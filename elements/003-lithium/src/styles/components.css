@@ -584,6 +584,20 @@
   animation: spinner-fancy-animation-lg 1.5s infinite linear;
 }
 
+/* Color variant: Monochrome — shades of gray */
+.spinner-fancy-mono {
+  --spinner-fancy-color-1: #808080;
+  --spinner-fancy-color-2: #A0A0A0;
+  --spinner-fancy-color-3: #606060;
+}
+
+/* Color variant: Alt — alternate arrangement of theme colors */
+.spinner-fancy-alt {
+  --spinner-fancy-color-1: var(--accent-info, #42A5F5);
+  --spinner-fancy-color-2: var(--accent-success, #66BB6A);
+  --spinner-fancy-color-3: var(--accent-danger, #EF5350);
+}
+
 /* Small spinner keyframes (8px) */
 @keyframes spinner-fancy-animation-sm {
   0%    {box-shadow: 

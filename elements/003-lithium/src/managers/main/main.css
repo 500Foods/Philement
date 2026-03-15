@@ -94,7 +94,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
+  width: 35px;
   padding: var(--space-2);
   border: none;
   border-radius: 0 var(--border-radius-md) var(--border-radius-md) 0;
@@ -220,9 +220,9 @@
   border-radius: var(--border-radius-md);
   background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
   color: white;
-  min-height: 36px;     
-  max-height: 36px;
-  height: 36px;
+  min-height: 35px;     
+  max-height: 35px;
+  height: 35px;
   flex-shrink: 0;
 }
 

@@ -34,7 +34,39 @@
       },
       "accessorDownload": null,
       "width": null,
-      "minWidth": 60
+      "minWidth": 40
+    },
+
+    "index": {
+      "description": "Simple whole numbers (lookup values)",
+      "align": "right",
+      "vertAlign": "middle",
+      "formatter": "number",
+      "formatterParams": {
+        "thousand": "",
+        "precision": 0
+      },
+      "editor": "number",
+      "editorParams": {
+        "min": null,
+        "max": null,
+        "step": 1
+      },
+      "sorter": "number",
+      "headerFilterFunc": ">=",
+      "headerFilterPlaceholder": "filter...",
+      "blank": "",
+      "zero": "",
+      "cssClass": "li-col-integer",
+      "bottomCalc": "count",
+      "bottomCalcFormatter": "number",
+      "bottomCalcFormatterParams": {
+        "thousand": "",
+        "precision": 0
+      },
+      "accessorDownload": null,
+      "width": null,
+      "minWidth": 40
     },
 
     "decimal": {

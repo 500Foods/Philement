@@ -4,7 +4,7 @@ This document analyses the gap between the JSON-driven column configuration syst
 (schemas, coltypes, table definitions) and the current runtime implementation, then
 lays out a phased plan to close that gap.
 
-**Status: Phases 1–4 complete; `tabulator-init.js` removed** (March 2026).
+**Status: Phases 1–4 complete; Phase 4b (lookup wiring + detailQueryRef + persistSort/Filter) complete; March 2026 edit-mode follow-up applied for row-scoped editors, consistent row selection, header-only resize handles, non-selectable footer calcs, same-row edit handoff without detail-query churn, stronger queued cell-editor activation, and row-change popup cleanup; `tabulator-init.js` removed** (March 2026).
 
 ---
 
@@ -153,6 +153,8 @@ export function resolveTableOptions(tableDef)
 | `resizableColumns` | `resizableColumns` |
 | `initialSort` | `initialSort` |
 | `groupBy` | `groupBy` |
+| `persistSort` | `persistSort` |
+| `persistFilter` | `persistFilter` |
 
 ---
 
@@ -239,6 +241,33 @@ export function createLookupEditor(lookupRef, lookupData)
 Returns a Tabulator `list` editor configuration with autocomplete, populated
 from the lookup table. Falls back to `'input'` if lookup data is empty.
 
+#### 3d. Resolver Integration ✅
+
+`resolveColumn()` now detects `lookupRef` on a column definition and, if the
+lookup data is in cache, automatically wires:
+
+- **Formatter:** `createLookupFormatter(lookupRef)` instead of the coltype's
+  default formatter — resolves integer IDs → human-readable labels
+- **Editor:** `createLookupEditor(lookupRef, lookupData)` with `list` +
+  autocomplete instead of the coltype's default editor
+
+When the lookup data is **not** cached (e.g., API unavailable), the column
+falls back to the coltype's standard formatter and editor — no runtime error.
+
+`queries.js` → `initTable()` now calls `preloadLookups()` with all unique
+`lookupRef` values from the column definitions, so lookup data is in cache
+before `resolveColumns()` runs:
+
+```javascript
+const lookupRefs = Object.values(this.tableDef.columns || {})
+  .map(col => col.lookupRef)
+  .filter(Boolean);
+const uniqueRefs = [...new Set(lookupRefs)];
+if (uniqueRefs.length > 0 && this.app?.api) {
+  await preloadLookups(uniqueRefs, this.app.api);
+}
+```
+
 ---
 
 ### Phase 4: Navigator Functionality ✅ Complete
@@ -247,7 +276,7 @@ from the lookup table. Falls back to `'input'` if lookup data is empty.
 |--------|--------|----------------|
 | Refresh | ✅ Working | `loadQueries()` with row selection persistence |
 | Search | ✅ Working | Uses config refs (`queryRefs.searchQueryRef`) with fallback |
-| Print | ✅ Working | `table.print()` |
+| Width | ✅ Working | Popup: Narrow (160px), Compact (314px), Normal (468px), Wide (622px), Auto (calculated) |
 | Export PDF | ✅ Working | `table.download('pdf', ...)` with landscape orientation |
 | Export CSV | ✅ Working | `table.download('csv', ...)` |
 | Export TXT | ✅ Working | `table.download('csv', ...)` with `.txt` extension |
@@ -259,7 +288,7 @@ from the lookup table. Falls back to `'input'` if lookup data is empty.
 | Save | ✅ Wired | Uses `insertQueryRef`/`updateQueryRef` from config; falls back to local-only if refs not defined |
 | Cancel | ✅ Working | `table.undo()` + clear edit state |
 | Delete | ✅ Wired | Uses `deleteQueryRef` from config; falls back to local-only if ref not defined |
-| Email | ✅ Working | Builds mailto: with visible columns, up to 50 rows |
+| Layout | ✅ Working | Popup: Fit Columns, Fit Data, Fit Fill, Fit Stretch, Fit Table (persisted to localStorage) |
 | Column Filters | ✅ Working | Toggle with custom clear (×) buttons |
 | Expand All | ✅ Working | Expand all groups/tree rows |
 | Collapse All | ✅ Working | Collapse all groups/tree rows |
@@ -321,8 +350,12 @@ template, button wiring, move/manage logic), which is currently embedded in
 
 | File | Changes | Status |
 |------|---------|--------|
-| `src/managers/queries/queries.js` | JSON-driven columns, config query refs, Save/Delete API integration | ✅ Complete |
+| `src/managers/queries/queries.js` | JSON-driven columns, config query refs (incl. detailQueryRef), Save/Delete API integration, lookup pre-loading, async row-scoped editor activation, consistent selection-before-edit, row-change popup cleanup, stronger queued same-row cell handoff | ✅ Complete |
+| `src/core/lithium-table.js` | Lookup auto-wiring in resolveColumn(), persistSort/persistFilter in resolveTableOptions() | ✅ Complete |
+| `src/managers/queries/queries.css` | Restrict resize handles to header row only; suppress body/footer handle hit areas | ✅ Complete |
+| `tests/unit/queries-manager.test.js` | Covers edit gating, async editor enable/disable, consistent selection/edit click behaviour, row-change popup cleanup, and queued same-row handoff | ✅ Complete |
 | `config/tabulator/tabledef-schema.json` | Added `insertQueryRef`, `updateQueryRef`, `deleteQueryRef` fields | ✅ Complete |
+| `config/tabulator/queries/query-manager.json` | Added `detailQueryRef: 27` | ✅ Complete |
 
 ### Removed Files
 
@@ -348,11 +381,12 @@ template, button wiring, move/manage logic), which is currently embedded in
 | 1 | 1a | Config loader (fetch + cache coltypes/tabledef) | ✅ Done |
 | 2 | 1b | Column resolver (coltype → Tabulator column def) | ✅ Done |
 | 3 | 1c | Blank/zero formatter wrapper | ✅ Done |
-| 4 | 1d | Table-level property mapping | ✅ Done |
+| 4 | 1d | Table-level property mapping (incl. persistSort/persistFilter) | ✅ Done |
 | 5 | 2a | Refactor `queries.js` to use resolved columns | ✅ Done |
-| 6 | 2b | Use config query refs instead of hardcoded | ✅ Done |
+| 6 | 2b | Use config query refs instead of hardcoded (incl. detailQueryRef) | ✅ Done |
 | 7 | 2c | `_discoverColumns()` — kept as hybrid approach | ✅ Done (design decision) |
-| 8 | 3 | Lookup column support | ✅ Done |
+| 8 | 3 | Lookup column support (load, format, edit) | ✅ Done |
+| 8a | 3d | Lookup resolver integration + preloadLookups() in initTable | ✅ Done |
 | 9 | 4 | Navigator button implementations | ✅ Done |
 | 9a | 4a | Save/Delete API wiring + CRUD QueryRef schema | ✅ Done |
 | 10 | 4b | Remove dead `tabulator-init.js` | ✅ Done |
@@ -366,10 +400,11 @@ Per LITHIUM-TOC.md: **do not run the dev server** — validate through:
 
 - `npm run build` — ensure no import/syntax errors
 - `npm run validate:tabulator` — ensure JSON configs remain valid
-- `npm test` — 482 tests across 17 files (all passing)
+- `npm test` — 490 tests across 17 files (all passing)
 - Unit tests for `resolveColumn()`, `wrapFormatter()`, `resolveColumns()`,
   `resolveTableOptions()`, `getPrimaryKeyField()`, `getQueryRefs()`, lookup
-  functions, and cache management (76 tests in `lithium-table.test.js`)
+  functions, lookup resolver integration, persistSort/persistFilter, and
+  cache management (84 tests in `lithium-table.test.js`)
 
 ---
 
@@ -436,6 +471,144 @@ in `queries.js`. JavaScript uses the **last** definition, so the working
 implementation (file picker + `table.import()`) was silently overwritten by
 a TODO stub. This was fixed by removing the duplicate.
 
+### Edit Mode Follow-up: Row-Scoped Editors + Selection Stability
+
+The first pass at inline editing exposed three related issues in the Queries
+manager:
+
+1. Column editor updates were asynchronous, so a call to `cell.edit()` could
+   run before the new editor definition had been attached to the column.
+2. Row selection could vary by cell type because some cell interactions reached
+   Tabulator's selection flow differently once edit-capable columns were present.
+3. Resize handles could still appear in non-header sections, making resizing
+   feel available from the wrong place.
+
+The follow-up fix in `src/managers/queries/queries.js` now:
+
+- makes `_enterEditMode()` / `_exitEditMode()` await async
+  `updateColumnDefinition()` work,
+- forces row selection consistently on `cellMouseDown` and `cellClick` before
+  any edit attempt,
+- defers `cell.edit()` with `requestAnimationFrame()` so the newly attached
+  editor is available before Tabulator opens it.
+
+The companion CSS update in `src/managers/queries/queries.css` hides
+non-header `.tabulator-col-resize-handle` elements with `!important`, leaving
+column resizing active only in header cells.
+
+An additional follow-up tightened event handling around footer calcs and
+same-row edit handoff:
+
+- footer calc rows/cells are now ignored by selection/edit handlers and have
+  pointer events disabled so they cannot become the active row,
+- switching from one editable cell to another on the same row now blurs the
+  current editor first so Tabulator saves the value before opening the next
+  field,
+- detail reloads are suppressed while the currently edited row remains selected,
+  preventing redundant REST calls during intra-row editing.
+
+One more pass addressed two remaining rough edges observed during manual use:
+
+- row-selection changes now explicitly close transient popups (column chooser,
+  navigator popup, footer export popup, font popup), which covers cases where a
+  document-level click handler never fires because the selection change came from
+  keyboard navigation or a Tabulator event path that stops propagation,
+- programmatic cell-editor activation now uses a tokenised double
+  `requestAnimationFrame()` handoff so number/list editors have more time to
+  open cleanly after the previous inline editor blurs and commits.
+
+### detailQueryRef Wiring
+
+`query-manager.json` now includes `detailQueryRef: 27`, and `queries.js` →
+`fetchQueryDetails()` reads this from `this.queryRefs?.detailQueryRef ?? 27`
+instead of hardcoding `27`. This ensures the detail-fetch query reference is
+config-driven, consistent with all other QueryRefs.
+
+### persistSort / persistFilter
+
+The tabledef schema already supported `persistSort` and `persistFilter` as
+boolean properties, and `query-manager.json` had them set to `true`. However,
+`resolveTableOptions()` did not map them. Now it does — both properties are
+passed through to the Tabulator constructor when present.
+
+### Table Width Presets
+
+The Print button was removed from the first nav block (Control) and replaced
+with a **Table Width** popup button (`fa-left-right` icon). Print, Email, and
+Export are now handled exclusively by the query manager footer's data-source
+controls (which support View vs. Data modes).
+
+The width popup offers five presets based on the nav-block unit:
+
+| Preset | Blocks | Pixel Width | Formula |
+|--------|--------|-------------|---------|
+| Narrow | 1 | 160px | 150 + 10 |
+| Compact | 2 | 314px | 300 + 4 + 10 |
+| Normal | 3 | 468px | 450 + 8 + 10 |
+| Wide | 4 | 622px | 600 + 12 + 10 |
+| Auto | — | calculated | sum of visible column widths + 28px margin |
+
+Where: nav block = 150px, gap = 4px (`--space-2`), container pad = 10px (6 + 4).
+
+**Auto** mode sums visible column widths via the Tabulator column API
+(`col.getWidth()`) after a forced redraw. When the current layout is
+`fitColumns` (columns stretched to fill), it temporarily switches to
+`fitDataTable` and expands the panel to 2000px so columns can spread to
+their natural content widths, measures, then restores the original layout.
+When a data-fitting layout (`fitData`, `fitDataFill`, `fitDataStretch`,
+`fitDataTable`) is active, columns are already at natural width and no
+layout switching is needed.
+
+A double `requestAnimationFrame` ensures the browser has fully committed
+the redraw before measuring. This fixes a timing issue where the previous
+single-rAF approach could measure stale layout dimensions.
+
+**Persistence:** The panel width is saved to `localStorage` (`PANEL_WIDTH_KEY`)
+after every preset selection **and** every manual splitter resize. On init, the
+stored value is restored and the width mode indicator is auto-detected (±8px
+tolerance per preset, falling back to `'custom'`).
+
+### Table Layout Mode
+
+The Email button was removed from the first nav block (Control) — email is
+now handled exclusively by the footer's data-source controls — and replaced
+with a **Table Layout** popup button (`fa-table-columns` icon).
+
+The layout popup offers five Tabulator layout modes:
+
+| Popup Label | Tabulator Setting | Behaviour |
+|-------------|-------------------|-----------|
+| Fit Columns | `fitColumns` | Columns stretch proportionally to fill the table width (default) |
+| Fit Data | `fitData` | Columns size to their data content; table may be narrower than panel |
+| Fit Fill | `fitDataFill` | Size to data, then stretch the **last** column to fill remaining space |
+| Fit Stretch | `fitDataStretch` | Size to data, then stretch **all** columns proportionally to fill |
+| Fit Table | `fitDataTable` | Size to data; table element itself shrinks to match column widths |
+
+**Persistence:** The layout mode is saved to `localStorage` (`LAYOUT_MODE_KEY`)
+and restored on init, overriding the JSON config default. This lets the user's
+preferred layout survive refresh and re-login.
+
+**Auto width integration:** When the layout mode changes while the panel is in
+auto-width mode, `setTableLayout()` automatically triggers `_applyAutoWidth()`
+to resize the panel to match the new natural column widths. This enables a
+workflow of: set layout to Fit Data → set width to Auto → panel sizes itself
+to exactly fit the table content.
+
+### Lookup Resolver Auto-Wiring
+
+`resolveColumn()` now checks for a `lookupRef` property on the column
+definition. If the lookup data is in the module cache (populated by
+`preloadLookups()`), the resolver automatically assigns:
+
+- `formatter` → `createLookupFormatter(lookupRef)` (replaces the coltype
+  default)
+- `editor` → list editor from `createLookupEditor()` with autocomplete
+
+If the lookup is **not** cached, the column falls through to the coltype's
+standard formatter/editor. This means the feature is entirely non-breaking:
+without a live API to populate lookups, columns render their raw integer IDs
+using the coltype formatter.
+
 ---
 
 ## Remaining Work
@@ -451,7 +624,12 @@ a TODO stub. This was fixed by removing the duplicate.
    - Move button wiring and move/manage logic into reusable functions
    - Enable new managers to spin up a table with minimal boilerplate
 
-3. **Lookup Integration at Runtime** (Phase 3 enhancement)
-   - Call `preloadLookups()` during table init to pre-fetch lookup data
-   - Wire `createLookupFormatter()` into the column resolver for lookup columns
-   - This requires a live Hydrogen API connection (not testable locally)
+3. ~~**Lookup Integration at Runtime** (Phase 3 enhancement)~~ ✅ Done
+   - ~~Call `preloadLookups()` during table init to pre-fetch lookup data~~
+   - ~~Wire `createLookupFormatter()` into the column resolver for lookup columns~~
+   - `resolveColumn()` now auto-detects `lookupRef` + cached data → wires
+     formatter and editor automatically
+   - `queries.js` → `initTable()` collects `lookupRef` values from the
+     tabledef and calls `preloadLookups()` before resolving columns
+   - Falls back gracefully to coltype defaults when lookups are not cached
+   - Requires a live Hydrogen API for lookup data to be available

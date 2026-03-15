@@ -7,6 +7,14 @@
 
 @layer layout {
 
+/* Note: Avoid !important on body as it causes "Declaration dropped" errors
+   when vendor libraries dynamically set these properties via JavaScript.
+   The layout layer has sufficient cascade priority without !important. */
+body {
+  text-align: left;
+  min-height: 0px;
+}
+
 /* ========================================
    App Container - Crossfade Support
    ======================================== */
@@ -859,8 +867,8 @@ body.hide-password-manager-ui [class*="password-icon"] {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 35px;
+  height: 35px;
   background: none;
   border: none;
   border-radius: var(--border-radius-md);

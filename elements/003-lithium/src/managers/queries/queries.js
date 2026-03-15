@@ -18,8 +18,15 @@ import {
   resolveTableOptions,
   getQueryRefs,
   getPrimaryKeyField,
+  preloadLookups,
 } from '../../core/lithium-table.js';
 import './queries.css';
+
+// ── JSON config imports (bundled by Vite — always available) ────────────────
+// These guarantee coltypes and table definitions are resolved from the JSON
+// config even when the production web server doesn't serve /config/ files.
+import coltypesJson from '../../../config/tabulator/coltypes.json';
+import queryManagerJson from '../../../config/tabulator/queries/query-manager.json';
 
 // Font constants
 const MIN_FONT_SIZE = 10;
@@ -33,6 +40,12 @@ const DEFAULT_FONT_FAMILY = '"Vanadium Mono", var(--font-mono, monospace)';
 // localStorage key for persisting the selected row across sessions
 const SELECTED_ROW_KEY = 'lithium_queries_selected_id';
 
+// localStorage key for persisting the left panel width across sessions
+const PANEL_WIDTH_KEY = 'lithium_queries_panel_width';
+
+// localStorage key for persisting the Tabulator layout mode across sessions
+const LAYOUT_MODE_KEY = 'lithium_queries_layout_mode';
+
 // History field for CodeMirror undo/redo state
 let historyField;
 
@@ -45,8 +58,14 @@ export default class QueriesManager {
     this.table = null;
     this._arrowRotation = 0;
     this._editingRowId = null;
+    this._isEditing = false;
     this._columnChooserPopup = null;
     this._filtersVisible = false;
+    this._tableWidthMode = 'compact'; // Default matches ~314px panel width
+    this._tableLayoutMode = 'fitColumns'; // Tabulator layout mode (persisted)
+    this._editTransitionPending = false;
+    this._loadedDetailRowId = null;
+    this._pendingCellEditToken = 0;
 
     // JSON-driven table configuration (loaded in initTable)
     this.tableDef = null;
@@ -81,7 +100,9 @@ export default class QueriesManager {
     await this.render();
     this.setupEventListeners();
     this.setupSplitter();
+    this._restorePanelWidth();
     await this.initTable();
+    this._setupFooter();
   }
 
   async render() {
@@ -146,7 +167,7 @@ export default class QueriesManager {
 
   /**
    * Build the navigator control bar with four blocks:
-   *   1. Control  — refresh, menu, print, email, export, import
+   *   1. Control  — refresh, menu, width, layout, export, import
    *   2. Move     — first, prev-page, prev, next, next-page, last
    *   3. Manage   — add, duplicate, edit, save, cancel, delete
    *   4. Search   — magnifying-glass icon, input, X button
@@ -167,11 +188,11 @@ export default class QueriesManager {
           <button type="button" class="queries-nav-btn queries-nav-btn-has-popup" id="queries-nav-menu" title="Table Options">
             <fa fa-screwdriver-wrench></fa>
           </button>
-          <button type="button" class="queries-nav-btn" id="queries-nav-print" title="Print">
-            <fa fa-print></fa>
+          <button type="button" class="queries-nav-btn queries-nav-btn-has-popup" id="queries-nav-width" title="Table Width">
+            <fa fa-left-right></fa>
           </button>
-          <button type="button" class="queries-nav-btn" id="queries-nav-email" title="Email">
-            <fa fa-envelope></fa>
+          <button type="button" class="queries-nav-btn queries-nav-btn-has-popup" id="queries-nav-layout" title="Table Layout">
+            <fa fa-table-columns></fa>
           </button>
           <button type="button" class="queries-nav-btn queries-nav-btn-has-popup" id="queries-nav-export" title="Export">
             <fa fa-download></fa>
@@ -210,10 +231,10 @@ export default class QueriesManager {
           <button type="button" class="queries-nav-btn" id="queries-nav-edit" title="Edit">
             <fa fa-pen-to-square></fa>
           </button>
-          <button type="button" class="queries-nav-btn" id="queries-nav-save" title="Save">
+          <button type="button" class="queries-nav-btn" id="queries-nav-save" title="Save" disabled>
             <fa fa-floppy-disk></fa>
           </button>
-          <button type="button" class="queries-nav-btn" id="queries-nav-cancel" title="Cancel">
+          <button type="button" class="queries-nav-btn" id="queries-nav-cancel" title="Cancel" disabled>
             <fa fa-ban></fa>
           </button>
           <button type="button" class="queries-nav-btn queries-nav-btn-danger" id="queries-nav-delete" title="Delete">
@@ -238,8 +259,8 @@ export default class QueriesManager {
     // --- Wire up control buttons ---
     nav.querySelector('#queries-nav-refresh')?.addEventListener('click', () => this.handleNavRefresh());
     nav.querySelector('#queries-nav-menu')?.addEventListener('click', (e) => this.toggleNavPopup(e, 'menu'));
-    nav.querySelector('#queries-nav-print')?.addEventListener('click', () => this.handleNavPrint());
-    nav.querySelector('#queries-nav-email')?.addEventListener('click', () => this.handleNavEmail());
+    nav.querySelector('#queries-nav-width')?.addEventListener('click', (e) => this.toggleNavPopup(e, 'width'));
+    nav.querySelector('#queries-nav-layout')?.addEventListener('click', (e) => this.toggleNavPopup(e, 'layout'));
     nav.querySelector('#queries-nav-export')?.addEventListener('click', (e) => this.toggleNavPopup(e, 'export'));
     nav.querySelector('#queries-nav-import')?.addEventListener('click', (e) => this.toggleNavPopup(e, 'import'));
 
@@ -384,6 +405,22 @@ export default class QueriesManager {
           { label: 'TXT', action: () => this.handleImport('txt') },
           { label: 'XLS', action: () => this.handleImport('xls') },
         ];
+      case 'width':
+        return [
+          { label: this._tableWidthMode === 'narrow'  ? '\u2713 Narrow'  : '   Narrow',  action: () => this.setTableWidth('narrow') },
+          { label: this._tableWidthMode === 'compact' ? '\u2713 Compact' : '   Compact', action: () => this.setTableWidth('compact') },
+          { label: this._tableWidthMode === 'normal'  ? '\u2713 Normal'  : '   Normal',  action: () => this.setTableWidth('normal') },
+          { label: this._tableWidthMode === 'wide'    ? '\u2713 Wide'    : '   Wide',    action: () => this.setTableWidth('wide') },
+          { label: this._tableWidthMode === 'auto'    ? '\u2713 Auto'    : '   Auto',    action: () => this.setTableWidth('auto') },
+        ];
+      case 'layout':
+        return [
+          { label: this._tableLayoutMode === 'fitColumns'     ? '\u2713 Fit Columns'  : '   Fit Columns',  action: () => this.setTableLayout('fitColumns') },
+          { label: this._tableLayoutMode === 'fitData'        ? '\u2713 Fit Data'     : '   Fit Data',     action: () => this.setTableLayout('fitData') },
+          { label: this._tableLayoutMode === 'fitDataFill'    ? '\u2713 Fit Fill'     : '   Fit Fill',     action: () => this.setTableLayout('fitDataFill') },
+          { label: this._tableLayoutMode === 'fitDataStretch' ? '\u2713 Fit Stretch'  : '   Fit Stretch',  action: () => this.setTableLayout('fitDataStretch') },
+          { label: this._tableLayoutMode === 'fitDataTable'   ? '\u2713 Fit Table'    : '   Fit Table',    action: () => this.setTableLayout('fitDataTable') },
+        ];
       default:
         return [];
     }
@@ -413,6 +450,7 @@ export default class QueriesManager {
    * @param {number} index - 0-based index in visible rows
    */
   _selectRowByIndex(index) {
+    if (!this.table) return;
     const rows = this.table.getRows('active');
     if (index < 0 || index >= rows.length) return;
     this.table.deselectRow();
@@ -437,6 +475,7 @@ export default class QueriesManager {
   }
 
   navigateFirst() {
+    if (!this.table) return;
     this._selectRowByIndex(0);
   }
 
@@ -450,20 +489,31 @@ export default class QueriesManager {
   // ── Table loading indicator ───────────────────────────────────────────
 
   /**
-   * Show Tabulator's built-in loader with spinner-fancy styling.
-   * Used during data fetch operations.
+   * Show loading overlay by adding a CSS class to the table container.
+   * The spinner is styled via CSS using :has() or a child element.
    */
   _showTableLoading() {
-    if (!this.table) return;
-    this.table.showLoader();
+    if (!this.elements.tableContainer) return;
+
+    // Remove any existing loader first
+    this._hideTableLoading();
+
+    // Create and append the loader element
+    const loader = document.createElement('div');
+    loader.className = 'queries-table-loader';
+    loader.innerHTML = '<div class="spinner-fancy spinner-fancy-md"></div>';
+    this.elements.tableContainer.appendChild(loader);
+    this._tableLoaderElement = loader;
   }
 
   /**
-   * Hide Tabulator's built-in loader.
+   * Hide the loading overlay.
    */
   _hideTableLoading() {
-    if (!this.table) return;
-    this.table.hideLoader();
+    if (this._tableLoaderElement) {
+      this._tableLoaderElement.remove();
+      this._tableLoaderElement = null;
+    }
   }
 
   navigatePrevRec() {
@@ -511,7 +561,7 @@ export default class QueriesManager {
 
       if (isSelected) {
         const pkField = this.primaryKeyField || 'query_id';
-        const isEditing = this._editingRowId != null &&
+        const isEditing = this._isEditing &&
           this._editingRowId === row.getData()[pkField];
         el.innerHTML = isEditing
           ? '<fa fa-i-cursor queries-selector-indicator queries-selector-edit>'
@@ -536,6 +586,428 @@ export default class QueriesManager {
     }
   }
 
+  /**
+   * Toggle a short-lived visual state while edit mode is entering/exiting.
+   * This gives the user a wait cursor during any transition work.
+   * @param {boolean} pending
+   */
+  _setEditTransitionState(pending) {
+    this._editTransitionPending = pending;
+    this.elements.tableContainer?.classList.toggle('queries-edit-transition', pending);
+    this.elements.navigatorContainer?.classList.toggle('queries-edit-transition', pending);
+  }
+
+  // ── Edit Mode ──────────────────────────────────────────────────────────
+
+  /**
+   * Enter edit mode for the currently selected row.
+   *
+   * This method orchestrates a coordinated set of visual and behavioural
+   * changes that signal "this row is now editable":
+   *   - Adds the `.queries-edit-mode` CSS class to the table container,
+   *     which switches the selected-row highlight from accent-primary
+   *     (indigo) to accent-warning (amber)
+   *   - Sets `_editingRowId` so the selector column shows the I-cursor
+   *   - Enables the Save and Cancel nav buttons
+   *   - Makes CodeMirror editors editable (they default to readOnly)
+   *   - Optionally focuses an editable cell for immediate typing
+   *
+   * @param {Object} [row] - Tabulator row component. If omitted, uses the
+   *   currently selected row.
+   */
+  async _enterEditMode(row) {
+    if (!this.table) return;
+
+    this._setEditTransitionState(true);
+
+    try {
+
+      // Resolve the target row
+      if (!row) {
+        const selected = this.table.getSelectedRows();
+        if (selected.length === 0) return;
+        row = selected[0];
+      }
+
+      const pkField = this.primaryKeyField || 'query_id';
+      const rowId = row.getData()?.[pkField];
+
+      // Already editing this row — nothing to do
+      if (this._isEditing && this._editingRowId === rowId) return;
+
+      // If we were editing a different row, exit that first
+      if (this._isEditing) {
+        await this._exitEditMode();
+      }
+
+      // ── Activate edit state ──────────────────────────────────────────
+      this._editingRowId = rowId;
+      this._isEditing = true;
+
+      // CSS class drives the amber selected-row highlight + text cursor
+      this.elements.tableContainer?.classList.add('queries-edit-mode');
+
+      // Legacy no-op hook retained for compatibility
+      await this._enableColumnEditors();
+
+      // Selector indicator: I-cursor with blink
+      this._updateEditingIndicator();
+
+      // Enable Save / Cancel buttons
+      this._setManageButtonState(true);
+
+      // Make CodeMirror editors writable
+      this._setCodeMirrorEditable(true);
+
+      log(Subsystems.MANAGER, Status.INFO,
+        `[QueriesManager] Entered edit mode (row ${rowId})`);
+    } finally {
+      requestAnimationFrame(() => this._setEditTransitionState(false));
+    }
+  }
+
+  /**
+   * Exit edit mode — revert all visual / behavioural changes made by
+   * `_enterEditMode()`. Called on Save, Cancel, row-change, or
+   * pressing Edit again.
+   *
+   * @param {'save'|'cancel'|'row-change'|'toggle'} [reason='cancel']
+   *   Why we're exiting edit mode. Determines whether the exit is
+   *   logged differently; the actual save/undo logic lives in the
+   *   calling handler (handleNavSave / handleNavCancel), not here.
+   */
+  async _exitEditMode(reason = 'cancel') {
+    if (!this._isEditing) return; // Not in edit mode
+
+    this._setEditTransitionState(true);
+
+    try {
+
+      const previousId = this._editingRowId;
+
+      // Cancel any active inline cell editor before changing state
+      this._cancelActiveCellEdit();
+
+      // ── Deactivate edit state ────────────────────────────────────────
+      this._editingRowId = null;
+      this._isEditing = false;
+
+      // Remove amber highlight + text cursor
+      this.elements.tableContainer?.classList.remove('queries-edit-mode');
+
+      // Legacy no-op hook retained for compatibility
+      await this._disableColumnEditors();
+
+      // Selector indicator: back to ▸ arrow (or empty if deselected)
+      this._updateEditingIndicator();
+
+      // Disable Save / Cancel buttons
+      this._setManageButtonState(false);
+
+      // Make CodeMirror editors read-only again
+      this._setCodeMirrorEditable(false);
+
+      log(Subsystems.MANAGER, Status.INFO,
+        `[QueriesManager] Exited edit mode (row ${previousId}, reason: ${reason})`);
+    } finally {
+      requestAnimationFrame(() => this._setEditTransitionState(false));
+    }
+  }
+
+  /**
+   * Enable or disable the Save and Cancel nav buttons.
+   *
+   * In normal (non-edit) mode these buttons are disabled to prevent
+   * accidental saves.  When edit mode is entered they are enabled.
+   *
+   * @param {boolean} editing - true to enable, false to disable
+   */
+  _setManageButtonState(editing) {
+    const nav = this.elements.navigatorContainer;
+    if (!nav) return;
+
+    const saveBtn = nav.querySelector('#queries-nav-save');
+    const cancelBtn = nav.querySelector('#queries-nav-cancel');
+
+    if (saveBtn) saveBtn.disabled = !editing;
+    if (cancelBtn) cancelBtn.disabled = !editing;
+  }
+
+  /**
+   * Toggle CodeMirror editor editability.
+   *
+   * Uses CodeMirror 6's `EditorView.readOnly` compartment-style
+   * reconfiguration via `dispatch({ effects })`.  For simplicity,
+   * we use the `EditorState.readOnly` facet via reconfigure.
+   *
+   * Since the editors are created dynamically (and may not exist yet),
+   * we guard each access.
+   *
+   * @param {boolean} editable - true → writable, false → readOnly
+   */
+  _setCodeMirrorEditable(editable) {
+    // The readOnly state is controlled by recreating the editor with or
+    // without the readOnly extension.  However, CodeMirror 6 doesn't
+    // make this trivial without compartments.  A simpler approach is to
+    // toggle the `contenteditable` attribute on the CM DOM element and
+    // set a CSS class for visual feedback.
+    const editors = [
+      { view: this.sqlEditor, container: this.elements.sqlEditorContainer },
+      { view: this.summaryEditor, container: this.elements.summaryEditorContainer },
+    ];
+
+    for (const { view, container } of editors) {
+      if (!view) continue;
+
+      // Toggle DOM-level editability
+      const contentEl = view.dom.querySelector('.cm-content');
+      if (contentEl) {
+        contentEl.contentEditable = editable ? 'true' : 'false';
+      }
+
+      // Visual feedback: dimmed appearance when read-only
+      if (container) {
+        container.classList.toggle('queries-cm-readonly', !editable);
+      }
+    }
+  }
+
+  /**
+   * Cancel any active inline cell editor in the table.
+   *
+   * When exiting edit mode, an inline editor (input/textarea) may still
+   * be focused inside a Tabulator cell.  Blurring it causes Tabulator
+   * to close the editor cleanly (applying or reverting the value per
+   * its own configuration).
+   */
+  _cancelActiveCellEdit() {
+    this._commitActiveCellEdit();
+  }
+
+  /**
+   * Commit the active inline cell editor by blurring it.
+   *
+   * Switching between editable cells on the same row should save the current
+   * field before the next editor opens. Blurring the current editor lets
+   * Tabulator apply its normal edit-complete flow.
+   *
+   * @param {Object|null} [nextCell=null] - Optional target cell. If the active
+   *   editor already belongs to this cell, no blur is forced.
+   */
+  _commitActiveCellEdit(nextCell = null) {
+    const active = document.activeElement;
+    if (!active || !this.elements.tableContainer?.contains(active)) return;
+
+    const activeCellEl = active.closest?.('.tabulator-cell');
+    const nextCellEl = nextCell?.getElement?.() || null;
+    if (activeCellEl && nextCellEl && activeCellEl === nextCellEl) {
+      return;
+    }
+
+    active.blur();
+  }
+
+  /**
+   * Determine whether a row is a non-data footer/calc row.
+   *
+   * @param {Object} row - Tabulator row component
+   * @returns {boolean}
+   */
+  _isCalcRow(row) {
+    if (!row) return false;
+
+    const rowEl = row.getElement?.();
+    return !!rowEl?.closest?.('.tabulator-calcs, .tabulator-calcs-holder, .tabulator-calcs-bottom');
+  }
+
+  /**
+   * Determine whether a cell belongs to the footer calculation section.
+   *
+   * @param {Object} cell - Tabulator cell component
+   * @returns {boolean}
+   */
+  _isCalcCell(cell) {
+    if (!cell) return false;
+
+    const cellEl = cell.getElement?.();
+    if (cellEl?.closest?.('.tabulator-calcs, .tabulator-calcs-holder, .tabulator-calcs-bottom')) {
+      return true;
+    }
+
+    return this._isCalcRow(cell.getRow?.());
+  }
+
+  /**
+   * Compare two rows by component identity or primary-key identity.
+   *
+   * @param {Object|null} rowA - Tabulator row component
+   * @param {Object|null} rowB - Tabulator row component
+   * @returns {boolean}
+   */
+  _rowsMatch(rowA, rowB) {
+    if (!rowA || !rowB) return false;
+    if (rowA === rowB) return true;
+
+    const pkField = this.primaryKeyField || 'query_id';
+    const rowAId = rowA.getData?.()?.[pkField];
+    const rowBId = rowB.getData?.()?.[pkField];
+    return rowAId != null && rowBId != null && String(rowAId) === String(rowBId);
+  }
+
+  /**
+   * Get the currently selected data row, excluding footer/calc rows.
+   *
+   * @returns {Object|null}
+   */
+  _getSelectedDataRow() {
+    if (!this.table) return null;
+    const selectedRows = this.table.getSelectedRows?.() || [];
+    return selectedRows.find(row => !this._isCalcRow(row)) || null;
+  }
+
+  /**
+   * Close transient popup UI that should not remain open during row changes.
+   *
+   * Row navigation can happen via mouse, keyboard, or programmatic selection.
+   * Some of those paths do not bubble a document click, so popups such as the
+   * column chooser can otherwise remain visible after the active row changes.
+   */
+  _closeTransientPopups() {
+    this._closeColumnChooser();
+    this._closeNavPopup();
+    this._closeFooterExportPopup();
+    this.hideFontPopup();
+  }
+
+  /**
+   * Select a data row without churning selection if the same logical row is
+   * already selected.
+   *
+   * @param {Object} row - Tabulator row component
+   * @returns {boolean} True when selection changed, false otherwise
+   */
+  _selectDataRow(row) {
+    if (!this.table || !row || this._isCalcRow(row)) return false;
+
+    const currentRow = this._getSelectedDataRow();
+    if (this._rowsMatch(currentRow, row)) {
+      if (!row.isSelected?.()) {
+        row.select();
+      }
+      return false;
+    }
+
+    this._closeTransientPopups();
+
+    this.table.deselectRow();
+    row.select();
+    return true;
+  }
+
+  /**
+   * Open a cell editor after any pending blur/save cycle has settled.
+   *
+   * A single rAF is not always sufficient when handing off from one active
+   * editor to another. Using a tokenised double-rAF keeps only the latest edit
+   * request and gives Tabulator time to finish the previous editor teardown
+   * before opening the next field.
+   *
+   * @param {Object|null} cell - Tabulator cell component to edit
+   */
+  _queueCellEdit(cell) {
+    if (!cell) return;
+
+    const field = cell.getField?.();
+    if (!field || !this._columnEditors?.has(field)) return;
+
+    const editToken = ++this._pendingCellEditToken;
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (editToken !== this._pendingCellEditToken) return;
+        if (!this._isEditing) return;
+
+        const row = cell.getRow?.();
+        if (!row || this._isCalcRow(row)) return;
+
+        const pkField = this.primaryKeyField || 'query_id';
+        const rowId = row.getData?.()?.[pkField];
+        const isEditingRow = (this._editingRowId != null)
+          ? rowId === this._editingRowId
+          : row.isSelected?.();
+
+        if (!isEditingRow) return;
+
+        cell.edit();
+      });
+    });
+  }
+
+  /**
+   * Post-process resolved columns to strip editors from the Tabulator
+   * column definitions and store them separately.
+   *
+   * **Why not use `editable` as a function gate?**
+   * When a column has `editor` set (even with `editable: () => false`),
+   * Tabulator's internal cell-click handler intercepts the click event
+   * to check whether to open the editor. This can prevent the click from
+   * reaching the row-selection handler, causing the row not to be
+   * selected when clicking on editor-enabled cells (issue #4).
+   *
+   * By removing `editor` entirely from the column definition, we ensure
+   * Tabulator treats all cells identically for click handling. Editors
+   * are invoked programmatically via `cell.edit()` in the `cellClick`
+   * handler when the manager is in edit mode.
+   *
+   * The stripped editor definitions are stored in `this._columnEditors`
+   * so they can be re-applied when entering edit mode and removed when
+   * exiting.
+   *
+   * @param {Array<Object>} columns - Resolved Tabulator column definitions
+   */
+  _applyEditModeGate(columns) {
+    // Store editor definitions keyed by field name
+    this._columnEditors = new Map();
+
+    for (const col of columns) {
+      if (!col.editor) continue;
+
+      this._columnEditors.set(col.field, {
+        editor: col.editor,
+        editorParams: col.editorParams || undefined,
+      });
+
+      // Keep the editor definition attached so Tabulator always knows the
+      // correct editor type for the column, but gate activation by row/edit mode.
+      // This avoids expensive updateColumnDefinition() churn when switching modes.
+      col.editable = (cell) => {
+        if (!this._isEditing) return false;
+
+        const pkField = this.primaryKeyField || 'query_id';
+        const rowId = cell.getRow().getData()?.[pkField];
+        return this._editingRowId != null
+          ? rowId === this._editingRowId
+          : cell.getRow().isSelected();
+      };
+    }
+  }
+
+  /**
+   * Apply stored editor definitions to the Tabulator columns.
+   * Called when entering edit mode so cells on the editing row become editable.
+   */
+  async _enableColumnEditors() {
+    return Promise.resolve();
+  }
+
+  /**
+   * Remove editors from all Tabulator columns.
+   * Called when exiting edit mode so the table returns to read-only.
+   */
+  async _disableColumnEditors() {
+    return Promise.resolve();
+  }
+
   // ── Column chooser ────────────────────────────────────────────────────
 
   /**
@@ -546,6 +1018,7 @@ export default class QueriesManager {
    */
   toggleColumnChooser(e, column) {
     e.stopPropagation();
+    if (!this.table) return;
 
     // If already open, close it
     if (this._columnChooserPopup) {
@@ -591,6 +1064,11 @@ export default class QueriesManager {
           col.show();
         } else {
           col.hide();
+        }
+        // Force a full redraw to ensure columns are properly laid out
+        // This is especially important for fitColumns layout mode
+        if (this.table) {
+          this.table.redraw(true);
         }
       });
 
@@ -662,34 +1140,33 @@ export default class QueriesManager {
     this.loadQueries();
   }
 
-  handleNavAdd() {
+  async handleNavAdd() {
     log(Subsystems.MANAGER, Status.INFO, 'Navigator: Add');
     if (!this.table) return;
 
     // Add a new empty row at the top of the table
-    const newRow = this.table.addRow({}, true); // true = add at position 0
+    const newRow = await this.table.addRow({}, true); // true = add at position 0
 
-    // Select the new row
+    // Select the new row and enter edit mode
     if (newRow) {
       this.table.deselectRow();
       newRow.select();
       newRow.scrollTo();
 
-      // Enter edit mode for the new row
-      this._editingRowId = newRow.getData()?.[this.primaryKeyField || 'query_id'];
-      this._updateEditingIndicator();
+      // Enter edit mode for the new row (adds editors to columns)
+      await this._enterEditMode(newRow);
 
-      // Focus on the Name column for editing
+      // Focus on the Name column for editing — defer to next frame
+      // so the column definition update from _enableColumnEditors()
+      // has been fully processed by Tabulator.
       const nameCell = newRow.getCell('name');
-      if (nameCell) {
-        nameCell.edit();
-      }
+      this._queueCellEdit(nameCell);
     }
 
     log(Subsystems.MANAGER, Status.INFO, 'Added new query row');
   }
 
-  handleNavDuplicate() {
+  async handleNavDuplicate() {
     log(Subsystems.MANAGER, Status.INFO, 'Navigator: Duplicate');
     if (!this.table) return;
 
@@ -716,22 +1193,29 @@ export default class QueriesManager {
     }
 
     // Add the duplicate row
-    const newRow = this.table.addRow(duplicateData, true);
+    const newRow = await this.table.addRow(duplicateData, true);
 
     if (newRow) {
       this.table.deselectRow();
       newRow.select();
       newRow.scrollTo();
 
-      // Enter edit mode
-      this._editingRowId = newRow.getData()?.[pkField];
-      this._updateEditingIndicator();
+      // Enter edit mode for the duplicated row
+      await this._enterEditMode(newRow);
 
       log(Subsystems.MANAGER, Status.INFO, 'Duplicated query row');
     }
   }
 
-  handleNavEdit() {
+  /**
+   * Toggle edit mode on the currently selected row.
+   *
+   * Behaviour:
+   *   - If not in edit mode → enter edit mode for the selected row
+   *   - If already editing the selected row → exit edit mode (toggle off)
+   *   - If no row is selected → show toast
+   */
+  async handleNavEdit() {
     log(Subsystems.MANAGER, Status.INFO, 'Navigator: Edit');
     if (!this.table) return;
 
@@ -747,18 +1231,20 @@ export default class QueriesManager {
     const pkField = this.primaryKeyField || 'query_id';
     const selectedId = selected[0].getData()?.[pkField];
 
-    if (selectedId != null) {
-      this._editingRowId = selectedId;
-      this._updateEditingIndicator();
-
-      // Start editing the Name cell
-      const nameCell = selected[0].getCell('name');
-      if (nameCell) {
-        nameCell.edit();
-      }
-
-      log(Subsystems.MANAGER, Status.INFO, `Entered edit mode for row ${selectedId}`);
+    // Toggle: if already editing this row, exit edit mode
+    if (this._isEditing && this._editingRowId === selectedId) {
+      await this._exitEditMode('toggle');
+      return;
     }
+
+    // Enter edit mode (adds editors to columns)
+    await this._enterEditMode(selected[0]);
+
+    // Start editing the Name cell (first editable column) — defer to
+    // next frame so the column definition update has been processed.
+    const editRow = selected[0];
+    const nameCell = editRow.getCell('name');
+    this._queueCellEdit(nameCell);
   }
 
   async handleNavSave() {
@@ -794,8 +1280,8 @@ export default class QueriesManager {
       log(Subsystems.MANAGER, Status.WARN,
         `[QueriesManager] No ${isInsert ? 'insert' : 'update'}QueryRef configured — save is local only`);
 
-      this._editingRowId = null;
-      this._updateEditingIndicator();
+      // Exit edit mode
+      await this._exitEditMode('save');
 
       toast.info('Saved Locally', {
         description: `${isInsert ? 'Insert' : 'Update'} API not configured — changes are local only`,
@@ -824,8 +1310,8 @@ export default class QueriesManager {
         row.update({ [pkField]: result[0][pkField] });
       }
 
-      this._editingRowId = null;
-      this._updateEditingIndicator();
+      // Exit edit mode after successful save
+      await this._exitEditMode('save');
 
       toast.success('Changes Saved', {
         description: `Row ${isInsert ? 'inserted' : 'updated'} successfully`,
@@ -843,25 +1329,28 @@ export default class QueriesManager {
     }
   }
 
-  handleNavCancel() {
+  async handleNavCancel() {
     log(Subsystems.MANAGER, Status.INFO, 'Navigator: Cancel');
     if (!this.table) return;
 
-    // Get all edited rows
-    const editedRows = this.table.getRows().filter(row => row.isEdited());
+    // Tabulator 6 row components do not expose row.isEdited().
+    // Derive the edited-row set from edited cells instead.
+    const editedCells = typeof this.table.getEditedCells === 'function'
+      ? this.table.getEditedCells()
+      : [];
+    const editedRows = [...new Set(editedCells.map(cell => cell.getRow()))];
 
     if (editedRows.length === 0) {
-      // Just clear edit mode if no edits
-      this._editingRowId = null;
-      this._updateEditingIndicator();
+      // Just exit edit mode if no edits
+      await this._exitEditMode('cancel');
       return;
     }
 
     // Revert all changes using Tabulator's undo
     this.table.undo();
 
-    this._editingRowId = null;
-    this._updateEditingIndicator();
+    // Exit edit mode
+    await this._exitEditMode('cancel');
 
     toast.info('Changes Cancelled', {
       description: `${editedRows.length} row(s) reverted`,
@@ -942,8 +1431,8 @@ export default class QueriesManager {
       nextRow.scrollTo();
     }
 
-    this._editingRowId = null;
-    this._updateEditingIndicator();
+    // Exit edit mode (delete always exits)
+    await this._exitEditMode('cancel');
 
     toast.success('Row Deleted', {
       description: rowName ? `"${rowName}" deleted` : `${rowCount} row(s) deleted`,
@@ -953,13 +1442,293 @@ export default class QueriesManager {
     log(Subsystems.MANAGER, Status.INFO, `Deleted ${rowCount} row(s)`);
   }
 
-  // ── Control button handlers (placeholder — wire up actions later) ─────
+  // ── Table Width Presets ─────────────────────────────────────────────────
 
-  handleNavPrint() {
-    log(Subsystems.MANAGER, Status.INFO, 'Navigator: Print');
-    if (this.table) {
-      this.table.print();
+  /**
+   * Set the left panel width to a named preset based on nav block sizing.
+   *
+   * Width presets are derived from the navigator block dimensions:
+   *   Nav block min-width: 150px, wrapper gap: 4px (--space-2),
+   *   container padding: 6px left + 4px right = 10px.
+   *
+   * For the fixed presets (Narrow–Wide), the panel width is set directly
+   * and Tabulator's built-in ResizeObserver detects the container change
+   * and redraws automatically — no explicit `redraw()` call needed.
+   *
+   * For "Auto" mode, the table layout is temporarily switched to
+   * `fitDataTable` so Tabulator sizes columns to their natural content
+   * width.  After the browser paints, the rendered table width is read
+   * from the DOM and used to set the panel width, then the layout is
+   * restored to `fitColumns`.
+   *
+   * @param {'narrow'|'compact'|'normal'|'wide'|'auto'} mode
+   */
+  setTableWidth(mode) {
+    const panel = this.elements.leftPanel;
+    if (!panel) return;
+
+    // Width presets: N blocks * 150px + (N-1) * 4px gap + 10px padding
+    const widths = {
+      narrow:  160,  // 1 block: 150 + 10
+      compact: 314,  // 2 blocks: 300 + 4 + 10
+      normal:  468,  // 3 blocks: 450 + 8 + 10
+      wide:    622,  // 4 blocks: 600 + 12 + 10
+    };
+
+    this._tableWidthMode = mode;
+
+    if (mode === 'auto') {
+      this._applyAutoWidth(panel);
+      return; // _applyAutoWidth handles save + log asynchronously
     }
+
+    panel.style.width = `${widths[mode]}px`;
+
+    // Persist to localStorage so the width survives refresh / re-login
+    this._savePanelWidth(parseInt(panel.style.width, 10));
+
+    log(Subsystems.MANAGER, Status.INFO, `Table width set to: ${mode} (${panel.style.width})`);
+  }
+
+  // ── Table Layout Mode ─────────────────────────────────────────────────
+
+  /**
+   * Change the Tabulator layout mode and persist the choice.
+   *
+   * Tabulator layout modes (see https://tabulator.info/docs/6.3/layout):
+   *   - fitColumns     — columns stretch to fill the table width
+   *   - fitData        — columns size to their data content
+   *   - fitDataFill    — size to data, stretch last column to fill
+   *   - fitDataStretch — size to data, stretch all columns proportionally
+   *   - fitDataTable   — size to data, shrink table element to match
+   *
+   * After changing the layout, if the current width mode is "auto" the
+   * panel width is recalculated to match the table's new natural width.
+   *
+   * @param {'fitColumns'|'fitData'|'fitDataFill'|'fitDataStretch'|'fitDataTable'} mode
+   */
+  setTableLayout(mode) {
+    if (!this.table) return;
+
+    this._tableLayoutMode = mode;
+    this._saveLayoutMode(mode);
+
+    // ── Preserve state before destroying the table ──────────────────
+    const currentData = this.table.getData();
+    const selectedId = this._getSelectedQueryId();
+
+    // ── Destroy the old Tabulator instance ──────────────────────────
+    // Tabulator doesn't support changing layout at runtime — the layout
+    // engine is initialised once in the constructor.  Destroying and
+    // recreating is the only reliable way to switch.
+    this.table.destroy();
+    this.table = null;
+
+    // ── Resolve columns (same as initTable) ─────────────────────────
+    const dataColumns = this.tableDef && this.coltypes
+      ? resolveColumns(this.tableDef, this.coltypes, {
+          filterEditor: this._createFilterEditor.bind(this),
+        })
+      : this._getFallbackColumns();
+
+    // Gate cell editing on edit mode (same as initTable)
+    this._applyEditModeGate(dataColumns);
+
+    const tableOptions = this.tableDef
+      ? resolveTableOptions(this.tableDef)
+      : { layout: 'fitColumns', responsiveLayout: 'collapse' };
+    tableOptions.layout = mode;
+
+    // ── Selector column ─────────────────────────────────────────────
+    const selectorColumn = this._buildSelectorColumn();
+
+    // ── Create new Tabulator instance ───────────────────────────────
+    this.table = new Tabulator(this.elements.tableContainer, {
+      ...tableOptions,
+      selectableRows: 1,
+      scrollToRowPosition: "center",
+      scrollToRowIfVisible: false,
+      headerSortElement: '<span class="queries-sort-icons"><span class="queries-sort-asc">▲</span><span class="queries-sort-desc">▼</span></span>',
+      columns: [selectorColumn, ...dataColumns],
+    });
+
+    // ── Wire table events ───────────────────────────────────────────
+    this._wireTableEvents();
+
+    // ── Restore data and selection ──────────────────────────────────
+    this.table.on("tableBuilt", () => {
+      this.table.setData(currentData);
+      this._discoverColumns(currentData);
+      requestAnimationFrame(() => {
+        this._autoSelectRow(selectedId);
+      });
+
+      // If the panel is in auto-width mode, recalculate to fit the new layout
+      if (this._tableWidthMode === 'auto') {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            this._applyAutoWidth(this.elements.leftPanel);
+          });
+        });
+      }
+    });
+
+    log(Subsystems.MANAGER, Status.INFO,
+      `Table layout set to: ${mode} (table recreated, ${currentData.length} rows preserved)`);
+  }
+
+  /**
+   * Persist the selected layout mode to localStorage.
+   * @param {string} mode - Tabulator layout mode name
+   */
+  _saveLayoutMode(mode) {
+    try {
+      localStorage.setItem(LAYOUT_MODE_KEY, mode);
+    } catch (_) { /* storage full or restricted — ignore */ }
+  }
+
+  /**
+   * Restore the layout mode from localStorage.
+   * @returns {string|null} The persisted layout mode, or null
+   */
+  _restoreLayoutMode() {
+    try {
+      const stored = localStorage.getItem(LAYOUT_MODE_KEY);
+      if (stored && ['fitColumns', 'fitData', 'fitDataFill', 'fitDataStretch', 'fitDataTable'].includes(stored)) {
+        return stored;
+      }
+    } catch (_) { /* ignore */ }
+    return null;
+  }
+
+  /**
+   * Apply "Auto" width by measuring the table's natural column widths.
+   *
+   * Strategy depends on the current layout mode:
+   *   - In data-fitting modes (fitData, fitDataFill, fitDataStretch,
+   *     fitDataTable) the columns are already at their natural content
+   *     width — just sum them via the Tabulator column API.
+   *   - In fitColumns mode the columns are stretched to fill the panel,
+   *     so we must temporarily switch to fitDataTable, expand the panel
+   *     so columns aren't constrained, measure, then restore.
+   *
+   * Uses a double requestAnimationFrame to ensure the browser has
+   * painted the new layout before measuring column widths.
+   *
+   * @param {HTMLElement} panel - the `.queries-left-panel` element
+   */
+  _applyAutoWidth(panel) {
+    if (!this.table) {
+      panel.style.width = '314px';
+      this._savePanelWidth(314);
+      return;
+    }
+
+    const currentLayout = this._tableLayoutMode || 'fitColumns';
+    const needsLayoutSwitch = (currentLayout === 'fitColumns');
+
+    // Disable CSS transitions so the intermediate 2000px state is invisible
+    panel.style.transition = 'none';
+
+    if (needsLayoutSwitch) {
+      // Expand the panel so columns can spread to their natural widths
+      panel.style.width = '2000px';
+      // Temporarily switch layout so columns size to their data content
+      this.table.options.layout = 'fitDataTable';
+      this.table.redraw(true);
+    }
+
+    // Double rAF: first fires after the current paint, second fires after
+    // the next, guaranteeing Tabulator's redraw is fully committed to pixels.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        // Sum visible column widths via the Tabulator API
+        let totalColWidth = 0;
+        this.table.getColumns().forEach(col => {
+          if (col.isVisible()) {
+            totalColWidth += col.getWidth();
+          }
+        });
+
+        // Fallback: if the API returned 0, measure the DOM element
+        if (totalColWidth === 0) {
+          const tableEl = this.elements.tableContainer?.querySelector('.tabulator-table');
+          totalColWidth = tableEl?.scrollWidth || tableEl?.offsetWidth || 300;
+        }
+
+        // Account for container padding (6 + 4 = 10px), table border (2px),
+        // column borders (~1px per col), and a small scrollbar buffer.
+        const panelWidth = Math.max(160, totalColWidth + 28);
+
+        // Set the final panel width
+        panel.style.width = `${panelWidth}px`;
+
+        // Restore original layout if we switched away
+        if (needsLayoutSwitch) {
+          this.table.options.layout = currentLayout;
+          this.table.redraw(true);
+        }
+
+        // Re-enable CSS transitions after the layout has stabilised
+        requestAnimationFrame(() => {
+          panel.style.transition = '';
+        });
+
+        // Persist
+        this._savePanelWidth(panelWidth);
+
+        log(Subsystems.MANAGER, Status.INFO,
+          `Table width set to: auto (${panelWidth}px, measured ${totalColWidth}px from columns)`);
+      });
+    });
+  }
+
+  /**
+   * Persist the current panel width to localStorage.
+   * Called after preset selection and manual splitter resize.
+   * @param {number} widthPx - panel width in pixels
+   */
+  _savePanelWidth(widthPx) {
+    try {
+      localStorage.setItem(PANEL_WIDTH_KEY, String(Math.round(widthPx)));
+    } catch (_) { /* storage full or restricted — ignore */ }
+  }
+
+  /**
+   * Restore the panel width from localStorage on init.
+   * Sets both the panel width and the width mode indicator.
+   */
+  _restorePanelWidth() {
+    try {
+      const stored = localStorage.getItem(PANEL_WIDTH_KEY);
+      if (stored != null) {
+        const px = parseInt(stored, 10);
+        if (!isNaN(px) && px >= 100) {
+          const panel = this.elements.leftPanel;
+          if (panel) {
+            panel.style.width = `${px}px`;
+          }
+          this._tableWidthMode = this._detectWidthMode(px);
+          return;
+        }
+      }
+    } catch (_) { /* ignore */ }
+    // No stored value — keep default (compact / 313px from CSS)
+  }
+
+  /**
+   * Detect which width mode a pixel value corresponds to.
+   * Allows ±8px tolerance for each preset to account for rounding.
+   * @param {number} px - panel width in pixels
+   * @returns {string} mode name ('narrow', 'compact', 'normal', 'wide', or 'custom')
+   */
+  _detectWidthMode(px) {
+    const presets = { narrow: 160, compact: 314, normal: 468, wide: 622 };
+    const tolerance = 8;
+    for (const [mode, target] of Object.entries(presets)) {
+      if (Math.abs(px - target) <= tolerance) return mode;
+    }
+    return 'custom';
   }
 
   handleNavEmail() {
@@ -1065,6 +1834,288 @@ export default class QueriesManager {
     input.click();
   }
 
+
+  // ── Slot footer setup ─────────────────────────────────────────────────
+
+  /**
+   * Customise the query manager's slot footer.
+   *
+   * Replaces the generic "Reports Placeholder" button with:
+   *   1. Print button
+   *   2. Email button
+   *   3. Export button (with popup for format selection)
+   *   4. Data-source select: "Query List View" / "Query List Data"
+   *
+   * All elements are injected as direct children of the footer's
+   * `.subpanel-header-group` flex container so they integrate seamlessly
+   * into the unified button strip (same sizing, gap, corner rounding).
+   *
+   * The data-source `<select>` gets `flex:1` to fill all remaining space
+   * between the new buttons and the pre-existing right-side buttons
+   * (notifications, tickets, annotations, tours, LMS).
+   *
+   * The slot element is found by walking up from the workspace container
+   * that was passed by the app when the manager was created.
+   */
+  _setupFooter() {
+    // Walk up to the .manager-slot from our workspace container
+    const slot = this.container.closest('.manager-slot');
+    if (!slot) return;
+
+    const footer = slot.querySelector('.manager-slot-footer');
+    if (!footer) return;
+
+    // Find the subpanel-header-group — the unified flex container
+    const group = footer.querySelector('.subpanel-header-group');
+    if (!group) return;
+
+    // Remove the generic "Reports Placeholder" button
+    const reportsBtn = group.querySelector('.slot-reports-btn');
+    if (reportsBtn) reportsBtn.remove();
+
+    // Identify the first right-side fixed button to use as insertion anchor
+    const anchor = group.querySelector('.slot-notifications-btn');
+
+    // --- Helper: create a button matching the footer style ---
+    const makeBtn = (id, icon, title) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'subpanel-header-btn subpanel-header-close';
+      btn.id = id;
+      btn.title = title;
+      btn.innerHTML = `<fa ${icon}></fa>`;
+      return btn;
+    };
+
+    // 1. Print button
+    const printBtn = makeBtn('queries-footer-print', 'fa-print', 'Print');
+    group.insertBefore(printBtn, anchor);
+
+    // 2. Email button
+    const emailBtn = makeBtn('queries-footer-email', 'fa-envelope', 'Email');
+    group.insertBefore(emailBtn, anchor);
+
+    // 3. Export button (with popup)
+    const exportBtn = makeBtn('queries-footer-export', 'fa-download', 'Export');
+    group.insertBefore(exportBtn, anchor);
+
+    // 4. Data-source select — fills remaining space via flex:1
+    const select = document.createElement('select');
+    select.id = 'queries-footer-datasource';
+    select.title = 'Data Source';
+    select.className = 'queries-footer-datasource';
+    select.innerHTML = `
+      <option value="view">Query List View</option>
+      <option value="data">Query List Data</option>
+    `;
+    group.insertBefore(select, anchor);
+
+    // Process <fa> icons inside the newly inserted buttons
+    processIcons(group);
+
+    // Wire up event handlers
+    printBtn.addEventListener('click', () => this._handleFooterPrint());
+    emailBtn.addEventListener('click', () => this._handleFooterEmail());
+    exportBtn.addEventListener('click', (e) => this._toggleFooterExportPopup(e));
+
+    // Store reference to the datasource select for use by export/print/email
+    this._footerDatasource = select;
+
+    log(Subsystems.MANAGER, Status.INFO, '[QueriesManager] Footer controls initialized');
+  }
+
+  // ── Footer action handlers ────────────────────────────────────────────
+
+  /**
+   * Get the selected data source mode from the footer combobox.
+   * @returns {'view'|'data'} - 'view' = current table rendering, 'data' = raw JSON data
+   */
+  _getFooterDatasource() {
+    return this._footerDatasource?.value || 'view';
+  }
+
+  /**
+   * Handle Print from the footer.
+   * 'view' mode: print the table as currently rendered (sort/filter/group).
+   * 'data' mode: print from the raw data (no sorting/filtering/grouping applied).
+   */
+  _handleFooterPrint() {
+    const mode = this._getFooterDatasource();
+    log(Subsystems.MANAGER, Status.INFO, `Footer: Print (${mode})`);
+    if (!this.table) return;
+
+    if (mode === 'view') {
+      // Print the table as currently rendered
+      this.table.print();
+    } else {
+      // Print from raw data — use 'all' style to bypass current filters/sort
+      this.table.print('all', true);
+    }
+  }
+
+  /**
+   * Handle Email from the footer.
+   * 'view' mode: email using visible/filtered rows with current column visibility.
+   * 'data' mode: email using all loaded data in native format.
+   */
+  _handleFooterEmail() {
+    const mode = this._getFooterDatasource();
+    log(Subsystems.MANAGER, Status.INFO, `Footer: Email (${mode})`);
+    if (!this.table) return;
+
+    const rows = mode === 'view'
+      ? this.table.getRows('active')
+      : this.table.getRows();
+
+    if (rows.length === 0) {
+      toast.info('No Data', {
+        description: 'No rows to include in the email',
+        duration: 3000,
+      });
+      return;
+    }
+
+    // Build a plain-text table summary
+    const visibleCols = mode === 'view'
+      ? this.table.getColumns().filter(col => col.isVisible() && col.getField() !== '_selector')
+      : this.table.getColumns().filter(col => col.getField() !== '_selector');
+
+    const headers = visibleCols.map(col => col.getDefinition().title || col.getField());
+    const separator = headers.map(h => '-'.repeat(h.length)).join('  ');
+
+    const dataLines = rows.slice(0, 50).map(row => {
+      const data = row.getData();
+      return visibleCols.map(col => {
+        const val = data[col.getField()];
+        return val != null ? String(val) : '';
+      }).join('\t');
+    });
+
+    const totalRows = rows.length;
+    const truncated = totalRows > 50 ? `\n... (${totalRows - 50} more rows not shown)` : '';
+    const modeLabel = mode === 'view' ? 'Filtered View' : 'Full Data';
+
+    const subject = encodeURIComponent(`${this.tableDef?.title || 'Query Manager'} — ${totalRows} rows (${modeLabel})`);
+    const body = encodeURIComponent(
+      `${this.tableDef?.title || 'Query Manager'} Export (${modeLabel})\n` +
+      `${totalRows} row(s)\n\n` +
+      `${headers.join('\t')}\n${separator}\n` +
+      `${dataLines.join('\n')}${truncated}\n`
+    );
+
+    window.open(`mailto:?subject=${subject}&body=${body}`, '_self');
+    log(Subsystems.MANAGER, Status.INFO, `Footer email prepared with ${totalRows} row(s) (${mode})`);
+  }
+
+  /**
+   * Toggle the export format popup from the footer export button.
+   * @param {MouseEvent} e - click event
+   */
+  _toggleFooterExportPopup(e) {
+    e.stopPropagation();
+
+    // If already open, close it
+    if (this._footerExportPopup) {
+      this._closeFooterExportPopup();
+      return;
+    }
+
+    const btn = e.currentTarget;
+    const mode = this._getFooterDatasource();
+    const formats = [
+      { label: 'PDF', action: () => this._handleFooterExport('pdf', mode) },
+      { label: 'CSV', action: () => this._handleFooterExport('csv', mode) },
+      { label: 'TXT', action: () => this._handleFooterExport('txt', mode) },
+      { label: 'XLS', action: () => this._handleFooterExport('xls', mode) },
+    ];
+
+    // Build popup
+    const popup = document.createElement('div');
+    popup.className = 'queries-footer-export-popup';
+    formats.forEach(item => {
+      const row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'queries-footer-export-popup-item';
+      row.textContent = item.label;
+      row.addEventListener('click', () => {
+        this._closeFooterExportPopup();
+        item.action();
+      });
+      popup.appendChild(row);
+    });
+
+    // Position above the button
+    const slot = this.container.closest('.manager-slot');
+    const footer = slot?.querySelector('.manager-slot-footer');
+    if (footer) {
+      footer.style.position = 'relative';
+      const btnRect = btn.getBoundingClientRect();
+      const footerRect = footer.getBoundingClientRect();
+      popup.style.left = `${btnRect.left - footerRect.left}px`;
+      footer.appendChild(popup);
+    }
+
+    // Animate in
+    popup.getBoundingClientRect();
+    popup.classList.add('visible');
+
+    this._footerExportPopup = popup;
+
+    // Close on click outside
+    this._footerExportCloseHandler = (evt) => {
+      if (!popup.contains(evt.target) && !btn.contains(evt.target)) {
+        this._closeFooterExportPopup();
+      }
+    };
+    document.addEventListener('click', this._footerExportCloseHandler);
+  }
+
+  /**
+   * Close the footer export popup.
+   */
+  _closeFooterExportPopup() {
+    if (this._footerExportPopup) {
+      this._footerExportPopup.remove();
+      this._footerExportPopup = null;
+    }
+    if (this._footerExportCloseHandler) {
+      document.removeEventListener('click', this._footerExportCloseHandler);
+      this._footerExportCloseHandler = null;
+    }
+  }
+
+  /**
+   * Handle export from the footer with data source mode.
+   * @param {'pdf'|'csv'|'txt'|'xls'} format
+   * @param {'view'|'data'} mode
+   */
+  _handleFooterExport(format, mode) {
+    log(Subsystems.MANAGER, Status.INFO, `Footer: Export ${format.toUpperCase()} (${mode})`);
+    if (!this.table) return;
+
+    const filename = `queries-export-${new Date().toISOString().slice(0, 10)}`;
+
+    // For 'data' mode, we temporarily clear filters to export all loaded data
+    // For 'view' mode, we export what's currently visible
+    const downloadOpts = mode === 'data' ? { rowGroups: false } : {};
+
+    switch (format) {
+      case 'pdf':
+        this.table.download('pdf', `${filename}.pdf`, { orientation: 'landscape', ...downloadOpts });
+        break;
+      case 'csv':
+        this.table.download('csv', `${filename}.csv`, downloadOpts);
+        break;
+      case 'txt':
+        this.table.download('csv', `${filename}.txt`, downloadOpts);
+        break;
+      case 'xls':
+        this.table.download('xlsx', `${filename}.xlsx`, downloadOpts);
+        break;
+      default:
+        log(Subsystems.MANAGER, Status.WARN, `Unknown export format: ${format}`);
+    }
+  }
 
   // ── Menu popup handlers ───────────────────────────────────────────────
 
@@ -1369,15 +2420,37 @@ export default class QueriesManager {
   }
 
   async initTable() {
-    // ── Load JSON-driven column configuration (parallel fetch) ─────────
+    // ── Load JSON-driven column configuration ──────────────────────────
+    // Pass the ES-module-imported JSON data so configs are guaranteed
+    // available even when the production server doesn't serve /config/.
+    // The loaders will use the provided data as priority 1 and skip fetch.
     [this.coltypes, this.tableDef] = await Promise.all([
-      loadColtypes(),
-      loadTableDef('queries/query-manager'),
+      loadColtypes(coltypesJson),
+      loadTableDef('queries/query-manager', queryManagerJson),
     ]);
 
     if (this.tableDef) {
       this.queryRefs = getQueryRefs(this.tableDef);
       this.primaryKeyField = getPrimaryKeyField(this.tableDef);
+
+      // ── Pre-load lookup tables referenced by columns ────────────────
+      // Collect all unique lookupRef values from the column definitions
+      // and pre-fetch them so resolveColumn() can wire up formatters/editors.
+      const lookupRefs = Object.values(this.tableDef.columns || {})
+        .map(col => col.lookupRef)
+        .filter(Boolean);
+      const uniqueRefs = [...new Set(lookupRefs)];
+
+      if (uniqueRefs.length > 0 && this.app?.api) {
+        try {
+          await preloadLookups(uniqueRefs, this.app.api);
+          log(Subsystems.MANAGER, Status.INFO,
+            `[QueriesManager] Pre-loaded ${uniqueRefs.length} lookup table(s): ${uniqueRefs.join(', ')}`);
+        } catch (err) {
+          log(Subsystems.MANAGER, Status.WARN,
+            `[QueriesManager] Lookup pre-load failed (non-fatal): ${err.message}`);
+        }
+      }
     }
 
     // Resolve columns from JSON config → Tabulator column definitions
@@ -1387,15 +2460,65 @@ export default class QueriesManager {
         })
       : this._getFallbackColumns();
 
+    // Gate cell editing on edit mode — columns that have an editor assigned
+    // by resolveColumn() should only be editable when _editingRowId is set.
+    // This ensures the table is read-only by default and cells only become
+    // editable when the user explicitly enters edit mode.
+    this._applyEditModeGate(dataColumns);
+
     // Resolve table-level options from the tabledef
     const tableOptions = this.tableDef
       ? resolveTableOptions(this.tableDef)
       : { layout: 'fitColumns', responsiveLayout: 'collapse' };
 
-    // Build the selector column (row indicator + column chooser header)
-    const selectorColumn = {
+    // Restore persisted layout mode (overrides the JSON config default).
+    // This lets the user's last-chosen layout survive refresh / re-login.
+    const persistedLayout = this._restoreLayoutMode();
+    if (persistedLayout) {
+      tableOptions.layout = persistedLayout;
+    }
+    this._tableLayoutMode = tableOptions.layout || 'fitColumns';
+
+    // Build the selector column and create the Tabulator instance
+    const selectorColumn = this._buildSelectorColumn();
+
+    log(Subsystems.MANAGER, Status.INFO,
+      `[QueriesManager] Initialising table with ${dataColumns.length} columns from JSON config`);
+
+    this.table = new Tabulator(this.elements.tableContainer, {
+      ...tableOptions,
+      selectableRows: 1,
+      scrollToRowPosition: "center",
+      scrollToRowIfVisible: false,
+      headerSortElement: '<span class="queries-sort-icons"><span class="queries-sort-asc">▲</span><span class="queries-sort-desc">▼</span></span>',
+      columns: [selectorColumn, ...dataColumns],
+    });
+
+    // Wire up table event handlers (shared with setTableLayout recreation)
+    this._wireTableEvents();
+
+    // Keyboard handling on the table container for navigation + Enter to select
+    this.elements.tableContainer.setAttribute('tabindex', '0');
+    this.elements.tableContainer.addEventListener('keydown', (e) => {
+      this._handleTableKeydown(e);
+    });
+
+    // Load initial data asynchronously — the table will update when the
+    // API response arrives; the manager is considered "loaded" immediately.
+    this.loadQueries();
+  }
+
+  /**
+   * Build the selector column definition (row indicator + column chooser header).
+   * Extracted as a reusable method so both initTable() and setTableLayout()
+   * can construct the same column without duplicating the definition.
+   * @returns {Object} Tabulator column definition
+   */
+  _buildSelectorColumn() {
+    return {
       title: "",
       field: "_selector",
+      frozen: true,
       width: 20,
       minWidth: 20,
       maxWidth: 20,
@@ -1415,7 +2538,7 @@ export default class QueriesManager {
         const row = cell.getRow();
         const pkField = this.primaryKeyField || 'query_id';
         if (row.isSelected()) {
-          if (this._editingRowId != null && this._editingRowId === row.getData()[pkField]) {
+          if (this._isEditing && this._editingRowId === row.getData()[pkField]) {
             return '<fa fa-i-cursor fa-swap-opacity queries-selector-indicator queries-selector-edit>';
           }
           return '<fa fa-caret-right fa-swap-opacity queries-selector-indicator queries-selector-active>';
@@ -1426,47 +2549,103 @@ export default class QueriesManager {
         this.toggleColumnChooser(e, column);
       },
       cellClick: (e, cell) => {
+        e?.stopPropagation?.();
+        e?.stopImmediatePropagation?.();
         const row = cell.getRow();
-        this.table.deselectRow();
-        row.select();
+        this._selectDataRow(row);
       },
     };
+  }
 
-    log(Subsystems.MANAGER, Status.INFO,
-      `[QueriesManager] Initialising table with ${dataColumns.length} columns from JSON config`);
+  /**
+   * Wire up Tabulator event handlers on the current table instance.
+   * Extracted as a reusable method so both initTable() and setTableLayout()
+   * can wire the same events without duplicating handler definitions.
+   *
+   * **Design note — row selection strategy:**
+   * Editors are stripped from column definitions by `_applyEditModeGate()`
+   * and only re-applied dynamically when entering edit mode via
+   * `_enableColumnEditors()`. This means Tabulator never has editor-
+   * related click handlers on cells in normal (non-edit) mode, so
+   * `rowClick` fires reliably for row selection on all cells.
+   *
+   * In edit mode, `cellClick` programmatically invokes `cell.edit()`
+   * on the editing row's editable cells, giving the user immediate
+   * inline editing when clicking any field.
+   */
+  _wireTableEvents() {
+    if (!this.table) return;
 
-    // Initialize Tabulator with JSON-resolved columns and table options.
-    // selectableRows: 1 is always set here as a safety net — even if the
-    // JSON config failed to load and we're using fallback columns, clicking
-    // a row should still select it (the fallback tableOptions omit this).
-    this.table = new Tabulator(this.elements.tableContainer, {
-      ...tableOptions,
-      selectableRows: 1,
-      // Scroll behavior: scroll to center when row is off-screen,
-      // but don't scroll at all if the row is already visible.
-      scrollToRowPosition: "center",
-      scrollToRowIfVisible: false,
-      // Custom dual-arrow sort indicator (▲/▼ with active direction highlighted)
-      headerSortElement: '<span class="queries-sort-icons"><span class="queries-sort-asc">▲</span><span class="queries-sort-desc">▼</span></span>',
-      columns: [selectorColumn, ...dataColumns],
+    // ── Row click — primary selection handler ────────────────────────
+    // Since editors are not present on columns in normal mode,
+    // rowClick fires reliably for all cells.
+    this.table.on("rowClick", (e, row) => {
+      if (this._isCalcRow(row)) return;
+      this._selectDataRow(row);
     });
 
-    // Explicit rowClick handler — select the clicked row.
-    // With selectableRows: 1, Tabulator handles single-click selection
-    // automatically. This handler is a safety net for edge cases where
-    // Tabulator's built-in selection might not fire (e.g., responsive
-    // collapse mode, custom formatters returning DOM elements, etc.).
-    this.table.on("rowClick", (e, row) => {
-      if (!row.isSelected()) {
-        this.table.deselectRow();
-        row.select();
+    // Ensure row selection happens consistently before any cell editor logic.
+    this.table.on("cellMouseDown", (e, cell) => {
+      if (cell.getField() === '_selector' || this._isCalcCell(cell)) return;
+
+      const row = cell.getRow();
+      this._selectDataRow(row);
+    });
+
+    // ── Cell click — programmatic editor invocation in edit mode ─────
+    // When in edit mode, clicking a cell on the editing row should open
+    // the appropriate inline editor. Editors are dynamically added to
+    // columns by _enableColumnEditors(), so cell.edit() works here.
+    this.table.on("cellClick", (e, cell) => {
+      const field = cell.getField();
+      // Skip the selector column — it has its own cellClick handler
+      if (field === '_selector' || this._isCalcCell(cell)) return;
+
+      e?.stopPropagation?.();
+      e?.stopImmediatePropagation?.();
+
+      const row = cell.getRow();
+      this._selectDataRow(row);
+
+      // In edit mode, invoke the editor for editable cells
+      if (this._isEditing) {
+        this._commitActiveCellEdit(cell);
+        this._queueCellEdit(cell);
       }
     });
 
+    // ── Double-click — enter edit mode ───────────────────────────────
+    this.table.on("rowDblClick", (e, row) => {
+      if (this._isCalcRow(row)) return;
+      // Ensure the row is selected first
+      this._selectDataRow(row);
+      // Enter edit mode
+      void this._enterEditMode(row);
+    });
+
+    // ── Selection tracking ───────────────────────────────────────────
     // Update selector indicator when rows are selected/deselected.
-    // Also persist the selected row's primary key to localStorage so the
-    // cursor position survives a refresh and even a re-login.
-    this.table.on("rowSelected", (row) => {
+    // Also persist the selected row's primary key to localStorage.
+    this.table.on("rowSelected", async (row) => {
+      if (this._isCalcRow(row)) return;
+
+      this._closeTransientPopups();
+
+      // If we were editing a different row, exit edit mode
+      // (selecting a new row exits edit mode)
+      if (this._isEditing) {
+        const pkField = this.primaryKeyField || 'query_id';
+        const newRowId = row.getData()?.[pkField];
+        // For rows with PKs, compare by ID; for new rows (no PK),
+        // only stay in edit mode if the new row also has no PK
+        const isSameRow = (this._editingRowId != null)
+          ? newRowId === this._editingRowId
+          : newRowId == null;
+        if (!isSameRow) {
+          await this._exitEditMode('row-change');
+        }
+      }
+
       this._updateSelectorCell(row, true);
       const pkField = this.primaryKeyField || 'query_id';
       const pkValue = row.getData()?.[pkField];
@@ -1478,26 +2657,24 @@ export default class QueriesManager {
     });
 
     this.table.on("rowDeselected", (row) => {
+      if (this._isCalcRow(row)) return;
       this._updateSelectorCell(row, false);
     });
 
     this.table.on("rowSelectionChanged", (data, rows) => {
       if (data.length > 0) {
-        this.loadQueryDetails(data[0]);
-      } else {
+        const pkField = this.primaryKeyField || 'query_id';
+        const selectedId = data[0]?.[pkField];
+        if (this._isEditing && this._editingRowId != null && String(this._editingRowId) === String(selectedId)) {
+          return;
+        }
+        if (selectedId != null && String(this._loadedDetailRowId) !== String(selectedId)) {
+          this.loadQueryDetails(data[0]);
+        }
+      } else if (!this._isEditing) {
         this.clearQueryDetails();
       }
     });
-
-    // Keyboard handling on the table container for navigation + Enter to select
-    this.elements.tableContainer.setAttribute('tabindex', '0');
-    this.elements.tableContainer.addEventListener('keydown', (e) => {
-      this._handleTableKeydown(e);
-    });
-
-    // Load initial data asynchronously — the table will update when the
-    // API response arrives; the manager is considered "loaded" immediately.
-    this.loadQueries();
   }
 
   /**
@@ -1578,11 +2755,16 @@ export default class QueriesManager {
       // switched away from while the request was in flight.
       if (!this.table) return;
 
-      this.table.setData(rows);
+      this.table.blockRedraw?.();
+      try {
+        this.table.setData(rows);
 
-      // Discover all columns from the data (adds hidden columns for
-      // fields not already defined, so they appear in the column chooser)
-      this._discoverColumns(rows);
+        // Discover all columns from the data (adds hidden columns for
+        // fields not already defined, so they appear in the column chooser)
+        this._discoverColumns(rows);
+      } finally {
+        this.table.restoreRedraw?.();
+      }
 
       // After data is loaded and columns are settled, select a row.
       // Defer to the next animation frame so that any pending Tabulator
@@ -1660,11 +2842,17 @@ export default class QueriesManager {
   }
 
   loadQueryDetails(queryData) {
+    const pkField = this.primaryKeyField || 'query_id';
+    const queryId = queryData?.[pkField];
+
+    if (queryId == null) return;
+    if (String(this._loadedDetailRowId) === String(queryId)) return;
+
     // Store current query reference
     this.currentQuery = queryData;
     
     // Fetch full query details using QueryRef 27
-    this.fetchQueryDetails(queryData.query_id);
+    this.fetchQueryDetails(queryId);
   }
 
   /**
@@ -1672,12 +2860,16 @@ export default class QueriesManager {
    * HTTP request/response logging is handled by json-request.js.
    */
   async fetchQueryDetails(queryId) {
+    if (queryId == null) return;
+
+    // Use config-driven detailQueryRef (fallback to 27 for safety)
+    const detailRef = this.queryRefs?.detailQueryRef ?? 27;
+
     log(Subsystems.CONDUIT, Status.INFO,
-      `[QueriesManager] Fetching query details (queryRef: 27, queryId: ${queryId})`);
+      `[QueriesManager] Fetching query details (queryRef: ${detailRef}, queryId: ${queryId})`);
 
     try {
-      // QueryRef 27: Get System Query - returns full query details
-      const queryDetails = await authQuery(this.app.api, 27, {
+      const queryDetails = await authQuery(this.app.api, detailRef, {
         INTEGER: { QUERYID: queryId },
       });
 
@@ -1733,6 +2925,8 @@ export default class QueriesManager {
           });
         }
 
+        this._loadedDetailRowId = queryId;
+
         log(Subsystems.CONDUIT, Status.INFO,
           `[QueriesManager] Loaded query details for ID ${queryId}`);
       }
@@ -1747,7 +2941,7 @@ export default class QueriesManager {
   }
 
   clearQueryDetails() {
-    // Placeholder for clearing tabs
+    this._loadedDetailRowId = null;
   }
 
   setupSplitter() {
@@ -1797,6 +2991,11 @@ export default class QueriesManager {
     // Restore width transition for expand/collapse button
     if (this.elements.leftPanel) {
       this.elements.leftPanel.style.transition = '';
+
+      // Persist the manually resized width and detect mode
+      const finalWidth = this.elements.leftPanel.offsetWidth;
+      this._savePanelWidth(finalWidth);
+      this._tableWidthMode = this._detectWidthMode(finalWidth);
     }
     
     document.removeEventListener('mousemove', this.handleSplitterMouseMove);
@@ -1869,6 +3068,13 @@ export default class QueriesManager {
         state: startState,
         parent: this.elements.sqlEditorContainer,
       });
+
+      // Default to read-only — edit mode enables editing
+      const contentEl = this.sqlEditor.dom.querySelector('.cm-content');
+      if (contentEl) {
+        contentEl.contentEditable = 'false';
+      }
+      this.elements.sqlEditorContainer?.classList.add('queries-cm-readonly');
       
       // Update toolbar state after initialization
       this.updateToolbarState();
@@ -1943,6 +3149,13 @@ export default class QueriesManager {
         state: startState,
         parent: this.elements.summaryEditorContainer,
       });
+
+      // Default to read-only — edit mode enables editing
+      const contentEl = this.summaryEditor.dom.querySelector('.cm-content');
+      if (contentEl) {
+        contentEl.contentEditable = 'false';
+      }
+      this.elements.summaryEditorContainer?.classList.add('queries-cm-readonly');
     } catch (error) {
       console.error('[QueriesManager] Failed to initialize Summary editor:', error);
       // Fallback to textarea
@@ -2323,6 +3536,9 @@ export default class QueriesManager {
 
     // Close any open navigator popups
     this._closeNavPopup();
+
+    // Close any open footer export popup
+    this._closeFooterExportPopup();
 
     // Hide and remove font popup
     if (this.fontPopup) {

@@ -69,7 +69,10 @@ describe('Utils', () => {
     it('should return defaults for invalid stored data', () => {
       localStorage.setItem('lithium_preferences', 'invalid json');
 
+      // Suppress the expected console.warn from getPreferences' catch block
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
       const prefs = getPreferences();
+      warnSpy.mockRestore();
 
       expect(prefs.lang).toBe('en-US');
     });

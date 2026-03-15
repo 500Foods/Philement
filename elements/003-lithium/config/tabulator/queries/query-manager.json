@@ -7,6 +7,7 @@
   "title": "Query Manager",
   "queryRef": 25,
   "searchQueryRef": 32,
+  "detailQueryRef": 27,
   "readonly": false,
   "selectableRows": 1,
   "layout": "fitColumns",
@@ -23,7 +24,7 @@
     "query_id": {
       "display": "ID#",
       "field": "query_id",
-      "coltype": "integer",
+      "coltype": "index",
       "visible": false,
       "sort": true,
       "filter": true,
@@ -40,7 +41,7 @@
     "query_ref": {
       "display": "Ref",
       "field": "query_ref",
-      "coltype": "integer",
+      "coltype": "index",
       "visible": true,
       "sort": true,
       "filter": true,
@@ -54,7 +55,7 @@
         "bottomCalc": "count",
         "bottomCalcFormatter": "number",
         "bottomCalcFormatterParams": {
-          "thousand": ","
+          "thousand": ""
         }
       }
     },
@@ -84,11 +85,11 @@
       "editable": true,
       "calculated": false,
       "primaryKey": false,
-      "description": "Query status — references lookup table A27 (Active, Inactive, etc.)",
-      "lookupRef": "a27",
+      "description": "Query status — references lookup table 27 (Active, Inactive, etc.)",
+      "lookupRef": "27",
       "overrides": {
         "editorParams": {
-          "valuesLookup": "a27"
+          "valuesLookup": "27"
         }
       }
     },
@@ -104,8 +105,8 @@
       "editable": false,
       "calculated": false,
       "primaryKey": false,
-      "description": "Query type — references lookup table A28 (SQL, Migration, Diagram, etc.)",
-      "lookupRef": "a28"
+      "description": "Query type — references lookup table 28 (SQL, Migration, Diagram, etc.)",
+      "lookupRef": "28"
     },
 
     "query_dialect_a30": {
@@ -119,8 +120,8 @@
       "editable": true,
       "calculated": false,
       "primaryKey": false,
-      "description": "SQL dialect — references lookup table A30 (SQLite, PostgreSQL, MySQL, DB2)",
-      "lookupRef": "a30"
+      "description": "SQL dialect — references lookup table 30 (SQLite, PostgreSQL, MySQL, DB2)",
+      "lookupRef": "30"
     },
 
     "query_queue_a58": {
@@ -134,8 +135,8 @@
       "editable": true,
       "calculated": false,
       "primaryKey": false,
-      "description": "Query execution queue — references lookup table A58 (Fast, Slow, etc.)",
-      "lookupRef": "a58"
+      "description": "Query execution queue — references lookup table 58 (Fast, Slow, etc.)",
+      "lookupRef": "58"
     },
 
     "query_timeout": {
@@ -159,49 +160,7 @@
       }
     },
 
-    "code": {
-      "display": "SQL",
-      "field": "code",
-      "coltype": "text",
-      "visible": false,
-      "sort": false,
-      "filter": false,
-      "group": false,
-      "editable": true,
-      "calculated": false,
-      "primaryKey": false,
-      "description": "Query SQL code — edited in the SQL tab, not inline"
-    },
-
-    "summary": {
-      "display": "Summary",
-      "field": "summary",
-      "coltype": "text",
-      "visible": false,
-      "sort": false,
-      "filter": false,
-      "group": false,
-      "editable": true,
-      "calculated": false,
-      "primaryKey": false,
-      "description": "Markdown documentation — edited in the Summary tab"
-    },
-
-    "collection": {
-      "display": "Collection",
-      "field": "collection",
-      "coltype": "json",
-      "visible": false,
-      "sort": false,
-      "filter": false,
-      "group": false,
-      "editable": true,
-      "calculated": false,
-      "primaryKey": false,
-      "description": "JSON configuration — edited in the Collection tab"
-    },
-
-    "created_at": {
+   "created_at": {
       "display": "Created",
       "field": "created_at",
       "coltype": "datetime",

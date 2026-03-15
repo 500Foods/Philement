@@ -399,6 +399,27 @@ A multi-shadow circular spinner with theme colors. Uses CSS custom properties fo
 
 **Note:** The base `spinner-fancy` class alone does not include the animation keyframes. Always use one of the size classes (`-sm`, `-md`, or `-lg`) to ensure the spinner animates properly.
 
+**Color variants:**
+
+Color variants can be combined with any size class. Two built-in variants are available:
+
+```html
+<!-- Default: accent theme colors (indigo, light indigo, orange) -->
+<div class="spinner-fancy spinner-fancy-md"></div>
+
+<!-- Mono: grayscale shades (medium gray, light gray, dark gray) -->
+<div class="spinner-fancy spinner-fancy-md spinner-fancy-mono"></div>
+
+<!-- Alt: alternate theme colors (info blue, success green, danger red) -->
+<div class="spinner-fancy spinner-fancy-md spinner-fancy-alt"></div>
+```
+
+| Variant | `color-1` (center) | `color-2` (secondary) | `color-3` (tertiary) |
+|---------|--------------------|-----------------------|----------------------|
+| Default | `--accent-primary` (#5C6BC0) | `--accent-secondary` (#7986CB) | `--accent-warning` (#FFA726) |
+| Mono | `#808080` | `#A0A0A0` | `#606060` |
+| Alt | `--accent-info` (#42A5F5) | `--accent-success` (#66BB6A) | `--accent-danger` (#EF5350) |
+
 **Custom colors:**
 Override the theme colors using CSS custom properties:
 

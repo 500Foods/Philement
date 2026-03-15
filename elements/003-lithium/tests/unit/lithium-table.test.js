@@ -28,6 +28,7 @@ import {
   getQueryRefs,
   wrapFormatter,
   needsBlankZeroWrapper,
+  formatBuiltinValue,
   clearCache,
 } from '../../src/core/lithium-table.js';
 
@@ -244,6 +245,38 @@ describe('LithiumTable', () => {
 
       expect(result).toEqual({});
     });
+
+    it('should use provided data instead of fetching', async () => {
+      const result = await loadColtypes(MOCK_COLTYPES);
+
+      expect(global.fetch).not.toHaveBeenCalled();
+      expect(result).toHaveProperty('integer');
+      expect(result).toHaveProperty('string');
+      expect(Object.keys(result)).toHaveLength(4);
+    });
+
+    it('should cache provided data for subsequent calls', async () => {
+      await loadColtypes(MOCK_COLTYPES);
+      const second = await loadColtypes();
+
+      expect(global.fetch).not.toHaveBeenCalled();
+      expect(second).toHaveProperty('integer');
+    });
+
+    it('should extract .coltypes key from provided data', async () => {
+      const result = await loadColtypes(MOCK_COLTYPES);
+
+      // MOCK_COLTYPES has a .coltypes key — loader should extract it
+      expect(result.integer.align).toBe('right');
+    });
+
+    it('should handle provided data without .coltypes wrapper', async () => {
+      // If someone passes the inner object directly (without .coltypes key)
+      const result = await loadColtypes(MOCK_COLTYPES.coltypes);
+
+      expect(result).toHaveProperty('integer');
+      expect(result.integer.align).toBe('right');
+    });
   });
 
   // ── loadTableDef ────────────────────────────────────────────────────────
@@ -304,6 +337,33 @@ describe('LithiumTable', () => {
 
       expect(result).toBeNull();
     });
+
+    it('should use provided data instead of fetching', async () => {
+      const result = await loadTableDef('queries/query-manager', MOCK_TABLEDEF);
+
+      expect(global.fetch).not.toHaveBeenCalled();
+      expect(result.title).toBe('Query Manager');
+      expect(result.queryRef).toBe(25);
+      expect(Object.keys(result.columns)).toHaveLength(4);
+    });
+
+    it('should cache provided data for subsequent calls', async () => {
+      await loadTableDef('queries/query-manager', MOCK_TABLEDEF);
+      const second = await loadTableDef('queries/query-manager');
+
+      expect(global.fetch).not.toHaveBeenCalled();
+      expect(second.title).toBe('Query Manager');
+    });
+
+    it('should store provided data under the normalised path key', async () => {
+      // Load with .json extension in the path
+      await loadTableDef('queries/query-manager.json', MOCK_TABLEDEF);
+      // Retrieve without .json extension — should hit the same cache entry
+      const result = await loadTableDef('queries/query-manager');
+
+      expect(global.fetch).not.toHaveBeenCalled();
+      expect(result.title).toBe('Query Manager');
+    });
   });
 
   // ── resolveColumn ──────────────────────────────────────────────────────
@@ -332,8 +392,9 @@ describe('LithiumTable', () => {
       expect(result.width).toBe(80);
       // Override: bottomCalc: "count" (coltype default is "sum")
       expect(result.bottomCalc).toBe('count');
-      // Override: bottomCalcFormatter: "number" (same as coltype, but from override)
-      expect(result.bottomCalcFormatter).toBe('number');
+      // Override: bottomCalcFormatter: "number" — resolveColumn wraps number/money
+      // formatters into a closure that calls formatBuiltinValue(), so it's a function
+      expect(typeof result.bottomCalcFormatter).toBe('function');
     });
 
     it('should respect visible: false', () => {
@@ -451,11 +512,19 @@ describe('LithiumTable', () => {
       expect(result.bottomCalc).toBeUndefined();
     });
 
-    it('should apply bottomCalcFormatterParams from overrides', () => {
+    it('should capture bottomCalcFormatterParams in closure for number/money formatters', () => {
       const colDef = MOCK_TABLEDEF.columns.query_ref;
       const result = resolveColumn('query_ref', colDef, coltypes);
 
-      expect(result.bottomCalcFormatterParams).toEqual({ thousand: ',' });
+      // For number/money bottomCalcFormatters, resolveColumn wraps them into a
+      // closure that calls formatBuiltinValue() with the params captured inside.
+      // So bottomCalcFormatterParams is NOT set as a separate property — the
+      // params live inside the closure.  Verify the function produces correct output.
+      expect(result.bottomCalcFormatterParams).toBeUndefined();
+      expect(typeof result.bottomCalcFormatter).toBe('function');
+      // The closure should format using the captured { thousand: ',' } params
+      const mockCell = { getValue: () => 1234 };
+      expect(result.bottomCalcFormatter(mockCell)).toBe('1,234');
     });
 
     it('should set headerSort to false when sort is false', () => {
@@ -471,6 +540,102 @@ describe('LithiumTable', () => {
       const result = resolveColumn('code', colDef, coltypes);
 
       expect(result.headerSort).toBe(false);
+    });
+
+    it('should use lookup formatter when lookupRef is cached', async () => {
+      // Pre-populate the lookup cache
+      const mockApi = {
+        authQuery: vi.fn().mockResolvedValue([
+          { lookup_id: 1, lookup_label: 'Active' },
+          { lookup_id: 2, lookup_label: 'Inactive' },
+        ]),
+      };
+      await loadLookup('a27', mockApi);
+
+      const colDef = {
+        display: 'Status',
+        field: 'query_status_a27',
+        coltype: 'lookup',
+        visible: false,
+        sort: true,
+        filter: true,
+        editable: true,
+        calculated: false,
+        lookupRef: 'a27',
+      };
+      const result = resolveColumn('query_status_a27', colDef, coltypes);
+
+      // Formatter should be a function (the lookup formatter), not the coltype string
+      expect(typeof result.formatter).toBe('function');
+      // The formatter should resolve ID → label
+      const mockCell = { getValue: () => 1 };
+      expect(result.formatter(mockCell)).toBe('Active');
+    });
+
+    it('should use lookup editor for editable lookup columns with cached data', async () => {
+      const mockApi = {
+        authQuery: vi.fn().mockResolvedValue([
+          { lookup_id: 1, lookup_label: 'Active' },
+          { lookup_id: 2, lookup_label: 'Inactive' },
+        ]),
+      };
+      await loadLookup('a27', mockApi);
+
+      const colDef = {
+        display: 'Status',
+        field: 'query_status_a27',
+        coltype: 'lookup',
+        visible: false,
+        sort: true,
+        filter: true,
+        editable: true,
+        calculated: false,
+        lookupRef: 'a27',
+      };
+      const result = resolveColumn('query_status_a27', colDef, coltypes);
+
+      // Editor should be 'list' from lookup
+      expect(result.editor).toBe('list');
+      expect(result.editorParams.values).toEqual(['Active', 'Inactive']);
+      expect(result.editorParams.autocomplete).toBe(true);
+    });
+
+    it('should fall back to coltype formatter when lookupRef is not cached', () => {
+      // Don't pre-load lookup — cache is empty after beforeEach clearCache()
+      const colDef = {
+        display: 'Status',
+        field: 'query_status_a27',
+        coltype: 'lookup',
+        visible: false,
+        sort: true,
+        filter: true,
+        editable: true,
+        calculated: false,
+        lookupRef: 'a27',
+      };
+      const result = resolveColumn('query_status_a27', colDef, coltypes);
+
+      // Without cached lookup, falls through to the standard formatter path
+      // The lookup coltype has blank: '' so it gets wrapped
+      expect(typeof result.formatter).toBe('function');
+    });
+
+    it('should fall back to coltype editor when lookupRef is not cached', () => {
+      const colDef = {
+        display: 'Status',
+        field: 'query_status_a27',
+        coltype: 'lookup',
+        visible: false,
+        sort: true,
+        filter: true,
+        editable: true,
+        calculated: false,
+        lookupRef: 'a27',
+      };
+      const result = resolveColumn('query_status_a27', colDef, coltypes);
+
+      // Without cached lookup, falls back to coltype editor ('list')
+      expect(result.editor).toBe('list');
     });
   });
 
@@ -548,6 +713,34 @@ describe('LithiumTable', () => {
       const result = resolveTableOptions(def);
 
       expect(result.groupBy).toBe('query_type_a28');
+    });
+
+    it('should map persistSort when present', () => {
+      const def = { ...MOCK_TABLEDEF, persistSort: true };
+      const result = resolveTableOptions(def);
+
+      expect(result.persistSort).toBe(true);
+    });
+
+    it('should map persistFilter when present', () => {
+      const def = { ...MOCK_TABLEDEF, persistFilter: true };
+      const result = resolveTableOptions(def);
+
+      expect(result.persistFilter).toBe(true);
+    });
+
+    it('should omit persistSort/persistFilter when not set', () => {
+      const result = resolveTableOptions({ layout: 'fitColumns' });
+
+      expect(result.persistSort).toBeUndefined();
+      expect(result.persistFilter).toBeUndefined();
+    });
+
+    it('should map persistSort: false explicitly', () => {
+      const def = { persistSort: false };
+      const result = resolveTableOptions(def);
+
+      expect(result.persistSort).toBe(false);
     });
   });
 
@@ -667,11 +860,39 @@ describe('LithiumTable', () => {
       expect(formatter(mockCell)).toBe('—');
     });
 
-    it('should pass through non-blank, non-zero values with string formatter', () => {
-      const formatter = wrapFormatter('number', {}, '', '');
+    it('should format non-blank, non-zero values using built-in number formatter', () => {
+      const formatter = wrapFormatter('number', { thousand: ',', precision: 0 }, '', '');
       const mockCell = { getValue: () => 42 };
 
-      expect(formatter(mockCell)).toBe(42);
+      expect(formatter(mockCell)).toBe('42');
+    });
+
+    it('should format large numbers with thousands separator', () => {
+      const formatter = wrapFormatter('number', { thousand: ',', precision: 0 }, '', '');
+      const mockCell = { getValue: () => 1234567 };
+
+      expect(formatter(mockCell)).toBe('1,234,567');
+    });
+
+    it('should format money values with symbol and precision', () => {
+      const formatter = wrapFormatter('money', { symbol: '$', thousand: ',', precision: 2 }, '', null);
+      const mockCell = { getValue: () => 1234.5 };
+
+      expect(formatter(mockCell)).toBe('$1,234.50');
+    });
+
+    it('should format plaintext values as strings', () => {
+      const formatter = wrapFormatter('plaintext', {}, '', null);
+      const mockCell = { getValue: () => 42 };
+
+      expect(formatter(mockCell)).toBe('42');
+    });
+
+    it('should pass through unknown formatter types as raw values', () => {
+      const formatter = wrapFormatter('datetime', {}, '', null);
+      const mockCell = { getValue: () => '2026-01-15' };
+
+      expect(formatter(mockCell)).toBe('2026-01-15');
     });
 
     it('should call custom formatter function for non-blank values', () => {
@@ -717,6 +938,91 @@ describe('LithiumTable', () => {
 
     it('should return true for blank="0"', () => {
       expect(needsBlankZeroWrapper('0', null)).toBe(true);
+    });
+  });
+
+  // ── formatBuiltinValue ─────────────────────────────────────────────────
+
+  describe('formatBuiltinValue', () => {
+    it('should format number with precision 0', () => {
+      expect(formatBuiltinValue(42, 'number', { precision: 0 })).toBe('42');
+    });
+
+    it('should format number with precision 2', () => {
+      expect(formatBuiltinValue(42, 'number', { precision: 2 })).toBe('42.00');
+    });
+
+    it('should format number with thousand separator', () => {
+      expect(formatBuiltinValue(1234567, 'number', { thousand: ',', precision: 0 })).toBe('1,234,567');
+    });
+
+    it('should format number with suffix', () => {
+      expect(formatBuiltinValue(42, 'number', { precision: 0, suffix: 's' })).toBe('42s');
+    });
+
+    it('should format number with prefix', () => {
+      expect(formatBuiltinValue(42, 'number', { precision: 0, prefix: '#' })).toBe('#42');
+    });
+
+    it('should format number with custom decimal character', () => {
+      expect(formatBuiltinValue(3.14, 'number', { precision: 2, decimal: ',' })).toBe('3,14');
+    });
+
+    it('should return empty string for null number', () => {
+      expect(formatBuiltinValue(null, 'number', { precision: 0 })).toBe('');
+    });
+
+    it('should return empty string for empty string number', () => {
+      expect(formatBuiltinValue('', 'number', { precision: 0 })).toBe('');
+    });
+
+    it('should return string for NaN input', () => {
+      expect(formatBuiltinValue('abc', 'number', { precision: 0 })).toBe('abc');
+    });
+
+    it('should format money with symbol before', () => {
+      expect(formatBuiltinValue(1234.5, 'money', {
+        symbol: '$', thousand: ',', precision: 2,
+      })).toBe('$1,234.50');
+    });
+
+    it('should format money with symbol after', () => {
+      expect(formatBuiltinValue(1234, 'money', {
+        symbol: '€', symbolAfter: true, precision: 2,
+      })).toBe('1234.00€');
+    });
+
+    it('should format money with custom decimal', () => {
+      expect(formatBuiltinValue(1234.5, 'money', {
+        symbol: '€', symbolAfter: true, precision: 2, thousand: '.', decimal: ',',
+      })).toBe('1.234,50€');
+    });
+
+    it('should format plaintext as string', () => {
+      expect(formatBuiltinValue(42, 'plaintext', {})).toBe('42');
+      expect(formatBuiltinValue('hello', 'plaintext', {})).toBe('hello');
+      expect(formatBuiltinValue(null, 'plaintext', {})).toBe('');
+    });
+
+    it('should return raw value for unknown formatter', () => {
+      expect(formatBuiltinValue(42, 'datetime', {})).toBe(42);
+      expect(formatBuiltinValue('2026-01-01', 'datetime', {})).toBe('2026-01-01');
+    });
+
+    it('should handle zero precision for money', () => {
+      expect(formatBuiltinValue(99, 'money', { symbol: '¥', precision: 0 })).toBe('¥99');
+    });
+
+    it('should handle negative numbers', () => {
+      expect(formatBuiltinValue(-1234, 'number', { thousand: ',', precision: 0 })).toBe('-1,234');
+    });
+
+    it('should default to precision 0 for number when not specified', () => {
+      expect(formatBuiltinValue(42.789, 'number', {})).toBe('43');
+    });
+
+    it('should default to precision 2 for money when not specified', () => {
+      expect(formatBuiltinValue(42, 'money', {})).toBe('42.00');
     });
   });
 

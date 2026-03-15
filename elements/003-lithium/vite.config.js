@@ -14,48 +14,39 @@ export default defineConfig(({ mode }) => {
     // Base public path when served in production
     base: './',
 
-     // Build options
-     build: {
-       // Output to $LITHIUM_DEPLOY when deploying, otherwise dist/ under root
-       outDir: isDeploy ? resolve(deployDir) : resolve(lithiumRoot, 'dist'),
+      // Build options - Optimized for production
+      build: {
+        // Output to $LITHIUM_DEPLOY when deploying, otherwise dist/ under root
+        outDir: isDeploy ? resolve(deployDir) : resolve(lithiumRoot, 'dist'),
 
-       // Don't empty the deploy dir (config may live there); do empty dist/
-       emptyOutDir: !isDeploy,
+        // Don't empty the deploy dir (config may live there); do empty dist/
+        emptyOutDir: !isDeploy,
 
-       // Generate source maps for debugging
-       sourcemap: true,
+        // Generate source maps for debugging
+        sourcemap: true,
 
-       // Minify for production
-       minify: 'terser',
+        // Enable all optimizations for production
+        minify: 'terser',
+        cssMinify: true,
+        treeshake: true,
 
-       // Target modern browsers
-       target: 'esnext',
+        // Target modern browsers
+        target: 'esnext',
 
-        // Chunk size warning limit (set to 0 to disable warning)
-        chunkSizeWarningLimit: 1100,
-
-       // Rollup options
+        // Code splitting - let Rollup create optimal chunks
         rollupOptions: {
           output: {
-            // Manual chunks for better caching
-            manualChunks(id) {
-              if (id.includes('node_modules/tabulator-tables')) {
-                return 'tabulator';
-              }
-              if (id.includes('node_modules/dompurify')) {
-                return 'dompurify';
-              }
-              if (id.includes('node_modules/@codemirror')) {
-                return 'codemirror';
-              }
-              // Include commonjs helpers in the codemirror chunk to avoid empty source map
-              if (id.includes('commonjsHelpers')) {
-                return 'codemirror';
-              }
+            manualChunks: {
+              // Vendor libraries that change less frequently
+              'vendor-ui': ['tabulator-tables', 'vanilla-jsoneditor'],
+              'vendor-editor': ['@codemirror/lang-markdown', '@codemirror/lang-css', '@codemirror/lang-html', 
+                '@codemirror/lang-javascript', '@codemirror/lang-json', '@codemirror/lang-sql',
+                '@codemirror/state', '@codemirror/theme-one-dark', '@codemirror/view', '@codemirror/commands'],
+              'vendor-utils': ['marked', 'dompurify', 'sql-formatter', 'country-flag-icons']
             }
           }
         }
-     },
+      },
 
     // Development server options
     server: {
