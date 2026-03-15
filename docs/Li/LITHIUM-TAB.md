@@ -130,7 +130,7 @@ Utility actions for the table:
 
 - **Refresh** — Reload data from the source
 - **Menu** — Table options popup (column filters, expand/collapse all)
-- **Print** — Print the table
+- **Width** — Table width presets popup (Narrow, Compact, Normal, Wide, Auto)
 - **Email** — Email table data
 - **Export** — Download as PDF, CSV, TXT, or XLS
 - **Import** — Upload from CSV, TXT, or XLS
@@ -238,9 +238,62 @@ config/tabulator/
 - The Navigator UI should be styled using standard Lithium CSS variables and icons (Font Awesome).
 - Consider how the Navigator adapts to smaller screens (responsive design).
 - The component should handle loading states (spinners) during data fetch or save operations.
-  - Use Tabulator's built-in `showLoader()` / `hideLoader()` API
-  - Style Tabulator's `.tabulator-loader` with `spinner-fancy` animation via CSS
-  - See `queries.css` for the override implementation
+  - Add a custom loader element with `spinner-fancy spinner-fancy-md` class
+  - Position it absolutely over the table container with a semi-transparent backdrop
+  - See `queries.js` and `queries.css` for the implementation
 - Column configuration is loaded at runtime via `fetch()` — supports hot-reconfiguration without rebuild.
 - The `blank` and `zero` coltype properties allow custom null/zero handling via a Tabulator `formatter` wrapper.
 - Lookup columns (`coltype: "lookup"`) require a runtime lookup resolver that maps integer IDs to display labels.
+- Inline editors should only be attached while the table is actively in edit mode; in normal mode the grid stays read-only so row selection works consistently across text, numeric, and future custom editor types.
+- Column resizing should be initiated from header cells only; body/footer resize handles are suppressed to avoid accidental resize targets inside the data area.
+
+---
+
+## Lessons Learned
+
+### Spinner-Fancy Integration
+
+When adding loading spinners to tables:
+
+- **Always use both classes**: `class="spinner-fancy spinner-fancy-md"` (the base class + size variant)
+- **Color variants** can be added as a third class: `spinner-fancy-mono` (grayscale) or `spinner-fancy-alt` (info/success/danger colors) — see [LITHIUM-CSS.md](LITHIUM-CSS.md) for full details
+- The CSS `@keyframes` for spinner-fancy must be defined **outside** any `@layer` block for proper browser support
+- Position the loader overlay `absolute` within the table container with a high `z-index`
+- **Critical:** The table container must have `position: relative` so the absolutely-positioned loader anchors to it — without this, the loader will position relative to a distant ancestor and won't be visible over the table
+
+### Tabulator Loading Patterns
+
+The Queries Manager uses a custom loading overlay rather than Tabulator's internal loader:
+
+```javascript
+// Create and append loader element
+const loader = document.createElement('div');
+loader.className = 'queries-table-loader';
+loader.innerHTML = '<div class="spinner-fancy spinner-fancy-md"></div>';
+tableContainer.appendChild(loader);
+
+// Remove when done
+loader.remove();
+```
+
+**Why custom instead of Tabulator's loader?**
+
+- Tabulator 5.x's `showLoader()`/`hideLoader()` API may not be available in all builds
+- Custom overlays give full control over styling and positioning
+- The overlay can be styled with `backdrop-filter: blur()` for a modern look
+
+### CSS Layer Considerations
+
+When working with the `@layer` system:
+
+- Keyframe animations should generally be defined outside layers
+- Loading overlays need `z-index` management to appear above table content
+- Use `position: relative` on the container and `position: absolute` on the overlay
+
+### Future Enhancements
+
+Consider for future table implementations:
+
+- Extract the loading overlay pattern into a reusable `LithiumTable` base class
+- Add loading state to the Navigator (disable buttons during load)
+- Support for skeleton loading screens for initial table render

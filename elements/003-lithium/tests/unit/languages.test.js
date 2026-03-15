@@ -221,8 +221,11 @@ describe('Languages Module', () => {
       localStorage.setItem.mockImplementation(() => {
         throw new Error('Quota exceeded');
       });
+      // Suppress the expected console.warn from saveLocalePreference's catch block
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
       // Should not throw
       expect(() => saveLocalePreference('en-US')).not.toThrow();
+      warnSpy.mockRestore();
     });
   });
 });

@@ -7,8 +7,6 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
     <!-- Branding Configuration Loader -->
-    <!-- Preload config for fastest possible branding load (SW cached) -->
-    <link rel="preload" href="/config/lithium.json" as="fetch" crossorigin="anonymous">
     <script>
       (function() {
         // Default branding values (must match config.js DEFAULT_CONFIG.branding)
@@ -147,13 +145,6 @@
       }
     </style>
 
-    <!-- Core Stylesheets - Loaded in dependency order -->
-    <link rel="stylesheet" href="/src/styles/base.css">
-    <link rel="stylesheet" href="/src/styles/layout.css">
-    <link rel="stylesheet" href="/src/styles/components.css">
-    <link rel="stylesheet" href="/src/styles/transitions.css">
-    <link rel="stylesheet" href="/src/styles/toast.css">
-
     <!-- Third-party Styles (CDN-loaded) -->
     <!-- Font Awesome Icons -->
     <script src="https://kit.fontawesome.com/0216bfa629.js" crossorigin="anonymous"></script>
@@ -166,7 +157,7 @@
 
     <div id="Loading"> 
       <div style="display: flex; flex-direction: column; align-items: center; gap: 24px;">
-        <div class="spinner-fancy spinner-fancy-md"></div>
+        <div class="spinner-fancy spinner-fancy-md spinner-fancy-mono"></div>
         <span id="splash-welcome">Welcome to Lithium</span>
       </div>
     </div>

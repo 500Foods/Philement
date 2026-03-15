@@ -7,6 +7,8 @@
   overflow: hidden;
   background-color: var(--bg-primary);
   color: var(--text-primary);
+  min-height: 0px;
+  text-align: left;
 }
 
 .queries-left-panel {
@@ -253,7 +255,7 @@
 .queries-tabs-header {
   display: flex;
   background-color: var(--bg-secondary);
-  padding: 4px;
+  padding: var(--space-2) var(--space-3);
 }
 
 .queries-tab-btn {
@@ -389,6 +391,7 @@
   flex: 1;
   position: relative;
   overflow: hidden;
+  background: var(--bg-secondary);
 }
 
 .queries-tab-pane {
@@ -422,6 +425,20 @@
   height: 100%;
 }
 
+/* CodeMirror read-only visual feedback — dimmed when not in edit mode.
+   The .queries-cm-readonly class is toggled on the editor container by JS. */
+.queries-cm-readonly .cm-editor {
+  opacity: 0.7;
+}
+
+.queries-cm-readonly .cm-activeLine {
+  background-color: transparent !important;
+}
+
+.queries-cm-readonly .cm-activeLineGutter {
+  background-color: transparent !important;
+}
+
 .queries-sql-editor .cm-scroller {
   overflow: auto;
 }
@@ -452,6 +469,98 @@
   padding-right: 8px;
 }
 
+/* ── Query Manager Footer Controls ───────────────────────────────────────── */
+
+/* Data-source <select> in the footer button group.
+   Styled to match subpanel-header-btn so it blends into the strip.
+   flex:1 fills the space between the new buttons (left) and the
+   pre-existing right-side buttons (notifications, tickets, etc.). */
+.queries-footer-datasource {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0 var(--space-3) 0 var(--space-3);
+  border: none;
+  background: var(--accent-primary);
+  color: white;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: background-color var(--transition-fast);
+  /* Caret indicator on the right */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='white'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  padding-right: 24px;
+  z-index: 1;
+}
+
+.queries-footer-datasource:hover,
+.queries-footer-datasource:focus {
+  background-color: var(--accent-hover);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='white'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+}
+
+.queries-footer-datasource option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  padding: var(--space-2);
+}
+
+/* ── Footer Export Popup ─────────────────────────────────────────────────── */
+
+/* Popup container — positioned above the footer, anchored to the button */
+.queries-footer-export-popup {
+  position: absolute;
+  bottom: 100%;
+  margin-bottom: 4px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+  min-width: 80px;
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(4px);
+  transition: opacity var(--transition-fast), visibility var(--transition-fast), transform var(--transition-fast);
+}
+
+.queries-footer-export-popup.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* Individual popup item */
+.queries-footer-export-popup-item {
+  display: block;
+  width: 100%;
+  padding: 6px 14px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color var(--transition-fast);
+}
+
+.queries-footer-export-popup-item:hover {
+  background-color: var(--accent-primary);
+  color: white;
+}
+
+.queries-footer-export-popup-item:active {
+  background-color: var(--accent-focus);
+}
+
 } /* end @layer managers — manager-specific styles above */
 
 /* ── Tabulator & JSONEditor Theme Overrides ─────────────────────────────── */
@@ -464,6 +573,7 @@
 
 /* Table container with rounded corners and border */
 #queries-table-container {
+  position: relative;
   flex: 1;
   overflow: hidden;
   min-height: 0px;
@@ -480,7 +590,6 @@
   flex: 1;
   min-height: 0;
   height: auto;
-  background: var(--bg-secondary);
   border: none;
   font-size: var(--font-size-xs);
   display: flex;
@@ -519,19 +628,17 @@
 
 /* Table body */
 #queries-table-container .tabulator-tableholder {
-  background: var(--bg-secondary);
+  
 }
 
 /* Row styling - no left/right borders, compact height */
 #queries-table-container .tabulator-row {
-  background: var(--bg-secondary);
   border-bottom: var(--border-standard);
   border-left: none;
   border-right: none;
   color: var(--text-primary);
   cursor: pointer;
-  transition: background-color var(--transition-fast);
-  max-height: 22px;
+  max-height: 20px;
 }
 #queries-table-container .tabulator-cell {
 	padding: 0px 6px;
@@ -626,37 +733,45 @@
   display: none;
 }
 
-/* ── Tabulator Loading Overlay ───────────────────────────────────────────── */
+/* ── Table Loading Overlay ──────────────────────────────────────────────── */
 
-/* Tabulator's built-in loader overlay — styled to match Lithium theme */
-#queries-table-container .tabulator-loader {
-  background: rgba(var(--bg-primary-rgb, 26, 26, 26), 0.8);
-  backdrop-filter: blur(2px);
-}
-
-/* Hide Tabulator's default loading message box */
-#queries-table-container .tabulator-loader-msg {
-  display: none;
-}
-
-/* Replace with our spinner-fancy centered in the loader */
-#queries-table-container .tabulator-loader::after {
-  content: '';
+/* Custom loading overlay for table data fetch operations */
+.queries-table-loader {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  /* Use spinner-fancy-md styling */
-  width: 11px;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: var(--accent-primary, #5C6BC0);
-  animation: spinner-fancy-animation-md 1.5s infinite linear;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(var(--bg-primary-rgb, 26, 26, 26), 0.8);
+  backdrop-filter: blur(2px);
+  z-index: 100;
 }
 
-/* Disable column resize handles - we enable resizableColumns in JSON config */
-#queries-table-container .tabulator-col-resize-handle {
-  /* Removed: display: none; - handles are now controlled by resizableColumns setting */
+/* Ensure spinner is visible above the overlay */
+.queries-table-loader .spinner-fancy {
+  z-index: 101;
+}
+
+/* Column resize handles — only allow resizing from the header row.
+   Hide non-header handles and disable their hit area so resize only starts
+   from the header cells. */
+#queries-table-container .tabulator-row .tabulator-col-resize-handle,
+#queries-table-container .tabulator-calcs-bottom .tabulator-col-resize-handle,
+#queries-table-container .tabulator-responsive-collapse .tabulator-col-resize-handle {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+#queries-table-container .tabulator-header .tabulator-col .tabulator-col-resize-handle {
+  pointer-events: auto;
+}
+
+/* Show a wait cursor briefly while edit mode transitions are being applied. */
+#queries-table-container.queries-edit-transition,
+#queries-table-container.queries-edit-transition *,
+.queries-navigator-container.queries-edit-transition,
+.queries-navigator-container.queries-edit-transition * {
+  cursor: progress !important;
 }
 
 /* Keyboard focus indicator for table container */
@@ -1025,15 +1140,29 @@
 }
 
 /* ── Table Footer (bottom calc row) ──────────────────────────────────────── */
-
+#queries-table-container .tabulator-footer,
+#queries-table-container .tabulator-calcs,
+#queries-table-container .tabulator-calcs-bopttom,
+#queries-table-container .tabulator-calcs-holder {
+  border-top: none;
+  border-bottom: none;
+  background: unset;
+}                                                 
+#queries-table-container .tabulator-calcs-holder {
+  background: var(--bg-tertiary);
+  border-top: 1px solid #888;
+}                            
+.tabulator-row .tabulator-cell.tabulator-editing {
+  border: unset;
+}
 /* Footer row — styled like the header */
 #queries-table-container .tabulator-calcs-bottom {
-  background: var(--bg-tertiary);
-  border-top: var(--border-standard);
-  border-bottom: var(--border-standard);
+  border-top: none;
+  border-bottom: none;
   color: var(--text-primary);
   font-weight: 500;
   max-height: 22px;
+  pointer-events: none;
 }
 
 #queries-table-container .tabulator-calcs-bottom .tabulator-cell {
@@ -1042,6 +1171,7 @@
   border-bottom: none;
   padding: 0;
   line-height: 22px;
+  pointer-events: none;
 }
 
 #queries-table-container .tabulator-calcs-bottom .tabulator-cell:first-child {
@@ -1055,6 +1185,84 @@
 /* Right-justify the count in the Ref column */
 #queries-table-container .tabulator-calcs-bottom .tabulator-cell[tabulator-field="query_ref"] {
   text-align: right;
+}
+
+/* ── Frozen Column Styling ───────────────────────────────────────────────── */
+
+/* Tabulator adds .tabulator-frozen to frozen columns. Ensure the frozen
+   selector column gets a right border so it visually separates from the
+   scrollable area, and inherits the header/row background correctly. */
+#queries-table-container .tabulator-frozen {
+  z-index: 10;
+}
+
+/* Frozen header cell */
+#queries-table-container .tabulator-header .tabulator-col.tabulator-frozen {
+}
+
+/* Frozen data cell — match alternating row background */
+#queries-table-container .tabulator-row .tabulator-cell.tabulator-frozen {
+  
+}
+
+/* Selected row's frozen cell */
+#queries-table-container .tabulator-row.tabulator-selected .tabulator-cell.tabulator-frozen {
+  background: var(--accent-primary) !important;
+}
+
+/* Hovered row's frozen cell */
+#queries-table-container .tabulator-row:hover .tabulator-cell.tabulator-frozen {
+  background: var(--bg-tertiary);
+}
+
+/* Hovered + selected */
+#queries-table-container .tabulator-row.tabulator-selected:hover .tabulator-cell.tabulator-frozen {
+  background: var(--accent-hover) !important;
+}
+
+/* ── Edit Mode ───────────────────────────────────────────────────────────── */
+/* When the table is in edit mode, the selected row gets a different
+   highlight color (--accent-warning) to indicate "this row is being edited".
+   The class .queries-edit-mode is toggled on the table container via JS. */
+
+/* Edit-mode selected row — uses warning/amber instead of primary/indigo */
+#queries-table-container.queries-edit-mode .tabulator-row.tabulator-selected {
+  background: var(--accent-warning, #FFA726) !important;
+  color: #1a1a1a !important;
+}
+
+#queries-table-container.queries-edit-mode .tabulator-row.tabulator-selected:hover {
+  background: var(--accent-warning-hover, #FB8C00) !important;
+  color: #1a1a1a !important;
+}
+
+/* Edit-mode selector frozen cell background */
+#queries-table-container.queries-edit-mode .tabulator-row.tabulator-selected .tabulator-cell.tabulator-frozen {
+  background: var(--accent-warning, #FFA726) !important;
+}
+
+#queries-table-container.queries-edit-mode .tabulator-row.tabulator-selected:hover .tabulator-cell.tabulator-frozen {
+  background: var(--accent-warning-hover, #FB8C00) !important;
+}
+
+/* Edit-mode selector indicator — dark text on amber background */
+#queries-table-container.queries-edit-mode .queries-selector-edit,
+#queries-table-container.queries-edit-mode .queries-selector-edit.svg-inline--fa {
+  color: #1a1a1a;
+}
+
+/* Edit-mode row cursor — use text cursor for editable cells */
+#queries-table-container.queries-edit-mode .tabulator-row.tabulator-selected .tabulator-cell {
+  cursor: text;
+}
+
+/* Edit-mode cells in the selected row allow tabulator editing styles */
+#queries-table-container.queries-edit-mode .tabulator-row.tabulator-selected .tabulator-cell .tabulator-editing {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border: 1px solid var(--accent-warning, #FFA726);
+  border-radius: var(--border-radius-sm);
+  padding: 0 4px;
 }
 
 } /* end @layer vendor-fixes */

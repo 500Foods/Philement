@@ -9,6 +9,190 @@
  * 5. Set up event listeners
  */
 
+// Suppress vendor CSS parsing warnings that flood the console
+// These come from Tabulator, CodeMirror, etc. dynamically injecting CSS
+(function() {
+  const originalConsoleError = console.error;
+  const cssWarningPattern = /Error in parsing value for '(text-align|min-height)'\. Declaration dropped\./;
+
+  console.error = function(...args) {
+    // Filter out the vendor CSS parsing warnings
+    if (args.length > 0 && typeof args[0] === 'string' && cssWarningPattern.test(args[0])) {
+      return; // Silently drop these warnings
+    }
+    originalConsoleError.apply(console, args);
+  };
+})();
+
+// Monkey-patch CSSStyleDeclaration to intercept invalid values at the source
+// This prevents the browser's CSS parser from ever seeing invalid values
+(function() {
+  const INVALID_VALUES = new Set(['', 'null', 'undefined', 'NaN', 'inherit', 'initial']);
+
+  // Known problematic property patterns
+  const PROBLEMATIC_PROPS = ['text-align', 'min-height'];
+
+  function isInvalidValue(value) {
+    if (value == null) return true;
+    const str = String(value).trim();
+    return str === '' || INVALID_VALUES.has(str.toLowerCase());
+  }
+
+  // Patch setProperty
+  const originalSetProperty = CSSStyleDeclaration.prototype.setProperty;
+  CSSStyleDeclaration.prototype.setProperty = function(property, value, priority) {
+    const propLower = property.toLowerCase();
+    if (PROBLEMATIC_PROPS.includes(propLower) && isInvalidValue(value)) {
+      return; // Silently drop invalid values
+    }
+    return originalSetProperty.call(this, property, value, priority);
+  };
+
+  // Patch cssText setter
+  const cssTextDescriptor = Object.getOwnPropertyDescriptor(CSSStyleDeclaration.prototype, 'cssText');
+  if (cssTextDescriptor && cssTextDescriptor.set) {
+    const originalCssTextSetter = cssTextDescriptor.set;
+    Object.defineProperty(CSSStyleDeclaration.prototype, 'cssText', {
+      set: function(value) {
+        // Filter out problematic declarations from cssText
+        if (typeof value === 'string') {
+          let filtered = value;
+          PROBLEMATIC_PROPS.forEach(prop => {
+            // Remove declarations like "text-align: ;" or "text-align: null;"
+            const regex = new RegExp(`${prop}\\s*:\\s*[^;]*(?:;|$)`, 'gi');
+            filtered = filtered.replace(regex, (match) => {
+              const val = match.split(':')[1]?.replace(';', '').trim();
+              if (isInvalidValue(val)) return '';
+              return match;
+            });
+          });
+          return originalCssTextSetter.call(this, filtered);
+        }
+        return originalCssTextSetter.call(this, value);
+      },
+      get: cssTextDescriptor.get,
+      configurable: true,
+    });
+  }
+
+  // Patch individual property setters for camelCase properties (element.style.textAlign)
+  const CAMEL_PROPS = {
+    'textAlign': 'text-align',
+    'minHeight': 'min-height',
+  };
+
+  Object.entries(CAMEL_PROPS).forEach(([camel, kebab]) => {
+    const descriptor = Object.getOwnPropertyDescriptor(CSSStyleDeclaration.prototype, camel);
+    if (descriptor && descriptor.set) {
+      const originalSetter = descriptor.set;
+      Object.defineProperty(CSSStyleDeclaration.prototype, camel, {
+        set: function(value) {
+          if (isInvalidValue(value)) {
+            return; // Silently drop invalid values
+          }
+          return originalSetter.call(this, value);
+        },
+        get: descriptor.get,
+        configurable: true,
+      });
+    }
+  });
+
+  // Patch insertRule on CSSStyleSheet to filter invalid rules
+  const originalInsertRule = CSSStyleSheet.prototype.insertRule;
+  CSSStyleSheet.prototype.insertRule = function(rule, index) {
+    // Check for problematic declarations in the rule text
+    let filtered = rule;
+    PROBLEMATIC_PROPS.forEach(prop => {
+      const regex = new RegExp(`${prop}\\s*:\\s*[^;{}]*`, 'gi');
+      filtered = filtered.replace(regex, (match) => {
+        const val = match.split(':')[1]?.trim();
+        if (isInvalidValue(val)) return `${prop}: initial`; // Replace with valid default
+        return match;
+      });
+    });
+    return originalInsertRule.call(this, filtered, index);
+  };
+
+  // Patch appendRule (used by some older libraries)
+  if (CSSStyleSheet.prototype.appendRule) {
+    const originalAppendRule = CSSStyleSheet.prototype.appendRule;
+    CSSStyleSheet.prototype.appendRule = function(rule) {
+      let filtered = rule;
+      PROBLEMATIC_PROPS.forEach(prop => {
+        const regex = new RegExp(`${prop}\\s*:\\s*[^;{}]*`, 'gi');
+        filtered = filtered.replace(regex, (match) => {
+          const val = match.split(':')[1]?.trim();
+          if (isInvalidValue(val)) return `${prop}: initial`;
+          return match;
+        });
+      });
+      return originalAppendRule.call(this, filtered);
+    };
+  }
+
+  // Patch innerHTML setter on HTMLStyleElement to filter CSS text
+  const styleInnerHTMLDescriptor = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML');
+  if (styleInnerHTMLDescriptor && styleInnerHTMLDescriptor.set) {
+    const originalInnerHTMLSetter = styleInnerHTMLDescriptor.set;
+    Object.defineProperty(HTMLStyleElement.prototype, 'innerHTML', {
+      set: function(value) {
+        if (typeof value === 'string') {
+          let filtered = value;
+          PROBLEMATIC_PROPS.forEach(prop => {
+            const regex = new RegExp(`${prop}\\s*:\\s*[^;{}]*`, 'gi');
+            filtered = filtered.replace(regex, (match) => {
+              const val = match.split(':')[1]?.trim();
+              if (isInvalidValue(val)) return `${prop}: initial`;
+              return match;
+            });
+          });
+          return originalInnerHTMLSetter.call(this, filtered);
+        }
+        return originalInnerHTMLSetter.call(this, value);
+      },
+      get: function() {
+        return styleInnerHTMLDescriptor.get.call(this);
+      },
+      configurable: true,
+    });
+  }
+
+  // Patch textContent setter on HTMLStyleElement
+  const textContentDescriptor = Object.getOwnPropertyDescriptor(Node.prototype, 'textContent');
+  if (textContentDescriptor && textContentDescriptor.set) {
+    const originalTextContentSetter = textContentDescriptor.set;
+    Object.defineProperty(HTMLStyleElement.prototype, 'textContent', {
+      set: function(value) {
+        if (typeof value === 'string' && this instanceof HTMLStyleElement) {
+          let filtered = value;
+          PROBLEMATIC_PROPS.forEach(prop => {
+            const regex = new RegExp(`${prop}\\s*:\\s*[^;{}]*`, 'gi');
+            filtered = filtered.replace(regex, (match) => {
+              const val = match.split(':')[1]?.trim();
+              if (isInvalidValue(val)) return `${prop}: initial`;
+              return match;
+            });
+          });
+          return originalTextContentSetter.call(this, filtered);
+        }
+        return originalTextContentSetter.call(this, value);
+      },
+      get: function() {
+        return textContentDescriptor.get.call(this);
+      },
+      configurable: true,
+    });
+  }
+})();
+
+// Core styles - imported first to establish CSS cascade layers
+import './styles/base.css';
+import './styles/layout.css';
+import './styles/components.css';
+import './styles/transitions.css';
+import './styles/toast.css';
+
 import { loadConfig, getConfig, getConfigValue } from './core/config.js';
 import { eventBus, Events } from './core/event-bus.js';
 import { validateJWT, retrieveJWT, getClaims, getRenewalTime, getTimeUntilExpiry, storeJWT, clearJWT } from './core/jwt.js';
