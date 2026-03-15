@@ -186,4 +186,8 @@ in the migrations themselves so that they get populated in the database directly
 | [1149](/elements/002-helium/acuranzo/migrations/acuranzo_1149.lua) | queries | 1.0.0 | 2026-01-19 | 4 | ✗ | QueryRef #055 - Get Number Range |
 | [1150](/elements/002-helium/acuranzo/migrations/acuranzo_1150.lua) | queries | 1.0.0 | 2026-01-20 | 4 | ✗ | QueryRef #056 - Query Error Handling |
 | [1151](/elements/002-helium/acuranzo/migrations/acuranzo_1151.lua) | queries | 1.3.0 | 2026-01-22 | 6 | ✗ | QueryRef #057 - Query Params Test |
-| **152** | | | | **797** | **152** | |
+| [1152](/elements/002-helium/acuranzo/migrations/acuranzo_1152.lua) | lookups | 1.0.0 | 2026-03-15 | 4 | ✗ | Defaults for Lookup 059 - Tabulator Schemas |
+| [1153](/elements/002-helium/acuranzo/migrations/acuranzo_1153.lua) | lookups | 1.0.0 | 2026-03-15 | 4 | ✗ | Tabulator Schema: coltypes.json (Lookup 059, Key 0) |
+| [1154](/elements/002-helium/acuranzo/migrations/acuranzo_1154.lua) | lookups | 1.0.0 | 2026-03-15 | 4 | ✗ | Tabulator Schema: query-manager.json (Lookup 059, Key 1) |
+| [1155](/elements/002-helium/acuranzo/migrations/acuranzo_1155.lua) | queries | 1.0.0 | 2026-03-15 | 4 | ✗ | QueryRef #060 - Get Tabulator Schemas |
+| **156** | | | | **813** | **156** | |

@@ -240,14 +240,22 @@ This ensures that when the table renders, the lookup formatter has cached data a
 
 ### Retrieving a Lookup's Entries
 
-**QueryRef 030** returns the master index (all lookup names). For individual lookup entries, the Hydrogen API uses:
+**QueryRef 030** returns the master index (all lookup names). For individual lookup entries, use **QueryRef 034** (Get Lookup List):
 
 ```javascript
 // Get all entries for lookup 27 (Query Status)
-const entries = await authQuery(api, queryRef, {
+const entries = await authQuery(api, 34, {
   INTEGER: { LOOKUPID: 27 },
 });
-// Returns: [{ lookup_id: 27, key_idx: 0, value_txt: "Inactive", ... }, ...]
+// Returns: [{ lookup_id: 27, key_idx: 1, value_txt: "Active", ... }, ...]
+//          key_idx = the lookup entry ID (used for column values)
+//          value_txt = the display label
+```
+
+The lookup entries are transformed by `loadLookup()` into a simplified format:
+
+```javascript
+// Transformed to: [{ id: 1, label: "Active" }, { id: 2, label: "Inactive" }, ...]
 ```
 
 ### Retrieving a Single Entry

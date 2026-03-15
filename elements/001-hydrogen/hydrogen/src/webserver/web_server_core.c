@@ -185,6 +185,8 @@ void add_cors_headers(struct MHD_Response *response) {
     MHD_add_response_header(response, "Access-Control-Allow-Origin", "*");
     MHD_add_response_header(response, "Access-Control-Allow-Methods", "GET, HEAD, POST, OPTIONS");
     MHD_add_response_header(response, "Access-Control-Allow-Headers", "Content-Type");
+    MHD_add_response_header(response, "Access-Control-Expose-Headers",
+                          "Content-Length, Content-Type, ETag, Last-Modified, Cache-Control");
 }
 
 bool init_web_server(WebServerConfig *web_config) {
