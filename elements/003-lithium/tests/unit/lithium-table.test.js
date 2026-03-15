@@ -32,6 +32,14 @@ import {
   clearCache,
 } from '../../src/core/lithium-table.js';
 
+// Mock the lookups module
+vi.mock('../../src/shared/lookups.js', () => ({
+  getTabulatorSchemas: vi.fn(),
+  fetchLookups: vi.fn(),
+}));
+
+import { getTabulatorSchemas, fetchLookups } from '../../src/shared/lookups.js';
+
 // ── Test fixtures ─────────────────────────────────────────────────────────
 
 const MOCK_COLTYPES = {
@@ -184,10 +192,6 @@ const MOCK_TABLEDEF = {
   },
 };
 
-// ── Mock fetch ────────────────────────────────────────────────────────────
-
-global.fetch = vi.fn();
-
 // ── Tests ─────────────────────────────────────────────────────────────────
 
 describe('LithiumTable', () => {
@@ -199,57 +203,67 @@ describe('LithiumTable', () => {
   // ── loadColtypes ────────────────────────────────────────────────────────
 
   describe('loadColtypes', () => {
-    it('should fetch and cache coltypes on first call', async () => {
-      global.fetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => MOCK_COLTYPES,
-      });
+    it('should load coltypes from lookup cache on first call', async () => {
+      getTabulatorSchemas.mockReturnValue([
+        { key_idx: 0, collection: MOCK_COLTYPES },
+      ]);
 
       const result = await loadColtypes();
 
-      expect(global.fetch).toHaveBeenCalledTimes(1);
-      expect(global.fetch).toHaveBeenCalledWith('/config/tabulator/coltypes.json');
+      expect(getTabulatorSchemas).toHaveBeenCalledTimes(1);
       expect(result).toHaveProperty('integer');
       expect(result).toHaveProperty('string');
       expect(Object.keys(result)).toHaveLength(4);
     });
 
     it('should return cached data on subsequent calls', async () => {
-      global.fetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => MOCK_COLTYPES,
-      });
+      getTabulatorSchemas.mockReturnValue([
+        { key_idx: 0, collection: MOCK_COLTYPES },
+      ]);
 
       await loadColtypes();
       const second = await loadColtypes();
 
-      expect(global.fetch).toHaveBeenCalledTimes(1);
+      // Second call should use module cache, not re-query lookups
+      expect(getTabulatorSchemas).toHaveBeenCalledTimes(1);
       expect(second).toHaveProperty('integer');
     });
 
-    it('should return empty object on HTTP error', async () => {
-      global.fetch.mockResolvedValueOnce({
-        ok: false,
-        status: 404,
-      });
+    it('should trigger lookup fetch if not cached', async () => {
+      getTabulatorSchemas
+        .mockReturnValueOnce(null)
+        .mockReturnValueOnce([{ key_idx: 0, collection: MOCK_COLTYPES }]);
+      fetchLookups.mockResolvedValue({});
+
+      const result = await loadColtypes();
+
+      expect(fetchLookups).toHaveBeenCalledTimes(1);
+      expect(result).toHaveProperty('integer');
+    });
+
+    it('should return empty object when lookup data unavailable', async () => {
+      getTabulatorSchemas.mockReturnValue(null);
+      fetchLookups.mockResolvedValue({});
 
       const result = await loadColtypes();
 
       expect(result).toEqual({});
     });
 
-    it('should return empty object on network error', async () => {
-      global.fetch.mockRejectedValueOnce(new Error('Network down'));
+    it('should return empty object when coltypes entry missing', async () => {
+      getTabulatorSchemas.mockReturnValue([
+        { key_idx: 1, collection: MOCK_TABLEDEF },
+      ]);
 
       const result = await loadColtypes();
 
       expect(result).toEqual({});
     });
 
-    it('should use provided data instead of fetching', async () => {
+    it('should use provided data instead of lookup', async () => {
       const result = await loadColtypes(MOCK_COLTYPES);
 
-      expect(global.fetch).not.toHaveBeenCalled();
+      expect(getTabulatorSchemas).not.toHaveBeenCalled();
       expect(result).toHaveProperty('integer');
       expect(result).toHaveProperty('string');
       expect(Object.keys(result)).toHaveLength(4);
@@ -259,7 +273,7 @@ describe('LithiumTable', () => {
       await loadColtypes(MOCK_COLTYPES);
       const second = await loadColtypes();
 
-      expect(global.fetch).not.toHaveBeenCalled();
+      expect(getTabulatorSchemas).not.toHaveBeenCalled();
       expect(second).toHaveProperty('integer');
     });
 
@@ -277,71 +291,100 @@ describe('LithiumTable', () => {
       expect(result).toHaveProperty('integer');
       expect(result.integer.align).toBe('right');
     });
+
+    it('should handle string JSON in lookup collection', async () => {
+      getTabulatorSchemas.mockReturnValue([
+        { key_idx: 0, collection: JSON.stringify(MOCK_COLTYPES) },
+      ]);
+
+      const result = await loadColtypes();
+
+      expect(result).toHaveProperty('integer');
+      expect(result.integer.align).toBe('right');
+    });
   });
 
   // ── loadTableDef ────────────────────────────────────────────────────────
 
   describe('loadTableDef', () => {
-    it('should fetch and cache a table definition', async () => {
-      global.fetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => MOCK_TABLEDEF,
-      });
+    it('should load tabledef from lookup cache', async () => {
+      getTabulatorSchemas.mockReturnValue([
+        { key_idx: 0, collection: MOCK_COLTYPES },
+        { key_idx: 1, collection: MOCK_TABLEDEF },
+      ]);
 
       const result = await loadTableDef('queries/query-manager');
 
-      expect(global.fetch).toHaveBeenCalledWith('/config/tabulator/queries/query-manager.json');
+      expect(getTabulatorSchemas).toHaveBeenCalled();
       expect(result.title).toBe('Query Manager');
       expect(result.queryRef).toBe(25);
     });
 
     it('should return cached tabledef on second call', async () => {
-      global.fetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => MOCK_TABLEDEF,
-      });
+      getTabulatorSchemas.mockReturnValue([
+        { key_idx: 0, collection: MOCK_COLTYPES },
+        { key_idx: 1, collection: MOCK_TABLEDEF },
+      ]);
 
       await loadTableDef('queries/query-manager');
       const second = await loadTableDef('queries/query-manager');
 
-      expect(global.fetch).toHaveBeenCalledTimes(1);
+      // Second call uses module cache
+      expect(getTabulatorSchemas).toHaveBeenCalledTimes(1);
       expect(second.title).toBe('Query Manager');
     });
 
+    it('should trigger lookup fetch if not cached', async () => {
+      getTabulatorSchemas
+        .mockReturnValueOnce(null)
+        .mockReturnValueOnce([
+          { key_idx: 0, collection: MOCK_COLTYPES },
+          { key_idx: 1, collection: MOCK_TABLEDEF },
+        ]);
+      fetchLookups.mockResolvedValue({});
+
+      const result = await loadTableDef('queries/query-manager');
+
+      expect(fetchLookups).toHaveBeenCalledTimes(1);
+      expect(result.title).toBe('Query Manager');
+    });
+
+    it('should return null when lookup data unavailable', async () => {
+      getTabulatorSchemas.mockReturnValue(null);
+      fetchLookups.mockResolvedValue({});
+
+      const result = await loadTableDef('queries/query-manager');
+
+      expect(result).toBeNull();
+    });
+
+    it('should return null when tabledef entry missing', async () => {
+      getTabulatorSchemas.mockReturnValue([
+        { key_idx: 0, collection: MOCK_COLTYPES },
+      ]);
+
+      const result = await loadTableDef('queries/query-manager');
+
+      expect(result).toBeNull();
+    });
+
     it('should strip .json extension from path', async () => {
-      global.fetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => MOCK_TABLEDEF,
-      });
+      getTabulatorSchemas.mockReturnValue([
+        { key_idx: 1, collection: MOCK_TABLEDEF },
+      ]);
 
       await loadTableDef('queries/query-manager.json');
+      const second = await loadTableDef('queries/query-manager');
 
-      expect(global.fetch).toHaveBeenCalledWith('/config/tabulator/queries/query-manager.json');
+      // Should hit cache, not re-query lookups
+      expect(getTabulatorSchemas).toHaveBeenCalledTimes(1);
+      expect(second.title).toBe('Query Manager');
     });
 
-    it('should return null on HTTP error', async () => {
-      global.fetch.mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-      });
-
-      const result = await loadTableDef('queries/nonexistent');
-
-      expect(result).toBeNull();
-    });
-
-    it('should return null on network error', async () => {
-      global.fetch.mockRejectedValueOnce(new Error('Network error'));
-
-      const result = await loadTableDef('queries/broken');
-
-      expect(result).toBeNull();
-    });
-
-    it('should use provided data instead of fetching', async () => {
+    it('should use provided data instead of lookup', async () => {
       const result = await loadTableDef('queries/query-manager', MOCK_TABLEDEF);
 
-      expect(global.fetch).not.toHaveBeenCalled();
+      expect(getTabulatorSchemas).not.toHaveBeenCalled();
       expect(result.title).toBe('Query Manager');
       expect(result.queryRef).toBe(25);
       expect(Object.keys(result.columns)).toHaveLength(4);
@@ -351,7 +394,7 @@ describe('LithiumTable', () => {
       await loadTableDef('queries/query-manager', MOCK_TABLEDEF);
       const second = await loadTableDef('queries/query-manager');
 
-      expect(global.fetch).not.toHaveBeenCalled();
+      expect(getTabulatorSchemas).not.toHaveBeenCalled();
       expect(second.title).toBe('Query Manager');
     });
 
@@ -361,8 +404,19 @@ describe('LithiumTable', () => {
       // Retrieve without .json extension — should hit the same cache entry
       const result = await loadTableDef('queries/query-manager');
 
-      expect(global.fetch).not.toHaveBeenCalled();
+      expect(getTabulatorSchemas).not.toHaveBeenCalled();
       expect(result.title).toBe('Query Manager');
+    });
+
+    it('should handle string JSON in lookup collection', async () => {
+      getTabulatorSchemas.mockReturnValue([
+        { key_idx: 1, collection: JSON.stringify(MOCK_TABLEDEF) },
+      ]);
+
+      const result = await loadTableDef('queries/query-manager');
+
+      expect(result.title).toBe('Query Manager');
+      expect(result.queryRef).toBe(25);
     });
   });
 
@@ -544,13 +598,12 @@ describe('LithiumTable', () => {
 
     it('should use lookup formatter when lookupRef is cached', async () => {
       // Pre-populate the lookup cache
-      const mockApi = {
-        authQuery: vi.fn().mockResolvedValue([
-          { lookup_id: 1, lookup_label: 'Active' },
-          { lookup_id: 2, lookup_label: 'Inactive' },
-        ]),
-      };
-      await loadLookup('a27', mockApi);
+      const mockAuthQuery = vi.fn().mockResolvedValue([
+        { lookup_id: 1, lookup_label: 'Active' },
+        { lookup_id: 2, lookup_label: 'Inactive' },
+      ]);
+      const mockApi = {};
+      await loadLookup('a27', mockAuthQuery, mockApi);
 
       const colDef = {
         display: 'Status',
@@ -573,13 +626,12 @@ describe('LithiumTable', () => {
     });
 
     it('should use lookup editor for editable lookup columns with cached data', async () => {
-      const mockApi = {
-        authQuery: vi.fn().mockResolvedValue([
-          { lookup_id: 1, lookup_label: 'Active' },
-          { lookup_id: 2, lookup_label: 'Inactive' },
-        ]),
-      };
-      await loadLookup('a27', mockApi);
+      const mockAuthQuery = vi.fn().mockResolvedValue([
+        { lookup_id: 1, lookup_label: 'Active' },
+        { lookup_id: 2, lookup_label: 'Inactive' },
+      ]);
+      const mockApi = {};
+      await loadLookup('a27', mockAuthQuery, mockApi);
 
       const colDef = {
         display: 'Status',
@@ -1030,58 +1082,97 @@ describe('LithiumTable', () => {
 
   describe('loadLookup', () => {
     it('should return empty array when no API instance provided', async () => {
-      const result = await loadLookup('a27', null);
+      const result = await loadLookup('a27', null, null);
 
       expect(result).toEqual([]);
     });
 
-    it('should fetch and cache lookup data', async () => {
-      const mockApi = {
-        authQuery: vi.fn().mockResolvedValue([
-          { lookup_id: 1, lookup_label: 'Active' },
-          { lookup_id: 2, lookup_label: 'Inactive' },
-        ]),
-      };
+    it('should return empty array when no authQuery function provided', async () => {
+      const result = await loadLookup('a27', null, {});
 
-      const result = await loadLookup('a27', mockApi);
+      expect(result).toEqual([]);
+    });
+
+    it('should fetch and cache lookup data using QueryRef 34', async () => {
+      const mockAuthQuery = vi.fn().mockResolvedValue([
+        { lookup_id: 1, lookup_label: 'Active' },
+        { lookup_id: 2, lookup_label: 'Inactive' },
+      ]);
+      const mockApi = {};
+
+      const result = await loadLookup('a27', mockAuthQuery, mockApi);
 
       expect(result).toHaveLength(2);
       expect(result[0]).toEqual({ id: 1, label: 'Active' });
       expect(result[1]).toEqual({ id: 2, label: 'Inactive' });
+      // Verify correct QueryRef and parameter format
+      expect(mockAuthQuery).toHaveBeenCalledWith(mockApi, 34, {
+        INTEGER: { LOOKUPID: 27 },
+      });
+    });
+
+    it('should parse numeric lookup ID from various formats', async () => {
+      const mockAuthQuery = vi.fn().mockResolvedValue([]);
+      const mockApi = {};
+
+      // Test a27 format
+      await loadLookup('a27', mockAuthQuery, mockApi);
+      expect(mockAuthQuery).toHaveBeenLastCalledWith(mockApi, 34, {
+        INTEGER: { LOOKUPID: 27 },
+      });
+
+      // Test g42 format
+      await loadLookup('g42', mockAuthQuery, mockApi);
+      expect(mockAuthQuery).toHaveBeenLastCalledWith(mockApi, 34, {
+        INTEGER: { LOOKUPID: 42 },
+      });
+
+      // Test numeric-only format (just in case)
+      await loadLookup('58', mockAuthQuery, mockApi);
+      expect(mockAuthQuery).toHaveBeenLastCalledWith(mockApi, 34, {
+        INTEGER: { LOOKUPID: 58 },
+      });
+    });
+
+    it('should return empty array for invalid lookup reference format', async () => {
+      const mockAuthQuery = vi.fn();
+      const mockApi = {};
+
+      const result = await loadLookup('invalid', mockAuthQuery, mockApi);
+
+      expect(result).toEqual([]);
+      expect(mockAuthQuery).not.toHaveBeenCalled();
     });
 
     it('should return cached data on second call', async () => {
-      const mockApi = {
-        authQuery: vi.fn().mockResolvedValue([
-          { lookup_id: 1, lookup_label: 'Active' },
-        ]),
-      };
+      const mockAuthQuery = vi.fn().mockResolvedValue([
+        { lookup_id: 1, lookup_label: 'Active' },
+      ]);
+      const mockApi = {};
 
-      await loadLookup('a27', mockApi);
-      const second = await loadLookup('a27', mockApi);
+      await loadLookup('a27', mockAuthQuery, mockApi);
+      const second = await loadLookup('a27', mockAuthQuery, mockApi);
 
-      expect(mockApi.authQuery).toHaveBeenCalledTimes(1);
+      expect(mockAuthQuery).toHaveBeenCalledTimes(1);
       expect(second).toHaveLength(1);
     });
 
     it('should return empty array on API error', async () => {
-      const mockApi = {
-        authQuery: vi.fn().mockRejectedValue(new Error('API error')),
-      };
+      const mockAuthQuery = vi.fn().mockRejectedValue(new Error('API error'));
+      const mockApi = {};
 
-      const result = await loadLookup('a99', mockApi);
+      const result = await loadLookup('a99', mockAuthQuery, mockApi);
 
       expect(result).toEqual([]);
     });
 
     it('should handle alternative field names in API response', async () => {
-      const mockApi = {
-        authQuery: vi.fn().mockResolvedValue([
-          { id: 10, label: 'Test Label' },
-        ]),
-      };
+      const mockAuthQuery = vi.fn().mockResolvedValue([
+        { id: 10, label: 'Test Label' },
+      ]);
+      const mockApi = {};
 
-      const result = await loadLookup('b55', mockApi);
+      const result = await loadLookup('b55', mockAuthQuery, mockApi);
 
       expect(result[0]).toEqual({ id: 10, label: 'Test Label' });
     });
@@ -1093,13 +1184,12 @@ describe('LithiumTable', () => {
     });
 
     it('should return cached lookup data', async () => {
-      const mockApi = {
-        authQuery: vi.fn().mockResolvedValue([
-          { lookup_id: 1, lookup_label: 'Active' },
-        ]),
-      };
+      const mockAuthQuery = vi.fn().mockResolvedValue([
+        { lookup_id: 1, lookup_label: 'Active' },
+      ]);
+      const mockApi = {};
 
-      await loadLookup('a27', mockApi);
+      await loadLookup('a27', mockAuthQuery, mockApi);
 
       const data = getLookup('a27');
       expect(data).toHaveLength(1);
@@ -1109,13 +1199,12 @@ describe('LithiumTable', () => {
 
   describe('resolveLookupLabel', () => {
     beforeEach(async () => {
-      const mockApi = {
-        authQuery: vi.fn().mockResolvedValue([
-          { lookup_id: 1, lookup_label: 'Active' },
-          { lookup_id: 2, lookup_label: 'Inactive' },
-        ]),
-      };
-      await loadLookup('a27', mockApi);
+      const mockAuthQuery = vi.fn().mockResolvedValue([
+        { lookup_id: 1, lookup_label: 'Active' },
+        { lookup_id: 2, lookup_label: 'Inactive' },
+      ]);
+      const mockApi = {};
+      await loadLookup('a27', mockAuthQuery, mockApi);
     });
 
     it('should return the label for a known ID', () => {
@@ -1138,12 +1227,11 @@ describe('LithiumTable', () => {
 
   describe('createLookupFormatter', () => {
     beforeEach(async () => {
-      const mockApi = {
-        authQuery: vi.fn().mockResolvedValue([
-          { lookup_id: 1, lookup_label: 'Active' },
-        ]),
-      };
-      await loadLookup('a27', mockApi);
+      const mockAuthQuery = vi.fn().mockResolvedValue([
+        { lookup_id: 1, lookup_label: 'Active' },
+      ]);
+      const mockApi = {};
+      await loadLookup('a27', mockAuthQuery, mockApi);
     });
 
     it('should return a formatter function', () => {
@@ -1194,13 +1282,12 @@ describe('LithiumTable', () => {
 
   describe('preloadLookups', () => {
     it('should load multiple lookups in parallel', async () => {
-      const mockApi = {
-        authQuery: vi.fn()
-          .mockResolvedValueOnce([{ lookup_id: 1, lookup_label: 'Active' }])
-          .mockResolvedValueOnce([{ lookup_id: 10, lookup_label: 'SQL' }]),
-      };
+      const mockAuthQuery = vi.fn()
+        .mockResolvedValueOnce([{ lookup_id: 1, lookup_label: 'Active' }])
+        .mockResolvedValueOnce([{ lookup_id: 10, lookup_label: 'SQL' }]);
+      const mockApi = {};
 
-      const results = await preloadLookups(['a27', 'a28'], mockApi);
+      const results = await preloadLookups(['a27', 'a28'], mockAuthQuery, mockApi);
 
       expect(results.size).toBe(2);
       expect(results.get('a27')).toHaveLength(1);
@@ -1211,24 +1298,26 @@ describe('LithiumTable', () => {
   // ── clearCache ─────────────────────────────────────────────────────────
 
   describe('clearCache', () => {
-    it('should clear all caches so data is re-fetched', async () => {
-      global.fetch
-        .mockResolvedValueOnce({ ok: true, json: async () => MOCK_COLTYPES })
-        .mockResolvedValueOnce({ ok: true, json: async () => MOCK_TABLEDEF })
-        .mockResolvedValueOnce({ ok: true, json: async () => MOCK_COLTYPES })
-        .mockResolvedValueOnce({ ok: true, json: async () => MOCK_TABLEDEF });
+    it('should clear all caches so data is re-loaded', async () => {
+      getTabulatorSchemas.mockReturnValue([
+        { key_idx: 0, collection: MOCK_COLTYPES },
+        { key_idx: 1, collection: MOCK_TABLEDEF },
+      ]);
 
       await loadColtypes();
       await loadTableDef('queries/query-manager');
 
-      expect(global.fetch).toHaveBeenCalledTimes(2);
+      // Called twice: once for coltypes, once for tabledef
+      expect(getTabulatorSchemas).toHaveBeenCalledTimes(2);
 
       clearCache();
+      getTabulatorSchemas.mockClear();
 
       await loadColtypes();
       await loadTableDef('queries/query-manager');
 
-      expect(global.fetch).toHaveBeenCalledTimes(4);
+      // Should be called again after cache clear
+      expect(getTabulatorSchemas).toHaveBeenCalledTimes(2);
     });
   });
 });

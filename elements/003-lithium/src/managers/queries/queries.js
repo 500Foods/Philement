@@ -22,11 +22,10 @@ import {
 } from '../../core/lithium-table.js';
 import './queries.css';
 
-// ── JSON config imports (bundled by Vite — always available) ────────────────
-// These guarantee coltypes and table definitions are resolved from the JSON
-// config even when the production web server doesn't serve /config/ files.
-import coltypesJson from '../../../config/tabulator/coltypes.json';
-import queryManagerJson from '../../../config/tabulator/queries/query-manager.json';
+// ── Tabulator schema loading ────────────────────────────────────────────────
+// Schemas are now loaded from the lookup cache (QueryRef 060) or fetched
+// from /config/tabulator/ as a fallback. The lookup data is loaded during
+// app initialization in lookups.js.
 
 // Font constants
 const MIN_FONT_SIZE = 10;
@@ -542,6 +541,54 @@ export default class QueriesManager {
     const pageSize = this._getPageSize();
     const newIndex = Math.min(rows.length - 1, selectedIndex + pageSize);
     this._selectRowByIndex(newIndex);
+  }
+
+  /**
+   * Update the enabled/disabled state of the Move navigation buttons
+   * based on the current row position and table data.
+   *
+   * Logic:
+   *   - FirstRec, PrevPage, PrevRec: disabled when at first row (index 0)
+   *   - NextRec, NextPage, LastRec: disabled when at last row
+   *   - PrevPage: also disabled if page size >= current position
+   *   - NextPage: also disabled if remaining rows <= page size
+   */
+  _updateMoveButtonState() {
+    if (!this.table) return;
+
+    const nav = this.elements.navigatorContainer;
+    if (!nav) return;
+
+    // Guard against mock tables without getRows method (tests)
+    if (typeof this.table.getRows !== 'function') return;
+
+    const { rows, selectedIndex } = this._getVisibleRowsAndIndex();
+    const rowCount = rows.length;
+
+    // If no rows or no selection, disable all navigation
+    const atFirst = selectedIndex <= 0;
+    const atLast = selectedIndex < 0 || selectedIndex >= rowCount - 1;
+
+    // Page-based logic for page buttons
+    const pageSize = this._getPageSize();
+    const canGoPrevPage = selectedIndex > 0 && selectedIndex >= pageSize;
+    const canGoNextPage = selectedIndex >= 0 && selectedIndex < rowCount - 1 - pageSize;
+
+    // Get button references
+    const firstBtn = nav.querySelector('#queries-nav-first');
+    const prevPageBtn = nav.querySelector('#queries-nav-pgup');
+    const prevRecBtn = nav.querySelector('#queries-nav-prev');
+    const nextRecBtn = nav.querySelector('#queries-nav-next');
+    const nextPageBtn = nav.querySelector('#queries-nav-pgdn');
+    const lastBtn = nav.querySelector('#queries-nav-last');
+
+    // Update button states
+    if (firstBtn) firstBtn.disabled = atFirst;
+    if (prevPageBtn) prevPageBtn.disabled = !canGoPrevPage;
+    if (prevRecBtn) prevRecBtn.disabled = atFirst;
+    if (nextRecBtn) nextRecBtn.disabled = atLast;
+    if (nextPageBtn) nextPageBtn.disabled = !canGoNextPage;
+    if (lastBtn) lastBtn.disabled = atLast;
   }
 
   // ── Selector column helpers ────────────────────────────────────────────
@@ -1561,6 +1608,8 @@ export default class QueriesManager {
       this._discoverColumns(currentData);
       requestAnimationFrame(() => {
         this._autoSelectRow(selectedId);
+        // Update navigation button states after table recreation
+        this._updateMoveButtonState();
       });
 
       // If the panel is in auto-width mode, recalculate to fit the new layout
@@ -2421,12 +2470,12 @@ export default class QueriesManager {
 
   async initTable() {
     // ── Load JSON-driven column configuration ──────────────────────────
-    // Pass the ES-module-imported JSON data so configs are guaranteed
-    // available even when the production server doesn't serve /config/.
-    // The loaders will use the provided data as priority 1 and skip fetch.
+    // Schemas are loaded from the lookup cache (loaded at app init) or
+    // fetched from /config/tabulator/ as fallback. No provided data means
+    // the loaders will check lookups first, then fall back to fetch.
     [this.coltypes, this.tableDef] = await Promise.all([
-      loadColtypes(coltypesJson),
-      loadTableDef('queries/query-manager', queryManagerJson),
+      loadColtypes(),
+      loadTableDef('queries/query-manager'),
     ]);
 
     if (this.tableDef) {
@@ -2443,7 +2492,7 @@ export default class QueriesManager {
 
       if (uniqueRefs.length > 0 && this.app?.api) {
         try {
-          await preloadLookups(uniqueRefs, this.app.api);
+          await preloadLookups(uniqueRefs, authQuery, this.app.api);
           log(Subsystems.MANAGER, Status.INFO,
             `[QueriesManager] Pre-loaded ${uniqueRefs.length} lookup table(s): ${uniqueRefs.join(', ')}`);
         } catch (err) {
@@ -2674,6 +2723,9 @@ export default class QueriesManager {
       } else if (!this._isEditing) {
         this.clearQueryDetails();
       }
+
+      // Update navigation button states based on new selection
+      this._updateMoveButtonState();
     });
   }
 
@@ -2773,6 +2825,8 @@ export default class QueriesManager {
       // selection can be silently reset by a trailing re-render.
       requestAnimationFrame(() => {
         this._autoSelectRow(previouslySelectedId);
+        // Update navigation button states after selection is restored
+        this._updateMoveButtonState();
       });
     } catch (error) {
       // Show detailed error toast with subsystem badge

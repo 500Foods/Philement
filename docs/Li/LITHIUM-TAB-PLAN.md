@@ -213,14 +213,21 @@ new API fields.
 #### 3a. Lookup Data Loader ✅
 
 ```javascript
-export async function loadLookup(lookupRef, api)
-export async function preloadLookups(lookupRefs, api)
+export async function loadLookup(lookupRef, authQueryFn, api)
+export async function preloadLookups(lookupRefs, authQueryFn, api)
 export function getLookup(lookupRef)
 ```
 
-Lookup data is fetched via the Conduit API (QueryRef 3) and cached in a
-module-level `Map`. The `preloadLookups()` function loads multiple lookups
-in parallel.
+Lookup data is fetched via the Conduit API (**QueryRef 34** — Get Lookup List)
+and cached in a module-level `Map`. The `preloadLookups()` function loads
+multiple lookups in parallel.
+
+**Fix (March 2026):** Corrected `loadLookup()` to use QueryRef 34 (was incorrectly
+using QueryRef 3 which expects `IPADDRESS`). The function now:
+
+- Parses numeric lookup ID from reference strings (e.g., "a27" → 27, "28" → 28)
+- Sends `INTEGER: { LOOKUPID: <id> }` parameter (was `STRING: { LOOKUP_REF }`)
+- Maps API response fields correctly: `key_idx` → `id`, `value_txt` → `label`
 
 #### 3b. Lookup Formatter ✅
 

@@ -376,66 +376,13 @@ enum MHD_Result serve_file_for_method(struct MHD_Connection *connection, const c
         log_this(SR_WEBSERVER, "Serving pre-compressed Brotli file: %s", LOG_LEVEL_DEBUG, 1, br_file_path);
     }
     
-    // For HEAD requests, we return only headers without body content
-    // MHD_create_response_from_fd includes the file content, so we need to handle HEAD specially
-    enum MHD_Result ret;
-    if (method != NULL && strcmp(method, "HEAD") == 0) {
-        // For HEAD, create a response with empty body but same headers
-        MHD_destroy_response(response);
-        close(fd);  // Close the file descriptor since we won't use it
-        
-        // Create empty response with same headers
-        struct MHD_Response *head_response = MHD_create_response_from_buffer(0, NULL, MHD_RESPMEM_PERSISTENT);
-        if (!head_response) {
-            return MHD_NO;
-        }
-        
-        add_cors_headers(head_response);
-        add_custom_headers(head_response, file_path, server_web_config);
-        add_static_metadata_headers(head_response, &st, etag);
-        
-        // Set Content-Type based on the original file (reuse ext from above)
-        if (ext) {
-            if (strcmp(ext, ".html") == 0) MHD_add_response_header(head_response, "Content-Type", "text/html");
-            else if (strcmp(ext, ".css") == 0) MHD_add_response_header(head_response, "Content-Type", "text/css");
-            else if (strcmp(ext, ".js") == 0) MHD_add_response_header(head_response, "Content-Type", "application/javascript");
-            else if (strcmp(ext, ".txt") == 0) MHD_add_response_header(head_response, "Content-Type", "text/plain");
-            else if (strcmp(ext, ".json") == 0) MHD_add_response_header(head_response, "Content-Type", "application/json");
-            else if (strcmp(ext, ".xml") == 0) MHD_add_response_header(head_response, "Content-Type", "application/xml");
-            else if (strcmp(ext, ".csv") == 0) MHD_add_response_header(head_response, "Content-Type", "text/csv");
-            else if (strcmp(ext, ".svg") == 0) MHD_add_response_header(head_response, "Content-Type", "image/svg+xml");
-            else if (strcmp(ext, ".png") == 0) MHD_add_response_header(head_response, "Content-Type", "image/png");
-            else if (strcmp(ext, ".jpg") == 0 || strcmp(ext, ".jpeg") == 0) MHD_add_response_header(head_response, "Content-Type", "image/jpeg");
-            else if (strcmp(ext, ".gif") == 0) MHD_add_response_header(head_response, "Content-Type", "image/gif");
-            else if (strcmp(ext, ".ico") == 0) MHD_add_response_header(head_response, "Content-Type", "image/x-icon");
-            else if (strcmp(ext, ".webp") == 0) MHD_add_response_header(head_response, "Content-Type", "image/webp");
-            else if (strcmp(ext, ".bmp") == 0) MHD_add_response_header(head_response, "Content-Type", "image/bmp");
-            else if (strcmp(ext, ".tif") == 0 || strcmp(ext, ".tiff") == 0) MHD_add_response_header(head_response, "Content-Type", "image/tiff");
-            else if (strcmp(ext, ".avif") == 0) MHD_add_response_header(head_response, "Content-Type", "image/avif");
-            else if (strcmp(ext, ".woff") == 0) MHD_add_response_header(head_response, "Content-Type", "font/woff");
-            else if (strcmp(ext, ".woff2") == 0) MHD_add_response_header(head_response, "Content-Type", "font/woff2");
-            else if (strcmp(ext, ".ttf") == 0) MHD_add_response_header(head_response, "Content-Type", "font/ttf");
-            else if (strcmp(ext, ".otf") == 0) MHD_add_response_header(head_response, "Content-Type", "font/otf");
-            else if (strcmp(ext, ".pdf") == 0) MHD_add_response_header(head_response, "Content-Type", "application/pdf");
-            else if (strcmp(ext, ".zip") == 0) MHD_add_response_header(head_response, "Content-Type", "application/zip");
-            else if (strcmp(ext, ".wasm") == 0) MHD_add_response_header(head_response, "Content-Type", "application/wasm");
-        }
-        
-        // Add Content-Length header with the actual file size
-        char content_length[32];
-        snprintf(content_length, sizeof(content_length), "%zu", (size_t)st.st_size);
-        MHD_add_response_header(head_response, "Content-Length", content_length);
-        
-        if (use_br_file) {
-            add_brotli_header(head_response);
-        }
-        
-        ret = MHD_queue_response(connection, MHD_HTTP_OK, head_response);
-        MHD_destroy_response(head_response);
-    } else {
-        ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
-        MHD_destroy_response(response);
-    }
+    // Queue the response - MHD automatically handles HEAD requests by suppressing
+    // the body while preserving all headers (Content-Length, Content-Type, CORS, etc.)
+    // No special HEAD handling needed: MHD_create_response_from_fd already knows the
+    // correct Content-Length from st.st_size, and MHD will skip sending the body for HEAD.
+    (void)method;
+    enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
+    MHD_destroy_response(response);
     return ret;
 }
 
@@ -524,6 +471,31 @@ enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
 
         // Try to serve a static file
         char file_path[PATH_MAX];
+
+        // Check if URL doesn't end with "/" but resolves to a directory
+        // If so, redirect to add trailing slash for better relative path handling
+        size_t url_len = strlen(url);
+        if (url_len > 0 && url[url_len - 1] != '/') {
+            char temp_path[PATH_MAX];
+            if (snprintf(temp_path, sizeof(temp_path), "%s%s",
+                         app_config->webserver.web_root, url) < (int)sizeof(temp_path)) {
+                struct stat path_stat;
+                if (stat(temp_path, &path_stat) == 0 && S_ISDIR(path_stat.st_mode)) {
+                    // This is a directory without trailing slash - redirect
+                    char redirect_url[PATH_MAX];
+                    if (snprintf(redirect_url, sizeof(redirect_url), "%s/", url) < (int)sizeof(redirect_url)) {
+                        struct MHD_Response *redirect_response = MHD_create_response_from_buffer(0, NULL, MHD_RESPMEM_PERSISTENT);
+                        if (redirect_response) {
+                            MHD_add_response_header(redirect_response, "Location", redirect_url);
+                            enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_MOVED_PERMANENTLY, redirect_response);
+                            MHD_destroy_response(redirect_response);
+                            log_this(SR_WEBSERVER, "Redirecting directory %s to %s", LOG_LEVEL_DEBUG, 2, url, redirect_url);
+                            return ret;
+                        }
+                    }
+                }
+            }
+        }
 
         // Serve exact files directly, or for directory requests only resolve index.html
         // and Project1.html as fallbacks.

@@ -11,6 +11,7 @@
  * - 030: Lookup Names
  * - 053: Themes
  * - 054: Icons
+ * - 060: Tabulator Schemas
  */
 
 import { eventBus, Events } from '../core/event-bus.js';
@@ -37,10 +38,11 @@ const logger = {
 // Friendly metadata for each lookup category
 // Maps category key → { queryRef, label, countLabel }
 const LOOKUP_META = {
-  system_info:   { queryRef: '001', label: 'System Info',    countLabel: 'elements' },
-  lookup_names:  { queryRef: '030', label: 'Lookup Names',   countLabel: 'lookups' },
-  themes:        { queryRef: '053', label: 'Themes',         countLabel: 'themes' },
-  icons:         { queryRef: '054', label: 'Icons',          countLabel: 'icons' },
+  system_info:       { queryRef: '001', label: 'System Info',       countLabel: 'elements' },
+  lookup_names:      { queryRef: '030', label: 'Lookup Names',      countLabel: 'lookups' },
+  themes:            { queryRef: '053', label: 'Themes',            countLabel: 'themes' },
+  icons:             { queryRef: '054', label: 'Icons',             countLabel: 'icons' },
+  tabulator_schemas: { queryRef: '060', label: 'Tabulator Schemas', countLabel: 'schemas' },
 };
 
 /**
@@ -103,10 +105,11 @@ const LOOKUP_QUERYREFS = {
   icons: 54,           // QueryRef 054 - Icons
   lookup_names: 30,    // QueryRef 030 - Names of all lookups
   managers: 1,         // Derived from system_info
+  tabulator_schemas: 60, // QueryRef 060 - Tabulator Schemas
 };
 
 // Categories that are "open" (available before login)
-const OPEN_CATEGORIES = ['system_info', 'themes', 'icons', 'managers'];
+const OPEN_CATEGORIES = ['system_info', 'themes', 'icons', 'managers', 'tabulator_schemas'];
 
 // localStorage key for caching lookups
 const STORAGE_KEY = 'lithium_lookups';
@@ -279,6 +282,11 @@ function processBatchResults(batchResults) {
         lookups.icons = rows;
         break;
 
+      case 60:
+        // QueryRef 060 - Tabulator Schemas
+        lookups.tabulator_schemas = rows;
+        break;
+
       default:
         logger.info(`Unhandled query_ref: ${queryRef} with ${rows.length} rows`);
     }
@@ -344,7 +352,7 @@ async function fetchFreshLookups(silent = false) {
     }
 
     // Fetch all open lookups in one batch
-    const queryRefs = [1, 30, 53, 54]; // QueryRefs 001, 030, 053, 054
+    const queryRefs = [1, 30, 53, 54, 60]; // QueryRefs 001, 030, 053, 054, 060
     const qrefLabels = queryRefs.map(r => String(r).padStart(3, '0')).join(', ');
     logger.info(`Loading lookups [${qrefLabels}] from server`);
     const batchResults = await fetchBatchQueries(queryRefs, '001');
@@ -451,6 +459,14 @@ export function getIcons() {
 }
 
 /**
+ * Get Tabulator schemas lookup data
+ * @returns {Object|null} Tabulator schemas data or null
+ */
+export function getTabulatorSchemas() {
+  return cache?.tabulator_schemas || null;
+}
+
+/**
  * Get system info lookup data
  * @returns {Object|null} System info data or null
  */
@@ -554,6 +570,7 @@ export default {
   getManagers,
   getThemes,
   getIcons,
+  getTabulatorSchemas,
   getSystemInfo,
   getLookupNames,
   getFeatureName,

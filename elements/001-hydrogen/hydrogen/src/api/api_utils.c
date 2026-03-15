@@ -313,9 +313,11 @@ enum MHD_Result api_send_json_response(struct MHD_Connection *connection,
  */
 void api_add_cors_headers(struct MHD_Response *response) {
     MHD_add_response_header(response, "Access-Control-Allow-Origin", "*");
-    MHD_add_response_header(response, "Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-    MHD_add_response_header(response, "Access-Control-Allow-Headers", 
+    MHD_add_response_header(response, "Access-Control-Allow-Methods", "GET, HEAD, POST, OPTIONS");
+    MHD_add_response_header(response, "Access-Control-Allow-Headers",
                           "Content-Type, Authorization, X-Requested-With");
+    MHD_add_response_header(response, "Access-Control-Expose-Headers",
+                          "Content-Length, Content-Type, ETag, Last-Modified, Cache-Control");
     MHD_add_response_header(response, "Access-Control-Max-Age", "86400");
 }
 
