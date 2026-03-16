@@ -104,8 +104,10 @@ describe('Permissions', () => {
   describe('getPermittedManagers', () => {
     it('should return default managers when no punchcard provided', () => {
       const managers = getPermittedManagers();
-      // Profile Manager (ID 2) is a utility manager, not in the menu
-      expect(managers).toEqual([1, 3, 4, 5]);
+      // Default managers from QueryRef 046 (excluding hidden items with negative Index)
+      // Group 0: System (2, 3), Group 1: Content (8, 9, 10, 11),
+      // Group 2: Data (4, 5, 12), Group 3: AI (6, 7)
+      expect(managers).toEqual([2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
     });
 
     it('should return managers from punchcard', () => {
@@ -175,8 +177,8 @@ describe('Permissions', () => {
       const perms = parsePermissions(claims);
       
       expect(perms.hasPunchcard).toBe(false);
-      // Profile Manager (ID 2) is a utility manager, not in the menu
-      expect(perms.managers).toEqual([1, 3, 4, 5]);
+      // Default managers from QueryRef 046 (excluding hidden items with negative Index)
+      expect(perms.managers).toEqual([2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
       expect(perms.features).toEqual({});
     });
 
@@ -184,8 +186,8 @@ describe('Permissions', () => {
       const perms = parsePermissions(null);
       
       expect(perms.hasPunchcard).toBe(false);
-      // Profile Manager (ID 2) is a utility manager, not in the menu
-      expect(perms.managers).toEqual([1, 3, 4, 5]);
+      // Default managers from QueryRef 046 (excluding hidden items with negative Index)
+      expect(perms.managers).toEqual([2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
     });
 
     it('should handle punchcard with empty arrays', () => {

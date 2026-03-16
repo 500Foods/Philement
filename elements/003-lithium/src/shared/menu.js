@@ -12,9 +12,9 @@ import { log, Subsystems, Status } from '../core/log.js';
 const MENU_QUERY_REF = 46;
 
 // localStorage key for caching menu data
-const MENU_CACHE_KEY = 'lithium_menu_data';
-const MENU_CACHE_TIMESTAMP_KEY = 'lithium_menu_cache_time';
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+export const MENU_CACHE_KEY = 'lithium_menu_data';
+export const MENU_CACHE_TIMESTAMP_KEY = 'lithium_menu_cache_time';
+export const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 // In-memory cache
 let menuCache = null;
@@ -35,11 +35,12 @@ let menuCache = null;
 
 /**
  * Parse collection field to extract icon information
+ * The collection contains JSON with an "Icon" field (HTML <i> tag) and "Index"
  * @param {string|Object} collection - Collection field from query result
- * @returns {Object} Parsed icon info with fallback
+ * @returns {Object} Parsed icon info with fallback, includes index for filtering
  */
-function parseIcon(collection) {
-  const fallback = { icon: 'fa-cube', iconSet: 'solid' };
+export function parseCollection(collection) {
+  const fallback = { icon: 'fa-cube', index: 0, visible: true };
 
   if (!collection) {
     return fallback;
@@ -47,9 +48,29 @@ function parseIcon(collection) {
 
   try {
     const parsed = typeof collection === 'string' ? JSON.parse(collection) : collection;
+    
+    // Extract icon class from HTML <i> tag if present
+    let icon = fallback.icon;
+    if (parsed.Icon) {
+      // Parse icon class from HTML like: <i class='fa fa-fw fa-xl fa-receipt'></i>
+      const iconMatch = parsed.Icon.match(/class=['"]([^'"]*)['"]/);
+      if (iconMatch) {
+        // Extract just the icon name (e.g., fa-receipt from fa fa-fw fa-xl fa-receipt)
+        const classes = iconMatch[1].split(/\s+/);
+        const faIcon = classes.find(c => c.startsWith('fa-') && !['fa-fw', 'fa-xl'].includes(c));
+        if (faIcon) {
+          icon = faIcon;
+        }
+      }
+    }
+    
+    // Items with negative Index should be hidden (Main Menu = -2, Login = -1)
+    const index = parsed.Index !== undefined ? parsed.Index : 0;
+    
     return {
-      icon: parsed.icon || fallback.icon,
-      iconSet: parsed.iconSet || parsed.icon_set || fallback.iconSet,
+      icon,
+      index,
+      visible: index >= 0, // Only show items with Index >= 0
     };
   } catch (e) {
     return fallback;
@@ -61,12 +82,17 @@ function parseIcon(collection) {
  * @param {Array} items - Raw menu items from QueryRef 046
  * @returns {Array} Grouped menu structure
  */
-function groupMenuItems(items) {
+export function groupMenuItems(items) {
   const groups = new Map();
 
   items.forEach((item) => {
     const groupId = item.grpnum;
-    const iconInfo = parseIcon(item.collection);
+    const collectionInfo = parseCollection(item.collection);
+    
+    // Skip items that should be hidden (negative Index like Main Menu, Login)
+    if (!collectionInfo.visible) {
+      return;
+    }
 
     if (!groups.has(groupId)) {
       groups.set(groupId, {
@@ -83,8 +109,8 @@ function groupMenuItems(items) {
       name: item.modname,
       sortOrder: item.modsort,
       count: item.entries || 0,
-      icon: iconInfo.icon,
-      iconSet: iconInfo.iconSet,
+      icon: collectionInfo.icon,
+      index: collectionInfo.index,
     });
   });
 
@@ -143,7 +169,7 @@ export async function fetchMenu(api) {
  * Get cached menu data from localStorage
  * @returns {Array|null} Cached menu data or null
  */
-function getCachedMenuData() {
+export function getCachedMenuData() {
   try {
     const cached = localStorage.getItem(MENU_CACHE_KEY);
     const timestamp = localStorage.getItem(MENU_CACHE_TIMESTAMP_KEY);
@@ -272,7 +298,7 @@ export function buildManagerIconsRegistry(menuData) {
   menuData.forEach((group) => {
     group.items.forEach((item) => {
       registry[item.managerId] = {
-        icon: item.icon,
+        icon: item.icon || 'fa-cube',
         name: item.name,
       };
     });
