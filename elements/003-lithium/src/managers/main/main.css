@@ -264,6 +264,71 @@
   padding: var(--space-2);
 }
 
+/* ========================================
+   Menu Groups (Collapsible)
+   ======================================== */
+
+.menu-group {
+  margin-bottom: var(--space-2);
+}
+
+.menu-group-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+  font-weight: 500;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.menu-group-header:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.group-toggle-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  transition: transform var(--transition-fast) ease;
+  font-size: var(--font-size-xs);
+}
+
+.group-name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.menu-group-items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-left: var(--space-2);
+  overflow: hidden;
+  transition: max-height var(--transition-fast) ease, opacity var(--transition-fast) ease;
+  max-height: 1000px;
+  opacity: 1;
+}
+
+.menu-group-items.collapsed {
+  max-height: 0;
+  opacity: 0;
+}
+
+/* ========================================
+   Menu Items
+   ======================================== */
+
 .menu-item {
   display: flex;
   align-items: center;
@@ -272,7 +337,6 @@
   border-radius: var(--border-radius-md);
   cursor: pointer;
   transition: background-color var(--transition-fast), color var(--transition-fast);
-  margin-bottom: var(--space-1);
   white-space: nowrap;
   overflow: hidden;     
   font-size: 20px;
@@ -294,17 +358,66 @@
   flex-shrink: 0;
 }
 
-.menu-item span {
+.menu-item-name {
+  flex: 1;
   white-space: nowrap;
   overflow: hidden;
+  text-overflow: ellipsis;
   transition: opacity calc(var(--transition-duration) / 2) ease;
   font-size: var(--font-size-base);
 }
 
-/* Hide text when collapsed */
-.main-sidebar.collapsed .menu-item span {
-  opacity: 0;
-  width: 0;
+/* Count badge */
+.menu-item-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  padding: 2px 6px;
+  background: var(--accent-secondary);
+  color: white;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  border-radius: var(--border-radius-sm);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.menu-item.active .menu-item-count {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* ========================================
+   Collapsed Sidebar Menu
+   ======================================== */
+
+/* When sidebar is collapsed, show flat list of icons */
+.main-sidebar.collapsed .menu-group-header {
+  display: none;
+}
+
+.main-sidebar.collapsed .menu-group {
+  margin-bottom: 0;
+}
+
+.main-sidebar.collapsed .menu-group-items {
+  display: flex !important;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-left: 0;
+  max-height: none !important;
+  opacity: 1 !important;
+}
+
+.main-sidebar.collapsed .menu-item {
+  justify-content: center;
+  padding: var(--space-2);
+}
+
+.main-sidebar.collapsed .menu-item-name,
+.main-sidebar.collapsed .menu-item-count {
+  display: none;
 }
 
 /* ========================================
@@ -896,6 +1009,32 @@ body.resizing * {
   /* On mobile, manager-area slot headers need room for the menu btn */
   .manager-slot-header {
     padding-left: calc(40px + var(--space-3) * 2);
+  }
+
+  /* On mobile, always show full menu with groups */
+  .main-sidebar.collapsed .menu-group-header,
+  .main-sidebar:not(.collapsed) .menu-group-header {
+    display: flex;
+  }
+
+  .main-sidebar.collapsed .menu-group-items,
+  .main-sidebar:not(.collapsed) .menu-group-items {
+    max-height: 1000px !important;
+    opacity: 1 !important;
+    padding-left: var(--space-2);
+  }
+
+  .main-sidebar.collapsed .menu-item,
+  .main-sidebar:not(.collapsed) .menu-item {
+    justify-content: flex-start;
+    padding: var(--space-2) var(--space-4);
+  }
+
+  .main-sidebar.collapsed .menu-item-name,
+  .main-sidebar:not(.collapsed) .menu-item-name,
+  .main-sidebar.collapsed .menu-item-count,
+  .main-sidebar:not(.collapsed) .menu-item-count {
+    display: inline-flex;
   }
 }
 

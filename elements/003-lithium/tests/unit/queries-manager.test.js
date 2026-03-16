@@ -387,23 +387,33 @@ describe('QueriesManager edit-mode table behavior', () => {
     expect(manager.table.restoreRedraw).toHaveBeenCalledTimes(1);
   });
 
-  it('uses edited cells rather than row.isEdited() when cancelling edits', async () => {
-    const editedRow = {};
-    const undo = vi.fn();
+  it('reverts changes using _revertAllChanges when cancelling edits with dirty state', async () => {
+    const revertAllChanges = vi.fn(() => Promise.resolve());
     const exitEditMode = vi.fn(() => Promise.resolve());
 
-    manager.table = {
-      getEditedCells: vi.fn(() => [
-        { getRow: () => editedRow },
-        { getRow: () => editedRow },
-      ]),
-      undo,
-    };
+    // Set up dirty state so cancel will revert
+    manager._isDirty = { table: true, sql: false, summary: false, collection: false };
+    manager._revertAllChanges = revertAllChanges;
     manager._exitEditMode = exitEditMode;
 
     await manager.handleNavCancel();
 
-    expect(undo).toHaveBeenCalledTimes(1);
+    expect(revertAllChanges).toHaveBeenCalledTimes(1);
+    expect(exitEditMode).toHaveBeenCalledWith('cancel');
+  });
+
+  it('just exits edit mode when cancelling with no changes', async () => {
+    const revertAllChanges = vi.fn(() => Promise.resolve());
+    const exitEditMode = vi.fn(() => Promise.resolve());
+
+    // No dirty state
+    manager._isDirty = { table: false, sql: false, summary: false, collection: false };
+    manager._revertAllChanges = revertAllChanges;
+    manager._exitEditMode = exitEditMode;
+
+    await manager.handleNavCancel();
+
+    expect(revertAllChanges).not.toHaveBeenCalled();
     expect(exitEditMode).toHaveBeenCalledWith('cancel');
   });
 });
