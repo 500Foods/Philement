@@ -93,6 +93,213 @@ export default class QueriesManager {
 
     // SQL dialect (sqlite is our default)
     this.sqlDialect = 'sqlite';
+
+    // Original data from server for change tracking and revert
+    this._originalRowData = null;          // Original Tabulator row data
+    this._originalSqlContent = null;       // Original SQL content
+    this._originalSummaryContent = null;   // Original summary/markdown content
+    this._originalCollectionContent = null; // Original collection/JSON content
+
+    // Dirty state flags for tracking changes
+    this._isDirty = {
+      table: false,      // Tabulator row has been edited
+      sql: false,        // SQL editor content changed
+      summary: false,    // Summary editor content changed
+      collection: false, // Collection editor content changed
+    };
+  }
+
+  /**
+   * Check if any content has been modified (dirty state)
+   * @returns {boolean} true if any changes exist
+   */
+  _isAnyDirty() {
+    return this._isDirty.table ||
+           this._isDirty.sql ||
+           this._isDirty.summary ||
+           this._isDirty.collection;
+  }
+
+  /**
+   * Update the dirty state and manage button states accordingly
+   * @param {string} type - which type changed ('table', 'sql', 'summary', 'collection')
+   * @param {boolean} isDirty - whether this type is now dirty
+   */
+  _setDirty(type, isDirty) {
+    const wasDirty = this._isAnyDirty();
+    this._isDirty[type] = isDirty;
+    const nowDirty = this._isAnyDirty();
+
+    // Only update button state if dirty state changed
+    if (wasDirty !== nowDirty) {
+      this._updateSaveCancelButtonState();
+    }
+  }
+
+  /**
+   * Update Save/Cancel button states based on edit mode AND dirty state
+   * Save/Cancel should only be enabled when in edit mode AND there are changes
+   */
+  _updateSaveCancelButtonState() {
+    const nav = this.elements.navigatorContainer;
+    if (!nav) return;
+
+    const saveBtn = nav.querySelector('#queries-nav-save');
+    const cancelBtn = nav.querySelector('#queries-nav-cancel');
+
+    // Buttons are enabled only when in edit mode AND there are changes
+    const shouldEnable = this._isEditing && this._isAnyDirty();
+
+    if (saveBtn) saveBtn.disabled = !shouldEnable;
+    if (cancelBtn) cancelBtn.disabled = !shouldEnable;
+  }
+
+  /**
+   * Mark all content as clean (after save or when loading new data)
+   */
+  _markAllClean() {
+    this._isDirty.table = false;
+    this._isDirty.sql = false;
+    this._isDirty.summary = false;
+    this._isDirty.collection = false;
+    this._updateSaveCancelButtonState();
+  }
+
+  /**
+   * Store original data from server for change tracking
+   * Called when loading query details
+   */
+  _captureOriginalData(queryData) {
+    if (!queryData) return;
+
+    // Capture original row data (shallow copy of relevant fields)
+    this._originalRowData = { ...queryData };
+
+    // Capture original external content
+    this._originalSqlContent = queryData.code || queryData.query_text || queryData.sql || '';
+    this._originalSummaryContent = queryData.summary || queryData.markdown || '';
+    const collection = queryData.collection || queryData.json || {};
+    this._originalCollectionContent = typeof collection === 'string'
+      ? collection
+      : JSON.stringify(collection);
+
+    // Reset dirty state since we just loaded fresh data
+    this._markAllClean();
+  }
+
+  /**
+   * Revert all changes to original values
+   * - Tabulator: use undo()
+   * - External content: restore from cached originals
+   */
+  async _revertAllChanges() {
+    // Revert Tabulator changes
+    if (this._isDirty.table && this.table) {
+      // Get all edited cells and undo them
+      const editedCells = typeof this.table.getEditedCells === 'function'
+        ? this.table.getEditedCells()
+        : [];
+      if (editedCells.length > 0) {
+        this.table.undo();
+      }
+    }
+
+    // Revert SQL content
+    if (this._isDirty.sql && this.sqlEditor && this._originalSqlContent != null) {
+      this.sqlEditor.dispatch({
+        changes: { from: 0, to: this.sqlEditor.state.doc.length, insert: this._originalSqlContent },
+      });
+    }
+
+    // Revert Summary content
+    if (this._isDirty.summary && this.summaryEditor && this._originalSummaryContent != null) {
+      this.summaryEditor.dispatch({
+        changes: { from: 0, to: this.summaryEditor.state.doc.length, insert: this._originalSummaryContent },
+      });
+    }
+
+    // Revert Collection content
+    if (this._isDirty.collection && this.collectionEditor && this._originalCollectionContent != null) {
+      try {
+        const jsonData = typeof this._originalCollectionContent === 'string'
+          ? JSON.parse(this._originalCollectionContent)
+          : this._originalCollectionContent;
+        this.collectionEditor.set({ json: jsonData });
+      } catch (e) {
+        // If parse fails, set as empty object
+        this.collectionEditor.set({ json: {} });
+      }
+    }
+
+    // Mark all as clean
+    this._markAllClean();
+  }
+
+  /**
+   * Get current SQL content from editor
+   */
+  _getCurrentSqlContent() {
+    if (!this.sqlEditor) return '';
+    return this.sqlEditor.state.doc.toString();
+  }
+
+  /**
+   * Get current Summary content from editor
+   */
+  _getCurrentSummaryContent() {
+    if (!this.summaryEditor) return '';
+    return this.summaryEditor.state.doc.toString();
+  }
+
+  /**
+   * Get current Collection content from editor
+   */
+  _getCurrentCollectionContent() {
+    if (!this.collectionEditor) return '';
+    // Get content from vanilla-jsoneditor
+    const content = this.collectionEditor.get();
+    if (content && content.json !== undefined) {
+      return JSON.stringify(content.json);
+    }
+    return JSON.stringify({});
+  }
+
+  /**
+   * Check if SQL content has changed from original
+   */
+  _checkSqlDirty() {
+    if (this._originalSqlContent == null) return false;
+    const current = this._getCurrentSqlContent();
+    return current !== this._originalSqlContent;
+  }
+
+  /**
+   * Check if Summary content has changed from original
+   */
+  _checkSummaryDirty() {
+    if (this._originalSummaryContent == null) return false;
+    const current = this._getCurrentSummaryContent();
+    return current !== this._originalSummaryContent;
+  }
+
+  /**
+   * Check if Collection content has changed from original
+   */
+  _checkCollectionDirty() {
+    if (this._originalCollectionContent == null) return false;
+    const current = this._getCurrentCollectionContent();
+    return current !== this._originalCollectionContent;
+  }
+
+  /**
+   * Check all dirty states and update accordingly
+   * Called periodically or when content changes
+   */
+  _refreshDirtyState() {
+    this._isDirty.sql = this._checkSqlDirty();
+    this._isDirty.summary = this._checkSummaryDirty();
+    this._isDirty.collection = this._checkCollectionDirty();
+    this._updateSaveCancelButtonState();
   }
 
   async init() {
@@ -655,7 +862,7 @@ export default class QueriesManager {
    *     which switches the selected-row highlight from accent-primary
    *     (indigo) to accent-warning (amber)
    *   - Sets `_editingRowId` so the selector column shows the I-cursor
-   *   - Enables the Save and Cancel nav buttons
+   *   - Captures original data for change tracking
    *   - Makes CodeMirror editors editable (they default to readOnly)
    *   - Optionally focuses an editable cell for immediate typing
    *
@@ -691,6 +898,9 @@ export default class QueriesManager {
       this._editingRowId = rowId;
       this._isEditing = true;
 
+      // Capture original data for change tracking
+      this._captureOriginalData(row.getData());
+
       // CSS class drives the amber selected-row highlight + text cursor
       this.elements.tableContainer?.classList.add('queries-edit-mode');
 
@@ -700,8 +910,8 @@ export default class QueriesManager {
       // Selector indicator: I-cursor with blink
       this._updateEditingIndicator();
 
-      // Enable Save / Cancel buttons
-      this._setManageButtonState(true);
+      // Update Save / Cancel buttons (disabled until changes are made)
+      this._updateSaveCancelButtonState();
 
       // Make CodeMirror editors writable
       this._setCodeMirrorEditable(true);
@@ -748,11 +958,21 @@ export default class QueriesManager {
       // Selector indicator: back to ▸ arrow (or empty if deselected)
       this._updateEditingIndicator();
 
-      // Disable Save / Cancel buttons
-      this._setManageButtonState(false);
+      // Disable Save / Cancel buttons (not in edit mode)
+      this._updateSaveCancelButtonState();
 
       // Make CodeMirror editors read-only again
       this._setCodeMirrorEditable(false);
+
+      // Clear dirty state when exiting edit mode
+      // (on save, this happens after save completes; on cancel, after revert)
+      if (reason !== 'save') {
+        this._markAllClean();
+        this._originalRowData = null;
+        this._originalSqlContent = null;
+        this._originalSummaryContent = null;
+        this._originalCollectionContent = null;
+      }
 
       log(Subsystems.MANAGER, Status.INFO,
         `[QueriesManager] Exited edit mode (row ${previousId}, reason: ${reason})`);
@@ -765,19 +985,16 @@ export default class QueriesManager {
    * Enable or disable the Save and Cancel nav buttons.
    *
    * In normal (non-edit) mode these buttons are disabled to prevent
-   * accidental saves.  When edit mode is entered they are enabled.
+   * accidental saves.  When edit mode is entered AND there are changes,
+   * they are enabled.
    *
-   * @param {boolean} editing - true to enable, false to disable
+   * @param {boolean} editing - true when entering edit mode, false when exiting
+   * @deprecated Use _updateSaveCancelButtonState() instead for dirty-aware state
    */
   _setManageButtonState(editing) {
-    const nav = this.elements.navigatorContainer;
-    if (!nav) return;
-
-    const saveBtn = nav.querySelector('#queries-nav-save');
-    const cancelBtn = nav.querySelector('#queries-nav-cancel');
-
-    if (saveBtn) saveBtn.disabled = !editing;
-    if (cancelBtn) cancelBtn.disabled = !editing;
+    // This is now a no-op wrapper - actual logic is in _updateSaveCancelButtonState
+    // which considers both edit mode AND dirty state
+    this._updateSaveCancelButtonState();
   }
 
   /**
@@ -1298,6 +1515,15 @@ export default class QueriesManager {
     log(Subsystems.MANAGER, Status.INFO, 'Navigator: Save');
     if (!this.table) return;
 
+    // Check if there are any changes to save
+    if (!this._isAnyDirty()) {
+      toast.info('No Changes', {
+        description: 'Nothing to save — no changes have been made',
+        duration: 3000,
+      });
+      return;
+    }
+
     // Determine which row(s) need saving.
     // When in edit mode, the selected row is the one being edited.
     const selected = this.table.getSelectedRows();
@@ -1318,8 +1544,9 @@ export default class QueriesManager {
     const isInsert = pkValue == null || pkValue === '' || pkValue === 0;
 
     // Find the appropriate QueryRef from config
+    // Use QueryRef 28 for updates (Update System Query)
     const insertRef = this.queryRefs?.insertQueryRef ?? null;
-    const updateRef = this.queryRefs?.updateQueryRef ?? null;
+    const updateRef = this.queryRefs?.updateQueryRef ?? 28; // Default to QueryRef 28
     const queryRef = isInsert ? insertRef : updateRef;
 
     if (queryRef == null) {
@@ -1337,36 +1564,70 @@ export default class QueriesManager {
       return;
     }
 
-    // Build the API payload from the row data.
-    // For updates, include the PK. For inserts, omit it.
-    const payload = { ...rowData };
-    if (isInsert) {
-      delete payload[pkField];
-    }
-
     try {
-      log(Subsystems.CONDUIT, Status.INFO,
-        `[QueriesManager] ${isInsert ? 'Inserting' : 'Updating'} row (queryRef: ${queryRef})`);
+      let result;
 
-      const result = await authQuery(this.app.api, queryRef, {
-        JSON: payload,
-      });
+      if (isInsert) {
+        // For inserts, use the generic insert approach with JSON payload
+        const payload = { ...rowData };
+        delete payload[pkField];
 
-      // If insert returned a new PK, update the row data
-      if (isInsert && result?.[0]?.[pkField] != null) {
-        row.update({ [pkField]: result[0][pkField] });
+        log(Subsystems.CONDUIT, Status.INFO,
+          `[QueriesManager] Inserting row (queryRef: ${queryRef})`);
+
+        result = await authQuery(this.app.api, queryRef, {
+          JSON: payload,
+        });
+
+        // If insert returned a new PK, update the row data
+        if (result?.[0]?.[pkField] != null) {
+          row.update({ [pkField]: result[0][pkField] });
+        }
+      } else {
+        // For updates, use QueryRef 28 with the specific parameters
+        // Get current content from editors
+        const sqlContent = this._getCurrentSqlContent();
+        const summaryContent = this._getCurrentSummaryContent();
+
+        log(Subsystems.CONDUIT, Status.INFO,
+          `[QueriesManager] Updating query (queryRef: ${queryRef}, queryId: ${pkValue})`);
+
+        // Build parameters for QueryRef 028 - Update System Query
+        // Per acuranzo_1119.lua, the required parameters are:
+        // QUERYID, QUERYCODE, QUERYNAME, QUERYSUMMARY, QUERYTYPE, QUERYREF, QUERYDIALECT, QUERYSTATUS, USERID
+        const params = {
+          INTEGER: {
+            QUERYID: pkValue,
+            QUERYTYPE: rowData.query_type_a28 ?? 1,
+            QUERYDIALECT: rowData.query_dialect_a30 ?? 1,
+            QUERYSTATUS: rowData.query_status_a27 ?? 1,
+            USERID: this.app?.user?.id ?? 0,
+            // QUERYREF is INTEGER - parse from string (e.g., "028" → 28)
+            QUERYREF: parseInt(rowData.query_ref, 10) || 0,
+          },
+          STRING: {
+            QUERYCODE: sqlContent || rowData.code || '',
+            QUERYNAME: rowData.name || '',
+            QUERYSUMMARY: summaryContent || rowData.summary || '',
+          },
+        };
+
+        result = await authQuery(this.app.api, queryRef, params);
       }
+
+      // Mark all as clean after successful save
+      this._markAllClean();
 
       // Exit edit mode after successful save
       await this._exitEditMode('save');
 
       toast.success('Changes Saved', {
-        description: `Row ${isInsert ? 'inserted' : 'updated'} successfully`,
+        description: `Query ${isInsert ? 'inserted' : 'updated'} successfully`,
         duration: 3000,
       });
 
       log(Subsystems.MANAGER, Status.INFO,
-        `${isInsert ? 'Inserted' : 'Updated'} row (PK: ${pkValue ?? 'new'})`);
+        `${isInsert ? 'Inserted' : 'Updated'} query (PK: ${pkValue ?? 'new'})`);
     } catch (error) {
       toast.error('Save Failed', {
         serverError: error.serverError,
@@ -1378,33 +1639,26 @@ export default class QueriesManager {
 
   async handleNavCancel() {
     log(Subsystems.MANAGER, Status.INFO, 'Navigator: Cancel');
-    if (!this.table) return;
 
-    // Tabulator 6 row components do not expose row.isEdited().
-    // Derive the edited-row set from edited cells instead.
-    const editedCells = typeof this.table.getEditedCells === 'function'
-      ? this.table.getEditedCells()
-      : [];
-    const editedRows = [...new Set(editedCells.map(cell => cell.getRow()))];
-
-    if (editedRows.length === 0) {
+    // Check if there are any changes to cancel
+    if (!this._isAnyDirty()) {
       // Just exit edit mode if no edits
       await this._exitEditMode('cancel');
       return;
     }
 
-    // Revert all changes using Tabulator's undo
-    this.table.undo();
+    // Revert all changes (Tabulator + external content)
+    await this._revertAllChanges();
 
     // Exit edit mode
     await this._exitEditMode('cancel');
 
     toast.info('Changes Cancelled', {
-      description: `${editedRows.length} row(s) reverted`,
+      description: 'All changes have been reverted',
       duration: 3000,
     });
 
-    log(Subsystems.MANAGER, Status.INFO, 'Cancelled changes and reverted edits');
+    log(Subsystems.MANAGER, Status.INFO, 'Cancelled changes and reverted all edits');
   }
 
   async handleNavDelete() {
@@ -2672,6 +2926,13 @@ export default class QueriesManager {
       void this._enterEditMode(row);
     });
 
+    // ── Cell edit tracking for dirty state ───────────────────────────
+    // Track when cells are edited to enable Save button
+    this.table.on("cellEdited", (cell) => {
+      // Mark table as dirty when a cell is edited
+      this._setDirty('table', true);
+    });
+
     // ── Selection tracking ───────────────────────────────────────────
     // Update selector indicator when rows are selected/deselected.
     // Also persist the selected row's primary key to localStorage.
@@ -2933,6 +3194,11 @@ export default class QueriesManager {
         // Update current query with full details
         this.currentQuery = fullQuery;
 
+        // Capture original data for change tracking (only if not currently editing)
+        if (!this._isEditing) {
+          this._captureOriginalData(fullQuery);
+        }
+
         // Get content from API response - using correct field names from QueryRef 27
         const sqlContent = fullQuery.code || fullQuery.query_text || fullQuery.sql || '';
         const summaryContent = fullQuery.summary || fullQuery.markdown || '';
@@ -3113,6 +3379,9 @@ export default class QueriesManager {
           EditorView.updateListener.of((update) => {
             if (update.docChanged) {
               this.updateToolbarState();
+              // Track dirty state for SQL content
+              const isDirty = this._checkSqlDirty();
+              this._setDirty('sql', isDirty);
             }
           }),
         ],
@@ -3196,6 +3465,13 @@ export default class QueriesManager {
             '.cm-scroller': { overflow: 'auto' },
             '.cm-content': { fontFamily: 'var(--font-mono, monospace)' },
           }),
+          EditorView.updateListener.of((update) => {
+            if (update.docChanged) {
+              // Track dirty state for Summary content
+              const isDirty = this._checkSummaryDirty();
+              this._setDirty('summary', isDirty);
+            }
+          }),
         ],
       });
 
@@ -3270,7 +3546,9 @@ export default class QueriesManager {
           navigationBar: true,
           statusBar: true,
           onChange: (updatedContent, previousContent, { contentErrors, patchResult }) => {
-            // Optionally handle changes
+            // Track dirty state for Collection content
+            const isDirty = this._checkCollectionDirty();
+            this._setDirty('collection', isDirty);
           },
         },
       });

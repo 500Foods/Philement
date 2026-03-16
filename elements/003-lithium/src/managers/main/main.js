@@ -7,7 +7,7 @@
  *
  * Sidebar features:
  *   - Gradient header matching login panel
- *   - Scrollable menu
+ *   - Scrollable menu with collapsible groups
  *   - Icon-only footer with collapse/expand button
  *   - Resizable width (220px-400px) with splitter
  *   - Width persisted to localStorage
@@ -22,12 +22,14 @@ import { eventBus, Events } from '../../core/event-bus.js';
 import { getClaims } from '../../core/jwt.js';
 import { getPermittedManagers, canAccessManager } from '../../core/permissions.js';
 import { setIcon, processIcons } from '../../core/icons.js';
+import { getMenu, buildManagerIconsRegistry, clearMenuCache } from '../../shared/menu.js';
 import './main.css';
 
 // localStorage keys for sidebar state
 const SIDEBAR_WIDTH_KEY = 'lithium_sidebar_width';
 const SIDEBAR_COLLAPSED_KEY = 'lithium_sidebar_collapsed';
 const LAST_MANAGER_KEY = 'lithium_last_manager';
+const COLLAPSED_GROUPS_KEY = 'lithium_collapsed_groups';
 
 // Sidebar constraints
 const MIN_SIDEBAR_WIDTH = 220;
@@ -49,7 +51,7 @@ const STEP_Y = ICON_H + ICON_GAP;   // 37px — vertical step
  * merge seamlessly into the same visually connected button strip — no breaks.
  *
  * Buttons are inserted directly into the group via insertBefore() — the
- * slot-header-extras / slot-footer-*-extras divs are kept as HTML markers
+ * slot-header-extras / slot-footer-*-tras divs are kept as HTML markers
  * only and are NOT used as the injection target (display:contents divs can
  * hide injected content in some browsers).
  *
@@ -136,6 +138,10 @@ export default class MainManager {
     this._arrowRotation = 0;
     this._isAnimating = false;
     
+    // Menu data
+    this.menuData = null;
+    this.collapsedGroups = new Set();
+    
     // Bind event handlers
     this.handleKeyDown = this.handleKeyDown.bind(this);
     this.handleGlobalKeyDown = this.handleGlobalKeyDown.bind(this);
@@ -146,20 +152,78 @@ export default class MainManager {
     this.handleSplitterTouchMove = this.handleSplitterTouchMove.bind(this);
     this.handleSplitterTouchEnd = this.handleSplitterTouchEnd.bind(this);
 
-    // Manager registry with icons (for sidebar menu + slot headers)
-    this.managerIcons = {
-      1: { icon: 'fa-palette', name: 'Style Manager' },
-      2: { icon: 'fa-user-cog', name: 'Profile Manager' },
-      3: { icon: 'fa-chart-line', name: 'Dashboard' },
-      4: { icon: 'fa-list', name: 'Lookups' },
-      5: { icon: 'fa-search', name: 'Queries' },
-    };
+    // Manager registry with icons (populated dynamically from menu data)
+    this.managerIcons = {};
 
     // Utility manager registry with icons
     this.utilityManagerIcons = {
       'session-log': { icon: 'fa-scroll', name: 'Session Log' },
       'user-profile': { icon: 'fa-user-cog', name: 'User Profile' },
     };
+    
+    // Load collapsed groups from localStorage
+    this._loadCollapsedGroups();
+  }
+
+  /**
+   * Load collapsed group states from localStorage
+   */
+  _loadCollapsedGroups() {
+    try {
+      const stored = localStorage.getItem(COLLAPSED_GROUPS_KEY);
+      if (stored) {
+        const groupIds = JSON.parse(stored);
+        this.collapsedGroups = new Set(groupIds);
+      }
+    } catch (e) {
+      this.collapsedGroups = new Set();
+    }
+  }
+
+  /**
+   * Save collapsed group states to localStorage
+   */
+  _saveCollapsedGroups() {
+    try {
+      localStorage.setItem(COLLAPSED_GROUPS_KEY, JSON.stringify([...this.collapsedGroups]));
+    } catch (e) {
+      // Non-fatal
+    }
+  }
+
+  /**
+   * Toggle a group's collapsed state
+   * @param {number} groupId - The group ID
+   */
+  _toggleGroup(groupId) {
+    if (this.collapsedGroups.has(groupId)) {
+      this.collapsedGroups.delete(groupId);
+    } else {
+      this.collapsedGroups.add(groupId);
+    }
+    this._saveCollapsedGroups();
+    this._updateGroupVisibility(groupId);
+  }
+
+  /**
+   * Update a group's visibility in the DOM
+   * @param {number} groupId - The group ID
+   */
+  _updateGroupVisibility(groupId) {
+    const groupEl = this.elements.sidebarMenu?.querySelector(`[data-group-id="${groupId}"]`);
+    if (!groupEl) return;
+
+    const itemsContainer = groupEl.querySelector('.menu-group-items');
+    const toggleIcon = groupEl.querySelector('.group-toggle-icon');
+    const isCollapsed = this.collapsedGroups.has(groupId);
+
+    if (itemsContainer) {
+      itemsContainer.classList.toggle('collapsed', isCollapsed);
+    }
+    if (toggleIcon) {
+      toggleIcon.style.transform = isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
+    }
+    groupEl.classList.toggle('is-collapsed', isCollapsed);
   }
 
   /**
@@ -346,6 +410,10 @@ export default class MainManager {
       this.setupGlobalKeyboardShortcuts();
       this.setupSplitter();
       this.loadUserInfo();
+      
+      // Fetch menu data before building sidebar
+      await this.loadMenuData();
+      
       this.buildSidebar();
       this.loadSidebarState();
       
@@ -366,6 +434,39 @@ export default class MainManager {
       await this._loadInitialManager();
     } catch (error) {
       console.error('[MainManager] Initialization error:', error);
+    }
+  }
+
+  /**
+   * Load menu data from server
+   */
+  async loadMenuData() {
+    try {
+      this.menuData = await getMenu(this.app.api);
+      
+      // Build manager icons registry from menu data
+      this.managerIcons = buildManagerIconsRegistry(this.menuData);
+      
+      // Update permitted managers from menu data
+      const menuManagerIds = Object.keys(this.managerIcons).map(id => parseInt(id, 10));
+      
+      // Filter to only include managers that are in the menu and permitted
+      this.permittedManagers = this.permittedManagers.filter(id => menuManagerIds.includes(id));
+      
+      // If no permitted managers from permission system, use all menu managers
+      if (this.permittedManagers.length === 0) {
+        this.permittedManagers = menuManagerIds;
+      }
+    } catch (error) {
+      console.error('[MainManager] Failed to load menu data:', error);
+      // Fall back to static manager icons
+      this.managerIcons = {
+        1: { icon: 'fa-palette', name: 'Style Manager' },
+        2: { icon: 'fa-user-cog', name: 'Profile Manager' },
+        3: { icon: 'fa-chart-line', name: 'Dashboard' },
+        4: { icon: 'fa-list', name: 'Lookups' },
+        5: { icon: 'fa-search', name: 'Queries' },
+      };
     }
   }
 
@@ -785,11 +886,16 @@ export default class MainManager {
         // Mark animation complete after stage 2 finishes
         this._stageTimer = setTimeout(() => {
           this._isAnimating = false;
+          // Collapse all groups when sidebar is collapsed
+          this._collapseAllGroups();
         }, halfDur);
       }, halfDur);
 
     } else {
       /* ---- EXPANDING ---- */
+      
+      // Expand all groups when sidebar expands
+      this._expandAllGroups();
 
       // Stage 1: collapse vertically back to stack, full rounding
       iconGroup.classList.add('stacking');
@@ -837,6 +943,43 @@ export default class MainManager {
     }
 
     this.saveSidebarState();
+  }
+
+  /**
+   * Collapse all groups (for sidebar collapsed mode)
+   */
+  _collapseAllGroups() {
+    if (!this.elements.sidebarMenu) return;
+    
+    this.elements.sidebarMenu.querySelectorAll('.menu-group-items').forEach(el => {
+      el.classList.add('collapsed');
+    });
+    this.elements.sidebarMenu.querySelectorAll('.group-toggle-icon').forEach(el => {
+      el.style.transform = 'rotate(-90deg)';
+    });
+    this.elements.sidebarMenu.querySelectorAll('.menu-group').forEach(el => {
+      el.classList.add('is-collapsed');
+    });
+  }
+
+  /**
+   * Expand all groups (for sidebar expanded mode)
+   */
+  _expandAllGroups() {
+    if (!this.elements.sidebarMenu) return;
+    
+    this.elements.sidebarMenu.querySelectorAll('.menu-group-items').forEach(el => {
+      const groupId = parseInt(el.closest('.menu-group')?.dataset.groupId, 10);
+      el.classList.toggle('collapsed', this.collapsedGroups.has(groupId));
+    });
+    this.elements.sidebarMenu.querySelectorAll('.group-toggle-icon').forEach(el => {
+      const groupId = parseInt(el.closest('.menu-group')?.dataset.groupId, 10);
+      el.style.transform = this.collapsedGroups.has(groupId) ? 'rotate(-90deg)' : 'rotate(0deg)';
+    });
+    this.elements.sidebarMenu.querySelectorAll('.menu-group').forEach(el => {
+      const groupId = parseInt(el.dataset.groupId, 10);
+      el.classList.toggle('is-collapsed', this.collapsedGroups.has(groupId));
+    });
   }
 
   /**
@@ -904,6 +1047,8 @@ export default class MainManager {
               arrowEl.style.transform = 'rotate(180deg)';
             }
           });
+          // Collapse all groups in the menu
+          this._collapseAllGroups();
         } else if (this.expandedWidth) {
           this.setSidebarWidth(this.expandedWidth);
         }
@@ -991,9 +1136,88 @@ export default class MainManager {
   }
 
   /**
-   * Build sidebar menu from permitted managers
+   * Build sidebar menu from menu data with collapsible groups
    */
   buildSidebar() {
+    const menu = this.elements.sidebarMenu;
+    if (!menu) return;
+
+    menu.innerHTML = '';
+
+    if (!this.menuData || this.menuData.length === 0) {
+      // Fallback to static menu if no menu data
+      this._buildStaticSidebar();
+      return;
+    }
+
+    // Build from menu data with groups
+    this.menuData.forEach((group) => {
+      // Filter items to only include permitted managers
+      const permittedItems = group.items.filter(item => 
+        this.permittedManagers.includes(item.managerId)
+      );
+      
+      if (permittedItems.length === 0) return;
+
+      const groupEl = document.createElement('div');
+      groupEl.className = 'menu-group';
+      groupEl.dataset.groupId = group.id;
+      
+      const isCollapsed = this.collapsedGroups.has(group.id);
+      if (isCollapsed) {
+        groupEl.classList.add('is-collapsed');
+      }
+
+      // Group header with toggle
+      const headerEl = document.createElement('div');
+      headerEl.className = 'menu-group-header';
+      headerEl.innerHTML = `
+        <span class="group-toggle-icon" style="transform: ${isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)'}">
+          <fa fa-chevron-down></fa>
+        </span>
+        <span class="group-name">${group.name}</span>
+      `;
+      headerEl.addEventListener('click', () => this._toggleGroup(group.id));
+
+      // Group items container
+      const itemsEl = document.createElement('div');
+      itemsEl.className = 'menu-group-items';
+      if (isCollapsed || this.isSidebarCollapsed) {
+        itemsEl.classList.add('collapsed');
+      }
+
+      // Build menu items
+      permittedItems.forEach((item) => {
+        const button = document.createElement('div');
+        button.className = 'menu-item';
+        button.dataset.managerId = item.managerId;
+        button.innerHTML = `
+          <fa ${item.icon}></fa>
+          <span class="menu-item-name">${item.name}</span>
+          ${item.count > 0 ? `<span class="menu-item-count">${item.count}</span>` : ''}
+        `;
+
+        button.addEventListener('click', () => {
+          this.loadManager(item.managerId);
+          this.closeMobileSidebar();
+        });
+
+        itemsEl.appendChild(button);
+      });
+
+      groupEl.appendChild(headerEl);
+      groupEl.appendChild(itemsEl);
+      menu.appendChild(groupEl);
+    });
+
+    // Process icons
+    processIcons(menu);
+  }
+
+  /**
+   * Build static sidebar as fallback when menu data is unavailable
+   */
+  _buildStaticSidebar() {
     const menu = this.elements.sidebarMenu;
     if (!menu) return;
 
@@ -1019,6 +1243,8 @@ export default class MainManager {
 
       menu.appendChild(button);
     });
+
+    processIcons(menu);
   }
 
   /**

@@ -13,7 +13,7 @@ The Main Manager (`src/managers/main/main.js`) handles the main application layo
 | **Type** | Special Menu Manager (wrapper for all authenticated views) |
 | **Template** | `/src/managers/main/main.html` |
 | **Styles** | `/src/managers/main/main.css` |
-| **Key Dependencies** | Event Bus, JWT, Permissions, Icons |
+| **Key Dependencies** | Event Bus, JWT, Permissions, Icons, Menu Service |
 
 ---
 
@@ -25,12 +25,12 @@ The Main Manager (`src/managers/main/main.js`) handles the main application layo
 │  ┌─────────────────────────────────────────────────────┐  │
 │  │ Header (gradient, logo)                              │  │
 │  ├─────────────────────────────────────────────────────┤  │
-│  │ Menu Items (from getPermittedManagers())             │  │
-│  │  - Style Manager (ID: 1)                            │  │
-│  │  - Profile Manager (ID: 2)                          │  │
-│  │  - Dashboard (ID: 3) [placeholder]                  │  │
-│  │  - Lookups (ID: 4) [placeholder]                   │  │
-│  │  - Queries (ID: 5) [placeholder]                    │  │
+│  │ Menu Groups (from QueryRef 046, collapsible)        │  │
+│  │  ▼ Administration                                   │  │
+│  │    - Style Manager (ID: 1)               [12]       │  │
+│  │    - Profile Manager (ID: 2)                        │  │
+│  │  ▶ Data Management                                  │  │
+│  │  ▶ Analytics                                        │  │
 │  ├─────────────────────────────────────────────────────┤  │
 │  │ Footer (utility buttons)                             │  │
 │  │  - Theme, Profile, Logs, Logout                      │  │
@@ -46,6 +46,100 @@ The Main Manager (`src/managers/main/main.js`) handles the main application layo
 │  └─────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+---
+
+## Dynamic Menu System
+
+The Main Manager now retrieves menu data dynamically from the server using **QueryRef 046** after JWT authentication. This provides:
+
+- **Grouped menu items** — One level deep grouping with collapsible sections
+- **Icons from database** — Each menu item's icon is stored in the `collection` field
+- **Count badges** — Optional count values displayed on the right side of menu items
+- **Persistent collapse state** — Group collapse states are saved to localStorage
+
+### Menu Data Structure (QueryRef 046)
+
+```javascript
+// Response from QueryRef 046 - Get Main Menu
+[
+  {
+    grpname: "Administration",    // Group name
+    grpnum: 1,                     // Group ID
+    modname: "Style Manager",      // Module/manager name
+    modnum: 1,                     // Manager ID
+    grpsort: 10,                   // Group sort order
+    modsort: 10,                   // Module sort order
+    entries: 12,                   // Count badge (0 = hidden)
+    collection: '{"icon":"fa-palette","iconSet":"solid"}'
+  },
+  // ... more items
+]
+```
+
+### Menu Service (`src/shared/menu.js`)
+
+The Menu Service handles fetching and caching:
+
+```javascript
+import { getMenu, buildManagerIconsRegistry } from '../../shared/menu.js';
+
+// Fetch menu (uses cache if available)
+const menuData = await getMenu(api);
+
+// Build manager icons registry
+const icons = buildManagerIconsRegistry(menuData);
+// Result: { 1: {icon: 'fa-palette', name: 'Style Manager'}, ... }
+```
+
+| Function | Purpose |
+|----------|---------|
+| `getMenu(api, options)` | Fetch menu data (cached) |
+| `fetchMenu(api)` | Force fetch from server |
+| `clearMenuCache()` | Clear cached menu data |
+| `buildManagerIconsRegistry(menuData)` | Build icon registry for managers |
+| `getManagerIdsFromMenu(menuData)` | Extract manager IDs |
+
+### Caching
+
+- **In-memory cache** — Persists during session
+- **localStorage cache** — 5-minute TTL for persistence across reloads
+- **Automatic refresh** — On login and when cache expires
+
+---
+
+## Collapsible Groups
+
+Menu groups are collapsible with the following behavior:
+
+| State | Behavior |
+|-------|----------|
+| **Expanded (default)** | Shows group header and all menu items |
+| **Collapsed** | Shows group header only, items hidden |
+| **Sidebar Collapsed** | Groups hidden, flat list of icons only |
+
+### Group Persistence
+
+Group collapse states are saved to `localStorage` key `lithium_collapsed_groups` and restored on page load.
+
+---
+
+## Count Badges
+
+Menu items can display count badges when `entries > 0`:
+
+```css
+/* Badge appears on right side of menu item */
+.menu-item-count {
+  background: var(--accent-secondary);
+  color: white;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  border-radius: var(--border-radius-sm);
+}
+```
+
+Badges are hidden when the sidebar is collapsed.
 
 ---
 
@@ -89,21 +183,77 @@ export default class MainManager {
     this.currentManagerId = null;
     this.isSidebarCollapsed = false;
     this.isResizing = false;
+    
+    // Menu data (loaded from QueryRef 046)
+    this.menuData = null;
+    this.collapsedGroups = new Set();
+    
+    // Manager icons registry (populated dynamically)
+    this.managerIcons = {};
   }
 }
 ```
 
+### Initialization Flow
+
+```
+┌─────────────────┐
+│   constructor   │
+│  (load collapsed│
+│   groups state) │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│   init()        │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐     ┌─────────────────┐
+│   render()      │────▶│ loadMenuData()  │◀── QueryRef 046
+└────────┬────────┘     └────────┬────────┘
+         │                       │
+         │              ┌────────▼────────┐
+         │              │ Build icons     │
+         │              │ registry from   │
+         │              │ menu data       │
+         │              └────────┬────────┘
+         │                       │
+         ▼                       ▼
+┌─────────────────┐     ┌─────────────────┐
+│ buildSidebar()  │◀────│ Filter permitted│
+│ (dynamic groups)│      │ managers        │
+└────────┬────────┘     └─────────────────┘
+         │
+         ▼
+┌─────────────────┐
+│ loadSidebarState│
+│ (apply collapse │
+│  state, groups) │
+└─────────────────┘
+```
+
 ### Manager Icons Registry
 
+The registry is now built dynamically from menu data:
+
 ```javascript
+// Before: Static registry
 this.managerIcons = {
   1: { icon: 'fa-palette', name: 'Style Manager' },
-  2: { icon: 'fa-user-cog', name: 'Profile Manager' },
-  3: { icon: 'fa-chart-line', name: 'Dashboard' },
-  4: { icon: 'fa-list', name: 'Lookups' },
-  5: { icon: 'fa-search', name: 'Queries' },
+  // ...
 };
 
+// After: Populated from QueryRef 046 response
+this.managerIcons = buildManagerIconsRegistry(this.menuData);
+// Result: { 1: {icon: 'fa-palette', name: 'Style Manager'}, ... }
+```
+
+### Utility Manager Icons
+
+Utility managers (footer buttons) remain static:
+
+```javascript
 this.utilityManagerIcons = {
   'session-log': { icon: 'fa-scroll', name: 'Session Log' },
   'user-profile': { icon: 'fa-user-cog', name: 'User Profile' },
@@ -114,6 +264,32 @@ this.utilityManagerIcons = {
 
 ## Sidebar System
 
+### Menu DOM Structure
+
+The sidebar menu has a hierarchical structure:
+
+```html
+<nav class="sidebar-menu" id="sidebar-menu">
+  <div class="menu-group" data-group-id="1">
+    <div class="menu-group-header">
+      <span class="group-toggle-icon">
+        <fa fa-chevron-down></fa>
+      </span>
+      <span class="group-name">Administration</span>
+    </div>
+    <div class="menu-group-items">
+      <div class="menu-item" data-manager-id="1">
+        <fa fa-palette></fa>
+        <span class="menu-item-name">Style Manager</span>
+        <span class="menu-item-count">12</span>
+      </div>
+      <!-- ... more items -->
+    </div>
+  </div>
+  <!-- ... more groups -->
+</nav>
+```
+
 ### Collapse Animation (Two-Stage)
 
 **Stage 1 - Collapse:**
@@ -121,21 +297,32 @@ this.utilityManagerIcons = {
 1. Sidebar narrows
 2. Icons stack horizontally behind arrow
 3. Arrow rotates left → up
+4. Menu groups collapse (hide items, show headers)
 
 **Stage 2 - Vertical Stack:**
 
 1. Icons collapse vertically
 2. Arrow rotates up → right
+3. Menu groups headers are hidden (flat icon list)
 
 **Stage 1 - Expand:**
 
 1. Icons collapse vertically back to stack
 2. Arrow rotates right → down
+3. Menu groups are restored to saved collapse state
 
 **Stage 2 - Horizontal Fan:**
 
 1. Icons fan out horizontally
 2. Arrow rotates down → left
+3. Full menu with groups visible
+
+### Menu Collapse Behavior
+
+| Sidebar State | Group Headers | Menu Items | Count Badges |
+|---------------|---------------|------------|--------------|
+| **Expanded** | Visible, clickable | Per group collapse state | Visible |
+| **Collapsed** | Hidden | Flat list of icons only | Hidden |
 
 ### Splitter
 
@@ -150,6 +337,7 @@ On screens ≤ 768px:
 - Sidebar becomes overlay (slide-in from left)
 - Overlay backdrop closes on click
 - Reset to expanded state (no collapse)
+- Menu always shows full structure with groups expanded
 
 ---
 
@@ -221,6 +409,14 @@ mainManager.addFooterButtons(slotId, 'left', [
 |-----|-------|-------------|
 | `lithium_sidebar_width` | Number | Current sidebar width in pixels |
 | `lithium_sidebar_collapsed` | Boolean | Whether sidebar is collapsed |
+| `lithium_last_manager` | String | Last used manager key (e.g., 'manager:1' or 'utility:user-profile') |
+| `lithium_collapsed_groups` | Array | IDs of collapsed menu groups |
+| `lithium_menu_data` | Object | Cached menu data from QueryRef 046 |
+| `lithium_menu_cache_time` | Number | Timestamp of menu cache |
+
+### Menu Cache TTL
+
+Menu data is cached for **5 minutes** to reduce server requests while ensuring reasonably fresh data.
 
 ---
 
@@ -257,6 +453,41 @@ See [LITHIUM-TST.md](LITHIUM-TST.md) for testing patterns.
 - Mobile breakpoint behavior
 - Slot creation and management
 - Logout panel flow
+- **Menu groups** - Collapse/expand functionality
+- **Menu data** - Fetch from QueryRef 046, caching
+- **Count badges** - Display and hide in collapsed mode
+- **Group persistence** - Save/restore collapse state
+
+### Menu Service Testing
+
+```javascript
+// Test menu data fetching
+const menuData = await fetchMenu(api);
+expect(menuData).toBeInstanceOf(Array);
+expect(menuData[0]).toHaveProperty('items');
+
+// Test icon registry building
+const registry = buildManagerIconsRegistry(menuData);
+expect(registry[1]).toHaveProperty('icon');
+expect(registry[1]).toHaveProperty('name');
+
+// Test caching
+const cached = getCachedMenuData();
+expect(cached).toEqual(menuData);
+```
+
+### Sidebar Menu Testing
+
+```javascript
+// Test group collapse/expand
+mainManager._toggleGroup(1);
+expect(mainManager.collapsedGroups.has(1)).toBe(true);
+
+// Test collapsed state persistence
+mainManager._saveCollapsedGroups();
+const stored = localStorage.getItem('lithium_collapsed_groups');
+expect(JSON.parse(stored)).toContain(1);
+```
 
 ---
 
@@ -264,4 +495,15 @@ See [LITHIUM-TST.md](LITHIUM-TST.md) for testing patterns.
 
 - [LITHIUM-MGR.md](LITHIUM-MGR.md) - Manager overview
 - [LITHIUM-MGR-LOGIN.md](LITHIUM-MGR-LOGIN.md) - Login Manager
+- [LITHIUM-MGR-QUERY.md](LITHIUM-MGR-QUERY.md) - Query Manager
 - [LITHIUM-DEV.md](LITHIUM-DEV.md) - Development setup
+- [LITHIUM-JWT.md](LITHIUM-JWT.md) - JWT authentication
+
+## Files Changed
+
+| File | Description |
+|------|-------------|
+| `src/shared/menu.js` | New - Menu service for fetching and caching menu data |
+| `src/managers/main/main.js` | Updated - Dynamic menu building with collapsible groups |
+| `src/managers/main/main.css` | Updated - Styles for groups, badges, collapsed state |
+| `docs/Li/LITHIUM-MGR-MAIN.md` | Updated - Documentation for dynamic menu system |
