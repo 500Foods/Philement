@@ -5,6 +5,7 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 1.0.1 - 2026-03-16 - Changed icons to use <fa> conveintion
 -- 1.0.0 - 2025-12-20 - Initial creation
 
 return function(engine, design_name, schema_name, cfg)
@@ -78,19 +79,19 @@ table.insert(queries,{sql=[[
             INSERT INTO ${SCHEMA}${TABLE}
                 (lookup_id, key_idx, status_a1, value_txt, value_int, sort_seq, code, summary, collection, ${COMMON_FIELDS})
             VALUES
-                (${LOOKUP_ID},  0, 1, 'Main Menu',          0, 0, '', '', ${JIS}[==[{"Index": -2, "Icon":"<i class='fa fa-fw fa-xl fa-circle'></i>"}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID},  1, 1, 'Login',              0, 0, '', '', ${JIS}[==[{"Index": -1, "Icon":"<i class='fa fa-fw fa-xl fa-circle'></i>"}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID},  2, 1, 'Session Logs',       0, 0, '', '', ${JIS}[==[{"Index":  0, "Icon":"<i class='fa fa-fw fa-xl fa-receipt'></i>"}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID},  3, 1, 'Version History',    0, 0, '', '', ${JIS}[==[{"Index":  1, "Icon":"<i class='fa fa-fw fa-xl fa-circle'></i>"}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID},  4, 1, 'Queries',            2, 1, '', '', ${JIS}[==[{"Index":  2, "Icon":"<i class='fa fa-fw fa-xl fa-clipboard-question'></i>"}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID},  5, 1, 'Lookups',            2, 2, '', '', ${JIS}[==[{"Index":  3, "Icon":"<i class='fa fa-fw fa-xl fa-clipboard-list'></i>"}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID},  6, 1, 'Chats',              3, 1, '', '', ${JIS}[==[{"Index":  4, "Icon":"<i class='fa fa-fw fa-xl fa-robot'></i>"}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID},  7, 1, 'AI Auditor',         3, 2, '', '', ${JIS}[==[{"Index":  5, "Icon":"<i class='fa fa-fw fa-xl fa-scale-balanced'></i>"}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID},  8, 1, 'Dashboard',          1, 1, '', '', ${JIS}[==[{"Index":  6, "Icon":"<i class='fa fa-fw fa-xl fa-bullseye-arrow'></i>"}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID},  9, 1, 'Document Library',   1, 2, '', '', ${JIS}[==[{"Index":  7, "Icon":"<i class='fa fa-fw fa-xl fa-books'></i>"}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID}, 10, 1, 'Media Library',      1, 3, '', '', ${JIS}[==[{"Index":  8, "Icon":"<i class='fa fa-fw fa-xl fa-photo-film-music'></i>"}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID}, 11, 1, 'Diagram Library',    1, 4, '', '', ${JIS}[==[{"Index": 10, "Icon":"<i class='fa fa-fw fa-xl fa-shapes'></i>"}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID}, 12, 1, 'Reports',            2, 5, '', '', ${JIS}[==[{"Index":  9, "Icon":"<i class='fa fa-fw fa-xl fa-clipboard-check'></i>"}]==]${JIE}, ${COMMON_VALUES});
+                (${LOOKUP_ID},  0, 1, 'Main Menu',          0, 0, '', '', ${JIS}[==[{"Index": -2, "Icon":"<fa fa-fw fa-xl fa-circle>"}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID},  1, 1, 'Login',              0, 0, '', '', ${JIS}[==[{"Index": -1, "Icon":"<fa fa-fw fa-xl fa-circle>"}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID},  2, 1, 'Session Logs',       0, 0, '', '', ${JIS}[==[{"Index":  0, "Icon":"<fa fa-fw fa-xl fa-receipt>"}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID},  3, 1, 'Version History',    0, 0, '', '', ${JIS}[==[{"Index":  1, "Icon":"<fa fa-fw fa-xl fa-circle>"}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID},  4, 1, 'Queries',            2, 1, '', '', ${JIS}[==[{"Index":  2, "Icon":"<fa fa-fw fa-xl fa-clipboard-question>"}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID},  5, 1, 'Lookups',            2, 2, '', '', ${JIS}[==[{"Index":  3, "Icon":"<fa fa-fw fa-xl fa-clipboard-list>"}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID},  6, 1, 'Chats',              3, 1, '', '', ${JIS}[==[{"Index":  4, "Icon":"<fa fa-fw fa-xl fa-robot>"}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID},  7, 1, 'AI Auditor',         3, 2, '', '', ${JIS}[==[{"Index":  5, "Icon":"<fa fa-fw fa-xl fa-scale-balanced>"}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID},  8, 1, 'Dashboard',          1, 1, '', '', ${JIS}[==[{"Index":  6, "Icon":"<fa fa-fw fa-xl fa-bullseye-arrow>"}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID},  9, 1, 'Document Library',   1, 2, '', '', ${JIS}[==[{"Index":  7, "Icon":"<fa fa-fw fa-xl fa-books>"}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 10, 1, 'Media Library',      1, 3, '', '', ${JIS}[==[{"Index":  8, "Icon":"<fa fa-fw fa-xl fa-photo-film-music>"}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 11, 1, 'Diagram Library',    1, 4, '', '', ${JIS}[==[{"Index": 10, "Icon":"<fa fa-fw fa-xl fa-shapes>"}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 12, 1, 'Reports',            2, 5, '', '', ${JIS}[==[{"Index":  9, "Icon":"<fa fa-fw fa-xl fa-clipboard-check>"}]==]${JIE}, ${COMMON_VALUES});
 
             ${SUBQUERY_DELIMITER}
 

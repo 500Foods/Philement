@@ -60,22 +60,49 @@ The Main Manager now retrieves menu data dynamically from the server using **Que
 
 ### Menu Data Structure (QueryRef 046)
 
+The actual response from QueryRef 046 uses the `acuranzo_schema_lookup` table structure:
+
 ```javascript
 // Response from QueryRef 046 - Get Main Menu
 [
   {
-    grpname: "Administration",    // Group name
-    grpnum: 1,                     // Group ID
-    modname: "Style Manager",      // Module/manager name
-    modnum: 1,                     // Manager ID
-    grpsort: 10,                   // Group sort order
-    modsort: 10,                   // Module sort order
-    entries: 12,                   // Count badge (0 = hidden)
-    collection: '{"icon":"fa-palette","iconSet":"solid"}'
+    grpname: "System",            // Group name
+    grpnum: 0,                     // Group ID (value_int)
+    modname: "Session Logs",       // Module/manager name
+    modnum: 2,                     // Manager ID (key_idx)
+    grpsort: 0,                    // Group sort order
+    modsort: 0,                    // Module sort order
+    entries: 0,                    // Count badge (0 = hidden)
+    collection: '{"Icon":"fa-receipt","Index":0}'  // JSON with icon and visibility
   },
   // ... more items
 ]
 ```
+
+**Key fields:**
+
+- `key_idx` → Manager ID (modnum): 2-12 for visible managers
+- `value_int` → Group ID (grpnum): Groups items together
+- `collection` → JSON string with `Icon` (Font Awesome class) and `Index` (visibility)
+- `entries` → Count badge value (displayed if > 0)
+
+**Visibility filtering:** Items with negative `Index` values are hidden from the menu (e.g., Main Menu=-2, Login=-1).
+
+**Manager ID Mapping:**
+
+| ID | Manager | Group |
+|----|---------|-------|
+| 2 | Session Logs | System (0) |
+| 3 | Version History | System (0) |
+| 4 | Queries | Data & Queries (2) |
+| 5 | Lookups | Data & Queries (2) |
+| 6 | Chats | AI (3) |
+| 7 | AI Auditor | AI (3) |
+| 8 | Dashboard | Content (1) |
+| 9 | Document Library | Content (1) |
+| 10 | Media Library | Content (1) |
+| 11 | Diagram Library | Content (1) |
+| 12 | Reports | Data & Queries (2) |
 
 ### Menu Service (`src/shared/menu.js`)
 
@@ -196,7 +223,7 @@ export default class MainManager {
 
 ### Initialization Flow
 
-```
+```diagram
 ┌─────────────────┐
 │   constructor   │
 │  (load collapsed│
@@ -501,9 +528,36 @@ expect(JSON.parse(stored)).toContain(1);
 
 ## Files Changed
 
+### New Files
+
 | File | Description |
 |------|-------------|
-| `src/shared/menu.js` | New - Menu service for fetching and caching menu data |
-| `src/managers/main/main.js` | Updated - Dynamic menu building with collapsible groups |
-| `src/managers/main/main.css` | Updated - Styles for groups, badges, collapsed state |
-| `docs/Li/LITHIUM-MGR-MAIN.md` | Updated - Documentation for dynamic menu system |
+| `src/shared/menu.js` | Menu service for fetching and caching menu data from QueryRef 046 |
+| `src/managers/session-logs/session-logs.js` | New manager - Session Logs (ID: 2) |
+| `src/managers/session-logs/session-logs.css` | Styles for Session Logs manager |
+| `src/managers/version-history/version-history.js` | New manager - Version History (ID: 3) |
+| `src/managers/version-history/version-history.css` | Styles for Version History manager |
+| `src/managers/dashboard/dashboard.js` | New manager - Dashboard (ID: 8) |
+| `src/managers/dashboard/dashboard.css` | Styles for Dashboard manager |
+| `src/managers/document-library/document-library.js` | New manager - Document Library (ID: 9) |
+| `src/managers/document-library/document-library.css` | Styles for Document Library manager |
+| `src/managers/media-library/media-library.js` | New manager - Media Library (ID: 10) |
+| `src/managers/media-library/media-library.css` | Styles for Media Library manager |
+| `src/managers/diagram-library/diagram-library.js` | New manager - Diagram Library (ID: 11) |
+| `src/managers/diagram-library/diagram-library.css` | Styles for Diagram Library manager |
+| `src/managers/reports/reports.js` | New manager - Reports (ID: 12) |
+| `src/managers/reports/reports.css` | Styles for Reports manager |
+| `src/managers/chats/chats.js` | New manager - Chats (ID: 6) |
+| `src/managers/chats/chats.css` | Styles for Chats manager |
+| `src/managers/ai-auditor/ai-auditor.js` | New manager - AI Auditor (ID: 7) |
+| `src/managers/ai-auditor/ai-auditor.css` | Styles for AI Auditor manager |
+
+### Updated Files
+
+| File | Description |
+|------|-------------|
+| `src/app.js` | Updated manager registry and imports for new manager IDs (2-12) |
+| `src/core/permissions.js` | Updated permitted managers list to include new IDs |
+| `src/managers/main/main.js` | Dynamic menu building with collapsible groups |
+| `src/managers/main/main.css` | Styles for groups, badges, collapsed state |
+| `docs/Li/LITHIUM-MGR-MAIN.md` | Documentation for dynamic menu system and manager list |

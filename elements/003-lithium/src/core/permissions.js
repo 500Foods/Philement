@@ -79,8 +79,10 @@ export function hasFeature(managerId, featureId, punchcard = null) {
 export function getPermittedManagers(punchcard = null) {
   // Fallback: return all default managers if no punchcard
   if (!punchcard) {
-    // Return default manager IDs (Profile Manager = 2 is a utility manager, not in menu)
-    return [1, 3, 4, 5];
+    // Return default manager IDs from QueryRef 046 (excluding hidden items with negative Index)
+    // Group 0: System (2, 3), Group 1: Content (8, 9, 10, 11), 
+    // Group 2: Data (4, 5, 12), Group 3: AI (6, 7)
+    return [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
   }
 
   return punchcard.managers || [];
@@ -114,7 +116,8 @@ export function parsePermissions(claims) {
   if (!claims || !claims.punchcard) {
     return {
       hasPunchcard: false,
-      managers: [1, 3, 4, 5], // Default menu managers (Profile Manager = 2 is utility, not in menu)
+      // Default manager IDs from QueryRef 046 (excluding hidden items with negative Index)
+      managers: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
       features: {},
     };
   }

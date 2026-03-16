@@ -223,12 +223,26 @@ class LithiumApp {
     this.deferredInstallPrompt = null;
 
     // Manager definitions — id -> name only (module loaded via _importManager)
+    // Manager IDs correspond to lookup key_idx values from QueryRef 046
     this.managerRegistry = {
-      1: { id: 1, name: 'Style Manager' },
-      2: { id: 2, name: 'Profile Manager' },
-      3: { id: 3, name: 'Dashboard' },
-      4: { id: 4, name: 'Lookups' },
-      5: { id: 5, name: 'Queries' },
+      // Group 0: System
+      2: { id: 2, name: 'Session Logs' },
+      3: { id: 3, name: 'Version History' },
+      
+      // Group 1: Content
+      8: { id: 8, name: 'Dashboard' },
+      9: { id: 9, name: 'Document Library' },
+      10: { id: 10, name: 'Media Library' },
+      11: { id: 11, name: 'Diagram Library' },
+      
+      // Group 2: Data & Queries
+      4: { id: 4, name: 'Queries' },
+      5: { id: 5, name: 'Lookups' },
+      12: { id: 12, name: 'Reports' },
+      
+      // Group 3: AI
+      6: { id: 6, name: 'Chats' },
+      7: { id: 7, name: 'AI Auditor' },
     };
 
     // Utility manager definitions — key -> name only (module loaded via _importUtilityManager)
@@ -906,11 +920,28 @@ class LithiumApp {
    */
   async _importManager(managerId) {
     switch (managerId) {
+      // Group 0: System
+      case 2: return import('./managers/session-logs/session-logs.js');
+      case 3: return import('./managers/version-history/version-history.js');
+      
+      // Group 1: Content
+      case 8: return import('./managers/dashboard/dashboard.js');
+      case 9: return import('./managers/document-library/document-library.js');
+      case 10: return import('./managers/media-library/media-library.js');
+      case 11: return import('./managers/diagram-library/diagram-library.js');
+      
+      // Group 2: Data & Queries
+      case 4: return import('./managers/queries/queries.js');
+      case 5: return import('./managers/lookups/lookups.js');
+      case 12: return import('./managers/reports/reports.js');
+      
+      // Group 3: AI
+      case 6: return import('./managers/chats/chats.js');
+      case 7: return import('./managers/ai-auditor/ai-auditor.js');
+      
+      // Legacy/deprecated IDs (for backward compatibility)
       case 1: return import('./managers/style-manager/style-manager.js');
-      case 2: return import('./managers/profile-manager/profile-manager.js');
-      case 3: return import('./managers/dashboard/dashboard.js');
-      case 4: return import('./managers/lookups/lookups.js');
-      case 5: return import('./managers/queries/queries.js');
+      
       default: throw new Error(`No import mapping for manager ID: ${managerId}`);
     }
   }
