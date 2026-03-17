@@ -1,299 +1,496 @@
-# Lithium Tabulator Component
+# LithiumTable Component
 
-This document describes the standard Tabulator component used throughout Lithium, including the integrated "Navigator" block and the JSON-driven column configuration system.
+This document describes the `LithiumTable` reusable component — a standardized Tabulator data grid with integrated Navigator control bar.
 
 ---
 
 ## Overview
 
-Tabulator is the primary data grid library used in Lithium. While powerful, it requires significant configuration to achieve a consistent and usable state across different managers. To address this, we are developing a standardized, reusable component that combines a Tabulator instance with a custom "Navigator" control bar.
+The `LithiumTable` component combines:
 
-This component will be modular, accepting parameters such as JSON data, event callbacks for updates, and configuration options.
+- **Tabulator** — Feature-rich data grid library
+- **Navigator** — Custom control bar with Control, Move, Manage, Search blocks
+- **JSON-driven configuration** — Column definitions from `config/tabulator/`
+- **Edit mode** — Inline editing with dirty state tracking
+- **Templates** — Save/load column configurations
+
+The component is modular, reusable across all managers, and provides consistent table behavior throughout Lithium.
 
 ---
 
-## Column Configuration System
+## Architecture
 
-Lithium uses a two-layer JSON configuration system to define how data is displayed in Tabulator tables. This eliminates hardcoded column definitions and allows reuse across dozens of tables.
+### File Structure
 
-### Layer 1: Column Types (`coltypes.json`)
-
-**File:** `config/tabulator/coltypes.json`
-
-Defines how each **data type** should be displayed and edited. A coltype controls:
-
-| Property | Purpose |
-|----------|---------|
-| `align` | Horizontal text alignment (`left`, `center`, `right`) |
-| `vertAlign` | Vertical alignment (`top`, `middle`, `bottom`) |
-| `formatter` | Tabulator formatter (e.g., `number`, `plaintext`, `tickCross`, `datetime`) |
-| `formatterParams` | Formatter configuration (thousands separator, date format, etc.) |
-| `editor` | Tabulator editor (e.g., `number`, `input`, `list`, `tickCross`) |
-| `editorParams` | Editor configuration (min/max values, autocomplete, etc.) |
-| `sorter` | Sort comparison function (`number`, `alphanum`, `date`, `boolean`) |
-| `blank` | Display value when cell is null/undefined/empty |
-| `zero` | Display value when cell is zero |
-| `bottomCalc` | Footer calculation (`sum`, `avg`, `count`, `min`, `max`, or `null`) |
-| `cssClass` | CSS class applied to cells of this type |
-| `width` / `minWidth` | Column sizing defaults |
-
-**Available coltypes:**
-
-| Coltype | Description | Align | Editor |
-|---------|-------------|-------|--------|
-| `integer` | Whole numbers (IDs, counts) | right | `number` |
-| `decimal` | Floating-point (prices, rates) | right | `number` |
-| `currency` | Monetary values with symbol | right | `number` |
-| `percent` | Percentage values (0–100) | right | `number` |
-| `string` | General text | left | `input` |
-| `text` | Long/multiline content | left | `textarea` |
-| `html` | Rich HTML content | left | `textarea` |
-| `boolean` | True/false toggle | center | `tickCross` |
-| `date` | Date only | center | `date` |
-| `datetime` | Date + time | center | `datetime-local` |
-| `time` | Time only | center | `time` |
-| `lookup` | Foreign key → lookup table | left | `list` |
-| `enum` | Fixed set of values | left | `list` |
-| `email` | Clickable mailto link | left | `input` |
-| `url` | Clickable hyperlink | left | `input` |
-| `image` | Thumbnail from URL | center | – |
-| `color` | Color swatch (hex) | center | `input` |
-| `progress` | Progress bar (0–100) | left | `number` |
-| `star` | Star rating (0–5) | center | `star` |
-| `rownum` | Auto-incrementing row number | right | – |
-| `json` | JSON object (truncated display) | left | `textarea` |
-
-### Layer 2: Table Definitions (`tabledef`)
-
-**Directory:** `config/tabulator/queries/` (one file per table/query)
-
-Defines how a specific query's result set maps to Tabulator columns. Each column references a coltype and adds query-specific settings:
-
-| Property | Purpose |
-|----------|---------|
-| `display` | Column header title |
-| `field` | JSON field name from API response |
-| `coltype` | Reference to coltype in `coltypes.json` |
-| `visible` | Whether column shows by default (column chooser can toggle) |
-| `sort` | Whether column is sortable |
-| `filter` | Whether column has a header filter |
-| `group` | Whether column can be used for row grouping |
-| `editable` | Whether column is editable (subject to table `readonly` and user permissions) |
-| `calculated` | Whether value is server-computed (always non-editable) |
-| `primaryKey` | Whether field is the primary key (used for API operations) |
-| `lookupRef` | For lookup columns: the lookup table reference (e.g., `a27`) |
-| `overrides` | Any coltype property can be overridden per-column |
-
-### Resolution Order
-
-When building a Tabulator column definition:
-
-1. Start with the **coltype** defaults from `coltypes.json`
-2. Apply **column-level overrides** from the tabledef
-3. Apply **runtime** overrides (Navigator size buttons, user preferences)
-
-### Example: How `query_ref` Resolves
-
-```pseudocoe
-coltypes.json → integer:
-  align: "right", formatter: "number", bottomCalc: "sum"
-
-query-manager.json → query_ref:
-  coltype: "integer", display: "Ref", visible: true
-  overrides: { width: 80, bottomCalc: "count" }
-
-Final Tabulator column:
-  title: "Ref", field: "query_ref", hozAlign: "right",
-  formatter: "number", width: 80, bottomCalc: "count"
+```structure
+src/core/
+├── lithium-table-base.js      # Core functionality (init, events, navigation)
+├── lithium-table-ops.js       # CRUD operations mixin
+├── lithium-table-ui.js        # Navigator UI and popups mixin
+├── lithium-table-main.js      # Combined LithiumTable class export
+└── lithium-table.css          # Component styles
 ```
 
-### JSON Schema Validation
+### Class Hierarchy
 
-Both file formats have corresponding JSON schemas:
+```javascript
+// lithium-table-main.js
+export class LithiumTable extends LithiumTableBase {
+  constructor(options) { super(options); }
+}
 
-- `config/tabulator/coltypes-schema.json` — validates `coltypes.json`
-- `config/tabulator/tabledef-schema.json` — validates each table definition
+// Apply mixins
+Object.assign(LithiumTable.prototype, LithiumTableOpsMixin, LithiumTableUIMixin);
+```
+
+**Mixins provide:**
+
+- **LithiumTableBase** — Initialization, config loading, Tabulator management, events, navigation
+- **LithiumTableOpsMixin** — Add, duplicate, edit, save, cancel, delete operations
+- **LithiumTableUIMixin** — Navigator UI, popups, column chooser, filter editors
+
+---
+
+## Usage
+
+### Basic Usage
+
+```javascript
+import { LithiumTable } from '../../core/lithium-table-main.js';
+
+const table = new LithiumTable({
+  // Required
+  container: document.getElementById('table-container'),
+  navigatorContainer: document.getElementById('nav-container'),
+  app: this.app,  // App instance for API calls
+
+  // Data source (one of)
+  queryRef: 25,                    // QueryRef for data loading
+  tablePath: 'queries/query-manager',  // JSON config path
+
+  // Optional
+  cssPrefix: 'mytable',            // CSS class prefix (default: 'lithium')
+  storageKey: 'mytable_config',    // localStorage key for templates
+  readonly: false,                 // Enable editing (default: false)
+
+  // Callbacks
+  onRowSelected: (rowData) => { /* ... */ },
+  onRowDeselected: () => { /* ... */ },
+  onDataLoaded: (rows) => { /* ... */ },
+  onEditModeChange: (isEditing) => { /* ... */ },
+});
+
+await table.init();
+await table.loadData();
+```
+
+### Full Options Reference
+
+| Option | Type | Required | Description |
+|--------|------|----------|-------------|
+| `container` | HTMLElement | ✅ | Table container element |
+| `navigatorContainer` | HTMLElement | ✅ | Navigator bar container |
+| `app` | Object | ✅ | App instance (for API access) |
+| `queryRef` | number | ⚪ | QueryRef for data loading |
+| `tablePath` | string | ⚪ | Path to JSON table definition |
+| `tableDef` | Object | ⚪ | Pre-loaded table definition |
+| `coltypes` | Object | ⚪ | Pre-loaded coltypes |
+| `cssPrefix` | string | ❌ | CSS class prefix (default: `'lithium'`) |
+| `storageKey` | string | ❌ | localStorage key (default: `'lithium_table'`) |
+| `readonly` | boolean | ❌ | Disable editing (default: `false`) |
+| `searchQueryRef` | number | ⚪ | QueryRef for search |
+| `detailQueryRef` | number | ⚪ | QueryRef for detail loading |
+| `updateQueryRef` | number | ⚪ | QueryRef for updates |
+| `insertQueryRef` | number | ⚪ | QueryRef for inserts |
+| `deleteQueryRef` | number | ⚪ | QueryRef for deletes |
+| `onRowSelected` | Function | ❌ | Called when row selected |
+| `onRowDeselected` | Function | ❌ | Called when row deselected |
+| `onDataLoaded` | Function | ❌ | Called when data loaded |
+| `onEditModeChange` | Function | ❌ | Called when edit mode changes |
 
 ---
 
 ## The Navigator Block
 
-The Navigator is a control bar positioned below the Tabulator grid. It provides standard functions for interacting with the table data, especially for read-write tables where rows or values can be edited.
+The Navigator provides standard table controls in four groups:
 
-### Navigator Controls
+### 1. Control Block
 
-The Navigator consists of four distinct control groups:
+| Button | Action |
+|--------|--------|
+| 🔄 Refresh | Reload data from source |
+| 🔽 Filter | Toggle column header filters |
+| ☰ Menu | Table options popup (expand/collapse all) |
+| ↔ Width | Table width presets (Narrow/Compact/Normal/Wide/Auto) |
+| ⊞ Layout | Layout mode (fitColumns/fitData/fitDataFill/etc) |
+| 🛠 Template | Save/load column configurations |
 
-#### 1. Control Block
+### 2. Move Block
 
-Utility actions for the table:
+| Button | Action | Keyboard |
+|--------|--------|----------|
+| ⏮ First | Go to first record | `Home` |
+| ⏪ Previous Page | Page up | `Page Up` |
+| ◀ Previous | Previous record | `↑` |
+| ▶ Next | Next record | `↓` |
+| ⏩ Next Page | Page down | `Page Down` |
+| ⏭ Last | Go to last record | `End` |
 
-- **Refresh** — Reload data from the source
-- **Menu** — Table options popup (column filters, expand/collapse all)
-- **Width** — Table width presets popup (Narrow, Compact, Normal, Wide, Auto)
-- **Email** — Email table data
-- **Export** — Download as PDF, CSV, TXT, or XLS
-- **Import** — Upload from CSV, TXT, or XLS
+### 3. Manage Block
 
-#### 2. Move Block
+| Button | Action |
+|--------|--------|
+| ➕ Add | Create new row |
+| 📋 Duplicate | Copy selected row |
+| ✏️ Edit | Enter edit mode |
+| 💾 Save | Commit changes |
+| 🚫 Cancel | Revert changes |
+| 🗑 Delete | Remove selected row |
 
-Record navigation buttons:
+**Edit Mode Behavior:**
 
-- **First** (`|<`)
-- **Previous Page** (`<<`)
-- **Previous Record** (`<`)
-- **Next Record** (`>`)
-- **Next Page** (`>>`)
-- **Last** (`>|`)
+- Save/Cancel only enabled when in edit mode AND changes exist
+- Auto-save when navigating away from edited row (configurable)
+- Visual indicator (I-cursor) in selector column during edit
 
-#### 3. Manage Block
+### 4. Search Block
 
-Data modification buttons:
-
-- **Add** — Create a new row
-- **Duplicate** — Copy the selected row
-- **Edit** — Enter edit mode for the selected row
-- **Save** — Commit changes
-- **Cancel** — Revert unsaved changes
-- **Delete** — Remove the selected row(s)
-
-#### 4. Search Block
-
-- Magnifying-glass icon button
-- Text input field for searching table contents
-- Clear (×) button
+- 🔍 Magnifying glass icon
+- Text input field
+- ✕ Clear button
+- Enter key triggers search
 
 ---
 
-## Component Architecture
+## Column Configuration
 
-The goal is to create a reusable class or module that encapsulates both the Tabulator initialization and the Navigator UI.
+### JSON-Driven Columns
 
-### Proposed Structure
+Columns are defined in `config/tabulator/<table-path>.json`:
 
-```javascript
-// Conceptual example
-class LithiumTable {
-  constructor(containerId, options) {
-    this.container = document.getElementById(containerId);
-    this.options = options; // Data, columns, callbacks, etc.
-    
-    this.initUI();
-    this.initTabulator();
-    this.bindEvents();
-  }
-
-  initUI() {
-    // Create the DOM structure for the table container and the Navigator block
-  }
-
-  initTabulator() {
-    // Initialize Tabulator with standard Lithium defaults + custom options
-  }
-
-  bindEvents() {
-    // Wire up Navigator buttons to Tabulator API methods
-    // (e.g., Add button -> table.addRow(), Save button -> emit save event)
+```json
+{
+  "title": "Query Manager",
+  "queryRef": 25,
+  "readonly": false,
+  "layout": "fitColumns",
+  "columns": {
+    "query_ref": {
+      "field": "query_ref",
+      "display": "Ref",
+      "coltype": "integer",
+      "visible": true,
+      "sort": true,
+      "filter": true,
+      "editable": false,
+      "overrides": {
+        "width": 80,
+        "bottomCalc": "count"
+      }
+    },
+    "name": {
+      "field": "name",
+      "display": "Name",
+      "coltype": "string",
+      "visible": true,
+      "sort": true,
+      "filter": true,
+      "editable": true
+    }
   }
 }
 ```
 
-### Key Features
+### Column Properties
 
-- **Modularity:** Easily instantiated in any manager.
-- **Consistency:** Ensures all tables look and behave the same way.
-- **Read/Write Support:** Handles both display-only and editable grids.
-- **Event-Driven:** Emits standard events (e.g., `rowSelected`, `dataChanged`, `saveRequested`) for the parent manager to handle.
-- **JSON-Configured:** Column definitions loaded from `config/tabulator/` files — no hardcoded columns in JavaScript.
+| Property | Type | Description |
+|----------|------|-------------|
+| `field` | string | JSON field name from API |
+| `display` | string | Column header title |
+| `coltype` | string | Reference to coltypes.json |
+| `visible` | boolean | Show by default |
+| `sort` | boolean | Allow sorting |
+| `filter` | boolean | Show header filter |
+| `editable` | boolean | Allow editing |
+| `primaryKey` | boolean | Is primary key field |
+| `lookupRef` | string | Lookup table reference (e.g., `"a27"`) |
+| `overrides` | Object | Override any coltype property |
 
 ---
 
-## File Layout
+## Edit Mode
 
-```structure
-config/tabulator/
-├── coltypes.json              # Column type definitions (global)
-├── coltypes-schema.json       # JSON Schema for coltypes.json
-├── tabledef-schema.json       # JSON Schema for table definitions
-└── queries/
-    └── query-manager.json     # Table definition for Query Manager
+### Entering Edit Mode
+
+- Click **Edit** button
+- Double-click a row
+- Press `Enter` on selected row
+
+### Edit Mode Features
+
+- **Inline editors** appear in cells
+- **I-cursor indicator** shows in selector column
+- **Save/Cancel** buttons become available
+- **Dirty tracking** — changes detected automatically
+- **Auto-save** on row navigation (optional)
+
+### Exiting Edit Mode
+
+- **Save** — Commit changes to API
+- **Cancel** — Revert to original values
+- **Navigate away** — Auto-save if enabled
+
+---
+
+## Templates
+
+Templates save column configurations to localStorage:
+
+### Saved Data
+
+- Column visibility
+- Column order
+- Column widths
+- Sort order
+- Filter values
+- Layout mode
+- Panel width
+
+### Template Menu
+
+Access via **Template** button in Control block:
+
+- **Saved templates** — List with checkmark for default
+- **Save template...** — Save current configuration
+- **Make default...** — Set default template
+- **Delete** — Remove saved template
+
+---
+
+## Loading States
+
+### Custom Loading Overlay
+
+The component shows a loading spinner during data fetch:
+
+```css
+/* HTML structure */
+<div class="table-container">
+  <div class="table-loader">
+    <div class="spinner-fancy spinner-fancy-md"></div>
+  </div>
+  <!-- Tabulator mounts here -->
+</div>
 ```
 
-Future table definitions go in the `queries/` directory (or a parallel directory for non-query tables):
+**Styling:**
 
-```structure
-config/tabulator/
-├── queries/
-│   ├── query-manager.json
-│   ├── lookup-manager.json     # (future)
-│   └── user-manager.json       # (future)
-└── managers/
-    └── style-manager.json      # (future)
+- Semi-transparent backdrop (`rgba(--bg-primary-rgb, 0.8)`)
+- Backdrop blur effect
+- Centered spinner
+- Z-index above table content
+
+---
+
+## CSS Architecture
+
+### Prefix System
+
+All CSS classes use a configurable prefix (default: `lithium`):
+
+```css
+/* Default prefix */
+.lithium-nav-wrapper { }
+.lithium-nav-block { }
+.lithium-nav-btn { }
+.lithium-sort-icons { }
+.lithium-selector-col { }
+
+/* Custom prefix (e.g., 'queries') */
+.queries-nav-wrapper { }
+.queries-nav-block { }
+/* etc */
 ```
 
----
+### Key Classes
 
-## Implementation Notes
-
-- The Navigator UI should be styled using standard Lithium CSS variables and icons (Font Awesome).
-- Consider how the Navigator adapts to smaller screens (responsive design).
-- The component should handle loading states (spinners) during data fetch or save operations.
-  - Add a custom loader element with `spinner-fancy spinner-fancy-md` class
-  - Position it absolutely over the table container with a semi-transparent backdrop
-  - See `queries.js` and `queries.css` for the implementation
-- Column configuration is loaded at runtime via `fetch()` — supports hot-reconfiguration without rebuild.
-- The `blank` and `zero` coltype properties allow custom null/zero handling via a Tabulator `formatter` wrapper.
-- Lookup columns (`coltype: "lookup"`) require a runtime lookup resolver that maps integer IDs to display labels.
-- Inline editors should only be attached while the table is actively in edit mode; in normal mode the grid stays read-only so row selection works consistently across text, numeric, and future custom editor types.
-- Column resizing should be initiated from header cells only; body/footer resize handles are suppressed to avoid accidental resize targets inside the data area.
+| Class | Element |
+|-------|---------|
+| `.{prefix}-nav-wrapper` | Navigator container |
+| `.{prefix}-nav-block` | Navigator button group |
+| `.{prefix}-nav-btn` | Navigator buttons |
+| `.{prefix}-selector-col` | Row selector column |
+| `.{prefix}-col-chooser-btn` | Column chooser trigger |
+| `.{prefix}-sort-icons` | Sort indicator container |
+| `.{prefix}-edit-mode` | Applied to container during edit |
 
 ---
 
-## Lessons Learned
+## Methods Reference
 
-### Spinner-Fancy Integration
+### Data Loading
 
-When adding loading spinners to tables:
+| Method | Description |
+|--------|-------------|
+| `loadData(searchTerm?, extraParams?)` | Load data from QueryRef |
+| `refresh()` | Reload current data |
+| `setData(rows)` | Set data directly |
 
-- **Always use both classes**: `class="spinner-fancy spinner-fancy-md"` (the base class + size variant)
-- **Color variants** can be added as a third class: `spinner-fancy-mono` (grayscale) or `spinner-fancy-alt` (info/success/danger colors) — see [LITHIUM-CSS.md](LITHIUM-CSS.md) for full details
-- The CSS `@keyframes` for spinner-fancy must be defined **outside** any `@layer` block for proper browser support
-- Position the loader overlay `absolute` within the table container with a high `z-index`
-- **Critical:** The table container must have `position: relative` so the absolutely-positioned loader anchors to it — without this, the loader will position relative to a distant ancestor and won't be visible over the table
+### Navigation
 
-### Tabulator Loading Patterns
+| Method | Description |
+|--------|-------------|
+| `navigateFirst()` | Go to first record |
+| `navigateLast()` | Go to last record |
+| `navigatePrevRec()` | Previous record |
+| `navigateNextRec()` | Next record |
+| `navigatePrevPage()` | Previous page |
+| `navigateNextPage()` | Next page |
 
-The Queries Manager uses a custom loading overlay rather than Tabulator's internal loader:
+### CRUD Operations
+
+| Method | Description |
+|--------|-------------|
+| `addRow()` | Add new row |
+| `duplicateRow()` | Duplicate selected row |
+| `enterEditMode(row?)` | Enter edit mode |
+| `exitEditMode(reason)` | Exit edit mode |
+| `saveRow()` | Save changes |
+| `cancelEdit()` | Cancel changes |
+| `deleteRow()` | Delete selected row |
+
+### Column Management
+
+| Method | Description |
+|--------|-------------|
+| `toggleColumnChooser(e, column)` | Show/hide column chooser |
+| `toggleColumnFilters()` | Show/hide header filters |
+| `setTableWidth(mode)` | Set width preset |
+| `setTableLayout(mode)` | Set layout mode |
+| `discoverColumns(rows)` | Auto-add hidden columns |
+
+### Lifecycle
+
+| Method | Description |
+|--------|-------------|
+| `init()` | Initialize component |
+| `destroy()` | Clean up and destroy |
+| `cleanup()` | Close popups, etc. |
+
+---
+
+## Events
+
+### Table Events (Tabulator)
+
+Standard Tabulator events are wired automatically:
+
+- `rowClick` — Row selection
+- `rowDblClick` — Enter edit mode
+- `cellEdited` — Cell value changed
+- `rowSelected` / `rowDeselected` — Selection changes
+
+### Callbacks
+
+Component callbacks (passed in options):
+
+- `onRowSelected(rowData)` — Row was selected
+- `onRowDeselected()` — Row was deselected
+- `onDataLoaded(rows)` — Data finished loading
+- `onEditModeChange(isEditing)` — Edit mode changed
+
+---
+
+## Integration Examples
+
+### Simple Read-Only Table
 
 ```javascript
-// Create and append loader element
-const loader = document.createElement('div');
-loader.className = 'queries-table-loader';
-loader.innerHTML = '<div class="spinner-fancy spinner-fancy-md"></div>';
-tableContainer.appendChild(loader);
+const table = new LithiumTable({
+  container: document.getElementById('table'),
+  navigatorContainer: document.getElementById('nav'),
+  queryRef: 25,
+  app: this.app,
+  readonly: true,
+  cssPrefix: 'readonly-table',
+});
 
-// Remove when done
-loader.remove();
+await table.init();
+await table.loadData();
 ```
 
-**Why custom instead of Tabulator's loader?**
+### Editable Table with Custom Callbacks
 
-- Tabulator 5.x's `showLoader()`/`hideLoader()` API may not be available in all builds
-- Custom overlays give full control over styling and positioning
-- The overlay can be styled with `backdrop-filter: blur()` for a modern look
+```javascript
+const table = new LithiumTable({
+  container: document.getElementById('table'),
+  navigatorContainer: document.getElementById('nav'),
+  tablePath: 'myapp/my-table',
+  app: this.app,
+  readonly: false,
 
-### CSS Layer Considerations
+  onRowSelected: (rowData) => {
+    console.log('Selected:', rowData);
+    this.loadDetails(rowData.id);
+  },
 
-When working with the `@layer` system:
+  onDataLoaded: (rows) => {
+    console.log(`Loaded ${rows.length} rows`);
+  },
+});
 
-- Keyframe animations should generally be defined outside layers
-- Loading overlays need `z-index` management to appear above table content
-- Use `position: relative` on the container and `position: absolute` on the overlay
+await table.init();
+```
 
-### Future Enhancements
+### Dual Table Setup (Like Lookups Manager)
 
-Consider for future table implementations:
+```javascript
+// Parent table
+this.parentTable = new LithiumTable({
+  container: this.elements.parentTableContainer,
+  navigatorContainer: this.elements.parentNavigator,
+  queryRef: 30,
+  cssPrefix: 'lookups-parent',
+  app: this.app,
+  onRowSelected: (row) => this.loadChildData(row.LOOKUPID),
+});
 
-- Extract the loading overlay pattern into a reusable `LithiumTable` base class
-- Add loading state to the Navigator (disable buttons during load)
-- Support for skeleton loading screens for initial table render
+// Child table
+this.childTable = new LithiumTable({
+  container: this.elements.childTableContainer,
+  navigatorContainer: this.elements.childNavigator,
+  queryRef: 34,
+  cssPrefix: 'lookups-child',
+  app: this.app,
+});
+
+await Promise.all([
+  this.parentTable.init(),
+  this.childTable.init(),
+]);
+
+await this.parentTable.loadData();
+```
+
+---
+
+## Related Documentation
+
+- [LITHIUM-MGR.md](LITHIUM-MGR.md) — Manager system overview
+- [LITHIUM-MGR-QUERY.md](LITHIUM-MGR-QUERY.md) — Query Manager (first LithiumTable implementation)
+- [LITHIUM-MGR-LOOKUPS.md](LITHIUM-MGR-LOOKUPS.md) — Lookups Manager (dual-table example)
+- [LITHIUM-LUT.md](LITHIUM-LUT.md) — Lookup Tables integration
+
+---
+
+## Implementation History
+
+The LithiumTable component was extracted from the Query Manager implementation to provide a reusable table solution for all managers. It represents a significant architectural improvement over inline table code.
+
+**Key Design Decisions:**
+
+1. **Mixin Pattern** — Functionality split into logical modules (base, ops, UI)
+2. **JSON-Driven** — Column configuration externalized to JSON files
+3. **CSS Prefix** — Configurable prefix allows multiple styled tables per page
+4. **Template System** — User preferences persisted to localStorage
+5. **Edit Mode Gate** — Editors only active in edit mode, ensuring consistent row selection
