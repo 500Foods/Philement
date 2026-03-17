@@ -96,11 +96,29 @@ export function setConsoleLogging(enabled) {
 function _ensureSessionId() {
   if (!_sessionId) {
     const timestamp = Date.now().toString(36);
-    const random1 = Math.random().toString(36).substring(2, 10);
-    const random2 = Math.random().toString(36).substring(2, 10);
+    const random1 = _getRandomString(8);
+    const random2 = _getRandomString(8);
     _sessionId = `${timestamp}-${random1}-${random2}`;
   }
   return _sessionId;
+}
+
+/**
+ * Generate a cryptographically secure random string
+ * @param {number} length - Length of the string to generate
+ * @returns {string} Random alphanumeric string
+ */
+function _getRandomString(length) {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  const randomValues = new Uint8Array(length);
+  
+  // Use crypto.getRandomValues for cryptographically secure randomness
+  crypto.getRandomValues(randomValues);
+  for (let i = 0; i < length; i++) {
+    result += chars[randomValues[i] % chars.length];
+  }
+  return result;
 }
 
 /**
@@ -361,7 +379,9 @@ export function logHttpRequest(method, path) {
  * @param {number|null} size - Response size in bytes
  * @param {number|null} duration - Response time in ms
  */
-export function logHttpResponse(requestNum, method, path, code = null, size = null, duration = null) {
+export function logHttpResponse(requestNum, method, path, responseInfo = {}) {
+  const { code = null, size = null, duration = null } = responseInfo;
+  
   // Build description based on what's available
   const items = [];
   if (code !== null) items.push(`Code: ${code}`);
@@ -498,6 +518,37 @@ export async function flush() {
 }
 
 /**
+ * Parse a single archived session entry from localStorage.
+ * @param {string} key - The localStorage key
+ * @returns {Object|null} Parsed entry or null if invalid
+ * @private
+ */
+function _parseArchivedEntry(key) {
+  try {
+    const value = localStorage.getItem(key);
+    const parsed = JSON.parse(value);
+    return { key, ...parsed };
+  } catch (e) {
+    // Skip malformed entries
+    return null;
+  }
+}
+
+/**
+ * Check if a key is an archive key and extract it.
+ * @param {number} index - Index in localStorage
+ * @returns {string|null} Key if valid archive key, null otherwise
+ * @private
+ */
+function _getArchiveKeyAtIndex(index) {
+  const key = localStorage.key(index);
+  if (key && key.startsWith(LOG_ARCHIVE_PREFIX)) {
+    return key;
+  }
+  return null;
+}
+
+/**
  * Get all archived session log entries from localStorage.
  * Keys are of the form: lithium_log_archive_<shortId>_<timestamp>
  * Returns an array of { key, sessionId, entries } objects sorted by key (oldest first).
@@ -505,22 +556,21 @@ export async function flush() {
  */
 export function getArchivedSessions() {
   const results = [];
+  
   try {
     for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith(LOG_ARCHIVE_PREFIX)) {
-        try {
-          const value = localStorage.getItem(key);
-          const parsed = JSON.parse(value);
-          results.push({ key, ...parsed });
-        } catch (e) {
-          // Skip malformed entries
-        }
+      const key = _getArchiveKeyAtIndex(i);
+      if (!key) continue;
+      
+      const entry = _parseArchivedEntry(key);
+      if (entry) {
+        results.push(entry);
       }
     }
   } catch (e) {
     // Ignore storage errors
   }
+  
   // Sort oldest first by key (key contains ISO timestamp)
   return results.sort((a, b) => a.key.localeCompare(b.key));
 }

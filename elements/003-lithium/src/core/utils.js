@@ -289,7 +289,26 @@ export function throttle(func, limit = 300) {
  * @returns {string} Unique ID
  */
 export function generateId(prefix = 'id') {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  const randomPart = _getRandomString(9);
+  return `${prefix}-${Date.now()}-${randomPart}`;
+}
+
+/**
+ * Generate a cryptographically secure random string
+ * @param {number} length - Length of the string to generate
+ * @returns {string} Random alphanumeric string
+ */
+function _getRandomString(length) {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  const randomValues = new Uint8Array(length);
+  
+  // Use crypto.getRandomValues for cryptographically secure randomness
+  crypto.getRandomValues(randomValues);
+  for (let i = 0; i < length; i++) {
+    result += chars[randomValues[i] % chars.length];
+  }
+  return result;
 }
 
 /**

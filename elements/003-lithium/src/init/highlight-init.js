@@ -20,6 +20,25 @@ class HighlightInit {
   }
 
   /**
+   * Generate a cryptographically secure random ID suffix
+   * @param {number} length - Length of the random part
+   * @returns {string} Random alphanumeric string
+   * @private
+   */
+  _generateRandomId(length = 9) {
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    const randomValues = new Uint8Array(length);
+    
+    // Use crypto.getRandomValues for cryptographically secure randomness
+    crypto.getRandomValues(randomValues);
+    for (let i = 0; i < length; i++) {
+      result += chars[randomValues[i] % chars.length];
+    }
+    return result;
+  }
+
+  /**
    * Highlight code in a specific element
    * @param {string} elementId - The DOM element ID containing code
    * @param {string} language - Programming language
@@ -85,7 +104,7 @@ class HighlightInit {
     const codeBlocks = document.querySelectorAll('pre code');
     codeBlocks.forEach((block) => {
       const language = block.className.replace('language-', '') || 'javascript';
-      const elementId = block.id || `highlight-block-${Math.random().toString(36).substr(2, 9)}`;
+      const elementId = block.id || `highlight-block-${this._generateRandomId()}`;
       block.id = elementId;
       this.highlightElement(elementId, language, options);
     });
@@ -271,7 +290,7 @@ class HighlightInit {
         throw new Error(`Container with ID ${containerId} not found`);
       }
 
-      const elementId = `highlight-code-${Math.random().toString(36).substr(2, 9)}`;
+      const elementId = `highlight-code-${this._generateRandomId()}`;
       const codeElement = document.createElement('code');
       codeElement.id = elementId;
       codeElement.className = `language-${language}`;

@@ -13,8 +13,9 @@
     "preview": "vite preview",
     "postbuild": "html-minifier-terser --input-dir \"$LITHIUM_ROOT/dist\" --output-dir \"$LITHIUM_ROOT/dist\" --file-ext html --collapse-whitespace --remove-comments --minify-js --minify-css && terser \"$LITHIUM_ROOT/dist/service-worker.js\" -o \"$LITHIUM_ROOT/dist/service-worker.js\" --compress --mangle",
     "serve": "vite preview --port 3000",
-    "test": "vitest run",
+    "test": "vitest run && npm run test:quality",
     "test:watch": "vitest watch",
+    "test:quality": "npx @opencodereview/cli scan src/ 2>&1 || true",
     "test:coverage": "vitest run --coverage",
     "coverage:copy": "rm -rf public/coverage && cp -r coverage public/coverage 2>/dev/null || echo 'No coverage report found. Run npm run test:coverage first.'",
     "templates:copy": "node scripts/copy-templates.js",
@@ -25,11 +26,13 @@
     "clean": "rm -rf dist coverage reports",
     "predeploy": "test -n \"$LITHIUM_DEPLOY\" || { echo 'Error: $LITHIUM_DEPLOY is not set'; exit 1; }",
     "version:bump": "node scripts/bump-version.js",
-    "deploy": "npm run validate:tabulator && npm run test:coverage && npm run coverage:copy && npm run templates:copy && npm run version:bump && vite build --mode deploy && npm run deploy:config && npm run deploy:postbuild && npm run deploy:prune && npm run deploy:brotli",
+    "deploy": "npm run validate:tabulator && npm run test:coverage && npm run coverage:copy && npm run templates:copy && npm run version:bump && vite build --mode deploy && npm run deploy:config && npm run deploy:postbuild && npm run deploy:prune && npm run deploy:brotli:fast",
     "deploy:config": "test -f \"$LITHIUM_DEPLOY/config/lithium.json\" || cp -r \"$LITHIUM_ROOT/config\" \"$LITHIUM_DEPLOY/config\"",
     "deploy:postbuild": "html-minifier-terser --input-dir \"$LITHIUM_DEPLOY\" --output-dir \"$LITHIUM_DEPLOY\" --file-ext html --collapse-whitespace --remove-comments --minify-js --minify-css && terser \"$LITHIUM_DEPLOY/service-worker.js\" -o \"$LITHIUM_DEPLOY/service-worker.js\" --compress --mangle",
     "deploy:prune": "node scripts/prune-deploy-assets.js \"$LITHIUM_DEPLOY\"",
-    "deploy:brotli": "node scripts/generate-brotli.js \"$LITHIUM_DEPLOY\""
+    "deploy:brotli": "node scripts/generate-brotli.js \"$LITHIUM_DEPLOY\"",
+    "deploy:brotli:fast": "BROTLI_JOBS=12 scripts/generate-brotli.sh \"$LITHIUM_DEPLOY\"",
+    "deploy:brotli:timed": "npm run deploy:brotli 2>&1 | tee /tmp/brotli-timing.log"
   },
   "dependencies": {
     "@codemirror/lang-markdown": "^6.5.0",

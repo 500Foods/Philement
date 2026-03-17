@@ -80,37 +80,54 @@ async function handleResponse(response, requestNum) {
 
   // Handle errors
   if (!response.ok) {
-    const error = new Error(data?.message || `HTTP ${response.status}: ${response.statusText}`);
-    error.status = response.status;
-    error.data = data;
-    error.response = response;
-
-    // Handle specific status codes
-    switch (response.status) {
-      case 401:
-        // Unauthorized - token expired or invalid
-        eventBus.emit(Events.AUTH_EXPIRED, { error });
-        break;
-      case 403:
-        error.message = data?.message || 'Access forbidden';
-        break;
-      case 429:
-        // Rate limited
-        const retryAfter = response.headers.get('retry-after');
-        error.retryAfter = retryAfter ? parseInt(retryAfter, 10) : null;
-        break;
-      case 500:
-      case 502:
-      case 503:
-      case 504:
-        error.message = data?.message || 'Server error. Please try again later.';
-        break;
-    }
-
-    throw error;
+    throw _createError(response, data);
   }
 
   return data;
+}
+
+/**
+ * Create an error object from HTTP response
+ * @param {Response} response - Fetch response
+ * @param {Object|null} data - Parsed response data
+ * @returns {Error} Configured error object
+ * @private
+ */
+function _createError(response, data) {
+  const error = new Error(data?.message || `HTTP ${response.status}: ${response.statusText}`);
+  error.status = response.status;
+  error.data = data;
+  error.response = response;
+
+  // Handle specific status codes
+  _applyStatusError(error, response, data);
+  return error;
+}
+
+/**
+ * Apply status-specific error handling
+ * @param {Error} error - Error object to configure
+ * @param {Response} response - Fetch response
+ * @param {Object|null} data - Parsed response data
+ * @private
+ */
+function _applyStatusError(error, response, data) {
+  const statusHandlers = {
+    401: () => eventBus.emit(Events.AUTH_EXPIRED, { error }),
+    403: () => { error.message = data?.message || 'Access forbidden'; },
+    429: () => {
+      const retryAfter = response.headers.get('retry-after');
+      error.retryAfter = retryAfter ? parseInt(retryAfter, 10) : null;
+    },
+  };
+  
+  const serverErrorCodes = [500, 502, 503, 504];
+  
+  if (statusHandlers[response.status]) {
+    statusHandlers[response.status]();
+  } else if (serverErrorCodes.includes(response.status)) {
+    error.message = data?.message || 'Server error. Please try again later.';
+  }
 }
 
 /**
@@ -135,11 +152,11 @@ export async function get(path, options = {}) {
   const duration = Date.now() - startTime;
   const contentLength = response.headers.get('content-length') || 0;
   
-  if (response.ok) {
-    logHttpResponse(requestNum, 'GET', path, response.status, contentLength, duration);
-  } else {
-    logHttpResponse(requestNum, 'GET', path, response.status, null, duration);
-  }
+  logHttpResponse(requestNum, 'GET', path, {
+    code: response.status,
+    size: response.ok ? contentLength : null,
+    duration,
+  });
   
   return handleResponse(response, requestNum);
 }
@@ -168,11 +185,11 @@ export async function post(path, body, options = {}) {
   const duration = Date.now() - startTime;
   const contentLength = response.headers.get('content-length') || 0;
   
-  if (response.ok) {
-    logHttpResponse(requestNum, 'POST', path, response.status, contentLength, duration);
-  } else {
-    logHttpResponse(requestNum, 'POST', path, response.status, null, duration);
-  }
+  logHttpResponse(requestNum, 'POST', path, {
+    code: response.status,
+    size: response.ok ? contentLength : null,
+    duration,
+  });
   
   return handleResponse(response, requestNum);
 }
@@ -201,11 +218,11 @@ export async function put(path, body, options = {}) {
   const duration = Date.now() - startTime;
   const contentLength = response.headers.get('content-length') || 0;
   
-  if (response.ok) {
-    logHttpResponse(requestNum, 'PUT', path, response.status, contentLength, duration);
-  } else {
-    logHttpResponse(requestNum, 'PUT', path, response.status, null, duration);
-  }
+  logHttpResponse(requestNum, 'PUT', path, {
+    code: response.status,
+    size: response.ok ? contentLength : null,
+    duration,
+  });
   
   return handleResponse(response, requestNum);
 }
@@ -232,11 +249,11 @@ export async function del(path, options = {}) {
   const duration = Date.now() - startTime;
   const contentLength = response.headers.get('content-length') || 0;
   
-  if (response.ok) {
-    logHttpResponse(requestNum, 'DELETE', path, response.status, contentLength, duration);
-  } else {
-    logHttpResponse(requestNum, 'DELETE', path, response.status, null, duration);
-  }
+  logHttpResponse(requestNum, 'DELETE', path, {
+    code: response.status,
+    size: response.ok ? contentLength : null,
+    duration,
+  });
   
   return handleResponse(response, requestNum);
 }
@@ -265,11 +282,11 @@ export async function patch(path, body, options = {}) {
   const duration = Date.now() - startTime;
   const contentLength = response.headers.get('content-length') || 0;
   
-  if (response.ok) {
-    logHttpResponse(requestNum, 'PATCH', path, response.status, contentLength, duration);
-  } else {
-    logHttpResponse(requestNum, 'PATCH', path, response.status, null, duration);
-  }
+  logHttpResponse(requestNum, 'PATCH', path, {
+    code: response.status,
+    size: response.ok ? contentLength : null,
+    duration,
+  });
   
   return handleResponse(response, requestNum);
 }

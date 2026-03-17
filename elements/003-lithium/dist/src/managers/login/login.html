@@ -1,5 +1,233 @@
-<div id="login-page"><div class="transition-overlay" id="transition-overlay"></div><div class="login-container" id="login-panel" style="display:none"><div class="login-header"><div class="login-header-group"><button type="button" class="login-header-btn login-header-primary"><img src="/assets/images/logo-li.svg" alt="" class="login-logo" width="48" height="48"> <span>Lithium</span></button> <button type="button" class="login-header-btn login-header-version" id="login-version-btn"><div class="version-row" id="login-version-build">1000</div><div class="version-row" id="login-version-year">2026</div><div class="version-row" id="login-version-date">0101</div><div class="version-row" id="login-version-time">0000</div></button></div></div><form class="login-form" id="login-form"><div class="form-group"><div class="input-with-icon"><input type="text" id="login-username" name="username" placeholder="Username" required autocomplete="username"> <button type="button" class="input-icon-btn" id="login-clear-username" data-tooltip="Clear"><fa fa-xmark></fa></button></div></div><div class="form-group"><div class="input-with-icon"><input type="password" id="login-password" name="password" placeholder="Password" required autocomplete="current-password"> <button type="button" class="input-icon-btn" id="login-toggle-password" data-tooltip="Show password"><fa fa-eye></fa></button></div></div><div class="login-error" id="login-error"><fa fa-exclamation-circle></fa><span id="login-error-text">Invalid username or password</span></div><div class="login-btn-group"><button type="button" class="login-btn-icon" id="login-language-btn" data-tooltip="Select language"><fa fa-earth-americas></fa></button> <button type="button" class="login-btn-icon" id="login-theme-btn" data-tooltip="Select theme"><fa fa-palette></fa></button> <button type="submit" value="Login" class="login-btn-primary" id="login-submit" data-tooltip="Login" aria-label="Login"><fa fa-sign-in-alt></fa></button> <button type="button" class="login-btn-icon" id="login-logs-btn" data-tooltip="View Session Log"><fa fa-scroll></fa></button> <button type="button" class="login-btn-icon" id="login-help-btn" data-tooltip="Help"><fa fa-circle-question></fa></button></div></form></div><div class="login-subpanel" id="theme-panel" style="display:none"><div class="subpanel-header"><div class="subpanel-header-group"><button type="button" class="subpanel-header-btn subpanel-header-primary"><fa fa-palette></fa><span>Select Theme</span></button> <button type="button" class="subpanel-header-btn subpanel-header-close" id="theme-close-btn" data-tooltip="Close (ESC)"><fa fa-xmark></fa></button></div></div><div class="subpanel-content"><div class="theme-list" id="theme-list"><div class="theme-item"><span class="theme-name">Midnight Indigo</span> <button class="theme-apply-btn">Apply</button></div><div class="theme-item"><span class="theme-name">Ocean Blue</span> <button class="theme-apply-btn">Apply</button></div><div class="theme-item"><span class="theme-name">Forest Green</span> <button class="theme-apply-btn">Apply</button></div><div class="theme-item"><span class="theme-name">Sunset Orange</span> <button class="theme-apply-btn">Apply</button></div></div></div></div><div class="login-subpanel" id="logs-panel" style="display:none"><div class="subpanel-header"><div class="subpanel-header-group"><button type="button" class="subpanel-header-btn subpanel-header-primary"><fa fa-scroll></fa><span>Session Log</span></button> <button type="button" class="subpanel-header-btn subpanel-header-close" id="logs-coverage-btn" data-tooltip="View coverage report" onclick='window.open("/coverage/index.html","_blank")'><fa fa-chart-simple-horizontal></fa></button> <button type="button" class="subpanel-header-btn subpanel-header-close" id="logs-close-btn" data-tooltip="Close (ESC)"><fa fa-xmark></fa></button></div></div><div class="subpanel-content"><div class="log-viewer" id="log-viewer"><div class="log-placeholder"><p>Log viewer will be initialized here...</p><pre class="log-content">[2025-03-06 10:30:15] INFO: System initialized
+<!--
+  Login Manager Template
+  CCC-style login page: centered card, gradient header, clean inputs
+-->
+<div id="login-page">
+  <!-- Transition overlay - blocks interaction during transitions -->
+  <div class="transition-overlay" id="transition-overlay"></div>
+
+  <!-- Main Login Panel -->
+  <div class="login-container" id="login-panel" style="display: none;">
+    <!-- Header with logo and title as button group -->
+    <div class="login-header">
+      <div class="login-header-group">
+        <button type="button" class="login-header-btn login-header-primary">
+          <img src="/assets/images/logo-li.svg" alt="" class="login-logo" width="48" height="48">
+          <span>Lithium</span>
+        </button>
+        <button type="button" class="login-header-btn login-header-version" id="login-version-btn">
+          <div class="version-row" id="login-version-build">1000</div>
+          <div class="version-row" id="login-version-year">2026</div>
+          <div class="version-row" id="login-version-date">0101</div>
+          <div class="version-row" id="login-version-time">0000</div>
+        </button>
+      </div>
+    </div>
+
+    <!-- Login form -->
+    <form class="login-form" id="login-form">
+      <div class="form-group">
+        <div class="input-with-icon">
+          <input
+            type="text"
+            id="login-username"
+            name="username"
+            placeholder="Username"
+            required
+            autocomplete="username"
+          >
+          <button type="button" class="input-icon-btn" id="login-clear-username" data-tooltip="Clear">
+            <fa fa-xmark></fa>
+          </button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <div class="input-with-icon">
+          <input
+            type="password"
+            id="login-password"
+            name="password"
+            placeholder="Password"
+            required
+            autocomplete="current-password"
+          >
+          <button type="button" class="input-icon-btn" id="login-toggle-password" data-tooltip="Show password">
+            <fa fa-eye></fa>
+          </button>
+        </div>
+      </div>
+
+      <!-- Error message (hidden by default) -->
+      <div class="login-error" id="login-error">
+        <fa fa-exclamation-circle></fa>
+        <span id="login-error-text">Invalid username or password</span>
+      </div>
+
+      <!-- Button group: Language, Theme, Login, Logs, Help -->
+      <div class="login-btn-group">
+        <button type="button" class="login-btn-icon" id="login-language-btn" data-tooltip="Select language">
+          <fa fa-earth-americas></fa>
+        </button>
+        <button type="button" class="login-btn-icon" id="login-theme-btn" data-tooltip="Select theme">
+          <fa fa-palette></fa>
+        </button>
+        <button type="submit" value="Login" class="login-btn-primary" id="login-submit" data-tooltip="Login" aria-label="Login">
+          <fa fa-sign-in-alt></fa>
+        </button>
+        <button type="button" class="login-btn-icon" id="login-logs-btn" data-tooltip="View Session Log">
+          <fa fa-scroll></fa>
+        </button>
+        <button type="button" class="login-btn-icon" id="login-help-btn" data-tooltip="Help">
+          <fa fa-circle-question></fa>
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Theme Selector Panel (initially hidden) -->
+  <div class="login-subpanel" id="theme-panel" style="display: none;">
+    <div class="subpanel-header">
+      <div class="subpanel-header-group">
+        <button type="button" class="subpanel-header-btn subpanel-header-primary">
+          <fa fa-palette></fa>
+          <span>Select Theme</span>
+        </button>
+        <button type="button" class="subpanel-header-btn subpanel-header-close" id="theme-close-btn" data-tooltip="Close (ESC)">
+          <fa fa-xmark></fa>
+        </button>
+      </div>
+    </div>
+    <div class="subpanel-content">
+      <div class="theme-list" id="theme-list">
+        <!-- Theme items will be populated here -->
+        <div class="theme-item">
+          <span class="theme-name">Midnight Indigo</span>
+          <button class="theme-apply-btn">Apply</button>
+        </div>
+        <div class="theme-item">
+          <span class="theme-name">Ocean Blue</span>
+          <button class="theme-apply-btn">Apply</button>
+        </div>
+        <div class="theme-item">
+          <span class="theme-name">Forest Green</span>
+          <button class="theme-apply-btn">Apply</button>
+        </div>
+        <div class="theme-item">
+          <span class="theme-name">Sunset Orange</span>
+          <button class="theme-apply-btn">Apply</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Log Viewer Panel (initially hidden) -->
+  <div class="login-subpanel" id="logs-panel" style="display: none;">
+    <div class="subpanel-header">
+      <div class="subpanel-header-group">
+        <button type="button" class="subpanel-header-btn subpanel-header-primary">
+          <fa fa-scroll></fa>
+          <span>Session Log</span>
+        </button>
+        <button type="button" class="subpanel-header-btn subpanel-header-close" id="logs-coverage-btn" data-tooltip="View coverage report" onclick="window.open('/coverage/index.html', '_blank')">
+          <fa fa-chart-simple-horizontal></fa>
+        </button>
+        <button type="button" class="subpanel-header-btn subpanel-header-close" id="logs-close-btn" data-tooltip="Close (ESC)">
+          <fa fa-xmark></fa>
+        </button>
+      </div>
+    </div>
+    <div class="subpanel-content">
+      <div class="log-viewer" id="log-viewer">
+        <!-- CodeMirror will be initialized here -->
+        <div class="log-placeholder">
+          <p>Log viewer will be initialized here...</p>
+          <pre class="log-content">[2025-03-06 10:30:15] INFO: System initialized
 [2025-03-06 10:30:16] INFO: Connecting to Hydrogen server...
 [2025-03-06 10:30:17] INFO: Connection established
 [2025-03-06 10:30:18] DEBUG: Loading configuration...
-[2025-03-06 10:30:19] INFO: Configuration loaded successfully</pre></div></div></div></div><div class="login-subpanel" id="language-panel" style="display:none"><div class="subpanel-header"><div class="subpanel-header-group"><button type="button" class="subpanel-header-btn subpanel-header-primary"><fa fa-earth-americas></fa><span>Select Language</span></button> <button type="button" class="subpanel-header-btn language-current-btn" id="language-current-btn" disabled="disabled"><span class="language-current-flag" id="language-current-flag"></span> <span class="language-current-code" id="language-current-code">en-US</span></button> <button type="button" class="subpanel-header-btn subpanel-header-close" id="language-close-btn" data-tooltip="Close (ESC)"><fa fa-xmark></fa></button></div></div><div class="subpanel-content language-panel-content"><div class="language-filter-container"><div class="input-with-icon language-filter-input"><fa fa-search></fa><input type="text" id="language-filter" placeholder="Search language, country, or locale..." autocomplete="off"> <button type="button" class="input-icon-btn" id="language-clear-filter" data-tooltip="Clear filter"><fa fa-xmark></fa></button></div></div><div class="language-table-container"><div id="language-table"></div></div></div></div><div class="login-subpanel" id="help-panel" style="display:none"><div class="subpanel-header"><div class="subpanel-header-group"><button type="button" class="subpanel-header-btn subpanel-header-primary"><fa fa-circle-question></fa><span>Help</span></button> <button type="button" class="subpanel-header-btn subpanel-header-close" id="help-close-btn" data-tooltip="Close (ESC)"><fa fa-xmark></fa></button></div></div><div class="subpanel-content"><div class="help-content" id="help-content"><div class="help-section"><h3>Account</h3><button type="button" class="help-link" id="help-forgot-password"><fa fa-key></fa><span>Forgot Password</span></button></div><div class="help-section"><h3>About</h3><div class="help-info"><p><strong>Lithium</strong> - A Philement Project</p><p class="help-version">Version: <span id="help-app-version">1.0.0</span></p><p class="help-version">Build: <span id="help-build-date">2025-03-07</span></p></div></div><div class="help-section"><h3>Support</h3><p class="help-text">Contact your system administrator for assistance.</p></div></div></div></div></div>
+[2025-03-06 10:30:19] INFO: Configuration loaded successfully</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Language Selector Panel (initially hidden) -->
+  <div class="login-subpanel" id="language-panel" style="display: none;">
+    <div class="subpanel-header">
+      <div class="subpanel-header-group">
+        <button type="button" class="subpanel-header-btn subpanel-header-primary">
+          <fa fa-earth-americas></fa>
+          <span>Select Language</span>
+        </button>
+        <button type="button" class="subpanel-header-btn language-current-btn" id="language-current-btn" disabled>
+          <span class="language-current-flag" id="language-current-flag"></span>
+          <span class="language-current-code" id="language-current-code">en-US</span>
+        </button>
+        <button type="button" class="subpanel-header-btn subpanel-header-close" id="language-close-btn" data-tooltip="Close (ESC)">
+          <fa fa-xmark></fa>
+        </button>
+      </div>
+    </div>
+    <div class="subpanel-content language-panel-content">
+      <!-- Filter input for language search -->
+      <div class="language-filter-container">
+        <div class="input-with-icon language-filter-input">
+          <fa fa-search></fa>
+          <input
+            type="text"
+            id="language-filter"
+            placeholder="Search language, country, or locale..."
+            autocomplete="off"
+          >
+          <button type="button" class="input-icon-btn" id="language-clear-filter" data-tooltip="Clear filter">
+            <fa fa-xmark></fa>
+          </button>
+        </div>
+      </div>
+      <!-- Tabulator table container -->
+      <div class="language-table-container">
+        <div id="language-table"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Help Panel (initially hidden) -->
+  <div class="login-subpanel" id="help-panel" style="display: none;">
+    <div class="subpanel-header">
+      <div class="subpanel-header-group">
+        <button type="button" class="subpanel-header-btn subpanel-header-primary">
+          <fa fa-circle-question></fa>
+          <span>Help</span>
+        </button>
+        <button type="button" class="subpanel-header-btn subpanel-header-close" id="help-close-btn" data-tooltip="Close (ESC)">
+          <fa fa-xmark></fa>
+        </button>
+      </div>
+    </div>
+    <div class="subpanel-content">
+      <div class="help-content" id="help-content">
+        <div class="help-section">
+          <h3>Account</h3>
+          <button type="button" class="help-link" id="help-forgot-password">
+            <fa fa-key></fa>
+            <span>Forgot Password</span>
+          </button>
+        </div>
+        <div class="help-section">
+          <h3>About</h3>
+          <div class="help-info">
+            <p><strong>Lithium</strong> - A Philement Project</p>
+            <p class="help-version">Version: <span id="help-app-version">1.0.0</span></p>
+            <p class="help-version">Build: <span id="help-build-date">2025-03-07</span></p>
+          </div>
+        </div>
+        <div class="help-section">
+          <h3>Support</h3>
+          <p class="help-text">Contact your system administrator for assistance.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

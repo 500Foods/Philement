@@ -512,88 +512,85 @@ export default class LoginManager {
    * Note: Shortcuts (except ESC) only work when on the login panel
    */
   handleKeyboardShortcuts(event) {
-    const key = event.key;
-    const ctrl = event.ctrlKey;
-    const shift = event.shiftKey;
-    const alt = event.altKey;
     const isOnLoginPanel = this.currentPanel === 'login';
     
     // ESC - always works to return to login panel or clear fields
-    if (key === 'Escape') {
-      if (isOnLoginPanel) {
-        // Clear username and password, focus username
-        this.handleClearUsername();
-        event.preventDefault();
-      } else {
-        // Switch to login panel from subpanels
-        log(LOGIN, Status.INFO, `Keyboard: ESC closed ${this.currentPanel} panel`);
-        this.switchPanel('login');
-        event.preventDefault();
-      }
+    if (event.key === 'Escape') {
+      this._handleEscapeKey(event, isOnLoginPanel);
       return;
     }
     
     // All other shortcuts only work when on login panel
-    if (!isOnLoginPanel) {
-      return;
-    }
+    if (!isOnLoginPanel) return;
     
-    // Ctrl+Shift+U - focus username and select contents
-    if (ctrl && shift && key.toLowerCase() === 'u') {
-      if (this.elements.username) {
-        log(LOGIN, Status.INFO, 'Keyboard: Ctrl+Shift+U focused username field');
-        this.elements.username.focus();
-        this.elements.username.select();
-      }
-      event.preventDefault();
-      return;
-    }
+    // Map of shortcut handlers
+    const shortcuts = [
+      { check: (e) => e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'u', handler: () => this._focusUsername() },
+      { check: (e) => e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'p', handler: () => this._focusPassword() },
+      { check: (e) => e.key === 'F1', handler: () => this._clickButton('helpBtn') },
+      { check: (e) => e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'i', handler: () => this._clickButton('languageBtn') },
+      { check: (e) => e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 't', handler: () => this._clickButton('themeBtn') },
+      { check: (e) => e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'l', handler: () => this._clickButton('logsBtn') },
+    ];
     
-    // Ctrl+Shift+P - focus password and select contents
-    if (ctrl && shift && key.toLowerCase() === 'p') {
-      if (this.elements.password) {
-        log(LOGIN, Status.INFO, 'Keyboard: Ctrl+Shift+P focused password field');
-        this.elements.password.focus();
-        this.elements.password.select();
+    for (const shortcut of shortcuts) {
+      if (shortcut.check(event)) {
+        shortcut.handler();
+        event.preventDefault();
+        return;
       }
-      event.preventDefault();
-      return;
     }
-    
-    // F1 - click help button
-    if (key === 'F1') {
-      if (this.elements.helpBtn && !this.elements.helpBtn.disabled) {
-        this.elements.helpBtn.click();
-      }
-      event.preventDefault();
-      return;
+  }
+
+  /**
+   * Handle ESC key press
+   * @param {KeyboardEvent} event
+   * @param {boolean} isOnLoginPanel
+   * @private
+   */
+  _handleEscapeKey(event, isOnLoginPanel) {
+    if (isOnLoginPanel) {
+      this.handleClearUsername();
+    } else {
+      log(LOGIN, Status.INFO, `Keyboard: ESC closed ${this.currentPanel} panel`);
+      this.switchPanel('login');
     }
-    
-    // Ctrl+Shift+I - click language (internationalization) button
-    if (ctrl && shift && key.toLowerCase() === 'i') {
-      if (this.elements.languageBtn && !this.elements.languageBtn.disabled) {
-        this.elements.languageBtn.click();
-      }
-      event.preventDefault();
-      return;
+    event.preventDefault();
+  }
+
+  /**
+   * Focus username field and select contents
+   * @private
+   */
+  _focusUsername() {
+    if (this.elements.username) {
+      log(LOGIN, Status.INFO, 'Keyboard: Ctrl+Shift+U focused username field');
+      this.elements.username.focus();
+      this.elements.username.select();
     }
-    
-    // Ctrl+Shift+T - click theme button
-    if (ctrl && shift && key.toLowerCase() === 't') {
-      if (this.elements.themeBtn && !this.elements.themeBtn.disabled) {
-        this.elements.themeBtn.click();
-      }
-      event.preventDefault();
-      return;
+  }
+
+  /**
+   * Focus password field and select contents
+   * @private
+   */
+  _focusPassword() {
+    if (this.elements.password) {
+      log(LOGIN, Status.INFO, 'Keyboard: Ctrl+Shift+P focused password field');
+      this.elements.password.focus();
+      this.elements.password.select();
     }
-    
-    // Ctrl+Shift+L - click log button
-    if (ctrl && shift && key.toLowerCase() === 'l') {
-      if (this.elements.logsBtn && !this.elements.logsBtn.disabled) {
-        this.elements.logsBtn.click();
-      }
-      event.preventDefault();
-      return;
+  }
+
+  /**
+   * Click a button by element name
+   * @param {string} btnName - Button element name
+   * @private
+   */
+  _clickButton(btnName) {
+    const btn = this.elements[btnName];
+    if (btn && !btn.disabled) {
+      btn.click();
     }
   }
 
@@ -657,62 +654,101 @@ export default class LoginManager {
   _passwordManagerObserver = null;
 
   /**
+   * Apply suppression styles to a password manager element.
+   * @param {HTMLElement} el - Element to suppress
+   * @private
+   */
+  _suppressElement(el) {
+    el.style.setProperty('display', 'none', 'important');
+    el.style.setProperty('visibility', 'hidden', 'important');
+    el.style.setProperty('opacity', '0', 'important');
+    el.style.setProperty('pointer-events', 'none', 'important');
+  }
+
+  /**
+   * Suppress elements matching a selector.
+   * @param {string} selector - CSS selector
+   * @private
+   */
+  _suppressSelector(selector) {
+    try {
+      document.querySelectorAll(selector).forEach(el => this._suppressElement(el));
+    } catch (e) {
+      // Invalid selector, skip
+    }
+  }
+
+  /**
+   * Suppress all password manager elements and reconnect observer.
+   * @param {string[]} selectors - Array of CSS selectors
+   * @private
+   */
+  _suppressAndReconnect(selectors) {
+    // Temporarily disconnect the observer while we mutate styles so that our
+    // own setAttribute calls do not re-trigger this callback (infinite loop).
+    // We immediately reconnect after the sweep so new 1Password injections
+    // are still caught.
+    this._passwordManagerObserver?.disconnect();
+    
+    try {
+      for (const selector of selectors) {
+        this._suppressSelector(selector);
+      }
+    } finally {
+      // Reconnect so future 1Password re-injections/re-shows are caught.
+      // Guard against calling observe() after teardown (observer may be null).
+      if (this._passwordManagerObserver) {
+        this._passwordManagerObserver.observe(document.body, {
+          childList: true,
+          subtree: true,
+          attributes: true,
+          attributeFilter: ['style', 'class'],
+        });
+      }
+    }
+  }
+
+  /**
+   * Start password manager UI suppression with MutationObserver.
+   * @param {string[]} selectors - Array of CSS selectors
+   * @private
+   */
+  _startSuppression(selectors) {
+    const suppressElements = () => this._suppressAndReconnect(selectors);
+
+    // Create the observer (initially disconnected; suppressElements reconnects it).
+    this._passwordManagerObserver = new MutationObserver(suppressElements);
+
+    // Run the initial suppression sweep, which also starts the observer.
+    suppressElements();
+
+    // Schedule a follow-up sweep on the next animation frame so we get the
+    // last word after any 1Password re-assertion in the same microtask flush.
+    requestAnimationFrame(suppressElements);
+  }
+
+  /**
+   * Stop password manager UI suppression.
+   * @private
+   */
+  _stopSuppression() {
+    document.body.classList.remove('hide-password-manager-ui');
+    this._passwordManagerObserver?.disconnect();
+    this._passwordManagerObserver = null;
+  }
+
+  /**
    * Toggle password manager UI visibility
    * Uses body class approach with MutationObserver for robustness
    * @param {boolean} hide - True to hide, false to show
    */
   togglePasswordManagerUI(hide) {
-    const body = document.body;
     const selectors = getPasswordManagerSelectors();
     
     if (hide) {
-
-      const suppressElements = () => {
-        // Temporarily disconnect the observer while we mutate styles so that our
-        // own setAttribute calls do not re-trigger this callback (infinite loop).
-        // We immediately reconnect after the sweep so new 1Password injections
-        // are still caught.
-        this._passwordManagerObserver?.disconnect();
-        try {
-          for (const selector of selectors) {
-            try {
-              document.querySelectorAll(selector).forEach(el => {
-                el.style.setProperty('display', 'none', 'important');
-                el.style.setProperty('visibility', 'hidden', 'important');
-                el.style.setProperty('opacity', '0', 'important');
-                el.style.setProperty('pointer-events', 'none', 'important');
-              });
-            } catch (e) {
-              // Invalid selector, skip
-            }
-          }
-        } finally {
-          // Reconnect so future 1Password re-injections/re-shows are caught.
-          // Guard against calling observe() after teardown (observer may be null).
-          if (this._passwordManagerObserver) {
-            this._passwordManagerObserver.observe(document.body, {
-              childList: true,
-              subtree: true,
-              attributes: true,
-              attributeFilter: ['style', 'class'],
-            });
-          }
-        }
-      };
-
-      // Create the observer (initially disconnected; suppressElements reconnects it).
-      this._passwordManagerObserver = new MutationObserver(suppressElements);
-
-      // Run the initial suppression sweep, which also starts the observer.
-      suppressElements();
-
-      // Schedule a follow-up sweep on the next animation frame so we get the
-      // last word after any 1Password re-assertion in the same microtask flush.
-      requestAnimationFrame(suppressElements);
+      this._startSuppression(selectors);
     } else {
-      body.classList.remove('hide-password-manager-ui');
-      this._passwordManagerObserver?.disconnect();
-      this._passwordManagerObserver = null;
+      this._stopSuppression();
     }
   }
 
@@ -946,7 +982,6 @@ export default class LoginManager {
     // If table already exists, just refresh the data and selection
     if (this._languageTable) {
       this._refreshLanguageTableSelection();
-      // Focus the table for keyboard navigation
       this._focusLanguageTable();
       return;
     }
@@ -958,148 +993,181 @@ export default class LoginManager {
     }
 
     try {
-      // Get language data first — it's synchronous
-      this._languageData = getLanguageData();
-
-      // Set _currentLocale BEFORE creating the table so dataLoaded can select it
-      // Priority: 1) Saved locale, 2) Best guess (sync parts first)
-      const savedLocale = getSavedLocale();
-      if (savedLocale && supportedLocales.includes(savedLocale)) {
-        this._currentLocale = savedLocale;
-        this._bestGuessLocale = savedLocale;
-      } else {
-        // No saved locale - get best guess asynchronously
-        const ipinfoToken = getConfigValue('services.ipinfo_token', null);
-        this._bestGuessLocale = await getBestGuessLocale({ ipinfoToken });
-        this._currentLocale = this._bestGuessLocale;
-      }
-
-      // Populate the current-locale indicator button in the header
+      await this._setupLanguageData();
       this._updateCurrentLocaleButton();
-
-      // Dynamically import Tabulator — use TabulatorFull which bundles all
-      // built-in modules (Sort, Format, SelectRow, Interaction, etc.).
-      // The bare `Tabulator` export is the stripped-down base without modules.
-      const TabulatorModule = await import('tabulator-tables');
-      const Tabulator = TabulatorModule.TabulatorFull;
+      await this._createLanguageTable(tableContainer);
+      this._setupLanguageTableEvents();
+      this._finalizeLanguageTableSetup();
       
-      // Verify we have a constructor
-      if (typeof Tabulator !== 'function') {
-        console.error('[LoginManager] Tabulator import failed. Module structure:', Object.keys(TabulatorModule));
-        throw new Error(`Tabulator is not a constructor. Type: ${typeof Tabulator}`);
-      }
-
-      // Custom dual-arrow sort indicator (▲/▼ with active direction highlighted)
-      const sortElement = '<span class="lang-sort-icons"><span class="lang-sort-asc">▲</span><span class="lang-sort-desc">▼</span></span>';
-
-      // Initialize Tabulator table
-      this._languageTable = new Tabulator(tableContainer, {
-        data: this._languageData,
-        layout: 'fitColumns',
-        height: '100%',
-        selectable: 1,
-        resizableColumns: false,
-        headerSortElement: sortElement,
-        // Sort by Language name then Country name
-        initialSort: [
-          { column: 'language', dir: 'asc' },
-          { column: 'country', dir: 'asc' },
-        ],
-        // No dataLoaded callback - we'll trigger selection after table creation
-        columns: [
-          {
-            title: '',
-            field: 'countryCode',
-            width: 50,
-            hozAlign: 'center',
-            vertAlign: 'middle',
-            cssClass: 'language-flag-cell',
-            headerSort: false,
-            resizable: false,
-            formatter: (cell) => {
-              const countryCode = cell.getValue();
-              return this._getFlagSvg(countryCode);
-            },
-          },
-          {
-            title: 'Language',
-            field: 'language',
-            widthGrow: 2,
-            hozAlign: 'left',
-            vertAlign: 'middle',
-            headerSort: true,
-            resizable: false,
-          },
-          {
-            title: 'Country',
-            field: 'country',
-            widthGrow: 2,
-            hozAlign: 'left',
-            vertAlign: 'middle',
-            headerSort: true,
-            resizable: false,
-          },
-          {
-            title: 'Locale',
-            field: 'locale',
-            width: 80,
-            hozAlign: 'left',
-            vertAlign: 'middle',
-            headerSort: true,
-            resizable: false,
-          },
-        ],
-      });
-
-      // Handle row selection (click)
-      this._languageTable.on('rowClick', (e, row) => {
-        const data = row.getData();
-        this.selectLanguage(data.locale);
-      });
-
-      // Handle keyboard selection (Enter/Space)
-      this._languageTable.on('rowSelected', (row) => {
-        const data = row.getData();
-        this._currentLocale = data.locale;
-      });
-
-      // Trigger selection after table is fully rendered
-      // Use setTimeout to ensure the table has finished initial rendering
-      setTimeout(() => {
-        this._refreshLanguageTableSelection();
-        this._focusLanguageTable();
-      }, 100);
-
       log(LOGIN, Status.INFO, `Language panel initialized. Best guess: ${this._bestGuessLocale}, Current: ${this._currentLocale}`);
     } catch (error) {
-      console.error('[LoginManager] Failed to initialize language table:', error);
-      log(LOGIN, Status.ERROR, `Failed to initialize language table: ${error.message}`);
-
-      // Fallback: show simple list
-      tableContainer.innerHTML = this._languageData.map(lang => `
-        <div class="language-item-fallback" data-locale="${lang.locale}" style="
-          padding: var(--space-3);
-          border-bottom: var(--border-standard);
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          gap: var(--space-3);
-          ${lang.locale === this._currentLocale ? 'background: var(--accent-primary); color: white;' : ''}
-        ">
-          ${this._getFlagSvg(lang.countryCode)}
-          <span style="flex: 1;">${lang.language}</span>
-          <span style="color: ${lang.locale === this._currentLocale ? 'rgba(255,255,255,0.8)' : 'var(--text-muted)'};">${lang.country}</span>
-          <span style="color: ${lang.locale === this._currentLocale ? 'rgba(255,255,255,0.8)' : 'var(--text-muted)'};">${lang.locale}</span>
-        </div>
-      `).join('');
-
-      // Add click handlers for fallback
-      tableContainer.querySelectorAll('.language-item-fallback').forEach(item => {
-        item.addEventListener('click', () => {
-          this.selectLanguage(item.dataset.locale);
-        });
-      });
+      this._handleLanguageTableError(error, tableContainer);
     }
+  }
+
+  /**
+   * Set up language data and determine current locale
+   * @private
+   */
+  async _setupLanguageData() {
+    this._languageData = getLanguageData();
+
+    const savedLocale = getSavedLocale();
+    if (savedLocale && supportedLocales.includes(savedLocale)) {
+      this._currentLocale = savedLocale;
+      this._bestGuessLocale = savedLocale;
+    } else {
+      const ipinfoToken = getConfigValue('services.ipinfo_token', null);
+      this._bestGuessLocale = await getBestGuessLocale({ ipinfoToken });
+      this._currentLocale = this._bestGuessLocale;
+    }
+  }
+
+  /**
+   * Create the Tabulator language table
+   * @param {HTMLElement} tableContainer - Container element
+   * @private
+   */
+  async _createLanguageTable(tableContainer) {
+    const TabulatorModule = await import('tabulator-tables');
+    const Tabulator = TabulatorModule.TabulatorFull;
+    
+    if (typeof Tabulator !== 'function') {
+      console.error('[LoginManager] Tabulator import failed. Module structure:', Object.keys(TabulatorModule));
+      throw new Error(`Tabulator is not a constructor. Type: ${typeof Tabulator}`);
+    }
+
+    const sortElement = '<span class="lang-sort-icons"><span class="lang-sort-asc">▲</span><span class="lang-sort-desc">▼</span></span>';
+
+    this._languageTable = new Tabulator(tableContainer, {
+      data: this._languageData,
+      layout: 'fitColumns',
+      height: '100%',
+      selectable: 1,
+      resizableColumns: false,
+      movableColumns: true,
+      headerSortTristate: true,
+      headerSortElement: sortElement,
+      initialSort: [
+        { column: 'language', dir: 'asc' },
+        { column: 'country', dir: 'asc' },
+      ],
+      columns: this._getLanguageTableColumns(),
+    });
+  }
+
+  /**
+   * Get column definitions for language table
+   * @returns {Array} Column definitions
+   * @private
+   */
+  _getLanguageTableColumns() {
+    return [
+      {
+        title: '',
+        field: 'countryCode',
+        width: 50,
+        frozen: true,
+        hozAlign: 'center',
+        vertAlign: 'middle',
+        cssClass: 'language-flag-cell',
+        headerSort: false,
+        resizable: false,
+        formatter: (cell) => this._getFlagSvg(cell.getValue()),
+      },
+      {
+        title: 'Language',
+        field: 'language',
+        widthGrow: 2,
+        hozAlign: 'left',
+        vertAlign: 'middle',
+        headerSort: true,
+        resizable: false,
+      },
+      {
+        title: 'Country',
+        field: 'country',
+        widthGrow: 2,
+        hozAlign: 'left',
+        vertAlign: 'middle',
+        headerSort: true,
+        resizable: false,
+      },
+      {
+        title: 'Locale',
+        field: 'locale',
+        width: 80,
+        hozAlign: 'left',
+        vertAlign: 'middle',
+        headerSort: true,
+        resizable: false,
+      },
+    ];
+  }
+
+  /**
+   * Set up language table event handlers
+   * @private
+   */
+  _setupLanguageTableEvents() {
+    this._languageTable.on('rowClick', (e, row) => {
+      this.selectLanguage(row.getData().locale);
+    });
+
+    this._languageTable.on('rowSelected', (row) => {
+      this._currentLocale = row.getData().locale;
+    });
+  }
+
+  /**
+   * Finalize table setup with selection and focus
+   * @private
+   */
+  _finalizeLanguageTableSetup() {
+    setTimeout(() => {
+      this._refreshLanguageTableSelection();
+      this._focusLanguageTable();
+    }, 100);
+  }
+
+  /**
+   * Handle language table initialization error
+   * @param {Error} error - Error object
+   * @param {HTMLElement} tableContainer - Container element
+   * @private
+   */
+  _handleLanguageTableError(error, tableContainer) {
+    console.error('[LoginManager] Failed to initialize language table:', error);
+    log(LOGIN, Status.ERROR, `Failed to initialize language table: ${error.message}`);
+    this._renderLanguageFallback(tableContainer);
+  }
+
+  /**
+   * Render fallback language list
+   * @param {HTMLElement} tableContainer - Container element
+   * @private
+   */
+  _renderLanguageFallback(tableContainer) {
+    tableContainer.innerHTML = this._languageData.map(lang => `
+      <div class="language-item-fallback" data-locale="${lang.locale}" style="
+        padding: var(--space-3);
+        border-bottom: var(--border-standard);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+        ${lang.locale === this._currentLocale ? 'background: var(--accent-primary); color: white;' : ''}
+      ">
+        ${this._getFlagSvg(lang.countryCode)}
+        <span style="flex: 1;">${lang.language}</span>
+        <span style="color: ${lang.locale === this._currentLocale ? 'rgba(255,255,255,0.8)' : 'var(--text-muted)'};">${lang.country}</span>
+        <span style="color: ${lang.locale === this._currentLocale ? 'rgba(255,255,255,0.8)' : 'var(--text-muted)'};">${lang.locale}</span>
+      </div>
+    `).join('');
+
+    tableContainer.querySelectorAll('.language-item-fallback').forEach(item => {
+      item.addEventListener('click', () => this.selectLanguage(item.dataset.locale));
+    });
   }
 
   /**

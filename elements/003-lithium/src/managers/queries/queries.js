@@ -45,6 +45,10 @@ const PANEL_WIDTH_KEY = 'lithium_queries_panel_width';
 // localStorage key for persisting the Tabulator layout mode across sessions
 const LAYOUT_MODE_KEY = 'lithium_queries_layout_mode';
 
+// localStorage keys for template persistence
+const TEMPLATES_KEY = 'lithium_queries_templates';
+const DEFAULT_TEMPLATE_KEY = 'lithium_queries_default_template';
+
 // History field for CodeMirror undo/redo state
 let historyField;
 
@@ -385,14 +389,35 @@ export default class QueriesManager {
     const nav = this.elements.navigatorContainer;
     if (!nav) return;
 
-    nav.innerHTML = `
+    nav.innerHTML = this._getNavigatorHTML();
+
+    // Process <fa> icons inside the navigator
+    processIcons(nav);
+
+    // Wire up all button groups
+    this._wireControlButtons(nav);
+    this._wireMoveButtons(nav);
+    this._wireManageButtons(nav);
+    this._wireSearchButtons(nav);
+  }
+
+  /**
+   * Get the navigator HTML template
+   * @returns {string} HTML string
+   * @private
+   */
+  _getNavigatorHTML() {
+    return `
       <div class="queries-nav-wrapper">
         <div class="queries-nav-block queries-nav-block-control">
           <button type="button" class="queries-nav-btn" id="queries-nav-refresh" title="Refresh">
             <fa fa-arrows-rotate></fa>
           </button>
+          <button type="button" class="queries-nav-btn ${this._filtersVisible ? 'queries-nav-btn-active' : ''}" id="queries-nav-filter" title="Toggle Filters">
+            <fa fa-filter></fa>
+          </button>
           <button type="button" class="queries-nav-btn queries-nav-btn-has-popup" id="queries-nav-menu" title="Table Options">
-            <fa fa-screwdriver-wrench></fa>
+            <fa fa-layer-group></fa>
           </button>
           <button type="button" class="queries-nav-btn queries-nav-btn-has-popup" id="queries-nav-width" title="Table Width">
             <fa fa-left-right></fa>
@@ -400,11 +425,8 @@ export default class QueriesManager {
           <button type="button" class="queries-nav-btn queries-nav-btn-has-popup" id="queries-nav-layout" title="Table Layout">
             <fa fa-table-columns></fa>
           </button>
-          <button type="button" class="queries-nav-btn queries-nav-btn-has-popup" id="queries-nav-export" title="Export">
-            <fa fa-download></fa>
-          </button>
-          <button type="button" class="queries-nav-btn queries-nav-btn-has-popup" id="queries-nav-import" title="Import">
-            <fa fa-upload></fa>
+          <button type="button" class="queries-nav-btn queries-nav-btn-has-popup" id="queries-nav-template" title="Templates">
+            <fa fa-screwdriver-wrench></fa>
           </button>
         </div>
         <div class="queries-nav-block queries-nav-block-move">
@@ -458,35 +480,56 @@ export default class QueriesManager {
         </div>
       </div>
     `;
+  }
 
-    // Process <fa> icons inside the navigator
-    processIcons(nav);
-
-    // --- Wire up control buttons ---
+  /**
+   * Wire up control buttons
+   * @param {HTMLElement} nav - Navigator container
+   * @private
+   */
+  _wireControlButtons(nav) {
     nav.querySelector('#queries-nav-refresh')?.addEventListener('click', () => this.handleNavRefresh());
+    nav.querySelector('#queries-nav-filter')?.addEventListener('click', () => this.handleNavFilter());
     nav.querySelector('#queries-nav-menu')?.addEventListener('click', (e) => this.toggleNavPopup(e, 'menu'));
     nav.querySelector('#queries-nav-width')?.addEventListener('click', (e) => this.toggleNavPopup(e, 'width'));
     nav.querySelector('#queries-nav-layout')?.addEventListener('click', (e) => this.toggleNavPopup(e, 'layout'));
-    nav.querySelector('#queries-nav-export')?.addEventListener('click', (e) => this.toggleNavPopup(e, 'export'));
-    nav.querySelector('#queries-nav-import')?.addEventListener('click', (e) => this.toggleNavPopup(e, 'import'));
+    nav.querySelector('#queries-nav-template')?.addEventListener('click', (e) => this.toggleNavPopup(e, 'template'));
+  }
 
-    // --- Wire up move buttons ---
+  /**
+   * Wire up move buttons
+   * @param {HTMLElement} nav - Navigator container
+   * @private
+   */
+  _wireMoveButtons(nav) {
     nav.querySelector('#queries-nav-first')?.addEventListener('click', () => this.navigateFirst());
     nav.querySelector('#queries-nav-pgup')?.addEventListener('click',  () => this.navigatePrevPage());
     nav.querySelector('#queries-nav-prev')?.addEventListener('click',  () => this.navigatePrevRec());
     nav.querySelector('#queries-nav-next')?.addEventListener('click',  () => this.navigateNextRec());
     nav.querySelector('#queries-nav-pgdn')?.addEventListener('click',  () => this.navigateNextPage());
     nav.querySelector('#queries-nav-last')?.addEventListener('click',  () => this.navigateLast());
+  }
 
-    // --- Wire up manage buttons ---
+  /**
+   * Wire up manage buttons
+   * @param {HTMLElement} nav - Navigator container
+   * @private
+   */
+  _wireManageButtons(nav) {
     nav.querySelector('#queries-nav-add')?.addEventListener('click',       () => this.handleNavAdd());
     nav.querySelector('#queries-nav-duplicate')?.addEventListener('click', () => this.handleNavDuplicate());
     nav.querySelector('#queries-nav-edit')?.addEventListener('click',      () => this.handleNavEdit());
     nav.querySelector('#queries-nav-save')?.addEventListener('click',      () => this.handleNavSave());
     nav.querySelector('#queries-nav-cancel')?.addEventListener('click',    () => this.handleNavCancel());
     nav.querySelector('#queries-nav-delete')?.addEventListener('click',    () => this.handleNavDelete());
+  }
 
-    // --- Wire up search ---
+  /**
+   * Wire up search buttons and input
+   * @param {HTMLElement} nav - Navigator container
+   * @private
+   */
+  _wireSearchButtons(nav) {
     const searchInput = nav.querySelector('#queries-search-input');
     const searchBtn   = nav.querySelector('#queries-search-btn');
     const clearBtn    = nav.querySelector('#queries-search-clear-btn');
@@ -535,16 +578,75 @@ export default class QueriesManager {
     const popup = document.createElement('div');
     popup.className = 'queries-nav-popup';
     items.forEach(item => {
+      // Handle separator
+      if (item.isSeparator) {
+        const separator = document.createElement('div');
+        separator.className = 'queries-nav-popup-separator';
+        popup.appendChild(separator);
+        return;
+      }
+
+      // Handle template items with delete button
+      if (item.isTemplate) {
+        const row = document.createElement('div');
+        row.className = 'queries-nav-popup-template-item';
+        
+        // Template label/button
+        const labelBtn = document.createElement('button');
+        labelBtn.type = 'button';
+        labelBtn.className = 'queries-nav-popup-template-label';
+        labelBtn.innerHTML = `
+          <span class="queries-nav-popup-template-check">${item.isDefault ? '✓' : ''}</span>
+          <span class="queries-nav-popup-template-name">${item.label}</span>
+          ${item.isDefault ? '<span class="queries-nav-popup-template-default">(default)</span>' : ''}
+        `;
+        labelBtn.addEventListener('click', () => {
+          this._closeNavPopup();
+          item.action();
+        });
+        row.appendChild(labelBtn);
+        
+        // Delete button
+        const deleteBtn = document.createElement('button');
+        deleteBtn.type = 'button';
+        deleteBtn.className = 'queries-nav-popup-template-delete';
+        deleteBtn.title = 'Delete template';
+        deleteBtn.innerHTML = '<fa fa-trash-can></fa>';
+        deleteBtn.addEventListener('click', (e) => {
+          this._deleteTemplate(item.template.name, e);
+        });
+        row.appendChild(deleteBtn);
+        
+        popup.appendChild(row);
+        return;
+      }
+
+      // Regular menu item with optional checkmark column
       const row = document.createElement('button');
       row.type = 'button';
       row.className = 'queries-nav-popup-item';
-      row.textContent = item.label;
+      
+      // Build content with aligned checkmark column if checked property exists
+      if (typeof item.checked === 'boolean') {
+        row.innerHTML = `
+          <span class="queries-nav-popup-check">${item.checked ? '✓' : ''}</span>
+          <span class="queries-nav-popup-label">${item.label}</span>
+        `;
+      } else if (item.icon) {
+        row.innerHTML = `<fa ${item.icon}></fa> ${item.label}`;
+      } else {
+        row.textContent = item.label;
+      }
+      
       row.addEventListener('click', () => {
         this._closeNavPopup();
         item.action();
       });
       popup.appendChild(row);
     });
+
+    // Process icons in the popup (for delete buttons)
+    processIcons(popup);
 
     // Position relative to the navigator container
     const navRect = this.elements.navigatorContainer.getBoundingClientRect();
@@ -594,38 +696,26 @@ export default class QueriesManager {
     switch (popupId) {
       case 'menu':
         return [
-          { label: this._filtersVisible ? '\u2713 Column Filters' : '   Column Filters', action: () => this.toggleColumnFilters() },
           { label: 'Expand All',   action: () => this.handleMenuExpandAll() },
           { label: 'Collapse All', action: () => this.handleMenuCollapseAll() },
         ];
-      case 'export':
-        return [
-          { label: 'PDF', action: () => this.handleExport('pdf') },
-          { label: 'CSV', action: () => this.handleExport('csv') },
-          { label: 'TXT', action: () => this.handleExport('txt') },
-          { label: 'XLS', action: () => this.handleExport('xls') },
-        ];
-      case 'import':
-        return [
-          { label: 'CSV', action: () => this.handleImport('csv') },
-          { label: 'TXT', action: () => this.handleImport('txt') },
-          { label: 'XLS', action: () => this.handleImport('xls') },
-        ];
+      case 'template':
+        return this._getTemplatePopupItems();
       case 'width':
         return [
-          { label: this._tableWidthMode === 'narrow'  ? '\u2713 Narrow'  : '   Narrow',  action: () => this.setTableWidth('narrow') },
-          { label: this._tableWidthMode === 'compact' ? '\u2713 Compact' : '   Compact', action: () => this.setTableWidth('compact') },
-          { label: this._tableWidthMode === 'normal'  ? '\u2713 Normal'  : '   Normal',  action: () => this.setTableWidth('normal') },
-          { label: this._tableWidthMode === 'wide'    ? '\u2713 Wide'    : '   Wide',    action: () => this.setTableWidth('wide') },
-          { label: this._tableWidthMode === 'auto'    ? '\u2713 Auto'    : '   Auto',    action: () => this.setTableWidth('auto') },
+          { label: 'Narrow',  checked: this._tableWidthMode === 'narrow',  action: () => this.setTableWidth('narrow') },
+          { label: 'Compact', checked: this._tableWidthMode === 'compact', action: () => this.setTableWidth('compact') },
+          { label: 'Normal',  checked: this._tableWidthMode === 'normal',  action: () => this.setTableWidth('normal') },
+          { label: 'Wide',    checked: this._tableWidthMode === 'wide',    action: () => this.setTableWidth('wide') },
+          { label: 'Auto',    checked: this._tableWidthMode === 'auto',    action: () => this.setTableWidth('auto') },
         ];
       case 'layout':
         return [
-          { label: this._tableLayoutMode === 'fitColumns'     ? '\u2713 Fit Columns'  : '   Fit Columns',  action: () => this.setTableLayout('fitColumns') },
-          { label: this._tableLayoutMode === 'fitData'        ? '\u2713 Fit Data'     : '   Fit Data',     action: () => this.setTableLayout('fitData') },
-          { label: this._tableLayoutMode === 'fitDataFill'    ? '\u2713 Fit Fill'     : '   Fit Fill',     action: () => this.setTableLayout('fitDataFill') },
-          { label: this._tableLayoutMode === 'fitDataStretch' ? '\u2713 Fit Stretch'  : '   Fit Stretch',  action: () => this.setTableLayout('fitDataStretch') },
-          { label: this._tableLayoutMode === 'fitDataTable'   ? '\u2713 Fit Table'    : '   Fit Table',    action: () => this.setTableLayout('fitDataTable') },
+          { label: 'Fit Columns',  checked: this._tableLayoutMode === 'fitColumns',     action: () => this.setTableLayout('fitColumns') },
+          { label: 'Fit Data',     checked: this._tableLayoutMode === 'fitData',        action: () => this.setTableLayout('fitData') },
+          { label: 'Fit Fill',     checked: this._tableLayoutMode === 'fitDataFill',    action: () => this.setTableLayout('fitDataFill') },
+          { label: 'Fit Stretch',  checked: this._tableLayoutMode === 'fitDataStretch', action: () => this.setTableLayout('fitDataStretch') },
+          { label: 'Fit Table',    checked: this._tableLayoutMode === 'fitDataTable',   action: () => this.setTableLayout('fitDataTable') },
         ];
       default:
         return [];
@@ -1515,126 +1605,139 @@ export default class QueriesManager {
     log(Subsystems.MANAGER, Status.INFO, 'Navigator: Save');
     if (!this.table) return;
 
-    // Check if there are any changes to save
     if (!this._isAnyDirty()) {
-      toast.info('No Changes', {
-        description: 'Nothing to save — no changes have been made',
-        duration: 3000,
-      });
+      toast.info('No Changes', { description: 'Nothing to save — no changes have been made', duration: 3000 });
       return;
     }
 
-    // Determine which row(s) need saving.
-    // When in edit mode, the selected row is the one being edited.
     const selected = this.table.getSelectedRows();
     if (selected.length === 0) {
-      toast.info('No Row Selected', {
-        description: 'Please select a row to save',
-        duration: 3000,
-      });
+      toast.info('No Row Selected', { description: 'Please select a row to save', duration: 3000 });
       return;
     }
 
     const row = selected[0];
-    const rowData = row.getData();
-    const pkField = this.primaryKeyField || 'query_id';
-    const pkValue = rowData[pkField];
-
-    // Determine whether this is an insert (no PK / PK is falsy) or update
-    const isInsert = pkValue == null || pkValue === '' || pkValue === 0;
-
-    // Find the appropriate QueryRef from config
-    // Use QueryRef 28 for updates (Update System Query)
-    const insertRef = this.queryRefs?.insertQueryRef ?? null;
-    const updateRef = this.queryRefs?.updateQueryRef ?? 28; // Default to QueryRef 28
-    const queryRef = isInsert ? insertRef : updateRef;
-
-    if (queryRef == null) {
-      // API QueryRefs not configured yet — save locally only
-      log(Subsystems.MANAGER, Status.WARN,
-        `[QueriesManager] No ${isInsert ? 'insert' : 'update'}QueryRef configured — save is local only`);
-
-      // Exit edit mode
-      await this._exitEditMode('save');
-
-      toast.info('Saved Locally', {
-        description: `${isInsert ? 'Insert' : 'Update'} API not configured — changes are local only`,
-        duration: 4000,
-      });
+    const saveContext = this._buildSaveContext(row);
+    
+    if (!saveContext.queryRef) {
+      await this._saveLocally(saveContext.isInsert);
       return;
     }
 
     try {
-      let result;
-
-      if (isInsert) {
-        // For inserts, use the generic insert approach with JSON payload
-        const payload = { ...rowData };
-        delete payload[pkField];
-
-        log(Subsystems.CONDUIT, Status.INFO,
-          `[QueriesManager] Inserting row (queryRef: ${queryRef})`);
-
-        result = await authQuery(this.app.api, queryRef, {
-          JSON: payload,
-        });
-
-        // If insert returned a new PK, update the row data
-        if (result?.[0]?.[pkField] != null) {
-          row.update({ [pkField]: result[0][pkField] });
-        }
-      } else {
-        // For updates, use QueryRef 28 with the specific parameters
-        // Get current content from editors
-        const sqlContent = this._getCurrentSqlContent();
-        const summaryContent = this._getCurrentSummaryContent();
-
-        log(Subsystems.CONDUIT, Status.INFO,
-          `[QueriesManager] Updating query (queryRef: ${queryRef}, queryId: ${pkValue})`);
-
-        // Build parameters for QueryRef 028 - Update System Query
-        // Per acuranzo_1119.lua, the required parameters are:
-        // QUERYID, QUERYCODE, QUERYNAME, QUERYSUMMARY, QUERYTYPE, QUERYREF, QUERYDIALECT, QUERYSTATUS, USERID
-        const params = {
-          INTEGER: {
-            QUERYID: pkValue,
-            QUERYTYPE: rowData.query_type_a28 ?? 1,
-            QUERYDIALECT: rowData.query_dialect_a30 ?? 1,
-            QUERYSTATUS: rowData.query_status_a27 ?? 1,
-            USERID: this.app?.user?.id ?? 0,
-            // QUERYREF is INTEGER - parse from string (e.g., "028" → 28)
-            QUERYREF: parseInt(rowData.query_ref, 10) || 0,
-          },
-          STRING: {
-            QUERYCODE: sqlContent || rowData.code || '',
-            QUERYNAME: rowData.name || '',
-            QUERYSUMMARY: summaryContent || rowData.summary || '',
-          },
-        };
-
-        result = await authQuery(this.app.api, queryRef, params);
-      }
-
-      // Mark all as clean after successful save
+      await this._executeSave(row, saveContext);
       this._markAllClean();
-
-      // Exit edit mode after successful save
       await this._exitEditMode('save');
-
+      
       toast.success('Changes Saved', {
-        description: `Query ${isInsert ? 'inserted' : 'updated'} successfully`,
+        description: `Query ${saveContext.isInsert ? 'inserted' : 'updated'} successfully`,
         duration: 3000,
       });
-
-      log(Subsystems.MANAGER, Status.INFO,
-        `${isInsert ? 'Inserted' : 'Updated'} query (PK: ${pkValue ?? 'new'})`);
+      log(Subsystems.MANAGER, Status.INFO, `${saveContext.isInsert ? 'Inserted' : 'Updated'} query (PK: ${saveContext.pkValue ?? 'new'})`);
     } catch (error) {
-      toast.error('Save Failed', {
-        serverError: error.serverError,
-        subsystem: 'Conduit',
-        duration: 8000,
-      });
+      toast.error('Save Failed', { serverError: error.serverError, subsystem: 'Conduit', duration: 8000 });
     }
+  }
+
+  /**
+   * Build context object for save operation
+   * @param {Object} row - Tabulator row
+   * @returns {Object} Save context
+   * @private
+   */
+  _buildSaveContext(row) {
+    const rowData = row.getData();
+    const pkField = this.primaryKeyField || 'query_id';
+    const pkValue = rowData[pkField];
+    const isInsert = pkValue == null || pkValue === '' || pkValue === 0;
+    
+    const insertRef = this.queryRefs?.insertQueryRef ?? null;
+    const updateRef = this.queryRefs?.updateQueryRef ?? 28;
+    
+    return {
+      pkField,
+      pkValue,
+      isInsert,
+      queryRef: isInsert ? insertRef : updateRef,
+      rowData,
+    };
+  }
+
+  /**
+   * Save locally when API is not configured
+   * @param {boolean} isInsert - Whether this is an insert operation
+   * @private
+   */
+  async _saveLocally(isInsert) {
+    log(Subsystems.MANAGER, Status.WARN, `[QueriesManager] No ${isInsert ? 'insert' : 'update'}QueryRef configured — save is local only`);
+    await this._exitEditMode('save');
+    toast.info('Saved Locally', {
+      description: `${isInsert ? 'Insert' : 'Update'} API not configured — changes are local only`,
+      duration: 4000,
+    });
+  }
+
+  /**
+   * Execute the save operation via API
+   * @param {Object} row - Tabulator row
+   * @param {Object} context - Save context
+   * @private
+   */
+  async _executeSave(row, context) {
+    if (context.isInsert) {
+      await this._executeInsert(row, context);
+    } else {
+      await this._executeUpdate(context);
+    }
+  }
+
+  /**
+   * Execute insert operation
+   * @param {Object} row - Tabulator row
+   * @param {Object} context - Save context
+   * @private
+   */
+  async _executeInsert(row, context) {
+    const payload = { ...context.rowData };
+    delete payload[context.pkField];
+
+    log(Subsystems.CONDUIT, Status.INFO, `[QueriesManager] Inserting row (queryRef: ${context.queryRef})`);
+
+    const result = await authQuery(this.app.api, context.queryRef, { JSON: payload });
+
+    if (result?.[0]?.[context.pkField] != null) {
+      row.update({ [context.pkField]: result[0][context.pkField] });
+    }
+  }
+
+  /**
+   * Execute update operation
+   * @param {Object} context - Save context
+   * @private
+   */
+  async _executeUpdate(context) {
+    const sqlContent = this._getCurrentSqlContent();
+    const summaryContent = this._getCurrentSummaryContent();
+
+    log(Subsystems.CONDUIT, Status.INFO, `[QueriesManager] Updating query (queryRef: ${context.queryRef}, queryId: ${context.pkValue})`);
+
+    const params = {
+      INTEGER: {
+        QUERYID: context.pkValue,
+        QUERYTYPE: context.rowData.query_type_a28 ?? 1,
+        QUERYDIALECT: context.rowData.query_dialect_a30 ?? 1,
+        QUERYSTATUS: context.rowData.query_status_a27 ?? 1,
+        USERID: this.app?.user?.id ?? 0,
+        QUERYREF: parseInt(context.rowData.query_ref, 10) || 0,
+      },
+      STRING: {
+        QUERYCODE: sqlContent || context.rowData.code || '',
+        QUERYNAME: context.rowData.name || '',
+        QUERYSUMMARY: summaryContent || context.rowData.summary || '',
+      },
+    };
+
+    await authQuery(this.app.api, context.queryRef, params);
   }
 
   async handleNavCancel() {
@@ -2034,6 +2137,516 @@ export default class QueriesManager {
     return 'custom';
   }
 
+  // ── Template System ───────────────────────────────────────────────────
+
+  /**
+   * Get template popup menu items.
+   * Layout: saved templates (with delete buttons), separator, Save template, Make default
+   * @returns {Array<{label: string, action: Function, isTemplate?: boolean, template?: Object, isSeparator?: boolean, icon?: string}>}
+   */
+  _getTemplatePopupItems() {
+    const items = [];
+    const templates = this._loadTemplates();
+    const defaultTemplateName = this._loadDefaultTemplateName();
+
+    // List saved templates at the TOP
+    templates.forEach(template => {
+      const isDefault = template.name === defaultTemplateName;
+      items.push({
+        label: template.name,
+        action: () => this._applyTemplate(template),
+        isTemplate: true,
+        template,
+        isDefault,
+      });
+    });
+
+    // Separator between templates and functions
+    if (templates.length > 0) {
+      items.push({ label: '', action: () => {}, isSeparator: true });
+    }
+
+    // Function items at the BOTTOM
+    items.push({ label: 'Save template...', action: () => this._showSaveTemplateDialog(), icon: 'fa-star' });
+    
+    if (templates.length > 0) {
+      items.push({ label: 'Make default...', action: () => this._showMakeDefaultDialog(), icon: 'fa-heart' });
+    }
+
+    return items;
+  }
+
+  /**
+   * Delete a template by name.
+   * @param {string} templateName - Name of template to delete
+   * @param {Event} e - Click event to stop propagation
+   */
+  _deleteTemplate(templateName, e) {
+    e.stopPropagation();
+    e.preventDefault();
+    
+    const confirmed = window.confirm(`Delete template "${templateName}"?\n\nThis action cannot be undone.`);
+    if (!confirmed) return;
+
+    const templates = this._loadTemplates();
+    const filtered = templates.filter(t => t.name !== templateName);
+    this._saveTemplates(filtered);
+
+    // If this was the default, clear it
+    const defaultName = this._loadDefaultTemplateName();
+    if (defaultName === templateName) {
+      this._saveDefaultTemplateName(null);
+    }
+
+    toast.success('Template Deleted', { description: `"${templateName}" has been deleted`, duration: 3000 });
+    
+    // Close and reopen popup to refresh
+    this._closeNavPopup();
+  }
+
+  /**
+   * Load templates from localStorage.
+   * @returns {Array<{name: string, columns: Array, createdAt: string}>}
+   */
+  _loadTemplates() {
+    try {
+      const stored = localStorage.getItem(TEMPLATES_KEY);
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (err) {
+      log(Subsystems.MANAGER, Status.ERROR, `[QueriesManager] Failed to load templates: ${err.message}`);
+    }
+    return [];
+  }
+
+  /**
+   * Save templates to localStorage.
+   * @param {Array} templates - Array of template objects
+   */
+  _saveTemplates(templates) {
+    try {
+      localStorage.setItem(TEMPLATES_KEY, JSON.stringify(templates));
+    } catch (err) {
+      log(Subsystems.MANAGER, Status.ERROR, `[QueriesManager] Failed to save templates: ${err.message}`);
+    }
+  }
+
+  /**
+   * Load the default template name from localStorage.
+   * @returns {string|null}
+   */
+  _loadDefaultTemplateName() {
+    try {
+      return localStorage.getItem(DEFAULT_TEMPLATE_KEY);
+    } catch (err) {
+      return null;
+    }
+  }
+
+  /**
+   * Save the default template name to localStorage.
+   * @param {string|null} name - Template name, or null to clear default
+   */
+  _saveDefaultTemplateName(name) {
+    try {
+      if (name) {
+        localStorage.setItem(DEFAULT_TEMPLATE_KEY, name);
+      } else {
+        localStorage.removeItem(DEFAULT_TEMPLATE_KEY);
+      }
+    } catch (err) {
+      log(Subsystems.MANAGER, Status.ERROR, `[QueriesManager] Failed to save default template: ${err.message}`);
+    }
+  }
+
+  /**
+   * Show the save template dialog.
+   * Prompts user for a template name and saves the current column configuration.
+   */
+  _showSaveTemplateDialog() {
+    if (!this.table) {
+      toast.info('No Table', { description: 'Table not initialized', duration: 3000 });
+      return;
+    }
+
+    const dialog = document.createElement('div');
+    dialog.className = 'queries-template-dialog';
+    dialog.innerHTML = `
+      <div class="queries-template-dialog-content">
+        <h3>Save Template</h3>
+        <input type="text" class="queries-template-input" placeholder="Template name..." maxlength="50">
+        <div class="queries-template-dialog-buttons">
+          <button type="button" class="queries-template-btn queries-template-btn-secondary" data-action="cancel">Cancel</button>
+          <button type="button" class="queries-template-btn queries-template-btn-primary" data-action="save">Save</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(dialog);
+
+    const input = dialog.querySelector('.queries-template-input');
+    const saveBtn = dialog.querySelector('[data-action="save"]');
+    const cancelBtn = dialog.querySelector('[data-action="cancel"]');
+
+    // Focus input after dialog is rendered
+    requestAnimationFrame(() => input.focus());
+
+    const closeDialog = () => {
+      dialog.remove();
+    };
+
+    const handleSave = () => {
+      const name = input.value.trim();
+      if (!name) {
+        input.classList.add('error');
+        return;
+      }
+
+      this._saveTemplate(name);
+      closeDialog();
+    };
+
+    saveBtn.addEventListener('click', handleSave);
+    cancelBtn.addEventListener('click', closeDialog);
+
+    input.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        handleSave();
+      } else if (e.key === 'Escape') {
+        closeDialog();
+      }
+    });
+
+    // Close on backdrop click
+    dialog.addEventListener('click', (e) => {
+      if (e.target === dialog) {
+        closeDialog();
+      }
+    });
+  }
+
+  /**
+   * Save the current table configuration as a template.
+   * Captures: column order, visibility, widths, sorting, filters, panel width, layout mode
+   * @param {string} name - Template name
+   */
+  _saveTemplate(name) {
+    if (!this.table) {
+      console.log('[Template] Cannot save - no table');
+      return;
+    }
+
+    const templates = this._loadTemplates();
+    const existingIndex = templates.findIndex(t => t.name === name);
+
+    // Get all columns in their current order with full configuration
+    const allColumns = this.table.getColumns();
+    const columnConfig = allColumns
+      .filter(col => col.getField() && col.getField() !== '_selector')
+      .map((col, index) => ({
+        field: col.getField(),
+        visible: col.isVisible(),
+        width: col.getWidth(),
+        position: index,
+      }));
+
+    console.log('[Template] Saving columns:', columnConfig);
+
+    // Get current sorters
+    const sorters = this.table.getSorters().map(s => ({
+      field: s.field,
+      dir: s.dir,
+    }));
+    console.log('[Template] Saving sorters:', sorters);
+
+    // Get header filters - Tabulator stores these in the column definitions
+    const filters = [];
+    allColumns.forEach(col => {
+      const field = col.getField();
+      if (!field || field === '_selector') return;
+      
+      // Try to get filter value from the column's filter element
+      const colDef = col.getDefinition();
+      const filterVal = this.table.getHeaderFilterValue?.(field);
+      if (filterVal !== undefined && filterVal !== '' && filterVal !== null) {
+        filters.push({ field, value: filterVal });
+      }
+    });
+    console.log('[Template] Saving filters:', filters);
+
+    // Get panel width
+    const panelWidth = this.elements.leftPanel?.offsetWidth || 314;
+    console.log('[Template] Saving panel width:', panelWidth);
+
+    // Get layout mode
+    const layoutMode = this._tableLayoutMode || 'fitColumns';
+    console.log('[Template] Saving layout mode:', layoutMode);
+
+    // Get filters visibility state
+    const filtersVisible = this._filtersVisible || false;
+    console.log('[Template] Saving filters visible:', filtersVisible);
+
+    const template = {
+      name,
+      columns: columnConfig,
+      sorters,
+      filters,
+      panelWidth,
+      layoutMode,
+      filtersVisible,
+      createdAt: new Date().toISOString(),
+    };
+
+    console.log('[Template] Full template object:', template);
+
+    if (existingIndex >= 0) {
+      templates[existingIndex] = template;
+      toast.success('Template Updated', { description: `"${name}" has been updated`, duration: 3000 });
+    } else {
+      templates.push(template);
+      toast.success('Template Saved', { description: `"${name}" has been saved`, duration: 3000 });
+    }
+
+    this._saveTemplates(templates);
+    log(Subsystems.MANAGER, Status.INFO, `[QueriesManager] Template saved: ${name} (${columnConfig.length} columns)`);
+  }
+
+  /**
+   * Show the make default dialog.
+   * Lists all templates to choose which one should be the default.
+   */
+  _showMakeDefaultDialog() {
+    const templates = this._loadTemplates();
+    const currentDefault = this._loadDefaultTemplateName();
+
+    if (templates.length === 0) {
+      toast.info('No Templates', { description: 'Save a template first', duration: 3000 });
+      return;
+    }
+
+    const dialog = document.createElement('div');
+    dialog.className = 'queries-template-dialog';
+
+    const templateOptions = templates.map(t => {
+      const isDefault = t.name === currentDefault;
+      return `<option value="${t.name}" ${isDefault ? 'selected' : ''}>${t.name}${isDefault ? ' (current default)' : ''}</option>`;
+    }).join('');
+
+    dialog.innerHTML = `
+      <div class="queries-template-dialog-content">
+        <h3>Set Default Template</h3>
+        <select class="queries-template-select">
+          <option value="">-- No Default --</option>
+          ${templateOptions}
+        </select>
+        <div class="queries-template-dialog-buttons">
+          <button type="button" class="queries-template-btn queries-template-btn-secondary" data-action="cancel">Cancel</button>
+          <button type="button" class="queries-template-btn queries-template-btn-primary" data-action="set">Set Default</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(dialog);
+
+    const select = dialog.querySelector('.queries-template-select');
+    const setBtn = dialog.querySelector('[data-action="set"]');
+    const cancelBtn = dialog.querySelector('[data-action="cancel"]');
+
+    const closeDialog = () => {
+      dialog.remove();
+    };
+
+    setBtn.addEventListener('click', () => {
+      const selectedName = select.value;
+      if (selectedName) {
+        this._saveDefaultTemplateName(selectedName);
+        toast.success('Default Set', { description: `"${selectedName}" is now the default template`, duration: 3000 });
+      } else {
+        this._saveDefaultTemplateName(null);
+        toast.info('Default Cleared', { description: 'No default template set', duration: 3000 });
+      }
+      closeDialog();
+    });
+
+    cancelBtn.addEventListener('click', closeDialog);
+
+    // Close on backdrop click
+    dialog.addEventListener('click', (e) => {
+      if (e.target === dialog) {
+        closeDialog();
+      }
+    });
+  }
+
+  /**
+   * Apply a template to the current table.
+   * Restores: column order, visibility, widths, sorting, filters, panel width, layout mode
+   * @param {Object} template - Template object with full configuration
+   */
+  _applyTemplate(template) {
+    console.log('[Template] Applying template:', template?.name);
+    
+    if (!this._validateTemplate(template)) return;
+
+    try {
+      this._applyTemplateLayout(template);
+      this._applyTemplateColumns(template);
+      this._applyTemplateFilters(template);
+      
+      this.table.redraw(true);
+      toast.success('Template Applied', { description: `"${template.name}" has been applied`, duration: 3000 });
+      log(Subsystems.MANAGER, Status.INFO, `[QueriesManager] Template applied: ${template.name}`);
+    } catch (err) {
+      this._handleTemplateError(err);
+    }
+  }
+
+  /**
+   * Validate template before applying
+   * @param {Object} template - Template to validate
+   * @returns {boolean} True if valid
+   * @private
+   */
+  _validateTemplate(template) {
+    if (!this.table || !template) {
+      console.error('[Template] Cannot apply - no table or template');
+      toast.error('Template Error', { description: 'Failed to apply template', duration: 3000 });
+      return false;
+    }
+
+    if (!template.columns || template.columns.length === 0) {
+      console.error('[Template] Template has no columns:', template);
+      toast.error('Template Error', { description: 'Template has no column data', duration: 3000 });
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * Apply layout and panel settings from template
+   * @param {Object} template - Template object
+   * @private
+   */
+  _applyTemplateLayout(template) {
+    if (template.layoutMode && template.layoutMode !== this._tableLayoutMode) {
+      this.setTableLayout(template.layoutMode);
+    }
+
+    if (template.panelWidth && this.elements.leftPanel) {
+      this.elements.leftPanel.style.width = `${template.panelWidth}px`;
+      this._savePanelWidth(template.panelWidth);
+      this._tableWidthMode = this._detectWidthMode(template.panelWidth);
+    }
+  }
+
+  /**
+   * Apply column configuration from template
+   * @param {Object} template - Template object
+   * @private
+   */
+  _applyTemplateColumns(template) {
+    if (this.table.blockRedraw) {
+      this.table.blockRedraw();
+    }
+
+    try {
+      const sortedColumns = [...template.columns].sort((a, b) => a.position - b.position);
+      this._reorderColumns(sortedColumns);
+      
+      if (template.sorters?.length > 0) {
+        this.table.setSort(template.sorters);
+      }
+    } finally {
+      if (this.table.restoreRedraw) {
+        this.table.restoreRedraw();
+      }
+    }
+  }
+
+  /**
+   * Reorder columns according to template
+   * @param {Array} sortedColumns - Sorted column configurations
+   * @private
+   */
+  _reorderColumns(sortedColumns) {
+    for (let i = sortedColumns.length - 1; i >= 0; i--) {
+      const colConfig = sortedColumns[i];
+      const col = this.table.getColumn(colConfig.field);
+      
+      if (!col) {
+        console.warn(`[Template] Column not found: ${colConfig.field}`);
+        continue;
+      }
+
+      // Move column if needed
+      if (i > 0) {
+        const afterCol = this.table.getColumn(sortedColumns[i - 1].field);
+        if (afterCol) {
+          this.table.moveColumn(col, afterCol, false);
+        }
+      }
+      
+      // Apply visibility
+      colConfig.visible ? col.show() : col.hide();
+      
+      // Apply width
+      if (colConfig.width) {
+        col.setWidth(colConfig.width);
+      }
+    }
+  }
+
+  /**
+   * Apply filters from template
+   * @param {Object} template - Template object
+   * @private
+   */
+  _applyTemplateFilters(template) {
+    if (template.filtersVisible !== undefined && template.filtersVisible !== this._filtersVisible) {
+      this.toggleColumnFilters();
+    }
+
+    if (template.filters?.length > 0) {
+      template.filters.forEach(filter => {
+        this.table.setHeaderFilterValue?.(filter.field, filter.value);
+      });
+    }
+  }
+
+  /**
+   * Handle template application error
+   * @param {Error} err - Error object
+   * @private
+   */
+  _handleTemplateError(err) {
+    if (this.table?.restoreRedraw) {
+      this.table.restoreRedraw();
+    }
+    console.error('[Template] Error applying template:', err);
+    toast.error('Template Error', { description: err.message, duration: 3000 });
+    log(Subsystems.MANAGER, Status.ERROR, `[QueriesManager] Failed to apply template: ${err.message}`);
+  }
+
+  /**
+   * Apply the default template if one is set.
+   * Called during table initialization.
+   */
+  _applyDefaultTemplate() {
+    const defaultName = this._loadDefaultTemplateName();
+    if (!defaultName) return;
+
+    const templates = this._loadTemplates();
+    const defaultTemplate = templates.find(t => t.name === defaultName);
+
+    if (defaultTemplate) {
+      // Defer application until table is fully built
+      this.table.on('tableBuilt', () => {
+        this._applyTemplate(defaultTemplate);
+      });
+    }
+  }
+
   handleNavEmail() {
     log(Subsystems.MANAGER, Status.INFO, 'Navigator: Email');
     if (!this.table) return;
@@ -2195,14 +2808,14 @@ export default class QueriesManager {
     group.insertBefore(printBtn, anchor);
 
     // 2. Email button
-    const emailBtn = makeBtn('queries-footer-email', 'fa-envelope', 'Email');
+    const emailBtn = makeBtn('queries-footer-email', 'fa-paper-plane', 'E-Mail');
     group.insertBefore(emailBtn, anchor);
 
     // 3. Export button (with popup)
-    const exportBtn = makeBtn('queries-footer-export', 'fa-download', 'Export');
+    const exportBtn = makeBtn('queries-footer-export', 'fa-file-circle-question', 'Export');
     group.insertBefore(exportBtn, anchor);
 
-    // 4. Data-source select — fills remaining space via flex:1
+    // 4. Data-source select — intrinsic width based on content
     const select = document.createElement('select');
     select.id = 'queries-footer-datasource';
     select.title = 'Data Source';
@@ -2212,6 +2825,13 @@ export default class QueriesManager {
       <option value="data">Query List Data</option>
     `;
     group.insertBefore(select, anchor);
+
+    // 5. Filler button — spans the gap between select and right-side buttons
+    const fillerBtn = document.createElement('button');
+    fillerBtn.type = 'button';
+    fillerBtn.className = 'subpanel-header-btn queries-footer-filler';
+    fillerBtn.title = 'Reports';
+    group.insertBefore(fillerBtn, anchor);
 
     // Process <fa> icons inside the newly inserted buttons
     processIcons(group);
@@ -2468,8 +3088,23 @@ export default class QueriesManager {
    * When hidden, clears all active header filters AND resets
    * custom filter input values and clear-button visibility.
    */
+  /**
+   * Handle filter button click - toggle column filters visibility
+   */
+  handleNavFilter() {
+    log(Subsystems.MANAGER, Status.INFO, 'Navigator: Toggle Filters');
+    this.toggleColumnFilters();
+  }
+
   toggleColumnFilters() {
     this._filtersVisible = !this._filtersVisible;
+
+    // Update the filter button's active state
+    const filterBtn = this.elements.navigatorContainer?.querySelector('#queries-nav-filter');
+    if (filterBtn) {
+      filterBtn.classList.toggle('queries-nav-btn-active', this._filtersVisible);
+    }
+
     if (this._filtersVisible) {
       this.elements.tableContainer.classList.add('queries-filters-visible');
     } else {
@@ -2800,6 +3435,9 @@ export default class QueriesManager {
     // Wire up table event handlers (shared with setTableLayout recreation)
     this._wireTableEvents();
 
+    // Apply default template if one is set
+    this._applyDefaultTemplate();
+
     // Keyboard handling on the table container for navigation + Enter to select
     this.elements.tableContainer.setAttribute('tabindex', '0');
     this.elements.tableContainer.addEventListener('keydown', (e) => {
@@ -2822,9 +3460,9 @@ export default class QueriesManager {
       title: "",
       field: "_selector",
       frozen: true,
-      width: 20,
-      minWidth: 20,
-      maxWidth: 20,
+      width: 16,
+      minWidth: 16,
+      maxWidth: 16,
       resizable: false,
       headerSort: false,
       hozAlign: "center",
@@ -2879,115 +3517,159 @@ export default class QueriesManager {
   _wireTableEvents() {
     if (!this.table) return;
 
-    // ── Row click — primary selection handler ────────────────────────
-    // Since editors are not present on columns in normal mode,
-    // rowClick fires reliably for all cells.
+    this._bindRowClickEvents();
+    this._bindCellClickEvents();
+    this._bindEditEvents();
+    this._bindSelectionEvents();
+  }
+
+  /**
+   * Bind row-level click events
+   * @private
+   */
+  _bindRowClickEvents() {
+    // Row click — primary selection handler
     this.table.on("rowClick", (e, row) => {
       if (this._isCalcRow(row)) return;
       this._selectDataRow(row);
     });
 
-    // Ensure row selection happens consistently before any cell editor logic.
+    // Ensure row selection happens consistently before any cell editor logic
     this.table.on("cellMouseDown", (e, cell) => {
       if (cell.getField() === '_selector' || this._isCalcCell(cell)) return;
-
-      const row = cell.getRow();
-      this._selectDataRow(row);
+      this._selectDataRow(cell.getRow());
     });
 
-    // ── Cell click — programmatic editor invocation in edit mode ─────
-    // When in edit mode, clicking a cell on the editing row should open
-    // the appropriate inline editor. Editors are dynamically added to
-    // columns by _enableColumnEditors(), so cell.edit() works here.
+    // Double-click — enter edit mode
+    this.table.on("rowDblClick", (e, row) => {
+      if (this._isCalcRow(row)) return;
+      this._selectDataRow(row);
+      void this._enterEditMode(row);
+    });
+  }
+
+  /**
+   * Bind cell-level click events
+   * @private
+   */
+  _bindCellClickEvents() {
     this.table.on("cellClick", (e, cell) => {
       const field = cell.getField();
-      // Skip the selector column — it has its own cellClick handler
       if (field === '_selector' || this._isCalcCell(cell)) return;
 
       e?.stopPropagation?.();
       e?.stopImmediatePropagation?.();
 
-      const row = cell.getRow();
-      this._selectDataRow(row);
+      this._selectDataRow(cell.getRow());
 
-      // In edit mode, invoke the editor for editable cells
       if (this._isEditing) {
         this._commitActiveCellEdit(cell);
         this._queueCellEdit(cell);
       }
     });
+  }
 
-    // ── Double-click — enter edit mode ───────────────────────────────
-    this.table.on("rowDblClick", (e, row) => {
-      if (this._isCalcRow(row)) return;
-      // Ensure the row is selected first
-      this._selectDataRow(row);
-      // Enter edit mode
-      void this._enterEditMode(row);
-    });
-
-    // ── Cell edit tracking for dirty state ───────────────────────────
-    // Track when cells are edited to enable Save button
-    this.table.on("cellEdited", (cell) => {
-      // Mark table as dirty when a cell is edited
+  /**
+   * Bind edit-related events
+   * @private
+   */
+  _bindEditEvents() {
+    // Cell edit tracking for dirty state
+    this.table.on("cellEdited", () => {
       this._setDirty('table', true);
     });
+  }
 
-    // ── Selection tracking ───────────────────────────────────────────
-    // Update selector indicator when rows are selected/deselected.
-    // Also persist the selected row's primary key to localStorage.
+  /**
+   * Bind selection-related events
+   * @private
+   */
+  _bindSelectionEvents() {
+    // Row selected
     this.table.on("rowSelected", async (row) => {
       if (this._isCalcRow(row)) return;
-
       this._closeTransientPopups();
-
-      // If we were editing a different row, exit edit mode
-      // (selecting a new row exits edit mode)
-      if (this._isEditing) {
-        const pkField = this.primaryKeyField || 'query_id';
-        const newRowId = row.getData()?.[pkField];
-        // For rows with PKs, compare by ID; for new rows (no PK),
-        // only stay in edit mode if the new row also has no PK
-        const isSameRow = (this._editingRowId != null)
-          ? newRowId === this._editingRowId
-          : newRowId == null;
-        if (!isSameRow) {
-          await this._exitEditMode('row-change');
-        }
-      }
-
-      this._updateSelectorCell(row, true);
-      const pkField = this.primaryKeyField || 'query_id';
-      const pkValue = row.getData()?.[pkField];
-      if (pkValue != null) {
-        try {
-          localStorage.setItem(SELECTED_ROW_KEY, String(pkValue));
-        } catch (_) { /* storage full or restricted — ignore */ }
-      }
+      await this._handleRowSelected(row);
     });
 
+    // Row deselected
     this.table.on("rowDeselected", (row) => {
       if (this._isCalcRow(row)) return;
       this._updateSelectorCell(row, false);
     });
 
-    this.table.on("rowSelectionChanged", (data, rows) => {
-      if (data.length > 0) {
-        const pkField = this.primaryKeyField || 'query_id';
-        const selectedId = data[0]?.[pkField];
-        if (this._isEditing && this._editingRowId != null && String(this._editingRowId) === String(selectedId)) {
-          return;
-        }
-        if (selectedId != null && String(this._loadedDetailRowId) !== String(selectedId)) {
-          this.loadQueryDetails(data[0]);
-        }
-      } else if (!this._isEditing) {
-        this.clearQueryDetails();
-      }
+    // Selection changed
+    this.table.on("rowSelectionChanged", (data) => this._handleSelectionChanged(data));
+  }
 
-      // Update navigation button states based on new selection
-      this._updateMoveButtonState();
-    });
+  /**
+   * Handle row selected event
+   * @param {Object} row - Tabulator row
+   * @private
+   */
+  async _handleRowSelected(row) {
+    // Exit edit mode if editing a different row
+    if (this._isEditing) {
+      const pkField = this.primaryKeyField || 'query_id';
+      const newRowId = row.getData()?.[pkField];
+      const isSameRow = (this._editingRowId != null)
+        ? newRowId === this._editingRowId
+        : newRowId == null;
+      if (!isSameRow) {
+        await this._exitEditMode('row-change');
+      }
+    }
+
+    this._updateSelectorCell(row, true);
+    this._persistSelectedRow(row);
+  }
+
+  /**
+   * Persist selected row to localStorage
+   * @param {Object} row - Tabulator row
+   * @private
+   */
+  _persistSelectedRow(row) {
+    const pkField = this.primaryKeyField || 'query_id';
+    const pkValue = row.getData()?.[pkField];
+    if (pkValue == null) return;
+    
+    try {
+      localStorage.setItem(SELECTED_ROW_KEY, String(pkValue));
+    } catch (_) { /* storage full or restricted — ignore */ }
+  }
+
+  /**
+   * Handle selection changed event
+   * @param {Array} data - Selected row data
+   * @private
+   */
+  _handleSelectionChanged(data) {
+    if (data.length > 0) {
+      const pkField = this.primaryKeyField || 'query_id';
+      const selectedId = data[0]?.[pkField];
+      
+      if (this._shouldSkipDetailLoad(selectedId)) return;
+      
+      if (selectedId != null && String(this._loadedDetailRowId) !== String(selectedId)) {
+        this.loadQueryDetails(data[0]);
+      }
+    } else if (!this._isEditing) {
+      this.clearQueryDetails();
+    }
+
+    this._updateMoveButtonState();
+  }
+
+  /**
+   * Check if detail load should be skipped
+   * @param {*} selectedId - Selected row ID
+   * @returns {boolean} True if should skip
+   * @private
+   */
+  _shouldSkipDetailLoad(selectedId) {
+    return this._isEditing && this._editingRowId != null 
+      && String(this._editingRowId) === String(selectedId);
   }
 
   /**
@@ -3177,86 +3859,104 @@ export default class QueriesManager {
   async fetchQueryDetails(queryId) {
     if (queryId == null) return;
 
-    // Use config-driven detailQueryRef (fallback to 27 for safety)
     const detailRef = this.queryRefs?.detailQueryRef ?? 27;
-
-    log(Subsystems.CONDUIT, Status.INFO,
-      `[QueriesManager] Fetching query details (queryRef: ${detailRef}, queryId: ${queryId})`);
+    log(Subsystems.CONDUIT, Status.INFO, `[QueriesManager] Fetching query details (queryRef: ${detailRef}, queryId: ${queryId})`);
 
     try {
-      const queryDetails = await authQuery(this.app.api, detailRef, {
-        INTEGER: { QUERYID: queryId },
-      });
-
-      if (queryDetails && queryDetails.length > 0) {
-        const fullQuery = queryDetails[0];
-
-        // Update current query with full details
-        this.currentQuery = fullQuery;
-
-        // Capture original data for change tracking (only if not currently editing)
-        if (!this._isEditing) {
-          this._captureOriginalData(fullQuery);
-        }
-
-        // Get content from API response - using correct field names from QueryRef 27
-        const sqlContent = fullQuery.code || fullQuery.query_text || fullQuery.sql || '';
-        const summaryContent = fullQuery.summary || fullQuery.markdown || '';
-        const collectionContent = fullQuery.collection || fullQuery.json || {};
-
-        // Initialize or update the SQL editor with the query content
-        // Only initialize if we're on the SQL tab or if editor doesn't exist
-        if (this.sqlEditor) {
-          this.sqlEditor.dispatch({
-            changes: { from: 0, to: this.sqlEditor.state.doc.length, insert: sqlContent },
-          });
-        }
-
-        // Update summary content if editor exists
-        if (this.summaryEditor) {
-          this.summaryEditor.dispatch({
-            changes: { from: 0, to: this.summaryEditor.state.doc.length, insert: summaryContent },
-          });
-        }
-
-        // Update collection content if editor exists
-        if (this.collectionEditor) {
-          const jsonData = typeof collectionContent === 'object'
-            ? collectionContent
-            : JSON.parse(collectionContent || '{}');
-          this.collectionEditor.set({ json: jsonData });
-        }
-
-        // Store data for lazy initialization
-        this._pendingSqlContent = sqlContent;
-        this._pendingSummaryContent = summaryContent;
-        this._pendingCollectionContent = collectionContent;
-
-        // If SQL tab is currently active, initialize the editor immediately
-        const sqlTabBtn = document.querySelector('.queries-tab-btn[data-tab="sql"]');
-        const isSqlTabActive = sqlTabBtn?.classList.contains('active');
-
-        if (isSqlTabActive && !this.sqlEditor) {
-          this.initSqlEditor(sqlContent);
-        } else if (this.sqlEditor && sqlContent) {
-          // Editor exists, update content
-          this.sqlEditor.dispatch({
-            changes: { from: 0, to: this.sqlEditor.state.doc.length, insert: sqlContent },
-          });
-        }
-
-        this._loadedDetailRowId = queryId;
-
-        log(Subsystems.CONDUIT, Status.INFO,
-          `[QueriesManager] Loaded query details for ID ${queryId}`);
-      }
+      const queryDetails = await authQuery(this.app.api, detailRef, { INTEGER: { QUERYID: queryId } });
+      await this._processQueryDetails(queryDetails, queryId);
     } catch (error) {
-      // Show detailed error toast - title comes from serverError.error, description from serverError.message
-      toast.error('Query Details Failed', {
-        serverError: error.serverError,
-        subsystem: 'Conduit',
-        duration: 8000,
+      toast.error('Query Details Failed', { serverError: error.serverError, subsystem: 'Conduit', duration: 8000 });
+    }
+  }
+
+  /**
+   * Process query details response
+   * @param {Array} queryDetails - Query details from API
+   * @param {number} queryId - Query ID
+   * @private
+   */
+  async _processQueryDetails(queryDetails, queryId) {
+    if (!queryDetails?.length) return;
+
+    const fullQuery = queryDetails[0];
+    this.currentQuery = fullQuery;
+
+    if (!this._isEditing) {
+      this._captureOriginalData(fullQuery);
+    }
+
+    const content = this._extractQueryContent(fullQuery);
+    this._updateEditors(content);
+    this._storePendingContent(content);
+    this._checkSqlTabInit(content.sqlContent);
+
+    this._loadedDetailRowId = queryId;
+    log(Subsystems.CONDUIT, Status.INFO, `[QueriesManager] Loaded query details for ID ${queryId}`);
+  }
+
+  /**
+   * Extract content from query data
+   * @param {Object} query - Query data
+   * @returns {Object} Extracted content
+   * @private
+   */
+  _extractQueryContent(query) {
+    return {
+      sqlContent: query.code || query.query_text || query.sql || '',
+      summaryContent: query.summary || query.markdown || '',
+      collectionContent: query.collection || query.json || {},
+    };
+  }
+
+  /**
+   * Update editors with content
+   * @param {Object} content - Content object
+   * @private
+   */
+  _updateEditors(content) {
+    if (this.sqlEditor) {
+      this.sqlEditor.dispatch({
+        changes: { from: 0, to: this.sqlEditor.state.doc.length, insert: content.sqlContent },
       });
+    }
+
+    if (this.summaryEditor) {
+      this.summaryEditor.dispatch({
+        changes: { from: 0, to: this.summaryEditor.state.doc.length, insert: content.summaryContent },
+      });
+    }
+
+    if (this.collectionEditor) {
+      const jsonData = typeof content.collectionContent === 'object'
+        ? content.collectionContent
+        : JSON.parse(content.collectionContent || '{}');
+      this.collectionEditor.set({ json: jsonData });
+    }
+  }
+
+  /**
+   * Store pending content for lazy initialization
+   * @param {Object} content - Content object
+   * @private
+   */
+  _storePendingContent(content) {
+    this._pendingSqlContent = content.sqlContent;
+    this._pendingSummaryContent = content.summaryContent;
+    this._pendingCollectionContent = content.collectionContent;
+  }
+
+  /**
+   * Check if SQL tab needs initialization
+   * @param {string} sqlContent - SQL content
+   * @private
+   */
+  _checkSqlTabInit(sqlContent) {
+    const sqlTabBtn = document.querySelector('.queries-tab-btn[data-tab="sql"]');
+    const isSqlTabActive = sqlTabBtn?.classList.contains('active');
+
+    if (isSqlTabActive && !this.sqlEditor) {
+      this.initSqlEditor(sqlContent);
     }
   }
 
