@@ -105,6 +105,15 @@
   cursor: not-allowed;
 }
 
+/* Active state for toggle buttons (e.g., filter button) */
+.queries-nav-btn-active {
+  background-color: var(--accent-success) !important;
+}
+
+.queries-nav-btn-active:hover {
+  background-color: var(--accent-success-hover, #4CAF50) !important;
+}
+
 /* Danger variant (Delete) */
 .queries-nav-btn-danger:hover {
   background-color: var(--accent-danger);
@@ -180,9 +189,11 @@
 
 /* Individual popup item */
 .queries-nav-popup-item {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   width: 100%;
-  padding: 6px 14px;
+  padding: 6px 12px;
   border: none;
   background: transparent;
   color: var(--text-primary);
@@ -200,6 +211,125 @@
 
 .queries-nav-popup-item:active {
   background-color: var(--accent-focus);
+}
+
+/* Checkmark column for aligned popups (width/mode) */
+.queries-nav-popup-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  flex-shrink: 0;
+  text-align: center;
+  font-weight: 600;
+}
+
+/* Label column for aligned popups */
+.queries-nav-popup-label {
+  flex: 1;
+}
+
+/* Icon in popup menu items */
+.queries-nav-popup-item i,
+.queries-nav-popup-item svg {
+  font-size: 11px;
+  width: 11px;
+  height: 11px;
+  margin-right: 6px;
+  opacity: 0.8;
+}
+
+/* Separator - full width, minimal vertical padding */
+.queries-nav-popup-separator {
+  height: 1px;
+  background-color: var(--border-color);
+  margin: 4px 0;
+  width: 100%;
+}
+
+/* Template item row with label and delete button */
+.queries-nav-popup-template-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* Template label button (takes remaining space) */
+.queries-nav-popup-template-label {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px 6px 14px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color var(--transition-fast);
+}
+
+.queries-nav-popup-template-label:hover {
+  background-color: var(--accent-primary);
+  color: white;
+}
+
+/* Checkmark for default template */
+.queries-nav-popup-template-check {
+  display: inline-block;
+  width: 14px;
+  text-align: center;
+  color: var(--accent-success);
+}
+
+.queries-nav-popup-template-label:hover .queries-nav-popup-template-check {
+  color: white;
+}
+
+/* Template name */
+.queries-nav-popup-template-name {
+  flex: 1;
+}
+
+/* Default indicator */
+.queries-nav-popup-template-default {
+  font-size: var(--font-size-xs);
+  opacity: 0.7;
+  margin-left: 4px;
+}
+
+/* Delete button */
+.queries-nav-popup-template-delete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.queries-nav-popup-template-delete:hover {
+  background-color: var(--accent-danger);
+  color: white;
+}
+
+.queries-nav-popup-template-delete svg,
+.queries-nav-popup-template-delete i {
+  font-size: 12px;
+  width: 12px;
+  height: 12px;
 }
 
 .queries-splitter {
@@ -373,6 +503,131 @@
   border-color: var(--accent-primary);
 }
 
+/* ── Template Dialog ─────────────────────────────────────────────────────── */
+
+/* Modal backdrop — covers the full viewport */
+.queries-template-dialog {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+}
+
+/* Dialog content box */
+.queries-template-dialog-content {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  padding: var(--space-4);
+  min-width: 300px;
+  max-width: 400px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* Dialog title */
+.queries-template-dialog-content h3 {
+  margin: 0 0 var(--space-3) 0;
+  font-size: var(--font-size-lg);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* Text input for template name */
+.queries-template-input {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-3);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.queries-template-input:focus {
+  border-color: var(--accent-primary);
+}
+
+.queries-template-input.error {
+  border-color: var(--accent-danger);
+  animation: queries-input-shake 0.3s ease;
+}
+
+@keyframes queries-input-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+/* Select dropdown for make default dialog */
+.queries-template-select {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-3);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
+  box-sizing: border-box;
+  outline: none;
+  cursor: pointer;
+  transition: border-color var(--transition-fast);
+}
+
+.queries-template-select:focus {
+  border-color: var(--accent-primary);
+}
+
+.queries-template-select option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  padding: var(--space-2);
+}
+
+/* Button row */
+.queries-template-dialog-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+/* Dialog buttons */
+.queries-template-btn {
+  padding: var(--space-2) var(--space-4);
+  border: none;
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.queries-template-btn-primary {
+  background: var(--accent-primary);
+  color: white;
+}
+
+.queries-template-btn-primary:hover {
+  background: var(--accent-hover);
+}
+
+.queries-template-btn-secondary {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.queries-template-btn-secondary:hover {
+  background: var(--bg-active);
+}
+
 .queries-collapse-btn {
   flex: 0 0 auto;
 }
@@ -420,8 +675,12 @@
   height: 100%;
   overflow: hidden;
   border-radius: var(--border-radius-md);
-}
+}                                        
 
+#queries-tab-summary > div {
+  border-radius: var(--border-radius-md);  
+  overflow: hidden;
+}
 .queries-sql-editor .cm-editor {
   height: 100%;
 }
@@ -474,13 +733,11 @@
 
 /* Data-source <select> in the footer button group.
    Styled to match subpanel-header-btn so it blends into the strip.
-   flex:1 fills the space between the new buttons (left) and the
-   pre-existing right-side buttons (notifications, tickets, etc.). */
+   Width is auto to fit the widest option content. */
 .queries-footer-datasource {
-  flex: 1;
-  min-width: 0;
+  width: auto;
   height: 100%;
-  padding: 0 var(--space-3) 0 var(--space-3);
+  padding: 0 var(--space-7) 0 var(--space-5);
   border: none;
   background: var(--accent-primary);
   color: white;
@@ -494,7 +751,6 @@
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='white'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 8px center;
-  padding-right: 24px;
   z-index: 1;
 }
 
@@ -510,6 +766,17 @@
   background: var(--bg-secondary);
   color: var(--text-primary);
   padding: var(--space-2);
+}
+
+/* Filler button — spans the gap between the select and right-side buttons.
+   Uses flex:1 to fill remaining space, creating visual separation. */
+.queries-footer-filler {
+  flex: 1;
+  min-width: 16px;
+  z-index: 1;
+  background: var(--accent-primary);
+  color: white;
+  border: none;
 }
 
 /* ── Footer Export Popup ─────────────────────────────────────────────────── */
@@ -571,6 +838,9 @@
 @layer vendor-fixes {
 
 /* ── Tabulator Theme Overrides (matching Login language panel) ───────────── */
+.tabulator {
+  font-size: var(--font-size-sm);
+}                                
 
 /* Table container with rounded corners and border */
 #queries-table-container {
@@ -610,21 +880,38 @@
   overflow-x: auto;
 }
 
-/* Header styling */
+/* Header styling - match row height and padding */
 #queries-table-container .tabulator-header {
   background: var(--bg-tertiary);
   border-bottom: var(--border-standard);
   color: var(--text-primary);
   font-weight: 500;
+  height: 20px !important;
+  min-height: 20px !important;
 }
 
 #queries-table-container .tabulator-header .tabulator-col {
   background: var(--bg-tertiary);
   border-right: var(--border-standard);
+  height: 20px !important;
+  min-height: 20px !important;
+  padding: 0px 6px;
 }
 
 #queries-table-container .tabulator-header .tabulator-col:last-child {
   border-right: none;
+}
+
+#queries-table-container .tabulator-header .tabulator-col-content {
+  padding: 0;
+  height: 20px;
+  line-height: 20px;
+}
+
+/* Header labels */
+#queries-table-container .tabulator-header .tabulator-col-title {
+  line-height: 20px;
+  font-size: 12px;
 }
 
 /* Table body */
@@ -634,19 +921,31 @@
 
 /* Row styling - no left/right borders, compact height */
 #queries-table-container .tabulator-row {
-  border-bottom: var(--border-standard);
+  border-bottom: 1px solid var(--bg-row-border);
   border-left: none;
   border-right: none;
   color: var(--text-primary);
   cursor: pointer;
-  max-height: 20px;
+  height: 20px !important;
+  min-height: 20px !important;
+  max-height: 20px !important;
+  overflow: hidden;
 }
+
+#queries-table-container .tabulator-row.tabulator-row-odd {
+  background: var(--bg-row-odd);
+}
+
+#queries-table-container .tabulator-row.tabulator-row-even {
+  background: var(--bg-row-even);
+}
+
 #queries-table-container .tabulator-cell {
 	padding: 0px 6px;
 	border-left: none;
 	border-right: none;
-	line-height: 14px !important;
-	height: 16px !important;
+	line-height: 20px !important;
+	height: 20px !important;
 	font-size: 12px;
 }
 
@@ -928,6 +1227,9 @@
 /* Selector column header — pointer cursor for column chooser */
 #queries-table-container .tabulator-col.queries-selector-col {
   cursor: pointer;
+  width: 16px !important;
+  min-width: 16px !important;
+  max-width: 16px !important;
 }
 
 /* FA icons inside the selector cells — size to fit the narrow column */
@@ -1041,7 +1343,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 12px;
+  padding: var(--space-1) var(--space-3);
   cursor: pointer;
   font-size: var(--font-size-sm);
   color: var(--text-primary);
@@ -1071,17 +1373,26 @@
 
 /* ── Header Filter Inputs ────────────────────────────────────────────────── */
 
-/* Filter row is hidden by default — toggled via Table Options > Column Filters */
+/* Filter row is hidden by default — toggled via Filter button */
 #queries-table-container .tabulator-header-filter {
-  display: none;
+  display: block;
+  height: 0;
+  min-height: 0;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: height var(--transition-fast), min-height var(--transition-fast), max-height var(--transition-fast), opacity var(--transition-fast);
 }
 
-/* Show filter row when toggled on — give it enough vertical space */
+/* Show filter row when toggled on — compact height */
 #queries-table-container.queries-filters-visible .tabulator-header-filter {
-  display: block;
-  padding: 4px 4px 6px 4px;
-  min-height: 28px;
+  height: 20px;
+  min-height: 20px;
+  max-height: 20px;
+  opacity: 1;
+  padding: 0px;
   box-sizing: border-box;
+  margin-left: -2px;
 }
 
 /* Style all header filter inputs (both custom and built-in) */
@@ -1090,10 +1401,10 @@
   color: var(--text-primary);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-sm);
-  padding: 2px 6px;
+  padding: 0px 6px;
   font-size: var(--font-size-xs);
   width: 100%;
-  height: 22px;
+  height: 18px;
   box-sizing: border-box;
   outline: none;
   transition: border-color var(--transition-fast);
@@ -1118,7 +1429,7 @@
 .queries-header-filter-clear {
   position: absolute;
   right: 3px;
-  top: 50%;
+  top: 42%;
   transform: translateY(-50%);
   display: none;
   align-items: center;
@@ -1151,18 +1462,21 @@
 }                                                 
 #queries-table-container .tabulator-calcs-holder {
   background: var(--bg-tertiary);
-  border-top: 1px solid #888;
-}                            
+  border-top: var(--border-standard);
+  height: 20px;
+}
 .tabulator-row .tabulator-cell.tabulator-editing {
   border: unset;
 }
-/* Footer row — styled like the header */
+/* Footer row — styled like rows: 20px height, same padding */
 #queries-table-container .tabulator-calcs-bottom {
   border-top: none;
   border-bottom: none;
   color: var(--text-primary);
   font-weight: 500;
-  max-height: 22px;
+  height: 20px !important;
+  min-height: 20px !important;
+  max-height: 20px !important;
   pointer-events: none;
 }
 
@@ -1170,8 +1484,9 @@
   border-right: var(--border-standard);
   border-top: none;
   border-bottom: none;
-  padding: 0;
-  line-height: 22px;
+  padding: 0px 6px;
+  height: 20px !important;
+  line-height: 20px !important;
   pointer-events: none;
 }
 
@@ -1180,7 +1495,7 @@
 }
 
 #queries-table-container .tabulator-calcs-bottom .tabulator-cell:last-child {
-  border-right: none;
+  border-right: none !important;
 }
 
 /* Right-justify the count in the Ref column */

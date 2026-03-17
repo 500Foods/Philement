@@ -354,6 +354,8 @@ export default class StyleManager {
       data: tableData,
       layout: 'fitColumns',
       responsiveLayout: 'hide',
+      movableColumns: true,
+      headerSortTristate: true,
       height: '100%',
       columns: [
         { title: 'Name', field: 'name', minWidth: 150 },

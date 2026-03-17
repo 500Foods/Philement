@@ -483,6 +483,49 @@ export default class MainManager {
   }
 
   /**
+   * Parse a last manager key into its components.
+   * @param {string} key - The last manager key (e.g., 'manager:1' or 'utility:user-profile')
+   * @returns {Object|null} Parsed type and id, or null if invalid
+   * @private
+   */
+  _parseLastManagerKey(key) {
+    const colonIdx = key.indexOf(':');
+    if (colonIdx <= 0) return null;
+    
+    const type = key.substring(0, colonIdx);
+    const id = key.substring(colonIdx + 1);
+    return { type, id };
+  }
+
+  /**
+   * Try to load a manager by ID.
+   * @param {string} id - Manager ID string
+   * @returns {boolean} True if manager was loaded successfully
+   * @private
+   */
+  _tryLoadManager(id) {
+    const managerId = parseInt(id, 10);
+    if (isNaN(managerId)) return false;
+    if (!this.permittedManagers.includes(managerId)) return false;
+    
+    this.loadManager(managerId);
+    return true;
+  }
+
+  /**
+   * Try to load a utility manager by key.
+   * @param {string} key - Utility manager key
+   * @returns {boolean} True if utility manager was loaded successfully
+   * @private
+   */
+  _tryLoadUtility(key) {
+    if (!this.app.utilityManagerRegistry[key]) return false;
+    
+    this.app.loadUtilityManager(key);
+    return true;
+  }
+
+  /**
    * Load the initial manager after login.
    * Restores the last-used manager from localStorage if available and permitted.
    * Falls back to the user profile utility manager if no stored preference
@@ -492,22 +535,15 @@ export default class MainManager {
     const lastManagerKey = this._getLastManagerKey();
 
     if (lastManagerKey) {
-      const colonIdx = lastManagerKey.indexOf(':');
-      if (colonIdx > 0) {
-        const type = lastManagerKey.substring(0, colonIdx);
-        const id = lastManagerKey.substring(colonIdx + 1);
-
-        if (type === 'manager') {
-          const managerId = parseInt(id, 10);
-          if (!isNaN(managerId) && this.permittedManagers.includes(managerId)) {
-            await this.loadManager(managerId);
-            return;
-          }
-        } else if (type === 'utility') {
-          if (this.app.utilityManagerRegistry[id]) {
-            await this.app.loadUtilityManager(id);
-            return;
-          }
+      const parsed = this._parseLastManagerKey(lastManagerKey);
+      
+      if (parsed) {
+        if (parsed.type === 'manager' && this._tryLoadManager(parsed.id)) {
+          return;
+        }
+        
+        if (parsed.type === 'utility' && this._tryLoadUtility(parsed.id)) {
+          return;
         }
       }
     }

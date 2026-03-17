@@ -94,6 +94,14 @@ if (!existsSync(targetDir)) {
   process.exit(1);
 }
 
+// Timing: Record start time
+const startTime = Date.now();
+const startTimeFmt = new Date().toISOString();
+console.log(`[brotli] ==================================================`);
+console.log(`[brotli] Brotli Compression Started: ${startTimeFmt}`);
+console.log(`[brotli] Target directory: ${targetDir}`);
+console.log(`[brotli] ==================================================`);
+
 const allFiles = walkFiles(targetDir);
 const candidateFiles = allFiles.filter((filePath) => {
   if (filePath.endsWith('.br')) {
@@ -150,11 +158,22 @@ const savingsPercent = totalSourceBytes > 0
   ? ((bytesSaved / totalSourceBytes) * 100).toFixed(2)
   : '0.00';
 
-console.log(`[brotli] Target directory: ${targetDir}`);
+// Timing: Calculate elapsed time
+const endTime = Date.now();
+const endTimeFmt = new Date().toISOString();
+const elapsedMs = endTime - startTime;
+const elapsedSec = (elapsedMs / 1000).toFixed(2);
+
+console.log(`[brotli] ==================================================`);
+console.log(`[brotli] Brotli Compression Complete: ${endTimeFmt}`);
+console.log(`[brotli] Elapsed time: ${elapsedSec}s (${elapsedMs}ms)`);
+console.log(`[brotli] --------------------------------------------------`);
 console.log(`[brotli] Eligible files: ${candidateFiles.length}`);
 console.log(`[brotli] Created: ${createdCount}`);
 console.log(`[brotli] Updated: ${updatedCount}`);
 console.log(`[brotli] Skipped (up-to-date): ${skippedCount}`);
+console.log(`[brotli] --------------------------------------------------`);
 console.log(`[brotli] Size before: ${formatBytes(totalSourceBytes)} (${totalSourceBytes} bytes)`);
 console.log(`[brotli] Size after : ${formatBytes(totalBrotliBytes)} (${totalBrotliBytes} bytes)`);
 console.log(`[brotli] Savings    : ${formatBytes(bytesSaved)} (${bytesSaved} bytes, ${savingsPercent}%)`);
+console.log(`[brotli] ==================================================`);

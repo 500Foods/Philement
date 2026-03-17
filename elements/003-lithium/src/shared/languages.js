@@ -260,53 +260,74 @@ export async function getBestGuessLocale(options = {}) {
   }
 
   // 2. Check browser preference
-  const browserLang = navigator.languages?.[0] || navigator.language;
-  if (browserLang) {
-    // Try exact match first
-    if (supportedLocales.includes(browserLang)) {
-      return browserLang;
-    }
-    // Try base language match (e.g., 'fr' from 'fr-CA')
-    const baseLang = browserLang.split('-')[0];
-    const baseMatch = supportedLocales.find(l => l.startsWith(`${baseLang}-`));
-    if (baseMatch) {
-      return baseMatch;
-    }
-  }
+  const browserLocale = _getBrowserLocale();
+  if (browserLocale) return browserLocale;
 
   // 3. IP geolocation fallback
   if (ipinfoToken) {
-    try {
-      const response = await fetch(`https://ipinfo.io/json?token=${ipinfoToken}`);
-      if (response.ok) {
-        const data = await response.json();
-        const country = data.country;
-        const region = data.region;
-
-        // Special case for Canada - check region
-        if (country === 'CA' && region) {
-          // Quebec gets fr-CA, rest gets en-CA
-          const caLocale = region === 'QC' || region.includes('Quebec') 
-            ? 'fr-CA' 
-            : 'en-CA';
-          if (supportedLocales.includes(caLocale)) {
-            return caLocale;
-          }
-        }
-
-        // General country mapping
-        const ipLocale = countryToLocale[country];
-        if (ipLocale && supportedLocales.includes(ipLocale)) {
-          return ipLocale;
-        }
-      }
-    } catch (e) {
-      // Network/VPN fail silently, continue to fallback
-    }
+    const ipLocale = await _getIpGeolocationLocale(ipinfoToken);
+    if (ipLocale) return ipLocale;
   }
 
   // 4. Ultimate fallback
   return 'en-US';
+}
+
+/**
+ * Get locale from browser preferences
+ * @returns {string|null} Browser locale or null if not found
+ * @private
+ */
+function _getBrowserLocale() {
+  const browserLang = navigator.languages?.[0] || navigator.language;
+  if (!browserLang) return null;
+
+  // Try exact match first
+  if (supportedLocales.includes(browserLang)) {
+    return browserLang;
+  }
+  
+  // Try base language match (e.g., 'fr' from 'fr-CA')
+  const baseLang = browserLang.split('-')[0];
+  return supportedLocales.find(l => l.startsWith(`${baseLang}-`)) || null;
+}
+
+/**
+ * Get locale from IP geolocation
+ * @param {string} ipinfoToken - API token for ipinfo.io
+ * @returns {Promise<string|null>} Locale from IP or null
+ * @private
+ */
+async function _getIpGeolocationLocale(ipinfoToken) {
+  try {
+    const response = await fetch(`https://ipinfo.io/json?token=${ipinfoToken}`);
+    if (!response.ok) return null;
+    
+    const data = await response.json();
+    return _resolveLocaleFromCountry(data.country, data.region);
+  } catch (e) {
+    // Network/VPN fail silently
+    return null;
+  }
+}
+
+/**
+ * Resolve locale from country and region
+ * @param {string} country - Country code
+ * @param {string} region - Region/state code
+ * @returns {string|null} Resolved locale or null
+ * @private
+ */
+function _resolveLocaleFromCountry(country, region) {
+  // Special case for Canada - check region
+  if (country === 'CA' && region) {
+    const caLocale = (region === 'QC' || region.includes('Quebec')) ? 'fr-CA' : 'en-CA';
+    return supportedLocales.includes(caLocale) ? caLocale : null;
+  }
+
+  // General country mapping
+  const ipLocale = countryToLocale[country];
+  return (ipLocale && supportedLocales.includes(ipLocale)) ? ipLocale : null;
 }
 
 /**

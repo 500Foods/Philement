@@ -95,6 +95,9 @@
     --bg-input: #363636;
     --bg-hover: #3A3A3A;
     --bg-active: #454545;
+    --bg-row-odd: #161616;
+    --bg-row-even: #191919;
+    --bg-row-border: #1C1C1C;
 
     --text-primary: #E0E0E0;
     --text-secondary: #B0B0B0;

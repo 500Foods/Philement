@@ -17,6 +17,11 @@ import {
   CACHE_TTL_MS,
 } from '../../src/shared/menu.js';
 
+// Mock conduit.js for fetchMenu tests
+vi.mock('../../src/shared/conduit.js', () => ({
+  authQuery: vi.fn(),
+}));
+
 // Mock localStorage
 const localStorageMock = (() => {
   let store = {};
@@ -296,13 +301,12 @@ describe('Menu Service', () => {
 
   describe('fetchMenu', () => {
     it('should handle API errors', async () => {
-      // Mock authQuery to throw an error
-      vi.mock('../../src/shared/conduit.js', () => ({
-        authQuery: vi.fn().mockRejectedValue(new Error('Network error')),
-      }));
-      
+      // Import mocked authQuery and configure it to throw
+      const { authQuery } = await import('../../src/shared/conduit.js');
+      authQuery.mockRejectedValueOnce(new Error('Network error'));
+
       const api = {};
-      await expect(fetchMenu(api)).rejects.toThrow();
+      await expect(fetchMenu(api)).rejects.toThrow('Network error');
     });
   });
 });

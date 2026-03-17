@@ -184,129 +184,186 @@ function getLookupIcon(name) {
  */
 function processIconElement(faElement) {
   const attributes = Array.from(faElement.attributes);
+  const parseResult = _parseIconAttributes(attributes, faElement.textContent);
+  
+  const finalIconName = _resolveIconName(parseResult);
+  const utilityClasses = _resolveUtilityClasses(parseResult, finalIconName);
+  
+  const iElement = _createIconElement(finalIconName, utilityClasses, attributes, faElement);
+  
+  faElement.parentNode.replaceChild(iElement, faElement);
+  return iElement;
+}
+
+/**
+ * Parse icon attributes from element
+ * @param {Array} attributes - Element attributes
+ * @param {string} textContent - Element text content
+ * @returns {Object} Parsed result
+ * @private
+ */
+function _parseIconAttributes(attributes, textContent) {
   const classes = [];
   let lookupName = null;
   let iconName = null;
 
-  // Parse attributes
   for (const attr of attributes) {
-    const name = attr.name;
-    const value = attr.value;
+    const { name, value } = attr;
 
     if (name === 'class') {
-      // Split class attribute
       classes.push(...value.split(/\s+/).filter(Boolean));
-    } else if (name === 'icon') {
-      // Icon name specified as attribute value
-      iconName = value;
-    } else if (name.startsWith('fa-')) {
-      // fa-* class as attribute
-      classes.push(name);
-    } else if (name.startsWith('data-')) {
-      // Data attributes - preserve them
       continue;
-    } else {
-      // Check if it's an icon name or lookup reference
-      const cleanName = name.toLowerCase();
-
-      // Check if it's a Font Awesome icon class pattern
-      if (cleanName.startsWith('fa')) {
-        classes.push(cleanName);
-      } else {
-        // Treat as lookup name (like "Status")
-        lookupName = name;
-      }
     }
+    
+    if (name === 'icon') {
+      iconName = value;
+      continue;
+    }
+    
+    if (name.startsWith('fa-')) {
+      classes.push(name);
+      continue;
+    }
+    
+    if (name.startsWith('data-')) {
+      continue;
+    }
+    
+    lookupName = _extractLookupName(name, classes);
   }
 
-  // Also check text content for icon name (legacy support)
-  if (!lookupName && !iconName && faElement.textContent.trim()) {
-    const text = faElement.textContent.trim();
-    if (text.startsWith('fa-')) {
-      classes.push(text);
-    } else if (/^[a-z-]+$/i.test(text)) {
-      // Could be a lookup name or icon name
-      lookupName = text;
-    }
+  // Check text content for icon name (legacy support)
+  if (!lookupName && !iconName) {
+    const result = _parseTextContent(textContent, classes);
+    lookupName = result.lookupName;
   }
 
-  // Determine the icon to use
-  let finalIconName = null;
+  return { classes, lookupName, iconName };
+}
+
+/**
+ * Extract lookup name from attribute name
+ * @param {string} name - Attribute name
+ * @param {string[]} classes - Classes array (modified if fa-prefixed)
+ * @returns {string|null} Lookup name or null
+ * @private
+ */
+function _extractLookupName(name, classes) {
+  const cleanName = name.toLowerCase();
+  if (cleanName.startsWith('fa')) {
+    classes.push(cleanName);
+    return null;
+  }
+  return name;
+}
+
+/**
+ * Parse text content for icon name (legacy support)
+ * @param {string} textContent - Element text content
+ * @param {string[]} classes - Classes array
+ * @returns {Object} Result with lookupName
+ * @private
+ */
+function _parseTextContent(textContent, classes) {
+  const text = textContent.trim();
+  
+  if (text.startsWith('fa-')) {
+    classes.push(text);
+    return { lookupName: null };
+  }
+  
+  if (/^[a-z-]+$/i.test(text)) {
+    return { lookupName: text };
+  }
+  
+  return { lookupName: null };
+}
+
+/**
+ * Resolve final icon name from parsed result
+ * @param {Object} parseResult - Parsed attributes
+ * @returns {string|null} Final icon name
+ * @private
+ */
+function _resolveIconName(parseResult) {
+  if (parseResult.lookupName) {
+    const lookupData = getLookupIcon(parseResult.lookupName);
+    if (lookupData?.icon) return lookupData.icon;
+  }
+  return parseIconName(parseResult.classes);
+}
+
+/**
+ * Resolve utility classes from parsed result
+ * @param {Object} parseResult - Parsed attributes
+ * @param {string} finalIconName - Resolved icon name
+ * @returns {Array} Utility classes
+ * @private
+ */
+function _resolveUtilityClasses(parseResult, finalIconName) {
   let utilityClasses = [];
-
-  if (lookupName) {
-    // Try to get icon from lookups
-    const lookupData = getLookupIcon(lookupName);
-    if (lookupData) {
-      finalIconName = lookupData.icon;
-      utilityClasses = lookupData.utilities;
-    }
+  
+  if (parseResult.lookupName) {
+    const lookupData = getLookupIcon(parseResult.lookupName);
+    if (lookupData?.utilities) utilityClasses = lookupData.utilities;
   }
+  
+  const elementUtilities = extractUtilityClasses(parseResult.classes);
+  return [...new Set([...utilityClasses, ...elementUtilities])];
+}
 
-  // If no lookup match, try to parse icon from classes
-  if (!finalIconName) {
-    finalIconName = parseIconName(classes);
-  }
-
-  // Extract additional utility classes from the element
-  const elementUtilities = extractUtilityClasses(classes);
-  utilityClasses = [...new Set([...utilityClasses, ...elementUtilities])];
-
-  // Create the <i> element
+/**
+ * Create the icon element
+ * @param {string} finalIconName - Icon name
+ * @param {Array} utilityClasses - Utility classes
+ * @param {Array} attributes - Original attributes
+ * @param {HTMLElement} faElement - Original fa element
+ * @returns {HTMLElement} Created icon element
+ * @private
+ */
+function _createIconElement(finalIconName, utilityClasses, attributes, faElement) {
   const iElement = document.createElement('i');
-
-  // Build the class list
+  
+  // Build class list
   const prefix = buildPrefix();
   const weightClass = buildWeightClass();
   const classList = [prefix];
-
-  if (weightClass) {
-    classList.push(weightClass);
-  }
-
-  if (finalIconName) {
-    classList.push(`fa-${finalIconName}`);
-  }
-
-  // Add utility classes
+  
+  if (weightClass) classList.push(weightClass);
+  if (finalIconName) classList.push(`fa-${finalIconName}`);
   classList.push(...utilityClasses);
-
-  // Set the class attribute
+  
   iElement.className = classList.join(' ');
+  
+  // Copy attributes
+  _copyIconAttributes(iElement, attributes, faElement);
+  
+  return iElement;
+}
 
-  // Copy any data attributes
+/**
+ * Copy attributes from fa element to icon element
+ * @param {HTMLElement} iElement - Icon element
+ * @param {Array} attributes - Original attributes
+ * @param {HTMLElement} faElement - Original fa element
+ * @private
+ */
+function _copyIconAttributes(iElement, attributes, faElement) {
+  // Copy data and aria attributes
   for (const attr of attributes) {
-    if (attr.name.startsWith('data-')) {
+    if (attr.name.startsWith('data-') || attr.name.startsWith('aria-')) {
       iElement.setAttribute(attr.name, attr.value);
     }
   }
-
+  
   // Copy inline styles
   if (faElement.style.cssText) {
     iElement.style.cssText = faElement.style.cssText;
   }
-
-  // Copy id if present
-  if (faElement.id) {
-    iElement.id = faElement.id;
-  }
-
-  // Copy title for accessibility
-  if (faElement.title) {
-    iElement.title = faElement.title;
-  }
-
-  // Copy aria attributes
-  for (const attr of attributes) {
-    if (attr.name.startsWith('aria-')) {
-      iElement.setAttribute(attr.name, attr.value);
-    }
-  }
-
-  // Replace the <fa> element with the <i> element
-  faElement.parentNode.replaceChild(iElement, faElement);
-
-  return iElement;
+  
+  // Copy id and title
+  if (faElement.id) iElement.id = faElement.id;
+  if (faElement.title) iElement.title = faElement.title;
 }
 
 /**
