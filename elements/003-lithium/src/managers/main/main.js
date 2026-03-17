@@ -464,8 +464,8 @@ export default class MainManager {
         1: { icon: 'fa-palette', name: 'Style Manager' },
         2: { icon: 'fa-user-cog', name: 'Profile Manager' },
         3: { icon: 'fa-chart-line', name: 'Dashboard' },
-        4: { icon: 'fa-list', name: 'Lookups' },
-        5: { icon: 'fa-search', name: 'Queries' },
+        4: { icon: 'fa-search', name: 'Queries' },
+        5: { icon: 'fa-list-check', name: 'Lookups' },
       };
     }
   }

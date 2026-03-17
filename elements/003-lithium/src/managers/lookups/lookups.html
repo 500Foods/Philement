@@ -1,0 +1,30 @@
+<div class="lookups-manager-container">
+  <!-- Left Panel: Lookups List (Parent Table) -->
+  <div class="lookups-left-panel">
+    <div class="lookups-table-container" id="lookups-parent-table-container">
+      <!-- Parent Tabulator table will be injected here -->
+    </div>
+    <div class="lookups-navigator-container" id="lookups-parent-navigator-container">
+      <!-- Parent Navigator block will be injected here -->
+    </div>
+  </div>
+
+  <!-- Splitter between panels -->
+  <div class="lookups-splitter" id="lookups-splitter"></div>
+
+  <!-- Right Panel: Lookup Values (Child Table) -->
+  <div class="lookups-right-panel">
+    <div class="lookups-child-header">
+      <button type="button" class="subpanel-header-btn subpanel-header-close lookups-collapse-btn" id="lookups-collapse-btn" title="Toggle Parent Panel">
+        <fa fa-angles-left id="lookups-collapse-icon"></fa>
+      </button>
+      <span class="lookups-child-title" id="lookups-child-title">Select a Lookup</span>
+    </div>
+    <div class="lookups-child-table-container" id="lookups-child-table-container">
+      <!-- Child Tabulator table will be injected here -->
+    </div>
+    <div class="lookups-navigator-container" id="lookups-child-navigator-container">
+      <!-- Child Navigator block will be injected here -->
+    </div>
+  </div>
+</div>
