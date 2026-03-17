@@ -193,18 +193,17 @@ export default class QueriesManager {
 
   /**
    * Revert all changes to original values
-   * - Tabulator: use undo()
+   * - Tabulator: restore from cached original row data
    * - External content: restore from cached originals
    */
   async _revertAllChanges() {
-    // Revert Tabulator changes
-    if (this._isDirty.table && this.table) {
-      // Get all edited cells and undo them
-      const editedCells = typeof this.table.getEditedCells === 'function'
-        ? this.table.getEditedCells()
-        : [];
-      if (editedCells.length > 0) {
-        this.table.undo();
+    // Revert Tabulator row data from cached original values
+    if (this._isDirty.table && this.table && this._originalRowData) {
+      const selected = this.table.getSelectedRows();
+      if (selected.length > 0) {
+        const row = selected[0];
+        // Restore the row data from the cached original
+        row.update(this._originalRowData);
       }
     }
 
@@ -770,12 +769,33 @@ export default class QueriesManager {
     return Math.max(1, Math.floor(visibleHeight / rowHeight));
   }
 
-  navigateFirst() {
+  async navigateFirst() {
     if (!this.table) return;
+    // If in edit mode with changes, save before navigating
+    if (this._isEditing && this._isAnyDirty()) {
+      const saveSucceeded = await this._autoSaveBeforeRowChange();
+      if (!saveSucceeded) return; // Stay on current row if save failed
+      // Save succeeded - exit edit mode
+      await this._exitEditMode('save');
+    } else if (this._isEditing) {
+      // In edit mode but no changes - exit edit mode
+      await this._exitEditMode('cancel');
+    }
     this._selectRowByIndex(0);
   }
 
-  navigateLast() {
+  async navigateLast() {
+    if (!this.table) return;
+    // If in edit mode with changes, save before navigating
+    if (this._isEditing && this._isAnyDirty()) {
+      const saveSucceeded = await this._autoSaveBeforeRowChange();
+      if (!saveSucceeded) return; // Stay on current row if save failed
+      // Save succeeded - exit edit mode
+      await this._exitEditMode('save');
+    } else if (this._isEditing) {
+      // In edit mode but no changes - exit edit mode
+      await this._exitEditMode('cancel');
+    }
     const rows = this.table?.getRows('active') || [];
     if (rows.length > 0) {
       this._selectRowByIndex(rows.length - 1);
@@ -812,28 +832,68 @@ export default class QueriesManager {
     }
   }
 
-  navigatePrevRec() {
+  async navigatePrevRec() {
+    // If in edit mode with changes, save before navigating
+    if (this._isEditing && this._isAnyDirty()) {
+      const saveSucceeded = await this._autoSaveBeforeRowChange();
+      if (!saveSucceeded) return; // Stay on current row if save failed
+      // Save succeeded - exit edit mode
+      await this._exitEditMode('save');
+    } else if (this._isEditing) {
+      // In edit mode but no changes - exit edit mode
+      await this._exitEditMode('cancel');
+    }
     const { selectedIndex } = this._getVisibleRowsAndIndex();
     if (selectedIndex > 0) {
       this._selectRowByIndex(selectedIndex - 1);
     }
   }
 
-  navigateNextRec() {
+  async navigateNextRec() {
+    // If in edit mode with changes, save before navigating
+    if (this._isEditing && this._isAnyDirty()) {
+      const saveSucceeded = await this._autoSaveBeforeRowChange();
+      if (!saveSucceeded) return; // Stay on current row if save failed
+      // Save succeeded - exit edit mode
+      await this._exitEditMode('save');
+    } else if (this._isEditing) {
+      // In edit mode but no changes - exit edit mode
+      await this._exitEditMode('cancel');
+    }
     const { rows, selectedIndex } = this._getVisibleRowsAndIndex();
     if (selectedIndex < rows.length - 1) {
       this._selectRowByIndex(selectedIndex + 1);
     }
   }
 
-  navigatePrevPage() {
+  async navigatePrevPage() {
+    // If in edit mode with changes, save before navigating
+    if (this._isEditing && this._isAnyDirty()) {
+      const saveSucceeded = await this._autoSaveBeforeRowChange();
+      if (!saveSucceeded) return; // Stay on current row if save failed
+      // Save succeeded - exit edit mode
+      await this._exitEditMode('save');
+    } else if (this._isEditing) {
+      // In edit mode but no changes - exit edit mode
+      await this._exitEditMode('cancel');
+    }
     const { rows, selectedIndex } = this._getVisibleRowsAndIndex();
     const pageSize = this._getPageSize();
     const newIndex = Math.max(0, selectedIndex - pageSize);
     this._selectRowByIndex(newIndex);
   }
 
-  navigateNextPage() {
+  async navigateNextPage() {
+    // If in edit mode with changes, save before navigating
+    if (this._isEditing && this._isAnyDirty()) {
+      const saveSucceeded = await this._autoSaveBeforeRowChange();
+      if (!saveSucceeded) return; // Stay on current row if save failed
+      // Save succeeded - exit edit mode
+      await this._exitEditMode('save');
+    } else if (this._isEditing) {
+      // In edit mode but no changes - exit edit mode
+      await this._exitEditMode('cancel');
+    }
     const { rows, selectedIndex } = this._getVisibleRowsAndIndex();
     const pageSize = this._getPageSize();
     const newIndex = Math.min(rows.length - 1, selectedIndex + pageSize);
@@ -958,8 +1018,9 @@ export default class QueriesManager {
    *
    * @param {Object} [row] - Tabulator row component. If omitted, uses the
    *   currently selected row.
+   * @param {Object} [targetCell] - Optional cell to focus after entering edit mode
    */
-  async _enterEditMode(row) {
+  async _enterEditMode(row, targetCell = null) {
     if (!this.table) return;
 
     this._setEditTransitionState(true);
@@ -1005,6 +1066,17 @@ export default class QueriesManager {
 
       // Make CodeMirror editors writable
       this._setCodeMirrorEditable(true);
+
+      // Focus the target cell if provided, otherwise focus first editable cell
+      if (targetCell) {
+        this._queueCellEdit(targetCell);
+      } else {
+        // Default: focus the first editable cell (name column)
+        const nameCell = row.getCell('name');
+        if (nameCell) {
+          this._queueCellEdit(nameCell);
+        }
+      }
 
       log(Subsystems.MANAGER, Status.INFO,
         `[QueriesManager] Entered edit mode (row ${rowId})`);
@@ -1485,9 +1557,21 @@ export default class QueriesManager {
    * Refresh: re-submit the API call, redraw the table, and restore
    * the cursor to the same row (using in-memory ID, falling back
    * to localStorage so the position survives login round-trips).
+   *
+   * If in edit mode with unsaved changes, saves before refreshing.
    */
-  handleNavRefresh() {
+  async handleNavRefresh() {
     log(Subsystems.MANAGER, Status.INFO, 'Navigator: Refresh');
+    
+    // If in edit mode with changes, save first and exit edit mode
+    if (this._isEditing && this._isAnyDirty()) {
+      await this.handleNavSave();
+      // handleNavSave already exits edit mode on success
+    } else if (this._isEditing) {
+      // In edit mode but no changes - exit edit mode silently
+      await this._exitEditMode('cancel');
+    }
+    
     // loadQueries() already captures the current selection via
     // _getSelectedQueryId() and passes it to _autoSelectRow(),
     // which now also checks localStorage as a fallback.
@@ -1566,7 +1650,8 @@ export default class QueriesManager {
    *
    * Behaviour:
    *   - If not in edit mode → enter edit mode for the selected row
-   *   - If already editing the selected row → exit edit mode (toggle off)
+   *   - If already editing the selected row with changes → save and exit
+   *   - If already editing the selected row without changes → exit edit mode
    *   - If no row is selected → show toast
    */
   async handleNavEdit() {
@@ -1585,9 +1670,15 @@ export default class QueriesManager {
     const pkField = this.primaryKeyField || 'query_id';
     const selectedId = selected[0].getData()?.[pkField];
 
-    // Toggle: if already editing this row, exit edit mode
+    // Toggle: if already editing this row
     if (this._isEditing && this._editingRowId === selectedId) {
-      await this._exitEditMode('toggle');
+      // If there are changes, save them before exiting
+      if (this._isAnyDirty()) {
+        await this.handleNavSave();
+      } else {
+        // No changes - just exit edit mode silently
+        await this._exitEditMode('toggle');
+      }
       return;
     }
 
@@ -1745,8 +1836,9 @@ export default class QueriesManager {
 
     // Check if there are any changes to cancel
     if (!this._isAnyDirty()) {
-      // Just exit edit mode if no edits
+      // No changes - exit edit mode silently (no toast)
       await this._exitEditMode('cancel');
+      log(Subsystems.MANAGER, Status.INFO, 'Exited edit mode (no changes to cancel)');
       return;
     }
 
@@ -1756,6 +1848,7 @@ export default class QueriesManager {
     // Exit edit mode
     await this._exitEditMode('cancel');
 
+    // Only show toast if there were actual changes
     toast.info('Changes Cancelled', {
       description: 'All changes have been reverted',
       duration: 3000,
@@ -3521,6 +3614,7 @@ export default class QueriesManager {
     this._bindCellClickEvents();
     this._bindEditEvents();
     this._bindSelectionEvents();
+    this._bindColumnChangeEvents();
   }
 
   /**
@@ -3540,11 +3634,24 @@ export default class QueriesManager {
       this._selectDataRow(cell.getRow());
     });
 
-    // Double-click — enter edit mode
+    // Double-click — enter edit mode and focus the clicked cell
     this.table.on("rowDblClick", (e, row) => {
       if (this._isCalcRow(row)) return;
+      
+      // Find which cell was double-clicked
+      const targetCellEl = e.target?.closest?.('.tabulator-cell');
+      let targetCell = null;
+      
+      if (targetCellEl) {
+        // Get the cell component from the element
+        const field = targetCellEl.getAttribute('tabulator-field');
+        if (field && field !== '_selector') {
+          targetCell = row.getCell(field);
+        }
+      }
+      
       this._selectDataRow(row);
-      void this._enterEditMode(row);
+      void this._enterEditMode(row, targetCell);
     });
   }
 
@@ -3574,9 +3681,50 @@ export default class QueriesManager {
    * @private
    */
   _bindEditEvents() {
-    // Cell edit tracking for dirty state
+    // Cell edit tracking for dirty state (fires when edit completes)
     this.table.on("cellEdited", () => {
       this._setDirty('table', true);
+    });
+
+    // Immediate dirty detection when editing starts (for text input)
+    this.table.on("cellEditing", (cell) => {
+      this._attachInputListener(cell);
+    });
+  }
+
+  /**
+   * Attach an input listener to the active cell editor for immediate dirty detection.
+   * This ensures the save/cancel buttons appear as soon as the user starts typing,
+   * rather than waiting for the cell edit to complete (blur).
+   *
+   * @param {Object} cell - Tabulator cell component being edited
+   * @private
+   */
+  _attachInputListener(cell) {
+    // Use requestAnimationFrame to ensure the editor DOM is ready
+    requestAnimationFrame(() => {
+      // Get the editor element - Tabulator editors are typically input or textarea elements
+      const cellEl = cell.getElement?.();
+      if (!cellEl) return;
+
+      // Find the actual input/textarea element within the cell
+      // Tabulator may use different selectors depending on the editor type
+      const inputEl = cellEl.querySelector?.('input, textarea');
+      if (!inputEl) return;
+
+      // Mark as dirty immediately on any input event
+      const handleInput = () => {
+        this._setDirty('table', true);
+      };
+
+      // Listen for input events (typing)
+      inputEl.addEventListener('input', handleInput, { once: true });
+      
+      // Also listen for keydown to catch immediate keystrokes
+      const handleKeydown = () => {
+        this._setDirty('table', true);
+      };
+      inputEl.addEventListener('keydown', handleKeydown, { once: true });
     });
   }
 
@@ -3603,25 +3751,346 @@ export default class QueriesManager {
   }
 
   /**
+   * Bind column change events (visibility, movement) to update visible column classes.
+   * This ensures .first-visible-col and .last-visible-col are always correct.
+   * @private
+   */
+  _bindColumnChangeEvents() {
+    if (!this.table) return;
+
+    // Update classes when column visibility changes
+    this.table.on('columnVisibilityChanged', () => {
+      this._updateVisibleColumnClasses();
+    });
+
+    // Update classes when columns are moved/reordered
+    this.table.on('columnMoved', () => {
+      this._updateVisibleColumnClasses();
+    });
+
+    // Initial update after table is built
+    this.table.on('tableBuilt', () => {
+      // Delay to ensure DOM is fully rendered
+      setTimeout(() => this._updateVisibleColumnClasses(), 100);
+    });
+
+    // Update classes on row render (handles virtual rows as they appear)
+    this.table.on('rowRendered', (row) => {
+      this._applyVisibleColumnClassesToRow(row);
+    });
+
+    // Update when data is loaded
+    this.table.on('dataLoaded', () => {
+      setTimeout(() => this._updateVisibleColumnClasses(), 50);
+    });
+
+    // Update when rows are added
+    this.table.on('rowAdded', (row) => {
+      this._applyVisibleColumnClassesToRow(row);
+    });
+
+    // Update when group visibility changes
+    this.table.on('groupVisibilityChanged', () => {
+      setTimeout(() => this._updateVisibleColumnClasses(), 50);
+    });
+  }
+
+  /**
+   * Get the first and last visible columns (excluding the selector column).
+   * @returns {{first: Object|null, last: Object|null, firstField: string|null, lastField: string|null}}
+   * @private
+   */
+  _getVisibleColumnBoundaries() {
+    if (!this.table) {
+      return { first: null, last: null, firstField: null, lastField: null };
+    }
+
+    const allColumns = this.table.getColumns();
+    // Filter out hidden columns AND the selector column
+    const visibleColumns = allColumns.filter(col => {
+      const field = col.getField?.();
+      return col.isVisible() && field !== '_selector';
+    });
+
+    if (visibleColumns.length === 0) {
+      return { first: null, last: null, firstField: null, lastField: null };
+    }
+
+    const firstVisible = visibleColumns[0];
+    const lastVisible = visibleColumns[visibleColumns.length - 1];
+
+    return {
+      first: firstVisible,
+      last: lastVisible,
+      firstField: firstVisible.getField(),
+      lastField: lastVisible.getField(),
+    };
+  }
+
+  /**
+   * Update .first-visible-col and .last-visible-col classes on all table cells.
+   * This compensates for :first-child/:last-child not working correctly when
+   * some columns are hidden with display:none.
+   * @private
+   */
+  _updateVisibleColumnClasses() {
+    if (!this.table || !this.elements.tableContainer) return;
+
+    const { firstField, lastField } = this._getVisibleColumnBoundaries();
+    if (!firstField || !lastField) return;
+
+    // Update header cells
+    this._applyVisibleColumnClassesToHeader(firstField, lastField);
+
+    // Update body rows via DOM query (handles both regular and virtual rows)
+    const bodyRows = this.elements.tableContainer.querySelectorAll(
+      '.tabulator-tableholder .tabulator-row:not(.tabulator-calcs):not(.tabulator-group)'
+    );
+    bodyRows.forEach(rowEl => {
+      this._applyVisibleColumnClassesToRowElement(rowEl, firstField, lastField);
+    });
+
+    // Update footer/calculation rows
+    this._applyVisibleColumnClassesToFooter(firstField, lastField);
+
+    // Update grouped rows if any
+    this._applyVisibleColumnClassesToGroups(firstField, lastField);
+  }
+
+  /**
+   * Apply first/last visible column classes to a specific row.
+   * @param {Object} row - Tabulator row component
+   * @param {string} [firstField] - Field name of first visible column (optional, fetched if not provided)
+   * @param {string} [lastField] - Field name of last visible column (optional, fetched if not provided)
+   * @private
+   */
+  _applyVisibleColumnClassesToRow(row, firstField, lastField) {
+    if (!row || row.getCells === undefined) return;
+
+    // Get boundaries if not provided
+    if (firstField === undefined || lastField === undefined) {
+      const boundaries = this._getVisibleColumnBoundaries();
+      firstField = boundaries.firstField;
+      lastField = boundaries.lastField;
+    }
+
+    if (!firstField || !lastField) return;
+
+    const cells = row.getCells();
+    cells.forEach(cell => {
+      const cellEl = cell.getElement?.();
+      if (!cellEl) return;
+
+      const cellField = cell.getField?.();
+      if (!cellField) return;
+
+      cellEl.classList.toggle('first-visible-col', cellField === firstField);
+      cellEl.classList.toggle('last-visible-col', cellField === lastField);
+    });
+  }
+
+  /**
+   * Apply first/last visible column classes to header cells.
+   * @param {string} firstField - Field name of first visible column
+   * @param {string} lastField - Field name of last visible column
+   * @private
+   */
+  _applyVisibleColumnClassesToHeader(firstField, lastField) {
+    if (!this.elements.tableContainer) return;
+
+    // Query header columns directly from DOM
+    const headerCols = this.elements.tableContainer.querySelectorAll(
+      '.tabulator-header .tabulator-col[tabulator-field]'
+    );
+
+    headerCols.forEach(colEl => {
+      const field = colEl.getAttribute('tabulator-field');
+      if (!field) return;
+
+      colEl.classList.toggle('first-visible-col', field === firstField);
+      colEl.classList.toggle('last-visible-col', field === lastField);
+    });
+  }
+
+  /**
+   * Apply first/last visible column classes to footer/calculation rows.
+   * @param {string} firstField - Field name of first visible column
+   * @param {string} lastField - Field name of last visible column
+   * @private
+   */
+  _applyVisibleColumnClassesToFooter(firstField, lastField) {
+    if (!this.elements.tableContainer) return;
+
+    // Calc rows are in separate containers - query them directly
+    const calcContainers = this.elements.tableContainer.querySelectorAll(
+      '.tabulator-calcs-holder, .tabulator-calcs-bottom, .tabulator-calcs-top'
+    );
+
+    calcContainers.forEach(container => {
+      const rows = container.querySelectorAll('.tabulator-row');
+      rows.forEach(rowEl => {
+        this._applyVisibleColumnClassesToRowElement(rowEl, firstField, lastField);
+      });
+    });
+  }
+
+  /**
+   * Apply first/last visible column classes to a row DOM element.
+   * @param {HTMLElement} rowEl - The row element
+   * @param {string} firstField - Field name of first visible column
+   * @param {string} lastField - Field name of last visible column
+   * @private
+   */
+  _applyVisibleColumnClassesToRowElement(rowEl, firstField, lastField) {
+    if (!rowEl) return;
+
+    const cells = rowEl.querySelectorAll('.tabulator-cell');
+    cells.forEach(cell => {
+      const field = cell.getAttribute('tabulator-field');
+      if (!field) return;
+
+      cell.classList.toggle('first-visible-col', field === firstField);
+      cell.classList.toggle('last-visible-col', field === lastField);
+    });
+  }
+
+  /**
+   * Apply first/last visible column classes to grouped rows.
+   * @param {string} firstField - Field name of first visible column
+   * @param {string} lastField - Field name of last visible column
+   * @private
+   */
+  _applyVisibleColumnClassesToGroups(firstField, lastField) {
+    if (!this.elements.tableContainer) return;
+
+    // Group rows have the .tabulator-group class
+    const groupRows = this.elements.tableContainer.querySelectorAll(
+      '.tabulator-tableholder .tabulator-row.tabulator-group'
+    );
+
+    groupRows.forEach(rowEl => {
+      this._applyVisibleColumnClassesToRowElement(rowEl, firstField, lastField);
+    });
+  }
+
+  /**
    * Handle row selected event
    * @param {Object} row - Tabulator row
    * @private
    */
   async _handleRowSelected(row) {
-    // Exit edit mode if editing a different row
-    if (this._isEditing) {
-      const pkField = this.primaryKeyField || 'query_id';
-      const newRowId = row.getData()?.[pkField];
-      const isSameRow = (this._editingRowId != null)
-        ? newRowId === this._editingRowId
-        : newRowId == null;
-      if (!isSameRow) {
-        await this._exitEditMode('row-change');
+    const pkField = this.primaryKeyField || 'query_id';
+    const newRowId = row.getData()?.[pkField];
+    const isSameRow = (this._editingRowId != null)
+      ? newRowId === this._editingRowId
+      : newRowId == null;
+    
+    // If clicking the same row we're already editing, just update selector
+    if (this._isEditing && isSameRow) {
+      this._updateSelectorCell(row, true);
+      return;
+    }
+    
+    // If editing a different row with unsaved changes, handle row change
+    if (this._isEditing && this._isAnyDirty()) {
+      // Auto-save changes before switching rows
+      // If save fails, block the row change to prevent data loss
+      const saveSucceeded = await this._autoSaveBeforeRowChange();
+      if (!saveSucceeded) {
+        // Save failed - do not proceed with row change
+        // Re-select the editing row to keep user on the unsaved row
+        const editingRow = this._getEditingRow();
+        if (editingRow) {
+          editingRow.select();
+        }
+        return;
       }
+      
+      // Save succeeded - mark clean and exit edit mode
+      // Note: _autoSaveBeforeRowChange already called _markAllClean()
+      await this._exitEditMode('save');
+    } else if (this._isEditing) {
+      // In edit mode but no changes - exit edit mode with 'row-change' reason
+      await this._exitEditMode('row-change');
     }
 
     this._updateSelectorCell(row, true);
     this._persistSelectedRow(row);
+  }
+
+  /**
+   * Get the currently editing row component.
+   * @returns {Object|null} The row being edited, or null
+   * @private
+   */
+  _getEditingRow() {
+    if (!this.table || !this._isEditing || this._editingRowId == null) return null;
+    
+    const pkField = this.primaryKeyField || 'query_id';
+    const rows = this.table.getRows('active');
+    return rows.find(row => row.getData()?.[pkField] === this._editingRowId) || null;
+  }
+
+  /**
+   * Auto-save changes when switching to a different row.
+   * This implements "save on blur" behavior - changes are accepted by default.
+   *
+   * @returns {Promise<boolean>} True if save succeeded or no save needed, false if save failed
+   * @private
+   */
+  async _autoSaveBeforeRowChange() {
+    try {
+      log(Subsystems.MANAGER, Status.INFO,
+        `[QueriesManager] Auto-saving changes before switching rows (row ${this._editingRowId})`);
+      
+      const selected = this.table?.getSelectedRows();
+      const row = selected?.[0];
+      
+      if (!row) {
+        log(Subsystems.MANAGER, Status.WARN,
+          '[QueriesManager] Cannot auto-save: no row selected');
+        return true; // No row to save, allow row change
+      }
+      
+      const saveContext = this._buildSaveContext(row);
+      
+      if (!saveContext.queryRef) {
+        // No API configured - just exit edit mode locally (treat as success)
+        log(Subsystems.MANAGER, Status.INFO,
+          '[QueriesManager] Auto-save: no queryRef configured, saving locally');
+        return true;
+      }
+      
+      // Execute the save
+      await this._executeSave(row, saveContext);
+      this._markAllClean();
+      
+      log(Subsystems.MANAGER, Status.INFO,
+        `[QueriesManager] Auto-saved successfully (row ${saveContext.pkValue ?? 'new'})`);
+      
+      // Show toast to inform user of successful auto-save
+      toast.success('Changes Saved', {
+        description: `Query updated before switching rows`,
+        duration: 2000,
+      });
+      
+      return true;
+    } catch (error) {
+      // Log the error and BLOCK row switching to prevent data loss
+      log(Subsystems.MANAGER, Status.ERROR,
+        `[QueriesManager] Auto-save failed: ${error.message}`);
+      
+      // Show error toast so user knows save failed
+      toast.error('Save Failed', {
+        serverError: error.serverError,
+        subsystem: 'Conduit',
+        duration: 6000,
+      });
+      
+      // Return false to block the row change - user stays on the current row
+      // with their unsaved changes intact
+      return false;
+    }
   }
 
   /**
@@ -3839,8 +4308,9 @@ export default class QueriesManager {
   }
 
   loadQueryDetails(queryData) {
-    const pkField = this.primaryKeyField || 'query_id';
-    const queryId = queryData?.[pkField];
+    // Always use 'query_id' specifically for extended data lookup
+    // The detail query (QueryRef 27) expects QUERYID parameter
+    const queryId = queryData?.query_id;
 
     if (queryId == null) return;
     if (String(this._loadedDetailRowId) === String(queryId)) return;
@@ -3877,7 +4347,16 @@ export default class QueriesManager {
    * @private
    */
   async _processQueryDetails(queryDetails, queryId) {
-    if (!queryDetails?.length) return;
+    if (!queryDetails?.length) {
+      // No data returned - clear editors and show warning toast
+      this._clearEditors();
+      toast.warning('No Data Found', {
+        description: `No details returned for query ID ${queryId}. The row may not exist in the underlying table.`,
+        duration: 5000,
+      });
+      log(Subsystems.MANAGER, Status.WARN, `[QueriesManager] No query details returned for ID ${queryId}`);
+      return;
+    }
 
     const fullQuery = queryDetails[0];
     this.currentQuery = fullQuery;
@@ -3962,6 +4441,40 @@ export default class QueriesManager {
 
   clearQueryDetails() {
     this._loadedDetailRowId = null;
+  }
+
+  /**
+   * Clear all editors (SQL, Summary, Collection) when no data is available.
+   * Called when query details return empty results.
+   * @private
+   */
+  _clearEditors() {
+    // Clear SQL editor
+    if (this.sqlEditor) {
+      this.sqlEditor.dispatch({
+        changes: { from: 0, to: this.sqlEditor.state.doc.length, insert: '' },
+      });
+    }
+
+    // Clear Summary editor
+    if (this.summaryEditor) {
+      this.summaryEditor.dispatch({
+        changes: { from: 0, to: this.summaryEditor.state.doc.length, insert: '' },
+      });
+    }
+
+    // Clear Collection editor
+    if (this.collectionEditor) {
+      this.collectionEditor.set({ json: {} });
+    }
+
+    // Clear pending content
+    this._pendingSqlContent = '';
+    this._pendingSummaryContent = '';
+    this._pendingCollectionContent = {};
+
+    // Clear current query reference
+    this.currentQuery = null;
   }
 
   setupSplitter() {
@@ -4098,6 +4611,16 @@ export default class QueriesManager {
         contentEl.contentEditable = 'false';
       }
       this.elements.sqlEditorContainer?.classList.add('queries-cm-readonly');
+      
+      // Add double-click handler to enter edit mode
+      this.elements.sqlEditorContainer.addEventListener('dblclick', () => {
+        if (!this._isEditing && this.table) {
+          const selected = this.table.getSelectedRows();
+          if (selected.length > 0) {
+            void this._enterEditMode(selected[0]);
+          }
+        }
+      });
       
       // Update toolbar state after initialization
       this.updateToolbarState();
@@ -4519,8 +5042,17 @@ export default class QueriesManager {
 
   /**
    * Handle prettify button click
+   * Also enters edit mode if not already editing (double-click behavior)
    */
   async handlePrettify() {
+    // Enter edit mode if not already editing (prettify acts as edit trigger)
+    if (!this._isEditing && this.table) {
+      const selected = this.table.getSelectedRows();
+      if (selected.length > 0) {
+        await this._enterEditMode(selected[0]);
+      }
+    }
+
     if (!this.sqlEditor) return;
 
     const currentContent = this.sqlEditor.state.doc.toString();

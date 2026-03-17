@@ -55,6 +55,8 @@ table.insert(queries,{sql=[[
                         query_type_a28,
                         query_dialect_a30,
                         query_status_a27,
+                        query_queue_a58,
+                        query_timeout,
                         name,
                         valid_after,
                         valid_until,

@@ -119,6 +119,18 @@
   background-color: var(--accent-danger);
 }
 
+/* Save button icon color when enabled (not disabled) - green */
+#queries-nav-save:not(:disabled) svg,
+#queries-nav-save:not(:disabled) i {
+  color: var(--accent-success, #66BB6A);
+}
+
+/* Cancel button icon color when enabled (not disabled) - red */
+#queries-nav-cancel:not(:disabled) svg,
+#queries-nav-cancel:not(:disabled) i {
+  color: var(--accent-danger, #EF5350);
+}
+
 /* SVG icons inside nav buttons — scale to fit */
 .queries-nav-btn svg,
 .queries-nav-btn i {
@@ -916,14 +928,13 @@
 
 /* Table body */
 #queries-table-container .tabulator-tableholder {
-  
+  outline: none;  
 }
 
-/* Row styling - no left/right borders, compact height */
+/* Row styling */
 #queries-table-container .tabulator-row {
   border-bottom: 1px solid var(--bg-row-border);
   border-left: none;
-  border-right: none;
   color: var(--text-primary);
   cursor: pointer;
   height: 20px !important;
@@ -943,7 +954,6 @@
 #queries-table-container .tabulator-cell {
 	padding: 0px 6px;
 	border-left: none;
-	border-right: none;
 	line-height: 20px !important;
 	height: 20px !important;
 	font-size: 12px;
@@ -1076,13 +1086,11 @@
 
 /* Keyboard focus indicator for table container */
 #queries-table-container:focus {
-  outline: 2px solid var(--accent-primary);
-  outline-offset: -2px;
+  outline: none;
 }
 
 #queries-table-container:focus-visible {
-  outline: 2px solid var(--accent-primary);
-  outline-offset: -2px;
+  outline: none;
 }
 
 /* ── Preview Tab Styles ─────────────────────────────────────────────────── */
@@ -1383,6 +1391,9 @@
   opacity: 0;
   transition: height var(--transition-fast), min-height var(--transition-fast), max-height var(--transition-fast), opacity var(--transition-fast);
 }
+.tabulator-row .tabulator-cell {
+  border-right: 1px solid var(--bg-row-border);
+}
 
 /* Show filter row when toggled on — compact height */
 #queries-table-container.queries-filters-visible .tabulator-header-filter {
@@ -1467,6 +1478,13 @@
 }
 .tabulator-row .tabulator-cell.tabulator-editing {
   border: unset;
+  padding: 0;
+}
+
+/* Override Tabulator's default padding on editing inputs */
+#queries-table-container .tabulator-cell.tabulator-editing > input,
+#queries-table-container .tabulator-cell.tabulator-editing > select {
+  padding: 4px 0px !important;
 }
 /* Footer row — styled like rows: 20px height, same padding */
 #queries-table-container .tabulator-calcs-bottom {
@@ -1514,11 +1532,12 @@
 
 /* Frozen header cell */
 #queries-table-container .tabulator-header .tabulator-col.tabulator-frozen {
+  outline: none;
 }
 
 /* Frozen data cell — match alternating row background */
 #queries-table-container .tabulator-row .tabulator-cell.tabulator-frozen {
-  
+  outline: none;  
 }
 
 /* Selected row's frozen cell */
@@ -1534,6 +1553,57 @@
 /* Hovered + selected */
 #queries-table-container .tabulator-row.tabulator-selected:hover .tabulator-cell.tabulator-frozen {
   background: var(--accent-hover) !important;
+}
+
+/* ── First/Last Visible Column Classes ───────────────────────────────────── */
+
+/*
+ * When columns are hidden with display:none, :first-child and :last-child
+ * don't work as expected because the hidden columns are still in the DOM.
+ * These classes (.first-visible-col and .last-visible-col) are dynamically
+ * applied via JavaScript to mark the actual first and last visible columns.
+ */
+
+/* First visible column — remove left border for clean edge */
+#queries-table-container .tabulator-cell.first-visible-col,
+#queries-table-container .tabulator-header .tabulator-col.first-visible-col {
+  border-left: none;
+}
+
+/* Last visible column — remove right border for clean edge */
+#queries-table-container .tabulator-cell.last-visible-col,
+#queries-table-container .tabulator-header .tabulator-col.last-visible-col {
+  border-right: none !important;
+}
+
+/* Footer calc row — ensure borders are consistent */
+#queries-table-container .tabulator-calcs-bottom .tabulator-cell.first-visible-col,
+#queries-table-container .tabulator-calcs-top .tabulator-cell.first-visible-col,
+#queries-table-container .tabulator-calcs-holder .tabulator-cell.first-visible-col {
+  border-left: none;
+}
+
+#queries-table-container .tabulator-calcs-bottom .tabulator-cell.last-visible-col,
+#queries-table-container .tabulator-calcs-top .tabulator-cell.last-visible-col,
+#queries-table-container .tabulator-calcs-holder .tabulator-cell.last-visible-col {
+  border-right: none !important;
+}
+
+/* Grouped rows — ensure borders are consistent */
+#queries-table-container .tabulator-group .tabulator-cell.first-visible-col,
+#queries-table-container .tabulator-row.tabulator-group .tabulator-cell.first-visible-col {
+  border-left: none;
+}
+
+#queries-table-container .tabulator-group .tabulator-cell.last-visible-col,
+#queries-table-container .tabulator-row.tabulator-group .tabulator-cell.last-visible-col {
+  border-right: none !important;
+}
+
+/* Frozen column edge cases — ensure no double borders */
+#queries-table-container .tabulator-cell.first-visible-col.tabulator-frozen,
+#queries-table-container .tabulator-col.first-visible-col.tabulator-frozen {
+  border-left: none;
 }
 
 /* ── Edit Mode ───────────────────────────────────────────────────────────── */
