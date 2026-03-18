@@ -29,6 +29,7 @@ This directory contains the canonical documentation for the Lithium web applicat
 | [LITHIUM-MGR-MAIN.md](LITHIUM-MGR-MAIN.md) | Main Manager — sidebar, slots, logout |
 | [LITHIUM-MGR-QUERY.md](LITHIUM-MGR-QUERY.md) | Query Manager — fully implemented with LithiumTable |
 | [LITHIUM-MGR-LOOKUPS.md](LITHIUM-MGR-LOOKUPS.md) | Lookups Manager — dual-table parent/child design |
+| [LITHIUM-MGR-CRIMSON.md](LITHIUM-MGR-CRIMSON.md) | Crimson AI Agent — popup chat interface |
 | [LITHIUM-TAB.md](LITHIUM-TAB.md) | LithiumTable Component — reusable Tabulator+Navigator |
 | [LITHIUM-TAB-PLAN.md](LITHIUM-TAB-PLAN.md) | Tabulator implementation plan — gap analysis and phased roadmap |
 | [LITHIUM-LUT.md](LITHIUM-LUT.md) | Lookup Tables — schema, caching, accessor functions, Tabulator integration |

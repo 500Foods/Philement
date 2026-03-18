@@ -1,0 +1,3 @@
+The Query Manager is used to, well, manage queries within Lithium. This inculdes virtually all the SQL that is in play.  The Hydrogen server, by design, has no actual SQL code within it, as it has been designed specifically to be database engine-agnostic, as much as possible. So all the queries it executes are stored in the databases that it provides access to. The Query Manager, then, provides access to all of the queries that are ever executed, with the sole exception of the bootstrap query that Hydrogen uses to get the queries it uses.
+
+The general idea is that there is a list of queries on the left, in a standard view that can be searched, edited, categorized, and so on. And on the right is the query itself, which can be edited, executed, formatted, and so on.
