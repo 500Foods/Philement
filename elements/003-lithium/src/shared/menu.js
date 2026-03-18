@@ -40,7 +40,7 @@ let menuCache = null;
  * @returns {Object} Parsed icon info with fallback, includes index for filtering
  */
 export function parseCollection(collection) {
-  const fallback = { icon: 'fa-cube', index: 0, visible: true };
+  const fallback = { iconHtml: '<fa fa-cube></fa>', index: 0, visible: true };
 
   if (!collection) {
     return fallback;
@@ -49,18 +49,19 @@ export function parseCollection(collection) {
   try {
     const parsed = typeof collection === 'string' ? JSON.parse(collection) : collection;
     
-    // Extract icon class from HTML <i> tag if present
-    let icon = fallback.icon;
-    if (parsed.Icon) {
-      // Parse icon class from HTML like: <i class='fa fa-fw fa-xl fa-receipt'></i>
-      const iconMatch = parsed.Icon.match(/class=['"]([^'"]*)['"]/);
-      if (iconMatch) {
-        // Extract just the icon name (e.g., fa-receipt from fa fa-fw fa-xl fa-receipt)
-        const classes = iconMatch[1].split(/\s+/);
-        const faIcon = classes.find(c => c.startsWith('fa-') && !['fa-fw', 'fa-xl'].includes(c));
-        if (faIcon) {
-          icon = faIcon;
-        }
+    // Get Icon HTML from server, ensuring it has a proper closing tag
+    // Server may return: <fa fa-fw fa-xl fa-receipt> (no closing tag)
+    // We need: <fa fa-fw fa-xl fa-receipt></fa>
+    let iconHtml = parsed.Icon || fallback.iconHtml;
+    
+    // Ensure the icon tag is properly closed
+    if (iconHtml && !iconHtml.includes('</fa>')) {
+      // Extract the tag content and wrap with proper opening/closing tags
+      const match = iconHtml.match(/<fa\s+(.+?)\/?>/);
+      if (match) {
+        iconHtml = `<fa ${match[1]}></fa>`;
+      } else {
+        iconHtml = fallback.iconHtml;
       }
     }
     
@@ -68,7 +69,7 @@ export function parseCollection(collection) {
     const index = parsed.Index !== undefined ? parsed.Index : 0;
     
     return {
-      icon,
+      iconHtml,
       index,
       visible: index >= 0, // Only show items with Index >= 0
     };
@@ -109,7 +110,7 @@ export function groupMenuItems(items) {
       name: item.modname,
       sortOrder: item.modsort,
       count: item.entries || 0,
-      icon: collectionInfo.icon,
+      iconHtml: collectionInfo.iconHtml,
       index: collectionInfo.index,
     });
   });
@@ -286,7 +287,7 @@ export function getMenuItemById(menuData, managerId) {
 /**
  * Build manager icons registry from menu data
  * @param {Array} menuData - Grouped menu data
- * @returns {Object} Manager icons registry (managerId -> {icon, name})
+ * @returns {Object} Manager icons registry (managerId -> {iconHtml, name})
  */
 export function buildManagerIconsRegistry(menuData) {
   const registry = {};
@@ -298,7 +299,7 @@ export function buildManagerIconsRegistry(menuData) {
   menuData.forEach((group) => {
     group.items.forEach((item) => {
       registry[item.managerId] = {
-        icon: item.icon || 'fa-cube',
+        iconHtml: item.iconHtml || '<fa fa-cube></fa>',
         name: item.name,
       };
     });

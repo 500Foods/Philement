@@ -18,6 +18,7 @@ import { log, Subsystems, Status } from '../../core/log.js';
 import { processIcons } from '../../core/icons.js';
 import SunEditor from 'suneditor';
 import 'suneditor/css/editor';
+import '../../styles/vendor-vanilla-jsoneditor.css';
 import './lookups.css';
 
 // ── Footer Select Options ───────────────────────────────────────────────────
@@ -72,6 +73,7 @@ export default class LookupsManager {
 
     // Editor instances
     this.sunEditor = null;
+    this.collectionEditor = null; // vanilla-jsoneditor instance
     this.currentDetailData = null;
 
     // Active tab
@@ -273,6 +275,11 @@ export default class LookupsManager {
     });
 
     // Initialize editors on first view
+    if (tabId === 'json' && !this.collectionEditor) {
+      const jsonContent = this.currentDetailData?.collection || this.currentDetailData?.json || {};
+      this.initJsonEditor(jsonContent);
+    }
+
     if (tabId === 'summary' && !this.sunEditor) {
       this.initSummaryEditor();
     }
@@ -293,7 +300,7 @@ export default class LookupsManager {
         defaultStyle: 'font-family: var(--font-sans); font-size: 14px;',
         buttonList: [
           ['undo', 'redo'],
-          ['font', 'fontSize', 'formatBlock'],
+          ['fontSize', 'formatBlock'],
           ['bold', 'underline', 'italic', 'strike', 'subscript', 'superscript'],
           ['removeFormat'],
           '/', // Line break
@@ -313,6 +320,66 @@ export default class LookupsManager {
       }
     } catch (error) {
       console.error('[LookupsManager] Failed to initialize SunEditor:', error);
+    }
+  }
+
+  /**
+   * Initialize JSONEditor for JSON tab (tree view JSON editor)
+   * @param {Object|string} initialContent - Initial JSON content
+   */
+  async initJsonEditor(initialContent = {}) {
+    if (!this.elements.jsonEditor) return;
+
+    // Parse content if it's a string
+    let jsonData = initialContent;
+    if (typeof initialContent === 'string') {
+      try {
+        jsonData = JSON.parse(initialContent);
+      } catch (e) {
+        jsonData = {};
+      }
+    }
+
+    // If editor already exists, just update content
+    if (this.collectionEditor) {
+      this.collectionEditor.set({ json: jsonData });
+      return;
+    }
+
+    try {
+      // Dynamic import vanilla-jsoneditor
+      const { JSONEditor } = await import('vanilla-jsoneditor');
+
+      // Create editor container
+      this.elements.jsonEditor.innerHTML = '';
+      const editorContainer = document.createElement('div');
+      editorContainer.style.cssText = 'width:100%;height:100%;';
+      editorContainer.classList.add('jse-theme-dark');
+      this.elements.jsonEditor.appendChild(editorContainer);
+
+      // Initialize vanilla-jsoneditor
+      this.collectionEditor = new JSONEditor({
+        target: editorContainer,
+        props: {
+          content: { json: jsonData },
+          mode: 'tree',
+          mainMenuBar: true,
+          navigationBar: true,
+          statusBar: true,
+        },
+      });
+
+    } catch (error) {
+      console.error('[LookupsManager] Failed to initialize vanilla-jsoneditor:', error);
+      // Fallback to textarea
+      const jsonContent = typeof jsonData === 'object'
+        ? JSON.stringify(jsonData, null, 2)
+        : jsonData;
+      this.elements.jsonEditor.innerHTML = `
+        <textarea id="lookups-json-editor-fallback"
+          style="width:100%;height:100%;background:var(--bg-secondary);color:var(--text-primary);border:none;padding:16px;font-family:var(--font-mono);font-size:14px;">
+          ${jsonContent}
+        </textarea>`;
     }
   }
 
@@ -491,9 +558,15 @@ export default class LookupsManager {
   updateDetailView() {
     if (!this.currentDetailData) return;
 
-    // Update JSON tab
-    if (this.elements.jsonEditor) {
-      this.elements.jsonEditor.textContent = JSON.stringify(this.currentDetailData, null, 2);
+    // Update JSON editor
+    const jsonContent = this.currentDetailData.collection || this.currentDetailData.json || {};
+    if (this.collectionEditor) {
+      // Editor already initialized, just update content
+      const jsonData = typeof jsonContent === 'string' ? JSON.parse(jsonContent || '{}') : jsonContent;
+      this.collectionEditor.set({ json: jsonData });
+    } else if (this.elements.jsonEditor && this.activeTab === 'json') {
+      // Initialize editor if JSON tab is active
+      this.initJsonEditor(jsonContent);
     }
 
     // Update Summary editor if initialized
@@ -510,8 +583,11 @@ export default class LookupsManager {
   clearDetailView() {
     this.currentDetailData = null;
 
-    if (this.elements.jsonEditor) {
-      this.elements.jsonEditor.textContent = 'Select a lookup entry to view details';
+    // Clear JSON editor
+    if (this.collectionEditor) {
+      this.collectionEditor.set({ json: {} });
+    } else if (this.elements.jsonEditor) {
+      this.elements.jsonEditor.innerHTML = '<p class="lookups-preview-placeholder">Select a lookup entry to view details</p>';
     }
 
     if (this.sunEditor) {
@@ -1171,6 +1247,12 @@ export default class LookupsManager {
     if (this.sunEditor) {
       this.sunEditor.destroy();
       this.sunEditor = null;
+    }
+
+    // Destroy JSONEditor
+    if (this.collectionEditor) {
+      this.collectionEditor.destroy();
+      this.collectionEditor = null;
     }
 
     // Remove font popup

@@ -493,13 +493,15 @@ export default class MainManager {
       }
     } catch (error) {
       console.error('[MainManager] Failed to load menu data:', error);
+      // Clear cache to force fresh fetch on next load
+      clearMenuCache();
       // Fall back to static manager icons
       this.managerIcons = {
-        1: { icon: 'fa-palette', name: 'Style Manager' },
-        2: { icon: 'fa-user-cog', name: 'Profile Manager' },
-        3: { icon: 'fa-chart-line', name: 'Dashboard' },
-        4: { icon: 'fa-search', name: 'Queries' },
-        5: { icon: 'fa-list-check', name: 'Lookups' },
+        1: { iconHtml: '<fa fa-palette></fa>', name: 'Style Manager' },
+        2: { iconHtml: '<fa fa-user-cog></fa>', name: 'Profile Manager' },
+        3: { iconHtml: '<fa fa-chart-line></fa>', name: 'Dashboard' },
+        4: { iconHtml: '<fa fa-search></fa>', name: 'Queries' },
+        5: { iconHtml: '<fa fa-list-check></fa>', name: 'Lookups' },
       };
     }
   }
@@ -1261,11 +1263,14 @@ export default class MainManager {
         const button = document.createElement('div');
         button.className = 'menu-item';
         button.dataset.managerId = item.managerId;
-        button.innerHTML = `
-          <fa ${item.icon}></fa>
-          <span class="menu-item-name">${item.name}</span>
-          ${item.count > 0 ? `<span class="menu-item-count">${item.count}</span>` : ''}
-        `;
+        const itemName = item.name || `Manager ${item.managerId}`;
+        // Build HTML without extra whitespace to avoid parsing issues
+        let htmlContent = item.iconHtml || '<fa fa-cube></fa>';
+        htmlContent += `<span class="menu-item-name">${itemName}</span>`;
+        if (item.count > 0) {
+          htmlContent += `<span class="menu-item-count">${item.count}</span>`;
+        }
+        button.innerHTML = htmlContent;
 
         button.addEventListener('click', () => {
           this.loadManager(item.managerId);
@@ -1296,15 +1301,12 @@ export default class MainManager {
     this.permittedManagers.forEach((managerId) => {
       if (!canAccessManager(managerId)) return;
 
-      const managerInfo = this.managerIcons[managerId] || { icon: 'fa-cube', name: `Manager ${managerId}` };
+      const managerInfo = this.managerIcons[managerId] || { iconHtml: '<fa fa-cube></fa>', name: `Manager ${managerId}` };
 
       const button = document.createElement('div');
       button.className = 'menu-item';
       button.dataset.managerId = managerId;
-      button.innerHTML = `
-        <fa ${managerInfo.icon}></fa>
-        <span>${managerInfo.name}</span>
-      `;
+      button.innerHTML = `${managerInfo.iconHtml}<span class="menu-item-name">${managerInfo.name}</span>`;
 
       button.addEventListener('click', () => {
         this.loadManager(managerId);

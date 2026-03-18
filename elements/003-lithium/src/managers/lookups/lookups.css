@@ -1491,4 +1491,41 @@
   background-color: var(--accent-focus);
 }
 
+/* ── vanilla-jsoneditor Dark Theme Integration ───────────────────────────── */
+/* vanilla-jsoneditor uses .jse-theme-dark class and --jse-* CSS custom
+   properties. The dark theme class is applied to the container in JS.
+   These overrides integrate the editor's colors with Lithium's design tokens. */
+
+/* Ensure vanilla-jsoneditor fills the tab pane */
+.lookups-tab-pane #lookups-tab-json {
+  padding: 0;
+}
+
+.lookups-tab-pane #lookups-tab-json .jse-theme-dark {
+  height: 100%;
+}
+
+/* Map Lithium design tokens to vanilla-jsoneditor CSS custom properties */
+.lookups-tab-pane .jse-theme-dark {
+  --jse-background-color: var(--bg-secondary);
+  --jse-panel-background: var(--bg-tertiary);
+  --jse-theme-color: var(--accent-primary);
+  --jse-theme-color-highlight: var(--accent-hover);
+  --jse-text-color: var(--text-primary);
+  --jse-text-color-inverse: white;
+  --jse-separator-color: var(--border-color);
+  --jse-key-color: var(--text-primary);
+  --jse-value-color-string: #a5d6a7;
+  --jse-value-color-number: #81d4fa;
+  --jse-value-color-boolean: #ffcc80;
+  --jse-value-color-null: #ef9a9a;
+  --jse-value-color-url: var(--accent-info);
+  --jse-selection-background-color: var(--accent-primary);
+  --jse-selection-background-inactive-color: var(--bg-active);
+  --jse-context-menu-background: var(--bg-secondary);
+  --jse-context-menu-background-highlight: var(--bg-tertiary);
+  --jse-context-menu-separator-color: var(--border-color);
+  --jse-context-menu-color: var(--text-primary);
+}
+
 } /* end @layer vendor-fixes */
