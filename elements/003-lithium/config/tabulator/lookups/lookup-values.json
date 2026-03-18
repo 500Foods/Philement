@@ -1,0 +1,134 @@
+{
+  "$schema": "../tabledef-schema.json",
+  "$version": "1.0.0",
+  "$description": "Column definitions for the Lookup Values table (child table). Shows values for a selected lookup table.",
+
+  "table": "lookup-values",
+  "title": "Lookup Values",
+  "queryRef": 34,
+  "readonly": false,
+  "selectableRows": 1,
+  "layout": "fitColumns",
+  "responsiveLayout": "collapse",
+  "resizableColumns": true,
+  "persistSort": true,
+  "persistFilter": true,
+  "initialSort": [
+    { "column": "sort_seq", "dir": "asc" }
+  ],
+
+  "columns": {
+
+    "lookup_value_id": {
+      "display": "ID#",
+      "field": "lookup_value_id",
+      "coltype": "index",
+      "visible": false,
+      "sort": true,
+      "filter": true,
+      "group": false,
+      "editable": false,
+      "calculated": false,
+      "primaryKey": true,
+      "description": "Database primary key for the lookup value",
+      "overrides": {
+        "bottomCalc": null
+      }
+    },
+
+    "lookup_id": {
+      "display": "Lookup ID",
+      "field": "lookup_id",
+      "coltype": "index",
+      "visible": false,
+      "sort": true,
+      "filter": true,
+      "group": false,
+      "editable": false,
+      "calculated": false,
+      "primaryKey": false,
+      "description": "Foreign key to the parent lookup table"
+    },
+
+    "key_idx": {
+      "display": "Key",
+      "field": "key_idx",
+      "coltype": "index",
+      "visible": true,
+      "sort": true,
+      "filter": true,
+      "group": false,
+      "editable": true,
+      "calculated": false,
+      "primaryKey": false,
+      "description": "The key/enum value for this lookup entry",
+      "overrides": {
+        "width": 80
+      }
+    },
+
+    "value_txt": {
+      "display": "Value",
+      "field": "value_txt",
+      "coltype": "string",
+      "visible": true,
+      "sort": true,
+      "filter": true,
+      "group": false,
+      "editable": true,
+      "calculated": false,
+      "primaryKey": false,
+      "description": "The display label for this lookup entry"
+    },
+
+    "sort_seq": {
+      "display": "Seq",
+      "field": "sort_seq",
+      "coltype": "integer",
+      "visible": true,
+      "sort": true,
+      "filter": true,
+      "group": false,
+      "editable": true,
+      "calculated": false,
+      "primaryKey": false,
+      "description": "Sort order within the lookup table",
+      "overrides": {
+        "width": 60,
+        "bottomCalc": "count",
+        "bottomCalcFormatter": "number",
+        "bottomCalcFormatterParams": {
+          "thousand": ""
+        }
+      }
+    },
+
+    "created_at": {
+      "display": "Created",
+      "field": "created_at",
+      "coltype": "datetime",
+      "visible": false,
+      "sort": true,
+      "filter": true,
+      "group": false,
+      "editable": false,
+      "calculated": true,
+      "primaryKey": false,
+      "description": "Record creation timestamp"
+    },
+
+    "updated_at": {
+      "display": "Updated",
+      "field": "updated_at",
+      "coltype": "datetime",
+      "visible": false,
+      "sort": true,
+      "filter": true,
+      "group": false,
+      "editable": false,
+      "calculated": true,
+      "primaryKey": false,
+      "description": "Last modification timestamp"
+    }
+  }
+}

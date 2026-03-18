@@ -1,0 +1,485 @@
+/**
+ * Crimson AI Agent Manager Styles
+ *
+ * A draggable, resizable popup chat window for the AI Agent "Crimson".
+ * Styled to match the Lithium design system with subpanel-header-group styling.
+ */
+
+@layer managers {
+
+/* ========================================
+   Crimson Overlay
+   ======================================== */
+
+.crimson-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 2000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--transition-fast) ease, visibility var(--transition-fast) ease;
+}
+
+.crimson-overlay.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ========================================
+   Crimson Popup Window
+   ======================================== */
+
+.crimson-popup {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  width: 70vw;
+  height: 70vh;
+  min-width: 400px;
+  min-height: 300px;
+  max-width: 95vw;
+  max-height: 95vh;
+  background: var(--bg-primary);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-lg);
+  z-index: 2001;
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(0.95);
+  transition: opacity var(--transition-duration) ease, visibility var(--transition-duration) ease, transform var(--transition-duration) ease;
+}
+
+.crimson-popup.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: scale(1);
+}
+
+.crimson-popup.dragging {
+  transition: none;
+  cursor: grabbing;
+}
+
+.crimson-popup.resizing {
+  transition: none;
+}
+
+/* ========================================
+   Crimson Header
+   ======================================== */
+
+.crimson-header {
+  flex-shrink: 0;
+  padding: var(--space-3);
+  background: var(--bg-secondary);
+  border-bottom: var(--border-standard);
+  cursor: grab;
+  user-select: none;
+}
+
+.crimson-header:active {
+  cursor: grabbing;
+}
+
+.crimson-header .subpanel-header-group {
+  display: flex;
+  gap: 2px;
+}
+
+.crimson-header-primary {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--accent-primary);
+  border: none;
+  border-radius: var(--border-radius-md) 0 0 var(--border-radius-md);
+  color: white;
+  font-size: var(--font-size-lg);
+  font-weight: 500;
+  cursor: grab;
+}
+
+.crimson-header-primary:active {
+  cursor: grabbing;
+}
+
+.crimson-header-primary svg,
+.crimson-header-primary i {
+  font-size: var(--font-size-xl);
+  color: #DC143C; /* Crimson color for the robot icon */
+}
+
+.crimson-header-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  padding: var(--space-2);
+  background: var(--accent-primary);
+  border: none;
+  border-radius: 0 var(--border-radius-md) var(--border-radius-md) 0;
+  color: white;
+  font-size: var(--font-size-xl);
+  cursor: pointer;
+  transition: background-color var(--transition-fast) ease;
+}
+
+.crimson-header-close:hover {
+  background: var(--accent-hover);
+}
+
+/* ========================================
+   Crimson Conversation Area
+   ======================================== */
+
+.crimson-conversation {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-4);
+  background: var(--bg-primary);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* Scrollbar styling */
+.crimson-conversation::-webkit-scrollbar {
+  width: 8px;
+}
+
+.crimson-conversation::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius-sm);
+}
+
+.crimson-conversation::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: var(--border-radius-sm);
+}
+
+.crimson-conversation::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* ========================================
+   Chat Messages
+   ======================================== */
+
+.crimson-message {
+  display: flex;
+  gap: var(--space-3);
+  max-width: 85%;
+  animation: crimson-message-in 200ms ease-out;
+}
+
+@keyframes crimson-message-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.crimson-message-user {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+.crimson-message-agent {
+  align-self: flex-start;
+}
+
+.crimson-message-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--border-radius-md);
+  flex-shrink: 0;
+  font-size: var(--font-size-lg);
+}
+
+.crimson-message-agent .crimson-message-avatar {
+  background: var(--accent-primary);
+  color: #DC143C; /* Crimson color for the robot icon */
+}
+
+.crimson-message-user .crimson-message-avatar {
+  background: var(--accent-secondary);
+  color: white;
+}
+
+.crimson-message-content {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-base);
+  line-height: 1.5;
+  word-wrap: break-word;
+}
+
+.crimson-message-agent .crimson-message-content {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-top-left-radius: 2px;
+}
+
+.crimson-message-user .crimson-message-content {
+  background: var(--accent-primary);
+  color: white;
+  border-top-right-radius: 2px;
+}
+
+/* ========================================
+   Input Area
+   ======================================== */
+
+.crimson-input-area {
+  flex-shrink: 0;
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-secondary);
+  border-top: var(--border-standard);
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-end;
+}
+
+.crimson-input {
+  flex: 1;
+  min-height: 44px;
+  max-height: 150px;
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-primary);
+  border: var(--border-standard);
+  border-radius: var(--border-radius-md);
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
+  font-family: inherit;
+  resize: none;
+  outline: none;
+  transition: border-color var(--transition-fast) ease, box-shadow var(--transition-fast) ease;
+}
+
+.crimson-input:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px rgba(92, 107, 192, 0.2);
+}
+
+.crimson-input::placeholder {
+  color: var(--text-muted);
+}
+
+.crimson-send-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  background: var(--accent-primary);
+  border: none;
+  border-radius: var(--border-radius-md);
+  color: white;
+  font-size: var(--font-size-lg);
+  cursor: pointer;
+  transition: background-color var(--transition-fast) ease, transform 100ms ease;
+  flex-shrink: 0;
+}
+
+.crimson-send-btn:hover {
+  background: var(--accent-hover);
+}
+
+.crimson-send-btn:active {
+  transform: scale(0.95);
+}
+
+.crimson-send-btn:disabled {
+  background: var(--text-disabled);
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ========================================
+   Resize Handles - All Four Corners
+   ======================================== */
+
+.crimson-resize-handle {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  opacity: 0.5;
+  transition: opacity var(--transition-fast) ease;
+  z-index: 1;
+}
+
+.crimson-resize-handle:hover {
+  opacity: 1;
+}
+
+.crimson-popup.resizing .crimson-resize-handle {
+  opacity: 1;
+}
+
+/* Bottom-right corner (diagonal resize) */
+.crimson-resize-handle-br {
+  bottom: 4px;
+  right: 4px;
+  cursor: nwse-resize;
+  background: linear-gradient(135deg, transparent 50%, var(--border-color) 50%);
+  border-bottom-right-radius: var(--border-radius-sm);
+}
+
+/* Bottom-left corner */
+.crimson-resize-handle-bl {
+  bottom: 4px;
+  left: 4px;
+  cursor: nesw-resize;
+  background: linear-gradient(225deg, transparent 50%, var(--border-color) 50%);
+  border-bottom-left-radius: var(--border-radius-sm);
+}
+
+/* Top-right corner */
+.crimson-resize-handle-tr {
+  top: 4px;
+  right: 4px;
+  cursor: nesw-resize;
+  background: linear-gradient(45deg, transparent 50%, var(--border-color) 50%);
+  border-top-right-radius: var(--border-radius-sm);
+}
+
+/* Top-left corner */
+.crimson-resize-handle-tl {
+  top: 4px;
+  left: 4px;
+  cursor: nwse-resize;
+  background: linear-gradient(315deg, transparent 50%, var(--border-color) 50%);
+  border-top-left-radius: var(--border-radius-sm);
+}
+
+/* ========================================
+   Welcome Message
+   ======================================== */
+
+.crimson-welcome {
+  text-align: center;
+  padding: var(--space-6);
+  color: var(--text-muted);
+}
+
+.crimson-welcome-icon {
+  font-size: 48px;
+  margin-bottom: var(--space-4);
+  color: #DC143C; /* Crimson color for the welcome icon */
+}
+
+.crimson-welcome-icon svg,
+.crimson-welcome-icon i {
+  color: #DC143C; /* Crimson color for the robot icon */
+}
+
+.crimson-welcome-text {
+  font-size: var(--font-size-lg);
+  margin-bottom: var(--space-2);
+  color: var(--text-primary);
+}
+
+.crimson-welcome-hint {
+  font-size: var(--font-size-sm);
+}
+
+/* ========================================
+   Typing Indicator
+   ======================================== */
+
+.crimson-typing {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4);
+}
+
+.crimson-typing-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--text-muted);
+  border-radius: var(--border-radius-full);
+  animation: crimson-typing-bounce 1.4s infinite ease-in-out both;
+}
+
+.crimson-typing-dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.crimson-typing-dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes crimson-typing-bounce {
+  0%, 80%, 100% {
+    transform: scale(0.6);
+  }
+  40% {
+    transform: scale(1);
+  }
+}
+
+/* ========================================
+   Crimson Button (in manager headers)
+   ======================================== */
+
+.crimson-btn {
+  position: relative;
+}
+
+.crimson-btn svg,
+.crimson-btn i {
+  color: #DC143C; /* Crimson color for the robot icon in buttons */
+}
+
+.crimson-btn::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-4px);
+  padding: var(--space-1) var(--space-2);
+  background-color: var(--bg-tertiary);
+  border: var(--border-standard);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-xs);
+  color: var(--text-primary);
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all var(--transition-fast);
+  z-index: var(--z-tooltip);
+  pointer-events: none;
+}
+
+.crimson-btn:hover::after {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .crimson-overlay,
+  .crimson-popup,
+  .crimson-message,
+  .crimson-send-btn,
+  .crimson-resize-handle,
+  .crimson-btn::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+} /* end @layer managers */

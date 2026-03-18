@@ -2588,7 +2588,7 @@ export default class QueriesManager {
       this._applyTemplateFilters(template);
       
       this.table.redraw(true);
-      toast.success('Template Applied', { description: `"${template.name}" has been applied`, duration: 3000 });
+      // toast.success('Template Applied', { description: `"${template.name}" has been applied`, duration: 3000 });
       log(Subsystems.MANAGER, Status.INFO, `[QueriesManager] Template applied: ${template.name}`);
     } catch (err) {
       this._handleTemplateError(err);

@@ -127,6 +127,7 @@ body.hide-password-manager-ui [class*="password-icon"] {
   outline-offset: -10px;       
   line-height: 1;
   height: 35px;
+  min-width: 40px;
 }
 
 .subpanel-header-group > button {
