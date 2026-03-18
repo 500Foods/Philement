@@ -190,4 +190,6 @@ in the migrations themselves so that they get populated in the database directly
 | [1153](/elements/002-helium/acuranzo/migrations/acuranzo_1153.lua) | lookups | 1.0.0 | 2026-03-15 | 4 | ✗ | Tabulator Schema: coltypes.json (Lookup 059, Key 0) |
 | [1154](/elements/002-helium/acuranzo/migrations/acuranzo_1154.lua) | lookups | 1.0.0 | 2026-03-15 | 4 | ✗ | Tabulator Schema: query-manager.json (Lookup 059, Key 1) |
 | [1155](/elements/002-helium/acuranzo/migrations/acuranzo_1155.lua) | queries | 1.0.0 | 2026-03-15 | 4 | ✗ | QueryRef #060 - Get Tabulator Schemas |
-| **156** | | | | **813** | **156** | |
+| [1156](/elements/002-helium/acuranzo/migrations/acuranzo_1156.lua) | lookups | 1.0.0 | 2026-03-17 | 4 | ✗ | Tabulator Schema: lookups-list.json (Lookup 059, Key 2) |
+| [1157](/elements/002-helium/acuranzo/migrations/acuranzo_1157.lua) | lookups | 1.0.0 | 2026-03-17 | 4 | ✗ | Tabulator Schema: lookup-values.json (Lookup 059, Key 3) |
+| **158** | | | | **821** | **158** | |

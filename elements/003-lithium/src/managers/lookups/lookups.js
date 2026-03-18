@@ -1,9 +1,10 @@
 /**
  * Lookups Manager — Manager ID 5
  *
- * A dual-table interface for managing lookup tables:
- * - Left panel (parent): List of all lookups
- * - Right panel (child): Values for the selected lookup
+ * A three-panel interface for managing lookup tables:
+ * - Left panel: List of all lookups (parent table)
+ * - Middle panel: Values for the selected lookup (child table)
+ * - Right panel: Tabbed view with JSON, Summary, and Preview
  *
  * Uses the reusable LithiumTable component for both tables.
  *
@@ -15,6 +16,8 @@ import { authQuery } from '../../shared/conduit.js';
 import { toast } from '../../shared/toast.js';
 import { log, Subsystems, Status } from '../../core/log.js';
 import { processIcons } from '../../core/icons.js';
+import SunEditor from 'suneditor';
+import 'suneditor/css/editor';
 import './lookups.css';
 
 // ── Footer Select Options ───────────────────────────────────────────────────
@@ -56,59 +59,73 @@ export default class LookupsManager {
     this.selectedLookupId = null;
     this.selectedLookupName = null;
 
+    // Currently selected lookup value
+    this.selectedLookupValue = null;
+
     // Splitter state
-    this.leftPanelWidth = 350;
+    this.leftPanelWidth = 280;
+    this.middlePanelWidth = 350;
     this.isLeftPanelCollapsed = false;
-    this.isResizing = false;
+    this.isMiddlePanelCollapsed = false;
+    this.isResizingLeft = false;
+    this.isResizingRight = false;
+
+    // Editor instances
+    this.sunEditor = null;
+    this.currentDetailData = null;
+
+    // Active tab
+    this.activeTab = 'json';
+
+    // Font popup state
+    this.fontPopup = null;
+    this.editorFontSize = 14;
+    this.editorFontFamily = 'var(--font-sans)';
   }
 
   async init() {
     await this.render();
     this.setupEventListeners();
-    this.setupSplitter();
+    this.setupSplitters();
     await this.initParentTable();
     await this.initChildTable();
     this.setupFooter();
+    this.setupTabs();
   }
 
   async render() {
-    this.container.innerHTML = `
-      <div class="lookups-manager-container">
-        <!-- Left Panel: Parent Table (Lookups List) -->
-        <div class="lookups-left-panel" id="lookups-left-panel">
-          <div class="lookups-table-container" id="lookups-parent-table-container"></div>
-          <div class="lookups-navigator-container" id="lookups-parent-navigator"></div>
-        </div>
-
-        <!-- Splitter -->
-        <div class="lookups-splitter" id="lookups-splitter"></div>
-
-        <!-- Right Panel: Child Table (Lookup Values) -->
-        <div class="lookups-right-panel" id="lookups-right-panel">
-          <div class="lookups-child-header">
-            <button type="button" class="subpanel-header-btn subpanel-header-close lookups-collapse-btn" id="lookups-collapse-btn" title="Toggle left panel">
-              <fa fa-chevron-left id="lookups-collapse-icon"></fa>
-            </button>
-            <span class="lookups-child-title" id="lookups-child-title">Select a lookup</span>
-          </div>
-          <div class="lookups-child-table-container" id="lookups-child-table-container"></div>
-          <div class="lookups-navigator-container" id="lookups-child-navigator"></div>
-        </div>
-      </div>
-    `;
+    try {
+      const response = await fetch('/src/managers/lookups/lookups.html');
+      const html = await response.text();
+      this.container.innerHTML = html;
+    } catch (error) {
+      console.error('[LookupsManager] Failed to load template:', error);
+      this.container.innerHTML = '<div class="error">Failed to load Lookups Manager</div>';
+      return;
+    }
 
     this.elements = {
       container: this.container.querySelector('.lookups-manager-container'),
       leftPanel: this.container.querySelector('#lookups-left-panel'),
+      middlePanel: this.container.querySelector('#lookups-middle-panel'),
+      rightPanel: this.container.querySelector('#lookups-right-panel'),
       parentTableContainer: this.container.querySelector('#lookups-parent-table-container'),
       parentNavigator: this.container.querySelector('#lookups-parent-navigator'),
-      splitter: this.container.querySelector('#lookups-splitter'),
-      rightPanel: this.container.querySelector('#lookups-right-panel'),
       childTableContainer: this.container.querySelector('#lookups-child-table-container'),
       childNavigator: this.container.querySelector('#lookups-child-navigator'),
       childTitle: this.container.querySelector('#lookups-child-title'),
-      collapseBtn: this.container.querySelector('#lookups-collapse-btn'),
-      collapseIcon: this.container.querySelector('#lookups-collapse-icon'),
+      splitterLeft: this.container.querySelector('#lookups-splitter-left'),
+      splitterRight: this.container.querySelector('#lookups-splitter-right'),
+      collapseLeftBtn: this.container.querySelector('#lookups-collapse-left-btn'),
+      collapseMiddleBtn: this.container.querySelector('#lookups-collapse-middle-btn'),
+      collapseLeftIcon: this.container.querySelector('#lookups-collapse-left-icon'),
+      collapseMiddleIcon: this.container.querySelector('#lookups-collapse-middle-icon'),
+      fontBtn: this.container.querySelector('#lookups-font-btn'),
+      tabBtns: this.container.querySelectorAll('.lookups-tab-btn'),
+      tabPanes: this.container.querySelectorAll('.lookups-tab-pane'),
+      jsonEditor: this.container.querySelector('#lookups-json-editor'),
+      summaryEditor: this.container.querySelector('#lookups-summary-editor'),
+      previewContent: this.container.querySelector('#lookups-preview-content'),
     };
 
     // Process icons
@@ -116,10 +133,187 @@ export default class LookupsManager {
   }
 
   setupEventListeners() {
-    // Collapse/expand button
-    this.elements.collapseBtn?.addEventListener('click', () => {
+    // Collapse/expand left panel button
+    this.elements.collapseLeftBtn?.addEventListener('click', () => {
       this.toggleLeftPanel();
     });
+
+    // Collapse/expand middle panel button
+    this.elements.collapseMiddleBtn?.addEventListener('click', () => {
+      this.toggleMiddlePanel();
+    });
+
+    // Font button
+    this.elements.fontBtn?.addEventListener('click', (e) => {
+      this.toggleFontPopup(e);
+    });
+
+    // Initialize font popup
+    this.initFontPopup();
+  }
+
+  // ── Font Popup ─────────────────────────────────────────────────────────────
+
+  initFontPopup() {
+    // Create font popup element
+    this.fontPopup = document.createElement('div');
+    this.fontPopup.className = 'lookups-font-popup';
+    const fontSizeValue = parseInt(this.editorFontSize, 10) || 14;
+    this.fontPopup.innerHTML = `
+      <div class="lookups-font-popup-row">
+        <label class="lookups-font-popup-label">Size</label>
+        <input type="number" class="lookups-font-popup-input" id="lookups-font-size" value="${fontSizeValue}" min="8" max="32">
+      </div>
+      <div class="lookups-font-popup-row">
+        <label class="lookups-font-popup-label">Family</label>
+        <select class="lookups-font-popup-select" id="lookups-font-family">
+          <option value="var(--font-sans)" ${this.editorFontFamily === 'var(--font-sans)' ? 'selected' : ''}>Sans Serif</option>
+          <option value="var(--font-mono)" ${this.editorFontFamily === 'var(--font-mono)' ? 'selected' : ''}>Monospace</option>
+          <option value="serif" ${this.editorFontFamily === 'serif' ? 'selected' : ''}>Serif</option>
+        </select>
+      </div>
+      <div class="lookups-font-popup-row">
+        <label class="lookups-font-popup-label">Style</label>
+        <div class="lookups-font-popup-styles">
+          <button type="button" class="lookups-font-popup-style-btn" data-style="normal">Normal</button>
+          <button type="button" class="lookups-font-popup-style-btn" data-style="bold">Bold</button>
+        </div>
+      </div>
+    `;
+
+    // Append to font button's parent (the toolbar)
+    if (this.elements.fontBtn) {
+      this.elements.fontBtn.parentElement.appendChild(this.fontPopup);
+    }
+
+    // Setup font popup event listeners
+    const sizeInput = this.fontPopup.querySelector('#lookups-font-size');
+    const familySelect = this.fontPopup.querySelector('#lookups-font-family');
+    const styleBtns = this.fontPopup.querySelectorAll('.lookups-font-popup-style-btn');
+
+    sizeInput?.addEventListener('change', (e) => {
+      this.editorFontSize = `${e.target.value}px`;
+      this.applyFontSettings();
+    });
+
+    familySelect?.addEventListener('change', (e) => {
+      this.editorFontFamily = e.target.value;
+      this.applyFontSettings();
+    });
+
+    styleBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        styleBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        this.applyFontSettings();
+      });
+    });
+
+    // Close popup when clicking outside
+    document.addEventListener('click', (e) => {
+      if (this.fontPopup?.classList.contains('visible') &&
+          !this.fontPopup.contains(e.target) &&
+          !this.elements.fontBtn?.contains(e.target)) {
+        this.fontPopup.classList.remove('visible');
+      }
+    });
+  }
+
+  toggleFontPopup(e) {
+    e.stopPropagation();
+    if (this.fontPopup) {
+      this.fontPopup.classList.toggle('visible');
+    }
+  }
+
+  applyFontSettings() {
+    // Apply font settings to JSON editor
+    if (this.elements.jsonEditor) {
+      this.elements.jsonEditor.style.fontSize = this.editorFontSize;
+      this.elements.jsonEditor.style.fontFamily = this.editorFontFamily;
+    }
+
+    // Apply font settings to SunEditor if initialized
+    if (this.sunEditor) {
+      const editorBody = this.sunEditor.getContext()?.element?.wysiwyg;
+      if (editorBody) {
+        editorBody.style.fontSize = this.editorFontSize;
+        editorBody.style.fontFamily = this.editorFontFamily;
+      }
+    }
+
+    // Apply font settings to preview content
+    if (this.elements.previewContent) {
+      this.elements.previewContent.style.fontSize = this.editorFontSize;
+      this.elements.previewContent.style.fontFamily = this.editorFontFamily;
+    }
+  }
+
+  setupTabs() {
+    // Tab switching
+    this.elements.tabBtns?.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tabId = btn.dataset.tab;
+        this.switchTab(tabId);
+      });
+    });
+  }
+
+  switchTab(tabId) {
+    this.activeTab = tabId;
+
+    // Update buttons
+    this.elements.tabBtns.forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.tab === tabId);
+    });
+
+    // Update panes
+    this.elements.tabPanes.forEach(pane => {
+      pane.classList.toggle('active', pane.id === `lookups-tab-${tabId}`);
+    });
+
+    // Initialize editors on first view
+    if (tabId === 'summary' && !this.sunEditor) {
+      this.initSummaryEditor();
+    }
+
+    // Refresh preview if switching to preview tab
+    if (tabId === 'preview') {
+      this.refreshPreview();
+    }
+  }
+
+  initSummaryEditor() {
+    if (!this.elements.summaryEditor || this.sunEditor) return;
+
+    try {
+      this.sunEditor = SunEditor.create(this.elements.summaryEditor, {
+        height: '100%',
+        width: '100%',
+        defaultStyle: 'font-family: var(--font-sans); font-size: 14px;',
+        buttonList: [
+          ['undo', 'redo'],
+          ['font', 'fontSize', 'formatBlock'],
+          ['bold', 'underline', 'italic', 'strike', 'subscript', 'superscript'],
+          ['removeFormat'],
+          '/', // Line break
+          ['fontColor', 'hiliteColor'],
+          ['outdent', 'indent'],
+          ['align', 'horizontalRule', 'list', 'table'],
+          ['link', 'image'],
+          ['fullScreen', 'showBlocks', 'codeView'],
+        ],
+        placeholder: 'Enter summary here...',
+        darkMode: true,
+      });
+
+      // Set initial content if we have detail data
+      if (this.currentDetailData?.summary) {
+        this.sunEditor.setContents(this.currentDetailData.summary);
+      }
+    } catch (error) {
+      console.error('[LookupsManager] Failed to initialize SunEditor:', error);
+    }
   }
 
   // ── Parent Table Initialization ────────────────────────────────────────────
@@ -131,7 +325,8 @@ export default class LookupsManager {
       container: this.elements.parentTableContainer,
       navigatorContainer: this.elements.parentNavigator,
       tablePath: 'lookups/lookups-list',
-      queryRef: 30, // QueryRef 30 - Lookup Names
+      queryRef: 30, // QueryRef 30 - Get Lookups List
+      searchQueryRef: 31, // QueryRef 31 - Get Lookups List + Search
       cssPrefix: 'lookups-parent',
       storageKey: 'lookups_parent_table',
       app: this.app,
@@ -158,14 +353,13 @@ export default class LookupsManager {
       container: this.elements.childTableContainer,
       navigatorContainer: this.elements.childNavigator,
       tablePath: 'lookups/lookup-values',
-      queryRef: 34, // QueryRef 034 - Get Lookup List (requires LOOKUPID param)
+      queryRef: 34, // QueryRef 34 - Get Lookup List (requires LOOKUPID param)
       cssPrefix: 'lookups-child',
       storageKey: 'lookups_child_table',
       app: this.app,
       readonly: false,
-      onRowSelected: (rowData) => {
-        log(Subsystems.TABLE, Status.DEBUG, `[Lookups] Child row selected: ${rowData?.LOOKUPVALUEID}`);
-      },
+      onRowSelected: (rowData) => this.handleChildRowSelected(rowData),
+      onRowDeselected: () => this.handleChildRowDeselected(),
       onDataLoaded: (rows) => {
         log(Subsystems.TABLE, Status.INFO, `[Lookups] Loaded ${rows.length} lookup values`);
       },
@@ -179,8 +373,8 @@ export default class LookupsManager {
   async handleParentRowSelected(rowData) {
     if (!rowData) return;
 
-    const lookupId = rowData.LOOKUPID;
-    const lookupName = rowData.LOOKUPNAME;
+    const lookupId = rowData.key_idx; // key_idx is the lookup_id for lookup_id=0 entries
+    const lookupName = rowData.value_txt;
 
     if (!lookupId) return;
 
@@ -189,8 +383,8 @@ export default class LookupsManager {
 
     // Update child table title
     if (this.elements.childTitle) {
-      this.elements.childTitle.textContent = lookupName 
-        ? `${lookupName} (${lookupId})` 
+      this.elements.childTitle.textContent = lookupName
+        ? `${lookupName} (${lookupId})`
         : `Lookup ${lookupId}`;
     }
 
@@ -204,13 +398,16 @@ export default class LookupsManager {
 
     // Clear child table title
     if (this.elements.childTitle) {
-      this.elements.childTitle.textContent = 'Select a lookup';
+      this.elements.childTitle.textContent = 'Select a Lookup';
     }
 
     // Clear child table data
     if (this.childTable?.table) {
       this.childTable.table.setData([]);
     }
+
+    // Clear detail view
+    this.clearDetailView();
   }
 
   async loadChildData(lookupId) {
@@ -254,19 +451,181 @@ export default class LookupsManager {
     }
   }
 
+  // ── Child/Detail Relationship ──────────────────────────────────────────────
+
+  async handleChildRowSelected(rowData) {
+    if (!rowData) return;
+
+    this.selectedLookupValue = rowData;
+
+    // Fetch full detail using QueryRef 35
+    await this.loadDetailData(rowData);
+  }
+
+  handleChildRowDeselected() {
+    this.selectedLookupValue = null;
+    this.clearDetailView();
+  }
+
+  async loadDetailData(rowData) {
+    if (!this.app?.api || !this.selectedLookupId) return;
+
+    try {
+      const detail = await authQuery(this.app.api, 35, {
+        INTEGER: {
+          LOOKUPID: this.selectedLookupId,
+          KEYIDX: rowData.key_idx,
+        },
+      });
+
+      if (detail && detail.length > 0) {
+        this.currentDetailData = detail[0];
+        this.updateDetailView();
+      }
+    } catch (error) {
+      log(Subsystems.TABLE, Status.ERROR, `[Lookups] Failed to load detail: ${error.message}`);
+      // Don't show toast - detail view is optional
+    }
+  }
+
+  updateDetailView() {
+    if (!this.currentDetailData) return;
+
+    // Update JSON tab
+    if (this.elements.jsonEditor) {
+      this.elements.jsonEditor.textContent = JSON.stringify(this.currentDetailData, null, 2);
+    }
+
+    // Update Summary editor if initialized
+    if (this.sunEditor) {
+      this.sunEditor.setContents(this.currentDetailData.summary || '');
+    }
+
+    // Refresh preview if active
+    if (this.activeTab === 'preview') {
+      this.refreshPreview();
+    }
+  }
+
+  clearDetailView() {
+    this.currentDetailData = null;
+
+    if (this.elements.jsonEditor) {
+      this.elements.jsonEditor.textContent = 'Select a lookup entry to view details';
+    }
+
+    if (this.sunEditor) {
+      this.sunEditor.setContents('');
+    }
+
+    if (this.elements.previewContent) {
+      this.elements.previewContent.innerHTML = '<p class="lookups-preview-placeholder">Select a lookup entry to preview</p>';
+    }
+  }
+
+  async refreshPreview() {
+    if (!this.elements.previewContent) return;
+
+    if (!this.currentDetailData) {
+      this.elements.previewContent.innerHTML = '<p class="lookups-preview-placeholder">Select a lookup entry to preview</p>';
+      return;
+    }
+
+    try {
+      // Try to use highlight.js or prism.js if available
+      let htmlContent = '';
+
+      // Get content from SunEditor or raw summary
+      const summaryContent = this.sunEditor
+        ? this.sunEditor.getContents()
+        : (this.currentDetailData.summary || '');
+
+      if (summaryContent) {
+        // Check if highlight.js is available
+        if (window.hljs) {
+          // Simple markdown-like processing with syntax highlighting
+          htmlContent = this.processContentWithHighlighting(summaryContent);
+        } else {
+          // Basic HTML processing
+          htmlContent = this.basicContentProcessing(summaryContent);
+        }
+      } else {
+        htmlContent = '<p class="lookups-preview-placeholder">No summary content available</p>';
+      }
+
+      this.elements.previewContent.innerHTML = htmlContent;
+    } catch (error) {
+      console.error('[LookupsManager] Failed to refresh preview:', error);
+      this.elements.previewContent.innerHTML = '<p class="lookups-preview-placeholder">Error rendering preview</p>';
+    }
+  }
+
+  processContentWithHighlighting(content) {
+    // Escape HTML first
+    let html = content
+      .replace(/&/g, '&')
+      .replace(/</g, '<')
+      .replace(/>/g, '>');
+
+    // Process code blocks with highlight.js
+    html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
+      if (window.hljs) {
+        try {
+          const highlighted = lang
+            ? window.hljs.highlight(code.trim(), { language: lang }).value
+            : window.hljs.highlightAuto(code.trim()).value;
+          return `<pre><code class="hljs">${highlighted}</code></pre>`;
+        } catch (e) {
+          return `<pre><code>${code.trim()}</code></pre>`;
+        }
+      }
+      return `<pre><code>${code.trim()}</code></pre>`;
+    });
+
+    // Process inline code
+    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+    // Process basic formatting
+    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+    html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+    html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+    html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+    html = html.replace(/\n/g, '<br>');
+
+    return `<div class="lookups-preview-rendered">${html}</div>`;
+  }
+
+  basicContentProcessing(content) {
+    // Simple HTML escaping and line breaks
+    return content
+      .replace(/&/g, '&')
+      .replace(/</g, '<')
+      .replace(/>/g, '>')
+      .replace(/\n/g, '<br>');
+  }
+
   // ── Splitter Logic ─────────────────────────────────────────────────────────
 
-  setupSplitter() {
-    const splitter = this.elements.splitter;
+  setupSplitters() {
+    // Left splitter (between left and middle panels)
+    this.setupLeftSplitter();
+
+    // Right splitter (between middle and right panels)
+    this.setupRightSplitter();
+  }
+
+  setupLeftSplitter() {
+    const splitter = this.elements.splitterLeft;
     const leftPanel = this.elements.leftPanel;
 
     if (!splitter || !leftPanel) return;
 
-    // Mouse down on splitter
+    // Mouse down on left splitter
     splitter.addEventListener('mousedown', (e) => {
       if (this.isLeftPanelCollapsed) return;
 
-      this.isResizing = true;
+      this.isResizingLeft = true;
       splitter.classList.add('resizing');
       document.body.style.cursor = 'col-resize';
       document.body.style.userSelect = 'none';
@@ -275,17 +634,17 @@ export default class LookupsManager {
       const startWidth = leftPanel.offsetWidth;
 
       const onMouseMove = (e) => {
-        if (!this.isResizing) return;
+        if (!this.isResizingLeft) return;
 
         const delta = e.clientX - startX;
-        const newWidth = Math.max(200, Math.min(600, startWidth + delta));
+        const newWidth = Math.max(150, Math.min(450, startWidth + delta));
 
         leftPanel.style.width = `${newWidth}px`;
         this.leftPanelWidth = newWidth;
       };
 
       const onMouseUp = () => {
-        this.isResizing = false;
+        this.isResizingLeft = false;
         splitter.classList.remove('resizing');
         document.body.style.cursor = '';
         document.body.style.userSelect = '';
@@ -306,7 +665,7 @@ export default class LookupsManager {
     splitter.addEventListener('touchstart', (e) => {
       if (this.isLeftPanelCollapsed) return;
 
-      this.isResizing = true;
+      this.isResizingLeft = true;
       splitter.classList.add('resizing');
 
       const touch = e.touches[0];
@@ -314,18 +673,102 @@ export default class LookupsManager {
       const startWidth = leftPanel.offsetWidth;
 
       const onTouchMove = (e) => {
-        if (!this.isResizing) return;
+        if (!this.isResizingLeft) return;
 
         const touch = e.touches[0];
         const delta = touch.clientX - startX;
-        const newWidth = Math.max(200, Math.min(600, startWidth + delta));
+        const newWidth = Math.max(150, Math.min(450, startWidth + delta));
 
         leftPanel.style.width = `${newWidth}px`;
         this.leftPanelWidth = newWidth;
       };
 
       const onTouchEnd = () => {
-        this.isResizing = false;
+        this.isResizingLeft = false;
+        splitter.classList.remove('resizing');
+
+        document.removeEventListener('touchmove', onTouchMove);
+        document.removeEventListener('touchend', onTouchEnd);
+
+        this.parentTable?.table?.redraw?.();
+        this.childTable?.table?.redraw?.();
+      };
+
+      document.addEventListener('touchmove', onTouchMove);
+      document.addEventListener('touchend', onTouchEnd);
+    });
+  }
+
+  setupRightSplitter() {
+    const splitter = this.elements.splitterRight;
+    const middlePanel = this.elements.middlePanel;
+
+    if (!splitter || !middlePanel) return;
+
+    // Mouse down on right splitter
+    splitter.addEventListener('mousedown', (e) => {
+      if (this.isMiddlePanelCollapsed) return;
+
+      this.isResizingRight = true;
+      splitter.classList.add('resizing');
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+
+      const startX = e.clientX;
+      const startWidth = middlePanel.offsetWidth;
+
+      const onMouseMove = (e) => {
+        if (!this.isResizingRight) return;
+
+        const delta = e.clientX - startX;
+        const newWidth = Math.max(200, Math.min(550, startWidth + delta));
+
+        middlePanel.style.width = `${newWidth}px`;
+        this.middlePanelWidth = newWidth;
+      };
+
+      const onMouseUp = () => {
+        this.isResizingRight = false;
+        splitter.classList.remove('resizing');
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+
+        // Redraw tables after resize
+        this.parentTable?.table?.redraw?.();
+        this.childTable?.table?.redraw?.();
+      };
+
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    });
+
+    // Touch support for mobile
+    splitter.addEventListener('touchstart', (e) => {
+      if (this.isMiddlePanelCollapsed) return;
+
+      this.isResizingRight = true;
+      splitter.classList.add('resizing');
+
+      const touch = e.touches[0];
+      const startX = touch.clientX;
+      const startWidth = middlePanel.offsetWidth;
+
+      const onTouchMove = (e) => {
+        if (!this.isResizingRight) return;
+
+        const touch = e.touches[0];
+        const delta = touch.clientX - startX;
+        const newWidth = Math.max(200, Math.min(550, startWidth + delta));
+
+        middlePanel.style.width = `${newWidth}px`;
+        this.middlePanelWidth = newWidth;
+      };
+
+      const onTouchEnd = () => {
+        this.isResizingRight = false;
         splitter.classList.remove('resizing');
 
         document.removeEventListener('touchmove', onTouchMove);
@@ -342,8 +785,7 @@ export default class LookupsManager {
 
   toggleLeftPanel() {
     const leftPanel = this.elements.leftPanel;
-    const splitter = this.elements.splitter;
-    const collapseIcon = this.elements.collapseIcon;
+    const splitter = this.elements.splitterLeft;
 
     if (!leftPanel || !splitter) return;
 
@@ -352,12 +794,34 @@ export default class LookupsManager {
     if (this.isLeftPanelCollapsed) {
       leftPanel.classList.add('collapsed');
       splitter.classList.add('collapsed');
-      if (collapseIcon) collapseIcon.style.transform = 'rotate(180deg)';
     } else {
       leftPanel.classList.remove('collapsed');
       leftPanel.style.width = `${this.leftPanelWidth}px`;
       splitter.classList.remove('collapsed');
-      if (collapseIcon) collapseIcon.style.transform = 'rotate(0deg)';
+    }
+
+    // Redraw tables after animation
+    setTimeout(() => {
+      this.parentTable?.table?.redraw?.();
+      this.childTable?.table?.redraw?.();
+    }, 350);
+  }
+
+  toggleMiddlePanel() {
+    const middlePanel = this.elements.middlePanel;
+    const splitter = this.elements.splitterRight;
+
+    if (!middlePanel || !splitter) return;
+
+    this.isMiddlePanelCollapsed = !this.isMiddlePanelCollapsed;
+
+    if (this.isMiddlePanelCollapsed) {
+      middlePanel.classList.add('collapsed');
+      splitter.classList.add('collapsed');
+    } else {
+      middlePanel.classList.remove('collapsed');
+      middlePanel.style.width = `${this.middlePanelWidth}px`;
+      splitter.classList.remove('collapsed');
     }
 
     // Redraw tables after animation
@@ -391,7 +855,7 @@ export default class LookupsManager {
     // Create parent table select
     const parentSelect = document.createElement('select');
     parentSelect.id = 'lookups-parent-select';
-    parentSelect.className = 'queries-footer-datasource';
+    parentSelect.className = 'lookups-footer-select';
     parentSelect.title = 'Parent Table Data Source';
     parentSelect.innerHTML = `
       <option value="view">Lookup List View</option>
@@ -405,7 +869,7 @@ export default class LookupsManager {
     // Create child table select
     const childSelect = document.createElement('select');
     childSelect.id = 'lookups-child-select';
-    childSelect.className = 'queries-footer-datasource';
+    childSelect.className = 'lookups-footer-select';
     childSelect.title = 'Child Table Data Source';
     childSelect.innerHTML = `
       <option value="view">Lookup Values View</option>
@@ -419,7 +883,7 @@ export default class LookupsManager {
     // Filler button
     const fillerBtn = document.createElement('button');
     fillerBtn.type = 'button';
-    fillerBtn.className = 'subpanel-header-btn queries-footer-filler';
+    fillerBtn.className = 'subpanel-header-btn lookups-footer-filler';
     fillerBtn.title = 'Lookups';
     group.insertBefore(fillerBtn, anchor);
 
@@ -469,6 +933,18 @@ export default class LookupsManager {
    */
   cleanup() {
     log(Subsystems.MANAGER, Status.INFO, '[Lookups] Cleaning up...');
+
+    // Destroy SunEditor
+    if (this.sunEditor) {
+      this.sunEditor.destroy();
+      this.sunEditor = null;
+    }
+
+    // Remove font popup
+    if (this.fontPopup) {
+      this.fontPopup.remove();
+      this.fontPopup = null;
+    }
 
     // Clean up tables
     this.parentTable?.destroy();
