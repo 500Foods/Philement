@@ -15,6 +15,7 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 1.0.2 - 2026-03-18 - Updated to use lower-case JSON keys, <fa>-style icon definitions
 -- 1.0.1 - 2026-01-01 - Fixed test conditions to be == instead of ~= (oopsie!)
 -- 1.0.0 - 2025-12-31 - Initial creation
 
@@ -65,15 +66,15 @@ if engine == 'db2' then table.insert(queries,{sql=[[
                         value_txt,
                         value_int,
                         JSON_OBJECT(
-                            KEY 'Name' VALUE JSON_VALUE(collection, '$.Name'),
-                            KEY 'Model' VALUE JSON_VALUE(collection, '$.Model'),
-                            KEY 'Icon' VALUE JSON_VALUE(collection, '$.Icon'),
-                            KEY 'Authority' VALUE JSON_VALUE(collection, '$.Authority'),
-                            KEY 'Location' VALUE JSON_VALUE(collection, '$.Location'),
-                            KEY 'Country' VALUE JSON_VALUE(collection, '$.Country'),
-                            KEY 'Engine' VALUE JSON_VALUE(collection, '$.Engine'),
-                            KEY 'Support Prompts' VALUE JSON_VALUE(collection, '$.Support Prompts'),
-                            KEY 'Demo' VALUE JSON_VALUE(collection, '$.Demo')
+                            KEY 'name' VALUE JSON_VALUE(collection, '$.name'),
+                            KEY 'model' VALUE JSON_VALUE(collection, '$.model'),
+                            KEY 'icon' VALUE JSON_VALUE(collection, '$.icon'),
+                            KEY 'authority' VALUE JSON_VALUE(collection, '$.authority'),
+                            KEY 'location' VALUE JSON_VALUE(collection, '$.location'),
+                            KEY 'country' VALUE JSON_VALUE(collection, '$.country'),
+                            KEY 'engine' VALUE JSON_VALUE(collection, '$.engine'),
+                            KEY 'support Prompts' VALUE JSON_VALUE(collection, '$.support prompts'),
+                            KEY 'demo' VALUE JSON_VALUE(collection, '$.demo')
                         ) AS collection,
                         valid_after,
                         valid_until,
@@ -201,15 +202,15 @@ if engine == 'mysql' then table.insert(queries,{sql=[[
                         value_txt,
                         value_int,
                         JSON_OBJECT(
-                            'Name', collection->>'Name',
-                            'Model', collection->>'Model',
-                            'Icon', collection->>'Icon',
-                            'Authority', collection->>'Authority',
-                            'Location', collection->>'Location',
-                            'Country', collection->>'Country',
-                            'Engine', collection->>'Engine',
-                            'Support Prompts', collection->>'Support Prompts',
-                            'Demo', collection->>'Demo'
+                            'name', collection->>'name',
+                            'model', collection->>'model',
+                            'icon', collection->>'icon',
+                            'authority', collection->>'authority',
+                            'location', collection->>'location',
+                            'country', collection->>'country',
+                            'engine', collection->>'engine',
+                            'support prompts', collection->>'support prompts',
+                            'demo', collection->>'demo'
                         ) AS collection,
                         valid_after,
                         valid_until,
@@ -337,15 +338,15 @@ if engine == 'postgresql' then table.insert(queries,{sql=[[
                         value_txt,
                         value_int,
                         jsonb_build_object(
-                            'Name', collection->'Name',
-                            'Model', collection->'Model',
-                            'Icon', collection->'Icon',
-                            'Authority', collection->'Authority',
-                            'Location', collection->'Location',
-                            'Country', collection->'Country',
-                            'Engine', collection->'Engine',
-                            'Support Prompts', collection->'Support Prompts',
-                            'Demo', collection->'Demo'
+                            'name', collection->'name',
+                            'model', collection->'model',
+                            'icon', collection->'icon',
+                            'authority', collection->'authority',
+                            'location', collection->'location',
+                            'country', collection->'country',
+                            'engine', collection->'engine',
+                            'support prompts', collection->'support prompts',
+                            'demo', collection->'demo'
                         ) AS collection,
                         valid_after,
                         valid_until,
@@ -472,15 +473,15 @@ if engine == 'sqlite' then table.insert(queries,{sql=[[
                         value_txt,
                         value_int,
                         json_object(
-                            'Name', collection ->> 'Name',
-                            'Model', collection ->> 'Model',
-                            'Icon', collection ->> 'Icon',
-                            'Authority', collection ->> 'Authority',
-                            'Location', collection ->> 'Location',
-                            'Country', collection ->> 'Country',
-                            'Engine', collection ->> 'Engine',
-                            'Support Prompts', collection ->> 'Support Prompts',
-                            'Demo', collection ->> 'Demo'
+                            'name', collection ->> 'name',
+                            'model', collection ->> 'model',
+                            'icon', collection ->> 'icon',
+                            'authority', collection ->> 'authority',
+                            'location', collection ->> 'location',
+                            'country', collection ->> 'country',
+                            'engine', collection ->> 'engine',
+                            'support Prompts', collection ->> 'support prompts',
+                            'demo', collection ->> 'demo'
                         ) AS collection,
                         valid_after,
                         valid_until,

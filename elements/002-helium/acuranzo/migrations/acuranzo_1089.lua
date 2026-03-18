@@ -5,6 +5,7 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 1.0.1 - 2026-03-18 - Updated to use lower-case JSON keys, <fa>-style icon definitions
 -- 1.0.0 - 2025-12-26 - Initial creation
 
 return function(engine, design_name, schema_name, cfg)
@@ -78,8 +79,8 @@ table.insert(queries,{sql=[[
             INSERT INTO ${SCHEMA}${TABLE}
                 (lookup_id, key_idx, status_a1, value_txt, value_int, sort_seq, code, summary, collection, ${COMMON_FIELDS})
             VALUES
-                (${LOOKUP_ID},  0, 1, 'default',             0, 0, '', '', ${JIS}[==[ {"Abbr": "ACZ", "Logo": "Logos/Acuranzo-Logo-128.png", "Name": "Acuranzo Client", "Short": "Acuranzo", "FavIcon": "Logos/acuranzo.ico"} ]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID},  1, 1, 'client.acuranzo.com', 0, 0, '', '', ${JIS}[==[ {"Abbr": "ACZ", "Logo": "Logos/Acuranzo-Logo-128.png", "Name": "Acuranzo Client", "Short": "Acuranzo", "FavIcon": "Logos/acuranzo.ico"} ]==]${JIE}, ${COMMON_VALUES});
+                (${LOOKUP_ID},  0, 1, 'default',             0, 0, '', '', ${JIS}[==[ {"abbr": "ACZ", "logo": "Logos/Acuranzo-Logo-128.png", "name": "Acuranzo Client", "short": "Acuranzo", "favicon": "Logos/acuranzo.ico"} ]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID},  1, 1, 'client.acuranzo.com', 0, 0, '', '', ${JIS}[==[ {"abbr": "ACZ", "logo": "Logos/Acuranzo-Logo-128.png", "name": "Acuranzo Client", "short": "Acuranzo", "favicon": "Logos/acuranzo.ico"} ]==]${JIE}, ${COMMON_VALUES});
 
             ${SUBQUERY_DELIMITER}
 

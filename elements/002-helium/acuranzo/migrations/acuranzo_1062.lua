@@ -5,6 +5,7 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 1.0.1 - 2026-03-18 - Updated to use lower-case JSON keys, <fa>-style icon definitions
 -- 1.0.0 - 2025-11-24 - Initial creation
 
 return function(engine, design_name, schema_name, cfg)
@@ -78,8 +79,8 @@ table.insert(queries,{sql=[[
             INSERT INTO ${SCHEMA}${TABLE}
                 (lookup_id, key_idx, status_a1, value_txt, value_int, sort_seq, code, summary, collection, ${COMMON_FIELDS})
             VALUES
-                (${LOOKUP_ID}, 0, 1, 'Inactive',    0, 0, '', '', ${JIS}[==[{"Icon":"<i class='fa fa-xmark fa-fw fa-swap-opacity' style='color: #FF0000; filter: var(--ACZ-shadow-4);'></i>"}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID}, 1, 1, 'Active',      0, 1, '', '', ${JIS}[==[{"Icon":"<i class='fa fa-check fa-fw fa-swap-opacity' style='color: #00FF00; filter: var(--ACZ-shadow-4);'></i>"}]==]${JIE}, ${COMMON_VALUES});
+                (${LOOKUP_ID}, 0, 1, 'Inactive',    0, 0, '', '', ${JIS}[==[{"icon":"<fa fa-xmark fa-swap-opacity style='color: #FF0000; filter: var(--ACZ-shadow-4);'></fa>"}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 1, 1, 'Active',      0, 1, '', '', ${JIS}[==[{"icon":"<fa fa-check fa-swap-opacity style='color: #00FF00; filter: var(--ACZ-shadow-4);'></fa>"}]==]${JIE}, ${COMMON_VALUES});
 
             ${SUBQUERY_DELIMITER}
 

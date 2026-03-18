@@ -35,7 +35,7 @@ let menuCache = null;
 
 /**
  * Parse collection field to extract icon information
- * The collection contains JSON with an "Icon" field (HTML <i> tag) and "Index"
+ * The collection contains JSON with an "icon" field (HTML <i> tag) and index"
  * @param {string|Object} collection - Collection field from query result
  * @returns {Object} Parsed icon info with fallback, includes index for filtering
  */
@@ -49,10 +49,10 @@ export function parseCollection(collection) {
   try {
     const parsed = typeof collection === 'string' ? JSON.parse(collection) : collection;
     
-    // Get Icon HTML from server, ensuring it has a proper closing tag
+    // Get icon HTML from server, ensuring it has a proper closing tag
     // Server may return: <fa fa-fw fa-xl fa-receipt> (no closing tag)
     // We need: <fa fa-fw fa-xl fa-receipt></fa>
-    let iconHtml = parsed.Icon || fallback.iconHtml;
+    let iconHtml = parsed.icon || fallback.iconHtml;
     
     // Ensure the icon tag is properly closed
     if (iconHtml && !iconHtml.includes('</fa>')) {
@@ -65,13 +65,13 @@ export function parseCollection(collection) {
       }
     }
     
-    // Items with negative Index should be hidden (Main Menu = -2, Login = -1)
-    const index = parsed.Index !== undefined ? parsed.Index : 0;
+    // Items with negative index should be hidden (Main Menu = -2, Login = -1)
+    const index = parsed.index !== undefined ? parsed.index : 0;
     
     return {
       iconHtml,
       index,
-      visible: index >= 0, // Only show items with Index >= 0
+      visible: index >= 0, // Only show items with index >= 0
     };
   } catch (e) {
     return fallback;
@@ -90,7 +90,7 @@ export function groupMenuItems(items) {
     const groupId = item.grpnum;
     const collectionInfo = parseCollection(item.collection);
     
-    // Skip items that should be hidden (negative Index like Main Menu, Login)
+    // Skip items that should be hidden (negative index like Main Menu, Login)
     if (!collectionInfo.visible) {
       return;
     }

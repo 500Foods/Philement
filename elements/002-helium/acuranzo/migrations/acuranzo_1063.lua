@@ -5,6 +5,7 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 1.0.1 - 2026-03-18 - Updated to use lower-case JSON keys, <fa>-style icon definitions
 -- 1.0.0 - 2025-11-24 - Initial creation
 
 return function(engine, design_name, schema_name, cfg)
@@ -80,23 +81,23 @@ table.insert(queries,{sql=[[
             VALUES
                 (${LOOKUP_ID}, 0, 1, 'Demo / ChatGPT 4o', 0, 0, '', '',${JIS}[==[
                     {
-                        "Icon": "<img src='images/ai_openai.png'>",
-                        "Name": "ChatGPT 4o",
-                        "Limit": 32768,
-                        "Model": "gpt-4o",
-                        "Banner": {
-                            "Default": ["Ask me anything."]
+                        "icon": "<img src='images/ai_openai.png'>",
+                        "name": "ChatGPT 4o",
+                        "limit": 32768,
+                        "model": "gpt-4o",
+                        "bnanner": {
+                            "default": ["Ask me anything."]
                         },
-                        "Engine": "OpenAI",
-                        "API Key": "<api key>",
-                        "Country": "Demo",
-                        "Default": true,
-                        "Endpoint": "https://api.openai.com/v1/chat/completions",
-                        "Location": "Demo",
-                        "Authority": "Demo",
-                        "Cost Prompt": 0.00000,
-                        "Organization": "<org>",
-                        "Cost Completion": 0.00000
+                        "engine": "OpenAI",
+                        "api key": "<api key>",
+                        "country": "Demo",
+                        "default": true,
+                        "endpoint": "https://api.openai.com/v1/chat/completions",
+                        "location": "Demo",
+                        "authority": "Demo",
+                        "cost prompt": 0.00000,
+                        "organization": "<org>",
+                        "cost completion": 0.00000
                     }
                 ]==]${JIE}, ${COMMON_VALUES});
 

@@ -5,6 +5,7 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 1.0.1 - 2026-03-18 - Updated to use lower-case JSON keys, <fa>-style icon definitions
 -- 1.0.0 - 2025-11-25 - Initial creation
 
 return function(engine, design_name, schema_name, cfg)
@@ -78,18 +79,18 @@ table.insert(queries,{sql=[[
             INSERT INTO ${SCHEMA}${TABLE}
                 (lookup_id, key_idx, status_a1, value_txt, value_int, sort_seq, code, summary, collection, ${COMMON_FIELDS})
             VALUES
-                (${LOOKUP_ID},  0, 1, 'Status',     0, 0, '', '', ${JIS}[==[{"Icon":"<i class='fa fa-fw fa-flag'></i>"}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID},  1, 1, 'Info',       0, 0, '', '', ${JIS}[==[{"Icon":"<i class='fa fa-fw fa-eye'></i>"}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID},  2, 1, 'Annotate',   0, 0, '', '', ${JIS}[==[{"Icon":"<i class='fa fa-fw fa-comments'></i>"}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID},  3, 1, 'Key',        0, 0, '', '', ${JIS}[==[{"Icon":"<i class='fa fa-fw fa-key fa-swap-opacity'></i>"}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID},  4, 1, 'Sort',       0, 0, '', '', ${JIS}[==[{"Icon":"<i class='fa fa-fw fa-shuffle'></i>"}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID},  5, 1, 'Robot',      0, 0, '', '', ${JIS}[==[{"Icon":"<i class='fa fa-fw fa-robot'></i>"}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID},  6, 1, 'Diamond',    0, 0, '', '', ${JIS}[==[{"Icon":"<i class='fa fa-fw fa-diamond-half'></i>"}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID},  7, 1, 'Client',     0, 0, '', '', ${JIS}[==[{"Icon":"<i class='fa fa-fw fa-spider-web fa-swap-opacity'></i>"}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID},  8, 1, 'Server',     0, 0, '', '', ${JIS}[==[{"Icon":"<i class='fa fa-fw fa-server'></i>"}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID},  9, 1, 'New',        0, 0, '', '', ${JIS}[==[{"Icon":"<i class='fa fa-fw fa-sparkle'></i>"}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID}, 10, 1, 'Doctype',    0, 0, '', '', ${JIS}[==[{"Icon":"<i class='fa fa-fw fa-file-circle-question'></i>"}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID}, 11, 1, 'QueryType',  0, 0, '', '', ${JIS}[==[{"Icon":"<i class='fa fa-fw fa-grid'></i>"}]==]${JIE}, ${COMMON_VALUES});
+                (${LOOKUP_ID},  0, 1, 'Status',     0, 0, '', '', ${JIS}[==[{"icon":"<fa fa-flag></fa>"}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID},  1, 1, 'Info',       0, 0, '', '', ${JIS}[==[{"icon":"<fa fa-eye></fa>"}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID},  2, 1, 'Annotate',   0, 0, '', '', ${JIS}[==[{"icon":"<fa fa-comments></fa>"}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID},  3, 1, 'Key',        0, 0, '', '', ${JIS}[==[{"icon":"<fa fa-key fa-swap-opacity></fa>"}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID},  4, 1, 'Sort',       0, 0, '', '', ${JIS}[==[{"icon":"<fa fa-shuffle></fa>"}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID},  5, 1, 'Robot',      0, 0, '', '', ${JIS}[==[{"icon":"<fa fa-robot></fa>"}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID},  6, 1, 'Diamond',    0, 0, '', '', ${JIS}[==[{"icon":"<fa fa-diamond-half></fa>"}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID},  7, 1, 'Client',     0, 0, '', '', ${JIS}[==[{"icon":"<fa fa-spider-web fa-swap-opacity></fa>"}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID},  8, 1, 'Server',     0, 0, '', '', ${JIS}[==[{"icon":"<fa fa-server></fa>"}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID},  9, 1, 'New',        0, 0, '', '', ${JIS}[==[{"icon":"<fa fa-sparkle></fa>"}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 10, 1, 'Doctype',    0, 0, '', '', ${JIS}[==[{"icon":"<fa fa-file-circle-question></fa>"}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 11, 1, 'QueryType',  0, 0, '', '', ${JIS}[==[{"icon":"<fa fa-grid></fa>"}]==]${JIE}, ${COMMON_VALUES});
 
             ${SUBQUERY_DELIMITER}
 

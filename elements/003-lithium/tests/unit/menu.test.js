@@ -44,15 +44,15 @@ describe('Menu Service', () => {
 
   describe('parseCollection', () => {
     it('should parse collection JSON with icon HTML', () => {
-      const collection = '{"Icon":"<fa fa-receipt fa-fw></fa>"}';
+      const collection = '{"icon":"<fa fa-receipt fa-fw></fa>"}';
       const result = parseCollection(collection);
       
       expect(result.iconHtml).toBe('<fa fa-receipt fa-fw></fa>');
       expect(result.visible).toBe(true);
     });
 
-    it('should parse collection JSON with Icon and Index', () => {
-      const collection = '{"Icon":"<fa fa-history></fa>","Index":0}';
+    it('should parse collection JSON with icon and index', () => {
+      const collection = '{"icon":"<fa fa-history></fa>","index":0}';
       const result = parseCollection(collection);
       
       expect(result.iconHtml).toBe('<fa fa-history></fa>');
@@ -77,14 +77,14 @@ describe('Menu Service', () => {
     });
 
     it('should extract icon from complex HTML', () => {
-      const collection = '{"Icon":"<fa fa-chart-line fa-fw fa-xl></fa>"}';
+      const collection = '{"icon":"<fa fa-chart-line fa-fw fa-xl></fa>"}';
       const result = parseCollection(collection);
       
       expect(result.iconHtml).toBe('<fa fa-chart-line fa-fw fa-xl></fa>');
     });
 
-    it('should mark items with negative Index as not visible', () => {
-      const collection = '{"Icon":"<fa fa-bars></fa>","Index":-2}';
+    it('should mark items with negative index as not visible', () => {
+      const collection = '{"icon":"<fa fa-bars></fa>","index":-2}';
       const result = parseCollection(collection);
       
       expect(result.iconHtml).toBe('<fa fa-bars></fa>');
@@ -104,7 +104,7 @@ describe('Menu Service', () => {
           modnum: 2,
           modsort: 0,
           entries: 0,
-          collection: '{"Icon":"<i class=\'fa fa-receipt\'></i>"}',
+          collection: '{"icon":"<i class=\'fa fa-receipt\'></i>"}',
         },
         {
           grpname: 'System',
@@ -114,7 +114,7 @@ describe('Menu Service', () => {
           modnum: 3,
           modsort: 1,
           entries: 5,
-          collection: '{"Icon":"<i class=\'fa fa-history\'></i>"}',
+          collection: '{"icon":"<i class=\'fa fa-history\'></i>"}',
         },
       ];
 
@@ -129,28 +129,28 @@ describe('Menu Service', () => {
       expect(result[0].items[1].count).toBe(5);
     });
 
-    it('should filter out items with negative Index', () => {
+    it('should filter out items with negative index', () => {
       const rawData = [
         {
           grpname: 'System',
           grpnum: 0,
           modname: 'Session Logs',
           modnum: 2,
-          collection: '{"Icon":"<i class=\'fa fa-receipt\'></i>","Index":0}',
+          collection: '{"icon":"<i class=\'fa fa-receipt\'></i>","index":0}',
         },
         {
           grpname: 'Hidden',
           grpnum: 0,
           modname: 'Main Menu',
           modnum: 1,
-          collection: '{"Icon":"<i class=\'fa fa-bars\'></i>","Index":-2}',
+          collection: '{"icon":"<i class=\'fa fa-bars\'></i>","index":-2}',
         },
         {
           grpname: 'Hidden',
           grpnum: 0,
           modname: 'Login',
           modnum: 99,
-          collection: '{"Icon":"<i class=\'fa fa-sign-in\'></i>","Index":-1}',
+          collection: '{"icon":"<i class=\'fa fa-sign-in\'></i>","index":-1}',
         },
       ];
 
@@ -164,9 +164,9 @@ describe('Menu Service', () => {
   describe('groupMenuItems', () => {
     it('should group items by grpnum', () => {
       const items = [
-        { grpnum: 0, grpname: 'System', grpsort: 0, modnum: 2, modsort: 0, modname: 'Session Logs', entries: 0, collection: '{"Icon":"fa-receipt"}' },
-        { grpnum: 0, grpname: 'System', grpsort: 0, modnum: 3, modsort: 1, modname: 'Version History', entries: 0, collection: '{"Icon":"fa-history"}' },
-        { grpnum: 1, grpname: 'Content', grpsort: 1, modnum: 8, modsort: 0, modname: 'Dashboard', entries: 0, collection: '{"Icon":"fa-chart-line"}' },
+        { grpnum: 0, grpname: 'System', grpsort: 0, modnum: 2, modsort: 0, modname: 'Session Logs', entries: 0, collection: '{"icon":"fa-receipt"}' },
+        { grpnum: 0, grpname: 'System', grpsort: 0, modnum: 3, modsort: 1, modname: 'Version History', entries: 0, collection: '{"icon":"fa-history"}' },
+        { grpnum: 1, grpname: 'Content', grpsort: 1, modnum: 8, modsort: 0, modname: 'Dashboard', entries: 0, collection: '{"icon":"fa-chart-line"}' },
       ];
 
       const result = groupMenuItems(items);
@@ -209,9 +209,9 @@ describe('Menu Service', () => {
 
     it('should filter out non-visible items (negative Index)', () => {
       const items = [
-        { grpnum: 0, grpname: 'System', modnum: 2, modsort: 0, modname: 'Session Logs', entries: 0, collection: '{"Icon":"fa-receipt","Index":0}' },
-        { grpnum: 0, grpname: 'System', modnum: 1, modsort: 0, modname: 'Main Menu', entries: 0, collection: '{"Icon":"fa-bars","Index":-2}' },
-        { grpnum: 0, grpname: 'System', modnum: 3, modsort: 1, modname: 'Version History', entries: 0, collection: '{"Icon":"fa-history","Index":0}' },
+        { grpnum: 0, grpname: 'System', modnum: 2, modsort: 0, modname: 'Session Logs', entries: 0, collection: '{"icon":"fa-receipt","index":0}' },
+        { grpnum: 0, grpname: 'System', modnum: 1, modsort: 0, modname: 'Main Menu', entries: 0, collection: '{"icon":"fa-bars","index":-2}' },
+        { grpnum: 0, grpname: 'System', modnum: 3, modsort: 1, modname: 'Version History', entries: 0, collection: '{"icon":"fa-history","index":0}' },
       ];
 
       const result = groupMenuItems(items);
