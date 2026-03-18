@@ -23,6 +23,8 @@ import { getClaims } from '../../core/jwt.js';
 import { getPermittedManagers, canAccessManager } from '../../core/permissions.js';
 import { setIcon, processIcons } from '../../core/icons.js';
 import { getMenu, buildManagerIconsRegistry, clearMenuCache } from '../../shared/menu.js';
+import { initZoom, createZoomButton, hideZoomPopup, toggleZoomPopup } from '../../core/zoom-control.js';
+import { initCrimsonShortcut, createCrimsonButton, toggleCrimson } from '../../managers/crimson/crimson.js';
 import './main.css';
 
 // localStorage keys for sidebar state
@@ -65,7 +67,7 @@ function buildSlotHTML(slotId, icon, name) {
 <div class="manager-slot" id="${slotId}">
 
   <!-- Slot Header: one unified button group spanning full width.
-       Title btn (left, flex:1) → header-extras insertion point → close btn (right).
+       Title btn (left, flex:1) → header-extras insertion point → willard btn → zoom btn → close btn (right).
        Managers inject buttons by calling mainManager.addHeaderButtons(slotId, [...]).  -->
   <div class="manager-slot-header">
     <div class="subpanel-header-group" style="flex:1;min-width:0;">
@@ -74,6 +76,12 @@ function buildSlotHTML(slotId, icon, name) {
         <span class="slot-name" style="white-space:nowrap;text-overflow:ellipsis;">${name}</span>
       </button>
       <!-- manager-injected header buttons are inserted here by addHeaderButtons() -->
+      <button type="button" class="subpanel-header-btn subpanel-header-close crimson-btn" title="Chat with Crimson (Ctrl+Shift+C)" data-slot-id="${slotId}">
+        <fa fa-robot></fa>
+      </button>
+      <button type="button" class="subpanel-header-btn subpanel-header-close zoom-btn" title="Zoom" data-slot-id="${slotId}">
+        <fa fa-magnifying-glass-plus></fa>
+      </button>
       <button type="button" class="subpanel-header-btn subpanel-header-close slot-close-btn" title="Close">
         <fa fa-xmark></fa>
       </button>
@@ -273,6 +281,32 @@ export default class MainManager {
     closeBtn?.addEventListener('click', () => {
       // TODO: Implement slot close functionality
     });
+
+    // Wire zoom button
+    const zoomBtn = slotEl.querySelector('.zoom-btn');
+    if (zoomBtn) {
+      zoomBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        // Toggle zoom popup
+        toggleZoomPopup(zoomBtn);
+      });
+    }
+
+    // Wire Crimson button
+    const crimsonBtn = slotEl.querySelector('.crimson-btn');
+    if (crimsonBtn) {
+      crimsonBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        // Toggle Crimson popup
+        toggleCrimson({ username: this.user?.username || 'User' });
+      });
+    }
+
+    // Initialize zoom on first slot creation
+    initZoom();
+
+    // Initialize Crimson shortcut
+    initCrimsonShortcut();
 
     // Footer button handlers are set up by individual managers
 

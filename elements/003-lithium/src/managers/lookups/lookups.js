@@ -630,6 +630,9 @@ export default class LookupsManager {
       document.body.style.cursor = 'col-resize';
       document.body.style.userSelect = 'none';
 
+      // Remove width transition so resizing follows mouse immediately
+      leftPanel.style.transition = 'none';
+
       const startX = e.clientX;
       const startWidth = leftPanel.offsetWidth;
 
@@ -648,6 +651,9 @@ export default class LookupsManager {
         splitter.classList.remove('resizing');
         document.body.style.cursor = '';
         document.body.style.userSelect = '';
+
+        // Restore width transition for expand/collapse button
+        leftPanel.style.transition = '';
 
         document.removeEventListener('mousemove', onMouseMove);
         document.removeEventListener('mouseup', onMouseUp);
@@ -668,6 +674,9 @@ export default class LookupsManager {
       this.isResizingLeft = true;
       splitter.classList.add('resizing');
 
+      // Remove width transition so resizing follows touch immediately
+      leftPanel.style.transition = 'none';
+
       const touch = e.touches[0];
       const startX = touch.clientX;
       const startWidth = leftPanel.offsetWidth;
@@ -686,6 +695,9 @@ export default class LookupsManager {
       const onTouchEnd = () => {
         this.isResizingLeft = false;
         splitter.classList.remove('resizing');
+
+        // Restore width transition
+        leftPanel.style.transition = '';
 
         document.removeEventListener('touchmove', onTouchMove);
         document.removeEventListener('touchend', onTouchEnd);
@@ -714,6 +726,9 @@ export default class LookupsManager {
       document.body.style.cursor = 'col-resize';
       document.body.style.userSelect = 'none';
 
+      // Remove width transition so resizing follows mouse immediately
+      middlePanel.style.transition = 'none';
+
       const startX = e.clientX;
       const startWidth = middlePanel.offsetWidth;
 
@@ -732,6 +747,9 @@ export default class LookupsManager {
         splitter.classList.remove('resizing');
         document.body.style.cursor = '';
         document.body.style.userSelect = '';
+
+        // Restore width transition for expand/collapse button
+        middlePanel.style.transition = '';
 
         document.removeEventListener('mousemove', onMouseMove);
         document.removeEventListener('mouseup', onMouseUp);
@@ -752,6 +770,9 @@ export default class LookupsManager {
       this.isResizingRight = true;
       splitter.classList.add('resizing');
 
+      // Remove width transition so resizing follows touch immediately
+      middlePanel.style.transition = 'none';
+
       const touch = e.touches[0];
       const startX = touch.clientX;
       const startWidth = middlePanel.offsetWidth;
@@ -770,6 +791,9 @@ export default class LookupsManager {
       const onTouchEnd = () => {
         this.isResizingRight = false;
         splitter.classList.remove('resizing');
+
+        // Restore width transition
+        middlePanel.style.transition = '';
 
         document.removeEventListener('touchmove', onTouchMove);
         document.removeEventListener('touchend', onTouchEnd);
@@ -852,55 +876,264 @@ export default class LookupsManager {
     // Identify the first right-side fixed button to use as insertion anchor
     const anchor = group.querySelector('.slot-notifications-btn');
 
-    // Create parent table select
-    const parentSelect = document.createElement('select');
-    parentSelect.id = 'lookups-parent-select';
-    parentSelect.className = 'lookups-footer-select';
-    parentSelect.title = 'Parent Table Data Source';
-    parentSelect.innerHTML = `
-      <option value="view">Lookup List View</option>
-      <option value="data">Lookup List Data</option>
-    `;
-    parentSelect.addEventListener('change', (e) => {
-      this.handleParentSelectChange(e.target.value);
-    });
-    group.insertBefore(parentSelect, anchor);
+    // --- Helper: create a button matching the footer style ---
+    const makeBtn = (id, icon, title) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'subpanel-header-btn subpanel-header-close';
+      btn.id = id;
+      btn.title = title;
+      btn.innerHTML = `<fa ${icon}></fa>`;
+      return btn;
+    };
 
-    // Create child table select
-    const childSelect = document.createElement('select');
-    childSelect.id = 'lookups-child-select';
-    childSelect.className = 'lookups-footer-select';
-    childSelect.title = 'Child Table Data Source';
-    childSelect.innerHTML = `
-      <option value="view">Lookup Values View</option>
-      <option value="data">Lookup Values Data</option>
-    `;
-    childSelect.addEventListener('change', (e) => {
-      this.handleChildSelectChange(e.target.value);
-    });
-    group.insertBefore(childSelect, anchor);
+    // 1. Print button
+    const printBtn = makeBtn('lookups-footer-print', 'fa-print', 'Print');
+    group.insertBefore(printBtn, anchor);
 
-    // Filler button
+    // 2. Email button
+    const emailBtn = makeBtn('lookups-footer-email', 'fa-paper-plane', 'E-Mail');
+    group.insertBefore(emailBtn, anchor);
+
+    // 3. Export button (with popup)
+    const exportBtn = makeBtn('lookups-footer-export', 'fa-file-circle-question', 'Export');
+    group.insertBefore(exportBtn, anchor);
+
+    // 4. Data-source select — combines parent and child table view options
+    const select = document.createElement('select');
+    select.id = 'lookups-footer-datasource';
+    select.title = 'Data Source';
+    select.className = 'lookups-footer-datasource';
+    select.innerHTML = `
+      <option value="lookups-list-view">Lookups List View</option>
+      <option value="lookups-list-data">Lookups List Data</option>
+      <option value="lookup-list-view">Lookup List View</option>
+      <option value="lookup-list-data">Lookup List Data</option>
+    `;
+    group.insertBefore(select, anchor);
+
+    // 5. Filler button — spans the gap between select and right-side buttons
     const fillerBtn = document.createElement('button');
     fillerBtn.type = 'button';
     fillerBtn.className = 'subpanel-header-btn lookups-footer-filler';
     fillerBtn.title = 'Lookups';
     group.insertBefore(fillerBtn, anchor);
 
+    // Process <fa> icons inside the newly inserted buttons
+    processIcons(group);
+
+    // Wire up event handlers
+    printBtn.addEventListener('click', () => this.handleFooterPrint());
+    emailBtn.addEventListener('click', () => this.handleFooterEmail());
+    exportBtn.addEventListener('click', (e) => this.toggleFooterExportPopup(e));
+
+    // Store reference to the datasource select
+    this._footerDatasource = select;
+
     log(Subsystems.MANAGER, Status.INFO, '[LookupsManager] Footer controls initialized');
   }
 
-  handleParentSelectChange(value) {
-    log(Subsystems.MANAGER, Status.INFO, `[Lookups] Parent select changed to: ${value}`);
-    if (value === 'data') {
-      toast.info('Data View', { description: 'Raw data view not yet implemented', duration: 3000 });
+  /**
+   * Get the selected data source mode from the footer combobox.
+   * @returns {string} - selected data source value
+   */
+  _getFooterDatasource() {
+    return this._footerDatasource?.value || 'lookups-list-view';
+  }
+
+  /**
+   * Handle Print from the footer.
+   */
+  handleFooterPrint() {
+    const mode = this._getFooterDatasource();
+    log(Subsystems.MANAGER, Status.INFO, `[Lookups] Footer: Print (${mode})`);
+
+    // Determine which table to print based on mode
+    const isParentMode = mode.startsWith('lookups-list');
+    const table = isParentMode ? this.parentTable?.table : this.childTable?.table;
+
+    if (!table) {
+      toast.info('No Data', { description: 'No table available to print', duration: 3000 });
+      return;
+    }
+
+    if (mode.endsWith('-view')) {
+      table.print();
+    } else {
+      table.print('all', true);
     }
   }
 
-  handleChildSelectChange(value) {
-    log(Subsystems.MANAGER, Status.INFO, `[Lookups] Child select changed to: ${value}`);
-    if (value === 'data') {
-      toast.info('Data View', { description: 'Raw data view not yet implemented', duration: 3000 });
+  /**
+   * Handle Email from the footer.
+   */
+  handleFooterEmail() {
+    const mode = this._getFooterDatasource();
+    log(Subsystems.MANAGER, Status.INFO, `[Lookups] Footer: Email (${mode})`);
+
+    // Determine which table to email based on mode
+    const isParentMode = mode.startsWith('lookups-list');
+    const table = isParentMode ? this.parentTable?.table : this.childTable?.table;
+    const tableName = isParentMode ? 'Lookups List' : 'Lookup List';
+
+    if (!table) {
+      toast.info('No Data', { description: 'No table available to email', duration: 3000 });
+      return;
+    }
+
+    const isViewMode = mode.endsWith('-view');
+    const rows = isViewMode ? table.getRows('active') : table.getRows();
+
+    if (rows.length === 0) {
+      toast.info('No Data', { description: 'No rows to include in the email', duration: 3000 });
+      return;
+    }
+
+    // Build a plain-text table summary
+    const visibleCols = isViewMode
+      ? table.getColumns().filter(col => col.isVisible() && col.getField() !== '_selector')
+      : table.getColumns().filter(col => col.getField() !== '_selector');
+
+    const headers = visibleCols.map(col => col.getDefinition().title || col.getField());
+    const separator = headers.map(h => '-'.repeat(h.length)).join('  ');
+
+    const dataLines = rows.slice(0, 50).map(row => {
+      const data = row.getData();
+      return visibleCols.map(col => {
+        const val = data[col.getField()];
+        return val != null ? String(val) : '';
+      }).join('\t');
+    });
+
+    const totalRows = rows.length;
+    const truncated = totalRows > 50 ? `\n... (${totalRows - 50} more rows not shown)` : '';
+    const modeLabel = isViewMode ? 'Filtered View' : 'Full Data';
+
+    const subject = encodeURIComponent(`${tableName} — ${totalRows} rows (${modeLabel})`);
+    const body = encodeURIComponent(
+      `${tableName} Export (${modeLabel})\n` +
+      `${totalRows} row(s)\n\n` +
+      `${headers.join('\t')}\n${separator}\n` +
+      `${dataLines.join('\n')}${truncated}\n`
+    );
+
+    window.open(`mailto:?subject=${subject}&body=${body}`, '_self');
+    log(Subsystems.MANAGER, Status.INFO, `[Lookups] Footer email prepared with ${totalRows} row(s) (${mode})`);
+  }
+
+  /**
+   * Toggle the export format popup from the footer export button.
+   * @param {MouseEvent} e - click event
+   */
+  toggleFooterExportPopup(e) {
+    e.stopPropagation();
+
+    // If already open, close it
+    if (this._footerExportPopup) {
+      this._closeFooterExportPopup();
+      return;
+    }
+
+    const btn = e.currentTarget;
+    const mode = this._getFooterDatasource();
+    const formats = [
+      { label: 'PDF', action: () => this.handleFooterExport('pdf', mode) },
+      { label: 'CSV', action: () => this.handleFooterExport('csv', mode) },
+      { label: 'TXT', action: () => this.handleFooterExport('txt', mode) },
+      { label: 'XLS', action: () => this.handleFooterExport('xls', mode) },
+    ];
+
+    // Build popup
+    const popup = document.createElement('div');
+    popup.className = 'lookups-footer-export-popup';
+    formats.forEach(item => {
+      const row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'lookups-footer-export-popup-item';
+      row.textContent = item.label;
+      row.addEventListener('click', () => {
+        this._closeFooterExportPopup();
+        item.action();
+      });
+      popup.appendChild(row);
+    });
+
+    // Position above the button
+    const slot = this.container.closest('.manager-slot');
+    const footer = slot?.querySelector('.manager-slot-footer');
+    if (footer) {
+      footer.style.position = 'relative';
+      const btnRect = btn.getBoundingClientRect();
+      const footerRect = footer.getBoundingClientRect();
+      popup.style.left = `${btnRect.left - footerRect.left}px`;
+      footer.appendChild(popup);
+    }
+
+    // Animate in
+    popup.getBoundingClientRect();
+    popup.classList.add('visible');
+
+    this._footerExportPopup = popup;
+
+    // Close on click outside
+    this._footerExportCloseHandler = (evt) => {
+      if (!popup.contains(evt.target) && !btn.contains(evt.target)) {
+        this._closeFooterExportPopup();
+      }
+    };
+    document.addEventListener('click', this._footerExportCloseHandler);
+  }
+
+  /**
+   * Close the footer export popup.
+   */
+  _closeFooterExportPopup() {
+    if (this._footerExportPopup) {
+      this._footerExportPopup.remove();
+      this._footerExportPopup = null;
+    }
+    if (this._footerExportCloseHandler) {
+      document.removeEventListener('click', this._footerExportCloseHandler);
+      this._footerExportCloseHandler = null;
+    }
+  }
+
+  /**
+   * Handle export from the footer with data source mode.
+   * @param {'pdf'|'csv'|'txt'|'xls'} format
+   * @param {string} mode - data source mode
+   */
+  handleFooterExport(format, mode) {
+    log(Subsystems.MANAGER, Status.INFO, `[Lookups] Footer: Export ${format.toUpperCase()} (${mode})`);
+
+    // Determine which table to export based on mode
+    const isParentMode = mode.startsWith('lookups-list');
+    const table = isParentMode ? this.parentTable?.table : this.childTable?.table;
+
+    if (!table) {
+      toast.info('No Data', { description: 'No table available to export', duration: 3000 });
+      return;
+    }
+
+    const filename = `lookups-export-${new Date().toISOString().slice(0, 10)}`;
+    const isViewMode = mode.endsWith('-view');
+    const downloadOpts = isViewMode ? {} : { rowGroups: false };
+
+    switch (format) {
+      case 'pdf':
+        table.download('pdf', `${filename}.pdf`, { orientation: 'landscape', ...downloadOpts });
+        break;
+      case 'csv':
+        table.download('csv', `${filename}.csv`, downloadOpts);
+        break;
+      case 'txt':
+        table.download('csv', `${filename}.txt`, downloadOpts);
+        break;
+      case 'xls':
+        table.download('xlsx', `${filename}.xlsx`, downloadOpts);
+        break;
+      default:
+        log(Subsystems.MANAGER, Status.WARN, `Unknown export format: ${format}`);
     }
   }
 
@@ -945,6 +1178,9 @@ export default class LookupsManager {
       this.fontPopup.remove();
       this.fontPopup = null;
     }
+
+    // Close any open footer export popup
+    this._closeFooterExportPopup();
 
     // Clean up tables
     this.parentTable?.destroy();

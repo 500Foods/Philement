@@ -170,7 +170,17 @@
   min-width: 16px;
 }
 
-/* Toolbar buttons styling */
+/* Toolbar buttons styling — minimum width and rounded corners */
+.lookups-toolbar-btn {
+  min-width: 24px;
+}
+
+/* Last button in toolbar should have rounded right corners */
+.lookups-toolbar-btn:last-child {
+  border-top-right-radius: var(--border-radius-sm);
+  border-bottom-right-radius: var(--border-radius-sm);
+}
+
 .lookups-toolbar-btn:disabled {
   cursor: not-allowed;
   background-color: var(--accent-disabled);
@@ -1396,6 +1406,89 @@
   background: var(--accent-primary);
   color: white;
   border: none;
+}
+
+/* Footer datasource select — combines parent and child table options.
+   Styled to match subpanel-header-btn so it blends into the strip. */
+.lookups-footer-datasource {
+  width: auto;
+  height: 100%;
+  padding: 0 var(--space-7) 0 var(--space-5);
+  border: none;
+  background: var(--accent-primary);
+  color: white;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: background-color var(--transition-fast);
+  /* Caret indicator on the right */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='white'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  z-index: 1;
+}
+
+.lookups-footer-datasource:hover,
+.lookups-footer-datasource:focus {
+  background-color: var(--accent-hover);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='white'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+}
+
+.lookups-footer-datasource option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  padding: var(--space-2);
+}
+
+/* Footer export popup */
+.lookups-footer-export-popup {
+  position: absolute;
+  bottom: 100%;
+  margin-bottom: 4px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+  min-width: 80px;
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(4px);
+  transition: opacity var(--transition-fast), visibility var(--transition-fast), transform var(--transition-fast);
+}
+
+.lookups-footer-export-popup.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.lookups-footer-export-popup-item {
+  display: block;
+  width: 100%;
+  padding: 6px 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color var(--transition-fast);
+}
+
+.lookups-footer-export-popup-item:hover {
+  background-color: var(--accent-primary);
+  color: white;
+}
+
+.lookups-footer-export-popup-item:active {
+  background-color: var(--accent-focus);
 }
 
 } /* end @layer vendor-fixes */

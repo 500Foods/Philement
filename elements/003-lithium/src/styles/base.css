@@ -191,6 +191,10 @@
     --z-modal: 300;
     --z-popover: 400;
     --z-tooltip: 500;
+
+    /* Zoom level - controlled via JavaScript */
+    --zoom: 1;
+    --zoom-inv: 1;
   }
 
   /* ---- Font Face Declarations ---- */
