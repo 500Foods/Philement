@@ -267,7 +267,8 @@ class CrimsonManager {
    * @param {string} options.username - Username for greeting
    */
   show(options = {}) {
-    if (!this.popup) this.init();
+    const isFirstShow = !this.popup;
+    if (isFirstShow) this.init();
 
     // Update username if provided
     if (options.username) {
@@ -282,6 +283,13 @@ class CrimsonManager {
     if (this.isVisible) {
       this.input?.focus();
       return;
+    }
+
+    // On first show, force a reflow to ensure initial styles are applied
+    // before adding the visible class. This ensures the animation runs.
+    if (isFirstShow) {
+      void this.overlay.offsetHeight;
+      void this.popup.offsetHeight;
     }
 
     // Show overlay and popup

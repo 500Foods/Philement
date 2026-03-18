@@ -2901,7 +2901,7 @@ export default class QueriesManager {
     group.insertBefore(printBtn, anchor);
 
     // 2. Email button
-    const emailBtn = makeBtn('queries-footer-email', 'fa-paper-plane', 'E-Mail');
+    const emailBtn = makeBtn('queries-footer-email', 'fa-envelope', 'E-Mail');
     group.insertBefore(emailBtn, anchor);
 
     // 3. Export button (with popup)
