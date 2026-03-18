@@ -5,6 +5,7 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 1.0.1 - 2026-03-18 - Updated to use lower-case JSON keys, <fa>-style icon definitions
 -- 1.0.0 - 2025-12-25 - Initial creation
 
 return function(engine, design_name, schema_name, cfg)
@@ -80,23 +81,23 @@ table.insert(queries,{sql=[[
             VALUES
                 (${LOOKUP_ID},  0, 1, 'OpenAI/ChatGPT 4o', 0, 0, '', '', ${JIS}[==[
                     {
-                        "Icon": "<img src='Images/ai_openai.png'>",
-                        "Name": "ChatGPT 4o",
-                        "Limit": 32768,
-                        "Model": "gpt-4o",
-                        "Engine": "OpenAI",
-                        "API Key": "<OpenAI Key>",
-                        "Country": "CA",
-                        "Default": false,
-                        "Endpoint": "https://api.openai.com/v1/chat/completions",
-                        "Location": "YVR",
-                        "Authority": "Example",
-                        "Cost Prompt": 0.00006,
-                        "Organization": "<OpenAI Org Identifier>",
-                        "Cost Completion": 0.00012,
-                        "Support Prompts": {
-                            "Abstract": 5010,
-                            "Correction": 6000
+                        "icon": "<img src='Images/ai_openai.png'>",
+                        "name": "ChatGPT 4o",
+                        "limit": 32768,
+                        "model": "gpt-4o",
+                        "engine": "OpenAI",
+                        "api key": "<OpenAI Key>",
+                        "country": "CA",
+                        "default": false,
+                        "endpoint": "https://api.openai.com/v1/chat/completions",
+                        "location": "YVR",
+                        "authority": "Example",
+                        "cost prompt": 0.00006,
+                        "organization": "<OpenAI Org Identifier>",
+                        "cost completion": 0.00012,
+                        "support prompts": {
+                            "abstract": 5010,
+                            "correction": 6000
                         }
                     }
                 ]==]${JIE}, ${COMMON_VALUES});

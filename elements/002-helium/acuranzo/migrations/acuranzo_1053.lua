@@ -5,6 +5,7 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 1.0.1 - 2026-03-18 - Updated to use lower-case JSON keys, <fa>-style icon definitions
 -- 1.0.0 - 2025-11-22 - Initial creation
 
 return function(engine, design_name, schema_name, cfg)
@@ -78,20 +79,20 @@ table.insert(queries,{sql=[[
             INSERT INTO ${SCHEMA}${TABLE}
                 (lookup_id, key_idx, status_a1, value_txt, value_int, sort_seq, code, summary, collection, ${COMMON_FIELDS})
             VALUES
-                (${LOOKUP_ID},    0, 1, 'SQL - Internal',               0,  0, '', '', ${JIS}[==[{"icon":"<i class='fa fa-code fa-fw'></i>"}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID},    1, 1, 'SQL - System',                 0,  1, '', '', ${JIS}[==[{"icon":"<i class='fa fa-code fa-fw'></i>"}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID},    2, 1, 'DDL - APP',                    0,  2, '', '', ${JIS}[==[{"icon":"<i class='fa fa-code fa-fw'></i>"}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID},    3, 1, 'SQL - Reporting',              0,  3, '', '', ${JIS}[==[{"icon":"<i class='fa fa-code fa-fw'></i>"}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID},   10, 1, 'SQL - Public',                 0,  3, '', '', ${JIS}[==[{"icon":"<i class='fa fa-code fa-fw'></i>"}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID},  101, 1, 'AI Prompts - Auditor',         0,  4, '', '', ${JIS}[==[{"icon":"<i class='fa fa-robot fa-fw'></i>"}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID},  102, 1, 'AI Prompts - Validation',      0,  5, '', '', ${JIS}[==[{"icon":"<i class='fa fa-robot fa-fw'></i>"}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID},  103, 1, 'AI Prompts - Playground',      0,  6, '', '', ${JIS}[==[{"icon":"<i class='fa fa-robot fa-fw'></i>"}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID},  104, 1, 'AI Prompts - Categorization',  0,  7, '', '', ${JIS}[==[{"icon":"<i class='fa fa-robot fa-fw'></i>"}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID},  105, 1, 'AI Prompts - System',          0,  8, '', '', ${JIS}[==[{"icon":"<i class='fa fa-robot fa-fw'></i>"}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID}, 1000, 1, 'Forward Migration',            0,  9, '', '', ${JIS}[==[{"icon":"<i class='fa fa-check fa-fw'></i>"}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID}, 1001, 1, 'Reverse Migration',            0, 10, '', '', ${JIS}[==[{"icon":"<i class='fa fa-check fa-fw'></i>"}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID}, 1002, 1, 'Diagram Migration',            0, 11, '', '', ${JIS}[==[{"icon":"<i class='fa fa-check fa-fw'></i>"}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID}, 1003, 1, 'Applied Migration',            0, 12, '', '', ${JIS}[==[{"icon":"<i class='fa fa-check fa-fw'></i>"}]==]${JIE}, ${COMMON_VALUES});
+                (${LOOKUP_ID},    0, 1, 'SQL - Internal',               0,  0, '', '', ${JIS}[==[{"icon":"<fa fa-code></fa>"}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID},    1, 1, 'SQL - System',                 0,  1, '', '', ${JIS}[==[{"icon":"<fa fa-code></fa>"}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID},    2, 1, 'DDL - APP',                    0,  2, '', '', ${JIS}[==[{"icon":"<fa fa-code></fa>"}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID},    3, 1, 'SQL - Reporting',              0,  3, '', '', ${JIS}[==[{"icon":"<fa fa-code></fa>"}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID},   10, 1, 'SQL - Public',                 0,  3, '', '', ${JIS}[==[{"icon":"<fa fa-code></fa>"}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID},  101, 1, 'AI Prompts - Auditor',         0,  4, '', '', ${JIS}[==[{"icon":"<fa fa-robo></fa>"}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID},  102, 1, 'AI Prompts - Validation',      0,  5, '', '', ${JIS}[==[{"icon":"<fa fa-robo></fa>"}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID},  103, 1, 'AI Prompts - Playground',      0,  6, '', '', ${JIS}[==[{"icon":"<fa fa-robo></fa>"}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID},  104, 1, 'AI Prompts - Categorization',  0,  7, '', '', ${JIS}[==[{"icon":"<fa fa-robot></fa>"}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID},  105, 1, 'AI Prompts - System',          0,  8, '', '', ${JIS}[==[{"icon":"<fa fa-robot></fa>"}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 1000, 1, 'Forward Migration',            0,  9, '', '', ${JIS}[==[{"icon":"<fa fa-check></fa>"}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 1001, 1, 'Reverse Migration',            0, 10, '', '', ${JIS}[==[{"icon":"<fa fa-check></fa>"}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 1002, 1, 'Diagram Migration',            0, 11, '', '', ${JIS}[==[{"icon":"<fa fa-check></fa>"}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 1003, 1, 'Applied Migration',            0, 12, '', '', ${JIS}[==[{"icon":"<fa fa-check></fa>"}]==]${JIE}, ${COMMON_VALUES});
 
             ${SUBQUERY_DELIMITER}
 

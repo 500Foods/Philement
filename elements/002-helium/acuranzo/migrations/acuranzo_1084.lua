@@ -5,6 +5,7 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 1.0.1 - 2026-03-18 - Updated to use lower-case JSON keys, <fa>-style icon definitions
 -- 1.0.0 - 2025-12-25 - Initial creation
 
 return function(engine, design_name, schema_name, cfg)
@@ -78,13 +79,13 @@ table.insert(queries,{sql=[[
             INSERT INTO ${SCHEMA}${TABLE}
                 (lookup_id, key_idx, status_a1, value_txt, value_int, sort_seq, code, summary, collection, ${COMMON_FIELDS})
             VALUES
-                (${LOOKUP_ID},  0, 1, 'Unspecified',            0, 99, '', '', ${JIS}[==[{"Icon": "<i class='fa fa-file fa-fw'></i>", "IconLarge": "<i class='fa fa-file fa-fw fa-8x'></i>"}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID},  1, 1, 'HTML Page',              0,  1, '', '', ${JIS}[==[{"Icon": "<i class='fa fa-file-shield fa-fw'></i>", "IconLarge": "<i class='fa fa-file-shield fa-fw fa-8x'></i>"}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID},  2, 1, 'PDF',                    0,  2, '', '', ${JIS}[==[{"Icon": "<i class='fa fa-file-pdf fa-fw'></i>", "IconLarge": "<i class='fa fa-file-pdf fa-fw fa-8x'></i>"}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID},  3, 1, 'Word Document',          0,  3, '', '', ${JIS}[==[{"Icon": "<i class='fa fa-file-doc fa-fw'></i>", "IconLarge": "<i class='fa fa-file-doc fa-fw fa-8x'></i>"}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID},  4, 1, 'Excel Document',         0,  4, '', '', ${JIS}[==[{"Icon": "<i class='fa fa-file-xls fa-fw'></i>", "IconLarge": "<i class='fa fa-file-xls fa-fw fa-8x'></i> "}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID},  5, 1, 'Powerpoint Document',    0,  5, '', '', ${JIS}[==[{"Icon": "<i class='fa fa-file-ppt fa-fw'></i>", "IconLarge": "<i class='fa fa-file-ppt fa-fw fa-8x'></i>"}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID},  6, 1, 'HTML Link',              0,  6, '', '', ${JIS}[==[{"Icon": "<i class='fa fa-link fa-fw'></i>", "IconLarge": "<i class='fa fa-link fa-fw fa-8x'></i>"}]==]${JIE}, ${COMMON_VALUES});
+                (${LOOKUP_ID},  0, 1, 'Unspecified',            0, 99, '', '', ${JIS}[==[{"icon": "<fa fa-file></fa>"}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID},  1, 1, 'HTML Page',              0,  1, '', '', ${JIS}[==[{"icon": "<fa fa-file-shield></fa>"}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID},  2, 1, 'PDF',                    0,  2, '', '', ${JIS}[==[{"icon": "<fa fa-file-pdf></fa>"}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID},  3, 1, 'Word Document',          0,  3, '', '', ${JIS}[==[{"icon": "<fa fa-file-doc></fa>"}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID},  4, 1, 'Excel Document',         0,  4, '', '', ${JIS}[==[{"icon": "<fa fa-file-xls></fa>"}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID},  5, 1, 'Powerpoint Document',    0,  5, '', '', ${JIS}[==[{"icon": "<fa fa-file-ppt></fa>"}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID},  6, 1, 'HTML Link',              0,  6, '', '', ${JIS}[==[{"icon": "<fa fa-link></fa>"}]==]${JIE}, ${COMMON_VALUES});
 
             ${SUBQUERY_DELIMITER}
 

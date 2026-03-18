@@ -5,6 +5,7 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 1.0.1 - 2026-03-18 - Updated to use lower-case JSON keys, <fa>-style icon definitions
 -- 1.0.0 - 2025-11-25 - Initial creation
 
 return function(engine, design_name, schema_name, cfg)
@@ -78,7 +79,7 @@ table.insert(queries,{sql=[[
             INSERT INTO ${SCHEMA}${TABLE}
                 (lookup_id, key_idx, status_a1, value_txt, value_int, sort_seq, code, summary, collection, ${COMMON_FIELDS})
             VALUES
-                (${LOOKUP_ID}, 0, 1, 'Inactive',    0, 0, '', '', ${JIS}[==[{"icon":"<i class='fa fa-thumbs-up fa-swap-opacity'></i>"}]==]${JIE}, ${COMMON_VALUES});
+                (${LOOKUP_ID}, 0, 1, 'Inactive',    0, 0, '', '', ${JIS}[==[{"icon":"<fa fa-thumbs-up fa-swap-opacity></fa>"}]==]${JIE}, ${COMMON_VALUES});
 
             ${SUBQUERY_DELIMITER}
 
