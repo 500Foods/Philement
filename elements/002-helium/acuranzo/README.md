@@ -60,46 +60,46 @@ in the migrations themselves so that they get populated in the database directly
 | [1023](/elements/002-helium/acuranzo/migrations/acuranzo_1023.lua) | workflows | 3.1.0 | 2025-11-23 | 6 | ✓ | Creates the workflows table |
 | [1024](/elements/002-helium/acuranzo/migrations/acuranzo_1024.lua) | accounts | 1.0.0 | 2025-11-11 | 4 | ✗ | Creates administrator account |
 | [1025](/elements/002-helium/acuranzo/migrations/acuranzo_1025.lua) | lookups | 1.0.0 | 2025-11-20 | 4 | ✗ | Defaults for Lookup 000 - Lookup Items |
-| [1026](/elements/002-helium/acuranzo/migrations/acuranzo_1026.lua) | lookups | 1.0.0 | 2025-11-21 | 6 | ✗ | Defaults for Lookup 001 - Lookup Status |
-| [1027](/elements/002-helium/acuranzo/migrations/acuranzo_1027.lua) | lookups | 1.0.0 | 2025-11-22 | 6 | ✗ | Defaults for Lookup 002 - Language Status |
-| [1028](/elements/002-helium/acuranzo/migrations/acuranzo_1028.lua) | lookups | 1.0.0 | 2025-11-22 | 6 | ✗ | Defaults for Lookup 003 - Dictionary Status |
+| [1026](/elements/002-helium/acuranzo/migrations/acuranzo_1026.lua) | lookups | 1.0.1 | 2026-03-18 | 6 | ✗ | Defaults for Lookup 001 - Lookup Status |
+| [1027](/elements/002-helium/acuranzo/migrations/acuranzo_1027.lua) | lookups | 1.0.1 | 2026-03-18 | 6 | ✗ | Defaults for Lookup 002 - Language Status |
+| [1028](/elements/002-helium/acuranzo/migrations/acuranzo_1028.lua) | lookups | 1.0.1 | 2026-03-18 | 6 | ✗ | Defaults for Lookup 003 - Dictionary Status |
 | [1029](/elements/002-helium/acuranzo/migrations/acuranzo_1029.lua) | lookups | 1.0.0 | 2025-11-22 | 6 | ✗ | Defaults for Lookup 004 - Connection Type |
-| [1030](/elements/002-helium/acuranzo/migrations/acuranzo_1030.lua) | lookups | 1.0.0 | 2025-11-22 | 6 | ✗ | Defaults for Lookup 005 - Connected Status |
-| [1031](/elements/002-helium/acuranzo/migrations/acuranzo_1031.lua) | lookups | 1.0.0 | 2025-11-22 | 6 | ✗ | Defaults for Lookup 006 - Connection Status |
-| [1032](/elements/002-helium/acuranzo/migrations/acuranzo_1032.lua) | lookups | 1.0.0 | 2025-11-22 | 6 | ✗ | Defaults for Lookup 007 - Rule Status |
+| [1030](/elements/002-helium/acuranzo/migrations/acuranzo_1030.lua) | lookups | 1.0.1 | 2026-03-18 | 6 | ✗ | Defaults for Lookup 005 - Connected Status |
+| [1031](/elements/002-helium/acuranzo/migrations/acuranzo_1031.lua) | lookups | 1.0.1 | 2026-03-18 | 6 | ✗ | Defaults for Lookup 006 - Connection Status |
+| [1032](/elements/002-helium/acuranzo/migrations/acuranzo_1032.lua) | lookups | 1.0.1 | 2026-03-18 | 6 | ✗ | Defaults for Lookup 007 - Rule Status |
 | [1033](/elements/002-helium/acuranzo/migrations/acuranzo_1033.lua) | lookups | 1.0.0 | 2025-11-22 | 6 | ✗ | Defaults for Lookup 008 - Note Status |
 | [1034](/elements/002-helium/acuranzo/migrations/acuranzo_1034.lua) | lookups | 1.0.0 | 2025-11-22 | 6 | ✗ | Defaults for Lookup 009 - Entity Type |
-| [1035](/elements/002-helium/acuranzo/migrations/acuranzo_1035.lua) | lookups | 1.0.0 | 2025-11-22 | 6 | ✗ | Defaults for Lookup 010 - Workflow Status |
+| [1035](/elements/002-helium/acuranzo/migrations/acuranzo_1035.lua) | lookups | 1.0.1 | 2026-03-18 | 6 | ✗ | Defaults for Lookup 010 - Workflow Status |
 | [1036](/elements/002-helium/acuranzo/migrations/acuranzo_1036.lua) | lookups | 1.0.0 | 2025-11-22 | 6 | ✗ | Defaults for Lookup 011 - Workflow Step Status |
-| [1037](/elements/002-helium/acuranzo/migrations/acuranzo_1037.lua) | lookups | 1.0.0 | 2025-11-22 | 6 | ✗ | Defaults for Lookup 012 - Template Status |
-| [1038](/elements/002-helium/acuranzo/migrations/acuranzo_1038.lua) | lookups | 1.0.0 | 2025-11-22 | 6 | ✗ | Defaults for Lookup 013 - License Status |
-| [1039](/elements/002-helium/acuranzo/migrations/acuranzo_1039.lua) | lookups | 1.0.0 | 2025-11-22 | 6 | ✗ | Defaults for Lookup 014 - System Status |
+| [1037](/elements/002-helium/acuranzo/migrations/acuranzo_1037.lua) | lookups | 1.0.1 | 2026-03-18 | 6 | ✗ | Defaults for Lookup 012 - Template Status |
+| [1038](/elements/002-helium/acuranzo/migrations/acuranzo_1038.lua) | lookups | 1.0.1 | 2026-03-18 | 6 | ✗ | Defaults for Lookup 013 - License Status |
+| [1039](/elements/002-helium/acuranzo/migrations/acuranzo_1039.lua) | lookups | 1.0.1 | 2026-03-18 | 6 | ✗ | Defaults for Lookup 014 - System Status |
 | [1040](/elements/002-helium/acuranzo/migrations/acuranzo_1040.lua) | lookups | 1.0.0 | 2025-11-22 | 6 | ✗ | Defaults for Lookup 015 - System Access Type |
 | [1041](/elements/002-helium/acuranzo/migrations/acuranzo_1041.lua) | lookups | 1.0.0 | 2025-11-22 | 6 | ✗ | Defaults for Lookup 016 - Account Access Type |
 | [1042](/elements/002-helium/acuranzo/migrations/acuranzo_1042.lua) | lookups | 1.0.0 | 2025-11-22 | 6 | ✗ | Defaults for Lookup 017 - IANA Timezone |
 | [1043](/elements/002-helium/acuranzo/migrations/acuranzo_1043.lua) | lookups | 1.0.0 | 2025-11-22 | 6 | ✗ | Defaults for Lookup 018 - Contact Type |
-| [1044](/elements/002-helium/acuranzo/migrations/acuranzo_1044.lua) | lookups | 1.0.0 | 2025-11-22 | 6 | ✗ | Defaults for Lookup 019 - Authenticate |
-| [1045](/elements/002-helium/acuranzo/migrations/acuranzo_1045.lua) | lookups | 1.0.0 | 2025-11-22 | 6 | ✗ | Defaults for Lookup 020 - Contact Status |
+| [1044](/elements/002-helium/acuranzo/migrations/acuranzo_1044.lua) | lookups | 1.0.1 | 2026-03-18 | 6 | ✗ | Defaults for Lookup 019 - Authenticate |
+| [1045](/elements/002-helium/acuranzo/migrations/acuranzo_1045.lua) | lookups | 1.0.1 | 2026-03-18 | 6 | ✗ | Defaults for Lookup 020 - Contact Status |
 | [1046](/elements/002-helium/acuranzo/migrations/acuranzo_1046.lua) | lookups | 1.0.0 | 2025-11-22 | 6 | ✗ | Defaults for Lookup 021 - Feature |
 | [1047](/elements/002-helium/acuranzo/migrations/acuranzo_1047.lua) | lookups | 1.0.0 | 2025-11-22 | 6 | ✗ | Defaults for Lookup 022 - Access Type |
-| [1048](/elements/002-helium/acuranzo/migrations/acuranzo_1048.lua) | lookups | 1.0.0 | 2025-11-22 | 6 | ✗ | Defaults for Lookup 023 - Access Status |
+| [1048](/elements/002-helium/acuranzo/migrations/acuranzo_1048.lua) | lookups | 1.0.1 | 2026-03-18 | 6 | ✗ | Defaults for Lookup 023 - Access Status |
 | [1049](/elements/002-helium/acuranzo/migrations/acuranzo_1049.lua) | lookups | 1.0.0 | 2025-11-22 | 6 | ✗ | Defaults for Lookup 024 - Action Type |
-| [1050](/elements/002-helium/acuranzo/migrations/acuranzo_1050.lua) | lookups | 1.0.0 | 2025-11-22 | 6 | ✗ | Defaults for Lookup 025 - Session Status |
-| [1051](/elements/002-helium/acuranzo/migrations/acuranzo_1051.lua) | lookups | 1.0.0 | 2025-11-22 | 6 | ✗ | Defaults for Lookup 026 - Session Flag |
-| [1052](/elements/002-helium/acuranzo/migrations/acuranzo_1052.lua) | lookups | 1.0.0 | 2025-11-22 | 6 | ✗ | Defaults for Lookup 027 - Query Status |
-| [1053](/elements/002-helium/acuranzo/migrations/acuranzo_1053.lua) | lookups | 1.0.0 | 2025-11-22 | 6 | ✗ | Defaults for Lookup 028 - Query Type |
+| [1050](/elements/002-helium/acuranzo/migrations/acuranzo_1050.lua) | lookups | 1.0.1 | 2026-03-18 | 6 | ✗ | Defaults for Lookup 025 - Session Status |
+| [1051](/elements/002-helium/acuranzo/migrations/acuranzo_1051.lua) | lookups | 1.0.1 | 2026-03-18 | 6 | ✗ | Defaults for Lookup 026 - Session Flag |
+| [1052](/elements/002-helium/acuranzo/migrations/acuranzo_1052.lua) | lookups | 1.0.1 | 2026-03-18 | 6 | ✗ | Defaults for Lookup 027 - Query Status |
+| [1053](/elements/002-helium/acuranzo/migrations/acuranzo_1053.lua) | lookups | 1.0.1 | 2026-03-18 | 6 | ✗ | Defaults for Lookup 028 - Query Type |
 | [1054](/elements/002-helium/acuranzo/migrations/acuranzo_1054.lua) | lookups | 1.0.0 | 2025-11-22 | 6 | ✗ | Defaults for Lookup 029 - Query Quadrant |
 | [1055](/elements/002-helium/acuranzo/migrations/acuranzo_1055.lua) | lookups | 1.0.0 | 2025-11-24 | 6 | ✗ | Defaults for Lookup 030 - Query Dialect |
 | [1056](/elements/002-helium/acuranzo/migrations/acuranzo_1056.lua) | lookups | 1.0.0 | 2025-11-24 | 6 | ✗ | Defaults for Lookup 031 - List Types |
 | [1057](/elements/002-helium/acuranzo/migrations/acuranzo_1057.lua) | lookups | 1.0.0 | 2025-11-24 | 6 | ✗ | Defaults for Lookup 032 - List Status |
 | [1058](/elements/002-helium/acuranzo/migrations/acuranzo_1058.lua) | lookups | 1.0.0 | 2025-11-24 | 6 | ✗ | Defaults for Lookup 033 - Login Controls |
-| [1059](/elements/002-helium/acuranzo/migrations/acuranzo_1059.lua) | lookups | 1.0.0 | 2025-11-24 | 6 | ✗ | Defaults for Lookup 034 - Role Status |
+| [1059](/elements/002-helium/acuranzo/migrations/acuranzo_1059.lua) | lookups | 1.0.1 | 2026-03-18 | 6 | ✗ | Defaults for Lookup 034 - Role Status |
 | [1060](/elements/002-helium/acuranzo/migrations/acuranzo_1060.lua) | lookups | 1.0.0 | 2025-11-24 | 6 | ✗ | Defaults for Lookup 035 - Role Scope |
 | [1061](/elements/002-helium/acuranzo/migrations/acuranzo_1061.lua) | lookups | 1.0.0 | 2025-11-24 | 6 | ✗ | Defaults for Lookup 036 - Role Type |
-| [1062](/elements/002-helium/acuranzo/migrations/acuranzo_1062.lua) | lookups | 1.0.0 | 2025-11-24 | 6 | ✗ | Defaults for Lookup 037 - Access Status |
-| [1063](/elements/002-helium/acuranzo/migrations/acuranzo_1063.lua) | lookups | 1.0.0 | 2025-11-24 | 6 | ✗ | Defaults for Lookup 038 - AI Chat Engines |
-| [1064](/elements/002-helium/acuranzo/migrations/acuranzo_1064.lua) | lookups | 1.0.0 | 2025-11-25 | 6 | ✗ | Defaults for Lookup 039 - AI Auditor Engines |
-| [1065](/elements/002-helium/acuranzo/migrations/acuranzo_1065.lua) | lookups | 1.0.0 | 2025-11-25 | 6 | ✗ | Defaults for Lookup 040 - Icons |
+| [1062](/elements/002-helium/acuranzo/migrations/acuranzo_1062.lua) | lookups | 1.0.1 | 2026-03-18 | 6 | ✗ | Defaults for Lookup 037 - Access Status |
+| [1063](/elements/002-helium/acuranzo/migrations/acuranzo_1063.lua) | lookups | 1.0.1 | 2026-03-18 | 6 | ✗ | Defaults for Lookup 038 - AI Chat Engines |
+| [1064](/elements/002-helium/acuranzo/migrations/acuranzo_1064.lua) | lookups | 1.0.1 | 2026-03-18 | 6 | ✗ | Defaults for Lookup 039 - AI Auditor Engines |
+| [1065](/elements/002-helium/acuranzo/migrations/acuranzo_1065.lua) | lookups | 1.0.1 | 2026-03-18 | 6 | ✗ | Defaults for Lookup 040 - Icons |
 | [1066](/elements/002-helium/acuranzo/migrations/acuranzo_1066.lua) | lookups | 1.0.0 | 2025-11-26 | 4 | ✗ | Defaults for Lookup 041 - Themes |
 | [1067](/elements/002-helium/acuranzo/migrations/acuranzo_1067.lua) | lookups | 1.0.1 | 2025-11-28 | 4 | ✗ | Theme - Default |
 | [1068](/elements/002-helium/acuranzo/migrations/acuranzo_1068.lua) | lookups | 1.0.0 | 2025-11-26 | 4 | ✗ | Theme - Bluish |
@@ -109,21 +109,21 @@ in the migrations themselves so that they get populated in the database directly
 | [1072](/elements/002-helium/acuranzo/migrations/acuranzo_1072.lua) | lookups | 1.0.0 | 2025-12-18 | 4 | ✗ | Theme - Lanboss |
 | [1073](/elements/002-helium/acuranzo/migrations/acuranzo_1073.lua) | lookups | 1.0.0 | 2025-12-18 | 4 | ✗ | Theme - Bland |
 | [1074](/elements/002-helium/acuranzo/migrations/acuranzo_1074.lua) | lookups | 1.0.0 | 2025-12-18 | 4 | ✗ | Theme - Stormy |
-| [1075](/elements/002-helium/acuranzo/migrations/acuranzo_1075.lua) | lookups | 1.0.1 | 2026-03-16 | 6 | ✗ | Defaults for Lookup 042 - Modules |
-| [1076](/elements/002-helium/acuranzo/migrations/acuranzo_1076.lua) | lookups | 1.0.0 | 2025-12-21 | 6 | ✗ | Defaults for Lookup 043 - Tours |
+| [1075](/elements/002-helium/acuranzo/migrations/acuranzo_1075.lua) | lookups | 1.0.2 | 2026-03-18 | 6 | ✗ | Defaults for Lookup 042 - Modules |
+| [1076](/elements/002-helium/acuranzo/migrations/acuranzo_1076.lua) | lookups | 1.0.1 | 2026-03-18 | 6 | ✗ | Defaults for Lookup 043 - Tours |
 | [1077](/elements/002-helium/acuranzo/migrations/acuranzo_1077.lua) | lookups | 1.0.0 | 2025-12-22 | 6 | ✗ | Defaults for Lookup 044 - Server Version History |
 | [1078](/elements/002-helium/acuranzo/migrations/acuranzo_1078.lua) | lookups | 1.0.0 | 2025-12-22 | 6 | ✗ | Defaults for Lookup 045 - Client Version History |
 | [1079](/elements/002-helium/acuranzo/migrations/acuranzo_1079.lua) | lookups | 1.0.0 | 2025-12-24 | 6 | ✗ | Defaults for Lookup 046 - Macro Expansion |
 | [1080](/elements/002-helium/acuranzo/migrations/acuranzo_1080.lua) | lookups | 1.0.0 | 2025-12-24 | 6 | ✗ | Defaults for Lookup 047 - Translations |
 | [1081](/elements/002-helium/acuranzo/migrations/acuranzo_1081.lua) | lookups | 1.0.0 | 2025-12-25 | 6 | ✗ | Defaults for Lookup 048 - Module Groups |
 | [1082](/elements/002-helium/acuranzo/migrations/acuranzo_1082.lua) | lookups | 1.0.0 | 2025-12-25 | 6 | ✗ | Defaults for Lookup 049 - Document Libraries |
-| [1083](/elements/002-helium/acuranzo/migrations/acuranzo_1083.lua) | lookups | 1.0.0 | 2025-12-25 | 6 | ✗ | Defaults for Lookup 050 - Document Status |
-| [1084](/elements/002-helium/acuranzo/migrations/acuranzo_1084.lua) | lookups | 1.0.0 | 2025-12-25 | 6 | ✗ | Defaults for Lookup 051 - Document Types |
-| [1085](/elements/002-helium/acuranzo/migrations/acuranzo_1085.lua) | lookups | 1.0.0 | 2025-12-25 | 6 | ✗ | Defaults for Lookup 052 - AI Summary Engines |
-| [1086](/elements/002-helium/acuranzo/migrations/acuranzo_1086.lua) | lookups | 1.0.0 | 2025-12-25 | 6 | ✗ | Defaults for Lookup 053 - Report Object Types |
+| [1083](/elements/002-helium/acuranzo/migrations/acuranzo_1083.lua) | lookups | 1.0.1 | 2026-03-18 | 6 | ✗ | Defaults for Lookup 050 - Document Status |
+| [1084](/elements/002-helium/acuranzo/migrations/acuranzo_1084.lua) | lookups | 1.0.1 | 2026-03-18 | 6 | ✗ | Defaults for Lookup 051 - Document Types |
+| [1085](/elements/002-helium/acuranzo/migrations/acuranzo_1085.lua) | lookups | 1.0.1 | 2026-03-18 | 6 | ✗ | Defaults for Lookup 052 - AI Summary Engines |
+| [1086](/elements/002-helium/acuranzo/migrations/acuranzo_1086.lua) | lookups | 1.0.1 | 2026-03-18 | 6 | ✗ | Defaults for Lookup 053 - Report Object Types |
 | [1087](/elements/002-helium/acuranzo/migrations/acuranzo_1087.lua) | lookups | 1.0.0 | 2025-12-25 | 6 | ✗ | Defaults for Lookup 054 - Report Object Attributes |
 | [1088](/elements/002-helium/acuranzo/migrations/acuranzo_1088.lua) | lookups | 1.0.0 | 2025-12-26 | 6 | ✗ | Defaults for Lookup 055 - Canvas LMS Links |
-| [1089](/elements/002-helium/acuranzo/migrations/acuranzo_1089.lua) | lookups | 1.0.0 | 2025-12-26 | 6 | ✗ | Defaults for Lookup 056 - Acuranzo Systems |
+| [1089](/elements/002-helium/acuranzo/migrations/acuranzo_1089.lua) | lookups | 1.0.1 | 2026-03-18 | 6 | ✗ | Defaults for Lookup 056 - Acuranzo Systems |
 | [1090](/elements/002-helium/acuranzo/migrations/acuranzo_1090.lua) | lookups | 1.0.0 | 2025-12-26 | 6 | ✗ | Defaults for Lookup 057 - Report Page Sizes |
 | [1091](/elements/002-helium/acuranzo/migrations/acuranzo_1091.lua) | lookups | 1.0.0 | 2025-12-26 | 6 | ✗ | Defaults for Lookup 058 - Query Queues |
 | [1092](/elements/002-helium/acuranzo/migrations/acuranzo_1092.lua) | queries | 1.0.0 | 2025-12-28 | 4 | ✗ | QueryRef #001 - Get System Information |
@@ -169,7 +169,7 @@ in the migrations themselves so that they get populated in the database directly
 | [1132](/elements/002-helium/acuranzo/migrations/acuranzo_1132.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #041 - Get Chat |
 | [1133](/elements/002-helium/acuranzo/migrations/acuranzo_1133.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #042 - Create Lookup Key |
 | [1134](/elements/002-helium/acuranzo/migrations/acuranzo_1134.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #043 - Update Lookup Key |
-| [1135](/elements/002-helium/acuranzo/migrations/acuranzo_1135.lua) | queries | 1.0.1 | 2026-01-01 | 10 | ✗ | QueryRef #044 - Get Filtered Lookup: AI Models |
+| [1135](/elements/002-helium/acuranzo/migrations/acuranzo_1135.lua) | queries | 1.0.2 | 2026-03-18 | 10 | ✗ | QueryRef #044 - Get Filtered Lookup: AI Models |
 | [1136](/elements/002-helium/acuranzo/migrations/acuranzo_1136.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #045 - Get Version History |
 | [1137](/elements/002-helium/acuranzo/migrations/acuranzo_1137.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #046 - Get Main Menu |
 | [1138](/elements/002-helium/acuranzo/migrations/acuranzo_1138.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #047 - Get Documents |

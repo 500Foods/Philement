@@ -15,7 +15,7 @@
     "serve": "vite preview --port 3000",
     "test": "vitest run && npm run test:quality",
     "test:watch": "vitest watch",
-    "test:quality": "npx @opencodereview/cli scan src/ 2>&1 || true",
+    "test:quality": "npx @opencodereview/cli@2.1.4 scan src/ 2>&1 || true",
     "test:coverage": "vitest run --coverage",
     "coverage:copy": "rm -rf public/coverage && cp -r coverage public/coverage 2>/dev/null || echo 'No coverage report found. Run npm run test:coverage first.'",
     "templates:copy": "node scripts/copy-templates.js",
