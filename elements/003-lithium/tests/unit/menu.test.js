@@ -44,18 +44,18 @@ describe('Menu Service', () => {
 
   describe('parseCollection', () => {
     it('should parse collection JSON with icon HTML', () => {
-      const collection = '{"Icon":"<i class=\'fa fa-fw fa-xl fa-receipt\'></i>"}';
+      const collection = '{"Icon":"<fa fa-receipt fa-fw></fa>"}';
       const result = parseCollection(collection);
       
-      expect(result.icon).toBe('fa-receipt');
+      expect(result.iconHtml).toBe('<fa fa-receipt fa-fw></fa>');
       expect(result.visible).toBe(true);
     });
 
     it('should parse collection JSON with Icon and Index', () => {
-      const collection = '{"Icon":"<i class=\'fa fa-history\'></i>","Index":0}';
+      const collection = '{"Icon":"<fa fa-history></fa>","Index":0}';
       const result = parseCollection(collection);
       
-      expect(result.icon).toBe('fa-history');
+      expect(result.iconHtml).toBe('<fa fa-history></fa>');
       expect(result.index).toBe(0);
       expect(result.visible).toBe(true);
     });
@@ -64,7 +64,7 @@ describe('Menu Service', () => {
       const collection = 'invalid json';
       const result = parseCollection(collection);
       
-      expect(result.icon).toBe('fa-cube');
+      expect(result.iconHtml).toBe('<fa fa-cube></fa>');
       expect(result.index).toBe(0);
       expect(result.visible).toBe(true);
     });
@@ -72,22 +72,22 @@ describe('Menu Service', () => {
     it('should handle empty collection', () => {
       const result = parseCollection('');
       
-      expect(result.icon).toBe('fa-cube');
+      expect(result.iconHtml).toBe('<fa fa-cube></fa>');
       expect(result.visible).toBe(true);
     });
 
     it('should extract icon from complex HTML', () => {
-      const collection = '{"Icon":"<i class=\'fa fa-fw fa-xl fa-chart-line\'></i>"}';
+      const collection = '{"Icon":"<fa fa-chart-line fa-fw fa-xl></fa>"}';
       const result = parseCollection(collection);
       
-      expect(result.icon).toBe('fa-chart-line');
+      expect(result.iconHtml).toBe('<fa fa-chart-line fa-fw fa-xl></fa>');
     });
 
     it('should mark items with negative Index as not visible', () => {
-      const collection = '{"Icon":"<i class=\'fa fa-bars\'></i>","Index":-2}';
+      const collection = '{"Icon":"<fa fa-bars></fa>","Index":-2}';
       const result = parseCollection(collection);
       
-      expect(result.icon).toBe('fa-bars');
+      expect(result.iconHtml).toBe('<fa fa-bars></fa>');
       expect(result.index).toBe(-2);
       expect(result.visible).toBe(false);
     });
@@ -227,16 +227,16 @@ describe('Menu Service', () => {
           id: 0,
           name: 'System',
           items: [
-            { managerId: 2, name: 'Session Logs', icon: 'fa-receipt' },
-            { managerId: 3, name: 'Version History', icon: 'fa-history' },
+            { managerId: 2, name: 'Session Logs', iconHtml: '<fa fa-receipt></fa>' },
+            { managerId: 3, name: 'Version History', iconHtml: '<fa fa-history></fa>' },
           ],
         },
       ];
 
       const result = buildManagerIconsRegistry(menuData);
 
-      expect(result[2]).toEqual({ icon: 'fa-receipt', name: 'Session Logs' });
-      expect(result[3]).toEqual({ icon: 'fa-history', name: 'Version History' });
+      expect(result[2]).toEqual({ iconHtml: '<fa fa-receipt></fa>', name: 'Session Logs' });
+      expect(result[3]).toEqual({ iconHtml: '<fa fa-history></fa>', name: 'Version History' });
     });
 
     it('should return empty object for empty menu', () => {

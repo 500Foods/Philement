@@ -25,14 +25,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/637</span>
+                <span class='fraction'>0/643</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/250</span>
+                <span class='fraction'>0/254</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/582</span>
+                <span class='fraction'>0/588</span>
             </div>
         
             
@@ -1669,7 +1669,9 @@
 <a name='L1604'></a><a href='#L1604'>1604</a>
 <a name='L1605'></a><a href='#L1605'>1605</a>
 <a name='L1606'></a><a href='#L1606'>1606</a>
-<a name='L1607'></a><a href='#L1607'>1607</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L1607'></a><a href='#L1607'>1607</a>
+<a name='L1608'></a><a href='#L1608'>1608</a>
+<a name='L1609'></a><a href='#L1609'>1609</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -2167,6 +2169,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -2180,6 +2183,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -2933,10 +2937,13 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -2973,9 +2980,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -3770,13 +3774,15 @@ export default class MainManager {
       }
     } catch (error) {
 <span class="cstat-no" title="statement not covered" >      console.error('[MainManager] Failed to load menu data:', error);</span>
+      // Clear cache to force fresh fetch on next load
+<span class="cstat-no" title="statement not covered" >      clearMenuCache();</span>
       // Fall back to static manager icons
 <span class="cstat-no" title="statement not covered" >      this.managerIcons = {</span>
-        1: { icon: 'fa-palette', name: 'Style Manager' },
-        2: { icon: 'fa-user-cog', name: 'Profile Manager' },
-        3: { icon: 'fa-chart-line', name: 'Dashboard' },
-        4: { icon: 'fa-search', name: 'Queries' },
-        5: { icon: 'fa-list-check', name: 'Lookups' },
+        1: { iconHtml: '&lt;fa fa-palette&gt;&lt;/fa&gt;', name: 'Style Manager' },
+        2: { iconHtml: '&lt;fa fa-user-cog&gt;&lt;/fa&gt;', name: 'Profile Manager' },
+        3: { iconHtml: '&lt;fa fa-chart-line&gt;&lt;/fa&gt;', name: 'Dashboard' },
+        4: { iconHtml: '&lt;fa fa-search&gt;&lt;/fa&gt;', name: 'Queries' },
+        5: { iconHtml: '&lt;fa fa-list-check&gt;&lt;/fa&gt;', name: 'Lookups' },
       };
     }
   }
@@ -4538,11 +4544,14 @@ export default class MainManager {
         const button = <span class="cstat-no" title="statement not covered" >document.createElement('div');</span>
 <span class="cstat-no" title="statement not covered" >        button.className = 'menu-item';</span>
 <span class="cstat-no" title="statement not covered" >        button.dataset.managerId = item.managerId;</span>
-<span class="cstat-no" title="statement not covered" >        button.innerHTML = `</span>
-          &lt;fa ${item.icon}&gt;&lt;/fa&gt;
-          &lt;span class="menu-item-name"&gt;${item.name}&lt;/span&gt;
-          ${item.count &gt; 0 ? `&lt;span class="menu-item-count"&gt;${item.count}&lt;/span&gt;` : ''}
-        `;
+        const itemName = <span class="cstat-no" title="statement not covered" >item.name || `Manager ${item.managerId}`;</span>
+        // Build HTML without extra whitespace to avoid parsing issues
+        let htmlContent = <span class="cstat-no" title="statement not covered" >item.iconHtml || '&lt;fa fa-cube&gt;&lt;/fa&gt;';</span>
+<span class="cstat-no" title="statement not covered" >        htmlContent += `&lt;span class="menu-item-name"&gt;${itemName}&lt;/span&gt;`;</span>
+<span class="cstat-no" title="statement not covered" >        if (item.count &gt; 0) {</span>
+<span class="cstat-no" title="statement not covered" >          htmlContent += `&lt;span class="menu-item-count"&gt;${item.count}&lt;/span&gt;`;</span>
+        }
+<span class="cstat-no" title="statement not covered" >        button.innerHTML = htmlContent;</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >        button.addEventListener('click', <span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >          this.loadManager(item.managerId);</span>
@@ -4573,15 +4582,12 @@ export default class MainManager {
 <span class="cstat-no" title="statement not covered" >    this.permittedManagers.forEach(<span class="fstat-no" title="function not covered" >(m</span>anagerId) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >      if (!canAccessManager(managerId)) <span class="cstat-no" title="statement not covered" >return;</span></span>
 &nbsp;
-      const managerInfo = <span class="cstat-no" title="statement not covered" >this.managerIcons[managerId] || { icon: 'fa-cube', name: `Manager ${managerId}` };</span>
+      const managerInfo = <span class="cstat-no" title="statement not covered" >this.managerIcons[managerId] || { iconHtml: '&lt;fa fa-cube&gt;&lt;/fa&gt;', name: `Manager ${managerId}` };</span>
 &nbsp;
       const button = <span class="cstat-no" title="statement not covered" >document.createElement('div');</span>
 <span class="cstat-no" title="statement not covered" >      button.className = 'menu-item';</span>
 <span class="cstat-no" title="statement not covered" >      button.dataset.managerId = managerId;</span>
-<span class="cstat-no" title="statement not covered" >      button.innerHTML = `</span>
-        &lt;fa ${managerInfo.icon}&gt;&lt;/fa&gt;
-        &lt;span&gt;${managerInfo.name}&lt;/span&gt;
-      `;
+<span class="cstat-no" title="statement not covered" >      button.innerHTML = `${managerInfo.iconHtml}&lt;span class="menu-item-name"&gt;${managerInfo.name}&lt;/span&gt;`;</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >      button.addEventListener('click', <span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >        this.loadManager(managerId);</span>
@@ -4888,7 +4894,7 @@ export default class MainManager {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-03-18T07:01:57.530Z
+                at 2026-03-18T13:29:59.220Z
             </div>
         <script src="../../prettify.js"></script>
         <script>
