@@ -1,14 +1,13 @@
 /**
- * Vendor vanilla-jsoneditor CSS — vanilla-jsoneditor bundles its own styles
- * internally, so no external CSS import is needed. This file exists as a
- * placeholder in the vendors.jsoneditor layer to maintain cascade order
+ * Vendor JsonTree.js CSS — json-tree.js CSS is imported directly from the package
+ * in the manager files. This file exists as a placeholder to maintain cascade order
  * consistency with the project's CSS architecture.
  *
- * Import this file instead of any bare vendor CSS:
- *   import '../../styles/vendor-vanilla-jsoneditor.css';
+ * The actual CSS is imported in the manager files:
+ *   import 'json-tree.js/dist/jsontree.min.css';
  *
- * Dark theme is applied via the `.jse-theme-dark` class on the editor
- * container element (set in queries.js initCollectionEditor).
+ * Dark theme is applied via the `.json-tree-container` class and CSS custom properties
+ * defined in the manager CSS files.
  */
 
-/* No vendor CSS import needed — vanilla-jsoneditor is self-contained */
+/* JsonTree.js CSS is imported directly in manager files — see queries.js and lookups.js */

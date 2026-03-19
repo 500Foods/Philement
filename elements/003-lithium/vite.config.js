@@ -38,7 +38,7 @@ export default defineConfig(({ mode }) => {
           output: {
             manualChunks: {
               // Vendor libraries that change less frequently
-              'vendor-ui': ['tabulator-tables', 'vanilla-jsoneditor'],
+              'vendor-ui': ['tabulator-tables', 'json-tree.js'],
               'vendor-editor': ['@codemirror/lang-markdown', '@codemirror/lang-css', '@codemirror/lang-html', 
                 '@codemirror/lang-javascript', '@codemirror/lang-json', '@codemirror/lang-sql',
                 '@codemirror/state', '@codemirror/theme-one-dark', '@codemirror/view', '@codemirror/commands'],

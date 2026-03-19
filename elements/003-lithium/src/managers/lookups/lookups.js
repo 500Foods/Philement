@@ -18,7 +18,8 @@ import { log, Subsystems, Status } from '../../core/log.js';
 import { processIcons } from '../../core/icons.js';
 import SunEditor from 'suneditor';
 import 'suneditor/css/editor';
-import '../../styles/vendor-vanilla-jsoneditor.css';
+import 'json-tree.js/dist/jsontree.js.min.css';
+import { initJsonTree, getJsonTreeData, setJsonTreeData, destroyJsonTree } from '../../components/json-tree-component.js';
 import './lookups.css';
 
 // ── Footer Select Options ───────────────────────────────────────────────────
@@ -73,7 +74,7 @@ export default class LookupsManager {
 
     // Editor instances
     this.sunEditor = null;
-    this.collectionEditor = null; // vanilla-jsoneditor instance
+    this.collectionEditor = null; // JsonTree.js instance
     this.currentDetailData = null;
 
     // Active tab
@@ -324,7 +325,7 @@ export default class LookupsManager {
   }
 
   /**
-   * Initialize JSONEditor for JSON tab (tree view JSON editor)
+   * Initialize JsonTree.js for JSON tab (tree view JSON editor)
    * @param {Object|string} initialContent - Initial JSON content
    */
   async initJsonEditor(initialContent = {}) {
@@ -342,35 +343,19 @@ export default class LookupsManager {
 
     // If editor already exists, just update content
     if (this.collectionEditor) {
-      this.collectionEditor.set({ json: jsonData });
+      setJsonTreeData(this.elements.jsonEditor, jsonData);
       return;
     }
 
     try {
-      // Dynamic import vanilla-jsoneditor
-      const { JSONEditor } = await import('vanilla-jsoneditor');
-
-      // Create editor container
-      this.elements.jsonEditor.innerHTML = '';
-      const editorContainer = document.createElement('div');
-      editorContainer.style.cssText = 'width:100%;height:100%;';
-      editorContainer.classList.add('jse-theme-dark');
-      this.elements.jsonEditor.appendChild(editorContainer);
-
-      // Initialize vanilla-jsoneditor
-      this.collectionEditor = new JSONEditor({
-        target: editorContainer,
-        props: {
-          content: { json: jsonData },
-          mode: 'tree',
-          mainMenuBar: true,
-          navigationBar: true,
-          statusBar: true,
-        },
+      // Initialize JsonTree.js using the component wrapper
+      this.collectionEditor = await initJsonTree({
+        target: this.elements.jsonEditor,
+        data: jsonData,
+        readOnly: false,
       });
-
     } catch (error) {
-      console.error('[LookupsManager] Failed to initialize vanilla-jsoneditor:', error);
+      console.error('[LookupsManager] Failed to initialize JsonTree:', error);
       // Fallback to textarea
       const jsonContent = typeof jsonData === 'object'
         ? JSON.stringify(jsonData, null, 2)
@@ -563,7 +548,7 @@ export default class LookupsManager {
     if (this.collectionEditor) {
       // Editor already initialized, just update content
       const jsonData = typeof jsonContent === 'string' ? JSON.parse(jsonContent || '{}') : jsonContent;
-      this.collectionEditor.set({ json: jsonData });
+      setJsonTreeData(this.elements.jsonEditor, jsonData);
     } else if (this.elements.jsonEditor && this.activeTab === 'json') {
       // Initialize editor if JSON tab is active
       this.initJsonEditor(jsonContent);
@@ -585,7 +570,7 @@ export default class LookupsManager {
 
     // Clear JSON editor
     if (this.collectionEditor) {
-      this.collectionEditor.set({ json: {} });
+      setJsonTreeData(this.elements.jsonEditor, {});
     } else if (this.elements.jsonEditor) {
       this.elements.jsonEditor.innerHTML = '<p class="lookups-preview-placeholder">Select a lookup entry to view details</p>';
     }
@@ -1249,9 +1234,9 @@ export default class LookupsManager {
       this.sunEditor = null;
     }
 
-    // Destroy JSONEditor
+    // Destroy JsonTree editor
     if (this.collectionEditor) {
-      this.collectionEditor.destroy();
+      destroyJsonTree(this.elements.jsonEditor);
       this.collectionEditor = null;
     }
 
