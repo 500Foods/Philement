@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><title>Code coverage report for managers/crimson/crimson.js</title><meta charset="utf-8"><link rel="stylesheet" href="../../prettify.css"><link rel="stylesheet" href="../../base.css"><link rel="shortcut icon" type="image/x-icon" href="../../favicon.png"><meta name="viewport" content="width=device-width,initial-scale=1"><style type="text/css">.coverage-summary .sorter{background-image:url(../../sort-arrow-sprite.png)}</style></head><body><div class="wrapper"><div class="pad1"><h1><a href="../../index.html">All files</a> / <a href="index.html">managers/crimson</a> crimson.js</h1><div class="clearfix"><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Statements</span> <span class="fraction">0/295</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Branches</span> <span class="fraction">0/85</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Functions</span> <span class="fraction">0/40</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Lines</span> <span class="fraction">0/280</span></div></div><p class="quiet">Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.</p><template id="filterTemplate"><div class="quiet">Filter: <input type="search" id="fileSearch"></div></template></div><div class="status-line low"></div><pre><table class="coverage">
+<!doctype html><html lang="en"><head><title>Code coverage report for managers/crimson/crimson.js</title><meta charset="utf-8"><link rel="stylesheet" href="../../prettify.css"><link rel="stylesheet" href="../../base.css"><link rel="shortcut icon" type="image/x-icon" href="../../favicon.png"><meta name="viewport" content="width=device-width,initial-scale=1"><style type="text/css">.coverage-summary .sorter{background-image:url(../../sort-arrow-sprite.png)}</style></head><body><div class="wrapper"><div class="pad1"><h1><a href="../../index.html">All files</a> / <a href="index.html">managers/crimson</a> crimson.js</h1><div class="clearfix"><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Statements</span> <span class="fraction">0/299</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Branches</span> <span class="fraction">0/87</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Functions</span> <span class="fraction">0/40</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Lines</span> <span class="fraction">0/284</span></div></div><p class="quiet">Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.</p><template id="filterTemplate"><div class="quiet">Filter: <input type="search" id="fileSearch"></div></template></div><div class="status-line low"></div><pre><table class="coverage">
 <tr><td class="line-count quiet"><a name="L1"></a><a href="#L1">1</a>
 <a name="L2"></a><a href="#L2">2</a>
 <a name="L3"></a><a href="#L3">3</a>
@@ -685,7 +685,15 @@
 <a name="L684"></a><a href="#L684">684</a>
 <a name="L685"></a><a href="#L685">685</a>
 <a name="L686"></a><a href="#L686">686</a>
-<a name="L687"></a><a href="#L687">687</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name="L687"></a><a href="#L687">687</a>
+<a name="L688"></a><a href="#L688">688</a>
+<a name="L689"></a><a href="#L689">689</a>
+<a name="L690"></a><a href="#L690">690</a>
+<a name="L691"></a><a href="#L691">691</a>
+<a name="L692"></a><a href="#L692">692</a>
+<a name="L693"></a><a href="#L693">693</a>
+<a name="L694"></a><a href="#L694">694</a>
+<a name="L695"></a><a href="#L695">695</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -955,10 +963,18 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1640,7 +1656,8 @@ class CrimsonManager {
    * @param {string} options.username - Username for greeting
    */
 <span class="fstat-no" title="function not covered">  show(</span>options = <span class="branch-0 cbranch-no" title="branch not covered">{})</span> {
-<span class="cstat-no" title="statement not covered">    if (!this.popup) <span class="cstat-no" title="statement not covered">this.init();</span></span>
+    const isFirstShow = <span class="cstat-no" title="statement not covered">!this.popup;</span>
+<span class="cstat-no" title="statement not covered">    if (isFirstShow) <span class="cstat-no" title="statement not covered">this.init();</span></span>
 &nbsp;
     // Update username if provided
 <span class="cstat-no" title="statement not covered">    if (options.username) {</span>
@@ -1655,6 +1672,13 @@ class CrimsonManager {
 <span class="cstat-no" title="statement not covered">    if (this.isVisible) {</span>
 <span class="cstat-no" title="statement not covered">      this.input?.focus();</span>
 <span class="cstat-no" title="statement not covered">      return;</span>
+    }
+&nbsp;
+    // On first show, force a reflow to ensure initial styles are applied
+    // before adding the visible class. This ensures the animation runs.
+<span class="cstat-no" title="statement not covered">    if (isFirstShow) {</span>
+<span class="cstat-no" title="statement not covered">      void this.overlay.offsetHeight;</span>
+<span class="cstat-no" title="statement not covered">      void this.popup.offsetHeight;</span>
     }
 &nbsp;
     // Show overlay and popup
@@ -2057,4 +2081,4 @@ class CrimsonManager {
 &nbsp;
 // Initialize global shortcut on module load
 <span class="cstat-no" title="statement not covered">initCrimsonShortcut();</span>
-&nbsp;</pre></td></tr></table></pre><div class="push"></div></div><div class="footer quiet pad2 space-top1 center small">Code coverage generated by <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a> at 2026-03-18T13:42:43.023Z</div><script src="../../prettify.js"></script><script>window.onload=function(){prettyPrint()}</script><script src="../../sorter.js"></script><script src="../../block-navigation.js"></script></body></html>
+&nbsp;</pre></td></tr></table></pre><div class="push"></div></div><div class="footer quiet pad2 space-top1 center small">Code coverage generated by <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a> at 2026-03-19T13:38:01.913Z</div><script src="../../prettify.js"></script><script>window.onload=function(){prettyPrint()}</script><script src="../../sorter.js"></script><script src="../../block-navigation.js"></script></body></html>

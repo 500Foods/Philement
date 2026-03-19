@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/571</span>
+                <span class='fraction'>0/565</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/537</span>
+                <span class='fraction'>0/531</span>
             </div>
         
             
@@ -1322,22 +1322,7 @@
 <a name='L1257'></a><a href='#L1257'>1257</a>
 <a name='L1258'></a><a href='#L1258'>1258</a>
 <a name='L1259'></a><a href='#L1259'>1259</a>
-<a name='L1260'></a><a href='#L1260'>1260</a>
-<a name='L1261'></a><a href='#L1261'>1261</a>
-<a name='L1262'></a><a href='#L1262'>1262</a>
-<a name='L1263'></a><a href='#L1263'>1263</a>
-<a name='L1264'></a><a href='#L1264'>1264</a>
-<a name='L1265'></a><a href='#L1265'>1265</a>
-<a name='L1266'></a><a href='#L1266'>1266</a>
-<a name='L1267'></a><a href='#L1267'>1267</a>
-<a name='L1268'></a><a href='#L1268'>1268</a>
-<a name='L1269'></a><a href='#L1269'>1269</a>
-<a name='L1270'></a><a href='#L1270'>1270</a>
-<a name='L1271'></a><a href='#L1271'>1271</a>
-<a name='L1272'></a><a href='#L1272'>1272</a>
-<a name='L1273'></a><a href='#L1273'>1273</a>
-<a name='L1274'></a><a href='#L1274'>1274</a>
-<a name='L1275'></a><a href='#L1275'>1275</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L1260'></a><a href='#L1260'>1260</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1362,6 +1347,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1680,30 +1666,14 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -2631,7 +2601,8 @@ import { log, Subsystems, Status } from '../../core/log.js';
 import { processIcons } from '../../core/icons.js';
 import SunEditor from 'suneditor';
 import 'suneditor/css/editor';
-import '../../styles/vendor-vanilla-jsoneditor.css';
+import 'json-tree.js/dist/jsontree.js.min.css';
+import { initJsonTree, getJsonTreeData, setJsonTreeData, destroyJsonTree } from '../../components/json-tree-component.js';
 import './lookups.css';
 &nbsp;
 // ── Footer Select Options ───────────────────────────────────────────────────
@@ -2686,7 +2657,7 @@ export default class LookupsManager {
 &nbsp;
     // Editor instances
 <span class="cstat-no" title="statement not covered" >    this.sunEditor = null;</span>
-<span class="cstat-no" title="statement not covered" >    this.collectionEditor = null; </span>// vanilla-jsoneditor instance
+<span class="cstat-no" title="statement not covered" >    this.collectionEditor = null; </span>// JsonTree.js instance
 <span class="cstat-no" title="statement not covered" >    this.currentDetailData = null;</span>
 &nbsp;
     // Active tab
@@ -2937,7 +2908,7 @@ export default class LookupsManager {
   }
 &nbsp;
   /**
-   * Initialize JSONEditor for JSON tab (tree view JSON editor)
+   * Initialize JsonTree.js for JSON tab (tree view JSON editor)
    * @param {Object|string} initialContent - Initial JSON content
    */
   async <span class="fstat-no" title="function not covered" >initJsonEditor(</span>initialContent = <span class="branch-0 cbranch-no" title="branch not covered" >{})</span> {
@@ -2955,35 +2926,19 @@ export default class LookupsManager {
 &nbsp;
     // If editor already exists, just update content
 <span class="cstat-no" title="statement not covered" >    if (this.collectionEditor) {</span>
-<span class="cstat-no" title="statement not covered" >      this.collectionEditor.set({ json: jsonData });</span>
+<span class="cstat-no" title="statement not covered" >      setJsonTreeData(this.elements.jsonEditor, jsonData);</span>
 <span class="cstat-no" title="statement not covered" >      return;</span>
     }
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    try {</span>
-      // Dynamic import vanilla-jsoneditor
-      const { JSONEditor } = <span class="cstat-no" title="statement not covered" >await import('vanilla-jsoneditor');</span>
-&nbsp;
-      // Create editor container
-<span class="cstat-no" title="statement not covered" >      this.elements.jsonEditor.innerHTML = '';</span>
-      const editorContainer = <span class="cstat-no" title="statement not covered" >document.createElement('div');</span>
-<span class="cstat-no" title="statement not covered" >      editorContainer.style.cssText = 'width:100%;height:100%;';</span>
-<span class="cstat-no" title="statement not covered" >      editorContainer.classList.add('jse-theme-dark');</span>
-<span class="cstat-no" title="statement not covered" >      this.elements.jsonEditor.appendChild(editorContainer);</span>
-&nbsp;
-      // Initialize vanilla-jsoneditor
-<span class="cstat-no" title="statement not covered" >      this.collectionEditor = new JSONEditor({</span>
-        target: editorContainer,
-        props: {
-          content: { json: jsonData },
-          mode: 'tree',
-          mainMenuBar: true,
-          navigationBar: true,
-          statusBar: true,
-        },
+      // Initialize JsonTree.js using the component wrapper
+<span class="cstat-no" title="statement not covered" >      this.collectionEditor = await initJsonTree({</span>
+        target: this.elements.jsonEditor,
+        data: jsonData,
+        readOnly: false,
       });
-&nbsp;
     } catch (error) {
-<span class="cstat-no" title="statement not covered" >      console.error('[LookupsManager] Failed to initialize vanilla-jsoneditor:', error);</span>
+<span class="cstat-no" title="statement not covered" >      console.error('[LookupsManager] Failed to initialize JsonTree:', error);</span>
       // Fallback to textarea
       const jsonContent = <span class="cstat-no" title="statement not covered" >typeof jsonData === 'object'</span>
         ? JSON.stringify(jsonData, null, 2)
@@ -3176,7 +3131,7 @@ export default class LookupsManager {
 <span class="cstat-no" title="statement not covered" >    if (this.collectionEditor) {</span>
       // Editor already initialized, just update content
       const jsonData = <span class="cstat-no" title="statement not covered" >typeof jsonContent === 'string' ? JSON.parse(jsonContent || '{}') : jsonContent;</span>
-<span class="cstat-no" title="statement not covered" >      this.collectionEditor.set({ json: jsonData });</span>
+<span class="cstat-no" title="statement not covered" >      setJsonTreeData(this.elements.jsonEditor, jsonData);</span>
     } else <span class="cstat-no" title="statement not covered" >if (this.elements.jsonEditor &amp;&amp; this.activeTab === 'json') {</span>
       // Initialize editor if JSON tab is active
 <span class="cstat-no" title="statement not covered" >      this.initJsonEditor(jsonContent);</span>
@@ -3198,7 +3153,7 @@ export default class LookupsManager {
 &nbsp;
     // Clear JSON editor
 <span class="cstat-no" title="statement not covered" >    if (this.collectionEditor) {</span>
-<span class="cstat-no" title="statement not covered" >      this.collectionEditor.set({ json: {} });</span>
+<span class="cstat-no" title="statement not covered" >      setJsonTreeData(this.elements.jsonEditor, {});</span>
     } else <span class="cstat-no" title="statement not covered" >if (this.elements.jsonEditor) {</span>
 <span class="cstat-no" title="statement not covered" >      this.elements.jsonEditor.innerHTML = '&lt;p class="lookups-preview-placeholder"&gt;Select a lookup entry to view details&lt;/p&gt;';</span>
     }
@@ -3862,9 +3817,9 @@ export default class LookupsManager {
 <span class="cstat-no" title="statement not covered" >      this.sunEditor = null;</span>
     }
 &nbsp;
-    // Destroy JSONEditor
+    // Destroy JsonTree editor
 <span class="cstat-no" title="statement not covered" >    if (this.collectionEditor) {</span>
-<span class="cstat-no" title="statement not covered" >      this.collectionEditor.destroy();</span>
+<span class="cstat-no" title="statement not covered" >      destroyJsonTree(this.elements.jsonEditor);</span>
 <span class="cstat-no" title="statement not covered" >      this.collectionEditor = null;</span>
     }
 &nbsp;
@@ -3892,7 +3847,7 @@ export default class LookupsManager {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-03-18T22:39:05.040Z
+                at 2026-03-19T21:03:09.287Z
             </div>
         <script src="../../prettify.js"></script>
         <script>
