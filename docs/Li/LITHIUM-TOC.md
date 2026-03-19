@@ -1,5 +1,7 @@
 # Lithium Documentation Suite
 
+> **⚠️ MANDATORY:** Before working on any Lithium code, you **MUST** read and follow the guidelines in **[LITHIUM-INS.md](LITHIUM-INS.md)**. This document contains critical coding standards that are enforced during code review. Failure to follow these instructions will result in rejected pull requests.
+
 This directory contains the canonical documentation for the Lithium web application. The docs are split into focused, bite-sized documents for easy reference when working on specific parts of the project.
 
 ---
@@ -20,6 +22,7 @@ This directory contains the canonical documentation for the Lithium web applicat
 
 | Document | Purpose |
 |----------|---------|
+| [LITHIUM-INS.md](LITHIUM-INS.md) | **⚠️ CODING STANDARDS** — Mandatory reading before any development work |
 | [LITHIUM-TOC.md](LITHIUM-TOC.md) | **This file** — Table of contents and overview |
 | [LITHIUM-DEV.md](LITHIUM-DEV.md) | Development environment setup, build tools, npm scripts |
 | [LITHIUM-TST.md](LITHIUM-TST.md) | Testing framework, Vitest, coverage |

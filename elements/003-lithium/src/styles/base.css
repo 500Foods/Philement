@@ -249,22 +249,25 @@
   /* ---- Scrollbar Styling ---- */
 
   /* WebKit (Chrome, Safari, Edge) - explicit pixel sizes */
-  ::-webkit-scrollbar {
-    width: var(--scrollbar-size);
-    height: var(--scrollbar-size);
-  }
+  @supports selector(::-webkit-scrollbar) {
 
-  ::-webkit-scrollbar-track {
-    background: var(--scrollbar-track);
-  }
+    ::-webkit-scrollbar {
+      width: var(--scrollbar-size);
+      height: var(--scrollbar-size);
+    }
+     
+    ::-webkit-scrollbar-track {
+      background: var(--scrollbar-track);
+    }
 
-  ::-webkit-scrollbar-thumb {
-    background: var(--scrollbar-thumb);
-    border-radius: var(--border-radius-full);
-  }
+    ::-webkit-scrollbar-thumb {
+      background: var(--scrollbar-thumb);
+      border-radius: var(--border-radius-full);
+    }
 
-  ::-webkit-scrollbar-thumb:hover {
-    background: var(--scrollbar-thumb-hover);
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--scrollbar-thumb-hover);
+    }
   }
 
 }
