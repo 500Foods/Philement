@@ -51,6 +51,13 @@ static volatile size_t http_requests_total = 0;
 static volatile size_t http_api_post_contexts_current = 0;
 static volatile size_t http_upload_contexts_current = 0;
 
+// New instrumentation metrics for memory leak investigation
+static volatile size_t http_request_bytes_received = 0;
+static volatile size_t http_request_bytes_sent = 0;
+static volatile size_t http_static_file_requests = 0;
+static volatile size_t http_api_requests = 0;
+static volatile size_t http_post_requests = 0;
+
 bool resolve_static_file_path(const char *url, char *resolved_path, size_t resolved_path_size) {
     struct stat path_stat;
     size_t url_len;
@@ -144,6 +151,13 @@ void get_http_runtime_metrics(HttpRuntimeMetrics *metrics) {
     metrics->api_post_contexts_current = (size_t)__sync_fetch_and_add(&http_api_post_contexts_current, 0);
     metrics->upload_contexts_current = (size_t)__sync_fetch_and_add(&http_upload_contexts_current, 0);
     metrics->current_connections = 0;
+    
+    // New metrics for leak investigation
+    metrics->request_bytes_received = (size_t)__sync_fetch_and_add(&http_request_bytes_received, 0);
+    metrics->request_bytes_sent = (size_t)__sync_fetch_and_add(&http_request_bytes_sent, 0);
+    metrics->static_file_requests = (size_t)__sync_fetch_and_add(&http_static_file_requests, 0);
+    metrics->api_requests = (size_t)__sync_fetch_and_add(&http_api_requests, 0);
+    metrics->post_requests = (size_t)__sync_fetch_and_add(&http_post_requests, 0);
 
     if (webserver_daemon) {
         const union MHD_DaemonInfo *conn_info =
@@ -422,6 +436,12 @@ enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
             char detail[128];
             snprintf(detail, sizeof(detail), "%sService/%s", service, endpoint);
             log_this(SR_API, detail, LOG_LEVEL_DEBUG, 0);
+            __sync_add_and_fetch(&http_api_requests, 1);
+        }
+
+        // Count POST requests once per connection (not per MHD callback)
+        if (strcmp(method, "POST") == 0) {
+            __sync_add_and_fetch(&http_post_requests, 1);
         }
     }
 
@@ -501,6 +521,7 @@ enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
         // and Project1.html as fallbacks.
         if (resolve_static_file_path(url, file_path, sizeof(file_path))) {
             log_this(SR_WEBSERVER, "Served File: %s", LOG_LEVEL_DEBUG, 1, file_path);
+            __sync_add_and_fetch(&http_static_file_requests, 1);
             return serve_file_for_method(connection, file_path, method);
         }
 
@@ -515,6 +536,11 @@ enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
     }
     // Handle POST requests
     else if (strcmp(method, "POST") == 0) {
+        // Track upload data size for bytes received metric
+        if (upload_data && *upload_data_size > 0) {
+            __sync_add_and_fetch(&http_request_bytes_received, *upload_data_size);
+        }
+
         // Check for registered endpoint handler first
         const WebServerEndpoint* post_endpoint = get_endpoint_for_url(url);
         if (post_endpoint) {

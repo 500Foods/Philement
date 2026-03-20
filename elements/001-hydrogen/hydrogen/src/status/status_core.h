@@ -109,6 +109,12 @@ typedef struct {
             int current_connections;
             int api_post_contexts_current;
             int upload_contexts_current;
+            // New metrics for memory leak investigation
+            size_t request_bytes_received;
+            size_t request_bytes_sent;
+            size_t static_file_requests;
+            size_t api_requests;
+            size_t post_requests;
         } webserver;
         struct {
             time_t uptime;
@@ -123,6 +129,22 @@ typedef struct {
             int queued_jobs;
             int completed_jobs;
         } print;
+        struct {
+            unsigned long long queries_executed_total;
+            unsigned long long queries_successful;
+            unsigned long long queries_failed;
+            unsigned long long queries_prepared_executed;
+            unsigned long long queries_direct_executed;
+            unsigned long long bytes_sent_total;
+            unsigned long long bytes_received_total;
+            unsigned long long prepared_statements_cached;
+            unsigned long long prepared_statements_evicted;
+            unsigned long long prepared_statement_cache_hits;
+            unsigned long long prepared_statement_cache_misses;
+            unsigned long long connections_created;
+            unsigned long long connections_closed;
+            unsigned long long connection_errors;
+        } database;
     } specific;
 } ServiceMetrics;
 
@@ -161,6 +183,7 @@ typedef struct {
     ServiceMetrics websocket;
     ServiceMetrics mdns;
     ServiceMetrics print;
+    ServiceMetrics database;
     
     // Queue metrics
     QueueMetrics log_queue;
