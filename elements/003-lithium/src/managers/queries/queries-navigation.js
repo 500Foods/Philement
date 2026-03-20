@@ -7,7 +7,6 @@
 import { authQuery } from '../../shared/conduit.js';
 import { toast } from '../../shared/toast.js';
 import { log, Subsystems, Status } from '../../core/log.js';
-import { getJsonTreeData } from '../../components/json-tree-component.js';
 
 // Constants
 const SELECTED_ROW_KEY = 'lithium_queries_selected_id';
@@ -85,29 +84,36 @@ export class NavigationManager {
         mgr.currentQuery = fullQuery;
         mgr._pendingSqlContent = fullQuery.code || fullQuery.query_text || fullQuery.sql || '';
         mgr._pendingSummaryContent = fullQuery.summary || fullQuery.markdown || '';
-        mgr._pendingCollectionContent = fullQuery.collection || fullQuery.json || {};
+
+        // Parse collection content to ensure it's always an object
+        let collectionData = fullQuery.collection || fullQuery.json || {};
+        if (typeof collectionData === 'string') {
+          try { collectionData = JSON.parse(collectionData); } catch { collectionData = {}; }
+        }
+        mgr._pendingCollectionContent = collectionData;
 
         if (!mgr.editModeManager.isEditing()) {
           mgr.dirtyTracker.captureOriginalData(fullQuery);
         }
 
-        // Update SQL editor if it exists
-        if (mgr.sqlEditor) {
-          mgr.sqlEditor.dispatch({ changes: { from: 0, to: mgr.sqlEditor.state.doc.length, insert: mgr._pendingSqlContent } });
-        }
-        
-        // Update summary editor if it exists
-        if (mgr.summaryEditor) {
-          mgr.summaryEditor.dispatch({ changes: { from: 0, to: mgr.summaryEditor.state.doc.length, insert: mgr._pendingSummaryContent } });
-        }
-        
-        // Update collection editor if it exists (recreate to ensure clean state)
-        if (mgr.collectionEditor) {
-          const { setJsonTreeData } = await import('../../components/json-tree-component.js');
-          setJsonTreeData(mgr.elements.collectionEditorContainer, mgr._pendingCollectionContent);
-        }
+        mgr._loadedDetailRowId = queryId;
+      } else {
+        // No data returned — clear all pending content after retrieval
+        mgr.currentQuery = null;
+        mgr._pendingSqlContent = '';
+        mgr._pendingSummaryContent = '';
+        mgr._pendingCollectionContent = {};
 
         mgr._loadedDetailRowId = queryId;
+      }
+
+      // Refresh the active tab to ensure its editor is initialized/updated.
+      // This handles: (a) SQL tab active on initial load before editor was created,
+      // (b) updating any active tab's editor with new content on row change,
+      // (c) clearing editor content when no data came back.
+      const activeTabId = mgr._getActiveTabId?.();
+      if (activeTabId) {
+        await mgr.switchTab(activeTabId);
       }
     } catch (error) {
       toast.error('Query Details Failed', { serverError: error.serverError, subsystem: 'Conduit', duration: 8000 });
@@ -270,8 +276,7 @@ export class NavigationManager {
     try {
       const sqlContent = mgr.sqlEditor?.state.doc.toString() || '';
       const summaryContent = mgr.summaryEditor?.state.doc.toString() || '';
-      const collectionContent = getJsonTreeData(mgr.elements.collectionEditorContainer);
-      const collectionString = collectionContent ? JSON.stringify(collectionContent) : '{}';
+      const collectionString = mgr.editorManager.getCollectionContent();
 
       const params = {
         INTEGER: {
@@ -286,7 +291,7 @@ export class NavigationManager {
           QUERYCODE: sqlContent || rowData.code || '',
           QUERYNAME: rowData.name || '',
           QUERYSUMMARY: summaryContent || rowData.summary || '',
-          QUERYJSON: collectionString,
+          COLLECTION: collectionString,
         },
       };
 
@@ -436,11 +441,12 @@ export class NavigationManager {
     try {
       log(Subsystems.MANAGER, Status.INFO, `[QueriesManager] Auto-saving changes before switching rows (row ${mgr.editModeManager.getEditingRowId()})`);
 
-      const selected = mgr.table?.getSelectedRows();
-      const row = selected?.[0];
-      if (!row) return true;
+      // Use the editing row (not the newly selected row) to get the correct
+      // primary key and row data for the save operation.
+      const editingRow = mgr.editModeManager.getEditingRow();
+      if (!editingRow) return true;
 
-      const rowData = row.getData();
+      const rowData = editingRow.getData();
       const pkField = mgr.primaryKeyField || 'query_id';
       const pkValue = rowData[pkField];
       const isInsert = pkValue == null || pkValue === '' || pkValue === 0;
@@ -450,8 +456,7 @@ export class NavigationManager {
 
       const sqlContent = mgr.dirtyTracker.getCurrentSqlContent();
       const summaryContent = mgr.dirtyTracker.getCurrentSummaryContent();
-      const collectionContent = getJsonTreeData(mgr.elements.collectionEditorContainer);
-      const collectionString = collectionContent ? JSON.stringify(collectionContent) : '{}';
+      const collectionString = mgr.editorManager.getCollectionContent();
 
       const params = {
         INTEGER: {
@@ -466,7 +471,7 @@ export class NavigationManager {
           QUERYCODE: sqlContent || rowData.code || '',
           QUERYNAME: rowData.name || '',
           QUERYSUMMARY: summaryContent || rowData.summary || '',
-          QUERYJSON: collectionString,
+          COLLECTION: collectionString,
         },
       };
 

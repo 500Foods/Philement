@@ -55,6 +55,7 @@ table.insert(queries,{sql=[[
                         code = :QUERYCODE,
                         name = :QUERYNAME,
                         summary = :QUERYSUMMARY,
+                        collection = :COLLECTION,
                         query_type_a28 = :QUERYTYPE,
                         query_ref = :QUERYREF,
                         query_dialect_a30 = :QUERYDIALECT,
