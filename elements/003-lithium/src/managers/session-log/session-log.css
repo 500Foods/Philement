@@ -17,6 +17,8 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  margin: var(--space-1) var(--space-3);
+  border-radius: var(--border-radius-md);  
 }
 
 /* Viewer takes all vertical space (no toolbar above it) */

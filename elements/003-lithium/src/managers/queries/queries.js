@@ -275,7 +275,7 @@ export default class QueriesManager {
           <button type="button" class="queries-nav-btn queries-nav-btn-has-popup" id="queries-nav-menu" title="Table Options"><fa fa-layer-group></fa></button>
           <button type="button" class="queries-nav-btn queries-nav-btn-has-popup" id="queries-nav-width" title="Table Width"><fa fa-left-right></fa></button>
           <button type="button" class="queries-nav-btn queries-nav-btn-has-popup" id="queries-nav-layout" title="Table Layout"><fa fa-table-columns></fa></button>
-          <button type="button" class="queries-nav-btn queries-nav-btn-has-popup" id="queries-nav-template" title="Templates"><fa fa-screwdriver-wrench></fa></button>
+          <button type="button" class="queries-nav-btn queries-nav-btn-has-popup" id="queries-nav-template" title="Templates"><fa fa-star></fa></button>
         </div>
         <div class="queries-nav-block queries-nav-block-move">
           <button type="button" class="queries-nav-btn" id="queries-nav-first" title="First Record"><fa fa-backward-fast></fa></button>
@@ -349,34 +349,58 @@ export default class QueriesManager {
     if (tabId === 'sql') {
       const sqlContent = this._pendingSqlContent || this.currentQuery?.code || this.currentQuery?.query_text || this.currentQuery?.sql || '';
       if (!this.sqlEditor) {
-        this.editorManager.initSqlEditor(sqlContent).then(() => {
-          this.sqlEditor = this.editorManager.sqlEditor;
-        });
+        await this.editorManager.initSqlEditor(sqlContent);
+        this.sqlEditor = this.editorManager.sqlEditor;
+      } else {
+        // Update existing editor with new content
+        const currentContent = this.sqlEditor.state.doc.toString();
+        if (currentContent !== sqlContent) {
+          this.sqlEditor.dispatch({ changes: { from: 0, to: this.sqlEditor.state.doc.length, insert: sqlContent } });
+        }
       }
     }
     if (tabId === 'summary') {
       const summaryContent = this._pendingSummaryContent || this.currentQuery?.summary || this.currentQuery?.markdown || '';
       if (!this.summaryEditor) {
-        this.editorManager.initSummaryEditor(summaryContent).then(() => {
-          this.summaryEditor = this.editorManager.summaryEditor;
-        });
+        await this.editorManager.initSummaryEditor(summaryContent);
+        this.summaryEditor = this.editorManager.summaryEditor;
+      } else {
+        // Update existing editor with new content
+        const currentContent = this.summaryEditor.state.doc.toString();
+        if (currentContent !== summaryContent) {
+          this.summaryEditor.dispatch({ changes: { from: 0, to: this.summaryEditor.state.doc.length, insert: summaryContent } });
+        }
       }
     }
     if (tabId === 'collection') {
-      const collectionContent = this._pendingCollectionContent || this.currentQuery?.collection || this.currentQuery?.json || {};
-      if (!this.collectionEditor) {
-        this.editorManager.initCollectionEditor(collectionContent).then(() => {
-          this.collectionEditor = this.editorManager.collectionEditor;
-        });
-      } else {
-        // Update existing editor with new content
-        const { setJsonTreeData } = await import('../../components/json-tree-component.js');
+      let collectionContent = this._pendingCollectionContent || this.currentQuery?.collection || this.currentQuery?.json || {};
+      // Ensure collection content is always an object, not a JSON string
+      if (typeof collectionContent === 'string') {
+        try { collectionContent = JSON.parse(collectionContent); } catch { collectionContent = {}; }
+      }
+      if (this.collectionEditor) {
+        // Update existing tree with new data via setJson API
         setJsonTreeData(this.elements.collectionEditorContainer, collectionContent);
+      } else {
+        // First-time initialization
+        await this.editorManager.initCollectionEditor(collectionContent);
+        this.collectionEditor = this.editorManager.collectionEditor;
       }
     }
     if (tabId === 'preview') {
       this.editorManager.renderMarkdownPreview();
     }
+  }
+
+  // ============ ACTIVE TAB HELPER ============
+
+  /**
+   * Get the currently active tab ID from the tab buttons
+   * @returns {string} The active tab ID (defaults to 'sql')
+   */
+  _getActiveTabId() {
+    const activeBtn = this.container?.querySelector('.queries-tab-btn.active');
+    return activeBtn?.dataset?.tab || 'sql';
   }
 
   // ============ NAVIGATOR HANDLERS (delegated to navManager) ============

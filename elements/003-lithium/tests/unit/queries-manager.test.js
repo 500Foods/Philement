@@ -68,6 +68,7 @@ vi.mock('../../src/components/json-tree-component.js', () => ({
       target._jsonTreeData = null;
     }
   }),
+  updateJsonTreeOptions: vi.fn(),
 }));
 
 import QueriesManager from '../../src/managers/queries/queries.js';
@@ -397,10 +398,11 @@ describe('QueriesManager JSONEditor and collection integration', () => {
   });
 
   describe('Collection save operations', () => {
-    it('handleNavSave includes collection data in API call using getJsonTreeData', async () => {
+    it('handleNavSave includes collection data in API call via editorManager', async () => {
       const { authQuery } = await import('../../src/shared/conduit.js');
 
-      // Setup mock editor data in container
+      // Setup mock editor data in container — handleNavSave now calls
+      // mgr.editorManager.getCollectionContent() which reads from the container.
       manager.elements.collectionEditorContainer._jsonTreeData = { updated: 'collection_data' };
       manager.sqlEditor = {
         state: { doc: { toString: vi.fn(() => 'SELECT * FROM test') } },
@@ -435,15 +437,12 @@ describe('QueriesManager JSONEditor and collection integration', () => {
 
       await manager.handleNavSave();
 
-      const collectionContent = getJsonTreeData(manager.elements.collectionEditorContainer);
-      const collectionString = collectionContent ? JSON.stringify(collectionContent) : '{}';
-
       expect(authQuery).toHaveBeenCalledWith(
         manager.app.api,
         28,
         expect.objectContaining({
           STRING: expect.objectContaining({
-            QUERYJSON: JSON.stringify({ updated: 'collection_data' }),
+            COLLECTION: JSON.stringify({ updated: 'collection_data' }),
           }),
         })
       );
@@ -455,7 +454,7 @@ describe('QueriesManager JSONEditor and collection integration', () => {
       // Clear previous mock calls
       authQuery.mockClear();
 
-      // No editor data - should return null from getJsonTreeData resulting in '{}'
+      // No editor data — editorManager.getCollectionContent() returns '{}'
       manager.elements.collectionEditorContainer._jsonTreeData = null;
       manager.sqlEditor = {
         state: { doc: { toString: vi.fn(() => 'SELECT * FROM test') } },
@@ -496,7 +495,7 @@ describe('QueriesManager JSONEditor and collection integration', () => {
       expect(lastCall[1]).toBe(28); // queryRef
       expect(lastCall[2]).toMatchObject({
         STRING: expect.objectContaining({
-          QUERYJSON: '{}', // Empty object when editor returns null
+          COLLECTION: '{}', // Empty object when editor returns null
         }),
       });
     });
