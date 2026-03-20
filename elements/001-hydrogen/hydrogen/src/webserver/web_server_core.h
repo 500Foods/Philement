@@ -65,6 +65,12 @@ typedef struct {
     size_t current_connections;
     size_t api_post_contexts_current;
     size_t upload_contexts_current;
+    // New metrics for memory leak investigation
+    size_t request_bytes_received;
+    size_t request_bytes_sent;
+    size_t static_file_requests;
+    size_t api_requests;
+    size_t post_requests;
 } HttpRuntimeMetrics;
 
 // Core server functions

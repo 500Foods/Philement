@@ -218,6 +218,49 @@ json_t* format_system_status_json(const SystemMetrics *metrics) {
         json_object_set_new(services, "websocket", websocket);
     }
 
+    // Database service
+    if (metrics->database.enabled) {
+        json_t *database = json_object();
+        json_object_set_new(database, "enabled", json_true());
+        json_t *database_status = json_object();
+        json_object_set_new(database_status, "queriesExecutedTotal",
+                          json_integer((json_int_t)metrics->database.specific.database.queries_executed_total));
+        json_object_set_new(database_status, "queriesSuccessful",
+                          json_integer((json_int_t)metrics->database.specific.database.queries_successful));
+        json_object_set_new(database_status, "queriesFailed",
+                          json_integer((json_int_t)metrics->database.specific.database.queries_failed));
+        json_object_set_new(database_status, "queriesPreparedExecuted",
+                          json_integer((json_int_t)metrics->database.specific.database.queries_prepared_executed));
+        json_object_set_new(database_status, "queriesDirectExecuted",
+                          json_integer((json_int_t)metrics->database.specific.database.queries_direct_executed));
+        json_object_set_new(database_status, "bytesSentTotal",
+                          json_integer((json_int_t)metrics->database.specific.database.bytes_sent_total));
+        json_object_set_new(database_status, "bytesReceivedTotal",
+                          json_integer((json_int_t)metrics->database.specific.database.bytes_received_total));
+        json_object_set_new(database_status, "preparedStatementsCached",
+                          json_integer((json_int_t)metrics->database.specific.database.prepared_statements_cached));
+        json_object_set_new(database_status, "preparedStatementsEvicted",
+                          json_integer((json_int_t)metrics->database.specific.database.prepared_statements_evicted));
+        json_object_set_new(database_status, "preparedStatementCacheHits",
+                          json_integer((json_int_t)metrics->database.specific.database.prepared_statement_cache_hits));
+        json_object_set_new(database_status, "preparedStatementCacheMisses",
+                          json_integer((json_int_t)metrics->database.specific.database.prepared_statement_cache_misses));
+        json_object_set_new(database_status, "connectionsCreated",
+                          json_integer((json_int_t)metrics->database.specific.database.connections_created));
+        json_object_set_new(database_status, "connectionsClosed",
+                          json_integer((json_int_t)metrics->database.specific.database.connections_closed));
+        json_object_set_new(database_status, "connectionErrors",
+                          json_integer((json_int_t)metrics->database.specific.database.connection_errors));
+        json_object_set_new(database_status, "threads",
+                          json_integer(metrics->database.threads.thread_count));
+        json_object_set_new(database_status, "virtualMemoryBytes",
+                          json_integer((json_int_t)metrics->database.threads.virtual_memory));
+        json_object_set_new(database_status, "residentMemoryBytes",
+                          json_integer((json_int_t)metrics->database.threads.resident_memory));
+        json_object_set_new(database, "status", database_status);
+        json_object_set_new(services, "database", database);
+    }
+
     json_object_set_new(root, "services", services);
     
     return root;
@@ -401,17 +444,37 @@ char* format_system_status_prometheus(const SystemMetrics *metrics) {
                "hydrogen_http_requests_in_flight %d\n"
                "# HELP hydrogen_http_contexts_current Current number of allocated HTTP request contexts by type\n"
                "# TYPE hydrogen_http_contexts_current gauge\n"
-               "hydrogen_http_contexts_current{type=\"api_post_buffer\"} %d\n"
-               "hydrogen_http_contexts_current{type=\"upload\"} %d\n",
-               metrics->webserver.threads.thread_count,
-               metrics->webserver.threads.virtual_memory,
-               metrics->webserver.threads.resident_memory,
-               metrics->webserver.specific.webserver.active_requests,
-               metrics->webserver.specific.webserver.total_requests,
-               metrics->webserver.specific.webserver.current_connections,
-               metrics->webserver.specific.webserver.active_requests,
-               metrics->webserver.specific.webserver.api_post_contexts_current,
-               metrics->webserver.specific.webserver.upload_contexts_current);
+                "hydrogen_http_contexts_current{type=\"api_post_buffer\"} %d\n"
+               "hydrogen_http_contexts_current{type=\"upload\"} %d\n"
+               "# HELP hydrogen_http_request_bytes_received Total HTTP request bytes received\n"
+               "# TYPE hydrogen_http_request_bytes_received counter\n"
+               "hydrogen_http_request_bytes_received %zu\n"
+               "# HELP hydrogen_http_request_bytes_sent Total HTTP response bytes sent\n"
+               "# TYPE hydrogen_http_request_bytes_sent counter\n"
+               "hydrogen_http_request_bytes_sent %zu\n"
+               "# HELP hydrogen_http_static_file_requests_total Total static file requests\n"
+               "# TYPE hydrogen_http_static_file_requests_total counter\n"
+               "hydrogen_http_static_file_requests_total %zu\n"
+               "# HELP hydrogen_http_api_requests_total Total API requests\n"
+               "# TYPE hydrogen_http_api_requests_total counter\n"
+               "hydrogen_http_api_requests_total %zu\n"
+               "# HELP hydrogen_http_post_requests_total Total POST requests\n"
+               "# TYPE hydrogen_http_post_requests_total counter\n"
+               "hydrogen_http_post_requests_total %zu\n",
+                metrics->webserver.threads.thread_count,
+                metrics->webserver.threads.virtual_memory,
+                metrics->webserver.threads.resident_memory,
+                metrics->webserver.specific.webserver.active_requests,
+                metrics->webserver.specific.webserver.total_requests,
+                metrics->webserver.specific.webserver.current_connections,
+                metrics->webserver.specific.webserver.active_requests,
+                metrics->webserver.specific.webserver.api_post_contexts_current,
+                metrics->webserver.specific.webserver.upload_contexts_current,
+                metrics->webserver.specific.webserver.request_bytes_received,
+                metrics->webserver.specific.webserver.request_bytes_sent,
+                metrics->webserver.specific.webserver.static_file_requests,
+                metrics->webserver.specific.webserver.api_requests,
+                metrics->webserver.specific.webserver.post_requests);
     }
 
     if (metrics->websocket.enabled) {
@@ -437,6 +500,72 @@ char* format_system_status_prometheus(const SystemMetrics *metrics) {
                metrics->websocket.specific.websocket.active_connections,
                metrics->websocket.specific.websocket.total_connections,
                metrics->websocket.specific.websocket.total_requests);
+    }
+
+    // Database Metrics
+    if (metrics->database.enabled) {
+        APPEND("hydrogen_service_threads{service=\"database\"} %d\n"
+               "hydrogen_service_virtual_memory_bytes{service=\"database\"} %zu\n"
+               "hydrogen_service_resident_memory_bytes{service=\"database\"} %zu\n"
+               "# HELP hydrogen_database_queries_executed_total Total number of database queries executed\n"
+               "# TYPE hydrogen_database_queries_executed_total counter\n"
+               "hydrogen_database_queries_executed_total %llu\n"
+               "# HELP hydrogen_database_queries_successful Total number of successful database queries\n"
+               "# TYPE hydrogen_database_queries_successful counter\n"
+               "hydrogen_database_queries_successful %llu\n"
+               "# HELP hydrogen_database_queries_failed Total number of failed database queries\n"
+               "# TYPE hydrogen_database_queries_failed counter\n"
+               "hydrogen_database_queries_failed %llu\n"
+               "# HELP hydrogen_database_queries_prepared_executed Total number of prepared statement queries executed\n"
+               "# TYPE hydrogen_database_queries_prepared_executed counter\n"
+               "hydrogen_database_queries_prepared_executed %llu\n"
+               "# HELP hydrogen_database_queries_direct_executed Total number of direct SQL queries executed\n"
+               "# TYPE hydrogen_database_queries_direct_executed counter\n"
+               "hydrogen_database_queries_direct_executed %llu\n"
+               "# HELP hydrogen_database_bytes_sent_total Total bytes sent to database\n"
+               "# TYPE hydrogen_database_bytes_sent_total counter\n"
+               "hydrogen_database_bytes_sent_total %llu\n"
+               "# HELP hydrogen_database_bytes_received_total Total bytes received from database\n"
+               "# TYPE hydrogen_database_bytes_received_total counter\n"
+               "hydrogen_database_bytes_received_total %llu\n"
+               "# HELP hydrogen_database_prepared_statements_cached Total number of prepared statements cached\n"
+               "# TYPE hydrogen_database_prepared_statements_cached counter\n"
+               "hydrogen_database_prepared_statements_cached %llu\n"
+               "# HELP hydrogen_database_prepared_statements_evicted Total number of prepared statements evicted from cache\n"
+               "# TYPE hydrogen_database_prepared_statements_evicted counter\n"
+               "hydrogen_database_prepared_statements_evicted %llu\n"
+               "# HELP hydrogen_database_prepared_statement_cache_hits Total number of prepared statement cache hits\n"
+               "# TYPE hydrogen_database_prepared_statement_cache_hits counter\n"
+               "hydrogen_database_prepared_statement_cache_hits %llu\n"
+               "# HELP hydrogen_database_prepared_statement_cache_misses Total number of prepared statement cache misses\n"
+               "# TYPE hydrogen_database_prepared_statement_cache_misses counter\n"
+               "hydrogen_database_prepared_statement_cache_misses %llu\n"
+               "# HELP hydrogen_database_connections_created Total number of database connections created\n"
+               "# TYPE hydrogen_database_connections_created counter\n"
+               "hydrogen_database_connections_created %llu\n"
+               "# HELP hydrogen_database_connections_closed Total number of database connections closed\n"
+               "# TYPE hydrogen_database_connections_closed counter\n"
+               "hydrogen_database_connections_closed %llu\n"
+               "# HELP hydrogen_database_connection_errors Total number of database connection errors\n"
+               "# TYPE hydrogen_database_connection_errors counter\n"
+               "hydrogen_database_connection_errors %llu\n",
+               metrics->database.threads.thread_count,
+               metrics->database.threads.virtual_memory,
+               metrics->database.threads.resident_memory,
+               metrics->database.specific.database.queries_executed_total,
+               metrics->database.specific.database.queries_successful,
+               metrics->database.specific.database.queries_failed,
+               metrics->database.specific.database.queries_prepared_executed,
+               metrics->database.specific.database.queries_direct_executed,
+               metrics->database.specific.database.bytes_sent_total,
+               metrics->database.specific.database.bytes_received_total,
+               metrics->database.specific.database.prepared_statements_cached,
+               metrics->database.specific.database.prepared_statements_evicted,
+               metrics->database.specific.database.prepared_statement_cache_hits,
+               metrics->database.specific.database.prepared_statement_cache_misses,
+               metrics->database.specific.database.connections_created,
+               metrics->database.specific.database.connections_closed,
+               metrics->database.specific.database.connection_errors);
     }
 
     // Queue Metrics
