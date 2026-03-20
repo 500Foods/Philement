@@ -10,6 +10,9 @@
 #include "database_pending.h"
 #include "database_types.h"
 
+// Forward declaration to avoid circular header dependency
+void database_engine_cleanup_result(QueryResult* result);
+
 // Global pending result manager instance
 static PendingResultManager* g_pending_manager = NULL;
 
@@ -266,6 +269,52 @@ bool pending_result_is_completed(const PendingQueryResult* pending) {
 bool pending_result_is_timed_out(const PendingQueryResult* pending) {
     if (!pending) return false;
     return pending->timed_out;
+}
+
+/**
+ * @brief Unregister and clean up a completed pending result
+ */
+void pending_result_unregister(PendingResultManager* manager, PendingQueryResult* pending, const char* dqm_label) {
+    if (!manager || !pending) return;
+
+    pthread_mutex_lock(&manager->manager_lock);
+
+    // Find and remove the pending result from the array
+    bool found = false;
+    for (size_t i = 0; i < manager->count; i++) {
+        if (manager->results[i] == pending) {
+            // Shift remaining elements
+            for (size_t j = i; j < manager->count - 1; j++) {
+                manager->results[j] = manager->results[j + 1];
+            }
+            manager->results[manager->count - 1] = NULL;
+            manager->count--;
+            found = true;
+            break;
+        }
+    }
+
+    pthread_mutex_unlock(&manager->manager_lock);
+
+    if (!found) {
+        log_this(dqm_label ? dqm_label : SR_DATABASE,
+                "Pending result not found in manager for unregister", LOG_LEVEL_ERROR, 0);
+        return;
+    }
+
+    // Clean up the pending result: query_id, QueryResult, sync primitives, struct
+    if (pending->query_id) {
+        free(pending->query_id);
+    }
+    if (pending->result) {
+        database_engine_cleanup_result(pending->result);
+    }
+    pthread_mutex_destroy(&pending->result_lock);
+    pthread_cond_destroy(&pending->result_ready);
+    free(pending);
+
+    log_this(dqm_label ? dqm_label : SR_DATABASE,
+            "Pending result unregistered and cleaned up", LOG_LEVEL_TRACE, 0);
 }
 
 /**

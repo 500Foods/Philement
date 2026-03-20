@@ -315,13 +315,15 @@ DatabaseQuery* database_queue_await_result(DatabaseQueue* db_queue, const char* 
         return NULL;
     }
 
-    // Get the result
+    // Get the result (pointer into pending->result, not a copy)
     QueryResult* query_result = pending_result_get(pending);
     
     // Create DatabaseQuery to return
     DatabaseQuery* db_query = malloc(sizeof(DatabaseQuery));
     if (!db_query) {
         log_this(dqm_label, "Memory allocation failed for DatabaseQuery", LOG_LEVEL_ERROR, 0);
+        // Clean up the pending entry even on allocation failure
+        pending_result_unregister(pending_mgr, pending, dqm_label);
         free(dqm_label);
         return NULL;
     }
@@ -353,6 +355,10 @@ DatabaseQuery* database_queue_await_result(DatabaseQueue* db_queue, const char* 
         db_query->error_message = strdup("Query execution failed or timed out");
         log_this(dqm_label, "Query completed with NULL result: %s", LOG_LEVEL_ALERT, 1, query_id);
     }
+
+    // Clean up the pending entry (frees pending struct, query_id, QueryResult, sync primitives)
+    // This must be done AFTER we've copied all data from query_result via strdup above
+    pending_result_unregister(pending_mgr, pending, dqm_label);
 
     free(dqm_label);
     return db_query;
