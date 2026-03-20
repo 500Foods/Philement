@@ -756,17 +756,15 @@
   background-color: var(--bg-tertiary) !important;
   border-right: 1px solid var(--border-color);
   font-family: "Vanadium Mono", var(--font-mono, monospace);
-  font-size: 11px;
+
 }
 
 .queries-sql-editor .cm-lineNumbers {
   font-family: "Vanadium Mono", var(--font-mono, monospace);
-  font-size: 11px;
 }
 
 .queries-sql-editor .cm-gutterElement {
   font-family: "Vanadium Mono", var(--font-mono, monospace);
-  font-size: 11px;
   color: var(--text-secondary);
 }
 

@@ -5,7 +5,7 @@
  */
 
 import { log, Subsystems, Status } from '../../core/log.js';
-import { initJsonTree, getJsonTreeData, setJsonTreeData, destroyJsonTree } from '../../components/json-tree-component.js';
+import { initJsonTree, getJsonTreeData, setJsonTreeData, destroyJsonTree, updateJsonTreeOptions } from '../../components/json-tree-component.js';
 
 // Constants
 const MIN_FONT_SIZE = 10;
@@ -32,7 +32,6 @@ export class EditorManager {
       bold: false,
       italic: false,
     };
-    this._collectionChangeInterval = null;
   }
 
   /**
@@ -158,6 +157,14 @@ export class EditorManager {
       const contentEl = this.summaryEditor.dom.querySelector('.cm-content');
       if (contentEl) contentEl.contentEditable = 'false';
       container?.classList.add('queries-summary-readonly');
+
+      // Double-click to enter edit mode (same behavior as SQL editor)
+      container.addEventListener('dblclick', () => {
+        if (!this.manager.editModeManager.isEditing() && this.manager.table) {
+          const selected = this.manager.table.getSelectedRows();
+          if (selected.length > 0) void this.manager.editModeManager.enterEditMode(selected[0]);
+        }
+      });
     } catch (error) {
       console.error('[QueriesManager] Failed to initialize Summary editor:', error);
     }
@@ -180,20 +187,21 @@ export class EditorManager {
         target: container,
         data: data,
         readOnly: !this.manager.editModeManager.isEditing(),
+        onJsonEdit: () => {
+          // Any edit in the tree is a change — mark dirty unconditionally.
+          // We avoid checkCollectionDirty() here because getJsonTreeData()
+          // may return stale data when the event fires before internal state updates.
+          this.manager.dirtyTracker.setDirty('collection', true);
+        },
       });
 
-      const checkDirty = () => {
-        try {
-          const currentData = getJsonTreeData(container);
-          const originalStr = typeof this.manager.dirtyTracker._originalCollectionContent === 'string'
-            ? this.manager.dirtyTracker._originalCollectionContent
-            : JSON.stringify(this.manager.dirtyTracker._originalCollectionContent || {});
-          const isDirty = JSON.stringify(currentData) !== originalStr;
-          this.manager.dirtyTracker.setDirty('collection', isDirty);
-        } catch {}
-      };
-
-      this._collectionChangeInterval = setInterval(checkDirty, 500);
+      // Double-click to enter edit mode (same behavior as SQL editor)
+      container.addEventListener('dblclick', () => {
+        if (!this.manager.editModeManager.isEditing() && this.manager.table) {
+          const selected = this.manager.table.getSelectedRows();
+          if (selected.length > 0) void this.manager.editModeManager.enterEditMode(selected[0]);
+        }
+      });
 
     } catch (error) {
       console.error('[QueriesManager] Failed to initialize JsonTree:', error);
@@ -246,35 +254,41 @@ export class EditorManager {
   }
 
   /**
-   * Set JsonTree editor editable state
+   * Set JsonTree editor editable state using updateBindingOptions.
+   * This avoids a costly destroy+rebuild cycle.
    */
-  async _setJsonTreeEditable(editable) {
-    if (!this.collectionEditor) return;
+  _setJsonTreeEditable(editable) {
     const container = this.manager.elements.collectionEditorContainer;
+    if (!this.collectionEditor || !container) return;
 
-    try {
-      const currentData = getJsonTreeData(container);
-      destroyJsonTree(container);
-
-      this.collectionEditor = await initJsonTree({
-        target: container,
-        data: currentData,
-        readOnly: !editable,
-      });
-    } catch {}
-
+    // Re-pass events alongside allowEditing to ensure the onJsonEdit handler
+    // survives option updates (the library may re-render and drop handlers).
+    updateJsonTreeOptions(container, {
+      allowEditing: editable,
+      events: {
+        onJsonEdit: () => {
+          this.manager.dirtyTracker.setDirty('collection', true);
+        },
+      },
+    });
     container?.classList.toggle('queries-jsoneditor-readonly', !editable);
+  }
+
+  /**
+   * Reset the collection editor (destroy tree) so it can be cleanly
+   * reinitialized with new data via initCollectionEditor.
+   */
+  resetCollectionEditor() {
+    if (this.collectionEditor) {
+      destroyJsonTree(this.manager.elements.collectionEditorContainer);
+      this.collectionEditor = null;
+    }
   }
 
   /**
    * Destroy all editors
    */
   destroy() {
-    if (this._collectionChangeInterval) {
-      clearInterval(this._collectionChangeInterval);
-      this._collectionChangeInterval = null;
-    }
-
     if (this.sqlEditor) {
       this.sqlEditor.destroy();
       this.sqlEditor = null;
@@ -387,7 +401,17 @@ export class EditorManager {
    * Get current collection content
    */
   getCollectionContent() {
-    const data = getJsonTreeData(this.manager.elements.collectionEditorContainer);
+    const container = this.manager.elements.collectionEditorContainer;
+
+    // Force-commit any active inline edit in the JSON tree before reading.
+    // Without this, the tree may still have an open input whose value hasn't
+    // been committed to the internal data model.
+    if (container) {
+      const activeEl = container.querySelector(':focus');
+      if (activeEl) activeEl.blur();
+    }
+
+    const data = getJsonTreeData(container);
     return data ? JSON.stringify(data) : '{}';
   }
 }
