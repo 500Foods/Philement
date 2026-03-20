@@ -139,6 +139,20 @@ bool pending_result_is_timed_out(const PendingQueryResult* pending);
 size_t pending_result_cleanup_expired(PendingResultManager* manager, const char* dqm_label);
 
 /**
+ * @brief Unregister and clean up a completed pending result
+ *
+ * Removes a pending result from the manager after the caller has consumed the result.
+ * Frees the pending result structure, its query_id, the contained QueryResult
+ * (using database_engine_cleanup_result), and destroys synchronization primitives.
+ * Must be called after pending_result_wait() returns and the result has been read.
+ *
+ * @param manager The pending result manager
+ * @param pending The pending result to remove and free
+ * @param dqm_label Label for logging purposes
+ */
+void pending_result_unregister(PendingResultManager* manager, PendingQueryResult* pending, const char* dqm_label);
+
+/**
  * @brief Get the global pending result manager instance
  *
  * @return Pointer to the global manager

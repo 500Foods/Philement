@@ -85,6 +85,9 @@ QueryResult* execute_auth_query(int query_ref, const char* database, json_t* par
     char* query_id = generate_query_id();
     if (!query_id) {
         free(params_json);
+        if (merged_params != params) {
+            json_decref(merged_params);
+        }
         log_this("AUTH", "Failed to generate query ID", LOG_LEVEL_ERROR, 0);
         return NULL;
     }
@@ -107,14 +110,22 @@ QueryResult* execute_auth_query(int query_ref, const char* database, json_t* par
         free(query_id);
         free(db_query.query_template);
         free(params_json);
+        if (merged_params != params) {
+            json_decref(merged_params);
+        }
         return NULL;
     }
 
-    // Wait for query result
-    const DatabaseQuery* result_query = database_queue_await_result(db_queue, query_id, 30); // 30 second timeout
+    // Wait for query result (returns heap-allocated DatabaseQuery, caller must free)
+    DatabaseQuery* result_query = database_queue_await_result(db_queue, query_id, 30); // 30 second timeout
     if (!result_query) {
         log_this("AUTH", "Query execution timed out or failed: %s", LOG_LEVEL_ERROR, 1, query_id);
         free(query_id);
+        free(db_query.query_template);
+        free(params_json);
+        if (merged_params != params) {
+            json_decref(merged_params);
+        }
         return NULL;
     }
 
@@ -122,7 +133,17 @@ QueryResult* execute_auth_query(int query_ref, const char* database, json_t* par
     QueryResult* result = calloc(1, sizeof(QueryResult));
     if (!result) {
         log_this("AUTH", "Failed to allocate memory for query result", LOG_LEVEL_ERROR, 0);
+        // Clean up result_query from database_queue_await_result
+        free(result_query->query_id);
+        free(result_query->query_template);
+        free(result_query->error_message);
+        free(result_query);
         free(query_id);
+        free(db_query.query_template);
+        free(params_json);
+        if (merged_params != params) {
+            json_decref(merged_params);
+        }
         return NULL;
     }
 
@@ -137,9 +158,16 @@ QueryResult* execute_auth_query(int query_ref, const char* database, json_t* par
         result->execution_time_ms = time(NULL) - result_query->submitted_at;
     }
 
-    // Cleanup
+    // Cleanup result_query from database_queue_await_result (heap-allocated with strdup'd fields)
+    free(result_query->query_id);
+    free(result_query->query_template);
+    free(result_query->error_message);
+    free(result_query);
+
+    // Cleanup local allocations
     free(query_id);
     free(db_query.query_template);
+    free(params_json);
     if (merged_params != params) {
         json_decref(merged_params);
     }
