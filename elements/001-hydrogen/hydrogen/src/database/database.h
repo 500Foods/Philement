@@ -350,4 +350,37 @@ bool database_queue_create_worker_underlying_queue(DatabaseQueue* db_queue, cons
 bool database_queue_init_worker_sync_primitives(DatabaseQueue* db_queue, const char* queue_type);
 void database_queue_init_worker_final_flags(DatabaseQueue* db_queue);
 
+/*
+ * Database Metrics for Prometheus instrumentation
+ */
+typedef struct {
+    // Query execution counters
+    volatile unsigned long long queries_executed_total;
+    volatile unsigned long long queries_successful;
+    volatile unsigned long long queries_failed;
+    volatile unsigned long long queries_prepared_executed;
+    volatile unsigned long long queries_direct_executed;
+
+    // Data transfer counters
+    volatile unsigned long long bytes_sent_total;
+    volatile unsigned long long bytes_received_total;
+
+    // Prepared statement cache metrics
+    volatile unsigned long long prepared_statements_cached;
+    volatile unsigned long long prepared_statements_evicted;
+    volatile unsigned long long prepared_statement_cache_hits;
+    volatile unsigned long long prepared_statement_cache_misses;
+
+    // Connection metrics
+    volatile unsigned long long connections_created;
+    volatile unsigned long long connections_closed;
+    volatile unsigned long long connection_errors;
+} DatabaseMetrics;
+
+// Global database metrics instance
+extern DatabaseMetrics database_metrics;
+
+// Get database metrics for leak investigation
+void get_database_metrics(DatabaseMetrics *metrics);
+
 #endif // DATABASE_H

@@ -21,6 +21,25 @@ static DatabaseEngineInterface* engine_registry[DB_ENGINE_MAX] = {NULL};
 static pthread_mutex_t engine_registry_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool engine_system_initialized = false;
 
+// Database metrics counters for leak investigation
+static volatile unsigned long long db_queries_executed_total = 0;
+static volatile unsigned long long db_queries_successful = 0;
+static volatile unsigned long long db_queries_failed = 0;
+static volatile unsigned long long db_queries_prepared_executed = 0;
+static volatile unsigned long long db_queries_direct_executed = 0;
+static volatile unsigned long long db_bytes_sent_total = 0;
+static volatile unsigned long long db_bytes_received_total = 0;
+static volatile unsigned long long db_prepared_statements_cached = 0;
+static volatile unsigned long long db_prepared_statements_evicted = 0;
+static volatile unsigned long long db_prepared_statement_cache_hits = 0;
+static volatile unsigned long long db_prepared_statement_cache_misses = 0;
+static volatile unsigned long long db_connections_created = 0;
+static volatile unsigned long long db_connections_closed = 0;
+static volatile unsigned long long db_connection_errors = 0;
+
+// Global database metrics instance
+DatabaseMetrics database_metrics;
+
 /*
  * Engine Registry Management
  */
@@ -350,7 +369,9 @@ bool database_engine_execute(DatabaseHandle* connection, QueryRequest* request, 
         bool stmt_was_created = false;
 
         if (!stmt && engine->prepare_statement) {
-            // Create new prepared statement if it doesn't exist
+            // Create new prepared statement if it doesn't exist - cache miss
+            __sync_add_and_fetch(&db_prepared_statement_cache_misses, 1);
+            
             log_this(designator, "database_engine_execute: Creating new prepared statement: %s", LOG_LEVEL_TRACE, 1,
                      request->prepared_statement_name);
 
@@ -358,6 +379,7 @@ bool database_engine_execute(DatabaseHandle* connection, QueryRequest* request, 
                                                     request->sql_template, &stmt, false);
             if (prepared && stmt) {
                 stmt_was_created = true;
+                __sync_add_and_fetch(&db_prepared_statements_cached, 1);
                 
                 // Try to store the prepared statement for future use
                 if (!store_prepared_statement(connection, stmt)) {
@@ -369,13 +391,26 @@ bool database_engine_execute(DatabaseHandle* connection, QueryRequest* request, 
                          request->prepared_statement_name);
                 stmt = NULL;
             }
+        } else if (stmt) {
+            // Found existing prepared statement - cache hit
+            __sync_add_and_fetch(&db_prepared_statement_cache_hits, 1);
         }
 
         if (stmt) {
             log_this(designator, "database_engine_execute: Executing prepared statement: %s", LOG_LEVEL_TRACE, 1,
                      request->prepared_statement_name);
             
+            // Increment prepared statement execution counter
+            __sync_add_and_fetch(&db_queries_executed_total, 1);
+            __sync_add_and_fetch(&db_queries_prepared_executed, 1);
+            
             bool exec_result = engine->execute_prepared(connection, stmt, request, result);
+            
+            if (exec_result) {
+                __sync_add_and_fetch(&db_queries_successful, 1);
+            } else {
+                __sync_add_and_fetch(&db_queries_failed, 1);
+            }
             
             // CRITICAL: If we created this statement but couldn't cache it, we must free it now
             if (stmt_was_created && find_prepared_statement(connection, request->prepared_statement_name) == NULL) {
@@ -407,7 +442,19 @@ bool database_engine_execute(DatabaseHandle* connection, QueryRequest* request, 
     // Execute query with timing measurement - no connection lock needed since thread owns connection exclusively
     struct timespec query_start_time, query_end_time;
     clock_gettime(CLOCK_MONOTONIC, &query_start_time);
+    
+    // Increment query counter before execution
+    __sync_add_and_fetch(&db_queries_executed_total, 1);
+    __sync_add_and_fetch(&db_queries_direct_executed, 1);
+    
     bool result_success = engine->execute_query(connection, request, result);
+    
+    if (result_success) {
+        __sync_add_and_fetch(&db_queries_successful, 1);
+    } else {
+        __sync_add_and_fetch(&db_queries_failed, 1);
+    }
+    
     clock_gettime(CLOCK_MONOTONIC, &query_end_time);
 
     // Calculate execution time in microseconds and store in result if successful
@@ -742,8 +789,11 @@ bool store_prepared_statement(DatabaseHandle* connection, PreparedStatement* stm
         // Evict the LRU prepared statement
         PreparedStatement* evicted_stmt = connection->prepared_statements[lru_index];
         if (evicted_stmt) {
+            // Track eviction
+            __sync_add_and_fetch(&db_prepared_statements_evicted, 1);
+            
             // Get engine interface to call unprepare
-            DatabaseEngineInterface* engine = database_engine_get_with_designator(connection->engine_type, 
+            DatabaseEngineInterface* engine = database_engine_get_with_designator(connection->engine_type,
                                                                                    connection->designator ? connection->designator : SR_DATABASE);
             if (engine && engine->unprepare_statement) {
                 // This will free the statement and remove it from the array
@@ -873,4 +923,26 @@ void database_get_supported_engines(char* buffer, size_t buffer_size) {
     const char* engines = "PostgreSQL, SQLite, MySQL, DB2";
     strncpy(buffer, engines, buffer_size - 1);
     buffer[buffer_size - 1] = '\0';
+}
+
+// Get database metrics for leak investigation
+void get_database_metrics(DatabaseMetrics *metrics) {
+    if (!metrics) {
+        return;
+    }
+
+    metrics->queries_executed_total = __sync_fetch_and_add(&db_queries_executed_total, 0);
+    metrics->queries_successful = __sync_fetch_and_add(&db_queries_successful, 0);
+    metrics->queries_failed = __sync_fetch_and_add(&db_queries_failed, 0);
+    metrics->queries_prepared_executed = __sync_fetch_and_add(&db_queries_prepared_executed, 0);
+    metrics->queries_direct_executed = __sync_fetch_and_add(&db_queries_direct_executed, 0);
+    metrics->bytes_sent_total = __sync_fetch_and_add(&db_bytes_sent_total, 0);
+    metrics->bytes_received_total = __sync_fetch_and_add(&db_bytes_received_total, 0);
+    metrics->prepared_statements_cached = __sync_fetch_and_add(&db_prepared_statements_cached, 0);
+    metrics->prepared_statements_evicted = __sync_fetch_and_add(&db_prepared_statements_evicted, 0);
+    metrics->prepared_statement_cache_hits = __sync_fetch_and_add(&db_prepared_statement_cache_hits, 0);
+    metrics->prepared_statement_cache_misses = __sync_fetch_and_add(&db_prepared_statement_cache_misses, 0);
+    metrics->connections_created = __sync_fetch_and_add(&db_connections_created, 0);
+    metrics->connections_closed = __sync_fetch_and_add(&db_connections_closed, 0);
+    metrics->connection_errors = __sync_fetch_and_add(&db_connection_errors, 0);
 }

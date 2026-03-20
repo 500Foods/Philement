@@ -8,6 +8,7 @@
 // Local includes
 #include "status_process.h"
 #include <src/webserver/web_server_core.h>
+#include <src/database/database.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <netinet/in.h>
@@ -18,6 +19,7 @@ extern ServiceThreads webserver_threads;
 extern ServiceThreads websocket_threads;
 extern ServiceThreads mdns_server_threads;
 extern ServiceThreads print_threads;
+extern ServiceThreads database_threads;
 
 // External queue memory structures
 extern QueueMemoryMetrics log_queue_memory;
@@ -301,6 +303,7 @@ bool collect_service_metrics(SystemMetrics *metrics, const WebSocketMetrics *ws_
     update_service_thread_metrics(&websocket_threads);
     update_service_thread_metrics(&mdns_server_threads);
     update_service_thread_metrics(&print_threads);
+    update_service_thread_metrics(&database_threads);
 
     get_http_runtime_metrics(&http_metrics);
 
@@ -317,6 +320,12 @@ bool collect_service_metrics(SystemMetrics *metrics, const WebSocketMetrics *ws_
     metrics->webserver.specific.webserver.current_connections = (int)http_metrics.current_connections;
     metrics->webserver.specific.webserver.api_post_contexts_current = (int)http_metrics.api_post_contexts_current;
     metrics->webserver.specific.webserver.upload_contexts_current = (int)http_metrics.upload_contexts_current;
+    // New metrics for memory leak investigation
+    metrics->webserver.specific.webserver.request_bytes_received = http_metrics.request_bytes_received;
+    metrics->webserver.specific.webserver.request_bytes_sent = http_metrics.request_bytes_sent;
+    metrics->webserver.specific.webserver.static_file_requests = http_metrics.static_file_requests;
+    metrics->webserver.specific.webserver.api_requests = http_metrics.api_requests;
+    metrics->webserver.specific.webserver.post_requests = http_metrics.post_requests;
 
     // WebSocket service
     metrics->websocket.enabled = (app_config->websocket.enable_ipv4 || app_config->websocket.enable_ipv6);
@@ -342,6 +351,26 @@ bool collect_service_metrics(SystemMetrics *metrics, const WebSocketMetrics *ws_
     convert_thread_metrics(&print_threads, &metrics->print.threads);
     metrics->print.specific.print.queued_jobs = (int)print_queue_memory.entry_count;
     metrics->print.specific.print.completed_jobs = 0;
+
+    // Database service metrics
+    metrics->database.enabled = (app_config->databases.connection_count > 0);
+    convert_thread_metrics(&database_threads, &metrics->database.threads);
+    DatabaseMetrics db_metrics = {0};
+    get_database_metrics(&db_metrics);
+    metrics->database.specific.database.queries_executed_total = db_metrics.queries_executed_total;
+    metrics->database.specific.database.queries_successful = db_metrics.queries_successful;
+    metrics->database.specific.database.queries_failed = db_metrics.queries_failed;
+    metrics->database.specific.database.queries_prepared_executed = db_metrics.queries_prepared_executed;
+    metrics->database.specific.database.queries_direct_executed = db_metrics.queries_direct_executed;
+    metrics->database.specific.database.bytes_sent_total = db_metrics.bytes_sent_total;
+    metrics->database.specific.database.bytes_received_total = db_metrics.bytes_received_total;
+    metrics->database.specific.database.prepared_statements_cached = db_metrics.prepared_statements_cached;
+    metrics->database.specific.database.prepared_statements_evicted = db_metrics.prepared_statements_evicted;
+    metrics->database.specific.database.prepared_statement_cache_hits = db_metrics.prepared_statement_cache_hits;
+    metrics->database.specific.database.prepared_statement_cache_misses = db_metrics.prepared_statement_cache_misses;
+    metrics->database.specific.database.connections_created = db_metrics.connections_created;
+    metrics->database.specific.database.connections_closed = db_metrics.connections_closed;
+    metrics->database.specific.database.connection_errors = db_metrics.connection_errors;
 
     // Update queue metrics
     metrics->log_queue.entry_count = (int)log_queue_memory.entry_count;
