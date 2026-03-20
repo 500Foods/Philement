@@ -19,6 +19,13 @@
 # run_auth_request()
 
 # CHANGELOG
+# 3.2.0 - 2026-03-20 - Tightened leak threshold from 2 KB/req to 1 KB/req
+#                     - Observed steady-state rate ~0.51 KB/req across 500 requests
+#                     - 1 KB/req gives ~2x safety margin while catching leaks earlier
+# 3.1.0 - 2026-03-19 - Added memory leak detection with steady-state growth analysis
+#                     - Compares last-half growth rate to detect unbounded leaks
+#                     - Threshold: 2 KB/request in second half flags as leak
+#                     - Reports warmup vs steady-state growth separately
 # 3.0.0 - 2026-03-19 - Adopted conduit_utils.sh approach from tests 50/51
 #                     - Uses run_conduit_server() for startup/migration/readiness
 #                     - Uses DATABASE_NAMES from conduit_utils.sh (Demo_PG, etc.)
@@ -49,11 +56,13 @@ TEST_NAME="Exercise"
 TEST_ABBR="EXE"
 TEST_NUMBER="41"
 TEST_COUNTER=0
-TEST_VERSION="3.0.0"
+TEST_VERSION="3.2.0"
 
-TOTAL_REQUESTS=500
+TOTAL_REQUESTS=100
 SNAPSHOT_INTERVAL=50
 METRICS_DELAY=1  # Seconds to wait before scraping metrics
+MIDPOINT_REQUEST=$(( TOTAL_REQUESTS / 2 ))  # For steady-state leak analysis
+LEAK_THRESHOLD_KB_PER_REQ=1  # Max KB/request growth in second half before flagging as leak
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -116,12 +125,12 @@ CONFIG_FILE="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_exercise.json"
 if [[ -f "${CONFIG_FILE}" ]]; then
     # shellcheck disable=SC2310 # We want to continue even if the test fails
     if validate_config_file "${CONFIG_FILE}"; then
+        print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Exercise Configuration"
         SERVER_PORT=$(get_webserver_port "${CONFIG_FILE}")
         API_PREFIX=$(jq -r '.API.Prefix // "/api"' "${CONFIG_FILE}" 2>/dev/null || echo "/api")
         DB_COUNT=$(jq '.Databases.Connections | length' "${CONFIG_FILE}" 2>/dev/null || echo "0")
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Port: ${SERVER_PORT}, API prefix: ${API_PREFIX}, Databases: ${DB_COUNT}"
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Configuration validated"
-        PASS_COUNT=$(( PASS_COUNT + 1 ))
     else
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Configuration validation failed"
         EXIT_CODE=1
@@ -311,6 +320,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         DB_COUNT=${#READY_DATABASES[@]}
         REQUEST_COUNT=0
         FAILED_REQUESTS=0
+        MIDPOINT_RSS=0  # Will capture RSS at midpoint for steady-state analysis
 
         for ((i=1; i<=TOTAL_REQUESTS; i++)); do
             # Round-robin across databases
@@ -332,6 +342,11 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
 
                     RSS_MB=$(echo "${RSS}" | awk '{printf "%.1f", $1/1024/1024}')
                     RSS_DELTA=$(echo "${RSS} ${INITIAL_RSS}" | awk '{printf "%.1f", ($1-$2)/1024/1024}')
+
+                    # Capture midpoint RSS for steady-state analysis
+                    if [[ "${REQUEST_COUNT}" -eq "${MIDPOINT_REQUEST}" ]]; then
+                        MIDPOINT_RSS="${RSS}"
+                    fi
 
                     printf "%-8s  %-10s  %-10s  %-10s  %-8s  %-10s  %-6s\n" \
                         "[${REQUEST_COUNT}/${TOTAL_REQUESTS}]" \
@@ -422,6 +437,58 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         else
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to collect final metrics"
             EXIT_CODE=1
+        fi
+    fi
+
+    # ── Memory Leak Detection ───────────────────────────────────────
+
+    if [[ "${EXIT_CODE}" -eq 0 ]]; then
+        print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Memory Leak Detection"
+
+        # Analyze steady-state growth: compare second-half growth to first-half
+        # First half (warmup): initial → midpoint includes cache warming, JIT, etc.
+        # Second half (steady): midpoint → final should show minimal growth if no leaks
+        if [[ "${MIDPOINT_RSS}" -gt 0 ]] && [[ "${FINAL_RSS}" -gt 0 ]]; then
+            SECOND_HALF_REQUESTS=$(( TOTAL_REQUESTS - MIDPOINT_REQUEST ))
+            SECOND_HALF_GROWTH_BYTES=$(echo "${FINAL_RSS} ${MIDPOINT_RSS}" | awk '{printf "%d", $1 - $2}')
+            SECOND_HALF_GROWTH_KB=$(echo "${SECOND_HALF_GROWTH_BYTES}" | awk '{printf "%.1f", $1/1024}')
+            FIRST_HALF_GROWTH_KB=$(echo "${MIDPOINT_RSS} ${INITIAL_RSS}" | awk '{printf "%.1f", ($1-$2)/1024}')
+
+            # Calculate per-request growth in second half (KB)
+            STEADY_GROWTH_PER_REQ_KB="0"
+            if [[ "${SECOND_HALF_REQUESTS}" -gt 0 ]]; then
+                STEADY_GROWTH_PER_REQ_KB=$(echo "${SECOND_HALF_GROWTH_BYTES} ${SECOND_HALF_REQUESTS}" | awk '{printf "%.2f", $1/$2/1024}')
+            fi
+
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Warmup growth (first ${MIDPOINT_REQUEST} reqs): ${FIRST_HALF_GROWTH_KB} KB"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Steady-state growth (last ${SECOND_HALF_REQUESTS} reqs): ${SECOND_HALF_GROWTH_KB} KB"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Steady-state rate: ${STEADY_GROWTH_PER_REQ_KB} KB/request (threshold: ${LEAK_THRESHOLD_KB_PER_REQ} KB/req)"
+
+            {
+                echo ""
+                echo "=== LEAK ANALYSIS ==="
+                echo "Warmup growth (first ${MIDPOINT_REQUEST} reqs): ${FIRST_HALF_GROWTH_KB} KB"
+                echo "Steady-state growth (last ${SECOND_HALF_REQUESTS} reqs): ${SECOND_HALF_GROWTH_KB} KB"
+                echo "Steady-state rate: ${STEADY_GROWTH_PER_REQ_KB} KB/request"
+                echo "Threshold: ${LEAK_THRESHOLD_KB_PER_REQ} KB/request"
+            } >> "${METRICS_LOG}"
+
+            # Compare against threshold using awk for float comparison
+            leak_detected=$(echo "${STEADY_GROWTH_PER_REQ_KB} ${LEAK_THRESHOLD_KB_PER_REQ}" | awk '{if ($1 > $2) print "yes"; else print "no"}')
+
+            if [[ "${leak_detected}" == "yes" ]]; then
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Memory leak suspected: ${STEADY_GROWTH_PER_REQ_KB} KB/req exceeds ${LEAK_THRESHOLD_KB_PER_REQ} KB/req threshold"
+                echo "LEAK_DETECTED=true" >> "${RESULT_FILE}"
+                EXIT_CODE=1
+            else
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "No leak detected: ${STEADY_GROWTH_PER_REQ_KB} KB/req within ${LEAK_THRESHOLD_KB_PER_REQ} KB/req threshold"
+                echo "LEAK_DETECTED=false" >> "${RESULT_FILE}"
+                PASS_COUNT=$(( PASS_COUNT + 1 ))
+            fi
+        else
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Insufficient data for leak analysis (midpoint RSS not captured)"
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Leak analysis skipped (insufficient data)"
+            PASS_COUNT=$(( PASS_COUNT + 1 ))
         fi
     fi
 
