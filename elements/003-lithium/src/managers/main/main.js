@@ -23,8 +23,20 @@ import { getClaims } from '../../core/jwt.js';
 import { getPermittedManagers, canAccessManager } from '../../core/permissions.js';
 import { setIcon, processIcons } from '../../core/icons.js';
 import { getMenu, buildManagerIconsRegistry, clearMenuCache } from '../../shared/menu.js';
-import { initZoom, createZoomButton, hideZoomPopup, toggleZoomPopup } from '../../core/zoom-control.js';
-import { initCrimsonShortcut, createCrimsonButton, toggleCrimson } from '../../managers/crimson/crimson.js';
+import { log, Subsystems, Status } from '../../core/log.js';
+import {
+  initZoom,
+  hideZoomPopup,
+  toggleZoomPopup,
+} from '../../core/zoom-control.js';
+import { initCrimsonShortcut, toggleCrimson } from '../../managers/crimson/crimson.js';
+import {
+  setupHeaderButtons,
+  setupFooterButtons,
+  registerShortcut,
+  unregisterManagerShortcuts,
+} from '../../core/manager-ui.js';
+import '../../core/manager-ui.css';
 import './main.css';
 
 // localStorage keys for sidebar state
@@ -57,6 +69,9 @@ const STEP_Y = ICON_H + ICON_GAP;   // 37px — vertical step
  * only and are NOT used as the injection target (display:contents divs can
  * hide injected content in some browsers).
  *
+ * Header (right-side): keyboard shortcuts, zoom (aperture), fullscreen, close
+ * Footer (right-side): crimson, notifications, concierge, annotations, tours, training
+ *
  * @param {string} slotId - The slot's DOM id
  * @param {string} icon - FA icon class e.g. 'fa-palette'
  * @param {string} name - Manager display name
@@ -67,24 +82,15 @@ function buildSlotHTML(slotId, icon, name) {
 <div class="manager-slot" id="${slotId}">
 
   <!-- Slot Header: one unified button group spanning full width.
-       Title btn (left, flex:1) → header-extras insertion point → willard btn → zoom btn → close btn (right).
-       Managers inject buttons by calling mainManager.addHeaderButtons(slotId, [...]).  -->
+       Title btn (left, flex:1) → keyboard → zoom → fullscreen → close btn (right).
+       Buttons are added by setupHeaderButtons() from manager-ui.js  -->
   <div class="manager-slot-header">
     <div class="subpanel-header-group" style="flex:1;min-width:0;">
       <button type="button" class="subpanel-header-btn subpanel-header-primary slot-title-btn" style="flex:1;min-width:0;overflow:hidden;">
         <fa ${icon} class="slot-icon"></fa>
         <span class="slot-name" style="white-space:nowrap;text-overflow:ellipsis;">${name}</span>
       </button>
-      <!-- manager-injected header buttons are inserted here by addHeaderButtons() -->
-      <button type="button" class="subpanel-header-btn subpanel-header-close crimson-btn" title="Chat with Crimson (Ctrl+Shift+C)" data-slot-id="${slotId}">
-        <fa fa-robot></fa>
-      </button>
-      <button type="button" class="subpanel-header-btn subpanel-header-close zoom-btn" title="Zoom" data-slot-id="${slotId}">
-        <fa fa-magnifying-glass-plus></fa>
-      </button>
-      <button type="button" class="subpanel-header-btn subpanel-header-close slot-close-btn" title="Close">
-        <fa fa-xmark></fa>
-      </button>
+      <!-- Header buttons are injected here by setupHeaderButtons() -->
     </div>
   </div>
 
@@ -93,33 +99,15 @@ function buildSlotHTML(slotId, icon, name) {
   </div>
 
   <!-- Slot Footer: single unified button group spanning full width.
-       Reports btn (left, flex:1) → footer-left-extras → footer-right-extras → fixed action icons.
-       Managers inject buttons by calling mainManager.addFooterButtons(slotId, 'left'|'right', [...]).  -->
+       Reports btn (left, flex:1) → crimson → notifications → concierge → annotations → tours → training.
+       Buttons are added by setupFooterButtons() from manager-ui.js  -->
   <div class="manager-slot-footer">
     <div class="subpanel-header-group" style="flex:1;min-width:0;">
       <button type="button" class="subpanel-header-btn subpanel-header-primary slot-reports-btn" style="flex:1;min-width:0;overflow:hidden;">
         <fa fa-chart-bar></fa>
         <span style="white-space:nowrap;text-overflow:ellipsis;">Reports Placeholder</span>
       </button>
-      <!-- manager-injected footer buttons are inserted here by addFooterButtons() -->
-      <button type="button" class="subpanel-header-btn subpanel-header-close slot-notifications-btn" title="Notifications">
-        <fa fa-bell></fa>
-        <span class="btn-counter" data-counter="notifications">000</span>
-      </button>
-      <button type="button" class="subpanel-header-btn subpanel-header-close slot-tickets-btn" title="Support Tickets">
-        <fa fa-bell-concierge></fa>
-        <span class="btn-counter" data-counter="tickets">000</span>
-      </button>
-      <button type="button" class="subpanel-header-btn subpanel-header-close slot-annotations-btn" title="Annotations">
-        <fa fa-tags></fa>
-        <span class="btn-counter" data-counter="annotations">000</span>
-      </button>
-      <button type="button" class="subpanel-header-btn subpanel-header-close slot-tours-btn" title="Tours">
-        <fa fa-signs-post></fa>
-      </button>
-      <button type="button" class="subpanel-header-btn subpanel-header-close slot-lms-btn" title="LMS">
-        <fa fa-graduation-cap></fa>
-      </button>
+      <!-- Footer buttons are injected here by setupFooterButtons() -->
     </div>
   </div>
 
@@ -254,9 +242,10 @@ export default class MainManager {
    * @param {string} slotId
    * @param {string} icon
    * @param {string} name
+   * @param {string|number} managerId - The manager ID for tours/training context
    * @returns {{ slotEl: HTMLElement, workspaceEl: HTMLElement }}
    */
-  createSlot(slotId, icon, name) {
+  createSlot(slotId, icon, name, managerId) {
     const area = this.elements.managerArea;
     if (!area) return null;
 
@@ -276,31 +265,28 @@ export default class MainManager {
     // Process FA icons inside the new slot
     processIcons(slotEl);
 
-    // Wire close button (stub)
-    const closeBtn = slotEl.querySelector('.slot-close-btn');
-    closeBtn?.addEventListener('click', () => {
-      // TODO: Implement slot close functionality
+    // Setup header buttons using manager-ui
+    const headerGroup = slotEl.querySelector('.manager-slot-header .subpanel-header-group');
+    setupHeaderButtons(slotId, {
+      showKeyboard: true,
+      showZoom: true,
+      showFullscreen: true,
+      showClose: true,
+      onClose: () => this.handleCloseSlot(slotId),
+      group: headerGroup,
     });
 
-    // Wire zoom button
-    const zoomBtn = slotEl.querySelector('.zoom-btn');
-    if (zoomBtn) {
-      zoomBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        // Toggle zoom popup
-        toggleZoomPopup(zoomBtn);
-      });
-    }
-
-    // Wire Crimson button
-    const crimsonBtn = slotEl.querySelector('.crimson-btn');
-    if (crimsonBtn) {
-      crimsonBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        // Toggle Crimson popup
-        toggleCrimson({ username: this.user?.username || 'User' });
-      });
-    }
+    // Setup footer buttons using manager-ui
+    const footerGroup = slotEl.querySelector('.manager-slot-footer .subpanel-header-group');
+    setupFooterButtons(slotId, managerId, {
+      showCrimson: true,
+      showNotifications: true,
+      showConcierge: true,
+      showAnnotations: true,
+      showTours: true,
+      showTraining: true,
+      group: footerGroup,
+    });
 
     // Initialize zoom on first slot creation
     initZoom();
@@ -308,12 +294,76 @@ export default class MainManager {
     // Initialize Crimson shortcut
     initCrimsonShortcut();
 
-    // Footer button handlers are set up by individual managers
-
     return {
       slotEl,
       workspaceEl: slotEl.querySelector(`#${slotId}-workspace`),
     };
+  }
+
+  /**
+   * Handle closing a manager slot.
+   * Switches to the previously open manager, or profile manager if none.
+   * @param {string} slotId - The slot ID to close
+   */
+  handleCloseSlot(slotId) {
+    // Parse manager ID from slot ID
+    const isUtility = slotId.startsWith('utility-slot-');
+    const managerId = isUtility
+      ? slotId.replace('utility-slot-', '')
+      : parseInt(slotId.replace('manager-slot-', ''), 10);
+
+    log(Subsystems.MANAGER, Status.INFO, `[MainManager] Closing slot: ${slotId}`);
+
+    // Unregister any shortcuts for this manager
+    if (!isUtility) {
+      unregisterManagerShortcuts(String(managerId));
+    }
+
+    // Hide the slot
+    const slotEl = document.getElementById(slotId);
+    if (slotEl) {
+      slotEl.classList.remove('visible');
+    }
+
+    // Try to find a previously open manager to switch to
+    const previousManager = this._findPreviousManager(slotId);
+    if (previousManager) {
+      if (previousManager.type === 'utility') {
+        this.app.loadUtilityManager(previousManager.id);
+      } else {
+        this.loadManager(previousManager.id);
+      }
+    } else {
+      // Default to profile manager
+      this.app.loadUtilityManager('user-profile');
+    }
+  }
+
+  /**
+   * Find a previously open manager to switch to after closing.
+   * @param {string} excludeSlotId - The slot ID being closed (to exclude)
+   * @returns {{type: string, id: string|number}|null}
+   */
+  _findPreviousManager(excludeSlotId) {
+    const area = this.elements.managerArea;
+    if (!area) return null;
+
+    // Find all visible slots except the one being closed
+    const visibleSlots = Array.from(area.querySelectorAll('.manager-slot.visible'))
+      .filter(slot => slot.id !== excludeSlotId);
+
+    if (visibleSlots.length === 0) return null;
+
+    // Get the most recently visible slot
+    const lastSlot = visibleSlots[visibleSlots.length - 1];
+    const slotId = lastSlot.id;
+
+    if (slotId.startsWith('utility-slot-')) {
+      return { type: 'utility', id: slotId.replace('utility-slot-', '') };
+    } else {
+      const managerId = parseInt(slotId.replace('manager-slot-', ''), 10);
+      return { type: 'manager', id: managerId };
+    }
   }
 
   /**
@@ -724,6 +774,11 @@ export default class MainManager {
 
     eventBus.on(Events.NETWORK_OFFLINE, () => {
       this._setOfflineIndicators(true);
+    });
+
+    // Logout event from keyboard shortcut
+    eventBus.on('logout:show', () => {
+      this.showLogoutPanel();
     });
 
     // Handle window resize to reset sidebar on mobile/desktop transition

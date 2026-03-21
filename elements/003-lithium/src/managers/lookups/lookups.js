@@ -935,7 +935,8 @@ export default class LookupsManager {
     if (reportsBtn) reportsBtn.remove();
 
     // Identify the first right-side fixed button to use as insertion anchor
-    const anchor = group.querySelector('.slot-notifications-btn');
+    // This is the Crimson button added by manager-ui
+    const anchor = group.querySelector('.slot-footer-anchor') || group.querySelector('.manager-ui-crimson-btn');
 
     // --- Helper: create a button matching the footer style ---
     const makeBtn = (id, icon, title) => {

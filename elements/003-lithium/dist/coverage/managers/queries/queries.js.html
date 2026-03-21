@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><title>Code coverage report for managers/queries/queries.js</title><meta charset="utf-8"><link rel="stylesheet" href="../../prettify.css"><link rel="stylesheet" href="../../base.css"><link rel="shortcut icon" type="image/x-icon" href="../../favicon.png"><meta name="viewport" content="width=device-width,initial-scale=1"><style type="text/css">.coverage-summary .sorter{background-image:url(../../sort-arrow-sprite.png)}</style></head><body><div class="wrapper"><div class="pad1"><h1><a href="../../index.html">All files</a> / <a href="index.html">managers/queries</a> queries.js</h1><div class="clearfix"><div class="fl pad1y space-right2"><span class="strong">12.52% </span><span class="quiet">Statements</span> <span class="fraction">67/535</span></div><div class="fl pad1y space-right2"><span class="strong">5.82% </span><span class="quiet">Branches</span> <span class="fraction">12/206</span></div><div class="fl pad1y space-right2"><span class="strong">12.07% </span><span class="quiet">Functions</span> <span class="fraction">25/207</span></div><div class="fl pad1y space-right2"><span class="strong">13.03% </span><span class="quiet">Lines</span> <span class="fraction">61/468</span></div></div><p class="quiet">Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.</p><template id="filterTemplate"><div class="quiet">Filter: <input type="search" id="fileSearch"></div></template></div><div class="status-line low"></div><pre><table class="coverage">
+<!doctype html><html lang="en"><head><title>Code coverage report for managers/queries/queries.js</title><meta charset="utf-8"><link rel="stylesheet" href="../../prettify.css"><link rel="stylesheet" href="../../base.css"><link rel="shortcut icon" type="image/x-icon" href="../../favicon.png"><meta name="viewport" content="width=device-width,initial-scale=1"><style type="text/css">.coverage-summary .sorter{background-image:url(../../sort-arrow-sprite.png)}</style></head><body><div class="wrapper"><div class="pad1"><h1><a href="../../index.html">All files</a> / <a href="index.html">managers/queries</a> queries.js</h1><div class="clearfix"><div class="fl pad1y space-right2"><span class="strong">12.54% </span><span class="quiet">Statements</span> <span class="fraction">67/534</span></div><div class="fl pad1y space-right2"><span class="strong">5.82% </span><span class="quiet">Branches</span> <span class="fraction">12/206</span></div><div class="fl pad1y space-right2"><span class="strong">12.07% </span><span class="quiet">Functions</span> <span class="fraction">25/207</span></div><div class="fl pad1y space-right2"><span class="strong">13.06% </span><span class="quiet">Lines</span> <span class="fraction">61/467</span></div></div><p class="quiet">Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.</p><template id="filterTemplate"><div class="quiet">Filter: <input type="search" id="fileSearch"></div></template></div><div class="status-line low"></div><pre><table class="coverage">
 <tr><td class="line-count quiet"><a name="L1"></a><a href="#L1">1</a>
 <a name="L2"></a><a href="#L2">2</a>
 <a name="L3"></a><a href="#L3">3</a>
@@ -1291,12 +1291,12 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -2200,13 +2200,13 @@ export default class QueriesManager {
 <span class="cstat-no" title="statement not covered">        try { <span class="cstat-no" title="statement not covered">collectionContent = JSON.parse(collectionContent); </span>} catch { <span class="cstat-no" title="statement not covered">collectionContent = {}; </span>}</span>
       }
 <span class="cstat-no" title="statement not covered">      if (this.collectionEditor) {</span>
-        // Destroy existing tree and interval, then reinitialize with new data.
-        // JsonTree.js setJson is unreliable for updates, so full destroy+rebuild.
-<span class="cstat-no" title="statement not covered">        this.editorManager.resetCollectionEditor();</span>
-<span class="cstat-no" title="statement not covered">        this.collectionEditor = null;</span>
+        // Update existing tree with new data via setJson API
+<span class="cstat-no" title="statement not covered">        setJsonTreeData(this.elements.collectionEditorContainer, collectionContent);</span>
+      } else {
+        // First-time initialization
+<span class="cstat-no" title="statement not covered">        await this.editorManager.initCollectionEditor(collectionContent);</span>
+<span class="cstat-no" title="statement not covered">        this.collectionEditor = this.editorManager.collectionEditor;</span>
       }
-<span class="cstat-no" title="statement not covered">      await this.editorManager.initCollectionEditor(collectionContent);</span>
-<span class="cstat-no" title="statement not covered">      this.collectionEditor = this.editorManager.collectionEditor;</span>
     }
 <span class="cstat-no" title="statement not covered">    if (tabId === 'preview') {</span>
 <span class="cstat-no" title="statement not covered">      this.editorManager.renderMarkdownPreview();</span>
@@ -2729,4 +2729,4 @@ export default class QueriesManager {
 <span class="fstat-no" title="function not covered">  _applyDefaultTemplate(</span>) { <span class="cstat-no" title="statement not covered">return this.templateManager.applyDefaultTemplate(); </span>}
 <span class="fstat-no" title="function not covered">  _getTemplatePopupItems(</span>) { <span class="cstat-no" title="statement not covered">return this.templateManager.getTemplatePopupItems(); </span>}
 }
-&nbsp;</pre></td></tr></table></pre><div class="push"></div></div><div class="footer quiet pad2 space-top1 center small">Code coverage generated by <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a> at 2026-03-20T05:23:56.711Z</div><script src="../../prettify.js"></script><script>window.onload=function(){prettyPrint()}</script><script src="../../sorter.js"></script><script src="../../block-navigation.js"></script></body></html>
+&nbsp;</pre></td></tr></table></pre><div class="push"></div></div><div class="footer quiet pad2 space-top1 center small">Code coverage generated by <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a> at 2026-03-21T21:52:59.091Z</div><script src="../../prettify.js"></script><script>window.onload=function(){prettyPrint()}</script><script src="../../sorter.js"></script><script src="../../block-navigation.js"></script></body></html>

@@ -155,7 +155,12 @@ json_t* chat_request_build_openai(const ChatEngineConfig* engine,
     return root;
 }
 
-// Build Anthropic request (simplified)
+// Build Anthropic native format request
+// Anthropic API differences from OpenAI:
+// - Uses separate "system" field (not a message in the array)
+// - Messages array only contains user/assistant (no system)
+// - Requires max_tokens
+// - Uses "anthropic-beta" headers for some features
 json_t* chat_request_build_anthropic(const ChatEngineConfig* engine,
                                       const ChatMessage* messages,
                                       const ChatRequestParams* params) {
@@ -173,16 +178,30 @@ json_t* chat_request_build_anthropic(const ChatEngineConfig* engine,
     if (max_tokens <= 0) max_tokens = 4096;  // Default for Anthropic
     json_object_set_new(root, "max_tokens", json_integer(max_tokens));
 
-    // Messages array
+    // Extract system message and build messages array
+    const char* system_content = NULL;
     json_t* messages_array = json_array();
     const ChatMessage* current = messages;
     while (current) {
-        json_t* msg_obj = json_object();
-        json_object_set_new(msg_obj, "role", json_string(chat_message_role_to_string(current->role)));
-        json_object_set_new(msg_obj, "content", json_string(current->content ? current->content : ""));
-        json_array_append_new(messages_array, msg_obj);
+        if (current->role == CHAT_ROLE_SYSTEM) {
+            // Anthropic uses separate system field, not a message
+            system_content = current->content;
+        } else {
+            // Only add user and assistant messages to the array
+            json_t* msg_obj = json_object();
+            const char* role_str = (current->role == CHAT_ROLE_ASSISTANT) ? "assistant" : "user";
+            json_object_set_new(msg_obj, "role", json_string(role_str));
+            json_object_set_new(msg_obj, "content", json_string(current->content ? current->content : ""));
+            json_array_append_new(messages_array, msg_obj);
+        }
         current = current->next;
     }
+
+    // Add system field if found
+    if (system_content) {
+        json_object_set_new(root, "system", json_string(system_content));
+    }
+
     json_object_set_new(root, "messages", messages_array);
 
     // Temperature
@@ -200,10 +219,12 @@ json_t* chat_request_build_anthropic(const ChatEngineConfig* engine,
     return root;
 }
 
-// Build Ollama request
+// Build Ollama native format request
+// Ollama native API: POST /api/chat
+// Uses "num_predict" instead of "max_tokens" in options
 json_t* chat_request_build_ollama(const ChatEngineConfig* engine,
-                                   const ChatMessage* messages,
-                                   const ChatRequestParams* params) {
+                                    const ChatMessage* messages,
+                                    const ChatRequestParams* params) {
     if (!engine || !messages) return NULL;
 
     json_t* root = json_object();
@@ -213,7 +234,7 @@ json_t* chat_request_build_ollama(const ChatEngineConfig* engine,
     const char* model = params->model ? params->model : engine->model;
     json_object_set_new(root, "model", json_string(model));
 
-    // Messages array
+    // Messages array (same as OpenAI format)
     json_t* messages_array = json_array();
     const ChatMessage* current = messages;
     while (current) {
@@ -225,13 +246,20 @@ json_t* chat_request_build_ollama(const ChatEngineConfig* engine,
     }
     json_object_set_new(root, "messages", messages_array);
 
-    // Options
+    // Options (Ollama uses num_predict instead of max_tokens)
     json_t* options = json_object();
     if (params->temperature >= 0.0) {
         json_object_set_new(options, "temperature", json_real(params->temperature));
     } else if (engine->temperature_default >= 0.0) {
         json_object_set_new(options, "temperature", json_real(engine->temperature_default));
     }
+
+    // Ollama uses num_predict for max_tokens
+    int max_tokens = params->max_tokens > 0 ? params->max_tokens : engine->max_tokens;
+    if (max_tokens > 0) {
+        json_object_set_new(options, "num_predict", json_integer(max_tokens));
+    }
+
     json_object_set_new(root, "options", options);
 
     // Stream
@@ -252,7 +280,12 @@ json_t* chat_request_build(const ChatEngineConfig* engine,
         case CEC_PROVIDER_ANTHROPIC:
             return chat_request_build_anthropic(engine, messages, params);
         case CEC_PROVIDER_OLLAMA:
-            return chat_request_build_ollama(engine, messages, params);
+            // Ollama can use native format or OpenAI-compatible format
+            if (engine->use_native_api) {
+                return chat_request_build_ollama(engine, messages, params);
+            }
+            // Fall through to OpenAI format for Ollama when not using native API
+            return chat_request_build_openai(engine, messages, params);
         case CEC_PROVIDER_OPENAI:
         case CEC_PROVIDER_UNKNOWN:
         default:
@@ -264,6 +297,38 @@ json_t* chat_request_build(const ChatEngineConfig* engine,
 char* chat_request_to_json_string(json_t* request, bool compact) {
     if (!request) return NULL;
     return json_dumps(request, compact ? JSON_COMPACT : JSON_INDENT(2));
+}
+
+// Count images in message content
+// For multimodal messages, content is an array of objects with type "image_url" or "image"
+static int chat_message_count_images(const char* content) {
+    if (!content) return 0;
+
+    // Try to parse as JSON array (multimodal format)
+    json_error_t error;
+    json_t* content_array = json_loads(content, 0, &error);
+    if (!content_array || !json_is_array(content_array)) {
+        if (content_array) json_decref(content_array);
+        return 0;  // Plain text, no images
+    }
+
+    int image_count = 0;
+    size_t index;
+    json_t* item;
+    json_array_foreach(content_array, index, item) {
+        if (!json_is_object(item)) continue;
+
+        json_t* type = json_object_get(item, "type");
+        if (type && json_is_string(type)) {
+            const char* type_str = json_string_value(type);
+            if (strcmp(type_str, "image_url") == 0 || strcmp(type_str, "image") == 0) {
+                image_count++;
+            }
+        }
+    }
+
+    json_decref(content_array);
+    return image_count;
 }
 
 // Validate request
@@ -293,6 +358,22 @@ bool chat_request_validate(const ChatEngineConfig* engine,
             *error_message = strdup(buf);
         }
         return false;
+    }
+
+    // Check image count per message
+    const ChatMessage* current = messages;
+    while (current) {
+        int images_in_message = chat_message_count_images(current->content);
+        if (images_in_message > engine->max_images_per_message) {
+            if (error_message) {
+                char buf[256];
+                snprintf(buf, sizeof(buf), "Message contains %d images, exceeds limit of %d",
+                         images_in_message, engine->max_images_per_message);
+                *error_message = strdup(buf);
+            }
+            return false;
+        }
+        current = current->next;
     }
 
     (void)params;
