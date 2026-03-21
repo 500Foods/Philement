@@ -165,7 +165,7 @@ export default class MainManager {
 
     // Utility manager registry with icons
     this.utilityManagerIcons = {
-      'session-log': { icon: 'fa-scroll', name: 'Session Log' },
+      'session-log': { icon: 'fa-receipt', name: 'Session Log' },
       'user-profile': { icon: 'fa-user-cog', name: 'User Profile' },
     };
     

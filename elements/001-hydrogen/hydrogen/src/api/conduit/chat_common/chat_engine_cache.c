@@ -9,6 +9,7 @@
 
 // Local includes
 #include "chat_engine_cache.h"
+#include "chat_health.h"
 
 // Database includes for bootstrap query
 #include <src/database/database.h>
@@ -61,6 +62,11 @@ ChatEngineCache* chat_engine_cache_create(const char* database_name) {
 
     // Initialize all entries to NULL
     memset(cache->engines, 0, INITIAL_CEC_CAPACITY * sizeof(ChatEngineConfig*));
+
+    // Initialize health monitoring fields (Phase 2.5)
+    cache->health_monitor_thread = 0;
+    cache->health_monitor_running = false;
+    cache->health_monitor_interval = 300;  // Default 5 minutes
 
     log_this(SR_CHAT, "Chat engine cache created for database: %s", LOG_LEVEL_DEBUG, 1, database_name ? database_name : "(null)");
     return cache;
@@ -129,7 +135,8 @@ void chat_engine_cache_clear(ChatEngineCache* cache) {
 // Create a new engine configuration
 ChatEngineConfig* chat_engine_config_create(int engine_id, const char* name, ChatEngineProvider provider,
                                            const char* model, const char* api_url, const char* api_key,
-                                           int max_tokens, double temperature_default, bool is_default) {
+                                           int max_tokens, double temperature_default, bool is_default,
+                                           int liveliness_seconds) {
     ChatEngineConfig* engine = (ChatEngineConfig*)malloc(sizeof(ChatEngineConfig));
     if (!engine) {
         log_this(SR_CHAT, "Failed to allocate memory for chat engine config", LOG_LEVEL_ERROR, 0);
@@ -144,6 +151,18 @@ ChatEngineConfig* chat_engine_config_create(int engine_id, const char* name, Cha
     engine->is_default = is_default;
     engine->last_used = 0;
     engine->usage_count = 0;
+
+    // Initialize health tracking fields (Phase 2.5)
+    engine->liveliness_seconds = liveliness_seconds > 0 ? liveliness_seconds : 300;  // Default 5 minutes
+    if (engine->liveliness_seconds > 3600) engine->liveliness_seconds = 3600;  // Max 1 hour
+    engine->last_health_check = 0;
+    engine->is_healthy = true;  // Start optimistic
+    engine->consecutive_failures = 0;
+    engine->last_confirmed_working = 0;
+    engine->avg_response_time_ms = 0.0;
+    engine->conversations_24h = 0;
+    engine->tokens_24h = 0;
+    pthread_mutex_init(&engine->health_mutex, NULL);
 
     // Copy strings with bounds checking
     if (name) {
@@ -180,6 +199,9 @@ ChatEngineConfig* chat_engine_config_create(int engine_id, const char* name, Cha
 // Destroy an engine configuration (securely wipes API key)
 void chat_engine_config_destroy(ChatEngineConfig* engine) {
     if (!engine) return;
+
+    // Destroy health mutex
+    pthread_mutex_destroy(&engine->health_mutex);
 
     // Securely clear API key from memory before freeing
     if (engine->api_key[0] != '\0') {
@@ -461,7 +483,7 @@ void chat_engine_cache_get_stats(ChatEngineCache* cache, char* buffer, size_t bu
 }
 
 // Check if cache needs refresh
-bool chat_engine_cache_needs_refresh(ChatEngineCache* cache, int refresh_interval_seconds) {
+bool chat_engine_cache_needs_refresh(const ChatEngineCache* cache, int refresh_interval_seconds) {
     if (!cache) return false;
 
     time_t now = time(NULL);
@@ -554,44 +576,61 @@ bool chat_engine_cache_load_from_database(ChatEngineCache* cache, const char* da
                 json_t* row = json_array_get(root, i);
                 if (!json_is_object(row)) continue;
 
-                // Extract engine configuration fields
-                json_t* id_obj = json_object_get(row, "id");
-                json_t* name_obj = json_object_get(row, "name");
-                json_t* provider_obj = json_object_get(row, "provider");
-                json_t* model_obj = json_object_get(row, "model");
-                json_t* url_obj = json_object_get(row, "api_url");
-                json_t* key_obj = json_object_get(row, "api_key");
-                json_t* max_tokens_obj = json_object_get(row, "max_tokens");
-                json_t* temp_obj = json_object_get(row, "temperature");
-                json_t* is_default_obj = json_object_get(row, "is_default");
+                // QueryRef #061 returns data from lookups table
+                // Engine configuration is in the "collection" field as JSON
+                json_t* key_idx_obj = json_object_get(row, "key_idx");
+                json_t* collection_obj = json_object_get(row, "collection");
 
-                if (!id_obj || !json_is_integer(id_obj) ||
-                    !name_obj || !json_is_string(name_obj)) {
+                if (!key_idx_obj || !json_is_integer(key_idx_obj) ||
+                    !collection_obj || !json_is_string(collection_obj)) {
+                    log_this(SR_CHAT, "Missing key_idx or collection in row %zu", LOG_LEVEL_DEBUG, 1, i);
                     continue;
                 }
 
-                int engine_id = (int)json_integer_value(id_obj);
-                const char* name = json_string_value(name_obj);
-                const char* provider_str = provider_obj && json_is_string(provider_obj) ?
-                                           json_string_value(provider_obj) : "openai";
+                int engine_id = (int)json_integer_value(key_idx_obj);
+                const char* collection_json = json_string_value(collection_obj);
+
+                // Parse the collection JSON to extract engine configuration
+                json_error_t collection_error;
+                json_t* collection = json_loads(collection_json, 0, &collection_error);
+                if (!collection) {
+                    log_this(SR_CHAT, "Failed to parse collection JSON for engine %d: %s",
+                             LOG_LEVEL_ERROR, 2, engine_id, collection_error.text);
+                    continue;
+                }
+
+                // Extract engine configuration from collection
+                json_t* name_obj = json_object_get(collection, "name");
+                json_t* engine_obj = json_object_get(collection, "engine");
+                json_t* model_obj = json_object_get(collection, "model");
+                json_t* endpoint_obj = json_object_get(collection, "endpoint");
+                json_t* api_key_obj = json_object_get(collection, "api key");
+                json_t* limit_obj = json_object_get(collection, "limit");
+                json_t* default_obj = json_object_get(collection, "default");
+                json_t* liveliness_obj = json_object_get(collection, "liveliness");
+
+                const char* name = name_obj && json_is_string(name_obj) ?
+                                   json_string_value(name_obj) : "unnamed";
+                const char* provider_str = engine_obj && json_is_string(engine_obj) ?
+                                           json_string_value(engine_obj) : "openai";
                 const char* model = model_obj && json_is_string(model_obj) ?
                                     json_string_value(model_obj) : name;
-                const char* api_url = url_obj && json_is_string(url_obj) ?
-                                      json_string_value(url_obj) : "";
-                const char* api_key = key_obj && json_is_string(key_obj) ?
-                                      json_string_value(key_obj) : "";
-                int max_tokens = max_tokens_obj && json_is_integer(max_tokens_obj) ?
-                                 (int)json_integer_value(max_tokens_obj) : 4096;
-                double temperature = temp_obj && json_is_real(temp_obj) ?
-                                     json_real_value(temp_obj) : 0.7;
-                bool is_default = is_default_obj && json_is_boolean(is_default_obj) ?
-                                  json_boolean_value(is_default_obj) : false;
+                const char* api_url = endpoint_obj && json_is_string(endpoint_obj) ?
+                                      json_string_value(endpoint_obj) : "";
+                const char* api_key = api_key_obj && json_is_string(api_key_obj) ?
+                                      json_string_value(api_key_obj) : "";
+                int max_tokens = limit_obj && json_is_integer(limit_obj) ?
+                                 (int)json_integer_value(limit_obj) : 4096;
+                bool is_default = default_obj && json_is_boolean(default_obj) ?
+                                  json_boolean_value(default_obj) : false;
+                int liveliness = liveliness_obj && json_is_integer(liveliness_obj) ?
+                                 (int)json_integer_value(liveliness_obj) : 300;
 
                 ChatEngineProvider provider = chat_engine_provider_from_string(provider_str);
 
                 ChatEngineConfig* engine = chat_engine_config_create(
                     engine_id, name, provider, model, api_url, api_key,
-                    max_tokens, temperature, is_default
+                    max_tokens, 0.7, is_default, liveliness
                 );
 
                 if (engine) {
@@ -602,6 +641,8 @@ bool chat_engine_cache_load_from_database(ChatEngineCache* cache, const char* da
                         chat_engine_config_destroy(engine);
                     }
                 }
+
+                json_decref(collection);
             }
             json_decref(root);
         }
@@ -654,7 +695,14 @@ bool chat_engine_cache_bootstrap_for_database(const char* database_name) {
     }
 
     // Load from database
-    return chat_engine_cache_load_from_database(db_queue->chat_engine_cache, database_name);
+    bool success = chat_engine_cache_load_from_database(db_queue->chat_engine_cache, database_name);
+
+    // Start health monitoring if engines were loaded (Phase 2.5)
+    if (success && db_queue->chat_engine_cache) {
+        chat_health_monitor_start(db_queue->chat_engine_cache);
+    }
+
+    return success;
 }
 
 // Manual refresh - reloads cache from database
@@ -669,7 +717,7 @@ bool chat_engine_cache_refresh(ChatEngineCache* cache) {
 }
 
 // Check if refresh is needed based on interval
-bool chat_engine_cache_should_refresh(ChatEngineCache* cache, int refresh_interval_seconds) {
+bool chat_engine_cache_should_refresh(const ChatEngineCache* cache, int refresh_interval_seconds) {
     if (!cache) return false;
 
     time_t now = time(NULL);
@@ -679,7 +727,74 @@ bool chat_engine_cache_should_refresh(ChatEngineCache* cache, int refresh_interv
 }
 
 // Get last refresh timestamp
-time_t chat_engine_cache_get_last_refresh(ChatEngineCache* cache) {
+time_t chat_engine_cache_get_last_refresh(const ChatEngineCache* cache) {
     if (!cache) return 0;
     return cache->last_refresh;
+}
+
+// Update engine health after a request (Phase 2.5)
+void chat_engine_config_update_health(ChatEngineConfig* engine, bool success, double response_time_ms) {
+    if (!engine) return;
+
+    pthread_mutex_lock(&engine->health_mutex);
+
+    if (success) {
+        engine->last_confirmed_working = time(NULL);
+        engine->consecutive_failures = 0;
+        engine->is_healthy = true;
+
+        // Update rolling average response time (exponential moving average)
+        if (engine->avg_response_time_ms == 0.0) {
+            engine->avg_response_time_ms = response_time_ms;
+        } else {
+            engine->avg_response_time_ms = (engine->avg_response_time_ms * 0.9) + (response_time_ms * 0.1);
+        }
+    } else {
+        engine->consecutive_failures++;
+        // Mark unhealthy after 3 consecutive failures
+        if (engine->consecutive_failures >= 3) {
+            engine->is_healthy = false;
+        }
+    }
+
+    pthread_mutex_unlock(&engine->health_mutex);
+}
+
+// Mark engine as health checked (Phase 2.5)
+void chat_engine_config_mark_health_checked(ChatEngineConfig* engine, bool is_healthy) {
+    if (!engine) return;
+
+    pthread_mutex_lock(&engine->health_mutex);
+
+    engine->last_health_check = time(NULL);
+
+    if (is_healthy) {
+        engine->is_healthy = true;
+        engine->consecutive_failures = 0;
+    } else {
+        engine->consecutive_failures++;
+        if (engine->consecutive_failures >= 3) {
+            engine->is_healthy = false;
+        }
+    }
+
+    pthread_mutex_unlock(&engine->health_mutex);
+}
+
+// Get engine status as string (Phase 2.5)
+const char* chat_engine_config_get_status(ChatEngineConfig* engine) {
+    if (!engine) return "unknown";
+
+    pthread_mutex_lock(&engine->health_mutex);
+    bool healthy = engine->is_healthy;
+    int failures = engine->consecutive_failures;
+    pthread_mutex_unlock(&engine->health_mutex);
+
+    if (!healthy) {
+        return "unavailable";
+    }
+    if (failures > 0) {
+        return "degraded";
+    }
+    return "healthy";
 }

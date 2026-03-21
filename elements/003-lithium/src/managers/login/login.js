@@ -390,7 +390,7 @@ export default class LoginManager {
                 <span>Login</span>
               </button>
               <button type="button" class="login-btn-icon tooltip" id="login-logs-btn" data-tooltip="View Session Log">
-                <fa fa-scroll></fa>
+                <fa fa-receipt></fa>
               </button>
               <button type="button" class="login-btn-icon tooltip" id="login-help-btn" data-tooltip="Help">
                 <fa circle-question></fa>
