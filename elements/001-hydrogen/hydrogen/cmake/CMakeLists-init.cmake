@@ -49,6 +49,7 @@ pkg_check_modules(WEBSOCKETS REQUIRED libwebsockets)
 pkg_check_modules(BROTLI REQUIRED libbrotlienc libbrotlidec)
 pkg_check_modules(UUID REQUIRED uuid)
 pkg_check_modules(LUA REQUIRED lua)
+pkg_check_modules(CURL REQUIRED libcurl)
 
 find_package(OpenSSL REQUIRED)
 find_package(Threads REQUIRED)
@@ -65,6 +66,7 @@ set(HYDROGEN_BASE_LIBS
     ${BROTLI_LIBRARIES}
     ${UUID_LIBRARIES}
     ${LUA_LIBRARIES}
+    ${CURL_LIBRARIES}
 )
 
 # Include directories
@@ -79,6 +81,7 @@ set(HYDROGEN_INCLUDE_DIRS
     ${BROTLI_INCLUDE_DIRS}
     ${UUID_INCLUDE_DIRS}
     ${LUA_INCLUDE_DIRS}
+    ${CURL_INCLUDE_DIRS}
 )
 
 # Source file discovery
@@ -142,6 +145,7 @@ function(hydrogen_add_executable_target target_name build_type extra_cflags extr
                 ${BROTLI_CFLAGS}
                 ${UUID_CFLAGS}
                 ${LUA_CFLAGS}
+                ${CURL_CFLAGS}
                 ${PROJECT_INCLUDE_FLAGS}
                 -c ${SOURCE_FILE} -o ${OUTPUT_OBJ}
             DEPENDS ${SOURCE_FILE}

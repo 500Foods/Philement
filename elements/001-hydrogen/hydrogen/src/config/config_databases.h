@@ -49,6 +49,8 @@ typedef struct DatabaseConnection {
     int max_queries_per_request;       // Maximum queries allowed per request (default: 10, range: 1-100)
     DatabaseQueues queues; // Queue configuration for this connection
     json_t* parameters;    // JSON object containing parameter values for queries
+    // Chat service configuration (Phase 1) - simplified to boolean only
+    bool chat;                  // Whether chat service is enabled for this database
 } DatabaseConnection;
 
 // Structure for overall database configuration

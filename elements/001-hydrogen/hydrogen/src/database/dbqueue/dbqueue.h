@@ -18,6 +18,7 @@
 typedef struct DatabaseHandle DatabaseHandle;
 typedef struct DatabaseEngineInterface DatabaseEngineInterface;
 typedef struct ConnectionConfig ConnectionConfig;
+typedef struct ChatEngineCache ChatEngineCache;
 
 // Queue types per database connection for different priority levels
 #define QUEUE_TYPE_SLOW    "slow"
@@ -102,6 +103,9 @@ struct DatabaseQueue {
 
     // Query Table Cache (QTC) - shared across all queues for this database
     QueryTableCache* query_cache;                  // In-memory cache of query templates
+
+    // Chat Engine Cache (CEC) - shared across all queues for this database
+    struct ChatEngineCache* chat_engine_cache;     // In-memory cache of AI engine configs
 
     // DQM Statistics for this database
     DQMStatistics dqm_stats;

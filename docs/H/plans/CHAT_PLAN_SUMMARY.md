@@ -19,6 +19,12 @@ This document summarizes the 14-phase implementation plan for the Chat Proxy Ser
    - Token pre-counting and retry mechanisms
    - **Gate**: CEC loads successfully, proxy/builder/parser unit tests pass
 
+2.5. **[CHAT_PLAN_PHASE_2_5.md](CHAT_PLAN_PHASE_2_5.md)** - Chat Status and Monitoring
+   - Health tracking with configurable Liveliness interval
+   - Augmented `/api/conduit/status` endpoint with model information
+   - Prometheus metrics for chat operations
+   - **Gate**: Status endpoint returns model health, Prometheus metrics accessible
+
 3. **[CHAT_PLAN_PHASE_3.md](CHAT_PLAN_PHASE_3.md)** - Public Endpoints (chat, chats)
    - Single and batch chat endpoints
    - Database parameter extraction
@@ -111,6 +117,7 @@ This phased approach ensures:
 
 Each phase depends on the successful completion of the previous phase's testable gate. This creates a solid foundation where:
 - Phases 1-2 establish infrastructure and core components
+- Phase 2.5 adds monitoring and observability before public endpoints
 - Phases 3-5 deliver progressively more sophisticated API endpoints
 - Phases 6-10 enhance performance and storage efficiency
 - Phases 11-14 add advanced features and enterprise capabilities

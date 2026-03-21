@@ -107,6 +107,7 @@
 #define SR_WEBSOCKET_LIB    "WebSocket-Lib"     // Low-level libwebsockets diagnostics
 #define SR_THREADS_LIB      "Threads-Lib"       // Tracks thread changes
 #define SR_BERYLLIUM        "Beryllium"         // G-code parsing
+#define SR_CHAT             "Chat"              // Chat/AI proxy service
 
 #define INITIAL_REGISTRY_CAPACITY 20
 #define MAX_DEPENDENCIES 20

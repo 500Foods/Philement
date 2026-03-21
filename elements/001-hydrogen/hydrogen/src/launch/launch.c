@@ -22,8 +22,11 @@
  * - 18. Notify
  */
 
- // Global includes 
+ // Global includes
 #include <src/hydrogen.h>
+
+// Library includes
+#include <curl/curl.h>
 
 // Local includes
 #include "launch.h"
@@ -316,7 +319,15 @@ int startup_hydrogen(const char* config_path) {
         log_this(SR_STARTUP, "Missing core library dependencies", LOG_LEVEL_ERROR, 0);
         return 0;
     }
-       
+
+    // Initialize libcurl globally
+    CURLcode curl_result = curl_global_init(CURL_GLOBAL_DEFAULT);
+    if (curl_result != CURLE_OK) {
+        log_this(SR_STARTUP, "Failed to initialize libcurl: %s", LOG_LEVEL_ERROR, 1, curl_easy_strerror(curl_result));
+        return 0;
+    }
+    log_this(SR_STARTUP, "libcurl initialized successfully", LOG_LEVEL_DEBUG, 0);
+
     // Load configuration
     // Store config path for restart
     if (config_path) {
