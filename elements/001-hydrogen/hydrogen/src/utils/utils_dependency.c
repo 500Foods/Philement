@@ -56,6 +56,7 @@ typedef struct {
  static const char *brotli_paths[] = {"libbrotlidec.so", "/lib64/libbrotlidec.so.1", "/usr/lib/libbrotlidec.so", "/usr/lib/x86_64-linux-gnu/libbrotlidec.so.1", NULL};
  static const char *libtar_paths[] = {"libtar.so", "/usr/lib64/libtar.so.1", "/usr/lib64/libtar.so", "/lib64/libtar.so.1", "/usr/lib/libtar.so", "/usr/lib/x86_64-linux-gnu/libtar.so", NULL};
  static const char *lua_paths[] = {"liblua.so", "/lib64/liblua.so.5.4", "/usr/lib/liblua.so", "/usr/lib/x86_64-linux-gnu/liblua.so.5.4", NULL};
+ static const char *libcurl_paths[] = {"libcurl.so", "/lib64/libcurl.so.4", "/usr/lib/libcurl.so", "/usr/lib/x86_64-linux-gnu/libcurl.so.4", NULL};
  
  static const char *jansson_funcs[] = {"jansson_version_str", NULL};
  static const char *microhttpd_funcs[] = {"MHD_get_version", NULL};
@@ -64,6 +65,7 @@ typedef struct {
  static const char *brotli_funcs[] = {"BrotliDecoderVersion", NULL};
  static const char *libtar_funcs[] = {"libtar_version", NULL};
  static const char *lua_funcs[] = {NULL};
+ static const char *libcurl_funcs[] = {"curl_version", NULL};
 
 // Database configurations
 static const DatabaseDependencyConfig db_configs[] = {
@@ -179,7 +181,8 @@ void save_cache(const char *db_name, const char *version) {
      {"OpenSSL", openssl_paths, openssl_funcs, "3.2.4", false, false},
      {"libbrotlidec", brotli_paths, brotli_funcs, "1.1.0", false, false},
      {"libtar", libtar_paths, libtar_funcs, "1.2.20", false, false},
-     {"lua", lua_paths, lua_funcs, "5.4", false, false}
+     {"lua", lua_paths, lua_funcs, "5.4", false, false},
+     {"libcurl", libcurl_paths, libcurl_funcs, "8.15.0", false, true}
  };
  
  static const char *get_status_string(LibraryStatus status) {

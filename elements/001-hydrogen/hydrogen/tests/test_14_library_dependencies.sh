@@ -63,9 +63,9 @@ check_dependency_log() {
     
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Check Dependency: ${dep_name}"
     
-    # Extract the full dependency line
+    # Extract the full dependency line (match library name after the dash marker to avoid false matches in version strings)
     local dep_line
-    dep_line=$("${GREP}" "DepCheck.*${dep_name}.*Status:" "${log_file}" 2>/dev/null)
+    dep_line=$("${GREP}" "DepCheck.*― ${dep_name}.*Status:" "${log_file}" 2>/dev/null)
     
     if [[ -n "${dep_line}" ]]; then
         # Extract version information using sed
@@ -223,6 +223,7 @@ check_dependency_log "libwebsockets" "${LOG_FILE}"
 check_dependency_log "OpenSSL" "${LOG_FILE}"
 check_dependency_log "libbrotlidec" "${LOG_FILE}"
 check_dependency_log "libtar" "${LOG_FILE}"
+check_dependency_log "libcurl" "${LOG_FILE}"
 
 # Check database dependencies (using system commands)
 check_dependency_log "DB2" "${LOG_FILE}"

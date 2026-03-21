@@ -44,6 +44,7 @@ void setUp(void) {
     mock_cache_entry.queue_type = (char*)"default";
     mock_cache_entry.timeout_seconds = 30;
     mock_cache_entry.query_ref = 42;  // Set the query_ref for the mock
+    mock_cache_entry.query_type = 10; // Public query type (not 0 or 1000-1010)
 
     // Initialize mock query cache
     memset(&mock_query_cache, 0, sizeof(QueryTableCache));

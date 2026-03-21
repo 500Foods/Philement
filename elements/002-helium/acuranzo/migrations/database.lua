@@ -215,6 +215,7 @@ local database = {
         cfg.STATUS_ACTIVE = self.query_status.active
 
         -- Lookup #28
+        cfg.TYPE_INTERNAL_SQL = self.query_types.internal_sql
         cfg.TYPE_SQL = self.query_types.system_sql
         cfg.TYPE_PUBLIC = self.query_types.public
         cfg.TYPE_FORWARD_MIGRATION = self.query_types.forward_migration

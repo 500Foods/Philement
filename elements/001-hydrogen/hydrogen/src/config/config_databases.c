@@ -270,6 +270,11 @@ bool load_database_config(json_t* root, AppConfig* config) {
                 }
             }
 
+            // Extract Chat configuration (Phase 1) - simplified boolean only
+            json_t* chat_obj = json_object_get(conn_obj, "Chat");
+            conn->chat = (chat_obj && json_is_boolean(chat_obj)) ?
+                         json_boolean_value(chat_obj) : false;
+
             // Process queue configuration with defaults
             json_t* queues_obj = json_object_get(conn_obj, "Queues");
             if (queues_obj && json_is_object(queues_obj)) {
@@ -438,6 +443,10 @@ bool load_database_config(json_t* root, AppConfig* config) {
                 // Migrations
                 snprintf(kpath, sizeof(kpath), "%s.Migrations", cpath);
                 PROCESS_STRING(NULL, conn, migrations, kpath, "Databases");
+
+                // Chat configuration (Phase 1) - simplified boolean
+                snprintf(kpath, sizeof(kpath), "%s.Chat", cpath);
+                PROCESS_BOOL(root, conn, chat, kpath, "Databases");
 
             } while (0);
 
@@ -717,6 +726,9 @@ void dump_database_config(const DatabaseConfig* config) {
             log_this(SR_CONFIG_CURRENT, "――― AutoMigration: %s", LOG_LEVEL_STATE, 1, conn->auto_migration ? "true" : "false");
             log_this(SR_CONFIG_CURRENT, "――― TestMigration: %s", LOG_LEVEL_STATE, 1, conn->test_migration ? "true" : "false");
             log_this(SR_CONFIG_CURRENT, "――― Migrations: %s", LOG_LEVEL_STATE, 1, conn->migrations ? conn->migrations : "(not set)");
+
+            // Dump chat configuration (Phase 1) - simplified boolean
+            log_this(SR_CONFIG_CURRENT, "――― Chat: %s", LOG_LEVEL_STATE, 1, conn->chat ? "enabled" : "disabled");
 
             // Dump queue configurations
             log_this(SR_CONFIG_CURRENT, "――― Queues", LOG_LEVEL_STATE, 0);

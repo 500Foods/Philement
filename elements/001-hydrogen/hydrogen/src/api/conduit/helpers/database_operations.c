@@ -62,6 +62,13 @@ bool lookup_database_and_query(DatabaseQueue** db_queue, QueryCacheEntry** cache
         return false;
     }
 
+    // Enforce query type restrictions: block internal (0) and migration (1000-1010) queries
+    int query_type = (*cache_entry)->query_type;
+    if (query_type == 0 || (query_type >= 1000 && query_type <= 1010)) {
+        *cache_entry = NULL; // Prevent access to restricted query types
+        return false;
+    }
+
     return true;
 }
 #endif
