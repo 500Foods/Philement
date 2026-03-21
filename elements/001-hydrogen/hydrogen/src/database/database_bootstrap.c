@@ -20,6 +20,7 @@
 #include "database_bootstrap.h"
 #include "database_cache.h"
 #include "migration/migration.h"
+#include <src/api/conduit/chat_common/chat_engine_cache.h>
 
 #ifdef USE_MOCK_DATABASE_ENGINE
 #include <unity/mocks/mock_database_engine.h>
@@ -342,14 +343,18 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
                      }
                      json_decref(root);
 
-                      // Log QTC population completion
-                      if (db_queue->query_cache) {
-                          size_t qtc_count = query_cache_get_entry_count(db_queue->query_cache);
-                          log_this(dqm_label, "QTC population completed: %zu queries loaded", LOG_LEVEL_TRACE, 1, qtc_count);
-                      }
-                 }
-             }
-             } // End of should_process_results block
+                       // Log QTC population completion
+                       if (db_queue->query_cache) {
+                           size_t qtc_count = query_cache_get_entry_count(db_queue->query_cache);
+                           log_this(dqm_label, "QTC population completed: %zu queries loaded", LOG_LEVEL_TRACE, 1, qtc_count);
+                       }
+
+                       // Populate Chat Engine Cache (CEC) if chat is enabled
+                       // This uses QueryRef #061 which was loaded into QTC above
+                       chat_engine_cache_bootstrap_for_database(db_queue->database_name);
+                  }
+              }
+              } // End of should_process_results block
          } else {
             // Bootstrap failed - expected for empty databases
             log_this(dqm_label, "Bootstrap query failed (expected for empty DB): %s", LOG_LEVEL_DEBUG, 1,

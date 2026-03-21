@@ -1,11 +1,14 @@
 /*
  * State Management
- * 
+ *
  */
 
  // Global includes
 #include <src/hydrogen.h>
 #include <stdint.h>  // For uintptr_t
+
+// Library includes
+#include <curl/curl.h>
 
 // Local includes
 #include "state.h"
@@ -139,7 +142,11 @@ void graceful_shutdown(void) {
 
     // Trigger landing sequence
     bool landing_ok = check_all_landing_readiness();
-    
+
+    // Cleanup libcurl global resources
+    curl_global_cleanup();
+    log_this(subsystem, "libcurl cleanup complete", LOG_LEVEL_DEBUG, 0);
+
     // If landing failed and this was a restart attempt, reset flags
     if (!landing_ok && restart_requested) {
         __sync_bool_compare_and_swap(&restart_requested, 1, 0);

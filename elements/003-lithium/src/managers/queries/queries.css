@@ -924,6 +924,8 @@
   min-height: 0;
   overflow-y: auto;
   overflow-x: auto;
+  height: calc(100% - 40px) !important;
+  max-height: calc(100% - 40px) !important;
 }
 
 /* Header styling - match row height and padding */
