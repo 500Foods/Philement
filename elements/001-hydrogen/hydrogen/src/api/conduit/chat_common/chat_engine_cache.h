@@ -50,6 +50,14 @@ typedef struct ChatEngineConfig {
     unsigned long long conversations_24h;  // Conversation count (24h)
     unsigned long long tokens_24h;         // Token usage count (24h)
     pthread_mutex_t health_mutex;     // Protect health fields
+
+    // Engine limits (Phase 3)
+    int max_images_per_message;       // Maximum images allowed per message
+    int max_payload_mb;               // Maximum request payload size in MB
+    int max_concurrent_requests;      // Maximum concurrent requests per engine
+
+    // Provider-specific settings (Phase 5)
+    bool use_native_api;              // Use provider's native API (not OpenAI-compatible)
 } ChatEngineConfig;
 
 // Chat Engine Cache structure (per database)
@@ -86,7 +94,9 @@ void chat_engine_cache_update_usage(ChatEngineCache* cache, int engine_id);
 ChatEngineConfig* chat_engine_config_create(int engine_id, const char* name, ChatEngineProvider provider,
                                            const char* model, const char* api_url, const char* api_key,
                                            int max_tokens, double temperature_default, bool is_default,
-                                           int liveliness_seconds);
+                                           int liveliness_seconds, int max_images_per_message,
+                                           int max_payload_mb, int max_concurrent_requests,
+                                           bool use_native_api);
 void chat_engine_config_destroy(ChatEngineConfig* engine);
 void chat_engine_config_clear_key(ChatEngineConfig* engine);
 

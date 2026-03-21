@@ -1,85 +1,78 @@
-# Chat Service - Phase 12: Streaming Support
+# Chat Service - Phase 12: Advanced Multi-modal Features
 
 ## Objective
-Add streaming response support (Server-Sent Events) for real-time chat interactions.
+Implement advanced multi-modal support including media upload endpoint and extended segment metadata for various content types.
 
 ## Prerequisites
-- Phase 11 completed and verified (cross-server segment recovery working)
+- Phase 11 completed and verified (streaming support working)
 
 ## Testable Gate
 Before proceeding to Phase 13, the following must be verified:
-- POST /api/conduit/auth_chat/stream endpoint registered and functional
-- Stream: true parameter handled correctly
-- Server-Sent Events format implemented properly
-- Streaming works with all supported AI providers
-- Unit and integration tests pass for streaming functionality
-- No regression in existing non-streaming endpoints
+- POST /api/conduit/upload endpoint registered and functional
+- Media assets table created with proper schema
+- Conversation segments table extended with content_type, mime_type, metadata
+- Provider-specific handling works (especially Anthropic translation)
+- Engine limits enforced (max_images_per_message, max_payload_mb)
+- Unit and integration tests pass for multi-modal features
+- No regression in existing chat or streaming functionality
 
 ## Tasks
 
-### 1. Implement streaming endpoint
-- Create `auth_chat_stream/auth_chat_stream.h` and `auth_chat_stream/auth_chat_stream.c`
-- Handle POST /api/conduit/auth_chat/stream
-- Require JWT authentication (same as auth_chat)
-- Extract database from JWT claims
-- Support stream: true parameter
+### 1. Create media upload endpoint
+- Create `upload/upload.h` and `upload/upload.c`
+- Handle POST /api/conduit/upload and /api/conduit/auth_upload
+- Accept multipart/form-data file uploads
+- Compute SHA-256 hash of file content
+- Store in media_assets table (or S3/minio if configured)
+- Return media_hash for use in chat messages
+- Support both public and authenticated variants
 
-### 2. Server-Sent Events implementation
-- Set appropriate HTTP headers for SSE:
-  - Content-Type: text/event-stream
-  - Cache-Control: no-cache
-  - Connection: keep-alive
-- Implement proper event formatting:
-  - id: (optional)
-  - event: message
-  - data: {JSON payload}
-  - \n\n separator
-- Handle reconnect mechanisms with Last-Event-ID header
+### 2. Create media_assets table (Helium migration)
+- media_hash VARCHAR(64) PRIMARY KEY (SHA-256 of file content)
+- media_data BLOB (binary data or S3 URL reference)
+- media_size INTEGER
+- mime_type VARCHAR(100)
+- created_at, last_accessed, access_count tracking
+- Appropriate indexes for performance
 
-### 3. Streaming integration with proxy
-- Modify chat_proxy.c to support streaming responses
-- Process incoming chunks as they arrive
-- Parse partial JSON if needed (for chunked responses)
-- Forward chunks to client as SSE events
-- Handle connection timeouts and errors appropriately
+### 3. Extend conversation_segments table
+- Add content_type VARCHAR(20) DEFAULT 'text' (text|image|pdf|audio|document)
+- Add mime_type VARCHAR(100) (image/jpeg, application/pdf, etc.)
+- Add metadata JSONB for provider-specific data
+- Store additional info like dimensions, duration, token estimates
 
-### 4. Provider-specific streaming support
-- Verify OpenAI, xAI, Ollama support streaming natively
-- Handle Anthropic streaming if available
-- Implement fallback to non-streaming for providers without streaming
-- Maintain consistent event format regardless of provider
+### 4. Implement media URL handling
+- Support media:hash format in chat messages
+- Server resolves media:hash to actual base64 or URL before proxying
+- Cache resolved media to avoid repeated lookups
+- Handle missing media gracefully (broken image/icons)
 
-### 5. Message accumulation
-- Accumulate streaming chunks to form complete message
-- Calculate final token counts when stream ends
-- Store complete message in conversation_segments (after stream completion)
-- Provide intermediate events for typing indicators if desired
+### 5. Provider-specific multi-modal handling
+- Extend chat_request_builder for provider-specific translation
+- Implement Anthropic vision format translation (as in original plan)
+- Handle varying vision capabilities across providers
+- Graceful degradation for providers with limited multi-modal support
 
-### 6. Error handling in streams
-- Send error events in SSE format when issues occur
-- Properly terminate stream on unrecoverable errors
-- Handle client disconnections gracefully
-- Clean up resources when stream ends
+### 6. Implement engine limits enforcement
+- Validate max_images_per_message per engine configuration
+- Validate max_payload_mb before processing requests
+- Return clear error messages when limits exceeded
+- Log limit violations for monitoring and abuse detection
 
-### 7. Registration in api_service.c
-- Add to endpoint_requires_auth(): "conduit/auth_chat/stream"
-- Add to endpoint_expects_json(): "conduit/auth_chat/stream" 
-- Add routing strcmp() block for the path
-
-### 8. Unit and integration tests
-- Test streaming with mock server that sends delayed chunks
-- Verify proper SSE format and event parsing
-- Test accumulation of chunks into complete message
-- Test error handling and stream termination
-- Test client disconnection handling
-- Ensure existing non-streaming endpoints unaffected
+### 7. Unit and integration tests
+- Test media upload and hash generation
+- Test media:hash resolution in chat messages
+- Verify provider-specific format translation (especially Anthropic)
+- Test engine limits enforcement
+- Test storage and retrieval of various media types
+- Ensure existing text-only chat unaffected
 
 ## Verification Steps
-1. Verify endpoint registration in api_service.c
-2. Test streaming endpoint returns proper SSE headers
-3. Confirm stream: true parameter enables streaming mode
-4. Verify chunks are sent as proper SSE events
-5. Test message accumulation and final storage
-6. Test error handling in streaming context
-7. Run unit and integration tests for streaming
-8. Ensure existing chat endpoints still work normally
+1. Verify media upload endpoint registration
+2. Test uploading various file types (images, PDFs, etc.)
+3. Confirm media:hash resolution works in chat messages
+4. Verify Anthropic vision format translation accuracy
+5. Test engine limits are properly enforced
+6. Run unit and integration tests for multi-modal features
+7. Ensure existing chat, streaming, and cache functionality unaffected
+8. Test media asset deduplication (same file stored once)

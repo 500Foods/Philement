@@ -136,7 +136,9 @@ void chat_engine_cache_clear(ChatEngineCache* cache) {
 ChatEngineConfig* chat_engine_config_create(int engine_id, const char* name, ChatEngineProvider provider,
                                            const char* model, const char* api_url, const char* api_key,
                                            int max_tokens, double temperature_default, bool is_default,
-                                           int liveliness_seconds) {
+                                           int liveliness_seconds, int max_images_per_message,
+                                           int max_payload_mb, int max_concurrent_requests,
+                                           bool use_native_api) {
     ChatEngineConfig* engine = (ChatEngineConfig*)malloc(sizeof(ChatEngineConfig));
     if (!engine) {
         log_this(SR_CHAT, "Failed to allocate memory for chat engine config", LOG_LEVEL_ERROR, 0);
@@ -163,6 +165,14 @@ ChatEngineConfig* chat_engine_config_create(int engine_id, const char* name, Cha
     engine->conversations_24h = 0;
     engine->tokens_24h = 0;
     pthread_mutex_init(&engine->health_mutex, NULL);
+
+    // Initialize engine limits (Phase 3)
+    engine->max_images_per_message = max_images_per_message > 0 ? max_images_per_message : 10;  // Default 10
+    engine->max_payload_mb = max_payload_mb > 0 ? max_payload_mb : 10;  // Default 10MB
+    engine->max_concurrent_requests = max_concurrent_requests > 0 ? max_concurrent_requests : 100;  // Default 100
+
+    // Initialize provider-specific settings (Phase 5)
+    engine->use_native_api = use_native_api;
 
     // Copy strings with bounds checking
     if (name) {
@@ -608,6 +618,10 @@ bool chat_engine_cache_load_from_database(ChatEngineCache* cache, const char* da
                 json_t* limit_obj = json_object_get(collection, "limit");
                 json_t* default_obj = json_object_get(collection, "default");
                 json_t* liveliness_obj = json_object_get(collection, "liveliness");
+                json_t* max_images_obj = json_object_get(collection, "max_images_per_message");
+                json_t* max_payload_obj = json_object_get(collection, "max_payload_mb");
+                json_t* max_concurrent_obj = json_object_get(collection, "max_concurrent_requests");
+                json_t* use_native_obj = json_object_get(collection, "use_native_api");
 
                 const char* name = name_obj && json_is_string(name_obj) ?
                                    json_string_value(name_obj) : "unnamed";
@@ -625,12 +639,21 @@ bool chat_engine_cache_load_from_database(ChatEngineCache* cache, const char* da
                                   json_boolean_value(default_obj) : false;
                 int liveliness = liveliness_obj && json_is_integer(liveliness_obj) ?
                                  (int)json_integer_value(liveliness_obj) : 300;
+                int max_images = max_images_obj && json_is_integer(max_images_obj) ?
+                                 (int)json_integer_value(max_images_obj) : 10;
+                int max_payload = max_payload_obj && json_is_integer(max_payload_obj) ?
+                                  (int)json_integer_value(max_payload_obj) : 10;
+                int max_concurrent = max_concurrent_obj && json_is_integer(max_concurrent_obj) ?
+                                     (int)json_integer_value(max_concurrent_obj) : 100;
+                bool use_native = use_native_obj && json_is_boolean(use_native_obj) ?
+                                  json_boolean_value(use_native_obj) : false;
 
                 ChatEngineProvider provider = chat_engine_provider_from_string(provider_str);
 
                 ChatEngineConfig* engine = chat_engine_config_create(
                     engine_id, name, provider, model, api_url, api_key,
-                    max_tokens, 0.7, is_default, liveliness
+                    max_tokens, 0.7, is_default, liveliness, max_images, max_payload, max_concurrent,
+                    use_native
                 );
 
                 if (engine) {
