@@ -70,8 +70,34 @@ ChatProxyResult* chat_proxy_send_request(const ChatEngineConfig* engine,
 
 // Retry logic with exponential backoff
 ChatProxyResult* chat_proxy_send_with_retry(const ChatEngineConfig* engine,
-                                            const char* request_json,
-                                            const ChatProxyConfig* config);
+                                             const char* request_json,
+                                             const ChatProxyConfig* config);
+
+// Multi-request structure for parallel execution
+typedef struct ChatMultiRequest {
+    const ChatEngineConfig* engine;   // Engine configuration
+    const char* request_json;         // Request JSON body
+    char* engine_name;                // Engine name (for result correlation)
+} ChatMultiRequest;
+
+// Multi-result structure for parallel execution
+typedef struct ChatMultiResult {
+    ChatProxyResult** results;        // Array of results (matches request order)
+    size_t count;                     // Number of results
+    double total_time_ms;             // Total time for all requests
+    size_t success_count;             // Number of successful requests
+    size_t failure_count;             // Number of failed requests
+} ChatMultiResult;
+
+// Create and destroy multi-result
+ChatMultiResult* chat_multi_result_create(size_t count);
+void chat_multi_result_destroy(ChatMultiResult* multi_result);
+
+// Send multiple requests in parallel using curl_multi
+// This executes requests to multiple AI engines simultaneously (fan-out pattern)
+ChatMultiResult* chat_proxy_send_multi(const ChatMultiRequest* requests,
+                                        size_t request_count,
+                                        const ChatProxyConfig* config);
 
 // Utility functions
 const char* chat_proxy_result_code_to_string(ChatProxyResultCode code);

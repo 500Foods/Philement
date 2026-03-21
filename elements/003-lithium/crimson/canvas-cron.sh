@@ -12,8 +12,10 @@ set -e
 
 # Configuration
 BACKUP_DIR="/fvl/tnt/t-500courses/backups/courses"
-OUTPUT_PREFIX="canvas"
+OUTPUT_PREFIX="knowledge/canvas"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+cp /mnt/extra/Projects/Philement/docs/Li/*.md knowledge
 
 # Find the latest PH-003*.imscc file
 # shellcheck disable=SC2312

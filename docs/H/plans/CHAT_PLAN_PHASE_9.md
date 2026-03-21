@@ -1,72 +1,73 @@
-# Chat Service - Phase 9: Context Hashing for Client-Server Optimization
+# Chat Service - Phase 9: Local Disk Cache and LRU
 
 ## Objective
-Reduce bandwidth usage by implementing context hashing where clients send hashes instead of full context for repeated messages.
+Add a local disk cache (LRU) for hot segments to avoid repeated decompression and improve performance for active conversations.
 
 ## Prerequisites
-- Phase 8 completed and verified (existing chat queries updated for hash-based storage)
+- Phase 8 completed and verified (context hashing working)
 
 ## Testable Gate
 Before proceeding to Phase 10, the following must be verified:
-- Context hashing implementation works (SHA-256 of message content)
-- Clients can send context_hashes field instead of full messages
-- Server reconstructs context from hashes using QueryRef A (Get Segments)
-- Bandwidth reduction of 50-90% achieved for long conversations
-- Fallback to full content when hashes not found in cache/DB
-- Unit tests pass for context hashing functionality
-- No regression in existing chat endpoints
+- Local disk cache implemented with 1GB limit
+- LRU eviction policy working correctly
+- Cache stores uncompressed segments (avoiding repeated decompression)
+- Background sync from cache to database functioning
+- Performance improvement measured for conversations active within last hour
+- Unit tests pass for cache operations
+- No regression in existing functionality
 
 ## Tasks
 
-### 1. Implement SHA-256 hashing of message content
-- Add function to compute SHA-256 hash of JSON message content
-- Use existing cryptographic libraries or implement securely
-- Ensure consistent hashing (same content always produces same hash)
+### 1. Design LRU disk cache
+- 1GB storage limit for hot segments
+- Store uncompressed segments to avoid repeated decompression
+- Use LRU (Least Recently Used) eviction policy
+- Persist cache across restarts (metadata tracking)
 
-### 2. Extend chat request format
-- Add optional `context_hashes` field to chat requests
-- When present, contains array of SHA-256 hashes of previous messages
-- Server uses hashes to retrieve segments instead of receiving full content
-- Maintain backward compatibility with full message format
+### 2. Implement cache storage structure
+- Cache directory structure organized by hash prefixes
+- Metadata file tracking access times and LRU ordering
+- Segment files stored as uncompressed JSON for fast access
+- Reference counting for shared segments
 
-### 3. Server-side reconstruction from hashes
-- When context_hashes provided, call QueryRef A to get segments
-- Decompress and parse each segment to reconstruct conversation
-- Validate that reconstructed context matches expected format
-- Handle missing hashes gracefully (request full content for those)
+### 3. Cache integration points
+- Check local cache before database for segment retrieval
+- Store newly created segments in both cache and database
+- Update access time on cache hits
+- Background thread to sync dirty cache entries to database
 
-### 4. Client-side implementation guidance
-- Document how clients should compute and send context hashes
-- Recommend sending hashes for all but the newest message
-- Explain trade-offs (bandwidth vs. computational cost)
-- Provide sample implementation pseudocode
+### 4. LRU eviction implementation
+- Track access timestamps for all cached segments
+- When cache exceeds limit, evict least recently used segments
+- Remove evicted segments from cache storage and metadata
+- Log evictions for monitoring and tuning
 
-### 5. Cache integration
-- Check local LRU disk cache first for segment hashes
-- Fallback to database query if not in local cache
-- Update access statistics on cache hits
-- Populate local cache from database misses
+### 5. Background synchronization
+- Periodically flush dirty cache entries to database
+- Handle cache-database consistency
+- Recovery mechanism for cache corruption
+- Performance tuning for sync frequency
 
-### 6. Performance optimization
-- Implement efficient hash lookup (avoid O(n^2) behavior)
-- Batch segment retrievals when possible
-- Consider predictive prefetching based on conversation patterns
+### 6. Performance monitoring
+- Track cache hit/miss ratios
+- Measure decompression time savings
+- Monitor cache size and eviction rates
+- Log performance metrics for optimization
 
 ### 7. Unit tests
-- Test SHA-256 hash generation consistency
-- Test context reconstruction from hashes
-- Test fallback behavior when hashes not found
-- Test bandwidth savings calculations
-- Test integration with local and database caches
-- Verify no data loss or corruption in reconstruction
+- Test LRU eviction under various access patterns
+- Verify cache-database consistency
+- Test background sync functionality
+- Measure performance improvement scenarios
+- Test cache recovery after unexpected shutdown
 
 ## Verification Steps
-1. Verify SHA-256 hashing produces consistent results
-2. Test sending context_hashes in chat request instead of full content
-3. Confirm server correctly reconstructs context from hashes
-4. Measure bandwidth reduction for sample conversations
-5. Test fallback to full content when hashes unavailable
-6. Verify local cache integration works correctly
-7. Run unit tests for context hashing functionality
-8. Ensure existing chat endpoints still work with full content
-9. Test mixed scenarios (some hashes, some full content)
+1. Verify cache directory structure and metadata files created
+2. Test storing and retrieving segments from local cache
+3. Confirm LRU eviction works when cache limit exceeded
+4. Measure performance improvement for repeated segment access
+5. Test background sync to database
+6. Verify cache recovers correctly after restart
+7. Run unit tests for all cache components
+8. Ensure existing chat functionality unaffected
+9. Test integration with context hashing (Phase 9)

@@ -1,81 +1,72 @@
-# Chat Service - Phase 8: Update Existing Chat Queries
+# Chat Service - Phase 8: Context Hashing for Client-Server Optimization
 
 ## Objective
-Modify existing chat queries to work with the new content-addressable storage model while maintaining backwards compatibility.
+Reduce bandwidth usage by implementing context hashing where clients send hashes instead of full context for repeated messages.
 
 ## Prerequisites
-- Phase 7 completed and verified (content-addressable storage with Brotli working)
+- Phase 7 completed and verified (existing chat queries updated for hash-based storage)
 
 ## Testable Gate
 Before proceeding to Phase 9, the following must be verified:
-- Updated QueryRef #036 (Store Chat) works with hash-based storage
-- Updated QueryRef #041 (Get Chat) reconstructs conversations from hash references
-- Updated QueryRef #039 (Get Chats List) includes segment count and storage metrics
-- New QueryRefs D, E, F work correctly for their respective purposes
-- Backwards compatibility maintained - legacy conversations still readable
-- All existing chat-related tests pass
-- No regression in related functionality
+- Context hashing implementation works (SHA-256 of message content)
+- Clients can send context_hashes field instead of full messages
+- Server reconstructs context from hashes using QueryRef A (Get Segments)
+- Bandwidth reduction of 50-90% achieved for long conversations
+- Fallback to full content when hashes not found in cache/DB
+- Unit tests pass for context hashing functionality
+- No regression in existing chat endpoints
 
 ## Tasks
 
-### 1. Update QueryRef #036 (Store Chat)
-- Modify to store only hash references in convos.segment_refs instead of full text
-- Insert actual segment content via QueryRef B (Store Conversation Segment)
-- Store engine_name, model, tokens, cost, session_id, etc. in convos table
-- Maintain same interface for callers
+### 1. Implement SHA-256 hashing of message content
+- Add function to compute SHA-256 hash of JSON message content
+- Use existing cryptographic libraries or implement securely
+- Ensure consistent hashing (same content always produces same hash)
 
-### 2. Update QueryRef #041 (Get Chat)
-- Major update to return reconstructed conversation from hash references
-- Get segment_refs hash array from convos
-- Call QueryRef A to get actual segment content
-- Decompress and reassemble conversation in correct order
-- Return same format as before for backward compatibility
+### 2. Extend chat request format
+- Add optional `context_hashes` field to chat requests
+- When present, contains array of SHA-256 hashes of previous messages
+- Server uses hashes to retrieve segments instead of receiving full content
+- Maintain backward compatibility with full message format
 
-### 3. Update QueryRef #039 (Get Chats List)
-- Add segment count (length of segment_refs array)
-- Add total storage size calculation (sum of uncompressed sizes)
-- Optionally add compression ratio averages
-- Maintain existing fields for backward compatibility
+### 3. Server-side reconstruction from hashes
+- When context_hashes provided, call QueryRef A to get segments
+- Decompress and parse each segment to reconstruct conversation
+- Validate that reconstructed context matches expected format
+- Handle missing hashes gracefully (request full content for those)
 
-### 4. Create New QueryRef D: Reconstruct Conversation
-- Get all segment hashes for a conversation
-- Return metadata plus instructions to fetch segments
-- Used for audit trails and administrative functions
+### 4. Client-side implementation guidance
+- Document how clients should compute and send context hashes
+- Recommend sending hashes for all but the newest message
+- Explain trade-offs (bandwidth vs. computational cost)
+- Provide sample implementation pseudocode
 
-### 5. Create New QueryRef E: Find Conversations by Segment Content
-- Accept segment hash (pre-computed from search content)
-- Find all convos containing that hash in their segment_refs
-- Return convos_id, convos_ref, session_id, created_at
-- Useful for content search and compliance
+### 5. Cache integration
+- Check local LRU disk cache first for segment hashes
+- Fallback to database query if not in local cache
+- Update access statistics on cache hits
+- Populate local cache from database misses
 
-### 6. Create New QueryRef F: Get Conversation Statistics
-- Analytics query for storage metrics
-- Count total conversations, unique segments
-- Calculate total uncompressed/compressed bytes
-- Average compression ratio and space saved
-- Important for capacity planning and optimization verification
+### 6. Performance optimization
+- Implement efficient hash lookup (avoid O(n^2) behavior)
+- Batch segment retrievals when possible
+- Consider predictive prefetching based on conversation patterns
 
-### 7. Backwards Compatibility Strategy
-- Hybrid read: Check if segment_refs exists, fallback to legacy columns
-- During transition period, support both storage types
-- Automatic migration of legacy content optional (background job)
-- Clear deprecation path for legacy storage
-
-### 8. Unit and Integration Tests
-- Test storing and retrieving chats with new hash-based system
-- Verify backwards compatibility with legacy format
-- Test reconstruction accuracy (no data loss)
-- Test statistics queries return correct values
-- Test search by segment content works
-- Ensure all existing chat-related tests still pass
+### 7. Unit tests
+- Test SHA-256 hash generation consistency
+- Test context reconstruction from hashes
+- Test fallback behavior when hashes not found
+- Test bandwidth savings calculations
+- Test integration with local and database caches
+- Verify no data loss or corruption in reconstruction
 
 ## Verification Steps
-1. Verify updated QueryRef #036 stores hashes, not full content
-2. Test storing a chat and retrieving it via updated #041
-3. Confirm reconstructed chat matches original content exactly
-4. Verify QueryRef #039 returns segment count and size info
-5. Test new QueryRefs D, E, F return expected results
-6. Verify backwards compatibility - legacy chats still readable
-7. Run all existing chat-related tests (test_23_websockets.sh, etc.)
-8. Test hybrid read functionality
-9. Verify no regression in related API endpoints
+1. Verify SHA-256 hashing produces consistent results
+2. Test sending context_hashes in chat request instead of full content
+3. Confirm server correctly reconstructs context from hashes
+4. Measure bandwidth reduction for sample conversations
+5. Test fallback to full content when hashes unavailable
+6. Verify local cache integration works correctly
+7. Run unit tests for context hashing functionality
+8. Ensure existing chat endpoints still work with full content
+9. Test mixed scenarios (some hashes, some full content)

@@ -26,7 +26,11 @@
  #include "conduit/alt_query/alt_query.h"
  #include "conduit/alt_queries/alt_queries.h"
  #include "conduit/status/status.h"
- #include "auth/login/login.h"
+#include "conduit/auth_chat/auth_chat.h"
+#include "conduit/auth_chats/auth_chats.h"
+#include "conduit/alt_chat/alt_chat.h"
+#include "conduit/alt_chats/alt_chats.h"
+#include "auth/login/login.h"
  #include "auth/renew/renew.h"
  #include "auth/logout/logout.h"
  #include "auth/register/register.h"
@@ -178,6 +182,10 @@ bool register_api_endpoints(void) {
         log_this(SR_API, "― %s/conduit/auth_query", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/conduit/auth_queries", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/conduit/alt_queries", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
+        log_this(SR_API, "― %s/conduit/auth_chat", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
+        log_this(SR_API, "― %s/conduit/auth_chats", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
+        log_this(SR_API, "― %s/conduit/alt_chat", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
+        log_this(SR_API, "― %s/conduit/alt_chats", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/conduit/status", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
     log_group_end();
     
@@ -310,6 +318,10 @@ static bool endpoint_requires_auth(const char *path) {
         "conduit/auth_queries",
         "conduit/alt_query",
         "conduit/alt_queries",
+        "conduit/auth_chat",
+        "conduit/auth_chats",
+        "conduit/alt_chat",
+        "conduit/alt_chats",
         NULL  // Sentinel
     };
 
@@ -341,6 +353,10 @@ static bool endpoint_expects_json(const char *path) {
         "conduit/auth_queries",
         "conduit/alt_query",
         "conduit/alt_queries",
+        "conduit/auth_chat",
+        "conduit/auth_chats",
+        "conduit/alt_chat",
+        "conduit/alt_chats",
         NULL  // Sentinel
     };
 
@@ -641,6 +657,22 @@ enum MHD_Result handle_api_request(struct MHD_Connection *connection,
     else if (strcmp(path, "conduit/alt_queries") == 0) {
         return handle_conduit_alt_queries_request(connection, url, method, upload_data,
                                           upload_data_size, con_cls);
+    }
+    else if (strcmp(path, "conduit/auth_chat") == 0) {
+        return handle_auth_chat_request(connection, url, method, upload_data,
+                                        upload_data_size, con_cls);
+    }
+    else if (strcmp(path, "conduit/auth_chats") == 0) {
+        return handle_auth_chats_request(connection, url, method, upload_data,
+                                         upload_data_size, con_cls);
+    }
+    else if (strcmp(path, "conduit/alt_chat") == 0) {
+        return handle_alt_chat_request(connection, url, method, upload_data,
+                                       upload_data_size, con_cls);
+    }
+    else if (strcmp(path, "conduit/alt_chats") == 0) {
+        return handle_alt_chats_request(connection, url, method, upload_data,
+                                        upload_data_size, con_cls);
     }
     else if (strcmp(path, "conduit/status") == 0) {
         return handle_conduit_status_request(connection, url, method, upload_data,
