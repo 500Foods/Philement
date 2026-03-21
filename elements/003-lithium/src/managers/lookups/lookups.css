@@ -753,6 +753,8 @@
   overflow-y: auto;
   overflow-x: auto;
   outline: none;
+  height: calc(100% - 40px) !important;
+  max-height: calc(100% - 40px) !important;  
 }
 
 /* Row styling */

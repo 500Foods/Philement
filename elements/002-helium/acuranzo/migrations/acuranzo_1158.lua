@@ -5,6 +5,7 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 1.0.1 - 2026-03-20 - Minor fixes - set lookup specifically as 38, other syntax adjustments
 -- 1.0.0 - 2026-03-20 - Initial creation for Chat Service Phase 1
 
 return function(engine, design_name, schema_name, cfg)
