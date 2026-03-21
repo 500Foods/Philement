@@ -1,63 +1,80 @@
-# Chat Service - Phase 6: Additional Provider Support
+# Chat Service - Phase 6: Conversation History with Content-Addressable Storage + Brotli
 
 ## Objective
-Add support for additional AI providers beyond OpenAI-compatible APIs, specifically Anthropic native format and Ollama native API.
+Implement content-addressable storage for conversation history with Brotli compression to drastically reduce storage requirements.
 
 ## Prerequisites
-- Phase 5 completed and verified (cross-database endpoints working)
+- Phase 5 completed and verified (additional provider support working)
 
 ## Testable Gate
 Before proceeding to Phase 7, the following must be verified:
-- Anthropic native format requests are properly built and responses parsed
-- Ollama native API support works (when use_native_api: true)
-- Provider-specific configuration options are correctly processed
-- Unit tests pass for each provider's specific request/response handling
-- Existing OpenAI-compatible provider support remains unaffected
+- conversation_segments table created with Brotli-compressed storage
+- convos table extended with segment_refs and usage tracking columns
+- Brotli compression/decompression wrappers functional using existing utils
+- Each message stored as compressed segment with SHA-256 hash
+- Conversation turns stored as arrays of hash references in convos.segment_refs
+- Usage tracking columns (tokens, cost, duration, session_id) working
+- Unit tests for compression, hashing, and storage all pass
+- Existing chat functionality continues to work (backwards compatibility)
 
 ## Tasks
 
-### 1. Implement Anthropic native format support
-- Extend chat_request_builder.c with Anthropic-specific function
-- Convert OpenAI-format messages to Anthropic format when needed
-- Add anthropic-version header handling in chat_proxy.c
-- Implement Anthropic response parser in chat_response_parser.c
-- Handle provider-specific parameters (top_k, etc.)
+### 1. Create conversation_segments table (Helium migration)
+- Table with segment_hash (SHA-256) as PRIMARY KEY
+- Brotli-compressed segment_content BLOB
+- uncompressed_size and compressed_size tracking
+- compression_ratio, created_at, last_accessed, access_count fields
+- Indexes on last_accessed and created_at for cache efficiency
 
-### 2. Implement Ollama native API support
-- Add support for Ollama's native endpoint: http://localhost:11434/api/chat
-- Handle Ollama-specific parameters (num_predict instead of max_tokens)
-- Implement Ollama native response parser
-- Support switching between OpenAI-compatible and native modes via config
+### 2. Extend convos table (Helium migration)
+- Add segment_refs JSONB column for hash references
+- Add engine_name, model columns
+- Add tokens_prompt, tokens_completion, cost_total tracking
+- Add session_id, user_id, duration_ms for analytics
+- Maintain backwards compatibility with legacy columns during transition
 
-### 3. Enhance provider-specific configuration
-- Update ChatEngineConfig to store provider-specific settings
-- Add supported_modalities array to engine config
-- Add max_images_per_message and max_payload_mb limits
-- Validate requests against provider limits before proxying
+### 3. Add Brotli compression/decompression wrappers
+- Wrapper functions around existing src/utils/utils_compression.c
+- Functions for compressing JSON message to Brotli blob
+- Functions for decompressing Brotli blob back to JSON
+- Proper error handling and resource cleanup
 
-### 4. Auto-detection improvements
-- Refine chat_request_build_auto to better handle provider detection
-- Improve chat_response_parse_auto accuracy
-- Add fallback mechanisms for unsupported features
+### 4. Implement storage pipeline
+- On message receipt: JSON -> SHA-256 Hash -> Brotli Compress -> Store
+- Store only hash reference in convos.segment_refs array
+- Check for existing hash before storing (content-addressable deduplication)
+- Update access_count and last_accessed on retrieval
 
-### 5. Provider-specific error handling
-- Map provider-specific error codes to standard response format
-- Handle rate limiting (429) with provider-specific retry-after headers
-- Parse provider error messages for better debugging
+### 5. Implement retrieval pipeline
+- Get hash references from convos.segment_refs
+- Fetch compressed segments from conversation_segments
+- Decompress each segment to reconstruct full conversation
+- Update access metadata on retrieval
 
-### 6. Unit tests
-- Test Anthropic request building with various message formats
-- Test Ollama native API request/response handling
-- Verify provider limit enforcement
-- Test error handling for each provider
-- Ensure backward compatibility with OpenAI-compatible providers
+### 6. Create new QueryRefs (Helium migrations)
+- QueryRef A: Get Conversation Segments by Hash (batch retrieval)
+- QueryRef B: Store Conversation Segment (with deduplication)
+- QueryRef C: Store Chat with Hashes (updated #036)
+- QueryRef D: Reconstruct Conversation (get hashes + metadata)
+- QueryRef E: Find Conversations by Segment Content (audit)
+- QueryRef F: Get Conversation Storage Statistics
+
+### 7. Unit tests
+- Test SHA-256 hash generation and collision resistance
+- Test Brotli compression ratios on sample chat messages
+- Test storage deduplication (same content returns same hash)
+- Test full storage/retrieval pipeline integrity
+- Test access count and last_updated tracking
+- Test error handling for compression/decompression failures
 
 ## Verification Steps
-1. Verify Anthropic native format requests are correctly formed
-2. Test Anthropic response parsing with sample responses
-3. Verify Ollama native API works when use_native_api: true
-4. Confirm Ollama still works with use_native_api: false (OpenAI-compatible)
-5. Test provider-specific limits (images, payload size) are enforced
-6. Run unit tests for each provider's specific functionality
-7. Verify existing OpenAI-compatible provider support unchanged
-8. Test error handling and mapping for each provider type
+1. Verify database schema migrations applied correctly
+2. Test storing a chat message and retrieving identical content
+3. Verify deduplication works (same message stored once)
+4. Test Brotli compression achieves expected 3-5x ratios
+5. Confirm segment_refs stores only hashes, not full content
+6. Verify usage tracking (tokens, cost) is recorded correctly
+7. Test reconstruction of multi-message conversations
+8. Run unit tests for all storage components
+9. Verify existing chat endpoints still work (backwards compatibility)
+10. Test hybrid read mode (can read both legacy and hash-based storage)

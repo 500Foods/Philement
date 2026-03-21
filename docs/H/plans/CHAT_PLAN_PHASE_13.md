@@ -1,78 +1,112 @@
-# Chat Service - Phase 13: Advanced Multi-modal Features
+# Chat Service - Phase 13: Advanced Features
 
 ## Objective
-Implement advanced multi-modal support including media upload endpoint and extended segment metadata for various content types.
+Implement advanced features including function calling, response caching, load balancing, and analytics dashboard.
 
 ## Prerequisites
-- Phase 12 completed and verified (streaming support working)
+- Phase 12 completed and verified (advanced multi-modal features working)
 
 ## Testable Gate
-Before proceeding to Phase 14, the following must be verified:
-- POST /api/conduit/upload endpoint registered and functional
-- Media assets table created with proper schema
-- Conversation segments table extended with content_type, mime_type, metadata
-- Provider-specific handling works (especially Anthropic translation)
-- Engine limits enforced (max_images_per_message, max_payload_mb)
-- Unit and integration tests pass for multi-modal features
-- No regression in existing chat or streaming functionality
+Before considering the implementation complete, the following must be verified:
+- Function calling support works with OpenAI-compatible providers
+- Response caching reduces costs for frequent queries
+- Load balancing distributes across multiple API keys effectively
+- Fallback engines provide graceful degradation
+- Usage analytics dashboard provides meaningful insights
+- Unit and integration tests pass for all advanced features
+- No regression in existing functionality
 
 ## Tasks
 
-### 1. Create media upload endpoint
-- Create `upload/upload.h` and `upload/upload.c`
-- Handle POST /api/conduit/upload and /api/conduit/auth_upload
-- Accept multipart/form-data file uploads
-- Compute SHA-256 hash of file content
-- Store in media_assets table (or S3/minio if configured)
-- Return media_hash for use in chat messages
-- Support both public and authenticated variants
+### 1. Implement Function Calling
+- Add support for OpenAI function calling format
+- Extend chat_request_builder to handle function definitions
+- Implement function result parsing in chat_response_parser
+- Support iterative function calling (multiple rounds)
+- Provide clear error handling for function execution failures
 
-### 2. Create media_assets table (Helium migration)
-- media_hash VARCHAR(64) PRIMARY KEY (SHA-256 of file content)
-- media_data BLOB (binary data or S3 URL reference)
-- media_size INTEGER
-- mime_type VARCHAR(100)
-- created_at, last_accessed, access_count tracking
-- Appropriate indexes for performance
+### 2. Implement Response Caching
+- Cache frequent queries to reduce API costs
+- Hash-based cache key (request parameters + context)
+- Configurable TTL and cache size limits
+- Cache invalidation strategies
+- Performance measurement of cache effectiveness
 
-### 3. Extend conversation_segments table
-- Add content_type VARCHAR(20) DEFAULT 'text' (text|image|pdf|audio|document)
-- Add mime_type VARCHAR(100) (image/jpeg, application/pdf, etc.)
-- Add metadata JSONB for provider-specific data
-- Store additional info like dimensions, duration, token estimates
+### 3. Implement Load Balancing
+- Distribute requests across multiple API keys for same provider
+- Round-robin, weighted, or least-used selection algorithms
+- Automatic failover when keys hit rate limits or errors
+- Key health monitoring and rotation
+- Configuration per engine for multiple keys
 
-### 4. Implement media URL handling
-- Support media:hash format in chat messages
-- Server resolves media:hash to actual base64 or URL before proxying
-- Cache resolved media to avoid repeated lookups
-- Handle missing media gracefully (broken image/icons)
+### 4. Implement Fallback Engines
+- Configure backup engines per database
+- Automatic failover on primary engine failure
+- Fallback chain (primary -> secondary -> tertiary)
+- Failback when primary recovers (optional)
+- Clear logging of failover/failback events
 
-### 5. Provider-specific multi-modal handling
-- Extend chat_request_builder for provider-specific translation
-- Implement Anthropic vision format translation (as in original plan)
-- Handle varying vision capabilities across providers
-- Graceful degradation for providers with limited multi-modal support
+### 5. Implement Usage Analytics Dashboard
+- Track requests, tokens, costs per user/database/engine
+- Real-time and historical views
+- Cost attribution and forecasting
+- Performance metrics (latency, error rates)
+- Export capabilities for billing and analysis
 
-### 6. Implement engine limits enforcement
-- Validate max_images_per_message per engine configuration
-- Validate max_payload_mb before processing requests
-- Return clear error messages when limits exceeded
-- Log limit violations for monitoring and abuse detection
+### 6. Implement Prompt Templates
+- Pre-defined prompt templates per engine/use-case
+- Template variable substitution
+- Template management (create, update, delete)
+- Usage statistics for templates
+- Sharing capabilities between users/databases
 
-### 7. Unit and integration tests
-- Test media upload and hash generation
-- Test media:hash resolution in chat messages
-- Verify provider-specific format translation (especially Anthropic)
-- Test engine limits enforcement
-- Test storage and retrieval of various media types
-- Ensure existing text-only chat unaffected
+### 7. Implement Conversation Management
+- API endpoints for listing, retrieving, deleting conversations
+- Conversation search and filtering
+- Archive and restore functionality
+- Bulk operations
+- Retention policies and automatic cleanup
+
+### 8. Implement Real-time Cost Tracking
+- Accurate per-request cost calculation based on provider pricing
+- Currency conversion and formatting
+- Budget alerts and notifications
+- Cost breakdown by prompt/completion tokens
+- Historical cost analysis and trends
+
+### 9. Implement A/B Testing Framework
+- Compare responses from different engines/configurations
+- Traffic splitting capabilities
+- Statistical significance calculation
+- Experiment management and tracking
+- Result analysis and reporting
+
+### 10. Unit and Integration Tests
+- Test function calling with various function definitions
+- Verify response caching reduces external API calls
+- Test load balancing distribution and failover
+- Verify fallback engine behavior
+- Test analytics data collection and reporting
+- Ensure all advanced features work together correctly
 
 ## Verification Steps
-1. Verify media upload endpoint registration
-2. Test uploading various file types (images, PDFs, etc.)
-3. Confirm media:hash resolution works in chat messages
-4. Verify Anthropic vision format translation accuracy
-5. Test engine limits are properly enforced
-6. Run unit and integration tests for multi-modal features
-7. Ensure existing chat, streaming, and cache functionality unaffected
-8. Test media asset deduplication (same file stored once)
+1. Verify function calling works with sample functions
+2. Test response caching shows reduced external API calls
+3. Confirm load balancing distributes requests appropriately
+4. Test fallback engine activates on primary failure
+5. Verify analytics dashboard shows accurate metrics
+6. Test conversation management API endpoints
+7. Confirm real-time cost tracking accuracy
+8. Run unit and integration tests for all advanced features
+9. Ensure existing core chat functionality unaffected
+10. Test advanced features work with streaming when applicable
+
+## Completion Criteria
+All 14 phases completed with their respective testable gates passed.
+The chat service provides:
+- Secure, scalable API proxy to multiple AI providers
+- Efficient storage with content-addressable segments and Brotli compression
+- Performance optimizations including caching and context hashing
+- Resilience through fallback mechanisms and cross-server recovery
+- Advanced features for enterprise use cases
+- Comprehensive monitoring and analytics

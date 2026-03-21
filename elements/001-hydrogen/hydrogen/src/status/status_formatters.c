@@ -2,11 +2,13 @@
  * Status Output Formatters Implementation
  */
 
-// Global includes 
+// Global includes
 #include <src/hydrogen.h>
+#include <string.h>
 
 // Local includes
 #include "status_formatters.h"
+#include <src/api/conduit/chat_common/chat_metrics.h>
 
 // Convert system metrics to JSON format
 // Exposed for testing - was previously static
@@ -589,8 +591,33 @@ char* format_system_status_prometheus(const SystemMetrics *metrics) {
            metrics->print_queue.block_count,
            metrics->log_queue.virtual_bytes,
            metrics->log_queue.resident_bytes,
-           metrics->print_queue.virtual_bytes,
-           metrics->print_queue.resident_bytes);
+            metrics->print_queue.virtual_bytes,
+            metrics->print_queue.resident_bytes);
+
+    // Chat Metrics
+    size_t chat_buffer_size = 8192;
+    char* chat_buffer = malloc(chat_buffer_size);
+    if (chat_buffer) {
+        size_t chat_len = chat_metrics_generate_prometheus(chat_buffer, chat_buffer_size);
+        if (chat_len > 0) {
+            // Ensure we have room for chat metrics
+            if (offset + chat_len >= buffer_size - 1) {
+                size_t new_size = buffer_size + chat_len + 1024;
+                char* new_buffer = realloc(output, new_size);
+                if (new_buffer) {
+                    output = new_buffer;
+                    buffer_size = new_size;
+                }
+            }
+            // Append chat metrics to output
+            if (offset + chat_len < buffer_size) {
+                memcpy(output + offset, chat_buffer, chat_len);
+                offset += chat_len;
+                output[offset] = '\0';
+            }
+        }
+        free(chat_buffer);
+    }
 
     #undef APPEND
     return output;

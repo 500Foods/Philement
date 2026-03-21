@@ -1,80 +1,81 @@
-# Chat Service - Phase 7: Conversation History with Content-Addressable Storage + Brotli
+# Chat Service - Phase 7: Update Existing Chat Queries
 
 ## Objective
-Implement content-addressable storage for conversation history with Brotli compression to drastically reduce storage requirements.
+Modify existing chat queries to work with the new content-addressable storage model while maintaining backwards compatibility.
 
 ## Prerequisites
-- Phase 6 completed and verified (additional provider support working)
+- Phase 6 completed and verified (content-addressable storage with Brotli working)
 
 ## Testable Gate
 Before proceeding to Phase 8, the following must be verified:
-- conversation_segments table created with Brotli-compressed storage
-- convos table extended with segment_refs and usage tracking columns
-- Brotli compression/decompression wrappers functional using existing utils
-- Each message stored as compressed segment with SHA-256 hash
-- Conversation turns stored as arrays of hash references in convos.segment_refs
-- Usage tracking columns (tokens, cost, duration, session_id) working
-- Unit tests for compression, hashing, and storage all pass
-- Existing chat functionality continues to work (backwards compatibility)
+- Updated QueryRef #036 (Store Chat) works with hash-based storage
+- Updated QueryRef #041 (Get Chat) reconstructs conversations from hash references
+- Updated QueryRef #039 (Get Chats List) includes segment count and storage metrics
+- New QueryRefs D, E, F work correctly for their respective purposes
+- Backwards compatibility maintained - legacy conversations still readable
+- All existing chat-related tests pass
+- No regression in related functionality
 
 ## Tasks
 
-### 1. Create conversation_segments table (Helium migration)
-- Table with segment_hash (SHA-256) as PRIMARY KEY
-- Brotli-compressed segment_content BLOB
-- uncompressed_size and compressed_size tracking
-- compression_ratio, created_at, last_accessed, access_count fields
-- Indexes on last_accessed and created_at for cache efficiency
+### 1. Update QueryRef #036 (Store Chat)
+- Modify to store only hash references in convos.segment_refs instead of full text
+- Insert actual segment content via QueryRef B (Store Conversation Segment)
+- Store engine_name, model, tokens, cost, session_id, etc. in convos table
+- Maintain same interface for callers
 
-### 2. Extend convos table (Helium migration)
-- Add segment_refs JSONB column for hash references
-- Add engine_name, model columns
-- Add tokens_prompt, tokens_completion, cost_total tracking
-- Add session_id, user_id, duration_ms for analytics
-- Maintain backwards compatibility with legacy columns during transition
+### 2. Update QueryRef #041 (Get Chat)
+- Major update to return reconstructed conversation from hash references
+- Get segment_refs hash array from convos
+- Call QueryRef A to get actual segment content
+- Decompress and reassemble conversation in correct order
+- Return same format as before for backward compatibility
 
-### 3. Add Brotli compression/decompression wrappers
-- Wrapper functions around existing src/utils/utils_compression.c
-- Functions for compressing JSON message to Brotli blob
-- Functions for decompressing Brotli blob back to JSON
-- Proper error handling and resource cleanup
+### 3. Update QueryRef #039 (Get Chats List)
+- Add segment count (length of segment_refs array)
+- Add total storage size calculation (sum of uncompressed sizes)
+- Optionally add compression ratio averages
+- Maintain existing fields for backward compatibility
 
-### 4. Implement storage pipeline
-- On message receipt: JSON -> SHA-256 Hash -> Brotli Compress -> Store
-- Store only hash reference in convos.segment_refs array
-- Check for existing hash before storing (content-addressable deduplication)
-- Update access_count and last_accessed on retrieval
+### 4. Create New QueryRef D: Reconstruct Conversation
+- Get all segment hashes for a conversation
+- Return metadata plus instructions to fetch segments
+- Used for audit trails and administrative functions
 
-### 5. Implement retrieval pipeline
-- Get hash references from convos.segment_refs
-- Fetch compressed segments from conversation_segments
-- Decompress each segment to reconstruct full conversation
-- Update access metadata on retrieval
+### 5. Create New QueryRef E: Find Conversations by Segment Content
+- Accept segment hash (pre-computed from search content)
+- Find all convos containing that hash in their segment_refs
+- Return convos_id, convos_ref, session_id, created_at
+- Useful for content search and compliance
 
-### 6. Create new QueryRefs (Helium migrations)
-- QueryRef A: Get Conversation Segments by Hash (batch retrieval)
-- QueryRef B: Store Conversation Segment (with deduplication)
-- QueryRef C: Store Chat with Hashes (updated #036)
-- QueryRef D: Reconstruct Conversation (get hashes + metadata)
-- QueryRef E: Find Conversations by Segment Content (audit)
-- QueryRef F: Get Conversation Storage Statistics
+### 6. Create New QueryRef F: Get Conversation Statistics
+- Analytics query for storage metrics
+- Count total conversations, unique segments
+- Calculate total uncompressed/compressed bytes
+- Average compression ratio and space saved
+- Important for capacity planning and optimization verification
 
-### 7. Unit tests
-- Test SHA-256 hash generation and collision resistance
-- Test Brotli compression ratios on sample chat messages
-- Test storage deduplication (same content returns same hash)
-- Test full storage/retrieval pipeline integrity
-- Test access count and last_updated tracking
-- Test error handling for compression/decompression failures
+### 7. Backwards Compatibility Strategy
+- Hybrid read: Check if segment_refs exists, fallback to legacy columns
+- During transition period, support both storage types
+- Automatic migration of legacy content optional (background job)
+- Clear deprecation path for legacy storage
+
+### 8. Unit and Integration Tests
+- Test storing and retrieving chats with new hash-based system
+- Verify backwards compatibility with legacy format
+- Test reconstruction accuracy (no data loss)
+- Test statistics queries return correct values
+- Test search by segment content works
+- Ensure all existing chat-related tests still pass
 
 ## Verification Steps
-1. Verify database schema migrations applied correctly
-2. Test storing a chat message and retrieving identical content
-3. Verify deduplication works (same message stored once)
-4. Test Brotli compression achieves expected 3-5x ratios
-5. Confirm segment_refs stores only hashes, not full content
-6. Verify usage tracking (tokens, cost) is recorded correctly
-7. Test reconstruction of multi-message conversations
-8. Run unit tests for all storage components
-9. Verify existing chat endpoints still work (backwards compatibility)
-10. Test hybrid read mode (can read both legacy and hash-based storage)
+1. Verify updated QueryRef #036 stores hashes, not full content
+2. Test storing a chat and retrieving it via updated #041
+3. Confirm reconstructed chat matches original content exactly
+4. Verify QueryRef #039 returns segment count and size info
+5. Test new QueryRefs D, E, F return expected results
+6. Verify backwards compatibility - legacy chats still readable
+7. Run all existing chat-related tests (test_23_websockets.sh, etc.)
+8. Test hybrid read functionality
+9. Verify no regression in related API endpoints
