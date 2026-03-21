@@ -5,6 +5,7 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 1.0.2 - 2026-03-20 - Added liveliness to default list of AI model properties, updated icon location
 -- 1.0.1 - 2026-03-18 - Updated to use lower-case JSON keys, <fa>-style icon definitions
 -- 1.0.0 - 2025-12-25 - Initial creation
 
@@ -81,7 +82,7 @@ table.insert(queries,{sql=[[
             VALUES
                 (${LOOKUP_ID},  0, 1, 'OpenAI/ChatGPT 4o', 0, 0, '', '', ${JIS}[==[
                     {
-                        "icon": "<img src='Images/ai_openai.png'>",
+                        "icon": "<img src='/assets/images/ai_openai.png'>",
                         "name": "ChatGPT 4o",
                         "limit": 32768,
                         "model": "gpt-4o",
@@ -90,6 +91,7 @@ table.insert(queries,{sql=[[
                         "country": "CA",
                         "default": false,
                         "endpoint": "https://api.openai.com/v1/chat/completions",
+                        "liveliness": 900,
                         "location": "YVR",
                         "authority": "Example",
                         "cost prompt": 0.00006,

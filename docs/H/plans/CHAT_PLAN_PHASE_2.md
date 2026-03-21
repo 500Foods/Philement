@@ -121,6 +121,29 @@ tests/unity/src/chat/
 - CEC stored in `DatabaseQueue->chat_engine_cache`
 - Refresh functions: `chat_engine_cache_refresh()`, `chat_engine_cache_should_refresh()`
 
+### Deviations from Original Plan
+
+| Item | Original Plan | Actual Implementation | Rationale |
+|------|---------------|----------------------|-----------|
+| **Task 3: Admin endpoint** | Implement on-demand admin endpoint for refresh | Deferred to Phase 2.5/3 | Admin endpoints require authentication framework; better to implement with status endpoint |
+| **Task 9: Proxy mock tests** | Test proxy with mock server | Unit tests focus on CEC operations only | Proxy testing requires live HTTP endpoints; integration testing will verify proxy functionality |
+| **Task 9: Builder/parser tests** | Validate request builder and response parser | Tested via CEC unit tests | Full builder/parser testing deferred to Phase 3 when integrated with endpoints |
+| **CEC Storage** | Not specified | Added `chat_engine_cache` field to `DatabaseQueue` | Follows QTC pattern for per-database cache storage |
+
+### Verification Results
+
+- ✅ CEC loads during database bootstrap (integrated into `database_bootstrap.c`)
+- ✅ Engine lookup by name returns correct configuration (unit tested)
+- ✅ Default engine selection works (unit tested)
+- ✅ All engine listings use sanitized data (API keys cleared from memory)
+- ✅ Proxy implements retry with exponential backoff (code review)
+- ✅ Request builder supports OpenAI, Anthropic, Ollama formats (code review)
+- ✅ Response parser extracts content, tokens, model, finish_reason (code review)
+- ✅ Token pre-counting validates requests before proxying (unit tested via validation)
+- ✅ Unit tests pass: `chat_engine_cache_test` (10/10 tests)
+- ✅ Build compiles without errors (all variants)
+- ✅ No regressions in existing tests (verified)
+
 ### Test Results
 
 ```test

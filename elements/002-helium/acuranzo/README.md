@@ -97,7 +97,7 @@ in the migrations themselves so that they get populated in the database directly
 | [1060](/elements/002-helium/acuranzo/migrations/acuranzo_1060.lua) | lookups | 1.0.0 | 2025-11-24 | 6 | ✗ | Defaults for Lookup 035 - Role Scope |
 | [1061](/elements/002-helium/acuranzo/migrations/acuranzo_1061.lua) | lookups | 1.0.0 | 2025-11-24 | 6 | ✗ | Defaults for Lookup 036 - Role Type |
 | [1062](/elements/002-helium/acuranzo/migrations/acuranzo_1062.lua) | lookups | 1.0.1 | 2026-03-18 | 6 | ✗ | Defaults for Lookup 037 - Access Status |
-| [1063](/elements/002-helium/acuranzo/migrations/acuranzo_1063.lua) | lookups | 1.0.1 | 2026-03-18 | 6 | ✗ | Defaults for Lookup 038 - AI Chat Engines |
+| [1063](/elements/002-helium/acuranzo/migrations/acuranzo_1063.lua) | lookups | 1.0.2 | 2026-03-20 | 6 | ✗ | Defaults for Lookup 038 - AI Chat Engines |
 | [1064](/elements/002-helium/acuranzo/migrations/acuranzo_1064.lua) | lookups | 1.0.1 | 2026-03-18 | 6 | ✗ | Defaults for Lookup 039 - AI Auditor Engines |
 | [1065](/elements/002-helium/acuranzo/migrations/acuranzo_1065.lua) | lookups | 1.0.1 | 2026-03-18 | 6 | ✗ | Defaults for Lookup 040 - Icons |
 | [1066](/elements/002-helium/acuranzo/migrations/acuranzo_1066.lua) | lookups | 1.0.0 | 2025-11-26 | 4 | ✗ | Defaults for Lookup 041 - Themes |
@@ -119,7 +119,7 @@ in the migrations themselves so that they get populated in the database directly
 | [1082](/elements/002-helium/acuranzo/migrations/acuranzo_1082.lua) | lookups | 1.0.0 | 2025-12-25 | 6 | ✗ | Defaults for Lookup 049 - Document Libraries |
 | [1083](/elements/002-helium/acuranzo/migrations/acuranzo_1083.lua) | lookups | 1.0.1 | 2026-03-18 | 6 | ✗ | Defaults for Lookup 050 - Document Status |
 | [1084](/elements/002-helium/acuranzo/migrations/acuranzo_1084.lua) | lookups | 1.0.1 | 2026-03-18 | 6 | ✗ | Defaults for Lookup 051 - Document Types |
-| [1085](/elements/002-helium/acuranzo/migrations/acuranzo_1085.lua) | lookups | 1.0.1 | 2026-03-18 | 6 | ✗ | Defaults for Lookup 052 - AI Summary Engines |
+| [1085](/elements/002-helium/acuranzo/migrations/acuranzo_1085.lua) | lookups | 1.0.2 | 2026-03-20 | 6 | ✗ | Defaults for Lookup 052 - AI Summary Engines |
 | [1086](/elements/002-helium/acuranzo/migrations/acuranzo_1086.lua) | lookups | 1.0.1 | 2026-03-18 | 6 | ✗ | Defaults for Lookup 053 - Report Object Types |
 | [1087](/elements/002-helium/acuranzo/migrations/acuranzo_1087.lua) | lookups | 1.0.0 | 2025-12-25 | 6 | ✗ | Defaults for Lookup 054 - Report Object Attributes |
 | [1088](/elements/002-helium/acuranzo/migrations/acuranzo_1088.lua) | lookups | 1.0.0 | 2025-12-26 | 6 | ✗ | Defaults for Lookup 055 - Canvas LMS Links |
@@ -192,5 +192,5 @@ in the migrations themselves so that they get populated in the database directly
 | [1155](/elements/002-helium/acuranzo/migrations/acuranzo_1155.lua) | queries | 1.0.0 | 2026-03-15 | 4 | ✗ | QueryRef #060 - Get Tabulator Schemas |
 | [1156](/elements/002-helium/acuranzo/migrations/acuranzo_1156.lua) | lookups | 1.0.0 | 2026-03-17 | 4 | ✗ | Tabulator Schema: lookups-list.json (Lookup 059, Key 2) |
 | [1157](/elements/002-helium/acuranzo/migrations/acuranzo_1157.lua) | lookups | 1.0.0 | 2026-03-17 | 4 | ✗ | Tabulator Schema: lookup-values.json (Lookup 059, Key 3) |
-| [1158](/elements/002-helium/acuranzo/migrations/acuranzo_1158.lua) | queries | 1.0.0 | 2026-03-20 | 4 | ✗ | QueryRef #061 - Internal: Get AI Chat Engines with API Keys |
+| [1158](/elements/002-helium/acuranzo/migrations/acuranzo_1158.lua) | queries | 1.0.1 | 2026-03-20 | 4 | ✗ | QueryRef #061 - Internal: Get AI Chat Engines with API Keys |
 | **159** | | | | **825** | **159** | |

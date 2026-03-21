@@ -15,6 +15,7 @@
 
 // Include source header
 #include <src/api/conduit/status/status.h>
+#include <src/api/conduit/chat_common/chat_engine_cache.h>
 
 // Mock includes
 #define USE_MOCK_LIBMICROHTTPD
@@ -45,6 +46,7 @@ void test_handle_conduit_status_request_invalid_method(void);
 void test_handle_conduit_status_request_no_queue_manager(void);
 void test_handle_conduit_status_request_empty_databases(void);
 void test_handle_conduit_status_request_database_ready_no_jwt(void);
+void test_handle_conduit_status_request_with_chat_models(void);
 
 void setUp(void) {
     // Reset all mocks before each test
@@ -170,6 +172,68 @@ int main(void) {
     RUN_TEST(test_handle_conduit_status_request_no_queue_manager);
     RUN_TEST(test_handle_conduit_status_request_empty_databases);
     RUN_TEST(test_handle_conduit_status_request_database_ready_no_jwt);
+    RUN_TEST(test_handle_conduit_status_request_with_chat_models);
 
     return UNITY_END();
+}
+
+// Test database with chat enabled - models array should be present when authenticated
+void test_handle_conduit_status_request_with_chat_models(void) {
+    // Setup
+    struct MHD_Connection *mock_connection = (struct MHD_Connection*)0x123;
+    global_queue_manager = calloc(1, sizeof(DatabaseQueueManager));
+    TEST_ASSERT_NOT_NULL(global_queue_manager);
+    if (global_queue_manager) {
+        global_queue_manager->max_databases = 1;
+        global_queue_manager->databases = calloc(1, sizeof(DatabaseQueue*));
+        TEST_ASSERT_NOT_NULL(global_queue_manager->databases);
+        if (global_queue_manager->databases) {
+            DatabaseQueue* db_queue = calloc(1, sizeof(DatabaseQueue));
+            TEST_ASSERT_NOT_NULL(db_queue);
+            if (db_queue) {
+                db_queue->database_name = (char*)"test_db";
+                db_queue->bootstrap_completed = true;
+
+                QueryTableCache* cache = calloc(1, sizeof(QueryTableCache));
+                TEST_ASSERT_NOT_NULL(cache);
+                if (cache) {
+                    cache->entry_count = 5;
+                    db_queue->query_cache = cache;
+
+                    // Create CEC with one engine
+                    ChatEngineCache* cec = chat_engine_cache_create("test_db");
+                    TEST_ASSERT_NOT_NULL(cec);
+                    if (cec) {
+                        ChatEngineConfig* engine = chat_engine_config_create(
+                            1, "gpt4", CEC_PROVIDER_OPENAI, "gpt-4-turbo",
+                            "https://api.openai.com/v1/chat/completions", "sk-test",
+                            4096, 0.7, true, 300);
+                        TEST_ASSERT_NOT_NULL(engine);
+                        if (engine) {
+                            chat_engine_cache_add_engine(cec, engine);
+                            db_queue->chat_engine_cache = cec;
+
+                            // Mock JWT validation success
+                            mock_auth_service_jwt_set_validation_result((jwt_validation_result_t){true, NULL, JWT_ERROR_NONE});
+
+                            global_queue_manager->databases[0] = db_queue;
+
+                            // Test
+                            enum MHD_Result result = handle_conduit_status_request(mock_connection, "/api/conduit/status", "GET", NULL, NULL, NULL);
+
+                            // Assert
+                            TEST_ASSERT_EQUAL(MHD_YES, result);
+
+                            // Cleanup
+                            chat_engine_cache_destroy(cec);
+                        }
+                    }
+                    free(cache);
+                }
+                free(db_queue);
+            }
+            free(global_queue_manager->databases);
+        }
+        free(global_queue_manager);
+    }
 }

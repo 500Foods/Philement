@@ -24,7 +24,7 @@
 #define MAX_RESPONSE_SIZE (8 * 1024 * 1024)
 
 // CURL write callback for collecting response data
-static size_t chat_proxy_write_callback(void* contents, size_t size, size_t nmemb, void* userp) {
+static size_t chat_proxy_write_callback(const void* contents, size_t size, size_t nmemb, void* userp) {
     size_t realsize = size * nmemb;
     ChatResponseBuffer* buffer = (ChatResponseBuffer*)userp;
 

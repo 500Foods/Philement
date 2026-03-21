@@ -39,6 +39,17 @@ typedef struct ChatEngineConfig {
     bool is_default;                  // Whether this is the default engine
     time_t last_used;                 // LRU tracking
     volatile int usage_count;         // Usage statistics
+
+    // Health tracking (Phase 2.5)
+    int liveliness_seconds;           // Health check interval (0 = disabled)
+    time_t last_health_check;         // Timestamp of last health check
+    bool is_healthy;                  // Current health status
+    int consecutive_failures;         // Count of consecutive failed health checks
+    time_t last_confirmed_working;    // Timestamp of last successful request
+    double avg_response_time_ms;      // Rolling average response time
+    unsigned long long conversations_24h;  // Conversation count (24h)
+    unsigned long long tokens_24h;         // Token usage count (24h)
+    pthread_mutex_t health_mutex;     // Protect health fields
 } ChatEngineConfig;
 
 // Chat Engine Cache structure (per database)
@@ -49,6 +60,11 @@ typedef struct ChatEngineCache {
     pthread_rwlock_t cache_lock;      // Reader-writer lock for concurrent access
     time_t last_refresh;              // Last refresh timestamp
     char* database_name;              // Associated database name
+    
+    // Health monitoring (Phase 2.5)
+    pthread_t health_monitor_thread;  // Health check thread
+    volatile bool health_monitor_running;  // Thread control flag
+    int health_monitor_interval;      // Seconds between health checks
 } ChatEngineCache;
 
 // Function prototypes
@@ -69,9 +85,15 @@ void chat_engine_cache_update_usage(ChatEngineCache* cache, int engine_id);
 // Entry creation and cleanup
 ChatEngineConfig* chat_engine_config_create(int engine_id, const char* name, ChatEngineProvider provider,
                                            const char* model, const char* api_url, const char* api_key,
-                                           int max_tokens, double temperature_default, bool is_default);
+                                           int max_tokens, double temperature_default, bool is_default,
+                                           int liveliness_seconds);
 void chat_engine_config_destroy(ChatEngineConfig* engine);
 void chat_engine_config_clear_key(ChatEngineConfig* engine);
+
+// Health tracking functions
+void chat_engine_config_update_health(ChatEngineConfig* engine, bool success, double response_time_ms);
+void chat_engine_config_mark_health_checked(ChatEngineConfig* engine, bool is_healthy);
+const char* chat_engine_config_get_status(ChatEngineConfig* engine);
 
 // Provider type helpers
 ChatEngineProvider chat_engine_provider_from_string(const char* provider_str);
@@ -80,7 +102,7 @@ const char* chat_engine_provider_to_string(ChatEngineProvider provider);
 // Statistics and monitoring
 size_t chat_engine_cache_get_engine_count(ChatEngineCache* cache);
 void chat_engine_cache_get_stats(ChatEngineCache* cache, char* buffer, size_t buffer_size);
-bool chat_engine_cache_needs_refresh(ChatEngineCache* cache, int refresh_interval_seconds);
+bool chat_engine_cache_needs_refresh(const ChatEngineCache* cache, int refresh_interval_seconds);
 
 // Bootstrap and refresh
 bool chat_engine_cache_load_from_database(ChatEngineCache* cache, const char* database_name);
@@ -93,9 +115,9 @@ bool chat_engine_cache_bootstrap_for_database(const char* database_name);
 bool chat_engine_cache_refresh(ChatEngineCache* cache);
 
 // Check if refresh is needed based on interval
-bool chat_engine_cache_should_refresh(ChatEngineCache* cache, int refresh_interval_seconds);
+bool chat_engine_cache_should_refresh(const ChatEngineCache* cache, int refresh_interval_seconds);
 
 // Get last refresh timestamp
-time_t chat_engine_cache_get_last_refresh(ChatEngineCache* cache);
+time_t chat_engine_cache_get_last_refresh(const ChatEngineCache* cache);
 
 #endif // CHAT_ENGINE_CACHE_H
