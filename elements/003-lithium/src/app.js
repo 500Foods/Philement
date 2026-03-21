@@ -1003,7 +1003,7 @@ class LithiumApp {
       // Look up icon for this manager
       const iconInfo = mainMgr.managerIcons?.[managerId] || { icon: 'fa-cube', name: managerDef.name };
       const slotId = mainMgr._slotId(managerId);
-      const slotResult = mainMgr.createSlot(slotId, iconInfo.icon, iconInfo.name);
+      const slotResult = mainMgr.createSlot(slotId, iconInfo.icon, iconInfo.name, managerId);
       if (!slotResult) {
         throw new Error('Failed to create manager slot');
       }
@@ -1066,7 +1066,7 @@ class LithiumApp {
 
       const iconInfo = mainMgr.utilityManagerIcons?.[managerKey] || { icon: 'fa-puzzle-piece', name: managerDef.name };
       const slotId = mainMgr._utilitySlotId(managerKey);
-      const slotResult = mainMgr.createSlot(slotId, iconInfo.icon, iconInfo.name);
+      const slotResult = mainMgr.createSlot(slotId, iconInfo.icon, iconInfo.name, managerKey);
       if (!slotResult) {
         throw new Error('Failed to create utility manager slot');
       }

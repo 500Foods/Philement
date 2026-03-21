@@ -188,14 +188,23 @@ ChatProxyResult* chat_proxy_send_request(const ChatEngineConfig* engine,
         return result;
     }
 
-    // Build Authorization header
-    char auth_header[CEC_MAX_KEY_LEN + 32];
-    snprintf(auth_header, sizeof(auth_header), "Authorization: Bearer %s", engine->api_key);
-
-    // Set headers
+    // Build headers based on provider
     struct curl_slist* headers = NULL;
     headers = curl_slist_append(headers, "Content-Type: application/json");
-    headers = curl_slist_append(headers, auth_header);
+
+    if (engine->provider == CEC_PROVIDER_ANTHROPIC) {
+        // Anthropic uses x-api-key header
+        char auth_header[CEC_MAX_KEY_LEN + 32];
+        snprintf(auth_header, sizeof(auth_header), "x-api-key: %s", engine->api_key);
+        headers = curl_slist_append(headers, auth_header);
+        // Anthropic requires version header
+        headers = curl_slist_append(headers, "anthropic-version: 2023-06-01");
+    } else {
+        // OpenAI-compatible providers use Bearer token
+        char auth_header[CEC_MAX_KEY_LEN + 32];
+        snprintf(auth_header, sizeof(auth_header), "Authorization: Bearer %s", engine->api_key);
+        headers = curl_slist_append(headers, auth_header);
+    }
 
     // Configure CURL options
     curl_easy_setopt(curl, CURLOPT_URL, engine->api_url);
@@ -446,14 +455,23 @@ ChatMultiResult* chat_proxy_send_multi(const ChatMultiRequest* requests,
             continue;
         }
 
-        // Build Authorization header
-        char auth_header[CEC_MAX_KEY_LEN + 32];
-        snprintf(auth_header, sizeof(auth_header), "Authorization: Bearer %s", req->engine->api_key);
-
-        // Set headers
+        // Build headers based on provider
         ctx->headers = NULL;
         ctx->headers = curl_slist_append(ctx->headers, "Content-Type: application/json");
-        ctx->headers = curl_slist_append(ctx->headers, auth_header);
+
+        if (req->engine->provider == CEC_PROVIDER_ANTHROPIC) {
+            // Anthropic uses x-api-key header
+            char auth_header[CEC_MAX_KEY_LEN + 32];
+            snprintf(auth_header, sizeof(auth_header), "x-api-key: %s", req->engine->api_key);
+            ctx->headers = curl_slist_append(ctx->headers, auth_header);
+            // Anthropic requires version header
+            ctx->headers = curl_slist_append(ctx->headers, "anthropic-version: 2023-06-01");
+        } else {
+            // OpenAI-compatible providers use Bearer token
+            char auth_header[CEC_MAX_KEY_LEN + 32];
+            snprintf(auth_header, sizeof(auth_header), "Authorization: Bearer %s", req->engine->api_key);
+            ctx->headers = curl_slist_append(ctx->headers, auth_header);
+        }
 
         // Configure CURL options
         curl_easy_setopt(ctx->curl, CURLOPT_URL, req->engine->api_url);

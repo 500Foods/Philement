@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><title>Code coverage report for managers/queries/queries-navigation.js</title><meta charset="utf-8"><link rel="stylesheet" href="../../prettify.css"><link rel="stylesheet" href="../../base.css"><link rel="shortcut icon" type="image/x-icon" href="../../favicon.png"><meta name="viewport" content="width=device-width,initial-scale=1"><style type="text/css">.coverage-summary .sorter{background-image:url(../../sort-arrow-sprite.png)}</style></head><body><div class="wrapper"><div class="pad1"><h1><a href="../../index.html">All files</a> / <a href="index.html">managers/queries</a> queries-navigation.js</h1><div class="clearfix"><div class="fl pad1y space-right2"><span class="strong">26.57% </span><span class="quiet">Statements</span> <span class="fraction">80/301</span></div><div class="fl pad1y space-right2"><span class="strong">20.07% </span><span class="quiet">Branches</span> <span class="fraction">51/254</span></div><div class="fl pad1y space-right2"><span class="strong">38.88% </span><span class="quiet">Functions</span> <span class="fraction">14/36</span></div><div class="fl pad1y space-right2"><span class="strong">29.5% </span><span class="quiet">Lines</span> <span class="fraction">77/261</span></div></div><p class="quiet">Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.</p><template id="filterTemplate"><div class="quiet">Filter: <input type="search" id="fileSearch"></div></template></div><div class="status-line low"></div><pre><table class="coverage">
+<!doctype html><html lang="en"><head><title>Code coverage report for managers/queries/queries-navigation.js</title><meta charset="utf-8"><link rel="stylesheet" href="../../prettify.css"><link rel="stylesheet" href="../../base.css"><link rel="shortcut icon" type="image/x-icon" href="../../favicon.png"><meta name="viewport" content="width=device-width,initial-scale=1"><style type="text/css">.coverage-summary .sorter{background-image:url(../../sort-arrow-sprite.png)}</style></head><body><div class="wrapper"><div class="pad1"><h1><a href="../../index.html">All files</a> / <a href="index.html">managers/queries</a> queries-navigation.js</h1><div class="clearfix"><div class="fl pad1y space-right2"><span class="strong">26.42% </span><span class="quiet">Statements</span> <span class="fraction">79/299</span></div><div class="fl pad1y space-right2"><span class="strong">19.6% </span><span class="quiet">Branches</span> <span class="fraction">49/250</span></div><div class="fl pad1y space-right2"><span class="strong">38.88% </span><span class="quiet">Functions</span> <span class="fraction">14/36</span></div><div class="fl pad1y space-right2"><span class="strong">29.34% </span><span class="quiet">Lines</span> <span class="fraction">76/259</span></div></div><p class="quiet">Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.</p><template id="filterTemplate"><div class="quiet">Filter: <input type="search" id="fileSearch"></div></template></div><div class="status-line low"></div><pre><table class="coverage">
 <tr><td class="line-count quiet"><a name="L1"></a><a href="#L1">1</a>
 <a name="L2"></a><a href="#L2">2</a>
 <a name="L3"></a><a href="#L3">3</a>
@@ -593,11 +593,7 @@
 <a name="L592"></a><a href="#L592">592</a>
 <a name="L593"></a><a href="#L593">593</a>
 <a name="L594"></a><a href="#L594">594</a>
-<a name="L595"></a><a href="#L595">595</a>
-<a name="L596"></a><a href="#L596">596</a>
-<a name="L597"></a><a href="#L597">597</a>
-<a name="L598"></a><a href="#L598">598</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<a name="L595"></a><a href="#L595">595</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -876,7 +872,6 @@
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1054,7 +1049,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1202,7 +1196,6 @@
 import { authQuery } from '../../shared/conduit.js';
 import { toast } from '../../shared/toast.js';
 import { log, Subsystems, Status } from '../../core/log.js';
-import { getJsonTreeData } from '../../components/json-tree-component.js';
 &nbsp;
 // Constants
 const SELECTED_ROW_KEY = 'lithium_queries_selected_id';
@@ -1472,8 +1465,7 @@ export class NavigationManager {
     try {
       const sqlContent = mgr.sqlEditor?.state.doc.toString() || <span class="branch-1 cbranch-no" title="branch not covered">'';</span>
       const summaryContent = mgr.summaryEditor?.state.doc.toString() || <span class="branch-1 cbranch-no" title="branch not covered">'';</span>
-      const collectionContent = getJsonTreeData(mgr.elements.collectionEditorContainer);
-      const collectionString = collectionContent ? JSON.stringify(collectionContent) : '{}';
+      const collectionString = mgr.editorManager.getCollectionContent();
 &nbsp;
       const params = {
         INTEGER: {
@@ -1488,7 +1480,7 @@ export class NavigationManager {
           QUERYCODE: sqlContent || <span class="branch-1 cbranch-no" title="branch not covered">rowData.code </span>|| <span class="branch-2 cbranch-no" title="branch not covered">'',</span>
           QUERYNAME: rowData.name || <span class="branch-1 cbranch-no" title="branch not covered">'',</span>
           QUERYSUMMARY: summaryContent || <span class="branch-1 cbranch-no" title="branch not covered">rowData.summary </span>|| <span class="branch-2 cbranch-no" title="branch not covered">'',</span>
-          QUERYJSON: collectionString,
+          COLLECTION: collectionString,
         },
       };
 &nbsp;
@@ -1653,8 +1645,7 @@ export class NavigationManager {
 &nbsp;
       const sqlContent = <span class="cstat-no" title="statement not covered">mgr.dirtyTracker.getCurrentSqlContent();</span>
       const summaryContent = <span class="cstat-no" title="statement not covered">mgr.dirtyTracker.getCurrentSummaryContent();</span>
-      const collectionContent =<span class="cstat-no" title="statement not covered"> getJsonTreeData(mgr.elements.collectionEditorContainer);</span>
-      const collectionString = <span class="cstat-no" title="statement not covered">collectionContent ? JSON.stringify(collectionContent) : '{}';</span>
+      const collectionString = <span class="cstat-no" title="statement not covered">mgr.editorManager.getCollectionContent();</span>
 &nbsp;
       const params = <span class="cstat-no" title="statement not covered">{</span>
         INTEGER: {
@@ -1669,7 +1660,7 @@ export class NavigationManager {
           QUERYCODE: sqlContent || rowData.code || '',
           QUERYNAME: rowData.name || '',
           QUERYSUMMARY: summaryContent || rowData.summary || '',
-          QUERYJSON: collectionString,
+          COLLECTION: collectionString,
         },
       };
 &nbsp;
@@ -1790,4 +1781,4 @@ export class NavigationManager {
 export function createNavigationManager(manager) {
   return new NavigationManager(manager);
 }
-&nbsp;</pre></td></tr></table></pre><div class="push"></div></div><div class="footer quiet pad2 space-top1 center small">Code coverage generated by <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a> at 2026-03-20T05:23:56.711Z</div><script src="../../prettify.js"></script><script>window.onload=function(){prettyPrint()}</script><script src="../../sorter.js"></script><script src="../../block-navigation.js"></script></body></html>
+&nbsp;</pre></td></tr></table></pre><div class="push"></div></div><div class="footer quiet pad2 space-top1 center small">Code coverage generated by <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a> at 2026-03-21T21:52:59.091Z</div><script src="../../prettify.js"></script><script>window.onload=function(){prettyPrint()}</script><script src="../../sorter.js"></script><script src="../../block-navigation.js"></script></body></html>
