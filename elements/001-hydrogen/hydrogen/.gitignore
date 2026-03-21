@@ -47,3 +47,6 @@ tests/lib/node_modules/*
 # tests/lib/package*
 extras/hbm_browser/node_modules/*
 # extras/hbm_browser/package*
+
+# No clue where these are coming from all of a sudden?
+.cache/*
