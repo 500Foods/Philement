@@ -120,5 +120,6 @@
     "<!---"
   ],
   "editor.formatOnSave": false,
-  "workbench.editor.wrapTabs": true
+  "workbench.editor.wrapTabs": true,
+  "githubRateLimit.pollIntervalSeconds": 15
 }

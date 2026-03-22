@@ -163,8 +163,8 @@ export default class MainManager {
 
     // Utility manager registry with icons
     this.utilityManagerIcons = {
-      'session-log': { icon: 'fa-receipt', name: 'Session Log' },
-      'user-profile': { icon: 'fa-user-cog', name: 'User Profile' },
+      'session-log': { iconHtml: '<fa fa-receipt></fa>', name: 'Session Log' },
+      'user-profile': { iconHtml: '<fa fa-user-cog></fa>', name: 'User Profile' },
     };
     
     // Load collapsed groups from localStorage
