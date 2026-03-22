@@ -7,6 +7,7 @@
 import { log, Subsystems, Status } from '../../core/log.js';
 import { toast } from '../../shared/toast.js';
 import { processIcons } from '../../core/icons.js';
+import { setupManagerFooterIcons } from '../../core/manager-ui.js';
 
 // Constants
 const PANEL_WIDTH_KEY = 'lithium_queries_panel_width';
@@ -87,7 +88,7 @@ export class UIManager {
   // ============ FOOTER ============
 
   /**
-   * Setup footer controls
+   * Setup footer controls using common function
    */
   setupFooter() {
     const slot = this.manager.container.closest('.manager-slot');
@@ -99,53 +100,22 @@ export class UIManager {
     const group = footer.querySelector('.subpanel-header-group');
     if (!group) return;
 
-    const reportsBtn = group.querySelector('.slot-reports-btn');
-    if (reportsBtn) reportsBtn.remove();
+    // Get the placeholder - manager buttons go before it, fixed buttons go after
+    const placeholder = group.querySelector('.slot-footer-placeholder');
 
-    const anchor = group.querySelector('.slot-notifications-btn');
+    const footerElements = setupManagerFooterIcons(group, {
+      onPrint: () => this.handleFooterPrint(),
+      onEmail: () => this.handleFooterEmail(),
+      onExport: (e) => this.toggleFooterExportPopup(e),
+      reportOptions: [
+        { value: 'view', label: 'Query List View' },
+        { value: 'data', label: 'Query List Data' },
+      ],
+      fillerTitle: 'Reports',
+      anchor: placeholder, // Insert manager buttons before placeholder
+    });
 
-    const makeBtn = (id, icon, title) => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'subpanel-header-btn subpanel-header-close';
-      btn.id = id;
-      btn.title = title;
-      btn.innerHTML = `<fa ${icon}></fa>`;
-      return btn;
-    };
-
-    const printBtn = makeBtn('queries-footer-print', 'fa-print', 'Print');
-    group.insertBefore(printBtn, anchor);
-
-    const emailBtn = makeBtn('queries-footer-email', 'fa-paper-plane', 'E-Mail');
-    group.insertBefore(emailBtn, anchor);
-
-    const exportBtn = makeBtn('queries-footer-export', 'fa-file-circle-question', 'Export');
-    group.insertBefore(exportBtn, anchor);
-
-    const select = document.createElement('select');
-    select.id = 'queries-footer-datasource';
-    select.title = 'Data Source';
-    select.className = 'queries-footer-datasource';
-    select.innerHTML = `
-      <option value="view">Query List View</option>
-      <option value="data">Query List Data</option>
-    `;
-    group.insertBefore(select, anchor);
-
-    const fillerBtn = document.createElement('button');
-    fillerBtn.type = 'button';
-    fillerBtn.className = 'subpanel-header-btn queries-footer-filler';
-    fillerBtn.title = 'Reports';
-    group.insertBefore(fillerBtn, anchor);
-
-    processIcons(group);
-
-    printBtn.addEventListener('click', () => this.handleFooterPrint());
-    emailBtn.addEventListener('click', () => this.handleFooterEmail());
-    exportBtn.addEventListener('click', (e) => this.toggleFooterExportPopup(e));
-
-    this._footerDatasource = select;
+    this._footerDatasource = footerElements.reportSelect;
   }
 
   /**
@@ -233,11 +203,17 @@ export class UIManager {
 
     const btn = e.currentTarget;
     const rect = btn.getBoundingClientRect();
-    popup.style.position = 'fixed';
-    popup.style.top = `${rect.bottom + 4}px`;
-    popup.style.right = `${window.innerWidth - rect.right}px`;
-
+    
     document.body.appendChild(popup);
+    
+    // Position popup above the button (bottom-left of popup aligns with top-left of button)
+    requestAnimationFrame(() => {
+      const popupRect = popup.getBoundingClientRect();
+      popup.style.position = 'fixed';
+      popup.style.top = `${rect.top - popupRect.height - 8}px`;
+      popup.style.left = `${rect.left}px`;
+    });
+    
     processIcons(popup);
 
     popup.querySelectorAll('.queries-popup-item').forEach(item => {
@@ -248,6 +224,11 @@ export class UIManager {
     });
 
     this._footerExportPopup = popup;
+
+    // Animate in after a small delay
+    setTimeout(() => {
+      popup.classList.add('visible');
+    }, 10);
 
     setTimeout(() => {
       document.addEventListener('click', this._footerExportPopupBound = () => {

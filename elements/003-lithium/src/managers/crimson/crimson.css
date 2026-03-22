@@ -441,7 +441,7 @@
 
 .crimson-btn svg,
 .crimson-btn i {
-  color: #DC143C; /* Crimson color for the robot icon in buttons */
+  color: var(--text-secondary, #a0a0c0); /* Neutral color for the robot icon */
 }
 
 .crimson-btn::after {

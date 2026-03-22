@@ -81,16 +81,27 @@ function buildSlotHTML(slotId, icon, name) {
   return `
 <div class="manager-slot" id="${slotId}">
 
-  <!-- Slot Header: one unified button group spanning full width.
-       Title btn (left, flex:1) → keyboard → zoom → fullscreen → close btn (right).
-       Buttons are added by setupHeaderButtons() from manager-ui.js  -->
+  <!-- Slot Header: title button + search + placeholder + fixed buttons (keyboard, zoom, fullscreen, close) -->
   <div class="manager-slot-header">
     <div class="subpanel-header-group" style="flex:1;min-width:0;">
-      <button type="button" class="subpanel-header-btn subpanel-header-primary slot-title-btn" style="flex:1;min-width:0;overflow:hidden;">
-        <fa ${icon} class="slot-icon"></fa>
-        <span class="slot-name" style="white-space:nowrap;text-overflow:ellipsis;">${name}</span>
+      <!-- Title button with icon and name -->
+      <button type="button" class="subpanel-header-btn subpanel-header-primary slot-title-btn">
+        <span class="slot-icon">${icon}</span>
+        <span class="slot-name">${name}</span>
       </button>
-      <!-- Header buttons are injected here by setupHeaderButtons() -->
+      <!-- Search section -->
+      <div class="slot-header-search">
+        <button type="button" class="slot-header-search-btn" title="Search">
+          <fa fa-magnifying-glass></fa>
+        </button>
+        <input type="text" class="slot-header-search-input" placeholder="Search...">
+        <button type="button" class="slot-header-search-clear" title="Clear">
+          <fa fa-xmark></fa>
+        </button>
+      </div>
+      <!-- Placeholder: fills space between title and header buttons -->
+      <button type="button" class="subpanel-header-btn slot-header-placeholder"></button>
+      <!-- Fixed header buttons are added after placeholder by setupHeaderButtons() -->
     </div>
   </div>
 
@@ -98,16 +109,13 @@ function buildSlotHTML(slotId, icon, name) {
   <div class="manager-slot-workspace" id="${slotId}-workspace">
   </div>
 
-  <!-- Slot Footer: single unified button group spanning full width.
-       Reports btn (left, flex:1) → crimson → notifications → concierge → annotations → tours → training.
-       Buttons are added by setupFooterButtons() from manager-ui.js  -->
+  <!-- Slot Footer: placeholder + fixed buttons (Crimson, Notifications, etc.)
+       Manager buttons are added before placeholder by each manager -->
   <div class="manager-slot-footer">
     <div class="subpanel-header-group" style="flex:1;min-width:0;">
-      <button type="button" class="subpanel-header-btn subpanel-header-primary slot-reports-btn" style="flex:1;min-width:0;overflow:hidden;">
-        <fa fa-chart-bar></fa>
-        <span style="white-space:nowrap;text-overflow:ellipsis;">Reports Placeholder</span>
-      </button>
-      <!-- Footer buttons are injected here by setupFooterButtons() -->
+      <!-- Placeholder: empty button that fills space between left and right buttons -->
+      <button type="button" class="subpanel-header-btn slot-footer-placeholder" style="flex:1;min-width:0;"></button>
+      <!-- Fixed buttons are added after placeholder by setupFooterButtons() -->
     </div>
   </div>
 
@@ -278,6 +286,7 @@ export default class MainManager {
 
     // Setup footer buttons using manager-ui
     const footerGroup = slotEl.querySelector('.manager-slot-footer .subpanel-header-group');
+    const placeholder = slotEl.querySelector('.manager-slot-footer .slot-footer-placeholder');
     setupFooterButtons(slotId, managerId, {
       showCrimson: true,
       showNotifications: true,
@@ -286,6 +295,7 @@ export default class MainManager {
       showTours: true,
       showTraining: true,
       group: footerGroup,
+      afterPlaceholder: placeholder, // Insert fixed buttons after placeholder
     });
 
     // Initialize zoom on first slot creation

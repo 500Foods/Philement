@@ -16,6 +16,7 @@ import { authQuery } from '../../shared/conduit.js';
 import { toast } from '../../shared/toast.js';
 import { log, Subsystems, Status } from '../../core/log.js';
 import { processIcons } from '../../core/icons.js';
+import { setupManagerFooterIcons } from '../../core/manager-ui.js';
 import SunEditor from 'suneditor';
 import 'suneditor/css/editor';
 import 'json-tree.js/dist/jsontree.js.min.css';
@@ -919,78 +920,33 @@ export default class LookupsManager {
   // ── Footer Setup ───────────────────────────────────────────────────────────
 
   setupFooter() {
-    // Walk up to the .manager-slot from our workspace container
     const slot = this.container.closest('.manager-slot');
     if (!slot) return;
 
     const footer = slot.querySelector('.manager-slot-footer');
     if (!footer) return;
 
-    // Find the subpanel-header-group
     const group = footer.querySelector('.subpanel-header-group');
     if (!group) return;
 
-    // Remove the generic "Reports Placeholder" button
-    const reportsBtn = group.querySelector('.slot-reports-btn');
-    if (reportsBtn) reportsBtn.remove();
+    // Get the placeholder - manager buttons go before it, fixed buttons go after
+    const placeholder = group.querySelector('.slot-footer-placeholder');
 
-    // Identify the first right-side fixed button to use as insertion anchor
-    // This is the Crimson button added by manager-ui
-    const anchor = group.querySelector('.slot-footer-anchor') || group.querySelector('.manager-ui-crimson-btn');
+    const footerElements = setupManagerFooterIcons(group, {
+      onPrint: () => this.handleFooterPrint(),
+      onEmail: () => this.handleFooterEmail(),
+      onExport: (e) => this.toggleFooterExportPopup(e),
+      reportOptions: [
+        { value: 'lookups-list-view', label: 'Lookups List View' },
+        { value: 'lookups-list-data', label: 'Lookups List Data' },
+        { value: 'lookup-list-view', label: 'Lookup List View' },
+        { value: 'lookup-list-data', label: 'Lookup List Data' },
+      ],
+      fillerTitle: 'Lookups',
+      anchor: placeholder, // Insert manager buttons before placeholder
+    });
 
-    // --- Helper: create a button matching the footer style ---
-    const makeBtn = (id, icon, title) => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'subpanel-header-btn subpanel-header-close';
-      btn.id = id;
-      btn.title = title;
-      btn.innerHTML = `<fa ${icon}></fa>`;
-      return btn;
-    };
-
-    // 1. Print button
-    const printBtn = makeBtn('lookups-footer-print', 'fa-print', 'Print');
-    group.insertBefore(printBtn, anchor);
-
-    // 2. Email button
-    const emailBtn = makeBtn('lookups-footer-email', 'fa-envelope', 'E-Mail');
-    group.insertBefore(emailBtn, anchor);
-
-    // 3. Export button (with popup)
-    const exportBtn = makeBtn('lookups-footer-export', 'fa-file-circle-question', 'Export');
-    group.insertBefore(exportBtn, anchor);
-
-    // 4. Data-source select — combines parent and child table view options
-    const select = document.createElement('select');
-    select.id = 'lookups-footer-datasource';
-    select.title = 'Data Source';
-    select.className = 'lookups-footer-datasource';
-    select.innerHTML = `
-      <option value="lookups-list-view">Lookups List View</option>
-      <option value="lookups-list-data">Lookups List Data</option>
-      <option value="lookup-list-view">Lookup List View</option>
-      <option value="lookup-list-data">Lookup List Data</option>
-    `;
-    group.insertBefore(select, anchor);
-
-    // 5. Filler button — spans the gap between select and right-side buttons
-    const fillerBtn = document.createElement('button');
-    fillerBtn.type = 'button';
-    fillerBtn.className = 'subpanel-header-btn lookups-footer-filler';
-    fillerBtn.title = 'Lookups';
-    group.insertBefore(fillerBtn, anchor);
-
-    // Process <fa> icons inside the newly inserted buttons
-    processIcons(group);
-
-    // Wire up event handlers
-    printBtn.addEventListener('click', () => this.handleFooterPrint());
-    emailBtn.addEventListener('click', () => this.handleFooterEmail());
-    exportBtn.addEventListener('click', (e) => this.toggleFooterExportPopup(e));
-
-    // Store reference to the datasource select
-    this._footerDatasource = select;
+    this._footerDatasource = footerElements.reportSelect;
 
     log(Subsystems.MANAGER, Status.INFO, '[LookupsManager] Footer controls initialized');
   }
@@ -1120,20 +1076,22 @@ export default class LookupsManager {
       popup.appendChild(row);
     });
 
-    // Position above the button
-    const slot = this.container.closest('.manager-slot');
-    const footer = slot?.querySelector('.manager-slot-footer');
-    if (footer) {
-      footer.style.position = 'relative';
-      const btnRect = btn.getBoundingClientRect();
-      const footerRect = footer.getBoundingClientRect();
-      popup.style.left = `${btnRect.left - footerRect.left}px`;
-      footer.appendChild(popup);
-    }
+    // Position popup above the button (appended to body to avoid overflow issues)
+    const btnRect = btn.getBoundingClientRect();
+    document.body.appendChild(popup);
 
-    // Animate in
-    popup.getBoundingClientRect();
-    popup.classList.add('visible');
+    // Position popup above the button (bottom-left of popup aligns with top-left of button)
+    requestAnimationFrame(() => {
+      const popupRect = popup.getBoundingClientRect();
+      popup.style.position = 'fixed';
+      popup.style.top = `${btnRect.top - popupRect.height - 8}px`;
+      popup.style.left = `${btnRect.left}px`;
+    });
+
+    // Animate in after a small delay
+    setTimeout(() => {
+      popup.classList.add('visible');
+    }, 10);
 
     this._footerExportPopup = popup;
 

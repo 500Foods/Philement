@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><title>Code coverage report for managers/main/main.js</title><meta charset="utf-8"><link rel="stylesheet" href="../../prettify.css"><link rel="stylesheet" href="../../base.css"><link rel="shortcut icon" type="image/x-icon" href="../../favicon.png"><meta name="viewport" content="width=device-width,initial-scale=1"><style type="text/css">.coverage-summary .sorter{background-image:url(../../sort-arrow-sprite.png)}</style></head><body><div class="wrapper"><div class="pad1"><h1><a href="../../index.html">All files</a> / <a href="index.html">managers/main</a> main.js</h1><div class="clearfix"><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Statements</span> <span class="fraction">0/665</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Branches</span> <span class="fraction">0/264</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Functions</span> <span class="fraction">0/120</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Lines</span> <span class="fraction">0/608</span></div></div><p class="quiet">Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.</p><template id="filterTemplate"><div class="quiet">Filter: <input type="search" id="fileSearch"></div></template></div><div class="status-line low"></div><pre><table class="coverage">
+<!doctype html><html lang="en"><head><title>Code coverage report for managers/main/main.js</title><meta charset="utf-8"><link rel="stylesheet" href="../../prettify.css"><link rel="stylesheet" href="../../base.css"><link rel="shortcut icon" type="image/x-icon" href="../../favicon.png"><meta name="viewport" content="width=device-width,initial-scale=1"><style type="text/css">.coverage-summary .sorter{background-image:url(../../sort-arrow-sprite.png)}</style></head><body><div class="wrapper"><div class="pad1"><h1><a href="../../index.html">All files</a> / <a href="index.html">managers/main</a> main.js</h1><div class="clearfix"><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Statements</span> <span class="fraction">0/666</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Branches</span> <span class="fraction">0/264</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Functions</span> <span class="fraction">0/120</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Lines</span> <span class="fraction">0/609</span></div></div><p class="quiet">Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.</p><template id="filterTemplate"><div class="quiet">Filter: <input type="search" id="fileSearch"></div></template></div><div class="status-line low"></div><pre><table class="coverage">
 <tr><td class="line-count quiet"><a name="L1"></a><a href="#L1">1</a>
 <a name="L2"></a><a href="#L2">2</a>
 <a name="L3"></a><a href="#L3">3</a>
@@ -1782,8 +1782,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1943,6 +1941,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -3408,16 +3408,17 @@ function <span class="fstat-no" title="function not covered">buildSlotHTML(</spa
 <span class="cstat-no" title="statement not covered">  return `</span>
 &lt;div class="manager-slot" id="${slotId}"&gt;
 &nbsp;
-  &lt;!-- Slot Header: one unified button group spanning full width.
-       Title btn (left, flex:1) → keyboard → zoom → fullscreen → close btn (right).
-       Buttons are added by setupHeaderButtons() from manager-ui.js  --&gt;
+  &lt;!-- Slot Header: title button + placeholder + fixed buttons (keyboard, zoom, fullscreen, close) --&gt;
   &lt;div class="manager-slot-header"&gt;
     &lt;div class="subpanel-header-group" style="flex:1;min-width:0;"&gt;
-      &lt;button type="button" class="subpanel-header-btn subpanel-header-primary slot-title-btn" style="flex:1;min-width:0;overflow:hidden;"&gt;
+      &lt;!-- Title button with icon and name --&gt;
+      &lt;button type="button" class="subpanel-header-btn subpanel-header-primary slot-title-btn"&gt;
         &lt;fa ${icon} class="slot-icon"&gt;&lt;/fa&gt;
-        &lt;span class="slot-name" style="white-space:nowrap;text-overflow:ellipsis;"&gt;${name}&lt;/span&gt;
+        &lt;span class="slot-name"&gt;${name}&lt;/span&gt;
       &lt;/button&gt;
-      &lt;!-- Header buttons are injected here by setupHeaderButtons() --&gt;
+      &lt;!-- Placeholder: fills space between title and header buttons --&gt;
+      &lt;button type="button" class="subpanel-header-btn slot-header-placeholder"&gt;&lt;/button&gt;
+      &lt;!-- Fixed header buttons are added after placeholder by setupHeaderButtons() --&gt;
     &lt;/div&gt;
   &lt;/div&gt;
 &nbsp;
@@ -3425,16 +3426,13 @@ function <span class="fstat-no" title="function not covered">buildSlotHTML(</spa
   &lt;div class="manager-slot-workspace" id="${slotId}-workspace"&gt;
   &lt;/div&gt;
 &nbsp;
-  &lt;!-- Slot Footer: single unified button group spanning full width.
-       Reports btn (left, flex:1) → crimson → notifications → concierge → annotations → tours → training.
-       Buttons are added by setupFooterButtons() from manager-ui.js  --&gt;
+  &lt;!-- Slot Footer: placeholder + fixed buttons (Crimson, Notifications, etc.)
+       Manager buttons are added before placeholder by each manager --&gt;
   &lt;div class="manager-slot-footer"&gt;
     &lt;div class="subpanel-header-group" style="flex:1;min-width:0;"&gt;
-      &lt;button type="button" class="subpanel-header-btn subpanel-header-primary slot-reports-btn" style="flex:1;min-width:0;overflow:hidden;"&gt;
-        &lt;fa fa-chart-bar&gt;&lt;/fa&gt;
-        &lt;span style="white-space:nowrap;text-overflow:ellipsis;"&gt;Reports Placeholder&lt;/span&gt;
-      &lt;/button&gt;
-      &lt;!-- Footer buttons are injected here by setupFooterButtons() --&gt;
+      &lt;!-- Placeholder: empty button that fills space between left and right buttons --&gt;
+      &lt;button type="button" class="subpanel-header-btn slot-footer-placeholder" style="flex:1;min-width:0;"&gt;&lt;/button&gt;
+      &lt;!-- Fixed buttons are added after placeholder by setupFooterButtons() --&gt;
     &lt;/div&gt;
   &lt;/div&gt;
 &nbsp;
@@ -3605,6 +3603,7 @@ export default class MainManager {
 &nbsp;
     // Setup footer buttons using manager-ui
     const footerGroup = <span class="cstat-no" title="statement not covered">slotEl.querySelector('.manager-slot-footer .subpanel-header-group');</span>
+    const placeholder = <span class="cstat-no" title="statement not covered">slotEl.querySelector('.manager-slot-footer .slot-footer-placeholder');</span>
 <span class="cstat-no" title="statement not covered">    setupFooterButtons(slotId, managerId, {</span>
       showCrimson: true,
       showNotifications: true,
@@ -3613,6 +3612,7 @@ export default class MainManager {
       showTours: true,
       showTraining: true,
       group: footerGroup,
+      afterPlaceholder: placeholder, // Insert fixed buttons after placeholder
     });
 &nbsp;
     // Initialize zoom on first slot creation
@@ -4988,4 +4988,4 @@ export default class MainManager {
 <span class="cstat-no" title="statement not covered">    this.elements = {};</span>
   }
 }
-&nbsp;</pre></td></tr></table></pre><div class="push"></div></div><div class="footer quiet pad2 space-top1 center small">Code coverage generated by <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a> at 2026-03-21T21:52:59.091Z</div><script src="../../prettify.js"></script><script>window.onload=function(){prettyPrint()}</script><script src="../../sorter.js"></script><script src="../../block-navigation.js"></script></body></html>
+&nbsp;</pre></td></tr></table></pre><div class="push"></div></div><div class="footer quiet pad2 space-top1 center small">Code coverage generated by <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a> at 2026-03-22T02:21:29.769Z</div><script src="../../prettify.js"></script><script>window.onload=function(){prettyPrint()}</script><script src="../../sorter.js"></script><script src="../../block-navigation.js"></script></body></html>

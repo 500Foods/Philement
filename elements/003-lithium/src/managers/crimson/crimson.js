@@ -75,7 +75,7 @@ export function createCrimsonButton(tooltip = 'Chat with Crimson (Ctrl+Shift+C)'
   button.type = 'button';
   button.className = 'subpanel-header-btn subpanel-header-close crimson-btn';
   button.title = tooltip;
-  button.innerHTML = '<fa fa-robot></fa>';
+  button.innerHTML = '<fa fa-fire></fa>';
 
   button.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -182,7 +182,7 @@ class CrimsonManager {
       <div class="crimson-header">
         <div class="subpanel-header-group">
           <button type="button" class="crimson-header-primary">
-            <fa fa-robot></fa>
+            <fa fa-fire></fa>
             <span>Chat with Crimson</span>
           </button>
           <button type="button" class="crimson-header-close" title="Close (ESC)">
@@ -193,7 +193,7 @@ class CrimsonManager {
       <div class="crimson-conversation">
         <div class="crimson-welcome">
           <div class="crimson-welcome-icon">
-            <fa fa-robot></fa>
+            <fa fa-fire></fa>
           </div>
           <div class="crimson-welcome-text">Hello, <span class="crimson-username">User</span>!</div>
           <div class="crimson-welcome-hint">How can I help you today?</div>
@@ -568,7 +568,7 @@ class CrimsonManager {
     messageEl.className = `crimson-message crimson-message-${sender}`;
 
     const avatar = sender === 'agent'
-      ? '<div class="crimson-message-avatar"><fa fa-robot></fa></div>'
+      ? '<div class="crimson-message-avatar"><fa fa-fire></fa></div>'
       : '<div class="crimson-message-avatar"><fa fa-user></fa></div>';
 
     messageEl.innerHTML = `
@@ -593,7 +593,7 @@ class CrimsonManager {
     const indicator = document.createElement('div');
     indicator.className = 'crimson-message crimson-message-agent crimson-typing-indicator';
     indicator.innerHTML = `
-      <div class="crimson-message-avatar"><fa fa-robot></fa></div>
+      <div class="crimson-message-avatar"><fa fa-fire></fa></div>
       <div class="crimson-message-content">
         <div class="crimson-typing">
           <div class="crimson-typing-dot"></div>
