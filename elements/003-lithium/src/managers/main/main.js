@@ -81,7 +81,7 @@ function buildSlotHTML(slotId, icon, name) {
   return `
 <div class="manager-slot" id="${slotId}">
 
-  <!-- Slot Header: title button + search + placeholder + fixed buttons (keyboard, zoom, fullscreen, close) -->
+  <!-- Slot Header: title button + placeholder + search + placeholder + fixed buttons (toolbox, keyboard, zoom, fullscreen, close) -->
   <div class="manager-slot-header">
     <div class="subpanel-header-group" style="flex:1;min-width:0;">
       <!-- Title button with icon and name -->
@@ -89,8 +89,10 @@ function buildSlotHTML(slotId, icon, name) {
         <span class="slot-icon">${icon}</span>
         <span class="slot-name">${name}</span>
       </button>
+      <!-- Placeholder: fills space between title and search -->
+      <button type="button" class="subpanel-header-btn slot-header-placeholder slot-header-flex"></button>
       <!-- Search section -->
-      <div class="slot-header-search">
+      <div class="slot-header-search slot-header-flex">
         <button type="button" class="slot-header-search-btn" title="Search">
           <fa fa-magnifying-glass></fa>
         </button>
@@ -99,8 +101,8 @@ function buildSlotHTML(slotId, icon, name) {
           <fa fa-xmark></fa>
         </button>
       </div>
-      <!-- Placeholder: fills space between title and header buttons -->
-      <button type="button" class="subpanel-header-btn slot-header-placeholder"></button>
+      <!-- Placeholder: fills space between search and header buttons -->
+      <button type="button" class="subpanel-header-btn slot-header-placeholder slot-header-flex"></button>
       <!-- Fixed header buttons are added after placeholder by setupHeaderButtons() -->
     </div>
   </div>
@@ -272,6 +274,16 @@ export default class MainManager {
 
     // Process FA icons inside the new slot
     processIcons(slotEl);
+
+    // Setup search clear button to clear the search input
+    const searchInput = slotEl.querySelector('.slot-header-search-input');
+    const searchClearBtn = slotEl.querySelector('.slot-header-search-clear');
+    if (searchInput && searchClearBtn) {
+      searchClearBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        searchInput.focus();
+      });
+    }
 
     // Setup header buttons using manager-ui
     const headerGroup = slotEl.querySelector('.manager-slot-header .subpanel-header-group');

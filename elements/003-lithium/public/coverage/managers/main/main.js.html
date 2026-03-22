@@ -25,28 +25,28 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/666</span>
+                <span class='fraction'>0/672</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/264</span>
+                <span class='fraction'>0/268</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/120</span>
+                <span class='fraction'>0/121</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/609</span>
+                <span class='fraction'>0/615</span>
             </div>
         
             
@@ -1736,7 +1736,19 @@
 <a name='L1671'></a><a href='#L1671'>1671</a>
 <a name='L1672'></a><a href='#L1672'>1672</a>
 <a name='L1673'></a><a href='#L1673'>1673</a>
-<a name='L1674'></a><a href='#L1674'>1674</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L1674'></a><a href='#L1674'>1674</a>
+<a name='L1675'></a><a href='#L1675'>1675</a>
+<a name='L1676'></a><a href='#L1676'>1676</a>
+<a name='L1677'></a><a href='#L1677'>1677</a>
+<a name='L1678'></a><a href='#L1678'>1678</a>
+<a name='L1679'></a><a href='#L1679'>1679</a>
+<a name='L1680'></a><a href='#L1680'>1680</a>
+<a name='L1681'></a><a href='#L1681'>1681</a>
+<a name='L1682'></a><a href='#L1682'>1682</a>
+<a name='L1683'></a><a href='#L1683'>1683</a>
+<a name='L1684'></a><a href='#L1684'>1684</a>
+<a name='L1685'></a><a href='#L1685'>1685</a>
+<a name='L1686'></a><a href='#L1686'>1686</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1866,6 +1878,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -2003,13 +2017,23 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -3492,7 +3516,7 @@ function <span class="fstat-no" title="function not covered" >buildSlotHTML(</sp
 <span class="cstat-no" title="statement not covered" >  return `</span>
 &lt;div class="manager-slot" id="${slotId}"&gt;
 &nbsp;
-  &lt;!-- Slot Header: title button + search + placeholder + fixed buttons (keyboard, zoom, fullscreen, close) --&gt;
+  &lt;!-- Slot Header: title button + placeholder + search + placeholder + fixed buttons (toolbox, keyboard, zoom, fullscreen, close) --&gt;
   &lt;div class="manager-slot-header"&gt;
     &lt;div class="subpanel-header-group" style="flex:1;min-width:0;"&gt;
       &lt;!-- Title button with icon and name --&gt;
@@ -3500,8 +3524,10 @@ function <span class="fstat-no" title="function not covered" >buildSlotHTML(</sp
         &lt;span class="slot-icon"&gt;${icon}&lt;/span&gt;
         &lt;span class="slot-name"&gt;${name}&lt;/span&gt;
       &lt;/button&gt;
+      &lt;!-- Placeholder: fills space between title and search --&gt;
+      &lt;button type="button" class="subpanel-header-btn slot-header-placeholder slot-header-flex"&gt;&lt;/button&gt;
       &lt;!-- Search section --&gt;
-      &lt;div class="slot-header-search"&gt;
+      &lt;div class="slot-header-search slot-header-flex"&gt;
         &lt;button type="button" class="slot-header-search-btn" title="Search"&gt;
           &lt;fa fa-magnifying-glass&gt;&lt;/fa&gt;
         &lt;/button&gt;
@@ -3510,8 +3536,8 @@ function <span class="fstat-no" title="function not covered" >buildSlotHTML(</sp
           &lt;fa fa-xmark&gt;&lt;/fa&gt;
         &lt;/button&gt;
       &lt;/div&gt;
-      &lt;!-- Placeholder: fills space between title and header buttons --&gt;
-      &lt;button type="button" class="subpanel-header-btn slot-header-placeholder"&gt;&lt;/button&gt;
+      &lt;!-- Placeholder: fills space between search and header buttons --&gt;
+      &lt;button type="button" class="subpanel-header-btn slot-header-placeholder slot-header-flex"&gt;&lt;/button&gt;
       &lt;!-- Fixed header buttons are added after placeholder by setupHeaderButtons() --&gt;
     &lt;/div&gt;
   &lt;/div&gt;
@@ -3683,6 +3709,16 @@ export default class MainManager {
 &nbsp;
     // Process FA icons inside the new slot
 <span class="cstat-no" title="statement not covered" >    processIcons(slotEl);</span>
+&nbsp;
+    // Setup search clear button to clear the search input
+    const searchInput = <span class="cstat-no" title="statement not covered" >slotEl.querySelector('.slot-header-search-input');</span>
+    const searchClearBtn = <span class="cstat-no" title="statement not covered" >slotEl.querySelector('.slot-header-search-clear');</span>
+<span class="cstat-no" title="statement not covered" >    if (searchInput &amp;&amp; searchClearBtn) {</span>
+<span class="cstat-no" title="statement not covered" >      searchClearBtn.addEventListener('click', <span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >        searchInput.value = '';</span>
+<span class="cstat-no" title="statement not covered" >        searchInput.focus();</span>
+      });
+    }
 &nbsp;
     // Setup header buttons using manager-ui
     const headerGroup = <span class="cstat-no" title="statement not covered" >slotEl.querySelector('.manager-slot-header .subpanel-header-group');</span>
@@ -5089,7 +5125,7 @@ export default class MainManager {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-03-22T08:43:57.828Z
+                at 2026-03-22T09:48:00.211Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

@@ -134,6 +134,7 @@ body.hide-password-manager-ui [class*="password-icon"] {
   margin: 0;
   border-radius: 0;        
   z-index: 1;
+  min-width: 40px;
 }
 
 /* Left button (primary with icon and title) - rounded left corners */
