@@ -400,6 +400,7 @@
   display: flex;
   background-color: var(--bg-secondary);
   padding: var(--space-2) var(--space-3);
+  container-type: inline-size;
 }
 
 .queries-tab-btn {
@@ -1772,6 +1773,17 @@
 
 .queries-popup-item:active {
   background-color: var(--accent-focus);
+}
+
+/* Hide text labels in Query Manager tabs/toolbar when toolbar width < 700px */
+@container (max-width: 700px) {
+  .queries-tabs-header .queries-tab-btn span {
+    display: none;
+  }
+  
+  .queries-tabs-header .queries-tab-btn {
+    padding: var(--space-2);
+  }
 }
 
 } /* end @layer managers */
