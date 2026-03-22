@@ -344,7 +344,7 @@
   transition: background-color var(--transition-fast), color var(--transition-fast);
   white-space: nowrap;
   overflow: hidden;     
-  font-size: 20px;
+  font-size: var(--icon-size-reg)
 }
 
 .menu-item:hover {
