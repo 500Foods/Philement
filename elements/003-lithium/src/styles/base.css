@@ -137,6 +137,9 @@
     --font-size-2xl: 24px;
     --font-size-3xl: 32px;
 
+    --icon-size-reg: 20px;
+    --icon-size-nav: 12px;
+
     --font-weight-normal: 400;
     --font-weight-medium: 500;
     --font-weight-semibold: 600;
@@ -195,6 +198,8 @@
     /* Zoom level - controlled via JavaScript */
     --zoom: 1;
     --zoom-inv: 1;
+
+    --fa-secondary-opacity: 0.15;
   }
 
   /* ---- Font Face Declarations ---- */
