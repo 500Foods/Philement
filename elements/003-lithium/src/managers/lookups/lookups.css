@@ -1449,19 +1449,17 @@
 
 /* Footer export popup */
 .lookups-footer-export-popup {
-  position: absolute;
-  bottom: 100%;
-  margin-bottom: 4px;
+  position: fixed;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-md);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  z-index: 100;
+  z-index: 10001;
   min-width: 80px;
   overflow: hidden;
   opacity: 0;
   visibility: hidden;
-  transform: translateY(4px);
+  transform: translateY(-4px);
   transition: opacity var(--transition-fast), visibility var(--transition-fast), transform var(--transition-fast);
 }
 
