@@ -104,6 +104,7 @@ enum MHD_Result handle_post_auth_logout(
 
     // Free the buffer now that we've parsed any optional data
     api_free_post_buffer(con_cls);
+    buffer = NULL;
 
     log_this(SR_AUTH, "Logout request received with token from Authorization header", LOG_LEVEL_DEBUG, 0);
 
