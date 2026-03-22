@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/665</span>
+                <span class='fraction'>0/666</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/608</span>
+                <span class='fraction'>0/609</span>
             </div>
         
             
@@ -1726,7 +1726,17 @@
 <a name='L1661'></a><a href='#L1661'>1661</a>
 <a name='L1662'></a><a href='#L1662'>1662</a>
 <a name='L1663'></a><a href='#L1663'>1663</a>
-<a name='L1664'></a><a href='#L1664'>1664</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L1664'></a><a href='#L1664'>1664</a>
+<a name='L1665'></a><a href='#L1665'>1665</a>
+<a name='L1666'></a><a href='#L1666'>1666</a>
+<a name='L1667'></a><a href='#L1667'>1667</a>
+<a name='L1668'></a><a href='#L1668'>1668</a>
+<a name='L1669'></a><a href='#L1669'>1669</a>
+<a name='L1670'></a><a href='#L1670'>1670</a>
+<a name='L1671'></a><a href='#L1671'>1671</a>
+<a name='L1672'></a><a href='#L1672'>1672</a>
+<a name='L1673'></a><a href='#L1673'>1673</a>
+<a name='L1674'></a><a href='#L1674'>1674</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1848,6 +1858,14 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -2007,6 +2025,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -3472,16 +3492,27 @@ function <span class="fstat-no" title="function not covered" >buildSlotHTML(</sp
 <span class="cstat-no" title="statement not covered" >  return `</span>
 &lt;div class="manager-slot" id="${slotId}"&gt;
 &nbsp;
-  &lt;!-- Slot Header: one unified button group spanning full width.
-       Title btn (left, flex:1) → keyboard → zoom → fullscreen → close btn (right).
-       Buttons are added by setupHeaderButtons() from manager-ui.js  --&gt;
+  &lt;!-- Slot Header: title button + search + placeholder + fixed buttons (keyboard, zoom, fullscreen, close) --&gt;
   &lt;div class="manager-slot-header"&gt;
     &lt;div class="subpanel-header-group" style="flex:1;min-width:0;"&gt;
-      &lt;button type="button" class="subpanel-header-btn subpanel-header-primary slot-title-btn" style="flex:1;min-width:0;overflow:hidden;"&gt;
+      &lt;!-- Title button with icon and name --&gt;
+      &lt;button type="button" class="subpanel-header-btn subpanel-header-primary slot-title-btn"&gt;
         &lt;fa ${icon} class="slot-icon"&gt;&lt;/fa&gt;
-        &lt;span class="slot-name" style="white-space:nowrap;text-overflow:ellipsis;"&gt;${name}&lt;/span&gt;
+        &lt;span class="slot-name"&gt;${name}&lt;/span&gt;
       &lt;/button&gt;
-      &lt;!-- Header buttons are injected here by setupHeaderButtons() --&gt;
+      &lt;!-- Search section --&gt;
+      &lt;div class="slot-header-search"&gt;
+        &lt;button type="button" class="slot-header-search-btn" title="Search"&gt;
+          &lt;fa fa-magnifying-glass&gt;&lt;/fa&gt;
+        &lt;/button&gt;
+        &lt;input type="text" class="slot-header-search-input" placeholder="Search..."&gt;
+        &lt;button type="button" class="slot-header-search-clear" title="Clear"&gt;
+          &lt;fa fa-xmark&gt;&lt;/fa&gt;
+        &lt;/button&gt;
+      &lt;/div&gt;
+      &lt;!-- Placeholder: fills space between title and header buttons --&gt;
+      &lt;button type="button" class="subpanel-header-btn slot-header-placeholder"&gt;&lt;/button&gt;
+      &lt;!-- Fixed header buttons are added after placeholder by setupHeaderButtons() --&gt;
     &lt;/div&gt;
   &lt;/div&gt;
 &nbsp;
@@ -3489,16 +3520,13 @@ function <span class="fstat-no" title="function not covered" >buildSlotHTML(</sp
   &lt;div class="manager-slot-workspace" id="${slotId}-workspace"&gt;
   &lt;/div&gt;
 &nbsp;
-  &lt;!-- Slot Footer: single unified button group spanning full width.
-       Reports btn (left, flex:1) → crimson → notifications → concierge → annotations → tours → training.
-       Buttons are added by setupFooterButtons() from manager-ui.js  --&gt;
+  &lt;!-- Slot Footer: placeholder + fixed buttons (Crimson, Notifications, etc.)
+       Manager buttons are added before placeholder by each manager --&gt;
   &lt;div class="manager-slot-footer"&gt;
     &lt;div class="subpanel-header-group" style="flex:1;min-width:0;"&gt;
-      &lt;button type="button" class="subpanel-header-btn subpanel-header-primary slot-reports-btn" style="flex:1;min-width:0;overflow:hidden;"&gt;
-        &lt;fa fa-chart-bar&gt;&lt;/fa&gt;
-        &lt;span style="white-space:nowrap;text-overflow:ellipsis;"&gt;Reports Placeholder&lt;/span&gt;
-      &lt;/button&gt;
-      &lt;!-- Footer buttons are injected here by setupFooterButtons() --&gt;
+      &lt;!-- Placeholder: empty button that fills space between left and right buttons --&gt;
+      &lt;button type="button" class="subpanel-header-btn slot-footer-placeholder" style="flex:1;min-width:0;"&gt;&lt;/button&gt;
+      &lt;!-- Fixed buttons are added after placeholder by setupFooterButtons() --&gt;
     &lt;/div&gt;
   &lt;/div&gt;
 &nbsp;
@@ -3669,6 +3697,7 @@ export default class MainManager {
 &nbsp;
     // Setup footer buttons using manager-ui
     const footerGroup = <span class="cstat-no" title="statement not covered" >slotEl.querySelector('.manager-slot-footer .subpanel-header-group');</span>
+    const placeholder = <span class="cstat-no" title="statement not covered" >slotEl.querySelector('.manager-slot-footer .slot-footer-placeholder');</span>
 <span class="cstat-no" title="statement not covered" >    setupFooterButtons(slotId, managerId, {</span>
       showCrimson: true,
       showNotifications: true,
@@ -3677,6 +3706,7 @@ export default class MainManager {
       showTours: true,
       showTraining: true,
       group: footerGroup,
+      afterPlaceholder: placeholder, // Insert fixed buttons after placeholder
     });
 &nbsp;
     // Initialize zoom on first slot creation
@@ -5059,7 +5089,7 @@ export default class MainManager {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-03-21T22:08:21.987Z
+                at 2026-03-22T02:46:14.142Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

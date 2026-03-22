@@ -23,7 +23,7 @@ export default class AIAuditorManager {
     this.container.innerHTML = `
       <div class="ai-auditor-container">
         <div class="placeholder-header">
-          <fa fa-robot></fa>
+          <fa fa-face-disguise></fa>
           <h2>AI Auditor</h2>
         </div>
         <div class="placeholder-content">
