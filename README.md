@@ -53,7 +53,7 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2026-03-22 16:13:51 UTC
+Last updated at 2026-03-22 16:28:27 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
@@ -80,22 +80,22 @@ Pascal                           2             11              2             31
 -------------------------------------------------------------------------------
 SUM:                          3081          86860         142585        1343175
 -------------------------------------------------------------------------------
-754 Files were skipped (duplicate, binary, or without source code):
+698 Files were skipped (duplicate, binary, or without source code):
   svg: 524
-  html: 56
   md: 49
-  png: 24
+  png: 22
   br: 16
   lua: 12
-  js: 6
+  html: 8
   gitignore: 5
-  css: 4
-  json: 4
   woff2: 4
   clp: 3
   ico: 3
   jpg: 3
+  js: 3
+  json: 3
   lintignore-markdown: 3
+  css: 2
   lintignore-bash: 2
   lintignore-c: 2
   lintignore-lua: 2
