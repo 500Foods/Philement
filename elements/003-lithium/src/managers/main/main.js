@@ -94,7 +94,7 @@ function buildSlotHTML(slotId, icon, name) {
         <button type="button" class="slot-header-search-btn" title="Search">
           <fa fa-magnifying-glass></fa>
         </button>
-        <input type="text" class="slot-header-search-input" placeholder="Search...">
+        <input type="text" class="slot-header-search-input" placeholder="Search Lithium...">
         <button type="button" class="slot-header-search-clear" title="Clear">
           <fa fa-xmark></fa>
         </button>

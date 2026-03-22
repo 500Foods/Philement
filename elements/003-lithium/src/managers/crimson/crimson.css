@@ -287,7 +287,7 @@
   border: none;
   border-radius: var(--border-radius-md);
   color: white;
-  font-size: 20px;
+  font-size: var(--icon-font-reg);
   cursor: pointer;
   transition: background-color var(--transition-fast) ease, transform 100ms ease;
   flex-shrink: 0; 
