@@ -8,12 +8,14 @@
  * - Centered initially at 70% viewport
  * - Chat interface with conversation pane and input
  * - ESC to close, Ctrl+Shift+C to open
+ * - WebSocket streaming for real-time AI responses
  *
  * @module managers/crimson
  */
 
 import { processIcons } from '../../core/icons.js';
 import { log, Subsystems, Status } from '../../core/log.js';
+import { getCrimsonWS } from '../../shared/crimson-ws.js';
 import './crimson.css';
 
 // Singleton instance tracking
@@ -144,6 +146,12 @@ class CrimsonManager {
     this.resizeCorner = 'br'; // Default to bottom-right
     this.username = 'User';
     this.messages = [];
+
+    // WebSocket chat state
+    this.wsClient = null;
+    this.isStreaming = false;
+    this.currentStreamElement = null;
+    this.conversationHistory = [];
 
     // Bind methods
     this.handleDragStart = this.handleDragStart.bind(this);
@@ -520,17 +528,20 @@ class CrimsonManager {
    */
   handleSend() {
     const message = this.input.value.trim();
-    if (!message) return;
+    if (!message || this.isStreaming) return;
 
     // Add user message
     this.addMessage('user', message);
+
+    // Add to conversation history for context
+    this.conversationHistory.push({ role: 'user', content: message });
 
     // Clear input
     this.input.value = '';
     this.autoResizeInput();
 
-    // Simulate Crimson response (placeholder)
-    this.simulateCrimsonResponse();
+    // Send message via WebSocket
+    this.sendChatMessage(message);
   }
 
   /**
@@ -619,39 +630,191 @@ class CrimsonManager {
   }
 
   /**
-   * Simulate Crimson response (placeholder for future AI integration)
+   * Initialize WebSocket client
+   */
+  initWebSocketClient() {
+    if (this.wsClient) return;
+
+    this.wsClient = getCrimsonWS({
+      onChunk: (content, index, finishReason) => {
+        this.handleStreamChunk(content, index, finishReason);
+      },
+      onDone: (content, result) => {
+        this.handleStreamDone(content, result);
+      },
+      onError: (error) => {
+        this.handleStreamError(error);
+      },
+      onStateChange: (state) => {
+        log(Subsystems.MANAGER, Status.DEBUG, `[Crimson] WebSocket state: ${state}`);
+      },
+    });
+  }
+
+  /**
+   * Send chat message via WebSocket
+   * @param {string} message - User message
+   */
+  async sendChatMessage(message) {
+    // Initialize WebSocket client if needed
+    this.initWebSocketClient();
+
+    // Disable send button while streaming
+    this.sendBtn.disabled = true;
+    this.isStreaming = true;
+
+    // Add streaming indicator
+    this.currentStreamElement = this.addStreamingMessage();
+
+    try {
+      // Send message with conversation history for context
+      await this.wsClient.send(message, {
+        history: this.conversationHistory.slice(-10), // Last 10 messages for context
+        stream: true,
+      });
+    } catch (error) {
+      log(Subsystems.MANAGER, Status.ERROR, `[Crimson] Chat error: ${error.message}`);
+      this.handleStreamError(error.message);
+    }
+  }
+
+  /**
+   * Handle incoming stream chunk
+   * @param {string} content - Chunk content
+   * @param {number} _index - Chunk index (unused)
+   * @param {string} _finishReason - Finish reason (unused)
+   */
+  handleStreamChunk(content, _index, _finishReason) {
+    if (!this.currentStreamElement) return;
+
+    const contentEl = this.currentStreamElement.querySelector('.crimson-message-content');
+    if (contentEl) {
+      // Append chunk to existing content
+      const currentContent = contentEl.getAttribute('data-raw-content') || '';
+      const newContent = currentContent + (content || '');
+      contentEl.setAttribute('data-raw-content', newContent);
+      contentEl.innerHTML = this.formatMessageContent(newContent);
+
+      // Scroll to bottom
+      this.conversation.scrollTop = this.conversation.scrollHeight;
+    }
+  }
+
+  /**
+   * Handle stream completion
+   * @param {string} content - Final complete content
+   * @param {Object} _result - Full result object (unused)
+   */
+  handleStreamDone(content, _result) {
+    if (this.currentStreamElement) {
+      const contentEl = this.currentStreamElement.querySelector('.crimson-message-content');
+      if (contentEl) {
+        // Set final content
+        contentEl.setAttribute('data-raw-content', content);
+        contentEl.innerHTML = this.formatMessageContent(content);
+      }
+
+      // Remove streaming indicator class
+      this.currentStreamElement.classList.remove('crimson-streaming');
+
+      // Add to conversation history
+      this.conversationHistory.push({ role: 'assistant', content });
+
+      // Store message
+      this.messages.push({ sender: 'agent', text: content, timestamp: Date.now() });
+    }
+
+    // Reset streaming state
+    this.currentStreamElement = null;
+    this.isStreaming = false;
+    this.sendBtn.disabled = false;
+    this.input.focus();
+
+    // Scroll to bottom
+    this.conversation.scrollTop = this.conversation.scrollHeight;
+  }
+
+  /**
+   * Handle stream error
+   * @param {string|Error} error - Error message or Error object
+   */
+  handleStreamError(error) {
+    const errorMessage = error instanceof Error ? error.message : error;
+
+    // Remove streaming indicator
+    if (this.currentStreamElement) {
+      this.currentStreamElement.remove();
+      this.currentStreamElement = null;
+    }
+
+    // Add error message
+    this.addMessage('agent', `Sorry, I encountered an error: ${errorMessage}`);
+
+    // Reset streaming state
+    this.isStreaming = false;
+    this.sendBtn.disabled = false;
+    this.input.focus();
+  }
+
+  /**
+   * Add a streaming message placeholder
+   * @returns {HTMLElement} The streaming message element
+   */
+  addStreamingMessage() {
+    // Remove welcome message if present
+    const welcome = this.conversation.querySelector('.crimson-welcome');
+    if (welcome) {
+      welcome.remove();
+    }
+
+    const messageEl = document.createElement('div');
+    messageEl.className = 'crimson-message crimson-message-agent crimson-streaming';
+    messageEl.innerHTML = `
+      <div class="crimson-message-avatar"><fa fa-fire></fa></div>
+      <div class="crimson-message-content" data-raw-content=""></div>
+    `;
+
+    this.conversation.appendChild(messageEl);
+    processIcons(messageEl);
+    this.conversation.scrollTop = this.conversation.scrollHeight;
+
+    return messageEl;
+  }
+
+  /**
+   * Format message content with basic markdown support
+   * @param {string} content - Raw content
+   * @returns {string} Formatted HTML
+   */
+  formatMessageContent(content) {
+    if (!content) return '';
+
+    // Escape HTML first
+    const escaped = this.escapeHtml(content);
+
+    // Basic markdown-like formatting
+    const formatted = escaped
+      // Code blocks (```code```)
+      .replace(/```([\s\S]*?)```/g, '<pre class="crimson-code"><code>$1</code></pre>')
+      // Inline code (`code`)
+      .replace(/`([^`]+)`/g, '<code class="crimson-inline-code">$1</code>')
+      // Bold (**text**)
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      // Italic (*text*)
+      .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+      // Line breaks
+      .replace(/\n/g, '<br>');
+
+    return formatted;
+  }
+
+  /**
+   * Simulate Crimson response (placeholder - not used with WebSocket)
+   * @deprecated Use WebSocket chat instead
    */
   simulateCrimsonResponse() {
-    // Disable send button
-    this.sendBtn.disabled = true;
-
-    // Show typing indicator after a short delay
-    setTimeout(() => {
-      const indicator = this.addTypingIndicator();
-
-      // Simulate response time (1-2 seconds)
-      const responseTime = 1000 + Math.random() * 1000;
-
-      setTimeout(() => {
-        this.removeTypingIndicator();
-
-        // Placeholder response
-        const responses = [
-          "I'm here to help! What would you like to know?",
-          "That's an interesting question. Let me think about that...",
-          "I can assist you with that. Could you provide more details?",
-          "Thanks for your message! I'm still learning, but I'll do my best to help.",
-          "I understand. How else can I assist you today?",
-        ];
-        const response = responses[Math.floor(Math.random() * responses.length)];
-
-        this.addMessage('agent', response);
-
-        // Re-enable send button
-        this.sendBtn.disabled = false;
-        this.input.focus();
-      }, responseTime);
-    }, 300);
+    // This method is no longer used - chat is handled via WebSocket
+    log(Subsystems.MANAGER, Status.WARN, '[Crimson] simulateCrimsonResponse called but WebSocket should be used');
   }
 
   /**
@@ -673,6 +836,12 @@ class CrimsonManager {
     document.removeEventListener('keydown', this.handleKeyDown);
     document.removeEventListener('keydown', globalKeyHandler);
 
+    // Disconnect WebSocket
+    if (this.wsClient) {
+      this.wsClient.disconnect();
+      this.wsClient = null;
+    }
+
     // Remove DOM elements
     this.overlay?.remove();
     this.popup?.remove();
@@ -683,6 +852,8 @@ class CrimsonManager {
     this.conversation = null;
     this.input = null;
     this.sendBtn = null;
+    this.currentStreamElement = null;
+    this.conversationHistory = [];
     crimsonInstance = null;
     globalKeyHandler = null;
 
