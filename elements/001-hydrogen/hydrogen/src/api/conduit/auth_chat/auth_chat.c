@@ -2,6 +2,7 @@
  * Authenticated Chat API Endpoint Implementation
  *
  * Handles single-model chat requests with JWT authentication.
+ * Phase 7: Integrated with chat storage for conversation persistence.
  */
 
 // Project includes
@@ -16,10 +17,16 @@
 #include "../chat_common/chat_response_parser.h"
 #include "../chat_common/chat_proxy.h"
 #include "../chat_common/chat_metrics.h"
+#include "../chat_common/chat_storage.h"
+#include "../chat_common/chat_context_hashing.h"
+#include "../chat_common/chat_lru_cache.h"
 #include "../conduit_service.h"
 
 // External reference to global queue manager
 extern DatabaseQueueManager* global_queue_manager;
+
+// Logging source for context hashing
+static const char* SR_AUTH_CHAT = "AUTH_CHAT";
 
 // Handle auth_chat request
 enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
@@ -98,18 +105,23 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
     // Parse request parameters
     char *engine_name = NULL;
     json_t *messages = NULL;
+    char **context_hashes = NULL;
+    size_t context_hash_count = 0;
     double temperature = -1.0;
     int max_tokens = -1;
     bool stream = false;
     char *error_message = NULL;
 
     bool parse_ok = auth_chat_parse_request(request_json, &engine_name,
-                                             &messages, &temperature, &max_tokens,
+                                             &messages, &context_hashes,
+                                             &context_hash_count,
+                                             &temperature, &max_tokens,
                                              &stream, &error_message);
 
     if (!parse_ok) {
         free_jwt_validation_result(&jwt_result);
         json_decref(request_json);
+        chat_context_free_hash_array(context_hashes, context_hash_count);
         json_t *error_response = auth_chat_build_error_response(error_message ? error_message : "Invalid request");
         free(error_message);
         enum MHD_Result ret = api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
@@ -122,6 +134,7 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
         free(engine_name);
         free_jwt_validation_result(&jwt_result);
         json_decref(request_json);
+        chat_context_free_hash_array(context_hashes, context_hash_count);
         json_t *error_response = auth_chat_build_error_response("Streaming not yet implemented");
         enum MHD_Result ret = api_send_json_response(connection, error_response, MHD_HTTP_NOT_IMPLEMENTED);
         json_decref(error_response);
@@ -134,6 +147,7 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
         free(engine_name);
         free_jwt_validation_result(&jwt_result);
         json_decref(request_json);
+        chat_context_free_hash_array(context_hashes, context_hash_count);
         json_t *error_response = auth_chat_build_error_response("Database not found");
         enum MHD_Result ret = api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
         json_decref(error_response);
@@ -146,6 +160,7 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
         free(engine_name);
         free_jwt_validation_result(&jwt_result);
         json_decref(request_json);
+        chat_context_free_hash_array(context_hashes, context_hash_count);
         json_t *error_response = auth_chat_build_error_response("Chat not enabled for this database");
         enum MHD_Result ret = api_send_json_response(connection, error_response, MHD_HTTP_SERVICE_UNAVAILABLE);
         json_decref(error_response);
@@ -164,6 +179,7 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
         free(engine_name);
         free_jwt_validation_result(&jwt_result);
         json_decref(request_json);
+        chat_context_free_hash_array(context_hashes, context_hash_count);
         json_t *error_response = auth_chat_build_error_response(engine_name ? "Engine not found" : "No default engine configured");
         enum MHD_Result ret = api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
         json_decref(error_response);
@@ -175,6 +191,7 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
         free(engine_name);
         free_jwt_validation_result(&jwt_result);
         json_decref(request_json);
+        chat_context_free_hash_array(context_hashes, context_hash_count);
         json_t *error_response = auth_chat_build_error_response("Engine is currently unavailable");
         enum MHD_Result ret = api_send_json_response(connection, error_response, MHD_HTTP_SERVICE_UNAVAILABLE);
         json_decref(error_response);
@@ -215,8 +232,29 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
         if (json_is_string(content_obj)) {
             content_str = strdup(json_string_value(content_obj));
         } else if (json_is_array(content_obj)) {
-            // For now, convert array content to JSON string for transport
-            content_str = json_dumps(content_obj, JSON_COMPACT);
+            // Convert array content to JSON string
+            char *content_json = json_dumps(content_obj, JSON_COMPACT);
+            if (content_json) {
+                // Check if content contains media:hash references
+                if (strstr(content_json, "media:") != NULL) {
+                    // Resolve media references
+                    char *resolved_json = NULL;
+                    char *error_msg = NULL;
+                    if (chat_storage_resolve_media_in_content(database, content_json, &resolved_json, &error_msg)) {
+                        free(content_json);
+                        content_str = resolved_json;
+                    } else {
+                        // Failed to resolve media, keep original content
+                        content_str = content_json;
+                        if (error_msg) {
+                            log_this(SR_AUTH_CHAT, "Media resolution failed: %s", LOG_LEVEL_ALERT, 1, error_msg);
+                            free(error_msg);
+                        }
+                    }
+                } else {
+                    content_str = content_json;
+                }
+            }
         }
 
         if (content_str) {
@@ -240,6 +278,23 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
         json_decref(request_json);
         json_t *error_response = auth_chat_build_error_response("Failed to build request");
         enum MHD_Result ret = api_send_json_response(connection, error_response, MHD_HTTP_INTERNAL_SERVER_ERROR);
+        json_decref(error_response);
+        return ret;
+    }
+
+    // Validate payload size
+    size_t request_size = strlen(request_body);
+    size_t max_payload_bytes = (size_t)engine->max_payload_mb * 1024 * 1024;
+    if (max_payload_bytes > 0 && request_size > max_payload_bytes) {
+        free(request_body);
+        free(engine_name);
+        free_jwt_validation_result(&jwt_result);
+        json_decref(request_json);
+        char error_buf[256];
+        snprintf(error_buf, sizeof(error_buf), "Request payload size (%zu bytes) exceeds engine limit (%d MB)",
+                 request_size, engine->max_payload_mb);
+        json_t *error_response = auth_chat_build_error_response(error_buf);
+        enum MHD_Result ret = api_send_json_response(connection, error_response, MHD_HTTP_REQUEST_ENTITY_TOO_LARGE);
         json_decref(error_response);
         return ret;
     }
@@ -306,6 +361,130 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
         chat_metrics_tokens(database, engine->name, "completion", parsed->completion_tokens);
     }
 
+    static int chat_counter = 0;
+    int convos_id = ++chat_counter;
+    char convos_ref[64];
+    snprintf(convos_ref, sizeof(convos_ref), "chat.%d.%lld", convos_id, (long long)time(NULL));
+
+    // Phase 8: Context Hashing - Use client-provided hashes when available
+    size_t messages_count = (messages && json_is_array(messages)) ? json_array_size(messages) : 0;
+    double bandwidth_saved_percent = 0.0;
+    size_t bandwidth_saved_bytes = 0;
+    size_t hashes_used = 0;
+    size_t hashes_missed = 0;
+
+    const char** segment_hashes = NULL;
+    size_t segment_hash_count = 0;
+
+    // Allocate array for segment hashes (messages + response)
+    size_t max_hashes = messages_count + 1;
+    segment_hashes = calloc(max_hashes, sizeof(char*));
+    if (!segment_hashes) {
+        free(engine_name);
+        free_jwt_validation_result(&jwt_result);
+        json_decref(request_json);
+        chat_context_free_hash_array(context_hashes, context_hash_count);
+        chat_parsed_response_destroy(parsed);
+        chat_proxy_result_destroy(proxy_result);
+        json_t *error_response = auth_chat_build_error_response("Memory allocation failed");
+        enum MHD_Result ret = api_send_json_response(connection, error_response, MHD_HTTP_INTERNAL_SERVER_ERROR);
+        json_decref(error_response);
+        return ret;
+    }
+
+    // Process messages: use provided context_hashes or store new segments
+    if (messages_count > 0) {
+        for (size_t i = 0; i < messages_count && segment_hash_count < max_hashes; i++) {
+            json_t* msg = json_array_get(messages, i);
+            if (!json_is_object(msg)) continue;
+
+            const json_t* role_obj = json_object_get(msg, "role");
+            const json_t* content_obj = json_object_get(msg, "content");
+            if (!role_obj || !content_obj) continue;
+
+            char* content_str = NULL;
+            if (json_is_string(content_obj)) {
+                content_str = strdup(json_string_value(content_obj));
+            } else if (json_is_array(content_obj)) {
+                content_str = json_dumps(content_obj, JSON_COMPACT);
+            }
+
+            if (!content_str) {
+                continue;
+            }
+
+            // Phase 8: Check if we have a matching context hash from client
+            char* hash = NULL;
+            if (context_hashes && i < context_hash_count) {
+                // Verify the provided hash exists in storage
+                if (chat_storage_segment_exists(database, context_hashes[i])) {
+                    hash = strdup(context_hashes[i]);
+                    hashes_used++;
+                    size_t content_len = strlen(content_str);
+                    if (content_len > 54) {  // Hash overhead is ~54 bytes
+                        bandwidth_saved_bytes += content_len - 54;
+                    }
+                    log_this(SR_AUTH_CHAT, "Using client-provided context hash for message %zu", LOG_LEVEL_DEBUG, 1, i);
+                } else {
+                    hashes_missed++;
+                    log_this(SR_AUTH_CHAT, "Client-provided hash not found for message %zu, storing new segment", LOG_LEVEL_ALERT, 1, i);
+                }
+            }
+
+            // If no valid context hash, store as new segment
+            if (!hash) {
+                hash = chat_storage_store_segment(database, content_str, strlen(content_str));
+            }
+
+            if (hash) {
+                segment_hashes[segment_hash_count++] = hash;
+            }
+            free(content_str);
+        }
+    }
+
+    // Store response as new segment
+    if (parsed->content) {
+        char* resp_hash = chat_storage_store_segment(database, parsed->content, strlen(parsed->content));
+        if (resp_hash && segment_hash_count < max_hashes) {
+            segment_hashes[segment_hash_count++] = resp_hash;
+        }
+    }
+
+    // Calculate bandwidth savings percentage
+    if (messages_count > 0 && bandwidth_saved_bytes > 0) {
+        size_t total_original_size = 0;
+        for (size_t i = 0; i < messages_count; i++) {
+            json_t* msg = json_array_get(messages, i);
+            if (json_is_object(msg)) {
+                char* msg_str = json_dumps(msg, JSON_COMPACT);
+                if (msg_str) {
+                    total_original_size += strlen(msg_str);
+                    free(msg_str);
+                }
+            }
+        }
+        if (total_original_size > 0) {
+            bandwidth_saved_percent = ((double)bandwidth_saved_bytes / (double)total_original_size) * 100.0;
+        }
+    }
+
+    chat_storage_store_chat(database, convos_ref,
+                            segment_hashes, segment_hash_count,
+                            engine->name,
+                            parsed->model ? parsed->model : engine->model,
+                            parsed->prompt_tokens,
+                            parsed->completion_tokens,
+                            0.0,
+                            jwt_result.claims ? jwt_result.claims->user_id : 0,
+                            (int)response_time_ms,
+                            NULL);
+
+    for (size_t i = 0; i < segment_hash_count; i++) {
+        if (segment_hashes[i]) chat_storage_free_hash((char*)segment_hashes[i]);
+    }
+    free(segment_hashes);
+
     // Build success response
     json_t *response = auth_chat_build_response(
         database,
@@ -316,13 +495,36 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
         parsed->completion_tokens,
         parsed->total_tokens,
         parsed->finish_reason ? parsed->finish_reason : "stop",
-        response_time_ms
+        response_time_ms,
+        convos_id,
+        convos_ref
     );
+
+    // Phase 8: Add context hashing stats to response if hashes were used
+    if (context_hashes && context_hash_count > 0) {
+        json_t *context_stats = json_object();
+        json_object_set_new(context_stats, "hashes_used", json_integer((json_int_t)hashes_used));
+        json_object_set_new(context_stats, "hashes_missed", json_integer((json_int_t)hashes_missed));
+        json_object_set_new(context_stats, "bandwidth_saved_bytes", json_integer((json_int_t)bandwidth_saved_bytes));
+        json_object_set_new(context_stats, "bandwidth_saved_percent", json_real(bandwidth_saved_percent));
+
+        // Phase 9: Add cache statistics
+        uint64_t cache_hits = 0, cache_misses = 0;
+        double cache_hit_ratio = 0.0;
+        if (chat_storage_cache_get_stats(database, &cache_hits, &cache_misses, &cache_hit_ratio)) {
+            json_object_set_new(context_stats, "cache_hits", json_integer((json_int_t)cache_hits));
+            json_object_set_new(context_stats, "cache_misses", json_integer((json_int_t)cache_misses));
+            json_object_set_new(context_stats, "cache_hit_ratio", json_real(cache_hit_ratio));
+        }
+
+        json_object_set_new(response, "context_hashing", context_stats);
+    }
 
     // Cleanup
     free(engine_name);
     free_jwt_validation_result(&jwt_result);
     json_decref(request_json);
+    chat_context_free_hash_array(context_hashes, context_hash_count);
     chat_parsed_response_destroy(parsed);
     chat_proxy_result_destroy(proxy_result);
 
@@ -335,6 +537,8 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
 bool auth_chat_parse_request(json_t *request_json,
                               char **engine,
                               json_t **messages,
+                              char ***context_hashes,
+                              size_t *context_hash_count,
                               double *temperature,
                               int *max_tokens,
                               bool *stream,
@@ -342,6 +546,8 @@ bool auth_chat_parse_request(json_t *request_json,
     (void)request_json;
     *engine = NULL;
     *messages = NULL;
+    *context_hashes = NULL;
+    *context_hash_count = 0;
     *temperature = -1.0;
     *max_tokens = -1;
     *stream = false;
@@ -354,6 +560,20 @@ bool auth_chat_parse_request(json_t *request_json,
         return false;
     }
     *messages = messages_obj;
+
+    // Extract context_hashes (optional - for bandwidth optimization)
+    *context_hashes = chat_context_parse_request_hashes(request_json, error_message);
+    if (*error_message) {
+        return false;  // Parse error occurred
+    }
+    if (*context_hashes) {
+        // Count valid hashes
+        size_t count = 0;
+        while ((*context_hashes)[count]) {
+            count++;
+        }
+        *context_hash_count = count;
+    }
 
     // Extract engine (optional)
     json_t *engine_obj = json_object_get(request_json, "engine");
@@ -399,7 +619,9 @@ json_t* auth_chat_build_response(const char *database,
                                   int completion_tokens,
                                   int total_tokens,
                                   const char *finish_reason,
-                                  double response_time_ms) {
+                                  double response_time_ms,
+                                  int convos_id,
+                                  const char *convos_ref) {
     json_t *response = json_object();
     json_object_set_new(response, "success", json_true());
     json_object_set_new(response, "database", json_string(database));
@@ -415,6 +637,8 @@ json_t* auth_chat_build_response(const char *database,
 
     json_object_set_new(response, "finish_reason", json_string(finish_reason));
     json_object_set_new(response, "response_time_ms", json_real(response_time_ms));
+    json_object_set_new(response, "convos_id", json_integer(convos_id));
+    json_object_set_new(response, "convos_ref", json_string(convos_ref));
 
     return response;
 }

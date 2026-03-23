@@ -10,6 +10,8 @@
 
 // Local includes
 #include "chat_proxy.h"
+#include "chat_response_parser.h"
+#include <src/queue/queue.h>
 
 // Default proxy configuration
 #define DEFAULT_CONNECT_TIMEOUT_SECONDS 10
@@ -618,4 +620,142 @@ ChatMultiResult* chat_proxy_send_multi(const ChatMultiRequest* requests,
              multi_result->total_time_ms);
 
     return multi_result;
+}
+
+// ============================================================================
+// Streaming Support
+// ============================================================================
+
+typedef struct {
+    ChatProxyStreamChunkCallback chunk_callback;
+    void* user_data;
+    char* line_buffer;
+    size_t line_buffer_len;
+    size_t line_buffer_capacity;
+} StreamContext;
+
+// Write callback for streaming: processes lines and calls chunk callback
+static size_t stream_write_callback(const void* contents, size_t size, size_t nmemb, void* userp) {
+    size_t realsize = size * nmemb;
+    StreamContext* ctx = (StreamContext*)userp;
+    
+    // Append incoming data to line buffer
+    const char* data = (const char*)contents;
+    size_t pos = 0;
+    
+    while (pos < realsize) {
+        // Look for newline
+        size_t remaining = realsize - pos;
+        const char* newline = memchr(data + pos, '\n', remaining);
+        size_t chunk_len = newline ? (size_t)(newline - (data + pos)) : remaining;
+        
+        // Ensure line buffer has enough capacity
+        size_t needed = ctx->line_buffer_len + chunk_len + 1;
+        if (needed > ctx->line_buffer_capacity) {
+            size_t new_capacity = ctx->line_buffer_capacity * 2;
+            while (new_capacity < needed) new_capacity *= 2;
+            char* new_buffer = realloc(ctx->line_buffer, new_capacity);
+            if (!new_buffer) {
+                // Memory allocation failure
+                return 0;
+            }
+            ctx->line_buffer = new_buffer;
+            ctx->line_buffer_capacity = new_capacity;
+        }
+        
+        // Copy chunk
+        memcpy(ctx->line_buffer + ctx->line_buffer_len, data + pos, chunk_len);
+        ctx->line_buffer_len += chunk_len;
+        ctx->line_buffer[ctx->line_buffer_len] = '\0';
+        
+        if (newline) {
+            // Complete line, process it
+            ChatStreamChunk* chunk = chat_stream_chunk_parse(ctx->line_buffer);
+            if (chunk) {
+                ctx->chunk_callback(chunk, ctx->user_data);
+                chat_stream_chunk_destroy(chunk);
+            }
+            // Reset line buffer
+            ctx->line_buffer_len = 0;
+            ctx->line_buffer[0] = '\0';
+            pos += chunk_len + 1; // skip newline
+        } else {
+            // No newline yet, wait for more data
+            pos += chunk_len;
+        }
+    }
+    
+    return realsize;
+}
+
+bool chat_proxy_send_stream(const ChatEngineConfig* engine,
+                            const char* request_json,
+                            const ChatProxyConfig* config,
+                            ChatProxyStreamChunkCallback chunk_callback,
+                            void* user_data) {
+    if (!engine || !request_json || !chunk_callback) {
+        return false;
+    }
+    
+    // Initialize stream context
+    StreamContext ctx = {0};
+    ctx.chunk_callback = chunk_callback;
+    ctx.user_data = user_data;
+    ctx.line_buffer_capacity = 4096;
+    ctx.line_buffer = malloc(ctx.line_buffer_capacity);
+    if (!ctx.line_buffer) {
+        return false;
+    }
+    ctx.line_buffer[0] = '\0';
+    
+    // Initialize CURL
+    CURL* curl = curl_easy_init();
+    if (!curl) {
+        free(ctx.line_buffer);
+        return false;
+    }
+    
+    // Build headers based on provider
+    struct curl_slist* headers = NULL;
+    headers = curl_slist_append(headers, "Content-Type: application/json");
+    
+    if (engine->provider == CEC_PROVIDER_ANTHROPIC) {
+        char auth_header[CEC_MAX_KEY_LEN + 32];
+        snprintf(auth_header, sizeof(auth_header), "x-api-key: %s", engine->api_key);
+        headers = curl_slist_append(headers, auth_header);
+        headers = curl_slist_append(headers, "anthropic-version: 2023-06-01");
+    } else {
+        char auth_header[CEC_MAX_KEY_LEN + 32];
+        snprintf(auth_header, sizeof(auth_header), "Authorization: Bearer %s", engine->api_key);
+        headers = curl_slist_append(headers, auth_header);
+    }
+    
+    // Configure CURL options
+    curl_easy_setopt(curl, CURLOPT_URL, engine->api_url);
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, request_json);
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, stream_write_callback);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&ctx);
+    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, (long)config->connect_timeout_seconds);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, (long)config->request_timeout_seconds);
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, config->verify_ssl ? 1L : 0L);
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, config->verify_ssl ? 2L : 0L);
+    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+    curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 3L);
+    curl_easy_setopt(curl, CURLOPT_USERAGENT, "Hydrogen-Chat-Proxy-Stream/1.0");
+    
+    // Perform request
+    CURLcode curl_result = curl_easy_perform(curl);
+    
+    // Cleanup
+    curl_slist_free_all(headers);
+    curl_easy_cleanup(curl);
+    free(ctx.line_buffer);
+    
+    if (curl_result != CURLE_OK) {
+        log_this(SR_CHAT, "Streaming CURL error: %s", LOG_LEVEL_ERROR, 1, curl_easy_strerror(curl_result));
+        return false;
+    }
+    
+    return true;
 }

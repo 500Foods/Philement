@@ -7,10 +7,12 @@
 // Jansson JSON library
 #include <jansson.h>
 
+#include "websocket_server_internal.h"
+
 // Forward declarations for WebSocket message functions
 int validate_session_and_context(const WebSocketSessionData *session);
 int buffer_message_data(struct lws *wsi, const void *in, size_t len);
-int parse_and_handle_message(struct lws *wsi);
+int parse_and_handle_message(struct lws *wsi, const WebSocketSessionData *session);
 int ws_handle_receive(struct lws *wsi, const WebSocketSessionData *session, const void *in, size_t len);
 int handle_message_type(struct lws *wsi, const char *type);
 int ws_write_json_response(struct lws *wsi, json_t *json);

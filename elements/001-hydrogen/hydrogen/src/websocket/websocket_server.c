@@ -28,6 +28,8 @@
 // Project headers
 #include "websocket_server.h"
 #include "websocket_server_internal.h"
+#include "websocket_server_chat.h"
+#include "websocket_server_media.h"
 #include <src/logging/logging.h>
 #include <src/config/config.h>
 #include <src/utils/utils.h>
@@ -460,6 +462,18 @@ int start_websocket_server(void)
     
     if (!ws_context) {
         log_this(SR_WEBSOCKET, "Server not initialized", LOG_LEVEL_DEBUG, 0);
+        return -1;
+    }
+
+    // Initialize chat subsystem
+    if (chat_subsystem_init() != 0) {
+        log_this(SR_WEBSOCKET, "Failed to initialize chat subsystem", LOG_LEVEL_ERROR, 0);
+        return -1;
+    }
+    
+    // Initialize media subsystem
+    if (media_subsystem_init() != 0) {
+        log_this(SR_WEBSOCKET, "Failed to initialize media subsystem", LOG_LEVEL_ERROR, 0);
         return -1;
     }
 

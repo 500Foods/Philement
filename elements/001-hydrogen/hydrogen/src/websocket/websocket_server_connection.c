@@ -16,6 +16,10 @@
 
 // Terminal includes for session management
 #include <src/terminal/terminal_session.h>
+// JWT claims for chat
+#include <src/api/auth/auth_service.h>
+// Chat session cleanup
+#include "websocket_server_chat.h"
 
 // External reference to the server context
 extern WebSocketServerContext *ws_context;
@@ -77,6 +81,8 @@ int ws_handle_connection_closed(const struct lws *wsi, WebSocketSessionData *ses
             // Clear the session from session data
             session->terminal_session = NULL;
         }
+        // Cleanup chat-specific resources
+        chat_session_cleanup(session);
     }
 
     pthread_mutex_lock(&ws_context->mutex);

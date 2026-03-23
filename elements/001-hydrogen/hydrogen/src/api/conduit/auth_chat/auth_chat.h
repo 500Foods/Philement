@@ -47,10 +47,13 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
 /**
  * Parse and validate auth_chat request JSON
  * Returns true if valid, false if error response was sent
+ * Note: context_hashes is optional - if provided, used for bandwidth optimization
  */
 bool auth_chat_parse_request(json_t *request_json,
                               char **engine,
                               json_t **messages,
+                              char ***context_hashes,
+                              size_t *context_hash_count,
                               double *temperature,
                               int *max_tokens,
                               bool *stream,
@@ -67,7 +70,9 @@ json_t* auth_chat_build_response(const char *database,
                                   int completion_tokens,
                                   int total_tokens,
                                   const char *finish_reason,
-                                  double response_time_ms);
+                                  double response_time_ms,
+                                  int convos_id,
+                                  const char *convos_ref);
 
 /**
  * Build auth_chat error response
