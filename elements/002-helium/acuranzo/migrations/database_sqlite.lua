@@ -3,6 +3,7 @@
 -- luacheck: no max line length
 
 -- CHANGELOG
+-- 2.7.0 - 2026-03-22 - Added VARCHAR_64
 -- 2.6.0 - 2025-12-31 - Added fancy INSERT_ macros to get our new key value returned
 -- 2.5.0 - 2025-12-31 - Added SIZE_ macros
 -- 2.4.0 - 2025-12-30 - Added JRS, JRM, JRE macros for JSON value retrieval
@@ -55,6 +56,7 @@ return {
     UNIQUE = "UNIQUE",
     VARCHAR_20 = "varchar(20)",
     VARCHAR_50 = "varchar(50)",
+    VARCHAR_64 = "varchar(64)",
     VARCHAR_100 = "varchar(100)",
     VARCHAR_128 = "varchar(128)",
     VARCHAR_500 = "varchar(500)",
