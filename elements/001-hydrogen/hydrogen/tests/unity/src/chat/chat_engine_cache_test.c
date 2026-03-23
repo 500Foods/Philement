@@ -50,7 +50,7 @@ void test_chat_engine_config_create(void) {
     ChatEngineConfig* engine = chat_engine_config_create(
         1, "gpt4", CEC_PROVIDER_OPENAI, "gpt-4-turbo",
         "https://api.openai.com/v1/chat/completions", "sk-test123",
-        4096, 0.7, true, 300, 10, 10, 100, false);
+        4096, 0.7, true, 300, 10, 10, 100, MODALITY_DEFAULT, false);
 
     TEST_ASSERT_NOT_NULL(engine);
     TEST_ASSERT_EQUAL(1, engine->engine_id);
@@ -72,7 +72,7 @@ void test_chat_engine_cache_add_lookup(void) {
     ChatEngineConfig* engine = chat_engine_config_create(
         1, "gpt4", CEC_PROVIDER_OPENAI, "gpt-4-turbo",
         "https://api.openai.com/v1/chat/completions", "sk-test123",
-        4096, 0.7, true, 300, 10, 10, 100, false);
+        4096, 0.7, true, 300, 10, 10, 100, MODALITY_DEFAULT, false);
 
     TEST_ASSERT_TRUE(chat_engine_cache_add_engine(test_cache, engine));
     TEST_ASSERT_EQUAL(1, chat_engine_cache_get_engine_count(test_cache));
@@ -92,12 +92,12 @@ void test_chat_engine_cache_lookup_by_name(void) {
     ChatEngineConfig* engine1 = chat_engine_config_create(
         1, "gpt4", CEC_PROVIDER_OPENAI, "gpt-4-turbo",
         "https://api.openai.com/v1/chat/completions", "sk-test123",
-        4096, 0.7, false, 300, 10, 10, 100, false);
+        4096, 0.7, false, 300, 10, 10, 100, MODALITY_DEFAULT, false);
 
     ChatEngineConfig* engine2 = chat_engine_config_create(
         2, "claude", CEC_PROVIDER_ANTHROPIC, "claude-3-opus",
         "https://api.anthropic.com/v1/messages", "sk-ant-test",
-        8192, 0.5, true, 300, 10, 10, 100, false);
+        8192, 0.5, true, 300, 10, 10, 100, MODALITY_DEFAULT, false);
 
     chat_engine_cache_add_engine(test_cache, engine1);
     chat_engine_cache_add_engine(test_cache, engine2);
@@ -119,12 +119,12 @@ void test_chat_engine_cache_get_default(void) {
     ChatEngineConfig* engine1 = chat_engine_config_create(
         1, "gpt4", CEC_PROVIDER_OPENAI, "gpt-4-turbo",
         "https://api.openai.com/v1/chat/completions", "sk-test123",
-        4096, 0.7, false, 300, 10, 10, 100, false);
+        4096, 0.7, false, 300, 10, 10, 100, MODALITY_DEFAULT, false);
 
     ChatEngineConfig* engine2 = chat_engine_config_create(
         2, "claude", CEC_PROVIDER_ANTHROPIC, "claude-3-opus",
         "https://api.anthropic.com/v1/messages", "sk-ant-test",
-        8192, 0.5, true, 300, 10, 10, 100, false);
+        8192, 0.5, true, 300, 10, 10, 100, MODALITY_DEFAULT, false);
 
     chat_engine_cache_add_engine(test_cache, engine1);
     chat_engine_cache_add_engine(test_cache, engine2);
@@ -143,12 +143,12 @@ void test_chat_engine_cache_get_all(void) {
     ChatEngineConfig* engine1 = chat_engine_config_create(
         1, "gpt4", CEC_PROVIDER_OPENAI, "gpt-4-turbo",
         "https://api.openai.com/v1/chat/completions", "sk-test123",
-        4096, 0.7, false, 300, 10, 10, 100, false);
+        4096, 0.7, false, 300, 10, 10, 100, MODALITY_DEFAULT, false);
 
     ChatEngineConfig* engine2 = chat_engine_config_create(
         2, "claude", CEC_PROVIDER_ANTHROPIC, "claude-3-opus",
         "https://api.anthropic.com/v1/messages", "sk-ant-test",
-        8192, 0.5, false, 300, 10, 10, 100, false);
+        8192, 0.5, false, 300, 10, 10, 100, MODALITY_DEFAULT, false);
 
     chat_engine_cache_add_engine(test_cache, engine1);
     chat_engine_cache_add_engine(test_cache, engine2);
@@ -167,7 +167,7 @@ void test_chat_engine_cache_clear(void) {
     ChatEngineConfig* engine = chat_engine_config_create(
         1, "gpt4", CEC_PROVIDER_OPENAI, "gpt-4-turbo",
         "https://api.openai.com/v1/chat/completions", "sk-test123",
-        4096, 0.7, true, 300, 10, 10, 100, false);
+        4096, 0.7, true, 300, 10, 10, 100, MODALITY_DEFAULT, false);
 
     chat_engine_cache_add_engine(test_cache, engine);
     TEST_ASSERT_EQUAL(1, chat_engine_cache_get_engine_count(test_cache));
@@ -203,12 +203,12 @@ void test_chat_engine_cache_stats(void) {
     ChatEngineConfig* engine1 = chat_engine_config_create(
         1, "gpt4", CEC_PROVIDER_OPENAI, "gpt-4-turbo",
         "https://api.openai.com/v1/chat/completions", "sk-test123",
-        4096, 0.7, true, 300, 10, 10, 100, false);
+        4096, 0.7, true, 300, 10, 10, 100, MODALITY_DEFAULT, false);
 
     ChatEngineConfig* engine2 = chat_engine_config_create(
         2, "claude", CEC_PROVIDER_ANTHROPIC, "claude-3-opus",
         "https://api.anthropic.com/v1/messages", "sk-ant-test",
-        8192, 0.5, false, 300, 10, 10, 100, false);
+        8192, 0.5, false, 300, 10, 10, 100, MODALITY_DEFAULT, false);
 
     chat_engine_cache_add_engine(test_cache, engine1);
     chat_engine_cache_add_engine(test_cache, engine2);
@@ -237,7 +237,7 @@ void test_chat_engine_cache_refresh_check(void) {
     ChatEngineConfig* engine = chat_engine_config_create(
         1, "gpt4", CEC_PROVIDER_OPENAI, "gpt-4-turbo",
         "https://api.openai.com/v1/chat/completions", "sk-test123",
-        4096, 0.7, true, 300, 10, 10, 100, false);
+        4096, 0.7, true, 300, 10, 10, 100, MODALITY_DEFAULT, false);
     chat_engine_cache_add_engine(test_cache, engine);
 
     // Simulate a recent refresh

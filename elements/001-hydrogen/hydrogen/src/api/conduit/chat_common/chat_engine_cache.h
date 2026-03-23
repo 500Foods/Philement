@@ -26,6 +26,19 @@ typedef enum {
     CEC_PROVIDER_UNKNOWN
 } ChatEngineProvider;
 
+// Supported modalities bitmask
+typedef enum {
+    MODALITY_TEXT = 1 << 0,      // Text generation
+    MODALITY_IMAGE = 1 << 1,     // Image understanding/processing
+    MODALITY_AUDIO = 1 << 2,     // Audio processing
+    MODALITY_PDF = 1 << 3,       // PDF document processing
+    MODALITY_DOCUMENT = 1 << 4   // Generic document processing
+} ChatModality;
+
+#define MODALITY_COUNT 5
+#define MODALITY_ALL (MODALITY_TEXT | MODALITY_IMAGE | MODALITY_AUDIO | MODALITY_PDF | MODALITY_DOCUMENT)
+#define MODALITY_DEFAULT MODALITY_TEXT
+
 // Chat engine configuration entry
 typedef struct ChatEngineConfig {
     int engine_id;                    // Unique engine identifier (from database)
@@ -58,6 +71,9 @@ typedef struct ChatEngineConfig {
 
     // Provider-specific settings (Phase 5)
     bool use_native_api;              // Use provider's native API (not OpenAI-compatible)
+    
+    // Supported modalities (Phase 12)
+    int supported_modalities;         // Bitmask of ChatModality values
 } ChatEngineConfig;
 
 // Chat Engine Cache structure (per database)
@@ -96,7 +112,7 @@ ChatEngineConfig* chat_engine_config_create(int engine_id, const char* name, Cha
                                            int max_tokens, double temperature_default, bool is_default,
                                            int liveliness_seconds, int max_images_per_message,
                                            int max_payload_mb, int max_concurrent_requests,
-                                           bool use_native_api);
+                                           int supported_modalities, bool use_native_api);
 void chat_engine_config_destroy(ChatEngineConfig* engine);
 void chat_engine_config_clear_key(ChatEngineConfig* engine);
 

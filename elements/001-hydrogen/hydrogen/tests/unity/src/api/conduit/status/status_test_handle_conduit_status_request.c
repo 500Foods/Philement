@@ -207,7 +207,7 @@ void test_handle_conduit_status_request_with_chat_models(void) {
                         ChatEngineConfig* engine = chat_engine_config_create(
                             1, "gpt4", CEC_PROVIDER_OPENAI, "gpt-4-turbo",
                             "https://api.openai.com/v1/chat/completions", "sk-test",
-                            4096, 0.7, true, 300, 10, 10, 100, false);
+                            4096, 0.7, true, 300, 10, 10, 100, MODALITY_DEFAULT, false);
                         TEST_ASSERT_NOT_NULL(engine);
                         if (engine) {
                             chat_engine_cache_add_engine(cec, engine);

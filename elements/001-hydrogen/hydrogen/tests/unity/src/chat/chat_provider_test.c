@@ -35,7 +35,7 @@ static ChatEngineConfig* create_test_engine(ChatEngineProvider provider, bool us
     return chat_engine_config_create(
         1, "test-engine", provider, "test-model",
         "https://api.test.com/v1/chat", "sk-test123",
-        4096, 0.7, true, 300, 10, 10, 100, use_native);
+        4096, 0.7, true, 300, 10, 10, 100, MODALITY_DEFAULT, use_native);
 }
 
 // Test OpenAI request building
@@ -284,7 +284,7 @@ void test_chat_request_validate_image_count(void) {
     ChatEngineConfig* engine = chat_engine_config_create(
         1, "test-engine", CEC_PROVIDER_OPENAI, "test-model",
         "https://api.test.com/v1/chat", "sk-test123",
-        4096, 0.7, true, 300, 2, 10, 100, false);  // max_images = 2
+        4096, 0.7, true, 300, 2, 10, 100, MODALITY_DEFAULT, false);  // max_images = 2
 
     // Message with 3 images (should fail validation)
     const char* multimodal_content = "[\n"

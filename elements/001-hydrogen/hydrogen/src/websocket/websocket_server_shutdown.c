@@ -15,6 +15,8 @@
 // Local includes
 #include "websocket_server.h"
 #include "websocket_server_internal.h"
+#include "websocket_server_chat.h"
+#include "websocket_server_media.h"
 #include <netinet/in.h>
 
 /* External variables */
@@ -98,6 +100,12 @@ void stop_websocket_server(void)
         // Do NOT destroy context here - leave that to cleanup_websocket_server
         // This prevents race conditions with context access
     }
+
+    // Cleanup chat subsystem
+    chat_subsystem_cleanup();
+    
+    // Cleanup media subsystem
+    media_subsystem_cleanup();
 
     log_this(SR_WEBSOCKET, "Server stopped", LOG_LEVEL_STATE, 0);
 }

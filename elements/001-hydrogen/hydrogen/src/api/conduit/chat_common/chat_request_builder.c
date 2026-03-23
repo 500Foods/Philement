@@ -155,15 +155,110 @@ json_t* chat_request_build_openai(const ChatEngineConfig* engine,
     return root;
 }
 
+// Helper: Convert OpenAI image_url format to Anthropic image format
+static json_t* convert_openai_content_to_anthropic(const char* content_str) {
+    if (!content_str) return NULL;
+    
+    json_error_t error;
+    json_t* content_array = json_loads(content_str, 0, &error);
+    if (!content_array || !json_is_array(content_array)) {
+        if (content_array) json_decref(content_array);
+        return NULL;  // Not JSON array, treat as plain text
+    }
+    
+    json_t* new_array = json_array();
+    if (!new_array) {
+        json_decref(content_array);
+        return NULL;
+    }
+    
+    size_t index;
+    json_t* item;
+    bool success = true;
+    
+    json_array_foreach(content_array, index, item) {
+        if (!json_is_object(item)) {
+            json_array_append(new_array, item);
+            continue;
+        }
+        
+        json_t* type = json_object_get(item, "type");
+        if (!type || !json_is_string(type)) {
+            json_array_append(new_array, item);
+            continue;
+        }
+        
+        const char* type_str = json_string_value(type);
+        json_t* new_item = NULL;
+        
+        if (strcmp(type_str, "text") == 0) {
+            // Text part, keep as is
+            new_item = json_deep_copy(item);
+        } else if (strcmp(type_str, "image_url") == 0) {
+            // Convert to Anthropic image format
+            json_t* image_url = json_object_get(item, "image_url");
+            if (image_url && json_is_object(image_url)) {
+                json_t* url = json_object_get(image_url, "url");
+                if (url && json_is_string(url)) {
+                    const char* url_str = json_string_value(url);
+                    // Determine if it's a data URL
+                    if (strncmp(url_str, "data:", 5) == 0) {
+                        // Parse data URL: data:<mediatype>;base64,<data>
+                        const char* comma = strchr(url_str + 5, ',');
+                        if (comma) {
+                            // Extract mime type (skip "data:")
+                            char* mime_start = strndup(url_str + 5, (size_t)(comma - (url_str + 5)));
+                            char* mime = strchr(mime_start, ';');
+                            if (mime) *mime = '\0';  // Remove ;base64 suffix
+                            else mime = mime_start;
+                            
+                            const char* base64_data = comma + 1;
+                            
+                            new_item = json_object();
+                            json_object_set(new_item, "type", json_string("image"));
+                            json_t* source = json_object();
+                            json_object_set(source, "type", json_string("base64"));
+                            json_object_set(source, "media_type", json_string(mime));
+                            json_object_set(source, "data", json_string(base64_data));
+                            json_object_set(new_item, "source", source);
+                            json_decref(source);
+                            free(mime_start);
+                        }
+                    }
+                }
+            }
+            // If conversion failed, keep original
+            if (!new_item) {
+                new_item = json_deep_copy(item);
+            }
+        } else {
+            // Unknown type, keep as is
+            new_item = json_deep_copy(item);
+        }
+        
+        if (new_item) {
+            json_array_append(new_array, new_item);
+            json_decref(new_item);
+        } else {
+            success = false;
+            break;
+        }
+    }
+    
+    json_decref(content_array);
+    
+    if (!success) {
+        json_decref(new_array);
+        return NULL;
+    }
+    
+    return new_array;
+}
+
 // Build Anthropic native format request
-// Anthropic API differences from OpenAI:
-// - Uses separate "system" field (not a message in the array)
-// - Messages array only contains user/assistant (no system)
-// - Requires max_tokens
-// - Uses "anthropic-beta" headers for some features
 json_t* chat_request_build_anthropic(const ChatEngineConfig* engine,
-                                      const ChatMessage* messages,
-                                      const ChatRequestParams* params) {
+                                       const ChatMessage* messages,
+                                       const ChatRequestParams* params) {
     if (!engine || !messages) return NULL;
 
     json_t* root = json_object();
@@ -191,7 +286,19 @@ json_t* chat_request_build_anthropic(const ChatEngineConfig* engine,
             json_t* msg_obj = json_object();
             const char* role_str = (current->role == CHAT_ROLE_ASSISTANT) ? "assistant" : "user";
             json_object_set_new(msg_obj, "role", json_string(role_str));
-            json_object_set_new(msg_obj, "content", json_string(current->content ? current->content : ""));
+            
+            // Process content: convert OpenAI image_url to Anthropic image format if needed
+            json_t* content_obj = NULL;
+            if (current->content) {
+                // Try to parse as JSON array (multimodal)
+                content_obj = convert_openai_content_to_anthropic(current->content);
+            }
+            if (content_obj) {
+                json_object_set_new(msg_obj, "content", content_obj);
+            } else {
+                // Plain text content
+                json_object_set_new(msg_obj, "content", json_string(current->content ? current->content : ""));
+            }
             json_array_append_new(messages_array, msg_obj);
         }
         current = current->next;
@@ -326,9 +433,20 @@ static int chat_message_count_images(const char* content) {
             }
         }
     }
-
+    
     json_decref(content_array);
     return image_count;
+}
+
+// Count total images across all messages
+static int chat_count_all_images(const ChatMessage* messages) {
+    int total = 0;
+    const ChatMessage* current = messages;
+    while (current) {
+        total += chat_message_count_images(current->content);
+        current = current->next;
+    }
+    return total;
 }
 
 // Validate request
@@ -374,6 +492,16 @@ bool chat_request_validate(const ChatEngineConfig* engine,
             return false;
         }
         current = current->next;
+    }
+    
+    // Check engine supports image modality if images present
+    if (chat_count_all_images(messages) > 0) {
+        if (!(engine->supported_modalities & MODALITY_IMAGE)) {
+            if (error_message) {
+                *error_message = strdup("Engine does not support image modality");
+            }
+            return false;
+        }
     }
 
     (void)params;

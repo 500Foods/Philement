@@ -662,6 +662,7 @@ enum MHD_Result handle_api_request(struct MHD_Connection *connection,
         return handle_auth_chat_request(connection, url, method, upload_data,
                                         upload_data_size, con_cls);
     }
+
     else if (strcmp(path, "conduit/auth_chats") == 0) {
         return handle_auth_chats_request(connection, url, method, upload_data,
                                          upload_data_size, con_cls);
