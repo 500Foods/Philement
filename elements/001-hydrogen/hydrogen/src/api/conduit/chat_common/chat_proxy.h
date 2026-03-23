@@ -14,6 +14,7 @@
 
 // Local includes
 #include "chat_engine_cache.h"
+#include "chat_response_parser.h"
 
 // Proxy result codes
 typedef enum {
@@ -98,6 +99,16 @@ void chat_multi_result_destroy(ChatMultiResult* multi_result);
 ChatMultiResult* chat_proxy_send_multi(const ChatMultiRequest* requests,
                                         size_t request_count,
                                         const ChatProxyConfig* config);
+
+// Streaming callback for each parsed chunk
+typedef void (*ChatProxyStreamChunkCallback)(const ChatStreamChunk* chunk, void* user_data);
+
+// Send request in streaming mode, calling callback for each chunk
+bool chat_proxy_send_stream(const ChatEngineConfig* engine,
+                            const char* request_json,
+                            const ChatProxyConfig* config,
+                            ChatProxyStreamChunkCallback chunk_callback,
+                            void* user_data);
 
 // Utility functions
 const char* chat_proxy_result_code_to_string(ChatProxyResultCode code);

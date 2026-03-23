@@ -13,6 +13,7 @@
 
 // Local includes
 #include "websocket_server_internal.h"
+#include "websocket_server_chat.h"
 
 // External reference to the server context
 extern WebSocketServerContext *ws_context;
@@ -394,7 +395,10 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
             return ws_handle_receive(wsi, session, in, len);
 
         case LWS_CALLBACK_SERVER_WRITEABLE:
-            return 0;  // Handle if we implement write queueing
+            if (session) {
+                handle_chat_writable(wsi, session);
+            }
+            return 0;
 
         // Connection Setup
         case LWS_CALLBACK_FILTER_NETWORK_CONNECTION:

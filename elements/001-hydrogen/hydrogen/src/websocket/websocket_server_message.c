@@ -14,6 +14,8 @@
 // Local includes
 #include "websocket_server.h"        // For handle_status_request
 #include "websocket_server_internal.h"
+#include "websocket_server_chat.h"   // For chat message handling
+#include "websocket_server_media.h"  // For media upload handling
 
 // Libwebsockets header for struct lws
 #include <libwebsockets.h>
@@ -66,7 +68,7 @@ int buffer_message_data(struct lws *wsi, const void *in, size_t len)
     return (int)ws_context->message_length;
 }
 
-int parse_and_handle_message(struct lws *wsi)
+int parse_and_handle_message(struct lws *wsi, const WebSocketSessionData *session)
 {
     // Parse JSON message
     json_error_t error;
@@ -84,6 +86,27 @@ int parse_and_handle_message(struct lws *wsi)
     if (json_is_string(type_json)) {
         const char *type = json_string_value(type_json);
         log_this(SR_WEBSOCKET, "Processing message type: %s", LOG_LEVEL_STATE, 1, type);
+        
+        // Chat messages need the full JSON object
+        if (strcmp(type, "chat") == 0) {
+            // Pass ownership of root to chat handler (it will decref)
+            result = handle_chat_message(wsi, (WebSocketSessionData*)session, root);
+            // root is now owned by chat handler, don't decref
+            return result;
+        }
+        
+        // Media upload messages need the full JSON object
+        if (strcmp(type, "media_upload") == 0) {
+            result = handle_media_upload_message(wsi, (WebSocketSessionData*)session, root);
+            return result;
+        }
+        
+        // Media chunk messages need the full JSON object
+        if (strcmp(type, "media_chunk") == 0) {
+            result = handle_media_chunk_message(wsi, (WebSocketSessionData*)session, root);
+            return result;
+        }
+        
         result = handle_message_type(wsi, type);
     } else {
         log_this(SR_WEBSOCKET, "Missing or invalid 'type' in request", LOG_LEVEL_STATE, 0);
@@ -124,7 +147,7 @@ int ws_handle_receive(struct lws *wsi, const WebSocketSessionData *session, cons
     // Comment out verbose message logging to reduce log size
     // log_this(SR_WEBSOCKET, "Processing complete message: %s", LOG_LEVEL_STATE, 1, ws_context->message_buffer);
 
-    int result = parse_and_handle_message(wsi);
+    int result = parse_and_handle_message(wsi, session);
     
     // Reset message length after processing is complete
     pthread_mutex_lock(&ws_context->mutex);

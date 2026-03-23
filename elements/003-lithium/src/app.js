@@ -243,6 +243,12 @@ class LithiumApp {
       // Group 3: AI
       6: { id: 6, name: 'Chats' },
       7: { id: 7, name: 'AI Auditor' },
+
+      // Group 2: Data & Queries
+      13: { id: 13, name: 'Notifications' },
+      14: { id: 14, name: 'Annotations' },
+      15: { id: 15, name: 'Ticketing' },
+
     };
 
     // Utility manager definitions — key -> name only (module loaded via _importUtilityManager)

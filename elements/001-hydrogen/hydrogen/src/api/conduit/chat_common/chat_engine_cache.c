@@ -138,7 +138,7 @@ ChatEngineConfig* chat_engine_config_create(int engine_id, const char* name, Cha
                                            int max_tokens, double temperature_default, bool is_default,
                                            int liveliness_seconds, int max_images_per_message,
                                            int max_payload_mb, int max_concurrent_requests,
-                                           bool use_native_api) {
+                                           int supported_modalities, bool use_native_api) {
     ChatEngineConfig* engine = (ChatEngineConfig*)malloc(sizeof(ChatEngineConfig));
     if (!engine) {
         log_this(SR_CHAT, "Failed to allocate memory for chat engine config", LOG_LEVEL_ERROR, 0);
@@ -173,6 +173,9 @@ ChatEngineConfig* chat_engine_config_create(int engine_id, const char* name, Cha
 
     // Initialize provider-specific settings (Phase 5)
     engine->use_native_api = use_native_api;
+    
+    // Initialize supported modalities (Phase 12)
+    engine->supported_modalities = supported_modalities > 0 ? supported_modalities : MODALITY_DEFAULT;
 
     // Copy strings with bounds checking
     if (name) {
@@ -622,6 +625,7 @@ bool chat_engine_cache_load_from_database(ChatEngineCache* cache, const char* da
                 json_t* max_payload_obj = json_object_get(collection, "max_payload_mb");
                 json_t* max_concurrent_obj = json_object_get(collection, "max_concurrent_requests");
                 json_t* use_native_obj = json_object_get(collection, "use_native_api");
+                json_t* modalities_obj = json_object_get(collection, "modalities");
 
                 const char* name = name_obj && json_is_string(name_obj) ?
                                    json_string_value(name_obj) : "unnamed";
@@ -647,13 +651,31 @@ bool chat_engine_cache_load_from_database(ChatEngineCache* cache, const char* da
                                      (int)json_integer_value(max_concurrent_obj) : 100;
                 bool use_native = use_native_obj && json_is_boolean(use_native_obj) ?
                                   json_boolean_value(use_native_obj) : false;
+                
+                // Parse modalities array into bitmask
+                int supported_modalities = MODALITY_DEFAULT;
+                if (modalities_obj && json_is_array(modalities_obj)) {
+                    supported_modalities = 0;
+                    size_t mod_count = json_array_size(modalities_obj);
+                    for (size_t m = 0; m < mod_count; m++) {
+                        json_t* mod_item = json_array_get(modalities_obj, m);
+                        if (!json_is_string(mod_item)) continue;
+                        const char* mod_str = json_string_value(mod_item);
+                        if (strcmp(mod_str, "text") == 0) supported_modalities |= MODALITY_TEXT;
+                        else if (strcmp(mod_str, "image") == 0) supported_modalities |= MODALITY_IMAGE;
+                        else if (strcmp(mod_str, "audio") == 0) supported_modalities |= MODALITY_AUDIO;
+                        else if (strcmp(mod_str, "pdf") == 0) supported_modalities |= MODALITY_PDF;
+                        else if (strcmp(mod_str, "document") == 0) supported_modalities |= MODALITY_DOCUMENT;
+                    }
+                    if (supported_modalities == 0) supported_modalities = MODALITY_DEFAULT;
+                }
 
                 ChatEngineProvider provider = chat_engine_provider_from_string(provider_str);
 
                 ChatEngineConfig* engine = chat_engine_config_create(
                     engine_id, name, provider, model, api_url, api_key,
                     max_tokens, 0.7, is_default, liveliness, max_images, max_payload, max_concurrent,
-                    use_native
+                    supported_modalities, use_native
                 );
 
                 if (engine) {

@@ -326,6 +326,11 @@ ChatStreamChunk* chat_stream_chunk_parse(const char* json_line) {
     if (strncmp(json_line, "data: ", 6) == 0) {
         data = json_line + 6;
     }
+    // Skip "event: " prefix if present (Anthropic SSE)
+    else if (strncmp(json_line, "event: ", 7) == 0) {
+        // This is an event line, not data; skip it
+        return NULL;
+    }
 
     // Check for [DONE]
     if (strcmp(data, "[DONE]") == 0) {
@@ -358,24 +363,78 @@ ChatStreamChunk* chat_stream_chunk_parse(const char* json_line) {
         chunk->model = strdup(json_string_value(model));
     }
 
-    // Extract delta content from choices
-    json_t* choices = json_object_get(root, "choices");
-    if (choices && json_is_array(choices)) {
-        json_t* first = json_array_get(choices, 0);
-        if (first) {
-            // Check for delta content
-            json_t* delta = json_object_get(first, "delta");
-            if (delta) {
-                json_t* content = json_object_get(delta, "content");
-                if (content && json_is_string(content)) {
-                    chunk->content = strdup(json_string_value(content));
-                }
-            }
+    // Detect provider by JSON structure
+    bool is_anthropic = false;
+    bool is_ollama = false;
+    
+    // Check for Anthropic: has "type" field
+    json_t* type = json_object_get(root, "type");
+    if (type && json_is_string(type)) {
+        const char* type_str = json_string_value(type);
+        if (strcmp(type_str, "content_block_delta") == 0 ||
+            strcmp(type_str, "message_start") == 0 ||
+            strcmp(type_str, "message_stop") == 0) {
+            is_anthropic = true;
+        }
+    }
+    
+    // Check for Ollama: has "response" field and "done" field
+    json_t* response = json_object_get(root, "response");
+    json_t* done = json_object_get(root, "done");
+    if (response && json_is_string(response) && done && json_is_boolean(done)) {
+        is_ollama = true;
+    }
 
-            // Check for finish reason
-            json_t* finish = json_object_get(first, "finish_reason");
-            if (finish && json_is_string(finish)) {
-                chunk->finish_reason = strdup(json_string_value(finish));
+    if (is_anthropic) {
+        // Anthropic streaming format
+        if (type) {
+            const char* type_str = json_string_value(type);
+            if (strcmp(type_str, "content_block_delta") == 0) {
+                json_t* delta = json_object_get(root, "delta");
+                if (delta) {
+                    json_t* text = json_object_get(delta, "text");
+                    if (text && json_is_string(text)) {
+                        chunk->content = strdup(json_string_value(text));
+                    }
+                }
+            } else if (strcmp(type_str, "message_stop") == 0) {
+                chunk->is_done = true;
+            }
+            // For other event types, content remains NULL
+        }
+    } else if (is_ollama) {
+        // Ollama streaming format
+        if (response && json_is_string(response)) {
+            chunk->content = strdup(json_string_value(response));
+        }
+        if (done && json_is_boolean(done) && json_boolean_value(done)) {
+            chunk->is_done = true;
+            // Extract finish_reason if present
+            json_t* done_reason = json_object_get(root, "done_reason");
+            if (done_reason && json_is_string(done_reason)) {
+                chunk->finish_reason = strdup(json_string_value(done_reason));
+            }
+        }
+    } else {
+        // OpenAI format (original)
+        json_t* choices = json_object_get(root, "choices");
+        if (choices && json_is_array(choices)) {
+            json_t* first = json_array_get(choices, 0);
+            if (first) {
+                // Check for delta content
+                json_t* delta = json_object_get(first, "delta");
+                if (delta) {
+                    json_t* content = json_object_get(delta, "content");
+                    if (content && json_is_string(content)) {
+                        chunk->content = strdup(json_string_value(content));
+                    }
+                }
+
+                // Check for finish reason
+                json_t* finish = json_object_get(first, "finish_reason");
+                if (finish && json_is_string(finish)) {
+                    chunk->finish_reason = strdup(json_string_value(finish));
+                }
             }
         }
     }

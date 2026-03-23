@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1130.lua
--- QueryRef #039 - Get Chats List
+-- QueryRef #039 (OBSOLETE) - Get Chats List
 
 -- luacheck: no max line length
 -- luacheck: no unused args

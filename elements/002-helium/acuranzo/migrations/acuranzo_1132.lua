@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1132.lua
--- QueryRef #041 - Get Chat
+-- QueryRef #041 (OBSOLETE) - Get Chat
 
 -- luacheck: no max line length
 -- luacheck: no unused args

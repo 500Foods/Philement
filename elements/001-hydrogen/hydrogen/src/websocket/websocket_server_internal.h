@@ -28,6 +28,8 @@
 #include <src/threads/threads.h>  // Thread management subsystem
 #include <src/terminal/terminal_session.h>  // Terminal session definitions
 #include <src/terminal/terminal_websocket.h>  // Terminal WebSocket definitions
+#include <src/api/conduit/helpers/auth_jwt_helper.h>  // JWT validation for chat
+#include <src/api/auth/auth_service.h>  // JWT claims structure
 
 // WebSocket server context structure
 typedef struct {
@@ -56,7 +58,7 @@ typedef struct {
 } WebSocketServerContext;
 
 // Session data for each connection
-typedef struct {
+typedef struct WebSocketSessionData {
     char request_ip[50];               // Client IP address
     char request_app[50];              // Client application name
     char request_client[50];           // Client identifier
@@ -65,6 +67,13 @@ typedef struct {
     bool status_response_sent;         // Flag for status response completion
     char *authenticated_key;           // Stored authenticated key for protocol filtering
     TerminalSession *terminal_session; // Terminal session for this WebSocket connection
+    // Chat-specific fields
+    char *chat_database;               // Database extracted from JWT for chat (NULL if not authenticated for chat)
+    jwt_claims_t *chat_claims;         // JWT claims for chat (NULL if not authenticated for chat)
+    char *chat_write_queue_name;       // Name of thread-safe queue for outgoing chat chunks (NULL if none)
+    bool chat_write_pending;           // Whether a LWS_CALLBACK_SERVER_WRITEABLE is already pending
+    char *terminal_write_queue_name;   // Name of thread-safe queue for outgoing terminal data (NULL if none)
+    bool terminal_write_pending;       // Whether a terminal write is pending
 } WebSocketSessionData;
 
 // Initialize the server context
@@ -87,7 +96,7 @@ int ws_handle_connection_closed(const struct lws *wsi, WebSocketSessionData *ses
 int ws_handle_receive(struct lws *wsi, const WebSocketSessionData *session, const void *in, size_t len);
 int validate_session_and_context(const WebSocketSessionData *session);
 int buffer_message_data(struct lws *wsi, const void *in, size_t len);
-int parse_and_handle_message(struct lws *wsi);
+int parse_and_handle_message(struct lws *wsi, const WebSocketSessionData *session);
 
 // PTY bridge thread control
 void stop_pty_bridge_thread(TerminalSession *session);
