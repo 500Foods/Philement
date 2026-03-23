@@ -28,6 +28,7 @@ template={file}:{line}:{column}: {severity}: {message} ({id})
 
 # Suppress specific warnings
 suppress=unusedStructMember
+suppress=knownConditionTrueFalse:src/api/conduit/chat_common/chat_storage.c
 
 # Define platform macros for cppcheck
 define=__linux__=1

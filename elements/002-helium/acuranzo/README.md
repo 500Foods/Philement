@@ -193,4 +193,12 @@ in the migrations themselves so that they get populated in the database directly
 | [1156](/elements/002-helium/acuranzo/migrations/acuranzo_1156.lua) | lookups | 1.0.0 | 2026-03-17 | 4 | ✗ | Tabulator Schema: lookups-list.json (Lookup 059, Key 2) |
 | [1157](/elements/002-helium/acuranzo/migrations/acuranzo_1157.lua) | lookups | 1.0.0 | 2026-03-17 | 4 | ✗ | Tabulator Schema: lookup-values.json (Lookup 059, Key 3) |
 | [1158](/elements/002-helium/acuranzo/migrations/acuranzo_1158.lua) | queries | 1.0.1 | 2026-03-20 | 4 | ✗ | QueryRef #061 - Internal: Get AI Chat Engines with API Keys |
-| **159** | | | | **825** | **159** | |
+| [1159](/elements/002-helium/acuranzo/migrations/acuranzo_1159.lua) | convo_segs | 1.0.0 | 2026-03-22 | 8 | ✓ | Creates the convo_segs table for Phase 6: Conversation History with Content-Addressable Storage + Brotli |
+| [1160](/elements/002-helium/acuranzo/migrations/acuranzo_1160.lua) | convos | 1.0.0 | 2026-03-22 | 5 | ✓ | Extend convos table with segment_refs and usage tracking columns for Phase 6 |
+| [1161](/elements/002-helium/acuranzo/migrations/acuranzo_1161.lua) | lookups | 1.0.0 | 2026-03-22 | 5 | ✗ | Additions to Lookup 042 - Modules |
+| [1162](/elements/002-helium/acuranzo/migrations/acuranzo_1162.lua) | queries | 1.0.0 | 2026-03-22 | 4 | ✗ | QueryRef #062: Get Conversation Segments by Hash (batch retrieval) |
+| [1163](/elements/002-helium/acuranzo/migrations/acuranzo_1163.lua) | queries | 1.0.0 | 2026-03-22 | 4 | ✗ | QueryRef #063: Store Conversation Segment (with deduplication) |
+| [1164](/elements/002-helium/acuranzo/migrations/acuranzo_1164.lua) | queries | 1.0.0 | 2026-03-22 | 4 | ✗ | QueryRef #064: Reconstruct Conversation (get hashes + metadata) |
+| [1165](/elements/002-helium/acuranzo/migrations/acuranzo_1165.lua) | queries | 1.0.0 | 2026-03-22 | 4 | ✗ | QueryRef #065: Find Conversations by Segment Content (audit) |
+| [1166](/elements/002-helium/acuranzo/migrations/acuranzo_1166.lua) | queries | 1.0.0 | 2026-03-22 | 4 | ✗ | QueryRef #066: Get Conversation Storage Statistics |
+| **167** | | | | **863** | **167** | |

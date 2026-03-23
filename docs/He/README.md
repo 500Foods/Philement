@@ -88,18 +88,18 @@ Each schema provides a complete database design with migrations, supporting Post
 
 ## Repository Information
 
-Generated 2026-Mar-20 (Fri) 21:50:19 PDT
+Generated 2026-Mar-22 (Sun) 18:42:18 PDT
 
 ```cloc
-github.com/AlDanial/cloc v 2.08  T=1.34 s (235.8 files/s, 116421.7 lines/s)
+github.com/AlDanial/cloc v 2.08  T=1.26 s (256.6 files/s, 124771.7 lines/s)
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
 SVG                            113            226           2977         109974
-Lua                            170           4088           3296          28622
-Markdown                        29           1458              0           3791
+Lua                            178           4271           3378          29832
+Markdown                        29           1458              0           3799
 Bourne Shell                     3            152            160            814
 -------------------------------------------------------------------------------
-SUM:                           315           5924           6433         143201
+SUM:                           323           6107           6515         144419
 -------------------------------------------------------------------------------
 ```
