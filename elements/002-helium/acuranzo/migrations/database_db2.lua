@@ -3,6 +3,7 @@
 -- luacheck: no max line length
 
 -- CHANGELOG
+-- 2.7.0 - 2026-03-22 - Added VARCHAR_64
 -- 2.6.0 - 2025-12-31 - Added fancy INSERT_ macros to get our new key value returned
 -- 2.5.0 - 2025-12-31 - Added SIZE_ macros
 -- 2.4.0 - 2025-12-30 - Added JRS, JRM, JRE macros (JSON Retrieval Start, Middle, End)
@@ -62,6 +63,7 @@ return {
     TIMESTAMP_FORMAT = "VARCHAR_FORMAT(${NOW}, 'YYYY-MM-DD HH24:MI:SS.FF3')",
     VARCHAR_20 = "VARCHAR(20)",
     VARCHAR_50 = "VARCHAR(50)",
+    VARCHAR_64 = "VARCHAR(64)",
     VARCHAR_100 = "VARCHAR(100)",
     VARCHAR_128 = "VARCHAR(128)",
     VARCHAR_500 = "VARCHAR(500)",

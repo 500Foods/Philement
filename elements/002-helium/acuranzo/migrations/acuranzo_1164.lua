@@ -1,20 +1,20 @@
--- Migration: acuranzo_1133.lua
--- QueryRef #042 - Create Lookup Key
+-- Migration: acuranzo_1164.lua
+-- QueryRef #064: Reconstruct Conversation (get hashes + metadata)
 
 -- luacheck: no max line length
 -- luacheck: no unused args
 
 -- CHANGELOG
--- 1.0.0 - 2025-12-31 - Initial creation
+-- 1.0.0 - 2026-03-22 - Initial creation for Phase 6 - Chat Service
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
 
 cfg.TABLE = "queries"
-cfg.MIGRATION = "1133"
-cfg.QUERY_REF = "042"
-cfg.QUERY_NAME = "Create Lookup Key"
--- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+cfg.MIGRATION = "1164"
+cfg.QUERY_REF = "064"
+cfg.QUERY_NAME = "Reconstruct Conversation"
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
     INSERT INTO ${SCHEMA}${QUERIES} (
@@ -30,7 +30,7 @@ table.insert(queries,{sql=[[
         ${STATUS_ACTIVE}                                                    AS query_status_a27,
         ${TYPE_FORWARD_MIGRATION}                                           AS query_type_a28,
         ${DIALECT}                                                          AS query_dialect_a30,
-        ${QTC_SLOW}                                                         AS query_queue_a58,
+        ${QTC_MEDIUM}                                                       AS query_queue_a58,
         ${TIMEOUT}                                                          AS query_timeout,
         [=[
             INSERT INTO ${SCHEMA}${QUERIES} (
@@ -44,82 +44,80 @@ table.insert(queries,{sql=[[
                 new_query_id                                                        AS query_id,
                 ${QUERY_REF}                                                        AS query_ref,
                 ${STATUS_ACTIVE}                                                    AS query_status_a27,
-                ${TYPE_SQL}                                                         AS query_type_a28,
+                ${TYPE_INTERNAL_SQL}                                                AS query_type_a28,
                 ${DIALECT}                                                          AS query_dialect_a30,
                 ${QTC_MEDIUM}                                                       AS query_queue_a58,
                 ${TIMEOUT}                                                          AS query_timeout,
                 [==[
-                    ${INSERT_KEYSTART} key_id ${INSERT_KEYEND}
-                        INSERT INTO ${SCHEMA}lookups (
-                            lookup_id,
-                            key_idx,
-                            value_txt,
-                            value_int,
-                            sort_seq,
-                            status_a1,
-                            summary,
-                            code,
-                            collection,
-                            created_at,
-                            created_id,
-                            updated_at,
-                            updated_id
+                    SELECT
+                        c.convos_id,
+                        c.convos_ref,
+                        c.engine_name,
+                        c.model,
+                        c.tokens_prompt,
+                        c.tokens_completion,
+                        c.cost_total,
+                        c.duration_ms,
+                        c.segment_refs,
+                        c.created_at,
+                        c.updated_at,
+                        cs.segment_hash,
+                        cs.access_count,
+                        cs.last_accessed
+                    FROM
+                        ${SCHEMA}convos c
+                    LEFT OUTER JOIN
+                        ${SCHEMA}convo_segs cs
+                        ON cs.segment_hash = ANY(
+                            COALESCE(
+                                (
+                                    SELECT array元素
+                                    FROM jsonb_array_elements(c.segment_refs) AS array
+                                    WHERE jsonb_typeof(c.segment_refs) = 'string'
+                                ),
+                                ARRAY[]::text[]
+                            )
                         )
-                        WITH next_key_id AS (
-                            SELECT COALESCE(MAX(key_id), 0) + 1 AS new_key_id
-                            FROM ${SCHEMA}lookups
-                            WHERE lookup_id = :LOOKUPID
-                        )
-                        SELECT
-                            :LOOKUPID,
-                            new_key_id,
-                            :VALUETXT,
-                            :VALUEINT,
-                            :SORTSEQ,
-                            :STATUSLUA1,
-                            :SUMMARY,
-                            :CODE,
-                            :COLLECTION,
-                            ${NOW},
-                            :USERID,
-                            ${NOW},
-                            :USERID
-                        FROM
-                            next_key_idx
-                    ${INSERT_KEY_RETURN} key_idx
-                    ;
+                    WHERE
+                        c.convos_id = :CONVOSID
                 ]==]                                                                AS code,
                 '${QUERY_NAME}'                                                     AS name,
                 [==[
-                    #  QueryRef #${QUERY_REF} - ${QUERY_NAME}
+                    # QueryRef ${QUERY_REF} - ${QUERY_NAME}
 
-                    This query creates a new key for a give lookup in the lookups table.
+                    This INTERNAL query reconstructs a conversation by retrieving
+                    segment hashes and metadata from the convos table.
 
                     ## Parameters
 
-                    - :LOOKUPID (integer): The unique identifier for the lookup.
-                    - :VALUETXT (string): The value for the key.
-                    - :VALUEINT (integer): The value for the key.
-                    - :SORTSEQ (integer): The sort sequence for the key.
-                    - :STATUSLUA1 (integer): The status for the key.
-                    - :SUMMARY (string): The summary for the key.
-                    - :CODE (string): The code for the key.
-                    - :COLLECTION (json): The collection for the key.
-                    - :USERID (integer): The user ID for the key.
+                    - CONVOSID: The conversation ID to reconstruct
 
                     ## Returns
 
-                    - `key_idx` (integer): The key index for the new key.
-                    - Affected row count, expected to be 1.
+                    - convos_id: Conversation ID
+                    - convos_ref: Conversation reference
+                    - engine_name: Engine used
+                    - model: Model used
+                    - tokens_prompt: Prompt tokens used
+                    - tokens_completion: Completion tokens used
+                    - cost_total: Total cost
+                    - duration_ms: Duration in milliseconds
+                    - segment_refs: JSON array of segment hashes
+                    - created_at: Creation timestamp
+                    - updated_at: Last update timestamp
+                    - segment_hash: Individual segment hashes
+                    - access_count: Segment access count
+                    - last_accessed: Last access timestamp
 
                     ## Tables
 
-                    - `${SCHEMA}lookups`: Stores lookup keys
+                    - `${SCHEMA}convos`: Conversations table
+                    - `${SCHEMA}convo_segs`: Segment storage
 
-                    ## Notes
-                    - This query uses the `next_key_idx` CTE to get the next key index for the lookup.
-                    - Sort of like a manual AUTOINCREMENT field.
-                    - A little more complex due to wanting to return the new key index from the query.
+                    ## Security Notes
+
+                    - query_type = 0 (internal_sql) prevents access via REST API
+                    - For internal Chat Storage implementation only
 
                 ]==]
                                                                                     AS summary,
@@ -135,11 +133,12 @@ table.insert(queries,{sql=[[
               and query_type_a28 = ${TYPE_FORWARD_MIGRATION};
         ]=]
                                                                             AS code,
-        'Populate QueryRef #${QUERY_REF} - ${QUERY_NAME}'                   AS name,
+        'Populate QueryRef ${QUERY_REF} - ${QUERY_NAME}'                   AS name,
         [=[
-            # Forward Migration ${MIGRATION}: Poulate QueryRef #${QUERY_REF} - ${QUERY_NAME}
+            # Forward Migration ${MIGRATION}: Populate QueryRef ${QUERY_REF} - ${QUERY_NAME}
 
-            This migration creates the query for QueryRef #${QUERY_REF} - ${QUERY_NAME}
+            This migration creates the query for QueryRef ${QUERY_REF} - ${QUERY_NAME}
+            for Phase 6 conversation storage.
         ]=]
                                                                             AS summary,
         '{}'                                                                AS collection,
@@ -147,7 +146,7 @@ table.insert(queries,{sql=[[
     FROM next_query_id;
 
 ]]})
--- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
     INSERT INTO ${SCHEMA}${QUERIES} (
@@ -177,12 +176,11 @@ table.insert(queries,{sql=[[
               and query_type_a28 = ${TYPE_APPLIED_MIGRATION};
         ]=]
                                                                             AS code,
-        'Remove QueryRef #${QUERY_REF} - ${QUERY_NAME}'                     AS name,
+        'Remove QueryRef ${QUERY_REF}'                                      AS name,
         [=[
-            # Reverse Migration ${MIGRATION}: Remove QueryRef #${QUERY_REF} - ${QUERY_NAME}
+            # Reverse Migration ${MIGRATION}: Remove QueryRef ${QUERY_REF}
 
-            This is provided for completeness when testing the migration system
-            to ensure that forward and reverse migrations are complete.
+            This is provided for completeness when testing the migration system.
         ]=]
                                                                             AS summary,
         '{}'                                                                AS collection,
@@ -190,5 +188,5 @@ table.insert(queries,{sql=[[
     FROM next_query_id;
 
 ]]})
--- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 return queries end
