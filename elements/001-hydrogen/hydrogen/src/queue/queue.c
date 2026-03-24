@@ -376,6 +376,48 @@ char* queue_dequeue(Queue* queue, size_t* size, int* priority) {
 }
 
 /*
+ * Non-blocking dequeue operation
+ *
+ * Returns NULL immediately if queue is empty instead of blocking.
+ * This is essential for WebSocket callbacks that must not block.
+ */
+char* queue_dequeue_nonblocking(Queue* queue, size_t* size, int* priority) {
+    if (!queue || !size || !priority) {
+        return NULL;
+    }
+
+    MutexResult lock_result = MUTEX_LOCK(&queue->mutex, SR_QUEUES);
+    if (lock_result != MUTEX_SUCCESS) {
+        return NULL;
+    }
+
+    // Non-blocking: return NULL if queue is empty
+    if (queue->size == 0) {
+        mutex_unlock(&queue->mutex);
+        return NULL;
+    }
+
+    QueueElement* element = queue->head;
+    queue->head = element->next;
+    if (queue->head == NULL) {
+        queue->tail = NULL;
+    }
+    queue->size--;
+    queue->memory_used -= element->size;
+
+    pthread_cond_signal(&queue->not_full);
+    mutex_unlock(&queue->mutex);
+
+    char* data = element->data;
+    *size = element->size;
+    *priority = element->priority;
+
+    free(element); // Free the QueueElement, but not the data
+
+    return data;
+}
+
+/*
  * Get current queue size with minimal locking
  *
  * Why this design?

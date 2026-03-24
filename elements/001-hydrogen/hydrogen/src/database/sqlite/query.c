@@ -280,7 +280,7 @@ int sqlite_exec_callback(void* data, int argc, char** argv, char** col_names) {
             size_t row_len = strlen(result->data_json) - row_start_pos;
             char* row_json = strndup(result->data_json + row_start_pos, row_len);
             if (row_json) {
-                log_this(SR_DATABASE, "SQLite first row JSON: %s", LOG_LEVEL_DEBUG, 1, row_json);
+//                log_this(SR_DATABASE, "SQLite first row JSON: %s", LOG_LEVEL_DEBUG, 1, row_json);
                 free(row_json);
             }
         }

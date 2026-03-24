@@ -2,6 +2,8 @@
 
 Lithium maintains a persistent, app-wide WebSocket connection to the Hydrogen server for real-time communication. This connection is established after login and maintained throughout the user session.
 
+**Status: Operational** — The persistent WebSocket connection with keepalive is now fully functional. Chat streaming and server push messages work correctly over the stable connection.
+
 ---
 
 ## Overview
@@ -12,6 +14,8 @@ Lithium maintains a persistent, app-wide WebSocket connection to the Hydrogen se
 | **Purpose** | Persistent real-time connection to Hydrogen server |
 | **Lifecycle** | Connects on login, disconnects on logout |
 | **Status Indicator** | Sidebar header icon (green/blue/red) |
+| **Keepalive** | Application-level ping every 25 seconds |
+| **Server Response** | Lightweight `keepalive_ok` (~50 bytes) |
 
 ### Architecture
 
@@ -106,13 +110,39 @@ The WebSocket status is displayed as an icon in the sidebar header:
 
 ## Keepalive Mechanism
 
-The WebSocket connection uses the protocol-level ping/pong mechanism provided by libwebsockets. No application-level keepalive messages are sent (the Hydrogen server doesn't recognize custom keepalive message types).
+The WebSocket connection uses application-level keepalive messages to maintain the connection through load balancers and proxies.
+
+| Component | Interval | Message | Response |
+|-----------|----------|---------|----------|
+| **Client** | 25 seconds | `{"type":"keepalive"}` | — |
+| **Server** | — | — | `{"type":"keepalive_ok","ts":<timestamp>}` |
+| **TCP Keepalive** | 30s idle, 10s interval | OS-level probes | Configured on server |
+
+### Keepalive Implementation
+
+```javascript
+// Client sends keepalive every 25 seconds
+setInterval(() => {
+  if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+    this.ws.send(JSON.stringify({ type: 'keepalive' }));
+  }
+}, 25000);
+```
+
+### Why Application-Level Keepalive?
+
+The initial implementation used libwebsockets' protocol-level ping/pong, but this was insufficient because:
+1. Load balancers may close idle WebSocket connections
+2. Some proxies don't forward LWS ping frames
+3. Application-level messages are visible in browser devtools for debugging
+
+The lightweight keepalive response (~50 bytes) minimizes bandwidth overhead while ensuring the connection stays active through network infrastructure.
 
 ---
 
 ## Retry Behavior
 
-When the connection drops unexpectedly, the client automatically retries with escalating intervals:
+When the connection drops unexpectedly (close code != 1000), the client automatically retries with escalating intervals:
 
 | Phase | Interval | Duration | Attempts |
 |-------|----------|----------|----------|
@@ -120,6 +150,15 @@ When the connection drops unexpectedly, the client automatically retries with es
 | 2 | 2 minutes | 10 minutes | 5 |
 | 3 | 5 minutes | 10 minutes | 2 |
 | 4 | 10 minutes | Indefinite | ∞ |
+
+### Connection Stability
+
+As of March 2026, the WebSocket connection is stable with the following characteristics:
+
+- **Persistent connections** — Connections remain open indefinitely
+- **Chat streaming** — Full response streaming works over the persistent connection
+- **Reconnection on drop** — Auto-reconnect with escalating intervals
+- **Clean disconnect** — Code 1000 closes without reconnect (e.g., logout)
 
 ### Retry Flow
 
@@ -233,6 +272,29 @@ await crimsonWS.send('How do I create a query?', {
 });
 ```
 
+### Streaming Architecture
+
+The chat streaming flow over WebSocket:
+
+```
+Client                    Server                      AI Engine
+  │                         │                            │
+  │──── chat message ──────►│                            │
+  │                         │──── request ──────────────►│
+  │                         │                            │
+  │◄──── chat_chunk ────────│◄──── chunk stream ─────────│
+  │     (multiple)          │     (multiple)             │
+  │                         │                            │
+  │◄──── chat_done ─────────│◄──── finish ───────────────│
+  │                         │                            │
+  │◄──── keepalive_ok ──────│                            │
+  │                         │                            │
+  │──── keepalive ─────────►│                            │
+  │◄──── keepalive_ok ──────│                            │
+  │                         │                            │
+  ... connection stays open ...
+```
+
 ---
 
 ## Logout Handling
@@ -297,4 +359,4 @@ If the server doesn't respond to keepalive pings:
 
 ---
 
-Last updated: March 2026
+Last updated: March 24, 2026

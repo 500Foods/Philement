@@ -111,7 +111,8 @@ void queue_destroy(Queue* queue);  // Clean up queue resources
 
 // Message Operations
 bool queue_enqueue(Queue* queue, const char* data, size_t size, int priority);  // Add message
-char* queue_dequeue(Queue* queue, size_t* size, int* priority);  // Remove message
+char* queue_dequeue(Queue* queue, size_t* size, int* priority);  // Remove message (blocks if empty)
+char* queue_dequeue_nonblocking(Queue* queue, size_t* size, int* priority);  // Remove message (returns NULL if empty)
 
 // Monitoring
 size_t queue_size(Queue* queue);  // Current message count

@@ -34,9 +34,6 @@
 // External reference to global queue manager (from auth_chat.c)
 extern DatabaseQueueManager* global_queue_manager;
 
-// Logging source for WebSocket chat
-static const char* SR_WEBSOCKET_CHAT = "WEBSOCKET_CHAT";
-
 // Forward declarations
 static void send_chat_error(struct lws *wsi, const char* error_message, const char* request_id);
 static void send_chat_done(struct lws *wsi, const char* request_id, const char* content, 
@@ -50,6 +47,10 @@ static void send_chat_chunk(struct lws *wsi, const char* request_id, const char*
 static bool enqueue_chat_chunk(const char* queue_name, const char* request_id, 
                                const char* content, const char* model, 
                                int index, const char* finish_reason);
+static bool enqueue_chat_done(const char* queue_name, const char* request_id, 
+                              const char* model, const char* finish_reason,
+                              int prompt_tokens, int completion_tokens, int total_tokens,
+                              double response_time_ms);
 static void dequeue_and_write_chat_chunks(struct lws *wsi, const char* queue_name);
 
 // Queue management implementations
@@ -102,17 +103,65 @@ static bool enqueue_chat_chunk(const char* queue_name, const char* request_id,
     return success;
 }
 
+static bool enqueue_chat_done(const char* queue_name, const char* request_id, 
+                              const char* model, const char* finish_reason,
+                              int prompt_tokens, int completion_tokens, int total_tokens,
+                              double response_time_ms) {
+    if (!queue_name) return false;
+    
+    // Build JSON string for done message (must match send_chat_done format)
+    json_t* response = json_object();
+    json_object_set_new(response, "type", json_string("chat_done"));
+    if (request_id) {
+        json_object_set_new(response, "id", json_string(request_id));
+    }
+    
+    json_t* result = json_object();
+    json_object_set_new(result, "content", json_string(""));
+    if (model) json_object_set_new(result, "model", json_string(model));
+    if (finish_reason) json_object_set_new(result, "finish_reason", json_string(finish_reason));
+    
+    json_t* tokens = json_object();
+    json_object_set_new(tokens, "prompt", json_integer(prompt_tokens));
+    json_object_set_new(tokens, "completion", json_integer(completion_tokens));
+    json_object_set_new(tokens, "total", json_integer(total_tokens));
+    json_object_set_new(result, "tokens", tokens);
+    
+    json_object_set_new(result, "response_time_ms", json_real(response_time_ms));
+    json_object_set_new(response, "result", result);
+    
+    char* json_str = json_dumps(response, JSON_COMPACT);
+    json_decref(response);
+    if (!json_str) return false;
+    
+    // Enqueue with priority 0 (normal) - this ensures it's sent AFTER all chunks
+    Queue* queue = queue_find(queue_name);
+    if (!queue) {
+        QueueAttributes attrs = {0};
+        queue = queue_create(queue_name, &attrs);
+        if (!queue) {
+            free(json_str);
+            return false;
+        }
+    }
+    
+    bool success = queue_enqueue(queue, json_str, strlen(json_str), 0);
+    free(json_str);
+    
+    return success;
+}
+
 static void dequeue_and_write_chat_chunks(struct lws *wsi, const char* queue_name) {
     if (!queue_name || !wsi) return;
     
     Queue* queue = queue_find(queue_name);
     if (!queue) return;
     
-    // Dequeue and write all available chunks
+    // Dequeue and write all available chunks (non-blocking to avoid blocking lws service loop)
     size_t size;
     int priority;
     char* data;
-    while ((data = queue_dequeue(queue, &size, &priority)) != NULL) {
+    while ((data = queue_dequeue_nonblocking(queue, &size, &priority)) != NULL) {
         // Write the JSON string directly via WebSocket
         ws_write_raw_data(wsi, data, size);
         free(data);
@@ -167,7 +216,7 @@ static void stream_chunk_callback(const ChatStreamChunk* chunk, void* user_data)
                            (double)(end_time.tv_nsec - ctx->start_time.tv_nsec) / 1000000.0;
         
         log_this(SR_WEBSOCKET_CHAT, "Stream completed for request %s with finish_reason: %s (%.0fms)",
-                 LOG_LEVEL_STATE, 2, ctx->request_id ? ctx->request_id : "unknown", 
+                 LOG_LEVEL_DEBUG, 2, ctx->request_id ? ctx->request_id : "unknown", 
                  ctx->finish_reason, elapsed_ms);
     } else {
         // Log first chunk as "initial response received"
@@ -178,7 +227,7 @@ static void stream_chunk_callback(const ChatStreamChunk* chunk, void* user_data)
             double ttfb_ms = (double)(first_chunk_time.tv_sec - ctx->start_time.tv_sec) * 1000.0 +
                             (double)(first_chunk_time.tv_nsec - ctx->start_time.tv_nsec) / 1000000.0;
             log_this(SR_WEBSOCKET_CHAT, "Initial response received from %s (%.0fms TTFB)",
-                     LOG_LEVEL_STATE, 1, ctx->model ? ctx->model : "unknown", ttfb_ms);
+                     LOG_LEVEL_DEBUG, 1, ctx->model ? ctx->model : "unknown", ttfb_ms);
         }
         
         // Enqueue content chunk - client already receives these, no need to accumulate
@@ -199,7 +248,7 @@ static void stream_chunk_callback(const ChatStreamChunk* chunk, void* user_data)
 }
 
 int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *request_json) {
-    if (!wsi || !request_json) {
+    if (!wsi || !session || !request_json) {
         return -1;
     }
     
@@ -281,7 +330,8 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
         free_jwt_validation_result(&jwt_result);
     }
     
-    const char* database = session->chat_database;
+    // cppcheck: session guaranteed non-null due to check at function entry
+    const char* database = session ? session->chat_database : NULL;
     
     // Get database queue
     DatabaseQueue *db_queue = database_queue_manager_get_database(global_queue_manager, database);
@@ -359,7 +409,8 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
             json_decref(request_json);
             return -1;
         }
-        session->chat_write_queue_name = queue_name;
+        // cppcheck: session guaranteed non-null due to check at function entry
+        if (session) session->chat_write_queue_name = queue_name;
         
         // Initialize stream context
         StreamContext stream_ctx = {0};
@@ -394,24 +445,30 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
                                   (double)(stream_end_time.tv_nsec - stream_ctx.start_time.tv_nsec) / 1000000.0;
 
         if (proxy_result) {
+            // CRITICAL: Enqueue chat_done instead of sending directly!
+            // This ensures it's sent AFTER all chunks are dequeued and written.
+            // Using send_chat_done() directly would cause it to arrive before chunks
+            // because chunks are still in the queue.
+            enqueue_chat_done(queue_name, request_id,
+                             stream_ctx.model,
+                             stream_ctx.finish_reason ? stream_ctx.finish_reason : "stop",
+                             0, 0, 0,  // Token counts not available in streaming mode
+                             response_time_ms);
             
-            // Ensure final chunk is written before sending chat_done
+            // Request writable callback to dequeue and write all queued chunks + done
             if (stream_ctx.wsi) {
                 lws_callback_on_writable(stream_ctx.wsi);
             }
             
-            // Send final chat_done message to signal stream completion to client
-            // Content was already streamed via chat_chunk messages, so just signal completion
-            send_chat_done(wsi, request_id, 
-                          "",  // Empty - client already has content from chunks
-                          stream_ctx.model, 
-                          stream_ctx.finish_reason ? stream_ctx.finish_reason : "stop",
-                          0, 0, 0,  // Token counts not available in streaming mode
-                          response_time_ms);
+            // Send keepalive ping to refresh connection through load balancer
+            // This helps prevent load balancers from timing out idle connections
+            if (stream_ctx.wsi && session) {
+                ws_send_ping(stream_ctx.wsi, session);
+            }
             
-            // Log that final response was sent to client
-            log_this(SR_WEBSOCKET_CHAT, "Final response sent to client for request %s (%.0fms total)", 
-                     LOG_LEVEL_STATE, 2,
+            // Log that final response was queued for client
+            log_this(SR_WEBSOCKET_CHAT, "Final response queued for client request %s (%.0fms total)", 
+                     LOG_LEVEL_DEBUG, 2,
                      request_id ? request_id : "unknown",
                      response_time_ms);
         } else {
@@ -429,8 +486,8 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
         free(stream_ctx.request_id);
         free(stream_ctx.model);
         
-        // Note: We don't clean up the queue here because it may still have pending chunks
-        // The queue will be cleaned up when the connection closes or when a new stream starts
+        // Clean up queue after streaming is complete - all chunks have been written
+        cleanup_chat_queue(&session->chat_write_queue_name);
     } else {
         // Non-streaming mode
         ChatProxyConfig proxy_config = chat_proxy_get_default_config();
@@ -461,7 +518,7 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
         
         // Log that response was received
         log_this(SR_WEBSOCKET_CHAT, "Response received from %s/%s/%s (%.0fms)",
-                 LOG_LEVEL_STATE, 4,
+                 LOG_LEVEL_DEBUG, 4,
                  engine->name[0] ? engine->name : "unknown",
                  engine->model[0] ? engine->model : "unknown",
                  engine->provider == CEC_PROVIDER_ANTHROPIC ? "Anthropic" :
@@ -520,7 +577,7 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
 }
 
 int chat_subsystem_init(void) {
-    log_this(SR_WEBSOCKET_CHAT, "Chat subsystem initialized", LOG_LEVEL_DEBUG, 0);
+    log_this(SR_WEBSOCKET_CHAT, "Chat subsystem initialized", LOG_LEVEL_STATE, 0);
     return 0;
 }
 

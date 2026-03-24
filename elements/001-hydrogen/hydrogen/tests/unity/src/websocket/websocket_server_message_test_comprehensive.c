@@ -327,8 +327,9 @@ void test_handle_message_type_wrong_protocol(void) {
     // Test terminal message type with wrong protocol
     int result = handle_message_type((void*)0x12345678, "input");
 
-    // Should return -1 due to wrong protocol
-    TEST_ASSERT_EQUAL_INT(-1, result);
+    // Should return 0 (gracefully ignore terminal message on non-terminal protocol)
+    // This prevents the connection from being closed due to protocol mismatch
+    TEST_ASSERT_EQUAL_INT(0, result);
 }
 
 // Test find_or_create_terminal_session with invalid parameters
@@ -394,8 +395,8 @@ void test_ws_write_json_response_success(void) {
     // Test successful JSON response
     int result = ws_write_json_response((void*)0x12345678, test_json);
 
-    // Should return result from lws_write
-    TEST_ASSERT_EQUAL_INT(34, result);
+    // Should return 0 on success (for lws callback compatibility)
+    TEST_ASSERT_EQUAL_INT(0, result);
 
     // Clean up
     json_decref(test_json);

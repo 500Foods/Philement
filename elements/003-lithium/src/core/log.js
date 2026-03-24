@@ -66,6 +66,7 @@ export const Subsystems = {
   THEME: 'Theme',
   LOGIN: 'Login',
   SESSIONLOG: 'SessionLog',
+  WEBSOCKET: 'WebSocket',
 };
 
 // Status constants

@@ -22,6 +22,12 @@ This folder contains utility scripts and one-off diagnostic tools for the Hydrog
   - [`migrate_paths.sh`](#migrate_pathssh)
   - [`run-unity-test.sh`](#run-unity-testsh)
   - [`hbm_browser`](#hbm_browser)
+- [WebSocket Testing Tools](#websocket-testing-tools)
+  - [`test-ws-connection.sh`](#test-ws-connectionsh)
+  - [`test-ws-stress.sh`](#test-ws-stresssh)
+  - [`test-ws-long-delays.sh`](#test-ws-long-delayssh)
+  - [`test-ws-maintain.sh`](#test-ws-maintainsh)
+  - [`test-ws-response.sh`](#test-ws-responsesh)
 - [Payload Tools](#payload-tools)
   - [`debug_payload.c`](#debug_payloadc)
   - [`find_all_markers.c`](#find_all_markersc)
@@ -469,6 +475,131 @@ node hbm_browser_cli.js config.json output.svg
 ```
 
 **Documentation:** See [hbm_browser/README.md](/elements/001-hydrogen/hydrogen/extras/hbm_browser/README.md) for complete usage instructions and configuration options.
+
+## WebSocket Testing Tools
+
+The `test-ws-*.sh` scripts are used to test WebSocket connectivity, connection maintenance, and reconnection behavior. These are useful for diagnosing issues with load balancers, idle timeouts, and connection stability.
+
+### `test-ws-connection.sh`
+
+**Purpose:** Configurable WebSocket Connection Test  
+**Description:** Comprehensive test script with multiple test modes for WebSocket connectivity. Can test sequential connections, connections with delays, and single connection maintenance.
+
+**Usage:**
+
+```bash
+# Run with default settings
+./test-ws-connection.sh
+
+# Run with custom delays
+DELAY_INTERVALS="30 60 90 120" ./test-ws-connection.sh
+
+# Run only sequential connections test
+RUN_DELAYED_TESTS="false" RUN_MAINTENANCE_TEST="false" ./test-ws-connection.sh
+
+# Run only maintenance test for 5 minutes
+RUN_IMMEDIATE_TEST="false" RUN_DELAYED_TESTS="false" MAINTENANCE_DURATION=300 ./test-ws-connection.sh
+
+# Verbose mode (see server responses)
+VERBOSE="true" ./test-ws-connection.sh
+```
+
+**Configuration Variables:**
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `WS_URL` | `wss://lithium.philement.com/wss` | Server URL |
+| `WS_KEY` | `ABCDEFGHIJKLMNOP` | Auth key |
+| `WS_PROTOCOL` | `hydrogen` | WebSocket protocol |
+| `RUN_IMMEDIATE_TEST` | `true` | Run sequential connection test |
+| `RUN_DELAYED_TESTS` | `true` | Run delayed connection test |
+| `RUN_MAINTENANCE_TEST` | `true` | Run single connection test |
+| `DELAY_INTERVALS` | `5 15 30 60 90 120` | Delays between connections (seconds) |
+| `SEQUENTIAL_COUNT` | `10` | Number of sequential connections |
+| `MAINTENANCE_DURATION` | `180` | Single connection test duration (seconds) |
+| `MAINTENANCE_PING_INTERVAL` | `30` | Ping frequency during maintenance (seconds) |
+| `TEST_REQUEST` | `{"type":"status"}` | Request payload |
+| `VERBOSE` | `false` | Show server responses |
+
+**Test Modes:**
+
+1. **Immediate Test** - Quick sequential connect/disconnect (10 connections)
+2. **Delayed Test** - Connections with increasing delays (5s, 15s, 30s, 60s, 90s, 120s)
+3. **Maintenance Test** - Single connection kept alive with periodic pings
+
+### `test-ws-stress.sh`
+
+**Purpose:** Quick Stress Test  
+**Description:** Simple script that tests 10 sequential connections with 1-second delays.
+
+**Usage:**
+
+```bash
+./test-ws-stress.sh
+```
+
+### `test-ws-long-delays.sh`
+
+**Purpose:** Long Delay Connection Test  
+**Description:** Tests connections with long delays (30s, 60s, 90s, 120s) to verify the server accepts new connections after idle periods.
+
+**Usage:**
+
+```bash
+./test-ws-long-delays.sh
+```
+
+**Duration:** ~5 minutes
+
+### `test-ws-maintain.sh`
+
+**Purpose:** Single Connection Maintenance Test  
+**Description:** Tests if a SINGLE connection stays open over time by keeping one connection alive and sending periodic pings. Useful for detecting load balancer idle timeouts.
+
+**Usage:**
+
+```bash
+./test-ws-maintain.sh
+```
+
+**Duration:** ~3 minutes (configurable in script)
+
+### `test-ws-response.sh`
+
+**Purpose:** Response Verification Test  
+**Description:** Tests if the server actually responds to messages (not just accepts connections). Uses status requests which return server information.
+
+**Usage:**
+
+```bash
+./test-ws-response.sh
+```
+
+### Common Test Patterns
+
+**Testing reconnection after server restart:**
+
+```bash
+# Run first connection
+./test-ws-stress.sh
+
+# Restart server, then test again
+./test-ws-stress.sh
+```
+
+**Testing load balancer idle timeout:**
+
+```bash
+# Test with various delays to find the timeout threshold
+DELAY_INTERVALS="30 60 90 120 150 180" ./test-ws-connection.sh
+```
+
+**Testing single connection stability:**
+
+```bash
+# Keep one connection alive for 10 minutes
+RUN_IMMEDIATE_TEST="false" RUN_DELAYED_TESTS="false" MAINTENANCE_DURATION=600 ./test-ws-connection.sh
+```
 
 ## Payload Tools
 

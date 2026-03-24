@@ -86,8 +86,8 @@ void test_ws_write_json_response_successful_write(void) {
 
     int result = ws_write_json_response(test_wsi, json);
 
-    // Should return success (bytes written)
-    TEST_ASSERT_EQUAL_INT(36, result);
+    // Should return 0 on success (for lws callback compatibility)
+    TEST_ASSERT_EQUAL_INT(0, result);
 
     json_decref(json);
 }
@@ -102,8 +102,8 @@ void test_ws_write_json_response_empty_json_object(void) {
 
     int result = ws_write_json_response(test_wsi, json);
 
-    // Should return success
-    TEST_ASSERT_EQUAL_INT(2, result);
+    // Should return 0 on success (for lws callback compatibility)
+    TEST_ASSERT_EQUAL_INT(0, result);
 
     json_decref(json);
 }
@@ -127,8 +127,8 @@ void test_ws_write_json_response_complex_json_data(void) {
 
     int result = ws_write_json_response(test_wsi, json);
 
-    // Should return success
-    TEST_ASSERT_EQUAL_INT(74, result);
+    // Should return 0 on success (for lws callback compatibility)
+    TEST_ASSERT_EQUAL_INT(0, result);
 
     json_decref(json);
 }

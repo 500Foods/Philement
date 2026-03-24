@@ -60,14 +60,12 @@ int ws_handle_connection_established(struct lws *wsi, WebSocketSessionData *sess
 
     pthread_mutex_unlock(&ws_context->mutex);
 
-    log_this(SR_WEBSOCKET, "New connection established (active: %d, total: %d)", LOG_LEVEL_STATE, 2, ws_context->active_connections, ws_context->total_connections);
-    
-    // Log chat-specific connection info
-    if (session->chat_database) {
-        log_this(SR_WEBSOCKET, "Connection has existing chat database: %s", LOG_LEVEL_STATE, 1, session->chat_database);
-    } else {
-        log_this(SR_WEBSOCKET, "Connection awaiting chat authentication (JWT required on first chat request)", LOG_LEVEL_STATE, 0);
-    }
+    log_this(SR_WEBSOCKET, "[WS] Connection ESTABLISHED - IP: %s, App: %s (active: %d, total: %d)", 
+             LOG_LEVEL_DEBUG, 4,
+             session->request_ip,
+             session->request_app,
+             ws_context->active_connections, 
+             ws_context->total_connections);
 
     return 0;
 }
@@ -75,8 +73,14 @@ int ws_handle_connection_established(struct lws *wsi, WebSocketSessionData *sess
 int ws_handle_connection_closed(const struct lws *wsi, WebSocketSessionData *session)
 {
     if (!ws_context) {
-        log_this(SR_WEBSOCKET, "Invalid context during connection closure", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_WEBSOCKET, "[WS] Invalid context during connection closure", LOG_LEVEL_DEBUG, 0);
         return -1;
+    }
+
+    // Get client info before cleanup for logging
+    const char *client_ip = "unknown";
+    if (session && session->request_ip[0]) {
+        client_ip = session->request_ip;
     }
 
     // Stop PTY bridge thread for terminal connections
@@ -100,27 +104,28 @@ int ws_handle_connection_closed(const struct lws *wsi, WebSocketSessionData *ses
     pthread_mutex_lock(&ws_context->mutex);
 
     // Update metrics
+    int remaining = ws_context->active_connections;
     if (ws_context->active_connections > 0) {
         ws_context->active_connections--;
-
-        // Log closure with remaining count
-        log_this(SR_WEBSOCKET, "Connection closed (remaining active: %d)", LOG_LEVEL_STATE, 1, ws_context->active_connections);
+        remaining = ws_context->active_connections;
     }
 
     // Remove thread from tracking
     remove_service_thread(&websocket_threads, pthread_self());
 
+    pthread_mutex_unlock(&ws_context->mutex);
+
+    // Log connection closed with detailed info
+    log_this(SR_WEBSOCKET, "[WS] Connection CLOSED - IP: %s (remaining active: %d)", 
+             LOG_LEVEL_DEBUG, 2, client_ip, remaining);
+
     // During shutdown, broadcast to all waiting threads when last connection closes
     if (ws_context->shutdown) {
-        if (ws_context->active_connections == 0) {
-            log_this(SR_WEBSOCKET, "Last connection closed during shutdown", LOG_LEVEL_STATE, 0);
+        if (remaining == 0) {
+            log_this(SR_WEBSOCKET, "[WS] Last connection closed during shutdown", LOG_LEVEL_DEBUG, 0);
             pthread_cond_broadcast(&ws_context->cond);
-        } else {
-            log_this(SR_WEBSOCKET, "Connection closed during shutdown (%d remaining)", LOG_LEVEL_ALERT, 1, ws_context->active_connections);
         }
     }
-
-    pthread_mutex_unlock(&ws_context->mutex);
 
     return 0;
 }

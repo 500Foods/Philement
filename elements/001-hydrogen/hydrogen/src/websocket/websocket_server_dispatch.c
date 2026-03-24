@@ -247,6 +247,7 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
         case LWS_CALLBACK_CLOSED:
         case LWS_CALLBACK_WSI_DESTROY:
         case LWS_CALLBACK_CLOSED_HTTP:
+            log_this(SR_WEBSOCKET, "[WS] LWS_CALLBACK_CLOSED received (reason=%d), calling ws_handle_connection_closed", LOG_LEVEL_TRACE, 1, reason);
             return ws_handle_connection_closed(wsi, session);
 
         // Authentication and Security
@@ -392,9 +393,12 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
 
         // Message Processing
         case LWS_CALLBACK_RECEIVE:
+            log_this(SR_WEBSOCKET, "[WS] LWS_CALLBACK_RECEIVE - len=%zu", LOG_LEVEL_TRACE, 1, len);
             return ws_handle_receive(wsi, session, in, len);
 
         case LWS_CALLBACK_SERVER_WRITEABLE:
+            log_this(SR_WEBSOCKET, "[WS] LWS_CALLBACK_SERVER_WRITEABLE - has_queue=%s", LOG_LEVEL_TRACE, 1, 
+                     (session && session->chat_write_queue_name) ? "yes" : "no");
             if (session) {
                 handle_chat_writable(wsi, session);
             }
