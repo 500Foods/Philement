@@ -283,7 +283,7 @@ void initialize_config_defaults_websocket(AppConfig* config) {
         config->websocket.enable_ipv6 = false;
         config->websocket.lib_log_level = 2;
         config->websocket.port = 5001;
-        config->websocket.max_message_size = 8192;  // 8KB to accommodate terminal output with JSON overhead
+        config->websocket.max_message_size = 65536;  // 64KB to accommodate chat messages with conversation history
 
         // Connection timeouts
         config->websocket.connection_timeouts.shutdown_wait_seconds = 2;

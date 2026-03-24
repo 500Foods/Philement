@@ -57,6 +57,7 @@ Hydrogen is currently designed for technical users who:
 ### Modules (aka plugins or extensions)
 
 - [**GAIUS**](/docs/H/modules/GAIUS.md) - Support for the [GAIUS](https://www.gaiusmodel.cmo) project.
+- [**WebSocket Chat**](/docs/H/modules/websocket_chat.md) - Chat message handling via WebSocket protocol
 
 ### Technical References
 

@@ -70,7 +70,7 @@ void test_load_websocket_config_empty_json(void) {
     TEST_ASSERT_FALSE(config.websocket.enable_ipv6);  // Default is disabled
     TEST_ASSERT_EQUAL(2, config.websocket.lib_log_level);  // Default log level
     TEST_ASSERT_EQUAL(5001, config.websocket.port);  // Default port
-    TEST_ASSERT_EQUAL(2048, config.websocket.max_message_size);  // Default message size
+    TEST_ASSERT_EQUAL(65536, config.websocket.max_message_size);  // Default message size (64KB for chat history)
     TEST_ASSERT_EQUAL(2, config.websocket.connection_timeouts.shutdown_wait_seconds);  // Default timeout
 
     json_decref(root);

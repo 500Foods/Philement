@@ -27,9 +27,11 @@ export class CrimsonWebSocket {
   }
 
   _registerHandlers() {
+    log(Subsystems.WEBSOCKET, Status.DEBUG, `[CrimsonWS] Registering WebSocket handlers`);
     registerWSHandler('chat_chunk', (message) => this.handleChunk(message));
     registerWSHandler('chat_done', (message) => this.handleDone(message));
     registerWSHandler('chat_error', (message) => this.handleError(message));
+    log(Subsystems.WEBSOCKET, Status.DEBUG, `[CrimsonWS] Handlers registered for chat_chunk, chat_done, chat_error`);
   }
 
   _unregisterHandlers() {
@@ -37,18 +39,43 @@ export class CrimsonWebSocket {
   }
 
   handleChunk(message) {
-    const { id, chunk } = message;
+    const { id, chunk, content, index, finish_reason } = message;
     if (id && !this.isCurrentRequest(id)) return;
-    if (chunk && this.onChunk) {
-      this.onChunk(chunk.content, chunk.index, chunk.finish_reason);
+    
+    // Handle different possible chunk structures
+    let chunkContent, chunkIndex, chunkFinishReason;
+    
+    if (chunk) {
+      // Structure: { id, chunk: { content, index, finish_reason } }
+      chunkContent = chunk.content;
+      chunkIndex = chunk.index;
+      chunkFinishReason = chunk.finish_reason;
+    } else if (content !== undefined) {
+      // Structure: { id, content, index, finish_reason }
+      chunkContent = content;
+      chunkIndex = index;
+      chunkFinishReason = finish_reason;
+    }
+    
+    if (this.onChunk && (chunkContent || chunkFinishReason)) {
+      log(Subsystems.WEBSOCKET, Status.DEBUG, `[CrimsonWS] Chunk received: len=${chunkContent?.length || 0}, index=${chunkIndex}, finish=${chunkFinishReason || 'none'}`);
+      this.onChunk(chunkContent, chunkIndex, chunkFinishReason);
     }
   }
 
   handleDone(message) {
     const { id, result } = message;
-    if (id && !this.isCurrentRequest(id)) return;
+    
+    log(Subsystems.WEBSOCKET, Status.DEBUG, `[CrimsonWS] handleDone: id=${id}, isCurrentRequest=${this.isCurrentRequest(id)}, result keys: ${Object.keys(result || {}).join(', ')}`);
+    
+    if (id && !this.isCurrentRequest(id)) {
+      log(Subsystems.WEBSOCKET, Status.DEBUG, `[CrimsonWS] Done ignored - not current request (current: ${this.currentRequestId})`);
+      return;
+    }
     
     const callbacks = this.pendingRequests.get(id);
+    
+    log(Subsystems.WEBSOCKET, Status.DEBUG, `[CrimsonWS] Done received for ${id}, result content length: ${result?.content?.length || 0}, has callbacks: ${!!callbacks}`);
     
     if (this.onDone && result) {
       this.onDone(result.content, result);
@@ -178,13 +205,22 @@ export class CrimsonWebSocket {
 let instance = null;
 
 export function getCrimsonWS(options = {}) {
+  log(Subsystems.WEBSOCKET, Status.DEBUG, `[CrimsonWS] getCrimsonWS called, instance exists: ${!!instance}`);
+  
   if (!instance) {
+    log(Subsystems.WEBSOCKET, Status.DEBUG, `[CrimsonWS] Creating new CrimsonWebSocket instance`);
     instance = new CrimsonWebSocket(options);
-  } else if (options) {
-    if (options.onChunk) instance.onChunk = options.onChunk;
-    if (options.onDone) instance.onDone = options.onDone;
-    if (options.onError) instance.onError = options.onError;
-    if (options.engine) instance.engine = options.engine;
+  } else {
+    log(Subsystems.WEBSOCKET, Status.DEBUG, `[CrimsonWS] Reusing existing instance, re-registering handlers`);
+    // Always re-register handlers - they may have been unregistered by cleanup()
+    instance._registerHandlers();
+    
+    if (options) {
+      if (options.onChunk) instance.onChunk = options.onChunk;
+      if (options.onDone) instance.onDone = options.onDone;
+      if (options.onError) instance.onError = options.onError;
+      if (options.engine) instance.engine = options.engine;
+    }
   }
   return instance;
 }

@@ -72,9 +72,10 @@ int ws_handle_connection_established(struct lws *wsi, WebSocketSessionData *sess
 
 int ws_handle_connection_closed(const struct lws *wsi, WebSocketSessionData *session)
 {
+    // Defensive check - log and return gracefully if context is invalid
     if (!ws_context) {
-        log_this(SR_WEBSOCKET, "[WS] Invalid context during connection closure", LOG_LEVEL_DEBUG, 0);
-        return -1;
+        log_this(SR_WEBSOCKET, "[WS] Invalid context during connection closure (ws_context is NULL)", LOG_LEVEL_DEBUG, 0);
+        return 0;  // Return 0 to avoid lws error propagation
     }
 
     // Get client info before cleanup for logging
@@ -101,6 +102,7 @@ int ws_handle_connection_closed(const struct lws *wsi, WebSocketSessionData *ses
         chat_session_cleanup(session);
     }
 
+    // Defensive check for websocket_threads validity before accessing
     pthread_mutex_lock(&ws_context->mutex);
 
     // Update metrics

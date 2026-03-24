@@ -159,6 +159,8 @@ As of March 2026, the WebSocket connection is stable with the following characte
 - **Chat streaming** — Full response streaming works over the persistent connection
 - **Reconnection on drop** — Auto-reconnect with escalating intervals
 - **Clean disconnect** — Code 1000 closes without reconnect (e.g., logout)
+- **Handler persistence** — Message handlers survive cleanup and reconnection
+- **Conversation history** — Multi-turn conversations work in both streaming and non-streaming modes
 
 ### Retry Flow
 

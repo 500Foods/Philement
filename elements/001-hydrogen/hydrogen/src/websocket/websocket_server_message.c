@@ -46,10 +46,37 @@ int validate_session_and_context(const WebSocketSessionData *session)
 
 int buffer_message_data(struct lws *wsi, const void *in, size_t len)
 {
+    // Validate context before accessing
+    if (!ws_context || !ws_context->message_buffer) {
+        log_this(SR_WEBSOCKET, "Invalid context in buffer_message_data", LOG_LEVEL_ERROR, 0);
+        return -1;
+    }
+
     // Check message size
     if (ws_context->message_length + len > ws_context->max_message_size) {
-        log_this(SR_WEBSOCKET, "Message too large (max size: %zu bytes)", LOG_LEVEL_ALERT, 1, ws_context->max_message_size);
+        log_this(SR_WEBSOCKET, "Message too large (max size: %zu bytes, received: %zu)", LOG_LEVEL_ALERT, 2, ws_context->max_message_size, len);
         ws_context->message_length = 0; // Reset buffer
+        
+        // Send error response to client before closing
+        json_t* error_response = json_object();
+        json_object_set_new(error_response, "type", json_string("chat_error"));
+        json_object_set_new(error_response, "error", json_string("Message too large"));
+        json_object_set_new(error_response, "max_size", json_integer((json_int_t)ws_context->max_message_size));
+        
+        char* error_str = json_dumps(error_response, JSON_COMPACT);
+        json_decref(error_response);
+        
+        if (error_str) {
+            size_t error_len = strlen(error_str);
+            unsigned char *buf = malloc(LWS_PRE + error_len);
+            if (buf) {
+                memcpy(buf + LWS_PRE, error_str, error_len);
+                lws_write(wsi, buf + LWS_PRE, error_len, LWS_WRITE_TEXT);
+                free(buf);
+            }
+            free(error_str);
+        }
+        
         return -1;
     }
 
@@ -86,7 +113,7 @@ int parse_and_handle_message(struct lws *wsi, const WebSocketSessionData *sessio
 
     if (json_is_string(type_json)) {
         const char *type = json_string_value(type_json);
-        log_this(SR_WEBSOCKET, "Processing message type: %s", LOG_LEVEL_STATE, 1, type);
+        log_this(SR_WEBSOCKET, "Processing message type: %s", LOG_LEVEL_DEBUG, 1, type);
         
         // Chat messages need the full JSON object
         if (strcmp(type, "chat") == 0) {
