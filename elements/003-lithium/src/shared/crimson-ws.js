@@ -1,170 +1,58 @@
 /**
  * Crimson WebSocket Chat Client
  *
- * Handles WebSocket communication with the Hydrogen server for AI chat.
- * Supports streaming responses for real-time chat experience.
+ * This module provides a chat-specific interface that uses the app-wide
+ * WebSocket connection (app-ws.js) for communication with the Hydrogen server.
+ * Supports streaming responses for real-time AI chat experience.
  */
 
-import { getConfigValue } from '../core/config.js';
-import { retrieveJWT } from '../core/jwt.js';
+import { retrieveJWT, validateJWT } from '../core/jwt.js';
 import { log, Subsystems, Status } from '../core/log.js';
+import { getAppWS, ConnectionState, registerWSHandler, unregisterWSHandler } from './app-ws.js';
 
-// Connection states
-export const ConnectionState = {
-  DISCONNECTED: 'disconnected',
-  CONNECTING: 'connecting',
-  CONNECTED: 'connected',
-  AUTHENTICATED: 'authenticated',
-  ERROR: 'error',
-};
+// Re-export ConnectionState for compatibility
+export { ConnectionState };
 
 // Default engine for Crimson
 const DEFAULT_ENGINE = 'Crimson';
 
+// Message types handled by this module
+const CHAT_MESSAGE_TYPES = ['chat_chunk', 'chat_done', 'chat_error'];
+
 /**
- * WebSocket Chat Client class
+ * Crimson Chat Client - wrapper around app-wide WebSocket
  */
 export class CrimsonWebSocket {
   constructor(options = {}) {
-    this.ws = null;
-    this.state = ConnectionState.DISCONNECTED;
     this.requestId = 0;
     this.pendingRequests = new Map();
+    this.requestTimeouts = new Map();
+    this.currentRequestId = null;
     this.onChunk = options.onChunk || null;
     this.onDone = options.onDone || null;
     this.onError = options.onError || null;
     this.onStateChange = options.onStateChange || null;
     this.engine = options.engine || DEFAULT_ENGINE;
-    this.reconnectAttempts = 0;
-    this.maxReconnectAttempts = 3;
-    this.reconnectDelay = 1000;
+    this.requestTimeoutMs = 120000; // 2 minute timeout for requests
+
+    // Register handlers for chat message types
+    this._registerHandlers();
   }
 
   /**
-   * Get the WebSocket URL from config
-   * @returns {string} WebSocket URL
+   * Register message handlers with the app-wide WebSocket
    */
-  getWebSocketUrl() {
-    return getConfigValue('server.websocket_url', 'wss://lithium.philement.com/wss');
+  _registerHandlers() {
+    registerWSHandler('chat_chunk', (message) => this.handleChunk(message));
+    registerWSHandler('chat_done', (message) => this.handleDone(message));
+    registerWSHandler('chat_error', (message) => this.handleError(message));
   }
 
   /**
-   * Update connection state
-   * @param {string} newState - New connection state
+   * Unregister message handlers
    */
-  setState(newState) {
-    if (this.state !== newState) {
-      this.state = newState;
-      log(Subsystems.MANAGER, Status.INFO, `[CrimsonWS] State: ${newState}`);
-      if (this.onStateChange) {
-        this.onStateChange(newState);
-      }
-    }
-  }
-
-  /**
-   * Connect to the WebSocket server
-   * @returns {Promise<void>}
-   */
-  connect() {
-    return new Promise((resolve, reject) => {
-      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-        resolve();
-        return;
-      }
-
-      this.setState(ConnectionState.CONNECTING);
-
-      const url = this.getWebSocketUrl();
-      log(Subsystems.MANAGER, Status.INFO, `[CrimsonWS] Connecting to ${url}`);
-
-      try {
-        this.ws = new WebSocket(url);
-      } catch (error) {
-        this.setState(ConnectionState.ERROR);
-        reject(new Error(`Failed to create WebSocket: ${error.message}`));
-        return;
-      }
-
-      this.ws.onopen = () => {
-        log(Subsystems.MANAGER, Status.INFO, '[CrimsonWS] Connected');
-        this.setState(ConnectionState.CONNECTED);
-        this.reconnectAttempts = 0;
-        resolve();
-      };
-
-      this.ws.onclose = (event) => {
-        log(Subsystems.MANAGER, Status.INFO, `[CrimsonWS] Disconnected: ${event.code} ${event.reason}`);
-        this.setState(ConnectionState.DISCONNECTED);
-        this.cleanup();
-      };
-
-      this.ws.onerror = (error) => {
-        log(Subsystems.MANAGER, Status.ERROR, `[CrimsonWS] Error: ${error.message || 'Unknown error'}`);
-        this.setState(ConnectionState.ERROR);
-        reject(new Error('WebSocket connection failed'));
-      };
-
-      this.ws.onmessage = (event) => {
-        this.handleMessage(event.data);
-      };
-    });
-  }
-
-  /**
-   * Disconnect from the WebSocket server
-   */
-  disconnect() {
-    if (this.ws) {
-      this.ws.close(1000, 'Client disconnect');
-      this.ws = null;
-    }
-    this.setState(ConnectionState.DISCONNECTED);
-    this.cleanup();
-  }
-
-  /**
-   * Clean up pending requests
-   */
-  cleanup() {
-    this.pendingRequests.forEach((callbacks) => {
-      if (callbacks.onError) {
-        callbacks.onError(new Error('Connection closed'));
-      }
-    });
-    this.pendingRequests.clear();
-  }
-
-  /**
-   * Handle incoming WebSocket message
-   * @param {string} data - Message data
-   */
-  handleMessage(data) {
-    try {
-      const message = JSON.parse(data);
-      const { type } = message;
-
-      log(Subsystems.MANAGER, Status.DEBUG, `[CrimsonWS] Received: ${type}`);
-
-      switch (type) {
-        case 'chat_chunk':
-          this.handleChunk(message);
-          break;
-
-        case 'chat_done':
-          this.handleDone(message);
-          break;
-
-        case 'chat_error':
-          this.handleError(message);
-          break;
-
-        default:
-          log(Subsystems.MANAGER, Status.WARN, `[CrimsonWS] Unknown message type: ${type}`);
-      }
-    } catch (error) {
-      log(Subsystems.MANAGER, Status.ERROR, `[CrimsonWS] Failed to parse message: ${error.message}`);
-    }
+  _unregisterHandlers() {
+    CHAT_MESSAGE_TYPES.forEach(type => unregisterWSHandler(type));
   }
 
   /**
@@ -172,7 +60,13 @@ export class CrimsonWebSocket {
    * @param {Object} message - Chat chunk message
    */
   handleChunk(message) {
-    const { chunk } = message;
+    const { id, chunk } = message;
+
+    // Only process chunks for the current request
+    if (id && !this.isCurrentRequest(id)) {
+      log(Subsystems.MANAGER, Status.DEBUG, `[CrimsonWS] Ignoring chunk for cancelled request: ${id}`);
+      return;
+    }
 
     if (chunk && this.onChunk) {
       this.onChunk(chunk.content, chunk.index, chunk.finish_reason);
@@ -185,6 +79,13 @@ export class CrimsonWebSocket {
    */
   handleDone(message) {
     const { id, result } = message;
+
+    // Only process done for the current request
+    if (id && !this.isCurrentRequest(id)) {
+      log(Subsystems.MANAGER, Status.DEBUG, `[CrimsonWS] Ignoring done for cancelled request: ${id}`);
+      return;
+    }
+
     const callbacks = this.pendingRequests.get(id);
 
     if (this.onDone && result) {
@@ -196,6 +97,11 @@ export class CrimsonWebSocket {
         callbacks.onDone(result);
       }
       this.pendingRequests.delete(id);
+    }
+
+    // Clear current request ID
+    if (id === this.currentRequestId) {
+      this.currentRequestId = null;
     }
   }
 
@@ -236,14 +142,35 @@ export class CrimsonWebSocket {
    * @returns {Promise<Object>} Response promise
    */
   async send(message, options = {}) {
-    // Ensure connected
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      await this.connect();
+    // Abort any previous request before starting a new one
+    this.abortCurrentRequest();
+
+    const ws = getAppWS();
+    
+    // Check connection state
+    if (!ws.isConnected()) {
+      log(Subsystems.MANAGER, Status.INFO, '[CrimsonWS] Not connected, attempting to connect...');
+      await ws.connect();
     }
 
+    // Validate JWT before sending
     const jwt = retrieveJWT();
     if (!jwt) {
-      throw new Error('Not authenticated - JWT required');
+      throw new Error('Not authenticated - please log in to use the chat');
+    }
+
+    // Check JWT validity
+    const validation = validateJWT(jwt);
+    if (!validation.valid) {
+      if (validation.error === 'Token expired') {
+        throw new Error('Your session has expired - please log in again');
+      }
+      throw new Error(`Authentication error: ${validation.error}`);
+    }
+
+    // Check for required database claim
+    if (!validation.claims || !validation.claims.database) {
+      throw new Error('Authentication incomplete - missing database claim');
     }
 
     const requestId = this.generateRequestId();
@@ -255,7 +182,7 @@ export class CrimsonWebSocket {
         { role: 'user', content: message },
       ],
       stream,
-      jwt,
+      jwt: `Bearer ${jwt}`,
     };
 
     // Add conversation history if provided
@@ -270,17 +197,50 @@ export class CrimsonWebSocket {
     };
 
     return new Promise((resolve, reject) => {
+      // Track this as the current request
+      this.currentRequestId = requestId;
+
+      // Set up request timeout
+      const timeout = setTimeout(() => {
+        if (this.pendingRequests.has(requestId) && this.currentRequestId === requestId) {
+          log(Subsystems.MANAGER, Status.WARN, `[CrimsonWS] Request timeout: ${requestId}`);
+          this.pendingRequests.delete(requestId);
+          this.requestTimeouts.delete(requestId);
+          this.currentRequestId = null;
+          reject(new Error('Request timeout - server did not respond in time'));
+        }
+      }, this.requestTimeoutMs);
+
+      this.requestTimeouts.set(requestId, timeout);
+
       this.pendingRequests.set(requestId, {
-        onDone: resolve,
-        onError: reject,
+        onDone: (result) => {
+          if (this.currentRequestId === requestId) {
+            clearTimeout(timeout);
+            this.requestTimeouts.delete(requestId);
+            this.currentRequestId = null;
+            resolve(result);
+          }
+        },
+        onError: (error) => {
+          if (this.currentRequestId === requestId) {
+            clearTimeout(timeout);
+            this.requestTimeouts.delete(requestId);
+            this.currentRequestId = null;
+            reject(error);
+          }
+        },
       });
 
-      try {
-        this.ws.send(JSON.stringify(request));
-        log(Subsystems.MANAGER, Status.DEBUG, `[CrimsonWS] Sent chat request: ${requestId}`);
-      } catch (error) {
+      // Send via app-wide WebSocket
+      const sent = ws.send(request);
+      if (!sent) {
+        clearTimeout(timeout);
+        this.requestTimeouts.delete(requestId);
         this.pendingRequests.delete(requestId);
-        reject(new Error(`Failed to send message: ${error.message}`));
+        reject(new Error('Failed to send message - WebSocket not connected'));
+      } else {
+        log(Subsystems.MANAGER, Status.DEBUG, `[CrimsonWS] Sent chat request: ${requestId}`);
       }
     });
   }
@@ -290,7 +250,8 @@ export class CrimsonWebSocket {
    * @returns {boolean} True if connected
    */
   isConnected() {
-    return this.ws && this.ws.readyState === WebSocket.OPEN;
+    const ws = getAppWS();
+    return ws.isConnected();
   }
 
   /**
@@ -298,7 +259,58 @@ export class CrimsonWebSocket {
    * @returns {string} Current connection state
    */
   getState() {
-    return this.state;
+    const ws = getAppWS();
+    return ws.getState();
+  }
+
+  /**
+   * Abort the current request (if any)
+   */
+  abortCurrentRequest() {
+    if (this.currentRequestId) {
+      log(Subsystems.MANAGER, Status.INFO, `[CrimsonWS] Aborting current request: ${this.currentRequestId}`);
+      
+      const timeout = this.requestTimeouts.get(this.currentRequestId);
+      if (timeout) {
+        clearTimeout(timeout);
+        this.requestTimeouts.delete(this.currentRequestId);
+      }
+      
+      this.pendingRequests.delete(this.currentRequestId);
+      this.currentRequestId = null;
+    }
+  }
+
+  /**
+   * Check if a request ID is the current (non-cancelled) request
+   * @param {string} requestId - Request ID to check
+   * @returns {boolean} True if this is the current request
+   */
+  isCurrentRequest(requestId) {
+    return requestId === this.currentRequestId;
+  }
+
+  /**
+   * Cleanup - unregister handlers and clear pending requests
+   */
+  cleanup() {
+    this._unregisterHandlers();
+    this.requestTimeouts.forEach((timeout) => clearTimeout(timeout));
+    this.requestTimeouts.clear();
+    this.pendingRequests.forEach((callbacks) => {
+      if (callbacks.onError) {
+        callbacks.onError(new Error('Connection closed'));
+      }
+    });
+    this.pendingRequests.clear();
+  }
+
+  /**
+   * Disconnect (no-op for wrapper, connection is managed by app-ws)
+   */
+  disconnect() {
+    // Connection is managed by app-ws, just cleanup our state
+    this.cleanup();
   }
 }
 
@@ -315,6 +327,13 @@ let instance = null;
 export function getCrimsonWS(options = {}) {
   if (!instance) {
     instance = new CrimsonWebSocket(options);
+  } else if (options && Object.keys(options).length > 0) {
+    // Update callbacks on existing instance
+    if (options.onChunk) instance.onChunk = options.onChunk;
+    if (options.onDone) instance.onDone = options.onDone;
+    if (options.onError) instance.onError = options.onError;
+    if (options.onStateChange) instance.onStateChange = options.onStateChange;
+    if (options.engine) instance.engine = options.engine;
   }
   return instance;
 }
@@ -324,9 +343,18 @@ export function getCrimsonWS(options = {}) {
  */
 export function destroyCrimsonWS() {
   if (instance) {
-    instance.disconnect();
+    instance.cleanup();
     instance = null;
   }
+}
+
+/**
+ * Initialize page unload handler to clean up
+ */
+export function initWSUnloadHandler() {
+  window.addEventListener('beforeunload', () => {
+    destroyCrimsonWS();
+  });
 }
 
 export default {

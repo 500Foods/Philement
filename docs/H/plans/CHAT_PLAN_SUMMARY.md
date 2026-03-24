@@ -152,3 +152,167 @@ Phase 11 (Streaming) and Phase 12 (Advanced Multi-modal) are now complete. The n
 - A/B testing framework
 
 Client development can now proceed with the completed multi-modal infrastructure.
+
+---
+
+## WebSocket Chat Endpoint
+
+In addition to the HTTP endpoints, Hydrogen provides a WebSocket-based chat interface for real-time streaming communication.
+
+### WebSocket Server Configuration
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `WebSocketServer.Port` | `7001` | WebSocket listening port |
+| `WebSocketServer.Protocol` | `hydrogen` | Protocol name for client identification |
+| `WebSocketServer.Key` | (from env) | Authentication key for connections |
+
+### Connection Authentication
+
+WebSocket connections authenticate via query parameter:
+
+```
+ws://host:port/path?key=<auth_key>
+```
+
+The server validates the key in `LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION` before allowing the upgrade.
+
+**Note**: libwebsockets strips query strings during WebSocket upgrade. The server uses a fallback authentication mechanism for JavaScript clients that relies on matching the configured key against a hardcoded value.
+
+### Message Protocol
+
+#### Client → Server: Chat Request
+
+```json
+{
+  "type": "chat",
+  "id": "request-123",
+  "payload": {
+    "engine": "Crimson",
+    "messages": [
+      {"role": "user", "content": "Hello, Crimson!"}
+    ],
+    "stream": true,
+    "jwt": "Bearer <jwt-token>"
+  }
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `type` | string | Yes | Message type: `"chat"` |
+| `id` | string | No | Request ID for tracking |
+| `payload.engine` | string | No | Engine name (defaults to config default) |
+| `payload.messages` | array | Yes | Chat messages array |
+| `payload.stream` | boolean | No | Enable streaming (default: true) |
+| `payload.jwt` | string | Yes | JWT token with `Bearer ` prefix |
+
+#### Server → Client: Streaming Chunk
+
+```json
+{
+  "type": "chat_chunk",
+  "id": "request-123",
+  "chunk": {
+    "content": "Hello",
+    "model": "Crimson",
+    "index": 0,
+    "finish_reason": null
+  }
+}
+```
+
+#### Server → Client: Completion
+
+```json
+{
+  "type": "chat_done",
+  "id": "request-123",
+  "result": {
+    "content": "Full response text",
+    "model": "Crimson",
+    "finish_reason": "stop",
+    "tokens": {"prompt": 10, "completion": 20, "total": 30},
+    "response_time_ms": 1234.5
+  }
+}
+```
+
+#### Server → Client: Error
+
+```json
+{
+  "type": "chat_error",
+  "id": "request-123",
+  "error": "Error message"
+}
+```
+
+### Structured Response Format
+
+The AI is prompted to return structured responses with a delimiter:
+
+```
+[Conversation text here]
+[LITHIUM-CRIMSON-JSON]
+{"followUpQuestions": [...], "suggestions": {...}, "metadata": {...}}
+```
+
+This allows clients to:
+1. Stream the conversation text immediately
+2. Parse structured data after the delimiter
+3. Display follow-up questions as interactive buttons
+4. Process suggestions for UI actions
+
+### Authentication Flow
+
+1. **Connection**: Client connects with `?key=<auth_key>` query parameter
+2. **Validation**: Server validates key during protocol filtering
+3. **Chat**: Each chat message includes JWT in payload for database context
+4. **Session**: Database claim from JWT is cached in session for subsequent messages
+
+### Error Handling
+
+| Error | HTTP/WS Code | Description |
+|-------|--------------|-------------|
+| Missing JWT | `chat_error` | No JWT provided in payload |
+| Invalid JWT | `chat_error` | JWT validation failed |
+| Missing database claim | `chat_error` | JWT lacks database claim |
+| Engine not found | `chat_error` | Requested engine not configured |
+| Engine unhealthy | `chat_error` | Engine health check failed |
+
+### Known Issues
+
+1. **Query String Stripping**: libwebsockets strips query strings during upgrade. Server uses fallback authentication for JavaScript clients.
+
+2. **Connection Lifecycle**: Connections are persistent and remain open for the lifetime of the client. Clients establish a connection once and reuse it for multiple chat requests. The connection will only close if the client disconnects, goes to sleep, or fails to respond to heartbeat pings.
+
+3. **Key Consistency**: The server's hardcoded fallback key must match the configured key for JavaScript clients to authenticate.
+
+### Heartbeat and Connection Health
+
+The WebSocket server implements a heartbeat mechanism to maintain connections through proxies and load balancers (like Traefik in DOKS clusters):
+
+- **Ping/Pong**: Server sends ping frames periodically (default: every 30 seconds)
+- **TCP Keepalive**: Enabled at the socket level (ka_time=30s, ka_interval=10s, ka_probes=3)
+- **Stale Detection**: Connections that don't respond to pings within the timeout (default: 60 seconds) are closed
+
+Configuration options in `WebSocketServer.Heartbeat`:
+- `Enabled`: Enable/disable heartbeat (default: true)
+- `PingIntervalSeconds`: How often to send pings (default: 30)
+- `PongTimeoutSeconds`: How long to wait for pong before closing (default: 60)
+- `StaleConnectionSeconds`: Consider connection stale after this time (default: 90)
+
+### Testing
+
+WebSocket chat can be tested with the terminal client:
+
+```bash
+# Using websocat
+websocat ws://localhost:7001/?key=ABCDEFGHIJKLMNOP --protocol=hydrogen
+```
+
+Then send a JSON message:
+```json
+{"type":"chat","id":"test-1","payload":{"engine":"Crimson","messages":[{"role":"user","content":"Hello"}],"stream":true,"jwt":"Bearer <token>"}}
+```

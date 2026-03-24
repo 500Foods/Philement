@@ -152,6 +152,22 @@ class CrimsonManager {
     this.isStreaming = false;
     this.currentStreamElement = null;
     this.conversationHistory = [];
+    this.lastMetadata = null;
+    this.lastSuggestions = null;
+
+    // Streaming delimiter handling
+    this.DELIMITER = '[LITHIUM-CRIMSON-JSON]';
+    this.seenDelimiter = false;
+    this.conversationBuffer = '';
+    this.metadataBuffer = '';
+    this.partialDelimiter = '';
+
+    // Debug state
+    this.debugMode = false;
+    this.debugChunks = [];
+
+    // Connection status
+    this.connectionState = 'disconnected';
 
     // Bind methods
     this.handleDragStart = this.handleDragStart.bind(this);
@@ -193,10 +209,20 @@ class CrimsonManager {
             <fa fa-fire></fa>
             <span>Chat with Crimson</span>
           </button>
+          <button type="button" class="crimson-debug-btn" title="Toggle debug view">
+            <fa fa-bug></fa>
+          </button>
+          <button type="button" class="crimson-reset-btn" title="Reset conversation">
+            <fa fa-broom></fa>
+          </button>
           <button type="button" class="crimson-header-close" title="Close (ESC)">
             <fa fa-xmark></fa>
           </button>
         </div>
+      </div>
+      <div class="crimson-status-bar">
+        <span class="crimson-status-indicator"></span>
+        <span class="crimson-status-text">Ready</span>
       </div>
       <div class="crimson-conversation">
         <div class="crimson-welcome">
@@ -206,6 +232,10 @@ class CrimsonManager {
           <div class="crimson-welcome-text">Hello, <span class="crimson-username">User</span>!</div>
           <div class="crimson-welcome-hint">How can I help you today?</div>
         </div>
+      </div>
+      <div class="crimson-debug-panel" style="display: none;">
+        <div class="crimson-debug-header">Debug Output</div>
+        <pre class="crimson-debug-content"></pre>
       </div>
       <div class="crimson-input-area">
         <textarea class="crimson-input" placeholder="Type your message..." rows="1"></textarea>
@@ -223,8 +253,15 @@ class CrimsonManager {
     this.conversation = this.popup.querySelector('.crimson-conversation');
     this.input = this.popup.querySelector('.crimson-input');
     this.sendBtn = this.popup.querySelector('.crimson-send-btn');
+    this.statusBar = this.popup.querySelector('.crimson-status-bar');
+    this.statusIndicator = this.popup.querySelector('.crimson-status-indicator');
+    this.statusText = this.popup.querySelector('.crimson-status-text');
+    this.debugPanel = this.popup.querySelector('.crimson-debug-panel');
+    this.debugContent = this.popup.querySelector('.crimson-debug-content');
     const header = this.popup.querySelector('.crimson-header');
     const closeBtn = this.popup.querySelector('.crimson-header-close');
+    const resetBtn = this.popup.querySelector('.crimson-reset-btn');
+    const debugBtn = this.popup.querySelector('.crimson-debug-btn');
     const resizeHandleBR = this.popup.querySelector('.crimson-resize-handle-br');
     const resizeHandleBL = this.popup.querySelector('.crimson-resize-handle-bl');
     const resizeHandleTR = this.popup.querySelector('.crimson-resize-handle-tr');
@@ -233,6 +270,8 @@ class CrimsonManager {
     // Set up event listeners
     header.addEventListener('mousedown', this.handleDragStart);
     closeBtn.addEventListener('click', () => this.hide());
+    resetBtn?.addEventListener('click', () => this.resetConversation());
+    debugBtn?.addEventListener('click', () => this.toggleDebugPanel());
     this.sendBtn.addEventListener('click', this.handleSend);
     this.input.addEventListener('keydown', this.handleInputKeydown);
     this.input.addEventListener('input', () => this.autoResizeInput());
@@ -335,6 +374,126 @@ class CrimsonManager {
     }
 
     log(Subsystems.MANAGER, Status.INFO, '[Crimson] Hidden');
+  }
+
+  /**
+   * Reset the conversation to empty state
+   */
+  resetConversation() {
+    // Disconnect WebSocket if connected
+    if (this.wsClient) {
+      this.wsClient.disconnect();
+      this.wsClient = null;
+    }
+
+    // Reset streaming state
+    this.isStreaming = false;
+    this.currentStreamElement = null;
+    this.conversationHistory = [];
+    this.lastMetadata = null;
+    this.lastSuggestions = null;
+
+    // Reset delimiter buffers
+    this.seenDelimiter = false;
+    this.conversationBuffer = '';
+    this.metadataBuffer = '';
+    this.partialDelimiter = '';
+
+    // Re-enable send button
+    if (this.sendBtn) {
+      this.sendBtn.disabled = false;
+    }
+
+    // Clear conversation and restore welcome message
+    if (this.conversation) {
+      this.conversation.innerHTML = `
+        <div class="crimson-welcome">
+          <div class="crimson-welcome-icon">
+            <fa fa-fire></fa>
+          </div>
+          <div class="crimson-welcome-text">Hello, <span class="crimson-username">${this.escapeHtml(this.username)}</span>!</div>
+          <div class="crimson-welcome-hint">How can I help you today?</div>
+        </div>
+      `;
+      processIcons(this.conversation);
+    }
+
+    // Clear input
+    if (this.input) {
+      this.input.value = '';
+      this.autoResizeInput();
+    }
+
+    // Clear message history
+    this.messages = [];
+
+    // Clear debug panel
+    this.debugChunks = [];
+    this.updateDebugPanel();
+
+    // Reset status
+    this.updateStatus('ready', 'Ready');
+
+    log(Subsystems.MANAGER, Status.INFO, '[Crimson] Conversation reset');
+  }
+
+  /**
+   * Update the status bar
+   * @param {string} state - Status state: 'ready', 'connecting', 'thinking', 'streaming', 'error'
+   * @param {string} text - Status text to display
+   */
+  updateStatus(state, text) {
+    if (!this.statusIndicator || !this.statusText) return;
+
+    this.connectionState = state;
+    this.statusIndicator.className = `crimson-status-indicator crimson-status-${state}`;
+    this.statusText.textContent = text;
+
+    // Add animation for active states
+    if (state === 'thinking' || state === 'streaming') {
+      this.statusBar.classList.add('crimson-status-active');
+    } else {
+      this.statusBar.classList.remove('crimson-status-active');
+    }
+  }
+
+  /**
+   * Toggle the debug panel visibility
+   */
+  toggleDebugPanel() {
+    if (!this.debugPanel) return;
+
+    this.debugMode = !this.debugMode;
+    this.debugPanel.style.display = this.debugMode ? 'block' : 'none';
+    this.popup.classList.toggle('crimson-debug-visible', this.debugMode);
+  }
+
+  /**
+   * Add debug message to the debug panel
+   * @param {string} type - Message type
+   * @param {string} content - Message content
+   */
+  addDebugMessage(type, content) {
+    if (!this.debugMode) return;
+
+    const timestamp = new Date().toLocaleTimeString();
+    this.debugChunks.push(`[${timestamp}] ${type}: ${content}`);
+    
+    // Keep only last 100 messages
+    if (this.debugChunks.length > 100) {
+      this.debugChunks.shift();
+    }
+
+    this.updateDebugPanel();
+  }
+
+  /**
+   * Update the debug panel content
+   */
+  updateDebugPanel() {
+    if (!this.debugContent) return;
+    this.debugContent.textContent = this.debugChunks.join('\n');
+    this.debugContent.scrollTop = this.debugContent.scrollHeight;
   }
 
   /**
@@ -559,7 +718,7 @@ class CrimsonManager {
    */
   autoResizeInput() {
     this.input.style.height = 'auto';
-    const newHeight = Math.min(150, Math.max(44, this.input.scrollHeight));
+    const newHeight = Math.min(150, Math.max(35, this.input.scrollHeight));
     this.input.style.height = `${newHeight}px`;
   }
 
@@ -633,8 +792,7 @@ class CrimsonManager {
    * Initialize WebSocket client
    */
   initWebSocketClient() {
-    if (this.wsClient) return;
-
+    // Always update callbacks in case this is a new instance
     this.wsClient = getCrimsonWS({
       onChunk: (content, index, finishReason) => {
         this.handleStreamChunk(content, index, finishReason);
@@ -647,6 +805,23 @@ class CrimsonManager {
       },
       onStateChange: (state) => {
         log(Subsystems.MANAGER, Status.DEBUG, `[Crimson] WebSocket state: ${state}`);
+        this.addDebugMessage('STATE', state);
+        
+        // Update status based on connection state
+        switch (state) {
+          case 'connecting':
+            this.updateStatus('connecting', 'Connecting...');
+            break;
+          case 'connected':
+            this.updateStatus('ready', 'Connected');
+            break;
+          case 'disconnected':
+            this.updateStatus('disconnected', 'Disconnected');
+            break;
+          case 'error':
+            this.updateStatus('error', 'Connection error');
+            break;
+        }
       },
     });
   }
@@ -659,9 +834,32 @@ class CrimsonManager {
     // Initialize WebSocket client if needed
     this.initWebSocketClient();
 
-    // Disable send button while streaming
-    this.sendBtn.disabled = true;
+    // If already streaming, cancel the previous request
+    if (this.isStreaming && this.wsClient) {
+      this.addDebugMessage('CANCEL', 'Cancelling previous request');
+      this.wsClient.abortCurrentRequest();
+      
+      // Remove the old streaming element
+      if (this.currentStreamElement) {
+        this.currentStreamElement.remove();
+        this.currentStreamElement = null;
+      }
+      
+      // Reset streaming state
+      this.seenDelimiter = false;
+      this.conversationBuffer = '';
+      this.metadataBuffer = '';
+      this.partialDelimiter = '';
+    }
+
     this.isStreaming = true;
+    this.chunkCount = 0;  // Reset chunk counter
+
+    // Update status to thinking
+    this.updateStatus('thinking', 'Thinking...');
+
+    // Add debug message
+    this.addDebugMessage('SEND', message);
 
     // Add streaming indicator
     this.currentStreamElement = this.addStreamingMessage();
@@ -673,6 +871,12 @@ class CrimsonManager {
         stream: true,
       });
     } catch (error) {
+      // Check if this was a cancelled request
+      if (error.message.includes('abort') || error.message.includes('cancel')) {
+        this.addDebugMessage('CANCELLED', 'Request was cancelled');
+        return; // Don't show error for cancelled requests
+      }
+      
       log(Subsystems.MANAGER, Status.ERROR, `[Crimson] Chat error: ${error.message}`);
       this.handleStreamError(error.message);
     }
@@ -685,15 +889,148 @@ class CrimsonManager {
    * @param {string} _finishReason - Finish reason (unused)
    */
   handleStreamChunk(content, _index, _finishReason) {
-    if (!this.currentStreamElement) return;
+    if (!this.currentStreamElement || !content) return;
 
     const contentEl = this.currentStreamElement.querySelector('.crimson-message-content');
-    if (contentEl) {
-      // Append chunk to existing content
-      const currentContent = contentEl.getAttribute('data-raw-content') || '';
-      const newContent = currentContent + (content || '');
-      contentEl.setAttribute('data-raw-content', newContent);
-      contentEl.innerHTML = this.formatMessageContent(newContent);
+    if (!contentEl) return;
+
+    // Update status to streaming on first content
+    if (this.connectionState !== 'streaming') {
+      this.updateStatus('streaming', 'Receiving response...');
+      this.addDebugMessage('STREAM', 'Started receiving response');
+    }
+
+    // Update status to show chunk count
+    this.chunkCount = (this.chunkCount || 0) + 1;
+    this.updateStatus('streaming', `Receiving... (${this.chunkCount} chunks)`);
+
+    // After delimiter - just accumulate metadata
+    if (this.seenDelimiter) {
+      this.metadataBuffer += content;
+      return;
+    }
+
+    // Combine any partial delimiter from previous chunk with current content
+    const fullContent = this.partialDelimiter + content;
+    this.partialDelimiter = ''; // Reset partial delimiter
+
+    // Check if delimiter appears in the combined content
+    const delimiterIndex = fullContent.indexOf(this.DELIMITER);
+
+    if (delimiterIndex !== -1) {
+      // Delimiter found - split the content
+      const beforeDelimiter = fullContent.substring(0, delimiterIndex);
+      const afterDelimiter = fullContent.substring(delimiterIndex + this.DELIMITER.length);
+
+      // Add conversation part only (strip any trailing whitespace)
+      this.conversationBuffer += beforeDelimiter;
+      this.metadataBuffer = afterDelimiter;
+      this.seenDelimiter = true;
+      this.addDebugMessage('STREAM', 'Response complete');
+
+      // Update display with conversation only (trimmed)
+      const displayContent = this.conversationBuffer.replace(/\s+$/, '');
+      contentEl.setAttribute('data-raw-content', displayContent);
+      contentEl.innerHTML = this.formatMessageContent(displayContent);
+    } else {
+      // No full delimiter found - check if content ends with a partial delimiter
+      // Find the longest suffix of fullContent that is a prefix of DELIMITER
+      let longestMatchLength = 0;
+      for (let i = Math.min(fullContent.length, this.DELIMITER.length - 1); i > 0; i--) {
+        const suffix = fullContent.slice(-i);
+        if (this.DELIMITER.startsWith(suffix)) {
+          longestMatchLength = i;
+          break;
+        }
+      }
+
+      if (longestMatchLength > 0) {
+        // Store the partial delimiter for the next chunk
+        this.partialDelimiter = fullContent.slice(-longestMatchLength);
+        // Add everything except the partial delimiter to the conversation
+        const contentToAdd = fullContent.slice(0, -longestMatchLength);
+        this.conversationBuffer += contentToAdd;
+      } else {
+        // No partial delimiter match - add all content to conversation
+        this.conversationBuffer += fullContent;
+      }
+
+      // Update display
+      contentEl.setAttribute('data-raw-content', this.conversationBuffer);
+      contentEl.innerHTML = this.formatMessageContent(this.conversationBuffer);
+    }
+
+    // Scroll to bottom
+    this.conversation.scrollTop = this.conversation.scrollHeight;
+  }
+
+  /**
+   * Handle stream completion
+   * @param {string} _content - Final complete content (unused - we use buffers)
+   * @param {Object} _result - Full result object (unused)
+   */
+  handleStreamDone(_content, _result) {
+    try {
+      this.addDebugMessage('DONE', 'Stream complete');
+
+      // Parse metadata JSON if we have it
+      let parsedMetadata = null;
+      if (this.metadataBuffer && this.metadataBuffer.trim()) {
+        try {
+          parsedMetadata = JSON.parse(this.metadataBuffer.trim());
+          this.addDebugMessage('META', JSON.stringify(parsedMetadata, null, 2));
+        } catch (e) {
+          log(Subsystems.MANAGER, Status.WARN, `[Crimson] Failed to parse metadata JSON: ${e.message}`);
+        }
+      }
+
+      if (this.currentStreamElement) {
+        const contentEl = this.currentStreamElement.querySelector('.crimson-message-content');
+        if (contentEl) {
+          // Set the final conversation content
+          contentEl.setAttribute('data-raw-content', this.conversationBuffer);
+          contentEl.innerHTML = this.formatMessageContent(this.conversationBuffer);
+
+          // Add follow-up questions from metadata if present
+          if (parsedMetadata && parsedMetadata.followUpQuestions && parsedMetadata.followUpQuestions.length > 0) {
+            this.addFollowUpQuestions(this.currentStreamElement, parsedMetadata.followUpQuestions);
+          }
+
+          // Store metadata for later use
+          if (parsedMetadata && parsedMetadata.metadata) {
+            this.lastMetadata = parsedMetadata.metadata;
+          }
+
+          // Handle suggestions (tours, navigation, etc.)
+          if (parsedMetadata && parsedMetadata.suggestions) {
+            this.handleSuggestions(parsedMetadata.suggestions);
+          }
+        }
+
+        // Remove streaming indicator class
+        this.currentStreamElement.classList.remove('crimson-streaming');
+      }
+
+      // Add to conversation history (conversation text only)
+      this.conversationHistory.push({ role: 'assistant', content: this.conversationBuffer });
+
+      // Store message
+      this.messages.push({ sender: 'agent', text: this.conversationBuffer, timestamp: Date.now() });
+    } catch (error) {
+      log(Subsystems.MANAGER, Status.ERROR, `[Crimson] Error in handleStreamDone: ${error.message}`);
+      this.addDebugMessage('ERROR', error.message);
+    } finally {
+      // Always reset streaming state (send button is never disabled now)
+      this.currentStreamElement = null;
+      this.isStreaming = false;
+      this.seenDelimiter = false;
+      this.conversationBuffer = '';
+      this.metadataBuffer = '';
+      this.partialDelimiter = '';
+      this.input.focus();
+
+      // Update status back to ready
+      this.updateStatus('ready', 'Ready');
 
       // Scroll to bottom
       this.conversation.scrollTop = this.conversation.scrollHeight;
@@ -701,37 +1038,81 @@ class CrimsonManager {
   }
 
   /**
-   * Handle stream completion
-   * @param {string} content - Final complete content
-   * @param {Object} _result - Full result object (unused)
+   * Parse Crimson's JSON response
+   * @param {string} content - Raw response content
+   * @returns {Object} Parsed response with displayMessage, followUpQuestions, suggestions, metadata
    */
-  handleStreamDone(content, _result) {
-    if (this.currentStreamElement) {
-      const contentEl = this.currentStreamElement.querySelector('.crimson-message-content');
-      if (contentEl) {
-        // Set final content
-        contentEl.setAttribute('data-raw-content', content);
-        contentEl.innerHTML = this.formatMessageContent(content);
+  parseCrimsonResponse(content) {
+    const result = {
+      displayMessage: content,
+      followUpQuestions: [],
+      suggestions: null,
+      metadata: null,
+    };
+
+    // Try to parse as JSON
+    try {
+      const json = JSON.parse(content);
+
+      // Extract conversation message
+      if (json.conversation && json.conversation.message) {
+        result.displayMessage = json.conversation.message;
+        result.followUpQuestions = json.conversation.followUpQuestions || [];
       }
 
-      // Remove streaming indicator class
-      this.currentStreamElement.classList.remove('crimson-streaming');
+      // Extract suggestions
+      if (json.suggestions) {
+        result.suggestions = json.suggestions;
+      }
 
-      // Add to conversation history
-      this.conversationHistory.push({ role: 'assistant', content });
-
-      // Store message
-      this.messages.push({ sender: 'agent', text: content, timestamp: Date.now() });
+      // Extract metadata
+      if (json.metadata) {
+        result.metadata = json.metadata;
+      }
+    } catch (e) {
+      // Not JSON, use raw content as message
+      log(Subsystems.MANAGER, Status.DEBUG, '[Crimson] Response is plain text, not JSON');
     }
 
-    // Reset streaming state
-    this.currentStreamElement = null;
-    this.isStreaming = false;
-    this.sendBtn.disabled = false;
-    this.input.focus();
+    return result;
+  }
 
-    // Scroll to bottom
-    this.conversation.scrollTop = this.conversation.scrollHeight;
+  /**
+   * Add follow-up question buttons to a message element
+   * @param {HTMLElement} messageEl - The message element
+   * @param {string[]} questions - Array of follow-up questions
+   */
+  addFollowUpQuestions(messageEl, questions) {
+    const container = document.createElement('div');
+    container.className = 'crimson-followups';
+
+    questions.forEach(question => {
+      const btn = document.createElement('button');
+      btn.className = 'crimson-followup-btn';
+      btn.textContent = question;
+      btn.addEventListener('click', () => {
+        this.input.value = question;
+        this.handleSend();
+      });
+      container.appendChild(btn);
+    });
+
+    messageEl.appendChild(container);
+  }
+
+  /**
+   * Handle suggestions from the AI response
+   * @param {Object} suggestions - Suggestions object
+   */
+  handleSuggestions(suggestions) {
+    // Store suggestions for later use
+    this.lastSuggestions = suggestions;
+
+    // Handle tour offers
+    if (suggestions.offerTours && suggestions.offerTours.length > 0) {
+      log(Subsystems.MANAGER, Status.DEBUG, `[Crimson] Tours available: ${JSON.stringify(suggestions.offerTours)}`);
+      // Tours can be triggered by clicking follow-up questions
+    }
   }
 
   /**
@@ -740,6 +1121,15 @@ class CrimsonManager {
    */
   handleStreamError(error) {
     const errorMessage = error instanceof Error ? error.message : error;
+
+    // Check if this was a cancelled request - don't show error
+    if (errorMessage.includes('abort') || errorMessage.includes('cancel') || errorMessage.includes('Connection closed')) {
+      this.addDebugMessage('CANCELLED', 'Request was cancelled or connection closed');
+      return;
+    }
+
+    this.addDebugMessage('ERROR', errorMessage);
+    this.updateStatus('error', `Error: ${errorMessage.substring(0, 50)}...`);
 
     // Remove streaming indicator
     if (this.currentStreamElement) {
@@ -750,10 +1140,18 @@ class CrimsonManager {
     // Add error message
     this.addMessage('agent', `Sorry, I encountered an error: ${errorMessage}`);
 
-    // Reset streaming state
+    // Reset streaming state and buffers
     this.isStreaming = false;
-    this.sendBtn.disabled = false;
+    this.seenDelimiter = false;
+    this.conversationBuffer = '';
+    this.metadataBuffer = '';
+    this.partialDelimiter = '';
     this.input.focus();
+
+    // Reset status to ready after a delay
+    setTimeout(() => {
+      this.updateStatus('ready', 'Ready');
+    }, 3000);
   }
 
   /**
@@ -766,6 +1164,12 @@ class CrimsonManager {
     if (welcome) {
       welcome.remove();
     }
+
+    // Reset delimiter state and buffers for new message
+    this.seenDelimiter = false;
+    this.conversationBuffer = '';
+    this.metadataBuffer = '';
+    this.partialDelimiter = '';
 
     const messageEl = document.createElement('div');
     messageEl.className = 'crimson-message crimson-message-agent crimson-streaming';

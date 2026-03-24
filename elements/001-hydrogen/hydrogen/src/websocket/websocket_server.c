@@ -382,6 +382,7 @@ int run_service_loop(void)
 
         // Add cancellation point during normal operation
         pthread_testcancel();
+
         usleep(1000);  // 1ms sleep
     }
 

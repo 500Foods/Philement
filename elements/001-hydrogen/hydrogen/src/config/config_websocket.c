@@ -27,6 +27,12 @@ bool load_websocket_config(json_t* root, AppConfig* config) {
     ws->connection_timeouts.service_loop_delay_ms = 50;
     ws->connection_timeouts.connection_cleanup_ms = 500;
     ws->connection_timeouts.exit_wait_seconds = 3;
+
+    // Initialize heartbeat configuration with defaults
+    ws->heartbeat.enabled = true;
+    ws->heartbeat.ping_interval_seconds = 30;
+    ws->heartbeat.pong_timeout_seconds = 60;
+    ws->heartbeat.stale_connection_seconds = 90;
     
     // Initialize string fields with defaults
     ws->protocol = strdup("hydrogen");
@@ -69,6 +75,12 @@ bool load_websocket_config(json_t* root, AppConfig* config) {
     (void)PROCESS_INT(root, &ws->connection_timeouts, connection_cleanup_ms, "WebSocketServer.ConnectionTimeouts.ConnectionCleanupMs", "WebSocket");
     (void)PROCESS_INT(root, &ws->connection_timeouts, exit_wait_seconds, "WebSocketServer.ConnectionTimeouts.ExitWaitSeconds", "WebSocket");
 
+    // Process heartbeat configuration with fallbacks (never fail)
+    (void)PROCESS_BOOL(root, &ws->heartbeat, enabled, "WebSocketServer.Heartbeat.Enabled", "WebSocket");
+    (void)PROCESS_INT(root, &ws->heartbeat, ping_interval_seconds, "WebSocketServer.Heartbeat.PingIntervalSeconds", "WebSocket");
+    (void)PROCESS_INT(root, &ws->heartbeat, pong_timeout_seconds, "WebSocketServer.Heartbeat.PongTimeoutSeconds", "WebSocket");
+    (void)PROCESS_INT(root, &ws->heartbeat, stale_connection_seconds, "WebSocketServer.Heartbeat.StaleConnectionSeconds", "WebSocket");
+
     log_this(SR_CONFIG, "WebSocket configuration loaded successfully (with fallbacks)", LOG_LEVEL_STATE, 0);
     return true; // Always succeed - use defaults for any missing values
 }
@@ -100,17 +112,39 @@ void dump_websocket_config(const WebSocketConfig* config) {
             
     // Message size with units
     if (config->max_message_size >= 1024 * 1024) {
-        snprintf(value_str, sizeof(value_str), "Max Message Size: %zu MB", 
+        snprintf(value_str, sizeof(value_str), "Max Message Size: %zu MB",
                 config->max_message_size / (1024 * 1024));
     } else if (config->max_message_size >= 1024) {
-        snprintf(value_str, sizeof(value_str), "Max Message Size: %zu KB", 
+        snprintf(value_str, sizeof(value_str), "Max Message Size: %zu KB",
                 config->max_message_size / 1024);
     } else {
-        snprintf(value_str, sizeof(value_str), "Max Message Size: %zu bytes", 
+        snprintf(value_str, sizeof(value_str), "Max Message Size: %zu bytes",
                 config->max_message_size);
     }
     DUMP_TEXT("――", value_str);
-    
+
+    // Auth key (first 8 chars only for debugging)
+    if (config->key) {
+        char masked_key[64];
+        size_t key_len = strlen(config->key);
+        if (key_len > 8) {
+            snprintf(masked_key, sizeof(masked_key), "%.8s... (%zu chars)", config->key, key_len);
+        } else {
+            snprintf(masked_key, sizeof(masked_key), "%s (%zu chars)", config->key, key_len);
+        }
+        DUMP_TEXT("―― Auth Key:", masked_key);
+    } else {
+        DUMP_TEXT("―― Auth Key:", "(not set)");
+    }
+
+    // Heartbeat configuration
+    DUMP_BOOL2("――", "Heartbeat Enabled", config->heartbeat.enabled);
+    snprintf(value_str, sizeof(value_str), "Ping Interval: %d seconds", config->heartbeat.ping_interval_seconds);
+    DUMP_TEXT("――", value_str);
+    snprintf(value_str, sizeof(value_str), "Pong Timeout: %d seconds", config->heartbeat.pong_timeout_seconds);
+    DUMP_TEXT("――", value_str);
+    snprintf(value_str, sizeof(value_str), "Stale Connection: %d seconds", config->heartbeat.stale_connection_seconds);
+    DUMP_TEXT("――", value_str);
 }
 
 // Clean up WebSocket configuration
