@@ -93,8 +93,8 @@ void configure_lws_context_info(struct lws_context_creation_info* info,
 
 // Configure libwebsockets vhost creation info
 void configure_lws_vhost_info(struct lws_context_creation_info* vhost_info,
-                             int port, struct lws_protocols* protocols,
-                             WebSocketServerContext* context) {
+                              int port, struct lws_protocols* protocols,
+                              WebSocketServerContext* context) {
     memset(vhost_info, 0, sizeof(*vhost_info));
 
     vhost_info->port = port;
@@ -109,6 +109,10 @@ void configure_lws_vhost_info(struct lws_context_creation_info* vhost_info,
     // Bind to all interfaces
     vhost_info->iface = NULL;
 
+    // Set WebSocket timeout - connections stay alive indefinitely
+    // This prevents lws from closing idle connections after a default timeout
+    vhost_info->timeout_secs = 3600;  // 1 hour timeout for idle connections
+
     // Enable TCP keepalive for persistent connections
     // ka_time: seconds of idleness before first probe
     // ka_interval: seconds between probes
@@ -117,8 +121,9 @@ void configure_lws_vhost_info(struct lws_context_creation_info* vhost_info,
     vhost_info->ka_interval = 10;  // Send probe every 10 seconds
     vhost_info->ka_probes = 3;     // Close after 3 failed probes (30 + 3*10 = 60 seconds total)
 
-    log_this(SR_WEBSOCKET, "TCP keepalive enabled: time=%ds, interval=%ds, probes=%d",
-             LOG_LEVEL_STATE, 3, vhost_info->ka_time, vhost_info->ka_interval, vhost_info->ka_probes);
+    log_this(SR_WEBSOCKET, "WebSocket timeout: %ds, TCP keepalive: time=%ds, interval=%ds, probes=%d",
+             LOG_LEVEL_STATE, 4, vhost_info->timeout_secs, 
+             vhost_info->ka_time, vhost_info->ka_interval, vhost_info->ka_probes);
 }
 
 // Verify WebSocket port binding by testing socket creation and binding

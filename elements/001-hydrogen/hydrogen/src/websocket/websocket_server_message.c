@@ -150,6 +150,8 @@ int ws_handle_receive(struct lws *wsi, const WebSocketSessionData *session, cons
 
     int result = parse_and_handle_message(wsi, session);
     
+    log_this(SR_WEBSOCKET, "[WS] parse_and_handle_message returned %d", LOG_LEVEL_DEBUG, 1, result);
+    
     // Reset message length after processing is complete
     pthread_mutex_lock(&ws_context->mutex);
     ws_context->message_length = 0;
@@ -164,23 +166,44 @@ int ws_handle_receive(struct lws *wsi, const WebSocketSessionData *session, cons
 int handle_message_type(struct lws *wsi, const char *type)
 {
     if (strcmp(type, "status") == 0) {
-        log_this(SR_WEBSOCKET, "Handling status request", LOG_LEVEL_STATE, 0);
+        log_this(SR_WEBSOCKET, "Handling status request", LOG_LEVEL_DEBUG, 0);
         handle_status_request(wsi);
         return 0;
     }
 
-    // Route terminal messages to terminal handlers
-    // Terminal protocol uses 'input', 'resize', 'ping' message types
-    if (strcmp(type, "input") == 0 || strcmp(type, "resize") == 0 || strcmp(type, "ping") == 0) {
-        return handle_terminal_message(wsi);
+    // Lightweight keepalive - returns minimal response for connection health checks
+    if (strcmp(type, "keepalive") == 0 || strcmp(type, "k") == 0) {
+        log_this(SR_WEBSOCKET, "Handling keepalive request", LOG_LEVEL_DEBUG, 0);
+        json_t *response = json_object();
+        json_object_set_new(response, "type", json_string("keepalive_ok"));
+        json_object_set_new(response, "ts", json_integer((json_int_t)time(NULL)));
+        int result = ws_write_json_response(wsi, response);
+        json_decref(response);
+        return result;
     }
 
-    log_this(SR_WEBSOCKET, "Unknown message type: %s", LOG_LEVEL_STATE, 1, type);
+    // Route terminal messages to terminal handlers
+    // Terminal protocol uses 'input', 'resize', 'ping' message types
+    // But ONLY if the connection is actually using the terminal protocol
+    if (strcmp(type, "input") == 0 || strcmp(type, "resize") == 0 || strcmp(type, "ping") == 0) {
+        // Check protocol before routing to terminal handler
+        const struct lws_protocols *protocol = lws_get_protocol(wsi);
+        if (protocol && strcmp(protocol->name, "terminal") == 0) {
+            return handle_terminal_message(wsi);
+        } else {
+            // Non-terminal connection sent a terminal message type - just ignore it
+            log_this(SR_WEBSOCKET, "Ignoring terminal message type '%s' on non-terminal protocol", LOG_LEVEL_DEBUG, 1, type);
+            return 0;
+        }
+    }
+
+    log_this(SR_WEBSOCKET, "Unknown message type: %s", LOG_LEVEL_ERROR, 1, type);
     return -1;
 }
 
 
 // Helper function to write a JSON response
+// Returns 0 on success, -1 on error (for lws callback compatibility)
 int ws_write_json_response(struct lws *wsi, json_t *json)
 {
     char *response_str = json_dumps(json, JSON_COMPACT);
@@ -194,8 +217,9 @@ int ws_write_json_response(struct lws *wsi, json_t *json)
 
     free(response_str);
 
-    // Return the length of data written for backward compatibility with tests
-    return result == 0 ? (int)response_len : result;
+    // Return 0 on success for lws callback compatibility
+    // Returning non-zero causes lws to close the connection
+    return result;
 }
 
 // Helper function to write raw data to WebSocket
@@ -203,13 +227,15 @@ int ws_write_raw_data(struct lws *wsi, const char *data, size_t len)
 {
     unsigned char *buf = malloc(LWS_PRE + len);
     if (!buf) {
-        log_this(SR_WEBSOCKET, "Failed to allocate WebSocket buffer", LOG_LEVEL_ERROR, 0);
+        log_this(SR_WEBSOCKET, "[WS] Failed to allocate WebSocket buffer", LOG_LEVEL_ERROR, 0);
         return -1;
     }
 
     memcpy(buf + LWS_PRE, data, len);
     int result = lws_write(wsi, buf + LWS_PRE, len, LWS_WRITE_TEXT);
-
+    
+    log_this(SR_WEBSOCKET, "[WS] lws_write returned %d for %zu bytes", LOG_LEVEL_TRACE, 2, result, len);
+    
     free(buf);
     return result >= 0 ? 0 : -1;
 }
