@@ -290,6 +290,11 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
         return -1;
     }
     
+    // Log message count for debugging
+    size_t message_count = json_array_size(messages);
+    log_this(SR_WEBSOCKET_CHAT, "Request parsed: %zu messages, stream=%s",
+             LOG_LEVEL_DEBUG, 2, message_count, stream ? "true" : "false");
+    
     // JWT authentication - check if already authenticated for chat
     if (!session->chat_database) {
         // Need JWT from payload
@@ -425,12 +430,14 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
         clock_gettime(CLOCK_MONOTONIC, &stream_ctx.start_time);
 
         // Log that prompt is being sent to model server
-        log_this(SR_WEBSOCKET_CHAT, "Prompt sent to %s/%s/%s (streaming)",
+        size_t request_size = strlen(request_json_str);
+        log_this(SR_WEBSOCKET_CHAT, "Prompt sent to %s/%s/%s (streaming, %zu bytes)",
                  LOG_LEVEL_STATE, 3,
                  engine->name[0] ? engine->name : "unknown",
                  engine->model[0] ? engine->model : "unknown",
                  engine->provider == CEC_PROVIDER_ANTHROPIC ? "Anthropic" :
-                 engine->provider == CEC_PROVIDER_OLLAMA ? "Ollama" : "OpenAI");
+                 engine->provider == CEC_PROVIDER_OLLAMA ? "Ollama" : "OpenAI",
+                 request_size);
 
         // Use streaming-specific config with longer timeout (10 minutes)
         ChatProxyConfig proxy_config = chat_proxy_get_streaming_config();
@@ -456,6 +463,11 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
                              response_time_ms);
             
             // Request writable callback to dequeue and write all queued chunks + done
+            // NOTE: Queue is NOT cleaned up here or in handle_chat_writable.
+            // It is cleaned up in chat_session_cleanup() when the connection closes,
+            // or in the next handle_chat_message() stream setup (line 400).
+            // This avoids race conditions where the queue is cleaned before the
+            // writable callback fires, or during the writable callback.
             if (stream_ctx.wsi) {
                 lws_callback_on_writable(stream_ctx.wsi);
             }
@@ -486,19 +498,20 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
         free(stream_ctx.request_id);
         free(stream_ctx.model);
         
-        // Clean up queue after streaming is complete - all chunks have been written
-        cleanup_chat_queue(&session->chat_write_queue_name);
+        // Queue cleanup happens in chat_session_cleanup() when connection closes
     } else {
         // Non-streaming mode
         ChatProxyConfig proxy_config = chat_proxy_get_default_config();
         
         // Log that prompt is being sent to model server
-        log_this(SR_WEBSOCKET_CHAT, "Prompt sent to %s/%s/%s (non-streaming)",
+        size_t request_size = strlen(request_json_str);
+        log_this(SR_WEBSOCKET_CHAT, "Prompt sent to %s/%s/%s (non-streaming, %zu bytes)",
                  LOG_LEVEL_STATE, 3,
                  engine->name[0] ? engine->name : "unknown",
                  engine->model[0] ? engine->model : "unknown",
                  engine->provider == CEC_PROVIDER_ANTHROPIC ? "Anthropic" :
-                 engine->provider == CEC_PROVIDER_OLLAMA ? "Ollama" : "OpenAI");
+                 engine->provider == CEC_PROVIDER_OLLAMA ? "Ollama" : "OpenAI",
+                 request_size);
         
         ChatProxyResult *proxy_result = chat_proxy_send_with_retry(engine, request_json_str, &proxy_config);
         
@@ -516,17 +529,26 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
             return -1;
         }
         
-        // Log that response was received
-        log_this(SR_WEBSOCKET_CHAT, "Response received from %s/%s/%s (%.0fms)",
+        // Log that response was received with size
+        size_t response_size = proxy_result->response_body ? strlen(proxy_result->response_body) : 0;
+        log_this(SR_WEBSOCKET_CHAT, "Response received from %s/%s/%s (%.0fms, %zu bytes)",
                  LOG_LEVEL_DEBUG, 4,
                  engine->name[0] ? engine->name : "unknown",
                  engine->model[0] ? engine->model : "unknown",
                  engine->provider == CEC_PROVIDER_ANTHROPIC ? "Anthropic" :
                  engine->provider == CEC_PROVIDER_OLLAMA ? "Ollama" : "OpenAI",
-                 proxy_result->total_time_ms);
+                 proxy_result->total_time_ms,
+                 response_size);
         
         // Parse response
         ChatParsedResponse *parsed = chat_response_parse(proxy_result->response_body, engine->provider);
+        if (parsed) {
+            log_this(SR_WEBSOCKET_CHAT, "Parsed response: content_length=%zu, model=%s, finish_reason=%s",
+                     LOG_LEVEL_DEBUG, 3,
+                     parsed->content ? strlen(parsed->content) : 0,
+                     parsed->model ? parsed->model : "null",
+                     parsed->finish_reason ? parsed->finish_reason : "null");
+        }
         if (!parsed || !parsed->success) {
             const char *error_msg = parsed && parsed->error_message ? 
                                     parsed->error_message : "Failed to parse response";
@@ -548,16 +570,24 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
         double response_time_ms = (double)(end_time.tv_sec - start_time.tv_sec) * 1000.0 +
                                   (double)(end_time.tv_nsec - start_time.tv_nsec) / 1000000.0;
         
+        // Log content details before sending
+        size_t content_length = parsed->content ? strlen(parsed->content) : 0;
+        log_this(SR_WEBSOCKET_CHAT, "Sending response: content=%zu bytes, messages=%zu, finish=%s",
+                 LOG_LEVEL_DEBUG, 3,
+                 content_length, message_count,
+                 parsed->finish_reason ? parsed->finish_reason : "null");
+        
         // Send chat_done
         send_chat_done(wsi, request_id, parsed->content, parsed->model, parsed->finish_reason,
                        parsed->prompt_tokens, parsed->completion_tokens, parsed->total_tokens,
                        response_time_ms);
         
         // Log that final response was sent to client
-        log_this(SR_WEBSOCKET_CHAT, "Final response sent to client for request %s (%.0fms total)", 
+        log_this(SR_WEBSOCKET_CHAT, "Final response sent to client for request %s (%.0fms total, %zu bytes content)", 
                  LOG_LEVEL_STATE, 2,
                  request_id ? request_id : "unknown",
-                 response_time_ms);
+                 response_time_ms,
+                 content_length);
         
         // Store conversation (if needed)
         // TODO: integrate with chat_storage
@@ -612,6 +642,7 @@ void handle_chat_writable(struct lws *wsi, const WebSocketSessionData *session) 
     }
     
     // Dequeue and write all pending chunks
+    // Queue cleanup happens in chat_session_cleanup() when connection closes
     dequeue_and_write_chat_chunks(wsi, session->chat_write_queue_name);
 }
 

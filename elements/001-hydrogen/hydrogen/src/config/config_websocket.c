@@ -20,7 +20,7 @@ bool load_websocket_config(json_t* root, AppConfig* config) {
     ws->enable_ipv6 = false;
     ws->lib_log_level = 2;
     ws->port = 5001;
-    ws->max_message_size = 2048;
+    ws->max_message_size = 65536;  // 64KB to accommodate chat messages with conversation history
     
     // Initialize connection timeouts with defaults
     ws->connection_timeouts.shutdown_wait_seconds = 2;
