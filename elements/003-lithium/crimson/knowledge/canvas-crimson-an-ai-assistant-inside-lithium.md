@@ -1,0 +1,7 @@
+When using Lithium, the bottom-right corner has a collection of icons, all focused on help.  The first of these, a flame, pops up the Crimson chat interface.
+
+This AI Assistant has been specifically designed to help Lithium users with whatever tasks they might be working on. It has been equipped with all of the course material, documentation, and even some of the source code and database schema information to help it provide informed and accurate guidance to any questions it receives. While it cannot make changes itself, it can guide you to the parts of the app where changes can be made, or offer links or other reference material to help you find the information that you\'re looking for.
+
+As a modern AI model, interacting with it is simple and straight forward. Just ask it questions in a normal conversational style. Give it details if you like. The more you can explain what you\'re after, the better chance it has at providing a meaningful and helpful response.
+
+If you find the interaction to be less than helpful, please use the Concierge button at the top of the chat window. This will create a new Concierge Request with the chat history attached for the team to review. You can add in a description of the issue you encountered and what you would have liked or expected to have happened instead. The team will then follow up with a response that may include adjustments to Crimson, to the documentation, or even to the app itself if warranted, to make the next similar encounter more beneficial.

@@ -74,6 +74,10 @@ typedef struct WebSocketSessionData {
     bool chat_write_pending;           // Whether a LWS_CALLBACK_SERVER_WRITEABLE is already pending
     char *terminal_write_queue_name;   // Name of thread-safe queue for outgoing terminal data (NULL if none)
     bool terminal_write_pending;       // Whether a terminal write is pending
+    // Heartbeat tracking fields
+    time_t last_ping_sent;             // When we last sent a ping to this client
+    time_t last_pong_received;         // When we last received a pong from this client
+    bool ping_pending;                 // Whether we're waiting for a pong response
 } WebSocketSessionData;
 
 // Initialize the server context
@@ -112,5 +116,11 @@ int process_terminal_message(TerminalWSConnection *ws_conn_adapter);
 // Main callback dispatcher
 int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
                         void *user, const void *in, size_t len);
+
+// Heartbeat functions
+void ws_send_ping(struct lws *wsi, WebSocketSessionData *session);
+void ws_handle_pong_received(WebSocketSessionData *session);
+bool ws_check_connection_health(const struct lws *wsi, const WebSocketSessionData *session, int pong_timeout_seconds);
+void ws_request_heartbeat_ping(struct lws *wsi, const WebSocketSessionData *session);
 
 #endif // WEBSOCKET_SERVER_INTERNAL_H

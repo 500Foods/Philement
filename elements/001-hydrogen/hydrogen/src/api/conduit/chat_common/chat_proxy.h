@@ -115,7 +115,8 @@ const char* chat_proxy_result_code_to_string(ChatProxyResultCode code);
 bool chat_proxy_result_is_success(const ChatProxyResult* result);
 bool chat_proxy_result_should_retry(const ChatProxyResult* result);
 
-// Default configuration
+// Default configurations
 ChatProxyConfig chat_proxy_get_default_config(void);
+ChatProxyConfig chat_proxy_get_streaming_config(void);
 
 #endif // CHAT_PROXY_H

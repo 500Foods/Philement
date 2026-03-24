@@ -36,6 +36,7 @@ import {
   registerShortcut,
   unregisterManagerShortcuts,
 } from '../../core/manager-ui.js';
+import { getAppWS, ConnectionState } from '../../shared/app-ws.js';
 import '../../core/manager-ui.css';
 import './main.css';
 
@@ -538,6 +539,9 @@ export default class MainManager {
 
       // Load last-used manager (from localStorage), or default to user profile
       await this._loadInitialManager();
+
+      // Initialize the app-wide WebSocket connection
+      await this.initWebSocket();
     } catch (error) {
       console.error('[MainManager] Initialization error:', error);
     }
@@ -693,6 +697,7 @@ export default class MainManager {
       logoutOverlay: this.container.querySelector('#logout-overlay'),
       logoutCloseBtn: this.container.querySelector('#logout-close-btn'),
       logoutOptions: this.container.querySelectorAll('.logout-option'),
+      wsStatus: this.container.querySelector('#ws-status'),
     };
 
     // Move logout overlay and panel to document.body for proper fixed positioning.
@@ -723,6 +728,94 @@ export default class MainManager {
         </div>
       </div>
     `;
+  }
+
+  /**
+   * Update the WebSocket status indicator
+   * @param {string} state - Connection state from ConnectionState
+   */
+  updateWSStatus(state) {
+    const wsStatus = this.elements.wsStatus;
+    if (!wsStatus) return;
+
+    // Remove all state classes
+    wsStatus.classList.remove('disconnected', 'connected', 'connecting', 'sending', 'flash');
+
+    // Update icon based on state
+    const icon = wsStatus.querySelector('.ws-status-icon');
+    if (!icon) return;
+
+    switch (state) {
+      case ConnectionState.CONNECTED:
+        wsStatus.classList.add('connected');
+        icon.innerHTML = '<fa fa-circle></fa>';
+        wsStatus.dataset.tooltip = 'WebSocket: Connected';
+        processIcons(wsStatus);
+        break;
+      case ConnectionState.CONNECTING:
+        wsStatus.classList.add('connecting');
+        icon.innerHTML = '<fa fa-circle></fa>';
+        wsStatus.dataset.tooltip = 'WebSocket: Connecting...';
+        processIcons(wsStatus);
+        break;
+      case ConnectionState.ERROR:
+        wsStatus.classList.add('disconnected');
+        icon.innerHTML = '<fa fa-octagon></fa>';
+        wsStatus.dataset.tooltip = 'WebSocket: Error';
+        processIcons(wsStatus);
+        break;
+      case ConnectionState.DISCONNECTED:
+      default:
+        wsStatus.classList.add('disconnected');
+        icon.innerHTML = '<fa fa-octagon></fa>';
+        wsStatus.dataset.tooltip = 'WebSocket: Disconnected';
+        processIcons(wsStatus);
+        break;
+    }
+  }
+
+  /**
+   * Flash the WebSocket status indicator blue (send activity)
+   */
+  flashWSStatus() {
+    const wsStatus = this.elements.wsStatus;
+    if (!wsStatus) return;
+
+    // Only flash if connected
+    if (wsStatus.classList.contains('connected')) {
+      wsStatus.classList.add('flash');
+      setTimeout(() => {
+        wsStatus.classList.remove('flash');
+      }, 100);
+    }
+  }
+
+  /**
+   * Initialize the app-wide WebSocket connection
+   * Called after successful login
+   */
+  async initWebSocket() {
+    const ws = getAppWS({
+      onStateChange: (newState, oldState) => {
+        this.updateWSStatus(newState);
+      },
+      onSendActivity: () => {
+        this.flashWSStatus();
+      },
+    });
+
+    // Set initial status
+    this.updateWSStatus(ws.getState());
+
+    // Connect to the WebSocket server
+    try {
+      await ws.connect();
+    } catch (error) {
+      log(Subsystems.MANAGER, Status.WARN, `[MainManager] WebSocket connection failed: ${error.message}`);
+      // Not fatal - connection will be retried when needed
+    }
+
+    return ws;
   }
 
   /**

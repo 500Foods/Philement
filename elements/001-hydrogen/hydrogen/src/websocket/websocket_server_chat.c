@@ -138,6 +138,10 @@ typedef struct {
     char *model;
     int chunk_index;
     char *queue_name;  // Name of queue for thread-safe communication
+    bool stream_completed;  // Whether stream completed successfully
+    char *finish_reason;    // Final finish reason
+    bool first_chunk_logged;  // Whether we've logged the first chunk (initial response)
+    struct timespec start_time;  // When streaming started
 } StreamContext;
 
 // Streaming chunk callback (called by chat_proxy_send_stream)
@@ -146,10 +150,38 @@ static void stream_chunk_callback(const ChatStreamChunk* chunk, void* user_data)
     if (!chunk || !ctx) return;
     
     if (chunk->is_done) {
-        // Enqueue final done chunk
-        enqueue_chat_chunk(ctx->queue_name, ctx->request_id, "", ctx->model, ctx->chunk_index, "stop");
+        // Mark stream as completed and store finish reason
+        ctx->stream_completed = true;
+        if (chunk->finish_reason) {
+            ctx->finish_reason = strdup(chunk->finish_reason);
+        } else {
+            ctx->finish_reason = strdup("stop");
+        }
+        // Enqueue final done chunk with finish_reason
+        enqueue_chat_chunk(ctx->queue_name, ctx->request_id, "", ctx->model, ctx->chunk_index, ctx->finish_reason);
+        
+        // Calculate time since stream start
+        struct timespec end_time;
+        clock_gettime(CLOCK_MONOTONIC, &end_time);
+        double elapsed_ms = (double)(end_time.tv_sec - ctx->start_time.tv_sec) * 1000.0 +
+                           (double)(end_time.tv_nsec - ctx->start_time.tv_nsec) / 1000000.0;
+        
+        log_this(SR_WEBSOCKET_CHAT, "Stream completed for request %s with finish_reason: %s (%.0fms)",
+                 LOG_LEVEL_STATE, 2, ctx->request_id ? ctx->request_id : "unknown", 
+                 ctx->finish_reason, elapsed_ms);
     } else {
-        // Enqueue content chunk
+        // Log first chunk as "initial response received"
+        if (!ctx->first_chunk_logged) {
+            ctx->first_chunk_logged = true;
+            struct timespec first_chunk_time;
+            clock_gettime(CLOCK_MONOTONIC, &first_chunk_time);
+            double ttfb_ms = (double)(first_chunk_time.tv_sec - ctx->start_time.tv_sec) * 1000.0 +
+                            (double)(first_chunk_time.tv_nsec - ctx->start_time.tv_nsec) / 1000000.0;
+            log_this(SR_WEBSOCKET_CHAT, "Initial response received from %s (%.0fms TTFB)",
+                     LOG_LEVEL_STATE, 1, ctx->model ? ctx->model : "unknown", ttfb_ms);
+        }
+        
+        // Enqueue content chunk - client already receives these, no need to accumulate
         const char* content = chunk->content ? chunk->content : "";
         const char* model = chunk->model ? chunk->model : ctx->model;
         if (chunk->model) {
@@ -329,37 +361,96 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
         }
         session->chat_write_queue_name = queue_name;
         
+        // Initialize stream context
         StreamContext stream_ctx = {0};
         stream_ctx.wsi = wsi;
         stream_ctx.request_id = request_id ? strdup(request_id) : NULL;
         stream_ctx.model = engine_name ? strdup(engine_name) : NULL;
         stream_ctx.chunk_index = 0;
         stream_ctx.queue_name = queue_name;
-        
-        ChatProxyConfig proxy_config = chat_proxy_get_default_config();
+        stream_ctx.stream_completed = false;
+        stream_ctx.finish_reason = NULL;
+        stream_ctx.first_chunk_logged = false;
+        clock_gettime(CLOCK_MONOTONIC, &stream_ctx.start_time);
+
+        // Log that prompt is being sent to model server
+        log_this(SR_WEBSOCKET_CHAT, "Prompt sent to %s/%s/%s (streaming)",
+                 LOG_LEVEL_STATE, 3,
+                 engine->name[0] ? engine->name : "unknown",
+                 engine->model[0] ? engine->model : "unknown",
+                 engine->provider == CEC_PROVIDER_ANTHROPIC ? "Anthropic" :
+                 engine->provider == CEC_PROVIDER_OLLAMA ? "Ollama" : "OpenAI");
+
+        // Use streaming-specific config with longer timeout (10 minutes)
+        ChatProxyConfig proxy_config = chat_proxy_get_streaming_config();
+
         bool proxy_result = chat_proxy_send_stream(engine, request_json_str, &proxy_config,
                                                    stream_chunk_callback, &stream_ctx);
-        
-        if (!proxy_result) {
+
+        // Calculate total response time
+        struct timespec stream_end_time;
+        clock_gettime(CLOCK_MONOTONIC, &stream_end_time);
+        double response_time_ms = (double)(stream_end_time.tv_sec - stream_ctx.start_time.tv_sec) * 1000.0 +
+                                  (double)(stream_end_time.tv_nsec - stream_ctx.start_time.tv_nsec) / 1000000.0;
+
+        if (proxy_result) {
+            
+            // Ensure final chunk is written before sending chat_done
+            if (stream_ctx.wsi) {
+                lws_callback_on_writable(stream_ctx.wsi);
+            }
+            
+            // Send final chat_done message to signal stream completion to client
+            // Content was already streamed via chat_chunk messages, so just signal completion
+            send_chat_done(wsi, request_id, 
+                          "",  // Empty - client already has content from chunks
+                          stream_ctx.model, 
+                          stream_ctx.finish_reason ? stream_ctx.finish_reason : "stop",
+                          0, 0, 0,  // Token counts not available in streaming mode
+                          response_time_ms);
+            
+            // Log that final response was sent to client
+            log_this(SR_WEBSOCKET_CHAT, "Final response sent to client for request %s (%.0fms total)", 
+                     LOG_LEVEL_STATE, 2,
+                     request_id ? request_id : "unknown",
+                     response_time_ms);
+        } else {
+            // Streaming proxy failed - send error to client
             send_chat_error(wsi, "Streaming proxy failed", request_id);
+            log_this(SR_WEBSOCKET_CHAT, "Streaming proxy failed for request %s", 
+                     LOG_LEVEL_ERROR, 1, request_id ? request_id : "unknown");
+            
             // Clean up queue on failure
             cleanup_chat_queue(&session->chat_write_queue_name);
         }
         
-        // Note: We don't clean up the queue here because it may still have pending chunks
-        // The queue will be cleaned up when the connection closes or when a new stream starts
-        
+        // Clean up stream context
+        free(stream_ctx.finish_reason);
         free(stream_ctx.request_id);
         free(stream_ctx.model);
+        
+        // Note: We don't clean up the queue here because it may still have pending chunks
+        // The queue will be cleaned up when the connection closes or when a new stream starts
     } else {
         // Non-streaming mode
         ChatProxyConfig proxy_config = chat_proxy_get_default_config();
+        
+        // Log that prompt is being sent to model server
+        log_this(SR_WEBSOCKET_CHAT, "Prompt sent to %s/%s/%s (non-streaming)",
+                 LOG_LEVEL_STATE, 3,
+                 engine->name[0] ? engine->name : "unknown",
+                 engine->model[0] ? engine->model : "unknown",
+                 engine->provider == CEC_PROVIDER_ANTHROPIC ? "Anthropic" :
+                 engine->provider == CEC_PROVIDER_OLLAMA ? "Ollama" : "OpenAI");
+        
         ChatProxyResult *proxy_result = chat_proxy_send_with_retry(engine, request_json_str, &proxy_config);
         
         if (!proxy_result || proxy_result->code != CHAT_PROXY_OK) {
             const char *error_msg = proxy_result && proxy_result->error_message ? 
                                     proxy_result->error_message : "Request failed";
             send_chat_error(wsi, error_msg, request_id);
+            log_this(SR_WEBSOCKET_CHAT, "Non-streaming request failed for request %s: %s", 
+                     LOG_LEVEL_ERROR, 2, request_id ? request_id : "unknown", error_msg);
             chat_proxy_result_destroy(proxy_result);
             free(request_json_str);
             free(engine_name);
@@ -368,12 +459,23 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
             return -1;
         }
         
+        // Log that response was received
+        log_this(SR_WEBSOCKET_CHAT, "Response received from %s/%s/%s (%.0fms)",
+                 LOG_LEVEL_STATE, 4,
+                 engine->name[0] ? engine->name : "unknown",
+                 engine->model[0] ? engine->model : "unknown",
+                 engine->provider == CEC_PROVIDER_ANTHROPIC ? "Anthropic" :
+                 engine->provider == CEC_PROVIDER_OLLAMA ? "Ollama" : "OpenAI",
+                 proxy_result->total_time_ms);
+        
         // Parse response
         ChatParsedResponse *parsed = chat_response_parse(proxy_result->response_body, engine->provider);
         if (!parsed || !parsed->success) {
             const char *error_msg = parsed && parsed->error_message ? 
                                     parsed->error_message : "Failed to parse response";
             send_chat_error(wsi, error_msg, request_id);
+            log_this(SR_WEBSOCKET_CHAT, "Failed to parse response for request %s: %s", 
+                     LOG_LEVEL_ERROR, 2, request_id ? request_id : "unknown", error_msg);
             chat_parsed_response_destroy(parsed);
             chat_proxy_result_destroy(proxy_result);
             free(request_json_str);
@@ -393,6 +495,12 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
         send_chat_done(wsi, request_id, parsed->content, parsed->model, parsed->finish_reason,
                        parsed->prompt_tokens, parsed->completion_tokens, parsed->total_tokens,
                        response_time_ms);
+        
+        // Log that final response was sent to client
+        log_this(SR_WEBSOCKET_CHAT, "Final response sent to client for request %s (%.0fms total)", 
+                 LOG_LEVEL_STATE, 2,
+                 request_id ? request_id : "unknown",
+                 response_time_ms);
         
         // Store conversation (if needed)
         // TODO: integrate with chat_storage

@@ -19,6 +19,12 @@
 #define DEFAULT_MAX_RETRIES 2
 #define DEFAULT_VERIFY_SSL true
 
+// Streaming configuration - longer timeout for AI responses
+#define STREAMING_CONNECT_TIMEOUT_SECONDS 10
+#define STREAMING_REQUEST_TIMEOUT_SECONDS 600  // 10 minutes for streaming AI responses
+#define STREAMING_MAX_RETRIES 0  // No retries for streaming (would restart the stream)
+#define STREAMING_VERIFY_SSL true
+
 // Initial response buffer size (64KB)
 #define INITIAL_RESPONSE_BUFFER_SIZE (64 * 1024)
 
@@ -108,6 +114,16 @@ ChatProxyConfig chat_proxy_get_default_config(void) {
     config.request_timeout_seconds = DEFAULT_REQUEST_TIMEOUT_SECONDS;
     config.max_retries = DEFAULT_MAX_RETRIES;
     config.verify_ssl = DEFAULT_VERIFY_SSL;
+    return config;
+}
+
+// Get streaming-specific configuration with longer timeout
+ChatProxyConfig chat_proxy_get_streaming_config(void) {
+    ChatProxyConfig config;
+    config.connect_timeout_seconds = STREAMING_CONNECT_TIMEOUT_SECONDS;
+    config.request_timeout_seconds = STREAMING_REQUEST_TIMEOUT_SECONDS;
+    config.max_retries = STREAMING_MAX_RETRIES;
+    config.verify_ssl = STREAMING_VERIFY_SSL;
     return config;
 }
 

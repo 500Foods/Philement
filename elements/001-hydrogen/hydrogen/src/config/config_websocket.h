@@ -22,6 +22,15 @@ struct WebSocketConnectionTimeouts {
 };
 typedef struct WebSocketConnectionTimeouts WebSocketConnectionTimeouts;
 
+// WebSocket heartbeat configuration structure
+struct WebSocketHeartbeatConfig {
+    bool enabled;                   // Whether heartbeat is enabled
+    int ping_interval_seconds;      // How often to send pings (default: 30)
+    int pong_timeout_seconds;       // How long to wait for pong before closing (default: 60)
+    int stale_connection_seconds;   // Consider connection stale after this time without pong (default: 90)
+};
+typedef struct WebSocketHeartbeatConfig WebSocketHeartbeatConfig;
+
 // WebSocket configuration structure
 struct WebSocketConfig {
     bool enable_ipv4;               // Whether WebSocket server is enabled
@@ -32,6 +41,7 @@ struct WebSocketConfig {
     char* protocol;                 // WebSocket protocol identifier
     size_t max_message_size;        // Maximum allowed message size
     WebSocketConnectionTimeouts connection_timeouts; // Connection timeout settings
+    WebSocketHeartbeatConfig heartbeat;            // Heartbeat/keepalive settings
 };
 typedef struct WebSocketConfig WebSocketConfig;
 
