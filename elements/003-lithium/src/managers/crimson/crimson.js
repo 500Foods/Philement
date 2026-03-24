@@ -24,6 +24,13 @@ let crimsonInstance = null;
 // Global keyboard shortcut handler
 let globalKeyHandler = null;
 
+// LocalStorage keys for persistent state
+const STORAGE_KEYS = {
+  DEBUG_MODE: 'crimson_debug_mode',
+  STREAMING_ENABLED: 'crimson_streaming_enabled',
+  REASONING_MODE: 'crimson_reasoning_mode',
+};
+
 /**
  * Get the singleton Crimson instance (creates if needed)
  * @returns {CrimsonManager} The Crimson manager instance
@@ -162,9 +169,17 @@ class CrimsonManager {
     this.metadataBuffer = '';
     this.partialDelimiter = '';
 
-    // Debug state
+    // Debug state (always collect, just hide/show)
     this.debugMode = false;
     this.debugChunks = [];
+
+    // Streaming toggle state
+    this.streamingEnabled = true;
+
+    // Reasoning state
+    this.reasoningMode = false;
+    this.reasoningChunks = [];
+    this.currentReasoningBuffer = '';
 
     // Connection status
     this.connectionState = 'disconnected';
@@ -187,9 +202,52 @@ class CrimsonManager {
     this.handleSend = this.handleSend.bind(this);
     this.handleInputKeydown = this.handleInputKeydown.bind(this);
     this.handleOverlayClick = this.handleOverlayClick.bind(this);
+    this.handleDebugResizeStart = this.handleDebugResizeStart.bind(this);
+    this.handleDebugResizeMove = this.handleDebugResizeMove.bind(this);
+    this.handleDebugResizeEnd = this.handleDebugResizeEnd.bind(this);
+    this.handleReasoningResizeStart = this.handleReasoningResizeStart.bind(this);
+    this.handleReasoningResizeMove = this.handleReasoningResizeMove.bind(this);
+    this.handleReasoningResizeEnd = this.handleReasoningResizeEnd.bind(this);
 
     // Initialize
     this.init();
+  }
+
+  /**
+   * Load persistent state from localStorage
+   */
+  loadPersistentState() {
+    try {
+      const debugMode = localStorage.getItem(STORAGE_KEYS.DEBUG_MODE);
+      if (debugMode !== null) {
+        this.debugMode = debugMode === 'true';
+      }
+      
+      const streamingEnabled = localStorage.getItem(STORAGE_KEYS.STREAMING_ENABLED);
+      if (streamingEnabled !== null) {
+        this.streamingEnabled = streamingEnabled === 'true';
+      }
+      
+      const reasoningMode = localStorage.getItem(STORAGE_KEYS.REASONING_MODE);
+      if (reasoningMode !== null) {
+        this.reasoningMode = reasoningMode === 'true';
+      }
+    } catch (e) {
+      // localStorage may not be available
+    }
+  }
+
+  /**
+   * Save persistent state to localStorage
+   */
+  savePersistentState() {
+    try {
+      localStorage.setItem(STORAGE_KEYS.DEBUG_MODE, String(this.debugMode));
+      localStorage.setItem(STORAGE_KEYS.STREAMING_ENABLED, String(this.streamingEnabled));
+      localStorage.setItem(STORAGE_KEYS.REASONING_MODE, String(this.reasoningMode));
+    } catch (e) {
+      // localStorage may not be available
+    }
   }
 
   /**
@@ -197,6 +255,9 @@ class CrimsonManager {
    */
   init() {
     if (this.popup) return; // Already initialized
+
+    // Load persistent state
+    this.loadPersistentState();
 
     // Create overlay
     this.overlay = document.createElement('div');
@@ -216,6 +277,12 @@ class CrimsonManager {
             <fa fa-fire></fa>
             <span>Chat with Crimson</span>
           </button>
+          <button type="button" class="crimson-streaming-btn" title="Toggle streaming">
+            <fa fa-water></fa>
+          </button>
+          <button type="button" class="crimson-reasoning-btn" title="Toggle reasoning display">
+            <fa fa-person></fa>
+          </button>
           <button type="button" class="crimson-debug-btn" title="Toggle debug view">
             <fa fa-bug></fa>
           </button>
@@ -226,6 +293,11 @@ class CrimsonManager {
             <fa fa-xmark></fa>
           </button>
         </div>
+      </div>
+      <div class="crimson-reasoning-panel">
+        <div class="crimson-reasoning-header">Reasoning</div>
+        <div class="crimson-reasoning-content"></div>
+        <div class="crimson-reasoning-splitter" title="Drag to resize"></div>
       </div>
       <div class="crimson-status-bar">
         <span class="crimson-status-indicator"></span>
@@ -240,7 +312,8 @@ class CrimsonManager {
           <div class="crimson-welcome-hint">How can I help you today?</div>
         </div>
       </div>
-      <div class="crimson-debug-panel" style="display: none;">
+      <div class="crimson-debug-panel">
+        <div class="crimson-debug-splitter" title="Drag to resize"></div>
         <div class="crimson-debug-header">Debug Output</div>
         <pre class="crimson-debug-content"></pre>
       </div>
@@ -265,6 +338,10 @@ class CrimsonManager {
     this.statusText = this.popup.querySelector('.crimson-status-text');
     this.debugPanel = this.popup.querySelector('.crimson-debug-panel');
     this.debugContent = this.popup.querySelector('.crimson-debug-content');
+    this.reasoningPanel = this.popup.querySelector('.crimson-reasoning-panel');
+    this.reasoningContent = this.popup.querySelector('.crimson-reasoning-content');
+    this.streamingBtn = this.popup.querySelector('.crimson-streaming-btn');
+    this.reasoningBtn = this.popup.querySelector('.crimson-reasoning-btn');
     const header = this.popup.querySelector('.crimson-header');
     const closeBtn = this.popup.querySelector('.crimson-header-close');
     const resetBtn = this.popup.querySelector('.crimson-reset-btn');
@@ -273,12 +350,16 @@ class CrimsonManager {
     const resizeHandleBL = this.popup.querySelector('.crimson-resize-handle-bl');
     const resizeHandleTR = this.popup.querySelector('.crimson-resize-handle-tr');
     const resizeHandleTL = this.popup.querySelector('.crimson-resize-handle-tl');
+    const debugSplitter = this.popup.querySelector('.crimson-debug-splitter');
+    const reasoningSplitter = this.popup.querySelector('.crimson-reasoning-splitter');
 
     // Set up event listeners
     header.addEventListener('mousedown', this.handleDragStart);
     closeBtn.addEventListener('click', () => this.hide());
     resetBtn?.addEventListener('click', () => this.resetConversation());
     debugBtn?.addEventListener('click', () => this.toggleDebugPanel());
+    this.streamingBtn?.addEventListener('click', () => this.toggleStreaming());
+    this.reasoningBtn?.addEventListener('click', () => this.toggleReasoningPanel());
     this.sendBtn.addEventListener('click', this.handleSend);
     this.input.addEventListener('keydown', this.handleInputKeydown);
     this.input.addEventListener('input', () => this.autoResizeInput());
@@ -289,6 +370,13 @@ class CrimsonManager {
     resizeHandleTR?.addEventListener('mousedown', (e) => this.handleResizeStart(e, 'tr'));
     resizeHandleTL?.addEventListener('mousedown', (e) => this.handleResizeStart(e, 'tl'));
 
+    // Debug and reasoning panel splitters
+    debugSplitter?.addEventListener('mousedown', (e) => this.handleDebugResizeStart(e));
+    reasoningSplitter?.addEventListener('mousedown', (e) => this.handleReasoningResizeStart(e));
+
+    // Apply persistent state to UI
+    this.applyPersistentState();
+
     // Process icons
     processIcons(this.popup);
 
@@ -296,6 +384,27 @@ class CrimsonManager {
     this.centerPopup();
 
     log(Subsystems.MANAGER, Status.INFO, '[Crimson] Initialized');
+  }
+
+  /**
+   * Apply persistent state to UI elements
+   */
+  applyPersistentState() {
+    // Apply debug state
+    this.popup.classList.toggle('crimson-debug-visible', this.debugMode);
+    if (this.debugMode) {
+      this.debugBtn?.classList.add('active');
+    }
+    this.updateDebugPanel();
+
+    // Apply streaming state
+    this.updateStreamingButton();
+
+    // Apply reasoning state
+    this.popup.classList.toggle('crimson-reasoning-visible', this.reasoningMode);
+    if (this.reasoningMode) {
+      this.reasoningBtn?.classList.add('active');
+    }
   }
 
   /**
@@ -469,33 +578,87 @@ class CrimsonManager {
   }
 
   /**
-   * Toggle the debug panel visibility
+   * Toggle the debug panel visibility with animation
    */
   toggleDebugPanel() {
     if (!this.debugPanel) return;
 
     this.debugMode = !this.debugMode;
-    this.debugPanel.style.display = this.debugMode ? 'block' : 'none';
     this.popup.classList.toggle('crimson-debug-visible', this.debugMode);
+    this.debugBtn?.classList.toggle('active', this.debugMode);
+    this.savePersistentState();
+    this.updateDebugPanel();
+  }
+
+  /**
+   * Toggle streaming mode
+   */
+  toggleStreaming() {
+    this.streamingEnabled = !this.streamingEnabled;
+    this.updateStreamingButton();
+    this.addDebugMessage('CONFIG', `Streaming ${this.streamingEnabled ? 'enabled' : 'disabled'}`);
+    this.savePersistentState();
+  }
+
+  /**
+   * Update streaming button icon
+   */
+  updateStreamingButton() {
+    if (!this.streamingBtn) return;
+    const icon = this.streamingBtn.querySelector('fa');
+    if (icon) {
+      icon.setAttribute('fa', this.streamingEnabled ? 'water' : 'lines-leaning');
+      processIcons(this.streamingBtn);
+    }
+    this.streamingBtn?.classList.toggle('active', !this.streamingEnabled);
+    this.streamingBtn?.setAttribute('title', `Streaming: ${this.streamingEnabled ? 'ON' : 'OFF'}`);
+  }
+
+  /**
+   * Toggle reasoning panel visibility with slide animation
+   */
+  toggleReasoningPanel() {
+    if (!this.reasoningPanel) return;
+
+    this.reasoningMode = !this.reasoningMode;
+    this.popup.classList.toggle('crimson-reasoning-visible', this.reasoningMode);
+    this.reasoningBtn?.classList.toggle('active', this.reasoningMode);
+    this.updateReasoningButton();
+    this.savePersistentState();
+  }
+
+  /**
+   * Update reasoning button icon
+   */
+  updateReasoningButton() {
+    if (!this.reasoningBtn) return;
+    const icon = this.reasoningBtn.querySelector('fa');
+    if (icon) {
+      icon.setAttribute('fa', this.reasoningMode ? 'person-running' : 'person');
+      processIcons(this.reasoningBtn);
+    }
+    this.reasoningBtn?.setAttribute('title', `Reasoning: ${this.reasoningMode ? 'SHOWING' : 'HIDDEN'}`);
   }
 
   /**
    * Add debug message to the debug panel
+   * Always collects data, only displays when debugMode is true
    * @param {string} type - Message type
    * @param {string} content - Message content
    */
   addDebugMessage(type, content) {
-    if (!this.debugMode) return;
-
     const timestamp = new Date().toLocaleTimeString();
     this.debugChunks.push(`[${timestamp}] ${type}: ${content}`);
     
-    // Keep only last 100 messages
-    if (this.debugChunks.length > 100) {
+    // Keep only last 200 messages
+    if (this.debugChunks.length > 200) {
       this.debugChunks.shift();
     }
 
-    this.updateDebugPanel();
+    // Only update display if debug mode is active
+    if (this.debugMode) {
+      this.updateDebugPanel();
+    }
   }
 
   /**
@@ -505,6 +668,38 @@ class CrimsonManager {
     if (!this.debugContent) return;
     this.debugContent.textContent = this.debugChunks.join('\n');
     this.debugContent.scrollTop = this.debugContent.scrollHeight;
+  }
+
+  /**
+   * Add reasoning content to the reasoning panel
+   * @param {string} content - Reasoning content
+   */
+  addReasoningContent(content) {
+    if (!content) return;
+    
+    this.currentReasoningBuffer += content;
+    
+    // Always collect reasoning data
+    this.reasoningChunks.push(content);
+    
+    // Only update display if reasoning mode is active
+    if (this.reasoningMode && this.reasoningContent) {
+      this.reasoningContent.textContent = this.currentReasoningBuffer;
+      this.reasoningContent.scrollTop = this.reasoningContent.scrollHeight;
+    }
+    
+    this.addDebugMessage('REASONING', `Chunk: ${content.substring(0, 50)}...`);
+  }
+
+  /**
+   * Clear reasoning buffer for new response
+   */
+  clearReasoningBuffer() {
+    this.currentReasoningBuffer = '';
+    this.reasoningChunks = [];
+    if (this.reasoningContent) {
+      this.reasoningContent.textContent = '';
+    }
   }
 
   /**
@@ -694,6 +889,86 @@ class CrimsonManager {
   }
 
   /**
+   * Handle debug panel resize start
+   */
+  handleDebugResizeStart(e) {
+    this.isResizingDebug = true;
+    this.debugResizeStartY = e.clientY;
+    this.debugStartHeight = this.debugPanel?.offsetHeight || 150;
+    
+    // Disable transition during resize for instant response
+    this.debugPanel?.classList.add('no-transition');
+
+    document.addEventListener('mousemove', this.handleDebugResizeMove);
+    document.addEventListener('mouseup', this.handleDebugResizeEnd);
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  /**
+   * Handle debug panel resize move
+   */
+  handleDebugResizeMove(e) {
+    if (!this.isResizingDebug || !this.debugPanel) return;
+
+    const deltaY = e.clientY - this.debugResizeStartY;
+    const newHeight = Math.max(50, Math.min(400, this.debugStartHeight - deltaY));
+    this.debugPanel.style.flex = `0 0 ${newHeight}px`;
+  }
+
+  /**
+   * Handle debug panel resize end
+   */
+  handleDebugResizeEnd() {
+    this.isResizingDebug = false;
+    // Re-enable transition after resize
+    this.debugPanel?.classList.remove('no-transition');
+    document.removeEventListener('mousemove', this.handleDebugResizeMove);
+    document.removeEventListener('mouseup', this.handleDebugResizeEnd);
+  }
+
+  /**
+   * Handle reasoning panel resize start
+   */
+  handleReasoningResizeStart(e) {
+    this.isResizingReasoning = true;
+    this.reasoningResizeStartY = e.clientY;
+    this.reasoningStartHeight = this.reasoningPanel?.offsetHeight || 150;
+    
+    // Disable transition during resize for instant response
+    this.reasoningPanel?.classList.add('no-transition');
+
+    document.addEventListener('mousemove', this.handleReasoningResizeMove);
+    document.addEventListener('mouseup', this.handleReasoningResizeEnd);
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  /**
+   * Handle reasoning panel resize move
+   * Splitter is at the bottom, so dragging down increases height
+   */
+  handleReasoningResizeMove(e) {
+    if (!this.isResizingReasoning || !this.reasoningPanel) return;
+
+    const deltaY = e.clientY - this.reasoningResizeStartY;
+    // Splitter at bottom: dragging down (+deltaY) should increase height
+    const newHeight = Math.max(50, Math.min(400, this.reasoningStartHeight + deltaY));
+    this.reasoningPanel.style.flex = `0 0 ${newHeight}px`;
+  }
+
+  /**
+   * Handle reasoning panel resize end
+   */
+  handleReasoningResizeEnd() {
+    this.isResizingReasoning = false;
+    // Re-enable transition after resize
+    this.reasoningPanel?.classList.remove('no-transition');
+    document.removeEventListener('mousemove', this.handleReasoningResizeMove);
+    document.removeEventListener('mouseup', this.handleReasoningResizeEnd);
+  }
+
+  /**
    * Handle send button click
    */
   handleSend() {
@@ -804,18 +1079,23 @@ class CrimsonManager {
    * Note: Connection lifecycle is managed by app-ws.js, not by Crimson
    */
   initWebSocketClient() {
+    log(Subsystems.WEBSOCKET, Status.DEBUG, `[Crimson] Initializing WebSocket client`);
     // Create or update the Crimson WS client (only handles messages, not connection)
     this.wsClient = getCrimsonWS({
       onChunk: (content, index, finishReason) => {
+        this.addDebugMessage('WS_CALLBACK', `onChunk called: len=${content?.length || 0}, index=${index}, finish=${finishReason || 'none'}`);
         this.handleStreamChunk(content, index, finishReason);
       },
       onDone: (content, result) => {
+        this.addDebugMessage('WS_CALLBACK', `onDone called: content len=${content?.length || 0}`);
         this.handleStreamDone(content, result);
       },
       onError: (error) => {
+        this.addDebugMessage('WS_CALLBACK', `onError called: ${error}`);
         this.handleStreamError(error);
       },
     });
+    log(Subsystems.WEBSOCKET, Status.DEBUG, `[Crimson] WebSocket client initialized, handlers registered`);
   }
 
   /**
@@ -826,6 +1106,12 @@ class CrimsonManager {
   async sendChatMessage(message) {
     // Initialize WebSocket client if needed (only sets up callbacks, doesn't connect)
     this.initWebSocketClient();
+
+    // Debug: Check WebSocket state and handlers
+    import('../../shared/app-ws.js').then(({ getAppWS, isAppWSConnected }) => {
+      const ws = getAppWS();
+      this.addDebugMessage('WS_STATE', `Connected: ${isAppWSConnected()}, handlers: ${ws.debugHandlers().join(', ')}`);
+    });
 
     // If already streaming, cancel the previous request
     if (this.isStreaming && this.wsClient) {
@@ -858,11 +1144,18 @@ class CrimsonManager {
     // Add streaming indicator
     this.currentStreamElement = this.addStreamingMessage();
 
+    // Clear reasoning buffer for new response
+    this.clearReasoningBuffer();
+
     try {
       // Send message - connection must already be established by app-ws.js
+      // Use streamingEnabled state to determine if we should stream
+      const history = this.conversationHistory.slice(-10); // Last 10 messages for context
+      this.addDebugMessage('SEND', `Sending with ${history.length} history messages, stream=${this.streamingEnabled}`);
+      
       await this.wsClient.send(message, {
-        history: this.conversationHistory.slice(-10), // Last 10 messages for context
-        stream: true,
+        history,
+        stream: this.streamingEnabled,
       });
     } catch (error) {
       // Check if this was a cancelled request
@@ -904,6 +1197,9 @@ class CrimsonManager {
     // Update total chunk counter
     this.totalChunksReceived++;
     
+    // Add debug message for every chunk
+    this.addDebugMessage('CHUNK', `#${this.totalChunksReceived} len=${content?.length || 0} finish=${finishReason || 'none'}`);
+    
     // Log only every 10th chunk or when finish reason is set
     if (this.totalChunksReceived % 10 === 0 || finishReason) {
       log(Subsystems.WEBSOCKET, Status.DEBUG, `[Crimson] Chunk #${this.totalChunksReceived}, finish: ${finishReason || 'none'}, content length: ${content?.length || 0}`);
@@ -926,6 +1222,7 @@ class CrimsonManager {
         this.conversationBuffer += fullContent.substring(0, delimiterIndex);
         this.metadataBuffer = fullContent.substring(delimiterIndex + this.DELIMITER.length);
         this.seenDelimiter = true;
+        this.addDebugMessage('DELIMITER', 'Found LITHIUM-CRIMSON-JSON delimiter');
       } else {
         // Check for partial delimiter at end
         let partialLen = 0;
@@ -958,6 +1255,7 @@ class CrimsonManager {
     // Handle stream completion
     if (finishReason) {
       log(Subsystems.WEBSOCKET, Status.DEBUG, `[Crimson] Stream complete (${finishReason})`);
+      this.addDebugMessage('COMPLETE', `Stream finished with reason: ${finishReason}`);
       this.handleStreamFinished();
     }
   }
@@ -1019,11 +1317,34 @@ class CrimsonManager {
     try {
       this.addDebugMessage('DONE', 'Stream complete');
 
+      // For non-streaming responses, content includes the delimiter and metadata
+      // We need to parse it to separate conversation text from metadata
+      let conversationText = content || '';
+      let metadataFromContent = null;
+      
+      if (!this.isStreaming && content) {
+        // Non-streaming: parse delimiter from content
+        const delimiterIndex = content.indexOf(this.DELIMITER);
+        if (delimiterIndex !== -1) {
+          conversationText = content.substring(0, delimiterIndex).replace(/\s+$/, '');
+          const metadataStr = content.substring(delimiterIndex + this.DELIMITER.length);
+          try {
+            metadataFromContent = JSON.parse(metadataStr);
+            this.addDebugMessage('META', 'Parsed from non-streaming content');
+          } catch (e) {
+            log(Subsystems.MANAGER, Status.WARN, `[Crimson] Failed to parse metadata from content: ${e.message}`);
+          }
+        } else {
+          // No delimiter, use all content as conversation
+          conversationText = content.replace(/\s+$/, '');
+        }
+      }
+
       // Parse metadata JSON if we have it (from chunks) or from result
-      let parsedMetadata = null;
+      let parsedMetadata = metadataFromContent;
       
       // First try to parse from metadata buffer (chunk-based metadata)
-      if (this.metadataBuffer && this.metadataBuffer.trim()) {
+      if (!parsedMetadata && this.metadataBuffer && this.metadataBuffer.trim()) {
         try {
           parsedMetadata = JSON.parse(this.metadataBuffer.trim());
           this.addDebugMessage('META', 'From chunks: ' + JSON.stringify(parsedMetadata).substring(0, 100));
@@ -1046,10 +1367,9 @@ class CrimsonManager {
       if (this.currentStreamElement) {
         const contentEl = this.currentStreamElement.querySelector('.crimson-message-content');
         if (contentEl) {
-          // Set the final conversation content
-          const finalContent = (content || this.conversationBuffer || '').replace(/\s+$/, '');
-          contentEl.setAttribute('data-raw-content', finalContent);
-          contentEl.innerHTML = this.formatMessageContent(finalContent);
+          // Set the final conversation content (already parsed to remove delimiter)
+          contentEl.setAttribute('data-raw-content', conversationText);
+          contentEl.innerHTML = this.formatMessageContent(conversationText);
 
           // Add follow-up questions from metadata if present
           if (parsedMetadata && parsedMetadata.followUpQuestions && parsedMetadata.followUpQuestions.length > 0) {
@@ -1072,12 +1392,11 @@ class CrimsonManager {
       }
 
       // Add to conversation history (conversation text only)
-      const historyContent = (content || this.conversationBuffer || '').replace(/\s+$/, '');
-      if (historyContent) {
-        this.conversationHistory.push({ role: 'assistant', content: historyContent });
+      if (conversationText) {
+        this.conversationHistory.push({ role: 'assistant', content: conversationText });
 
         // Store message
-        this.messages.push({ sender: 'agent', text: historyContent, timestamp: Date.now() });
+        this.messages.push({ sender: 'agent', text: conversationText, timestamp: Date.now() });
       }
     } catch (error) {
       log(Subsystems.MANAGER, Status.ERROR, `[Crimson] Error in handleStreamDone: ${error.message}`);

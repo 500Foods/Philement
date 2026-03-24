@@ -61,11 +61,22 @@ export class AppWebSocket {
   }
 
   registerHandler(type, handler) {
+    log(Subsystems.WEBSOCKET, Status.DEBUG, `[WS] Registering handler for type: "${type}"`);
     this.messageHandlers.set(type, handler);
   }
 
   unregisterHandler(type) {
+    log(Subsystems.WEBSOCKET, Status.DEBUG, `[WS] Unregistering handler for type: "${type}"`);
     this.messageHandlers.delete(type);
+  }
+
+  /**
+   * Debug: List all registered handlers
+   */
+  debugHandlers() {
+    const types = Array.from(this.messageHandlers.keys());
+    log(Subsystems.WEBSOCKET, Status.DEBUG, `[WS] Registered handlers: ${types.join(', ') || 'NONE'}`);
+    return types;
   }
 
   connect() {
@@ -80,7 +91,7 @@ export class AppWebSocket {
         this.ws.onclose = null;
         this.ws.onerror = null;
         this.ws.onmessage = null;
-        try { this.ws.close(1000, 'Reconnecting'); } catch (e) {}
+        try { this.ws.close(1000, 'Reconnecting'); } catch { /* ignore close errors */ }
         this.ws = null;
       }
 
@@ -125,7 +136,7 @@ export class AppWebSocket {
         }
       };
 
-      this.ws.onerror = (error) => {
+      this.ws.onerror = (_error) => {
         log(Subsystems.WEBSOCKET, Status.DEBUG, `[WS] Error event fired, readyState=${this.ws?.readyState}`);
         if (!resolved) {
           resolved = true;
@@ -163,12 +174,19 @@ export class AppWebSocket {
         return;
       }
 
+      // Log all non-keepalive messages for debugging
+      log(Subsystems.WEBSOCKET, Status.DEBUG, `[WS] Received message type: "${type}", handlers registered: ${this.messageHandlers.size}, has handler: ${this.messageHandlers.has(type)}`);
+
       // Dispatch to registered handler
       const handler = this.messageHandlers.get(type);
       if (handler) {
+        log(Subsystems.WEBSOCKET, Status.DEBUG, `[WS] Dispatching ${type} to registered handler`);
         handler(message);
       } else if (this.onMessage) {
+        log(Subsystems.WEBSOCKET, Status.DEBUG, `[WS] No handler for ${type}, using fallback onMessage`);
         this.onMessage(message);
+      } else {
+        log(Subsystems.WEBSOCKET, Status.DEBUG, `[WS] No handler and no fallback for ${type}`);
       }
     } catch (error) {
       log(Subsystems.WEBSOCKET, Status.DEBUG, `[WS] Failed to parse message: ${error.message}`);

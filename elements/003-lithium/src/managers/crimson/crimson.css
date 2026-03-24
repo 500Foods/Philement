@@ -149,7 +149,9 @@
   background: var(--accent-hover);
 }
 
-.crimson-debug-btn {
+.crimson-debug-btn,
+.crimson-streaming-btn,
+.crimson-reasoning-btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -162,12 +164,19 @@
   transition: background-color var(--transition-fast) ease;
 }
 
-.crimson-debug-btn:hover {
+.crimson-debug-btn:hover,
+.crimson-streaming-btn:hover,
+.crimson-reasoning-btn:hover {
   background: var(--accent-hover);
 }
 
-.crimson-debug-btn.active {
+.crimson-debug-btn.active,
+.crimson-reasoning-btn.active {
   background: var(--text-muted);
+}
+
+.crimson-streaming-btn.active {
+  background: #6b7280; /* Gray for disabled streaming */
 }
 
 /* ========================================
@@ -243,21 +252,149 @@
 }
 
 /* ========================================
-   Debug Panel
+   Reasoning Panel (slides down from top)
+   ======================================== */
+
+.crimson-reasoning-panel {
+  flex: 0 0 0px;
+  max-height: 0;
+  overflow: hidden;
+  background: #1e1e2e;
+  display: flex;
+  flex-direction: column;
+  transition: flex var(--transition-duration) ease, max-height var(--transition-duration) ease;
+}
+
+.crimson-reasoning-panel.no-transition {
+  transition: none !important;
+}
+
+.crimson-popup.crimson-reasoning-visible .crimson-reasoning-panel {
+  flex: 0 0 150px;
+  max-height: 400px;
+}
+
+.crimson-reasoning-header {
+  padding: var(--space-1) var(--space-2);
+  background: #2d2d44;
+  color: #c4b5fd;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  border-bottom: 1px solid #3d3d5c;
+}
+
+.crimson-reasoning-splitter {
+  flex-shrink: 0;
+  height: 6px;
+  background: var(--bg-tertiary);
+  cursor: ns-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.crimson-reasoning-splitter::after {
+  content: '';
+  width: 40px;
+  height: 2px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--text-muted) 0px,
+    var(--text-muted) 2px,
+    transparent 2px,
+    transparent 6px
+  );
+}
+
+.crimson-reasoning-splitter:hover::after {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--text-primary) 0px,
+    var(--text-primary) 2px,
+    transparent 2px,
+    transparent 6px
+  );
+}
+
+.crimson-reasoning-content {
+  flex: 1;
+  margin: 0;
+  padding: var(--space-2);
+  background: #1e1e2e;
+  color: #c4b5fd;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: var(--font-size-xs);
+  line-height: 1.4;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* ========================================
+   Debug Panel (slides up from bottom)
    ======================================== */
 
 .crimson-debug-panel {
-  flex: 0 0 150px;
-  border-top: var(--border-standard);
-  border-bottom: var(--border-standard);
-  background: #1a1a2e;
+  flex: 0 0 0px;
+  max-height: 0;
   overflow: hidden;
+  background: #1a1a2e;
   display: flex;
   flex-direction: column;
+  transition: flex var(--transition-duration) ease, max-height var(--transition-duration) ease;
+}
+
+.crimson-debug-panel.no-transition {
+  transition: none !important;
+}
+
+.crimson-popup.crimson-debug-visible .crimson-debug-panel {
+  flex: 0 0 150px;
+  max-height: 400px;
 }
 
 .crimson-popup.crimson-debug-visible .crimson-conversation {
   flex: 1;
+}
+
+.crimson-popup.crimson-reasoning-visible .crimson-conversation {
+  flex: 1;
+}
+
+.crimson-popup.crimson-debug-visible.crimson-reasoning-visible .crimson-conversation {
+  flex: 1;
+}
+
+.crimson-debug-splitter {
+  flex-shrink: 0;
+  height: 6px;
+  background: var(--bg-tertiary);
+  cursor: ns-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.crimson-debug-splitter::after {
+  content: '';
+  width: 40px;
+  height: 2px;
+  background: repeating-linear-gradient(
+    90deg,
+    #00ff88 0px,
+    #00ff88 2px,
+    transparent 2px,
+    transparent 6px
+  );
+}
+
+.crimson-debug-splitter:hover::after {
+  opacity: 1;
 }
 
 .crimson-debug-header {

@@ -605,6 +605,100 @@ While content streams, a blinking cursor appears:
 | Send button stays disabled | Error in stream processing | Wrap handleStreamDone in try-finally |
 | Connection not reestablished | Stale callbacks on singleton | Always update callbacks in initWebSocketClient |
 | Key mismatch | Config key differs from server | Use consistent key: `ABCDEFGHIJKLMNOP` |
+| Handlers lost after reset | cleanup() unregisters handlers | Re-register handlers in getCrimsonWS() |
+| Non-streaming delimiter not parsed | Delimiter only parsed in streaming mode | Parse delimiter in handleStreamDone for non-streaming |
+
+---
+
+## UI Controls
+
+### Debug Panel
+
+The debug panel shows WebSocket message flow and can be toggled with animation.
+
+```javascript
+// Debug state is persisted in localStorage
+localStorage.setItem('crimson_debug_mode', 'true/false');
+```
+
+| Control | Icon | Behavior |
+|---------|------|----------|
+| Debug toggle | `fa-bug` | Slides up/down with animation |
+| Streaming toggle | `fa-water` / `fa-lines-leaning` | Enables/disables streaming mode |
+| Reasoning toggle | `fa-person` / `fa-person-running` | Shows/hides reasoning panel |
+
+### Resizable Panels
+
+Both debug and reasoning panels are resizable via horizontal splitter bars:
+
+```
+┌──────────────────────────────────────┐
+│ Reasoning Panel                      │
+│ [reasoning content here]             │
+├──────────────────────────────────────┤ ← Splitter (drag to resize)
+│ Conversation Area                    │
+│                                      │
+├──────────────────────────────────────┤ ← Splitter (drag to resize)
+│ Debug Panel                          │
+│ [debug output here]                  │
+└──────────────────────────────────────┘
+```
+
+- **Debug panel splitter**: At top of panel
+- **Reasoning panel splitter**: At bottom of panel
+- **Animation disabled during resize**: Instant response to mouse movement
+- **State persisted**: Panel visibility remembered across sessions
+
+### Persistent State
+
+The following states are persisted in localStorage:
+
+| Key | Purpose | Default |
+|-----|---------|---------|
+| `crimson_debug_mode` | Debug panel visibility | `false` |
+| `crimson_streaming_enabled` | Streaming mode enabled | `true` |
+| `crimson_reasoning_mode` | Reasoning panel visibility | `false` |
+
+---
+
+## WebSocket Handler Management
+
+### Handler Lifecycle
+
+Handlers are registered when `getCrimsonWS()` is called and must survive cleanup operations:
+
+```javascript
+export function getCrimsonWS(options = {}) {
+  if (!instance) {
+    instance = new CrimsonWebSocket(options);
+  } else {
+    // Always re-register handlers - they may have been unregistered by cleanup()
+    instance._registerHandlers();
+    // Update callbacks...
+  }
+  return instance;
+}
+```
+
+### Message Flow Debugging
+
+The debug panel shows all WebSocket message types:
+
+```
+[15:52:42.260] CHAT_DONE: id=crimson_123, content_length=147
+[15:52:42.263] DONE: Stream complete
+[15:52:58.670] CHAT_DONE: id=crimson_456, content_length=0
+```
+
+Debug message types:
+- `SEND`: Message being sent
+- `CHUNK`: Streaming chunk received
+- `DONE`: Stream completion
+- `ERROR`: Error messages
+- `META`: Metadata parsing
+- `DELIMITER`: Delimiter detection
+- `WS_CALLBACK`: WebSocket callback invocation
+- `WS_STATE`: Connection state
 
 ---
 
@@ -651,4 +745,4 @@ Event listeners are attached directly to elements during initialization. No even
 
 ---
 
-Last updated: March 23, 2026
+Last updated: March 24, 2026
