@@ -39,7 +39,12 @@ int ws_handle_connection_established(struct lws *wsi, WebSocketSessionData *sess
     memset(session, 0, sizeof(WebSocketSessionData));
     session->authenticated = true;  // Authentication already validated during protocol filtering
     session->connection_time = time(NULL);
-    
+
+    // Initialize heartbeat tracking
+    session->last_ping_sent = 0;
+    session->last_pong_received = time(NULL);  // Start with current time to avoid immediate timeout
+    session->ping_pending = false;
+
     // Extract client information
     ws_update_client_info(wsi, session);
 
@@ -56,6 +61,13 @@ int ws_handle_connection_established(struct lws *wsi, WebSocketSessionData *sess
     pthread_mutex_unlock(&ws_context->mutex);
 
     log_this(SR_WEBSOCKET, "New connection established (active: %d, total: %d)", LOG_LEVEL_STATE, 2, ws_context->active_connections, ws_context->total_connections);
+    
+    // Log chat-specific connection info
+    if (session->chat_database) {
+        log_this(SR_WEBSOCKET, "Connection has existing chat database: %s", LOG_LEVEL_STATE, 1, session->chat_database);
+    } else {
+        log_this(SR_WEBSOCKET, "Connection awaiting chat authentication (JWT required on first chat request)", LOG_LEVEL_STATE, 0);
+    }
 
     return 0;
 }

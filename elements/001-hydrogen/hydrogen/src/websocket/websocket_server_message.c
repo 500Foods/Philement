@@ -31,6 +31,7 @@ int handle_terminal_message(struct lws *wsi);
 
 // Forward declarations for WebSocket utility functions
 int ws_write_raw_data(struct lws *wsi, const char *data, size_t len);
+int ws_write_ping_frame(struct lws *wsi);
 json_t* create_json_response(const char *type, const char *data);
 json_t* create_pty_output_json(const char *buffer, size_t data_size);
 
@@ -242,5 +243,22 @@ json_t* create_pty_output_json(const char *buffer, size_t data_size)
 
     free(data_str);
     return json_response;
+}
+
+// Helper function to write a WebSocket ping frame
+int ws_write_ping_frame(struct lws *wsi)
+{
+    unsigned char buf[LWS_PRE + 1];
+    memset(buf, 0, sizeof(buf));
+
+    // Write a ping frame with empty payload
+    int result = lws_write(wsi, buf + LWS_PRE, 0, LWS_WRITE_PING);
+
+    if (result < 0) {
+        log_this(SR_WEBSOCKET, "Failed to write ping frame", LOG_LEVEL_ERROR, 0);
+        return -1;
+    }
+
+    return 0;
 }
 

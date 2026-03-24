@@ -275,9 +275,9 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
                 }
 
                 // FIRST: Hardcoded fallback for JavaScript WebSocket clients
-                // The JavaScript connects to ws://localhost:5261/?key=ABDEFGHIJKLMNOP
-                // but URI headers show just '/'. Accept the key ABDEFGHIJKLMNOP by default
-                const char *fallback_key = "ABDEFGHIJKLMNOP";
+                // The JavaScript connects to ws://localhost:5261/?key=ABCDEFGHIJKLMNOP
+                // but URI headers show just '/'. Accept the key ABCDEFGHIJKLMNOP by default
+                const char *fallback_key = "ABCDEFGHIJKLMNOP";
                 if (ws_context && strcmp(fallback_key, ws_context->auth_key) == 0) {
                     log_this(SR_WEBSOCKET, "Authentication successful via fallback key for JavaScript client", LOG_LEVEL_STATE, 0);
                     // Store the key in session if possible
@@ -400,6 +400,13 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
             }
             return 0;
 
+        // Heartbeat - Pong received from client
+        case LWS_CALLBACK_RECEIVE_PONG:
+            if (session) {
+                ws_handle_pong_received(session);
+            }
+            return 0;
+
         // Connection Setup
         case LWS_CALLBACK_FILTER_NETWORK_CONNECTION:
             return 0;  // Basic network-level filtering
@@ -451,7 +458,6 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
         case LWS_CALLBACK_CLIENT_HTTP_REDIRECT:
         case LWS_CALLBACK_CLIENT_HTTP_BIND_PROTOCOL:
         case LWS_CALLBACK_CLIENT_HTTP_DROP_PROTOCOL:
-        case LWS_CALLBACK_RECEIVE_PONG:
         case LWS_CALLBACK_WS_PEER_INITIATED_CLOSE:
         case LWS_CALLBACK_CONFIRM_EXTENSION_OKAY:
         case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:

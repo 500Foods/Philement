@@ -394,41 +394,217 @@ The crimson color (`#DC143C`) is used for the robot icon to match the agent's na
 
 ---
 
-## Future AI Integration
+## WebSocket Chat Integration
 
-The current implementation includes a placeholder response system:
+Crimson uses the app-wide WebSocket connection for real-time AI chat with streaming responses. The connection is established after login and maintained throughout the session.
 
-```javascript
-simulateCrimsonResponse() {
-  // Show typing indicator
-  const indicator = this.addTypingIndicator();
-  
-  // Simulate response delay
-  setTimeout(() => {
-    this.removeTypingIndicator();
-    
-    // Placeholder responses
-    const responses = [
-      "I'm here to help! What would you like to know?",
-      // ... more responses
-    ];
-    
-    this.addMessage('agent', randomResponse);
-  }, responseTime);
+### Architecture
+
+```
+┌─────────────────┐                    ┌─────────────────┐
+│                 │    WebSocket       │                 │
+│  Lithium Client │ ◄────────────────► │ Hydrogen Server │
+│   (app-ws.js)   │    Port 7001       │  (websocket_*)  │
+└─────────────────┘                    └─────────────────┘
+         │
+         │ Uses by:
+         ▼
+┌─────────────────┐     ┌─────────────────┐
+│  Crimson Chat   │     │  Notifications  │
+│  (crimson-ws.js)│     │    (future)     │
+└─────────────────┘     └─────────────────┘
+```
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `src/shared/app-ws.js` | App-wide WebSocket client with keepalive |
+| `src/shared/crimson-ws.js` | Crimson chat wrapper using app-ws |
+| `src/managers/crimson/crimson.js` | Chat UI with streaming display |
+| `src/managers/main/main.js` | WebSocket initialization and status indicator |
+| `crimson/PROMPT.md` | AI system prompt with delimiter format |
+
+### Connection Lifecycle
+
+1. **On login**: `MainManager.initWebSocket()` establishes the connection
+2. **During session**: Connection stays alive with keepalive pings every 30 seconds
+3. **Status indicator**: Sidebar header shows connection state (green/blue/red)
+4. **On logout**: Connection is gracefully closed
+
+### Connection Configuration
+
+The WebSocket connection uses settings from `config/lithium.json`:
+
+```json
+{
+  "server": {
+    "websocket_url": "wss://lithium.philement.com/wss",
+    "websocket_key": "ABCDEFGHIJKLMNOP",
+    "websocket_protocol": "hydrogen"
+  }
 }
 ```
 
-### Planned Integration
+### Authentication Flow
 
-- **DigitalOcean GradientAI** model with RAG content
-- **Tool calling** for actions like "click this button" or "run this report"
-- **Training data** from `elements/003-lithium/crimson/` directory:
-  - `ABOUT.md` — Agent description
-  - `LITHIUM.md` — UI reference
-  - `TOURS.md` — Built-in tours (future)
-  - `CANVAS.md` — LMS course content
-  - `SCHEMA.md` — Database schema
-  - `FACTS.md` — Environment facts
+1. **Connection auth**: Query parameter `?key=<websocket_key>` authenticates the WebSocket connection
+2. **Chat auth**: JWT token (with `Bearer ` prefix) authenticates each chat message
+3. **Database extraction**: JWT claims provide the database context for the AI
+
+```javascript
+// JWT is sent with "Bearer " prefix in chat payload
+const payload = {
+  engine: "Crimson",
+  messages: [{ role: "user", content: message }],
+  stream: true,
+  jwt: `Bearer ${jwt}`  // Note the Bearer prefix
+};
+```
+
+### Streaming Response Format
+
+The AI responses use a delimiter-based format for structured data:
+
+```
+[Conversation text streams here in plain text...]
+[LITHIUM-CRIMSON-JSON]
+{
+  "followUpQuestions": ["Question 1?", "Question 2?"],
+  "suggestions": { ... },
+  "metadata": { "confidence": 0.95, "category": "help" }
+}
+```
+
+#### Delimiter Handling
+
+The client handles the delimiter `[LITHIUM-CRIMSON-JSON]` which may be split across WebSocket chunks:
+
+1. **Before delimiter**: Conversation text streams in real-time
+2. **After delimiter**: JSON metadata is accumulated and parsed
+3. **On completion**: Follow-up questions are rendered as clickable buttons
+
+```javascript
+// Delimiter detection handles partial matches across chunks
+this.DELIMITER = '[LITHIUM-CRIMSON-JSON]';
+this.seenDelimiter = false;
+this.conversationBuffer = '';
+this.metadataBuffer = '';
+this.partialDelimiter = '';
+```
+
+### Response Structure
+
+The JSON metadata after the delimiter supports:
+
+| Field | Type | Purpose |
+|-------|------|---------|
+| `followUpQuestions` | `string[]` | 1-3 suggested follow-up questions |
+| `suggestions.highlightButtons` | `object[]` | Highlight UI elements |
+| `suggestions.suggestManagers` | `object[]` | Suggest navigating to a manager |
+| `suggestions.offerTours` | `object[]` | Offer guided tours |
+| `suggestions.openDocumentation` | `object` | Link to documentation |
+| `metadata.confidence` | `number` | AI confidence (0-1) |
+| `metadata.category` | `string` | Response category (help, navigation, etc.) |
+
+### Follow-up Questions
+
+When `followUpQuestions` are present, clickable buttons are rendered below the message:
+
+```css
+.crimson-followups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.crimson-followup-btn {
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-secondary);
+  border: 1px solid var(--accent-primary);
+  border-radius: var(--border-radius-md);
+  color: var(--accent-primary);
+  cursor: pointer;
+}
+```
+
+Clicking a follow-up question sends it as a new message.
+
+### Connection State Management
+
+The WebSocket connection is managed by the app-wide `app-ws.js` module. Crimson uses the shared connection through `crimson-ws.js`.
+
+| State | Description | Status Indicator |
+|-------|-------------|------------------|
+| `DISCONNECTED` | No active connection | Red octagon |
+| `CONNECTING` | Connection in progress | Orange (pulsing) |
+| `CONNECTED` | Connection established | Green circle |
+| `ERROR` | Connection failed | Red octagon |
+
+### Keepalive
+
+The connection uses a keepalive mechanism:
+- **Ping interval**: 30 seconds
+- **Pong timeout**: 10 seconds
+- On timeout, the connection is automatically re-established
+
+### Status Indicator
+
+A visual indicator in the sidebar header shows the connection state:
+- **Green circle** — Connected and idle
+- **Blue flash** — Data sent (100ms flash)
+- **Red octagon** — Disconnected or error
+
+See [LITHIUM-WSS.md](LITHIUM-WSS.md) for full WebSocket documentation.
+
+### Code Block Formatting
+
+Conversation text supports markdown-like formatting:
+
+```css
+.crimson-code {
+  display: block;
+  margin: var(--space-2) 0;
+  padding: var(--space-3);
+  background: var(--bg-tertiary);
+  border: var(--border-standard);
+  border-radius: var(--border-radius-md);
+  font-family: 'Consolas', 'Monaco', monospace;
+}
+
+.crimson-inline-code {
+  display: inline;
+  padding: 2px 6px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+}
+```
+
+### Streaming Indicator
+
+While content streams, a blinking cursor appears:
+
+```css
+.crimson-streaming .crimson-message-content::after {
+  content: '';
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  background: var(--accent-primary);
+  animation: crimson-blink 1s infinite;
+}
+```
+
+### Known Issues and Solutions
+
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| JSON appears in conversation | Delimiter split across chunks | Handle partial delimiter matching |
+| Send button stays disabled | Error in stream processing | Wrap handleStreamDone in try-finally |
+| Connection not reestablished | Stale callbacks on singleton | Always update callbacks in initWebSocketClient |
+| Key mismatch | Config key differs from server | Use consistent key: `ABCDEFGHIJKLMNOP` |
 
 ---
 
@@ -454,6 +630,7 @@ elements/003-lithium/crimson/
 - [LITHIUM-MGR.md](LITHIUM-MGR.md) — Manager system overview
 - [LITHIUM-MGR-QUERY.md](LITHIUM-MGR-QUERY.md) — Example integration
 - [LITHIUM-MGR-MAIN.md](LITHIUM-MGR-MAIN.md) — Main manager (global shortcuts)
+- [LITHIUM-WSS.md](LITHIUM-WSS.md) — WebSocket connection architecture
 - `elements/003-lithium/crimson/ABOUT.md` — Agent background
 
 ---
@@ -474,4 +651,4 @@ Event listeners are attached directly to elements during initialization. No even
 
 ---
 
-Last updated: March 2026
+Last updated: March 23, 2026

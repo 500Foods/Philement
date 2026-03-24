@@ -108,6 +108,17 @@ void configure_lws_vhost_info(struct lws_context_creation_info* vhost_info,
 
     // Bind to all interfaces
     vhost_info->iface = NULL;
+
+    // Enable TCP keepalive for persistent connections
+    // ka_time: seconds of idleness before first probe
+    // ka_interval: seconds between probes
+    // ka_probes: number of failed probes before giving up
+    vhost_info->ka_time = 30;      // Start probing after 30 seconds of inactivity
+    vhost_info->ka_interval = 10;  // Send probe every 10 seconds
+    vhost_info->ka_probes = 3;     // Close after 3 failed probes (30 + 3*10 = 60 seconds total)
+
+    log_this(SR_WEBSOCKET, "TCP keepalive enabled: time=%ds, interval=%ds, probes=%d",
+             LOG_LEVEL_STATE, 3, vhost_info->ka_time, vhost_info->ka_interval, vhost_info->ka_probes);
 }
 
 // Verify WebSocket port binding by testing socket creation and binding

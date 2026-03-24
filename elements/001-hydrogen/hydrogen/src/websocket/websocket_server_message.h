@@ -17,6 +17,7 @@ int ws_handle_receive(struct lws *wsi, const WebSocketSessionData *session, cons
 int handle_message_type(struct lws *wsi, const char *type);
 int ws_write_json_response(struct lws *wsi, json_t *json);
 int ws_write_raw_data(struct lws *wsi, const char *data, size_t len);
+int ws_write_ping_frame(struct lws *wsi);
 json_t* create_json_response(const char *type, const char *data);
 json_t* create_pty_output_json(const char *buffer, size_t data_size);
 

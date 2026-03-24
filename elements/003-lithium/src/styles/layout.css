@@ -135,6 +135,7 @@ body.hide-password-manager-ui [class*="password-icon"] {
   border-radius: 0;        
   z-index: 1;
   min-width: 40px;
+  font-size: var(--icon-size-reg);
 }
 
 /* Left button (primary with icon and title) - rounded left corners */
@@ -882,6 +883,88 @@ body.hide-password-manager-ui [class*="password-icon"] {
 .header-btn:hover {
   background-color: var(--bg-hover);
   color: var(--text-primary);
+}
+
+/* ========================================
+   WebSocket Status Indicator
+   ======================================== */
+
+.ws-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  position: relative;
+  cursor: default;
+}
+
+.ws-status-icon {
+  font-size: 20px;
+  transition: color 100ms ease;
+}
+
+/* Red octagon - disconnected/error */
+.ws-status.disconnected .ws-status-icon {
+  color: #ef4444; /* red-500 */
+}
+
+/* Green circle - connected/idle */
+.ws-status.connected .ws-status-icon {
+  color: #22c55e; /* green-500 */
+}
+
+/* Blue circle - sending (temporary flash) */
+.ws-status.sending .ws-status-icon {
+  color: #3b82f6; /* blue-500 */
+}
+
+/* Connecting state - orange pulse */
+.ws-status.connecting .ws-status-icon {
+  color: #f59e0b; /* amber-500 */
+  animation: ws-pulse 5s ease-in-out infinite;
+}
+
+@keyframes ws-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Blue flash animation */
+@keyframes ws-blue-flash {
+  0% { color: #22c55e; } /* Start green */
+  25% { color: #3b85f6; } /* Flash blue */
+  100% { color: #22c55e; } /* Return to green */
+}
+
+.ws-status.flash .ws-status-icon {
+  animation: ws-blue-flash 100ms ease-out;
+}
+
+/* Tooltip - top-left aligned with bottom-left of icon */
+.ws-status[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  padding: var(--space-1) var(--space-2);
+  background-color: var(--bg-tertiary);
+  border: var(--border-standard);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-xs);
+  color: var(--text-primary);
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all var(--transition-fast);
+  z-index: var(--z-tooltip);
+  pointer-events: none;
+}
+
+.ws-status[data-tooltip]:hover::after {
+  opacity: 1;
+  visibility: visible;
 }
 
 /* Workspace */
