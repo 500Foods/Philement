@@ -486,7 +486,7 @@ bool postgresql_execute_query(DatabaseHandle* connection, QueryRequest* request,
                 size_t row_len = strlen(db_result->data_json) - row_start_pos;
                 char* row_json = strndup(db_result->data_json + row_start_pos, row_len);
                 if (row_json) {
-                    log_this(designator, "PostgreSQL first row JSON: %s", LOG_LEVEL_DEBUG, 1, row_json);
+//                    log_this(designator, "PostgreSQL first row JSON: %s", LOG_LEVEL_DEBUG, 1, row_json);
                     free(row_json);
                 }
             }
@@ -814,7 +814,7 @@ bool postgresql_execute_prepared(DatabaseHandle* connection, const PreparedState
                 size_t row_len = strlen(db_result->data_json) - row_start_pos;
                 char* row_json = strndup(db_result->data_json + row_start_pos, row_len);
                 if (row_json) {
-                    log_this(designator, "PostgreSQL first row JSON: %s", LOG_LEVEL_DEBUG, 1, row_json);
+//                    log_this(designator, "PostgreSQL first row JSON: %s", LOG_LEVEL_DEBUG, 1, row_json);
                     free(row_json);
                 }
             }
