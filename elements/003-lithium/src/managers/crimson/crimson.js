@@ -320,7 +320,7 @@ class CrimsonManager {
       <div class="crimson-input-area">
         <textarea class="crimson-input" placeholder="Type your message..." rows="1"></textarea>
         <button type="button" class="crimson-send-btn" title="Send message">
-          <fa fa-paper-plane></fa>
+          <fa fa-up></fa>
         </button>
       </div>
       <div class="crimson-resize-handle crimson-resize-handle-bl" title="Resize"></div>
