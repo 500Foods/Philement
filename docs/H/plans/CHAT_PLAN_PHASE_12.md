@@ -1,13 +1,17 @@
 # Chat Service - Phase 12: Advanced Multi-modal Features
 
 ## Objective
+
 Implement advanced multi-modal support including WebSocket-based media upload, extended segment metadata, engine modality configuration, and provider-specific translation.
 
 ## Prerequisites
+
 - Phase 11 completed and verified (streaming support working)
 
 ## Testable Gate
+
 Before proceeding to Phase 13, the following must be verified:
+
 - WebSocket message type "media_upload" handles file uploads with authentication
 - Media assets table created with proper schema
 - Conversation segments table extended with content_type, mime_type, metadata
@@ -19,6 +23,7 @@ Before proceeding to Phase 13, the following must be verified:
 ## Tasks
 
 ### 1. Add WebSocket message type "media_upload"
+
 - Extend WebSocket message handling in `websocket_server_message.c`
 - Create `handle_media_upload_message()` function
 - Reuse existing JWT authentication per connection (database stored in session)
@@ -29,6 +34,7 @@ Before proceeding to Phase 13, the following must be verified:
 - Support progress updates via "media_chunk" messages for large files
 
 ### 2. Create media_assets table (Helium migration)
+
 - media_hash VARCHAR(64) PRIMARY KEY (SHA-256 of file content)
 - media_data BLOB (binary data or S3 URL reference)
 - media_size INTEGER
@@ -37,6 +43,7 @@ Before proceeding to Phase 13, the following must be verified:
 - Appropriate indexes for performance
 
 ### 3. Add engine modality configuration
+
 - Add `modalities` field (JSON array) to `ChatEngineConfig` in `chat_engine_cache.h`
 - Parse `modalities` from QueryRef #061 collection JSON (key: "modalities")
 - Default to ["text"] when key missing or empty
@@ -45,30 +52,35 @@ Before proceeding to Phase 13, the following must be verified:
 - Validate modalities against provider capabilities
 
 ### 4. Extend conversation_segments table
+
 - Add content_type VARCHAR(20) DEFAULT 'text' (text|image|pdf|audio|document)
 - Add mime_type VARCHAR(100) (image/jpeg, application/pdf, etc.)
 - Add metadata JSONB for provider-specific data
 - Store additional info like dimensions, duration, token estimates
 
 ### 5. Implement media URL handling
+
 - Support media:hash format in chat messages
 - Server resolves media:hash to actual base64 or URL before proxying
 - Cache resolved media to avoid repeated lookups
 - Handle missing media gracefully (broken image/icons)
 
 ### 6. Provider-specific multi-modal handling
+
 - Extend chat_request_builder for provider-specific translation
 - Implement Anthropic vision format translation (as in original plan)
 - Handle varying vision capabilities across providers
 - Graceful degradation for providers with limited multi-modal support
 
 ### 7. Implement engine limits enforcement
+
 - Validate max_images_per_message per engine configuration
 - Validate max_payload_mb before processing requests
 - Return clear error messages when limits exceeded
 - Log limit violations for monitoring and abuse detection
 
 ### 8. Unit and integration tests
+
 - Test media upload via WebSocket message type
 - Test media:hash resolution in chat messages
 - Verify provider-specific format translation (especially Anthropic)
@@ -77,6 +89,7 @@ Before proceeding to Phase 13, the following must be verified:
 - Ensure existing text-only chat unaffected
 
 ## Verification Steps
+
 1. Verify WebSocket message type "media_upload" handles uploads with authentication
 2. Test uploading various file types via WebSocket (images, PDFs, etc.)
 3. Confirm media:hash resolution works in chat messages
@@ -106,6 +119,7 @@ Before proceeding to Phase 13, the following must be verified:
 ### Key Files Modified/Created
 
 **New Files:**
+
 - `elements/002-helium/acuranzo/migrations/acuranzo_1171.lua` - media_assets table
 - `elements/002-helium/acuranzo/migrations/acuranzo_1172.lua` - convo_segs extension
 - `elements/002-helium/acuranzo/migrations/acuranzo_1173.lua` - QueryRef #071 (insert media)
@@ -114,6 +128,7 @@ Before proceeding to Phase 13, the following must be verified:
 - `src/websocket/websocket_server_media.c` - WebSocket media upload implementation
 
 **Modified Files:**
+
 - `src/api/conduit/chat_common/chat_engine_cache.h` - Added supported_modalities field
 - `src/api/conduit/chat_common/chat_engine_cache.c` - Parse modalities from QueryRef #061
 - `src/api/conduit/chat_common/chat_storage.h` - Added media storage and resolution functions

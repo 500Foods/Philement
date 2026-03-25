@@ -28,7 +28,7 @@ Before proceeding to Phase 2, the following must be verified:
 ### 3. Implement internal query enforcement in Hydrogen
 
 - Update `lookup_database_and_query()` in `database_operations.c` to block `query_type` 0-3 from conduit access
-- Audit existing client usage to verify no breakage (see [Internal Query Enforcement](#internal-query-enforcement-helium--hydrogen))
+- Audit existing client usage to verify no breakage (see [Internal Query Enforcement](#3-implement-internal-query-enforcement-in-hydrogen))
 
 ### 4. Add chat configuration fields to `DatabaseConnection`
 

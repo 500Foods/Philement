@@ -140,7 +140,7 @@ class JSONEditorInit {
                 <fa fa-sitemap></fa>
               </button>
               <button class="btn btn-outline-secondary" id="${elementId}-mode-text" title="Text Mode">
-                <fa fa-code></fa>
+                <fa fa-brackets-curly></fa>
               </button>
               <button class="btn btn-outline-secondary" id="${elementId}-mode-table" title="Table Mode">
                 <fa fa-table></fa>
