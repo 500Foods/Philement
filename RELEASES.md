@@ -223,7 +223,9 @@ QUALITY CHECKLIST (before completing)
 
 ### February: Deployment Work
 
-Work in early February 2026 seems like it was paused, but this is misleading. Rather, the focus was more on deployment efforts in Digital Ocean's DOKS. This involved creating a new report (Canada Cluster Chronicles) and many other activities directly related to this project, just coincidentally not involving changes to any of the source code.
+Work in early February 2026 seems like it was paused, but this is misleading. Rather, the focus was more on deployment efforts in Digital Ocean's DOKS. This involved creating a new report (Canada Cluster Chronicles) and many other activities directly related to this project, just coincidentally not involving changes to any of the source code for any of the sub-projects within Philement.
+
+The Conduit implementation  in particular has made the project immediately viable for many use-cases as this makes it posible to have a rudimentary login with username/passowrd and have state stored in a datbase. This is a significant milestone for the project as everything that follows this implementation relies on these features rather heavily.
 
 ## January 2026
 
