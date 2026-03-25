@@ -39,6 +39,7 @@ int ws_handle_connection_established(struct lws *wsi, WebSocketSessionData *sess
     memset(session, 0, sizeof(WebSocketSessionData));
     session->authenticated = true;  // Authentication already validated during protocol filtering
     session->connection_time = time(NULL);
+    session->connection_valid = true;  // Mark connection as valid for stream safety
 
     // Initialize heartbeat tracking
     session->last_ping_sent = 0;
@@ -76,6 +77,11 @@ int ws_handle_connection_closed(const struct lws *wsi, WebSocketSessionData *ses
     if (!ws_context) {
         log_this(SR_WEBSOCKET, "[WS] Invalid context during connection closure (ws_context is NULL)", LOG_LEVEL_DEBUG, 0);
         return 0;  // Return 0 to avoid lws error propagation
+    }
+
+    // Mark connection as invalid immediately - prevents stream callbacks from using stale data
+    if (session) {
+        session->connection_valid = false;
     }
 
     // Get client info before cleanup for logging

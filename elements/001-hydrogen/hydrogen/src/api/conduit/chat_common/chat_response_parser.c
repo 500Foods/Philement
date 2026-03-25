@@ -312,6 +312,7 @@ void chat_stream_chunk_destroy(ChatStreamChunk* chunk) {
     if (!chunk) return;
     free(chunk->id);
     free(chunk->content);
+    free(chunk->reasoning_content);
     free(chunk->finish_reason);
     free(chunk->model);
     free(chunk);
@@ -427,6 +428,11 @@ ChatStreamChunk* chat_stream_chunk_parse(const char* json_line) {
                     json_t* content = json_object_get(delta, "content");
                     if (content && json_is_string(content)) {
                         chunk->content = strdup(json_string_value(content));
+                    }
+                    // Check for reasoning_content (e.g., Kimi K2.5)
+                    json_t* reasoning = json_object_get(delta, "reasoning_content");
+                    if (reasoning && json_is_string(reasoning)) {
+                        chunk->reasoning_content = strdup(json_string_value(reasoning));
                     }
                 }
 

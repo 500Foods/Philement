@@ -36,18 +36,18 @@ extern DatabaseQueueManager* global_queue_manager;
 
 // Forward declarations
 static void send_chat_error(struct lws *wsi, const char* error_message, const char* request_id);
-static void send_chat_done(struct lws *wsi, const char* request_id, const char* content, 
+static void send_chat_done(struct lws *wsi, const char* request_id, const char* content,
                            const char* model, const char* finish_reason,
                            int prompt_tokens, int completion_tokens, int total_tokens,
                            double response_time_ms);
-static void send_chat_chunk(struct lws *wsi, const char* request_id, const char* content,
-                            const char* model, int index, const char* finish_reason);
+static __attribute__((unused)) void send_chat_chunk(struct lws *wsi, const char* request_id, const char* content,
+                            const char* reasoning_content, const char* model, int index, const char* finish_reason);
 
 // Queue management for thread-safe streaming
-static bool enqueue_chat_chunk(const char* queue_name, const char* request_id, 
-                               const char* content, const char* model, 
-                               int index, const char* finish_reason);
-static bool enqueue_chat_done(const char* queue_name, const char* request_id, 
+static bool enqueue_chat_chunk(const char* queue_name, const char* request_id,
+                               const char* content, const char* reasoning_content,
+                               const char* model, int index, const char* finish_reason);
+static bool enqueue_chat_done(const char* queue_name, const char* request_id,
                               const char* model, const char* finish_reason,
                               int prompt_tokens, int completion_tokens, int total_tokens,
                               double response_time_ms);
@@ -61,20 +61,23 @@ char* create_chat_queue_name(const struct lws *wsi) {
     return queue_name;
 }
 
-static bool enqueue_chat_chunk(const char* queue_name, const char* request_id, 
-                               const char* content, const char* model, 
-                               int index, const char* finish_reason) {
+static bool enqueue_chat_chunk(const char* queue_name, const char* request_id,
+                               const char* content, const char* reasoning_content,
+                               const char* model, int index, const char* finish_reason) {
     if (!queue_name) return false;
-    
+
     // Build JSON string for this chunk
     json_t* response = json_object();
     json_object_set_new(response, "type", json_string("chat_chunk"));
     if (request_id) {
         json_object_set_new(response, "id", json_string(request_id));
     }
-    
+
     json_t* chunk = json_object();
     json_object_set_new(chunk, "content", json_string(content ? content : ""));
+    if (reasoning_content) {
+        json_object_set_new(chunk, "reasoning_content", json_string(reasoning_content));
+    }
     if (model) json_object_set_new(chunk, "model", json_string(model));
     json_object_set_new(chunk, "index", json_integer(index));
     if (finish_reason) json_object_set_new(chunk, "finish_reason", json_string(finish_reason));
@@ -191,13 +194,21 @@ typedef struct {
     char *finish_reason;    // Final finish reason
     bool first_chunk_logged;  // Whether we've logged the first chunk (initial response)
     struct timespec start_time;  // When streaming started
+    volatile bool *connection_valid;  // Pointer to flag that's set false when connection closes
 } StreamContext;
 
 // Streaming chunk callback (called by chat_proxy_send_stream)
 static void stream_chunk_callback(const ChatStreamChunk* chunk, void* user_data) {
     StreamContext* ctx = (StreamContext*)user_data;
     if (!chunk || !ctx) return;
-    
+
+    // Check if connection is still valid before processing
+    // This prevents crashes when connection closes while streaming
+    if (ctx->connection_valid && !*ctx->connection_valid) {
+        log_this(SR_WEBSOCKET_CHAT, "Stream callback ignored - connection closed", LOG_LEVEL_DEBUG, 0);
+        return;
+    }
+
     if (chunk->is_done) {
         // Mark stream as completed and store finish reason
         ctx->stream_completed = true;
@@ -207,7 +218,7 @@ static void stream_chunk_callback(const ChatStreamChunk* chunk, void* user_data)
             ctx->finish_reason = strdup("stop");
         }
         // Enqueue final done chunk with finish_reason
-        enqueue_chat_chunk(ctx->queue_name, ctx->request_id, "", ctx->model, ctx->chunk_index, ctx->finish_reason);
+        enqueue_chat_chunk(ctx->queue_name, ctx->request_id, "", NULL, ctx->model, ctx->chunk_index, ctx->finish_reason);
         
         // Calculate time since stream start
         struct timespec end_time;
@@ -232,17 +243,18 @@ static void stream_chunk_callback(const ChatStreamChunk* chunk, void* user_data)
         
         // Enqueue content chunk - client already receives these, no need to accumulate
         const char* content = chunk->content ? chunk->content : "";
+        const char* reasoning_content = chunk->reasoning_content ? chunk->reasoning_content : NULL;
         const char* model = chunk->model ? chunk->model : ctx->model;
         if (chunk->model) {
             free(ctx->model);
             ctx->model = strdup(chunk->model);
         }
-        enqueue_chat_chunk(ctx->queue_name, ctx->request_id, content, model, ctx->chunk_index, NULL);
+        enqueue_chat_chunk(ctx->queue_name, ctx->request_id, content, reasoning_content, model, ctx->chunk_index, NULL);
         ctx->chunk_index++;
     }
     
-    // Request writable callback from the service thread
-    if (ctx->wsi) {
+    // Request writable callback from the service thread (only if connection still valid)
+    if (ctx->wsi && (!ctx->connection_valid || *ctx->connection_valid)) {
         lws_callback_on_writable(ctx->wsi);
     }
 }
@@ -427,7 +439,11 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
         stream_ctx.stream_completed = false;
         stream_ctx.finish_reason = NULL;
         stream_ctx.first_chunk_logged = false;
+        stream_ctx.connection_valid = &session->connection_valid;  // For thread-safe connection check
         clock_gettime(CLOCK_MONOTONIC, &stream_ctx.start_time);
+
+        // Mark stream as active on session (session guaranteed non-null due to check at line 267)
+        if (session) session->chat_stream_active = true;  // cppcheck: session validated above
 
         // Log that prompt is being sent to model server
         size_t request_size = strlen(request_json_str);
@@ -479,20 +495,23 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
             }
             
             // Log that final response was queued for client
-            log_this(SR_WEBSOCKET_CHAT, "Final response queued for client request %s (%.0fms total)", 
+            log_this(SR_WEBSOCKET_CHAT, "Final response queued for client request %s (%.0fms total)",
                      LOG_LEVEL_DEBUG, 2,
                      request_id ? request_id : "unknown",
                      response_time_ms);
         } else {
             // Streaming proxy failed - send error to client
             send_chat_error(wsi, "Streaming proxy failed", request_id);
-            log_this(SR_WEBSOCKET_CHAT, "Streaming proxy failed for request %s", 
+            log_this(SR_WEBSOCKET_CHAT, "Streaming proxy failed for request %s",
                      LOG_LEVEL_ERROR, 1, request_id ? request_id : "unknown");
-            
+
             // Clean up queue on failure
             cleanup_chat_queue(&session->chat_write_queue_name);
         }
-        
+
+        // Mark stream as no longer active (session guaranteed non-null due to check at line 267)
+        if (session) session->chat_stream_active = false;  // cppcheck: session validated above
+
         // Clean up stream context
         free(stream_ctx.finish_reason);
         free(stream_ctx.request_id);
@@ -688,7 +707,7 @@ static void send_chat_done(struct lws *wsi, const char* request_id, const char* 
 }
 
 static __attribute__((unused)) void send_chat_chunk(struct lws *wsi, const char* request_id, const char* content,
-                            const char* model, int index, const char* finish_reason) {
+                            const char* reasoning_content, const char* model, int index, const char* finish_reason) {
     json_t* response = json_object();
     json_object_set_new(response, "type", json_string("chat_chunk"));
     if (request_id) {
@@ -697,6 +716,9 @@ static __attribute__((unused)) void send_chat_chunk(struct lws *wsi, const char*
     
     json_t* chunk = json_object();
     json_object_set_new(chunk, "content", json_string(content ? content : ""));
+    if (reasoning_content) {
+        json_object_set_new(chunk, "reasoning_content", json_string(reasoning_content));
+    }
     if (model) json_object_set_new(chunk, "model", json_string(model));
     json_object_set_new(chunk, "index", json_integer(index));
     if (finish_reason) json_object_set_new(chunk, "finish_reason", json_string(finish_reason));
