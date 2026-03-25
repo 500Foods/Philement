@@ -75,8 +75,11 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
             // Allow cleanup callbacks during shutdown
             case LWS_CALLBACK_WSI_DESTROY:
             case LWS_CALLBACK_CLOSED:
+            case LWS_CALLBACK_WS_PEER_INITIATED_CLOSE:
+            case LWS_CALLBACK_CLIENT_CLOSED:
             case LWS_CALLBACK_PROTOCOL_DESTROY:
-                if (reason == LWS_CALLBACK_CLOSED || reason == LWS_CALLBACK_WSI_DESTROY) {
+                if (reason == LWS_CALLBACK_CLOSED || reason == LWS_CALLBACK_WSI_DESTROY || 
+                    reason == LWS_CALLBACK_WS_PEER_INITIATED_CLOSE || reason == LWS_CALLBACK_CLIENT_CLOSED) {
                     // During shutdown, some sessions might be already cleaned up
                     if (!session) {
                         log_this(SR_WEBSOCKET, "Connection cleanup with no session during shutdown", LOG_LEVEL_STATE, 0);
@@ -148,7 +151,6 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
             case LWS_CALLBACK_SERVER_WRITEABLE:
             case LWS_CALLBACK_RECEIVE:
             case LWS_CALLBACK_RECEIVE_PONG:
-            case LWS_CALLBACK_WS_PEER_INITIATED_CLOSE:
             case LWS_CALLBACK_CONFIRM_EXTENSION_OKAY:
             case LWS_CALLBACK_WS_SERVER_BIND_PROTOCOL:
             case LWS_CALLBACK_WS_SERVER_DROP_PROTOCOL:
@@ -210,7 +212,6 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
             case LWS_CALLBACK_MQTT_SHADOW_TIMEOUT:
             case LWS_CALLBACK_USER:
             case LWS_CALLBACK_CLIENT_ESTABLISHED:
-            case LWS_CALLBACK_CLIENT_CLOSED:
             case LWS_CALLBACK_CGI:
             case LWS_CALLBACK_CGI_TERMINATED:
             case LWS_CALLBACK_CGI_STDIN_DATA:
@@ -245,10 +246,17 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
             return ws_handle_connection_established(wsi, session);
 
         case LWS_CALLBACK_CLOSED:
-        case LWS_CALLBACK_WSI_DESTROY:
         case LWS_CALLBACK_CLOSED_HTTP:
+        case LWS_CALLBACK_WS_PEER_INITIATED_CLOSE:  // Reason 38 - peer sent close frame
+        case LWS_CALLBACK_CLIENT_CLOSED:  // Client side closed
             log_this(SR_WEBSOCKET, "[WS] LWS_CALLBACK_CLOSED received (reason=%d), calling ws_handle_connection_closed", LOG_LEVEL_TRACE, 1, reason);
             return ws_handle_connection_closed(wsi, session);
+
+        case LWS_CALLBACK_WSI_DESTROY:
+            // WSI_DESTROY is called after CLOSED - session may already be cleaned up
+            // Just log and return 0 to avoid double-cleanup crash
+            log_this(SR_WEBSOCKET, "[WS] LWS_CALLBACK_WSI_DESTROY received - skipping (already cleaned up)", LOG_LEVEL_TRACE, 0);
+            return 0;
 
         // Authentication and Security
         case LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION:
@@ -387,7 +395,7 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
                     log_this(SR_WEBSOCKET, "No Authorization header present", LOG_LEVEL_DEBUG, 0);
                 }
 
-                log_this(SR_WEBSOCKET, "All authentication methods failed, denying connection", 1, LOG_LEVEL_ALERT, 0);
+                log_this(SR_WEBSOCKET, "All authentication methods failed, denying connection", LOG_LEVEL_ALERT, 0);
                 return -1;
             }
 
@@ -397,8 +405,6 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
             return ws_handle_receive(wsi, session, in, len);
 
         case LWS_CALLBACK_SERVER_WRITEABLE:
-            log_this(SR_WEBSOCKET, "[WS] LWS_CALLBACK_SERVER_WRITEABLE - has_queue=%s", LOG_LEVEL_TRACE, 1, 
-                     (session && session->chat_write_queue_name) ? "yes" : "no");
             if (session) {
                 handle_chat_writable(wsi, session);
             }
@@ -462,7 +468,6 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
         case LWS_CALLBACK_CLIENT_HTTP_REDIRECT:
         case LWS_CALLBACK_CLIENT_HTTP_BIND_PROTOCOL:
         case LWS_CALLBACK_CLIENT_HTTP_DROP_PROTOCOL:
-        case LWS_CALLBACK_WS_PEER_INITIATED_CLOSE:
         case LWS_CALLBACK_CONFIRM_EXTENSION_OKAY:
         case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
         case LWS_CALLBACK_CLIENT_FILTER_PRE_ESTABLISH:
@@ -529,7 +534,6 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
         case LWS_CALLBACK_MQTT_SHADOW_TIMEOUT:
         case LWS_CALLBACK_USER:
         case LWS_CALLBACK_CLIENT_ESTABLISHED:
-        case LWS_CALLBACK_CLIENT_CLOSED:
         case LWS_CALLBACK_CGI:
         case LWS_CALLBACK_CGI_TERMINATED:
         case LWS_CALLBACK_CGI_STDIN_DATA:

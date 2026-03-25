@@ -1,11 +1,9 @@
-An organization may use many of its features, or very few. And they may grant access to some or all of these features to individuals within their organization. And the people using Lithium within an organization might use it all day long or perhaps just infrequently on an as-needed basis. Regardless, the level of knowledge required by people to get the most out of their Lithium experience can vary broadly across the organization and even specifically across the tasks they wish to perform.
+Lithium is a reasonably large and complex web application by most standards. With many Managers, each with their own purpose and role, things can get pretty complicated fast.  People using Lithium often also have a broad background. Some may be developers, not afraid to click buttons and explore whatever they can get access to. Others may be focused on achieving a specific outcome as quickly as possible so they can get on with their day.  All of this to say that everyone\'s interactions with Lithium are likely to be unique and nuanced in ways that are truly hard to predict.
 
-To help, a number of resources have been created. They can all be found hanging out together in any Lithium Manager  footer.
+To address this, Lithium has been equipped with a broad array of resources. Each targeting a particular level of interaction. People might want to learn via a traditional course-style system. Or maybe they just want to ask a question and get an answer. Or maybe they want to be shown around tourguide-style. All of the help resources are gathered together and appear in the bottom-right corner of the Lithium app.
 
-![Help Icons](%24IMS-CC-FILEBASE%24/lithium_help_footer-1.png){width="547" height="81"}\
-*Example Lithium Manager Footer*
-
- 
+![Help Icons](%24IMS-CC-FILEBASE%24/lithium_help_footer-1.png){width="547" height="81" api-endpoint="https://canvas.500courses.com/api/v1/courses/801/files/4203" api-returntype="File"}\
+*Example Lithium Help Footer*
 
 - **Crimson** - An AI Assistant Inside Lithium
 - **Notifications** - Don\'t Miss A Thing
@@ -14,4 +12,4 @@ To help, a number of resources have been created. They can all be found hanging 
 - **Tours** - Let Us Show You Around
 - **Training** - Learn At Your Own Pace
 
- 
+Each of these has been designed, tailored even, to meet specific needs, and are described in detail in the sections that follow.

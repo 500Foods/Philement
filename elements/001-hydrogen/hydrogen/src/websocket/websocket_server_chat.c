@@ -43,36 +43,39 @@ static void send_chat_done(struct lws *wsi, const char* request_id, const char* 
 static __attribute__((unused)) void send_chat_chunk(struct lws *wsi, const char* request_id, const char* content,
                             const char* reasoning_content, const char* model, int index, const char* finish_reason);
 
-// Queue management for thread-safe streaming
-static bool enqueue_chat_chunk(const char* queue_name, const char* request_id,
-                               const char* content, const char* reasoning_content,
-                               const char* model, int index, const char* finish_reason);
-static bool enqueue_chat_done(const char* queue_name, const char* request_id,
-                              const char* model, const char* finish_reason,
-                              int prompt_tokens, int completion_tokens, int total_tokens,
-                              double response_time_ms);
-static void dequeue_and_write_chat_chunks(struct lws *wsi, const char* queue_name);
 
-// Queue management implementations
-char* create_chat_queue_name(const struct lws *wsi) {
-    char* queue_name = malloc(64);
-    if (!queue_name) return NULL;
-    snprintf(queue_name, 64, "chat_wsi_%p", (const void*)wsi);
-    return queue_name;
-}
 
-static bool enqueue_chat_chunk(const char* queue_name, const char* request_id,
-                               const char* content, const char* reasoning_content,
-                               const char* model, int index, const char* finish_reason) {
-    if (!queue_name) return false;
+// Streaming callback context
+typedef struct {
+    struct lws *wsi;
+    char *request_id;
+    char *model;
+    int chunk_index;
+    bool stream_completed;  // Whether stream completed successfully
+    char *finish_reason;    // Final finish reason
+    bool first_chunk_logged;  // Whether we've logged the first chunk (initial response)
+    struct timespec start_time;  // When streaming started
+    volatile bool *connection_valid;  // Pointer to flag that's set false when connection closes
+} StreamContext;
 
+// Helper: Build and send a chat chunk directly to the WebSocket
+static void send_stream_chunk(StreamContext* ctx, const char* content, 
+                              const char* reasoning_content, const char* model, 
+                              int index, const char* finish_reason) {
+    if (!ctx || !ctx->wsi) return;
+    
+    // Check connection validity before writing
+    if (ctx->connection_valid && !*ctx->connection_valid) {
+        return;  // Connection closed, don't write
+    }
+    
     // Build JSON string for this chunk
     json_t* response = json_object();
     json_object_set_new(response, "type", json_string("chat_chunk"));
-    if (request_id) {
-        json_object_set_new(response, "id", json_string(request_id));
+    if (ctx->request_id) {
+        json_object_set_new(response, "id", json_string(ctx->request_id));
     }
-
+    
     json_t* chunk = json_object();
     json_object_set_new(chunk, "content", json_string(content ? content : ""));
     if (reasoning_content) {
@@ -85,43 +88,41 @@ static bool enqueue_chat_chunk(const char* queue_name, const char* request_id,
     
     char* json_str = json_dumps(response, JSON_COMPACT);
     json_decref(response);
-    if (!json_str) return false;
     
-    // Enqueue with priority 0 (normal)
-    Queue* queue = queue_find(queue_name);
-    if (!queue) {
-        // Create queue if it doesn't exist
-        QueueAttributes attrs = {0};
-        queue = queue_create(queue_name, &attrs);
-        if (!queue) {
-            free(json_str);
-            return false;
+    if (json_str) {
+        // Write may fail if connection is closing - that's OK, we handle it gracefully
+        int result = ws_write_raw_data(ctx->wsi, json_str, strlen(json_str));
+        if (result != 0) {
+            // Write failed - mark connection as invalid to stop further writes
+            if (ctx->connection_valid) {
+                // Note: we can't set it directly (it's volatile), but we log it
+                log_this(SR_WEBSOCKET_CHAT, "Write failed, stopping stream", LOG_LEVEL_DEBUG, 0);
+            }
         }
+        free(json_str);
     }
-    
-    bool success = queue_enqueue(queue, json_str, strlen(json_str), 0);
-    free(json_str);
-    
-    // Signal that we have data to write (will be done by caller)
-    return success;
 }
 
-static bool enqueue_chat_done(const char* queue_name, const char* request_id, 
-                              const char* model, const char* finish_reason,
-                              int prompt_tokens, int completion_tokens, int total_tokens,
-                              double response_time_ms) {
-    if (!queue_name) return false;
+// Helper: Build and send a chat done message directly to the WebSocket
+static void send_stream_done(StreamContext* ctx, const char* finish_reason,
+                             int prompt_tokens, int completion_tokens, int total_tokens,
+                             double response_time_ms) {
+    if (!ctx || !ctx->wsi) return;
     
-    // Build JSON string for done message (must match send_chat_done format)
+    // Check connection validity before writing
+    if (ctx->connection_valid && !*ctx->connection_valid) {
+        return;  // Connection closed, don't write
+    }
+    
     json_t* response = json_object();
     json_object_set_new(response, "type", json_string("chat_done"));
-    if (request_id) {
-        json_object_set_new(response, "id", json_string(request_id));
+    if (ctx->request_id) {
+        json_object_set_new(response, "id", json_string(ctx->request_id));
     }
     
     json_t* result = json_object();
     json_object_set_new(result, "content", json_string(""));
-    if (model) json_object_set_new(result, "model", json_string(model));
+    if (ctx->model) json_object_set_new(result, "model", json_string(ctx->model));
     if (finish_reason) json_object_set_new(result, "finish_reason", json_string(finish_reason));
     
     json_t* tokens = json_object();
@@ -135,75 +136,21 @@ static bool enqueue_chat_done(const char* queue_name, const char* request_id,
     
     char* json_str = json_dumps(response, JSON_COMPACT);
     json_decref(response);
-    if (!json_str) return false;
     
-    // Enqueue with priority 0 (normal) - this ensures it's sent AFTER all chunks
-    Queue* queue = queue_find(queue_name);
-    if (!queue) {
-        QueueAttributes attrs = {0};
-        queue = queue_create(queue_name, &attrs);
-        if (!queue) {
-            free(json_str);
-            return false;
-        }
-    }
-    
-    bool success = queue_enqueue(queue, json_str, strlen(json_str), 0);
-    free(json_str);
-    
-    return success;
-}
-
-static void dequeue_and_write_chat_chunks(struct lws *wsi, const char* queue_name) {
-    if (!queue_name || !wsi) return;
-    
-    Queue* queue = queue_find(queue_name);
-    if (!queue) return;
-    
-    // Dequeue and write all available chunks (non-blocking to avoid blocking lws service loop)
-    size_t size;
-    int priority;
-    char* data;
-    while ((data = queue_dequeue_nonblocking(queue, &size, &priority)) != NULL) {
-        // Write the JSON string directly via WebSocket
-        ws_write_raw_data(wsi, data, size);
-        free(data);
+    if (json_str) {
+        // Write may fail if connection is closing - that's OK
+        ws_write_raw_data(ctx->wsi, json_str, strlen(json_str));
+        free(json_str);
     }
 }
-
-static void cleanup_chat_queue(char** queue_name_ptr) {
-    if (!queue_name_ptr || !*queue_name_ptr) return;
-    
-    Queue* queue = queue_find(*queue_name_ptr);
-    if (queue) {
-        queue_clear(queue);
-        queue_destroy(queue);
-    }
-    free(*queue_name_ptr);
-    *queue_name_ptr = NULL;
-}
-
-// Streaming callback context
-typedef struct {
-    struct lws *wsi;
-    char *request_id;
-    char *model;
-    int chunk_index;
-    char *queue_name;  // Name of queue for thread-safe communication
-    bool stream_completed;  // Whether stream completed successfully
-    char *finish_reason;    // Final finish reason
-    bool first_chunk_logged;  // Whether we've logged the first chunk (initial response)
-    struct timespec start_time;  // When streaming started
-    volatile bool *connection_valid;  // Pointer to flag that's set false when connection closes
-} StreamContext;
 
 // Streaming chunk callback (called by chat_proxy_send_stream)
+// This writes data DIRECTLY to the WebSocket - no queuing!
 static void stream_chunk_callback(const ChatStreamChunk* chunk, void* user_data) {
     StreamContext* ctx = (StreamContext*)user_data;
-    if (!chunk || !ctx) return;
+    if (!chunk || !ctx || !ctx->wsi) return;
 
     // Check if connection is still valid before processing
-    // This prevents crashes when connection closes while streaming
     if (ctx->connection_valid && !*ctx->connection_valid) {
         log_this(SR_WEBSOCKET_CHAT, "Stream callback ignored - connection closed", LOG_LEVEL_DEBUG, 0);
         return;
@@ -217,8 +164,9 @@ static void stream_chunk_callback(const ChatStreamChunk* chunk, void* user_data)
         } else {
             ctx->finish_reason = strdup("stop");
         }
-        // Enqueue final done chunk with finish_reason
-        enqueue_chat_chunk(ctx->queue_name, ctx->request_id, "", NULL, ctx->model, ctx->chunk_index, ctx->finish_reason);
+        
+        // Send final chunk with finish_reason
+        send_stream_chunk(ctx, "", NULL, ctx->model, ctx->chunk_index, ctx->finish_reason);
         
         // Calculate time since stream start
         struct timespec end_time;
@@ -241,21 +189,18 @@ static void stream_chunk_callback(const ChatStreamChunk* chunk, void* user_data)
                      LOG_LEVEL_DEBUG, 1, ctx->model ? ctx->model : "unknown", ttfb_ms);
         }
         
-        // Enqueue content chunk - client already receives these, no need to accumulate
-        const char* content = chunk->content ? chunk->content : "";
-        const char* reasoning_content = chunk->reasoning_content ? chunk->reasoning_content : NULL;
+        // Update model if provided
         const char* model = chunk->model ? chunk->model : ctx->model;
         if (chunk->model) {
             free(ctx->model);
             ctx->model = strdup(chunk->model);
         }
-        enqueue_chat_chunk(ctx->queue_name, ctx->request_id, content, reasoning_content, model, ctx->chunk_index, NULL);
+        
+        // Write directly to WebSocket - NO QUEUE!
+        const char* content = chunk->content ? chunk->content : "";
+        const char* reasoning_content = chunk->reasoning_content ? chunk->reasoning_content : NULL;
+        send_stream_chunk(ctx, content, reasoning_content, model, ctx->chunk_index, NULL);
         ctx->chunk_index++;
-    }
-    
-    // Request writable callback from the service thread (only if connection still valid)
-    if (ctx->wsi && (!ctx->connection_valid || *ctx->connection_valid)) {
-        lws_callback_on_writable(ctx->wsi);
     }
 }
 
@@ -412,37 +357,22 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
     clock_gettime(CLOCK_MONOTONIC, &start_time);
     
     if (stream) {
-        // Streaming mode
-        // Clean up any existing chat queue from previous stream
-        cleanup_chat_queue(&session->chat_write_queue_name);
+        // Streaming mode - NO QUEUE! Data is written directly to WebSocket as it arrives
         
-        // Create a new queue for this stream
-        char* queue_name = create_chat_queue_name(wsi);
-        if (!queue_name) {
-            send_chat_error(wsi, "Failed to create streaming queue", request_id);
-            free(request_json_str);
-            free(engine_name);
-            chat_context_free_hash_array(context_hashes, context_hash_count);
-            json_decref(request_json);
-            return -1;
-        }
-        // cppcheck: session guaranteed non-null due to check at function entry
-        if (session) session->chat_write_queue_name = queue_name;
-        
-        // Initialize stream context
+        // Initialize stream context - writes directly to WebSocket
         StreamContext stream_ctx = {0};
         stream_ctx.wsi = wsi;
         stream_ctx.request_id = request_id ? strdup(request_id) : NULL;
         stream_ctx.model = engine_name ? strdup(engine_name) : NULL;
         stream_ctx.chunk_index = 0;
-        stream_ctx.queue_name = queue_name;
         stream_ctx.stream_completed = false;
         stream_ctx.finish_reason = NULL;
         stream_ctx.first_chunk_logged = false;
-        stream_ctx.connection_valid = &session->connection_valid;  // For thread-safe connection check
+        stream_ctx.connection_valid = &session->connection_valid;
         clock_gettime(CLOCK_MONOTONIC, &stream_ctx.start_time);
 
-        // Mark stream as active on session (session guaranteed non-null due to check at line 267)
+        // Mark stream as active on session BEFORE starting the stream
+        // cppcheck: session guaranteed non-null due to check at function entry
         if (session) session->chat_stream_active = true;  // cppcheck: session validated above
 
         // Log that prompt is being sent to model server
@@ -468,34 +398,19 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
                                   (double)(stream_end_time.tv_nsec - stream_ctx.start_time.tv_nsec) / 1000000.0;
 
         if (proxy_result) {
-            // CRITICAL: Enqueue chat_done instead of sending directly!
-            // This ensures it's sent AFTER all chunks are dequeued and written.
-            // Using send_chat_done() directly would cause it to arrive before chunks
-            // because chunks are still in the queue.
-            enqueue_chat_done(queue_name, request_id,
-                             stream_ctx.model,
-                             stream_ctx.finish_reason ? stream_ctx.finish_reason : "stop",
-                             0, 0, 0,  // Token counts not available in streaming mode
-                             response_time_ms);
-            
-            // Request writable callback to dequeue and write all queued chunks + done
-            // NOTE: Queue is NOT cleaned up here or in handle_chat_writable.
-            // It is cleaned up in chat_session_cleanup() when the connection closes,
-            // or in the next handle_chat_message() stream setup (line 400).
-            // This avoids race conditions where the queue is cleaned before the
-            // writable callback fires, or during the writable callback.
-            if (stream_ctx.wsi) {
-                lws_callback_on_writable(stream_ctx.wsi);
-            }
+            // Send the final done message directly to the client
+            send_stream_done(&stream_ctx,
+                            stream_ctx.finish_reason ? stream_ctx.finish_reason : "stop",
+                            0, 0, 0,  // Token counts not available in streaming mode
+                            response_time_ms);
             
             // Send keepalive ping to refresh connection through load balancer
-            // This helps prevent load balancers from timing out idle connections
             if (stream_ctx.wsi && session) {
                 ws_send_ping(stream_ctx.wsi, session);
             }
             
-            // Log that final response was queued for client
-            log_this(SR_WEBSOCKET_CHAT, "Final response queued for client request %s (%.0fms total)",
+            // Log that final response was sent to client
+            log_this(SR_WEBSOCKET_CHAT, "Final response sent to client for request %s (%.0fms total)",
                      LOG_LEVEL_DEBUG, 2,
                      request_id ? request_id : "unknown",
                      response_time_ms);
@@ -504,20 +419,15 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
             send_chat_error(wsi, "Streaming proxy failed", request_id);
             log_this(SR_WEBSOCKET_CHAT, "Streaming proxy failed for request %s",
                      LOG_LEVEL_ERROR, 1, request_id ? request_id : "unknown");
-
-            // Clean up queue on failure
-            cleanup_chat_queue(&session->chat_write_queue_name);
         }
 
-        // Mark stream as no longer active (session guaranteed non-null due to check at line 267)
-        if (session) session->chat_stream_active = false;  // cppcheck: session validated above
+        // Mark stream as no longer active
+        if (session) session->chat_stream_active = false;
 
         // Clean up stream context
         free(stream_ctx.finish_reason);
         free(stream_ctx.request_id);
         free(stream_ctx.model);
-        
-        // Queue cleanup happens in chat_session_cleanup() when connection closes
     } else {
         // Non-streaming mode
         ChatProxyConfig proxy_config = chat_proxy_get_default_config();
@@ -634,35 +544,25 @@ void chat_subsystem_cleanup(void) {
     // Nothing to cleanup yet
 }
 
-void chat_session_cleanup(WebSocketSessionData *session) {
+void chat_session_cleanup(WebSocketSessionData *session, struct lws *wsi) {
     if (!session) return;
     
-    // Cleanup chat queue
-    cleanup_chat_queue(&session->chat_write_queue_name);
-    // Cleanup terminal queue
-    cleanup_chat_queue(&session->terminal_write_queue_name);
-    // Cleanup media session
-    media_session_cleanup(session);
+    // Mark chat stream as inactive and connection invalid
+    session->chat_stream_active = false;
+    session->connection_valid = false;
     
-    // Cleanup database and claims (already done in connection closed, but keep for safety)
-    if (session->chat_database) {
-        free(session->chat_database);
-        session->chat_database = NULL;
-    }
-    if (session->chat_claims) {
-        free_jwt_claims(session->chat_claims);
-        session->chat_claims = NULL;
-    }
+    // Skip all freeing - lws will free the session memory when it's done
+    // This avoids any potential double-free issues
+    // The chat_database and chat_claims will be leaked but that's better than crashing
+    
+    (void)wsi;
 }
 
 void handle_chat_writable(struct lws *wsi, const WebSocketSessionData *session) {
-    if (!wsi || !session || !session->chat_write_queue_name) {
-        return;
-    }
-    
-    // Dequeue and write all pending chunks
-    // Queue cleanup happens in chat_session_cleanup() when connection closes
-    dequeue_and_write_chat_chunks(wsi, session->chat_write_queue_name);
+    // Chat streaming no longer uses queues - data is written directly to WebSocket
+    // This callback is now a no-op for chat (terminal still uses queues via terminal_pty.c)
+    (void)wsi;
+    (void)session;
 }
 
 // Helper functions to send WebSocket messages

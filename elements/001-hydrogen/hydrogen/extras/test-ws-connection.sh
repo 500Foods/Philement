@@ -11,7 +11,7 @@
 # ---------------------------------------------------------------------------
 
 # Server URL (no trailing slash)
-WS_URL="${WS_URL:-wss://lithium.philement.com/wss}"
+WS_URL="${WS_URL:-wss://lithium.philement.com:7001}"
 
 # WebSocket key for authentication
 WS_KEY="${WS_KEY:-ABCDEFGHIJKLMNOP}"

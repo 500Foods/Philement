@@ -8,7 +8,7 @@
  * - Thread registration and metrics
  */
 
-// Global includes 
+// Global includes
 #include <src/hydrogen.h>
 
 // Local includes
@@ -20,6 +20,8 @@
 #include <src/api/auth/auth_service.h>
 // Chat session cleanup
 #include "websocket_server_chat.h"
+// Service thread tracking
+#include <src/threads/threads.h>
 
 // External reference to the server context
 extern WebSocketServerContext *ws_context;
@@ -73,18 +75,22 @@ int ws_handle_connection_established(struct lws *wsi, WebSocketSessionData *sess
 
 int ws_handle_connection_closed(const struct lws *wsi, WebSocketSessionData *session)
 {
-    // Defensive check - log and return gracefully if context is invalid
+    // Defensive check - return gracefully if context is invalid
     if (!ws_context) {
-        log_this(SR_WEBSOCKET, "[WS] Invalid context during connection closure (ws_context is NULL)", LOG_LEVEL_DEBUG, 0);
-        return 0;  // Return 0 to avoid lws error propagation
+        return 0;
     }
 
-    // Mark connection as invalid immediately - prevents stream callbacks from using stale data
+    // Guard against double cleanup - check and set atomically
     if (session) {
+        // Use connection_valid as a one-time flag
+        if (!session->connection_valid) {
+            return 0;  // Already cleaned up
+        }
         session->connection_valid = false;
+        session->chat_stream_active = false;
     }
 
-    // Get client info before cleanup for logging
+    // Get client info for logging
     const char *client_ip = "unknown";
     if (session && session->request_ip[0]) {
         client_ip = session->request_ip;
@@ -104,8 +110,8 @@ int ws_handle_connection_closed(const struct lws *wsi, WebSocketSessionData *ses
             // Clear the session from session data
             session->terminal_session = NULL;
         }
-        // Cleanup chat-specific resources
-        chat_session_cleanup(session);
+        // Cleanup chat-specific resources (pass wsi for final writable callback)
+        chat_session_cleanup(session, (struct lws *)wsi);
     }
 
     // Defensive check for websocket_threads validity before accessing

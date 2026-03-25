@@ -572,6 +572,7 @@ void log_this(const char* subsystem, const char* format, int priority, int num_a
                     // Signal the log queue manager
                     pthread_cond_signal(&terminate_cond);
                 }
+                queue_release(log_queue);
             }
 
             // Only check console enabled during normal operation
