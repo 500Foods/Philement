@@ -458,8 +458,53 @@ const payload = {
   engine: "Crimson",
   messages: [{ role: "user", content: message }],
   stream: true,
-  jwt: `Bearer ${jwt}`  // Note the Bearer prefix
+  jwt: `Bearer ${jwt}`,  // Note the Bearer prefix
+  context: {              // Context packet for personalization
+    user: { id, username, displayName, roles, preferences },
+    session: { sessionId, loginTime, currentManager },
+    permissions: { managers, features },
+    currentView: { managerId, managerName },
+    lithiumVersion, buildDate
+  }
 };
+```
+
+### Context Packet
+
+The context packet is gathered automatically from the app state and JWT claims:
+
+```javascript
+// From crimson-ws.js: gatherContext()
+{
+  user: {
+    id: claims.user_id,
+    username: claims.username,
+    displayName: claims.display_name || claims.username,
+    roles: claims.roles || [],
+    preferences: {
+      theme: localStorage.getItem('lithium_theme'),
+      language: navigator.language
+    }
+  },
+  session: {
+    sessionId: app.sessionId,
+    loginTime: claims.iat * 1000,
+    currentManager: app.currentManager?.id,
+    recentActivity: []
+  },
+  permissions: {
+    managers: claims.managers || [],
+    features: claims.features || []
+  },
+  currentView: {
+    managerId: app.currentManager?.id,
+    managerName: app.currentManager?.name,
+    activeTab: null,
+    selectedRecord: null
+  },
+  lithiumVersion: app.version,
+  buildDate: app.build
+}
 ```
 
 ### Streaming Response Format
@@ -467,7 +512,7 @@ const payload = {
 The AI responses use a delimiter-based format for structured data:
 
 ```
-[Conversation text streams here in plain text...]
+Conversation text streams here in plain text...
 [LITHIUM-CRIMSON-JSON]
 {
   "followUpQuestions": ["Question 1?", "Question 2?"],
@@ -475,6 +520,15 @@ The AI responses use a delimiter-based format for structured data:
   "metadata": { "confidence": 0.95, "category": "help" }
 }
 ```
+
+#### Reasoning Content
+
+Models like Kimi K2.5 expose reasoning/thinking via a separate `reasoning_content` field in the streaming response:
+
+- **Separate field**: `reasoning_content` arrives in the WebSocket chunk alongside `content`
+- **Streaming**: Reasoning content streams in real-time to the reasoning panel
+- **Display**: The reasoning panel must be toggled visible (person icon) to see content
+- **Timing**: `reasoning_content` arrives before `content` (the model thinks first, then answers)
 
 #### Delimiter Handling
 

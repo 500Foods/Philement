@@ -5,12 +5,56 @@
  * Connection lifecycle is managed by app-ws.js.
  */
 
-import { retrieveJWT, validateJWT } from '../core/jwt.js';
+import { retrieveJWT, validateJWT, getClaims } from '../core/jwt.js';
 import { log, Subsystems, Status } from '../core/log.js';
 import { getAppWS, isAppWSConnected, registerWSHandler, unregisterWSHandler } from './app-ws.js';
 
 const DEFAULT_ENGINE = 'Crimson';
 const CHAT_MESSAGE_TYPES = ['chat_chunk', 'chat_done', 'chat_error'];
+
+/**
+ * Gather context information for the AI assistant
+ * @returns {Object} Context packet with user, session, permissions, and view info
+ */
+function gatherContext() {
+  const jwt = retrieveJWT();
+  const claims = jwt ? getClaims(jwt) : null;
+
+  // Get app state from window (exposed in app.js)
+  const app = window.lithiumApp || null;
+  const state = app?.getState?.() || {};
+
+  return {
+    user: {
+      id: claims?.user_id || null,
+      username: claims?.username || 'User',
+      displayName: claims?.display_name || claims?.username || 'User',
+      roles: claims?.roles || [],
+      preferences: {
+        theme: localStorage.getItem('lithium_theme') || 'default',
+        language: navigator.language || 'en-US'
+      }
+    },
+    session: {
+      sessionId: window.lithiumLogs?.sessionId || null,
+      loginTime: claims?.iat ? new Date(claims.iat * 1000).toISOString() : null,
+      currentManager: state.currentManager || app?.currentManager?.id || null,
+      recentActivity: []
+    },
+    permissions: {
+      managers: claims?.managers || [],
+      features: claims?.features || []
+    },
+    currentView: {
+      managerId: app?.currentManager?.id || null,
+      managerName: app?.currentManager?.name || null,
+      activeTab: null,
+      selectedRecord: null
+    },
+    lithiumVersion: state.version || 'unknown',
+    buildDate: state.build || 'unknown'
+  };
+}
 
 export class CrimsonWebSocket {
   constructor(options = {}) {
@@ -39,27 +83,29 @@ export class CrimsonWebSocket {
   }
 
   handleChunk(message) {
-    const { id, chunk, content, index, finish_reason } = message;
+    const { id, chunk, content, reasoning_content, index, finish_reason } = message;
     if (id && !this.isCurrentRequest(id)) return;
-    
+
     // Handle different possible chunk structures
-    let chunkContent, chunkIndex, chunkFinishReason;
-    
+    let chunkContent, chunkReasoning, chunkIndex, chunkFinishReason;
+
     if (chunk) {
-      // Structure: { id, chunk: { content, index, finish_reason } }
+      // Structure: { id, chunk: { content, reasoning_content, index, finish_reason } }
       chunkContent = chunk.content;
+      chunkReasoning = chunk.reasoning_content;
       chunkIndex = chunk.index;
       chunkFinishReason = chunk.finish_reason;
     } else if (content !== undefined) {
-      // Structure: { id, content, index, finish_reason }
+      // Structure: { id, content, reasoning_content, index, finish_reason }
       chunkContent = content;
+      chunkReasoning = reasoning_content;
       chunkIndex = index;
       chunkFinishReason = finish_reason;
     }
-    
-    if (this.onChunk && (chunkContent || chunkFinishReason)) {
-      log(Subsystems.WEBSOCKET, Status.DEBUG, `[CrimsonWS] Chunk received: len=${chunkContent?.length || 0}, index=${chunkIndex}, finish=${chunkFinishReason || 'none'}`);
-      this.onChunk(chunkContent, chunkIndex, chunkFinishReason);
+
+    if (this.onChunk && (chunkContent || chunkReasoning || chunkFinishReason)) {
+      log(Subsystems.WEBSOCKET, Status.DEBUG, `[CrimsonWS] Chunk received: content_len=${chunkContent?.length || 0}, reasoning_len=${chunkReasoning?.length || 0}, index=${chunkIndex}, finish=${chunkFinishReason || 'none'}`);
+      this.onChunk(chunkContent, chunkIndex, chunkFinishReason, chunkReasoning);
     }
   }
 
@@ -133,16 +179,31 @@ export class CrimsonWebSocket {
     const requestId = this.generateRequestId();
     const stream = options.stream !== false;
 
+    // Gather context for the AI assistant
+    const context = gatherContext();
+    const contextMessage = `[CURRENT SESSION CONTEXT]\n${JSON.stringify(context, null, 2)}\n[/CURRENT SESSION CONTEXT]`;
+
     const payload = {
       engine: this.engine,
-      messages: [{ role: 'user', content: message }],
+      messages: [
+        { role: 'system', content: contextMessage },  // Inject context as system message
+        { role: 'user', content: message }
+      ],
       stream,
-      jwt: `Bearer ${jwt}`,
+      jwt: `Bearer ${jwt}`
     };
 
     if (options.history && Array.isArray(options.history)) {
-      payload.messages = [...options.history, ...payload.messages];
+      // Insert context as first system message, then history, then user message
+      payload.messages = [
+        { role: 'system', content: contextMessage },
+        ...options.history,
+        { role: 'user', content: message }
+      ];
     }
+
+    // Debug: Log context being sent
+    log(Subsystems.WEBSOCKET, Status.DEBUG, `[CrimsonWS] Context injected as system message: user=${context?.user?.username}, manager=${context?.currentView?.managerName}`);
 
     const request = { type: 'chat', id: requestId, payload };
 

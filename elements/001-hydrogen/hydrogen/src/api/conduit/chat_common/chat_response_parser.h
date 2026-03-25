@@ -33,6 +33,7 @@ typedef struct ChatParsedResponse {
 typedef struct ChatStreamChunk {
     char* id;                   // Chunk ID
     char* content;              // Delta content
+    char* reasoning_content;    // Reasoning/thinking content (e.g., Kimi K2.5)
     char* finish_reason;        // Finish reason (if complete)
     char* model;                // Model name
     bool is_done;               // Whether this is the final chunk
