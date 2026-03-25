@@ -16,15 +16,15 @@ INTERVAL=30   # 30 seconds between pings
 
 # Use a FIFO to send periodic messages
 FIFO=$(mktemp -u)
-mkfifo "$FIFO"
-trap "rm -f $FIFO" EXIT
+mkfifo "${FIFO}"
+trap 'rm -f "${FIFO}"' EXIT
 
 # Start websocat reading from FIFO
-websocat --protocol "$PROTO" "$WS_URL" < "$FIFO" 2>&1 &
+websocat --protocol "${PROTO}" "${WS_URL}" < "${FIFO}" 2>&1 &
 WS_PID=$!
 
 # Open FIFO for writing
-exec 3>"$FIFO"
+exec 3>"${FIFO}"
 
 # Send initial ping
 echo '{"type":"ping"}' >&3
@@ -32,23 +32,22 @@ echo "Ping sent at 0s"
 
 # Monitor connection and send periodic pings
 ELAPSED=0
-while [ $ELAPSED -lt $TIMEOUT ]; do
-    sleep $INTERVAL
-    ELAPSED=$((ELAPSED + INTERVAL))
-    
+while [[ ${ELAPSED} -lt ${TIMEOUT} ]]; do
+    sleep "${INTERVAL}"
+    ELAPSED=$(( ELAPSED + INTERVAL ))
+
     # Check if websocat is still running
-    if ! kill -0 $WS_PID 2>/dev/null; then
+    if ! kill -0 "${WS_PID}" 2>/dev/null; then
         echo "Connection lost at ${ELAPSED}s"
         break
     fi
-    
+
     # Send ping
-    echo '{"type":"ping"}' >&3 2>/dev/null
-    if [ $? -ne 0 ]; then
+    if ! echo '{"type":"ping"}' >&3 2>/dev/null; then
         echo "Send failed at ${ELAPSED}s - connection closed"
         break
     fi
-    
+
     echo "Ping sent at ${ELAPSED}s - connection alive"
 done
 
@@ -56,18 +55,18 @@ done
 exec 3>&-
 
 # Wait for websocat to finish
-wait $WS_PID 2>/dev/null
+wait "${WS_PID}" 2>/dev/null
 WS_EXIT=$?
 
 END_TIME=$(date +%s)
-TOTAL=$((END_TIME - START_TIME))
+TOTAL=$(( END_TIME - START_TIME ))
 
 echo ""
 echo "=== Results ==="
 echo "Duration: ${TOTAL}s"
-echo "Exit code: $WS_EXIT"
+echo "Exit code: ${WS_EXIT}"
 
-if [ $TOTAL -ge $TIMEOUT ]; then
+if [[ ${TOTAL} -ge ${TIMEOUT} ]]; then
     echo "SUCCESS: Connection maintained for ${TIMEOUT}s"
     exit 0
 else

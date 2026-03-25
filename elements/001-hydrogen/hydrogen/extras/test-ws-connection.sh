@@ -4,7 +4,7 @@
 # =============================================================================
 # This script tests WebSocket connectivity and connection maintenance.
 # Configure the variables below and run: bash test-ws-connection.sh
-# =============================================================================
+# ============================================================================
 
 # ---------------------------------------------------------------------------
 # CONFIGURATION - Modify these variables to adjust test behavior
@@ -63,41 +63,41 @@ FAILED=0
 print_header() {
     echo ""
     echo -e "${BLUE}========================================${NC}"
-    echo -e "${BLUE}$1${NC}"
+    echo -e "${BLUE}${1}${NC}"
     echo -e "${BLUE}========================================${NC}"
 }
 
 print_result() {
-    local name=$1
-    local result=$2
-    
-    if [ "$result" = "PASS" ]; then
-        echo -e "  ${GREEN}✓${NC} $name"
-        PASSED=$((PASSED + 1))
+    local name="${1}"
+    local result="${2}"
+
+    if [[ "${result}" = "PASS" ]]; then
+        echo -e "  ${GREEN}✓${NC} ${name}"
+        PASSED=$(( PASSED + 1 ))
     else
-        echo -e "  ${RED}✗${NC} $name"
-        FAILED=$((FAILED + 1))
+        echo -e "  ${RED}✗${NC} ${name}"
+        FAILED=$(( FAILED + 1 ))
     fi
 }
 
 test_connection() {
-    local name=$1
-    local timeout=$2
-    
+    local name="${1}"
+    local timeout="${2}"
+
     local output
     local exit_code
-    
-    output=$(echo "$TEST_REQUEST" | timeout "$timeout" websocat --protocol "$WS_PROTOCOL" "$FULL_URL" 2>&1)
+
+    output=$(echo "${TEST_REQUEST}" | timeout "${timeout}" websocat --protocol "${WS_PROTOCOL}" "${FULL_URL}" 2>&1)
     exit_code=$?
-    
-    if [ $exit_code -eq 0 ]; then
-        if [ "$VERBOSE" = "true" ]; then
+
+    if [[ ${exit_code} -eq 0 ]]; then
+        if [[ "${VERBOSE}" = "true" ]]; then
             echo "    Response: ${output:0:100}..."
         fi
-        print_result "$name" "PASS"
+        print_result "${name}" "PASS"
         return 0
     else
-        print_result "$name" "FAIL (exit: $exit_code)"
+        print_result "${name}" "FAIL (exit: ${exit_code})"
         return 1
     fi
 }
@@ -110,76 +110,75 @@ echo "╚═══════════════════════�
 echo -e "${NC}"
 
 echo "Configuration:"
-echo "  URL: $FULL_URL"
-echo "  Protocol: $WS_PROTOCOL"
+echo "  URL: ${FULL_URL}"
+echo "  Protocol: ${WS_PROTOCOL}"
 echo ""
 
 # Test 1: Immediate sequential connections
-if [ "$RUN_IMMEDIATE_TEST" = "true" ]; then
-    print_header "Test 1: Sequential Connections ($SEQUENTIAL_COUNT)"
-    
-    for i in $(seq 1 $SEQUENTIAL_COUNT); do
-        test_connection "Connection $i" 10
+if [[ "${RUN_IMMEDIATE_TEST}" = "true" ]]; then
+    print_header "Test 1: Sequential Connections (${SEQUENTIAL_COUNT})"
+
+    for i in $(seq 1 "${SEQUENTIAL_COUNT}"); do
+        test_connection "Connection ${i}" 10
     done
-    
+
     echo ""
 fi
 
 # Test 2: Connections with delays
-if [ "$RUN_DELAYED_TESTS" = "true" ]; then
+if [[ "${RUN_DELAYED_TESTS}" = "true" ]]; then
     print_header "Test 2: Connections with Delays"
-    
-    for delay in $DELAY_INTERVALS; do
+
+    for delay in ${DELAY_INTERVALS}; do
         echo "  Waiting ${delay}s..."
-        sleep "$delay"
+        sleep "${delay}"
         test_connection "After ${delay}s delay" 10
     done
-    
+
     echo ""
 fi
 
 # Test 3: Single connection maintenance
-if [ "$RUN_MAINTENANCE_TEST" = "true" ]; then
+if [[ "${RUN_MAINTENANCE_TEST}" = "true" ]]; then
     print_header "Test 3: Single Connection Maintenance (${MAINTENANCE_DURATION}s)"
-    
+
     echo "  Opening connection and sending periodic pings..."
-    
+
     # Use a FIFO for bidirectional communication
     FIFO=$(mktemp -u)
-    mkfifo "$FIFO"
-    trap "rm -f $FIFO" EXIT
-    
+    mkfifo "${FIFO}"
+    trap 'rm -f "${FIFO}"' EXIT
+
     # Start websocat in background
-    websocat --protocol "$WS_PROTOCOL" "$FULL_URL" < "$FIFO" > /tmp/ws_output_$$.txt 2>&1 &
+    websocat --protocol "${WS_PROTOCOL}" "${FULL_URL}" < "${FIFO}" > "/tmp/ws_output_$$.txt" 2>&1 &
     WS_PID=$!
-    
+
     # Open FIFO for writing
-    exec 3>"$FIFO"
-    
+    exec 3>"${FIFO}"
+
     # Send initial request
-    echo "$TEST_REQUEST" >&3
+    echo "${TEST_REQUEST}" >&3
     echo -n "  0s: "
     sleep 1
-    
-    if kill -0 $WS_PID 2>/dev/null; then
+
+    if kill -0 "${WS_PID}" 2>/dev/null; then
         echo -e "${GREEN}Connected${NC}"
     else
         echo -e "${RED}Connection failed${NC}"
-        FAILED=$((FAILED + 1))
+        FAILED=$(( FAILED + 1 ))
         exec 3>&-
-        wait $WS_PID 2>/dev/null
+        wait "${WS_PID}" 2>/dev/null
     fi
-    
+
     # Send periodic pings
-    MAINTENANCE_PINGS=$((MAINTENANCE_DURATION / MAINTENANCE_PING_INTERVAL))
-    
-    for i in $(seq 1 $MAINTENANCE_PINGS); do
-        sleep "$MAINTENANCE_PING_INTERVAL"
-        ELAPSED=$((i * MAINTENANCE_PING_INTERVAL))
-        
-        if kill -0 $WS_PID 2>/dev/null; then
-            echo "$TEST_REQUEST" >&3 2>/dev/null
-            if [ $? -eq 0 ]; then
+    MAINTENANCE_PINGS=$(( MAINTENANCE_DURATION / MAINTENANCE_PING_INTERVAL ))
+
+    for i in $(seq 1 "${MAINTENANCE_PINGS}"); do
+        sleep "${MAINTENANCE_PING_INTERVAL}"
+        ELAPSED=$(( i * MAINTENANCE_PING_INTERVAL ))
+
+        if kill -0 "${WS_PID}" 2>/dev/null; then
+            if echo "${TEST_REQUEST}" >&3 2>/dev/null; then
                 echo -n "  ${ELAPSED}s: "
                 echo -e "${GREEN}Ping sent, alive${NC}"
             else
@@ -188,30 +187,30 @@ if [ "$RUN_MAINTENANCE_TEST" = "true" ]; then
             fi
         else
             echo -e "  ${ELAPSED}s: ${RED}Connection lost${NC}"
-            FAILED=$((FAILED + 1))
+            FAILED=$(( FAILED + 1 ))
             break
         fi
     done
-    
+
     # Check if we completed the full duration
-    if [ $ELAPSED -ge $MAINTENANCE_DURATION ]; then
-        PASSED=$((PASSED + 1))
+    if [[ ${ELAPSED} -ge ${MAINTENANCE_DURATION} ]]; then
+        PASSED=$(( PASSED + 1 ))
     fi
-    
+
     # Close connection
     exec 3>&-
-    wait $WS_PID 2>/dev/null
-    
+    wait "${WS_PID}" 2>/dev/null
+
     echo ""
 fi
 
 # Summary
 print_header "Test Summary"
-echo "  Passed: $PASSED"
-echo "  Failed: $FAILED"
+echo "  Passed: ${PASSED}"
+echo "  Failed: ${FAILED}"
 echo ""
 
-if [ $FAILED -eq 0 ]; then
+if [[ ${FAILED} -eq 0 ]]; then
     echo -e "${GREEN}All tests passed!${NC}"
     exit 0
 else
