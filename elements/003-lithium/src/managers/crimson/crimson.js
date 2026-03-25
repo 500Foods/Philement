@@ -672,22 +672,22 @@ class CrimsonManager {
 
   /**
    * Add reasoning content to the reasoning panel
-   * @param {string} content - Reasoning content
+   * @param {string} content - Reasoning content from reasoning_content field
    */
   addReasoningContent(content) {
     if (!content) return;
-    
+
     this.currentReasoningBuffer += content;
-    
+
     // Always collect reasoning data
     this.reasoningChunks.push(content);
-    
+
     // Only update display if reasoning mode is active
     if (this.reasoningMode && this.reasoningContent) {
       this.reasoningContent.textContent = this.currentReasoningBuffer;
       this.reasoningContent.scrollTop = this.reasoningContent.scrollHeight;
     }
-    
+
     this.addDebugMessage('REASONING', `Chunk: ${content.substring(0, 50)}...`);
   }
 
@@ -1082,9 +1082,9 @@ class CrimsonManager {
     log(Subsystems.WEBSOCKET, Status.DEBUG, `[Crimson] Initializing WebSocket client`);
     // Create or update the Crimson WS client (only handles messages, not connection)
     this.wsClient = getCrimsonWS({
-      onChunk: (content, index, finishReason) => {
-        this.addDebugMessage('WS_CALLBACK', `onChunk called: len=${content?.length || 0}, index=${index}, finish=${finishReason || 'none'}`);
-        this.handleStreamChunk(content, index, finishReason);
+      onChunk: (content, index, finishReason, reasoningContent) => {
+        this.addDebugMessage('WS_CALLBACK', `onChunk called: content_len=${content?.length || 0}, reasoning_len=${reasoningContent?.length || 0}, index=${index}, finish=${finishReason || 'none'}`);
+        this.handleStreamChunk(content, index, finishReason, reasoningContent);
       },
       onDone: (content, result) => {
         this.addDebugMessage('WS_CALLBACK', `onDone called: content len=${content?.length || 0}`);
@@ -1180,7 +1180,12 @@ class CrimsonManager {
   /**
    * Handle incoming stream chunk - accumulates content and displays in real-time
    */
-  handleStreamChunk(content, _index, finishReason) {
+  handleStreamChunk(content, _index, finishReason, reasoningContent) {
+    // Handle reasoning content first (if present)
+    if (reasoningContent) {
+      this.addReasoningContent(reasoningContent);
+    }
+
     if (!content && !finishReason) return;
     
     // Get content element
@@ -1216,7 +1221,7 @@ class CrimsonManager {
     } else {
       const fullContent = this.partialDelimiter + content;
       this.partialDelimiter = '';
-      
+
       const delimiterIndex = fullContent.indexOf(this.DELIMITER);
       if (delimiterIndex !== -1) {
         this.conversationBuffer += fullContent.substring(0, delimiterIndex);
@@ -1232,7 +1237,7 @@ class CrimsonManager {
             break;
           }
         }
-        
+
         if (partialLen > 0) {
           this.partialDelimiter = fullContent.slice(-partialLen);
           this.conversationBuffer += fullContent.slice(0, -partialLen);
@@ -1240,12 +1245,12 @@ class CrimsonManager {
           this.conversationBuffer += fullContent;
         }
       }
-      
+
       // Update display with current content
       const displayContent = this.conversationBuffer.replace(/\s+$/, '');
       contentEl.setAttribute('data-raw-content', displayContent);
       contentEl.innerHTML = this.formatMessageContent(displayContent);
-      
+
       // Scroll to show new content
       if (this.conversation) {
         this.conversation.scrollTop = this.conversation.scrollHeight;
@@ -1313,7 +1318,7 @@ class CrimsonManager {
    */
   handleStreamDone(content, result) {
     log(Subsystems.WEBSOCKET, Status.DEBUG, `[Crimson] handleStreamDone called, isStreaming: ${this.isStreaming}, content length: ${content?.length || 0}`);
-    
+
     try {
       this.addDebugMessage('DONE', 'Stream complete');
 

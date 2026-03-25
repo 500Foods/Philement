@@ -297,6 +297,34 @@ Client                    Server                      AI Engine
   ... connection stays open ...
 ```
 
+### Chunk Message Structure
+
+Each `chat_chunk` message contains:
+
+```json
+{
+  "type": "chat_chunk",
+  "id": "crimson_1234567890_1",
+  "chunk": {
+    "content": "The answer is...",
+    "reasoning_content": "Let me think about this...",
+    "model": "kimi-k2.5",
+    "index": 0,
+    "finish_reason": null
+  }
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `content` | string | Main response text (may be empty during reasoning phase) |
+| `reasoning_content` | string | Model's thinking/reasoning process (e.g., Kimi K2.5) |
+| `model` | string | Model name |
+| `index` | number | Chunk sequence number |
+| `finish_reason` | string | Present on final chunk (e.g., "stop") |
+
+**Note**: Models like Kimi K2.5 send `reasoning_content` chunks first, then `content` chunks. The reasoning panel displays `reasoning_content` when toggled visible.
+
 ---
 
 ## Logout Handling

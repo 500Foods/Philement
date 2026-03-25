@@ -1571,6 +1571,9 @@ let app = null;
 document.addEventListener('DOMContentLoaded', async () => {
   app = new LithiumApp();
 
+  // Expose app instance on window for module access (e.g., Crimson context)
+  window.lithiumApp = app;
+
   // Expose log inspection API on window for console debugging
   window.lithiumLogs = {
     /** Get all log entries as raw JSON objects */
