@@ -12,27 +12,27 @@ echo "Testing 10 sequential connections..."
 echo ""
 
 for i in $(seq 1 10); do
-    echo -n "Connection $i: "
-    RESULT=$(echo '{"type":"ping"}' | timeout 5 websocat -1 --protocol "$PROTO" "$WS_URL" 2>&1)
+    echo -n "Connection ${i}: "
+    echo '{"type":"ping"}' | timeout 5 websocat -1 --protocol "${PROTO}" "${WS_URL}" 2>&1
     EXIT=$?
-    
-    if [ $EXIT -eq 0 ]; then
+
+    if [[ ${EXIT} -eq 0 ]]; then
         echo "OK"
-        PASSED=$((PASSED + 1))
+        PASSED=$(( PASSED + 1 ))
     else
-        echo "FAILED (exit $EXIT)"
-        FAILED=$((FAILED + 1))
+        echo "FAILED (exit ${EXIT})"
+        FAILED=$(( FAILED + 1 ))
     fi
-    
+
     sleep 1
 done
 
 echo ""
 echo "=== Results ==="
-echo "Passed: $PASSED"
-echo "Failed: $FAILED"
+echo "Passed: ${PASSED}"
+echo "Failed: ${FAILED}"
 
-if [ $FAILED -eq 0 ]; then
+if [[ ${FAILED} -eq 0 ]]; then
     echo "SUCCESS: All connections succeeded"
     exit 0
 else
