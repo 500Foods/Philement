@@ -3,9 +3,11 @@
 ## Status: ✅ COMPLETE (2026-03-23)
 
 ## Objective
+
 Implement mechanisms for recovering missing segments in a shared-nothing server architecture where each server maintains its own local cache but shares a common database backend.
 
 ## Architecture Notes
+
 - **Shared Storage**: Database serves as the shared backend between servers
 - **Cache Location**: `./cache/` relative to server cwd (configurable via `CHAT_CACHE_DIR` env var)
 - **Two-Tier Structure**: `{cache_dir}/{XX}/{XXXXXX}.json` (first 2 hash chars as subfolder)
@@ -14,9 +16,11 @@ Implement mechanisms for recovering missing segments in a shared-nothing server 
 - **Pre-fetching**: Conservative approach - pre-fetch next segment in conversation when accessing current
 
 ## Prerequisites
+
 - Phase 9 completed and verified (local disk cache and LRU working)
 
 ## Testable Gate Results
+
 All gates verified:
 
 | Gate | Status | Notes |
@@ -31,6 +35,7 @@ All gates verified:
 ## Tasks Completed
 
 ### 1. Update cache directory configuration ✅
+
 - Changed default cache location from `~/.philement/chat_lru_cache/` to `./cache/`
 - Added `CHAT_CACHE_DIR` environment variable for override
 - Removed database name from cache path (no topology = single cache)
@@ -38,12 +43,14 @@ All gates verified:
 - **Files modified**: `chat_lru_cache.h`, `chat_lru_cache.c`
 
 ### 2. Create QueryRef #070 for batch segment retrieval ✅
+
 - Created migration `acuranzo_1170.lua`
 - Accepts comma-separated list of hashes via `:SEGMENT_HASHES` parameter
 - Returns all found segments in single query
 - Internal query type (query_type = 0) for security
 
 ### 3. Implement batch retrieval API ✅
+
 - Added `chat_storage_retrieve_segments_batch()` function
 - Accepts array of hashes, returns JSON array of found segments
 - Single database round-trip for multiple segments
@@ -51,23 +58,27 @@ All gates verified:
 - **Files modified**: `chat_storage.h`, `chat_storage.c`
 
 ### 4. Implement conservative pre-fetching ✅
+
 - Added `chat_storage_prefetch_segment()` function
 - Conservative: ensures segment is in cache without full conversation context
 - Skip pre-fetch if already in cache
 - **Files modified**: `chat_storage.h`, `chat_storage.c`
 
 ### 5. Segment availability monitoring ✅
+
 - Leverages existing `ChatLRUCacheStats` structure
 - Cache hits, misses, evictions already tracked
 - Hit ratio calculation available
 
 ### 6. Unit tests ✅
+
 - Created `tests/unity/src/chat/chat_phase10_test.c` with 9 tests:
   - Cache directory configuration tests (4)
   - Batch retrieval API parameter validation tests (3)
   - Pre-fetch API parameter validation tests (2)
 
 ## Verification Steps
+
 1. Verify cache uses `./cache/` directory structure
 2. Test QueryRef #070 returns multiple segments in single query
 3. Test automatic fallback when segments missing from cache
@@ -104,35 +115,45 @@ All gates verified:
 ## Lessons Learned
 
 ### 1. Cache Location Flexibility
+
 Using `CHAT_CACHE_DIR` environment variable allows deployment flexibility without code changes. This is important for:
+
 - Docker containers (can mount volume at any path)
 - Development vs production environments
 - Testing scenarios with temporary directories
 
 ### 2. Batch Retrieval Benefits
+
 Single query for multiple segments reduces database round-trips significantly for long conversations. The batch API:
+
 - Uses PostgreSQL `ANY(string_to_array(...))` for efficient batch lookup
 - Returns JSON array directly from QueryRef
 - Integrates with cache layer to populate on DB hit
 
 ### 3. Conservative Pre-fetching
+
 Simple approach of ensuring segment is in cache (rather than predicting next segment) provides good benefits with minimal complexity. Future enhancement could analyze conversation patterns if needed.
 
 ### 4. No Topology Awareness
+
 Removing database name from cache path simplifies the cache structure since servers don't need to know about each other. The cache is now:
+
 - Shared across all databases on the same server
 - Two-tier structure: `./cache/{XX}/{hash}.json`
 - 256 subdirectories for filesystem distribution
 
 ### 5. LSP vs Build System
+
 LSP errors in development environment are false positives - the actual build works because CMake handles include paths. Don't rely on LSP for validation.
 
 ### 6. QueryRef Numbering
+
 Phase 10 added QueryRef #070. Current QueryRef range for chat: #061-#070.
 
 ## Dependencies for Phase 11
 
 Phase 11 (Streaming Support) will need:
+
 - ✅ Existing chat proxy infrastructure (Phase 2)
 - ✅ auth_chat endpoint (Phase 4)
 - ✅ Response parser supporting streaming chunks (Phase 2)
@@ -162,6 +183,7 @@ Phase 10 provides infrastructure that Phase 11 will build upon:
 ## Next Phase
 
 After Phase 10 completion, proceed to Phase 11 (Streaming Support):
+
 - POST /api/conduit/auth_chat/stream endpoint
 - Server-Sent Events implementation
 - Streaming integration with proxy

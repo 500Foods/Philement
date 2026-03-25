@@ -169,6 +169,7 @@ QUALITY CHECKLIST (before completing)
 -->
 ## Contents
 
+- [March 2026](#march-2026)
 - [February 2026](#february-2026)
 - [January 2026](#january-2026)
 - [December 2025](#december-2025)
@@ -184,14 +185,62 @@ QUALITY CHECKLIST (before completing)
 - [February 2025](#february-2025)
 - [July 2024](#july-2024)
 
+## March 2026
+
+- [2026-Mar-25 (Wed)](/releases/2026-03/2026-03-25.md): (H) WebSocket crash fixes, queue improvements; (Li) Knowledge base additions
+- [2026-Mar-24 (Tue)](/releases/2026-03/2026-03-24.md): (H) WebSocket chat stability, queue improvements; (Li) Crimson user context, Lua knowledge
+- [2026-Mar-23 (Mon)](/releases/2026-03/2026-03-23.md): (H) Chat phases 7-12, LRU cache, context hashing; (Li) Crimson WebSocket
+- [2026-Mar-22 (Sun)](/releases/2026-03/2026-03-22.md): (H) Chat phase 6, chat storage; (Li) UI cleanup, Helium migrations
+- [2026-Mar-21 (Sat)](/releases/2026-03/2026-03-21.md): (H) Chat phases 1-5; (Li) Crimson knowledge base
+- [2026-Mar-20 (Fri)](/releases/2026-03/2026-03-20.md): (H) Chat implementation phases 1-14, status endpoint; (Li) JSON tree component
+- [2026-Mar-19 (Thu)](/releases/2026-03/2026-03-19.md): (Li) Query manager refactoring, JSON editor; (H) Memory leak fixes, status improvements
+- [2026-Mar-18 (Wed)](/releases/2026-03/2026-03-18.md): (Li) Crimson AI agent start, menu icons; (He) JSON standardization
+- [2026-Mar-17 (Tue)](/releases/2026-03/2026-03-17.md): (Li) Lookups Manager, Query Manager, brotli script
+- [2026-Mar-16 (Mon)](/releases/2026-03/2026-03-16.md): (Li) Dynamic main menu, manager stubs
+- [2026-Mar-15 (Sun)](/releases/2026-03/2026-03-15.md): (Li) Query Manager tests, Tabulator updates; (He) Migrations 1152-1155
+- [2026-Mar-14 (Sat)](/releases/2026-03/2026-03-14.md): (Li) LithiumTable tests, spinner component, jsoneditor updates
+- [2026-Mar-13 (Fri)](/releases/2026-03/2026-03-13.md): (Li) JWT documentation and fixes, Tabulator improvements
+- [2026-Mar-12 (Thu)](/releases/2026-03/2026-03-12.md): (Li) Tabulator integration, @layer CSS, query manager
+- [2026-Mar-11 (Wed)](/releases/2026-03/2026-03-11.md): (Li) Toast system, Query Manager; (H) Unit test fixes
+- [2026-Mar-10 (Tue)](/releases/2026-03/2026-03-10.md): (Li) Documentation overhaul, notifications; (H) Query error handling
+- [2026-Mar-09 (Mon)](/releases/2026-03/2026-03-09.md): (Li) Languages module, tests, brotli; (H) Static cache updates
+- [2026-Mar-08 (Sun)](/releases/2026-03/2026-03-08.md): (Li) Session Log manager, navigation, logging
+- [2026-Mar-07 (Sat)](/releases/2026-03/2026-03-07.md): (Li) Login panel keyboard shortcuts, animations
+- [2026-Mar-06 (Fri)](/releases/2026-03/2026-03-06.md): (Li) Icon system, lookups, login; (H) IP lookup fix
+- [2026-Mar-05 (Thu)](/releases/2026-03/2026-03-05.md): (Li) Core managers, unit tests, coverage
+- [2026-Mar-04 (Wed)](/releases/2026-03/2026-03-04.md): (Li) BLUEPRINT documentation
+- [2026-Mar-02 (Mon)](/releases/2026-03/2026-03-02.md): (H) Lint fixes, Unity test updates
+
 ## February 2026
 
+- [2026-Feb-28 (Sat)](/releases/2026-02/2026-02-28.md): (Li) NPM dependency updates
+- [2026-Feb-24 (Mon)](/releases/2026-02/2026-02-24.md): (H) Web server content type additions
+- [2026-Feb-19 (Thu)](/releases/2026-02/2026-02-19.md): (H) Conduit testing, non-OIDC coverage completion
 - [2026-Feb-18 (Wed)](/releases/2026-02/2026-02-18.md): (H) Database string trimming for PostgreSQL, MySQL, SQLite
 - [2026-Feb-17 (Tue)](/releases/2026-02/2026-02-17.md): (H) YugabyteDB test configurations and compatibility
 - [2026-Feb-13 (Fri)](/releases/2026-02/2026-02-13.md): (H) Prometheus metrics format fixes, Swagger proxy support
+- [2026-Feb-12 (Wed)](/releases/2026-02/2026-02-12.md): (H) README updates
+
+### February: Deployment Work
+
+Work in early February 2026 seems like it was paused, but this is misleading. Rather, the focus was more on deployment efforts in Digital Ocean's DOKS. This involved creating a new report (Canada Cluster Chronicles) and many other activities directly related to this project, just coincidentally not involving changes to any of the source code.
 
 ## January 2026
 
+- [2026-Jan-29 (Wed)](/releases/2026-01/2026-01-29.md): (H) Performance test, auth queries implementation
+- [2026-Jan-28 (Tue)](/releases/2026-01/2026-01-28.md): (H) Auth query JWT testing, JWT helper utilities
+- [2026-Jan-27 (Mon)](/releases/2026-01/2026-01-27.md): (H) Auth query implementation, crypto fixes
+- [2026-Jan-26 (Sun)](/releases/2026-01/2026-01-26.md): (H) Query exec helpers, database pending tests
+- [2026-Jan-24 (Sat)](/releases/2026-01/2026-01-24.md): (H) Request parsing and query execution tests
+- [2026-Jan-23 (Fri)](/releases/2026-01/2026-01-23.md): (H) Parameter processing helpers and tests
+- [2026-Jan-22 (Thu)](/releases/2026-01/2026-01-22.md): (H) Compression tests, dbqueue manager tests, DB2 fixes
+- [2026-Jan-21 (Wed)](/releases/2026-01/2026-01-21.md): (H) Conduit test suite (tests 50-55)
+- [2026-Jan-20 (Tue)](/releases/2026-01/2026-01-20.md): (H) Conduit helper modules implementation
+- [2026-Jan-19 (Mon)](/releases/2026-01/2026-01-19.md): (H) Conduit testing and refinement
+- [2026-Jan-18 (Sun)](/releases/2026-01/2026-01-18.md): (H) Conduit endpoints implementation, compression, status endpoint
+- [2026-Jan-17 (Sat)](/releases/2026-01/2026-01-17.md): (H) Conduit documentation, migration execution
+- [2026-Jan-16 (Fri)](/releases/2026-01/2026-01-16.md): (H) Swagger payloads, acuranzo migrations
+- [2026-Jan-15 (Thu)](/releases/2026-01/2026-01-15.md): (H) Auth testing (renew, logout, register), conduit tests
 - [2026-Jan-14 (Thu)](/releases/2026-01/2026-01-14.md): (H, He) Database query enhancements, auth service updates, comprehensive testing
 - [2026-Jan-13 (Wed)](/releases/2026-01/2026-01-13.md): (H, He) Database migrations, auth service enhancements, query parameter handling
 - [2026-Jan-12 (Mon)](/releases/2026-01/2026-01-12.md): (H) Auth service testing framework, comprehensive unit tests, web server testing

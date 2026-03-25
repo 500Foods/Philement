@@ -90,7 +90,7 @@ Chat engines are stored in the database as JSON objects in the `lookups` table (
 
 Chat engines are stored in the existing **`lookups` table** under **Lookup 038 - AI Chat Engines**. Each engine is a lookup entry with JSON configuration in the `collection` field.
 
-**CEC Bootstrap Query (New QueryRef - `internal_sql` type):**
+#### CEC Bootstrap Query (New QueryRef - `internal_sql` type)
 
 ```sql
 -- New QueryRef: Get AI Chat Engines (Server-side with API keys)
@@ -129,7 +129,7 @@ ALTER TABLE convos ADD COLUMN IF NOT EXISTS duration_ms INTEGER;
 CREATE INDEX idx_convos_session ON convos(session_id, created_at);
 ```
 
-**Storage Model Change:**
+#### Storage Model Change
 
 - **Old**: Store full JSON array in `history` column (duplicates data, O(n^2) growth)
 - **New**: Store array of SHA-256 hashes in `segment_refs` (references content, O(n) growth)
@@ -156,7 +156,7 @@ CREATE INDEX idx_segments_accessed ON conversation_segments(last_accessed);
 CREATE INDEX idx_segments_created ON conversation_segments(created_at);
 ```
 
-**Storage with Brotli Compression:**
+#### Storage with Brotli Compression
 
 ```c
 // Pseudocode for storing a segment with compression
@@ -212,7 +212,7 @@ char* retrieve_conversation_segment(const char* hash) {
 }
 ```
 
-**Example Storage:**
+#### Example Storage
 
 ```sql
 -- A typical chat message:
@@ -235,7 +235,7 @@ INSERT INTO convos (session_id, segment_refs, engine_name, tokens_prompt, tokens
 VALUES ('sess-123', '["a3f5c8...", "b7e2d1..."]', 'gpt-4o', 10, 25);
 ```
 
-**Brotli Compression Benefits:**
+#### Brotli Compression Benefits
 
 - **3-5x compression** on typical chat messages (text-heavy JSON)
 - **Faster than storage I/O**: Compression/decompression is CPU-bound, faster than disk
@@ -262,7 +262,7 @@ The existing chat queries need updates to work with hash-based storage:
 
 **Note**: QueryRef numbers below are provisional. Actual numbers will be assigned during Helium migration creation based on what's available. The existing codebase already uses QueryRefs up through #052 for account registration.
 
-**New QueryRef A: Get Conversation Segments by Hash**
+#### New QueryRef A: Get Conversation Segments by Hash
 
 ```sql
 -- Retrieve multiple compressed segments for reconstruction
@@ -273,7 +273,7 @@ WHERE segment_hash = ANY(:HASH_ARRAY);
 -- Returns: Array of compressed blobs that need Brotli decompression
 ```
 
-**New QueryRef B: Store Conversation Segment**
+#### New QueryRef B: Store Conversation Segment
 
 ```sql
 -- Insert compressed segment (called by chat service after Brotli compression)
@@ -285,7 +285,7 @@ ON CONFLICT (segment_hash) DO UPDATE SET
     access_count = conversation_segments.access_count + 1;
 ```
 
-**New QueryRef C: Store Chat with Hashes**
+#### New QueryRef C: Store Chat with Hashes
 
 ```sql
 -- Updated version of #036 for hash-based storage
@@ -324,7 +324,7 @@ VALUES (
 -- Note: Actual segment content stored via QueryRef B
 ```
 
-**New QueryRef D: Reconstruct Conversation**
+#### New QueryRef D: Reconstruct Conversation
 
 ```sql
 -- Get all segment hashes for a conversation, then client fetches segments
@@ -347,7 +347,7 @@ WHERE c.convos_id = :CONVOSID;
 -- Client then calls QueryRef A to get actual segment content
 ```
 
-**New QueryRef E: Find Conversations by Segment Content**
+#### New QueryRef E: Find Conversations by Segment Content
 
 ```sql
 -- Audit query: Find all conversations containing a specific message
@@ -360,7 +360,7 @@ WHERE EXISTS (
 );
 ```
 
-**New QueryRef F: Get Conversation Statistics**
+#### New QueryRef F: Get Conversation Statistics
 
 ```sql
 -- Analytics query for storage metrics
@@ -402,7 +402,7 @@ WHERE session_id = :SESSIONID;
 
 ## Internal Query Enforcement (Helium + Hydrogen)
 
-### The Problem
+### The Problem - Internal Query Security Gap
 
 The CEC bootstrap query retrieves AI engine configurations **including plaintext API keys**. This query must be executable by the Hydrogen server at bootstrap time but must **never** be callable by any client through conduit endpoints.
 
@@ -1041,7 +1041,7 @@ Modify existing queries to work with new storage model:
 
 #### What's in This Phase (Advanced)
 
-**Step 1: Separate Media Upload Endpoint**
+##### Step 1: Separate Media Upload Endpoint
 
 New endpoint: `POST /api/conduit/upload` or `/auth_upload`
 
@@ -1062,7 +1062,7 @@ Server -> Injects real base64/URL before proxying to AI provider
 - Same content-addressable magic
 - Store large binaries in S3/minio or `media_assets` table
 
-**media_assets Table:**
+##### media_assets Table
 
 ```sql
 CREATE TABLE media_assets (
@@ -1076,7 +1076,7 @@ CREATE TABLE media_assets (
 );
 ```
 
-**Step 2: Extend Segments Table**
+##### Step 2: Extend Segments Table
 
 Add optional columns to `conversation_segments`:
 
@@ -1091,7 +1091,7 @@ ALTER TABLE conversation_segments ADD COLUMN metadata JSONB;
 -- {"width":1024, "height":768, "detail":"high", "approx_tokens":450}
 ```
 
-**Step 3: Provider-Specific Handling**
+##### Step 3: Provider-Specific Handling
 
 | Provider | Vision Support | Notes |
 |----------|---------------|-------|
@@ -1101,7 +1101,7 @@ ALTER TABLE conversation_segments ADD COLUMN metadata JSONB;
 | **Anthropic** | Different format | Needs translation in request builder |
 | **Gradient AI** | Limited | Text mostly, let it fail gracefully |
 
-**Anthropic Translation Example:**
+##### Anthropic Translation Example
 
 ```c
 json_t* convert_openai_to_anthropic_vision(json_t* openai_message) {
@@ -1138,7 +1138,7 @@ json_t* convert_openai_to_anthropic_vision(json_t* openai_message) {
 }
 ```
 
-**Step 4: Add Engine Limits**
+##### Step 4: Add Engine Limits
 
 ```json
 {
@@ -1152,13 +1152,13 @@ json_t* convert_openai_to_anthropic_vision(json_t* openai_message) {
 
 #### Nice-to-Haves
 
-**Image Validation and Optimization:**
+##### Image Validation and Optimization
 
 - Size/resolution validation (prevent 8K photo token explosion)
 - Auto-resize before sending to provider
 - Vision-specific token estimator (OpenAI charges by resolution/detail)
 
-**Rate Limiting per Media Type:**
+##### Rate Limiting per Media Type
 
 ```c
 // Prevent abuse
@@ -1170,7 +1170,7 @@ if (request->total_payload_mb > engine->max_payload_mb) {
 }
 ```
 
-**Moderation:**
+##### Moderation
 
 - Optional image moderation scan on upload
 - Easy hook in upload endpoint
@@ -1515,7 +1515,7 @@ void chat_engine_cache_periodic_refresh(void) {
 }
 ```
 
-**On-Demand Refresh (Admin Endpoint)**
+#### On-Demand Refresh (Admin Endpoint)
 
 ```c
 // POST /api/conduit/admin/refresh_engines
@@ -1523,7 +1523,7 @@ void chat_engine_cache_periodic_refresh(void) {
 // Useful when new engines are added or API keys are rotated
 ```
 
-**Future: Trigger-Based Refresh**
+##### Future: Trigger-Based Refresh
 
 ```c
 // Database trigger on lookups table updates
@@ -1558,7 +1558,7 @@ void chat_engine_cache_entry_clear(ChatEngineCacheEntry* entry) {
 
 To reduce bandwidth between client and server during long conversations, implement **content-addressable conversation segment caching**.
 
-### The Problem
+### The Problem - Bandwidth Waste in Multi-Turn Conversations
 
 In a multi-turn conversation:
 
@@ -1615,7 +1615,7 @@ Client                     Server                  Database/Cache
 
 ### Request/Response Format with Hashing
 
-**Initial Request (no context):**
+#### Initial Request (no context)
 
 ```json
 {
@@ -1626,7 +1626,7 @@ Client                     Server                  Database/Cache
 }
 ```
 
-**Response:**
+##### Response
 
 ```json
 {
@@ -1640,7 +1640,7 @@ Client                     Server                  Database/Cache
 }
 ```
 
-**Follow-up Request (with context hashes):**
+##### Follow-up Request (with context hashes)
 
 ```json
 {

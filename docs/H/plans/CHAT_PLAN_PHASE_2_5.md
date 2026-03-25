@@ -23,7 +23,7 @@ Before proceeding to Phase 3, the following must be verified:
 
 ### 1. Extend CEC with Health Tracking ✅
 
-**Status: COMPLETED**
+#### Status: COMPLETED - Health Tracking
 
 Added to `ChatEngineConfig` in `chat_engine_cache.h`:
 
@@ -43,7 +43,7 @@ Added to `ChatEngineCache`:
 
 ### 2. Liveliness Configuration ✅
 
-**Status: COMPLETED**
+#### Status: COMPLETED - Liveliness
 
 Liveliness is configured per-engine in the database and returned by QueryRef #061, not in the Hydrogen config file. The config file only contains the `Chat` boolean.
 
@@ -71,7 +71,7 @@ QueryRef #061 returns liveliness per engine in the `collection` JSON field:
 
 ### 3. Implement Health Check Function ✅
 
-**Status: COMPLETED**
+#### Status: COMPLETED - Health Check Function
 
 Created `chat_health.c/chat_health.h`:
 
@@ -102,7 +102,7 @@ Health check implementation:
 
 ### 4. Augment `/api/conduit/status` Endpoint ✅
 
-**Status: COMPLETED**
+#### Status: COMPLETED - Status Endpoint
 
 Modified existing status endpoint in `src/api/conduit/status/status.c`:
 
@@ -146,7 +146,7 @@ Status values:
 
 ### 5. Prometheus Metrics Integration ✅
 
-**Status: COMPLETED (Framework Ready)**
+#### Status: COMPLETED (Framework Ready)
 
 Created `chat_metrics.c/chat_metrics.h` with full Prometheus-compatible metrics support:
 
@@ -183,7 +183,7 @@ size_t chat_metrics_generate_prometheus(char* buffer, size_t buffer_size);
 
 ### 6. Background Statistics Query ⏳
 
-**Status: DEFERRED to Phase 3**
+#### Status: DEFERRED to Phase 3
 
 The background statistics query was planned to aggregate conversation/token counts from the database every 5 minutes. This has been deferred because:
 
@@ -199,7 +199,7 @@ Current implementation:
 
 ### 7. Unit Tests ✅
 
-**Status: COMPLETED**
+#### Status: COMPLETED - Unit Tests
 
 Created/updated tests:
 
@@ -216,7 +216,7 @@ Test coverage includes:
 
 **Test Results:**
 
-```
+```text
 chat_engine_cache_test: 10 Tests 0 Failures
 status_test_handle_conduit_status_request: 5 Tests 0 Failures
 ```

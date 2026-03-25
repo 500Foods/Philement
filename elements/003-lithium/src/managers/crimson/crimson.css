@@ -278,7 +278,7 @@
   padding: var(--space-1) var(--space-2);
   background: #2d2d44;
   color: #c4b5fd;
-  font-family: 'Consolas', 'Monaco', monospace;
+  font-family: var(--font-mono);
   font-size: var(--font-size-xs);
   font-weight: 600;
   border-bottom: 1px solid #3d3d5c;
@@ -325,7 +325,7 @@
   padding: var(--space-2);
   background: #1e1e2e;
   color: #c4b5fd;
-  font-family: 'Consolas', 'Monaco', monospace;
+  font-family: var(--font-mono);
   font-size: var(--font-size-xs);
   line-height: 1.4;
   overflow: auto;
@@ -401,7 +401,7 @@
   padding: var(--space-1) var(--space-2);
   background: #16213e;
   color: #00ff88;
-  font-family: 'Consolas', 'Monaco', monospace;
+  font-family: var(--font-mono);
   font-size: var(--font-size-xs);
   font-weight: 600;
   border-bottom: 1px solid #0f3460;
@@ -413,7 +413,7 @@
   padding: var(--space-2);
   background: #1a1a2e;
   color: #00ff88;
-  font-family: 'Consolas', 'Monaco', monospace;
+  font-family: var(--font-mono);
   font-size: var(--font-size-xs);
   line-height: 1.4;
   overflow: auto;
@@ -498,7 +498,7 @@
 
 .crimson-message-agent .crimson-message-avatar {
   background: var(--accent-primary);
-  color: #DC143C; /* Crimson color for the robot icon */
+  color: white;
 }
 
 .crimson-message-user .crimson-message-avatar {
@@ -780,7 +780,7 @@
   background: var(--bg-tertiary);
   border: var(--border-standard);
   border-radius: var(--border-radius-md);
-  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-family: var(--font-mono);
   font-size: var(--font-size-sm);
   line-height: 1.4;
   overflow-x: auto;
