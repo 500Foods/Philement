@@ -71,6 +71,8 @@ typedef struct Queue {
     struct timespec oldest_element_timestamp;       // Oldest message time
     struct timespec youngest_element_timestamp;     // Newest message time
     QueueAttributes attrs;                          // Queue configuration attributes
+    int refcount;                                   // Reference count for safe concurrent access
+    bool pending_destroy;                           // Marked for destruction when refcount reaches 0
 } Queue;
 
 /*
@@ -103,16 +105,22 @@ void queue_system_init(void);    // Initialize queue system
 void queue_system_destroy(void); // Clean shutdown of all queues
 
 // Queue Management
-Queue* queue_find(const char* name);  // O(1) queue lookup
-Queue* queue_find_with_label(const char* name, const char* subsystem);  // O(1) queue lookup with custom subsystem
+Queue* queue_find(const char* name);  // O(1) queue lookup (increments refcount)
+Queue* queue_find_with_label(const char* name, const char* subsystem);  // O(1) queue lookup with custom subsystem (increments refcount)
 Queue* queue_create(const char* name, const QueueAttributes* attrs);  // Create/get queue
 Queue* queue_create_with_label(const char* name, const QueueAttributes* attrs, const char* subsystem);  // Create/get queue with custom subsystem
-void queue_destroy(Queue* queue);  // Clean up queue resources
+void queue_destroy(Queue* queue);  // Clean up queue resources (removes from hash, defers free if refs held)
+bool queue_destroy_safe(Queue* queue);  // Idempotent destroy - safe to call multiple times, returns true if destroyed
+void queue_release(Queue* queue);  // Release a reference obtained via queue_find
 
 // Message Operations
 bool queue_enqueue(Queue* queue, const char* data, size_t size, int priority);  // Add message
 char* queue_dequeue(Queue* queue, size_t* size, int* priority);  // Remove message (blocks if empty)
 char* queue_dequeue_nonblocking(Queue* queue, size_t* size, int* priority);  // Remove message (returns NULL if empty)
+
+// Reference counting for safe concurrent access
+void queue_acquire(Queue* queue);  // Increment refcount (call when borrowing a queue pointer)
+void queue_release(Queue* queue);  // Decrement refcount, destroy if reaches 0
 
 // Monitoring
 size_t queue_size(Queue* queue);  // Current message count

@@ -15,7 +15,13 @@ BACKUP_DIR="/fvl/tnt/t-500courses/backups/courses"
 OUTPUT_PREFIX="knowledge/canvas"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# Copy some other knowledge into here that might be helpful
+# Markdown for everything
 cp /mnt/extra/Projects/Philement/docs/Li/*.md knowledge
+cp /mnt/extra/Projects/Philement/README.md knowledge/PHILEMENT.md
+cp /mnt/extra/Projects/Philement/docs/H/README.md knowledge/HYDROGEN.md
+cp /mnt/extra/Projects/Philement/docs/He/README.md knowledge/HELIUM.md
+cp /mnt/extra/Projects/Philement/docs/V/README.md knowledge/VANADIUM.md
 
 # Find the latest PH-003*.imscc file
 # shellcheck disable=SC2312
