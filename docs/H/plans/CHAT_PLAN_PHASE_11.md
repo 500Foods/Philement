@@ -10,9 +10,9 @@ Add streaming response support via WebSocket for real-time chat interactions, le
 ## Current Status (2026-03-23)
 - ✅ Housekeeping: Fixed failing Unity test `chat_lru_cache_test` (12/12 passing)
 - ✅ HTTP streaming endpoint removed (was `conduit/auth_chat_stream`) - not needed with WebSocket approach
-- ✅ WebSocket chat handler: Implemented with thread-safe streaming queue
-- ✅ Thread-safety fix: Added per-connection write queue using libwebsockets' `LWS_CALLBACK_SERVER_WRITEABLE`
-- ✅ Terminal subsystem write-queuing fixed: PTY bridge thread now enqueues data and requests writable callback
+- ✅ WebSocket chat handler: Implemented with direct streaming writes (no queues)
+- ✅ Thread-safety fix: Direct writes from streaming callback with connection_valid guard
+- ✅ Terminal subsystem: Direct writes for PTY data (no queue needed)
 - ✅ Provider streaming formats researched: OpenAI (SSE), Anthropic (SSE with events), Ollama (NDJSON)
 - ✅ Provider-specific streaming parsers: Implemented in `chat_stream_chunk_parse()` with auto-detection
 - ⏳ Unit tests for streaming: Not yet written.
@@ -25,10 +25,11 @@ Add streaming response support via WebSocket for real-time chat interactions, le
    - Better performance and bidirectional communication
    - Reduces dependency on microhttpd for streaming
 
-2. **Thread-safety solution** - Original plan was separate thread + pipe. Implemented per-connection write queue with `LWS_CALLBACK_SERVER_WRITEABLE` instead:
-   - More idiomatic for libwebsockets
-   - Eliminates complex pipe/thread synchronization
-   - Reusable pattern for both chat and terminal streaming
+2. **Thread-safety solution** - Original plan was separate thread + pipe. Implemented direct writes with connection validity checks:
+    - Data written directly from streaming callback to WebSocket
+    - `connection_valid` flag prevents writes to closing connections
+    - Simpler than queue-based approach, no synchronization needed
+    - Eliminated heap corruption issues caused by queue cleanup race conditions
 
 3. **Provider-specific parsing** - Original plan was to implement separate parsers per provider. Implemented auto-detection within single parser function:
    - Simplifies integration (no provider context needed)
@@ -38,14 +39,11 @@ Add streaming response support via WebSocket for real-time chat interactions, le
 4. **Terminal subsystem fix** - Added write-queuing for terminal streaming to address thread-safety issue discovered during review. This was not in original Phase 11 plan but was identified as necessary.
 
 ## Lessons Learned
-1. **libwebsockets threading model**: Must write from service thread only. Use `LWS_CALLBACK_SERVER_WRITEABLE` for cross-thread communication.
-2. **Queue system reuse**: The existing queue system (`src/queue/queue.h`) is perfect for thread-safe data passing between threads.
-3. **Provider streaming formats differ significantly**:
-   - OpenAI: Simple SSE with `data:` lines
-   - Anthropic: SSE with `event:` and `data:` lines (requires event parsing)
-   - Ollama: NDJSON (newline-delimited JSON) with different field names
-4. **Backward compatibility**: HTTP streaming endpoint created but never used; safe to remove early.
-5. **Terminal subsystem thread-safety**: Existing code had potential issue (PTY bridge thread calling `lws_write` directly). Fixed with same pattern as chat streaming.
+1. **Direct writes work**: Writing directly from streaming callbacks (with `connection_valid` guards) is simpler and more reliable than queue-based approaches.
+2. **Queue complexity is dangerous**: Queue lifecycle management with refcounting across multiple threads caused heap corruption and double-free crashes.
+3. **libwebsockets callback 38**: `LWS_CALLBACK_WS_PEER_INITIATED_CLOSE` (reason 38) fires when client sends close frame - must be handled the same as `LWS_CALLBACK_CLOSED`.
+4. **Double-cleanup guard**: Use `connection_valid` flag to prevent cleanup from running twice when both reason 38 and reason 4 fire.
+5. **Provider streaming formats differ significantly** - Same as before.
 
 ## Testable Gate
 Before proceeding to Phase 12, the following must be verified:
@@ -93,9 +91,10 @@ Before proceeding to Phase 12, the following must be verified:
 - Log errors appropriately
 
 ### 7. Thread-safety fix for chat streaming ✅
-- Implemented per-connection thread-safe write queue using libwebsockets queue system
-- Added `LWS_CALLBACK_SERVER_WRITEABLE` handler to write from service thread
-- Added queue management in `websocket_server_chat.c` and session cleanup
+- Implemented direct writes from streaming callback with `connection_valid` guards
+- Connection close handling via `LWS_CALLBACK_WS_PEER_INITIATED_CLOSE` (reason 38)
+- Double-cleanup guard prevents crashes on browser reload
+- Removed all queue infrastructure - data flows directly to client
 
 ### 8. Provider-specific streaming formats research ✅
 - OpenAI: SSE with `data: {...}` lines, `[DONE]` sentinel (parser exists)

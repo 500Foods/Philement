@@ -1,7 +1,22 @@
-When using Lithium, the bottom-right corner has a collection of icons, all focused on help.  The first of these, a flame, pops up the Crimson chat interface.
+Lithium\'s Crimson is a modern AI chatbot, similar to something like ChatGPT that people might be familiar with. You can ask it questions and it will try and find helpful answers for you. What sets it apart from other chatbots is that it has been equipped with everything about Lithium that we could find. Here\'s a list of things that are included in its knowledge base. These are amended from time to time as new resources become available.
 
-This AI Assistant has been specifically designed to help Lithium users with whatever tasks they might be working on. It has been equipped with all of the course material, documentation, and even some of the source code and database schema information to help it provide informed and accurate guidance to any questions it receives. While it cannot make changes itself, it can guide you to the parts of the app where changes can be made, or offer links or other reference material to help you find the information that you\'re looking for.
+- All the 500 Courses training materials related to Lithium, including this one.
+- All of the developer documentation for Lithium, the desktop web app.
+- All of the developer documentation for Hydrogen, the backend server.
+- Formal documentation on Lua, the scripting language used in some Lithium Managers.
 
-As a modern AI model, interacting with it is simple and straight forward. Just ask it questions in a normal conversational style. Give it details if you like. The more you can explain what you\'re after, the better chance it has at providing a meaningful and helpful response.
+On top of that, when you start chatting with Crimson, we send along a little bit of information about you, like your name, what you\'re currently doing inside of Lithium. Don\'t worry - nothing incriminating, and nothing in these chats is shared with anyone outside of your organization. Ever. Chats are logged and searchable though. So you might want to send those drink recipe questions to ChatGPT instead.
 
-If you find the interaction to be less than helpful, please use the Concierge button at the top of the chat window. This will create a new Concierge Request with the chat history attached for the team to review. You can add in a description of the issue you encountered and what you would have liked or expected to have happened instead. The team will then follow up with a response that may include adjustments to Crimson, to the documentation, or even to the app itself if warranted, to make the next similar encounter more beneficial.
+Interacting with Crimson couldn\'t be simpler. Just open the Crimson window by clicking on the icon in the bottom-right corner. Or use the shortcut, Ctrl+Shift+C.  Once the window appears, just chat with Crimson as you normally would in any other conversation. Ask it questions and it will respond. It will even communicate with you in a different language. Generally it will try to help you find a solution to your question, providing suggestions for where to take the conversation next, as well as buttons that can be used to navigate the Lithium UI if Crimson knows you\'re looking for a particular feature and where to find it.
+
+####  Reasoning Pane
+
+If you\'re curious, you can see what Crimson is \"thinking\" before responding to your prompt. This is called \"reasoning\" and it is often longer and more complex than the actual response provided. This can sometimes be useful if you want to know more about how the response was arrived at, showing what kinds of things go into this process. This window can be toggled using one of the buttons in the top of the Crimson window.
+
+ 
+
+#### Debug Pane
+
+Another toggle is the Debug pane. If Crimson is struggling to respond, sometimes it helps to see what it is doing. Long, complex questions sometimes take a long time to process, so a response might be a minute or two. The Debug Pane shows what was sent and whether anything has yet been received from Crimson in response to your question.
+
+ 

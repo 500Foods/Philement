@@ -1,62 +1,68 @@
 # Chat Service Implementation Plan - Phased Approach
 
 ## Overview
+
 This document summarizes the 13-phase implementation plan for the Chat Proxy Service within the Conduit API. Each phase has a specific testable gate to ensure quality and prevent scope creep.
+
+## Old files
+
+This went through several iterations before landing on this plan. One can be found here: [CHAT_PLAN_ORIGINAL.md](/docs/H/plans/CHAT_PLAN_ORIGINAL.md)
 
 ## Phase Files
 
-1. **[CHAT_PLAN_PHASE_1.md](CHAT_PLAN_PHASE_1.md)** - Prerequisites and Infrastructure
+1. **[CHAT_PLAN_PHASE_1.md](/docs/H/plans/CHAT_PLAN_PHASE_1.md)** - Prerequisites and Infrastructure
    - libcurl integration
    - Internal CEC bootstrap QueryRef creation
    - Internal query enforcement
    - Chat configuration fields
    - **Gate**: libcurl functional, tests pass, internal query enforcement working
 
-2. **[CHAT_PLAN_PHASE_2.md](CHAT_PLAN_PHASE_2.md)** - Chat Engine Cache and Proxy Foundation
+2. **[CHAT_PLAN_PHASE_2.md](/docs/H/plans/CHAT_PLAN_PHASE_2.md)** - Chat Engine Cache and Proxy Foundation
    - CEC data structures and lookup functions
    - CEC bootstrap and refresh mechanisms
    - chat_proxy.c, chat_request_builder.c, chat_response_parser.c
    - Token pre-counting and retry mechanisms
    - **Gate**: CEC loads successfully, proxy/builder/parser unit tests pass
 
-2.5. **[CHAT_PLAN_PHASE_2_5.md](CHAT_PLAN_PHASE_2_5.md)** - Chat Status and Monitoring
-   - Health tracking with configurable Liveliness interval
-   - Augmented `/api/conduit/status` endpoint with model information
-   - Prometheus metrics for chat operations
-   - **Gate**: Status endpoint returns model health, Prometheus metrics accessible
+2.5. **[CHAT_PLAN_PHASE_2_5.md](/docs/H/plans/CHAT_PLAN_PHASE_2_5.md)** - Chat Status and Monitoring
 
-3. **[CHAT_PLAN_PHASE_3.md](CHAT_PLAN_PHASE_3.md)** - Authenticated Endpoints (auth_chat, auth_chats)
+- Health tracking with configurable Liveliness interval
+- Augmented `/api/conduit/status` endpoint with model information
+- Prometheus metrics for chat operations
+- **Gate**: Status endpoint returns model health, Prometheus metrics accessible
+
+1. **[CHAT_PLAN_PHASE_3.md](/docs/H/plans/CHAT_PLAN_PHASE_3.md)** - Authenticated Endpoints (auth_chat, auth_chats)
    - JWT authentication integration
    - Database extraction from JWT claims
    - Single and batch chat endpoints
    - Image/multimodal support (Day One)
    - **Gate**: POST /api/conduit/auth_chat and /api/conduit/auth_chats working
 
-4. **[CHAT_PLAN_PHASE_4.md](CHAT_PLAN_PHASE_4.md)** - Cross-Database Endpoints (alt_chat, alt_chats)
+2. **[CHAT_PLAN_PHASE_4.md](/docs/H/plans/CHAT_PLAN_PHASE_4.md)** - Cross-Database Endpoints (alt_chat, alt_chats)
    - Database override via request body (not JWT claims)
    - Cross-database routing for centralized auth patterns
    - **Gate**: POST /api/conduit/alt_chat and /api/conduit/alt_chats working
 
-5. **[CHAT_PLAN_PHASE_5.md](CHAT_PLAN_PHASE_5.md)** - Additional Provider Support
+3. **[CHAT_PLAN_PHASE_5.md](/docs/H/plans/CHAT_PLAN_PHASE_5.md)** - Additional Provider Support
    - Anthropic native format support
    - Ollama native API support
    - Provider-specific configuration options
    - **Gate**: Non-OpenAI providers working correctly
 
-6. **[CHAT_PLAN_PHASE_6.md](CHAT_PLAN_PHASE_6.md)** - Conversation History with Content-Addressable Storage + Brotli
+4. **[CHAT_PLAN_PHASE_6.md](/docs/H/plans/CHAT_PLAN_PHASE_6.md)** - Conversation History with Content-Addressable Storage + Brotli
    - conversation_segments table with Brotli compression
    - Extended convos table with segment_refs
    - Storage and retrieval pipelines
    - **Gate**: Content-addressable storage working with compression benefits
 
-7. **[CHAT_PLAN_PHASE_7.md](CHAT_PLAN_PHASE_7.md)** - Update Existing Chat Queries
+5. **[CHAT_PLAN_PHASE_7.md](/docs/H/plans/CHAT_PLAN_PHASE_7.md)** - Update Existing Chat Queries
    - New QueryRefs #067, #068, #069 replaces #036, #039, #041
    - QueryRefs D, E, F already implemented as #064, #065, #066
    - Backwards compatibility maintained
    - 42 Unity tests pass, cppcheck clean
    - **Gate**: ✅ New queries work with hash-based storage, backwards compatibility maintained
 
-8. **[CHAT_PLAN_PHASE_8.md](CHAT_PLAN_PHASE_8.md)** - Context Hashing for Client-Server Optimization
+6. **[CHAT_PLAN_PHASE_8.md](/docs/H/plans/CHAT_PLAN_PHASE_8.md)** - Context Hashing for Client-Server Optimization
     - SHA-256 hashing of message content (43-char base64url)
     - Optional `context_hashes` field in chat requests
     - Hash validation and segment existence checking
@@ -64,26 +70,26 @@ This document summarizes the 13-phase implementation plan for the Chat Proxy Ser
     - Graceful fallback when hashes not found
     - **Gate**: ✅ Context hashing framework complete, 23 unit tests passing
 
-9. **[CHAT_PLAN_PHASE_9.md](CHAT_PLAN_PHASE_9.md)** - Local Disk Cache and LRU
+7. **[CHAT_PLAN_PHASE_9.md](/docs/H/plans/CHAT_PLAN_PHASE_9.md)** - Local Disk Cache and LRU
    - 1GB LRU disk cache for hot segments
    - Uncompressed segment storage to avoid repeated decompression
    - Background sync to database
    - **Gate**: ✅ Cache implemented, 12 unit tests passing, LRU eviction working
 
-10. **[CHAT_PLAN_PHASE_10.md](CHAT_PLAN_PHASE_10.md)** - Cross-Server Segment Recovery
+8. **[CHAT_PLAN_PHASE_10.md](/docs/H/plans/CHAT_PLAN_PHASE_10.md)** - Cross-Server Segment Recovery
     - Batch query for missing segments (QueryRef #070)
     - Automatic fallback to database (from Phase 9)
     - Conservative pre-fetching
     - Cache location changed to `./cache/` with `CHAT_CACHE_DIR` env var override
     - **Gate**: ✅ Batch retrieval working, 9 unit tests passing, cppcheck clean
 
-11. **[CHAT_PLAN_PHASE_11.md](CHAT_PLAN_PHASE_11.md)** - Streaming Support
+9. **[CHAT_PLAN_PHASE_11.md](/docs/H/plans/CHAT_PLAN_PHASE_11.md)** - Streaming Support
     - POST /api/conduit/auth_chat/stream endpoint
     - Server-Sent Events implementation
     - Streaming integration with proxy
     - **Gate**: Streaming endpoint working with proper SSE format
 
-12. **[CHAT_PLAN_PHASE_12.md](CHAT_PLAN_PHASE_12.md)** - Advanced Multi-modal Features
+10. **[CHAT_PLAN_PHASE_12.md](/docs/H/plans/CHAT_PLAN_PHASE_12.md)** - Advanced Multi-modal Features
     - Media upload endpoint (/api/conduit/upload)
     - media_assets table
     - Extended conversation_segments with metadata
@@ -91,7 +97,7 @@ This document summarizes the 13-phase implementation plan for the Chat Proxy Ser
     - Engine limits enforcement
     - **Gate**: Advanced multi-modal features working with proper provider translation
 
-13. **[CHAT_PLAN_PHASE_13.md](CHAT_PLAN_PHASE_13.md)** - Advanced Features
+11. **[CHAT_PLAN_PHASE_13.md](/docs/H/plans/CHAT_PLAN_PHASE_13.md)** - Advanced Features
     - Function calling support
     - Response caching
     - Load balancing across API keys
@@ -105,6 +111,7 @@ This document summarizes the 13-phase implementation plan for the Chat Proxy Ser
 ## Implementation Philosophy
 
 This phased approach ensures:
+
 1. **Early Value Delivery**: Core chat functionality available after Phase 3
 2. **Risk Mitigation**: Each phase builds on verified previous work
 3. **Testability**: Clear gates prevent accumulating technical debt
@@ -114,6 +121,7 @@ This phased approach ensures:
 ## Dependencies Between Phases
 
 Each phase depends on the successful completion of the previous phase's testable gate. This creates a solid foundation where:
+
 - Phases 1-2 establish infrastructure and core components (libcurl, CEC, proxy)
 - Phase 2.5 adds monitoring and observability before public endpoints
 - Phases 3-5 deliver progressively more sophisticated API endpoints (public, auth, cross-db, multi-provider)
@@ -142,6 +150,7 @@ Each phase depends on the successful completion of the previous phase's testable
 ## Next Steps
 
 Phase 11 (Streaming) and Phase 12 (Advanced Multi-modal) are now complete. The next phase is **Phase 13: Advanced Features** which will implement:
+
 - Function calling support
 - Response caching
 - Load balancing across API keys
@@ -171,7 +180,7 @@ In addition to the HTTP endpoints, Hydrogen provides a WebSocket-based chat inte
 
 WebSocket connections authenticate via query parameter:
 
-```
+```url
 ws://host:port/path?key=<auth_key>
 ```
 
@@ -205,7 +214,7 @@ The server validates the key in `LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION` before
 | `payload.engine` | string | No | Engine name (defaults to config default) |
 | `payload.messages` | array | Yes | Chat messages array |
 | `payload.stream` | boolean | No | Enable streaming (default: true) |
-| `payload.jwt` | string | Yes | JWT token with `Bearer ` prefix |
+| `payload.jwt` | string | Yes | JWT token with `Bearer` prefix |
 
 #### Server → Client: Streaming Chunk
 
@@ -252,13 +261,14 @@ The server validates the key in `LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION` before
 
 The AI is prompted to return structured responses with a delimiter:
 
-```
+```structure
 [Conversation text here]
 [LITHIUM-CRIMSON-JSON]
 {"followUpQuestions": [...], "suggestions": {...}, "metadata": {...}}
 ```
 
 This allows clients to:
+
 1. Stream the conversation text immediately
 2. Parse structured data after the delimiter
 3. Display follow-up questions as interactive buttons
@@ -298,6 +308,7 @@ The WebSocket server implements a heartbeat mechanism to maintain connections th
 - **Stale Detection**: Connections that don't respond to pings within the timeout (default: 60 seconds) are closed
 
 Configuration options in `WebSocketServer.Heartbeat`:
+
 - `Enabled`: Enable/disable heartbeat (default: true)
 - `PingIntervalSeconds`: How often to send pings (default: 30)
 - `PongTimeoutSeconds`: How long to wait for pong before closing (default: 60)
@@ -313,6 +324,7 @@ websocat ws://localhost:7001/?key=ABCDEFGHIJKLMNOP --protocol=hydrogen
 ```
 
 Then send a JSON message:
+
 ```json
 {"type":"chat","id":"test-1","payload":{"engine":"Crimson","messages":[{"role":"user","content":"Hello"}],"stream":true,"jwt":"Bearer <token>"}}
 ```

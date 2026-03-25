@@ -57,6 +57,7 @@ Hydrogen is currently designed for technical users who:
 ### Modules (aka plugins or extensions)
 
 - [**GAIUS**](/docs/H/modules/GAIUS.md) - Support for the [GAIUS](https://www.gaiusmodel.cmo) project.
+- [**WebSocket Chat**](/docs/H/modules/websocket_chat.md) - Chat message handling via WebSocket protocol
 
 ### Technical References
 
@@ -70,8 +71,7 @@ Hydrogen is currently designed for technical users who:
 - [**Service Architecture**](/docs/H/core/service.md) - Service management and lifecycle
 - [**Shutdown Architecture**](/docs/H/core/shutdown_architecture.md) - Graceful shutdown procedures
 - [**Thread Monitoring**](/docs/H/core/subsystems/threads/threads.md) - Thread management and monitoring
-- [**WebSocket Implementation**](/docs/H/core/subsystems/websocket/websocket.md) - WebSocket server architecture and keepalive mechanism
-- [**WebSocket Chat**](/docs/H/core/subsystems/websocket/websocket_chat.md) - Chat message handling via WebSocket protocol
+- [**WebSocket Implementation**](/docs/He/WEBSOCKET.md) - WebSocket server architecture and keepalive mechanism
 - [**Mirage Proxy**](/docs/H/core/subsystems/mirage/mirage.md) - WebSocket tunneling for remote device access
 - [**mDNS Server**](/docs/H/core/subsystems/mdnsserver/mdnsserver.md) - Service discovery implementation
 - [**Print Queue System**](/docs/H/core/subsystems/print/print.md) - 3D printing queue management

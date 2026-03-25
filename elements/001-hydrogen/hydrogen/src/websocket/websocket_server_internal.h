@@ -70,12 +70,8 @@ typedef struct WebSocketSessionData {
     // Chat-specific fields
     char *chat_database;               // Database extracted from JWT for chat (NULL if not authenticated for chat)
     jwt_claims_t *chat_claims;         // JWT claims for chat (NULL if not authenticated for chat)
-    char *chat_write_queue_name;       // Name of thread-safe queue for outgoing chat chunks (NULL if none)
-    bool chat_write_pending;           // Whether a LWS_CALLBACK_SERVER_WRITEABLE is already pending
     bool chat_stream_active;           // Whether a streaming response is in progress (prevents cleanup race)
-    volatile bool connection_valid;    // Set to false when connection closes (for stream thread safety)
-    char *terminal_write_queue_name;   // Name of thread-safe queue for outgoing terminal data (NULL if none)
-    bool terminal_write_pending;       // Whether a terminal write is pending
+    volatile bool connection_valid;    // Set to false when connection closes (for thread safety)
     // Heartbeat tracking fields
     time_t last_ping_sent;             // When we last sent a ping to this client
     time_t last_pong_received;         // When we last received a pong from this client

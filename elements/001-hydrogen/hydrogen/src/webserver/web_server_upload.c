@@ -325,6 +325,7 @@ enum MHD_Result handle_upload_request(struct MHD_Connection *connection,
                 Queue* print_queue = queue_find("PrintQueue");
                 if (print_queue) {
                     queue_enqueue(print_queue, print_job_str, strlen(print_job_str), 0);
+                    queue_release(print_queue);
                     log_this(SR_WEBSERVER, "Added print job to queue", LOG_LEVEL_DEBUG, 0);
                 } else {
                     log_this(SR_WEBSERVER, "Failed to find PrintQueue", LOG_LEVEL_DEBUG, 0);

@@ -47,49 +47,22 @@ int send_pty_data_to_websocket(struct lws *wsi, const char *data, size_t len);
 int perform_pty_read(int master_fd, char *buffer, size_t buffer_size);
 int setup_pty_select(int master_fd, fd_set *readfds, struct timeval *timeout);
 
-// Send PTY data to WebSocket connection (enqueue and request writable)
+// Send PTY data to WebSocket connection - writes directly, no queue
 int send_pty_data_to_websocket(struct lws *wsi, const char *data, size_t len)
 {
     // Get session data for this WebSocket connection
     WebSocketSessionData *session = (WebSocketSessionData *)lws_wsi_user(wsi);
     if (!session || !session->terminal_session) {
-        // Fallback to direct write (should not happen)
-        return ws_write_raw_data(wsi, data, len);
+        return -1;  // No session or terminal
     }
     
-    // Ensure we have a queue for terminal writes
-    if (!session->terminal_write_queue_name) {
-        session->terminal_write_queue_name = create_chat_queue_name(wsi);
-        if (!session->terminal_write_queue_name) {
-            return -1;
-        }
+    // Don't write if connection is closing
+    if (!session->connection_valid) {
+        return -1;  // Connection closing, discard data
     }
     
-    // Enqueue the data
-    Queue* queue = queue_find(session->terminal_write_queue_name);
-    if (!queue) {
-        QueueAttributes attrs = {0};
-        queue = queue_create(session->terminal_write_queue_name, &attrs);
-        if (!queue) {
-            return -1;
-        }
-    }
-    
-    // Copy data into buffer for queue (queue will free)
-    char* data_copy = malloc(len);
-    if (!data_copy) {
-        return -1;
-    }
-    memcpy(data_copy, data, len);
-    
-    if (!queue_enqueue(queue, data_copy, len, 0)) {
-        free(data_copy);
-        return -1;
-    }
-    
-    // Request writable callback from the service thread
-    lws_callback_on_writable(wsi);
-    return 0;
+    // Write directly to WebSocket - NO QUEUE!
+    return ws_write_raw_data(wsi, data, len);
 }
 
 // Simple PTY read wrapper with null termination

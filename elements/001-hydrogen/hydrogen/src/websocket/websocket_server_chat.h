@@ -36,14 +36,7 @@ void chat_subsystem_cleanup(void);
  * Cleanup chat-specific resources for a session
  * @param session Session data to clean up
  */
-void chat_session_cleanup(WebSocketSessionData *session);
-
-/**
- * Create a unique queue name based on WebSocket connection
- * @param wsi WebSocket connection instance
- * @return Newly allocated queue name (caller must free)
- */
-char* create_chat_queue_name(const struct lws *wsi);
+void chat_session_cleanup(WebSocketSessionData *session, struct lws *wsi);
 
 /**
  * Handle writable callback for chat streaming

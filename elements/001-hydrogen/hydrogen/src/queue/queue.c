@@ -73,7 +73,25 @@ void queue_system_destroy(void) {
                 Queue* next = queue->hash_next;
                 queue_system.queues[i] = next;  // Remove from hash table
                 if (queue->name) {  // Check if the queue is still valid
-                    queue_destroy(queue);
+                    // Force immediate destruction during shutdown - bypass refcount
+                    // Drain elements
+                    MutexResult qlock_result = MUTEX_LOCK(&queue->mutex, SR_QUEUES);
+                    if (qlock_result == MUTEX_SUCCESS) {
+                        while (queue->head != NULL) {
+                            QueueElement* temp = queue->head;
+                            queue->head = queue->head->next;
+                            free(temp->data);
+                            free(temp);
+                        }
+                        mutex_unlock(&queue->mutex);
+                    }
+                    pthread_mutex_destroy(&queue->mutex);
+                    pthread_cond_destroy(&queue->not_empty);
+                    pthread_cond_destroy(&queue->not_full);
+                    if (queue->name && (uintptr_t)queue->name >= 0x1000) {
+                        free(queue->name);
+                    }
+                    free(queue);
                 }
                 queue = next;
             }
@@ -104,7 +122,9 @@ Queue* queue_find_with_label(const char* name, const char* subsystem) {
         Queue* queue = queue_system.queues[index];
         while (queue) {
             // Safety check: ensure queue->name is valid before comparison
-            if (queue->name && strcmp(queue->name, name) == 0) {
+            // Skip queues that are marked for destruction
+            if (queue->name && !queue->pending_destroy && strcmp(queue->name, name) == 0) {
+                queue->refcount++;  // Increment refcount for caller
                 mutex_unlock(&queue_system.mutex);
                 return queue;
             }
@@ -157,6 +177,8 @@ Queue* queue_create_with_label(const char* name, const QueueAttributes* attrs, c
     queue->size = 0;
     queue->memory_used = 0;
     queue->hash_next = NULL;
+    queue->refcount = 1;  // Creator gets initial reference
+    queue->pending_destroy = false;
 
     if (pthread_mutex_init(&queue->mutex, NULL) != 0) {
         free(queue->name);
@@ -249,8 +271,19 @@ void queue_destroy(Queue* queue) {
         return;
     }
 
-    MutexResult lock_result = MUTEX_LOCK(&queue->mutex, SR_QUEUES);
-    if (lock_result == MUTEX_SUCCESS) {
+    // Decrement refcount (creator had 1 ref, destroy call releases it)
+    queue->refcount--;
+    
+    // If refs are still held by other threads, mark for deferred destruction
+    // The actual struct free will happen in queue_release when refcount reaches 0
+    if (queue->refcount > 0) {
+        queue->pending_destroy = true;
+        return;
+    }
+
+    // Free the queue immediately (no other references)
+    MutexResult qlr = MUTEX_LOCK(&queue->mutex, SR_QUEUES);
+    if (qlr == MUTEX_SUCCESS) {
         while (queue->head != NULL) {
             QueueElement* temp = queue->head;
             queue->head = queue->head->next;
@@ -264,12 +297,113 @@ void queue_destroy(Queue* queue) {
     pthread_cond_destroy(&queue->not_empty);
     pthread_cond_destroy(&queue->not_full);
 
-    // Defensive: Only free name if pointer looks valid (not obviously corrupted)
     if (queue->name && (uintptr_t)queue->name >= 0x1000) {
         free(queue->name);
     }
     free(queue);
 }
+
+// Idempotent version of queue_destroy - safe to call multiple times
+// Returns true if queue was actually destroyed, false if already destroyed
+bool queue_destroy_safe(Queue* queue) {
+    if (queue == NULL) {
+        return false;
+    }
+
+    // Check if queue is still in hash table
+    bool found_in_hash = false;
+    
+    MutexResult hash_lock_result = MUTEX_LOCK(&queue_system.mutex, SR_QUEUES);
+    if (hash_lock_result == MUTEX_SUCCESS) {
+        for (int i = 0; i < QUEUE_HASH_SIZE && !found_in_hash; i++) {
+            Queue** current = &queue_system.queues[i];
+            while (*current) {
+                if (*current == queue) {
+                    *current = queue->hash_next;
+                    found_in_hash = true;
+                    break;
+                }
+                current = &(*current)->hash_next;
+            }
+        }
+        mutex_unlock(&queue_system.mutex);
+    }
+    
+    // If not in hash, already destroyed
+    if (!found_in_hash) {
+        return false;
+    }
+
+    // Decrement refcount
+    queue->refcount--;
+    
+    if (queue->refcount > 0) {
+        queue->pending_destroy = true;
+        return false;  // Not fully destroyed yet
+    }
+
+    // Free any remaining elements (queue should already be empty via queue_clear,
+    // but we check to be safe in case queue_clear wasn't called)
+    MutexResult qlr = MUTEX_LOCK(&queue->mutex, SR_QUEUES);
+    if (qlr == MUTEX_SUCCESS) {
+        // Only free elements if there are any (shouldn't happen normally)
+        while (queue->head != NULL) {
+            QueueElement* temp = queue->head;
+            queue->head = queue->head->next;
+            if (temp->data) {
+                free(temp->data);
+                temp->data = NULL;
+            }
+            free(temp);
+        }
+        queue->size = 0;
+        mutex_unlock(&queue->mutex);
+    }
+    
+    // Destroy synchronization primitives
+    pthread_mutex_destroy(&queue->mutex);
+    pthread_cond_destroy(&queue->not_empty);
+    pthread_cond_destroy(&queue->not_full);
+
+    // Free the queue name and structure
+    if (queue->name && (uintptr_t)queue->name >= 0x1000) {
+        free(queue->name);
+        queue->name = NULL;
+    }
+    free(queue);
+    return true;
+}
+
+// Increment refcount for a queue (call when borrowing a queue pointer)
+void queue_acquire(Queue* queue) {
+    if (!queue) return;
+    
+    MutexResult lock_result = MUTEX_LOCK(&queue->mutex, SR_QUEUES);
+    if (lock_result == MUTEX_SUCCESS) {
+        queue->refcount++;
+        mutex_unlock(&queue->mutex);
+    }
+}
+
+// Decrement refcount, destroy if reaches 0
+void queue_release(Queue* queue) {
+    if (!queue) return;
+    
+    MutexResult lock_result = MUTEX_LOCK(&queue->mutex, SR_QUEUES);
+    if (lock_result != MUTEX_SUCCESS) {
+        return;
+    }
+    
+    queue->refcount--;
+    int refcount = queue->refcount;
+    mutex_unlock(&queue->mutex);
+    
+    // If refcount reaches 0, destroy the queue
+    if (refcount <= 0) {
+        queue_destroy_safe(queue);
+    }
+}
+
 
 // Add a message to the queue with guaranteed ordering and memory safety
 //

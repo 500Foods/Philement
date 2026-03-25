@@ -43,7 +43,8 @@ The context structure looks like this (structure reference only - use actual val
 | `lithiumVersion` | App state | Version string |
 | `buildDate` | App state | Build date |
 
-**IMPORTANT**: 
+**IMPORTANT**:
+
 - Use context values internally to personalize responses
 - Do NOT output the raw context values to the user
 - Do NOT say "I see you're on Query Manager" - instead, just reference it naturally
