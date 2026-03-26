@@ -43,6 +43,6 @@ void chat_session_cleanup(WebSocketSessionData *session, struct lws *wsi);
  * @param wsi WebSocket connection instance
  * @param session Session data for this connection
  */
-void handle_chat_writable(struct lws *wsi, const WebSocketSessionData *session);
+void handle_chat_writable(struct lws *wsi, WebSocketSessionData *session);
 
 #endif // WEBSOCKET_SERVER_CHAT_H
