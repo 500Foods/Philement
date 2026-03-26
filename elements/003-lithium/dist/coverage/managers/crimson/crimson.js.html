@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><title>Code coverage report for managers/crimson/crimson.js</title><meta charset="utf-8"><link rel="stylesheet" href="../../prettify.css"><link rel="stylesheet" href="../../base.css"><link rel="shortcut icon" type="image/x-icon" href="../../favicon.png"><meta name="viewport" content="width=device-width,initial-scale=1"><style type="text/css">.coverage-summary .sorter{background-image:url(../../sort-arrow-sprite.png)}</style></head><body><div class="wrapper"><div class="pad1"><h1><a href="../../index.html">All files</a> / <a href="index.html">managers/crimson</a> crimson.js</h1><div class="clearfix"><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Statements</span> <span class="fraction">0/720</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Branches</span> <span class="fraction">0/309</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Functions</span> <span class="fraction">0/82</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Lines</span> <span class="fraction">0/687</span></div></div><p class="quiet">Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.</p><template id="filterTemplate"><div class="quiet">Filter: <input type="search" id="fileSearch"></div></template></div><div class="status-line low"></div><pre><table class="coverage">
+<!doctype html><html lang="en"><head><title>Code coverage report for managers/crimson/crimson.js</title><meta charset="utf-8"><link rel="stylesheet" href="../../prettify.css"><link rel="stylesheet" href="../../base.css"><link rel="shortcut icon" type="image/x-icon" href="../../favicon.png"><meta name="viewport" content="width=device-width,initial-scale=1"><style type="text/css">.coverage-summary .sorter{background-image:url(../../sort-arrow-sprite.png)}</style></head><body><div class="wrapper"><div class="pad1"><h1><a href="../../index.html">All files</a> / <a href="index.html">managers/crimson</a> crimson.js</h1><div class="clearfix"><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Statements</span> <span class="fraction">0/719</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Branches</span> <span class="fraction">0/309</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Functions</span> <span class="fraction">0/81</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Lines</span> <span class="fraction">0/686</span></div></div><p class="quiet">Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.</p><template id="filterTemplate"><div class="quiet">Filter: <input type="search" id="fileSearch"></div></template></div><div class="status-line low"></div><pre><table class="coverage">
 <tr><td class="line-count quiet"><a name="L1"></a><a href="#L1">1</a>
 <a name="L2"></a><a href="#L2">2</a>
 <a name="L3"></a><a href="#L3">3</a>
@@ -1656,8 +1656,7 @@
 <a name="L1655"></a><a href="#L1655">1655</a>
 <a name="L1656"></a><a href="#L1656">1656</a>
 <a name="L1657"></a><a href="#L1657">1657</a>
-<a name="L1658"></a><a href="#L1658">1658</a>
-<a name="L1659"></a><a href="#L1659">1659</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name="L1658"></a><a href="#L1658">1658</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1678,6 +1677,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -2769,8 +2769,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -3333,6 +3331,7 @@
 import { processIcons } from '../../core/icons.js';
 import { log, Subsystems, Status } from '../../core/log.js';
 import { getCrimsonWS } from '../../shared/crimson-ws.js';
+import { getAppWS, isAppWSConnected } from '../../shared/app-ws.js';
 import './crimson.css';
 &nbsp;
 // Singleton instance tracking
@@ -3637,7 +3636,7 @@ class CrimsonManager {
       &lt;div class="crimson-input-area"&gt;
         &lt;textarea class="crimson-input" placeholder="Type your message..." rows="1"&gt;&lt;/textarea&gt;
         &lt;button type="button" class="crimson-send-btn" title="Send message"&gt;
-          &lt;fa fa-paper-plane&gt;&lt;/fa&gt;
+          &lt;fa fa-up&gt;&lt;/fa&gt;
         &lt;/button&gt;
       &lt;/div&gt;
       &lt;div class="crimson-resize-handle crimson-resize-handle-bl" title="Resize"&gt;&lt;/div&gt;
@@ -4425,10 +4424,8 @@ class CrimsonManager {
 <span class="cstat-no" title="statement not covered">    this.initWebSocketClient();</span>
 &nbsp;
     // Debug: Check WebSocket state and handlers
-<span class="cstat-no" title="statement not covered">    import('../../shared/app-ws.js').then<span class="fstat-no" title="function not covered">((</span>{ getAppWS, isAppWSConnected }) =&gt; {</span>
-      const ws = <span class="cstat-no" title="statement not covered">getAppWS();</span>
-<span class="cstat-no" title="statement not covered">      this.addDebugMessage('WS_STATE', `Connected: ${isAppWSConnected()}, handlers: ${ws.debugHandlers().join(', ')}`);</span>
-    });
+    const ws =<span class="cstat-no" title="statement not covered"> getAppWS();</span>
+<span class="cstat-no" title="statement not covered">    this.addDebugMessage('WS_STATE', `Connected: ${isAppWSConnected()}, handlers: ${ws.debugHandlers().join(', ')}`);</span>
 &nbsp;
     // If already streaming, cancel the previous request
 <span class="cstat-no" title="statement not covered">    if (this.isStreaming &amp;&amp; this.wsClient) {</span>
@@ -4973,4 +4970,4 @@ class CrimsonManager {
 &nbsp;
 // Initialize global shortcut on module load
 <span class="cstat-no" title="statement not covered">initCrimsonShortcut();</span>
-&nbsp;</pre></td></tr></table></pre><div class="push"></div></div><div class="footer quiet pad2 space-top1 center small">Code coverage generated by <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a> at 2026-03-25T00:45:35.255Z</div><script src="../../prettify.js"></script><script>window.onload=function(){prettyPrint()}</script><script src="../../sorter.js"></script><script src="../../block-navigation.js"></script></body></html>
+&nbsp;</pre></td></tr></table></pre><div class="push"></div></div><div class="footer quiet pad2 space-top1 center small">Code coverage generated by <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a> at 2026-03-26T18:10:05.482Z</div><script src="../../prettify.js"></script><script>window.onload=function(){prettyPrint()}</script><script src="../../sorter.js"></script><script src="../../block-navigation.js"></script></body></html>

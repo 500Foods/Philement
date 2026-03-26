@@ -33,19 +33,35 @@ export default defineConfig(({ mode }) => {
         // Target modern browsers
         target: 'esnext',
 
-        // Code splitting - let Rollup create optimal chunks
-        rollupOptions: {
-          output: {
-            manualChunks: {
-              // Vendor libraries that change less frequently
-              'vendor-ui': ['tabulator-tables', 'json-tree.js'],
-              'vendor-editor': ['@codemirror/lang-markdown', '@codemirror/lang-css', '@codemirror/lang-html', 
-                '@codemirror/lang-javascript', '@codemirror/lang-json', '@codemirror/lang-sql',
-                '@codemirror/state', '@codemirror/theme-one-dark', '@codemirror/view', '@codemirror/commands'],
-              'vendor-utils': ['marked', 'dompurify', 'sql-formatter', 'country-flag-icons']
-            }
+        // Chunk size warning threshold (largest vendor chunk is ~581 kB)
+        chunkSizeWarningLimit: 708,
+
+      // Code splitting - chunk by library purpose (each manager loads only what it needs)
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            // Heavy UI libraries - split by purpose for cleaner manager dependency graphs
+            'vendor-tabulator': ['tabulator-tables'],              // Data grids (queries, style-manager, login)
+            'vendor-codemirror': [                                  // Code/text editors (queries, login, style-manager, session-log)
+              '@codemirror/lang-markdown', '@codemirror/lang-css', '@codemirror/lang-html',
+              '@codemirror/lang-javascript', '@codemirror/lang-json', '@codemirror/lang-sql',
+              '@codemirror/state', '@codemirror/theme-one-dark', '@codemirror/view', '@codemirror/commands'
+            ],
+            'vendor-json-tree': ['json-tree.js'],                  // JSON visualization (lookups, queries)
+            'vendor-editor': ['suneditor'],                        // Rich text editor (lookups only)
+
+            // Lighter utilities grouped together (change less frequently)
+            'vendor-utils': ['marked', 'dompurify', 'sql-formatter', 'country-flag-icons']
           }
+        },
+        // Suppress warnings from node_modules (external dependencies we cannot control)
+        onwarn(warning, warn) {
+          if (warning.id && warning.id.includes('node_modules')) {
+            return; // Skip warnings from node_modules
+          }
+          warn(warning);
         }
+      }
       },
 
     // Development server options
