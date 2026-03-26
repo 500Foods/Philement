@@ -20,7 +20,7 @@
 #include "database_bootstrap.h"
 #include "database_cache.h"
 #include "migration/migration.h"
-#include <src/api/conduit/chat_common/chat_engine_cache.h>
+#include <src/api/wschat/helpers/engine_cache.h>
 
 #ifdef USE_MOCK_DATABASE_ENGINE
 #include <unity/mocks/mock_database_engine.h>

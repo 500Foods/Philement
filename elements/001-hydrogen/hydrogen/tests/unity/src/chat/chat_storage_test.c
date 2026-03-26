@@ -10,7 +10,7 @@
 #include <unity.h>
 #include <string.h>
 
-#include <src/api/conduit/chat_common/chat_storage.h>
+#include <src/api/wschat/helpers/storage.h>
 #include <src/utils/utils_compression.h>
 #include <src/utils/utils_crypto.h>
 

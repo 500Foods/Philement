@@ -8,7 +8,7 @@
 
 // Local includes
 #include "status_formatters.h"
-#include <src/api/conduit/chat_common/chat_metrics.h>
+#include <src/api/wschat/helpers/metrics.h>
 
 // Convert system metrics to JSON format
 // Exposed for testing - was previously static

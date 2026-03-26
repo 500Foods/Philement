@@ -15,8 +15,8 @@
 #include <src/api/auth/auth_service_jwt.h>
 
 // Chat includes for model status (Phase 2.5)
-#include <src/api/conduit/chat_common/chat_engine_cache.h>
-#include <src/api/conduit/chat_common/chat_health.h>
+#include <src/api/wschat/helpers/engine_cache.h>
+#include <src/api/wschat/helpers/health.h>
 
 // Local includes
 #include "../conduit_service.h"

@@ -8,8 +8,8 @@
 #include <unity.h>
 
 // Include necessary headers for the module being tested
-#include <src/api/conduit/chat_common/chat_lru_cache.h>
-#include <src/api/conduit/chat_common/chat_storage.h>
+#include <src/api/wschat/helpers/lru_cache.h>
+#include <src/api/wschat/helpers/storage.h>
 #include <string.h>
 #include <stdlib.h>
 #include <sys/stat.h>
