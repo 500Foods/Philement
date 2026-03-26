@@ -57,6 +57,9 @@ typedef struct {
     int total_requests;                // Total requests processed
 } WebSocketServerContext;
 
+// Forward declaration for MultiStreamContext (defined in proxy_multi.h)
+struct MultiStreamContext;
+
 // Session data for each connection
 typedef struct WebSocketSessionData {
     char request_ip[50];               // Client IP address
@@ -72,6 +75,7 @@ typedef struct WebSocketSessionData {
     jwt_claims_t *chat_claims;         // JWT claims for chat (NULL if not authenticated for chat)
     bool chat_stream_active;           // Whether a streaming response is in progress (prevents cleanup race)
     volatile bool connection_valid;    // Set to false when connection closes (for thread safety)
+    struct MultiStreamContext* multi_stream_ctx;  // Multi-stream context for queue-based streaming
     // Heartbeat tracking fields
     time_t last_ping_sent;             // When we last sent a ping to this client
     time_t last_pong_received;         // When we last received a pong from this client
