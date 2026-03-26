@@ -527,9 +527,8 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
         // Store multi-stream context in stream context for cleanup
         stream_ctx->multi_stream_ctx = multi_ctx;
         
-        // Store stream context in session for writable callback access
-        // Note: We would need to add a field to WebSocketSessionData for this
-        // For now, we rely on the multi-stream manager to handle the queue
+        // Store multi-stream context in session for writable callback to drain queue
+        session->multi_stream_ctx = multi_ctx;
         
         // Request writable callback to start draining the queue
         lws_callback_on_writable(wsi);
@@ -690,17 +689,23 @@ void chat_session_cleanup(WebSocketSessionData *session, struct lws *wsi) {
     (void)wsi;
 }
 
-void handle_chat_writable(struct lws *wsi, const WebSocketSessionData *session) {
+void handle_chat_writable(struct lws *wsi, WebSocketSessionData *session) {
     // For multi-stream mode, drain the chunk queue for any active streams
     // This is called from the LWS service thread, so writes are thread-safe
     
-    (void)session;  // Session data may be used for session lookup in future
+    (void)wsi;  // wsi is used via session->multi_stream_ctx->wsi
     
-    // Note: We would need to track streams per session to drain their queues
-    // For now, the proxy_multi module handles writes internally via callbacks
-    // This function is kept for future queue-based integration
+    if (!session || !session->multi_stream_ctx) {
+        return;
+    }
     
-    (void)wsi;
+    // Drain the chunk queue - this writes queued chunks to the WebSocket
+    MultiStreamContext* ctx = session->multi_stream_ctx;
+    int written = chat_proxy_multi_drain_queue(ctx);
+    
+    if (written > 0) {
+        log_this(SR_WEBSOCKET_CHAT, "Drained %d chunks from queue to WebSocket", LOG_LEVEL_TRACE, 1, written);
+    }
 }
 
 // Helper functions to send WebSocket messages

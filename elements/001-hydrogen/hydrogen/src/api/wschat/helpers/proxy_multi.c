@@ -21,6 +21,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <errno.h>
+#include <time.h>
 
 // ============================================================================
 // Internal Constants
@@ -174,23 +175,24 @@ static size_t multi_stream_write_callback(const void* contents, size_t size, siz
     
     MultiStreamContext* stream_ctx = curl_ctx->stream_ctx;
     
-    // DEBUG: Log raw data received
-    if (realsize > 0 && realsize < 512) {
-        char debug_buf[512];
-        memcpy(debug_buf, contents, realsize < 511 ? realsize : 511);
-        debug_buf[realsize < 511 ? realsize : 511] = '\0';
-        log_this(SR_CHAT, "Multi-stream RAW (%zu bytes): '%s'", LOG_LEVEL_DEBUG, 2, realsize, debug_buf);
-    } else if (realsize >= 512) {
-        log_this(SR_CHAT, "Multi-stream RAW (%zu bytes) - too large to display", LOG_LEVEL_DEBUG, 1, realsize);
-    }
-    
     // Track bytes received
     curl_ctx->bytes_received += realsize;
+    
+    // TRACE: Log raw data in batches (every 50 chunks) to reduce log spam
+    // Individual chunks are too verbose, but batching gives visibility into data flow
+    if (realsize > 0 && curl_ctx->chunks_processed > 0 && (curl_ctx->chunks_processed % 50) == 0) {
+        log_this(SR_CHAT, "Multi-stream progress: %zu chunks, %zu bytes total", 
+                 LOG_LEVEL_TRACE, 2, curl_ctx->chunks_processed, curl_ctx->bytes_received);
+    }
     
     // Log first data arrival (TTFB diagnostic)
     if (!curl_ctx->first_data_logged && realsize > 0) {
         curl_ctx->first_data_logged = true;
-        log_this(SR_CHAT, "Multi-stream first data received: %zu bytes (TTFB)", LOG_LEVEL_DEBUG, 1, realsize);
+        struct timespec now;
+        clock_gettime(CLOCK_MONOTONIC, &now);
+        double elapsed_ms = (double)(now.tv_sec - stream_ctx->start_time.tv_sec) * 1000.0 +
+                           (double)(now.tv_nsec - stream_ctx->start_time.tv_nsec) / 1000000.0;
+        log_this(SR_CHAT, "Multi-stream TTFB: %.0fms (%zu bytes)", LOG_LEVEL_STATE, 2, elapsed_ms, realsize);
     }
     
     // Check connection validity
@@ -295,55 +297,28 @@ static int multi_stream_debug_callback(CURL* handle, curl_infotype type, char* d
             debug_buf[--len] = '\0';
         }
         
-        // Log interesting connection events
+        // Only log key connection events, skip TLS handshake details
         if (strstr(debug_buf, "Connected to") || 
-            strstr(debug_buf, "TLS") ||
-            strstr(debug_buf, "SSL")) {
+            strstr(debug_buf, "Trying ") ||
+            strstr(debug_buf, "SSL certificate verify")) {
             log_this(SR_CHAT, "Multi CURL: %s", LOG_LEVEL_DEBUG, 1, debug_buf);
         }
+        // TLS handshake details are logged at TRACE if needed
+        else if (strstr(debug_buf, "TLS") || strstr(debug_buf, "SSL")) {
+            log_this(SR_CHAT, "Multi CURL: %s", LOG_LEVEL_TRACE, 1, debug_buf);
+        }
+    } else if (type == CURLINFO_HEADER_OUT && size > 0) {
+        log_this(SR_CHAT, "Multi CURL: Sent %zu bytes headers", LOG_LEVEL_TRACE, 1, size);
+    } else if (type == CURLINFO_HEADER_IN && size > 0) {
+        // Parse HTTP status from first line
+        const char* p = data;
+        const char* nl = memchr(p, '\n', size);
+        size_t line_len = nl ? (size_t)(nl - p) : size;
+        if (line_len > 0 && p[line_len-1] == '\r') line_len--;
+        if (line_len > 0) {
+            log_this(SR_CHAT, "Multi CURL: Received %.*s", LOG_LEVEL_DEBUG, 2, (int)line_len, p);
+        }
     }
-    
-    return 0;
-}
-
-// CURL socket callback (called when socket state changes)
-static int multi_socket_callback(CURL* easy, int sockfd, int action, void* userp, void* sockp) {
-    (void)easy;
-    (void)sockp;
-    
-    MultiStreamManager* manager = (MultiStreamManager*)userp;
-    
-    if (!manager || !manager->lws_context) {
-        return 0;
-    }
-    
-    // In a full LWS integration, we would:
-    // 1. Use lws_sock_file_descriptor_type for the socket
-    // 2. Call lws_evlib_wait or similar to integrate with LWS poll
-    
-    // For now, we rely on curl_multi_perform() in the perform loop
-    // which handles socket activity without explicit LWS integration
-    
-    (void)sockfd;
-    (void)action;
-    
-    return 0;
-}
-
-// CURL timer callback (called when timeout changes)
-static int multi_timer_callback(CURLM* multi, long timeout_ms, void* userp) {
-    (void)multi;
-    
-    MultiStreamManager* manager = (MultiStreamManager*)userp;
-    
-    if (!manager) {
-        return 0;
-    }
-    
-    // Timer management would be handled by the event loop
-    // For our simple implementation, we use polling in perform()
-    
-    (void)timeout_ms;
     
     return 0;
 }
@@ -374,11 +349,9 @@ bool chat_proxy_multi_init(MultiStreamManager* manager, struct lws_context* lws_
     manager->max_total_connections = 200;
     manager->shutdown_requested = false;
     
-    // Configure multi handle
-    curl_multi_setopt(manager->multi_handle, CURLMOPT_SOCKETFUNCTION, multi_socket_callback);
-    curl_multi_setopt(manager->multi_handle, CURLMOPT_SOCKETDATA, manager);
-    curl_multi_setopt(manager->multi_handle, CURLMOPT_TIMERFUNCTION, multi_timer_callback);
-    curl_multi_setopt(manager->multi_handle, CURLMOPT_TIMERDATA, manager);
+    // Configure multi handle - use simple polling interface (curl_multi_perform + curl_multi_wait)
+    // Do NOT set CURLMOPT_SOCKETFUNCTION or CURLMOPT_TIMERFUNCTION - those require
+    // the multi_socket_action() interface which we're not using
     curl_multi_setopt(manager->multi_handle, CURLMOPT_MAX_HOST_CONNECTIONS, (long)manager->max_host_connections);
     curl_multi_setopt(manager->multi_handle, CURLMOPT_MAX_TOTAL_CONNECTIONS, (long)manager->max_total_connections);
     
@@ -408,14 +381,50 @@ static void* multi_worker_thread(void* arg) {
     log_this(SR_CHAT, "Multi-stream worker thread started", LOG_LEVEL_DEBUG, 0);
     
     while (!manager->shutdown_requested) {
-        // Process any pending transfers
-        if (manager->initialized && chat_proxy_multi_perform(manager)) {
-            // There are active transfers, sleep briefly
-            usleep(10000);  // 10ms polling interval
-        } else {
+        if (!manager->initialized) {
+            usleep(50000);  // 50ms when not initialized
+            continue;
+        }
+        
+        // First, drive any pending transfers
+        int still_running = 0;
+        CURLMcode mc = curl_multi_perform(manager->multi_handle, &still_running);
+        
+        if (mc != CURLM_OK) {
+            log_this(SR_CHAT, "curl_multi_perform error in worker: %s", LOG_LEVEL_ERROR, 1, curl_multi_strerror(mc));
+            usleep(10000);  // 10ms on error
+            continue;
+        }
+        
+        if (still_running == 0) {
             // No active transfers, sleep longer
             usleep(50000);  // 50ms when idle
+            continue;
         }
+        
+        // There are active transfers - wait for socket activity or timeout
+        // Use curl_multi_poll() instead of curl_multi_wait() because curl_multi_wait()
+        // doesn't work correctly with HTTP/2 - it returns num_fds=0 when HTTP/2 frames
+        // are being processed internally, causing the wait to timeout instead of blocking
+        // until data is actually available. curl_multi_poll() handles this correctly.
+        // Use 10ms timeout for responsive streaming without excessive CPU usage.
+        CURLMcode wait_mc = curl_multi_poll(manager->multi_handle, NULL, 0, 10, NULL);
+        
+        if (wait_mc != CURLM_OK) {
+            log_this(SR_CHAT, "curl_multi_poll error: %s", LOG_LEVEL_ERROR, 1, curl_multi_strerror(wait_mc));
+            usleep(10000);  // 10ms on error
+            continue;
+        }
+        
+        // After wait returns, call curl_multi_perform AGAIN to process any data
+        // that arrived on sockets. This is required by libcurl's multi interface.
+        mc = curl_multi_perform(manager->multi_handle, &still_running);
+        if (mc != CURLM_OK) {
+            log_this(SR_CHAT, "curl_multi_perform (post-wait) error: %s", LOG_LEVEL_ERROR, 1, curl_multi_strerror(mc));
+        }
+        
+        // Process any completed transfers
+        chat_proxy_multi_perform(manager);
     }
     
     log_this(SR_CHAT, "Multi-stream worker thread stopped", LOG_LEVEL_DEBUG, 0);
@@ -483,13 +492,9 @@ bool chat_proxy_multi_perform(MultiStreamManager* manager) {
         return false;
     }
     
-    int still_running = 0;
-    CURLMcode mc = curl_multi_perform(manager->multi_handle, &still_running);
-    
-    if (mc != CURLM_OK) {
-        log_this(SR_CHAT, "curl_multi_perform error: %s", LOG_LEVEL_ERROR, 1, curl_multi_strerror(mc));
-        return still_running > 0;
-    }
+    // Note: curl_multi_perform() is called by the worker thread before curl_multi_wait().
+    // This function only processes completed transfers - do NOT call curl_multi_perform here
+    // as it would disrupt the multi handle's internal state machine.
     
     // Check for completed transfers
     CURLMsg* msg;
@@ -514,8 +519,11 @@ bool chat_proxy_multi_perform(MultiStreamManager* manager) {
                 MultiStreamContext* stream_ctx = curl_ctx->stream_ctx;
                 
                 if (stream_ctx) {
-                    // Process any remaining data in line buffer
-                    if (curl_ctx->line_buffer_len > 0 && res == CURLE_OK) {
+                    // Check if HTTP status indicates an error (non-2xx)
+                    bool http_error = (http_code < 200 || http_code >= 300);
+                    
+                    // Process any remaining data in line buffer (only for successful responses)
+                    if (curl_ctx->line_buffer_len > 0 && res == CURLE_OK && !http_error) {
                         ChatStreamChunk* chunk = chat_stream_chunk_parse(curl_ctx->line_buffer);
                         if (chunk) {
                             // Build and enqueue final chunk
@@ -551,29 +559,55 @@ bool chat_proxy_multi_perform(MultiStreamManager* manager) {
                     // Mark stream as completed
                     stream_ctx->stream_completed = true;
                     
-                    // Build and enqueue done message
+                    // Build and enqueue response (error or done)
                     json_t* done_response = json_object();
-                    json_object_set_new(done_response, "type", json_string("chat_done"));
                     if (stream_ctx->request_id) {
                         json_object_set_new(done_response, "id", json_string(stream_ctx->request_id));
                     }
-                    
-                    json_t* result = json_object();
-                    json_object_set_new(result, "content", json_string(""));
-                    if (stream_ctx->engine_name) {
-                        json_object_set_new(result, "model", json_string(stream_ctx->engine_name));
-                    }
-                    json_object_set_new(result, "finish_reason", 
-                                       json_string(stream_ctx->finish_reason ? stream_ctx->finish_reason : "stop"));
                     
                     // Calculate timing
                     struct timespec end_time;
                     clock_gettime(CLOCK_MONOTONIC, &end_time);
                     double elapsed_ms = (double)(end_time.tv_sec - stream_ctx->start_time.tv_sec) * 1000.0 +
                                        (double)(end_time.tv_nsec - stream_ctx->start_time.tv_nsec) / 1000000.0;
-                    json_object_set_new(result, "response_time_ms", json_real(elapsed_ms));
                     
-                    json_object_set_new(done_response, "result", result);
+                    if (http_error) {
+                        // HTTP error response - send error to client
+                        json_object_set_new(done_response, "type", json_string("chat_error"));
+                        
+                        // Build error message from available info
+                        char error_msg[256];
+                        if (curl_ctx->line_buffer_len > 0) {
+                            // Use the response body as error message (e.g., "error code: 504")
+                            snprintf(error_msg, sizeof(error_msg), "HTTP %ld: %s", 
+                                     http_code, curl_ctx->line_buffer);
+                        } else {
+                            snprintf(error_msg, sizeof(error_msg), "HTTP %ld error from upstream", http_code);
+                        }
+                        json_object_set_new(done_response, "error", json_string(error_msg));
+                        
+                        log_this(SR_CHAT, "Multi-stream HTTP error: %ld (%.0fms, %zu chunks before error)",
+                                 LOG_LEVEL_ERROR, 3, http_code, elapsed_ms, curl_ctx->chunks_processed);
+                    } else {
+                        // Successful completion
+                        json_object_set_new(done_response, "type", json_string("chat_done"));
+                        
+                        json_t* result = json_object();
+                        json_object_set_new(result, "content", json_string(""));
+                        if (stream_ctx->engine_name) {
+                            json_object_set_new(result, "model", json_string(stream_ctx->engine_name));
+                        }
+                        json_object_set_new(result, "finish_reason", 
+                                           json_string(stream_ctx->finish_reason ? stream_ctx->finish_reason : "stop"));
+                        json_object_set_new(result, "response_time_ms", json_real(elapsed_ms));
+                        json_object_set_new(done_response, "result", result);
+                        
+                        log_this(SR_CHAT, "Multi-stream complete: %zu chunks, %.0fms, finish=%s",
+                                 LOG_LEVEL_STATE, 3,
+                                 curl_ctx->chunks_processed,
+                                 elapsed_ms,
+                                 stream_ctx->finish_reason ? stream_ctx->finish_reason : "stop");
+                    }
                     
                     char* done_json = json_dumps(done_response, JSON_COMPACT);
                     json_decref(done_response);
@@ -583,13 +617,6 @@ bool chat_proxy_multi_perform(MultiStreamManager* manager) {
                         chat_proxy_multi_request_writable(stream_ctx);
                         free(done_json);
                     }
-                    
-                    // Log completion
-                    log_this(SR_CHAT, "Multi-stream complete: %zu chunks, %.0fms, finish=%s",
-                             LOG_LEVEL_STATE, 3,
-                             curl_ctx->chunks_processed,
-                             elapsed_ms,
-                             stream_ctx->finish_reason ? stream_ctx->finish_reason : "stop");
                     
                     // Remove from CURL multi
                     curl_multi_remove_handle(manager->multi_handle, easy);
@@ -626,7 +653,7 @@ bool chat_proxy_multi_perform(MultiStreamManager* manager) {
         }
     }
     
-    return still_running > 0;
+    return true;
 }
 
 CURLM* chat_proxy_multi_get_handle(const MultiStreamManager* manager) {
@@ -722,38 +749,47 @@ MultiStreamContext* chat_proxy_multi_stream_start(
     // Store CURL context in CURL private data
     curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_PRIVATE, curl_ctx);
     
-    // Build headers
-    stream_ctx->headers = NULL;
-    stream_ctx->headers = curl_slist_append(stream_ctx->headers, "Content-Type: application/json");
-    stream_ctx->headers = curl_slist_append(stream_ctx->headers, "Accept: text/event-stream");
+    // Build headers exactly like proxy.c (using local variable first)
+    struct curl_slist* headers = NULL;
+    headers = curl_slist_append(headers, "Content-Type: application/json");
+    headers = curl_slist_append(headers, "Accept: text/event-stream");
     
-    // Log provider type for debugging
-    log_this(SR_CHAT, "Multi-stream provider type: %d (OpenAI=%d, Anthropic=%d)", LOG_LEVEL_DEBUG, 3,
+    // Log provider type at TRACE for debugging
+    log_this(SR_CHAT, "Multi-stream provider type: %d (OpenAI=%d, Anthropic=%d)", LOG_LEVEL_TRACE, 3,
              engine->provider, CEC_PROVIDER_OPENAI, CEC_PROVIDER_ANTHROPIC);
     
     if (engine->provider == CEC_PROVIDER_ANTHROPIC) {
         char auth_header[CEC_MAX_KEY_LEN + 32];
         snprintf(auth_header, sizeof(auth_header), "x-api-key: %s", engine->api_key);
-        stream_ctx->headers = curl_slist_append(stream_ctx->headers, auth_header);
-        stream_ctx->headers = curl_slist_append(stream_ctx->headers, "anthropic-version: 2023-06-01");
+        headers = curl_slist_append(headers, auth_header);
+        headers = curl_slist_append(headers, "anthropic-version: 2023-06-01");
         log_this(SR_CHAT, "Multi-stream using Anthropic headers", LOG_LEVEL_DEBUG, 0);
     } else {
         char auth_header[CEC_MAX_KEY_LEN + 32];
         snprintf(auth_header, sizeof(auth_header), "Authorization: Bearer %s", engine->api_key);
-        stream_ctx->headers = curl_slist_append(stream_ctx->headers, auth_header);
+        headers = curl_slist_append(headers, auth_header);
         log_this(SR_CHAT, "Multi-stream using OpenAI headers", LOG_LEVEL_DEBUG, 0);
     }
     
+    // Store in context for later cleanup
+    stream_ctx->headers = headers;
+    
     // Log the API URL for debugging
-    log_this(SR_CHAT, "Multi-stream API URL: %s", LOG_LEVEL_DEBUG, 1, engine->api_url);
+    log_this(SR_CHAT, "Multi-stream API URL: %s", LOG_LEVEL_TRACE, 1, engine->api_url);
     
     // Configure CURL options
     curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_URL, engine->api_url);
     
-    // DEBUG: Log the request body being sent
+    // Log request size at DEBUG, full body at TRACE
     size_t request_len = strlen(request_json);
-    log_this(SR_CHAT, "Multi-stream sending request (%zu bytes): %.200s%s", LOG_LEVEL_DEBUG, 3,
-             request_len, request_json, request_len > 200 ? "..." : "");
+    log_this(SR_CHAT, "Multi-stream sending request (%zu bytes)", LOG_LEVEL_DEBUG, 1, request_len);
+    log_this(SR_CHAT, "Request body: %.200s%s", LOG_LEVEL_TRACE, 2,
+             request_json, request_len > 200 ? "..." : "");
+    
+    // Warn if stream parameter is missing
+    if (!strstr(request_json, "\"stream\"")) {
+        log_this(SR_CHAT, "WARNING: Request does NOT contain stream parameter!", LOG_LEVEL_ERROR, 0);
+    }
     
     // Make a copy of the request body that we own (original may be freed)
     stream_ctx->request_body = strdup(request_json);
@@ -782,7 +818,7 @@ MultiStreamContext* chat_proxy_multi_stream_start(
     curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_USERAGENT, "Hydrogen-Chat-Proxy-Multi/1.0");
     curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_NOSIGNAL, 1L);  // Thread-safe
     
-    // Enable debug callback
+    // Enable debug callback for connection diagnostics and header logging
     curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_DEBUGFUNCTION, multi_stream_debug_callback);
     curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_VERBOSE, 1L);
     
