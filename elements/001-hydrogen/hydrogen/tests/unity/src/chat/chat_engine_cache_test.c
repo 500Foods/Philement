@@ -7,7 +7,7 @@
 #include <src/hydrogen.h>
 #include <unity.h>
 
-#include <src/api/conduit/chat_common/chat_engine_cache.h>
+#include <src/api/wschat/helpers/engine_cache.h>
 
 // Test function prototypes
 void test_chat_engine_cache_create_destroy(void);

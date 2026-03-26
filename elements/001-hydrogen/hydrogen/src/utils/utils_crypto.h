@@ -19,6 +19,15 @@
 #include <stdbool.h>
 
 /**
+ * @brief Standard Base64 encode data WITH padding (RFC 4648)
+ * @param data Input data to encode
+ * @param length Length of input data in bytes
+ * @return Allocated string containing base64 encoded data, or NULL on error
+ * @note Caller must free the returned string
+ */
+char* utils_base64_encode(const unsigned char* data, size_t length);
+
+/**
  * @brief Base64url encode data (URL-safe base64 without padding)
  * @param data Input data to encode
  * @param length Length of input data in bytes

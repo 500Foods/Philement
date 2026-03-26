@@ -9,8 +9,8 @@
 #include <unity.h>
 #include <string.h>
 
-#include <src/api/conduit/chat_common/chat_context_hashing.h>
-#include <src/api/conduit/chat_common/chat_storage.h>
+#include <src/api/wschat/helpers/context_hashing.h>
+#include <src/api/wschat/helpers/storage.h>
 
 // Forward declarations for internal functions tested via public API
 char* chat_context_hash_content(const char* content, size_t content_length);

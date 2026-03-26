@@ -15,7 +15,7 @@
 
 // Include source header
 #include <src/api/conduit/status/status.h>
-#include <src/api/conduit/chat_common/chat_engine_cache.h>
+#include <src/api/wschat/helpers/engine_cache.h>
 
 // Mock includes
 #define USE_MOCK_LIBMICROHTTPD
