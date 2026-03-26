@@ -249,6 +249,13 @@ int ws_write_json_response(struct lws *wsi, json_t *json)
     return result;
 }
 
+// Batched logging state for streaming operations
+static struct {
+    size_t total_bytes;
+    int write_count;
+    int64_t last_log_time_ms;
+} stream_stats = {0};
+
 // Helper function to write raw data to WebSocket
 int ws_write_raw_data(struct lws *wsi, const char *data, size_t len)
 {
@@ -261,7 +268,26 @@ int ws_write_raw_data(struct lws *wsi, const char *data, size_t len)
     memcpy(buf + LWS_PRE, data, len);
     int result = lws_write(wsi, buf + LWS_PRE, len, LWS_WRITE_TEXT);
     
-    log_this(SR_WEBSOCKET, "[WS] lws_write returned %d for %zu bytes", LOG_LEVEL_TRACE, 2, result, len);
+    // Batched logging - accumulate stats and log periodically instead of per-write
+    stream_stats.total_bytes += len;
+    stream_stats.write_count++;
+    
+    // Get current time for periodic logging
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    int64_t now_ms = (int64_t)now.tv_sec * 1000 + now.tv_nsec / 1000000;
+    
+    // Log batched summary every 5 seconds or every 100 writes
+    if (stream_stats.write_count >= 100 || 
+        (now_ms - stream_stats.last_log_time_ms) >= 5000) {
+        if (stream_stats.write_count > 1) {
+            log_this(SR_WEBSOCKET, "[WS] lws_write: %d writes, %zu bytes (batched)",
+                     LOG_LEVEL_TRACE, 2, stream_stats.write_count, stream_stats.total_bytes);
+        }
+        stream_stats.total_bytes = 0;
+        stream_stats.write_count = 0;
+        stream_stats.last_log_time_ms = now_ms;
+    }
     
     free(buf);
     return result >= 0 ? 0 : -1;

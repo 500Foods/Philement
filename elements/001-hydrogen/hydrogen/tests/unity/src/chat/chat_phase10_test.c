@@ -13,8 +13,8 @@
 #include <unity.h>
 
 // Include necessary headers
-#include <src/api/conduit/chat_common/chat_lru_cache.h>
-#include <src/api/conduit/chat_common/chat_storage.h>
+#include <src/api/wschat/helpers/lru_cache.h>
+#include <src/api/wschat/helpers/storage.h>
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>

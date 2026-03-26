@@ -1,5 +1,20 @@
 # Helium Database Schema Project
 
+At a high level, Helium is essentially a colleciton of migration scripts that are used to configure a database schema in a particular database engine.
+There's not much else here to interact with aside from these scripts. Essentially, you can connect to a database, apply the SQL that the scripts generate
+that are specific to the database engine, and then you'll have a database with the current schema and any base or sample records included in the particular
+schema you've applied (say, Acuranzo for example).  
+
+The Hydrogen project has a built-in mechanism for doing all of this for you - point it at a database and turn on AutoMigrations in its config file, and it
+will do the rest of the work, starting from an empty database. It even packages up the migrations and stores them in its payload so a single executable can be
+distributed that can do everything - connect to a database, populate it, and be operational in one (big) step. Once running, Lithium can be configred to use it
+by updating a similar config file to point wherever the Hydrogen server is at, and you're operational almost instantly.
+
+The goal is to even package up Lithium into Hydrogen's payload and build a version of Hydrogen for the RaspberryPi platform so that you can just run it on,
+say, a 3D printer, as a service and you've got 99% of what it takes to run Mainsail and Moonraker - all as a single executable.  
+
+## Overview
+
 The Helium project provides database schemas and migrations (collectively referred to as "designs") for the Hydrogen server system. It supports multiple database engines - currently including the following.
 
 - [PostgreSQL 16+](https://www.postgresql.org/) - Advanced open source relational database

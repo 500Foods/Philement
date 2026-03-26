@@ -18,8 +18,8 @@
 #include "websocket_server_message.h"
 
 // Media storage includes
-#include "../api/conduit/chat_common/chat_storage.h"
-#include "../api/conduit/chat_common/chat_engine_cache.h"
+#include "../api/wschat/helpers/storage.h"
+#include "../api/wschat/helpers/engine_cache.h"
 
 // Queue for thread-safe chunk passing (if needed)
 #include <src/queue/queue.h>

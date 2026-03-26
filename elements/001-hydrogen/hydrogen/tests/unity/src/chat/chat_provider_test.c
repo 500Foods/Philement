@@ -8,9 +8,9 @@
 #include <src/hydrogen.h>
 #include <unity.h>
 
-#include <src/api/conduit/chat_common/chat_engine_cache.h>
-#include <src/api/conduit/chat_common/chat_request_builder.h>
-#include <src/api/conduit/chat_common/chat_response_parser.h>
+#include <src/api/wschat/helpers/engine_cache.h>
+#include <src/api/wschat/helpers/req_builder.h>
+#include <src/api/wschat/helpers/resp_parser.h>
 
 // Test function prototypes
 void setUp(void);
