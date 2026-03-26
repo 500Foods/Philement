@@ -16,6 +16,7 @@
 import { processIcons } from '../../core/icons.js';
 import { log, Subsystems, Status } from '../../core/log.js';
 import { getCrimsonWS } from '../../shared/crimson-ws.js';
+import { getAppWS, isAppWSConnected } from '../../shared/app-ws.js';
 import './crimson.css';
 
 // Singleton instance tracking
@@ -1108,10 +1109,8 @@ class CrimsonManager {
     this.initWebSocketClient();
 
     // Debug: Check WebSocket state and handlers
-    import('../../shared/app-ws.js').then(({ getAppWS, isAppWSConnected }) => {
-      const ws = getAppWS();
-      this.addDebugMessage('WS_STATE', `Connected: ${isAppWSConnected()}, handlers: ${ws.debugHandlers().join(', ')}`);
-    });
+    const ws = getAppWS();
+    this.addDebugMessage('WS_STATE', `Connected: ${isAppWSConnected()}, handlers: ${ws.debugHandlers().join(', ')}`);
 
     // If already streaming, cancel the previous request
     if (this.isStreaming && this.wsClient) {
