@@ -347,6 +347,7 @@ int launch_websocket_subsystem(void) {
     log_this(SR_WEBSOCKET, "    Port: %d", LOG_LEVEL_STATE, 1, app_config->websocket.port);
     log_this(SR_WEBSOCKET, "    Protocol: %s", LOG_LEVEL_STATE, 1, protocol);
     log_this(SR_WEBSOCKET, "    Max Message Size: %zu", LOG_LEVEL_STATE, 1, app_config->websocket.max_message_size);
+    log_this(SR_WEBSOCKET, "    RX Buffer Size: %zu", LOG_LEVEL_STATE, 1, app_config->websocket.rx_buffer_size);
     log_this(SR_WEBSOCKET, "    Exit Wait Seconds: %d", LOG_LEVEL_STATE, 1, app_config->websocket.connection_timeouts.exit_wait_seconds);
 
     // Step 4: Start websocket server (which creates its thread)

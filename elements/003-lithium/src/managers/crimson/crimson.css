@@ -104,9 +104,15 @@
   flex-shrink: 0;
   padding-right: 10px;
 }
+.crimson-header-primary span:first-child {
+  font-size: var(--icon-size-reg);
+}
 
 .crimson-header-primary:active {
   cursor: grabbing;
+}
+.manager-ui-crimson-btn {
+  color: var(--accent-crimson);
 }
 
 .crimson-header-primary svg,
@@ -461,19 +467,21 @@
 
 .crimson-message-user {
   align-self: flex-end;
+  align-items: flex-start;
   flex-direction: row-reverse;
 }
 
 .crimson-message-agent {
-  align-self: flex-start;
+  align-self: flex-start; 
+  align-items: flex-start;  
 }
 
 .crimson-message-avatar {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 35px;
   border-radius: var(--border-radius-md);
   flex-shrink: 0;
   font-size: var(--font-size-lg);
@@ -481,16 +489,18 @@
 
 .crimson-message-agent .crimson-message-avatar {
   background: var(--accent-primary);
-  color: white;
+  color: var(--accent-crimson);
+  font-size: var(--icon-size-reg);
 }
 
 .crimson-message-user .crimson-message-avatar {
   background: var(--accent-secondary);
-  color: white;
+  color: white;   
+  font-size: var(--icon-size-reg);
 }
 
 .crimson-message-content {
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-3) var(--space-5);
   border-radius: var(--border-radius-md);
   font-size: var(--font-size-sm);
   line-height: 1.5;
@@ -499,21 +509,37 @@
   word-break: break-word;
   max-width: 100%;
   min-width: 0;
+  overflow:auto;
+}
+
+.crimson-message-content p {
+  margin: var(--space-4) 0px;
+}
+.crimson-message-content ul {
+  margin: var(--space-5);
+}
+
+.crimson-message-content blockquote {
+  border-left: 2px solid var(--border-color);
+  padding: 0px var(--space-3);
+  margin: var(--space-5);
+  font-style: oblique;
+  font-size: var(--font-size-xs);
 }
 
 /* Markdown table styling */
 .crimson-message-content table {
-  border-collapse: collapse;
-  width: 100%;
-  margin: var(--space-2) 0;
+  border-collapse: separate;
+  border-spacing: 0px;
+  margin: var(--space-4) 0;
   border-radius: var(--border-radius-md);
-  overflow: hidden;
+  max-width: 100%;
 }
 
 .crimson-message-content th,
 .crimson-message-content td {
   border: 1px solid var(--border-color);
-  padding: var(--space-1) var(--space-2);
+  padding: var(--space-3) var(--space-4);
   text-align: left;
 }
 
@@ -709,7 +735,7 @@
 }
 
 .crimson-welcome-icon {
-  font-size: 48px;
+  font-size: 96px;
   margin-bottom: var(--space-4);
   color: var(--accent-crimson);
 }
@@ -806,6 +832,9 @@
   align-items: center;
   justify-content: center;
   padding: var(--space-2);
+  margin-left: 10px;
+  height: 35px;
+  min-height: 35px;
 }
 
 /* Spinner animation for waiting state */
@@ -927,9 +956,9 @@
 
 .crimson-followups {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 20px;
-  margin: 10px 40px 0 40px;
+  margin: 10px 142px 10px 46px;
   align-items: flex-start;
 }
 
@@ -966,7 +995,7 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  color: var(--accent-primary);
+  color: white;
   font-size: var(--font-size-xs);
 }
 

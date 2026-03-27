@@ -16,11 +16,12 @@ bool load_websocket_config(json_t* root, AppConfig* config) {
 
     // Initialize with robust defaults that match no-config behavior
     WebSocketConfig* ws = &config->websocket;
-    ws->enable_ipv4 = false; 
+    ws->enable_ipv4 = false;
     ws->enable_ipv6 = false;
     ws->lib_log_level = 2;
     ws->port = 5001;
     ws->max_message_size = 65536;  // 64KB to accommodate chat messages with conversation history
+    ws->rx_buffer_size = 65536;    // Match max_message_size by default to prevent frame truncation
     
     // Initialize connection timeouts with defaults
     ws->connection_timeouts.shutdown_wait_seconds = 2;
@@ -68,6 +69,7 @@ bool load_websocket_config(json_t* root, AppConfig* config) {
     (void)PROCESS_STRING(root, ws, protocol, "WebSocketServer.Protocol", "WebSocket");
     (void)PROCESS_SENSITIVE(root, ws, key, "WebSocketServer.Key", "WebSocket");
     (void)PROCESS_SIZE(root, ws, max_message_size, "WebSocketServer.MaxMessageSize", "WebSocket");
+    (void)PROCESS_SIZE(root, ws, rx_buffer_size, "WebSocketServer.RxBufferSize", "WebSocket");
     
     // Process connection timeouts with fallbacks (never fail)
     (void)PROCESS_INT(root, &ws->connection_timeouts, shutdown_wait_seconds, "WebSocketServer.ConnectionTimeouts.ShutdownWaitSeconds", "WebSocket");
@@ -120,6 +122,19 @@ void dump_websocket_config(const WebSocketConfig* config) {
     } else {
         snprintf(value_str, sizeof(value_str), "Max Message Size: %zu bytes",
                 config->max_message_size);
+    }
+    DUMP_TEXT("――", value_str);
+
+    // RX buffer size with units
+    if (config->rx_buffer_size >= 1024 * 1024) {
+        snprintf(value_str, sizeof(value_str), "RX Buffer Size: %zu MB",
+                config->rx_buffer_size / (1024 * 1024));
+    } else if (config->rx_buffer_size >= 1024) {
+        snprintf(value_str, sizeof(value_str), "RX Buffer Size: %zu KB",
+                config->rx_buffer_size / 1024);
+    } else {
+        snprintf(value_str, sizeof(value_str), "RX Buffer Size: %zu bytes",
+                config->rx_buffer_size);
     }
     DUMP_TEXT("――", value_str);
 
