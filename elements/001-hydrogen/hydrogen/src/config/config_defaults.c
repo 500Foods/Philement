@@ -284,6 +284,7 @@ void initialize_config_defaults_websocket(AppConfig* config) {
         config->websocket.lib_log_level = 2;
         config->websocket.port = 5001;
         config->websocket.max_message_size = 65536;  // 64KB to accommodate chat messages with conversation history
+        config->websocket.rx_buffer_size = 65536;    // Match max_message_size to prevent WebSocket frame truncation
 
         // Connection timeouts
         config->websocket.connection_timeouts.shutdown_wait_seconds = 2;
@@ -294,7 +295,7 @@ void initialize_config_defaults_websocket(AppConfig* config) {
         // String fields
         config->websocket.protocol = strdup("hydrogen");
         config->websocket.key = strdup("${env.WEBSOCKET_KEY}");
-        
+
         log_this(SR_CONFIG, "――― Applied config defaults for Websockets", LOG_LEVEL_DEBUG, 0);
     }
 }
