@@ -9,10 +9,50 @@ This document describes the WebSocket interface provided by the Hydrogen server 
 - **Authorization:** Required, use `Authorization: Key abc` in header
 - **Initialization:** Robust startup with port fallback and session validation
 - **State Management:** Thread-safe context handling throughout connection lifecycle
+- **Buffer Size:** Configurable `RxBufferSize` for WebSocket frames (default 64KB)
 
 The server will automatically try alternative ports (5001-5010) if the default port is unavailable. Check the server logs or use the system info endpoint to determine the actual bound port.
 
-For complete configuration options including IPv6 support and logging settings, see the [Configuration Guide](/docs/H/core/configuration.md#websocket).
+For complete configuration options including IPv6 support, buffer sizes, and logging settings, see the [Configuration Guide](/docs/H/core/configuration.md#websocket).
+
+## Buffer Configuration
+
+### RxBufferSize
+
+The `RxBufferSize` setting controls the internal libwebsockets receive buffer size for WebSocket frames. This is critical for handling large messages, especially in chat conversations with history.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `RxBufferSize` | 65536 (64KB) | LWS receive buffer for incoming WebSocket frames |
+
+**Why this matters:**
+
+- LWS buffers incoming data in chunks of `RxBufferSize`
+- If a WebSocket frame exceeds this size, it may be truncated or cause issues
+- Chat conversations with history can easily exceed 4KB, so the default matches `MaxMessageSize`
+
+**Recommended values:**
+
+| Use Case | RxBufferSize | MaxMessageSize |
+|----------|--------------|----------------|
+| Simple status updates | 4096 | 65536 |
+| Chat with short history | 65536 | 65536 |
+| Chat with extended history | 131072 | 131072 |
+| Long conversations (10+ turns) | 262144 | 262144 |
+
+**Configuration example:**
+
+```json
+{
+  "WebSocketServer": {
+    "Port": 5001,
+    "MaxMessageSize": 131072,
+    "RxBufferSize": 131072
+  }
+}
+```
+
+> **Note:** `RxBufferSize` should typically match or exceed `MaxMessageSize` to ensure incoming frames are not truncated.
 
 ## Status Updates
 
@@ -239,6 +279,9 @@ For a complete overview of the shutdown architecture across all components, see 
 - Efficient buffer management
 - Minimal dynamic allocations
 - Resource cleanup on disconnect
+- Session-specific resource freeing in `chat_session_cleanup()`
+- Multi-stream context cleanup via `chat_proxy_multi_stream_stop()`
+- NULL-pointer safety for all freed resources
 
 ### Concurrency and Safety
 

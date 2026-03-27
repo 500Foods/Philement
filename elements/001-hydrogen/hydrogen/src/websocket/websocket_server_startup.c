@@ -51,23 +51,28 @@ int validate_websocket_params(int port, const char* protocol, const char* key) {
 
 // Set up WebSocket protocol array
 void setup_websocket_protocols(struct lws_protocols protocols[3], const char* protocol) {
+    // Get rx_buffer_size from config, default to 64KB if not set
+    size_t rx_buf_size = (app_config && app_config->websocket.rx_buffer_size > 0) 
+                         ? app_config->websocket.rx_buffer_size 
+                         : 65536;
+
     // HTTP protocol for upgrade requests
     protocols[0] = (struct lws_protocols){
         .name = "http",
         .callback = callback_http,
         .per_session_data_size = 0,
-        .rx_buffer_size = 0,
+        .rx_buffer_size = 0,  // HTTP doesn't need large buffer
         .id = 0,
         .user = NULL,
         .tx_packet_size = 0
     };
 
-    // Custom protocol
+    // Custom protocol - use configured rx_buffer_size to prevent message truncation
     protocols[1] = (struct lws_protocols){
         .name = protocol,
         .callback = callback_hydrogen,
         .per_session_data_size = sizeof(WebSocketSessionData),
-        .rx_buffer_size = 0,
+        .rx_buffer_size = rx_buf_size,
         .id = 1,
         .user = NULL,
         .tx_packet_size = 0

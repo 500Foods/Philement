@@ -31,7 +31,10 @@
 #define INITIAL_CHUNK_CAPACITY 32
 
 // Maximum chunks per queue before backpressure
-#define MAX_CHUNKS_PER_QUEUE 1024
+// Increased from 1024 to handle high-volume streaming without dropping chunks
+// With lws_cancel_service() now used, the queue should drain much faster,
+// but this provides headroom for bursty AI responses
+#define MAX_CHUNKS_PER_QUEUE 4096
 
 // ============================================================================
 // Static Variables
@@ -79,8 +82,14 @@ static bool chunk_queue_enqueue(StreamChunkQueue* queue, const char* json_data, 
     // Check queue size limit (backpressure)
     if (queue->count >= MAX_CHUNKS_PER_QUEUE) {
         pthread_mutex_unlock(&queue->mutex);
-        log_this(SR_CHAT, "Chunk queue full, dropping chunk", LOG_LEVEL_ALERT, 0);
+        log_this(SR_CHAT, "Chunk queue full (%d), dropping chunk", LOG_LEVEL_ALERT, 1, MAX_CHUNKS_PER_QUEUE);
         return false;
+    }
+    
+    // Warn when queue is getting full (80% capacity)
+    if (queue->count >= (MAX_CHUNKS_PER_QUEUE * 80 / 100) && 
+        queue->count % 100 == 0) {  // Log every 100th chunk to avoid spam
+        log_this(SR_CHAT, "Chunk queue high (%zu/%d)", LOG_LEVEL_STATE, 2, queue->count, MAX_CHUNKS_PER_QUEUE);
     }
     
     // Allocate node
@@ -316,7 +325,12 @@ static int multi_stream_debug_callback(CURL* handle, curl_infotype type, char* d
         size_t line_len = nl ? (size_t)(nl - p) : size;
         if (line_len > 0 && p[line_len-1] == '\r') line_len--;
         if (line_len > 0) {
-            log_this(SR_CHAT, "Multi CURL: Received %.*s", LOG_LEVEL_DEBUG, 2, (int)line_len, p);
+            // Use separate specifiers to avoid log_this validation warning with %.*s
+            char header_buf[256];
+            size_t copy_len = line_len < sizeof(header_buf) - 1 ? line_len : sizeof(header_buf) - 1;
+            memcpy(header_buf, p, copy_len);
+            header_buf[copy_len] = '\0';
+            log_this(SR_CHAT, "Multi CURL: Received %s", LOG_LEVEL_DEBUG, 1, header_buf);
         }
     }
     
@@ -496,7 +510,61 @@ bool chat_proxy_multi_perform(MultiStreamManager* manager) {
     // This function only processes completed transfers - do NOT call curl_multi_perform here
     // as it would disrupt the multi handle's internal state machine.
     
-    // Check for completed transfers
+    // Clean up any completed streams whose queues have been drained
+    pthread_mutex_lock(&manager->streams_mutex);
+    MultiStreamContext* stream = manager->active_streams;
+    
+    while (stream) {
+        MultiStreamContext* next = stream->next;
+        if (stream->stream_completed && stream->easy_handle == NULL) {
+            // Check if queue is drained (chat_done should have been sent by now)
+            if (!chunk_queue_has_data(&stream->chunk_queue)) {
+                // Save pointers before freeing
+                void* session_data_ptr = stream->session_data;
+                
+                // Free headers
+                if (stream->headers) {
+                    curl_slist_free_all(stream->headers);
+                    stream->headers = NULL;
+                }
+                
+                // Call completion callback if set
+                if (stream->completion_callback) {
+                    stream->completion_callback(stream->completion_user_data, true);
+                }
+                
+                // Remove from linked list
+                if (stream->prev) {
+                    stream->prev->next = stream->next;
+                } else {
+                    manager->active_streams = stream->next;
+                }
+                if (stream->next) {
+                    stream->next->prev = stream->prev;
+                }
+                
+                // Clear session's pointer ONLY if it still points to the stream we're freeing
+                // This prevents the race where a new stream started and overwrote the pointer
+                if (session_data_ptr) {
+                    WebSocketSessionData* session = (WebSocketSessionData*)session_data_ptr;
+                    if (session->multi_stream_ctx == stream) {
+                        session->multi_stream_ctx = NULL;
+                    }
+                }
+                
+                // Free stream context (after checking pointer, stream is now freed)
+                free(stream->request_id);
+                free(stream->engine_name);
+                free(stream->finish_reason);
+                free(stream->request_body);
+                free(stream);
+            }
+        }
+        stream = next;
+    }
+    pthread_mutex_unlock(&manager->streams_mutex);
+    
+    // Check for completed transfers from CURL
     CURLMsg* msg;
     int msgs_left;
     while ((msg = curl_multi_info_read(manager->multi_handle, &msgs_left))) {
@@ -618,36 +686,23 @@ bool chat_proxy_multi_perform(MultiStreamManager* manager) {
                         free(done_json);
                     }
                     
-                    // Remove from CURL multi
+                    // Remove CURL handle but DON'T free the stream context yet
+                    // The chat_done message is in the queue and needs to be sent first
                     curl_multi_remove_handle(manager->multi_handle, easy);
+                    curl_easy_cleanup(easy);
+                    stream_ctx->easy_handle = NULL;
                     
-                    // Cleanup CURL context
+                    // Cleanup CURL context (no longer needed)
                     free(curl_ctx->line_buffer);
                     free(curl_ctx);
                     
-                    // Update session flags
+                    // Mark as completed - cleanup will happen on next iteration when queue is drained
+                    stream_ctx->stream_completed = true;
+                    
+                    // Update session flag
                     if (stream_ctx->stream_active) {
                         *stream_ctx->stream_active = false;
                     }
-                    
-                    // Remove from active streams list
-                    pthread_mutex_lock(&manager->streams_mutex);
-                    if (stream_ctx->prev) {
-                        stream_ctx->prev->next = stream_ctx->next;
-                    } else {
-                        manager->active_streams = stream_ctx->next;
-                    }
-                    if (stream_ctx->next) {
-                        stream_ctx->next->prev = stream_ctx->prev;
-                    }
-                    pthread_mutex_unlock(&manager->streams_mutex);
-                    
-                    // Free stream context
-                    free(stream_ctx->request_id);
-                    free(stream_ctx->engine_name);
-                    free(stream_ctx->finish_reason);
-                    free(stream_ctx->request_body);
-                    free(stream_ctx);
                 }
             }
         }
@@ -862,59 +917,22 @@ void chat_proxy_multi_stream_stop(MultiStreamManager* manager, MultiStreamContex
         return;
     }
     
-    // Remove from CURL multi
+    // NOTE: Don't set *connection_valid = false here!
+    // The connection_valid flag is shared across all streams for the same WebSocket session.
+    // Setting it to false would prevent subsequent streams from sending data.
+    // The flag is only set to false by chat_session_cleanup() when the actual WebSocket closes.
+    // The worker thread's chat_proxy_multi_perform() will handle cleanup when it
+    // processes CURLMSG_DONE for this handle.
+    
+    // Remove CURL handle from multi - this is thread-safe
     if (context->easy_handle) {
         curl_multi_remove_handle(manager->multi_handle, context->easy_handle);
-        curl_easy_cleanup(context->easy_handle);
     }
     
-    // Get and free CURL context
-    void* priv_data = NULL;
-    if (context->easy_handle) {
-        curl_easy_getinfo(context->easy_handle, CURLINFO_PRIVATE, &priv_data);
-    }
-    if (priv_data) {
-        CurlStreamContext* curl_ctx = (CurlStreamContext*)priv_data;
-        free(curl_ctx->line_buffer);
-        free(curl_ctx);
-    }
-    
-    // Free headers
-    if (context->headers) {
-        curl_slist_free_all(context->headers);
-    }
-    
-    // Destroy chunk queue
-    chunk_queue_destroy(&context->chunk_queue);
-    
-    // Remove from active streams list
-    pthread_mutex_lock(&manager->streams_mutex);
-    if (context->prev) {
-        context->prev->next = context->next;
-    } else {
-        manager->active_streams = context->next;
-    }
-    if (context->next) {
-        context->next->prev = context->prev;
-    }
-    pthread_mutex_unlock(&manager->streams_mutex);
-    
-    // Update session flags
+    // Update session flag
     if (context->stream_active) {
         *context->stream_active = false;
     }
-    
-    // Call completion callback if set
-    if (context->completion_callback) {
-        context->completion_callback(context->completion_user_data, false);
-    }
-    
-    // Free resources
-    free(context->request_id);
-    free(context->engine_name);
-    free(context->finish_reason);
-    free(context->request_body);
-    free(context);
 }
 
 void chat_proxy_multi_socket_action(MultiStreamManager* manager, int sockfd, int action) {
@@ -991,6 +1009,14 @@ void chat_proxy_multi_request_writable(MultiStreamContext* context) {
     // Request LWS writable callback
     // This will trigger handle_chat_writable() on the LWS service thread
     lws_callback_on_writable(context->wsi);
+    
+    // Cancel the current lws_service() wait so the writable callback is processed immediately
+    // Without this, the LWS service loop would wait up to 50ms before checking for writable,
+    // causing chunks to queue up and potentially drop when the queue fills
+    struct lws_context* ctx = lws_get_context(context->wsi);
+    if (ctx) {
+        lws_cancel_service(ctx);
+    }
 }
 
 // ============================================================================
