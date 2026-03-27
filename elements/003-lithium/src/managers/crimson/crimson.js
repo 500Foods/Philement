@@ -14,7 +14,8 @@
  */
 
 import { processIcons } from '../../core/icons.js';
-import { log, Subsystems, Status } from '../../core/log.js';
+import { log, getRawLog, Subsystems, Status } from '../../core/log.js';
+import { formatLogText } from '../../shared/log-formatter.js';
 import { getCrimsonWS } from '../../shared/crimson-ws.js';
 import { getAppWS, isAppWSConnected } from '../../shared/app-ws.js';
 import './crimson.css';
@@ -85,7 +86,12 @@ export function createCrimsonButton(tooltip = 'Chat with Crimson (Ctrl+Shift+C)'
   button.type = 'button';
   button.className = 'subpanel-header-btn subpanel-header-close crimson-btn';
   button.title = tooltip;
-  button.innerHTML = '<fa fa-fire></fa>';
+  button.innerHTML = 
+    `<span class="fa-stack fa-2x" style="width: 1.25em; height: 1.3em; line-height: 1.5;">
+       <i class="fa-duotone fa-solid fa-circle-dot fa-stack-1x" style="font-size: 0.15em; left: 1.2em; top: 2.5em;"></i>
+       <i class="fa-duotone fa-solid fa-circle-dot fa-stack-1x" style="font-size: 0.15em; left: -1.1em; top: 2.5em;"></i>
+       <i class="fa-duotone fa-thin fa-fire fa-stack-1x"></i>
+     </span>`;
 
   button.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -125,7 +131,7 @@ export function initCrimsonShortcut() {
   };
 
   document.addEventListener('keydown', globalKeyHandler);
-  log(Subsystems.MANAGER, Status.INFO, '[Crimson] Global keyboard shortcut initialized (Ctrl+Shift+C)');
+  log(Subsystems.CRIMSON, Status.INFO, 'Global keyboard shortcut initialized (Ctrl+Shift+C)');
 }
 
 /**
@@ -170,9 +176,8 @@ class CrimsonManager {
     this.metadataBuffer = '';
     this.partialDelimiter = '';
 
-    // Debug state (always collect, just hide/show)
+    // Debug state
     this.debugMode = false;
-    this.debugChunks = [];
 
     // Streaming toggle state
     this.streamingEnabled = true;
@@ -275,8 +280,16 @@ class CrimsonManager {
       <div class="crimson-header">
         <div class="subpanel-header-group">
           <button type="button" class="crimson-header-primary">
-            <fa fa-fire></fa>
+            <span class="fa-stack fa-2x" style="width: 1em; height: 1.2em;">
+              <i class="fa-duotone fa-solid fa-circle-dot fa-stack-1x" style="font-size: 0.15em; left: 1.2em; top: 2.5em;"></i>
+              <i class="fa-duotone fa-solid fa-circle-dot fa-stack-1x" style="font-size: 0.15em; left: -1.1em; top: 2.5em;"></i>
+              <i class="fa-duotone fa-thin fa-fire fa-stack-1x"></i>
+            </span>
             <span>Chat with Crimson</span>
+          </button>
+          <button type="button" class="crimson-status-placeholder" disabled>
+            <span class="crimson-status-indicator crimson-status-ready"></span>
+            <span class="crimson-status-text">Ready</span>
           </button>
           <button type="button" class="crimson-streaming-btn" title="Toggle streaming">
             <fa fa-water></fa>
@@ -296,18 +309,17 @@ class CrimsonManager {
         </div>
       </div>
       <div class="crimson-reasoning-panel">
-        <div class="crimson-reasoning-header">Reasoning</div>
         <div class="crimson-reasoning-content"></div>
         <div class="crimson-reasoning-splitter" title="Drag to resize"></div>
-      </div>
-      <div class="crimson-status-bar">
-        <span class="crimson-status-indicator"></span>
-        <span class="crimson-status-text">Ready</span>
       </div>
       <div class="crimson-conversation">
         <div class="crimson-welcome">
           <div class="crimson-welcome-icon">
-            <fa fa-fire></fa>
+            <span class="fa-stack fa-2x" style="width: 1.25em; height: 1.3em; line-height: 1.5;">
+              <i class="fa-duotone fa-solid fa-circle-dot fa-stack-1x" style="font-size: 0.15em; left: 1.2em; top: 2.5em;"></i>
+              <i class="fa-duotone fa-solid fa-circle-dot fa-stack-1x" style="font-size: 0.15em; left: -1.1em; top: 2.5em;"></i>
+              <i class="fa-duotone fa-thin fa-fire fa-stack-1x"></i>
+            </span>
           </div>
           <div class="crimson-welcome-text">Hello, <span class="crimson-username">User</span>!</div>
           <div class="crimson-welcome-hint">How can I help you today?</div>
@@ -315,7 +327,6 @@ class CrimsonManager {
       </div>
       <div class="crimson-debug-panel">
         <div class="crimson-debug-splitter" title="Drag to resize"></div>
-        <div class="crimson-debug-header">Debug Output</div>
         <pre class="crimson-debug-content"></pre>
       </div>
       <div class="crimson-input-area">
@@ -334,7 +345,7 @@ class CrimsonManager {
     this.conversation = this.popup.querySelector('.crimson-conversation');
     this.input = this.popup.querySelector('.crimson-input');
     this.sendBtn = this.popup.querySelector('.crimson-send-btn');
-    this.statusBar = this.popup.querySelector('.crimson-status-bar');
+    this.statusPlaceholder = this.popup.querySelector('.crimson-status-placeholder');
     this.statusIndicator = this.popup.querySelector('.crimson-status-indicator');
     this.statusText = this.popup.querySelector('.crimson-status-text');
     this.debugPanel = this.popup.querySelector('.crimson-debug-panel');
@@ -343,10 +354,10 @@ class CrimsonManager {
     this.reasoningContent = this.popup.querySelector('.crimson-reasoning-content');
     this.streamingBtn = this.popup.querySelector('.crimson-streaming-btn');
     this.reasoningBtn = this.popup.querySelector('.crimson-reasoning-btn');
+    this.debugBtn = this.popup.querySelector('.crimson-debug-btn');
     const header = this.popup.querySelector('.crimson-header');
     const closeBtn = this.popup.querySelector('.crimson-header-close');
     const resetBtn = this.popup.querySelector('.crimson-reset-btn');
-    const debugBtn = this.popup.querySelector('.crimson-debug-btn');
     const resizeHandleBR = this.popup.querySelector('.crimson-resize-handle-br');
     const resizeHandleBL = this.popup.querySelector('.crimson-resize-handle-bl');
     const resizeHandleTR = this.popup.querySelector('.crimson-resize-handle-tr');
@@ -358,7 +369,7 @@ class CrimsonManager {
     header.addEventListener('mousedown', this.handleDragStart);
     closeBtn.addEventListener('click', () => this.hide());
     resetBtn?.addEventListener('click', () => this.resetConversation());
-    debugBtn?.addEventListener('click', () => this.toggleDebugPanel());
+    this.debugBtn?.addEventListener('click', () => this.toggleDebugPanel());
     this.streamingBtn?.addEventListener('click', () => this.toggleStreaming());
     this.reasoningBtn?.addEventListener('click', () => this.toggleReasoningPanel());
     this.sendBtn.addEventListener('click', this.handleSend);
@@ -384,28 +395,29 @@ class CrimsonManager {
     // Position popup initially (centered)
     this.centerPopup();
 
-    log(Subsystems.MANAGER, Status.INFO, '[Crimson] Initialized');
+    log(Subsystems.CRIMSON, Status.INFO, 'Initialized');
   }
 
   /**
    * Apply persistent state to UI elements
+   * Uses requestAnimationFrame to ensure initial render before animating panels
    */
   applyPersistentState() {
-    // Apply debug state
-    this.popup.classList.toggle('crimson-debug-visible', this.debugMode);
-    if (this.debugMode) {
-      this.debugBtn?.classList.add('active');
-    }
-    this.updateDebugPanel();
-
-    // Apply streaming state
+    // Apply streaming state (no animation needed)
     this.updateStreamingButton();
 
-    // Apply reasoning state
-    this.popup.classList.toggle('crimson-reasoning-visible', this.reasoningMode);
-    if (this.reasoningMode) {
-      this.reasoningBtn?.classList.add('active');
-    }
+    // Apply debug button state
+    this.debugBtn?.classList.toggle('active', this.debugMode);
+    this.updateDebugPanel();
+
+    // Apply reasoning button state
+    this.reasoningBtn?.classList.toggle('active', this.reasoningMode);
+
+    // Defer panel visibility to allow initial render, then animate
+    requestAnimationFrame(() => {
+      this.popup.classList.toggle('crimson-debug-visible', this.debugMode);
+      this.popup.classList.toggle('crimson-reasoning-visible', this.reasoningMode);
+    });
   }
 
   /**
@@ -469,7 +481,7 @@ class CrimsonManager {
       this.input?.focus();
     }, 100);
 
-    log(Subsystems.MANAGER, Status.INFO, '[Crimson] Shown');
+    log(Subsystems.CRIMSON, Status.INFO, 'Shown');
   }
 
   /**
@@ -490,13 +502,22 @@ class CrimsonManager {
       document.activeElement.blur();
     }
 
-    log(Subsystems.MANAGER, Status.INFO, '[Crimson] Hidden');
+    log(Subsystems.CRIMSON, Status.INFO, 'Hidden');
   }
 
   /**
    * Reset the conversation to empty state
    */
   resetConversation() {
+    // Animate broom icon - trigger CSS animation on SVG
+    const resetBtn = this.popup?.querySelector('.crimson-reset-btn');
+    if (resetBtn) {
+      resetBtn.classList.add('animating');
+      setTimeout(() => {
+        resetBtn.classList.remove('animating');
+      }, 1500);
+    }
+
     // Cleanup WebSocket client state (does NOT disconnect - managed by app-ws)
     if (this.wsClient) {
       this.wsClient.cleanup();
@@ -525,10 +546,48 @@ class CrimsonManager {
       this.sendBtn.disabled = false;
     }
 
-    // Clear conversation and restore welcome message
+    // Clear reasoning panel
+    this.clearReasoningBuffer();
+
+    // Refresh debug panel
+    this.updateDebugPanel();
+
+    // Clear message history
+    this.messages = [];
+
+    // Clear input
+    if (this.input) {
+      this.input.value = '';
+      this.autoResizeInput();
+    }
+
+    // Fade out existing conversation content, then show welcome
+    if (this.conversation) {
+      const existingContent = this.conversation.querySelector('.crimson-message, .crimson-typing-indicator');
+      if (existingContent) {
+        this.conversation.classList.add('crimson-conversation-fading');
+        setTimeout(() => {
+          this.conversation.classList.remove('crimson-conversation-fading');
+          this.showWelcomeMessage();
+        }, 350); // Match transition duration
+      } else {
+        this.showWelcomeMessage();
+      }
+    }
+
+    // Reset status
+    this.updateStatus('ready', 'Ready');
+
+    log(Subsystems.CRIMSON, Status.INFO, 'Conversation reset');
+  }
+
+  /**
+   * Show the welcome message in the conversation area
+   */
+  showWelcomeMessage() {
     if (this.conversation) {
       this.conversation.innerHTML = `
-        <div class="crimson-welcome">
+        <div class="crimson-welcome crimson-welcome-fade-in">
           <div class="crimson-welcome-icon">
             <fa fa-fire></fa>
           </div>
@@ -538,29 +597,11 @@ class CrimsonManager {
       `;
       processIcons(this.conversation);
     }
-
-    // Clear input
-    if (this.input) {
-      this.input.value = '';
-      this.autoResizeInput();
-    }
-
-    // Clear message history
-    this.messages = [];
-
-    // Clear debug panel
-    this.debugChunks = [];
-    this.updateDebugPanel();
-
-    // Reset status
-    this.updateStatus('ready', 'Ready');
-
-    log(Subsystems.MANAGER, Status.INFO, '[Crimson] Conversation reset');
   }
 
   /**
-   * Update the status bar
-   * @param {string} state - Status state: 'ready', 'connecting', 'thinking', 'streaming', 'error'
+   * Update the status display in the header placeholder
+   * @param {string} state - Status state: 'ready', 'sending', 'thinking', 'reasoning', 'responding', 'error'
    * @param {string} text - Status text to display
    */
   updateStatus(state, text) {
@@ -569,13 +610,6 @@ class CrimsonManager {
     this.connectionState = state;
     this.statusIndicator.className = `crimson-status-indicator crimson-status-${state}`;
     this.statusText.textContent = text;
-
-    // Add animation for active states
-    if (state === 'thinking' || state === 'streaming') {
-      this.statusBar.classList.add('crimson-status-active');
-    } else {
-      this.statusBar.classList.remove('crimson-status-active');
-    }
   }
 
   /**
@@ -625,6 +659,13 @@ class CrimsonManager {
     this.popup.classList.toggle('crimson-reasoning-visible', this.reasoningMode);
     this.reasoningBtn?.classList.toggle('active', this.reasoningMode);
     this.updateReasoningButton();
+    
+    // If turning on and we have accumulated reasoning data, display it
+    if (this.reasoningMode && this.reasoningContent && this.currentReasoningBuffer) {
+      this.reasoningContent.textContent = this.currentReasoningBuffer;
+      this.reasoningContent.scrollTop = this.reasoningContent.scrollHeight;
+    }
+    
     this.savePersistentState();
   }
 
@@ -642,19 +683,13 @@ class CrimsonManager {
   }
 
   /**
-   * Add debug message to the debug panel
-   * Always collects data, only displays when debugMode is true
+   * Add debug message to the session log
    * @param {string} type - Message type
    * @param {string} content - Message content
    */
   addDebugMessage(type, content) {
-    const timestamp = new Date().toLocaleTimeString();
-    this.debugChunks.push(`[${timestamp}] ${type}: ${content}`);
-    
-    // Keep only last 200 messages
-    if (this.debugChunks.length > 200) {
-      this.debugChunks.shift();
-    }
+    // Log to session log with Crimson subsystem
+    log(Subsystems.CRIMSON, Status.DEBUG, `[${type}] ${content}`);
 
     // Only update display if debug mode is active
     if (this.debugMode) {
@@ -663,11 +698,22 @@ class CrimsonManager {
   }
 
   /**
-   * Update the debug panel content
+   * Update the debug panel content with session log format
+   * Shows all Crimson subsystem entries from the session log
    */
   updateDebugPanel() {
     if (!this.debugContent) return;
-    this.debugContent.textContent = this.debugChunks.join('\n');
+    
+    // Get all log entries and filter for Crimson subsystem
+    const allEntries = getRawLog();
+    const crimsonEntries = allEntries.filter(e => 
+      e.subsystem === 'Crimson' || 
+      (e.subsystem && e.subsystem.startsWith('[EventBus]') && e.description && e.description.includes('Crimson'))
+    );
+    
+    // Format using the session log formatter
+    const logText = formatLogText(crimsonEntries);
+    this.debugContent.textContent = logText;
     this.debugContent.scrollTop = this.debugContent.scrollHeight;
   }
 
@@ -688,8 +734,6 @@ class CrimsonManager {
       this.reasoningContent.textContent = this.currentReasoningBuffer;
       this.reasoningContent.scrollTop = this.reasoningContent.scrollHeight;
     }
-
-    this.addDebugMessage('REASONING', `Chunk: ${content.substring(0, 50)}...`);
   }
 
   /**
@@ -976,17 +1020,15 @@ class CrimsonManager {
     const message = this.input.value.trim();
     if (!message || this.isStreaming) return;
 
-    // Add user message
+    // Add user message to display
     this.addMessage('user', message);
-
-    // Add to conversation history for context
-    this.conversationHistory.push({ role: 'user', content: message });
 
     // Clear input
     this.input.value = '';
     this.autoResizeInput();
 
     // Send message via WebSocket
+    // Note: user message is added to conversationHistory in sendChatMessage after successful send
     this.sendChatMessage(message);
   }
 
@@ -1015,17 +1057,24 @@ class CrimsonManager {
    * @param {string} text - Message text
    */
   addMessage(sender, text) {
-    // Remove welcome message if present
+    // Fade out and remove welcome message if present
     const welcome = this.conversation.querySelector('.crimson-welcome');
     if (welcome) {
-      welcome.remove();
+      welcome.classList.add('crimson-welcome-fading');
+      setTimeout(() => welcome.remove(), 350);
     }
 
     const messageEl = document.createElement('div');
     messageEl.className = `crimson-message crimson-message-${sender}`;
 
     const avatar = sender === 'agent'
-      ? '<div class="crimson-message-avatar"><fa fa-fire></fa></div>'
+      ? `<div class="crimson-message-avatar">
+          <span class="fa-stack fa-2x" style="width: 1.25em; height: 1.3em; line-height: 1.5;">
+            <i class="fa-duotone fa-solid fa-circle-dot fa-stack-1x" style="font-size: 0.15em; left: 1.2em; top: 2.5em;"></i>
+            <i class="fa-duotone fa-solid fa-circle-dot fa-stack-1x" style="font-size: 0.15em; left: -1.1em; top: 2.5em;"></i>
+            <i class="fa-duotone fa-thin fa-fire fa-stack-1x"></i>
+          </span>
+        </div>`
       : '<div class="crimson-message-avatar"><fa fa-user></fa></div>';
 
     messageEl.innerHTML = `
@@ -1080,23 +1129,18 @@ class CrimsonManager {
    * Note: Connection lifecycle is managed by app-ws.js, not by Crimson
    */
   initWebSocketClient() {
-    log(Subsystems.WEBSOCKET, Status.DEBUG, `[Crimson] Initializing WebSocket client`);
     // Create or update the Crimson WS client (only handles messages, not connection)
     this.wsClient = getCrimsonWS({
       onChunk: (content, index, finishReason, reasoningContent) => {
-        this.addDebugMessage('WS_CALLBACK', `onChunk called: content_len=${content?.length || 0}, reasoning_len=${reasoningContent?.length || 0}, index=${index}, finish=${finishReason || 'none'}`);
         this.handleStreamChunk(content, index, finishReason, reasoningContent);
       },
       onDone: (content, result) => {
-        this.addDebugMessage('WS_CALLBACK', `onDone called: content len=${content?.length || 0}`);
         this.handleStreamDone(content, result);
       },
       onError: (error) => {
-        this.addDebugMessage('WS_CALLBACK', `onError called: ${error}`);
         this.handleStreamError(error);
       },
     });
-    log(Subsystems.WEBSOCKET, Status.DEBUG, `[Crimson] WebSocket client initialized, handlers registered`);
   }
 
   /**
@@ -1104,13 +1148,15 @@ class CrimsonManager {
    * Uses the persistent app-ws.js connection - does NOT manage connection lifecycle
    * @param {string} message - User message
    */
-  async sendChatMessage(message) {
+  sendChatMessage(message) {
     // Initialize WebSocket client if needed (only sets up callbacks, doesn't connect)
     this.initWebSocketClient();
 
-    // Debug: Check WebSocket state and handlers
-    const ws = getAppWS();
-    this.addDebugMessage('WS_STATE', `Connected: ${isAppWSConnected()}, handlers: ${ws.debugHandlers().join(', ')}`);
+    // Check WebSocket state
+    if (!isAppWSConnected()) {
+      this.addDebugMessage('ERROR', 'WebSocket not connected');
+      return;
+    }
 
     // If already streaming, cancel the previous request
     if (this.isStreaming && this.wsClient) {
@@ -1134,29 +1180,41 @@ class CrimsonManager {
     this.chunkCount = 0;  // Reset chunk counter
     this.totalChunksReceived = 0;  // Reset total chunk counter
 
-    // Update status to thinking
-    this.updateStatus('thinking', 'Thinking...');
+    // Update status to sending
+    this.updateStatus('sending', 'Sending...');
 
     // Add debug message
     this.addDebugMessage('SEND', message);
 
-    // Add streaming indicator
+    // Add streaming indicator with loading spinner
     this.currentStreamElement = this.addStreamingMessage();
 
     // Clear reasoning buffer for new response
     this.clearReasoningBuffer();
 
-    try {
-      // Send message - connection must already be established by app-ws.js
-      // Use streamingEnabled state to determine if we should stream
-      const history = this.conversationHistory.slice(-10); // Last 10 messages for context
-      this.addDebugMessage('SEND', `Sending with ${history.length} history messages, stream=${this.streamingEnabled}`);
-      
-      await this.wsClient.send(message, {
-        history,
-        stream: this.streamingEnabled,
-      });
-    } catch (error) {
+    // Show loading animation on the streaming message while waiting
+    if (this.currentStreamElement) {
+      this.currentStreamElement.classList.add('crimson-waiting');
+    }
+
+    // Use streamingEnabled state to determine if we should stream
+    // Note: current message is NOT in history - crimson-ws.js adds it at the end
+    const history = this.conversationHistory.slice(-10); // Last 10 messages for context
+    this.addDebugMessage('SEND', `Sending with ${history.length} history messages, stream=${this.streamingEnabled}`);
+    
+    // Log prompt sent to event bus
+    log(Subsystems.EVENTBUS, Status.INFO, `Crimson: Prompt sent (${message.length} chars)`);
+    
+    // Update status to thinking immediately after initiating send
+    // The send call is synchronous over WebSocket, the Promise just waits for response
+    this.updateStatus('thinking', 'Thinking...');
+    
+    // Fire-and-forget: send returns a Promise that resolves when done, but we handle
+    // results via callbacks (onChunk, onDone, onError) registered in initWebSocketClient
+    this.wsClient.send(message, {
+      history,
+      stream: this.streamingEnabled,
+    }).catch((error) => {
       // Check if this was a cancelled request
       if (error.message.includes('abort') || error.message.includes('cancel')) {
         this.addDebugMessage('CANCELLED', 'Request was cancelled');
@@ -1171,9 +1229,9 @@ class CrimsonManager {
         return;
       }
       
-      log(Subsystems.MANAGER, Status.ERROR, `[Crimson] Chat error: ${error.message}`);
+      log(Subsystems.CRIMSON, Status.ERROR, `Chat error: ${error.message}`);
       this.handleStreamError(error.message);
-    }
+    });
   }
 
   /**
@@ -1182,10 +1240,24 @@ class CrimsonManager {
   handleStreamChunk(content, _index, finishReason, reasoningContent) {
     // Handle reasoning content first (if present)
     if (reasoningContent) {
+      // Update status to reasoning when we first receive reasoning content
+      if (this.connectionState === 'thinking') {
+        this.updateStatus('reasoning', 'Reasoning...');
+      }
       this.addReasoningContent(reasoningContent);
     }
 
     if (!content && !finishReason) return;
+
+    // Remove waiting animation and show content ONLY when we have actual response content
+    if (this.currentStreamElement && this.currentStreamElement.classList.contains('crimson-waiting')) {
+      this.currentStreamElement.classList.remove('crimson-waiting');
+      // Hide waiting spinner and show content
+      const waitingEl = this.currentStreamElement.querySelector('.crimson-message-waiting');
+      const contentEl = this.currentStreamElement.querySelector('.crimson-message-content');
+      if (waitingEl) waitingEl.classList.add('crimson-hidden');
+      if (contentEl) contentEl.classList.remove('crimson-hidden');
+    }
     
     // Get content element
     let contentEl = null;
@@ -1194,24 +1266,20 @@ class CrimsonManager {
     }
     
     if (!contentEl) {
-      log(Subsystems.WEBSOCKET, Status.DEBUG, `[Crimson] No contentEl found, currentStreamElement: ${!!this.currentStreamElement}`);
       return;
     }
 
     // Update total chunk counter
     this.totalChunksReceived++;
     
-    // Add debug message for every chunk
-    this.addDebugMessage('CHUNK', `#${this.totalChunksReceived} len=${content?.length || 0} finish=${finishReason || 'none'}`);
-    
-    // Log only every 10th chunk or when finish reason is set
-    if (this.totalChunksReceived % 10 === 0 || finishReason) {
-      log(Subsystems.WEBSOCKET, Status.DEBUG, `[Crimson] Chunk #${this.totalChunksReceived}, finish: ${finishReason || 'none'}, content length: ${content?.length || 0}`);
+    // Log to debug panel every 100 chunks only
+    if (this.totalChunksReceived % 100 === 0 || finishReason) {
+      this.addDebugMessage('CHUNK', `#${this.totalChunksReceived}${finishReason ? ` (${finishReason})` : ''}`);
     }
 
-    // Update status on first content
-    if (this.connectionState !== 'streaming') {
-      this.updateStatus('streaming', 'Receiving response...');
+    // Update status on first content (AI is now responding)
+    if (this.connectionState !== 'responding') {
+      this.updateStatus('responding', 'Responding...');
     }
 
     // Check for delimiter to separate content from metadata
@@ -1245,10 +1313,10 @@ class CrimsonManager {
         }
       }
 
-      // Update display with current content
+      // Update display with current content (add cursor during streaming)
       const displayContent = this.conversationBuffer.replace(/\s+$/, '');
       contentEl.setAttribute('data-raw-content', displayContent);
-      contentEl.innerHTML = this.formatMessageContent(displayContent);
+      contentEl.innerHTML = this.formatMessageContent(displayContent) + '<span class="crimson-streaming-cursor"></span>';
 
       // Scroll to show new content
       if (this.conversation) {
@@ -1258,7 +1326,7 @@ class CrimsonManager {
 
     // Handle stream completion
     if (finishReason) {
-      log(Subsystems.WEBSOCKET, Status.DEBUG, `[Crimson] Stream complete (${finishReason})`);
+      log(Subsystems.CRIMSON, Status.DEBUG, `Stream complete (${finishReason})`);
       this.addDebugMessage('COMPLETE', `Stream finished with reason: ${finishReason}`);
       this.handleStreamFinished();
     }
@@ -1269,35 +1337,34 @@ class CrimsonManager {
    * This is called when finish_reason arrives in the last chunk
    */
   handleStreamFinished() {
-    log(Subsystems.WEBSOCKET, Status.DEBUG, `[Crimson] handleStreamFinished called, chunks: ${this.totalChunksReceived}, isStreaming: ${this.isStreaming}`);
-    
+    // Skip if already completed (prevent duplicate handleStreamDone calls)
+    if (!this.isStreaming) {
+      return;
+    }
+
     try {
       // If there's a pending done result, process it now
       if (this.wsClient && this.wsClient.pendingDoneResult) {
         const { id, result } = this.wsClient.pendingDoneResult;
-        log(Subsystems.WEBSOCKET, Status.DEBUG, `[Crimson] Processing pending done result for ${id}`);
         this.wsClient.pendingDoneResult = null;
         
         // Call the onDone callback to update UI
         this.handleStreamDone(result?.content, result);
       } else {
         // Finalize with current buffers (no done message received yet)
-        log(Subsystems.WEBSOCKET, Status.DEBUG, `[Crimson] No pending done, finalizing with buffer length: ${this.conversationBuffer.length}`);
         this.handleStreamDone(this.conversationBuffer, null);
       }
     } catch (error) {
-      log(Subsystems.WEBSOCKET, Status.DEBUG, `[Crimson] Error in handleStreamFinished: ${error.message}`);
+      log(Subsystems.CRIMSON, Status.ERROR, `Error in handleStreamFinished: ${error.message}`);
     }
     
     // Always try to resolve any pending Promise and clear state
     if (this.wsClient) {
       const id = this.wsClient.currentRequestId;
-      log(Subsystems.WEBSOCKET, Status.DEBUG, `[Crimson] Resolving pending request: ${id}`);
       
       if (id && this.wsClient.pendingRequests && this.wsClient.pendingRequests.has(id)) {
         const callbacks = this.wsClient.pendingRequests.get(id);
         if (callbacks && callbacks.onDone) {
-          log(Subsystems.WEBSOCKET, Status.DEBUG, `[Crimson] Calling onDone callback to resolve Promise`);
           callbacks.onDone({ content: this.conversationBuffer });
           this.wsClient.pendingRequests.delete(id);
         }
@@ -1305,7 +1372,7 @@ class CrimsonManager {
       this.wsClient.currentRequestId = null;
     }
     
-    log(Subsystems.WEBSOCKET, Status.DEBUG, `[Crimson] handleStreamFinished complete, isStreaming: ${this.isStreaming}`);
+    log(Subsystems.CRIMSON, Status.DEBUG, 'handleStreamFinished complete');
   }
 
 
@@ -1316,7 +1383,10 @@ class CrimsonManager {
    * @param {Object} result - Full result object (may contain followUpQuestions, etc.)
    */
   handleStreamDone(content, result) {
-    log(Subsystems.WEBSOCKET, Status.DEBUG, `[Crimson] handleStreamDone called, isStreaming: ${this.isStreaming}, content length: ${content?.length || 0}`);
+    log(Subsystems.CRIMSON, Status.DEBUG, `handleStreamDone called, isStreaming: ${this.isStreaming}, content length: ${content?.length || 0}`);
+
+    // Log response received to event bus
+    log(Subsystems.EVENTBUS, Status.INFO, `Crimson: Response received (${content?.length || 0} chars)`);
 
     try {
       this.addDebugMessage('DONE', 'Stream complete');
@@ -1326,25 +1396,31 @@ class CrimsonManager {
       let conversationText = content || '';
       let metadataFromContent = null;
       
-      if (!this.isStreaming && content) {
-        // Non-streaming: parse delimiter from content
+      // Check if content contains delimiter (handles both streaming and non-streaming cases)
+      // This can happen when the server sends the full response in chat_done
+      if (content) {
         const delimiterIndex = content.indexOf(this.DELIMITER);
         if (delimiterIndex !== -1) {
           conversationText = content.substring(0, delimiterIndex).replace(/\s+$/, '');
           const metadataStr = content.substring(delimiterIndex + this.DELIMITER.length);
           try {
             metadataFromContent = JSON.parse(metadataStr);
-            this.addDebugMessage('META', 'Parsed from non-streaming content');
+            this.addDebugMessage('META', 'Parsed delimiter from content');
           } catch (e) {
-            log(Subsystems.MANAGER, Status.WARN, `[Crimson] Failed to parse metadata from content: ${e.message}`);
+            log(Subsystems.CRIMSON, Status.WARN, `Failed to parse metadata from content: ${e.message}`);
           }
-        } else {
-          // No delimiter, use all content as conversation
+        } else if (!this.seenDelimiter) {
+          // No delimiter found, use all content as conversation
           conversationText = content.replace(/\s+$/, '');
         }
       }
 
-      // Parse metadata JSON if we have it (from chunks) or from result
+      // If we were streaming and accumulated conversation buffer, use that instead
+      if (this.isStreaming && this.conversationBuffer) {
+        conversationText = this.conversationBuffer.replace(/\s+$/, '');
+      }
+
+      // Parse metadata JSON if we have it (from chunks) or from content
       let parsedMetadata = metadataFromContent;
       
       // First try to parse from metadata buffer (chunk-based metadata)
@@ -1353,27 +1429,44 @@ class CrimsonManager {
           parsedMetadata = JSON.parse(this.metadataBuffer.trim());
           this.addDebugMessage('META', 'From chunks: ' + JSON.stringify(parsedMetadata).substring(0, 100));
         } catch (e) {
-          log(Subsystems.MANAGER, Status.WARN, `[Crimson] Failed to parse metadata JSON: ${e.message}`);
+          log(Subsystems.CRIMSON, Status.WARN, `Failed to parse metadata JSON: ${e.message}`);
         }
       }
       
       // If no metadata from chunks, try from result object (from done message)
       if (!parsedMetadata && result) {
-        // The result might have followUpQuestions and other metadata directly
+        // Result might have followUpQuestions directly or nested in various structures
         parsedMetadata = {
-          followUpQuestions: result.followUpQuestions || [],
-          suggestions: result.suggestions || null,
+          followUpQuestions: result.followUpQuestions || result.metadata?.followUpQuestions || [],
+          suggestions: result.suggestions || result.metadata?.suggestions || null,
           metadata: result.metadata || null,
         };
-        this.addDebugMessage('META', 'From done message');
+        this.addDebugMessage('META', `From done message: ${JSON.stringify(parsedMetadata).substring(0, 200)}`);
       }
 
       if (this.currentStreamElement) {
+        // Remove waiting animation and show content for non-streaming responses
+        if (this.currentStreamElement.classList.contains('crimson-waiting')) {
+          this.currentStreamElement.classList.remove('crimson-waiting');
+          const waitingEl = this.currentStreamElement.querySelector('.crimson-message-waiting');
+          const contentEl = this.currentStreamElement.querySelector('.crimson-message-content');
+          if (waitingEl) waitingEl.classList.add('crimson-hidden');
+          if (contentEl) contentEl.classList.remove('crimson-hidden');
+        }
+
         const contentEl = this.currentStreamElement.querySelector('.crimson-message-content');
         if (contentEl) {
-          // Set the final conversation content (already parsed to remove delimiter)
+          // Set the final conversation content with full markdown rendering
           contentEl.setAttribute('data-raw-content', conversationText);
-          contentEl.innerHTML = this.formatMessageContent(conversationText);
+          
+          // Use full markdown rendering for final content
+          this.formatMessageContentMarkdown(conversationText).then(htmlContent => {
+            contentEl.innerHTML = htmlContent;
+            // Scroll to show new content
+            if (this.conversation) {
+              this.conversation.scrollTop = this.conversation.scrollHeight;
+            }
+          });
 
           // Add follow-up questions from metadata if present
           if (parsedMetadata && parsedMetadata.followUpQuestions && parsedMetadata.followUpQuestions.length > 0) {
@@ -1403,7 +1496,7 @@ class CrimsonManager {
         this.messages.push({ sender: 'agent', text: conversationText, timestamp: Date.now() });
       }
     } catch (error) {
-      log(Subsystems.MANAGER, Status.ERROR, `[Crimson] Error in handleStreamDone: ${error.message}`);
+      log(Subsystems.CRIMSON, Status.ERROR, `Error in handleStreamDone: ${error.message}`);
       this.addDebugMessage('ERROR', error.message);
     } finally {
       // Always reset streaming state
@@ -1459,25 +1552,31 @@ class CrimsonManager {
       }
     } catch (e) {
       // Not JSON, use raw content as message
-      log(Subsystems.MANAGER, Status.DEBUG, '[Crimson] Response is plain text, not JSON');
+      log(Subsystems.CRIMSON, Status.DEBUG, 'Response is plain text, not JSON');
     }
 
     return result;
   }
 
   /**
-   * Add follow-up question buttons to a message element
-   * @param {HTMLElement} messageEl - The message element
+   * Add follow-up question buttons after a message element in the conversation
+   * @param {HTMLElement} messageEl - The message element (follow-ups added after it)
    * @param {string[]} questions - Array of follow-up questions
    */
   addFollowUpQuestions(messageEl, questions) {
+    // Remove any existing follow-ups first
+    const existingFollowups = messageEl.nextElementSibling;
+    if (existingFollowups?.classList.contains('crimson-followups')) {
+      existingFollowups.remove();
+    }
+
     const container = document.createElement('div');
     container.className = 'crimson-followups';
 
     questions.forEach(question => {
       const btn = document.createElement('button');
       btn.className = 'crimson-followup-btn';
-      btn.textContent = question;
+      btn.innerHTML = `<span class="crimson-followup-icon"><fa fa-up></fa></span><span class="crimson-followup-text">${this.escapeHtml(question)}</span>`;
       btn.addEventListener('click', () => {
         this.input.value = question;
         this.handleSend();
@@ -1485,7 +1584,9 @@ class CrimsonManager {
       container.appendChild(btn);
     });
 
-    messageEl.appendChild(container);
+    // Insert follow-ups after the message element in the conversation
+    messageEl.parentNode.insertBefore(container, messageEl.nextSibling);
+    processIcons(container);
   }
 
   /**
@@ -1498,7 +1599,7 @@ class CrimsonManager {
 
     // Handle tour offers
     if (suggestions.offerTours && suggestions.offerTours.length > 0) {
-      log(Subsystems.MANAGER, Status.DEBUG, `[Crimson] Tours available: ${JSON.stringify(suggestions.offerTours)}`);
+      log(Subsystems.CRIMSON, Status.DEBUG, `Tours available: ${JSON.stringify(suggestions.offerTours)}`);
       // Tours can be triggered by clicking follow-up questions
     }
   }
@@ -1547,10 +1648,11 @@ class CrimsonManager {
    * @returns {HTMLElement} The streaming message element
    */
   addStreamingMessage() {
-    // Remove welcome message if present
+    // Fade out and remove welcome message if present
     const welcome = this.conversation.querySelector('.crimson-welcome');
     if (welcome) {
-      welcome.remove();
+      welcome.classList.add('crimson-welcome-fading');
+      setTimeout(() => welcome.remove(), 350);
     }
 
     // Reset delimiter state and buffers for new message
@@ -1560,10 +1662,13 @@ class CrimsonManager {
     this.partialDelimiter = '';
 
     const messageEl = document.createElement('div');
-    messageEl.className = 'crimson-message crimson-message-agent crimson-streaming';
+    messageEl.className = 'crimson-message crimson-message-agent crimson-streaming crimson-waiting';
     messageEl.innerHTML = `
       <div class="crimson-message-avatar"><fa fa-fire></fa></div>
-      <div class="crimson-message-content" data-raw-content=""></div>
+      <div class="crimson-message-waiting">
+        <div class="spinner-fancy spinner-fancy-sm"></div>
+      </div>
+      <div class="crimson-message-content crimson-hidden" data-raw-content=""></div>
     `;
 
     this.conversation.appendChild(messageEl);
@@ -1574,7 +1679,7 @@ class CrimsonManager {
   }
 
   /**
-   * Format message content with basic markdown support
+   * Format message content with basic markdown support (for streaming)
    * @param {string} content - Raw content
    * @returns {string} Formatted HTML
    */
@@ -1584,7 +1689,7 @@ class CrimsonManager {
     // Escape HTML first
     const escaped = this.escapeHtml(content);
 
-    // Basic markdown-like formatting
+    // Basic markdown-like formatting for streaming display
     const formatted = escaped
       // Code blocks (```code```)
       .replace(/```([\s\S]*?)```/g, '<pre class="crimson-code"><code>$1</code></pre>')
@@ -1601,12 +1706,36 @@ class CrimsonManager {
   }
 
   /**
+   * Format message content with full markdown support using marked (for final content)
+   * @param {string} content - Raw content
+   * @returns {Promise<string>} Formatted HTML
+   */
+  async formatMessageContentMarkdown(content) {
+    if (!content) return '';
+
+    try {
+      const { marked } = await import('marked');
+      // Configure marked for GFM (tables, etc.)
+      marked.setOptions({
+        gfm: true,
+        breaks: true,
+      });
+      const htmlContent = await marked.parse(content);
+      return htmlContent;
+    } catch (error) {
+      log(Subsystems.CRIMSON, Status.WARN, `Failed to render markdown: ${error.message}`);
+      // Fallback to basic formatting
+      return this.formatMessageContent(content);
+    }
+  }
+
+  /**
    * Simulate Crimson response (placeholder - not used with WebSocket)
    * @deprecated Use WebSocket chat instead
    */
   simulateCrimsonResponse() {
     // This method is no longer used - chat is handled via WebSocket
-    log(Subsystems.MANAGER, Status.WARN, '[Crimson] simulateCrimsonResponse called but WebSocket should be used');
+    log(Subsystems.CRIMSON, Status.WARN, ' simulateCrimsonResponse called but WebSocket should be used');
   }
 
   /**
@@ -1649,7 +1778,7 @@ class CrimsonManager {
     crimsonInstance = null;
     globalKeyHandler = null;
 
-    log(Subsystems.MANAGER, Status.INFO, '[Crimson] Destroyed');
+    log(Subsystems.CRIMSON, Status.INFO, 'Destroyed');
   }
 }
 

@@ -113,6 +113,9 @@
     --accent-hover: #3F51B5;
     --accent-focus: #3949AB;
     --accent-disabled: #8080FF;
+    --accent-toggle: #FFFF8F;
+    /* --accent-crimson: #DC143C; */
+    --accent-crimson: white;
 
     --accent-danger: #EF5350;
     --accent-danger-hover: #E53935;
