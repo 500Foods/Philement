@@ -513,8 +513,18 @@
 }
 
 .crimson-message-content p {
-  margin: var(--space-4) 0px;
+  margin-bottom: var(--space-4);
+} 
+.crimson-message-content p:last-child {
+  margin-bottom: 0px;
 }
+.crimson-message-content p br {
+  margin-bottom: var(--space-4);
+}
+.crimson-message-content p br:last-child {
+  margin-bottom: 0px;
+}                             
+.crimson-message-content ol,
 .crimson-message-content ul {
   margin: var(--space-5);
 }
@@ -996,7 +1006,7 @@
   justify-content: center;
   flex-shrink: 0;
   color: white;
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-lg);
 }
 
 .crimson-message-user .crimson-followups {
