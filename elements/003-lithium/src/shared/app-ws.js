@@ -147,7 +147,6 @@ export class AppWebSocket {
       };
 
       this.ws.onmessage = (event) => {
-        log(Subsystems.WEBSOCKET, Status.DEBUG, `[WS] Message received (${event.data.length} bytes)`);
         this.handleMessage(event.data);
       };
 
@@ -168,28 +167,34 @@ export class AppWebSocket {
       const message = JSON.parse(data);
       const { type } = message;
 
-      // Log keepalive responses
-      if (type === 'keepalive_ok') {
-        log(Subsystems.WEBSOCKET, Status.DEBUG, `[WS] Keepalive #${this.keepaliveCount || '?'} response received`);
+      // Skip verbose logging for chat chunks - handled by CrimsonWS
+      if (type === 'chat_chunk') {
+        const handler = this.messageHandlers.get(type);
+        if (handler) {
+          handler(message);
+        }
         return;
       }
 
-      // Log all non-keepalive messages for debugging
-      log(Subsystems.WEBSOCKET, Status.DEBUG, `[WS] Received message type: "${type}", handlers registered: ${this.messageHandlers.size}, has handler: ${this.messageHandlers.has(type)}`);
+      // Log keepalive responses
+      if (type === 'keepalive_ok') {
+        return;
+      }
+
+      // Log only important message types
+      if (type !== 'chat_done' && type !== 'chat_error') {
+        log(Subsystems.WEBSOCKET, Status.DEBUG, `[WS] ${type} received`);
+      }
 
       // Dispatch to registered handler
       const handler = this.messageHandlers.get(type);
       if (handler) {
-        log(Subsystems.WEBSOCKET, Status.DEBUG, `[WS] Dispatching ${type} to registered handler`);
         handler(message);
       } else if (this.onMessage) {
-        log(Subsystems.WEBSOCKET, Status.DEBUG, `[WS] No handler for ${type}, using fallback onMessage`);
         this.onMessage(message);
-      } else {
-        log(Subsystems.WEBSOCKET, Status.DEBUG, `[WS] No handler and no fallback for ${type}`);
       }
     } catch (error) {
-      log(Subsystems.WEBSOCKET, Status.DEBUG, `[WS] Failed to parse message: ${error.message}`);
+      log(Subsystems.WEBSOCKET, Status.DEBUG, `[WS] Parse error: ${error.message}`);
     }
   }
 

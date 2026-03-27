@@ -67,6 +67,7 @@ export const Subsystems = {
   LOGIN: 'Login',
   SESSIONLOG: 'SessionLog',
   WEBSOCKET: 'WebSocket',
+  CRIMSON: 'Crimson',
 };
 
 // Status constants
