@@ -561,6 +561,7 @@
   margin: var(--space-4) 0;
   border-radius: var(--border-radius-md);
   max-width: 100%;
+  word-break: normal;
 }
 
 .crimson-message-content th,
