@@ -1,0 +1,131 @@
+{
+  "$schema": "../tabledef-schema.json",
+  "$version": "1.0.0",
+  "$description": "Column definitions for the Sections List table (child table in Style Manager). Shows sections for a selected theme.",
+
+  "table": "sections-list",
+  "title": "Theme Sections",
+  "queryRef": 52,
+  "readonly": false,
+  "selectableRows": 1,
+  "layout": "fitColumns",
+  "responsiveLayout": "collapse",
+  "resizableColumns": true,
+  "persistSort": true,
+  "persistFilter": true,
+  "initialSort": [
+    { "column": "sort_seq", "dir": "asc" }
+  ],
+
+  "columns": {
+
+    "section_id": {
+      "display": "ID#",
+      "field": "section_id",
+      "coltype": "index",
+      "visible": false,
+      "sort": true,
+      "filter": true,
+      "group": false,
+      "editable": false,
+      "calculated": false,
+      "primaryKey": true,
+      "description": "Database primary key for the section",
+      "overrides": {
+        "bottomCalc": null
+      }
+    },
+
+    "theme_id": {
+      "display": "Theme ID",
+      "field": "theme_id",
+      "coltype": "index",
+      "visible": false,
+      "sort": true,
+      "filter": true,
+      "group": false,
+      "editable": false,
+      "calculated": false,
+      "primaryKey": false,
+      "description": "Foreign key to the parent theme"
+    },
+
+    "name": {
+      "display": "Section Name",
+      "field": "name",
+      "coltype": "string",
+      "visible": true,
+      "sort": true,
+      "filter": true,
+      "group": false,
+      "editable": true,
+      "calculated": false,
+      "primaryKey": false,
+      "description": "Section display name (e.g., 'Header', 'Sidebar', 'Cards')"
+    },
+
+    "selector": {
+      "display": "CSS Selector",
+      "field": "selector",
+      "coltype": "string",
+      "visible": true,
+      "sort": true,
+      "filter": true,
+      "group": false,
+      "editable": true,
+      "calculated": false,
+      "primaryKey": false,
+      "description": "CSS selector for this section"
+    },
+
+    "sort_seq": {
+      "display": "Seq",
+      "field": "sort_seq",
+      "coltype": "integer",
+      "visible": true,
+      "sort": true,
+      "filter": true,
+      "group": false,
+      "editable": true,
+      "calculated": false,
+      "primaryKey": false,
+      "description": "Sort order within the theme",
+      "overrides": {
+        "width": 60,
+        "bottomCalc": "count",
+        "bottomCalcFormatter": "number",
+        "bottomCalcFormatterParams": {
+          "thousand": ""
+        }
+      }
+    },
+
+    "created_at": {
+      "display": "Created",
+      "field": "created_at",
+      "coltype": "datetime",
+      "visible": false,
+      "sort": true,
+      "filter": true,
+      "group": false,
+      "editable": false,
+      "calculated": true,
+      "primaryKey": false,
+      "description": "Record creation timestamp"
+    },
+
+    "updated_at": {
+      "display": "Updated",
+      "field": "updated_at",
+      "coltype": "datetime",
+      "visible": false,
+      "sort": true,
+      "filter": true,
+      "group": false,
+      "editable": false,
+      "calculated": true,
+      "primaryKey": false,
+      "description": "Last modification timestamp"
+    }
+  }
+}

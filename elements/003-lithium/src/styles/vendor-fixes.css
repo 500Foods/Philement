@@ -1,0 +1,93 @@
+/**
+ * Global Vendor Fixes
+ * 
+ * Contains generic overrides for third-party libraries (Tabulator, JsonTree, etc.)
+ * that are needed by ALL managers. This file must load BEFORE any manager CSS.
+ *
+ * @layer vendor-fixes
+ */
+
+@layer vendor-fixes {
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   TABULATOR GLOBAL OVERRIDES
+   ═════════════════════════════════════════════════════════════════════════════ */
+
+/* Base font size for all Tabulator tables */
+.tabulator {
+  font-size: var(--font-size-sm);
+}
+
+/* Cell right border - consistent across all tables */
+.tabulator-row .tabulator-cell {
+  border-right: 1px solid var(--bg-row-border);
+}
+
+/* Editing cell - remove border/padding */
+.tabulator-row .tabulator-cell.tabulator-editing {
+  border: unset;
+  padding: 0;
+}
+
+/* Editing cell inputs */
+.tabulator-cell.tabulator-editing > input,
+.tabulator-cell.tabulator-editing > select {
+  padding: 4px 0px !important;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   JSONTREE DARK THEME INTEGRATION
+   ═════════════════════════════════════════════════════════════════════════════ */
+
+.json-tree-container {
+  background: var(--bg-secondary);
+  border: var(--border-standard);
+  border-radius: var(--border-radius-md);
+  padding: var(--space-3);
+  height: 100%;
+  overflow: auto;
+}
+
+.json-tree-container .json-tree {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+}
+
+.json-tree-container .json-tree-key {
+  color: var(--text-primary);
+}
+
+.json-tree-container .json-tree-value-string {
+  color: #a5d6a7;
+}
+
+.json-tree-container .json-tree-value-number {
+  color: #81d4fa;
+}
+
+.json-tree-container .json-tree-value-boolean {
+  color: #ffcc80;
+  font-weight: 500;
+}
+
+.json-tree-container .json-tree-value-null {
+  color: #ef9a9a;
+}
+
+.json-tree-container .json-tree-expand,
+.json-tree-container .json-tree-collapse {
+  color: var(--accent-primary);
+  cursor: pointer;
+}
+
+.json-tree-container .json-tree-expand:hover,
+.json-tree-container .json-tree-collapse:hover {
+  color: var(--accent-hover);
+}
+
+.json-tree-container .json-tree-bracket {
+  color: var(--text-secondary);
+}
+
+} /* end @layer vendor-fixes */

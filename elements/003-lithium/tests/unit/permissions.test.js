@@ -104,10 +104,9 @@ describe('Permissions', () => {
   describe('getPermittedManagers', () => {
     it('should return default managers when no punchcard provided', () => {
       const managers = getPermittedManagers();
-      // Default managers from QueryRef 046 (excluding hidden items with negative Index)
-      // Group 0: System (2, 3), Group 1: Content (8, 9, 10, 11),
-      // Group 2: Data (4, 5, 12), Group 3: AI (6, 7)
-      expect(managers).toEqual([2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+      // Default managers from lithium.json (007-032)
+      // Excludes Group 0: System (001-006) which are hidden from main menu
+      expect(managers).toEqual([7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]);
     });
 
     it('should return managers from punchcard', () => {
@@ -177,8 +176,8 @@ describe('Permissions', () => {
       const perms = parsePermissions(claims);
       
       expect(perms.hasPunchcard).toBe(false);
-      // Default managers from QueryRef 046 (excluding hidden items with negative Index)
-      expect(perms.managers).toEqual([2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+      // Default managers from lithium.json (007-032)
+      expect(perms.managers).toEqual([7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]);
       expect(perms.features).toEqual({});
     });
 
@@ -186,8 +185,8 @@ describe('Permissions', () => {
       const perms = parsePermissions(null);
       
       expect(perms.hasPunchcard).toBe(false);
-      // Default managers from QueryRef 046 (excluding hidden items with negative Index)
-      expect(perms.managers).toEqual([2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+      // Default managers from lithium.json (007-032)
+      expect(perms.managers).toEqual([7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]);
     });
 
     it('should handle punchcard with empty arrays', () => {

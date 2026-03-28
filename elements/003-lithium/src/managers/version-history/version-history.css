@@ -1,46 +1,198 @@
 /**
  * Version History Manager Styles
+ *
+ * @layer managers
  */
 
 @layer managers {
-  .version-history-container {
-    padding: var(--space-4);
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-  }
 
-  .placeholder-header {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-    margin-bottom: var(--space-4);
-    padding-bottom: var(--space-3);
-    border-bottom: var(--border-standard);
-  }
+/* ── Manager Container ──────────────────────────────────────────────────── */
 
-  .placeholder-header h2 {
-    margin: 0;
-    font-size: var(--font-size-xl);
-    color: var(--text-primary);
-  }
-
-  .placeholder-content {
-    flex: 1;
-  }
-
-  .placeholder-content p {
-    color: var(--text-secondary);
-    margin-bottom: var(--space-4);
-  }
-
-  .placeholder-notice {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    padding: var(--space-3);
-    background: var(--bg-tertiary);
-    border-radius: var(--border-radius-md);
-    color: var(--text-secondary);
-  }
+.version-manager-container {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
 }
+
+/* Override default panel widths for this manager */
+.version-manager-container {
+  --panel-left-w: 350px;
+  --panel-left-min: 200px;
+  --panel-right-min: 300px;
+}
+
+/* Remove max-width constraint on left panel */
+.version-manager-container [data-panel="left"] {
+  max-width: none !important;
+}
+
+/* ── Preview Container ──────────────────────────────────────────────────── */
+
+.version-preview-container {
+  flex: 1;
+  overflow: auto;
+  padding: var(--space-4);
+  background: var(--bg-secondary);
+}
+
+.version-preview-placeholder {
+  color: var(--text-muted);
+  text-align: center;
+  padding: var(--space-8);
+}
+
+.version-error {
+  color: var(--accent-danger);
+}
+
+/* ── Preview Header ─────────────────────────────────────────────────────── */
+
+.version-preview-header {
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-3);
+  border-bottom: var(--border-standard);
+}
+
+.version-preview-header h2 {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  color: var(--accent-primary);
+}
+
+.version-preview-header h3 {
+  margin: var(--space-1) 0 0;
+  font-size: var(--font-size-lg);
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+.version-preview-date {
+  margin: var(--space-2) 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
+
+/* Version metadata badges */
+.version-meta {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.version-meta-item {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--border-radius-sm);
+}
+
+/* ── Rendered Markdown Content ──────────────────────────────────────────── */
+
+.version-preview-rendered {
+  line-height: 1.6;
+}
+
+.version-preview-rendered h1,
+.version-preview-rendered h2,
+.version-preview-rendered h3,
+.version-preview-rendered h4,
+.version-preview-rendered h5,
+.version-preview-rendered h6 {
+  margin-top: var(--space-4);
+  margin-bottom: var(--space-2);
+  color: var(--text-primary);
+}
+
+.version-preview-rendered h1 { font-size: var(--font-size-2xl); }
+.version-preview-rendered h2 { font-size: var(--font-size-xl); }
+.version-preview-rendered h3 { font-size: var(--font-size-lg); }
+
+.version-preview-rendered p {
+  margin-bottom: var(--space-3);
+}
+
+.version-preview-rendered code {
+  background: var(--bg-tertiary);
+  padding: 2px 6px;
+  border-radius: var(--border-radius-sm);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+}
+
+.version-preview-rendered pre {
+  background: var(--bg-tertiary);
+  padding: var(--space-3);
+  border-radius: var(--border-radius-md);
+  overflow-x: auto;
+  margin-bottom: var(--space-3);
+}
+
+.version-preview-rendered pre code {
+  background: transparent;
+  padding: 0;
+}
+
+.version-preview-rendered ul,
+.version-preview-rendered ol {
+  margin-left: var(--space-4);
+  margin-bottom: var(--space-3);
+}
+
+.version-preview-rendered blockquote {
+  border-left: 3px solid var(--accent-primary);
+  padding-left: var(--space-3);
+  margin-left: 0;
+  margin-bottom: var(--space-3);
+  color: var(--text-secondary);
+}
+
+.version-preview-rendered a {
+  color: var(--accent-primary);
+  text-decoration: none;
+}
+
+.version-preview-rendered a:hover {
+  text-decoration: underline;
+}
+
+.version-preview-rendered table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-bottom: var(--space-3);
+}
+
+.version-preview-rendered th,
+.version-preview-rendered td {
+  border: var(--border-standard);
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+}
+
+.version-preview-rendered th {
+  background: var(--bg-tertiary);
+  font-weight: 600;
+}
+
+/* ── Loading Indicator ──────────────────────────────────────────────────── */
+
+.version-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-8);
+}
+
+/* ── Subpanel Header Title ──────────────────────────────────────────────── */
+
+.subpanel-header-title {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-left: var(--space-2);
+}
+
+} /* end @layer managers */

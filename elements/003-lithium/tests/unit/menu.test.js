@@ -12,6 +12,7 @@ import {
   getCachedMenuData,
   parseCollection,
   groupMenuItems,
+  clearEnabledManagerCache,
   MENU_CACHE_KEY,
   MENU_CACHE_TIMESTAMP_KEY,
   CACHE_TTL_MS,
@@ -20,6 +21,34 @@ import {
 // Mock conduit.js for fetchMenu tests
 vi.mock('../../src/shared/conduit.js', () => ({
   authQuery: vi.fn(),
+}));
+
+// Mock config.js to return managers config for filtering tests
+vi.mock('../../src/core/config.js', () => ({
+  getConfigValue: vi.fn((path, defaultValue) => {
+    // Return mock managers config with all test manager IDs enabled
+    if (path === 'managers') {
+      return {
+        '002.Session Logs': true,
+        '003.Version History': true,
+        '004.Queries': true,
+        '005.Lookups': true,
+        '006.Chats': true,
+        '007.AI Auditor': true,
+        '008.Dashboard': true,
+        '009.Document Library': true,
+        '010.Media Library': true,
+        '011.Diagram Library': true,
+        '012.Reports': true,
+        '099.Test Manager': true,
+      };
+    }
+    return defaultValue;
+  }),
+  loadConfig: vi.fn(async () => ({})),
+  getConfig: vi.fn(() => ({})),
+  isConfigLoaded: vi.fn(() => true),
+  clearConfig: vi.fn(),
 }));
 
 // Mock localStorage
@@ -39,6 +68,7 @@ describe('Menu Service', () => {
   beforeEach(() => {
     localStorageMock.clear();
     clearMenuCache();
+    clearEnabledManagerCache();
     vi.clearAllMocks();
   });
 

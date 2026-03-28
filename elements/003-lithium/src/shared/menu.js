@@ -3,10 +3,15 @@
  *
  * Fetches and caches the main menu data from QueryRef 046.
  * Menu items are grouped and include icons and count badges.
+ *
+ * The lithium.json managers section acts as a restrictive filter:
+ * only managers listed and enabled (true) in that config will appear
+ * in the menu, regardless of what the database returns.
  */
 
 import { authQuery } from './conduit.js';
 import { log, Subsystems, Status } from '../core/log.js';
+import { getConfigValue, isConfigLoaded, loadConfig } from '../core/config.js';
 
 // QueryRef for main menu
 const MENU_QUERY_REF = 46;
@@ -18,6 +23,99 @@ export const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 // In-memory cache
 let menuCache = null;
+
+// Cached set of enabled manager IDs from lithium.json
+let enabledManagerIds = null;
+
+/**
+ * Parse the enabled manager IDs from lithium.json managers config.
+ * Keys are in format "NNN.Name" where NNN is the numeric ID.
+ * Only keys with value === true are considered enabled.
+ * @returns {Set<number>} Set of enabled manager IDs
+ */
+/**
+ * Get enabled manager IDs from lithium.json config.
+ * Fetches the config directly if not already loaded.
+ * @returns {Set<number>} Set of enabled manager IDs
+ */
+export async function getEnabledManagerIdsAsync() {
+  // Return cached result if available
+  if (enabledManagerIds !== null && enabledManagerIds.size > 0) {
+    return enabledManagerIds;
+  }
+
+  // Ensure config is loaded
+  if (!isConfigLoaded()) {
+    await loadConfig();
+  }
+
+  const managersConfig = getConfigValue('managers', {});
+  const ids = new Set();
+
+  if (managersConfig && typeof managersConfig === 'object') {
+    for (const [key, value] of Object.entries(managersConfig)) {
+      // Only include managers that are explicitly enabled (true)
+      if (value === true) {
+        // Parse the numeric ID from the key (e.g., "007.Query Manager" -> 7)
+        const match = key.match(/^(\d+)\./);
+        if (match) {
+          const id = parseInt(match[1], 10);
+          if (!isNaN(id) && id > 0) {
+            ids.add(id);
+          }
+        }
+      }
+    }
+  }
+
+  enabledManagerIds = ids;
+  log(Subsystems.MANAGER, Status.INFO, `[MenuService] Filter enabled: ${ids.size} managers`);
+  
+  return ids;
+}
+
+/**
+ * Get enabled manager IDs (synchronous version - requires config already loaded).
+ * @returns {Set<number>} Set of enabled manager IDs (empty if config not ready)
+ */
+export function getEnabledManagerIds() {
+  // Return cached result if available
+  if (enabledManagerIds !== null) {
+    return enabledManagerIds;
+  }
+
+  // If config not loaded, return empty - use async version instead
+  if (!isConfigLoaded()) {
+    return new Set();
+  }
+
+  const managersConfig = getConfigValue('managers', {});
+  const ids = new Set();
+
+  if (managersConfig && typeof managersConfig === 'object') {
+    for (const [key, value] of Object.entries(managersConfig)) {
+      if (value === true) {
+        const match = key.match(/^(\d+)\./);
+        if (match) {
+          const id = parseInt(match[1], 10);
+          if (!isNaN(id) && id > 0) {
+            ids.add(id);
+          }
+        }
+      }
+    }
+  }
+
+  enabledManagerIds = ids;
+  return ids;
+}
+
+/**
+ * Clear the cached enabled manager IDs (useful when config is reloaded)
+ */
+export function clearEnabledManagerCache() {
+  enabledManagerIds = null;
+}
 
 /**
  * Menu item structure from QueryRef 046:
@@ -79,12 +177,17 @@ export function parseCollection(collection) {
 }
 
 /**
- * Transform flat menu items into grouped structure
+ * Transform flat menu items into grouped structure.
+ * Filters out managers not enabled in lithium.json config.
+ * Uses the 'index' field from collection (matches lithium.json key numbers like 001, 007, etc.)
  * @param {Array} items - Raw menu items from QueryRef 046
+ * @param {Set<number>} allowedManagerIds - Optional set of allowed manager IDs (if not provided, will be fetched)
  * @returns {Array} Grouped menu structure
  */
-export function groupMenuItems(items) {
+export function groupMenuItems(items, allowedManagerIds = null) {
   const groups = new Map();
+  // Use provided set, or fall back to sync version (which may be empty if config not loaded)
+  const allowedIds = allowedManagerIds || getEnabledManagerIds();
 
   items.forEach((item) => {
     const groupId = item.grpnum;
@@ -92,6 +195,13 @@ export function groupMenuItems(items) {
     
     // Skip items that should be hidden (negative index like Main Menu, Login)
     if (!collectionInfo.visible) {
+      return;
+    }
+
+    // Filter by index from collection (matches lithium.json key numbers)
+    // Index 0 means no index specified - allow through (for backwards compatibility)
+    // Non-zero index must be in allowed list
+    if (allowedIds.size > 0 && collectionInfo.index > 0 && !allowedIds.has(collectionInfo.index)) {
       return;
     }
 
@@ -106,7 +216,7 @@ export function groupMenuItems(items) {
 
     const group = groups.get(groupId);
     group.items.push({
-      managerId: item.modnum,
+      managerId: collectionInfo.index || item.modnum,  // Use index (matches lithium.json keys), fallback to modnum
       name: item.modname,
       sortOrder: item.modsort,
       count: item.entries || 0,
@@ -145,13 +255,16 @@ export async function fetchMenu(api) {
   try {
     log(Subsystems.MANAGER, Status.INFO, '[MenuService] Fetching menu from QueryRef 046');
 
+    // Ensure config is loaded before filtering
+    const allowedManagerIds = await getEnabledManagerIdsAsync();
+
     const items = await authQuery(api, MENU_QUERY_REF);
 
     if (!Array.isArray(items)) {
       throw new Error('Invalid menu data format');
     }
 
-    const grouped = groupMenuItems(items);
+    const grouped = groupMenuItems(items, allowedManagerIds);
 
     // Update cache
     menuCache = grouped;
@@ -316,4 +429,7 @@ export default {
   getManagerIdsFromMenu,
   getMenuItemById,
   buildManagerIconsRegistry,
+  getEnabledManagerIds,
+  getEnabledManagerIdsAsync,
+  clearEnabledManagerCache,
 };
