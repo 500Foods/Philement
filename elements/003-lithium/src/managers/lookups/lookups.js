@@ -12,6 +12,8 @@
  */
 
 import { LithiumTable } from '../../core/lithium-table-main.js';
+import { LithiumSplitter } from '../../core/lithium-splitter.js';
+import '../../styles/vendor-tabulator.css';
 import { authQuery } from '../../shared/conduit.js';
 import { toast } from '../../shared/toast.js';
 import { log, Subsystems, Status } from '../../core/log.js';
@@ -380,7 +382,7 @@ export default class LookupsManager {
       tablePath: 'lookups/lookups-list',
       queryRef: 30, // QueryRef 30 - Get Lookups List
       searchQueryRef: 31, // QueryRef 31 - Get Lookups List + Search
-      cssPrefix: 'lookups-parent',
+      cssPrefix: 'lithium', // Use default prefix for shared styling
       storageKey: 'lookups_parent_table',
       app: this.app,
       readonly: false,
@@ -389,6 +391,7 @@ export default class LookupsManager {
       onDataLoaded: (rows) => {
         log(Subsystems.TABLE, Status.INFO, `[Lookups] Loaded ${rows.length} lookups`);
       },
+      onSetTableWidth: (mode) => this.setTableWidth(mode, 'left'),
     });
 
     await this.parentTable.init();
@@ -407,7 +410,7 @@ export default class LookupsManager {
       navigatorContainer: this.elements.childNavigator,
       tablePath: 'lookups/lookup-values',
       queryRef: 34, // QueryRef 34 - Get Lookup List (requires LOOKUPID param)
-      cssPrefix: 'lookups-child',
+      cssPrefix: 'lithium', // Use default prefix for shared styling
       storageKey: 'lookups_child_table',
       app: this.app,
       readonly: false,
@@ -416,9 +419,28 @@ export default class LookupsManager {
       onDataLoaded: (rows) => {
         log(Subsystems.TABLE, Status.INFO, `[Lookups] Loaded ${rows.length} lookup values`);
       },
+      onSetTableWidth: (mode) => this.setTableWidth(mode, 'middle'),
     });
 
     await this.childTable.init();
+  }
+
+  // ── Table Width Control ────────────────────────────────────────────────────
+
+  setTableWidth(mode, panel) {
+    const panelElement = panel === 'left' ? this.elements.leftPanel : this.elements.middlePanel;
+    if (!panelElement) return;
+
+    // Match Query Manager width setpoints
+    const widths = { narrow: 160, compact: 314, normal: 468, wide: 622 };
+
+    if (mode === 'auto') {
+      panelElement.style.width = '';
+      return;
+    }
+
+    panelElement.style.width = `${widths[mode] || 314}px`;
+    log(Subsystems.MANAGER, Status.INFO, `[Lookups] ${panel} panel width set to: ${mode}`);
   }
 
   // ── Parent/Child Relationship ──────────────────────────────────────────────
@@ -429,17 +451,10 @@ export default class LookupsManager {
     const lookupId = rowData.key_idx; // key_idx is the lookup_id for lookup_id=0 entries
     const lookupName = rowData.value_txt;
 
-    if (!lookupId) return;
+    if (lookupId == null) return;
 
     this.selectedLookupId = lookupId;
     this.selectedLookupName = lookupName;
-
-    // Update child table title
-    if (this.elements.childTitle) {
-      this.elements.childTitle.textContent = lookupName
-        ? `${lookupName} (${lookupId})`
-        : `Lookup ${lookupId}`;
-    }
 
     // Load child data for this lookup
     await this.loadChildData(lookupId);
@@ -448,11 +463,6 @@ export default class LookupsManager {
   handleParentRowDeselected() {
     this.selectedLookupId = null;
     this.selectedLookupName = null;
-
-    // Clear child table title
-    if (this.elements.childTitle) {
-      this.elements.childTitle.textContent = 'Select a Lookup';
-    }
 
     // Clear child table data
     if (this.childTable?.table) {
@@ -467,40 +477,18 @@ export default class LookupsManager {
     if (!this.childTable || !this.app?.api) return;
 
     try {
-      this.childTable.showLoading();
-
-      const rows = await authQuery(this.app.api, 34, {
+      // Use the child table's loadData() method which handles row restoration
+      await this.childTable.loadData('', {
         INTEGER: { LOOKUPID: lookupId },
       });
 
-      if (!this.childTable.table) return;
-
-      this.childTable.table.blockRedraw?.();
-      try {
-        this.childTable.table.setData(rows);
-        this.childTable.discoverColumns(rows);
-      } finally {
-        this.childTable.table.restoreRedraw?.();
-      }
-
-      // Auto-select first row if any
-      requestAnimationFrame(() => {
-        const activeRows = this.childTable.table.getRows('active');
-        if (activeRows.length > 0) {
-          activeRows[0].select();
-        }
-        this.childTable.updateMoveButtonState();
-      });
-
-      log(Subsystems.TABLE, Status.INFO, `[Lookups] Loaded ${rows.length} lookup values for lookup ${lookupId}`);
+      log(Subsystems.TABLE, Status.INFO, `[Lookups] Loaded lookup values for lookup ${lookupId}`);
     } catch (error) {
       toast.error('Failed to load lookup values', {
         serverError: error.serverError,
         subsystem: 'Conduit',
         duration: 6000,
       });
-    } finally {
-      this.childTable.hideLoading();
     }
   }
 
@@ -521,7 +509,7 @@ export default class LookupsManager {
   }
 
   async loadDetailData(rowData) {
-    if (!this.app?.api || !this.selectedLookupId) return;
+    if (!this.app?.api || this.selectedLookupId == null) return;
 
     try {
       const detail = await authQuery(this.app.api, 35, {
@@ -671,219 +659,42 @@ export default class LookupsManager {
 
   setupSplitters() {
     // Left splitter (between left and middle panels)
-    this.setupLeftSplitter();
+    this.leftSplitter = new LithiumSplitter({
+      element: this.elements.splitterLeft,
+      leftPanel: this.elements.leftPanel,
+      minWidth: 157,
+      maxWidth: 1000,
+      onResize: (width) => {
+        this.leftPanelWidth = width;
+      },
+      onResizeEnd: () => {
+        this.parentTable?.table?.redraw?.();
+        this.childTable?.table?.redraw?.();
+      },
+    });
 
     // Right splitter (between middle and right panels)
-    this.setupRightSplitter();
-  }
-
-  setupLeftSplitter() {
-    const splitter = this.elements.splitterLeft;
-    const leftPanel = this.elements.leftPanel;
-
-    if (!splitter || !leftPanel) return;
-
-    // Mouse down on left splitter
-    splitter.addEventListener('mousedown', (e) => {
-      if (this.isLeftPanelCollapsed) return;
-
-      this.isResizingLeft = true;
-      splitter.classList.add('resizing');
-      document.body.style.cursor = 'col-resize';
-      document.body.style.userSelect = 'none';
-
-      // Remove width transition so resizing follows mouse immediately
-      leftPanel.style.transition = 'none';
-
-      const startX = e.clientX;
-      const startWidth = leftPanel.offsetWidth;
-
-      const onMouseMove = (e) => {
-        if (!this.isResizingLeft) return;
-
-        const delta = e.clientX - startX;
-        const newWidth = Math.max(150, Math.min(450, startWidth + delta));
-
-        leftPanel.style.width = `${newWidth}px`;
-        this.leftPanelWidth = newWidth;
-      };
-
-      const onMouseUp = () => {
-        this.isResizingLeft = false;
-        splitter.classList.remove('resizing');
-        document.body.style.cursor = '';
-        document.body.style.userSelect = '';
-
-        // Restore width transition for expand/collapse button
-        leftPanel.style.transition = '';
-
-        document.removeEventListener('mousemove', onMouseMove);
-        document.removeEventListener('mouseup', onMouseUp);
-
-        // Redraw tables after resize
+    this.rightSplitter = new LithiumSplitter({
+      element: this.elements.splitterRight,
+      leftPanel: this.elements.middlePanel,
+      minWidth: 157,
+      maxWidth: 1000,
+      onResize: (width) => {
+        this.middlePanelWidth = width;
+      },
+      onResizeEnd: () => {
         this.parentTable?.table?.redraw?.();
         this.childTable?.table?.redraw?.();
-      };
-
-      document.addEventListener('mousemove', onMouseMove);
-      document.addEventListener('mouseup', onMouseUp);
-    });
-
-    // Touch support for mobile
-    splitter.addEventListener('touchstart', (e) => {
-      if (this.isLeftPanelCollapsed) return;
-
-      this.isResizingLeft = true;
-      splitter.classList.add('resizing');
-
-      // Remove width transition so resizing follows touch immediately
-      leftPanel.style.transition = 'none';
-
-      const touch = e.touches[0];
-      const startX = touch.clientX;
-      const startWidth = leftPanel.offsetWidth;
-
-      const onTouchMove = (e) => {
-        if (!this.isResizingLeft) return;
-
-        const touch = e.touches[0];
-        const delta = touch.clientX - startX;
-        const newWidth = Math.max(150, Math.min(450, startWidth + delta));
-
-        leftPanel.style.width = `${newWidth}px`;
-        this.leftPanelWidth = newWidth;
-      };
-
-      const onTouchEnd = () => {
-        this.isResizingLeft = false;
-        splitter.classList.remove('resizing');
-
-        // Restore width transition
-        leftPanel.style.transition = '';
-
-        document.removeEventListener('touchmove', onTouchMove);
-        document.removeEventListener('touchend', onTouchEnd);
-
-        this.parentTable?.table?.redraw?.();
-        this.childTable?.table?.redraw?.();
-      };
-
-      document.addEventListener('touchmove', onTouchMove);
-      document.addEventListener('touchend', onTouchEnd);
-    });
-  }
-
-  setupRightSplitter() {
-    const splitter = this.elements.splitterRight;
-    const middlePanel = this.elements.middlePanel;
-
-    if (!splitter || !middlePanel) return;
-
-    // Mouse down on right splitter
-    splitter.addEventListener('mousedown', (e) => {
-      if (this.isMiddlePanelCollapsed) return;
-
-      this.isResizingRight = true;
-      splitter.classList.add('resizing');
-      document.body.style.cursor = 'col-resize';
-      document.body.style.userSelect = 'none';
-
-      // Remove width transition so resizing follows mouse immediately
-      middlePanel.style.transition = 'none';
-
-      const startX = e.clientX;
-      const startWidth = middlePanel.offsetWidth;
-
-      const onMouseMove = (e) => {
-        if (!this.isResizingRight) return;
-
-        const delta = e.clientX - startX;
-        const newWidth = Math.max(200, Math.min(550, startWidth + delta));
-
-        middlePanel.style.width = `${newWidth}px`;
-        this.middlePanelWidth = newWidth;
-      };
-
-      const onMouseUp = () => {
-        this.isResizingRight = false;
-        splitter.classList.remove('resizing');
-        document.body.style.cursor = '';
-        document.body.style.userSelect = '';
-
-        // Restore width transition for expand/collapse button
-        middlePanel.style.transition = '';
-
-        document.removeEventListener('mousemove', onMouseMove);
-        document.removeEventListener('mouseup', onMouseUp);
-
-        // Redraw tables after resize
-        this.parentTable?.table?.redraw?.();
-        this.childTable?.table?.redraw?.();
-      };
-
-      document.addEventListener('mousemove', onMouseMove);
-      document.addEventListener('mouseup', onMouseUp);
-    });
-
-    // Touch support for mobile
-    splitter.addEventListener('touchstart', (e) => {
-      if (this.isMiddlePanelCollapsed) return;
-
-      this.isResizingRight = true;
-      splitter.classList.add('resizing');
-
-      // Remove width transition so resizing follows touch immediately
-      middlePanel.style.transition = 'none';
-
-      const touch = e.touches[0];
-      const startX = touch.clientX;
-      const startWidth = middlePanel.offsetWidth;
-
-      const onTouchMove = (e) => {
-        if (!this.isResizingRight) return;
-
-        const touch = e.touches[0];
-        const delta = touch.clientX - startX;
-        const newWidth = Math.max(200, Math.min(550, startWidth + delta));
-
-        middlePanel.style.width = `${newWidth}px`;
-        this.middlePanelWidth = newWidth;
-      };
-
-      const onTouchEnd = () => {
-        this.isResizingRight = false;
-        splitter.classList.remove('resizing');
-
-        // Restore width transition
-        middlePanel.style.transition = '';
-
-        document.removeEventListener('touchmove', onTouchMove);
-        document.removeEventListener('touchend', onTouchEnd);
-
-        this.parentTable?.table?.redraw?.();
-        this.childTable?.table?.redraw?.();
-      };
-
-      document.addEventListener('touchmove', onTouchMove);
-      document.addEventListener('touchend', onTouchEnd);
+      },
     });
   }
 
   toggleLeftPanel() {
-    const leftPanel = this.elements.leftPanel;
-    const splitter = this.elements.splitterLeft;
-
-    if (!leftPanel || !splitter) return;
-
     this.isLeftPanelCollapsed = !this.isLeftPanelCollapsed;
+    this.leftSplitter?.setCollapsed(this.isLeftPanelCollapsed);
 
-    if (this.isLeftPanelCollapsed) {
-      leftPanel.classList.add('collapsed');
-      splitter.classList.add('collapsed');
-    } else {
-      leftPanel.classList.remove('collapsed');
-      leftPanel.style.width = `${this.leftPanelWidth}px`;
-      splitter.classList.remove('collapsed');
+    if (!this.isLeftPanelCollapsed) {
+      this.elements.leftPanel.style.width = `${this.leftPanelWidth}px`;
     }
 
     // Redraw tables after animation
@@ -894,20 +705,11 @@ export default class LookupsManager {
   }
 
   toggleMiddlePanel() {
-    const middlePanel = this.elements.middlePanel;
-    const splitter = this.elements.splitterRight;
-
-    if (!middlePanel || !splitter) return;
-
     this.isMiddlePanelCollapsed = !this.isMiddlePanelCollapsed;
+    this.rightSplitter?.setCollapsed(this.isMiddlePanelCollapsed);
 
-    if (this.isMiddlePanelCollapsed) {
-      middlePanel.classList.add('collapsed');
-      splitter.classList.add('collapsed');
-    } else {
-      middlePanel.classList.remove('collapsed');
-      middlePanel.style.width = `${this.middlePanelWidth}px`;
-      splitter.classList.remove('collapsed');
+    if (!this.isMiddlePanelCollapsed) {
+      this.elements.middlePanel.style.width = `${this.middlePanelWidth}px`;
     }
 
     // Redraw tables after animation
@@ -1207,6 +1009,12 @@ export default class LookupsManager {
 
     // Close any open footer export popup
     this._closeFooterExportPopup();
+
+    // Clean up splitters
+    this.leftSplitter?.destroy();
+    this.rightSplitter?.destroy();
+    this.leftSplitter = null;
+    this.rightSplitter = null;
 
     // Clean up tables
     this.parentTable?.destroy();

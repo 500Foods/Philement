@@ -55,7 +55,7 @@ table.insert(queries,{sql=[[
                         AL.value_txt,
                         AL.value_int,
                         AL.sort_seq,
-                        AL.status_lua_1,
+                        AL.status_a1,
                         AL.summary,
                         AL.code,
                         AL.collection,
@@ -101,7 +101,7 @@ table.insert(queries,{sql=[[
                     - value_txt: The text value associated with the history item.
                     - value_int: The integer value associated with the history item.
                     - sort_seq: The sort sequence for the history item.
-                    - status_lua_1: The status of the history item.
+                    - status_a1: The status of the history item.
                     - summary: A summary of the history item.
                     - code: The code associated with the history item.
                     - collection: A JSON object containing additional details about the history item.

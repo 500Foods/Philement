@@ -79,10 +79,9 @@ export function hasFeature(managerId, featureId, punchcard = null) {
 export function getPermittedManagers(punchcard = null) {
   // Fallback: return all default managers if no punchcard
   if (!punchcard) {
-    // Return default manager IDs from QueryRef 046 (excluding hidden items with negative Index)
-    // Group 0: System (2, 3), Group 1: Content (8, 9, 10, 11), 
-    // Group 2: Data (4, 5, 12), Group 3: AI (6, 7)
-    return [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+    // Return default manager IDs from lithium.json (007-032)
+    // Excludes Group 0: System (001-006) which are hidden from main menu
+    return [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32];
   }
 
   return punchcard.managers || [];
@@ -116,8 +115,9 @@ export function parsePermissions(claims) {
   if (!claims || !claims.punchcard) {
     return {
       hasPunchcard: false,
-      // Default manager IDs from QueryRef 046 (excluding hidden items with negative Index)
-      managers: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+      // Default manager IDs from lithium.json (007-032)
+      // Excludes Group 0: System (001-006) which are hidden from main menu
+      managers: [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32],
       features: {},
     };
   }

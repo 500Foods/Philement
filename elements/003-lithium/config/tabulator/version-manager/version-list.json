@@ -1,0 +1,119 @@
+{
+  "$schema": "../tabledef-schema.json",
+  "$version": "1.0.0",
+  "$description": "Column definitions for the Version List table in Version Manager. Shows all available versions with changelog preview.",
+
+  "table": "version-list",
+  "title": "Version List",
+  "queryRef": 60,
+  "searchQueryRef": 61,
+  "readonly": true,
+  "selectableRows": 1,
+  "layout": "fitColumns",
+  "responsiveLayout": "collapse",
+  "resizableColumns": true,
+  "persistSort": true,
+  "persistFilter": true,
+  "initialSort": [
+    { "column": "version_num", "dir": "desc" }
+  ],
+
+  "columns": {
+
+    "version_id": {
+      "display": "ID#",
+      "field": "version_id",
+      "coltype": "index",
+      "visible": false,
+      "sort": true,
+      "filter": true,
+      "group": false,
+      "editable": false,
+      "calculated": false,
+      "primaryKey": true,
+      "description": "Database primary key — hidden from display",
+      "overrides": {
+        "bottomCalc": null
+      }
+    },
+
+    "version_num": {
+      "display": "Version",
+      "field": "version_num",
+      "coltype": "string",
+      "visible": true,
+      "sort": true,
+      "filter": true,
+      "group": false,
+      "editable": false,
+      "calculated": false,
+      "primaryKey": false,
+      "description": "Version number (semantic versioning)",
+      "overrides": {
+        "width": 100,
+        "bottomCalc": "count",
+        "bottomCalcFormatter": "number",
+        "bottomCalcFormatterParams": {
+          "thousand": ""
+        }
+      }
+    },
+
+    "codename": {
+      "display": "Codename",
+      "field": "codename",
+      "coltype": "string",
+      "visible": true,
+      "sort": true,
+      "filter": true,
+      "group": false,
+      "editable": false,
+      "calculated": false,
+      "primaryKey": false,
+      "description": "Version codename or title"
+    },
+
+    "status": {
+      "display": "Status",
+      "field": "status",
+      "coltype": "lookup",
+      "visible": true,
+      "sort": true,
+      "filter": true,
+      "group": true,
+      "editable": false,
+      "calculated": false,
+      "primaryKey": false,
+      "description": "Version status — references lookup table 60 (Draft, Released, Archived)",
+      "lookupRef": "60"
+    },
+
+    "release_date": {
+      "display": "Released",
+      "field": "release_date",
+      "coltype": "datetime",
+      "visible": true,
+      "sort": true,
+      "filter": true,
+      "group": false,
+      "editable": false,
+      "calculated": false,
+      "primaryKey": false,
+      "description": "Version release date"
+    },
+
+    "created_at": {
+      "display": "Created",
+      "field": "created_at",
+      "coltype": "datetime",
+      "visible": false,
+      "sort": true,
+      "filter": true,
+      "group": false,
+      "editable": false,
+      "calculated": true,
+      "primaryKey": false,
+      "description": "Record creation timestamp"
+    }
+  }
+}

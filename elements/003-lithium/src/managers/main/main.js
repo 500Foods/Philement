@@ -538,6 +538,7 @@ export default class MainManager {
       }
 
       // Load last-used manager (from localStorage), or default to user profile
+      // This will also collapse all groups except the one containing the initial manager
       await this._loadInitialManager();
 
       // Initialize the app-wide WebSocket connection
@@ -642,26 +643,85 @@ export default class MainManager {
    * Restores the last-used manager from localStorage if available and permitted.
    * Falls back to the user profile utility manager if no stored preference
    * or the stored manager is not in the permitted list.
+   * 
+   * On startup, all groups are collapsed except the one containing the active manager.
    */
   async _loadInitialManager() {
     const lastManagerKey = this._getLastManagerKey();
+    let loadedManagerId = null;
+    let loadedUtilityKey = null;
 
     if (lastManagerKey) {
       const parsed = this._parseLastManagerKey(lastManagerKey);
       
       if (parsed) {
         if (parsed.type === 'manager' && this._tryLoadManager(parsed.id)) {
-          return;
-        }
-        
-        if (parsed.type === 'utility' && this._tryLoadUtility(parsed.id)) {
-          return;
+          loadedManagerId = parsed.id;
+        } else if (parsed.type === 'utility' && this._tryLoadUtility(parsed.id)) {
+          loadedUtilityKey = parsed.id;
         }
       }
     }
 
-    // Default: show user profile
-    await this.app.loadUtilityManager('user-profile');
+    // If no manager was loaded, default to user profile
+    if (!loadedManagerId && !loadedUtilityKey) {
+      await this.app.loadUtilityManager('user-profile');
+      loadedUtilityKey = 'user-profile';
+    }
+
+    // Collapse all groups, then expand only the group containing the active menu manager
+    if (loadedManagerId) {
+      // Menu manager loaded - collapse all, then expand its group
+      this._collapseAllGroups();
+      this._expandGroupForManager(loadedManagerId);
+    } else {
+      // Utility manager loaded (or default) - collapse all groups
+      this._collapseAllGroups();
+    }
+  }
+
+  /**
+   * Find which group contains a specific manager ID
+   * @param {number} managerId - The manager ID to find
+   * @returns {number|null} The group ID, or null if not found
+   */
+  _findGroupForManager(managerId) {
+    if (!this.menuData || !Array.isArray(this.menuData)) {
+      return null;
+    }
+    const targetId = Number(managerId);
+    if (isNaN(targetId)) return null;
+
+    for (const group of this.menuData) {
+      const hasManager = group.items.some(item => item.managerId === targetId);
+      if (hasManager) {
+        return group.id;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Expand a specific group (remove from collapsed set and update UI).
+   * Assumes all groups are already collapsed - this just expands one.
+   * @param {number} managerId - The manager ID whose group should be expanded
+   */
+  _expandGroupForManager(managerId) {
+    const targetGroupId = this._findGroupForManager(managerId);
+    
+    if (targetGroupId === null) {
+      return;
+    }
+
+    // Remove the target group from collapsed set (expanding it)
+    this.collapsedGroups.delete(targetGroupId);
+
+    // Save the state
+    this._saveCollapsedGroups();
+
+    // Update the UI for the target group
+    this._updateGroupVisibility(targetGroupId);
   }
 
   /**
@@ -1188,11 +1248,20 @@ export default class MainManager {
   }
 
   /**
-   * Collapse all groups (for sidebar collapsed mode)
+   * Collapse all groups and update the collapsedGroups Set
    */
   _collapseAllGroups() {
     if (!this.elements.sidebarMenu) return;
     
+    // Update the Set for all groups
+    this.elements.sidebarMenu.querySelectorAll('.menu-group').forEach(el => {
+      const groupId = parseInt(el.dataset.groupId, 10);
+      if (!isNaN(groupId)) {
+        this.collapsedGroups.add(groupId);
+      }
+    });
+    
+    // Update DOM for all groups
     this.elements.sidebarMenu.querySelectorAll('.menu-group-items').forEach(el => {
       el.classList.add('collapsed');
     });
@@ -1394,6 +1463,9 @@ export default class MainManager {
 
     // Build from menu data with groups
     this.menuData.forEach((group) => {
+      // Skip internal System/Internal groups (should not appear in menu)
+      if (group.id === 0 || group.name === 'System' || group.name === 'Internal') return;
+
       // Filter items to only include permitted managers
       const permittedItems = group.items.filter(item => 
         this.permittedManagers.includes(item.managerId)
@@ -1434,6 +1506,7 @@ export default class MainManager {
         button.className = 'menu-item';
         button.dataset.managerId = item.managerId;
         const itemName = item.name || `Manager ${item.managerId}`;
+        button.title = itemName;
         // Build HTML without extra whitespace to avoid parsing issues
         let htmlContent = item.iconHtml || '<fa fa-cube></fa>';
         htmlContent += `<span class="menu-item-name">${itemName}</span>`;
@@ -1476,6 +1549,7 @@ export default class MainManager {
       const button = document.createElement('div');
       button.className = 'menu-item';
       button.dataset.managerId = managerId;
+      button.title = managerInfo.name;
       button.innerHTML = `${managerInfo.iconHtml}<span class="menu-item-name">${managerInfo.name}</span>`;
 
       button.addEventListener('click', () => {

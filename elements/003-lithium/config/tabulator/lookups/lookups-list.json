@@ -1,0 +1,118 @@
+{
+  "$schema": "../tabledef-schema.json",
+  "$version": "1.0.0",
+  "$description": "Column definitions for the Lookups List table (parent table). Shows all lookup tables.",
+
+  "table": "lookups-list",
+  "title": "Lookups List",
+  "queryRef": 30,
+  "searchQueryRef": 31,
+  "readonly": false,
+  "selectableRows": 1,
+  "layout": "fitColumns",
+  "responsiveLayout": "collapse",
+  "resizableColumns": true,
+  "persistSort": true,
+  "persistFilter": true,
+  "initialSort": [
+    { "column": "lookup_ref", "dir": "asc" }
+  ],
+
+  "columns": {
+
+    "lookup_id": {
+      "display": "ID#",
+      "field": "lookup_id",
+      "coltype": "index",
+      "visible": false,
+      "sort": true,
+      "filter": true,
+      "group": false,
+      "editable": false,
+      "calculated": false,
+      "primaryKey": true,
+      "description": "Database primary key — hidden from display",
+      "overrides": {
+        "bottomCalc": null
+      }
+    },
+
+    "lookup_ref": {
+      "display": "Ref",
+      "field": "lookup_ref",
+      "coltype": "index",
+      "visible": true,
+      "sort": true,
+      "filter": true,
+      "group": false,
+      "editable": false,
+      "calculated": false,
+      "primaryKey": false,
+      "description": "Human-readable lookup reference number",
+      "overrides": {
+        "width": 80,
+        "bottomCalc": "count",
+        "bottomCalcFormatter": "number",
+        "bottomCalcFormatterParams": {
+          "thousand": ""
+        }
+      }
+    },
+
+    "name": {
+      "display": "Name",
+      "field": "name",
+      "coltype": "string",
+      "visible": true,
+      "sort": true,
+      "filter": true,
+      "group": false,
+      "editable": true,
+      "calculated": false,
+      "primaryKey": false,
+      "description": "Lookup table display name"
+    },
+
+    "description": {
+      "display": "Description",
+      "field": "description",
+      "coltype": "string",
+      "visible": false,
+      "sort": true,
+      "filter": true,
+      "group": false,
+      "editable": true,
+      "calculated": false,
+      "primaryKey": false,
+      "description": "Lookup table description"
+    },
+
+    "created_at": {
+      "display": "Created",
+      "field": "created_at",
+      "coltype": "datetime",
+      "visible": false,
+      "sort": true,
+      "filter": true,
+      "group": false,
+      "editable": false,
+      "calculated": true,
+      "primaryKey": false,
+      "description": "Record creation timestamp"
+    },
+
+    "updated_at": {
+      "display": "Updated",
+      "field": "updated_at",
+      "coltype": "datetime",
+      "visible": false,
+      "sort": true,
+      "filter": true,
+      "group": false,
+      "editable": false,
+      "calculated": true,
+      "primaryKey": false,
+      "description": "Last modification timestamp"
+    }
+  }
+}

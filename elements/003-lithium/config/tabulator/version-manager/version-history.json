@@ -1,0 +1,129 @@
+{
+  "$schema": "../tabledef-schema.json",
+  "$version": "1.0.0",
+  "$description": "Column definitions for the Version History list. Uses Lookup 45 to show document versions (Focused, Released, etc.)",
+
+  "table": "version-history",
+  "title": "Version History",
+  "queryRef": 45,
+  "searchQueryRef": 45,
+  "readonly": true,
+  "selectableRows": 1,
+  "layout": "fitColumns",
+  "responsiveLayout": "collapse",
+  "resizableColumns": true,
+  "persistSort": true,
+  "persistFilter": false,
+  "initialSort": [
+    { "column": "key_idx", "dir": "desc" }
+  ],
+
+  "columns": {
+
+    "key_idx": {
+      "display": "ID#",
+      "field": "key_idx",
+      "coltype": "index",
+      "visible": true,
+      "sort": true,
+      "filter": true,
+      "group": false,
+      "editable": false,
+      "calculated": false,
+      "primaryKey": true,
+      "description": "Unique key index for the version record",
+      "overrides": {
+        "width": 80,
+        "bottomCalc": "count",
+        "bottomCalcFormatter": "number",
+        "bottomCalcFormatterParams": {
+          "thousand": ""
+        }
+      }
+    },
+
+    "source_label": {
+      "display": "Source",
+      "field": "source_label",
+      "coltype": "string",
+      "visible": true,
+      "sort": true,
+      "filter": true,
+      "group": true,
+      "editable": false,
+      "calculated": false,
+      "primaryKey": false,
+      "description": "Version source (Server or Client)",
+      "overrides": {
+        "width": 100
+      }
+    },
+
+    "value_txt": {
+      "display": "Status",
+      "field": "value_txt",
+      "coltype": "string",
+      "visible": true,
+      "sort": true,
+      "filter": true,
+      "group": false,
+      "editable": false,
+      "calculated": false,
+      "primaryKey": false,
+      "description": "Version status (Focused, Released, etc.)"
+    },
+
+    "Focus": {
+      "display": "Focus",
+      "field": "Focus",
+      "coltype": "string",
+      "visible": true,
+      "sort": true,
+      "filter": true,
+      "group": false,
+      "editable": false,
+      "calculated": false,
+      "description": "Version focus area"
+    },
+
+    "Released": {
+      "display": "Release Date",
+      "field": "Released",
+      "coltype": "string",
+      "visible": true,
+      "sort": true,
+      "filter": true,
+      "group": false,
+      "editable": false,
+      "calculated": false,
+      "description": "Release date"
+    },
+
+    "collection": {
+      "display": "Collection",
+      "field": "collection",
+      "coltype": "string",
+      "visible": true,
+      "sort": true,
+      "filter": true,
+      "group": false,
+      "editable": false,
+      "calculated": false,
+      "description": "Collection keys summary"
+    },
+
+    "created_at": {
+      "display": "Created",
+      "field": "created_at",
+      "coltype": "datetime",
+      "visible": false,
+      "sort": true,
+      "filter": true,
+      "group": false,
+      "editable": false,
+      "calculated": true,
+      "primaryKey": false,
+      "description": "Record creation timestamp"
+    }
+  }
+}

@@ -1,5 +1,15 @@
 @layer managers {
 
+/* ═════════════════════════════════════════════════════════════════════════════
+   Lookups Manager Styles
+   ═════════════════════════════════════════════════════════════════════════════
+   
+   Note: Tabulator theme overrides and Navigator styles are now provided by
+   lithium-table.css via the .lithium-table-container and .lithium-nav-* classes.
+   This file only contains manager-specific layout styles.
+   
+   ═════════════════════════════════════════════════════════════════════════════ */
+
 /* ── Main Container ─────────────────────────────────────────────────────── */
 
 .lookups-manager-container {
@@ -20,18 +30,9 @@
   flex-direction: column;
   width: 280px;
   min-width: 150px;
-  max-width: 450px;
   background-color: var(--bg-secondary);
   transition: width var(--transition-delay) ease, min-width var(--transition-delay) ease;
   flex-shrink: 0;
-}
-
-.lookups-left-panel.collapsed {
-  width: 0 !important;
-  min-width: 0;
-  max-width: 0;
-  border-right: none;
-  overflow: hidden;
 }
 
 /* ── Middle Panel (Child Table - Lookup Values) ─────────────────────────── */
@@ -41,17 +42,9 @@
   flex-direction: column;
   width: 350px;
   min-width: 200px;
-  max-width: 550px;
   background-color: var(--bg-primary);
   transition: width var(--transition-delay) ease, min-width var(--transition-delay) ease;
   flex-shrink: 0;
-}
-
-.lookups-middle-panel.collapsed {
-  width: 0 !important;
-  min-width: 0;
-  max-width: 0;
-  overflow: hidden;
 }
 
 .lookups-child-header {
@@ -106,15 +99,13 @@
   transform: rotate(180deg);
 }
 
+/* ── Table Containers (additional styling beyond lithium-table.css) ────── */
+
+.lookups-table-container,
 .lookups-child-table-container {
   flex: 1;
   overflow: hidden;
   margin: var(--space-2) var(--space-3);
-  border-radius: var(--border-radius-md);
-  border: var(--border-standard);
-  background: var(--bg-secondary);
-  display: flex;
-  flex-direction: column;
   min-height: 0;
 }
 
@@ -170,12 +161,11 @@
   min-width: 16px;
 }
 
-/* Toolbar buttons styling — minimum width and rounded corners */
+/* Toolbar buttons styling */
 .lookups-toolbar-btn {
   min-width: 24px;
 }
 
-/* Last button in toolbar should have rounded right corners */
 .lookups-toolbar-btn:last-child {
   border-top-right-radius: var(--border-radius-sm);
   border-bottom-right-radius: var(--border-radius-sm);
@@ -376,1013 +366,6 @@
   margin-bottom: var(--space-2);
 }
 
-/* ── Table Containers ────────────────────────────────────────────────────── */
-
-.lookups-table-container {
-  flex: 1;
-  overflow: hidden;
-  margin: var(--space-2) var(--space-3);
-  border-radius: var(--border-radius-md);
-  border: var(--border-standard);
-  background: var(--bg-secondary);
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
-/* ── Splitters ───────────────────────────────────────────────────────────── */
-
-.lookups-splitter {
-  width: 6px;
-  background: transparent;
-  cursor: col-resize;
-  flex-shrink: 0;
-  position: relative;
-  z-index: 10;
-  transition: background-color 0.2s ease;
-}
-
-.lookups-splitter:hover,
-.lookups-splitter.resizing {
-  background-color: var(--accent-primary);
-}
-
-.lookups-splitter::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 2px;
-  height: 40px;
-  background-color: var(--border-color);
-  border-radius: 1px;
-  transition: background-color 0.2s ease;
-  display: none;
-}
-
-.lookups-splitter:hover::after,
-.lookups-splitter.resizing::after {
-  background-color: white;
-}
-
-.lookups-splitter-left.collapsed,
-.lookups-splitter-right.collapsed {
-  display: none;
-}
-
-/* ── Navigator Control Bar ───────────────────────────────────────────────── */
-
-.lookups-navigator-container {
-  padding: 0px var(--space-2) var(--space-2) var(--space-3);
-  flex-shrink: 0;
-}
-
-/* Wrapper: blocks flow left-to-right, wrapping when narrow */
-.lookups-parent-nav-wrapper,
-.lookups-child-nav-wrapper {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  align-items: center;
-}
-
-/* Each block is a nowrap row of buttons */
-.lookups-parent-nav-block,
-.lookups-child-nav-block {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 1px;
-  outline: 3px solid var(--accent-primary);
-  outline-offset: -5px;
-  border-radius: var(--border-radius-sm);
-  overflow: hidden;
-  height: 24px;
-  line-height: 1;
-  min-width: 150px;
-}
-
-.lookups-parent-nav-block > *:first-child,
-.lookups-child-nav-block > *:first-child {
-  border-top-left-radius: var(--border-radius-sm);
-  border-bottom-left-radius: var(--border-radius-sm);
-}
-
-.lookups-parent-nav-block > *:last-child,
-.lookups-child-nav-block > *:last-child {
-  border-top-right-radius: var(--border-radius-sm);
-  border-bottom-right-radius: var(--border-radius-sm);
-}
-
-/* Navigator button */
-.lookups-parent-nav-btn,
-.lookups-child-nav-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 24px;
-  height: 24px;
-  padding: 0 var(--space-2);
-  margin: 0;
-  border: none;
-  border-radius: 0;
-  background-color: var(--accent-primary);
-  color: white;
-  font-size: 11px;
-  cursor: pointer;
-  transition: background-color var(--transition-fast);
-  line-height: 1;
-  z-index: 1;
-}
-
-.lookups-parent-nav-btn:hover,
-.lookups-child-nav-btn:hover {
-  background-color: var(--accent-hover);
-}
-
-.lookups-parent-nav-btn:active,
-.lookups-child-nav-btn:active {
-  background-color: var(--accent-focus);
-}
-
-.lookups-parent-nav-btn:disabled,
-.lookups-child-nav-btn:disabled {
-  background-color: var(--accent-disabled);
-  color: var(--text-disabled);
-  cursor: not-allowed;
-}
-
-/* Active state for toggle buttons */
-.lookups-parent-nav-btn-active,
-.lookups-child-nav-btn-active {
-  background-color: var(--accent-success) !important;
-}
-
-.lookups-parent-nav-btn-active:hover,
-.lookups-child-nav-btn-active:hover {
-  background-color: var(--accent-success-hover, #4CAF50) !important;
-}
-
-/* Danger variant (Delete) */
-.lookups-parent-nav-btn-danger:hover,
-.lookups-child-nav-btn-danger:hover {
-  background-color: var(--accent-danger);
-}
-
-/* Save button icon color when enabled */
-.lookups-parent-nav-btn-save:not(:disabled) svg,
-.lookups-parent-nav-btn-save:not(:disabled) i,
-.lookups-child-nav-btn-save:not(:disabled) svg,
-.lookups-child-nav-btn-save:not(:disabled) i {
-  color: var(--accent-success, #66BB6A);
-}
-
-/* Cancel button icon color when enabled */
-.lookups-parent-nav-btn-cancel:not(:disabled) svg,
-.lookups-parent-nav-btn-cancel:not(:disabled) i,
-.lookups-child-nav-btn-cancel:not(:disabled) svg,
-.lookups-child-nav-btn-cancel:not(:disabled) i {
-  color: var(--accent-danger, #EF5350);
-}
-
-/* SVG icons inside nav buttons */
-.lookups-parent-nav-btn svg,
-.lookups-parent-nav-btn i,
-.lookups-child-nav-btn svg,
-.lookups-child-nav-btn i {
-  font-size: 11px;
-  width: 11px;
-  height: 11px;
-}
-
-/* Search block */
-.lookups-parent-nav-block-search,
-.lookups-child-nav-block-search {
-  flex: 1;
-  outline: none;
-  border: 2px solid var(--accent-primary);
-  background: var(--accent-primary);
-  min-width: 149px;
-  margin-right: 1px;
-}
-
-.lookups-parent-nav-block-search .lookups-parent-nav-btn,
-.lookups-child-nav-block-search .lookups-child-nav-btn {
-  margin-top: -2px;
-}
-
-.lookups-parent-nav-search-input,
-.lookups-child-nav-search-input {
-  flex: 1;
-  min-width: 0;
-  height: 20px;
-  padding: 0px var(--space-2) 0px var(--space-2);
-  border: none;
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
-  font-size: var(--font-size-xs);
-  outline: none;
-  border-radius: var(--border-radius-sm);
-}
-
-.lookups-parent-nav-search-input::placeholder,
-.lookups-child-nav-search-input::placeholder {
-  color: var(--text-muted);
-}
-
-.lookups-parent-nav-search-input:focus,
-.lookups-child-nav-search-input:focus {
-  background-color: var(--bg-input);
-}
-
-/* ── Navigator Popup Menus ───────────────────────────────────────────────── */
-
-.lookups-parent-nav-popup,
-.lookups-child-nav-popup {
-  position: absolute;
-  bottom: 100%;
-  margin-bottom: 4px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-md);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  z-index: 100;
-  min-width: 120px;
-  overflow: hidden;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(4px);
-  transition: opacity var(--transition-fast), visibility var(--transition-fast), transform var(--transition-fast);
-}
-
-.lookups-parent-nav-popup.visible,
-.lookups-child-nav-popup.visible {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
-}
-
-.lookups-parent-nav-popup-item,
-.lookups-child-nav-popup-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 6px 12px;
-  border: none;
-  background: transparent;
-  color: var(--text-primary);
-  font-size: var(--font-size-sm);
-  text-align: left;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background-color var(--transition-fast);
-}
-
-.lookups-parent-nav-popup-item:hover,
-.lookups-child-nav-popup-item:hover {
-  background-color: var(--accent-primary);
-  color: white;
-}
-
-.lookups-parent-nav-popup-item:active,
-.lookups-child-nav-popup-item:active {
-  background-color: var(--accent-focus);
-}
-
-/* Checkmark column for aligned popups */
-.lookups-parent-nav-popup-check,
-.lookups-child-nav-popup-check {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  flex-shrink: 0;
-  text-align: center;
-  font-weight: 600;
-}
-
-.lookups-parent-nav-popup-label,
-.lookups-child-nav-popup-label {
-  flex: 1;
-}
-
-/* Icon in popup menu items */
-.lookups-parent-nav-popup-item i,
-.lookups-parent-nav-popup-item svg,
-.lookups-child-nav-popup-item i,
-.lookups-child-nav-popup-item svg {
-  font-size: 11px;
-  width: 11px;
-  height: 11px;
-  margin-right: 6px;
-  opacity: 0.8;
-}
-
-/* Separator */
-.lookups-parent-nav-popup-separator,
-.lookups-child-nav-popup-separator {
-  height: 1px;
-  background-color: var(--border-color);
-  margin: 4px 0;
-  width: 100%;
-}
-
-} /* end @layer managers */
-
-/* ── Tabulator Theme Overrides ───────────────────────────────────────────── */
-
-@layer vendor-fixes {
-
-/* Base Tabulator styling */
-#lookups-parent-table-container .tabulator,
-#lookups-child-table-container .tabulator {
-  flex: 1;
-  min-height: 0;
-  height: auto;
-  border: none;
-  font-size: var(--font-size-xs);
-  display: flex;
-  flex-direction: column;
-}
-
-/* Header */
-#lookups-parent-table-container .tabulator-header,
-#lookups-child-table-container .tabulator-header {
-  background: var(--bg-tertiary);
-  border-bottom: var(--border-standard);
-  color: var(--text-primary);
-  font-weight: 500;
-  height: 20px !important;
-  min-height: 20px !important;
-  flex-shrink: 0;
-}
-
-#lookups-parent-table-container .tabulator-header .tabulator-col,
-#lookups-child-table-container .tabulator-header .tabulator-col {
-  background: var(--bg-tertiary);
-  border-right: var(--border-standard);
-  height: 20px !important;
-  min-height: 20px !important;
-  padding: 0px 6px;
-}
-
-#lookups-parent-table-container .tabulator-header .tabulator-col:last-child,
-#lookups-child-table-container .tabulator-header .tabulator-col:last-child {
-  border-right: none;
-}
-
-#lookups-parent-table-container .tabulator-header .tabulator-col-content,
-#lookups-child-table-container .tabulator-header .tabulator-col-content {
-  padding: 0;
-  height: 20px;
-  line-height: 20px;
-}
-
-#lookups-parent-table-container .tabulator-header .tabulator-col-title,
-#lookups-child-table-container .tabulator-header .tabulator-col-title {
-  line-height: 20px;
-  font-size: 12px;
-}
-
-/* Table holder */
-#lookups-parent-table-container .tabulator-tableholder,
-#lookups-child-table-container .tabulator-tableholder {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: auto;
-  outline: none;
-  height: calc(100% - 40px) !important;
-  max-height: calc(100% - 40px) !important;  
-}
-
-/* Row styling */
-#lookups-parent-table-container .tabulator-row,
-#lookups-child-table-container .tabulator-row {
-  border-bottom: 1px solid var(--bg-row-border);
-  border-left: none;
-  color: var(--text-primary);
-  cursor: pointer;
-  height: 20px !important;
-  min-height: 20px !important;
-  max-height: 20px !important;
-  overflow: hidden;
-}
-
-#lookups-parent-table-container .tabulator-row.tabulator-row-odd,
-#lookups-child-table-container .tabulator-row.tabulator-row-odd {
-  background: var(--bg-row-odd);
-}
-
-#lookups-parent-table-container .tabulator-row.tabulator-row-even,
-#lookups-child-table-container .tabulator-row.tabulator-row-even {
-  background: var(--bg-row-even);
-}
-
-#lookups-parent-table-container .tabulator-cell,
-#lookups-child-table-container .tabulator-cell {
-  padding: 0px 6px;
-  border-left: none;
-  line-height: 20px !important;
-  height: 20px !important;
-  font-size: 12px;
-  border-right: 1px solid var(--bg-row-border);
-}
-
-/* Row hover */
-#lookups-parent-table-container .tabulator-row:hover,
-#lookups-child-table-container .tabulator-row:hover {
-  background: var(--bg-tertiary);
-}
-
-/* Selected row styling */
-#lookups-parent-table-container .tabulator-row.tabulator-selected,
-#lookups-child-table-container .tabulator-row.tabulator-selected {
-  background: var(--accent-primary) !important;
-  color: white !important;
-}
-
-#lookups-parent-table-container .tabulator-row.tabulator-selected:hover,
-#lookups-child-table-container .tabulator-row.tabulator-selected:hover {
-  background: var(--accent-hover) !important;
-}
-
-/* Scrollbar styling */
-#lookups-parent-table-container .tabulator-tableholder::-webkit-scrollbar,
-#lookups-child-table-container .tabulator-tableholder::-webkit-scrollbar {
-  width: var(--scrollbar-size);
-  height: var(--scrollbar-size);
-}
-
-#lookups-parent-table-container .tabulator-tableholder::-webkit-scrollbar-track,
-#lookups-child-table-container .tabulator-tableholder::-webkit-scrollbar-track {
-  background: var(--scrollbar-track);
-}
-
-#lookups-parent-table-container .tabulator-tableholder::-webkit-scrollbar-thumb,
-#lookups-child-table-container .tabulator-tableholder::-webkit-scrollbar-thumb {
-  background: var(--scrollbar-thumb);
-  border-radius: var(--border-radius-full);
-}
-
-#lookups-parent-table-container .tabulator-tableholder::-webkit-scrollbar-thumb:hover,
-#lookups-child-table-container .tabulator-tableholder::-webkit-scrollbar-thumb:hover {
-  background: var(--scrollbar-thumb-hover);
-}
-
-/* ── Custom Sort Icons ──────────────────────────────────────────────────── */
-
-#lookups-parent-table-container .lookups-parent-sort-icons,
-#lookups-child-table-container .lookups-child-sort-icons {
-  display: inline-flex;
-  flex-direction: column;
-  line-height: 1;
-  font-size: 7px;
-  margin-left: var(--space-1);
-  vertical-align: middle;
-  gap: 0;
-}
-
-#lookups-parent-table-container .lookups-parent-sort-asc,
-#lookups-parent-table-container .lookups-parent-sort-desc,
-#lookups-child-table-container .lookups-child-sort-asc,
-#lookups-child-table-container .lookups-child-sort-desc {
-  color: var(--text-muted);
-  opacity: 0.35;
-  transition: opacity var(--transition-fast), color var(--transition-fast);
-}
-
-#lookups-parent-table-container .tabulator-col[aria-sort="ascending"] .lookups-parent-sort-asc,
-#lookups-child-table-container .tabulator-col[aria-sort="ascending"] .lookups-child-sort-asc {
-  color: white;
-  opacity: 1;
-}
-
-#lookups-parent-table-container .tabulator-col[aria-sort="descending"] .lookups-parent-sort-desc,
-#lookups-child-table-container .tabulator-col[aria-sort="descending"] .lookups-child-sort-desc {
-  color: white;
-  opacity: 1;
-}
-
-/* Hide default Tabulator sort arrows */
-#lookups-parent-table-container .tabulator-col .tabulator-col-sorter .tabulator-arrow,
-#lookups-child-table-container .tabulator-col .tabulator-col-sorter .tabulator-arrow {
-  display: none;
-}
-
-/* ── Table Loading Overlay ──────────────────────────────────────────────── */
-
-.lookups-parent-table-loader,
-.lookups-child-table-loader {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: rgba(var(--bg-primary-rgb, 26, 26, 26), 0.8);
-  backdrop-filter: blur(2px);
-  z-index: 100;
-}
-
-.lookups-parent-table-loader .spinner-fancy,
-.lookups-child-table-loader .spinner-fancy {
-  z-index: 101;
-}
-
-/* Column resize handles - header only */
-#lookups-parent-table-container .tabulator-row .tabulator-col-resize-handle,
-#lookups-child-table-container .tabulator-row .tabulator-col-resize-handle,
-#lookups-parent-table-container .tabulator-calcs-bottom .tabulator-col-resize-handle,
-#lookups-child-table-container .tabulator-calcs-bottom .tabulator-col-resize-handle {
-  display: none !important;
-  pointer-events: none !important;
-}
-
-#lookups-parent-table-container .tabulator-header .tabulator-col .tabulator-col-resize-handle,
-#lookups-child-table-container .tabulator-header .tabulator-col .tabulator-col-resize-handle {
-  pointer-events: auto;
-}
-
-/* Edit mode transition cursor */
-#lookups-parent-table-container.lookups-parent-edit-transition,
-#lookups-child-table-container.lookups-child-edit-transition,
-.lookups-navigator-container.lookups-edit-transition {
-  cursor: progress !important;
-}
-
-/* ── Selector Column ─────────────────────────────────────────────────────── */
-
-#lookups-parent-table-container .lookups-parent-selector-col,
-#lookups-child-table-container .lookups-child-selector-col {
-  padding: 0 !important;
-  text-align: center;
-  border-right: var(--border-standard) !important;
-}
-
-#lookups-parent-table-container .tabulator-col.lookups-parent-selector-col,
-#lookups-child-table-container .tabulator-col.lookups-child-selector-col {
-  cursor: pointer;
-  width: 16px !important;
-  min-width: 16px !important;
-  max-width: 16px !important;
-}
-
-#lookups-parent-table-container .lookups-parent-selector-col i,
-#lookups-parent-table-container .lookups-parent-selector-col svg,
-#lookups-child-table-container .lookups-child-selector-col i,
-#lookups-child-table-container .lookups-child-selector-col svg {
-  font-size: 10px;
-  width: 10px;
-  height: 10px;
-}
-
-/* Selected row indicator */
-.lookups-parent-selector-active,
-.lookups-parent-selector-active.svg-inline--fa,
-.lookups-child-selector-active,
-.lookups-child-selector-active.svg-inline--fa {
-  color: white;
-}
-
-/* Edit mode indicator */
-.lookups-parent-selector-edit,
-.lookups-parent-selector-edit.svg-inline--fa,
-.lookups-child-selector-edit,
-.lookups-child-selector-edit.svg-inline--fa {
-  color: var(--accent-success, #66BB6A);
-  animation: lookups-caret-blink 1s step-end infinite;
-}
-
-@keyframes lookups-caret-blink {
-  50% { opacity: 0; }
-}
-
-/* ── Column Chooser ──────────────────────────────────────────────────────── */
-
-.lookups-parent-col-chooser-btn,
-.lookups-child-col-chooser-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  cursor: pointer;
-  color: var(--text-secondary);
-  line-height: 1;
-  user-select: none;
-  transition: color var(--transition-fast);
-}
-
-.lookups-parent-col-chooser-btn i,
-.lookups-parent-col-chooser-btn svg,
-.lookups-child-col-chooser-btn i,
-.lookups-child-col-chooser-btn svg {
-  font-size: 12px !important;
-  width: 12px !important;
-  height: 12px !important;
-}
-
-.lookups-parent-col-chooser-btn:hover,
-.lookups-child-col-chooser-btn:hover {
-  color: var(--text-primary);
-}
-
-/* Column chooser dropdown */
-.lookups-parent-col-chooser-popup,
-.lookups-child-col-chooser-popup {
-  position: absolute;
-  z-index: 200;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-md);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-  min-width: 160px;
-  max-width: 280px;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-4px);
-  transition: opacity var(--transition-fast), visibility var(--transition-fast), transform var(--transition-fast);
-}
-
-.lookups-parent-col-chooser-popup.visible,
-.lookups-child-col-chooser-popup.visible {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
-}
-
-.lookups-parent-col-chooser-title,
-.lookups-child-col-chooser-title {
-  padding: 8px 12px 6px;
-  font-size: var(--font-size-xs);
-  font-weight: 600;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.lookups-parent-col-chooser-list,
-.lookups-child-col-chooser-list {
-  overflow-y: auto;
-  padding: 4px 0;
-}
-
-.lookups-parent-col-chooser-list::-webkit-scrollbar,
-.lookups-child-col-chooser-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.lookups-parent-col-chooser-list::-webkit-scrollbar-track,
-.lookups-child-col-chooser-list::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.lookups-parent-col-chooser-list::-webkit-scrollbar-thumb,
-.lookups-child-col-chooser-list::-webkit-scrollbar-thumb {
-  background: var(--scrollbar-thumb);
-  border-radius: 3px;
-}
-
-.lookups-parent-col-chooser-item,
-.lookups-child-col-chooser-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: var(--space-1) var(--space-3);
-  cursor: pointer;
-  font-size: var(--font-size-sm);
-  color: var(--text-primary);
-  transition: background-color var(--transition-fast);
-  white-space: nowrap;
-}
-
-.lookups-parent-col-chooser-item:hover,
-.lookups-child-col-chooser-item:hover {
-  background-color: var(--bg-tertiary);
-}
-
-.lookups-parent-col-chooser-checkbox,
-.lookups-child-col-chooser-checkbox {
-  accent-color: var(--accent-primary);
-  width: 14px;
-  height: 14px;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.lookups-parent-col-chooser-label,
-.lookups-child-col-chooser-label {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* ── Header Filter Inputs ────────────────────────────────────────────────── */
-
-#lookups-parent-table-container .tabulator-header-filter,
-#lookups-child-table-container .tabulator-header-filter {
-  display: block;
-  height: 0;
-  min-height: 0;
-  max-height: 0;
-  overflow: hidden;
-  opacity: 0;
-  transition: height var(--transition-fast), min-height var(--transition-fast), max-height var(--transition-fast), opacity var(--transition-fast);
-}
-
-#lookups-parent-table-container.lookups-parent-filters-visible .tabulator-header-filter,
-#lookups-child-table-container.lookups-child-filters-visible .tabulator-header-filter {
-  height: 20px;
-  min-height: 20px;
-  max-height: 20px;
-  opacity: 1;
-  padding: 0px;
-  box-sizing: border-box;
-  margin-left: -2px;
-}
-
-#lookups-parent-table-container .tabulator-header-filter input,
-#lookups-child-table-container .tabulator-header-filter input {
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-sm);
-  padding: 0px 6px;
-  font-size: var(--font-size-xs);
-  width: 100%;
-  height: 18px;
-  box-sizing: border-box;
-  outline: none;
-  transition: border-color var(--transition-fast);
-}
-
-#lookups-parent-table-container .tabulator-header-filter input:focus,
-#lookups-child-table-container .tabulator-header-filter input:focus {
-  border-color: var(--accent-primary);
-}
-
-#lookups-parent-table-container .tabulator-header-filter input::placeholder,
-#lookups-child-table-container .tabulator-header-filter input::placeholder {
-  color: var(--text-muted);
-  font-style: italic;
-}
-
-/* Clear filter button */
-.lookups-parent-header-filter-clear,
-.lookups-child-header-filter-clear {
-  position: absolute;
-  right: 3px;
-  top: 42%;
-  transform: translateY(-50%);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  font-size: 14px;
-  line-height: 1;
-  color: var(--text-muted);
-  cursor: pointer;
-  border-radius: 50%;
-  transition: color var(--transition-fast), background-color var(--transition-fast);
-  user-select: none;
-  z-index: 5;
-}
-
-.lookups-parent-header-filter-clear:hover,
-.lookups-child-header-filter-clear:hover {
-  color: var(--text-primary);
-  background-color: var(--bg-tertiary);
-}
-
-/* ── Table Footer (bottom calc row) ──────────────────────────────────────── */
-
-#lookups-parent-table-container .tabulator-footer,
-#lookups-child-table-container .tabulator-footer,
-#lookups-parent-table-container .tabulator-calcs,
-#lookups-child-table-container .tabulator-calcs,
-#lookups-parent-table-container .tabulator-calcs-bottom,
-#lookups-child-table-container .tabulator-calcs-bottom,
-#lookups-parent-table-container .tabulator-calcs-holder,
-#lookups-child-table-container .tabulator-calcs-holder {
-  border-top: none;
-  border-bottom: none;
-  background: unset;
-}
-
-#lookups-parent-table-container .tabulator-calcs-holder,
-#lookups-child-table-container .tabulator-calcs-holder {
-  background: var(--bg-tertiary);
-  border-top: var(--border-standard);
-  height: 20px;
-}
-
-#lookups-parent-table-container .tabulator-row .tabulator-cell.tabulator-editing,
-#lookups-child-table-container .tabulator-row .tabulator-cell.tabulator-editing {
-  border: unset;
-  padding: 0;
-}
-
-#lookups-parent-table-container .tabulator-cell.tabulator-editing > input,
-#lookups-parent-table-container .tabulator-cell.tabulator-editing > select,
-#lookups-child-table-container .tabulator-cell.tabulator-editing > input,
-#lookups-child-table-container .tabulator-cell.tabulator-editing > select {
-  padding: 4px 0px !important;
-}
-
-#lookups-parent-table-container .tabulator-calcs-bottom,
-#lookups-child-table-container .tabulator-calcs-bottom {
-  border-top: none;
-  border-bottom: none;
-  color: var(--text-primary);
-  font-weight: 500;
-  height: 20px !important;
-  min-height: 20px !important;
-  max-height: 20px !important;
-  pointer-events: none;
-}
-
-#lookups-parent-table-container .tabulator-calcs-bottom .tabulator-cell,
-#lookups-child-table-container .tabulator-calcs-bottom .tabulator-cell {
-  border-right: var(--border-standard);
-  border-top: none;
-  border-bottom: none;
-  padding: 0px 6px;
-  height: 20px !important;
-  line-height: 20px !important;
-  pointer-events: none;
-}
-
-#lookups-parent-table-container .tabulator-calcs-bottom .tabulator-cell:first-child,
-#lookups-child-table-container .tabulator-calcs-bottom .tabulator-cell:first-child {
-  border-left: none;
-}
-
-#lookups-parent-table-container .tabulator-calcs-bottom .tabulator-cell:last-child,
-#lookups-child-table-container .tabulator-calcs-bottom .tabulator-cell:last-child {
-  border-right: none !important;
-}
-
-/* ── Frozen Column Styling ───────────────────────────────────────────────── */
-
-#lookups-parent-table-container .tabulator-frozen,
-#lookups-child-table-container .tabulator-frozen {
-  z-index: 10;
-}
-
-#lookups-parent-table-container .tabulator-header .tabulator-col.tabulator-frozen,
-#lookups-child-table-container .tabulator-header .tabulator-col.tabulator-frozen {
-  outline: none;
-}
-
-#lookups-parent-table-container .tabulator-row .tabulator-cell.tabulator-frozen,
-#lookups-child-table-container .tabulator-row .tabulator-cell.tabulator-frozen {
-  outline: none;
-}
-
-#lookups-parent-table-container .tabulator-row.tabulator-selected .tabulator-cell.tabulator-frozen,
-#lookups-child-table-container .tabulator-row.tabulator-selected .tabulator-cell.tabulator-frozen {
-  background: var(--accent-primary) !important;
-}
-
-#lookups-parent-table-container .tabulator-row:hover .tabulator-cell.tabulator-frozen,
-#lookups-child-table-container .tabulator-row:hover .tabulator-cell.tabulator-frozen {
-  background: var(--bg-tertiary);
-}
-
-#lookups-parent-table-container .tabulator-row.tabulator-selected:hover .tabulator-cell.tabulator-frozen,
-#lookups-child-table-container .tabulator-row.tabulator-selected:hover .tabulator-cell.tabulator-frozen {
-  background: var(--accent-hover) !important;
-}
-
-/* ── First/Last Visible Column Classes ───────────────────────────────────── */
-
-#lookups-parent-table-container .tabulator-cell.first-visible-col,
-#lookups-child-table-container .tabulator-cell.first-visible-col,
-#lookups-parent-table-container .tabulator-header .tabulator-col.first-visible-col,
-#lookups-child-table-container .tabulator-header .tabulator-col.first-visible-col {
-  border-left: none;
-}
-
-#lookups-parent-table-container .tabulator-cell.last-visible-col,
-#lookups-child-table-container .tabulator-cell.last-visible-col,
-#lookups-parent-table-container .tabulator-header .tabulator-col.last-visible-col,
-#lookups-child-table-container .tabulator-header .tabulator-col.last-visible-col {
-  border-right: none !important;
-}
-
-/* ── Edit Mode ───────────────────────────────────────────────────────────── */
-
-#lookups-parent-table-container.lookups-parent-edit-mode .tabulator-row.tabulator-selected,
-#lookups-child-table-container.lookups-child-edit-mode .tabulator-row.tabulator-selected {
-  background: var(--accent-warning, #FFA726) !important;
-  color: #1a1a1a !important;
-}
-
-#lookups-parent-table-container.lookups-parent-edit-mode .tabulator-row.tabulator-selected:hover,
-#lookups-child-table-container.lookups-child-edit-mode .tabulator-row.tabulator-selected:hover {
-  background: var(--accent-warning-hover, #FB8C00) !important;
-  color: #1a1a1a !important;
-}
-
-#lookups-parent-table-container.lookups-parent-edit-mode .tabulator-row.tabulator-selected .tabulator-cell.tabulator-frozen,
-#lookups-child-table-container.lookups-child-edit-mode .tabulator-row.tabulator-selected .tabulator-cell.tabulator-frozen {
-  background: var(--accent-warning, #FFA726) !important;
-}
-
-#lookups-parent-table-container.lookups-parent-edit-mode .tabulator-row.tabulator-selected:hover .tabulator-cell.tabulator-frozen,
-#lookups-child-table-container.lookups-child-edit-mode .tabulator-row.tabulator-selected:hover .tabulator-cell.tabulator-frozen {
-  background: var(--accent-warning-hover, #FB8C00) !important;
-}
-
-#lookups-parent-table-container.lookups-parent-edit-mode .lookups-parent-selector-edit,
-#lookups-child-table-container.lookups-child-edit-mode .lookups-child-selector-edit {
-  color: #1a1a1a;
-}
-
-#lookups-parent-table-container.lookups-parent-edit-mode .tabulator-row.tabulator-selected .tabulator-cell,
-#lookups-child-table-container.lookups-child-edit-mode .tabulator-row.tabulator-selected .tabulator-cell {
-  cursor: text;
-}
-
-/* ── Syntax Highlighting for Preview ─────────────────────────────────────── */
-
-.lookups-preview-content pre {
-  background: var(--bg-tertiary);
-  border-radius: var(--border-radius-md);
-  padding: var(--space-3);
-  overflow-x: auto;
-}
-
-.lookups-preview-content pre code {
-  background: transparent;
-  padding: 0;
-  font-family: var(--font-mono);
-  font-size: var(--font-size-sm);
-}
-
-/* Highlight.js / Prism.js theme overrides for dark mode */
-.lookups-preview-content .hljs,
-.lookups-preview-content code[class*="language-"],
-.lookups-preview-content pre[class*="language-"] {
-  background: transparent;
-  color: var(--text-primary);
-}
-
-.lookups-preview-content .hljs-keyword,
-.lookups-preview-content .token.keyword {
-  color: #ff79c6;
-}
-
-.lookups-preview-content .hljs-string,
-.lookups-preview-content .token.string {
-  color: #f1fa8c;
-}
-
-.lookups-preview-content .hljs-number,
-.lookups-preview-content .token.number {
-  color: #bd93f9;
-}
-
-.lookups-preview-content .hljs-comment,
-.lookups-preview-content .token.comment {
-  color: #6272a4;
-}
-
-.lookups-preview-content .hljs-function,
-.lookups-preview-content .token.function {
-  color: #50fa7b;
-}
-
-/* ── SunEditor Customization ─────────────────────────────────────────────── */
-
-.lookups-summary-editor .sun-editor {
-  background: var(--bg-secondary);
-  border: var(--border-standard);
-  border-radius: var(--border-radius-md);
-}
-
-.lookups-summary-editor .sun-editor .se-toolbar {
-  background: var(--bg-tertiary);
-  border-bottom: var(--border-standard);
-}
-
-.lookups-summary-editor .sun-editor .se-resizing-bar {
-  background: var(--bg-tertiary);
-  border-top: var(--border-standard);
-}
-
-.lookups-summary-editor .sun-editor .se-wrapper {
-  background: var(--bg-primary);
-}
-
-.lookups-summary-editor .sun-editor .se-wrapper .se-wrapper-wysiwyg {
-  background: var(--bg-primary);
-  color: var(--text-primary);
-}
-
 /* ── Footer Controls ─────────────────────────────────────────────────────── */
 
 .lookups-footer-select {
@@ -1400,8 +383,6 @@
   border-color: var(--accent-primary);
 }
 
-/* Filler button — spans the gap between the select and right-side buttons.
-   Uses flex:1 to fill remaining space, creating visual separation. */
 .lookups-footer-filler {
   flex: 1;
   min-width: 16px;
@@ -1411,8 +392,6 @@
   border: none;
 }
 
-/* Footer datasource select — combines parent and child table options.
-   Styled to match subpanel-header-btn so it blends into the strip. */
 .lookups-footer-datasource {
   width: auto;
   height: 100%;
@@ -1426,7 +405,6 @@
   appearance: none;
   -webkit-appearance: none;
   transition: background-color var(--transition-fast);
-  /* Caret indicator on the right */
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='white'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 8px center;
@@ -1493,71 +471,86 @@
 }
 
 /* ── JsonTree.js Dark Theme Integration ───────────────────────────────────── */
-/* JsonTree.js uses .json-tree and related CSS classes.
-   These overrides integrate the editor's colors with Lithium's design tokens. */
 
-/* Ensure JsonTree fills the tab pane */
 .lookups-tab-pane #lookups-tab-json {
   padding: 0;
   width: 100%;
   height: 100%;
 }
 
-/* JsonTree container styling */
-.json-tree-container {
+/* ── Syntax Highlighting for Preview ─────────────────────────────────────── */
+
+.lookups-preview-content pre {
+  background: var(--bg-tertiary);
+  border-radius: var(--border-radius-md);
+  padding: var(--space-3);
+  overflow-x: auto;
+}
+
+.lookups-preview-content pre code {
+  background: transparent;
+  padding: 0;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+}
+
+.lookups-preview-content .hljs,
+.lookups-preview-content code[class*="language-"],
+.lookups-preview-content pre[class*="language-"] {
+  background: transparent;
+  color: var(--text-primary);
+}
+
+.lookups-preview-content .hljs-keyword,
+.lookups-preview-content .token.keyword {
+  color: #ff79c6;
+}
+
+.lookups-preview-content .hljs-string,
+.lookups-preview-content .token.string {
+  color: #f1fa8c;
+}
+
+.lookups-preview-content .hljs-number,
+.lookups-preview-content .token.number {
+  color: #bd93f9;
+}
+
+.lookups-preview-content .hljs-comment,
+.lookups-preview-content .token.comment {
+  color: #6272a4;
+}
+
+.lookups-preview-content .hljs-function,
+.lookups-preview-content .token.function {
+  color: #50fa7b;
+}
+
+/* ── SunEditor Customization ─────────────────────────────────────────────── */
+
+.lookups-summary-editor .sun-editor {
   background: var(--bg-secondary);
   border: var(--border-standard);
   border-radius: var(--border-radius-md);
-  padding: var(--space-3);
-  height: 100%;
-  overflow: auto;
 }
 
-/* Override JsonTree.js default styles for dark theme integration */
-.json-tree-container .json-tree {
-  font-family: var(--font-mono);
-  font-size: var(--font-size-sm);
+.lookups-summary-editor .sun-editor .se-toolbar {
+  background: var(--bg-tertiary);
+  border-bottom: var(--border-standard);
+}
+
+.lookups-summary-editor .sun-editor .se-resizing-bar {
+  background: var(--bg-tertiary);
+  border-top: var(--border-standard);
+}
+
+.lookups-summary-editor .sun-editor .se-wrapper {
+  background: var(--bg-primary);
+}
+
+.lookups-summary-editor .sun-editor .se-wrapper .se-wrapper-wysiwyg {
+  background: var(--bg-primary);
   color: var(--text-primary);
 }
 
-/* JsonTree key names */
-.json-tree-container .json-tree-key {
-  color: var(--text-primary);
-}
-
-/* JsonTree value types */
-.json-tree-container .json-tree-value-string {
-  color: #a5d6a7;
-}
-
-.json-tree-container .json-tree-value-number {
-  color: #81d4fa;
-}
-
-.json-tree-container .json-tree-value-boolean {
-  color: #ffcc80;
-  font-weight: 500;
-}
-
-.json-tree-container .json-tree-value-null {
-  color: #ef9a9a;
-}
-
-/* JsonTree expand/collapse buttons */
-.json-tree-container .json-tree-expand,
-.json-tree-container .json-tree-collapse {
-  color: var(--accent-primary);
-  cursor: pointer;
-}
-
-.json-tree-container .json-tree-expand:hover,
-.json-tree-container .json-tree-collapse:hover {
-  color: var(--accent-hover);
-}
-
-/* JsonTree brackets */
-.json-tree-container .json-tree-bracket {
-  color: var(--text-secondary);
-}
-
-} /* end @layer vendor-fixes */
+} /* end @layer managers */

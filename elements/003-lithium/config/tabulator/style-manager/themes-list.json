@@ -1,0 +1,117 @@
+{
+  "$schema": "../tabledef-schema.json",
+  "$version": "1.0.0",
+  "$description": "Column definitions for the Themes List table (parent table in Style Manager). Shows all available themes.",
+
+  "table": "themes-list",
+  "title": "Themes List",
+  "queryRef": 50,
+  "searchQueryRef": 51,
+  "readonly": false,
+  "selectableRows": 1,
+  "layout": "fitColumns",
+  "responsiveLayout": "collapse",
+  "resizableColumns": true,
+  "persistSort": true,
+  "persistFilter": true,
+  "initialSort": [
+    { "column": "name", "dir": "asc" }
+  ],
+
+  "columns": {
+
+    "theme_id": {
+      "display": "ID#",
+      "field": "theme_id",
+      "coltype": "index",
+      "visible": false,
+      "sort": true,
+      "filter": true,
+      "group": false,
+      "editable": false,
+      "calculated": false,
+      "primaryKey": true,
+      "description": "Database primary key — hidden from display",
+      "overrides": {
+        "bottomCalc": null
+      }
+    },
+
+    "name": {
+      "display": "Name",
+      "field": "name",
+      "coltype": "string",
+      "visible": true,
+      "sort": true,
+      "filter": true,
+      "group": false,
+      "editable": true,
+      "calculated": false,
+      "primaryKey": false,
+      "description": "Theme display name"
+    },
+
+    "owner_name": {
+      "display": "Owner",
+      "field": "owner_name",
+      "coltype": "string",
+      "visible": true,
+      "sort": true,
+      "filter": true,
+      "group": false,
+      "editable": false,
+      "calculated": true,
+      "primaryKey": false,
+      "description": "Theme owner username"
+    },
+
+    "is_public": {
+      "display": "Public",
+      "field": "is_public",
+      "coltype": "boolean",
+      "visible": true,
+      "sort": true,
+      "filter": true,
+      "group": false,
+      "editable": true,
+      "calculated": false,
+      "primaryKey": false,
+      "description": "Whether theme is publicly visible"
+    },
+
+    "created_at": {
+      "display": "Created",
+      "field": "created_at",
+      "coltype": "datetime",
+      "visible": false,
+      "sort": true,
+      "filter": true,
+      "group": false,
+      "editable": false,
+      "calculated": true,
+      "primaryKey": false,
+      "description": "Record creation timestamp",
+      "overrides": {
+        "bottomCalc": "count",
+        "bottomCalcFormatter": "number",
+        "bottomCalcFormatterParams": {
+          "thousand": ""
+        }
+      }
+    },
+
+    "updated_at": {
+      "display": "Updated",
+      "field": "updated_at",
+      "coltype": "datetime",
+      "visible": true,
+      "sort": true,
+      "filter": true,
+      "group": false,
+      "editable": false,
+      "calculated": true,
+      "primaryKey": false,
+      "description": "Last modification timestamp"
+    }
+  }
+}

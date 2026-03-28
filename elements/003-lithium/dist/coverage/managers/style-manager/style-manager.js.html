@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><title>Code coverage report for managers/style-manager/style-manager.js</title><meta charset="utf-8"><link rel="stylesheet" href="../../prettify.css"><link rel="stylesheet" href="../../base.css"><link rel="shortcut icon" type="image/x-icon" href="../../favicon.png"><meta name="viewport" content="width=device-width,initial-scale=1"><style type="text/css">.coverage-summary .sorter{background-image:url(../../sort-arrow-sprite.png)}</style></head><body><div class="wrapper"><div class="pad1"><h1><a href="../../index.html">All files</a> / <a href="index.html">managers/style-manager</a> style-manager.js</h1><div class="clearfix"><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Statements</span> <span class="fraction">0/282</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Branches</span> <span class="fraction">0/88</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Functions</span> <span class="fraction">0/60</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Lines</span> <span class="fraction">0/261</span></div></div><p class="quiet">Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.</p><template id="filterTemplate"><div class="quiet">Filter: <input type="search" id="fileSearch"></div></template></div><div class="status-line low"></div><pre><table class="coverage">
+<!doctype html><html lang="en"><head><title>Code coverage report for managers/style-manager/style-manager.js</title><meta charset="utf-8"><link rel="stylesheet" href="../../prettify.css"><link rel="stylesheet" href="../../base.css"><link rel="shortcut icon" type="image/x-icon" href="../../favicon.png"><meta name="viewport" content="width=device-width,initial-scale=1"><style type="text/css">.coverage-summary .sorter{background-image:url(../../sort-arrow-sprite.png)}</style></head><body><div class="wrapper"><div class="pad1"><h1><a href="../../index.html">All files</a> / <a href="index.html">managers/style-manager</a> style-manager.js</h1><div class="clearfix"><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Statements</span> <span class="fraction">0/492</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Branches</span> <span class="fraction">0/174</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Functions</span> <span class="fraction">0/92</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Lines</span> <span class="fraction">0/463</span></div></div><p class="quiet">Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.</p><template id="filterTemplate"><div class="quiet">Filter: <input type="search" id="fileSearch"></div></template></div><div class="status-line low"></div><pre><table class="coverage">
 <tr><td class="line-count quiet"><a name="L1"></a><a href="#L1">1</a>
 <a name="L2"></a><a href="#L2">2</a>
 <a name="L3"></a><a href="#L3">3</a>
@@ -840,7 +840,202 @@
 <a name="L839"></a><a href="#L839">839</a>
 <a name="L840"></a><a href="#L840">840</a>
 <a name="L841"></a><a href="#L841">841</a>
-<a name="L842"></a><a href="#L842">842</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name="L842"></a><a href="#L842">842</a>
+<a name="L843"></a><a href="#L843">843</a>
+<a name="L844"></a><a href="#L844">844</a>
+<a name="L845"></a><a href="#L845">845</a>
+<a name="L846"></a><a href="#L846">846</a>
+<a name="L847"></a><a href="#L847">847</a>
+<a name="L848"></a><a href="#L848">848</a>
+<a name="L849"></a><a href="#L849">849</a>
+<a name="L850"></a><a href="#L850">850</a>
+<a name="L851"></a><a href="#L851">851</a>
+<a name="L852"></a><a href="#L852">852</a>
+<a name="L853"></a><a href="#L853">853</a>
+<a name="L854"></a><a href="#L854">854</a>
+<a name="L855"></a><a href="#L855">855</a>
+<a name="L856"></a><a href="#L856">856</a>
+<a name="L857"></a><a href="#L857">857</a>
+<a name="L858"></a><a href="#L858">858</a>
+<a name="L859"></a><a href="#L859">859</a>
+<a name="L860"></a><a href="#L860">860</a>
+<a name="L861"></a><a href="#L861">861</a>
+<a name="L862"></a><a href="#L862">862</a>
+<a name="L863"></a><a href="#L863">863</a>
+<a name="L864"></a><a href="#L864">864</a>
+<a name="L865"></a><a href="#L865">865</a>
+<a name="L866"></a><a href="#L866">866</a>
+<a name="L867"></a><a href="#L867">867</a>
+<a name="L868"></a><a href="#L868">868</a>
+<a name="L869"></a><a href="#L869">869</a>
+<a name="L870"></a><a href="#L870">870</a>
+<a name="L871"></a><a href="#L871">871</a>
+<a name="L872"></a><a href="#L872">872</a>
+<a name="L873"></a><a href="#L873">873</a>
+<a name="L874"></a><a href="#L874">874</a>
+<a name="L875"></a><a href="#L875">875</a>
+<a name="L876"></a><a href="#L876">876</a>
+<a name="L877"></a><a href="#L877">877</a>
+<a name="L878"></a><a href="#L878">878</a>
+<a name="L879"></a><a href="#L879">879</a>
+<a name="L880"></a><a href="#L880">880</a>
+<a name="L881"></a><a href="#L881">881</a>
+<a name="L882"></a><a href="#L882">882</a>
+<a name="L883"></a><a href="#L883">883</a>
+<a name="L884"></a><a href="#L884">884</a>
+<a name="L885"></a><a href="#L885">885</a>
+<a name="L886"></a><a href="#L886">886</a>
+<a name="L887"></a><a href="#L887">887</a>
+<a name="L888"></a><a href="#L888">888</a>
+<a name="L889"></a><a href="#L889">889</a>
+<a name="L890"></a><a href="#L890">890</a>
+<a name="L891"></a><a href="#L891">891</a>
+<a name="L892"></a><a href="#L892">892</a>
+<a name="L893"></a><a href="#L893">893</a>
+<a name="L894"></a><a href="#L894">894</a>
+<a name="L895"></a><a href="#L895">895</a>
+<a name="L896"></a><a href="#L896">896</a>
+<a name="L897"></a><a href="#L897">897</a>
+<a name="L898"></a><a href="#L898">898</a>
+<a name="L899"></a><a href="#L899">899</a>
+<a name="L900"></a><a href="#L900">900</a>
+<a name="L901"></a><a href="#L901">901</a>
+<a name="L902"></a><a href="#L902">902</a>
+<a name="L903"></a><a href="#L903">903</a>
+<a name="L904"></a><a href="#L904">904</a>
+<a name="L905"></a><a href="#L905">905</a>
+<a name="L906"></a><a href="#L906">906</a>
+<a name="L907"></a><a href="#L907">907</a>
+<a name="L908"></a><a href="#L908">908</a>
+<a name="L909"></a><a href="#L909">909</a>
+<a name="L910"></a><a href="#L910">910</a>
+<a name="L911"></a><a href="#L911">911</a>
+<a name="L912"></a><a href="#L912">912</a>
+<a name="L913"></a><a href="#L913">913</a>
+<a name="L914"></a><a href="#L914">914</a>
+<a name="L915"></a><a href="#L915">915</a>
+<a name="L916"></a><a href="#L916">916</a>
+<a name="L917"></a><a href="#L917">917</a>
+<a name="L918"></a><a href="#L918">918</a>
+<a name="L919"></a><a href="#L919">919</a>
+<a name="L920"></a><a href="#L920">920</a>
+<a name="L921"></a><a href="#L921">921</a>
+<a name="L922"></a><a href="#L922">922</a>
+<a name="L923"></a><a href="#L923">923</a>
+<a name="L924"></a><a href="#L924">924</a>
+<a name="L925"></a><a href="#L925">925</a>
+<a name="L926"></a><a href="#L926">926</a>
+<a name="L927"></a><a href="#L927">927</a>
+<a name="L928"></a><a href="#L928">928</a>
+<a name="L929"></a><a href="#L929">929</a>
+<a name="L930"></a><a href="#L930">930</a>
+<a name="L931"></a><a href="#L931">931</a>
+<a name="L932"></a><a href="#L932">932</a>
+<a name="L933"></a><a href="#L933">933</a>
+<a name="L934"></a><a href="#L934">934</a>
+<a name="L935"></a><a href="#L935">935</a>
+<a name="L936"></a><a href="#L936">936</a>
+<a name="L937"></a><a href="#L937">937</a>
+<a name="L938"></a><a href="#L938">938</a>
+<a name="L939"></a><a href="#L939">939</a>
+<a name="L940"></a><a href="#L940">940</a>
+<a name="L941"></a><a href="#L941">941</a>
+<a name="L942"></a><a href="#L942">942</a>
+<a name="L943"></a><a href="#L943">943</a>
+<a name="L944"></a><a href="#L944">944</a>
+<a name="L945"></a><a href="#L945">945</a>
+<a name="L946"></a><a href="#L946">946</a>
+<a name="L947"></a><a href="#L947">947</a>
+<a name="L948"></a><a href="#L948">948</a>
+<a name="L949"></a><a href="#L949">949</a>
+<a name="L950"></a><a href="#L950">950</a>
+<a name="L951"></a><a href="#L951">951</a>
+<a name="L952"></a><a href="#L952">952</a>
+<a name="L953"></a><a href="#L953">953</a>
+<a name="L954"></a><a href="#L954">954</a>
+<a name="L955"></a><a href="#L955">955</a>
+<a name="L956"></a><a href="#L956">956</a>
+<a name="L957"></a><a href="#L957">957</a>
+<a name="L958"></a><a href="#L958">958</a>
+<a name="L959"></a><a href="#L959">959</a>
+<a name="L960"></a><a href="#L960">960</a>
+<a name="L961"></a><a href="#L961">961</a>
+<a name="L962"></a><a href="#L962">962</a>
+<a name="L963"></a><a href="#L963">963</a>
+<a name="L964"></a><a href="#L964">964</a>
+<a name="L965"></a><a href="#L965">965</a>
+<a name="L966"></a><a href="#L966">966</a>
+<a name="L967"></a><a href="#L967">967</a>
+<a name="L968"></a><a href="#L968">968</a>
+<a name="L969"></a><a href="#L969">969</a>
+<a name="L970"></a><a href="#L970">970</a>
+<a name="L971"></a><a href="#L971">971</a>
+<a name="L972"></a><a href="#L972">972</a>
+<a name="L973"></a><a href="#L973">973</a>
+<a name="L974"></a><a href="#L974">974</a>
+<a name="L975"></a><a href="#L975">975</a>
+<a name="L976"></a><a href="#L976">976</a>
+<a name="L977"></a><a href="#L977">977</a>
+<a name="L978"></a><a href="#L978">978</a>
+<a name="L979"></a><a href="#L979">979</a>
+<a name="L980"></a><a href="#L980">980</a>
+<a name="L981"></a><a href="#L981">981</a>
+<a name="L982"></a><a href="#L982">982</a>
+<a name="L983"></a><a href="#L983">983</a>
+<a name="L984"></a><a href="#L984">984</a>
+<a name="L985"></a><a href="#L985">985</a>
+<a name="L986"></a><a href="#L986">986</a>
+<a name="L987"></a><a href="#L987">987</a>
+<a name="L988"></a><a href="#L988">988</a>
+<a name="L989"></a><a href="#L989">989</a>
+<a name="L990"></a><a href="#L990">990</a>
+<a name="L991"></a><a href="#L991">991</a>
+<a name="L992"></a><a href="#L992">992</a>
+<a name="L993"></a><a href="#L993">993</a>
+<a name="L994"></a><a href="#L994">994</a>
+<a name="L995"></a><a href="#L995">995</a>
+<a name="L996"></a><a href="#L996">996</a>
+<a name="L997"></a><a href="#L997">997</a>
+<a name="L998"></a><a href="#L998">998</a>
+<a name="L999"></a><a href="#L999">999</a>
+<a name="L1000"></a><a href="#L1000">1000</a>
+<a name="L1001"></a><a href="#L1001">1001</a>
+<a name="L1002"></a><a href="#L1002">1002</a>
+<a name="L1003"></a><a href="#L1003">1003</a>
+<a name="L1004"></a><a href="#L1004">1004</a>
+<a name="L1005"></a><a href="#L1005">1005</a>
+<a name="L1006"></a><a href="#L1006">1006</a>
+<a name="L1007"></a><a href="#L1007">1007</a>
+<a name="L1008"></a><a href="#L1008">1008</a>
+<a name="L1009"></a><a href="#L1009">1009</a>
+<a name="L1010"></a><a href="#L1010">1010</a>
+<a name="L1011"></a><a href="#L1011">1011</a>
+<a name="L1012"></a><a href="#L1012">1012</a>
+<a name="L1013"></a><a href="#L1013">1013</a>
+<a name="L1014"></a><a href="#L1014">1014</a>
+<a name="L1015"></a><a href="#L1015">1015</a>
+<a name="L1016"></a><a href="#L1016">1016</a>
+<a name="L1017"></a><a href="#L1017">1017</a>
+<a name="L1018"></a><a href="#L1018">1018</a>
+<a name="L1019"></a><a href="#L1019">1019</a>
+<a name="L1020"></a><a href="#L1020">1020</a>
+<a name="L1021"></a><a href="#L1021">1021</a>
+<a name="L1022"></a><a href="#L1022">1022</a>
+<a name="L1023"></a><a href="#L1023">1023</a>
+<a name="L1024"></a><a href="#L1024">1024</a>
+<a name="L1025"></a><a href="#L1025">1025</a>
+<a name="L1026"></a><a href="#L1026">1026</a>
+<a name="L1027"></a><a href="#L1027">1027</a>
+<a name="L1028"></a><a href="#L1028">1028</a>
+<a name="L1029"></a><a href="#L1029">1029</a>
+<a name="L1030"></a><a href="#L1030">1030</a>
+<a name="L1031"></a><a href="#L1031">1031</a>
+<a name="L1032"></a><a href="#L1032">1032</a>
+<a name="L1033"></a><a href="#L1033">1033</a>
+<a name="L1034"></a><a href="#L1034">1034</a>
+<a name="L1035"></a><a href="#L1035">1035</a>
+<a name="L1036"></a><a href="#L1036">1036</a>
+<a name="L1037"></a><a href="#L1037">1037</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -861,16 +1056,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -881,13 +1067,12 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -899,35 +1084,44 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -937,17 +1131,23 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -971,6 +1171,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -978,12 +1179,15 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -992,84 +1196,77 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1079,15 +1276,21 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1098,14 +1301,21 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1115,30 +1325,42 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1156,22 +1378,35 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1180,8 +1415,12 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1192,7 +1431,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1201,41 +1439,52 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1243,15 +1492,13 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1259,21 +1506,25 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1285,17 +1536,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1307,109 +1550,162 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1417,46 +1713,67 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1465,21 +1782,36 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1487,114 +1819,138 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1603,43 +1959,63 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1654,126 +2030,148 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">/**
- * Style Manager
- * 
- * Theme management: create, edit, apply, and share user themes.
- * Implements List View with Tabulator and CSS View with CodeMirror.
+ * Style Manager — Manager ID 1
+ *
+ * A three-panel interface for managing themes and their CSS sections:
+ * - Left panel: List of all themes (parent table)
+ * - Middle panel: CSS sections for the selected theme (child table)
+ * - Right panel: Tabbed view with CSS Editor, Variables, and Preview
+ *
+ * Uses the reusable LithiumTable component for both tables.
+ *
+ * @module managers/style-manager
  */
 &nbsp;
-import { eventBus, Events } from '../../core/event-bus.js';
+import { LithiumTable } from '../../core/lithium-table-main.js';
+import '../../styles/vendor-tabulator.css';
+import { authQuery } from '../../shared/conduit.js';
+import { toast } from '../../shared/toast.js';
+import { log, Subsystems, Status } from '../../core/log.js';
+import { processIcons } from '../../core/icons.js';
+import { setupManagerFooterIcons } from '../../core/manager-ui.js';
 import { getClaims } from '../../core/jwt.js';
-import { getConfig, getConfigValue } from '../../core/config.js';
 import { hasFeature, getFeaturesForManager } from '../../core/permissions.js';
+import '../../core/manager-panels.css';
+import './style-manager.css';
 &nbsp;
 // Dynamic imports for third-party libraries
-let Tabulator;
-let DOMPurify;
+let marked;
 &nbsp;
-/**
- * Style Manager Class
- */
+// Constants
+const SELECTED_THEME_KEY = <span class="cstat-no" title="statement not covered">'lithium_style_selected_theme_id';</span>
+&nbsp;
+// ── StyleManager Class ────────────────────────────────────────────────────
+&nbsp;
 export default class StyleManager {
 <span class="fstat-no" title="function not covered">  constructor(</span>app, container) {
 <span class="cstat-no" title="statement not covered">    this.app = app;</span>
 <span class="cstat-no" title="statement not covered">    this.container = container;</span>
 <span class="cstat-no" title="statement not covered">    this.elements = {};</span>
-<span class="cstat-no" title="statement not covered">    this.themes = [];</span>
-<span class="cstat-no" title="statement not covered">    this.currentTheme = null;</span>
-<span class="cstat-no" title="statement not covered">    this.table = null;</span>
-<span class="cstat-no" title="statement not covered">    this.editor = null;</span>
-    
+&nbsp;
     // Style Manager ID = 1
 <span class="cstat-no" title="statement not covered">    this.managerId = 1;</span>
+&nbsp;
+    // Parent table (themes list)
+<span class="cstat-no" title="statement not covered">    this.themesTable = null;</span>
+&nbsp;
+    // Child table (sections list)
+<span class="cstat-no" title="statement not covered">    this.sectionsTable = null;</span>
+&nbsp;
+    // Currently selected theme
+<span class="cstat-no" title="statement not covered">    this.selectedThemeId = null;</span>
+<span class="cstat-no" title="statement not covered">    this.selectedThemeName = null;</span>
+&nbsp;
+    // Editor instances
+<span class="cstat-no" title="statement not covered">    this.cssEditor = null;</span>
+<span class="cstat-no" title="statement not covered">    this.variablesEditor = null;</span>
+&nbsp;
+    // Splitter state
+<span class="cstat-no" title="statement not covered">    this.leftPanelWidth = 280;</span>
+<span class="cstat-no" title="statement not covered">    this.middlePanelWidth = 350;</span>
+<span class="cstat-no" title="statement not covered">    this.isLeftPanelCollapsed = false;</span>
+<span class="cstat-no" title="statement not covered">    this.isMiddlePanelCollapsed = false;</span>
+<span class="cstat-no" title="statement not covered">    this.isResizingLeft = false;</span>
+<span class="cstat-no" title="statement not covered">    this.isResizingRight = false;</span>
+&nbsp;
+    // Active tab
+<span class="cstat-no" title="statement not covered">    this.activeTab = 'css';</span>
+&nbsp;
+    // Font popup state
+<span class="cstat-no" title="statement not covered">    this.fontPopup = null;</span>
+<span class="cstat-no" title="statement not covered">    this.editorFontSize = 14;</span>
+<span class="cstat-no" title="statement not covered">    this.editorFontFamily = 'var(--font-mono)';</span>
+&nbsp;
+    // Current theme data for preview
+<span class="cstat-no" title="statement not covered">    this.currentThemeData = null;</span>
   }
 &nbsp;
-  /**
-   * Initialize the style manager
-   */
   async <span class="fstat-no" title="function not covered">init(</span>) {
-    // Load third-party libraries
 <span class="cstat-no" title="statement not covered">    await this.loadDependencies();</span>
-    
-    // Load CSS
-<span class="cstat-no" title="statement not covered">    this.loadStyles();</span>
-    
-    // Render template
 <span class="cstat-no" title="statement not covered">    await this.render();</span>
-    
-    // Setup event listeners
 <span class="cstat-no" title="statement not covered">    this.setupEventListeners();</span>
-    
-    // Apply feature-gated UI
+<span class="cstat-no" title="statement not covered">    this.setupSplitters();</span>
 <span class="cstat-no" title="statement not covered">    this.applyPermissions();</span>
-    
-    // Load themes from API (or mock data for now)
-<span class="cstat-no" title="statement not covered">    await this.loadThemes();</span>
-    
-    // Show the page
+<span class="cstat-no" title="statement not covered">    await this.initThemesTable();</span>
+<span class="cstat-no" title="statement not covered">    await this.initSectionsTable();</span>
+<span class="cstat-no" title="statement not covered">    this.setupFooter();</span>
+<span class="cstat-no" title="statement not covered">    this.setupTabs();</span>
 <span class="cstat-no" title="statement not covered">    this.show();</span>
   }
 &nbsp;
   /**
-   * Load dependencies (Tabulator, DOMPurify)
+   * Load third-party dependencies
    */
   async <span class="fstat-no" title="function not covered">loadDependencies(</span>) {
 <span class="cstat-no" title="statement not covered">    try {</span>
-      // Dynamic import Tabulator
-      const tabulatorModule = <span class="cstat-no" title="statement not covered">await import('tabulator-tables');</span>
-<span class="cstat-no" title="statement not covered">      Tabulator = tabulatorModule.default;</span>
-      
-      // Dynamic import DOMPurify
-      const dompurifyModule = <span class="cstat-no" title="statement not covered">await import('dompurify');</span>
-<span class="cstat-no" title="statement not covered">      DOMPurify = dompurifyModule.default;</span>
+      const markedModule = <span class="cstat-no" title="statement not covered">await import('marked');</span>
+<span class="cstat-no" title="statement not covered">      marked = markedModule.marked;</span>
     } catch (error) {
 <span class="cstat-no" title="statement not covered">      console.error('[StyleManager] Failed to load dependencies:', error);</span>
     }
   }
 &nbsp;
-  /**
-   * Load manager-specific CSS
-   */
-<span class="fstat-no" title="function not covered">  loadStyles(</span>) {
-    // Check if styles are already loaded
-<span class="cstat-no" title="statement not covered">    if (document.getElementById('style-manager-styles')) <span class="cstat-no" title="statement not covered">return;</span></span>
-    
-    const link = <span class="cstat-no" title="statement not covered">document.createElement('link');</span>
-<span class="cstat-no" title="statement not covered">    link.id = 'style-manager-styles';</span>
-<span class="cstat-no" title="statement not covered">    link.rel = 'stylesheet';</span>
-<span class="cstat-no" title="statement not covered">    link.href = '/src/managers/style-manager/style-manager.css';</span>
-<span class="cstat-no" title="statement not covered">    document.head.appendChild(link);</span>
-  }
-&nbsp;
-  /**
-   * Render the style manager template
-   */
   async <span class="fstat-no" title="function not covered">render(</span>) {
 <span class="cstat-no" title="statement not covered">    try {</span>
       const response = <span class="cstat-no" title="statement not covered">await fetch('/src/managers/style-manager/style-manager.html');</span>
@@ -1781,48 +2179,35 @@ export default class StyleManager {
 <span class="cstat-no" title="statement not covered">      this.container.innerHTML = html;</span>
     } catch (error) {
 <span class="cstat-no" title="statement not covered">      console.error('[StyleManager] Failed to load template:', error);</span>
-<span class="cstat-no" title="statement not covered">      this.renderFallback();</span>
+<span class="cstat-no" title="statement not covered">      this.container.innerHTML = '&lt;div class="error"&gt;Failed to load Style Manager&lt;/div&gt;';</span>
+<span class="cstat-no" title="statement not covered">      return;</span>
     }
 &nbsp;
-    // Cache DOM elements
 <span class="cstat-no" title="statement not covered">    this.elements = {</span>
-      page: this.container.querySelector('#style-manager-page'),
-      tabButtons: this.container.querySelectorAll('.tab-btn'),
-      listView: this.container.querySelector('#list-view'),
-      cssView: this.container.querySelector('#css-view'),
-      themeTable: this.container.querySelector('#theme-table'),
-      cssEditor: this.container.querySelector('#css-editor'),
-      themeSelect: this.container.querySelector('#theme-select'),
-      btnNewTheme: this.container.querySelector('#btn-new-theme'),
-      btnApplyCss: this.container.querySelector('#btn-apply-css'),
-      btnSaveCss: this.container.querySelector('#btn-save-css'),
-      themeModal: this.container.querySelector('#theme-modal'),
-      deleteModal: this.container.querySelector('#delete-modal'),
-      modalTitle: this.container.querySelector('#modal-title'),
-      modalClose: this.container.querySelector('#modal-close'),
-      themeForm: this.container.querySelector('#theme-form'),
-      themeId: this.container.querySelector('#theme-id'),
-      themeName: this.container.querySelector('#theme-name'),
-      themeVariables: this.container.querySelector('#theme-variables'),
-      themeRawCss: this.container.querySelector('#theme-raw-css'),
-      btnSaveTheme: this.container.querySelector('#btn-save-theme'),
-      btnCancelTheme: this.container.querySelector('#btn-cancel-theme'),
-      deleteThemeName: this.container.querySelector('#delete-theme-name'),
-      deleteModalClose: this.container.querySelector('#delete-modal-close'),
-      btnCancelDelete: this.container.querySelector('#btn-cancel-delete'),
-      btnConfirmDelete: this.container.querySelector('#btn-confirm-delete'),
+      container: this.container.querySelector('.style-manager-container'),
+      leftPanel: this.container.querySelector('#style-left-panel'),
+      middlePanel: this.container.querySelector('#style-middle-panel'),
+      rightPanel: this.container.querySelector('#style-right-panel'),
+      themesTableContainer: this.container.querySelector('#style-themes-table-container'),
+      themesNavigator: this.container.querySelector('#style-themes-navigator'),
+      sectionsTableContainer: this.container.querySelector('#style-sections-table-container'),
+      sectionsNavigator: this.container.querySelector('#style-sections-navigator'),
+      childTitle: this.container.querySelector('#style-child-title'),
+      splitterLeft: this.container.querySelector('#style-splitter-left'),
+      splitterRight: this.container.querySelector('#style-splitter-right'),
+      collapseLeftBtn: this.container.querySelector('#style-collapse-left-btn'),
+      collapseMiddleBtn: this.container.querySelector('#style-collapse-middle-btn'),
+      collapseLeftIcon: this.container.querySelector('#style-collapse-left-icon'),
+      collapseMiddleIcon: this.container.querySelector('#style-collapse-middle-icon'),
+      fontBtn: this.container.querySelector('#style-font-btn'),
+      tabBtns: this.container.querySelectorAll('.tab-btn'),
+      tabPanes: this.container.querySelectorAll('.tab-pane'),
+      cssEditor: this.container.querySelector('#style-css-editor'),
+      variablesEditor: this.container.querySelector('#style-variables-editor'),
+      previewContent: this.container.querySelector('#style-preview-content'),
     };
-  }
 &nbsp;
-  /**
-   * Render fallback if template fails
-   */
-<span class="fstat-no" title="function not covered">  renderFallback(</span>) {
-<span class="cstat-no" title="statement not covered">    this.container.innerHTML = `</span>
-      &lt;div id="style-manager-page"&gt;
-        &lt;p&gt;Style Manager loading...&lt;/p&gt;
-      &lt;/div&gt;
-    `;
+<span class="cstat-no" title="statement not covered">    processIcons(this.container);</span>
   }
 &nbsp;
   /**
@@ -1831,305 +2216,242 @@ export default class StyleManager {
 <span class="fstat-no" title="function not covered">  applyPermissions(</span>) {
     const claims =<span class="cstat-no" title="statement not covered"> getClaims();</span>
     const features =<span class="cstat-no" title="statement not covered"> getFeaturesForManager(this.managerId, claims?.punchcard);</span>
-    
-    // Feature 1: View all styles (read-only) - always show
-    // Feature 2: Edit all styles - controls New/Edit buttons
+&nbsp;
+    // Feature 1: View all styles (read-only)
+    // Feature 2: Edit all styles
     const canEdit =<span class="cstat-no" title="statement not covered"> hasFeature(this.managerId, 2, claims?.punchcard);</span>
-    // Feature 4: Use CSS code editor - controls CSS View tab
-    const canUseCssEditor =<span class="cstat-no" title="statement not covered"> hasFeature(this.managerId, 4, claims?.punchcard);</span>
-    // Feature 5: Delete themes - controls Delete button
+    // Feature 5: Delete themes
     const canDelete =<span class="cstat-no" title="statement not covered"> hasFeature(this.managerId, 5, claims?.punchcard);</span>
-    
-    // Store permissions for use in actions
-<span class="cstat-no" title="statement not covered">    this.permissions = { canEdit, canUseCssEditor, canDelete };</span>
-    
-    // Show/hide elements based on permissions
-<span class="cstat-no" title="statement not covered">    if (!canEdit) {</span>
-<span class="cstat-no" title="statement not covered">      this.elements.btnNewTheme?.classList.add('hidden');</span>
-    }
-    
-<span class="cstat-no" title="statement not covered">    if (!canUseCssEditor) {</span>
-      const cssTab = <span class="cstat-no" title="statement not covered">this.container.querySelector('[data-view="css"]');</span>
-<span class="cstat-no" title="statement not covered">      cssTab?.classList.add('hidden');</span>
-    }
-    
-    // Store canDelete for table row actions
-<span class="cstat-no" title="statement not covered">    this.canDelete = canDelete;</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    this.permissions = { canEdit, canDelete };</span>
   }
 &nbsp;
-  /**
-   * Set up event listeners
-   */
 <span class="fstat-no" title="function not covered">  setupEventListeners(</span>) {
-    // Tab switching
-<span class="cstat-no" title="statement not covered">    this.elements.tabButtons?.forEach(<span class="fstat-no" title="function not covered">(b</span>tn) =&gt; {</span>
-<span class="cstat-no" title="statement not covered">      btn.addEventListener('click', <span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
-        const view = <span class="cstat-no" title="statement not covered">btn.dataset.view;</span>
-<span class="cstat-no" title="statement not covered">        this.switchView(view);</span>
-      });
+    // Collapse/expand buttons
+<span class="cstat-no" title="statement not covered">    this.elements.collapseLeftBtn?.addEventListener('click', <span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered">      this.toggleLeftPanel();</span>
     });
 &nbsp;
-    // New theme button
-<span class="cstat-no" title="statement not covered">    this.elements.btnNewTheme?.addEventListener('click', <span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
-<span class="cstat-no" title="statement not covered">      this.openThemeModal();</span>
+<span class="cstat-no" title="statement not covered">    this.elements.collapseMiddleBtn?.addEventListener('click', <span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered">      this.toggleMiddlePanel();</span>
     });
 &nbsp;
-    // Apply CSS button
-<span class="cstat-no" title="statement not covered">    this.elements.btnApplyCss?.addEventListener('click', <span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
-<span class="cstat-no" title="statement not covered">      this.applyCurrentCss();</span>
+    // Font button
+<span class="cstat-no" title="statement not covered">    this.elements.fontBtn?.addEventListener('click', <span class="fstat-no" title="function not covered">(e</span>) =&gt; {</span>
+<span class="cstat-no" title="statement not covered">      this.toggleFontPopup(e);</span>
     });
 &nbsp;
-    // Save CSS button
-<span class="cstat-no" title="statement not covered">    this.elements.btnSaveCss?.addEventListener('click', <span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
-<span class="cstat-no" title="statement not covered">      this.saveCss();</span>
-    });
-&nbsp;
-    // Theme select change
-<span class="cstat-no" title="statement not covered">    this.elements.themeSelect?.addEventListener('change', <span class="fstat-no" title="function not covered">(e</span>) =&gt; {</span>
-<span class="cstat-no" title="statement not covered">      this.loadThemeForEditor(e.target.value);</span>
-    });
-&nbsp;
-    // Modal: Close buttons
-<span class="cstat-no" title="statement not covered">    this.elements.modalClose?.addEventListener('click', <span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
-<span class="cstat-no" title="statement not covered">      this.closeThemeModal();</span>
-    });
-&nbsp;
-<span class="cstat-no" title="statement not covered">    this.elements.btnCancelTheme?.addEventListener('click', <span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
-<span class="cstat-no" title="statement not covered">      this.closeThemeModal();</span>
-    });
-&nbsp;
-<span class="cstat-no" title="statement not covered">    this.elements.btnSaveTheme?.addEventListener('click', <span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
-<span class="cstat-no" title="statement not covered">      this.saveTheme();</span>
-    });
-&nbsp;
-    // Modal overlay click
-<span class="cstat-no" title="statement not covered">    this.elements.themeModal?.querySelector('.modal-overlay')?.addEventListener('click', <span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
-<span class="cstat-no" title="statement not covered">      this.closeThemeModal();</span>
-    });
-&nbsp;
-    // Delete modal
-<span class="cstat-no" title="statement not covered">    this.elements.deleteModalClose?.addEventListener('click', <span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
-<span class="cstat-no" title="statement not covered">      this.closeDeleteModal();</span>
-    });
-&nbsp;
-<span class="cstat-no" title="statement not covered">    this.elements.btnCancelDelete?.addEventListener('click', <span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
-<span class="cstat-no" title="statement not covered">      this.closeDeleteModal();</span>
-    });
-&nbsp;
-<span class="cstat-no" title="statement not covered">    this.elements.btnConfirmDelete?.addEventListener('click', <span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
-<span class="cstat-no" title="statement not covered">      this.confirmDelete();</span>
-    });
-&nbsp;
-<span class="cstat-no" title="statement not covered">    this.elements.deleteModal?.querySelector('.modal-overlay')?.addEventListener('click', <span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
-<span class="cstat-no" title="statement not covered">      this.closeDeleteModal();</span>
-    });
+<span class="cstat-no" title="statement not covered">    this.initFontPopup();</span>
   }
 &nbsp;
-  /**
-   * Switch between views
-   */
-<span class="fstat-no" title="function not covered">  switchView(</span>view) {
-    // Update tab buttons
-<span class="cstat-no" title="statement not covered">    this.elements.tabButtons?.forEach(<span class="fstat-no" title="function not covered">(b</span>tn) =&gt; {</span>
-<span class="cstat-no" title="statement not covered">      btn.classList.toggle('active', btn.dataset.view === view);</span>
+  // ── Themes Table (Parent) ──────────────────────────────────────────────────
+&nbsp;
+  async <span class="fstat-no" title="function not covered">initThemesTable(</span>) {
+<span class="cstat-no" title="statement not covered">    if (!this.elements.themesTableContainer || !this.elements.themesNavigator) <span class="cstat-no" title="statement not covered">return;</span></span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    this.themesTable = new LithiumTable({</span>
+      container: this.elements.themesTableContainer,
+      navigatorContainer: this.elements.themesNavigator,
+      tablePath: 'style-manager/themes-list',
+      queryRef: 50, // Theme List
+      searchQueryRef: 51, // Theme Search
+      cssPrefix: 'style-parent',
+      storageKey: 'style_themes_table',
+      app: this.app,
+      readonly: false,
+      onRowSelected: <span class="fstat-no" title="function not covered">(r</span>owData) =&gt; <span class="cstat-no" title="statement not covered">this.handleThemeSelected(rowData),</span>
+      onRowDeselected: <span class="fstat-no" title="function not covered">()</span> =&gt; <span class="cstat-no" title="statement not covered">this.handleThemeDeselected(),</span>
+      onDataLoaded: <span class="fstat-no" title="function not covered">(r</span>ows) =&gt; {
+<span class="cstat-no" title="statement not covered">        log(Subsystems.TABLE, Status.INFO, `[Style] Loaded ${rows.length} themes`);</span>
+      },
     });
 &nbsp;
-    // Update view visibility
-<span class="cstat-no" title="statement not covered">    this.elements.listView?.classList.toggle('hidden', view !== 'list');</span>
-<span class="cstat-no" title="statement not covered">    this.elements.cssView?.classList.toggle('hidden', view !== 'css');</span>
+<span class="cstat-no" title="statement not covered">    await this.themesTable.init();</span>
+<span class="cstat-no" title="statement not covered">    await this.themesTable.loadData();</span>
+  }
 &nbsp;
-    // Initialize CodeMirror when switching to CSS view
-<span class="cstat-no" title="statement not covered">    if (view === 'css' &amp;&amp; !this.editor) {</span>
-<span class="cstat-no" title="statement not covered">      this.initCodeMirror();</span>
+  // ── Sections Table (Child) ─────────────────────────────────────────────────
+&nbsp;
+  async <span class="fstat-no" title="function not covered">initSectionsTable(</span>) {
+<span class="cstat-no" title="statement not covered">    if (!this.elements.sectionsTableContainer || !this.elements.sectionsNavigator) <span class="cstat-no" title="statement not covered">return;</span></span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    this.sectionsTable = new LithiumTable({</span>
+      container: this.elements.sectionsTableContainer,
+      navigatorContainer: this.elements.sectionsNavigator,
+      tablePath: 'style-manager/sections-list',
+      queryRef: 52, // Sections List (requires THEMEID param)
+      cssPrefix: 'style-child',
+      storageKey: 'style_sections_table',
+      app: this.app,
+      readonly: false,
+      onRowSelected: <span class="fstat-no" title="function not covered">(r</span>owData) =&gt; <span class="cstat-no" title="statement not covered">this.handleSectionSelected(rowData),</span>
+      onRowDeselected: <span class="fstat-no" title="function not covered">()</span> =&gt; <span class="cstat-no" title="statement not covered">this.handleSectionDeselected(),</span>
+      onDataLoaded: <span class="fstat-no" title="function not covered">(r</span>ows) =&gt; {
+<span class="cstat-no" title="statement not covered">        log(Subsystems.TABLE, Status.INFO, `[Style] Loaded ${rows.length} sections`);</span>
+      },
+    });
+&nbsp;
+<span class="cstat-no" title="statement not covered">    await this.sectionsTable.init();</span>
+  }
+&nbsp;
+  // ── Parent/Child Relationship ──────────────────────────────────────────────
+&nbsp;
+  async <span class="fstat-no" title="function not covered">handleThemeSelected(</span>rowData) {
+<span class="cstat-no" title="statement not covered">    if (!rowData) <span class="cstat-no" title="statement not covered">return;</span></span>
+&nbsp;
+    const themeId = <span class="cstat-no" title="statement not covered">rowData.theme_id;</span>
+    const themeName = <span class="cstat-no" title="statement not covered">rowData.name;</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    if (!themeId) <span class="cstat-no" title="statement not covered">return;</span></span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    this.selectedThemeId = themeId;</span>
+<span class="cstat-no" title="statement not covered">    this.selectedThemeName = themeName;</span>
+&nbsp;
+    // Update child table title
+<span class="cstat-no" title="statement not covered">    if (this.elements.childTitle) {</span>
+<span class="cstat-no" title="statement not covered">      this.elements.childTitle.textContent = themeName</span>
+        ? `${themeName} (${themeId})`
+        : `Theme ${themeId}`;
+    }
+&nbsp;
+    // Persist selection
+<span class="cstat-no" title="statement not covered">    try { <span class="cstat-no" title="statement not covered">localStorage.setItem(SELECTED_THEME_KEY, String(themeId)); </span>} catch (_e) { /* ignore */ }</span>
+&nbsp;
+    // Load child data for this theme
+<span class="cstat-no" title="statement not covered">    await this.loadSectionsData(themeId);</span>
+&nbsp;
+    // Load theme details for preview
+<span class="cstat-no" title="statement not covered">    await this.loadThemeDetails(themeId);</span>
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered">  handleThemeDeselected(</span>) {
+<span class="cstat-no" title="statement not covered">    this.selectedThemeId = null;</span>
+<span class="cstat-no" title="statement not covered">    this.selectedThemeName = null;</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    if (this.elements.childTitle) {</span>
+<span class="cstat-no" title="statement not covered">      this.elements.childTitle.textContent = 'Select a Theme';</span>
+    }
+&nbsp;
+    // Clear child table data
+<span class="cstat-no" title="statement not covered">    if (this.sectionsTable?.table) {</span>
+<span class="cstat-no" title="statement not covered">      this.sectionsTable.table.setData([]);</span>
+    }
+&nbsp;
+    // Clear detail view
+<span class="cstat-no" title="statement not covered">    this.clearDetailView();</span>
+  }
+&nbsp;
+  async <span class="fstat-no" title="function not covered">loadSectionsData(</span>themeId) {
+<span class="cstat-no" title="statement not covered">    if (!this.sectionsTable || !this.app?.api) <span class="cstat-no" title="statement not covered">return;</span></span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    try {</span>
+<span class="cstat-no" title="statement not covered">      this.sectionsTable.showLoading();</span>
+&nbsp;
+      const rows = <span class="cstat-no" title="statement not covered">await authQuery(this.app.api, 52, {</span>
+        INTEGER: { THEMEID: themeId },
+      });
+&nbsp;
+<span class="cstat-no" title="statement not covered">      if (!this.sectionsTable.table) <span class="cstat-no" title="statement not covered">return;</span></span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">      this.sectionsTable.table.blockRedraw?.();</span>
+<span class="cstat-no" title="statement not covered">      try {</span>
+<span class="cstat-no" title="statement not covered">        this.sectionsTable.table.setData(rows);</span>
+<span class="cstat-no" title="statement not covered">        this.sectionsTable.discoverColumns(rows);</span>
+      } finally {
+<span class="cstat-no" title="statement not covered">        this.sectionsTable.table.restoreRedraw?.();</span>
+      }
+&nbsp;
+      // Auto-select first row if any
+<span class="cstat-no" title="statement not covered">      requestAnimationFrame(<span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
+        const activeRows = <span class="cstat-no" title="statement not covered">this.sectionsTable.table.getRows('active');</span>
+<span class="cstat-no" title="statement not covered">        if (activeRows.length &gt; 0) {</span>
+<span class="cstat-no" title="statement not covered">          activeRows[0].select();</span>
+        }
+<span class="cstat-no" title="statement not covered">        this.sectionsTable.updateMoveButtonState();</span>
+      });
+&nbsp;
+<span class="cstat-no" title="statement not covered">      log(Subsystems.TABLE, Status.INFO, `[Style] Loaded ${rows.length} sections for theme ${themeId}`);</span>
+    } catch (error) {
+<span class="cstat-no" title="statement not covered">      toast.error('Failed to load theme sections', {</span>
+        serverError: error.serverError,
+        subsystem: 'Conduit',
+        duration: 6000,
+      });
+    } finally {
+<span class="cstat-no" title="statement not covered">      this.sectionsTable.hideLoading();</span>
     }
   }
 &nbsp;
-  /**
-   * Load themes from API (or use mock data)
-   */
-  async <span class="fstat-no" title="function not covered">loadThemes(</span>) {
-<span class="cstat-no" title="statement not covered">    try {</span>
-      const config =<span class="cstat-no" title="statement not covered"> getConfig();</span>
-      const serverUrl =<span class="cstat-no" title="statement not covered"> getConfigValue('server.url', 'http://localhost:8080');</span>
-      const apiPrefix =<span class="cstat-no" title="statement not covered"> getConfigValue('server.api_prefix', '/api');</span>
+  async <span class="fstat-no" title="function not covered">loadThemeDetails(</span>themeId) {
+<span class="cstat-no" title="statement not covered">    if (!this.app?.api) <span class="cstat-no" title="statement not covered">return;</span></span>
 &nbsp;
-      const response = <span class="cstat-no" title="statement not covered">await fetch(`${serverUrl}${apiPrefix}/themes`, {</span>
-        headers: {
-          'Accept': 'application/json',
-        },
+<span class="cstat-no" title="statement not covered">    try {</span>
+      // QueryRef 53: Get single theme details
+      const detail = <span class="cstat-no" title="statement not covered">await authQuery(this.app.api, 53, {</span>
+        INTEGER: { THEMEID: themeId },
       });
 &nbsp;
-<span class="cstat-no" title="statement not covered">      if (response.ok) {</span>
-<span class="cstat-no" title="statement not covered">        this.themes = await response.json();</span>
-      } else {
-        // Use mock data if API fails
-<span class="cstat-no" title="statement not covered">        this.themes = this.getMockThemes();</span>
+<span class="cstat-no" title="statement not covered">      if (detail &amp;&amp; detail.length &gt; 0) {</span>
+<span class="cstat-no" title="statement not covered">        this.currentThemeData = detail[0];</span>
+<span class="cstat-no" title="statement not covered">        this.updatePreview();</span>
       }
     } catch (error) {
-<span class="cstat-no" title="statement not covered">      console.warn('[StyleManager] Failed to fetch themes, using mock data:', error);</span>
-<span class="cstat-no" title="statement not covered">      this.themes = this.getMockThemes();</span>
+<span class="cstat-no" title="statement not covered">      log(Subsystems.TABLE, Status.ERROR, `[Style] Failed to load theme details: ${error.message}`);</span>
+    }
+  }
+&nbsp;
+  // ── Child Table Handlers ───────────────────────────────────────────────────
+&nbsp;
+<span class="fstat-no" title="function not covered">  handleSectionSelected(</span>_rowData) {
+    // Future: Load section CSS into editor when row is selected
+    // This would populate the CSS editor with the section's CSS rules
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered">  handleSectionDeselected(</span>) {
+    // Clear section editor
+  }
+&nbsp;
+  // ── Tab System ─────────────────────────────────────────────────────────────
+&nbsp;
+<span class="fstat-no" title="function not covered">  setupTabs(</span>) {
+<span class="cstat-no" title="statement not covered">    this.elements.tabBtns?.forEach(<span class="fstat-no" title="function not covered">btn </span>=&gt; {</span>
+<span class="cstat-no" title="statement not covered">      btn.addEventListener('click', <span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
+        const tabId = <span class="cstat-no" title="statement not covered">btn.dataset.tab;</span>
+<span class="cstat-no" title="statement not covered">        this.switchTab(tabId);</span>
+      });
+    });
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered">  switchTab(</span>tabId) {
+<span class="cstat-no" title="statement not covered">    this.activeTab = tabId;</span>
+&nbsp;
+    // Update buttons
+<span class="cstat-no" title="statement not covered">    this.elements.tabBtns.forEach(<span class="fstat-no" title="function not covered">btn </span>=&gt; {</span>
+<span class="cstat-no" title="statement not covered">      btn.classList.toggle('active', btn.dataset.tab === tabId);</span>
+    });
+&nbsp;
+    // Update panes
+<span class="cstat-no" title="statement not covered">    this.elements.tabPanes.forEach(<span class="fstat-no" title="function not covered">pane </span>=&gt; {</span>
+<span class="cstat-no" title="statement not covered">      pane.classList.toggle('active', pane.id === `style-tab-${tabId}`);</span>
+    });
+&nbsp;
+    // Initialize CodeMirror when switching to CSS view
+<span class="cstat-no" title="statement not covered">    if (tabId === 'css' &amp;&amp; !this.cssEditor) {</span>
+<span class="cstat-no" title="statement not covered">      this.initCssEditor();</span>
     }
 &nbsp;
-<span class="cstat-no" title="statement not covered">    this.renderThemeTable();</span>
-<span class="cstat-no" title="statement not covered">    this.populateThemeSelect();</span>
+    // Refresh preview if switching to preview tab
+<span class="cstat-no" title="statement not covered">    if (tabId === 'preview') {</span>
+<span class="cstat-no" title="statement not covered">      this.updatePreview();</span>
+    }
   }
 &nbsp;
-  /**
-   * Get mock themes for development
-   */
-<span class="fstat-no" title="function not covered">  getMockThemes(</span>) {
-<span class="cstat-no" title="statement not covered">    return [</span>
-      {
-        id: 1,
-        name: 'Midnight Indigo',
-        owner_id: 1,
-        shared_with: [],
-        public: false,
-        variables: { '--bg-primary': '#0D1117', '--accent-primary': '#58A6FF' },
-        raw_css: '',
-        created_at: '2025-01-15T10:30:00Z',
-        updated_at: '2025-03-01T14:22:00Z',
-      },
-      {
-        id: 2,
-        name: 'Ocean Breeze',
-        owner_id: 1,
-        shared_with: [3, 12],
-        public: false,
-        variables: { '--bg-primary': '#0a192f', '--accent-primary': '#64ffda' },
-        raw_css: '',
-        created_at: '2025-02-10T09:15:00Z',
-        updated_at: '2025-02-28T16:45:00Z',
-      },
-      {
-        id: 3,
-        name: 'Sunset Glow',
-        owner_id: 2,
-        shared_with: [],
-        public: true,
-        variables: { '--bg-primary': '#1a1a2e', '--accent-primary': '#f39c12' },
-        raw_css: '/* Custom sunset effects */\n.btn { border-radius: 20px; }',
-        created_at: '2025-01-20T11:00:00Z',
-        updated_at: '2025-02-15T08:30:00Z',
-      },
-    ];
-  }
+  // ── Editor Initialization ──────────────────────────────────────────────────
 &nbsp;
-  /**
-   * Render the theme table with Tabulator
-   */
-<span class="fstat-no" title="function not covered">  renderThemeTable(</span>) {
-<span class="cstat-no" title="statement not covered">    if (!this.elements.themeTable || !Tabulator) <span class="cstat-no" title="statement not covered">return;</span></span>
-&nbsp;
-    // Clear existing table
-<span class="cstat-no" title="statement not covered">    this.elements.themeTable.innerHTML = '';</span>
-&nbsp;
-    const tableData = <span class="cstat-no" title="statement not covered">this.themes.map(<span class="fstat-no" title="function not covered">(t</span>heme) =&gt; (<span class="cstat-no" title="statement not covered">{</span></span>
-      id: theme.id,
-      name: theme.name,
-      created: new Date(theme.created_at).toLocaleDateString(),
-      updated: new Date(theme.updated_at).toLocaleDateString(),
-      owner: `User ${theme.owner_id}`,
-      isPublic: theme.public ? 'Yes' : 'No',
-    }));
-&nbsp;
-<span class="cstat-no" title="statement not covered">    this.table = new Tabulator(this.elements.themeTable, {</span>
-      data: tableData,
-      layout: 'fitColumns',
-      responsiveLayout: 'hide',
-      movableColumns: true,
-      headerSortTristate: true,
-      height: '100%',
-      columns: [
-        { title: 'Name', field: 'name', minWidth: 150 },
-        { title: 'Created', field: 'created', width: 120 },
-        { title: 'Updated', field: 'updated', width: 120 },
-        { title: 'Owner', field: 'owner', width: 100 },
-        { title: 'Public', field: 'isPublic', width: 80 },
-        {
-          title: 'Actions',
-          field: 'actions',
-          width: 150,
-          formatter: <span class="fstat-no" title="function not covered">(c</span>ell, formatterParams, onRendered) =&gt; {
-            const themeId = <span class="cstat-no" title="statement not covered">cell.getData().id;</span>
-            const canEdit = <span class="cstat-no" title="statement not covered">this.permissions?.canEdit;</span>
-            const canDelete = <span class="cstat-no" title="statement not covered">this.canDelete;</span>
-            
-            let html = <span class="cstat-no" title="statement not covered">'&lt;div class="theme-actions"&gt;';</span>
-            
-            // Apply button
-<span class="cstat-no" title="statement not covered">            html += `&lt;button class="theme-action-btn btn-apply" data-action="apply" data-id="${themeId}" title="Apply theme"&gt;</span>
-              &lt;fa fa-check&gt;&lt;/fa&gt;
-            &lt;/button&gt;`;
-            
-            // Edit button (if canEdit)
-<span class="cstat-no" title="statement not covered">            if (canEdit) {</span>
-<span class="cstat-no" title="statement not covered">              html += `&lt;button class="theme-action-btn btn-edit" data-action="edit" data-id="${themeId}" title="Edit theme"&gt;</span>
-                &lt;fa fa-edit&gt;&lt;/fa&gt;
-              &lt;/button&gt;`;
-            }
-            
-            // Delete button (if canDelete)
-<span class="cstat-no" title="statement not covered">            if (canDelete) {</span>
-<span class="cstat-no" title="statement not covered">              html += `&lt;button class="theme-action-btn btn-delete" data-action="delete" data-id="${themeId}" title="Delete theme"&gt;</span>
-                &lt;fa fa-trash&gt;&lt;/fa&gt;
-              &lt;/button&gt;`;
-            }
-            
-<span class="cstat-no" title="statement not covered">            html += '&lt;/div&gt;';</span>
-<span class="cstat-no" title="statement not covered">            return html;</span>
-          },
-        },
-      ],
-    });
-&nbsp;
-    // Add action event listeners
-<span class="cstat-no" title="statement not covered">    this.elements.themeTable.addEventListener('click', <span class="fstat-no" title="function not covered">(e</span>) =&gt; {</span>
-      const btn = <span class="cstat-no" title="statement not covered">e.target.closest('.theme-action-btn');</span>
-<span class="cstat-no" title="statement not covered">      if (!btn) <span class="cstat-no" title="statement not covered">return;</span></span>
-&nbsp;
-      const action = <span class="cstat-no" title="statement not covered">btn.dataset.action;</span>
-      const themeId = <span class="cstat-no" title="statement not covered">parseInt(btn.dataset.id, 10);</span>
-&nbsp;
-<span class="cstat-no" title="statement not covered">      switch (action) {</span>
-        case 'apply':
-<span class="cstat-no" title="statement not covered">          this.applyTheme(themeId);</span>
-<span class="cstat-no" title="statement not covered">          break;</span>
-        case 'edit':
-<span class="cstat-no" title="statement not covered">          this.editTheme(themeId);</span>
-<span class="cstat-no" title="statement not covered">          break;</span>
-        case 'delete':
-<span class="cstat-no" title="statement not covered">          this.deleteTheme(themeId);</span>
-<span class="cstat-no" title="statement not covered">          break;</span>
-      }
-    });
-  }
-&nbsp;
-  /**
-   * Populate theme select dropdown
-   */
-<span class="fstat-no" title="function not covered">  populateThemeSelect(</span>) {
-<span class="cstat-no" title="statement not covered">    if (!this.elements.themeSelect) <span class="cstat-no" title="statement not covered">return;</span></span>
-&nbsp;
-    // Clear existing options (keep first)
-<span class="cstat-no" title="statement not covered">    this.elements.themeSelect.innerHTML = '&lt;option value=""&gt;Select a theme...&lt;/option&gt;';</span>
-&nbsp;
-<span class="cstat-no" title="statement not covered">    this.themes.forEach(<span class="fstat-no" title="function not covered">(t</span>heme) =&gt; {</span>
-      const option = <span class="cstat-no" title="statement not covered">document.createElement('option');</span>
-<span class="cstat-no" title="statement not covered">      option.value = theme.id;</span>
-<span class="cstat-no" title="statement not covered">      option.textContent = theme.name;</span>
-<span class="cstat-no" title="statement not covered">      this.elements.themeSelect.appendChild(option);</span>
-    });
-  }
-&nbsp;
-  /**
-   * Initialize CodeMirror editor
-   */
-  async <span class="fstat-no" title="function not covered">initCodeMirror(</span>) {
+  async <span class="fstat-no" title="function not covered">initCssEditor(</span>) {
 <span class="cstat-no" title="statement not covered">    if (!this.elements.cssEditor) <span class="cstat-no" title="statement not covered">return;</span></span>
 &nbsp;
 <span class="cstat-no" title="statement not covered">    try {</span>
-      // Dynamic import CodeMirror
       const { EditorState } = <span class="cstat-no" title="statement not covered">await import('@codemirror/state');</span>
       const { EditorView, keymap, lineNumbers, highlightActiveLineGutter, highlightSpecialChars, drawSelection, highlightActiveLine } = <span class="cstat-no" title="statement not covered">await import('@codemirror/view');</span>
       const { defaultKeymap, history, historyKeymap } = <span class="cstat-no" title="statement not covered">await import('@codemirror/commands');</span>
@@ -2155,371 +2477,634 @@ export default class StyleManager {
         ],
       });
 &nbsp;
-<span class="cstat-no" title="statement not covered">      this.editor = new EditorView({</span>
+<span class="cstat-no" title="statement not covered">      this.cssEditor = new EditorView({</span>
         state: startState,
         parent: this.elements.cssEditor,
       });
     } catch (error) {
-<span class="cstat-no" title="statement not covered">      console.error('[StyleManager] Failed to initialize CodeMirror:', error);</span>
-      // Fallback to textarea
-<span class="cstat-no" title="statement not covered">      this.elements.cssEditor.innerHTML = '&lt;textarea id="css-editor-fallback" style="width:100%;height:100%;background:var(--bg-secondary);color:var(--text-primary);border:none;padding:16px;font-family:var(--font-mono);"&gt;&lt;/textarea&gt;';</span>
+<span class="cstat-no" title="statement not covered">      console.error('[StyleManager] Failed to initialize CSS editor:', error);</span>
+<span class="cstat-no" title="statement not covered">      this.elements.cssEditor.innerHTML = '&lt;textarea id="style-css-editor-fallback" style="width:100%;height:100%;background:var(--bg-secondary);color:var(--text-primary);border:none;padding:16px;font-family:var(--font-mono);"&gt;&lt;/textarea&gt;';</span>
     }
   }
 &nbsp;
-  /**
-   * Load theme for CSS editor
-   */
-<span class="fstat-no" title="function not covered">  loadThemeForEditor(</span>themeId) {
-<span class="cstat-no" title="statement not covered">    if (!themeId || !this.editor) <span class="cstat-no" title="statement not covered">return;</span></span>
+  async <span class="fstat-no" title="function not covered">initVariablesEditor(</span>) {
+<span class="cstat-no" title="statement not covered">    if (!this.elements.variablesEditor) <span class="cstat-no" title="statement not covered">return;</span></span>
 &nbsp;
-    const theme = <span class="cstat-no" title="statement not covered">this.themes.find(<span class="fstat-no" title="function not covered">(t</span>) =&gt; <span class="cstat-no" title="statement not covered">t.id === parseInt(themeId, 10))</span>;</span>
-<span class="cstat-no" title="statement not covered">    if (!theme) <span class="cstat-no" title="statement not covered">return;</span></span>
-&nbsp;
-    const css = <span class="cstat-no" title="statement not covered">this.buildCssFromTheme(theme);</span>
-    
-    // Update editor content
-<span class="cstat-no" title="statement not covered">    this.editor.dispatch({</span>
-      changes: { from: 0, to: this.editor.state.doc.length, insert: css },
-    });
-  }
-&nbsp;
-  /**
-   * Build CSS string from theme variables
-   */
-<span class="fstat-no" title="function not covered">  buildCssFromTheme(</span>theme) {
-    let css = <span class="cstat-no" title="statement not covered">'/* Theme CSS Variables */\n:root {\n';</span>
-    
-<span class="cstat-no" title="statement not covered">    if (theme.variables) {</span>
-<span class="cstat-no" title="statement not covered">      Object.entries(theme.variables).forEach(<span class="fstat-no" title="function not covered">([</span>key, value]) =&gt; {</span>
-<span class="cstat-no" title="statement not covered">        css += `  ${key}: ${value};\n`;</span>
-      });
-    }
-    
-<span class="cstat-no" title="statement not covered">    css += '}\n\n';</span>
-    
-<span class="cstat-no" title="statement not covered">    if (theme.raw_css) {</span>
-<span class="cstat-no" title="statement not covered">      css += '/* Raw CSS */\n' + theme.raw_css;</span>
-    }
-    
-<span class="cstat-no" title="statement not covered">    return css;</span>
-  }
-&nbsp;
-  /**
-   * Apply theme to the application
-   */
-<span class="fstat-no" title="function not covered">  applyTheme(</span>themeId) {
-    const theme = <span class="cstat-no" title="statement not covered">this.themes.find(<span class="fstat-no" title="function not covered">(t</span>) =&gt; <span class="cstat-no" title="statement not covered">t.id === themeId)</span>;</span>
-<span class="cstat-no" title="statement not covered">    if (!theme) <span class="cstat-no" title="statement not covered">return;</span></span>
-&nbsp;
-<span class="cstat-no" title="statement not covered">    this.applyThemeToDom(theme);</span>
-    
-    // Persist active theme ID in user preferences
-<span class="cstat-no" title="statement not covered">    localStorage.setItem('activeThemeId', themeId);</span>
-    
-    // Fire theme:changed event
-<span class="cstat-no" title="statement not covered">    eventBus.emit(Events.THEME_CHANGED, {</span>
-      themeId: theme.id,
-      themeName: theme.name,
-      vars: theme.variables,
-    });
-  }
-&nbsp;
-  /**
-   * Apply theme CSS to DOM
-   */
-<span class="fstat-no" title="function not covered">  applyThemeToDom(</span>theme) {
-    // Build CSS from variables
-    let css = <span class="cstat-no" title="statement not covered">':root {\n';</span>
-    
-<span class="cstat-no" title="statement not covered">    if (theme.variables) {</span>
-<span class="cstat-no" title="statement not covered">      Object.entries(theme.variables).forEach(<span class="fstat-no" title="function not covered">([</span>key, value]) =&gt; {</span>
-<span class="cstat-no" title="statement not covered">        css += `  ${key}: ${value};\n`;</span>
-      });
-    }
-    
-<span class="cstat-no" title="statement not covered">    css += '}\n';</span>
-    
-    // Add raw CSS if present
-<span class="cstat-no" title="statement not covered">    if (theme.raw_css) {</span>
-<span class="cstat-no" title="statement not covered">      css += '\n' + theme.raw_css;</span>
-    }
-&nbsp;
-    // Sanitize with DOMPurify
-    const sanitizedCss = <span class="cstat-no" title="statement not covered">DOMPurify.sanitize(css, {</span>
-      ALLOWED_TAGS: [],
-      ALLOWED_ATTR: [],
-    });
-&nbsp;
-    // Find or create dynamic style element
-    let styleEl = <span class="cstat-no" title="statement not covered">document.getElementById('dynamic-theme');</span>
-<span class="cstat-no" title="statement not covered">    if (!styleEl) {</span>
-<span class="cstat-no" title="statement not covered">      styleEl = document.createElement('style');</span>
-<span class="cstat-no" title="statement not covered">      styleEl.id = 'dynamic-theme';</span>
-<span class="cstat-no" title="statement not covered">      document.head.appendChild(styleEl);</span>
-    }
-&nbsp;
-    // Inject sanitized CSS
-<span class="cstat-no" title="statement not covered">    styleEl.textContent = sanitizedCss;</span>
-  }
-&nbsp;
-  /**
-   * Apply current CSS from editor
-   */
-<span class="fstat-no" title="function not covered">  applyCurrentCss(</span>) {
-<span class="cstat-no" title="statement not covered">    if (!this.editor) <span class="cstat-no" title="statement not covered">return;</span></span>
-&nbsp;
-    const css = <span class="cstat-no" title="statement not covered">this.editor.state.doc.toString();</span>
-    
-    // Sanitize with DOMPurify
-    const sanitizedCss = <span class="cstat-no" title="statement not covered">DOMPurify.sanitize(css, {</span>
-      ALLOWED_TAGS: [],
-      ALLOWED_ATTR: [],
-    });
-&nbsp;
-    // Find or create dynamic style element
-    let styleEl = <span class="cstat-no" title="statement not covered">document.getElementById('dynamic-theme');</span>
-<span class="cstat-no" title="statement not covered">    if (!styleEl) {</span>
-<span class="cstat-no" title="statement not covered">      styleEl = document.createElement('style');</span>
-<span class="cstat-no" title="statement not covered">      styleEl.id = 'dynamic-theme';</span>
-<span class="cstat-no" title="statement not covered">      document.head.appendChild(styleEl);</span>
-    }
-&nbsp;
-    // Inject sanitized CSS
-<span class="cstat-no" title="statement not covered">    styleEl.textContent = sanitizedCss;</span>
-&nbsp;
-    // Fire theme:changed event
-<span class="cstat-no" title="statement not covered">    eventBus.emit(Events.THEME_CHANGED, {</span>
-      themeId: null,
-      themeName: 'Custom CSS',
-      vars: {},
-    });
-  }
-&nbsp;
-  /**
-   * Save CSS changes to theme
-   */
-  async <span class="fstat-no" title="function not covered">saveCss(</span>) {
-<span class="cstat-no" title="statement not covered">    if (!this.editor || !this.elements.themeSelect?.value) <span class="cstat-no" title="statement not covered">return;</span></span>
-&nbsp;
-    const themeId = <span class="cstat-no" title="statement not covered">parseInt(this.elements.themeSelect.value, 10);</span>
-    const theme = <span class="cstat-no" title="statement not covered">this.themes.find(<span class="fstat-no" title="function not covered">(t</span>) =&gt; <span class="cstat-no" title="statement not covered">t.id === themeId)</span>;</span>
-<span class="cstat-no" title="statement not covered">    if (!theme) <span class="cstat-no" title="statement not covered">return;</span></span>
-&nbsp;
-    const css = <span class="cstat-no" title="statement not covered">this.editor.state.doc.toString();</span>
-    
-    // Sanitize before saving
-    const sanitizedCss = <span class="cstat-no" title="statement not covered">DOMPurify.sanitize(css, {</span>
-      ALLOWED_TAGS: [],
-      ALLOWED_ATTR: [],
-    });
-&nbsp;
-    // TODO: Save to API
-<span class="cstat-no" title="statement not covered">    console.log('[StyleManager] Saving CSS for theme:', themeId, sanitizedCss);</span>
-    
-    // Update local state
-<span class="cstat-no" title="statement not covered">    theme.raw_css = sanitizedCss;</span>
-    
-    // Show success feedback
-<span class="cstat-no" title="statement not covered">    this.showNotification('CSS saved successfully');</span>
-  }
-&nbsp;
-  /**
-   * Open theme modal for create/edit
-   */
-<span class="fstat-no" title="function not covered">  openThemeModal(</span>theme = <span class="branch-0 cbranch-no" title="branch not covered">null)</span> {
-<span class="cstat-no" title="statement not covered">    this.currentTheme = theme;</span>
-    
-<span class="cstat-no" title="statement not covered">    if (theme) {</span>
-      // Edit mode
-<span class="cstat-no" title="statement not covered">      this.elements.modalTitle.textContent = 'Edit Theme';</span>
-<span class="cstat-no" title="statement not covered">      this.elements.themeId.value = theme.id;</span>
-<span class="cstat-no" title="statement not covered">      this.elements.themeName.value = theme.name;</span>
-<span class="cstat-no" title="statement not covered">      this.elements.themeVariables.value = JSON.stringify(theme.variables || {}, null, 2);</span>
-<span class="cstat-no" title="statement not covered">      this.elements.themeRawCss.value = theme.raw_css || '';</span>
-    } else {
-      // Create mode
-<span class="cstat-no" title="statement not covered">      this.elements.modalTitle.textContent = 'New Theme';</span>
-<span class="cstat-no" title="statement not covered">      this.elements.themeId.value = '';</span>
-<span class="cstat-no" title="statement not covered">      this.elements.themeName.value = '';</span>
-<span class="cstat-no" title="statement not covered">      this.elements.themeVariables.value = '{\n  "--bg-primary": "#0D1117",\n  "--accent-primary": "#58A6FF"\n}';</span>
-<span class="cstat-no" title="statement not covered">      this.elements.themeRawCss.value = '';</span>
-    }
-&nbsp;
-<span class="cstat-no" title="statement not covered">    this.elements.themeModal?.classList.add('visible');</span>
-  }
-&nbsp;
-  /**
-   * Close theme modal
-   */
-<span class="fstat-no" title="function not covered">  closeThemeModal(</span>) {
-<span class="cstat-no" title="statement not covered">    this.elements.themeModal?.classList.remove('visible');</span>
-<span class="cstat-no" title="statement not covered">    this.currentTheme = null;</span>
-  }
-&nbsp;
-  /**
-   * Save theme from modal form
-   */
-  async <span class="fstat-no" title="function not covered">saveTheme(</span>) {
-    const name = <span class="cstat-no" title="statement not covered">this.elements.themeName?.value?.trim();</span>
-    const variablesStr = <span class="cstat-no" title="statement not covered">this.elements.themeVariables?.value?.trim();</span>
-    const rawCss = <span class="cstat-no" title="statement not covered">this.elements.themeRawCss?.value?.trim();</span>
-&nbsp;
-<span class="cstat-no" title="statement not covered">    if (!name) {</span>
-<span class="cstat-no" title="statement not covered">      this.showError('Theme name is required');</span>
-<span class="cstat-no" title="statement not covered">      return;</span>
-    }
-&nbsp;
-    // Parse variables JSON
-    let variables = <span class="cstat-no" title="statement not covered">{};</span>
 <span class="cstat-no" title="statement not covered">    try {</span>
-<span class="cstat-no" title="statement not covered">      if (variablesStr) {</span>
-<span class="cstat-no" title="statement not covered">        variables = JSON.parse(variablesStr);</span>
-      }
+      const { EditorState } = <span class="cstat-no" title="statement not covered">await import('@codemirror/state');</span>
+      const { EditorView, keymap, lineNumbers, highlightActiveLineGutter, highlightSpecialChars, drawSelection, highlightActiveLine } = <span class="cstat-no" title="statement not covered">await import('@codemirror/view');</span>
+      const { defaultKeymap, history, historyKeymap } = <span class="cstat-no" title="statement not covered">await import('@codemirror/commands');</span>
+      const { json } = <span class="cstat-no" title="statement not covered">await import('@codemirror/lang-json');</span>
+      const { oneDark } = <span class="cstat-no" title="statement not covered">await import('@codemirror/theme-one-dark');</span>
+&nbsp;
+      const startState = <span class="cstat-no" title="statement not covered">EditorState.create({</span>
+        doc: '{\n  \n}',
+        extensions: [
+          lineNumbers(),
+          highlightActiveLineGutter(),
+          highlightSpecialChars(),
+          history(),
+          drawSelection(),
+          highlightActiveLine(),
+          keymap.of([...defaultKeymap, ...historyKeymap]),
+          json(),
+          oneDark,
+          EditorView.theme({
+            '&amp;': { height: '100%' },
+            '.cm-scroller': { overflow: 'auto' },
+          }),
+        ],
+      });
+&nbsp;
+<span class="cstat-no" title="statement not covered">      this.variablesEditor = new EditorView({</span>
+        state: startState,
+        parent: this.elements.variablesEditor,
+      });
     } catch (error) {
-<span class="cstat-no" title="statement not covered">      this.showError('Invalid JSON in CSS variables');</span>
+<span class="cstat-no" title="statement not covered">      console.error('[StyleManager] Failed to initialize variables editor:', error);</span>
+    }
+  }
+&nbsp;
+  // ── Preview ────────────────────────────────────────────────────────────────
+&nbsp;
+<span class="fstat-no" title="function not covered">  updatePreview(</span>) {
+<span class="cstat-no" title="statement not covered">    if (!this.elements.previewContent) <span class="cstat-no" title="statement not covered">return;</span></span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    if (!this.currentThemeData) {</span>
+<span class="cstat-no" title="statement not covered">      this.elements.previewContent.innerHTML = '&lt;p class="style-preview-placeholder"&gt;Select a theme to preview&lt;/p&gt;';</span>
 <span class="cstat-no" title="statement not covered">      return;</span>
     }
 &nbsp;
-    // Sanitize raw CSS
-    const sanitizedRawCss = <span class="cstat-no" title="statement not covered">DOMPurify.sanitize(rawCss || '', {</span>
-      ALLOWED_TAGS: [],
-      ALLOWED_ATTR: [],
+<span class="cstat-no" title="statement not covered">    try {</span>
+      let htmlContent = <span class="cstat-no" title="statement not covered">'';</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">      if (this.currentThemeData.summary &amp;&amp; marked) {</span>
+<span class="cstat-no" title="statement not covered">        htmlContent = marked.parse(this.currentThemeData.summary);</span>
+      } else {
+<span class="cstat-no" title="statement not covered">        htmlContent = '&lt;p class="style-preview-placeholder"&gt;No summary content available&lt;/p&gt;';</span>
+      }
+&nbsp;
+<span class="cstat-no" title="statement not covered">      this.elements.previewContent.innerHTML = `&lt;div class="style-preview-rendered"&gt;${htmlContent}&lt;/div&gt;`;</span>
+    } catch (error) {
+<span class="cstat-no" title="statement not covered">      console.error('[StyleManager] Failed to update preview:', error);</span>
+<span class="cstat-no" title="statement not covered">      this.elements.previewContent.innerHTML = '&lt;p class="style-preview-placeholder"&gt;Error rendering preview&lt;/p&gt;';</span>
+    }
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered">  clearDetailView(</span>) {
+<span class="cstat-no" title="statement not covered">    this.currentThemeData = null;</span>
+<span class="cstat-no" title="statement not covered">    if (this.elements.previewContent) {</span>
+<span class="cstat-no" title="statement not covered">      this.elements.previewContent.innerHTML = '&lt;p class="style-preview-placeholder"&gt;Select a theme to preview&lt;/p&gt;';</span>
+    }
+  }
+&nbsp;
+  // ── Font Popup ─────────────────────────────────────────────────────────────
+&nbsp;
+<span class="fstat-no" title="function not covered">  initFontPopup(</span>) {
+<span class="cstat-no" title="statement not covered">    this.fontPopup = document.createElement('div');</span>
+<span class="cstat-no" title="statement not covered">    this.fontPopup.className = 'style-font-popup';</span>
+    const fontSizeValue = <span class="cstat-no" title="statement not covered">parseInt(this.editorFontSize, 10) || 14;</span>
+<span class="cstat-no" title="statement not covered">    this.fontPopup.innerHTML = `</span>
+      &lt;div class="style-font-popup-row"&gt;
+        &lt;label class="style-font-popup-label"&gt;Size&lt;/label&gt;
+        &lt;input type="number" class="style-font-popup-input" id="style-font-size" value="${fontSizeValue}" min="8" max="32"&gt;
+      &lt;/div&gt;
+      &lt;div class="style-font-popup-row"&gt;
+        &lt;label class="style-font-popup-label"&gt;Family&lt;/label&gt;
+        &lt;select class="style-font-popup-select" id="style-font-family"&gt;
+          &lt;option value="var(--font-sans)" ${this.editorFontFamily === 'var(--font-sans)' ? 'selected' : ''}&gt;Sans Serif&lt;/option&gt;
+          &lt;option value="var(--font-mono)" ${this.editorFontFamily === 'var(--font-mono)' ? 'selected' : ''}&gt;Monospace&lt;/option&gt;
+          &lt;option value="serif" ${this.editorFontFamily === 'serif' ? 'selected' : ''}&gt;Serif&lt;/option&gt;
+        &lt;/select&gt;
+      &lt;/div&gt;
+      &lt;div class="style-font-popup-row"&gt;
+        &lt;label class="style-font-popup-label"&gt;Style&lt;/label&gt;
+        &lt;div class="style-font-popup-styles"&gt;
+          &lt;button type="button" class="style-font-popup-style-btn" data-style="normal"&gt;Normal&lt;/button&gt;
+          &lt;button type="button" class="style-font-popup-style-btn" data-style="bold"&gt;Bold&lt;/button&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+    `;
+&nbsp;
+<span class="cstat-no" title="statement not covered">    if (this.elements.fontBtn) {</span>
+<span class="cstat-no" title="statement not covered">      this.elements.fontBtn.parentElement.appendChild(this.fontPopup);</span>
+    }
+&nbsp;
+    const sizeInput = <span class="cstat-no" title="statement not covered">this.fontPopup.querySelector('#style-font-size');</span>
+    const familySelect = <span class="cstat-no" title="statement not covered">this.fontPopup.querySelector('#style-font-family');</span>
+    const styleBtns = <span class="cstat-no" title="statement not covered">this.fontPopup.querySelectorAll('.style-font-popup-style-btn');</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    sizeInput?.addEventListener('change', <span class="fstat-no" title="function not covered">(e</span>) =&gt; {</span>
+<span class="cstat-no" title="statement not covered">      this.editorFontSize = `${e.target.value}px`;</span>
+<span class="cstat-no" title="statement not covered">      this.applyFontSettings();</span>
     });
 &nbsp;
-    const themeId = <span class="cstat-no" title="statement not covered">this.elements.themeId?.value;</span>
-    
-<span class="cstat-no" title="statement not covered">    if (themeId) {</span>
-      // Update existing theme
-      const theme = <span class="cstat-no" title="statement not covered">this.themes.find(<span class="fstat-no" title="function not covered">(t</span>) =&gt; <span class="cstat-no" title="statement not covered">t.id === parseInt(themeId, 10))</span>;</span>
-<span class="cstat-no" title="statement not covered">      if (theme) {</span>
-<span class="cstat-no" title="statement not covered">        theme.name = name;</span>
-<span class="cstat-no" title="statement not covered">        theme.variables = variables;</span>
-<span class="cstat-no" title="statement not covered">        theme.raw_css = sanitizedRawCss;</span>
-<span class="cstat-no" title="statement not covered">        theme.updated_at = new Date().toISOString();</span>
+<span class="cstat-no" title="statement not covered">    familySelect?.addEventListener('change', <span class="fstat-no" title="function not covered">(e</span>) =&gt; {</span>
+<span class="cstat-no" title="statement not covered">      this.editorFontFamily = e.target.value;</span>
+<span class="cstat-no" title="statement not covered">      this.applyFontSettings();</span>
+    });
+&nbsp;
+<span class="cstat-no" title="statement not covered">    styleBtns.forEach(<span class="fstat-no" title="function not covered">btn </span>=&gt; {</span>
+<span class="cstat-no" title="statement not covered">      btn.addEventListener('click', <span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered">        styleBtns.forEach(<span class="fstat-no" title="function not covered">b </span>=&gt; <span class="cstat-no" title="statement not covered">b.classList.remove('active'))</span>;</span>
+<span class="cstat-no" title="statement not covered">        btn.classList.add('active');</span>
+<span class="cstat-no" title="statement not covered">        this.applyFontSettings();</span>
+      });
+    });
+&nbsp;
+<span class="cstat-no" title="statement not covered">    document.addEventListener('click', <span class="fstat-no" title="function not covered">(e</span>) =&gt; {</span>
+<span class="cstat-no" title="statement not covered">      if (this.fontPopup?.classList.contains('visible') &amp;&amp;</span>
+          !this.fontPopup.contains(e.target) &amp;&amp;
+          !this.elements.fontBtn?.contains(e.target)) {
+<span class="cstat-no" title="statement not covered">        this.fontPopup.classList.remove('visible');</span>
       }
-    } else {
-      // Create new theme
-      const newTheme = <span class="cstat-no" title="statement not covered">{</span>
-        id: Date.now(),
-        name,
-        owner_id: 1,
-        shared_with: [],
-        public: false,
-        variables,
-        raw_css: sanitizedRawCss,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+    });
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered">  toggleFontPopup(</span>e) {
+<span class="cstat-no" title="statement not covered">    e.stopPropagation();</span>
+<span class="cstat-no" title="statement not covered">    if (this.fontPopup) {</span>
+<span class="cstat-no" title="statement not covered">      this.fontPopup.classList.toggle('visible');</span>
+    }
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered">  applyFontSettings(</span>) {
+    // Apply to editors when implemented
+  }
+&nbsp;
+  // ── Splitter Logic ─────────────────────────────────────────────────────────
+&nbsp;
+<span class="fstat-no" title="function not covered">  setupSplitters(</span>) {
+<span class="cstat-no" title="statement not covered">    this.setupLeftSplitter();</span>
+<span class="cstat-no" title="statement not covered">    this.setupRightSplitter();</span>
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered">  setupLeftSplitter(</span>) {
+    const splitter = <span class="cstat-no" title="statement not covered">this.elements.splitterLeft;</span>
+    const leftPanel = <span class="cstat-no" title="statement not covered">this.elements.leftPanel;</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    if (!splitter || !leftPanel) <span class="cstat-no" title="statement not covered">return;</span></span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    splitter.addEventListener('mousedown', <span class="fstat-no" title="function not covered">(e</span>) =&gt; {</span>
+<span class="cstat-no" title="statement not covered">      if (this.isLeftPanelCollapsed) <span class="cstat-no" title="statement not covered">return;</span></span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">      this.isResizingLeft = true;</span>
+<span class="cstat-no" title="statement not covered">      splitter.classList.add('resizing');</span>
+<span class="cstat-no" title="statement not covered">      document.body.style.cursor = 'col-resize';</span>
+<span class="cstat-no" title="statement not covered">      document.body.style.userSelect = 'none';</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">      leftPanel.style.transition = 'none';</span>
+&nbsp;
+      const startX = <span class="cstat-no" title="statement not covered">e.clientX;</span>
+      const startWidth = <span class="cstat-no" title="statement not covered">leftPanel.offsetWidth;</span>
+&nbsp;
+      const onMouseMove = <span class="cstat-no" title="statement not covered"><span class="fstat-no" title="function not covered">(e</span>) =&gt; {</span>
+<span class="cstat-no" title="statement not covered">        if (!this.isResizingLeft) <span class="cstat-no" title="statement not covered">return;</span></span>
+        const delta = <span class="cstat-no" title="statement not covered">e.clientX - startX;</span>
+        const newWidth = <span class="cstat-no" title="statement not covered">Math.max(150, Math.min(450, startWidth + delta));</span>
+<span class="cstat-no" title="statement not covered">        leftPanel.style.width = `${newWidth}px`;</span>
+<span class="cstat-no" title="statement not covered">        this.leftPanelWidth = newWidth;</span>
       };
-<span class="cstat-no" title="statement not covered">      this.themes.push(newTheme);</span>
+&nbsp;
+      const onMouseUp = <span class="cstat-no" title="statement not covered"><span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered">        this.isResizingLeft = false;</span>
+<span class="cstat-no" title="statement not covered">        splitter.classList.remove('resizing');</span>
+<span class="cstat-no" title="statement not covered">        document.body.style.cursor = '';</span>
+<span class="cstat-no" title="statement not covered">        document.body.style.userSelect = '';</span>
+<span class="cstat-no" title="statement not covered">        leftPanel.style.transition = '';</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">        document.removeEventListener('mousemove', onMouseMove);</span>
+<span class="cstat-no" title="statement not covered">        document.removeEventListener('mouseup', onMouseUp);</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">        this.themesTable?.table?.redraw?.();</span>
+<span class="cstat-no" title="statement not covered">        this.sectionsTable?.table?.redraw?.();</span>
+      };
+&nbsp;
+<span class="cstat-no" title="statement not covered">      document.addEventListener('mousemove', onMouseMove);</span>
+<span class="cstat-no" title="statement not covered">      document.addEventListener('mouseup', onMouseUp);</span>
+    });
+&nbsp;
+    // Touch support
+<span class="cstat-no" title="statement not covered">    splitter.addEventListener('touchstart', <span class="fstat-no" title="function not covered">(e</span>) =&gt; {</span>
+<span class="cstat-no" title="statement not covered">      if (this.isLeftPanelCollapsed) <span class="cstat-no" title="statement not covered">return;</span></span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">      this.isResizingLeft = true;</span>
+<span class="cstat-no" title="statement not covered">      splitter.classList.add('resizing');</span>
+<span class="cstat-no" title="statement not covered">      leftPanel.style.transition = 'none';</span>
+&nbsp;
+      const touch = <span class="cstat-no" title="statement not covered">e.touches[0];</span>
+      const startX = <span class="cstat-no" title="statement not covered">touch.clientX;</span>
+      const startWidth = <span class="cstat-no" title="statement not covered">leftPanel.offsetWidth;</span>
+&nbsp;
+      const onTouchMove = <span class="cstat-no" title="statement not covered"><span class="fstat-no" title="function not covered">(e</span>) =&gt; {</span>
+<span class="cstat-no" title="statement not covered">        if (!this.isResizingLeft) <span class="cstat-no" title="statement not covered">return;</span></span>
+        const touch = <span class="cstat-no" title="statement not covered">e.touches[0];</span>
+        const delta = <span class="cstat-no" title="statement not covered">touch.clientX - startX;</span>
+        const newWidth = <span class="cstat-no" title="statement not covered">Math.max(150, Math.min(450, startWidth + delta));</span>
+<span class="cstat-no" title="statement not covered">        leftPanel.style.width = `${newWidth}px`;</span>
+<span class="cstat-no" title="statement not covered">        this.leftPanelWidth = newWidth;</span>
+      };
+&nbsp;
+      const onTouchEnd = <span class="cstat-no" title="statement not covered"><span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered">        this.isResizingLeft = false;</span>
+<span class="cstat-no" title="statement not covered">        splitter.classList.remove('resizing');</span>
+<span class="cstat-no" title="statement not covered">        leftPanel.style.transition = '';</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">        document.removeEventListener('touchmove', onTouchMove);</span>
+<span class="cstat-no" title="statement not covered">        document.removeEventListener('touchend', onTouchEnd);</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">        this.themesTable?.table?.redraw?.();</span>
+<span class="cstat-no" title="statement not covered">        this.sectionsTable?.table?.redraw?.();</span>
+      };
+&nbsp;
+<span class="cstat-no" title="statement not covered">      document.addEventListener('touchmove', onTouchMove);</span>
+<span class="cstat-no" title="statement not covered">      document.addEventListener('touchend', onTouchEnd);</span>
+    });
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered">  setupRightSplitter(</span>) {
+    const splitter = <span class="cstat-no" title="statement not covered">this.elements.splitterRight;</span>
+    const middlePanel = <span class="cstat-no" title="statement not covered">this.elements.middlePanel;</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    if (!splitter || !middlePanel) <span class="cstat-no" title="statement not covered">return;</span></span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    splitter.addEventListener('mousedown', <span class="fstat-no" title="function not covered">(e</span>) =&gt; {</span>
+<span class="cstat-no" title="statement not covered">      if (this.isMiddlePanelCollapsed) <span class="cstat-no" title="statement not covered">return;</span></span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">      this.isResizingRight = true;</span>
+<span class="cstat-no" title="statement not covered">      splitter.classList.add('resizing');</span>
+<span class="cstat-no" title="statement not covered">      document.body.style.cursor = 'col-resize';</span>
+<span class="cstat-no" title="statement not covered">      document.body.style.userSelect = 'none';</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">      middlePanel.style.transition = 'none';</span>
+&nbsp;
+      const startX = <span class="cstat-no" title="statement not covered">e.clientX;</span>
+      const startWidth = <span class="cstat-no" title="statement not covered">middlePanel.offsetWidth;</span>
+&nbsp;
+      const onMouseMove = <span class="cstat-no" title="statement not covered"><span class="fstat-no" title="function not covered">(e</span>) =&gt; {</span>
+<span class="cstat-no" title="statement not covered">        if (!this.isResizingRight) <span class="cstat-no" title="statement not covered">return;</span></span>
+        const delta = <span class="cstat-no" title="statement not covered">e.clientX - startX;</span>
+        const newWidth = <span class="cstat-no" title="statement not covered">Math.max(200, Math.min(550, startWidth + delta));</span>
+<span class="cstat-no" title="statement not covered">        middlePanel.style.width = `${newWidth}px`;</span>
+<span class="cstat-no" title="statement not covered">        this.middlePanelWidth = newWidth;</span>
+      };
+&nbsp;
+      const onMouseUp = <span class="cstat-no" title="statement not covered"><span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered">        this.isResizingRight = false;</span>
+<span class="cstat-no" title="statement not covered">        splitter.classList.remove('resizing');</span>
+<span class="cstat-no" title="statement not covered">        document.body.style.cursor = '';</span>
+<span class="cstat-no" title="statement not covered">        document.body.style.userSelect = '';</span>
+<span class="cstat-no" title="statement not covered">        middlePanel.style.transition = '';</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">        document.removeEventListener('mousemove', onMouseMove);</span>
+<span class="cstat-no" title="statement not covered">        document.removeEventListener('mouseup', onMouseUp);</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">        this.themesTable?.table?.redraw?.();</span>
+<span class="cstat-no" title="statement not covered">        this.sectionsTable?.table?.redraw?.();</span>
+      };
+&nbsp;
+<span class="cstat-no" title="statement not covered">      document.addEventListener('mousemove', onMouseMove);</span>
+<span class="cstat-no" title="statement not covered">      document.addEventListener('mouseup', onMouseUp);</span>
+    });
+&nbsp;
+    // Touch support
+<span class="cstat-no" title="statement not covered">    splitter.addEventListener('touchstart', <span class="fstat-no" title="function not covered">(e</span>) =&gt; {</span>
+<span class="cstat-no" title="statement not covered">      if (this.isMiddlePanelCollapsed) <span class="cstat-no" title="statement not covered">return;</span></span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">      this.isResizingRight = true;</span>
+<span class="cstat-no" title="statement not covered">      splitter.classList.add('resizing');</span>
+<span class="cstat-no" title="statement not covered">      middlePanel.style.transition = 'none';</span>
+&nbsp;
+      const touch = <span class="cstat-no" title="statement not covered">e.touches[0];</span>
+      const startX = <span class="cstat-no" title="statement not covered">touch.clientX;</span>
+      const startWidth = <span class="cstat-no" title="statement not covered">middlePanel.offsetWidth;</span>
+&nbsp;
+      const onTouchMove = <span class="cstat-no" title="statement not covered"><span class="fstat-no" title="function not covered">(e</span>) =&gt; {</span>
+<span class="cstat-no" title="statement not covered">        if (!this.isResizingRight) <span class="cstat-no" title="statement not covered">return;</span></span>
+        const touch = <span class="cstat-no" title="statement not covered">e.touches[0];</span>
+        const delta = <span class="cstat-no" title="statement not covered">touch.clientX - startX;</span>
+        const newWidth = <span class="cstat-no" title="statement not covered">Math.max(200, Math.min(550, startWidth + delta));</span>
+<span class="cstat-no" title="statement not covered">        middlePanel.style.width = `${newWidth}px`;</span>
+<span class="cstat-no" title="statement not covered">        this.middlePanelWidth = newWidth;</span>
+      };
+&nbsp;
+      const onTouchEnd = <span class="cstat-no" title="statement not covered"><span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered">        this.isResizingRight = false;</span>
+<span class="cstat-no" title="statement not covered">        splitter.classList.remove('resizing');</span>
+<span class="cstat-no" title="statement not covered">        middlePanel.style.transition = '';</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">        document.removeEventListener('touchmove', onTouchMove);</span>
+<span class="cstat-no" title="statement not covered">        document.removeEventListener('touchend', onTouchEnd);</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">        this.themesTable?.table?.redraw?.();</span>
+<span class="cstat-no" title="statement not covered">        this.sectionsTable?.table?.redraw?.();</span>
+      };
+&nbsp;
+<span class="cstat-no" title="statement not covered">      document.addEventListener('touchmove', onTouchMove);</span>
+<span class="cstat-no" title="statement not covered">      document.addEventListener('touchend', onTouchEnd);</span>
+    });
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered">  toggleLeftPanel(</span>) {
+    const leftPanel = <span class="cstat-no" title="statement not covered">this.elements.leftPanel;</span>
+    const splitter = <span class="cstat-no" title="statement not covered">this.elements.splitterLeft;</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    if (!leftPanel || !splitter) <span class="cstat-no" title="statement not covered">return;</span></span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    this.isLeftPanelCollapsed = !this.isLeftPanelCollapsed;</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    if (this.isLeftPanelCollapsed) {</span>
+<span class="cstat-no" title="statement not covered">      leftPanel.classList.add('collapsed');</span>
+<span class="cstat-no" title="statement not covered">      splitter.classList.add('collapsed');</span>
+    } else {
+<span class="cstat-no" title="statement not covered">      leftPanel.classList.remove('collapsed');</span>
+<span class="cstat-no" title="statement not covered">      leftPanel.style.width = `${this.leftPanelWidth}px`;</span>
+<span class="cstat-no" title="statement not covered">      splitter.classList.remove('collapsed');</span>
     }
 &nbsp;
-    // Re-render table and select
-<span class="cstat-no" title="statement not covered">    this.renderThemeTable();</span>
-<span class="cstat-no" title="statement not covered">    this.populateThemeSelect();</span>
-    
-    // Close modal
-<span class="cstat-no" title="statement not covered">    this.closeThemeModal();</span>
-    
-    // Show success
-<span class="cstat-no" title="statement not covered">    this.showNotification(themeId ? 'Theme updated' : 'Theme created');</span>
+<span class="cstat-no" title="statement not covered">    setTimeout(<span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered">      this.themesTable?.table?.redraw?.();</span>
+<span class="cstat-no" title="statement not covered">      this.sectionsTable?.table?.redraw?.();</span>
+    }, 350);
   }
 &nbsp;
-  /**
-   * Edit theme
-   */
-<span class="fstat-no" title="function not covered">  editTheme(</span>themeId) {
-    const theme = <span class="cstat-no" title="statement not covered">this.themes.find(<span class="fstat-no" title="function not covered">(t</span>) =&gt; <span class="cstat-no" title="statement not covered">t.id === themeId)</span>;</span>
-<span class="cstat-no" title="statement not covered">    if (theme) {</span>
-<span class="cstat-no" title="statement not covered">      this.openThemeModal(theme);</span>
+<span class="fstat-no" title="function not covered">  toggleMiddlePanel(</span>) {
+    const middlePanel = <span class="cstat-no" title="statement not covered">this.elements.middlePanel;</span>
+    const splitter = <span class="cstat-no" title="statement not covered">this.elements.splitterRight;</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    if (!middlePanel || !splitter) <span class="cstat-no" title="statement not covered">return;</span></span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    this.isMiddlePanelCollapsed = !this.isMiddlePanelCollapsed;</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    if (this.isMiddlePanelCollapsed) {</span>
+<span class="cstat-no" title="statement not covered">      middlePanel.classList.add('collapsed');</span>
+<span class="cstat-no" title="statement not covered">      splitter.classList.add('collapsed');</span>
+    } else {
+<span class="cstat-no" title="statement not covered">      middlePanel.classList.remove('collapsed');</span>
+<span class="cstat-no" title="statement not covered">      middlePanel.style.width = `${this.middlePanelWidth}px`;</span>
+<span class="cstat-no" title="statement not covered">      splitter.classList.remove('collapsed');</span>
+    }
+&nbsp;
+<span class="cstat-no" title="statement not covered">    setTimeout(<span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered">      this.themesTable?.table?.redraw?.();</span>
+<span class="cstat-no" title="statement not covered">      this.sectionsTable?.table?.redraw?.();</span>
+    }, 350);
+  }
+&nbsp;
+  // ── Footer Setup ───────────────────────────────────────────────────────────
+&nbsp;
+<span class="fstat-no" title="function not covered">  setupFooter(</span>) {
+    const slot = <span class="cstat-no" title="statement not covered">this.container.closest('.manager-slot');</span>
+<span class="cstat-no" title="statement not covered">    if (!slot) <span class="cstat-no" title="statement not covered">return;</span></span>
+&nbsp;
+    const footer = <span class="cstat-no" title="statement not covered">slot.querySelector('.manager-slot-footer');</span>
+<span class="cstat-no" title="statement not covered">    if (!footer) <span class="cstat-no" title="statement not covered">return;</span></span>
+&nbsp;
+    const group = <span class="cstat-no" title="statement not covered">footer.querySelector('.subpanel-header-group');</span>
+<span class="cstat-no" title="statement not covered">    if (!group) <span class="cstat-no" title="statement not covered">return;</span></span>
+&nbsp;
+    const placeholder = <span class="cstat-no" title="statement not covered">group.querySelector('.slot-footer-placeholder');</span>
+&nbsp;
+    const footerElements =<span class="cstat-no" title="statement not covered"> setupManagerFooterIcons(group, {</span>
+      onPrint: <span class="fstat-no" title="function not covered">()</span> =&gt; <span class="cstat-no" title="statement not covered">this.handleFooterPrint(),</span>
+      onEmail: <span class="fstat-no" title="function not covered">()</span> =&gt; <span class="cstat-no" title="statement not covered">this.handleFooterEmail(),</span>
+      onExport: <span class="fstat-no" title="function not covered">(e</span>) =&gt; <span class="cstat-no" title="statement not covered">this.toggleFooterExportPopup(e),</span>
+      reportOptions: [
+        { value: 'themes-list-view', label: 'Themes List View' },
+        { value: 'themes-list-data', label: 'Themes List Data' },
+        { value: 'sections-list-view', label: 'Sections List View' },
+        { value: 'sections-list-data', label: 'Sections List Data' },
+      ],
+      fillerTitle: 'Style',
+      anchor: placeholder,
+    });
+&nbsp;
+<span class="cstat-no" title="statement not covered">    this._footerDatasource = footerElements.reportSelect;</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    log(Subsystems.MANAGER, Status.INFO, '[StyleManager] Footer controls initialized');</span>
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered">  _getFooterDatasource(</span>) {
+<span class="cstat-no" title="statement not covered">    return this._footerDatasource?.value || 'themes-list-view';</span>
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered">  handleFooterPrint(</span>) {
+    const mode = <span class="cstat-no" title="statement not covered">this._getFooterDatasource();</span>
+<span class="cstat-no" title="statement not covered">    log(Subsystems.MANAGER, Status.INFO, `[Style] Footer: Print (${mode})`);</span>
+&nbsp;
+    const isParentMode = <span class="cstat-no" title="statement not covered">mode.startsWith('themes-list');</span>
+    const table = <span class="cstat-no" title="statement not covered">isParentMode ? this.themesTable?.table : this.sectionsTable?.table;</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    if (!table) {</span>
+<span class="cstat-no" title="statement not covered">      toast.info('No Data', { description: 'No table available to print', duration: 3000 });</span>
+<span class="cstat-no" title="statement not covered">      return;</span>
+    }
+&nbsp;
+<span class="cstat-no" title="statement not covered">    if (mode.endsWith('-view')) {</span>
+<span class="cstat-no" title="statement not covered">      table.print();</span>
+    } else {
+<span class="cstat-no" title="statement not covered">      table.print('all', true);</span>
     }
   }
 &nbsp;
-  /**
-   * Open delete confirmation modal
-   */
-<span class="fstat-no" title="function not covered">  deleteTheme(</span>themeId) {
-    const theme = <span class="cstat-no" title="statement not covered">this.themes.find(<span class="fstat-no" title="function not covered">(t</span>) =&gt; <span class="cstat-no" title="statement not covered">t.id === themeId)</span>;</span>
-<span class="cstat-no" title="statement not covered">    if (!theme) <span class="cstat-no" title="statement not covered">return;</span></span>
+<span class="fstat-no" title="function not covered">  handleFooterEmail(</span>) {
+    const mode = <span class="cstat-no" title="statement not covered">this._getFooterDatasource();</span>
+<span class="cstat-no" title="statement not covered">    log(Subsystems.MANAGER, Status.INFO, `[Style] Footer: Email (${mode})`);</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered">    this.themeToDelete = themeId;</span>
-<span class="cstat-no" title="statement not covered">    this.elements.deleteThemeName.textContent = theme.name;</span>
-<span class="cstat-no" title="statement not covered">    this.elements.deleteModal?.classList.add('visible');</span>
+    const isParentMode = <span class="cstat-no" title="statement not covered">mode.startsWith('themes-list');</span>
+    const table = <span class="cstat-no" title="statement not covered">isParentMode ? this.themesTable?.table : this.sectionsTable?.table;</span>
+    const tableName = <span class="cstat-no" title="statement not covered">isParentMode ? 'Themes List' : 'Sections List';</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    if (!table) {</span>
+<span class="cstat-no" title="statement not covered">      toast.info('No Data', { description: 'No table available to email', duration: 3000 });</span>
+<span class="cstat-no" title="statement not covered">      return;</span>
+    }
+&nbsp;
+    const isViewMode = <span class="cstat-no" title="statement not covered">mode.endsWith('-view');</span>
+    const rows = <span class="cstat-no" title="statement not covered">isViewMode ? table.getRows('active') : table.getRows();</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    if (rows.length === 0) {</span>
+<span class="cstat-no" title="statement not covered">      toast.info('No Data', { description: 'No rows to include in the email', duration: 3000 });</span>
+<span class="cstat-no" title="statement not covered">      return;</span>
+    }
+&nbsp;
+    const visibleCols = <span class="cstat-no" title="statement not covered">isViewMode</span>
+      ? table.getColumns().filter(<span class="fstat-no" title="function not covered">col </span>=&gt; <span class="cstat-no" title="statement not covered">col.isVisible() &amp;&amp; col.getField() !== '_selector')</span>
+      : table.getColumns().filter(<span class="fstat-no" title="function not covered">col </span>=&gt; <span class="cstat-no" title="statement not covered">col.getField() !== '_selector')</span>;
+&nbsp;
+    const headers = <span class="cstat-no" title="statement not covered">visibleCols.map(<span class="fstat-no" title="function not covered">col </span>=&gt; <span class="cstat-no" title="statement not covered">col.getDefinition().title || col.getField())</span>;</span>
+    const separator = <span class="cstat-no" title="statement not covered">headers.map(<span class="fstat-no" title="function not covered">h </span>=&gt; <span class="cstat-no" title="statement not covered">'-'.repeat(h.length))</span>.join('  ');</span>
+&nbsp;
+    const dataLines = <span class="cstat-no" title="statement not covered">rows.slice(0, 50).map(<span class="fstat-no" title="function not covered">row </span>=&gt; {</span>
+      const data = <span class="cstat-no" title="statement not covered">row.getData();</span>
+<span class="cstat-no" title="statement not covered">      return visibleCols.map(<span class="fstat-no" title="function not covered">col </span>=&gt; {</span>
+        const val = <span class="cstat-no" title="statement not covered">data[col.getField()];</span>
+<span class="cstat-no" title="statement not covered">        return val != null ? String(val) : '';</span>
+      }).join('\t');
+    });
+&nbsp;
+    const totalRows = <span class="cstat-no" title="statement not covered">rows.length;</span>
+    const truncated = <span class="cstat-no" title="statement not covered">totalRows &gt; 50 ? `\n... (${totalRows - 50} more rows not shown)` : '';</span>
+    const modeLabel = <span class="cstat-no" title="statement not covered">isViewMode ? 'Filtered View' : 'Full Data';</span>
+&nbsp;
+    const subject = <span class="cstat-no" title="statement not covered">encodeURIComponent(`${tableName} — ${totalRows} rows (${modeLabel})`);</span>
+    const body = <span class="cstat-no" title="statement not covered">encodeURIComponent(</span>
+      `${tableName} Export (${modeLabel})\n` +
+      `${totalRows} row(s)\n\n` +
+      `${headers.join('\t')}\n${separator}\n` +
+      `${dataLines.join('\n')}${truncated}\n`
+    );
+&nbsp;
+<span class="cstat-no" title="statement not covered">    window.open(`mailto:?subject=${subject}&amp;body=${body}`, '_self');</span>
   }
 &nbsp;
-  /**
-   * Close delete modal
-   */
-<span class="fstat-no" title="function not covered">  closeDeleteModal(</span>) {
-<span class="cstat-no" title="statement not covered">    this.elements.deleteModal?.classList.remove('visible');</span>
-<span class="cstat-no" title="statement not covered">    this.themeToDelete = null;</span>
+<span class="fstat-no" title="function not covered">  toggleFooterExportPopup(</span>e) {
+<span class="cstat-no" title="statement not covered">    e.stopPropagation();</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    if (this._footerExportPopup) {</span>
+<span class="cstat-no" title="statement not covered">      this._closeFooterExportPopup();</span>
+<span class="cstat-no" title="statement not covered">      return;</span>
+    }
+&nbsp;
+    const btn = <span class="cstat-no" title="statement not covered">e.currentTarget;</span>
+    const mode = <span class="cstat-no" title="statement not covered">this._getFooterDatasource();</span>
+    const formats = <span class="cstat-no" title="statement not covered">[</span>
+      { label: 'PDF', action: <span class="fstat-no" title="function not covered">()</span> =&gt; <span class="cstat-no" title="statement not covered">this.handleFooterExport('pdf', mode) </span>},
+      { label: 'CSV', action: <span class="fstat-no" title="function not covered">()</span> =&gt; <span class="cstat-no" title="statement not covered">this.handleFooterExport('csv', mode) </span>},
+      { label: 'TXT', action: <span class="fstat-no" title="function not covered">()</span> =&gt; <span class="cstat-no" title="statement not covered">this.handleFooterExport('txt', mode) </span>},
+      { label: 'XLS', action: <span class="fstat-no" title="function not covered">()</span> =&gt; <span class="cstat-no" title="statement not covered">this.handleFooterExport('xls', mode) </span>},
+    ];
+&nbsp;
+    const popup = <span class="cstat-no" title="statement not covered">document.createElement('div');</span>
+<span class="cstat-no" title="statement not covered">    popup.className = 'style-footer-export-popup';</span>
+<span class="cstat-no" title="statement not covered">    formats.forEach(<span class="fstat-no" title="function not covered">item </span>=&gt; {</span>
+      const row = <span class="cstat-no" title="statement not covered">document.createElement('button');</span>
+<span class="cstat-no" title="statement not covered">      row.type = 'button';</span>
+<span class="cstat-no" title="statement not covered">      row.className = 'style-footer-export-popup-item';</span>
+<span class="cstat-no" title="statement not covered">      row.textContent = item.label;</span>
+<span class="cstat-no" title="statement not covered">      row.addEventListener('click', <span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered">        this._closeFooterExportPopup();</span>
+<span class="cstat-no" title="statement not covered">        item.action();</span>
+      });
+<span class="cstat-no" title="statement not covered">      popup.appendChild(row);</span>
+    });
+&nbsp;
+    const btnRect = <span class="cstat-no" title="statement not covered">btn.getBoundingClientRect();</span>
+<span class="cstat-no" title="statement not covered">    document.body.appendChild(popup);</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    requestAnimationFrame(<span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
+      const popupRect = <span class="cstat-no" title="statement not covered">popup.getBoundingClientRect();</span>
+<span class="cstat-no" title="statement not covered">      popup.style.position = 'fixed';</span>
+<span class="cstat-no" title="statement not covered">      popup.style.top = `${btnRect.top - popupRect.height - 8}px`;</span>
+<span class="cstat-no" title="statement not covered">      popup.style.left = `${btnRect.left}px`;</span>
+    });
+&nbsp;
+<span class="cstat-no" title="statement not covered">    setTimeout(<span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered">      popup.classList.add('visible');</span>
+    }, 10);
+&nbsp;
+<span class="cstat-no" title="statement not covered">    this._footerExportPopup = popup;</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    this._footerExportCloseHandler = <span class="fstat-no" title="function not covered">(e</span>vt) =&gt; {</span>
+<span class="cstat-no" title="statement not covered">      if (!popup.contains(evt.target) &amp;&amp; !btn.contains(evt.target)) {</span>
+<span class="cstat-no" title="statement not covered">        this._closeFooterExportPopup();</span>
+      }
+    };
+<span class="cstat-no" title="statement not covered">    document.addEventListener('click', this._footerExportCloseHandler);</span>
   }
 &nbsp;
-  /**
-   * Confirm delete
-   */
-  async <span class="fstat-no" title="function not covered">confirmDelete(</span>) {
-<span class="cstat-no" title="statement not covered">    if (!this.themeToDelete) <span class="cstat-no" title="statement not covered">return;</span></span>
-&nbsp;
-    // Remove from array
-<span class="cstat-no" title="statement not covered">    this.themes = this.themes.filter(<span class="fstat-no" title="function not covered">(t</span>) =&gt; <span class="cstat-no" title="statement not covered">t.id !== this.themeToDelete)</span>;</span>
-    
-    // Re-render
-<span class="cstat-no" title="statement not covered">    this.renderThemeTable();</span>
-<span class="cstat-no" title="statement not covered">    this.populateThemeSelect();</span>
-    
-    // Close modal
-<span class="cstat-no" title="statement not covered">    this.closeDeleteModal();</span>
-    
-    // Show success
-<span class="cstat-no" title="statement not covered">    this.showNotification('Theme deleted');</span>
+<span class="fstat-no" title="function not covered">  _closeFooterExportPopup(</span>) {
+<span class="cstat-no" title="statement not covered">    if (this._footerExportPopup) {</span>
+<span class="cstat-no" title="statement not covered">      this._footerExportPopup.remove();</span>
+<span class="cstat-no" title="statement not covered">      this._footerExportPopup = null;</span>
+    }
+<span class="cstat-no" title="statement not covered">    if (this._footerExportCloseHandler) {</span>
+<span class="cstat-no" title="statement not covered">      document.removeEventListener('click', this._footerExportCloseHandler);</span>
+<span class="cstat-no" title="statement not covered">      this._footerExportCloseHandler = null;</span>
+    }
   }
 &nbsp;
-  /**
-   * Show notification
-   */
-<span class="fstat-no" title="function not covered">  showNotification(</span>message) {
-    // Simple notification - could be enhanced with toast UI
-<span class="cstat-no" title="statement not covered">    console.log('[StyleManager]', message);</span>
-    
-    // Dispatch custom event for app-level notification
-<span class="cstat-no" title="statement not covered">    eventBus.emit('notification', { type: 'success', message });</span>
+<span class="fstat-no" title="function not covered">  handleFooterExport(</span>format, mode) {
+<span class="cstat-no" title="statement not covered">    log(Subsystems.MANAGER, Status.INFO, `[Style] Footer: Export ${format.toUpperCase()} (${mode})`);</span>
+&nbsp;
+    const isParentMode = <span class="cstat-no" title="statement not covered">mode.startsWith('themes-list');</span>
+    const table = <span class="cstat-no" title="statement not covered">isParentMode ? this.themesTable?.table : this.sectionsTable?.table;</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    if (!table) {</span>
+<span class="cstat-no" title="statement not covered">      toast.info('No Data', { description: 'No table available to export', duration: 3000 });</span>
+<span class="cstat-no" title="statement not covered">      return;</span>
+    }
+&nbsp;
+    const filename = <span class="cstat-no" title="statement not covered">`style-export-${new Date().toISOString().slice(0, 10)}`;</span>
+    const isViewMode = <span class="cstat-no" title="statement not covered">mode.endsWith('-view');</span>
+    const downloadOpts = <span class="cstat-no" title="statement not covered">isViewMode ? {} : { rowGroups: false };</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    switch (format) {</span>
+      case 'pdf':
+<span class="cstat-no" title="statement not covered">        table.download('pdf', `${filename}.pdf`, { orientation: 'landscape', ...downloadOpts });</span>
+<span class="cstat-no" title="statement not covered">        break;</span>
+      case 'csv':
+<span class="cstat-no" title="statement not covered">        table.download('csv', `${filename}.csv`, downloadOpts);</span>
+<span class="cstat-no" title="statement not covered">        break;</span>
+      case 'txt':
+<span class="cstat-no" title="statement not covered">        table.download('csv', `${filename}.txt`, downloadOpts);</span>
+<span class="cstat-no" title="statement not covered">        break;</span>
+      case 'xls':
+<span class="cstat-no" title="statement not covered">        table.download('xlsx', `${filename}.xlsx`, downloadOpts);</span>
+<span class="cstat-no" title="statement not covered">        break;</span>
+      default:
+<span class="cstat-no" title="statement not covered">        log(Subsystems.MANAGER, Status.WARN, `Unknown export format: ${format}`);</span>
+    }
   }
 &nbsp;
-  /**
-   * Show error
-   */
-<span class="fstat-no" title="function not covered">  showError(</span>message) {
-<span class="cstat-no" title="statement not covered">    console.error('[StyleManager]', message);</span>
-<span class="cstat-no" title="statement not covered">    eventBus.emit('notification', { type: 'error', message });</span>
-  }
+  // ── Lifecycle ──────────────────────────────────────────────────────────────
 &nbsp;
-  /**
-   * Show the style manager
-   */
 <span class="fstat-no" title="function not covered">  show(</span>) {
 <span class="cstat-no" title="statement not covered">    requestAnimationFrame(<span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
-<span class="cstat-no" title="statement not covered">      this.elements.page?.classList.add('visible');</span>
+<span class="cstat-no" title="statement not covered">      this.elements.container?.classList.add('visible');</span>
     });
   }
 &nbsp;
-  /**
-   * Teardown the style manager
-   */
-<span class="fstat-no" title="function not covered">  teardown(</span>) {
-    // Destroy Tabulator table
-<span class="cstat-no" title="statement not covered">    if (this.table) {</span>
-<span class="cstat-no" title="statement not covered">      this.table.destroy();</span>
-<span class="cstat-no" title="statement not covered">      this.table = null;</span>
+<span class="fstat-no" title="function not covered">  onActivate(</span>) {
+<span class="cstat-no" title="statement not covered">    log(Subsystems.MANAGER, Status.INFO, '[Style] Activated');</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    if (this.themesTable?.table) {</span>
+<span class="cstat-no" title="statement not covered">      this.themesTable.table.redraw?.();</span>
+    }
+<span class="cstat-no" title="statement not covered">    if (this.sectionsTable?.table) {</span>
+<span class="cstat-no" title="statement not covered">      this.sectionsTable.table.redraw?.();</span>
+    }
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered">  onDeactivate(</span>) {
+<span class="cstat-no" title="statement not covered">    log(Subsystems.MANAGER, Status.INFO, '[Style] Deactivated');</span>
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered">  cleanup(</span>) {
+<span class="cstat-no" title="statement not covered">    log(Subsystems.MANAGER, Status.INFO, '[Style] Cleaning up...');</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    this._closeFooterExportPopup();</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    if (this.fontPopup) {</span>
+<span class="cstat-no" title="statement not covered">      this.fontPopup.remove();</span>
+<span class="cstat-no" title="statement not covered">      this.fontPopup = null;</span>
     }
 &nbsp;
-    // Destroy CodeMirror editor
-<span class="cstat-no" title="statement not covered">    if (this.editor) {</span>
-<span class="cstat-no" title="statement not covered">      this.editor.destroy();</span>
-<span class="cstat-no" title="statement not covered">      this.editor = null;</span>
+<span class="cstat-no" title="statement not covered">    this.themesTable?.destroy();</span>
+<span class="cstat-no" title="statement not covered">    this.sectionsTable?.destroy();</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    this.themesTable = null;</span>
+<span class="cstat-no" title="statement not covered">    this.sectionsTable = null;</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    if (this.cssEditor) {</span>
+<span class="cstat-no" title="statement not covered">      this.cssEditor.destroy();</span>
+<span class="cstat-no" title="statement not covered">      this.cssEditor = null;</span>
     }
 &nbsp;
-    // Clear elements
-<span class="cstat-no" title="statement not covered">    this.elements = {};</span>
+<span class="cstat-no" title="statement not covered">    if (this.variablesEditor) {</span>
+<span class="cstat-no" title="statement not covered">      this.variablesEditor.destroy();</span>
+<span class="cstat-no" title="statement not covered">      this.variablesEditor = null;</span>
+    }
   }
 }
-&nbsp;</pre></td></tr></table></pre><div class="push"></div></div><div class="footer quiet pad2 space-top1 center small">Code coverage generated by <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a> at 2026-03-27T03:22:24.134Z</div><script src="../../prettify.js"></script><script>window.onload=function(){prettyPrint()}</script><script src="../../sorter.js"></script><script src="../../block-navigation.js"></script></body></html>
+&nbsp;</pre></td></tr></table></pre><div class="push"></div></div><div class="footer quiet pad2 space-top1 center small">Code coverage generated by <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a> at 2026-03-28T16:42:46.479Z</div><script src="../../prettify.js"></script><script>window.onload=function(){prettyPrint()}</script><script src="../../sorter.js"></script><script src="../../block-navigation.js"></script></body></html>
