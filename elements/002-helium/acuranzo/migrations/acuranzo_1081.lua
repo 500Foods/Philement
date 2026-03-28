@@ -78,10 +78,12 @@ table.insert(queries,{sql=[[
             INSERT INTO ${SCHEMA}${TABLE}
                 (lookup_id, key_idx, status_a1, value_txt, value_int, sort_seq, code, summary, collection, ${COMMON_FIELDS})
             VALUES
-                (${LOOKUP_ID},  0, 1, 'Not Assigned',           0,  0, '', '', ${JIS}[==[{}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID},  1, 1, 'General Information',    0,  1, '', '', ${JIS}[==[{}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID},  2, 1, 'Configuration',          0, 10, '', '', ${JIS}[==[{}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID},  3, 1, 'Chat Services',          0,  2, '', '', ${JIS}[==[{}]==]${JIE}, ${COMMON_VALUES});
+                (${LOOKUP_ID},  0, 1, 'Internal',       0, 0, '', '', ${JIS}[==[{}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID},  1, 1, 'General',        0, 1, '', '', ${JIS}[==[{}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID},  2, 1, 'Shared',         0, 2, '', '', ${JIS}[==[{}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID},  3, 1, 'Support',        0, 3, '', '', ${JIS}[==[{}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID},  4, 1, 'Configuration',  0, 4, '', '', ${JIS}[==[{}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID},  5, 1, 'Security',       0, 5, '', '', ${JIS}[==[{}]==]${JIE}, ${COMMON_VALUES});
 
             ${SUBQUERY_DELIMITER}
 
@@ -130,7 +132,7 @@ table.insert(queries,{sql=[[
 
             DELETE FROM ${SCHEMA}${TABLE}
             WHERE lookup_id = ${LOOKUP_ID}
-            AND key_idx IN (0,1,2,3);
+            AND key_idx IN (0,1,2,3,4,5);
 
             ${SUBQUERY_DELIMITER}
 

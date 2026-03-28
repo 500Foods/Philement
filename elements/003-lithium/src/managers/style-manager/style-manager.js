@@ -1,96 +1,104 @@
 /**
- * Style Manager
- * 
- * Theme management: create, edit, apply, and share user themes.
- * Implements List View with Tabulator and CSS View with CodeMirror.
+ * Style Manager — Manager ID 1
+ *
+ * A three-panel interface for managing themes and their CSS sections:
+ * - Left panel: List of all themes (parent table)
+ * - Middle panel: CSS sections for the selected theme (child table)
+ * - Right panel: Tabbed view with CSS Editor, Variables, and Preview
+ *
+ * Uses the reusable LithiumTable component for both tables.
+ *
+ * @module managers/style-manager
  */
 
-import { eventBus, Events } from '../../core/event-bus.js';
+import { LithiumTable } from '../../core/lithium-table-main.js';
+import '../../styles/vendor-tabulator.css';
+import { authQuery } from '../../shared/conduit.js';
+import { toast } from '../../shared/toast.js';
+import { log, Subsystems, Status } from '../../core/log.js';
+import { processIcons } from '../../core/icons.js';
+import { setupManagerFooterIcons } from '../../core/manager-ui.js';
 import { getClaims } from '../../core/jwt.js';
-import { getConfig, getConfigValue } from '../../core/config.js';
 import { hasFeature, getFeaturesForManager } from '../../core/permissions.js';
+import '../../core/manager-panels.css';
+import './style-manager.css';
 
 // Dynamic imports for third-party libraries
-let Tabulator;
-let DOMPurify;
+let marked;
 
-/**
- * Style Manager Class
- */
+// Constants
+const SELECTED_THEME_KEY = 'lithium_style_selected_theme_id';
+
+// ── StyleManager Class ────────────────────────────────────────────────────
+
 export default class StyleManager {
   constructor(app, container) {
     this.app = app;
     this.container = container;
     this.elements = {};
-    this.themes = [];
-    this.currentTheme = null;
-    this.table = null;
-    this.editor = null;
-    
+
     // Style Manager ID = 1
     this.managerId = 1;
+
+    // Parent table (themes list)
+    this.themesTable = null;
+
+    // Child table (sections list)
+    this.sectionsTable = null;
+
+    // Currently selected theme
+    this.selectedThemeId = null;
+    this.selectedThemeName = null;
+
+    // Editor instances
+    this.cssEditor = null;
+    this.variablesEditor = null;
+
+    // Splitter state
+    this.leftPanelWidth = 280;
+    this.middlePanelWidth = 350;
+    this.isLeftPanelCollapsed = false;
+    this.isMiddlePanelCollapsed = false;
+    this.isResizingLeft = false;
+    this.isResizingRight = false;
+
+    // Active tab
+    this.activeTab = 'css';
+
+    // Font popup state
+    this.fontPopup = null;
+    this.editorFontSize = 14;
+    this.editorFontFamily = 'var(--font-mono)';
+
+    // Current theme data for preview
+    this.currentThemeData = null;
   }
 
-  /**
-   * Initialize the style manager
-   */
   async init() {
-    // Load third-party libraries
     await this.loadDependencies();
-    
-    // Load CSS
-    this.loadStyles();
-    
-    // Render template
     await this.render();
-    
-    // Setup event listeners
     this.setupEventListeners();
-    
-    // Apply feature-gated UI
+    this.setupSplitters();
     this.applyPermissions();
-    
-    // Load themes from API (or mock data for now)
-    await this.loadThemes();
-    
-    // Show the page
+    await this.initThemesTable();
+    await this.initSectionsTable();
+    this.setupFooter();
+    this.setupTabs();
     this.show();
   }
 
   /**
-   * Load dependencies (Tabulator, DOMPurify)
+   * Load third-party dependencies
    */
   async loadDependencies() {
     try {
-      // Dynamic import Tabulator
-      const tabulatorModule = await import('tabulator-tables');
-      Tabulator = tabulatorModule.default;
-      
-      // Dynamic import DOMPurify
-      const dompurifyModule = await import('dompurify');
-      DOMPurify = dompurifyModule.default;
+      const markedModule = await import('marked');
+      marked = markedModule.marked;
     } catch (error) {
       console.error('[StyleManager] Failed to load dependencies:', error);
     }
   }
 
-  /**
-   * Load manager-specific CSS
-   */
-  loadStyles() {
-    // Check if styles are already loaded
-    if (document.getElementById('style-manager-styles')) return;
-    
-    const link = document.createElement('link');
-    link.id = 'style-manager-styles';
-    link.rel = 'stylesheet';
-    link.href = '/src/managers/style-manager/style-manager.css';
-    document.head.appendChild(link);
-  }
-
-  /**
-   * Render the style manager template
-   */
   async render() {
     try {
       const response = await fetch('/src/managers/style-manager/style-manager.html');
@@ -98,48 +106,35 @@ export default class StyleManager {
       this.container.innerHTML = html;
     } catch (error) {
       console.error('[StyleManager] Failed to load template:', error);
-      this.renderFallback();
+      this.container.innerHTML = '<div class="error">Failed to load Style Manager</div>';
+      return;
     }
 
-    // Cache DOM elements
     this.elements = {
-      page: this.container.querySelector('#style-manager-page'),
-      tabButtons: this.container.querySelectorAll('.tab-btn'),
-      listView: this.container.querySelector('#list-view'),
-      cssView: this.container.querySelector('#css-view'),
-      themeTable: this.container.querySelector('#theme-table'),
-      cssEditor: this.container.querySelector('#css-editor'),
-      themeSelect: this.container.querySelector('#theme-select'),
-      btnNewTheme: this.container.querySelector('#btn-new-theme'),
-      btnApplyCss: this.container.querySelector('#btn-apply-css'),
-      btnSaveCss: this.container.querySelector('#btn-save-css'),
-      themeModal: this.container.querySelector('#theme-modal'),
-      deleteModal: this.container.querySelector('#delete-modal'),
-      modalTitle: this.container.querySelector('#modal-title'),
-      modalClose: this.container.querySelector('#modal-close'),
-      themeForm: this.container.querySelector('#theme-form'),
-      themeId: this.container.querySelector('#theme-id'),
-      themeName: this.container.querySelector('#theme-name'),
-      themeVariables: this.container.querySelector('#theme-variables'),
-      themeRawCss: this.container.querySelector('#theme-raw-css'),
-      btnSaveTheme: this.container.querySelector('#btn-save-theme'),
-      btnCancelTheme: this.container.querySelector('#btn-cancel-theme'),
-      deleteThemeName: this.container.querySelector('#delete-theme-name'),
-      deleteModalClose: this.container.querySelector('#delete-modal-close'),
-      btnCancelDelete: this.container.querySelector('#btn-cancel-delete'),
-      btnConfirmDelete: this.container.querySelector('#btn-confirm-delete'),
+      container: this.container.querySelector('.style-manager-container'),
+      leftPanel: this.container.querySelector('#style-left-panel'),
+      middlePanel: this.container.querySelector('#style-middle-panel'),
+      rightPanel: this.container.querySelector('#style-right-panel'),
+      themesTableContainer: this.container.querySelector('#style-themes-table-container'),
+      themesNavigator: this.container.querySelector('#style-themes-navigator'),
+      sectionsTableContainer: this.container.querySelector('#style-sections-table-container'),
+      sectionsNavigator: this.container.querySelector('#style-sections-navigator'),
+      childTitle: this.container.querySelector('#style-child-title'),
+      splitterLeft: this.container.querySelector('#style-splitter-left'),
+      splitterRight: this.container.querySelector('#style-splitter-right'),
+      collapseLeftBtn: this.container.querySelector('#style-collapse-left-btn'),
+      collapseMiddleBtn: this.container.querySelector('#style-collapse-middle-btn'),
+      collapseLeftIcon: this.container.querySelector('#style-collapse-left-icon'),
+      collapseMiddleIcon: this.container.querySelector('#style-collapse-middle-icon'),
+      fontBtn: this.container.querySelector('#style-font-btn'),
+      tabBtns: this.container.querySelectorAll('.tab-btn'),
+      tabPanes: this.container.querySelectorAll('.tab-pane'),
+      cssEditor: this.container.querySelector('#style-css-editor'),
+      variablesEditor: this.container.querySelector('#style-variables-editor'),
+      previewContent: this.container.querySelector('#style-preview-content'),
     };
-  }
 
-  /**
-   * Render fallback if template fails
-   */
-  renderFallback() {
-    this.container.innerHTML = `
-      <div id="style-manager-page">
-        <p>Style Manager loading...</p>
-      </div>
-    `;
+    processIcons(this.container);
   }
 
   /**
@@ -148,305 +143,242 @@ export default class StyleManager {
   applyPermissions() {
     const claims = getClaims();
     const features = getFeaturesForManager(this.managerId, claims?.punchcard);
-    
-    // Feature 1: View all styles (read-only) - always show
-    // Feature 2: Edit all styles - controls New/Edit buttons
+
+    // Feature 1: View all styles (read-only)
+    // Feature 2: Edit all styles
     const canEdit = hasFeature(this.managerId, 2, claims?.punchcard);
-    // Feature 4: Use CSS code editor - controls CSS View tab
-    const canUseCssEditor = hasFeature(this.managerId, 4, claims?.punchcard);
-    // Feature 5: Delete themes - controls Delete button
+    // Feature 5: Delete themes
     const canDelete = hasFeature(this.managerId, 5, claims?.punchcard);
-    
-    // Store permissions for use in actions
-    this.permissions = { canEdit, canUseCssEditor, canDelete };
-    
-    // Show/hide elements based on permissions
-    if (!canEdit) {
-      this.elements.btnNewTheme?.classList.add('hidden');
-    }
-    
-    if (!canUseCssEditor) {
-      const cssTab = this.container.querySelector('[data-view="css"]');
-      cssTab?.classList.add('hidden');
-    }
-    
-    // Store canDelete for table row actions
-    this.canDelete = canDelete;
+
+    this.permissions = { canEdit, canDelete };
   }
 
-  /**
-   * Set up event listeners
-   */
   setupEventListeners() {
-    // Tab switching
-    this.elements.tabButtons?.forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const view = btn.dataset.view;
-        this.switchView(view);
-      });
+    // Collapse/expand buttons
+    this.elements.collapseLeftBtn?.addEventListener('click', () => {
+      this.toggleLeftPanel();
     });
 
-    // New theme button
-    this.elements.btnNewTheme?.addEventListener('click', () => {
-      this.openThemeModal();
+    this.elements.collapseMiddleBtn?.addEventListener('click', () => {
+      this.toggleMiddlePanel();
     });
 
-    // Apply CSS button
-    this.elements.btnApplyCss?.addEventListener('click', () => {
-      this.applyCurrentCss();
+    // Font button
+    this.elements.fontBtn?.addEventListener('click', (e) => {
+      this.toggleFontPopup(e);
     });
 
-    // Save CSS button
-    this.elements.btnSaveCss?.addEventListener('click', () => {
-      this.saveCss();
-    });
-
-    // Theme select change
-    this.elements.themeSelect?.addEventListener('change', (e) => {
-      this.loadThemeForEditor(e.target.value);
-    });
-
-    // Modal: Close buttons
-    this.elements.modalClose?.addEventListener('click', () => {
-      this.closeThemeModal();
-    });
-
-    this.elements.btnCancelTheme?.addEventListener('click', () => {
-      this.closeThemeModal();
-    });
-
-    this.elements.btnSaveTheme?.addEventListener('click', () => {
-      this.saveTheme();
-    });
-
-    // Modal overlay click
-    this.elements.themeModal?.querySelector('.modal-overlay')?.addEventListener('click', () => {
-      this.closeThemeModal();
-    });
-
-    // Delete modal
-    this.elements.deleteModalClose?.addEventListener('click', () => {
-      this.closeDeleteModal();
-    });
-
-    this.elements.btnCancelDelete?.addEventListener('click', () => {
-      this.closeDeleteModal();
-    });
-
-    this.elements.btnConfirmDelete?.addEventListener('click', () => {
-      this.confirmDelete();
-    });
-
-    this.elements.deleteModal?.querySelector('.modal-overlay')?.addEventListener('click', () => {
-      this.closeDeleteModal();
-    });
+    this.initFontPopup();
   }
 
-  /**
-   * Switch between views
-   */
-  switchView(view) {
-    // Update tab buttons
-    this.elements.tabButtons?.forEach((btn) => {
-      btn.classList.toggle('active', btn.dataset.view === view);
+  // ── Themes Table (Parent) ──────────────────────────────────────────────────
+
+  async initThemesTable() {
+    if (!this.elements.themesTableContainer || !this.elements.themesNavigator) return;
+
+    this.themesTable = new LithiumTable({
+      container: this.elements.themesTableContainer,
+      navigatorContainer: this.elements.themesNavigator,
+      tablePath: 'style-manager/themes-list',
+      queryRef: 50, // Theme List
+      searchQueryRef: 51, // Theme Search
+      cssPrefix: 'style-parent',
+      storageKey: 'style_themes_table',
+      app: this.app,
+      readonly: false,
+      onRowSelected: (rowData) => this.handleThemeSelected(rowData),
+      onRowDeselected: () => this.handleThemeDeselected(),
+      onDataLoaded: (rows) => {
+        log(Subsystems.TABLE, Status.INFO, `[Style] Loaded ${rows.length} themes`);
+      },
     });
 
-    // Update view visibility
-    this.elements.listView?.classList.toggle('hidden', view !== 'list');
-    this.elements.cssView?.classList.toggle('hidden', view !== 'css');
+    await this.themesTable.init();
+    await this.themesTable.loadData();
+  }
 
-    // Initialize CodeMirror when switching to CSS view
-    if (view === 'css' && !this.editor) {
-      this.initCodeMirror();
+  // ── Sections Table (Child) ─────────────────────────────────────────────────
+
+  async initSectionsTable() {
+    if (!this.elements.sectionsTableContainer || !this.elements.sectionsNavigator) return;
+
+    this.sectionsTable = new LithiumTable({
+      container: this.elements.sectionsTableContainer,
+      navigatorContainer: this.elements.sectionsNavigator,
+      tablePath: 'style-manager/sections-list',
+      queryRef: 52, // Sections List (requires THEMEID param)
+      cssPrefix: 'style-child',
+      storageKey: 'style_sections_table',
+      app: this.app,
+      readonly: false,
+      onRowSelected: (rowData) => this.handleSectionSelected(rowData),
+      onRowDeselected: () => this.handleSectionDeselected(),
+      onDataLoaded: (rows) => {
+        log(Subsystems.TABLE, Status.INFO, `[Style] Loaded ${rows.length} sections`);
+      },
+    });
+
+    await this.sectionsTable.init();
+  }
+
+  // ── Parent/Child Relationship ──────────────────────────────────────────────
+
+  async handleThemeSelected(rowData) {
+    if (!rowData) return;
+
+    const themeId = rowData.theme_id;
+    const themeName = rowData.name;
+
+    if (!themeId) return;
+
+    this.selectedThemeId = themeId;
+    this.selectedThemeName = themeName;
+
+    // Update child table title
+    if (this.elements.childTitle) {
+      this.elements.childTitle.textContent = themeName
+        ? `${themeName} (${themeId})`
+        : `Theme ${themeId}`;
+    }
+
+    // Persist selection
+    try { localStorage.setItem(SELECTED_THEME_KEY, String(themeId)); } catch (_e) { /* ignore */ }
+
+    // Load child data for this theme
+    await this.loadSectionsData(themeId);
+
+    // Load theme details for preview
+    await this.loadThemeDetails(themeId);
+  }
+
+  handleThemeDeselected() {
+    this.selectedThemeId = null;
+    this.selectedThemeName = null;
+
+    if (this.elements.childTitle) {
+      this.elements.childTitle.textContent = 'Select a Theme';
+    }
+
+    // Clear child table data
+    if (this.sectionsTable?.table) {
+      this.sectionsTable.table.setData([]);
+    }
+
+    // Clear detail view
+    this.clearDetailView();
+  }
+
+  async loadSectionsData(themeId) {
+    if (!this.sectionsTable || !this.app?.api) return;
+
+    try {
+      this.sectionsTable.showLoading();
+
+      const rows = await authQuery(this.app.api, 52, {
+        INTEGER: { THEMEID: themeId },
+      });
+
+      if (!this.sectionsTable.table) return;
+
+      this.sectionsTable.table.blockRedraw?.();
+      try {
+        this.sectionsTable.table.setData(rows);
+        this.sectionsTable.discoverColumns(rows);
+      } finally {
+        this.sectionsTable.table.restoreRedraw?.();
+      }
+
+      // Auto-select first row if any
+      requestAnimationFrame(() => {
+        const activeRows = this.sectionsTable.table.getRows('active');
+        if (activeRows.length > 0) {
+          activeRows[0].select();
+        }
+        this.sectionsTable.updateMoveButtonState();
+      });
+
+      log(Subsystems.TABLE, Status.INFO, `[Style] Loaded ${rows.length} sections for theme ${themeId}`);
+    } catch (error) {
+      toast.error('Failed to load theme sections', {
+        serverError: error.serverError,
+        subsystem: 'Conduit',
+        duration: 6000,
+      });
+    } finally {
+      this.sectionsTable.hideLoading();
     }
   }
 
-  /**
-   * Load themes from API (or use mock data)
-   */
-  async loadThemes() {
-    try {
-      const config = getConfig();
-      const serverUrl = getConfigValue('server.url', 'http://localhost:8080');
-      const apiPrefix = getConfigValue('server.api_prefix', '/api');
+  async loadThemeDetails(themeId) {
+    if (!this.app?.api) return;
 
-      const response = await fetch(`${serverUrl}${apiPrefix}/themes`, {
-        headers: {
-          'Accept': 'application/json',
-        },
+    try {
+      // QueryRef 53: Get single theme details
+      const detail = await authQuery(this.app.api, 53, {
+        INTEGER: { THEMEID: themeId },
       });
 
-      if (response.ok) {
-        this.themes = await response.json();
-      } else {
-        // Use mock data if API fails
-        this.themes = this.getMockThemes();
+      if (detail && detail.length > 0) {
+        this.currentThemeData = detail[0];
+        this.updatePreview();
       }
     } catch (error) {
-      console.warn('[StyleManager] Failed to fetch themes, using mock data:', error);
-      this.themes = this.getMockThemes();
+      log(Subsystems.TABLE, Status.ERROR, `[Style] Failed to load theme details: ${error.message}`);
+    }
+  }
+
+  // ── Child Table Handlers ───────────────────────────────────────────────────
+
+  handleSectionSelected(_rowData) {
+    // Future: Load section CSS into editor when row is selected
+    // This would populate the CSS editor with the section's CSS rules
+  }
+
+  handleSectionDeselected() {
+    // Clear section editor
+  }
+
+  // ── Tab System ─────────────────────────────────────────────────────────────
+
+  setupTabs() {
+    this.elements.tabBtns?.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tabId = btn.dataset.tab;
+        this.switchTab(tabId);
+      });
+    });
+  }
+
+  switchTab(tabId) {
+    this.activeTab = tabId;
+
+    // Update buttons
+    this.elements.tabBtns.forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.tab === tabId);
+    });
+
+    // Update panes
+    this.elements.tabPanes.forEach(pane => {
+      pane.classList.toggle('active', pane.id === `style-tab-${tabId}`);
+    });
+
+    // Initialize CodeMirror when switching to CSS view
+    if (tabId === 'css' && !this.cssEditor) {
+      this.initCssEditor();
     }
 
-    this.renderThemeTable();
-    this.populateThemeSelect();
+    // Refresh preview if switching to preview tab
+    if (tabId === 'preview') {
+      this.updatePreview();
+    }
   }
 
-  /**
-   * Get mock themes for development
-   */
-  getMockThemes() {
-    return [
-      {
-        id: 1,
-        name: 'Midnight Indigo',
-        owner_id: 1,
-        shared_with: [],
-        public: false,
-        variables: { '--bg-primary': '#0D1117', '--accent-primary': '#58A6FF' },
-        raw_css: '',
-        created_at: '2025-01-15T10:30:00Z',
-        updated_at: '2025-03-01T14:22:00Z',
-      },
-      {
-        id: 2,
-        name: 'Ocean Breeze',
-        owner_id: 1,
-        shared_with: [3, 12],
-        public: false,
-        variables: { '--bg-primary': '#0a192f', '--accent-primary': '#64ffda' },
-        raw_css: '',
-        created_at: '2025-02-10T09:15:00Z',
-        updated_at: '2025-02-28T16:45:00Z',
-      },
-      {
-        id: 3,
-        name: 'Sunset Glow',
-        owner_id: 2,
-        shared_with: [],
-        public: true,
-        variables: { '--bg-primary': '#1a1a2e', '--accent-primary': '#f39c12' },
-        raw_css: '/* Custom sunset effects */\n.btn { border-radius: 20px; }',
-        created_at: '2025-01-20T11:00:00Z',
-        updated_at: '2025-02-15T08:30:00Z',
-      },
-    ];
-  }
+  // ── Editor Initialization ──────────────────────────────────────────────────
 
-  /**
-   * Render the theme table with Tabulator
-   */
-  renderThemeTable() {
-    if (!this.elements.themeTable || !Tabulator) return;
-
-    // Clear existing table
-    this.elements.themeTable.innerHTML = '';
-
-    const tableData = this.themes.map((theme) => ({
-      id: theme.id,
-      name: theme.name,
-      created: new Date(theme.created_at).toLocaleDateString(),
-      updated: new Date(theme.updated_at).toLocaleDateString(),
-      owner: `User ${theme.owner_id}`,
-      isPublic: theme.public ? 'Yes' : 'No',
-    }));
-
-    this.table = new Tabulator(this.elements.themeTable, {
-      data: tableData,
-      layout: 'fitColumns',
-      responsiveLayout: 'hide',
-      movableColumns: true,
-      headerSortTristate: true,
-      height: '100%',
-      columns: [
-        { title: 'Name', field: 'name', minWidth: 150 },
-        { title: 'Created', field: 'created', width: 120 },
-        { title: 'Updated', field: 'updated', width: 120 },
-        { title: 'Owner', field: 'owner', width: 100 },
-        { title: 'Public', field: 'isPublic', width: 80 },
-        {
-          title: 'Actions',
-          field: 'actions',
-          width: 150,
-          formatter: (cell, formatterParams, onRendered) => {
-            const themeId = cell.getData().id;
-            const canEdit = this.permissions?.canEdit;
-            const canDelete = this.canDelete;
-            
-            let html = '<div class="theme-actions">';
-            
-            // Apply button
-            html += `<button class="theme-action-btn btn-apply" data-action="apply" data-id="${themeId}" title="Apply theme">
-              <fa fa-check></fa>
-            </button>`;
-            
-            // Edit button (if canEdit)
-            if (canEdit) {
-              html += `<button class="theme-action-btn btn-edit" data-action="edit" data-id="${themeId}" title="Edit theme">
-                <fa fa-edit></fa>
-              </button>`;
-            }
-            
-            // Delete button (if canDelete)
-            if (canDelete) {
-              html += `<button class="theme-action-btn btn-delete" data-action="delete" data-id="${themeId}" title="Delete theme">
-                <fa fa-trash></fa>
-              </button>`;
-            }
-            
-            html += '</div>';
-            return html;
-          },
-        },
-      ],
-    });
-
-    // Add action event listeners
-    this.elements.themeTable.addEventListener('click', (e) => {
-      const btn = e.target.closest('.theme-action-btn');
-      if (!btn) return;
-
-      const action = btn.dataset.action;
-      const themeId = parseInt(btn.dataset.id, 10);
-
-      switch (action) {
-        case 'apply':
-          this.applyTheme(themeId);
-          break;
-        case 'edit':
-          this.editTheme(themeId);
-          break;
-        case 'delete':
-          this.deleteTheme(themeId);
-          break;
-      }
-    });
-  }
-
-  /**
-   * Populate theme select dropdown
-   */
-  populateThemeSelect() {
-    if (!this.elements.themeSelect) return;
-
-    // Clear existing options (keep first)
-    this.elements.themeSelect.innerHTML = '<option value="">Select a theme...</option>';
-
-    this.themes.forEach((theme) => {
-      const option = document.createElement('option');
-      option.value = theme.id;
-      option.textContent = theme.name;
-      this.elements.themeSelect.appendChild(option);
-    });
-  }
-
-  /**
-   * Initialize CodeMirror editor
-   */
-  async initCodeMirror() {
+  async initCssEditor() {
     if (!this.elements.cssEditor) return;
 
     try {
-      // Dynamic import CodeMirror
       const { EditorState } = await import('@codemirror/state');
       const { EditorView, keymap, lineNumbers, highlightActiveLineGutter, highlightSpecialChars, drawSelection, highlightActiveLine } = await import('@codemirror/view');
       const { defaultKeymap, history, historyKeymap } = await import('@codemirror/commands');
@@ -472,370 +404,633 @@ export default class StyleManager {
         ],
       });
 
-      this.editor = new EditorView({
+      this.cssEditor = new EditorView({
         state: startState,
         parent: this.elements.cssEditor,
       });
     } catch (error) {
-      console.error('[StyleManager] Failed to initialize CodeMirror:', error);
-      // Fallback to textarea
-      this.elements.cssEditor.innerHTML = '<textarea id="css-editor-fallback" style="width:100%;height:100%;background:var(--bg-secondary);color:var(--text-primary);border:none;padding:16px;font-family:var(--font-mono);"></textarea>';
+      console.error('[StyleManager] Failed to initialize CSS editor:', error);
+      this.elements.cssEditor.innerHTML = '<textarea id="style-css-editor-fallback" style="width:100%;height:100%;background:var(--bg-secondary);color:var(--text-primary);border:none;padding:16px;font-family:var(--font-mono);"></textarea>';
     }
   }
 
-  /**
-   * Load theme for CSS editor
-   */
-  loadThemeForEditor(themeId) {
-    if (!themeId || !this.editor) return;
+  async initVariablesEditor() {
+    if (!this.elements.variablesEditor) return;
 
-    const theme = this.themes.find((t) => t.id === parseInt(themeId, 10));
-    if (!theme) return;
-
-    const css = this.buildCssFromTheme(theme);
-    
-    // Update editor content
-    this.editor.dispatch({
-      changes: { from: 0, to: this.editor.state.doc.length, insert: css },
-    });
-  }
-
-  /**
-   * Build CSS string from theme variables
-   */
-  buildCssFromTheme(theme) {
-    let css = '/* Theme CSS Variables */\n:root {\n';
-    
-    if (theme.variables) {
-      Object.entries(theme.variables).forEach(([key, value]) => {
-        css += `  ${key}: ${value};\n`;
-      });
-    }
-    
-    css += '}\n\n';
-    
-    if (theme.raw_css) {
-      css += '/* Raw CSS */\n' + theme.raw_css;
-    }
-    
-    return css;
-  }
-
-  /**
-   * Apply theme to the application
-   */
-  applyTheme(themeId) {
-    const theme = this.themes.find((t) => t.id === themeId);
-    if (!theme) return;
-
-    this.applyThemeToDom(theme);
-    
-    // Persist active theme ID in user preferences
-    localStorage.setItem('activeThemeId', themeId);
-    
-    // Fire theme:changed event
-    eventBus.emit(Events.THEME_CHANGED, {
-      themeId: theme.id,
-      themeName: theme.name,
-      vars: theme.variables,
-    });
-  }
-
-  /**
-   * Apply theme CSS to DOM
-   */
-  applyThemeToDom(theme) {
-    // Build CSS from variables
-    let css = ':root {\n';
-    
-    if (theme.variables) {
-      Object.entries(theme.variables).forEach(([key, value]) => {
-        css += `  ${key}: ${value};\n`;
-      });
-    }
-    
-    css += '}\n';
-    
-    // Add raw CSS if present
-    if (theme.raw_css) {
-      css += '\n' + theme.raw_css;
-    }
-
-    // Sanitize with DOMPurify
-    const sanitizedCss = DOMPurify.sanitize(css, {
-      ALLOWED_TAGS: [],
-      ALLOWED_ATTR: [],
-    });
-
-    // Find or create dynamic style element
-    let styleEl = document.getElementById('dynamic-theme');
-    if (!styleEl) {
-      styleEl = document.createElement('style');
-      styleEl.id = 'dynamic-theme';
-      document.head.appendChild(styleEl);
-    }
-
-    // Inject sanitized CSS
-    styleEl.textContent = sanitizedCss;
-  }
-
-  /**
-   * Apply current CSS from editor
-   */
-  applyCurrentCss() {
-    if (!this.editor) return;
-
-    const css = this.editor.state.doc.toString();
-    
-    // Sanitize with DOMPurify
-    const sanitizedCss = DOMPurify.sanitize(css, {
-      ALLOWED_TAGS: [],
-      ALLOWED_ATTR: [],
-    });
-
-    // Find or create dynamic style element
-    let styleEl = document.getElementById('dynamic-theme');
-    if (!styleEl) {
-      styleEl = document.createElement('style');
-      styleEl.id = 'dynamic-theme';
-      document.head.appendChild(styleEl);
-    }
-
-    // Inject sanitized CSS
-    styleEl.textContent = sanitizedCss;
-
-    // Fire theme:changed event
-    eventBus.emit(Events.THEME_CHANGED, {
-      themeId: null,
-      themeName: 'Custom CSS',
-      vars: {},
-    });
-  }
-
-  /**
-   * Save CSS changes to theme
-   */
-  async saveCss() {
-    if (!this.editor || !this.elements.themeSelect?.value) return;
-
-    const themeId = parseInt(this.elements.themeSelect.value, 10);
-    const theme = this.themes.find((t) => t.id === themeId);
-    if (!theme) return;
-
-    const css = this.editor.state.doc.toString();
-    
-    // Sanitize before saving
-    const sanitizedCss = DOMPurify.sanitize(css, {
-      ALLOWED_TAGS: [],
-      ALLOWED_ATTR: [],
-    });
-
-    // TODO: Save to API
-    console.log('[StyleManager] Saving CSS for theme:', themeId, sanitizedCss);
-    
-    // Update local state
-    theme.raw_css = sanitizedCss;
-    
-    // Show success feedback
-    this.showNotification('CSS saved successfully');
-  }
-
-  /**
-   * Open theme modal for create/edit
-   */
-  openThemeModal(theme = null) {
-    this.currentTheme = theme;
-    
-    if (theme) {
-      // Edit mode
-      this.elements.modalTitle.textContent = 'Edit Theme';
-      this.elements.themeId.value = theme.id;
-      this.elements.themeName.value = theme.name;
-      this.elements.themeVariables.value = JSON.stringify(theme.variables || {}, null, 2);
-      this.elements.themeRawCss.value = theme.raw_css || '';
-    } else {
-      // Create mode
-      this.elements.modalTitle.textContent = 'New Theme';
-      this.elements.themeId.value = '';
-      this.elements.themeName.value = '';
-      this.elements.themeVariables.value = '{\n  "--bg-primary": "#0D1117",\n  "--accent-primary": "#58A6FF"\n}';
-      this.elements.themeRawCss.value = '';
-    }
-
-    this.elements.themeModal?.classList.add('visible');
-  }
-
-  /**
-   * Close theme modal
-   */
-  closeThemeModal() {
-    this.elements.themeModal?.classList.remove('visible');
-    this.currentTheme = null;
-  }
-
-  /**
-   * Save theme from modal form
-   */
-  async saveTheme() {
-    const name = this.elements.themeName?.value?.trim();
-    const variablesStr = this.elements.themeVariables?.value?.trim();
-    const rawCss = this.elements.themeRawCss?.value?.trim();
-
-    if (!name) {
-      this.showError('Theme name is required');
-      return;
-    }
-
-    // Parse variables JSON
-    let variables = {};
     try {
-      if (variablesStr) {
-        variables = JSON.parse(variablesStr);
-      }
+      const { EditorState } = await import('@codemirror/state');
+      const { EditorView, keymap, lineNumbers, highlightActiveLineGutter, highlightSpecialChars, drawSelection, highlightActiveLine } = await import('@codemirror/view');
+      const { defaultKeymap, history, historyKeymap } = await import('@codemirror/commands');
+      const { json } = await import('@codemirror/lang-json');
+      const { oneDark } = await import('@codemirror/theme-one-dark');
+
+      const startState = EditorState.create({
+        doc: '{\n  \n}',
+        extensions: [
+          lineNumbers(),
+          highlightActiveLineGutter(),
+          highlightSpecialChars(),
+          history(),
+          drawSelection(),
+          highlightActiveLine(),
+          keymap.of([...defaultKeymap, ...historyKeymap]),
+          json(),
+          oneDark,
+          EditorView.theme({
+            '&': { height: '100%' },
+            '.cm-scroller': { overflow: 'auto' },
+          }),
+        ],
+      });
+
+      this.variablesEditor = new EditorView({
+        state: startState,
+        parent: this.elements.variablesEditor,
+      });
     } catch (error) {
-      this.showError('Invalid JSON in CSS variables');
+      console.error('[StyleManager] Failed to initialize variables editor:', error);
+    }
+  }
+
+  // ── Preview ────────────────────────────────────────────────────────────────
+
+  updatePreview() {
+    if (!this.elements.previewContent) return;
+
+    if (!this.currentThemeData) {
+      this.elements.previewContent.innerHTML = '<p class="style-preview-placeholder">Select a theme to preview</p>';
       return;
     }
 
-    // Sanitize raw CSS
-    const sanitizedRawCss = DOMPurify.sanitize(rawCss || '', {
-      ALLOWED_TAGS: [],
-      ALLOWED_ATTR: [],
+    try {
+      let htmlContent = '';
+
+      if (this.currentThemeData.summary && marked) {
+        htmlContent = marked.parse(this.currentThemeData.summary);
+      } else {
+        htmlContent = '<p class="style-preview-placeholder">No summary content available</p>';
+      }
+
+      this.elements.previewContent.innerHTML = `<div class="style-preview-rendered">${htmlContent}</div>`;
+    } catch (error) {
+      console.error('[StyleManager] Failed to update preview:', error);
+      this.elements.previewContent.innerHTML = '<p class="style-preview-placeholder">Error rendering preview</p>';
+    }
+  }
+
+  clearDetailView() {
+    this.currentThemeData = null;
+    if (this.elements.previewContent) {
+      this.elements.previewContent.innerHTML = '<p class="style-preview-placeholder">Select a theme to preview</p>';
+    }
+  }
+
+  // ── Font Popup ─────────────────────────────────────────────────────────────
+
+  initFontPopup() {
+    this.fontPopup = document.createElement('div');
+    this.fontPopup.className = 'style-font-popup';
+    const fontSizeValue = parseInt(this.editorFontSize, 10) || 14;
+    this.fontPopup.innerHTML = `
+      <div class="style-font-popup-row">
+        <label class="style-font-popup-label">Size</label>
+        <input type="number" class="style-font-popup-input" id="style-font-size" value="${fontSizeValue}" min="8" max="32">
+      </div>
+      <div class="style-font-popup-row">
+        <label class="style-font-popup-label">Family</label>
+        <select class="style-font-popup-select" id="style-font-family">
+          <option value="var(--font-sans)" ${this.editorFontFamily === 'var(--font-sans)' ? 'selected' : ''}>Sans Serif</option>
+          <option value="var(--font-mono)" ${this.editorFontFamily === 'var(--font-mono)' ? 'selected' : ''}>Monospace</option>
+          <option value="serif" ${this.editorFontFamily === 'serif' ? 'selected' : ''}>Serif</option>
+        </select>
+      </div>
+      <div class="style-font-popup-row">
+        <label class="style-font-popup-label">Style</label>
+        <div class="style-font-popup-styles">
+          <button type="button" class="style-font-popup-style-btn" data-style="normal">Normal</button>
+          <button type="button" class="style-font-popup-style-btn" data-style="bold">Bold</button>
+        </div>
+      </div>
+    `;
+
+    if (this.elements.fontBtn) {
+      this.elements.fontBtn.parentElement.appendChild(this.fontPopup);
+    }
+
+    const sizeInput = this.fontPopup.querySelector('#style-font-size');
+    const familySelect = this.fontPopup.querySelector('#style-font-family');
+    const styleBtns = this.fontPopup.querySelectorAll('.style-font-popup-style-btn');
+
+    sizeInput?.addEventListener('change', (e) => {
+      this.editorFontSize = `${e.target.value}px`;
+      this.applyFontSettings();
     });
 
-    const themeId = this.elements.themeId?.value;
-    
-    if (themeId) {
-      // Update existing theme
-      const theme = this.themes.find((t) => t.id === parseInt(themeId, 10));
-      if (theme) {
-        theme.name = name;
-        theme.variables = variables;
-        theme.raw_css = sanitizedRawCss;
-        theme.updated_at = new Date().toISOString();
+    familySelect?.addEventListener('change', (e) => {
+      this.editorFontFamily = e.target.value;
+      this.applyFontSettings();
+    });
+
+    styleBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        styleBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        this.applyFontSettings();
+      });
+    });
+
+    document.addEventListener('click', (e) => {
+      if (this.fontPopup?.classList.contains('visible') &&
+          !this.fontPopup.contains(e.target) &&
+          !this.elements.fontBtn?.contains(e.target)) {
+        this.fontPopup.classList.remove('visible');
       }
-    } else {
-      // Create new theme
-      const newTheme = {
-        id: Date.now(),
-        name,
-        owner_id: 1,
-        shared_with: [],
-        public: false,
-        variables,
-        raw_css: sanitizedRawCss,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+    });
+  }
+
+  toggleFontPopup(e) {
+    e.stopPropagation();
+    if (this.fontPopup) {
+      this.fontPopup.classList.toggle('visible');
+    }
+  }
+
+  applyFontSettings() {
+    // Apply to editors when implemented
+  }
+
+  // ── Splitter Logic ─────────────────────────────────────────────────────────
+
+  setupSplitters() {
+    this.setupLeftSplitter();
+    this.setupRightSplitter();
+  }
+
+  setupLeftSplitter() {
+    const splitter = this.elements.splitterLeft;
+    const leftPanel = this.elements.leftPanel;
+
+    if (!splitter || !leftPanel) return;
+
+    splitter.addEventListener('mousedown', (e) => {
+      if (this.isLeftPanelCollapsed) return;
+
+      this.isResizingLeft = true;
+      splitter.classList.add('resizing');
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+
+      leftPanel.style.transition = 'none';
+
+      const startX = e.clientX;
+      const startWidth = leftPanel.offsetWidth;
+
+      const onMouseMove = (e) => {
+        if (!this.isResizingLeft) return;
+        const delta = e.clientX - startX;
+        const newWidth = Math.max(150, Math.min(450, startWidth + delta));
+        leftPanel.style.width = `${newWidth}px`;
+        this.leftPanelWidth = newWidth;
       };
-      this.themes.push(newTheme);
+
+      const onMouseUp = () => {
+        this.isResizingLeft = false;
+        splitter.classList.remove('resizing');
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        leftPanel.style.transition = '';
+
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+
+        this.themesTable?.table?.redraw?.();
+        this.sectionsTable?.table?.redraw?.();
+      };
+
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    });
+
+    // Touch support
+    splitter.addEventListener('touchstart', (e) => {
+      if (this.isLeftPanelCollapsed) return;
+
+      this.isResizingLeft = true;
+      splitter.classList.add('resizing');
+      leftPanel.style.transition = 'none';
+
+      const touch = e.touches[0];
+      const startX = touch.clientX;
+      const startWidth = leftPanel.offsetWidth;
+
+      const onTouchMove = (e) => {
+        if (!this.isResizingLeft) return;
+        const touch = e.touches[0];
+        const delta = touch.clientX - startX;
+        const newWidth = Math.max(150, Math.min(450, startWidth + delta));
+        leftPanel.style.width = `${newWidth}px`;
+        this.leftPanelWidth = newWidth;
+      };
+
+      const onTouchEnd = () => {
+        this.isResizingLeft = false;
+        splitter.classList.remove('resizing');
+        leftPanel.style.transition = '';
+
+        document.removeEventListener('touchmove', onTouchMove);
+        document.removeEventListener('touchend', onTouchEnd);
+
+        this.themesTable?.table?.redraw?.();
+        this.sectionsTable?.table?.redraw?.();
+      };
+
+      document.addEventListener('touchmove', onTouchMove);
+      document.addEventListener('touchend', onTouchEnd);
+    });
+  }
+
+  setupRightSplitter() {
+    const splitter = this.elements.splitterRight;
+    const middlePanel = this.elements.middlePanel;
+
+    if (!splitter || !middlePanel) return;
+
+    splitter.addEventListener('mousedown', (e) => {
+      if (this.isMiddlePanelCollapsed) return;
+
+      this.isResizingRight = true;
+      splitter.classList.add('resizing');
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+
+      middlePanel.style.transition = 'none';
+
+      const startX = e.clientX;
+      const startWidth = middlePanel.offsetWidth;
+
+      const onMouseMove = (e) => {
+        if (!this.isResizingRight) return;
+        const delta = e.clientX - startX;
+        const newWidth = Math.max(200, Math.min(550, startWidth + delta));
+        middlePanel.style.width = `${newWidth}px`;
+        this.middlePanelWidth = newWidth;
+      };
+
+      const onMouseUp = () => {
+        this.isResizingRight = false;
+        splitter.classList.remove('resizing');
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        middlePanel.style.transition = '';
+
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+
+        this.themesTable?.table?.redraw?.();
+        this.sectionsTable?.table?.redraw?.();
+      };
+
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    });
+
+    // Touch support
+    splitter.addEventListener('touchstart', (e) => {
+      if (this.isMiddlePanelCollapsed) return;
+
+      this.isResizingRight = true;
+      splitter.classList.add('resizing');
+      middlePanel.style.transition = 'none';
+
+      const touch = e.touches[0];
+      const startX = touch.clientX;
+      const startWidth = middlePanel.offsetWidth;
+
+      const onTouchMove = (e) => {
+        if (!this.isResizingRight) return;
+        const touch = e.touches[0];
+        const delta = touch.clientX - startX;
+        const newWidth = Math.max(200, Math.min(550, startWidth + delta));
+        middlePanel.style.width = `${newWidth}px`;
+        this.middlePanelWidth = newWidth;
+      };
+
+      const onTouchEnd = () => {
+        this.isResizingRight = false;
+        splitter.classList.remove('resizing');
+        middlePanel.style.transition = '';
+
+        document.removeEventListener('touchmove', onTouchMove);
+        document.removeEventListener('touchend', onTouchEnd);
+
+        this.themesTable?.table?.redraw?.();
+        this.sectionsTable?.table?.redraw?.();
+      };
+
+      document.addEventListener('touchmove', onTouchMove);
+      document.addEventListener('touchend', onTouchEnd);
+    });
+  }
+
+  toggleLeftPanel() {
+    const leftPanel = this.elements.leftPanel;
+    const splitter = this.elements.splitterLeft;
+
+    if (!leftPanel || !splitter) return;
+
+    this.isLeftPanelCollapsed = !this.isLeftPanelCollapsed;
+
+    if (this.isLeftPanelCollapsed) {
+      leftPanel.classList.add('collapsed');
+      splitter.classList.add('collapsed');
+    } else {
+      leftPanel.classList.remove('collapsed');
+      leftPanel.style.width = `${this.leftPanelWidth}px`;
+      splitter.classList.remove('collapsed');
     }
 
-    // Re-render table and select
-    this.renderThemeTable();
-    this.populateThemeSelect();
-    
-    // Close modal
-    this.closeThemeModal();
-    
-    // Show success
-    this.showNotification(themeId ? 'Theme updated' : 'Theme created');
+    setTimeout(() => {
+      this.themesTable?.table?.redraw?.();
+      this.sectionsTable?.table?.redraw?.();
+    }, 350);
   }
 
-  /**
-   * Edit theme
-   */
-  editTheme(themeId) {
-    const theme = this.themes.find((t) => t.id === themeId);
-    if (theme) {
-      this.openThemeModal(theme);
+  toggleMiddlePanel() {
+    const middlePanel = this.elements.middlePanel;
+    const splitter = this.elements.splitterRight;
+
+    if (!middlePanel || !splitter) return;
+
+    this.isMiddlePanelCollapsed = !this.isMiddlePanelCollapsed;
+
+    if (this.isMiddlePanelCollapsed) {
+      middlePanel.classList.add('collapsed');
+      splitter.classList.add('collapsed');
+    } else {
+      middlePanel.classList.remove('collapsed');
+      middlePanel.style.width = `${this.middlePanelWidth}px`;
+      splitter.classList.remove('collapsed');
+    }
+
+    setTimeout(() => {
+      this.themesTable?.table?.redraw?.();
+      this.sectionsTable?.table?.redraw?.();
+    }, 350);
+  }
+
+  // ── Footer Setup ───────────────────────────────────────────────────────────
+
+  setupFooter() {
+    const slot = this.container.closest('.manager-slot');
+    if (!slot) return;
+
+    const footer = slot.querySelector('.manager-slot-footer');
+    if (!footer) return;
+
+    const group = footer.querySelector('.subpanel-header-group');
+    if (!group) return;
+
+    const placeholder = group.querySelector('.slot-footer-placeholder');
+
+    const footerElements = setupManagerFooterIcons(group, {
+      onPrint: () => this.handleFooterPrint(),
+      onEmail: () => this.handleFooterEmail(),
+      onExport: (e) => this.toggleFooterExportPopup(e),
+      reportOptions: [
+        { value: 'themes-list-view', label: 'Themes List View' },
+        { value: 'themes-list-data', label: 'Themes List Data' },
+        { value: 'sections-list-view', label: 'Sections List View' },
+        { value: 'sections-list-data', label: 'Sections List Data' },
+      ],
+      fillerTitle: 'Style',
+      anchor: placeholder,
+    });
+
+    this._footerDatasource = footerElements.reportSelect;
+
+    log(Subsystems.MANAGER, Status.INFO, '[StyleManager] Footer controls initialized');
+  }
+
+  _getFooterDatasource() {
+    return this._footerDatasource?.value || 'themes-list-view';
+  }
+
+  handleFooterPrint() {
+    const mode = this._getFooterDatasource();
+    log(Subsystems.MANAGER, Status.INFO, `[Style] Footer: Print (${mode})`);
+
+    const isParentMode = mode.startsWith('themes-list');
+    const table = isParentMode ? this.themesTable?.table : this.sectionsTable?.table;
+
+    if (!table) {
+      toast.info('No Data', { description: 'No table available to print', duration: 3000 });
+      return;
+    }
+
+    if (mode.endsWith('-view')) {
+      table.print();
+    } else {
+      table.print('all', true);
     }
   }
 
-  /**
-   * Open delete confirmation modal
-   */
-  deleteTheme(themeId) {
-    const theme = this.themes.find((t) => t.id === themeId);
-    if (!theme) return;
+  handleFooterEmail() {
+    const mode = this._getFooterDatasource();
+    log(Subsystems.MANAGER, Status.INFO, `[Style] Footer: Email (${mode})`);
 
-    this.themeToDelete = themeId;
-    this.elements.deleteThemeName.textContent = theme.name;
-    this.elements.deleteModal?.classList.add('visible');
+    const isParentMode = mode.startsWith('themes-list');
+    const table = isParentMode ? this.themesTable?.table : this.sectionsTable?.table;
+    const tableName = isParentMode ? 'Themes List' : 'Sections List';
+
+    if (!table) {
+      toast.info('No Data', { description: 'No table available to email', duration: 3000 });
+      return;
+    }
+
+    const isViewMode = mode.endsWith('-view');
+    const rows = isViewMode ? table.getRows('active') : table.getRows();
+
+    if (rows.length === 0) {
+      toast.info('No Data', { description: 'No rows to include in the email', duration: 3000 });
+      return;
+    }
+
+    const visibleCols = isViewMode
+      ? table.getColumns().filter(col => col.isVisible() && col.getField() !== '_selector')
+      : table.getColumns().filter(col => col.getField() !== '_selector');
+
+    const headers = visibleCols.map(col => col.getDefinition().title || col.getField());
+    const separator = headers.map(h => '-'.repeat(h.length)).join('  ');
+
+    const dataLines = rows.slice(0, 50).map(row => {
+      const data = row.getData();
+      return visibleCols.map(col => {
+        const val = data[col.getField()];
+        return val != null ? String(val) : '';
+      }).join('\t');
+    });
+
+    const totalRows = rows.length;
+    const truncated = totalRows > 50 ? `\n... (${totalRows - 50} more rows not shown)` : '';
+    const modeLabel = isViewMode ? 'Filtered View' : 'Full Data';
+
+    const subject = encodeURIComponent(`${tableName} — ${totalRows} rows (${modeLabel})`);
+    const body = encodeURIComponent(
+      `${tableName} Export (${modeLabel})\n` +
+      `${totalRows} row(s)\n\n` +
+      `${headers.join('\t')}\n${separator}\n` +
+      `${dataLines.join('\n')}${truncated}\n`
+    );
+
+    window.open(`mailto:?subject=${subject}&body=${body}`, '_self');
   }
 
-  /**
-   * Close delete modal
-   */
-  closeDeleteModal() {
-    this.elements.deleteModal?.classList.remove('visible');
-    this.themeToDelete = null;
+  toggleFooterExportPopup(e) {
+    e.stopPropagation();
+
+    if (this._footerExportPopup) {
+      this._closeFooterExportPopup();
+      return;
+    }
+
+    const btn = e.currentTarget;
+    const mode = this._getFooterDatasource();
+    const formats = [
+      { label: 'PDF', action: () => this.handleFooterExport('pdf', mode) },
+      { label: 'CSV', action: () => this.handleFooterExport('csv', mode) },
+      { label: 'TXT', action: () => this.handleFooterExport('txt', mode) },
+      { label: 'XLS', action: () => this.handleFooterExport('xls', mode) },
+    ];
+
+    const popup = document.createElement('div');
+    popup.className = 'style-footer-export-popup';
+    formats.forEach(item => {
+      const row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'style-footer-export-popup-item';
+      row.textContent = item.label;
+      row.addEventListener('click', () => {
+        this._closeFooterExportPopup();
+        item.action();
+      });
+      popup.appendChild(row);
+    });
+
+    const btnRect = btn.getBoundingClientRect();
+    document.body.appendChild(popup);
+
+    requestAnimationFrame(() => {
+      const popupRect = popup.getBoundingClientRect();
+      popup.style.position = 'fixed';
+      popup.style.top = `${btnRect.top - popupRect.height - 8}px`;
+      popup.style.left = `${btnRect.left}px`;
+    });
+
+    setTimeout(() => {
+      popup.classList.add('visible');
+    }, 10);
+
+    this._footerExportPopup = popup;
+
+    this._footerExportCloseHandler = (evt) => {
+      if (!popup.contains(evt.target) && !btn.contains(evt.target)) {
+        this._closeFooterExportPopup();
+      }
+    };
+    document.addEventListener('click', this._footerExportCloseHandler);
   }
 
-  /**
-   * Confirm delete
-   */
-  async confirmDelete() {
-    if (!this.themeToDelete) return;
-
-    // Remove from array
-    this.themes = this.themes.filter((t) => t.id !== this.themeToDelete);
-    
-    // Re-render
-    this.renderThemeTable();
-    this.populateThemeSelect();
-    
-    // Close modal
-    this.closeDeleteModal();
-    
-    // Show success
-    this.showNotification('Theme deleted');
+  _closeFooterExportPopup() {
+    if (this._footerExportPopup) {
+      this._footerExportPopup.remove();
+      this._footerExportPopup = null;
+    }
+    if (this._footerExportCloseHandler) {
+      document.removeEventListener('click', this._footerExportCloseHandler);
+      this._footerExportCloseHandler = null;
+    }
   }
 
-  /**
-   * Show notification
-   */
-  showNotification(message) {
-    // Simple notification - could be enhanced with toast UI
-    console.log('[StyleManager]', message);
-    
-    // Dispatch custom event for app-level notification
-    eventBus.emit('notification', { type: 'success', message });
+  handleFooterExport(format, mode) {
+    log(Subsystems.MANAGER, Status.INFO, `[Style] Footer: Export ${format.toUpperCase()} (${mode})`);
+
+    const isParentMode = mode.startsWith('themes-list');
+    const table = isParentMode ? this.themesTable?.table : this.sectionsTable?.table;
+
+    if (!table) {
+      toast.info('No Data', { description: 'No table available to export', duration: 3000 });
+      return;
+    }
+
+    const filename = `style-export-${new Date().toISOString().slice(0, 10)}`;
+    const isViewMode = mode.endsWith('-view');
+    const downloadOpts = isViewMode ? {} : { rowGroups: false };
+
+    switch (format) {
+      case 'pdf':
+        table.download('pdf', `${filename}.pdf`, { orientation: 'landscape', ...downloadOpts });
+        break;
+      case 'csv':
+        table.download('csv', `${filename}.csv`, downloadOpts);
+        break;
+      case 'txt':
+        table.download('csv', `${filename}.txt`, downloadOpts);
+        break;
+      case 'xls':
+        table.download('xlsx', `${filename}.xlsx`, downloadOpts);
+        break;
+      default:
+        log(Subsystems.MANAGER, Status.WARN, `Unknown export format: ${format}`);
+    }
   }
 
-  /**
-   * Show error
-   */
-  showError(message) {
-    console.error('[StyleManager]', message);
-    eventBus.emit('notification', { type: 'error', message });
-  }
+  // ── Lifecycle ──────────────────────────────────────────────────────────────
 
-  /**
-   * Show the style manager
-   */
   show() {
     requestAnimationFrame(() => {
-      this.elements.page?.classList.add('visible');
+      this.elements.container?.classList.add('visible');
     });
   }
 
-  /**
-   * Teardown the style manager
-   */
-  teardown() {
-    // Destroy Tabulator table
-    if (this.table) {
-      this.table.destroy();
-      this.table = null;
+  onActivate() {
+    log(Subsystems.MANAGER, Status.INFO, '[Style] Activated');
+
+    if (this.themesTable?.table) {
+      this.themesTable.table.redraw?.();
+    }
+    if (this.sectionsTable?.table) {
+      this.sectionsTable.table.redraw?.();
+    }
+  }
+
+  onDeactivate() {
+    log(Subsystems.MANAGER, Status.INFO, '[Style] Deactivated');
+  }
+
+  cleanup() {
+    log(Subsystems.MANAGER, Status.INFO, '[Style] Cleaning up...');
+
+    this._closeFooterExportPopup();
+
+    if (this.fontPopup) {
+      this.fontPopup.remove();
+      this.fontPopup = null;
     }
 
-    // Destroy CodeMirror editor
-    if (this.editor) {
-      this.editor.destroy();
-      this.editor = null;
+    this.themesTable?.destroy();
+    this.sectionsTable?.destroy();
+
+    this.themesTable = null;
+    this.sectionsTable = null;
+
+    if (this.cssEditor) {
+      this.cssEditor.destroy();
+      this.cssEditor = null;
     }
 
-    // Clear elements
-    this.elements = {};
+    if (this.variablesEditor) {
+      this.variablesEditor.destroy();
+      this.variablesEditor = null;
+    }
   }
 }

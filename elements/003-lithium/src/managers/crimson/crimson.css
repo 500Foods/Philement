@@ -277,13 +277,12 @@
 .crimson-reasoning-splitter {
   flex-shrink: 0;
   height: 6px;
-  background: var(--bg-tertiary);
+  background: black;
   cursor: ns-resize;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-top: 1px solid var(--border-color);
-  border-bottom: 1px solid var(--border-color);
+  transition: background-color 0.2s ease;
 }
 
 .crimson-reasoning-splitter::after {
@@ -297,16 +296,11 @@
     transparent 2px,
     transparent 6px
   );
+  display: none;
 }
 
-.crimson-reasoning-splitter:hover::after {
-  background: repeating-linear-gradient(
-    90deg,
-    var(--text-primary) 0px,
-    var(--text-primary) 2px,
-    transparent 2px,
-    transparent 6px
-  );
+.crimson-reasoning-splitter:hover {
+  background: var(--accent-primary);
 }
 
 .crimson-reasoning-content {
@@ -364,13 +358,12 @@
 .crimson-debug-splitter {
   flex-shrink: 0;
   height: 6px;
-  background: var(--bg-tertiary);
+  background: black;
   cursor: ns-resize;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-top: 1px solid var(--border-color);
-  border-bottom: 1px solid var(--border-color);
+  transition: background-color 0.2s ease;
 }
 
 .crimson-debug-splitter::after {
@@ -384,10 +377,11 @@
     transparent 2px,
     transparent 6px
   );
+  display: none;
 }
 
-.crimson-debug-splitter:hover::after {
-  opacity: 1;
+.crimson-debug-splitter:hover {
+  background: var(--accent-primary);
 }
 
 /* Debug panel - no header */
@@ -536,6 +530,29 @@
   font-style: oblique;
   font-size: var(--font-size-xs);
 }
+
+.crimson-message-content hr {
+  margin: var(--space-5) 0px;
+}                            
+
+.crimson-message-content h1,
+.crimson-message-content h2, 
+.crimson-message-content h3,
+.crimson-message-content h4,
+.crimson-message-content h5,
+.crimson-message-content h6 {
+  margin: var(--space-3) 0px;
+}
+
+.crimson-message-content pre {
+	background: black;
+	padding: var(--space-4);
+	font-family: 'Vanadium Mono';
+	font-size: var(--font-size-us);
+	border-radius: var(--border-radius-md);
+	color: lightgreen;
+	margin: var(--space-3) var(--space-5);
+}	                          
 
 /* Markdown table styling */
 .crimson-message-content table {

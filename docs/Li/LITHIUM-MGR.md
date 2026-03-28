@@ -78,11 +78,11 @@ Lithium has three types of managers:
 
 ---
 
-### ✅ Style Manager (Legacy)
+### ✅ Style Manager
 
 **Location:** `src/managers/style-manager/`
 
-**Type:** Menu Manager (ID: 1 — legacy/deprecated)
+**Type:** Menu Manager (ID: 10)
 
 **Purpose:** Theme management — list, apply, edit, create themes
 
@@ -104,7 +104,7 @@ Lithium has three types of managers:
 | 4 | Use CSS code editor |
 | 5 | Delete themes |
 
-**Status:** ✅ Implemented (Legacy — may be removed in future)
+**Status:** ✅ Implemented
 
 ---
 
@@ -154,7 +154,7 @@ Lithium has three types of managers:
 
 **Location:** `src/managers/queries/`
 
-**Type:** Menu Manager (ID: 4)
+**Type:** Menu Manager (ID: 29)
 
 **Purpose:** Query builder and execution interface
 
@@ -194,7 +194,7 @@ Lithium has three types of managers:
 
 **Location:** `src/managers/lookups/`
 
-**Type:** Menu Manager (ID: 5)
+**Type:** Menu Manager (ID: 23)
 
 **Purpose:** Manage lookup tables (key-value pairs used throughout the system)
 
@@ -275,47 +275,7 @@ await table.loadData();
 
 These are registered in `app.js` but not yet implemented:
 
-### ⬜ Session Logs
-
-**Type:** Menu Manager (ID: 2)
-
-**Status:** Placeholder
-
----
-
-### ⬜ Version History
-
-**Type:** Menu Manager (ID: 3)
-
-**Status:** Placeholder
-
----
-
-### ⬜ Dashboard
-
-**Type:** Menu Manager (ID: 8)
-
-**Status:** Placeholder
-
----
-
-### ⬜ Document Library
-
-**Type:** Menu Manager (ID: 9)
-
-**Status:** Placeholder
-
----
-
-### ⬜ Media Library
-
-**Type:** Menu Manager (ID: 10)
-
-**Status:** Placeholder
-
----
-
-### ⬜ Diagram Library
+### ⬜ Profile Manager
 
 **Type:** Menu Manager (ID: 11)
 
@@ -323,7 +283,7 @@ These are registered in `app.js` but not yet implemented:
 
 ---
 
-### ⬜ Reports
+### ⬜ Session Manager
 
 **Type:** Menu Manager (ID: 12)
 
@@ -331,17 +291,105 @@ These are registered in `app.js` but not yet implemented:
 
 ---
 
-### ⬜ Chats
+### ⬜ Notification Manager
 
-**Type:** Menu Manager (ID: 6)
+**Type:** Menu Manager (ID: 14)
 
 **Status:** Placeholder
 
 ---
 
-### ⬜ AI Auditor
+### ⬜ Annotation Manager
 
-**Type:** Menu Manager (ID: 7)
+**Type:** Menu Manager (ID: 15)
+
+**Status:** Placeholder
+
+---
+
+### ⬜ Ticketing Manager
+
+**Type:** Menu Manager (ID: 22)
+
+**Status:** Placeholder
+
+---
+
+### ⬜ Role Manager
+
+**Type:** Menu Manager (ID: 23)
+
+**Status:** Placeholder
+
+---
+
+### ⬜ Security Manager
+
+**Type:** Menu Manager (ID: 24)
+
+**Status:** Placeholder
+
+---
+
+### ⬜ Job Manager
+
+**Type:** Menu Manager (ID: 25)
+
+**Status:** Placeholder
+
+---
+
+### ⬜ Mail Manager
+
+**Type:** Menu Manager (ID: 26)
+
+**Status:** Placeholder
+
+---
+
+### ⬜ Calendar Manager
+
+**Type:** Menu Manager (ID: 27)
+
+**Status:** Placeholder
+
+---
+
+### ⬜ Contact Manager
+
+**Type:** Menu Manager (ID: 28)
+
+**Status:** Placeholder
+
+---
+
+### ⬜ File Manager
+
+**Type:** Menu Manager (ID: 29)
+
+**Status:** Placeholder
+
+---
+
+### ⬜ Sync Manager
+
+**Type:** Menu Manager (ID: 30)
+
+**Status:** Placeholder
+
+---
+
+### ⬜ Camera Manager
+
+**Type:** Menu Manager (ID: 31)
+
+**Status:** Placeholder
+
+---
+
+### ⬜ Terminal
+
+**Type:** Menu Manager (ID: 32)
 
 **Status:** Placeholder
 
@@ -349,20 +397,49 @@ These are registered in `app.js` but not yet implemented:
 
 ## Manager ID Registry
 
+Manager IDs correspond to the `lithium.json` `managers` section. Group 0 (IDs 1-6) are system managers hidden from the main menu.
+
+### Group 0: System Managers (Hidden)
+
 | ID | Manager | Status |
 |----|---------|--------|
-| 1 | Style Manager (Legacy) | ✅ Implemented |
-| 2 | Session Logs | ⬜ Placeholder |
-| 3 | Version History | ⬜ Placeholder |
-| 4 | Queries | ✅ **Implemented** |
-| 5 | Lookups | ✅ **Implemented** |
-| 6 | Chats | ⬜ Placeholder |
-| 7 | AI Auditor | ⬜ Placeholder |
-| 8 | Dashboard | ⬜ Placeholder |
-| 9 | Document Library | ⬜ Placeholder |
-| 10 | Media Library | ⬜ Placeholder |
-| 11 | Diagram Library | ⬜ Placeholder |
-| 12 | Reports | ⬜ Placeholder |
+| 1 | Login | System (pre-auth) |
+| 2 | Menu | System (wrapper) |
+| 3 | Profile | System (utility) |
+| 4 | Session | System (utility) |
+| 5 | Crimson | System (AI agent) |
+| 6 | Tour | System (onboarding) |
+
+### Groups 1-4: Menu Managers (Visible)
+
+| ID | Manager | Status |
+|----|---------|--------|
+| 7 | Dashboard Manager | ✅ Implemented |
+| 8 | Mail Manager | ⬜ Placeholder |
+| 9 | Profile Manager | ⬜ Placeholder |
+| 10 | Session Manager | ⬜ Placeholder |
+| 11 | Version Manager | ✅ Implemented |
+| 12 | Calendar Manager | ⬜ Placeholder |
+| 13 | Contact Manager | ⬜ Placeholder |
+| 14 | File Manager | ⬜ Placeholder |
+| 15 | Document Manager | ✅ Implemented |
+| 16 | Media Manager | ✅ Implemented |
+| 17 | Diagram Manager | ✅ Implemented |
+| 18 | Chat Manager | ✅ Implemented |
+| 19 | Notification Manager | ⬜ Placeholder |
+| 20 | Annotation Manager | ⬜ Placeholder |
+| 21 | Ticketing Manager | ⬜ Placeholder |
+| 22 | Style Manager | ✅ **Implemented** |
+| 23 | Lookup Manager | ✅ **Implemented** |
+| 24 | Report Manager | ✅ Implemented |
+| 25 | Role Manager | ⬜ Placeholder |
+| 26 | Security Manager | ⬜ Placeholder |
+| 27 | AI Auditor Manager | ✅ Implemented |
+| 28 | Job Manager | ⬜ Placeholder |
+| 29 | Query Manager | ✅ **Implemented** |
+| 30 | Sync Manager | ⬜ Placeholder |
+| 31 | Camera Manager | ⬜ Placeholder |
+| 32 | Terminal | ⬜ Placeholder |
 
 ---
 

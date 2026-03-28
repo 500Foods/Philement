@@ -42,7 +42,7 @@ table.insert(queries,{sql=[[
                 last_accessed,
                 access_count
             FROM ${SCHEMA}media_assets
-            WHERE media_hash = :MEDIA_HASH
+            WHERE media_hash = :MEDIAHASH
         ]==]                                                                AS code,
         '${QUERY_NAME}'                                                     AS name,
         [==[

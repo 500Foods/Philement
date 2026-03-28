@@ -87,9 +87,9 @@ export function createCrimsonButton(tooltip = 'Chat with Crimson (Ctrl+Shift+C)'
   button.className = 'subpanel-header-btn subpanel-header-close crimson-btn';
   button.title = tooltip;
   button.innerHTML = 
-    `<span class="fa-stack" style="width: 1.25em; height: 1.3em; line-height: 1.5;">
-       <i class="fa-duotone fa-solid fa-circle-dot fa-stack-1x" style="font-size: 0.15em; left: 1.2em; top: 2.5em;"></i>
-       <i class="fa-duotone fa-solid fa-circle-dot fa-stack-1x" style="font-size: 0.15em; left: -1.1em; top: 2.5em;"></i>
+    `<span class="fa-stack" style="width: 1.25em; height: 1.3em; line-height: 1.5; --fa-secondary-opacity: 0.5;">
+       <i class="fa-duotone fa-solid fa-circle-dot fa-stack-1x" style="color: var(--accent-crimson-eyes); font-size: 0.15em; left: 1.2em; top: 2.5em;"></i>
+       <i class="fa-duotone fa-solid fa-circle-dot fa-stack-1x" style="color: var(--accent-crimson-eyes); font-size: 0.15em; left: -1.1em; top: 2.5em;"></i>
        <i class="fa-duotone fa-thin fa-fire fa-stack-1x"></i>
      </span>`;
 
@@ -280,9 +280,9 @@ class CrimsonManager {
       <div class="crimson-header">
         <div class="subpanel-header-group">
           <button type="button" class="crimson-header-primary">
-            <span class="fa-stack" style="width: 1em; height: 1.2em;">
-              <i class="fa-duotone fa-solid fa-circle-dot fa-stack-1x" style="font-size: 0.15em; left: 1.2em; top: 2.5em;"></i>
-              <i class="fa-duotone fa-solid fa-circle-dot fa-stack-1x" style="font-size: 0.15em; left: -1.1em; top: 2.5em;"></i>
+            <span class="fa-stack" style="width: 1em; height: 1.2em; --fa-secondary-opacity: 0.5;">
+              <i class="fa-duotone fa-solid fa-circle-dot fa-stack-1x" style="color: var(--accent-crimson-eyes); font-size: 0.15em; left: 1.2em; top: 2.5em;"></i>
+              <i class="fa-duotone fa-solid fa-circle-dot fa-stack-1x" style="color: var(--accent-crimson-eyes); font-size: 0.15em; left: -1.1em; top: 2.5em;"></i>
               <i class="fa-duotone fa-thin fa-fire fa-stack-1x"></i>
             </span>
             <span>Chat with Crimson</span>
@@ -315,9 +315,9 @@ class CrimsonManager {
       <div class="crimson-conversation">
         <div class="crimson-welcome">
           <div class="crimson-welcome-icon">
-            <span class="fa-stack" style="width: 1.25em; height: 1.3em; line-height: 1.5;">
-              <i class="fa-duotone fa-solid fa-circle-dot fa-stack-1x" style="font-size: 0.15em; left: 1.2em; top: 2.5em;"></i>
-              <i class="fa-duotone fa-solid fa-circle-dot fa-stack-1x" style="font-size: 0.15em; left: -1.1em; top: 2.5em;"></i>
+            <span class="fa-stack" style="width: 1.25em; height: 1.3em; line-height: 1.5; --fa-secondary-opacity: 0.5;">
+              <i class="fa-duotone fa-solid fa-circle-dot fa-stack-1x" style="color: var(--accent-crimson-eyes); font-size: 0.15em; left: 1.2em; top: 2.5em;"></i>
+              <i class="fa-duotone fa-solid fa-circle-dot fa-stack-1x" style="color: var(--accent-crimson-eyes); font-size: 0.15em; left: -1.1em; top: 2.5em;"></i>
               <i class="fa-duotone fa-thin fa-fire fa-stack-1x"></i>
             </span>
           </div>
@@ -589,9 +589,9 @@ class CrimsonManager {
       this.conversation.innerHTML = `
         <div class="crimson-welcome crimson-welcome-fade-in">
           <div class="crimson-welcome-icon">
-            <span class="fa-stack" style="width: 1.25em; height: 1.3em; line-height: 1.5;">
-              <i class="fa-duotone fa-solid fa-circle-dot fa-stack-1x" style="font-size: 0.15em; left: 1.2em; top: 2.5em;"></i>
-              <i class="fa-duotone fa-solid fa-circle-dot fa-stack-1x" style="font-size: 0.15em; left: -1.1em; top: 2.5em;"></i>
+            <span class="fa-stack" style="width: 1.25em; height: 1.3em; line-height: 1.5; --fa-secondary-opacity: 0.5;">
+              <i class="fa-duotone fa-solid fa-circle-dot fa-stack-1x" style="color: var(--accent-crimson-eyes); font-size: 0.15em; left: 1.2em; top: 2.5em;"></i>
+              <i class="fa-duotone fa-solid fa-circle-dot fa-stack-1x" style="color: var(--accent-crimson-eyes); font-size: 0.15em; left: -1.1em; top: 2.5em;"></i>
               <i class="fa-duotone fa-thin fa-fire fa-stack-1x"></i>
             </span>
           </div>
@@ -1073,9 +1073,9 @@ class CrimsonManager {
 
     const avatar = sender === 'agent'
       ? `<div class="crimson-message-avatar">
-          <span class="fa-stack" style="width: 1.25em; height: 1.3em; line-height: 1.5;">
-            <i class="fa-duotone fa-solid fa-circle-dot fa-stack-1x" style="font-size: 0.15em; left: 1.2em; top: 2.5em;"></i>
-            <i class="fa-duotone fa-solid fa-circle-dot fa-stack-1x" style="font-size: 0.15em; left: -1.1em; top: 2.5em;"></i>
+          <span class="fa-stack" style="width: 1.25em; height: 1.3em; line-height: 1.5; --fa-secondary-opacity: 0.5;">
+            <i class="fa-duotone fa-solid fa-circle-dot fa-stack-1x" style="color: var(--accent-crimson-eyes); font-size: 0.15em; left: 1.2em; top: 2.5em;"></i>
+            <i class="fa-duotone fa-solid fa-circle-dot fa-stack-1x" style="color: var(--accent-crimson-eyes); font-size: 0.15em; left: -1.1em; top: 2.5em;"></i>
             <i class="fa-duotone fa-thin fa-fire fa-stack-1x"></i>
           </span>
         </div>`
@@ -1104,9 +1104,9 @@ class CrimsonManager {
     indicator.className = 'crimson-message crimson-message-agent crimson-typing-indicator';
     indicator.innerHTML = `
       <div class="crimson-message-avatar">
-        <span class="fa-stack" style="width: 1.25em; height: 1.3em; line-height: 1.5;">
-          <i class="fa-duotone fa-solid fa-circle-dot fa-stack-1x" style="font-size: 0.15em; left: 1.2em; top: 2.5em;"></i>
-          <i class="fa-duotone fa-solid fa-circle-dot fa-stack-1x" style="font-size: 0.15em; left: -1.1em; top: 2.5em;"></i>
+        <span class="fa-stack" style="width: 1.25em; height: 1.3em; line-height: 1.5; --fa-secondary-opacity: 0.5;">
+          <i class="fa-duotone fa-solid fa-circle-dot fa-stack-1x" style="color: var(--accent-crimson-eyes); font-size: 0.15em; left: 1.2em; top: 2.5em;"></i>
+          <i class="fa-duotone fa-solid fa-circle-dot fa-stack-1x" style="color: var(--accent-crimson-eyes); font-size: 0.15em; left: -1.1em; top: 2.5em;"></i>
           <i class="fa-duotone fa-thin fa-fire fa-stack-1x"></i>
         </span>
       </div>
@@ -1675,9 +1675,9 @@ class CrimsonManager {
     messageEl.className = 'crimson-message crimson-message-agent crimson-streaming crimson-waiting';
     messageEl.innerHTML = `
       <div class="crimson-message-avatar">
-        <span class="fa-stack" style="width: 1.25em; height: 1.3em; line-height: 1.5;">
-          <i class="fa-duotone fa-solid fa-circle-dot fa-stack-1x" style="font-size: 0.15em; left: 1.2em; top: 2.5em;"></i>
-          <i class="fa-duotone fa-solid fa-circle-dot fa-stack-1x" style="font-size: 0.15em; left: -1.1em; top: 2.5em;"></i>
+        <span class="fa-stack" style="width: 1.25em; height: 1.3em; line-height: 1.5; --fa-secondary-opacity: 0.5;">
+          <i class="fa-duotone fa-solid fa-circle-dot fa-stack-1x" style="color: var(--accent-crimson-eyes); font-size: 0.15em; left: 1.2em; top: 2.5em;"></i>
+          <i class="fa-duotone fa-solid fa-circle-dot fa-stack-1x" style="color: var(--accent-crimson-eyes); font-size: 0.15em; left: -1.1em; top: 2.5em;"></i>
           <i class="fa-duotone fa-thin fa-fire fa-stack-1x"></i>
         </span>
       </div>

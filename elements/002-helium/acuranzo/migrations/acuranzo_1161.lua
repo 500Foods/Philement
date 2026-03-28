@@ -36,9 +36,8 @@ table.insert(queries,{sql=[[
             INSERT INTO ${SCHEMA}${TABLE}
                 (lookup_id, key_idx, status_a1, value_txt, value_int, sort_seq, code, summary, collection, ${COMMON_FIELDS})
             VALUES
-                (${LOOKUP_ID}, 13, 1, 'Notifications',      3, 0, '', '', ${JIS}[==[{"index": 11, "icon":"<fa fa-bell></fa>"}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID}, 14, 1, 'Annotations',        3, 0, '', '', ${JIS}[==[{"index": 12, "icon":"<fa fa-tags></fa>"}]==]${JIE}, ${COMMON_VALUES}),
-                (${LOOKUP_ID}, 15, 1, 'Ticketing',          3, 0, '', '', ${JIS}[==[{"index": 13, "icon":"<fa fa-bell-concierge></fa>"}]==]${JIE}, ${COMMON_VALUES});
+                (${LOOKUP_ID}, 31, 1, 'Cameras',            4 , 31, '', '', ${JIS}[==[{"index": 31, "icon":"<fa fa-video></fa>"}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 32, 1, 'Terminal',           0 , 32, '', '', ${JIS}[==[{"index": 32, "icon":"<fa fa-terminal></fa>"}]==]${JIE}, ${COMMON_VALUES});
 
             ${SUBQUERY_DELIMITER}
 
@@ -87,7 +86,7 @@ table.insert(queries,{sql=[[
 
             DELETE FROM ${SCHEMA}${TABLE}
             WHERE lookup_id = ${LOOKUP_ID}
-            AND key_idx IN (13,14,15);
+            AND key_idx IN (31,32);
 
             ${SUBQUERY_DELIMITER}
 

@@ -43,16 +43,16 @@ table.insert(queries,{sql=[[
                 access_count
             )
             SELECT
-                :MEDIA_HASH,
-                :MEDIA_DATA,
-                :MEDIA_SIZE,
-                :MIME_TYPE,
+                :MEDIAHASH,
+                :MEDIADATA,
+                :MEDIASIZE,
+                :MIMETYPE,
                 ${NOW},
                 ${NOW},
                 1
             WHERE NOT EXISTS (
                 SELECT 1 FROM ${SCHEMA}media_assets
-                WHERE media_hash = :MEDIA_HASH
+                WHERE media_hash = :MEDIAHASH
             )
         ]==]                                                                AS code,
         '${QUERY_NAME}'                                                     AS name,
