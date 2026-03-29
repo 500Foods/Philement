@@ -35,11 +35,11 @@
     "deploy:brotli:timed": "npm run deploy:brotli 2>&1 | tee /tmp/brotli-timing.log"
   },
   "dependencies": {
+    "@codemirror/lang-json": "^6.0.1",
     "@codemirror/lang-markdown": "^6.5.0",
     "@eslint/js": "^10.0.1",
     "country-flag-icons": "^1.6.15",
     "dompurify": "^3.3.2",
-    "json-tree.js": "github:williamtroup/JsonTree.js",
     "marked": "^17.0.4",
     "sql-formatter": "^15.3.0",
     "suneditor": "^3.0.0-beta.0",
@@ -51,7 +51,6 @@
     "@codemirror/lang-css": "^6.2.1",
     "@codemirror/lang-html": "^6.4.8",
     "@codemirror/lang-javascript": "^6.2.1",
-    "@codemirror/lang-json": "^6.0.1",
     "@codemirror/lang-sql": "^6.5.5",
     "@codemirror/state": "^6.4.0",
     "@codemirror/theme-one-dark": "^6.1.3",

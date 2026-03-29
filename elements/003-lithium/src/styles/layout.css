@@ -122,9 +122,9 @@ body.hide-password-manager-ui [class*="password-icon"] {
 /* Button group style for panel headers */
 .subpanel-header-group {
   display: flex;
-  gap: 2px;    
+  gap: 2px;
   outline: 5px solid var(--accent-primary);
-  outline-offset: -10px;       
+  outline-offset: -10px;
   line-height: 1;
   height: 35px;
   min-width: 40px;
@@ -132,10 +132,18 @@ body.hide-password-manager-ui [class*="password-icon"] {
 
 .subpanel-header-group > button {
   margin: 0;
-  border-radius: 0;        
+  border-radius: 0;
   z-index: 1;
   min-width: 40px;
   font-size: var(--icon-size-reg);
+}
+
+/* Base button class for subpanel header buttons */
+.subpanel-header-btn {
+  margin: 0;
+  border: none;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
 }
 
 /* Left button (primary with icon and title) - rounded left corners */
@@ -169,6 +177,7 @@ body.hide-password-manager-ui [class*="password-icon"] {
 }
 .subpanel-header-primary > span {
   font-size: var(--font-size-base);
+  padding-right: var(--space-3);  
 }
 
 /* Close button in header */

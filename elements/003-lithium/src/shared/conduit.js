@@ -20,7 +20,10 @@
  *   Optionally includes database: "DatabaseName" for public endpoints.
  */
 
-// ─── Pure Functions (testable, no side-effects) ──────────────────────────
+import { log, Subsystems, Status } from '../core/log.js';
+import { addTarget, removeTarget } from './radar-controller.js';
+
+// ─── Pure Functions (testable, no side-effects) ──────────────────────────────
 
 /**
  * Build a single-query payload for conduit endpoints.
@@ -179,21 +182,22 @@ export function extractError(response) {
  *   const rows = await authQuery(app.api, 32, { STRING: { SEARCH: "USERS" } });
  */
 export async function authQuery(api, queryRef, params = {}) {
+  const targetId = addTarget('triangle');
   const payload = buildQueryPayload(queryRef, params);
 
   let response;
   try {
     response = await api.post('conduit/auth_query', payload);
   } catch (httpError) {
-    // HTTP error (non-2xx response) — enrich with serverError from response body
     const serverErr = extractError(httpError.data);
     if (serverErr) {
       httpError.serverError = serverErr;
     }
     throw httpError;
+  } finally {
+    if (targetId) removeTarget(targetId);
   }
 
-  // 2xx response but success: false — extract error info
   const error = extractError(response);
   if (error) {
     const err = new Error(error.message);
@@ -219,9 +223,14 @@ export async function authQuery(api, queryRef, params = {}) {
  *   const queryList = results.get(25);  // rows array
  */
 export async function authQueries(api, queries) {
+  const targetId = addTarget('square');
   const payload = buildBatchPayload(queries);
-  const response = await api.post('conduit/auth_queries', payload);
-  return extractBatchRows(response);
+  try {
+    const response = await api.post('conduit/auth_queries', payload);
+    return extractBatchRows(response);
+  } finally {
+    if (targetId) removeTarget(targetId);
+  }
 }
 
 /**
