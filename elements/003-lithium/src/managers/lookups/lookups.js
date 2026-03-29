@@ -13,15 +13,15 @@
 
 import { LithiumTable } from '../../core/lithium-table-main.js';
 import { LithiumSplitter } from '../../core/lithium-splitter.js';
+import { PanelStateManager } from '../../core/panel-state-manager.js';
 import '../../styles/vendor-tabulator.css';
 import { authQuery } from '../../shared/conduit.js';
 import { toast } from '../../shared/toast.js';
 import { log, Subsystems, Status } from '../../core/log.js';
 import { processIcons } from '../../core/icons.js';
-import { setupManagerFooterIcons } from '../../core/manager-ui.js';
+import { setupManagerFooterIcons, createFontPopup } from '../../core/manager-ui.js';
 import SunEditor from 'suneditor';
 import 'suneditor/css/editor';
-import 'json-tree.js/dist/jsontree.js.min.css';
 import { initJsonTree, getJsonTreeData, setJsonTreeData, destroyJsonTree } from '../../components/json-tree-component.js';
 import './lookups.css';
 
@@ -67,17 +67,21 @@ export default class LookupsManager {
     // Currently selected lookup value
     this.selectedLookupValue = null;
 
-    // Splitter state
-    this.leftPanelWidth = 280;
-    this.middlePanelWidth = 350;
-    this.isLeftPanelCollapsed = false;
-    this.isMiddlePanelCollapsed = false;
+    // Panel state persistence
+    this.leftPanelState = new PanelStateManager('lithium_lookups_left');
+    this.middlePanelState = new PanelStateManager('lithium_lookups_middle');
+
+    // Splitter state (loaded from persistence)
+    this.leftPanelWidth = this.leftPanelState.loadWidth(280);
+    this.middlePanelWidth = this.middlePanelState.loadWidth(350);
+    this.isLeftPanelCollapsed = this.leftPanelState.loadCollapsed(false);
+    this.isMiddlePanelCollapsed = this.middlePanelState.loadCollapsed(false);
     this.isResizingLeft = false;
     this.isResizingRight = false;
 
     // Editor instances
     this.sunEditor = null;
-    this.collectionEditor = null; // JsonTree.js instance
+    this.collectionEditor = null; // JSON editor (CodeMirror) instance
     this.currentDetailData = null;
 
     // Active tab
@@ -97,6 +101,7 @@ export default class LookupsManager {
     await this.initChildTable();
     this.setupFooter();
     this.setupTabs();
+    this.restorePanelState();
   }
 
   async render() {
@@ -161,68 +166,15 @@ export default class LookupsManager {
   // ── Font Popup ─────────────────────────────────────────────────────────────
 
   initFontPopup() {
-    // Create font popup element
-    this.fontPopup = document.createElement('div');
-    this.fontPopup.className = 'lookups-font-popup';
-    const fontSizeValue = parseInt(this.editorFontSize, 10) || 14;
-    this.fontPopup.innerHTML = `
-      <div class="lookups-font-popup-row">
-        <label class="lookups-font-popup-label">Size</label>
-        <input type="number" class="lookups-font-popup-input" id="lookups-font-size" value="${fontSizeValue}" min="8" max="32">
-      </div>
-      <div class="lookups-font-popup-row">
-        <label class="lookups-font-popup-label">Family</label>
-        <select class="lookups-font-popup-select" id="lookups-font-family">
-          <option value="var(--font-sans)" ${this.editorFontFamily === 'var(--font-sans)' ? 'selected' : ''}>Sans Serif</option>
-          <option value="var(--font-mono)" ${this.editorFontFamily === 'var(--font-mono)' ? 'selected' : ''}>Monospace</option>
-          <option value="serif" ${this.editorFontFamily === 'serif' ? 'selected' : ''}>Serif</option>
-        </select>
-      </div>
-      <div class="lookups-font-popup-row">
-        <label class="lookups-font-popup-label">Style</label>
-        <div class="lookups-font-popup-styles">
-          <button type="button" class="lookups-font-popup-style-btn" data-style="normal">Normal</button>
-          <button type="button" class="lookups-font-popup-style-btn" data-style="bold">Bold</button>
-        </div>
-      </div>
-    `;
-
-    // Append to font button's parent (the toolbar)
-    if (this.elements.fontBtn) {
-      this.elements.fontBtn.parentElement.appendChild(this.fontPopup);
-    }
-
-    // Setup font popup event listeners
-    const sizeInput = this.fontPopup.querySelector('#lookups-font-size');
-    const familySelect = this.fontPopup.querySelector('#lookups-font-family');
-    const styleBtns = this.fontPopup.querySelectorAll('.lookups-font-popup-style-btn');
-
-    sizeInput?.addEventListener('change', (e) => {
-      this.editorFontSize = `${e.target.value}px`;
-      this.applyFontSettings();
+    const { popup, getState } = createFontPopup({
+      anchor: this.elements.fontBtn,
+      fontSize: parseInt(this.editorFontSize, 10) || 14,
+      fontFamily: this.editorFontFamily,
+      fontWeight: 'normal',
+      onChange: () => this.applyFontSettings(),
     });
-
-    familySelect?.addEventListener('change', (e) => {
-      this.editorFontFamily = e.target.value;
-      this.applyFontSettings();
-    });
-
-    styleBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
-        styleBtns.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        this.applyFontSettings();
-      });
-    });
-
-    // Close popup when clicking outside
-    document.addEventListener('click', (e) => {
-      if (this.fontPopup?.classList.contains('visible') &&
-          !this.fontPopup.contains(e.target) &&
-          !this.elements.fontBtn?.contains(e.target)) {
-        this.fontPopup.classList.remove('visible');
-      }
-    });
+    this.fontPopup = popup;
+    this._fontPopupGetState = getState;
   }
 
   toggleFontPopup(e) {
@@ -328,7 +280,7 @@ export default class LookupsManager {
   }
 
   /**
-   * Initialize JsonTree.js for JSON tab (tree view JSON editor)
+   * Initialize CodeMirror JSON editor for JSON tab
    * @param {Object|string} initialContent - Initial JSON content
    */
   async initJsonEditor(initialContent = {}) {
@@ -351,14 +303,19 @@ export default class LookupsManager {
     }
 
     try {
-      // Initialize JsonTree.js using the component wrapper
       this.collectionEditor = await initJsonTree({
         target: this.elements.jsonEditor,
         data: jsonData,
-        readOnly: false,
+        readOnly: true,
+        onJsonEdit: () => {
+          // Track dirty state when editor content changes
+          if (this.elements.jsonEditor) {
+            this.elements.jsonEditor._isDirty = true;
+          }
+        },
       });
     } catch (error) {
-      console.error('[LookupsManager] Failed to initialize JsonTree:', error);
+      console.error('[LookupsManager] Failed to initialize JSON editor:', error);
       // Fallback to textarea
       const jsonContent = typeof jsonData === 'object'
         ? JSON.stringify(jsonData, null, 2)
@@ -392,6 +349,7 @@ export default class LookupsManager {
         log(Subsystems.TABLE, Status.INFO, `[Lookups] Loaded ${rows.length} lookups`);
       },
       onSetTableWidth: (mode) => this.setTableWidth(mode, 'left'),
+      onEditModeChange: (isEditing, rowData) => this.handleTableEditModeChange(this.parentTable, isEditing, rowData),
     });
 
     await this.parentTable.init();
@@ -420,6 +378,7 @@ export default class LookupsManager {
         log(Subsystems.TABLE, Status.INFO, `[Lookups] Loaded ${rows.length} lookup values`);
       },
       onSetTableWidth: (mode) => this.setTableWidth(mode, 'middle'),
+      onEditModeChange: (isEditing, rowData) => this.handleTableEditModeChange(this.childTable, isEditing, rowData),
     });
 
     await this.childTable.init();
@@ -432,15 +391,18 @@ export default class LookupsManager {
     if (!panelElement) return;
 
     // Match Query Manager width setpoints
-    const widths = { narrow: 160, compact: 314, normal: 468, wide: 622 };
+    // Get width from CSS variables
+    const widthVar = `--table-width-${mode}`;
+    const computedStyle = getComputedStyle(document.documentElement);
+    const width = computedStyle.getPropertyValue(widthVar).trim();
 
-    if (mode === 'auto') {
+    if (mode === 'auto' || !width) {
       panelElement.style.width = '';
       return;
     }
 
-    panelElement.style.width = `${widths[mode] || 314}px`;
-    log(Subsystems.MANAGER, Status.INFO, `[Lookups] ${panel} panel width set to: ${mode}`);
+    panelElement.style.width = width;
+    log(Subsystems.MANAGER, Status.INFO, `[Lookups] ${panel} panel width set to: ${mode} (${width})`);
   }
 
   // ── Parent/Child Relationship ──────────────────────────────────────────────
@@ -667,7 +629,8 @@ export default class LookupsManager {
       onResize: (width) => {
         this.leftPanelWidth = width;
       },
-      onResizeEnd: () => {
+      onResizeEnd: (width) => {
+        this.leftPanelState.saveWidth(width);
         this.parentTable?.table?.redraw?.();
         this.childTable?.table?.redraw?.();
       },
@@ -682,7 +645,8 @@ export default class LookupsManager {
       onResize: (width) => {
         this.middlePanelWidth = width;
       },
-      onResizeEnd: () => {
+      onResizeEnd: (width) => {
+        this.middlePanelState.saveWidth(width);
         this.parentTable?.table?.redraw?.();
         this.childTable?.table?.redraw?.();
       },
@@ -692,6 +656,12 @@ export default class LookupsManager {
   toggleLeftPanel() {
     this.isLeftPanelCollapsed = !this.isLeftPanelCollapsed;
     this.leftSplitter?.setCollapsed(this.isLeftPanelCollapsed);
+
+    // Toggle rotation class on collapse button
+    this.elements.collapseLeftBtn?.classList.toggle('collapsed', this.isLeftPanelCollapsed);
+
+    // Save collapsed state
+    this.leftPanelState.saveCollapsed(this.isLeftPanelCollapsed);
 
     if (!this.isLeftPanelCollapsed) {
       this.elements.leftPanel.style.width = `${this.leftPanelWidth}px`;
@@ -708,6 +678,12 @@ export default class LookupsManager {
     this.isMiddlePanelCollapsed = !this.isMiddlePanelCollapsed;
     this.rightSplitter?.setCollapsed(this.isMiddlePanelCollapsed);
 
+    // Toggle rotation class on collapse button
+    this.elements.collapseMiddleBtn?.classList.toggle('collapsed', this.isMiddlePanelCollapsed);
+
+    // Save collapsed state
+    this.middlePanelState.saveCollapsed(this.isMiddlePanelCollapsed);
+
     if (!this.isMiddlePanelCollapsed) {
       this.elements.middlePanel.style.width = `${this.middlePanelWidth}px`;
     }
@@ -717,6 +693,24 @@ export default class LookupsManager {
       this.parentTable?.table?.redraw?.();
       this.childTable?.table?.redraw?.();
     }, 350);
+  }
+
+  restorePanelState() {
+    // Restore left panel
+    this.elements.collapseLeftBtn?.classList.toggle('collapsed', this.isLeftPanelCollapsed);
+    this.leftSplitter?.setCollapsed(this.isLeftPanelCollapsed);
+
+    // Restore middle panel
+    this.elements.collapseMiddleBtn?.classList.toggle('collapsed', this.isMiddlePanelCollapsed);
+    this.rightSplitter?.setCollapsed(this.isMiddlePanelCollapsed);
+
+    // Apply saved widths to panels (will be used when expanding)
+    if (this.elements.leftPanel && !this.isLeftPanelCollapsed) {
+      this.elements.leftPanel.style.width = `${this.leftPanelWidth}px`;
+    }
+    if (this.elements.middlePanel && !this.isMiddlePanelCollapsed) {
+      this.elements.middlePanel.style.width = `${this.middlePanelWidth}px`;
+    }
   }
 
   // ── Footer Setup ───────────────────────────────────────────────────────────
@@ -746,9 +740,34 @@ export default class LookupsManager {
       ],
       fillerTitle: 'Lookups',
       anchor: placeholder, // Insert manager buttons before placeholder
+      showSaveCancel: true,
     });
 
     this._footerDatasource = footerElements.reportSelect;
+
+    // Store footer save/cancel element references for state management
+    this.footerSaveBtn = footerElements.saveBtn;
+    this.footerCancelBtn = footerElements.cancelBtn;
+    this.footerDummyBtn = footerElements.dummyBtn;
+
+    // The LithiumTable instance currently in edit mode (if any)
+    this.activeEditingTable = null;
+
+    // Wire footer Save/Cancel to the active editing table
+    if (this.footerSaveBtn) {
+      this.footerSaveBtn.addEventListener('click', () => {
+        if (this.activeEditingTable?.handleSave) {
+          this.activeEditingTable.handleSave();
+        }
+      });
+    }
+    if (this.footerCancelBtn) {
+      this.footerCancelBtn.addEventListener('click', () => {
+        if (this.activeEditingTable?.handleCancel) {
+          this.activeEditingTable.handleCancel();
+        }
+      });
+    }
 
     log(Subsystems.MANAGER, Status.INFO, '[LookupsManager] Footer controls initialized');
   }
@@ -959,6 +978,54 @@ export default class LookupsManager {
     }
   }
 
+  // ── Footer Save/Cancel ─────────────────────────────────────────────────────
+
+  /**
+   * Called when any LithiumTable in this manager changes edit mode.
+   * Enables/disables the footer Save/Cancel buttons and binds them to
+   * the table that is currently in edit mode.
+   *
+   * @param {LithiumTable} lithiumTable - The table instance
+   * @param {boolean} isEditing - Whether the table is now in edit mode
+   * @param {Object|null} rowData - The row data being edited (or null)
+   */
+  handleTableEditModeChange(lithiumTable, isEditing, rowData) {
+    if (isEditing) {
+      // If another table was already editing, exit its edit mode first
+      if (this.activeEditingTable && this.activeEditingTable !== lithiumTable) {
+        this.activeEditingTable.exitEditMode('cancel');
+      }
+      this.activeEditingTable = lithiumTable;
+      this.updateFooterSaveCancelState(true, true);
+      log(Subsystems.MANAGER, Status.INFO, `[Lookups] Footer Save/Cancel enabled for table`);
+    } else {
+      if (this.activeEditingTable === lithiumTable) {
+        this.activeEditingTable = null;
+      }
+      this.updateFooterSaveCancelState(true, false);
+      log(Subsystems.MANAGER, Status.INFO, `[Lookups] Footer Save/Cancel disabled`);
+    }
+  }
+
+  /**
+   * Show/hide and enable/disable the footer Save/Cancel buttons.
+   * @param {boolean} visible - Whether the buttons should be visible
+   * @param {boolean} enabled - Whether the buttons should be enabled (requires visible=true)
+   */
+  updateFooterSaveCancelState(visible, enabled) {
+    if (this.footerSaveBtn) {
+      this.footerSaveBtn.style.display = visible ? '' : 'none';
+      this.footerSaveBtn.disabled = !visible || !enabled;
+    }
+    if (this.footerCancelBtn) {
+      this.footerCancelBtn.style.display = visible ? '' : 'none';
+      this.footerCancelBtn.disabled = !visible || !enabled;
+    }
+    if (this.footerDummyBtn) {
+      this.footerDummyBtn.style.display = visible ? '' : 'none';
+    }
+  }
+
   // ── Lifecycle Methods ──────────────────────────────────────────────────────
 
   /**
@@ -995,7 +1062,7 @@ export default class LookupsManager {
       this.sunEditor = null;
     }
 
-    // Destroy JsonTree editor
+    // Destroy JSON editor
     if (this.collectionEditor) {
       destroyJsonTree(this.elements.jsonEditor);
       this.collectionEditor = null;

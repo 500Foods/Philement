@@ -102,10 +102,19 @@ this.columnTable = new LithiumTable({
 
 Different background colors indicate the column manager depth:
 
-| Level | Background | CSS Class |
-|-------|------------|-----------|
-| 1 | Dark blue | `.col-manager-popup` |
-| 2 | Dark red | `.col-manager-popup.depth-2` |
+| Level | Background | CSS Class | Column Manager Available |
+|-------|------------|-----------|--------------------------|
+| 0 | Default (black) | N/A | Yes |
+| 1 | Dark blue | `.col-manager-popup` | Yes |
+| 2 | Dark red | `.col-manager-popup.depth-2` | No |
+
+### Depth Detection
+
+The column manager automatically detects its depth by checking if its parent table's container is inside a `.col-manager-popup` element. This detection is used to:
+
+1. Apply the appropriate theme (blue vs red)
+2. Enable/disable the column chooser in the nested table
+3. Control recursive behavior
 
 ---
 
@@ -123,20 +132,36 @@ This ensures that when opening a depth-2 column manager (red), the depth-1 colum
 
 ```javascript
 async toggleColumnManager(e, column) {
-  // Close all existing column managers first
-  this.closeAllColumnManagers();
-  
-  // Then open this one
-  await this.openColumnManager(e, column);
+  e.stopPropagation();
+
+  if (this.columnManager) {
+    this.closeColumnManager();
+    return;
+  }
+
+  // Close all other column managers first (singleton behavior)
+  // But keep the parent column manager open if this is a depth-2 column manager
+  const parentColumnManager = this.container.closest('.col-manager-popup');
+  this.closeAllColumnManagers(parentColumnManager);
+
+  // Create and open the column manager
+  // ...
 }
 
-closeAllColumnManagers() {
-  // Close all column managers in the DOM
+closeAllColumnManagers(parentColumnManager = null) {
+  // Close all column managers in the DOM except the parent
   document.querySelectorAll('.col-manager-popup').forEach(popup => {
+    // Don't close the parent column manager
+    if (popup === parentColumnManager) {
+      return;
+    }
+    
     const managerId = popup.getAttribute('data-manager-id');
     // Find and cleanup the manager instance
-    if (managerInstance) {
-      managerInstance.cleanup();
+    if (popup._columnManagerInstance) {
+      popup._columnManagerInstance.cleanup();
+    } else {
+      popup.remove();
     }
   });
 }
@@ -174,6 +199,34 @@ storageKey: 'col_manager_template'
 ---
 
 ## CSS Architecture
+
+### Popup Visibility
+
+The column manager popup uses proper visibility management to prevent mouse event interception when hidden:
+
+```css
+.col-manager-popup {
+  /* Hidden state */
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(0.95);
+  pointer-events: none;
+  transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
+}
+
+.col-manager-popup.visible {
+  /* Visible state */
+  opacity: 1;
+  visibility: visible;
+  transform: scale(1);
+  pointer-events: auto;
+}
+```
+
+This ensures:
+- Hidden popups don't intercept mouse events
+- Smooth transitions between visible/hidden states
+- No "ghost" popups blocking interaction with underlying elements
 
 ### Popup Styling
 
@@ -225,9 +278,16 @@ The LithiumTable inside the column manager uses standard `lithium` prefix classe
    - Close button (X)
    - Escape key
    - Outside the popup
-2. `cleanup()` is called on the column manager
-3. Popup is removed from DOM
+2. `hide()` is called on the column manager
+3. Popup is hidden with animation (not removed from DOM)
 4. Parent table is notified of changes
+
+### Cleanup vs Hide
+
+- **`hide()`** — Hides the popup but keeps it in DOM for reuse
+- **`cleanup()`** — Completely removes the popup from DOM and destroys resources
+
+The column manager uses `hide()` for normal closing to allow quick reopening, and `cleanup()` when destroying the instance completely.
 
 ### Important: Closing Behavior
 
@@ -249,6 +309,43 @@ The column manager's table has its own navigator with popups (width, layout, tem
 - **Resize the popup** — Width popup adjusts the column manager popup width
 
 This ensures that clicking on width popup items doesn't inadvertently close the column manager and instead resizes the popup.
+
+### Click Outside Detection
+
+The column manager's click-outside detection is sophisticated to handle nested popups:
+
+```javascript
+handleClickOutside(e) {
+  if (this.popup && !this.popup.contains(e.target) && this.popup.classList.contains('visible')) {
+    // Check if click was on the anchor element (column chooser button)
+    if (this.anchorElement && this.anchorElement.contains(e.target)) {
+      return; // Don't close if clicking the anchor
+    }
+    
+    // Check if click is inside any other column manager popup
+    const otherPopups = document.querySelectorAll('.col-manager-popup');
+    for (const popup of otherPopups) {
+      if (popup !== this.popup && popup.contains(e.target)) {
+        return; // Don't close if clicking inside another column manager
+      }
+    }
+    
+    // Check if click is on a navigator popup item (e.g., width popup)
+    if (e.target.closest('.lithium-nav-popup') || 
+        e.target.closest('.lithium-nav-popup-item') ||
+        e.target.closest('[class*="nav-popup"]')) {
+      return; // Don't close if clicking on navigator popup
+    }
+    
+    this.close();
+  }
+}
+```
+
+This ensures that:
+1. Clicking on the anchor button doesn't close the popup
+2. Clicking inside nested column managers doesn't close the parent
+3. Clicking on navigator popup items doesn't close the column manager
 
 ---
 
@@ -288,11 +385,64 @@ The column manager displays columns in a specific format:
 | Method | Description |
 |--------|-------------|
 | `init()` | Initialize the column manager |
-| `show()` | Show the popup |
-| `hide()` | Hide the popup |
-| `cleanup()` | Clean up and destroy |
+| `show()` | Show the popup with animation |
+| `hide()` | Hide the popup (doesn't remove from DOM) |
+| `cleanup()` | Clean up and destroy (removes from DOM) |
 | `refreshColumnData()` | Refresh data from parent table |
 | `setTableWidth(mode)` | Adjust the column manager popup width |
+| `isDepth2ColumnManager()` | Check if this is a depth-2 column manager |
+| `positionPopup()` | Position popup relative to anchor element |
+
+---
+
+## Width Presets
+
+Table and popup widths are controlled via CSS variables for consistent theming:
+
+### CSS Variable Definition
+
+Width presets are defined in `base.css`:
+
+```css
+:root {
+  /* Table width presets (for regular tables) */
+  --table-width-narrow: 160px;
+  --table-width-compact: 314px;
+  --table-width-normal: 468px;
+  --table-width-wide: 622px;
+
+  /* Popup width presets (4px wider for border) */
+  --table-popup-width-narrow: 164px;
+  --table-popup-width-compact: 318px;
+  --table-popup-width-normal: 472px;
+  --table-popup-width-wide: 626px;
+}
+```
+
+### Usage
+
+The column manager reads these CSS variables dynamically:
+
+```javascript
+setTableWidth(mode) {
+  // Get width from CSS variables
+  const widthVar = `--table-popup-width-${mode}`;
+  const computedStyle = getComputedStyle(document.documentElement);
+  const width = computedStyle.getPropertyValue(widthVar).trim();
+  
+  // Apply width to popup
+  this.popup.style.width = width;
+}
+```
+
+### Benefits
+
+- **Themeable** — Widths can be overridden in theme files
+- **Consistent** — Same widths across all panels and managers
+- **Maintainable** — Single source of truth for width values
+- **Popup-specific** — Popup widths are 4px wider to account for borders
+
+These CSS variables can be overridden in theme files to adjust widths for different themes or padding requirements.
 
 ---
 
@@ -315,3 +465,6 @@ The Column Manager was created to provide a more powerful alternative to the sim
 5. **Theme Differentiation** — Visual indicators for depth level (blue/red)
 6. **Immediate Changes** — Cell edits are applied to parent table immediately
 7. **Popup Width Control** — Navigator width popup resizes the column manager popup
+8. **CSS Variables** — Width presets controlled via CSS variables for theming
+9. **Proper Visibility** — Hidden popups use `visibility: hidden` and `pointer-events: none`
+10. **Parent Preservation** — Opening depth-2 column manager keeps depth-1 open

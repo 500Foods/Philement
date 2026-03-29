@@ -385,6 +385,7 @@ When manager is destroyed (rare):
 - [LITHIUM-TAB.md](LITHIUM-TAB.md) — LithiumTable component documentation
 - [LITHIUM-MGR-QUERY.md](LITHIUM-MGR-QUERY.md) — Query Manager (similar dual-panel design)
 - [LITHIUM-LUT.md](LITHIUM-LUT.md) — Lookup Tables system
+- [LITHIUM-DEV.md](LITHIUM-DEV.md) — Shared UI utilities (createFontPopup, etc.)
 
 ---
 

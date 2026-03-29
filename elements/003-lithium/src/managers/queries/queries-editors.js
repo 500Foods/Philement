@@ -2,10 +2,11 @@
  * Queries Manager - Editors Module
  *
  * Handles SQL, Summary (Markdown), and Collection (JSON) editor initialization.
+ * JSON editing uses CodeMirror 6 with @codemirror/lang-json.
  */
 
 import { log, Subsystems, Status } from '../../core/log.js';
-import { initJsonTree, getJsonTreeData, setJsonTreeData, destroyJsonTree, updateJsonTreeOptions } from '../../components/json-tree-component.js';
+import { initJsonTree, getJsonTreeData, setJsonTreeData, destroyJsonTree } from '../../components/json-tree-component.js';
 
 // Constants
 const MIN_FONT_SIZE = 10;
@@ -171,7 +172,7 @@ export class EditorManager {
   }
 
   /**
-   * Initialize Collection (JSON) editor with JsonTree.js
+   * Initialize Collection (JSON) editor with CodeMirror
    */
   async initCollectionEditor(initialContent = {}) {
     const container = this.manager.elements.collectionEditorContainer;
@@ -204,7 +205,7 @@ export class EditorManager {
       });
 
     } catch (error) {
-      console.error('[QueriesManager] Failed to initialize JsonTree:', error);
+      console.error('[QueriesManager] Failed to initialize JSON editor:', error);
     }
   }
 
@@ -250,28 +251,31 @@ export class EditorManager {
       container?.classList.toggle(readonlyClass, !editable);
     }
 
-    this._setJsonTreeEditable(editable);
+    this._setJsonEditorEditable(editable);
   }
 
   /**
-   * Set JsonTree editor editable state using updateBindingOptions.
-   * This avoids a costly destroy+rebuild cycle.
+   * Set JSON editor editable state.
+   * Uses the Compartment stored on the container to reconfigure readOnly
+   * via a dispatch effect — no state recreation needed.
    */
-  _setJsonTreeEditable(editable) {
+  _setJsonEditorEditable(editable) {
     const container = this.manager.elements.collectionEditorContainer;
-    if (!this.collectionEditor || !container) return;
+    if (!container?._cmView) return;
 
-    // Re-pass events alongside allowEditing to ensure the onJsonEdit handler
-    // survives option updates (the library may re-render and drop handlers).
-    updateJsonTreeOptions(container, {
-      allowEditing: editable,
-      events: {
-        onJsonEdit: () => {
-          this.manager.dirtyTracker.setDirty('collection', true);
-        },
-      },
+    const view = container._cmView;
+    const compartment = container._cmReadOnlyCompartment;
+
+    if (!compartment) return;
+
+    const isReadOnly = !editable;
+
+    view.dispatch({
+      effects: compartment.reconfigure(isReadOnly),
     });
-    container?.classList.toggle('queries-jsoneditor-readonly', !editable);
+
+    container._cmReadOnly = isReadOnly;
+    container?.classList.toggle('queries-jsoneditor-readonly', isReadOnly);
   }
 
   /**

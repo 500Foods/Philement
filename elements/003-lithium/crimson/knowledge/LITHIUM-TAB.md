@@ -296,33 +296,190 @@ The component shows a loading spinner during data fetch:
 
 ### Prefix System
 
-All CSS classes use a configurable prefix (default: `lithium`):
+The Navigator uses a **two-tier CSS class system**:
+
+1. **Visual styling classes** always use the base `lithium-` prefix (from `lithium-table.css`)
+2. **Element IDs** use the configured `cssPrefix` for unique selection within each table instance
+3. **Sort icon classes** use `cssPrefix` (auto-injected for custom prefixes)
 
 ```css
-/* Default prefix */
+/* Visual styling — always lithium- prefix (shared across all tables) */
 .lithium-nav-wrapper { }
 .lithium-nav-block { }
 .lithium-nav-btn { }
-.lithium-sort-icons { }
+.lithium-nav-popup { }
+.lithium-nav-search-input { }
 .lithium-selector-col { }
 
-/* Custom prefix (e.g., 'queries') */
-.queries-nav-wrapper { }
-.queries-nav-block { }
-/* etc */
+/* Sort icons — use cssPrefix, auto-injected by injectSortIconStyles() */
+.lithium-sort-icons { }       /* default prefix */
+.lithium-sort-asc { }
+.lithium-sort-desc { }
+.queries-sort-icons { }      /* custom prefix — auto-injected */
+.queries-sort-asc { }
+.queries-sort-desc { }
+
+/* Element IDs — use cssPrefix for uniqueness */
+#lookups-parent-nav-first { }
+#lookups-parent-nav-next { }
 ```
 
 ### Key Classes
 
-| Class | Element |
-|-------|---------|
-| `.{prefix}-nav-wrapper` | Navigator container |
-| `.{prefix}-nav-block` | Navigator button group |
-| `.{prefix}-nav-btn` | Navigator buttons |
-| `.{prefix}-selector-col` | Row selector column |
-| `.{prefix}-col-chooser-btn` | Column chooser trigger |
-| `.{prefix}-sort-icons` | Sort indicator container |
-| `.{prefix}-edit-mode` | Applied to container during edit |
+| Class | Element | Prefix Source |
+|-------|---------|---------------|
+| `.lithium-nav-wrapper` | Navigator container | Always base `lithium-` |
+| `.lithium-nav-block` | Navigator button group | Always base `lithium-` |
+| `.lithium-nav-btn` | Navigator buttons | Always base `lithium-` |
+| `.lithium-nav-popup` | Popup menus | Always base `lithium-` |
+| `.lithium-nav-popup-item` | Popup menu items | Always base `lithium-` |
+| `.lithium-nav-search-input` | Search input field | Always base `lithium-` |
+| `.lithium-selector-col` | Row selector column | Always base `lithium-` |
+| `.lithium-col-chooser-btn` | Column chooser trigger | Always base `lithium-` |
+| `.{prefix}-sort-icons` | Sort indicator container | Auto-injected for custom prefixes |
+| `.{prefix}-sort-asc` | Sort ascending arrow | Auto-injected for custom prefixes |
+| `.{prefix}-sort-desc` | Sort descending arrow | Auto-injected for custom prefixes |
+| `.{prefix}-edit-mode` | Applied to container during edit | Always base `lithium-` |
+
+### Why Base Classes for Navigator?
+
+All Navigator instances share the same visual styles via `.lithium-*` classes in `lithium-table.css`. This enables:
+
+- **Themeability** — CSS variables on `.lithium-nav-btn` cascade to all tables
+- **No duplication** — One set of CSS rules covers all Navigator instances
+- **Layer-based overrides** — Themes can override via `@layer custom-theme` (highest priority)
+
+### Tri-State Sort
+
+All LithiumTable instances support **tri-state sorting** (asc → desc → unsorted). This is enabled globally at the Tabulator constructor level:
+
+```javascript
+this.table = new Tabulator(this.container, {
+  headerSortTristate: true,  // Always enabled
+  headerSortElement: (column, dir) => {
+    // dir is "asc", "desc", or "none"
+    return `<span class="${prefix}-sort-icons" data-sort-dir="${dir}">
+      <span class="${prefix}-sort-asc">&#9650;</span>
+      <span class="${prefix}-sort-desc">&#9660;</span>
+    </span>`;
+  },
+  // ...
+});
+```
+
+CSS for tri-state sort is included in both `lithium-table.css` and the auto-injected styles for custom prefixes:
+
+```css
+/* Ascending — up arrow highlighted */
+.lithium-table-container .tabulator-col[aria-sort="ascending"] .lithium-sort-asc {
+  color: white;
+  opacity: 1;
+}
+
+/* Descending — down arrow highlighted */
+.lithium-table-container .tabulator-col[aria-sort="descending"] .lithium-sort-desc {
+  color: white;
+  opacity: 1;
+}
+
+/* None/unsorted — both arrows dimmed */
+.lithium-table-container .tabulator-col[aria-sort="none"] .lithium-sort-asc,
+.lithium-table-container .tabulator-col[aria-sort="none"] .lithium-sort-desc {
+  color: var(--text-muted);
+  opacity: 0.35;
+}
+```
+
+### Sort Icons CSS (Automatic)
+
+LithiumTable automatically injects sort icon styles for the specified `cssPrefix`. You **do not** need to add sort icon CSS to your manager's CSS file when using LithiumTable.
+
+When you create a LithiumTable instance with a custom `cssPrefix` (e.g., `cssPrefix: 'mymanager'`), LithiumTable will automatically inject a `<style>` element with the required sort icon styles:
+
+```javascript
+// LithiumTable automatically handles sort icons for 'mymanager' prefix
+const table = new LithiumTable({
+  container: document.getElementById('my-table-container'),
+  navigatorContainer: document.getElementById('my-navigator'),
+  cssPrefix: 'mymanager',  // Sort icons automatically injected
+  // ... other options
+});
+```
+
+**What gets injected automatically (sort icons only):**
+
+```css
+.mymanager-sort-icons { /* sort icon container */ }
+.mymanager-sort-asc { /* ascending arrow */ }
+.mymanager-sort-desc { /* descending arrow */ }
+
+/* Tri-state: unsorted columns */
+.mymanager-sort-asc, .mymanager-sort-desc {
+  color: var(--text-muted);
+  opacity: 0.35;
+}
+
+/* Highlighted states */
+[aria-sort="ascending"] .mymanager-sort-asc { color: white; opacity: 1; }
+[aria-sort="descending"] .mymanager-sort-desc { color: white; opacity: 1; }
+```
+
+**Navigator styles are NOT injected** — they come from `lithium-table.css` using `lithium-*` base classes.
+
+**Note:** If you use the default `cssPrefix` (`lithium`), the base `lithium-table.css` already provides these styles. The automatic injection only happens for custom prefixes.
+
+**Exception:** Managers that use raw Tabulator (not LithiumTable), such as the Queries Manager and Login Manager, must still define their own sort icon styles in their CSS files.
+
+### Container HTML Requirements
+
+**IMPORTANT:** When adding a LithiumTable to a manager, the container elements in the HTML template **must include both** the manager-specific class AND the LithiumTable base classes:
+
+```html
+<!-- CORRECT — Both classes present -->
+<div class="mymanager-table-container lithium-table-container" id="my-table-container">
+  <!-- Tabulator table injected here -->
+</div>
+<div class="mymanager-navigator lithium-navigator-container" id="my-navigator">
+  <!-- Navigator injected here -->
+</div>
+
+<!-- INCORRECT — Missing base classes -->
+<div class="mymanager-table-container" id="my-table-container">
+  <!-- Styles will NOT apply correctly -->
+</div>
+```
+
+**Required base classes:**
+
+| Container | Required Class |
+|-----------|----------------|
+| Table container | `lithium-table-container` |
+| Navigator container | `lithium-navigator-container` |
+
+**CSS Overrides for custom layouts:**
+
+If the default lithium-table.css margins/padding don't fit your layout, override them in your manager CSS:
+
+```css
+/* Override default margins to fit custom layout */
+.mymanager-table-container.lithium-table-container {
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  flex: 1;
+  min-height: 0;
+}
+
+.mymanager-navigator.lithium-navigator-container {
+  padding: var(--space-1) var(--space-2);
+}
+
+/* Ensure table fills container */
+.mymanager-table-container .tabulator {
+  border: none;
+  height: 100% !important;
+}
+```
 
 ---
 
@@ -333,8 +490,9 @@ All CSS classes use a configurable prefix (default: `lithium`):
 | Method | Description |
 |--------|-------------|
 | `loadData(searchTerm?, extraParams?)` | Load data from QueryRef |
+| `loadStaticData(rows, options?)` | Load hardcoded/pre-fetched data |
 | `refresh()` | Reload current data |
-| `setData(rows)` | Set data directly |
+| `setData(rows)` | Set data directly (low-level) |
 
 ### Navigation
 
@@ -474,12 +632,101 @@ await this.parentTable.loadData();
 
 ---
 
+## Collapsible Panels with Animated Icons
+
+Managers using LithiumTable often need collapsible panels (left panel, middle panel) with collapse/expand buttons in the toolbar. The collapse buttons should have a rotation animation on their icons.
+
+### Implementation Pattern
+
+When adding collapsible panels to a manager, follow this pattern:
+
+#### 1. HTML Structure
+
+```html
+<div class="mymanager-tabs-header">
+  <div class="subpanel-header-group">
+    <!-- Collapse button for left panel -->
+    <button type="button" class="subpanel-header-btn subpanel-header-close collapse-btn" 
+            id="mymanager-collapse-left-btn" title="Toggle Left Panel">
+      <fa fa-angles-left id="mymanager-collapse-left-icon"></fa>
+    </button>
+    <!-- Other toolbar buttons... -->
+  </div>
+</div>
+```
+
+#### 2. CSS for Collapse Button Rotation
+
+Add this to your manager's CSS file:
+
+```css
+/* Collapse button styling */
+.collapse-btn {
+  flex: 0 0 auto;
+  padding: var(--space-1);
+}
+
+/* Collapse icon rotation - base state (pointing left) */
+.collapse-btn > i,
+.collapse-btn > svg {
+  transition: transform var(--transition-delay) ease;
+  transform: rotate(0deg);
+}
+
+/* Collapse icon rotation when panel is collapsed (pointing right) */
+.collapse-btn.collapsed > i,
+.collapse-btn.collapsed > svg {
+  transform: rotate(180deg);
+}
+```
+
+#### 3. JavaScript Toggle Method
+
+In your manager's toggle method, toggle the `.collapsed` class on the collapse button:
+
+```javascript
+toggleLeftPanel() {
+  this.isLeftPanelCollapsed = !this.isLeftPanelCollapsed;
+  this.leftSplitter?.setCollapsed(this.isLeftPanelCollapsed);
+
+  // Toggle rotation class on collapse button
+  this.elements.collapseLeftBtn?.classList.toggle('collapsed', this.isLeftPanelCollapsed);
+
+  if (!this.isLeftPanelCollapsed) {
+    this.elements.leftPanel.style.width = `${this.leftPanelWidth}px`;
+  }
+
+  // Redraw tables after animation completes
+  setTimeout(() => {
+    this.leftTable?.table?.redraw?.();
+    this.rightTable?.table?.redraw?.();
+  }, 350);
+}
+```
+
+### How It Works
+
+1. **LithiumSplitter** adds `.lithium-panel-collapsed` class to the panel and `.lithium-splitter-collapsed` class to the splitter when collapsed
+2. **Manager toggle method** adds `.collapsed` class to the collapse button itself
+3. **CSS transition** smoothly rotates the icon from 0deg to 180deg using `var(--transition-delay)` timing
+4. **Icon direction**: 0deg = pointing left (expand), 180deg = pointing right (collapse)
+
+### Current Implementations
+
+This pattern is used in:
+- **Style Manager** (`style-manager.js`) — Left and middle panel collapse buttons
+- **Lookups Manager** (`lookups.js`) — Left and middle panel collapse buttons  
+- **Version Manager** (`version-history.js`) — Left panel collapse button
+
+---
+
 ## Related Documentation
 
 - [LITHIUM-MGR.md](LITHIUM-MGR.md) — Manager system overview
 - [LITHIUM-MGR-QUERY.md](LITHIUM-MGR-QUERY.md) — Query Manager (first LithiumTable implementation)
 - [LITHIUM-MGR-LOOKUPS.md](LITHIUM-MGR-LOOKUPS.md) — Lookups Manager (dual-table example)
 - [LITHIUM-LUT.md](LITHIUM-LUT.md) — Lookup Tables integration
+- [LITHIUM-CSS.md](LITHIUM-CSS.md) — CSS architecture, layers, and theming
 
 ---
 
@@ -491,6 +738,8 @@ The LithiumTable component was extracted from the Query Manager implementation t
 
 1. **Mixin Pattern** — Functionality split into logical modules (base, ops, UI)
 2. **JSON-Driven** — Column configuration externalized to JSON files
-3. **CSS Prefix** — Configurable prefix allows multiple styled tables per page
-4. **Template System** — User preferences persisted to localStorage
-5. **Edit Mode Gate** — Editors only active in edit mode, ensuring consistent row selection
+3. **CSS Two-Tier System** — Navigator always uses `lithium-*` base classes for styling; element IDs use `cssPrefix` for uniqueness; sort icons use `cssPrefix` via auto-injection
+4. **Tri-State Sort** — Always enabled; `headerSortElement` callback receives `(column, dir)` from Tabulator
+5. **Template System** — User preferences persisted to localStorage
+6. **Edit Mode Gate** — Editors only active in edit mode, ensuring consistent row selection
+7. **`loadStaticData()` method** — Encapsulates blockRedraw/setData/discoverColumns pattern for hardcoded or pre-fetched data

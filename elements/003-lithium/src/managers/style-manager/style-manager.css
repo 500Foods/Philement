@@ -1,83 +1,919 @@
 /**
  * Style Manager Styles
  *
- * Manager-specific overrides for the shared panel layout.
- * Uses class prefix 'style-' only for unique overrides.
+ * A dual-table interface for managing styles with Lookup 41 and Sections.
+ * Features interactive section mockups with clickable targets.
  *
  * @layer managers
  */
 
 @layer managers {
 
-/* ── Manager-specific overrides ──────────────────────────────────────────── */
+/* ═════════════════════════════════════════════════════════════════════════════
+   Style Manager Styles
+   ═════════════════════════════════════════════════════════════════════════════
+   
+   Layout follows the Lookups Manager pattern:
+   - Left panel: Lookup 41 (Style Elements)
+   - Middle panel: Sections (Hardcoded)
+   - Right panel: Section/JSON editor with toolbar
+   
+   Note: Tabulator theme overrides and Navigator styles are provided by
+   lithium-table.css via the .lithium-table-container and .lithium-nav-* classes.
+   This file only contains manager-specific layout styles.
+   
+   ═════════════════════════════════════════════════════════════════════════════ */
 
-/* Override default panel widths for this manager */
+/* ── Main Container ─────────────────────────────────────────────────────── */
+
 .style-manager-container {
-  --panel-left-w: 280px;
-  --panel-middle-w: 350px;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 0px;
+  text-align: left;
 }
 
-/* CSS Editor styling */
-#style-css-editor .cm-editor {
-  height: 100%;
+/* ── Left Panel (Lookup 41 Table) ───────────────────────────────────────── */
+
+.style-manager-container [data-panel="left"]#style-left-panel {
+  display: flex;
+  flex-direction: column;
+  width: 280px;
+  min-width: 150px;
+  background-color: var(--bg-secondary);
+  transition: width var(--transition-delay) ease, min-width var(--transition-delay) ease;
+  flex-shrink: 0;
+}
+
+/* ── Middle Panel (Sections Table) ──────────────────────────────────────── */
+
+.style-manager-container [data-panel="left"]#style-middle-panel {
+  display: flex;
+  flex-direction: column;
+  width: 350px;
+  min-width: 200px;
+  background-color: var(--bg-primary);
+  transition: width var(--transition-delay) ease, min-width var(--transition-delay) ease;
+  flex-shrink: 0;
+}
+
+/* Collapse buttons in toolbar */
+.style-collapse-left-btn,
+.style-collapse-middle-btn {
+  flex: 0 0 auto;
+  padding: var(--space-1);
+}
+
+/* Collapse button styling */
+.style-collapse-left-btn,
+.style-collapse-middle-btn {
+  flex: 0 0 auto;
+  padding: var(--space-1);
+}
+
+/* Collapse icon rotation */
+.style-collapse-left-btn > i,
+.style-collapse-left-btn > svg,
+.style-collapse-middle-btn > i,
+.style-collapse-middle-btn > svg {
+  transition: transform var(--transition-delay) ease;
+  transform: rotate(0deg);
+}
+
+/* Collapse icon rotation when panels are collapsed */
+.style-collapse-left-btn.collapsed > i,
+.style-collapse-left-btn.collapsed > svg,
+.style-collapse-middle-btn.collapsed > i,
+.style-collapse-middle-btn.collapsed > svg {
+  transform: rotate(180deg);
+}
+
+/* ── Table Containers (additional styling beyond lithium-table.css) ────── */
+
+.style-table-container {
+  flex: 1;
+  overflow: hidden;
+  margin: var(--space-2) var(--space-3);
+  min-height: 0;
+}
+
+/* ── Right Panel (Editor Area) ──────────────────────────────────────────── */
+
+.style-manager-container [data-panel="right"] {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 300px;
+  overflow: hidden;
+  background-color: var(--bg-primary);
+}
+
+/* Toolbar / Tab Header */
+.style-tabs-header {
+  display: flex;
+  background-color: var(--bg-secondary);
+  padding: var(--space-2) var(--space-3);
+  flex-shrink: 0;
+}
+
+/* Mode Toggle */
+.style-mode-toggle {
+  display: flex;
+  gap: 2px;
+  background: var(--bg-tertiary);
+  border-radius: var(--border-radius-md);
+  padding: 2px;
+}
+
+.style-mode-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+  background: transparent;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.style-mode-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+.style-mode-btn.active {
+  background: var(--accent-primary);
+  color: white;
+}
+
+/* Placeholder button stretches to fill space between tabs and toolbar */
+.style-toolbar-placeholder {
+  flex: 1;
+  min-width: 16px;
+}
+
+/* Toolbar buttons styling */
+.style-toolbar-btn {
+  min-width: 24px;
+}
+
+.style-toolbar-btn:disabled {
+  cursor: not-allowed;
+  background-color: var(--accent-disabled);
+  color: var(--text-disabled);
+}
+
+/* Placeholder button stretches to fill space between tabs and toolbar */
+.style-toolbar-placeholder {
+  flex: 1;
+  min-width: 16px;
+}
+
+.style-font-popup.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.style-font-popup-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.style-font-popup-row:last-child {
+  margin-bottom: 0;
+}
+
+.style-font-popup-label {
+  width: 60px;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.style-font-popup-select,
+.style-font-popup-input {
+  flex: 1;
+  padding: 6px 8px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
+}
+
+.style-font-popup-select:focus,
+.style-font-popup-input:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}
+
+.style-font-popup-styles {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+}
+
+.style-font-popup-style-btn {
+  flex: 1;
+  padding: 6px 8px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  transition: all 0.2s ease;
+}
+
+.style-font-popup-style-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.style-font-popup-style-btn.active {
+  background: var(--accent-primary);
+  color: white;
+  border-color: var(--accent-primary);
+}
+
+/* ── Editor Content ─────────────────────────────────────────────────────── */
+
+.style-editor-content {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ── Section View ───────────────────────────────────────────────────────── */
+
+.style-section-view {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.style-section-view.active {
+  display: flex;
+}
+
+.style-mockup-container {
+  flex: 1;
+  overflow: auto;
+  padding: var(--space-4);
   background: var(--bg-secondary);
 }
 
-#style-css-editor .cm-gutters {
-  background: var(--bg-tertiary);
-  border-right: var(--border-standard);
-}
-
-#style-css-editor .cm-activeLineGutter {
-  background: var(--bg-tertiary);
-}
-
-#style-css-editor .cm-activeLine {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-#style-css-editor .cm-selectionBackground {
-  background: rgba(88, 166, 255, 0.2) !important;
-}
-
-#style-css-editor .cm-cursor {
-  border-left-color: var(--accent-primary);
-}
-
-/* Variables editor */
-#style-variables-editor .cm-editor {
+.style-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   height: 100%;
+  color: var(--text-muted);
+  font-style: italic;
 }
 
-/* Footer datasource select */
-.style-footer-datasource {
-  width: auto;
-  height: 100%;
-  padding: 0 var(--space-7) 0 var(--space-5);
-  border: none;
-  background: var(--accent-primary);
-  color: white;
-  font-size: var(--font-size-sm);
-  cursor: pointer;
-  outline: none;
-  appearance: none;
-  -webkit-appearance: none;
-  transition: background-color var(--transition-fast);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='white'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 8px center;
+/* ── Preview Wrapper (Theme Isolation) ───────────────────────────────────── */
+
+.style-preview-wrapper {
+  position: relative;
+  min-height: 200px;
+  isolation: isolate;
+}
+
+.style-preview-wrapper.simulate-hover {
+  /* Applied when user clicks "Hover" state toggle */
+}
+
+.style-preview-wrapper.simulate-focus {
+  /* Applied when user clicks "Focus" state toggle */
+}
+
+.style-preview-wrapper.simulate-disabled {
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+/* ── Mockup Elements ────────────────────────────────────────────────────── */
+
+.style-mockup-wrapper {
+  position: relative;
+  min-height: 200px;
+}
+
+/* Login Mockup - matches actual login layout */
+.login-mockup {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 500px;
+  background: var(--bg-primary);
+  padding: var(--space-4);
+}
+
+.login-card {
+  width: 360px;
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+/* Header */
+.login-mockup .login-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: var(--space-5);
+  border-radius: var(--border-radius-md);
+}
+
+.login-mockup .login-header-group {
+  display: flex;
+  flex: 1;
+  gap: 2px;
+  outline: 10px solid var(--accent-primary);
+  outline-offset: -20px;
+  line-height: 1;
+}
+
+.login-mockup .login-header-group > .login-header-btn {
+  margin: 0;
+  border-radius: 0;
   z-index: 1;
 }
 
-.style-footer-datasource:hover,
-.style-footer-datasource:focus {
-  background-color: var(--accent-hover);
+.login-mockup .login-header-group > .login-header-btn:first-child {
+  border-top-left-radius: var(--border-radius-md);
+  border-bottom-left-radius: var(--border-radius-md);
+  padding: var(--space-5);
+  flex: 1;
 }
 
-.style-footer-datasource option {
-  background: var(--bg-secondary);
+.login-mockup .login-header-group > .login-header-btn:last-child {
+  border-top-right-radius: var(--border-radius-md);
+  border-bottom-right-radius: var(--border-radius-md);
+  width: 37px;
+  display: flex;
+  flex-direction: column;
+  padding-top: 8px;
+}
+
+.login-mockup .login-header-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background-color: var(--accent-primary);
+  border: none;
+  color: white;
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  cursor: default;
+}
+
+.login-mockup .login-logo {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+
+.login-mockup .login-header-primary span {
+  font-size: var(--font-size-xl);
+}
+
+.login-mockup .login-header-version {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px var(--space-3);
+  background-color: var(--accent-primary);
+  border: none;
+  color: white;
+  cursor: default;
+}
+
+.login-mockup .version-row {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.9);
+  text-align: center;
+}
+
+/* Form */
+.login-mockup .login-form {
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.login-mockup .form-group {
+  margin-bottom: var(--space-4);
+}
+
+.login-mockup .form-group:last-of-type {
+  margin-bottom: var(--space-5);
+}
+
+.login-mockup .input-with-icon {
+  position: relative;
+}
+
+.login-mockup .login-username,
+.login-mockup .login-password {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-tertiary);
+  border: var(--border-standard);
+  border-radius: var(--border-radius-md);
   color: var(--text-primary);
-  padding: var(--space-2);
+  font-size: var(--font-size-base);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  box-sizing: border-box;
+}
+
+.login-mockup .login-username::placeholder,
+.login-mockup .login-password::placeholder {
+  color: var(--text-muted);
+}
+
+.login-mockup .login-username:focus,
+.login-mockup .login-password:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px rgba(92, 107, 192, 0.3);
+}
+
+.login-mockup .input-icon-btn {
+  position: absolute;
+  right: var(--space-2);
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: var(--space-1);
+  border-radius: var(--border-radius-sm);
+}
+
+.login-mockup .input-icon-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+/* Error */
+.login-mockup .login-error {
+  display: none;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  margin-bottom: var(--space-4);
+  background: rgba(239, 83, 80, 0.1);
+  border: 1px solid var(--accent-danger);
+  border-radius: var(--border-radius-md);
+  color: var(--accent-danger);
+  font-size: var(--font-size-sm);
+}
+
+.login-mockup .login-error.visible {
+  display: flex;
+}
+
+/* Button group */
+.login-mockup .login-btn-group {
+  display: flex;
+  gap: 2px;
+  background: var(--accent-primary);
+  border-radius: var(--border-radius-md);
+  padding: 2px;
+  width: 100%;
+}
+
+.login-mockup .login-btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: none;
+  color: white;
+  cursor: pointer;
+  border-radius: var(--border-radius-sm);
+  transition: background-color var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.login-mockup .login-btn-icon:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.login-mockup .login-btn-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: var(--border-radius-sm);
+  transition: background-color var(--transition-fast);
+  gap: var(--space-2);
+}
+
+.login-mockup .login-btn-primary:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* ── Target Circles ─────────────────────────────────────────────────────── */
+
+.style-target-circle {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  border: 2px solid var(--accent-hover);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: white;
+  transition: all var(--transition-fast);
+  z-index: 10;
+}
+
+.style-target-circle:hover {
+  transform: scale(1.15);
+  background: var(--accent-hover);
+  box-shadow: 0 0 0 4px rgba(var(--accent-primary-rgb), 0.3);
+}
+
+.style-target-circle.active {
+  background: var(--accent-hover);
+  box-shadow: 0 0 0 4px rgba(var(--accent-primary-rgb), 0.4);
+}
+
+.style-target-circle::after {
+  content: '\2192';
+  position: absolute;
+  right: -18px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  color: var(--accent-primary);
+}
+
+/* ── Editor Panel (Toolbar Style) ───────────────────────────────────────── */
+
+.style-editor-panel {
+  flex-shrink: 0;
+  max-height: 400px;
+  overflow: auto;
+  background: var(--bg-tertiary);
+  border-top: var(--border-standard);
+}
+
+/* Editor Toolbar - matches the top toolbar style */
+.style-editor-toolbar {
+  display: flex;
+  background-color: var(--bg-secondary);
+  padding: var(--space-2) var(--space-3);
+  flex-shrink: 0;
+}
+
+.style-editor-toolbar .subpanel-header-group {
+  display: flex;
+  gap: 2px;
+  width: 100%;
+}
+
+#style-target-name-btn {
+  flex: 1;
+  min-width: 120px;
+  justify-content: flex-start;
+  overflow: hidden;
+}
+
+#style-target-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+}
+
+/* State buttons in editor toolbar */
+.style-editor-toolbar .style-state-btn {
+  flex: 0 0 auto;
+}
+
+.style-editor-toolbar .style-state-btn.active {
+  background: var(--accent-primary);
+  color: white;
+}
+
+.style-editor-toolbar .style-state-css {
+  font-family: var(--font-mono);
+}
+
+/* ── Property Editor ────────────────────────────────────────────────────── */
+
+.style-property-editor {
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.style-property-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.style-property-group-title {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.style-property-row {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.style-property-name {
+  flex: 0 0 150px;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+}
+
+.style-property-input {
+  flex: 1;
+  padding: var(--space-1) var(--space-2);
+  background: var(--bg-primary);
+  border: var(--border-standard);
+  border-radius: var(--border-radius-sm);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-mono);
+}
+
+.style-property-input:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}
+
+/* Color picker input */
+.style-property-color {
+  flex: 1;
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.style-property-color input[type="color"] {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: var(--border-standard);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  background: var(--bg-primary);
+}
+
+.style-property-color input[type="text"] {
+  flex: 1;
+  padding: var(--space-1) var(--space-2);
+  background: var(--bg-primary);
+  border: var(--border-standard);
+  border-radius: var(--border-radius-sm);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-mono);
+}
+
+/* Live preview indicator */
+.style-preview-input:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px rgba(var(--accent-primary-rgb), 0.2);
+}
+
+/* ── Editor Actions ─────────────────────────────────────────────────────── */
+
+.style-css-editor {
+  flex: 1;
+  overflow: hidden;
+  border-top: var(--border-standard);
+  border-bottom: var(--border-standard);
+}
+
+.style-css-editor .cm-editor {
+  height: 100%;
+}
+
+.style-editor-actions {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-secondary);
+  border-top: var(--border-standard);
+}
+
+.style-action-btn {
+  padding: var(--space-1) var(--space-3);
+  background: var(--bg-tertiary);
+  border: var(--border-standard);
+  border-radius: var(--border-radius-sm);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.style-action-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent-primary);
+}
+
+.style-action-btn:active {
+  background: var(--bg-active);
+}
+
+/* ── JSON View ──────────────────────────────────────────────────────────── */
+
+.style-json-view {
+  position: absolute;
+  inset: 0;
+  display: none;
+  overflow: hidden;
+}
+
+.style-json-view.active {
+  display: block;
+}
+
+.style-json-view .editor-container {
+  height: 100%;
+}
+
+/* ── Footer Export Popup ────────────────────────────────────────────────── */
+
+.style-footer-export-popup {
+  position: fixed;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 10001;
+  min-width: 80px;
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: opacity var(--transition-fast), visibility var(--transition-fast), transform var(--transition-fast);
+}
+
+.style-footer-export-popup.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.style-footer-export-popup-item {
+  display: block;
+  width: 100%;
+  padding: 6px 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color var(--transition-fast);
+}
+
+.style-footer-export-popup-item:hover {
+  background-color: var(--accent-primary);
+  color: white;
+}
+
+.style-footer-export-popup-item:active {
+  background-color: var(--accent-focus);
+}
+
+/* ── Footer Save/Cancel Buttons ────────────────────────────────────────── */
+
+/* Save button in the footer (appears when a record is being edited) */
+.manager-footer-save-btn {
+  background: var(--accent-toggle);
+  color: white;
+}
+
+.manager-footer-save-btn:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.manager-footer-save-btn:disabled {
+  background: var(--accent-disabled);
+  color: var(--text-disabled);
+}
+
+/* Cancel button in the footer (appears when a record is being edited) */
+.manager-footer-cancel-btn {
+  background: var(--accent-disabled);
+  color: var(--text-disabled);
+}
+
+.manager-footer-cancel-btn:hover:not(:disabled) {
+  background: var(--accent-toggle);
+  color: white;
+}
+
+.manager-footer-cancel-btn:disabled {
+  background: var(--accent-disabled);
+  color: var(--text-disabled);
+}
+
+/* Dummy button (spacer, same size as other footer buttons) */
+.manager-footer-dummy-btn {
+  background: var(--accent-primary);
+  min-width: 60px;
+  cursor: auto;
+}
+
+/* ── Table Containers (additional styling beyond lithium-table.css) ────── */
+
+.style-lookup-table-container,
+.style-sections-table-container {
+  flex: 1;
+  overflow: hidden;
+  margin: var(--space-2) var(--space-3);
+  min-height: 0;
+}
+
+/* Navigator containers */
+.style-lookup-navigator-container,
+.style-sections-navigator-container {
+  flex-shrink: 0;
+}
+
+/* ── Responsive Adjustments ─────────────────────────────────────────────── */
+
+@media (max-width: 1024px) {
+  .style-manager-container [data-panel="left"]#style-left-panel {
+    width: 200px;
+    min-width: 150px;
+  }
+}
+
+@media (max-width: 768px) {
+  .style-manager-container {
+    flex-direction: column;
+  }
+
+  .style-manager-container [data-panel="left"] {
+    width: 100% !important;
+    max-width: none;
+    height: 30%;
+    flex: 0 0 auto;
+  }
+
+  .style-tabs-header {
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .style-mode-toggle {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 } /* end @layer managers */

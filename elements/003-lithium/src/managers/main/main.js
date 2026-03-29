@@ -37,6 +37,7 @@ import {
   unregisterManagerShortcuts,
 } from '../../core/manager-ui.js';
 import { getAppWS, ConnectionState } from '../../shared/app-ws.js';
+import { initRadar, wsConnected, wsFlaky, wsDisconnected, onHeartbeat, destroyRadar } from '../../shared/radar-controller.js';
 import '../../core/manager-ui.css';
 import './main.css';
 
@@ -524,6 +525,9 @@ export default class MainManager {
       this.buildSidebar();
       this.loadSidebarState();
       
+      // Initialize the radar status icon
+      initRadar();
+
       // Only run show animation if not skipping (e.g., during crossfade transition)
       if (!options.skipShowAnimation) {
         this.show();
@@ -757,7 +761,7 @@ export default class MainManager {
       logoutOverlay: this.container.querySelector('#logout-overlay'),
       logoutCloseBtn: this.container.querySelector('#logout-close-btn'),
       logoutOptions: this.container.querySelectorAll('.logout-option'),
-      wsStatus: this.container.querySelector('#ws-status'),
+      radarIcon: this.container.querySelector('#radar-icon'),
     };
 
     // Move logout overlay and panel to document.body for proper fixed positioning.
@@ -791,63 +795,39 @@ export default class MainManager {
   }
 
   /**
-   * Update the WebSocket status indicator
+   * Update the radar status icon based on WebSocket connection state
    * @param {string} state - Connection state from ConnectionState
    */
   updateWSStatus(state) {
-    const wsStatus = this.elements.wsStatus;
-    if (!wsStatus) return;
-
-    // Remove all state classes
-    wsStatus.classList.remove('disconnected', 'connected', 'connecting', 'sending', 'flash');
-
-    // Update icon based on state
-    const icon = wsStatus.querySelector('.ws-status-icon');
-    if (!icon) return;
+    const radarIcon = this.elements.radarIcon;
+    if (!radarIcon) return;
 
     switch (state) {
       case ConnectionState.CONNECTED:
-        wsStatus.classList.add('connected');
-        icon.innerHTML = '<fa fa-circle></fa>';
-        wsStatus.dataset.tooltip = 'WebSocket: Connected';
-        processIcons(wsStatus);
+        wsConnected();
+        radarIcon.dataset.tooltip = 'Status: Connected';
         break;
       case ConnectionState.CONNECTING:
-        wsStatus.classList.add('connecting');
-        icon.innerHTML = '<fa fa-circle></fa>';
-        wsStatus.dataset.tooltip = 'WebSocket: Connecting...';
-        processIcons(wsStatus);
+        wsFlaky();
+        radarIcon.dataset.tooltip = 'Status: Connecting...';
         break;
       case ConnectionState.ERROR:
-        wsStatus.classList.add('disconnected');
-        icon.innerHTML = '<fa fa-octagon></fa>';
-        wsStatus.dataset.tooltip = 'WebSocket: Error';
-        processIcons(wsStatus);
+        wsDisconnected();
+        radarIcon.dataset.tooltip = 'Status: Error';
         break;
       case ConnectionState.DISCONNECTED:
       default:
-        wsStatus.classList.add('disconnected');
-        icon.innerHTML = '<fa fa-octagon></fa>';
-        wsStatus.dataset.tooltip = 'WebSocket: Disconnected';
-        processIcons(wsStatus);
+        wsDisconnected();
+        radarIcon.dataset.tooltip = 'Status: Disconnected';
         break;
     }
   }
 
   /**
-   * Flash the WebSocket status indicator blue (send activity)
+   * Flash the radar sweep line (send activity / heartbeat)
    */
   flashWSStatus() {
-    const wsStatus = this.elements.wsStatus;
-    if (!wsStatus) return;
-
-    // Only flash if connected
-    if (wsStatus.classList.contains('connected')) {
-      wsStatus.classList.add('flash');
-      setTimeout(() => {
-        wsStatus.classList.remove('flash');
-      }, 100);
-    }
+    onHeartbeat();
   }
 
   /**
@@ -1824,6 +1804,9 @@ export default class MainManager {
     // Clear animation timers
     clearTimeout(this._stageTimer);
     this._isAnimating = false;
+
+    // Clean up radar controller
+    destroyRadar();
 
     // Remove keyboard listeners if still active
     document.removeEventListener('keydown', this.handleKeyDown);

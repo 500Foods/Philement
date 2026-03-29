@@ -47,7 +47,6 @@ export default defineConfig(({ mode }) => {
               '@codemirror/lang-javascript', '@codemirror/lang-json', '@codemirror/lang-sql',
               '@codemirror/state', '@codemirror/theme-one-dark', '@codemirror/view', '@codemirror/commands'
             ],
-            'vendor-json-tree': ['json-tree.js'],                  // JSON visualization (lookups, queries)
             'vendor-editor': ['suneditor'],                        // Rich text editor (lookups only)
 
             // Lighter utilities grouped together (change less frequently)

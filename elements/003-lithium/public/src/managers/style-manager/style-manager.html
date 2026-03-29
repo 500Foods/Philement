@@ -1,84 +1,108 @@
-<div class="manager-panels style-manager-container">
-  <!-- Left Panel: Themes List (Parent Table) -->
+<div class="style-manager-container">
+  <!-- Left Panel: Lookup 41 Table -->
   <div data-panel="left" id="style-left-panel">
-    <div class="table-container" id="style-themes-table-container">
-      <!-- Parent Tabulator table will be injected here -->
+    <div class="style-lookup-table-container lithium-table-container" id="style-lookup-table-container">
+      <!-- Lookup 41 Tabulator table will be injected here -->
     </div>
-    <div class="navigator-container" id="style-themes-navigator">
-      <!-- Parent Navigator block will be injected here -->
+    <div class="style-lookup-navigator-container lithium-navigator-container" id="style-lookup-navigator">
+      <!-- Lookup Navigator block will be injected here -->
     </div>
   </div>
 
   <!-- First Splitter between left and middle panels -->
-  <div data-splitter="left" id="style-splitter-left"></div>
+  <div class="lithium-splitter" id="style-splitter-left"></div>
 
-  <!-- Middle Panel: Sections List (Child Table) -->
-  <div data-panel="middle" id="style-middle-panel">
-    <div class="panel-header">
-      <span class="panel-header-title" id="style-child-title">Select a Theme</span>
+  <!-- Middle Panel: Sections Table -->
+  <div data-panel="left" id="style-middle-panel">
+    <div class="style-sections-table-container lithium-table-container" id="style-sections-table-container">
+      <!-- Sections Tabulator table will be injected here -->
     </div>
-    <div class="table-container" id="style-sections-table-container">
-      <!-- Child Tabulator table will be injected here -->
-    </div>
-    <div class="navigator-container" id="style-sections-navigator">
-      <!-- Child Navigator block will be injected here -->
+    <div class="style-sections-navigator-container lithium-navigator-container" id="style-sections-navigator">
+      <!-- Sections Navigator block will be injected here -->
     </div>
   </div>
 
   <!-- Second Splitter between middle and right panels -->
-  <div data-splitter="right" id="style-splitter-right"></div>
+  <div class="lithium-splitter" id="style-splitter-right"></div>
 
-  <!-- Right Panel: Tabbed View (CSS Editor, Variables, Preview) -->
+  <!-- Right Panel: Editor Area -->
   <div data-panel="right" id="style-right-panel">
     <!-- Toolbar Header -->
-    <div class="tab-header">
+    <div class="style-tabs-header">
       <div class="subpanel-header-group" style="flex:1;min-width:0;">
         <!-- Collapse/Expand buttons for tables -->
-        <button type="button" class="subpanel-header-btn subpanel-header-close collapse-btn" id="style-collapse-left-btn" title="Toggle Themes Panel">
+        <button type="button" class="subpanel-header-btn subpanel-header-close style-collapse-left-btn" id="style-collapse-left-btn" title="Toggle Left Panel">
           <fa fa-angles-left id="style-collapse-left-icon"></fa>
         </button>
-        <button type="button" class="subpanel-header-btn subpanel-header-close collapse-btn" id="style-collapse-middle-btn" title="Toggle Sections Panel">
+        <button type="button" class="subpanel-header-btn subpanel-header-close style-collapse-middle-btn" id="style-collapse-middle-btn" title="Toggle Middle Panel">
           <fa fa-angles-left id="style-collapse-middle-icon"></fa>
         </button>
-        <!-- Tab buttons -->
-        <button type="button" class="subpanel-header-btn subpanel-header-primary tab-btn active" data-tab="css">
-          <fa fa-brackets-curly></fa>
-          <span>CSS</span>
-        </button>
-        <button type="button" class="subpanel-header-btn subpanel-header-primary tab-btn" data-tab="variables">
-          <fa fa-sliders></fa>
-          <span>Variables</span>
-        </button>
-        <button type="button" class="subpanel-header-btn subpanel-header-primary tab-btn" data-tab="preview">
-          <fa fa-eye></fa>
-          <span>Preview</span>
-        </button>
+        <!-- Section/JSON Mode Toggle -->
+        <div class="style-mode-toggle">
+          <button type="button" class="style-mode-btn active" id="style-section-btn" title="Section View">
+            <fa fa-eye></fa>
+            <span>Section</span>
+          </button>
+          <button type="button" class="style-mode-btn" id="style-json-btn" title="JSON View">
+            <fa fa-brackets-curly></fa>
+            <span>JSON</span>
+          </button>
+        </div>
         <!-- Placeholder to fill space -->
-        <button type="button" class="subpanel-header-btn subpanel-header-primary tab-spacer" tabindex="-1" aria-hidden="true"></button>
-        <!-- Font button -->
-        <button type="button" class="subpanel-header-btn subpanel-header-close" id="style-font-btn" title="Font Settings">
+        <button type="button" class="subpanel-header-btn subpanel-header-primary style-toolbar-placeholder" tabindex="-1" aria-hidden="true"></button>
+        <!-- Right toolbar buttons -->
+        <button type="button" class="subpanel-header-btn subpanel-header-close style-toolbar-btn" id="style-undo-btn" title="Undo (Ctrl+Z)" disabled>
+          <fa fa-rotate-left></fa>
+        </button>
+        <button type="button" class="subpanel-header-btn subpanel-header-close style-toolbar-btn" id="style-redo-btn" title="Redo (Ctrl+Shift+Z)" disabled>
+          <fa fa-rotate-right></fa>
+        </button>
+        <button type="button" class="subpanel-header-btn subpanel-header-close style-toolbar-btn" id="style-font-btn" title="Font Settings">
           <fa fa-font-case></fa>
+        </button>
+        <button type="button" class="subpanel-header-btn subpanel-header-close style-toolbar-btn" id="style-prettify-btn" title="Prettify (Ctrl+P)" disabled>
+          <fa fa-flower-tulip></fa>
         </button>
       </div>
     </div>
 
-    <!-- Tab Panes -->
-    <div class="tab-content">
-      <!-- CSS Tab -->
-      <div class="tab-pane active" id="style-tab-css">
-        <div class="editor-container" id="style-css-editor"></div>
-      </div>
-
-      <!-- Variables Tab -->
-      <div class="tab-pane" id="style-tab-variables">
-        <div class="editor-container" id="style-variables-editor"></div>
-      </div>
-
-      <!-- Preview Tab -->
-      <div class="tab-pane" id="style-tab-preview">
-        <div class="preview-content" id="style-preview-content">
-          <p class="preview-placeholder">Select a theme to preview</p>
+    <!-- Editor Content Area -->
+    <div class="style-editor-content">
+      <!-- Section View -->
+      <div class="style-section-view active" id="style-section-view">
+        <div class="style-mockup-container" id="style-mockup-container">
+          <p class="style-placeholder">Select a section to view its mockup</p>
         </div>
+        <div class="style-editor-panel" id="style-editor-panel" style="display: none;">
+          <!-- Editor Toolbar -->
+          <div class="style-editor-toolbar">
+            <div class="subpanel-header-group" style="flex:1;min-width:0;">
+              <button type="button" class="subpanel-header-btn subpanel-header-primary" id="style-target-name-btn" title="Target Element">
+                <span id="style-target-name">Select a target</span>
+              </button>
+              <!-- Placeholder to fill space -->
+              <button type="button" class="subpanel-header-btn subpanel-header-primary style-toolbar-placeholder" tabindex="-1" aria-hidden="true"></button>
+              <!-- State toggle buttons -->
+              <button type="button" class="subpanel-header-btn subpanel-header-close style-state-btn active" data-state="default">Default</button>
+              <button type="button" class="subpanel-header-btn subpanel-header-close style-state-btn" data-state=":hover">:HOVER</button>
+              <button type="button" class="subpanel-header-btn subpanel-header-close style-state-btn" data-state=":focus">:FOCUS</button>
+              <button type="button" class="subpanel-header-btn subpanel-header-close style-state-btn" data-state=":disabled">:DISABLED</button>
+              <button type="button" class="subpanel-header-btn subpanel-header-close style-state-btn style-state-css" data-state="css">CSS</button>
+            </div>
+          </div>
+          <div class="style-property-editor" id="style-property-editor"></div>
+          <div class="style-css-editor" id="style-css-editor" style="display: none;"></div>
+          <div class="style-editor-actions">
+            <button type="button" class="style-action-btn" id="style-apply-btn">Apply</button>
+            <button type="button" class="style-action-btn" id="style-reset-btn">Reset</button>
+            <button type="button" class="style-action-btn" id="style-copy-css-btn">Copy CSS</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- JSON View -->
+      <div class="style-json-view" id="style-json-view">
+        <div class="editor-container" id="style-json-editor"></div>
       </div>
     </div>
   </div>

@@ -1,0 +1,50 @@
+{
+  "$schema": "../tabledef-schema.json",
+  "$version": "1.0.0",
+  "$description": "Column definitions for the Lookup 41 table (Themes). Uses QueryRef 45 with LookupID=41. Shows theme names only.",
+
+  "table": "lookup-41",
+  "title": "Lookup 41 (Themes)",
+  "queryRef": 45,
+  "readonly": false,
+  "selectableRows": 1,
+  "layout": "fitColumns",
+  "responsiveLayout": "collapse",
+  "resizableColumns": true,
+  "persistSort": true,
+  "persistFilter": true,
+  "initialSort": [
+    { "column": "key_idx", "dir": "asc" }
+  ],
+
+  "columns": {
+
+    "key_idx": {
+      "display": "Code",
+      "field": "key_idx",
+      "coltype": "string",
+      "visible": true,
+      "sort": true,
+      "filter": true,
+      "group": false,
+      "editable": false,
+      "calculated": false,
+      "primaryKey": false,
+      "description": "Theme code/index"
+    },
+
+    "value_txt": {
+      "display": "Theme Name",
+      "field": "value_txt",
+      "coltype": "string",
+      "visible": true,
+      "sort": true,
+      "filter": true,
+      "group": false,
+      "editable": false,
+      "calculated": false,
+      "primaryKey": false,
+      "description": "Theme display name"
+    }
+  }
+}

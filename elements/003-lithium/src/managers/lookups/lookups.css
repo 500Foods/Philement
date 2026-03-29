@@ -74,9 +74,14 @@
   padding: var(--space-1);
 }
 
-/* Collapse icon rotation - both icons point left initially */
-#lookups-collapse-left-icon,
-#lookups-collapse-middle-icon,
+/* Collapse button styling */
+.lookups-collapse-left-btn,
+.lookups-collapse-middle-btn {
+  flex: 0 0 auto;
+  padding: var(--space-1);
+}
+
+/* Collapse icon rotation */
 .lookups-collapse-left-btn > i,
 .lookups-collapse-left-btn > svg,
 .lookups-collapse-middle-btn > i,
@@ -85,17 +90,11 @@
   transform: rotate(0deg);
 }
 
-/* When left panel is collapsed, rotate the left collapse icon */
-.lookups-left-panel.collapsed ~ .lookups-splitter-left ~ .lookups-middle-panel ~ .lookups-splitter-right ~ .lookups-right-panel .lookups-collapse-left-btn #lookups-collapse-left-icon,
-.lookups-left-panel.collapsed ~ .lookups-splitter-left ~ .lookups-middle-panel ~ .lookups-splitter-right ~ .lookups-right-panel .lookups-collapse-left-btn > i,
-.lookups-left-panel.collapsed ~ .lookups-splitter-left ~ .lookups-middle-panel ~ .lookups-splitter-right ~ .lookups-right-panel .lookups-collapse-left-btn > svg {
-  transform: rotate(180deg);
-}
-
-/* When middle panel is collapsed, rotate the middle collapse icon */
-.lookups-middle-panel.collapsed ~ .lookups-splitter-right ~ .lookups-right-panel .lookups-collapse-middle-btn #lookups-collapse-middle-icon,
-.lookups-middle-panel.collapsed ~ .lookups-splitter-right ~ .lookups-right-panel .lookups-collapse-middle-btn > i,
-.lookups-middle-panel.collapsed ~ .lookups-splitter-right ~ .lookups-right-panel .lookups-collapse-middle-btn > svg {
+/* Collapse icon rotation when panels are collapsed */
+.lookups-collapse-left-btn.collapsed > i,
+.lookups-collapse-left-btn.collapsed > svg,
+.lookups-collapse-middle-btn.collapsed > i,
+.lookups-collapse-middle-btn.collapsed > svg {
   transform: rotate(180deg);
 }
 
@@ -177,93 +176,6 @@
   color: var(--text-disabled);
 }
 
-/* Font Popup */
-.lookups-font-popup {
-  position: absolute;
-  top: 100%;
-  right: 8px;
-  margin-top: 4px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-md);
-  padding: 12px;
-  min-width: 280px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  z-index: 100;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-8px);
-  transition: opacity var(--transition-fast), visibility var(--transition-fast), transform var(--transition-fast);
-}
-
-.lookups-font-popup.visible {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
-}
-
-.lookups-font-popup-row {
-  display: flex;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.lookups-font-popup-row:last-child {
-  margin-bottom: 0;
-}
-
-.lookups-font-popup-label {
-  width: 60px;
-  color: var(--text-secondary);
-  font-size: var(--font-size-sm);
-}
-
-.lookups-font-popup-select,
-.lookups-font-popup-input {
-  flex: 1;
-  padding: 6px 8px;
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-sm);
-  color: var(--text-primary);
-  font-size: var(--font-size-base);
-}
-
-.lookups-font-popup-select:focus,
-.lookups-font-popup-input:focus {
-  outline: none;
-  border-color: var(--accent-primary);
-}
-
-.lookups-font-popup-styles {
-  display: flex;
-  gap: 8px;
-  flex: 1;
-}
-
-.lookups-font-popup-style-btn {
-  flex: 1;
-  padding: 6px 8px;
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-sm);
-  color: var(--text-secondary);
-  cursor: pointer;
-  font-size: var(--font-size-sm);
-  transition: all 0.2s ease;
-}
-
-.lookups-font-popup-style-btn:hover {
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
-}
-
-.lookups-font-popup-style-btn.active {
-  background: var(--accent-primary);
-  color: white;
-  border-color: var(--accent-primary);
-}
-
 /* Tab Content */
 .lookups-tabs-content {
   flex: 1;
@@ -283,18 +195,23 @@
   display: block;
 }
 
-/* JSON Editor */
+/* ── JSON Editor ───────────────────────────────────────────────────────────── */
+
 .lookups-json-editor {
   width: 100%;
   height: 100%;
   background: var(--bg-secondary);
   border-radius: var(--border-radius-md);
-  padding: var(--space-3);
-  font-family: var(--font-mono);
-  font-size: var(--font-size-sm);
+  overflow: hidden;
+}
+
+.lookups-json-editor .cm-editor {
+  height: 100%;
+}
+
+.lookups-json-editor .cm-scroller {
   overflow: auto;
-  white-space: pre-wrap;
-  word-wrap: break-word;
+  font-family: var(--font-mono);
 }
 
 /* Summary Editor (SunEditor will mount here) */
@@ -470,10 +387,16 @@
   background-color: var(--accent-focus);
 }
 
-/* ── JsonTree.js Dark Theme Integration ───────────────────────────────────── */
+/* ── JSON Editor Dark Theme Integration ──────────────────────────────────── */
 
 .lookups-tab-pane #lookups-tab-json {
   padding: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.lookups-tab-pane #lookups-tab-json .json-tree-container,
+.lookups-tab-pane #lookups-tab-json .cm-editor {
   width: 100%;
   height: 100%;
 }

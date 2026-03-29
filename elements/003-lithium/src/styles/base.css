@@ -28,7 +28,9 @@
   theme,
   managers,
   utilities,
-  overrides;
+  overrides,
+  default,
+  custom-theme;
 
 /* ========================================
    Reset Layer — Normalise browser defaults
@@ -203,6 +205,18 @@
     --zoom-inv: 1;
 
     --fa-secondary-opacity: 0.15;
+
+    /* Table width presets */
+    --table-width-narrow: 160px;
+    --table-width-compact: 314px;
+    --table-width-normal: 468px;
+    --table-width-wide: 622px;
+
+    /* Popup width presets (4px wider for border) */
+    --table-popup-width-narrow: 164px;
+    --table-popup-width-compact: 318px;
+    --table-popup-width-normal: 472px;
+    --table-popup-width-wide: 626px;
   }
 
   /* ---- Font Face Declarations ---- */
