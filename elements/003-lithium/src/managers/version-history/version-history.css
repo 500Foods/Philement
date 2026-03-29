@@ -195,4 +195,24 @@
   margin-left: var(--space-2);
 }
 
+/* ── Collapse Button ───────────────────────────────────────────────────── */
+
+.collapse-btn {
+  flex: 0 0 auto;
+  padding: var(--space-1);
+}
+
+/* Collapse icon rotation */
+.collapse-btn > i,
+.collapse-btn > svg {
+  transition: transform var(--transition-delay) ease;
+  transform: rotate(0deg);
+}
+
+/* Collapse icon rotation when panel is collapsed */
+.collapse-btn.collapsed > i,
+.collapse-btn.collapsed > svg {
+  transform: rotate(180deg);
+}
+
 } /* end @layer managers */

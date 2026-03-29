@@ -44,18 +44,19 @@ export class EditModeManager {
    * Enter edit mode for a specific row
    */
   async enterEditMode(row, targetCell = null) {
-    if (!this.manager.table) return;
+    const table = this.manager.queryTable?.table;
+    if (!table) return;
 
     this._setEditTransitionState(true);
 
     try {
       if (!row) {
-        const selected = this.manager.table.getSelectedRows();
+        const selected = table.getSelectedRows();
         if (selected.length === 0) return;
         row = selected[0];
       }
 
-      const pkField = this.manager.primaryKeyField || 'query_id';
+      const pkField = 'query_id';
       const rowId = row.getData()?.[pkField];
 
       if (this._isEditing && this._editingRowId === rowId) return;
@@ -124,11 +125,12 @@ export class EditModeManager {
    * Toggle edit mode for the currently selected row
    */
   async toggleEditMode() {
-    if (!this.manager.table) return;
-    const selected = this.manager.table.getSelectedRows();
+    const table = this.manager.queryTable?.table;
+    if (!table) return;
+    const selected = table.getSelectedRows();
     if (selected.length === 0) return;
 
-    const pkField = this.manager.primaryKeyField;
+    const pkField = 'query_id';
     const selectedId = selected[0].getData()?.[pkField];
 
     if (this._isEditing && this._editingRowId === selectedId) {
@@ -155,14 +157,15 @@ export class EditModeManager {
    * Update the editing indicator in the selector column
    */
   _updateEditingIndicator() {
-    if (!this.manager.table) return;
-    const selected = this.manager.table.getSelectedRows();
+    const table = this.manager.queryTable?.table;
+    if (!table) return;
+    const selected = table.getSelectedRows();
     if (selected.length > 0) {
       const row = selected[0];
       const cell = row.getCell('_selector');
       if (cell) {
         const el = cell.getElement();
-        const pkField = this.manager.primaryKeyField;
+        const pkField = 'query_id';
         const isEditing = this._isEditing && this._editingRowId === row.getData()[pkField];
         el.innerHTML = isEditing
           ? '<fa fa-i-cursor fa-swap-opacity queries-selector-indicator queries-selector-edit>'
@@ -187,7 +190,7 @@ export class EditModeManager {
 
       col.editable = (cell) => {
         if (!this._isEditing) return false;
-        const pkField = this.manager.primaryKeyField || 'query_id';
+        const pkField = 'query_id';
         const rowId = cell.getRow().getData()?.[pkField];
         return this._editingRowId != null ? rowId === this._editingRowId : cell.getRow().isSelected();
       };
@@ -253,7 +256,7 @@ export class EditModeManager {
         const row = cell.getRow?.();
         if (!row || this._isCalcRow(row)) return;
 
-        const pkField = this.manager.primaryKeyField || 'query_id';
+        const pkField = 'query_id';
         const rowId = row.getData?.()?.[pkField];
         const isEditingRow = (this._editingRowId != null)
           ? rowId === this._editingRowId
@@ -270,9 +273,10 @@ export class EditModeManager {
    * Get the row currently being edited
    */
   getEditingRow() {
-    if (!this.manager.table || !this._isEditing || this._editingRowId == null) return null;
-    const pkField = this.manager.primaryKeyField || 'query_id';
-    const rows = this.manager.table.getRows('active');
+    const table = this.manager.queryTable?.table;
+    if (!table || !this._isEditing || this._editingRowId == null) return null;
+    const pkField = 'query_id';
+    const rows = table.getRows('active');
     return rows.find(row => row.getData()?.[pkField] === this._editingRowId) || null;
   }
 

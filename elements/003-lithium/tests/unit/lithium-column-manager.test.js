@@ -140,7 +140,7 @@ describe('LithiumColumnManager', () => {
 
       const def = manager.buildColumnManagerDefinition();
 
-      expect(def).toHaveProperty('title', 'Column Manager');
+      expect(def).toHaveProperty('title', 'Column Manager Manager');
       expect(def).toHaveProperty('columns');
       expect(def.columns).toHaveProperty('order');
       expect(def.columns).toHaveProperty('visible');

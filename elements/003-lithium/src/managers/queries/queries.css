@@ -1,4 +1,29 @@
+/**
+ * Queries Manager Styles
+ *
+ * Query builder and execution interface.
+ * Uses LithiumTable component for the query list table.
+ *
+ * @layer managers
+ */
+
 @layer managers {
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   Queries Manager Styles
+   ═════════════════════════════════════════════════════════════════════════════
+   
+   Layout follows the Lookups Manager pattern:
+   - Left panel: Query list (LithiumTable)
+   - Right panel: Query details (SQL, Summary, Preview, Collection tabs)
+   
+   Note: Tabulator theme overrides and Navigator styles are provided by
+   lithium-table.css via the .lithium-table-container and .lithium-nav-* classes.
+   This file only contains manager-specific layout styles.
+   
+   ═════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Main Container ─────────────────────────────────────────────────────── */
 
 .queries-manager-container {
   display: flex;
@@ -11,13 +36,16 @@
   text-align: left;
 }
 
+/* ── Left Panel (Query List) ─────────────────────────────────────────────── */
+
 .queries-left-panel {
   display: flex;
   flex-direction: column;
-  width: 313px; /* Initial width */
+  width: 313px;
   min-width: 157px;
   background-color: var(--bg-secondary);
   transition: width var(--transition-delay) ease, min-width var(--transition-delay) ease;
+  flex-shrink: 0;
 }
 
 .queries-left-panel.collapsed {
@@ -27,366 +55,36 @@
   overflow: hidden;
 }
 
+/* ── Table Containers (additional styling beyond lithium-table.css) ────── */
+
 .queries-table-container {
   flex: 1;
-  overflow: auto;
-  /* Tabulator styles will apply here */
-}
-
-.queries-navigator-container {
-  padding: 0px var(--space-2) var(--space-2) var(--space-3);
-}
-
-/* ── Navigator Control Bar ───────────────────────────────────────────────── */
-
-/* Wrapper: blocks flow left-to-right, wrapping when narrow */
-.queries-nav-wrapper {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  align-items: center;
-}
-
-/* Each block is a nowrap row of buttons — half the size of the main toolbar */
-.queries-nav-block {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 1px;
-  outline: 3px solid var(--accent-primary);
-  outline-offset: -5px;
-  border-radius: var(--border-radius-sm);
   overflow: hidden;
-  height: 24px;
-  line-height: 1;
-  min-width: 150px;
+  margin: var(--space-2) var(--space-3);
+  min-height: 0;
 }
 
-/* First and last button in a block get rounded corners */
-.queries-nav-block > *:first-child {
-  border-top-left-radius: var(--border-radius-sm);
-  border-bottom-left-radius: var(--border-radius-sm);
-}
-.queries-nav-block > *:last-child {
-  border-top-right-radius: var(--border-radius-sm);
-  border-bottom-right-radius: var(--border-radius-sm);
+/* ── Collapse Button ───────────────────────────────────────────────────── */
+
+.queries-collapse-btn {
+  flex: 0 0 auto;
+  padding: var(--space-1);
 }
 
-/* Navigator button — compact icon-only button */
-.queries-nav-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 24px;
-  height: 24px;
-  padding: 0 var(--space-2);
-  margin: 0;
-  border: none;
-  border-radius: 0;
-  background-color: var(--accent-primary);
-  color: white;
-  font-size: 11px;
-  cursor: pointer;
-  transition: background-color var(--transition-fast);
-  line-height: 1;
-  z-index: 1;
+/* Collapse icon rotation */
+#queries-collapse-icon,
+#queries-collapse-btn > i,
+#queries-collapse-btn > svg {
+  transition: transform var(--transition-delay) ease;
+  transform: rotate(0deg);
 }
 
-.queries-nav-btn:hover {
-  background-color: var(--accent-hover);
+.queries-collapse-btn.collapsed > i,
+.queries-collapse-btn.collapsed > svg {
+  transform: rotate(180deg);
 }
 
-.queries-nav-btn:active {
-  background-color: var(--accent-focus);
-}
-
-.queries-nav-btn:disabled {
-  background-color: var(--accent-disabled);
-  color: var(--text-disabled);
-  cursor: not-allowed;
-}
-
-/* Active state for toggle buttons (e.g., filter button) */
-.queries-nav-btn-active {
-  background-color: var(--accent-success) !important;
-}
-
-.queries-nav-btn-active:hover {
-  background-color: var(--accent-success-hover, #4CAF50) !important;
-}
-
-/* Danger variant (Delete) */
-.queries-nav-btn-danger:hover {
-  background-color: var(--accent-danger);
-}
-
-/* Save button icon color when enabled (not disabled) - green */
-#queries-nav-save:not(:disabled) svg,
-#queries-nav-save:not(:disabled) i {
-  color: var(--accent-success, #66BB6A);
-}
-
-/* Cancel button icon color when enabled (not disabled) - red */
-#queries-nav-cancel:not(:disabled) svg,
-#queries-nav-cancel:not(:disabled) i {
-  color: var(--accent-danger, #EF5350);
-}
-
-/* SVG icons inside nav buttons — scale to fit */
-.queries-nav-btn svg,
-.queries-nav-btn i {
-  font-size: 11px;
-  width: 11px;
-  height: 11px;
-}
-
-/* Search block — magnifying-glass, input, X clear button */
-.queries-nav-block-search {
-  flex: 1;
-  outline: none;
-  border: 2px solid var(--accent-primary);
-  background: var(--accent-primary);
-  min-width: 149px;
-  margin-right: 1px;
-}
-.queries-nav-block-search .queries-nav-btn {
-  margin-top: -2px;
-}
-
-.queries-nav-search-input {
-  flex: 1;
-  min-width: 0;
-  height: 20px;
-  padding: 0px var(--space-2) 0px var(--space-2);
-  border: none;
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
-  font-size: var(--font-size-xs);
-  outline: none;
-  border-radius: var(--border-radius-sm);
-}
-
-.queries-nav-search-input::placeholder {
-  color: var(--text-muted);
-}
-
-.queries-nav-search-input:focus {
-  background-color: var(--bg-input);
-}
-
-/* ── Navigator Popup Menus ───────────────────────────────────────────────── */
-
-/* Popup container — positioned above the navigator, anchored to the button */
-.queries-nav-popup {
-  position: absolute;
-  bottom: 100%;
-  margin-bottom: 4px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-md);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  z-index: 100;
-  min-width: 120px;
-  overflow: hidden;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(4px);
-  transition: opacity var(--transition-fast), visibility var(--transition-fast), transform var(--transition-fast);
-}
-
-.queries-nav-popup.visible {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
-}
-
-/* Individual popup item */
-.queries-nav-popup-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 6px 12px;
-  border: none;
-  background: transparent;
-  color: var(--text-primary);
-  font-size: var(--font-size-sm);
-  text-align: left;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background-color var(--transition-fast);
-}
-
-.queries-nav-popup-item:hover {
-  background-color: var(--accent-primary);
-  color: white;
-}
-
-.queries-nav-popup-item:active {
-  background-color: var(--accent-focus);
-}
-
-/* Checkmark column for aligned popups (width/mode) */
-.queries-nav-popup-check {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  flex-shrink: 0;
-  text-align: center;
-  font-weight: 600;
-}
-
-/* Label column for aligned popups */
-.queries-nav-popup-label {
-  flex: 1;
-}
-
-/* Icon in popup menu items */
-.queries-nav-popup-item i,
-.queries-nav-popup-item svg {
-  font-size: 11px;
-  width: 11px;
-  height: 11px;
-  margin-right: 6px;
-  opacity: 0.8;
-}
-
-/* Separator - full width, minimal vertical padding */
-.queries-nav-popup-separator {
-  height: 1px;
-  background-color: var(--border-color);
-  margin: 4px 0;
-  width: 100%;
-}
-
-/* Template item row with label and delete button */
-.queries-nav-popup-template-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  background: transparent;
-  border: none;
-  padding: 0;
-  margin: 0;
-}
-
-/* Template label button (takes remaining space) */
-.queries-nav-popup-template-label {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 8px 6px 14px;
-  border: none;
-  background: transparent;
-  color: var(--text-primary);
-  font-size: var(--font-size-sm);
-  text-align: left;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background-color var(--transition-fast);
-}
-
-.queries-nav-popup-template-label:hover {
-  background-color: var(--accent-primary);
-  color: white;
-}
-
-/* Checkmark for default template */
-.queries-nav-popup-template-check {
-  display: inline-block;
-  width: 14px;
-  text-align: center;
-  color: var(--accent-success);
-}
-
-.queries-nav-popup-template-label:hover .queries-nav-popup-template-check {
-  color: white;
-}
-
-/* Template name */
-.queries-nav-popup-template-name {
-  flex: 1;
-}
-
-/* Default indicator */
-.queries-nav-popup-template-default {
-  font-size: var(--font-size-xs);
-  opacity: 0.7;
-  margin-left: 4px;
-}
-
-/* Delete button */
-.queries-nav-popup-template-delete {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: background-color var(--transition-fast), color var(--transition-fast);
-}
-
-.queries-nav-popup-template-delete:hover {
-  background-color: var(--accent-danger);
-  color: white;
-}
-
-.queries-nav-popup-template-delete svg,
-.queries-nav-popup-template-delete i {
-  font-size: 12px;
-  width: 12px;
-  height: 12px;
-}
-
-.queries-splitter {
-  width: 6px;
-  background: transparent;
-  cursor: col-resize;
-  flex-shrink: 0;
-  position: relative;
-  z-index: 10;
-  transition: background-color 0.2s ease;
-}
-
-.queries-splitter:hover,
-.queries-splitter.resizing {
-  background-color: var(--accent-primary);
-}
-
-/* Visual indicator line in the splitter */
-.queries-splitter::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 2px;
-  height: 40px;
-  background-color: var(--border-color);
-  border-radius: 1px;
-  transition: background-color 0.2s ease;
-  display: none;
-}
-
-.queries-splitter:hover::after,
-.queries-splitter.resizing::after {
-  background-color: white;
-}
-
-.queries-splitter.collapsed {
-  display: none;
-}
-
-.queries-splitter:hover,
-.queries-splitter.resizing {
-  background-color: var(--accent-primary);
-}
+/* ── Right Panel (Query Details) ────────────────────────────────────────── */
 
 .queries-right-panel {
   flex: 1;
@@ -396,11 +94,13 @@
   overflow: hidden;
 }
 
+/* Toolbar / Tab Header */
 .queries-tabs-header {
   display: flex;
   background-color: var(--bg-secondary);
   padding: var(--space-2) var(--space-3);
   container-type: inline-size;
+  flex-shrink: 0;
 }
 
 .queries-tab-btn {
@@ -411,7 +111,8 @@
 .queries-tab-btn.active {
   background-color: var(--accent-focus);
 }
-.queries-tab-btn:hover {                
+
+.queries-tab-btn:hover {
   background-color: var(--accent-hover);
 }
 
@@ -419,7 +120,6 @@
 .queries-toolbar-placeholder {
   flex: 1;
   min-width: 16px;
-  /* Visible with normal button styling, just empty content */
 }
 
 /* Toolbar buttons styling */
@@ -429,232 +129,7 @@
   color: var(--text-disabled);
 }
 
-/* Font Popup */
-.queries-font-popup {
-  position: absolute;
-  top: 100%;
-  right: 8px;
-  margin-top: 4px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-md);
-  padding: 12px;
-  min-width: 280px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  z-index: 100;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-8px);
-  transition: opacity var(--transition-fast), visibility var(--transition-fast), transform var(--transition-fast);
-  z-index: 1;
-}
-
-.queries-font-popup.visible {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
-}
-
-.queries-font-popup-row {
-  display: flex;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.queries-font-popup-row:last-child {
-  margin-bottom: 0;
-}
-
-.queries-font-popup-label {
-  width: 60px;
-  color: var(--text-secondary);
-  font-size: var(--font-size-sm);
-}
-
-.queries-font-popup-select,
-.queries-font-popup-input {
-  flex: 1;
-  padding: 6px 8px;
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-sm);
-  color: var(--text-primary);
-  font-size: var(--font-size-base);
-}
-
-.queries-font-popup-select:focus,
-.queries-font-popup-input:focus {
-  outline: none;
-  border-color: var(--accent-primary);
-}
-
-.queries-font-popup-styles {
-  display: flex;
-  gap: 8px;
-  flex: 1;
-}
-
-.queries-font-popup-style-btn {
-  flex: 1;
-  padding: 6px 8px;
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-sm);
-  color: var(--text-secondary);
-  cursor: pointer;
-  font-size: var(--font-size-sm);
-  transition: all 0.2s ease;
-}
-
-.queries-font-popup-style-btn:hover {
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
-}
-
-.queries-font-popup-style-btn.active {
-  background: var(--accent-primary);
-  color: white;
-  border-color: var(--accent-primary);
-}
-
-/* ── Template Dialog ─────────────────────────────────────────────────────── */
-
-/* Modal backdrop — covers the full viewport */
-.queries-template-dialog {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  backdrop-filter: blur(2px);
-}
-
-/* Dialog content box */
-.queries-template-dialog-content {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-md);
-  padding: var(--space-4);
-  min-width: 300px;
-  max-width: 400px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-}
-
-/* Dialog title */
-.queries-template-dialog-content h3 {
-  margin: 0 0 var(--space-3) 0;
-  font-size: var(--font-size-lg);
-  color: var(--text-primary);
-  font-weight: 600;
-}
-
-/* Text input for template name */
-.queries-template-input {
-  width: 100%;
-  padding: var(--space-2) var(--space-3);
-  margin-bottom: var(--space-3);
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-sm);
-  color: var(--text-primary);
-  font-size: var(--font-size-base);
-  box-sizing: border-box;
-  outline: none;
-  transition: border-color var(--transition-fast);
-}
-
-.queries-template-input:focus {
-  border-color: var(--accent-primary);
-}
-
-.queries-template-input.error {
-  border-color: var(--accent-danger);
-  animation: queries-input-shake 0.3s ease;
-}
-
-@keyframes queries-input-shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-4px); }
-  75% { transform: translateX(4px); }
-}
-
-/* Select dropdown for make default dialog */
-.queries-template-select {
-  width: 100%;
-  padding: var(--space-2) var(--space-3);
-  margin-bottom: var(--space-3);
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-sm);
-  color: var(--text-primary);
-  font-size: var(--font-size-base);
-  box-sizing: border-box;
-  outline: none;
-  cursor: pointer;
-  transition: border-color var(--transition-fast);
-}
-
-.queries-template-select:focus {
-  border-color: var(--accent-primary);
-}
-
-.queries-template-select option {
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  padding: var(--space-2);
-}
-
-/* Button row */
-.queries-template-dialog-buttons {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--space-2);
-}
-
-/* Dialog buttons */
-.queries-template-btn {
-  padding: var(--space-2) var(--space-4);
-  border: none;
-  border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-sm);
-  cursor: pointer;
-  transition: background-color var(--transition-fast), color var(--transition-fast);
-}
-
-.queries-template-btn-primary {
-  background: var(--accent-primary);
-  color: white;
-}
-
-.queries-template-btn-primary:hover {
-  background: var(--accent-hover);
-}
-
-.queries-template-btn-secondary {
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
-}
-
-.queries-template-btn-secondary:hover {
-  background: var(--bg-active);
-}
-
-.queries-collapse-btn {
-  flex: 0 0 auto;
-}
-
-/* Collapse icon rotation — target by ID regardless of what tag FA renders
-   (<fa> → <i> → possibly <svg>). Also target the button's first child
-   as a fallback for when the ID is lost during FA processing. */
-#queries-collapse-icon,
-#queries-collapse-btn > i,
-#queries-collapse-btn > svg {
-  transition: transform var(--transition-delay) ease;
-  transform: rotate(0deg); /* Pointing left initially (collapse) */
-}
+/* ── Tabs Content ───────────────────────────────────────────────────────── */
 
 .queries-tabs-content {
   flex: 1;
@@ -684,58 +159,20 @@
   transition: opacity var(--transition-duration) ease-in-out, visibility 0s linear 0s;
 }
 
+/* ── SQL Editor ─────────────────────────────────────────────────────────── */
+
 .queries-sql-editor {
   width: 100%;
   height: 100%;
   overflow: hidden;
   border-radius: var(--border-radius-md);
-}                                        
-
-/* Summary Editor (CodeMirror) container */
-#queries-tab-summary {
-  width: 100%;
-  height: 100%;
-  padding: var(--space-2) var(--space-3);
-}
-
-#queries-tab-summary > div {
-  border-radius: var(--border-radius-md);
-  overflow: hidden;
-  height: 100%;
-  border: var(--border-standard);
-}
-
-/* Summary CodeMirror editor styling */
-.queries-summary-editor {
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  border-radius: var(--border-radius-md);
-}
-
-.queries-summary-editor .cm-editor {
-  height: 100%;
-}
-
-/* Summary CodeMirror read-only visual feedback */
-.queries-summary-readonly .cm-editor {
-  opacity: 0.7;
-}
-
-.queries-summary-readonly .cm-activeLine {
-  background-color: transparent !important;
-}
-
-.queries-summary-readonly .cm-activeLineGutter {
-  background-color: transparent !important;
 }
 
 .queries-sql-editor .cm-editor {
   height: 100%;
 }
 
-/* CodeMirror read-only visual feedback — dimmed when not in edit mode.
-   The .queries-cm-readonly class is toggled on the editor container by JS. */
+/* CodeMirror read-only visual feedback */
 .queries-cm-readonly .cm-editor {
   opacity: 0.7;
 }
@@ -757,7 +194,6 @@
   background-color: var(--bg-tertiary) !important;
   border-right: 1px solid var(--border-color);
   font-family: "Vanadium Mono", var(--font-mono, monospace);
-
 }
 
 .queries-sql-editor .cm-lineNumbers {
@@ -776,361 +212,45 @@
   padding-right: 8px;
 }
 
-/* ── Query Manager Footer Controls ───────────────────────────────────────── */
+/* ── Summary Editor ─────────────────────────────────────────────────────── */
 
-/* Data-source <select> in the footer button group.
-   Styled to match subpanel-header-btn so it blends into the strip.
-   Width is auto to fit the widest option content. */
-.queries-footer-datasource {
-  width: auto;
+#queries-tab-summary {
+  width: 100%;
   height: 100%;
-  padding: 0 var(--space-7) 0 var(--space-5);
-  border: none;
-  background: var(--accent-primary);
-  color: white;
-  font-size: var(--font-size-sm);
-  cursor: pointer;
-  outline: none;
-  appearance: none;
-  -webkit-appearance: none;
-  transition: background-color var(--transition-fast);
-  /* Caret indicator on the right */
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='white'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 8px center;
-  z-index: 1;
+  padding: var(--space-2) var(--space-3);
 }
 
-.queries-footer-datasource:hover,
-.queries-footer-datasource:focus {
-  background-color: var(--accent-hover);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='white'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 8px center;
-}
-
-.queries-footer-datasource option {
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  padding: var(--space-2);
-}
-
-/* Filler button — spans the gap between the select and right-side buttons.
-   Uses flex:1 to fill remaining space, creating visual separation. */
-.queries-footer-filler {
-  flex: 1;
-  min-width: 16px;
-  z-index: 1;
-  background: var(--accent-primary);
-  color: white;
-  border: none;
-}
-
-/* ── Footer Export Popup ─────────────────────────────────────────────────── */
-
-/* Popup container — positioned above the footer, anchored to the button */
-.queries-footer-export-popup {
-  position: absolute;
-  bottom: 100%;
-  margin-bottom: 4px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
+#queries-tab-summary > div {
   border-radius: var(--border-radius-md);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  z-index: 100;
-  min-width: 80px;
   overflow: hidden;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(4px);
-  transition: opacity var(--transition-fast), visibility var(--transition-fast), transform var(--transition-fast);
-}
-
-.queries-footer-export-popup.visible {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
-}
-
-/* Individual popup item */
-.queries-footer-export-popup-item {
-  display: block;
-  width: 100%;
-  padding: 6px 14px;
-  border: none;
-  background: transparent;
-  color: var(--text-primary);
-  font-size: var(--font-size-sm);
-  text-align: left;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background-color var(--transition-fast);
-}
-
-.queries-footer-export-popup-item:hover {
-  background-color: var(--accent-primary);
-  color: white;
-}
-
-.queries-footer-export-popup-item:active {
-  background-color: var(--accent-focus);
-}
-
-} /* end @layer managers — manager-specific styles above */
-
-/* ── Tabulator & JSONEditor Theme Overrides ─────────────────────────────── */
-/* These override vendor default styles, so they go in the vendor-fixes layer
-   which sits above the vendors layer in the cascade. */
-
-@layer vendor-fixes {
-
-/* ── Tabulator Theme Overrides (matching Login language panel) ───────────── */
-.tabulator {
-  font-size: var(--font-size-sm);
-}                                
-
-/* Table container with rounded corners and border */
-#queries-table-container {
-  position: relative;
-  flex: 1;
-  overflow: hidden;
-  min-height: 0px;
-  margin: var(--space-2) var(--space-3);
-  border-radius: var(--border-radius-md);
+  height: 100%;
   border: var(--border-standard);
-  background: var(--bg-secondary);
-  display: flex;
-  flex-direction: column;
 }
 
-/* Tabulator base styling */
-#queries-table-container .tabulator {
-  flex: 1;
-  min-height: 0;
-  height: auto;
-  border: none;
-  font-size: var(--font-size-xs);
-  display: flex;
-  flex-direction: column;
-}
-
-/* Header - don't shrink */
-#queries-table-container .tabulator-header {
-  flex-shrink: 0;
-}
-
-/* Table holder - this is where scrolling happens */
-#queries-table-container .tabulator-tableholder {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: auto;
-  height: calc(100% - 40px) !important;
-  max-height: calc(100% - 40px) !important;
-}
-
-/* Header styling - match row height and padding */
-#queries-table-container .tabulator-header {
-  background: var(--bg-tertiary);
-  border-bottom: var(--border-standard);
-  color: var(--text-primary);
-  font-weight: 500;
-  height: 20px !important;
-  min-height: 20px !important;
-}
-
-#queries-table-container .tabulator-header .tabulator-col {
-  background: var(--bg-tertiary);
-  border-right: var(--border-standard);
-  height: 20px !important;
-  min-height: 20px !important;
-  padding: 0px 6px;
-}
-
-#queries-table-container .tabulator-header .tabulator-col:last-child {
-  border-right: none;
-}
-
-#queries-table-container .tabulator-header .tabulator-col-content {
-  padding: 0;
-  height: 20px;
-  line-height: 20px;
-}
-
-/* Header labels */
-#queries-table-container .tabulator-header .tabulator-col-title {
-  line-height: 20px;
-  font-size: 12px;
-}
-
-/* Table body */
-#queries-table-container .tabulator-tableholder {
-  outline: none;  
-}
-
-/* Row styling */
-#queries-table-container .tabulator-row {
-  border-bottom: 1px solid var(--bg-row-border);
-  border-left: none;
-  color: var(--text-primary);
-  cursor: pointer;
-  height: 20px !important;
-  min-height: 20px !important;
-  max-height: 20px !important;
-  overflow: hidden;
-}
-
-#queries-table-container .tabulator-row.tabulator-row-odd {
-  background: var(--bg-row-odd);
-}
-
-#queries-table-container .tabulator-row.tabulator-row-even {
-  background: var(--bg-row-even);
-}
-
-#queries-table-container .tabulator-cell {
-	padding: 0px 6px;
-	border-left: none;
-	line-height: 20px !important;
-	height: 20px !important;
-	font-size: 12px;
-}
-
-/* Row hover */
-#queries-table-container .tabulator-row:hover {
-  background: var(--bg-tertiary);
-}
-
-/* Selected row styling */
-#queries-table-container .tabulator-row.tabulator-selected {
-  background: var(--accent-primary) !important;
-  color: white !important;
-}
-
-#queries-table-container .tabulator-row.tabulator-selected:hover {
-  background: var(--accent-hover) !important;
-}
-
-/* Scrollbar styling */
-#queries-table-container .tabulator-tableholder {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: auto;
-}
-
-/* Ensure table itself takes remaining height */
-#queries-table-container .tabulator .tabulator-table {
-  display: table;
+.queries-summary-editor {
   width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: var(--border-radius-md);
 }
 
-#queries-table-container .tabulator-tableholder::-webkit-scrollbar {
-  width: var(--scrollbar-size);
-  height: var(--scrollbar-size);
+.queries-summary-editor .cm-editor {
+  height: 100%;
 }
 
-#queries-table-container .tabulator-tableholder::-webkit-scrollbar-track {
-  background: var(--scrollbar-track);
+.queries-summary-readonly .cm-editor {
+  opacity: 0.7;
 }
 
-#queries-table-container .tabulator-tableholder::-webkit-scrollbar-thumb {
-  background: var(--scrollbar-thumb);
-  border-radius: var(--border-radius-full);
+.queries-summary-readonly .cm-activeLine {
+  background-color: transparent !important;
 }
 
-#queries-table-container .tabulator-tableholder::-webkit-scrollbar-thumb:hover {
-  background: var(--scrollbar-thumb-hover);
+.queries-summary-readonly .cm-activeLineGutter {
+  background-color: transparent !important;
 }
 
-/* ── Custom Sort Icons (dual ▲▼ arrows) ─────────────────────────────────── */
-
-/* Sort icon container */
-#queries-table-container .queries-sort-icons {
-  display: inline-flex;
-  flex-direction: column;
-  line-height: 1;
-  font-size: 7px;
-  margin-left: var(--space-1);
-  vertical-align: middle;
-  gap: 0;
-}
-
-/* Both arrows dimmed by default */
-#queries-table-container .queries-sort-asc,
-#queries-table-container .queries-sort-desc {
-  color: var(--text-muted);
-  opacity: 0.35;
-  transition: opacity var(--transition-fast), color var(--transition-fast);
-}
-
-/* Highlight active sort direction */
-#queries-table-container .tabulator-col[aria-sort="ascending"] .queries-sort-asc {
-  color: white;
-  opacity: 1;
-}
-
-#queries-table-container .tabulator-col[aria-sort="descending"] .queries-sort-desc {
-  color: white;
-  opacity: 1;
-}
-
-/* Hide default Tabulator sort arrows — we use our own */
-#queries-table-container .tabulator-col .tabulator-col-sorter .tabulator-arrow {
-  display: none;
-}
-
-/* ── Table Loading Overlay ──────────────────────────────────────────────── */
-
-/* Custom loading overlay for table data fetch operations */
-.queries-table-loader {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: rgba(var(--bg-primary-rgb, 26, 26, 26), 0.8);
-  backdrop-filter: blur(2px);
-  z-index: 100;
-}
-
-/* Ensure spinner is visible above the overlay */
-.queries-table-loader .spinner-fancy {
-  z-index: 101;
-}
-
-/* Column resize handles — only allow resizing from the header row.
-   Hide non-header handles and disable their hit area so resize only starts
-   from the header cells. */
-#queries-table-container .tabulator-row .tabulator-col-resize-handle,
-#queries-table-container .tabulator-calcs-bottom .tabulator-col-resize-handle,
-#queries-table-container .tabulator-responsive-collapse .tabulator-col-resize-handle {
-  display: none !important;
-  pointer-events: none !important;
-}
-
-#queries-table-container .tabulator-header .tabulator-col .tabulator-col-resize-handle {
-  pointer-events: auto;
-}
-
-/* Show a wait cursor briefly while edit mode transitions are being applied. */
-#queries-table-container.queries-edit-transition,
-#queries-table-container.queries-edit-transition *,
-.queries-navigator-container.queries-edit-transition,
-.queries-navigator-container.queries-edit-transition * {
-  cursor: progress !important;
-}
-
-/* Keyboard focus indicator for table container */
-#queries-table-container:focus {
-  outline: none;
-}
-
-#queries-table-container:focus-visible {
-  outline: none;
-}
-
-/* ── Preview Tab Styles ─────────────────────────────────────────────────── */
+/* ── Preview Tab ────────────────────────────────────────────────────────── */
 
 .queries-preview-content {
   padding: var(--space-4);
@@ -1194,7 +314,7 @@
   color: var(--text-secondary);
 }
 
-/* ── Test Tab Styles ────────────────────────────────────────────────────── */
+/* ── Test Tab ───────────────────────────────────────────────────────────── */
 
 .queries-test-content {
   padding: var(--space-4);
@@ -1223,559 +343,127 @@
   overflow: auto;
 }
 
-/* ── JsonTree.js Dark Theme Integration ───────────────────────────────────── */
-/* JsonTree.js uses .json-tree and related CSS classes.
-   These overrides integrate the editor's colors with Lithium's design tokens. */
+/* ── Collection (JSON) Editor ───────────────────────────────────────────── */
 
-/* Ensure JsonTree fills the tab pane */
 .queries-tab-pane #queries-tab-collection {
-  padding: var(--space-2) var(--space-3);
+  padding: 0;
   width: 100%;
   height: 100%;
 }
 
-/* JsonTree container styling */
-.json-tree-container {
-  background: var(--bg-secondary);
-  border: var(--border-standard);
-  border-radius: var(--border-radius-md);
-  padding: var(--space-3);
+.queries-tab-pane #queries-tab-collection .json-tree-container {
+  width: 100%;
   height: 100%;
+}
+
+.queries-tab-pane #queries-tab-collection .cm-editor {
+  height: 100%;
+}
+
+.queries-tab-pane #queries-tab-collection .cm-scroller {
   overflow: auto;
-}
-
-/* Override JsonTree.js default styles for dark theme integration */
-.json-tree-container .json-tree {
   font-family: var(--font-mono);
-  font-size: var(--font-size-sm);
-  color: var(--text-primary);
 }
 
-/* JsonTree key names */
-.json-tree-container .json-tree-key {
-  color: var(--text-primary);
-}
-
-/* JsonTree value types */
-.json-tree-container .json-tree-value-string {
-  color: #a5d6a7;
-}
-
-.json-tree-container .json-tree-value-number {
-  color: #81d4fa;
-}
-
-.json-tree-container .json-tree-value-boolean {
-  color: #ffcc80;
-  font-weight: 500;
-}
-
-.json-tree-container .json-tree-value-null {
-  color: #ef9a9a;
-}
-
-/* JsonTree expand/collapse buttons */
-.json-tree-container .json-tree-expand,
-.json-tree-container .json-tree-collapse {
-  color: var(--accent-primary);
-  cursor: pointer;
-}
-
-.json-tree-container .json-tree-expand:hover,
-.json-tree-container .json-tree-collapse:hover {
-  color: var(--accent-hover);
-}
-
-/* JsonTree brackets */
-.json-tree-container .json-tree-bracket {
-  color: var(--text-secondary);
-}
-
-/* JsonTree readonly state - dimmed appearance */
-.queries-jsoneditor-readonly .json-tree-container {
+.queries-jsoneditor-readonly .cm-editor {
   opacity: 0.7;
 }
 
-.queries-jsoneditor-readonly .json-tree-container .json-tree {
+.queries-jsoneditor-readonly .cm-content {
   pointer-events: none;
 }
 
-/* ── Selector Column ─────────────────────────────────────────────────────── */
+/* ── Footer Controls ────────────────────────────────────────────────────── */
 
-/* Narrow selector column cells — zero padding, centered */
-#queries-table-container .queries-selector-col {
-  padding: 0 !important;
-  text-align: center;
-  border-right: var(--border-standard) !important;
-}
-
-/* Selector column header — pointer cursor for column chooser */
-#queries-table-container .tabulator-col.queries-selector-col {
-  cursor: pointer;
-  width: 16px !important;
-  min-width: 16px !important;
-  max-width: 16px !important;
-}
-
-/* FA icons inside the selector cells — size to fit the narrow column */
-#queries-table-container .queries-selector-col i,
-#queries-table-container .queries-selector-col svg {
-  font-size: 10px;
-  width: 10px;
-  height: 10px;
-}
-
-/* fa-caret-right for selected row */
-.queries-selector-active,
-.queries-selector-active.svg-inline--fa {
-  color: white;
-}
-
-/* fa-i-cursor for row being edited — blinking caret */
-.queries-selector-edit,
-.queries-selector-edit.svg-inline--fa {
-  color: var(--accent-success, #66BB6A);
-  animation: queries-caret-blink 1s step-end infinite;
-}
-
-@keyframes queries-caret-blink {
-  50% { opacity: 0; }
-}
-
-/* ── Column Chooser ──────────────────────────────────────────────────────── */
-
-/* Vertical-ellipsis button in the selector column header */
-.queries-col-chooser-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
+.queries-footer-datasource {
+  width: auto;
   height: 100%;
-  cursor: pointer;
-  color: var(--text-secondary);
-  line-height: 1;
-  user-select: none;
-  transition: color var(--transition-fast);
-}
-
-/* The FA icon inside the chooser button — slightly larger than cell icons */
-.queries-col-chooser-btn i,
-.queries-col-chooser-btn svg {
-  font-size: 12px !important;
-  width: 12px !important;
-  height: 12px !important;
-}
-
-.queries-col-chooser-btn:hover {
-  color: var(--text-primary);
-}
-
-/* Column chooser dropdown popup */
-.queries-col-chooser-popup {
-  position: absolute;
-  z-index: 200;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-md);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-  min-width: 160px;
-  max-width: 280px;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-4px);
-  transition: opacity var(--transition-fast), visibility var(--transition-fast), transform var(--transition-fast);
-}
-
-.queries-col-chooser-popup.visible {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
-}
-
-/* "Columns" title at the top of the popup */
-.queries-col-chooser-title {
-  padding: 8px 12px 6px;
-  font-size: var(--font-size-xs);
-  font-weight: 600;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  border-bottom: 1px solid var(--border-color);
-}
-
-/* Scrollable list of column checkboxes */
-.queries-col-chooser-list {
-  overflow-y: auto;
-  padding: 4px 0;
-}
-
-/* Scrollbar for column list */
-.queries-col-chooser-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.queries-col-chooser-list::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.queries-col-chooser-list::-webkit-scrollbar-thumb {
-  background: var(--scrollbar-thumb);
-  border-radius: 3px;
-}
-
-/* Individual column item row */
-.queries-col-chooser-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: var(--space-1) var(--space-3);
-  cursor: pointer;
+  padding: 0 var(--space-7) 0 var(--space-5);
+  border: none;
+  background: var(--accent-primary);
+  color: white;
   font-size: var(--font-size-sm);
-  color: var(--text-primary);
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
   transition: background-color var(--transition-fast);
-  white-space: nowrap;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='white'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  z-index: 1;
 }
 
-.queries-col-chooser-item:hover {
-  background-color: var(--bg-tertiary);
+.queries-footer-datasource:hover,
+.queries-footer-datasource:focus {
+  background-color: var(--accent-hover);
 }
 
-/* Checkbox in the column chooser */
-.queries-col-chooser-checkbox {
-  accent-color: var(--accent-primary);
-  width: 14px;
-  height: 14px;
-  cursor: pointer;
-  flex-shrink: 0;
+.queries-footer-datasource option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  padding: var(--space-2);
 }
 
-/* Column label text */
-.queries-col-chooser-label {
+.queries-footer-filler {
   flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  min-width: 16px;
+  z-index: 1;
+  background: var(--accent-primary);
+  color: white;
+  border: none;
 }
 
-/* ── Header Filter Inputs ────────────────────────────────────────────────── */
+/* ── Footer Export Popup ────────────────────────────────────────────────── */
 
-/* Filter row is hidden by default — toggled via Filter button */
-#queries-table-container .tabulator-header-filter {
-  display: block;
-  height: 0;
-  min-height: 0;
-  max-height: 0;
-  overflow: hidden;
-  opacity: 0;
-  transition: height var(--transition-fast), min-height var(--transition-fast), max-height var(--transition-fast), opacity var(--transition-fast);
-}
-.tabulator-row .tabulator-cell {
-  border-right: 1px solid var(--bg-row-border);
-}
-
-/* Show filter row when toggled on — compact height */
-#queries-table-container.queries-filters-visible .tabulator-header-filter {
-  height: 20px;
-  min-height: 20px;
-  max-height: 20px;
-  opacity: 1;
-  padding: 0px;
-  box-sizing: border-box;
-  margin-left: -2px;
-}
-
-/* Style all header filter inputs (both custom and built-in) */
-#queries-table-container .tabulator-header-filter input {
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-sm);
-  padding: 0px 6px;
-  font-size: var(--font-size-xs);
-  width: 100%;
-  height: 18px;
-  box-sizing: border-box;
-  outline: none;
-  transition: border-color var(--transition-fast);
-}
-
-/* Custom filter inputs get extra right padding for the clear button */
-#queries-table-container .tabulator-header-filter input.queries-header-filter-input {
-  padding-right: 22px;
-}
-
-#queries-table-container .tabulator-header-filter input:focus {
-  border-color: var(--accent-primary);
-}
-
-#queries-table-container .tabulator-header-filter input::placeholder {
-  color: var(--text-muted);
-  font-style: italic;
-}
-
-/* Clear (×) button — injected as a sibling of the <input> inside
-   .tabulator-header-filter, which gets position:relative in JS. */
-.queries-header-filter-clear {
+.queries-footer-export-popup {
   position: absolute;
-  right: 3px;
-  top: 42%;
-  transform: translateY(-50%);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  font-size: 14px;
-  line-height: 1;
-  color: var(--text-muted);
-  cursor: pointer;
-  border-radius: 50%;
-  transition: color var(--transition-fast), background-color var(--transition-fast);
-  user-select: none;
-  z-index: 5;
-}
-
-.queries-header-filter-clear:hover {
-  color: var(--text-primary);
-  background-color: var(--bg-tertiary);
-}
-
-/* ── Table Footer (bottom calc row) ──────────────────────────────────────── */
-#queries-table-container .tabulator-footer,
-#queries-table-container .tabulator-calcs,
-#queries-table-container .tabulator-calcs-bopttom,
-#queries-table-container .tabulator-calcs-holder {
-  border-top: none;
-  border-bottom: none;
-  background: unset;
-}                                                 
-#queries-table-container .tabulator-calcs-holder {
-  background: var(--bg-tertiary);
-  border-top: var(--border-standard);
-  height: 20px;
-}
-.tabulator-row .tabulator-cell.tabulator-editing {
-  border: unset;
-  padding: 0;
-}
-
-/* Override Tabulator's default padding on editing inputs */
-#queries-table-container .tabulator-cell.tabulator-editing > input,
-#queries-table-container .tabulator-cell.tabulator-editing > select {
-  padding: 4px 0px !important;
-}
-/* Footer row — styled like rows: 20px height, same padding */
-#queries-table-container .tabulator-calcs-bottom {
-  border-top: none;
-  border-bottom: none;
-  color: var(--text-primary);
-  font-weight: 500;
-  height: 20px !important;
-  min-height: 20px !important;
-  max-height: 20px !important;
-  pointer-events: none;
-}
-
-#queries-table-container .tabulator-calcs-bottom .tabulator-cell {
-  border-right: var(--border-standard);
-  border-top: none;
-  border-bottom: none;
-  padding: 0px 6px;
-  height: 20px !important;
-  line-height: 20px !important;
-  pointer-events: none;
-}
-
-#queries-table-container .tabulator-calcs-bottom .tabulator-cell:first-child {
-  border-left: none;
-}
-
-#queries-table-container .tabulator-calcs-bottom .tabulator-cell:last-child {
-  border-right: none !important;
-}
-
-/* Right-justify the count in the Ref column */
-#queries-table-container .tabulator-calcs-bottom .tabulator-cell[tabulator-field="query_ref"] {
-  text-align: right;
-}
-
-/* ── Frozen Column Styling ───────────────────────────────────────────────── */
-
-/* Tabulator adds .tabulator-frozen to frozen columns. Ensure the frozen
-   selector column gets a right border so it visually separates from the
-   scrollable area, and inherits the header/row background correctly. */
-#queries-table-container .tabulator-frozen {
-  z-index: 10;
-}
-
-/* Frozen header cell */
-#queries-table-container .tabulator-header .tabulator-col.tabulator-frozen {
-  outline: none;
-}
-
-/* Frozen data cell — match alternating row background */
-#queries-table-container .tabulator-row .tabulator-cell.tabulator-frozen {
-  outline: none;  
-}
-
-/* Selected row's frozen cell */
-#queries-table-container .tabulator-row.tabulator-selected .tabulator-cell.tabulator-frozen {
-  background: var(--accent-primary) !important;
-}
-
-/* Hovered row's frozen cell */
-#queries-table-container .tabulator-row:hover .tabulator-cell.tabulator-frozen {
-  background: var(--bg-tertiary);
-}
-
-/* Hovered + selected */
-#queries-table-container .tabulator-row.tabulator-selected:hover .tabulator-cell.tabulator-frozen {
-  background: var(--accent-hover) !important;
-}
-
-/* ── First/Last Visible Column Classes ───────────────────────────────────── */
-
-/*
- * When columns are hidden with display:none, :first-child and :last-child
- * don't work as expected because the hidden columns are still in the DOM.
- * These classes (.first-visible-col and .last-visible-col) are dynamically
- * applied via JavaScript to mark the actual first and last visible columns.
- */
-
-/* First visible column — remove left border for clean edge */
-#queries-table-container .tabulator-cell.first-visible-col,
-#queries-table-container .tabulator-header .tabulator-col.first-visible-col {
-  border-left: none;
-}
-
-/* Last visible column — remove right border for clean edge */
-#queries-table-container .tabulator-cell.last-visible-col,
-#queries-table-container .tabulator-header .tabulator-col.last-visible-col {
-  border-right: none !important;
-}
-
-/* Footer calc row — ensure borders are consistent */
-#queries-table-container .tabulator-calcs-bottom .tabulator-cell.first-visible-col,
-#queries-table-container .tabulator-calcs-top .tabulator-cell.first-visible-col,
-#queries-table-container .tabulator-calcs-holder .tabulator-cell.first-visible-col {
-  border-left: none;
-}
-
-#queries-table-container .tabulator-calcs-bottom .tabulator-cell.last-visible-col,
-#queries-table-container .tabulator-calcs-top .tabulator-cell.last-visible-col,
-#queries-table-container .tabulator-calcs-holder .tabulator-cell.last-visible-col {
-  border-right: none !important;
-}
-
-/* Grouped rows — ensure borders are consistent */
-#queries-table-container .tabulator-group .tabulator-cell.first-visible-col,
-#queries-table-container .tabulator-row.tabulator-group .tabulator-cell.first-visible-col {
-  border-left: none;
-}
-
-#queries-table-container .tabulator-group .tabulator-cell.last-visible-col,
-#queries-table-container .tabulator-row.tabulator-group .tabulator-cell.last-visible-col {
-  border-right: none !important;
-}
-
-/* Frozen column edge cases — ensure no double borders */
-#queries-table-container .tabulator-cell.first-visible-col.tabulator-frozen,
-#queries-table-container .tabulator-col.first-visible-col.tabulator-frozen {
-  border-left: none;
-}
-
-/* ── Edit Mode ───────────────────────────────────────────────────────────── */
-/* When the table is in edit mode, the selected row gets a different
-   highlight color (--accent-warning) to indicate "this row is being edited".
-   The class .queries-edit-mode is toggled on the table container via JS. */
-
-/* Edit-mode selected row — uses warning/amber instead of primary/indigo */
-#queries-table-container.queries-edit-mode .tabulator-row.tabulator-selected {
-  background: var(--accent-warning, #FFA726) !important;
-  color: #1a1a1a !important;
-}
-
-#queries-table-container.queries-edit-mode .tabulator-row.tabulator-selected:hover {
-  background: var(--accent-warning-hover, #FB8C00) !important;
-  color: #1a1a1a !important;
-}
-
-/* Edit-mode selector frozen cell background */
-#queries-table-container.queries-edit-mode .tabulator-row.tabulator-selected .tabulator-cell.tabulator-frozen {
-  background: var(--accent-warning, #FFA726) !important;
-}
-
-#queries-table-container.queries-edit-mode .tabulator-row.tabulator-selected:hover .tabulator-cell.tabulator-frozen {
-  background: var(--accent-warning-hover, #FB8C00) !important;
-}
-
-/* Edit-mode selector indicator — dark text on amber background */
-#queries-table-container.queries-edit-mode .queries-selector-edit,
-#queries-table-container.queries-edit-mode .queries-selector-edit.svg-inline--fa {
-  color: #1a1a1a;
-}
-
-/* Edit-mode row cursor — use text cursor for editable cells */
-#queries-table-container.queries-edit-mode .tabulator-row.tabulator-selected .tabulator-cell {
-  cursor: text;
-}
-
-/* Edit-mode cells in the selected row allow tabulator editing styles */
-#queries-table-container.queries-edit-mode .tabulator-row.tabulator-selected .tabulator-cell .tabulator-editing {
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  border: 1px solid var(--accent-warning, #FFA726);
-  border-radius: var(--border-radius-sm);
-  padding: 0 4px;
-}
-
-/* Footer Export Popup */
-.queries-popup {
-  position: fixed;
+  bottom: 100%;
+  margin-bottom: 4px;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-md);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  z-index: 10001;
-  min-width: 100px;
+  z-index: 100;
+  min-width: 80px;
   overflow: hidden;
   opacity: 0;
   visibility: hidden;
-  transform: translateY(-4px);
-  transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
+  transform: translateY(4px);
+  transition: opacity var(--transition-fast), visibility var(--transition-fast), transform var(--transition-fast);
 }
 
-.queries-popup.visible {
+.queries-footer-export-popup.visible {
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
 }
 
-.queries-popup-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.queries-footer-export-popup-item {
+  display: block;
   width: 100%;
-  padding: 8px 16px;
+  padding: 6px 14px;
   border: none;
   background: transparent;
   color: var(--text-primary);
   font-size: var(--font-size-sm);
-  cursor: pointer;
   text-align: left;
+  cursor: pointer;
   white-space: nowrap;
   transition: background-color var(--transition-fast);
 }
 
-.queries-popup-item:hover {
+.queries-footer-export-popup-item:hover {
   background-color: var(--accent-primary);
   color: white;
 }
 
-.queries-popup-item:active {
+.queries-footer-export-popup-item:active {
   background-color: var(--accent-focus);
 }
 
-/* Hide text labels in Query Manager tabs/toolbar when toolbar width < 700px */
+/* ── Container Query - Hide Text Labels ─────────────────────────────────── */
+
 @container (max-width: 700px) {
   .queries-tabs-header .queries-tab-btn span {
     display: none;

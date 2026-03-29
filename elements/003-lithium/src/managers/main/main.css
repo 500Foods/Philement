@@ -232,32 +232,15 @@
   position: relative;
 }
 
-/* WebSocket status indicator in sidebar header */
-.sidebar-header-gradient .ws-status {
+/* Radar status icon in sidebar header (replaces old ws-status) */
+.sidebar-header-gradient .radar-icon {
+  width: 32px;
+  height: 32px;
   margin-left: auto;
-  margin-right: 5px;
-  position: relative;
-}
-
-.sidebar-header-gradient .ws-status .ws-status-icon {
-  font-size: 20px;
-  filter: drop-shadow(0 1px 2px black);
-}
-
-.sidebar-header-gradient .ws-status.disconnected .ws-status-icon {
-  color: #fca5a5; /* lighter red for gradient background */
-}
-
-.sidebar-header-gradient .ws-status.connected .ws-status-icon {
-  color: #86efac; /* lighter green for gradient background */
-}
-
-.sidebar-header-gradient .ws-status.sending .ws-status-icon {
-  color: #93c5fd; /* lighter blue for gradient background */
-}
-
-.sidebar-header-gradient .ws-status.connecting .ws-status-icon {
-  color: #fde68a; /* lighter amber for gradient background */
+  margin-right: -2px;
+  color: #ef4444; /* default: disconnected red */
+  cursor: default;
+  flex-shrink: 0;
 }
 
 .sidebar-logo {
@@ -877,6 +860,7 @@ body.resizing * {
 .manager-slot-header .subpanel-header-primary span {
   white-space: nowrap;
   text-overflow: ellipsis;
+  padding-right: var(--space-3);
 }
 
 /* ========================================

@@ -40,7 +40,7 @@ export class DirtyStateTracker {
     this._isDirty[type] = isDirty;
     const nowDirty = this.isAnyDirty();
     if (wasDirty !== nowDirty) {
-      this.manager._updateSaveCancelButtonState();
+      this.manager.updateFooterSaveCancelState();
     }
   }
 
@@ -52,7 +52,7 @@ export class DirtyStateTracker {
     this._isDirty.sql = false;
     this._isDirty.summary = false;
     this._isDirty.collection = false;
-    this.manager._updateSaveCancelButtonState();
+    this.manager.updateFooterSaveCancelState();
   }
 
   /**
@@ -74,8 +74,8 @@ export class DirtyStateTracker {
   async revertAllChanges() {
     const mgr = this.manager;
 
-    if (this._isDirty.table && mgr.table && this._originalRowData) {
-      const selected = mgr.table.getSelectedRows();
+    if (this._isDirty.table && mgr.queryTable?.table && this._originalRowData) {
+      const selected = mgr.queryTable.table.getSelectedRows();
       if (selected.length > 0) {
         selected[0].update(this._originalRowData);
       }
@@ -162,7 +162,7 @@ export class DirtyStateTracker {
     this._isDirty.sql = this.checkSqlDirty();
     this._isDirty.summary = this.checkSummaryDirty();
     this._isDirty.collection = this.checkCollectionDirty();
-    this.manager._updateSaveCancelButtonState();
+    this.manager.updateFooterSaveCancelState();
   }
 
   /**

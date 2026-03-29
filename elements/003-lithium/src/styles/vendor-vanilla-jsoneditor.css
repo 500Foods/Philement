@@ -1,13 +1,10 @@
 /**
- * Vendor JsonTree.js CSS — json-tree.js CSS is imported directly from the package
- * in the manager files. This file exists as a placeholder to maintain cascade order
- * consistency with the project's CSS architecture.
+ * JSON Editor Styles
  *
- * The actual CSS is imported in the manager files:
- *   import 'json-tree.js/dist/jsontree.min.css';
+ * The JSON editor now uses CodeMirror 6 with @codemirror/lang-json
+ * instead of the previous JsonTree.js library.
  *
- * Dark theme is applied via the `.json-tree-container` class and CSS custom properties
- * defined in the manager CSS files.
+ * CodeMirror's one-dark theme is applied via the @codemirror/theme-one-dark
+ * extension. Additional styling for Lithium integration is in each
+ * manager's CSS file.
  */
-
-/* JsonTree.js CSS is imported directly in manager files — see queries.js and lookups.js */

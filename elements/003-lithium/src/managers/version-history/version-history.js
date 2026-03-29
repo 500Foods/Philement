@@ -15,6 +15,7 @@
 
 import { LithiumTable } from '../../core/lithium-table-main.js';
 import { LithiumSplitter } from '../../core/lithium-splitter.js';
+import { PanelStateManager } from '../../core/panel-state-manager.js';
 import '../../styles/vendor-tabulator.css';
 import { authQuery } from '../../shared/conduit.js';
 import { log, Subsystems, Status } from '../../core/log.js';
@@ -46,10 +47,13 @@ export default class VersionHistoryManager {
     this.selectedVersionId = null;
     this.selectedVersionData = null;
 
-    // Splitter
+    // Panel state persistence
+    this.leftPanelState = new PanelStateManager('lithium_version_left');
+
+    // Splitter (loaded from persistence)
     this.splitter = null;
-    this.leftPanelWidth = 350;
-    this.isLeftPanelCollapsed = false;
+    this.leftPanelWidth = this.leftPanelState.loadWidth(350);
+    this.isLeftPanelCollapsed = this.leftPanelState.loadCollapsed(false);
 
     // Table state
     this._tableWidthMode = 'compact';
@@ -61,6 +65,7 @@ export default class VersionHistoryManager {
     await this.render();
     this.setupEventListeners();
     await this.initVersionsTable();
+    this.restorePanelState();
   }
 
   /**
@@ -484,7 +489,8 @@ export default class VersionHistoryManager {
       onResize: (width) => {
         this.leftPanelWidth = width;
       },
-      onResizeEnd: () => {
+      onResizeEnd: (width) => {
+        this.leftPanelState.saveWidth(width);
         this.versionsTable?.table?.redraw?.();
       },
     });
@@ -494,6 +500,12 @@ export default class VersionHistoryManager {
     this.isLeftPanelCollapsed = !this.isLeftPanelCollapsed;
     this.splitter?.setCollapsed(this.isLeftPanelCollapsed);
 
+    // Toggle rotation class on collapse button
+    this.elements.collapseBtn?.classList.toggle('collapsed', this.isLeftPanelCollapsed);
+
+    // Save collapsed state
+    this.leftPanelState.saveCollapsed(this.isLeftPanelCollapsed);
+
     if (!this.isLeftPanelCollapsed) {
       this.elements.leftPanel.style.width = `${this.leftPanelWidth}px`;
     }
@@ -501,6 +513,17 @@ export default class VersionHistoryManager {
     setTimeout(() => {
       this.versionsTable?.table?.redraw?.();
     }, 350);
+  }
+
+  restorePanelState() {
+    // Restore left panel
+    this.elements.collapseBtn?.classList.toggle('collapsed', this.isLeftPanelCollapsed);
+    this.splitter?.setCollapsed(this.isLeftPanelCollapsed);
+
+    // Apply saved width to panel (will be used when expanding)
+    if (this.elements.leftPanel && !this.isLeftPanelCollapsed) {
+      this.elements.leftPanel.style.width = `${this.leftPanelWidth}px`;
+    }
   }
 
   // ── Cleanup ────────────────────────────────────────────────────────────────

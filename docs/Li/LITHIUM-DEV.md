@@ -62,7 +62,7 @@ This fills and submits the login form automatically.
 
 | Command | Description |
 |---------|-------------|
-| `npm test` | Run all tests (171 tests) |
+| `npm test` | Run all tests (588 tests) |
 | `npm run test:watch` | Run tests in watch mode |
 | `npm run test:coverage` | Run tests with coverage report |
 
@@ -254,6 +254,39 @@ npm run format
 | [`jwt.js`](elements/003-lithium/src/core/jwt.js) | JWT handling |
 | [`config.js`](elements/003-lithium/src/core/config.js) | Configuration loader |
 | [`permissions.js`](elements/003-lithium/src/core/permissions.js) | Punchcard permissions |
+| [`manager-ui.js`](elements/003-lithium/src/core/manager-ui.js) | Shared UI utilities (keyboard shortcuts, footer buttons, font popup) |
+
+## Shared UI Utilities (`manager-ui.js`)
+
+The `manager-ui.js` module provides common UI functionality used across all managers:
+
+### `createFontPopup(options)`
+
+Creates a reusable font settings popup (size, family, weight). Used by Lookups Manager, Style Manager, and any manager with an editor panel.
+
+```javascript
+import { createFontPopup } from '../../core/manager-ui.js';
+
+const { popup, toggle, show, hide, getState, setState } = createFontPopup({
+  anchor: this.elements.fontBtn,
+  fontSize: 14,
+  fontFamily: 'var(--font-mono)',
+  fontWeight: 'normal',
+  onChange: ({ fontSize, fontFamily, fontWeight }) => {
+    // Apply to editor elements
+  },
+});
+```
+
+CSS classes: `.manager-font-popup`, `.manager-font-popup-row`, `.manager-font-popup-input`, `.manager-font-popup-select`, `.manager-font-popup-style-btn` (defined in `manager-ui.css`).
+
+### `setupManagerFooterIcons(group, options)`
+
+Creates Print, Email, Export, and Reports select buttons in the manager footer.
+
+### `setupFooterButtons(slotId, managerId, options)`
+
+Creates the standard footer action icons (Crimson, Notifications, Concierge, Annotations, Tours, Training).
 
 ---
 
