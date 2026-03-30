@@ -8,6 +8,7 @@
 import { LithiumTable } from '../../core/lithium-table-main.js';
 import { LithiumSplitter } from '../../core/lithium-splitter.js';
 import { PanelStateManager } from '../../core/panel-state-manager.js';
+import { togglePanelCollapse, restorePanelState } from '../../core/panel-collapse.js';
 import '../../styles/vendor-tabulator.css';
 import '../../core/manager-panels.css';
 import { authQuery } from '../../shared/conduit.js';
@@ -51,7 +52,7 @@ export default class QueriesManager {
     
     // Panel state persistence
     this.leftPanelState = new PanelStateManager('lithium_queries_left');
-    this.leftPanelWidth = this.leftPanelState.loadWidth(350);
+    this.leftPanelWidth = this.leftPanelState.loadWidth(280);
     this.isLeftPanelCollapsed = this.leftPanelState.loadCollapsed(false);
     
     // Initialize modular managers
@@ -175,16 +176,31 @@ export default class QueriesManager {
     const panel = this.elements.leftPanel;
     if (!panel) return;
 
+    console.log(`[Queries] _setTableWidth(${mode}) this.leftPanelWidth=${this.leftPanelWidth}`);
+
+    // mode === null means LithiumTable has no saved width mode.
+    // Apply the PanelStateManager pixel width as fallback.
+    if (mode === null) {
+      console.log(`[Queries] Applying pixel width: ${this.leftPanelWidth}px`);
+      panel.style.width = `${this.leftPanelWidth}px`;
+      return;
+    }
+
     const widths = { narrow: 160, compact: 314, normal: 468, wide: 622 };
 
     if (mode === 'auto') {
       panel.style.width = '';
-      this.leftPanelState.saveWidth(panel.offsetWidth);
+      const currentWidth = panel.offsetWidth;
+      this.leftPanelWidth = currentWidth;
+      this.leftPanelState.saveWidth(currentWidth);
       return;
     }
 
-    panel.style.width = `${widths[mode]}px`;
-    this.leftPanelState.saveWidth(widths[mode]);
+    // Named mode: set the panel width but do NOT overwrite this.leftPanelWidth
+    // (which holds the pixel width for collapse/expand). Only save to PanelStateManager
+    // when the user explicitly picks a mode via the Width popup (setTableWidth method).
+    const widthPx = widths[mode];
+    panel.style.width = `${widthPx}px`;
     log(Subsystems.MANAGER, Status.INFO, `[Queries] Table width set to: ${mode}`);
   }
 
@@ -359,6 +375,7 @@ export default class QueriesManager {
       leftPanel: this.elements.leftPanel,
       minWidth: 157,
       maxWidth: 1000,
+      tables: this.queryTable,
       onResize: (width) => {
         this.leftPanelWidth = width;
       },
@@ -370,31 +387,37 @@ export default class QueriesManager {
   }
 
   _toggleLeftPanel() {
-    this.isLeftPanelCollapsed = !this.isLeftPanelCollapsed;
-    this.splitter?.setCollapsed(this.isLeftPanelCollapsed);
-
-    // Toggle rotation class on collapse button
-    this.elements.collapseBtn?.classList.toggle('collapsed', this.isLeftPanelCollapsed);
+    this.isLeftPanelCollapsed = togglePanelCollapse({
+      panel: this.elements.leftPanel,
+      splitter: this.splitter,
+      collapseBtn: this.elements.collapseBtn,
+      panelWidth: this.leftPanelWidth,
+      isCollapsed: this.isLeftPanelCollapsed,
+      onAfterToggle: () => this.queryTable?.table?.redraw?.(),
+    });
 
     // Save collapsed state
     this.leftPanelState.saveCollapsed(this.isLeftPanelCollapsed);
-
-    if (!this.isLeftPanelCollapsed) {
-      this.elements.leftPanel.style.width = `${this.leftPanelWidth}px`;
-    }
-
-    setTimeout(() => {
-      this.queryTable?.table?.redraw?.();
-    }, 350);
   }
 
   _restorePanelState() {
-    this.elements.collapseBtn?.classList.toggle('collapsed', this.isLeftPanelCollapsed);
-    this.splitter?.setCollapsed(this.isLeftPanelCollapsed);
+    // Re-read collapsed state from localStorage as a safety net
+    // (handles cases where constructor loaded before persistence was ready)
+    const prev = this.isLeftPanelCollapsed;
+    this.isLeftPanelCollapsed = this.leftPanelState.loadCollapsed(this.isLeftPanelCollapsed);
 
-    if (this.elements.leftPanel && !this.isLeftPanelCollapsed) {
-      this.elements.leftPanel.style.width = `${this.leftPanelWidth}px`;
-    }
+    // Restore collapsed state using shared utility
+    restorePanelState({
+      panel: this.elements.leftPanel,
+      splitter: this.splitter,
+      collapseBtn: this.elements.collapseBtn,
+      isCollapsed: this.isLeftPanelCollapsed,
+    });
+
+    // Panel width is handled by LithiumTable's setupPersistence():
+    // - If a width mode was saved, it calls onSetTableWidth(mode)
+    // - If no mode was saved, it calls onSetTableWidth(null), and _setTableWidth
+    //   applies the PanelStateManager pixel width as fallback
   }
 
   // ============ FOOTER ============

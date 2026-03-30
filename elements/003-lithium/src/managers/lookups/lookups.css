@@ -28,8 +28,8 @@
 .lookups-left-panel {
   display: flex;
   flex-direction: column;
-  width: 280px;
-  min-width: 150px;
+  width: var(--panel-left-w, 280px);
+  min-width: 157px;
   background-color: var(--bg-secondary);
   transition: width var(--transition-delay) ease, min-width var(--transition-delay) ease;
   flex-shrink: 0;
@@ -40,8 +40,8 @@
 .lookups-middle-panel {
   display: flex;
   flex-direction: column;
-  width: 350px;
-  min-width: 200px;
+  width: var(--panel-middle-w, 350px);
+  min-width: 157px;
   background-color: var(--bg-primary);
   transition: width var(--transition-delay) ease, min-width var(--transition-delay) ease;
   flex-shrink: 0;
@@ -72,30 +72,6 @@
 .lookups-collapse-middle-btn {
   flex: 0 0 auto;
   padding: var(--space-1);
-}
-
-/* Collapse button styling */
-.lookups-collapse-left-btn,
-.lookups-collapse-middle-btn {
-  flex: 0 0 auto;
-  padding: var(--space-1);
-}
-
-/* Collapse icon rotation */
-.lookups-collapse-left-btn > i,
-.lookups-collapse-left-btn > svg,
-.lookups-collapse-middle-btn > i,
-.lookups-collapse-middle-btn > svg {
-  transition: transform var(--transition-delay) ease;
-  transform: rotate(0deg);
-}
-
-/* Collapse icon rotation when panels are collapsed */
-.lookups-collapse-left-btn.collapsed > i,
-.lookups-collapse-left-btn.collapsed > svg,
-.lookups-collapse-middle-btn.collapsed > i,
-.lookups-collapse-middle-btn.collapsed > svg {
-  transform: rotate(180deg);
 }
 
 /* ── Table Containers (additional styling beyond lithium-table.css) ────── */

@@ -10,6 +10,7 @@
 
 import { getConfigValue } from '../core/config.js';
 import { log, Subsystems, Status } from '../core/log.js';
+import { addTarget, removeTarget } from './radar-controller.js';
 
 export const ConnectionState = {
   DISCONNECTED: 'disconnected',
@@ -167,17 +168,22 @@ export class AppWebSocket {
       const message = JSON.parse(data);
       const { type } = message;
 
+      // Remove a target when we get a response back
+      if (type === 'keepalive_ok') {
+        removeTarget();
+        return;
+      }
+
+      if (type === 'chat_done' || type === 'chat_error') {
+        removeTarget();
+      }
+
       // Skip verbose logging for chat chunks - handled by CrimsonWS
       if (type === 'chat_chunk') {
         const handler = this.messageHandlers.get(type);
         if (handler) {
           handler(message);
         }
-        return;
-      }
-
-      // Log keepalive responses
-      if (type === 'keepalive_ok') {
         return;
       }
 
@@ -206,6 +212,10 @@ export class AppWebSocket {
 
     try {
       this.ws.send(JSON.stringify(message));
+      // Track on radar — triangle for chat/command, square for keepalive, category 'ws'
+      const msgType = message?.type;
+      const isKeepalive = msgType === 'keepalive';
+      addTarget(isKeepalive ? 'square' : 'triangle', 'ws');
       return true;
     } catch (error) {
       log(Subsystems.WEBSOCKET, Status.DEBUG, `[WS] Failed to send: ${error.message}`);

@@ -10,7 +10,7 @@
   </div>
 
   <!-- Splitter between panels -->
-  <div class="lithium-splitter" id="version-splitter"></div>
+  <div class="lithium-splitter" data-splitter="left" id="version-splitter"></div>
 
   <!-- Right Panel: Markdown Preview -->
   <div data-panel="right" id="version-right-panel">
@@ -18,8 +18,8 @@
     <div class="tab-header">
       <div class="subpanel-header-group" style="flex:1;min-width:0;">
         <!-- Collapse button -->
-        <button type="button" class="subpanel-header-btn subpanel-header-close collapse-btn" id="version-collapse-btn" title="Toggle Version List">
-          <fa fa-angles-left id="version-collapse-icon"></fa>
+        <button type="button" class="subpanel-header-btn subpanel-header-close collapse-btn lithium-collapse-btn" id="version-collapse-btn" data-collapse-target="left" title="Toggle Version List">
+          <fa fa-angles-left id="version-collapse-icon" class="lithium-collapse-icon"></fa>
         </button>
         <!-- Title -->
         <span class="subpanel-header-title">Version Summary</span>

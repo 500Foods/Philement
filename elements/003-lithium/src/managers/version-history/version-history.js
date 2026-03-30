@@ -16,6 +16,7 @@
 import { LithiumTable } from '../../core/lithium-table-main.js';
 import { LithiumSplitter } from '../../core/lithium-splitter.js';
 import { PanelStateManager } from '../../core/panel-state-manager.js';
+import { togglePanelCollapse, restorePanelState } from '../../core/panel-collapse.js';
 import '../../styles/vendor-tabulator.css';
 import { authQuery } from '../../shared/conduit.js';
 import { log, Subsystems, Status } from '../../core/log.js';
@@ -190,6 +191,13 @@ export default class VersionHistoryManager {
     const panel = this.elements.leftPanel;
     if (!panel) return;
 
+    // mode === null means LithiumTable has no saved width mode.
+    // Apply the PanelStateManager pixel width as fallback.
+    if (mode === null) {
+      panel.style.width = `${this.leftPanelWidth}px`;
+      return;
+    }
+
     // Match Query Manager width setpoints
     const widths = { narrow: 160, compact: 314, normal: 468, wide: 622 };
 
@@ -197,10 +205,16 @@ export default class VersionHistoryManager {
 
     if (mode === 'auto') {
       panel.style.width = '';
+      const currentWidth = panel.offsetWidth;
+      this.leftPanelWidth = currentWidth;
+      this.leftPanelState.saveWidth(currentWidth);
       return;
     }
 
-    panel.style.width = `${widths[mode] || 314}px`;
+    // Named mode: set the panel width but do NOT overwrite this.leftPanelWidth
+    // (which holds the pixel width for collapse/expand).
+    const widthPx = widths[mode] || 314;
+    panel.style.width = `${widthPx}px`;
     log(Subsystems.MANAGER, Status.INFO, `[VersionHistory] Table width set to: ${mode}`);
   }
 
@@ -486,6 +500,7 @@ export default class VersionHistoryManager {
       leftPanel: this.elements.leftPanel,
       minWidth: 157,
       maxWidth: 1000,
+      tables: this.versionsTable,
       onResize: (width) => {
         this.leftPanelWidth = width;
       },
@@ -497,33 +512,35 @@ export default class VersionHistoryManager {
   }
 
   toggleLeftPanel() {
-    this.isLeftPanelCollapsed = !this.isLeftPanelCollapsed;
-    this.splitter?.setCollapsed(this.isLeftPanelCollapsed);
-
-    // Toggle rotation class on collapse button
-    this.elements.collapseBtn?.classList.toggle('collapsed', this.isLeftPanelCollapsed);
+    this.isLeftPanelCollapsed = togglePanelCollapse({
+      panel: this.elements.leftPanel,
+      splitter: this.splitter,
+      collapseBtn: this.elements.collapseBtn,
+      panelWidth: this.leftPanelWidth,
+      isCollapsed: this.isLeftPanelCollapsed,
+      onAfterToggle: () => this.versionsTable?.table?.redraw?.(),
+    });
 
     // Save collapsed state
     this.leftPanelState.saveCollapsed(this.isLeftPanelCollapsed);
-
-    if (!this.isLeftPanelCollapsed) {
-      this.elements.leftPanel.style.width = `${this.leftPanelWidth}px`;
-    }
-
-    setTimeout(() => {
-      this.versionsTable?.table?.redraw?.();
-    }, 350);
   }
 
   restorePanelState() {
-    // Restore left panel
-    this.elements.collapseBtn?.classList.toggle('collapsed', this.isLeftPanelCollapsed);
-    this.splitter?.setCollapsed(this.isLeftPanelCollapsed);
+    // Re-read collapsed state from localStorage (handles edge cases)
+    this.isLeftPanelCollapsed = this.leftPanelState.loadCollapsed(this.isLeftPanelCollapsed);
 
-    // Apply saved width to panel (will be used when expanding)
-    if (this.elements.leftPanel && !this.isLeftPanelCollapsed) {
-      this.elements.leftPanel.style.width = `${this.leftPanelWidth}px`;
-    }
+    // Restore collapsed state using shared utility
+    restorePanelState({
+      panel: this.elements.leftPanel,
+      splitter: this.splitter,
+      collapseBtn: this.elements.collapseBtn,
+      isCollapsed: this.isLeftPanelCollapsed,
+    });
+
+    // Panel width is handled by LithiumTable's setupPersistence():
+    // - If a width mode was saved, it calls onSetTableWidth(mode)
+    // - If no mode was saved, it calls onSetTableWidth(null), and setTableWidth
+    //   applies the PanelStateManager pixel width as fallback
   }
 
   // ── Cleanup ────────────────────────────────────────────────────────────────
