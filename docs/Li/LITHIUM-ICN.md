@@ -337,25 +337,47 @@ console.log('Icon set:', config.set);
 
 ## Icon Rotation Pattern
 
-Because the three-stage pipeline replaces DOM elements, any cached reference to a `<fa>` or `<i>` tag becomes **stale** once Font Awesome finishes. This means you **cannot** cache an icon element during `render()` or `init()` and then manipulate it later.
+Because the three-stage pipeline replaces DOM elements, any cached reference to a `<fa>` or `<i>` tag becomes **stale** once Font Awesome finishes. Lithium provides two approaches for handling icon rotation:
 
-### The Problem
+### Approach 1: CSS-Based Rotation (Recommended)
 
-```javascript
-// ❌ BAD — element reference goes stale after FA replaces <i> → <svg>
-this.elements.myIcon = container.querySelector('#my-icon');
+For collapse buttons and panel toggles, use CSS classes to control rotation. This approach is used by the shared `panel-collapse.js` utility:
 
-// Later, user clicks a button...
-this.elements.myIcon.style.transform = 'rotate(180deg)';
-// Nothing happens — the element is no longer in the DOM!
+```html
+<button class="lithium-collapse-btn" id="my-collapse-btn" data-collapse-target="left">
+  <fa fa-angles-left id="my-collapse-icon" class="lithium-collapse-icon"></fa>
+</button>
 ```
 
-### The Solution: Fresh DOM Query
+```javascript
+// Toggle rotation via CSS class
+collapseBtn.classList.toggle('collapsed', isCollapsed);
+```
 
-Always query the DOM at the moment you need the icon element. This is the pattern used by the sidebar collapse arrow (`main.js`) and the queries collapse button (`queries.js`):
+```css
+/* CSS handles the animation using --transition-duration */
+.lithium-collapse-icon,
+.lithium-collapse-btn > i,
+.lithium-collapse-btn > svg {
+  transition: transform var(--transition-duration, 350ms) ease;
+  transform: rotate(0deg);
+}
+
+.lithium-collapse-btn.collapsed .lithium-collapse-icon,
+.lithium-collapse-btn.collapsed > i,
+.lithium-collapse-btn.collapsed > svg {
+  transform: rotate(180deg);
+}
+```
+
+> **Why this works:** The CSS targets both `<i>` and `<svg>` elements, so it works regardless of which stage the Font Awesome pipeline has reached. The `.collapsed` class on the button triggers the rotation via descendant selectors.
+
+### Approach 2: JavaScript DOM Query (For Custom Animations)
+
+For cases where you need programmatic control (e.g., accumulating rotation angles), query the DOM at the moment you need the icon element:
 
 ```javascript
-// ✅ GOOD — fresh query each time, works regardless of FA stage
+// ✅ Fresh query each time, works regardless of FA stage
 _getMyIconEl() {
   return document.querySelector('#my-icon') ||
          document.querySelector('#my-button')?.firstElementChild;
@@ -371,15 +393,15 @@ toggleSomething() {
 }
 ```
 
-### CSS Setup
+### CSS Setup for Custom Animations
 
-For smooth rotation, add a CSS transition targeting the icon by ID **and** by possible tag types (to cover whichever stage the pipeline has reached):
+For smooth rotation with custom JS logic, add a CSS transition targeting the icon by ID **and** by possible tag types:
 
 ```css
 #my-icon,
 #my-button > i,
 #my-button > svg {
-  transition: transform 0.3s ease;
+  transition: transform var(--transition-duration, 350ms) ease;
 }
 ```
 
@@ -387,18 +409,17 @@ For smooth rotation, add a CSS transition targeting the icon by ID **and** by po
 
 | Location | Element | Pattern |
 |----------|---------|---------|
+| `panel-collapse.js` | Panel collapse buttons | CSS class `.collapsed` toggles rotation (all managers) |
 | `main.js` | Sidebar collapse arrow | `_getArrowEl()` — queries `#collapse-icon` or button's `firstElementChild` |
-| `queries.js` | Table collapse arrow | `_getCollapseIconEl()` — queries `#queries-collapse-icon` or button's `firstElementChild` |
 | `toast.css` | Expand chevron rotation | CSS targets both `i` and `svg` for smooth 180° rotation |
 
-> **Note:** For simple CSS transitions/animations (like the toast expand chevron), you can target both `i` and `svg` elements directly in CSS instead of using JavaScript DOM queries:
->
-> ```css
-> .toast-header-expand i,
-> .toast-header-expand svg {
->   transition: transform 0.2s ease;
-> }
-> ```
+### Panel Collapse Buttons
+
+All LithiumTable managers use the shared `panel-collapse.js` utility for panel collapse/expand with animated icons. See [LITHIUM-TAB.md](LITHIUM-TAB.md#collapsible-panels-with-animated-icons) for the complete implementation pattern including:
+
+- HTML structure with `data-collapse-target` attributes
+- CSS classes (`lithium-collapse-btn`, `lithium-collapse-icon`)
+- JavaScript integration using `togglePanelCollapse()` and `restorePanelState()`
 
 ---
 

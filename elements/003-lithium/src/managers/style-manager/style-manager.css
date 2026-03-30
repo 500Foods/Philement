@@ -42,8 +42,8 @@
 .style-manager-container [data-panel="left"]#style-left-panel {
   display: flex;
   flex-direction: column;
-  width: 280px;
-  min-width: 150px;
+  width: var(--panel-left-w, 280px);
+  min-width: 157px;
   background-color: var(--bg-secondary);
   transition: width var(--transition-delay) ease, min-width var(--transition-delay) ease;
   flex-shrink: 0;
@@ -54,8 +54,8 @@
 .style-manager-container [data-panel="left"]#style-middle-panel {
   display: flex;
   flex-direction: column;
-  width: 350px;
-  min-width: 200px;
+  width: var(--panel-middle-w, 350px);
+  min-width: 157px;
   background-color: var(--bg-primary);
   transition: width var(--transition-delay) ease, min-width var(--transition-delay) ease;
   flex-shrink: 0;
@@ -73,23 +73,6 @@
 .style-collapse-middle-btn {
   flex: 0 0 auto;
   padding: var(--space-1);
-}
-
-/* Collapse icon rotation */
-.style-collapse-left-btn > i,
-.style-collapse-left-btn > svg,
-.style-collapse-middle-btn > i,
-.style-collapse-middle-btn > svg {
-  transition: transform var(--transition-delay) ease;
-  transform: rotate(0deg);
-}
-
-/* Collapse icon rotation when panels are collapsed */
-.style-collapse-left-btn.collapsed > i,
-.style-collapse-left-btn.collapsed > svg,
-.style-collapse-middle-btn.collapsed > i,
-.style-collapse-middle-btn.collapsed > svg {
-  transform: rotate(180deg);
 }
 
 /* ── Table Containers (additional styling beyond lithium-table.css) ────── */
@@ -889,7 +872,7 @@
 @media (max-width: 1024px) {
   .style-manager-container [data-panel="left"]#style-left-panel {
     width: 200px;
-    min-width: 150px;
+    min-width: 157px;
   }
 }
 

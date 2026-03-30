@@ -237,10 +237,21 @@
   width: 32px;
   height: 32px;
   margin-left: auto;
-  margin-right: -2px;
-  color: #ef4444; /* default: disconnected red */
+  margin-right: -3px;
+  color: var(--accent-focus);
   cursor: default;
   flex-shrink: 0;
+}
+
+/* Radar state colors — rim + center hub use currentColor */
+.sidebar-header-gradient .radar-icon.radar-connected {
+  color: #86efac;
+}
+.sidebar-header-gradient .radar-icon.radar-flaky {
+  color: #fde68a;
+}
+.sidebar-header-gradient .radar-icon.radar-disconnected {
+  color: #fca5a5;
 }
 
 .sidebar-logo {

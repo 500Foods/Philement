@@ -20,7 +20,6 @@
  *   Optionally includes database: "DatabaseName" for public endpoints.
  */
 
-import { log, Subsystems, Status } from '../core/log.js';
 import { addTarget, removeTarget } from './radar-controller.js';
 
 // ─── Pure Functions (testable, no side-effects) ──────────────────────────────
@@ -182,7 +181,7 @@ export function extractError(response) {
  *   const rows = await authQuery(app.api, 32, { STRING: { SEARCH: "USERS" } });
  */
 export async function authQuery(api, queryRef, params = {}) {
-  const targetId = addTarget('triangle');
+  const targetId = addTarget('triangle', 'rest');
   const payload = buildQueryPayload(queryRef, params);
 
   let response;
@@ -223,7 +222,7 @@ export async function authQuery(api, queryRef, params = {}) {
  *   const queryList = results.get(25);  // rows array
  */
 export async function authQueries(api, queries) {
-  const targetId = addTarget('square');
+  const targetId = addTarget('square', 'rest');
   const payload = buildBatchPayload(queries);
   try {
     const response = await api.post('conduit/auth_queries', payload);
@@ -243,10 +242,15 @@ export async function authQueries(api, queries) {
  * @returns {Promise<Array>} The rows from the query result
  */
 export async function query(api, queryRef, params = {}, database) {
+  const targetId = addTarget('triangle', 'rest');
   const payload = buildQueryPayload(queryRef, params);
   if (database) payload.database = database;
-  const response = await api.post('conduit/query', payload);
-  return extractRows(response);
+  try {
+    const response = await api.post('conduit/query', payload);
+    return extractRows(response);
+  } finally {
+    if (targetId) removeTarget(targetId);
+  }
 }
 
 /**
@@ -258,9 +262,14 @@ export async function query(api, queryRef, params = {}, database) {
  * @returns {Promise<Map<number, Array>>} Map of queryRef → rows
  */
 export async function queries(api, queryList, database) {
+  const targetId = addTarget('square', 'rest');
   const payload = buildBatchPayload(queryList, database);
-  const response = await api.post('conduit/queries', payload);
-  return extractBatchRows(response);
+  try {
+    const response = await api.post('conduit/queries', payload);
+    return extractBatchRows(response);
+  } finally {
+    if (targetId) removeTarget(targetId);
+  }
 }
 
 

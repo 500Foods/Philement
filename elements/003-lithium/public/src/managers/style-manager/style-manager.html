@@ -10,7 +10,7 @@
   </div>
 
   <!-- First Splitter between left and middle panels -->
-  <div class="lithium-splitter" id="style-splitter-left"></div>
+  <div class="lithium-splitter" data-splitter="left" id="style-splitter-left"></div>
 
   <!-- Middle Panel: Sections Table -->
   <div data-panel="left" id="style-middle-panel">
@@ -23,7 +23,7 @@
   </div>
 
   <!-- Second Splitter between middle and right panels -->
-  <div class="lithium-splitter" id="style-splitter-right"></div>
+  <div class="lithium-splitter" data-splitter="right" id="style-splitter-right"></div>
 
   <!-- Right Panel: Editor Area -->
   <div data-panel="right" id="style-right-panel">
@@ -31,11 +31,11 @@
     <div class="style-tabs-header">
       <div class="subpanel-header-group" style="flex:1;min-width:0;">
         <!-- Collapse/Expand buttons for tables -->
-        <button type="button" class="subpanel-header-btn subpanel-header-close style-collapse-left-btn" id="style-collapse-left-btn" title="Toggle Left Panel">
-          <fa fa-angles-left id="style-collapse-left-icon"></fa>
+        <button type="button" class="subpanel-header-btn subpanel-header-close style-collapse-left-btn lithium-collapse-btn" id="style-collapse-left-btn" data-collapse-target="left" title="Toggle Left Panel">
+          <fa fa-angles-left id="style-collapse-left-icon" class="lithium-collapse-icon"></fa>
         </button>
-        <button type="button" class="subpanel-header-btn subpanel-header-close style-collapse-middle-btn" id="style-collapse-middle-btn" title="Toggle Middle Panel">
-          <fa fa-angles-left id="style-collapse-middle-icon"></fa>
+        <button type="button" class="subpanel-header-btn subpanel-header-close style-collapse-middle-btn lithium-collapse-btn" id="style-collapse-middle-btn" data-collapse-target="middle" title="Toggle Middle Panel">
+          <fa fa-angles-left id="style-collapse-middle-icon" class="lithium-collapse-icon"></fa>
         </button>
         <!-- Section/JSON Mode Toggle -->
         <div class="style-mode-toggle">

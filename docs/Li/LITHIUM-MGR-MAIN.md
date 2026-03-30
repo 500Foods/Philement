@@ -23,7 +23,7 @@ The Main Manager (`src/managers/main/main.js`) handles the main application layo
 ┌─────────────────────────────────────────────────────────────┐
 │                        Sidebar (resizable)                  │
 │  ┌─────────────────────────────────────────────────────┐  │
-│  │ Header (gradient, logo)                              │  │
+│  │ Header (gradient, logo, radar status icon)           │  │
 │  ├─────────────────────────────────────────────────────┤  │
 │  │ Menu Groups (from QueryRef 046, collapsible)        │  │
 │  │  ▼ Administration                                   │  │
@@ -178,6 +178,7 @@ Badges are hidden when the sidebar is collapsed.
 - **Collapsible**: Two-stage animation (icons stack horizontally, then vertically)
 - **Mobile responsive**: Overlay mode on screens ≤ 768px
 - **Manager menu**: Built from `getPermittedManagers()` with Punchcard gating
+- **Radar status icon**: Animated SVG in header gradient tracking WS health + REST API requests (see [LITHIUM-WSS.md](LITHIUM-WSS.md#status-indicator))
 
 ### Manager Slots
 

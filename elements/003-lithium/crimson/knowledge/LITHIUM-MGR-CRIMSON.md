@@ -471,7 +471,7 @@ const payload = {
 
 ### Context Packet
 
-The context packet is gathered automatically from the app state and JWT claims:
+The context packet is gathered automatically from the app state and JWT claims. The `permissions.managers` list is populated from the **actual managers loaded in the UI menu** — not from the JWT. This ensures Crimson only knows about managers the user can truly access, accounting for both `lithium.json` config filters and any app-level permission checks that may restrict access beyond what the JWT grants.
 
 ```javascript
 // From crimson-ws.js: gatherContext()
@@ -484,17 +484,21 @@ The context packet is gathered automatically from the app state and JWT claims:
     preferences: {
       theme: localStorage.getItem('lithium_theme'),
       language: navigator.language
+    },
+    login: {
+      count: claims.login_count,
+      age: null
     }
   },
   session: {
     sessionId: app.sessionId,
     loginTime: claims.iat * 1000,
-    currentManager: app.currentManager?.id,
+    currentManager: <manager name or null>,
     recentActivity: []
   },
   permissions: {
-    managers: claims.managers || [],
-    features: claims.features || []
+    managers: <array of manager names from UI menu>,
+    features: {}                          // Not implemented yet
   },
   currentView: {
     managerId: app.currentManager?.id,
@@ -505,6 +509,44 @@ The context packet is gathered automatically from the app state and JWT claims:
   lithiumVersion: app.version,
   buildDate: app.build
 }
+```
+
+#### How `permissions.managers` is populated
+
+During menu load, `MainManager.loadMenuData()` builds a flat array of manager names and stores it on `this.accessibleManagerNames`. This list is derived from the final filtered menu data — only managers that pass `lithium.json` config, user permissions, and visibility checks (index >= 0) appear in it.
+
+When `gatherContext()` runs in `src/shared/crimson-ws.js`, it reads the list from the app's MainManager instance (`app._getMainManager()` or `app.mainManagerInstance`) — no JWT parsing, no registry lookups, no localStorage reads at send time.
+
+```javascript
+// In MainManager.loadMenuData(), after building this.managerIcons:
+this.accessibleManagerNames = Object.values(this.managerIcons)
+  .map(info => info?.name)
+  .filter(Boolean);
+
+// In gatherContext():
+const mainManager = app?._getMainManager?.() || app?.mainManagerInstance || null;
+const accessibleManagerNames = mainManager?.accessibleManagerNames || [];
+```
+
+#### Why not the JWT?
+
+The JWT's `punchcard.managers` contains the raw list of manager IDs the user *could* access, but the app may further restrict this:
+
+- `lithium.json` config can disable specific managers for the deployment
+- Index values of `-1` or `-2` hide managers (e.g., Login, Main Menu)
+- The app may apply additional runtime checks
+
+Since the sidebar menu already reflects all these filters, the pre-built list derived from it is the authoritative source for "what can this user actually access right now".
+
+#### Current manager resolution
+
+`app.currentManager` is set by the app when a manager is loaded into a slot. It contains `{ id, name, instance }` where `name` is the human-readable manager name from the menu definition. `session.currentManager` and `currentView.managerName` both use `app.currentManager?.name` directly.
+
+```javascript
+// In console:
+window.lithiumApp.currentManager        // { id: 29, name: "Style Manager", instance: ... }
+window.lithiumApp.currentManager.name   // "Style Manager"
+window.lithiumLogs.sessionId            // "mncah74t-qj2jsw1e-i15mpyl2"
 ```
 
 ### Streaming Response Format

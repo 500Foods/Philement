@@ -41,18 +41,11 @@
 .queries-left-panel {
   display: flex;
   flex-direction: column;
-  width: 313px;
+  width: var(--panel-left-w, 280px);
   min-width: 157px;
   background-color: var(--bg-secondary);
   transition: width var(--transition-delay) ease, min-width var(--transition-delay) ease;
   flex-shrink: 0;
-}
-
-.queries-left-panel.collapsed {
-  width: 0 !important;
-  min-width: 0;
-  border-right: none;
-  overflow: hidden;
 }
 
 /* ── Table Containers (additional styling beyond lithium-table.css) ────── */
@@ -62,26 +55,6 @@
   overflow: hidden;
   margin: var(--space-2) var(--space-3);
   min-height: 0;
-}
-
-/* ── Collapse Button ───────────────────────────────────────────────────── */
-
-.queries-collapse-btn {
-  flex: 0 0 auto;
-  padding: var(--space-1);
-}
-
-/* Collapse icon rotation */
-#queries-collapse-icon,
-#queries-collapse-btn > i,
-#queries-collapse-btn > svg {
-  transition: transform var(--transition-delay) ease;
-  transform: rotate(0deg);
-}
-
-.queries-collapse-btn.collapsed > i,
-.queries-collapse-btn.collapsed > svg {
-  transform: rotate(180deg);
 }
 
 /* ── Right Panel (Query Details) ────────────────────────────────────────── */
@@ -468,10 +441,7 @@
   .queries-tabs-header .queries-tab-btn span {
     display: none;
   }
-  
-  .queries-tabs-header .queries-tab-btn {
-    padding: var(--space-2);
-  }
+ 
 }
 
 } /* end @layer managers */
