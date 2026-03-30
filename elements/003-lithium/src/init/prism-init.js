@@ -88,7 +88,7 @@ class PrismInit {
       // Store reference
       this.highlightedElements.set(elementId, element);
 
-      console.log(`Prism.js highlighting applied to ${elementId} (${language})`);
+      // console.log(`Prism.js highlighting applied to ${elementId} (${language})`);
       return element;
     } catch (error) {
       console.error(`Failed to highlight element ${elementId}:`, error);
@@ -357,7 +357,7 @@ class PrismInit {
    */
   configurePlugins(plugins) {
     this.defaultOptions.plugins = plugins;
-    console.log('Prism plugins configured:', plugins);
+    // console.log('Prism plugins configured:', plugins);
   }
 
   /**

@@ -88,7 +88,7 @@ class HighlightInit {
       // Store reference
       this.highlightedElements.set(elementId, element);
 
-      console.log(`Highlight.js highlighting applied to ${elementId} (${language})`);
+      // console.log(`Highlight.js highlighting applied to ${elementId} (${language})`);
       return element;
     } catch (error) {
       console.error(`Failed to highlight element ${elementId}:`, error);
@@ -373,7 +373,7 @@ class HighlightInit {
    */
   configurePlugins(plugins) {
     this.defaultOptions.plugins = plugins;
-    console.log('Highlight.js plugins configured:', plugins);
+    // console.log('Highlight.js plugins configured:', plugins);
   }
 
   /**

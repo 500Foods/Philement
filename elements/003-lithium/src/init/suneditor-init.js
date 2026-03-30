@@ -39,19 +39,19 @@ class SunEditorInit {
       },
       callbacks: {
         onChange: (contents, core) => {
-          console.log('SunEditor content changed:', contents);
+          // console.log('SunEditor content changed:', contents);
         },
         onBlur: (contents, core) => {
-          console.log('SunEditor blurred:', contents);
+          // console.log('SunEditor blurred:', contents);
         },
         onFocus: (contents, core) => {
-          console.log('SunEditor focused');
+          // console.log('SunEditor focused');
         },
         onImageUpload: (targetImgElement, index, state, imageInfo, remainingFilesCount) => {
-          console.log('Image upload:', imageInfo);
+          // console.log('Image upload:', imageInfo);
         },
         onImageUploadError: (errorMessage, result, core) => {
-          console.error('Image upload error:', errorMessage);
+          // console.error('Image upload error:', errorMessage);
         }
       }
     };
@@ -85,7 +85,7 @@ class SunEditorInit {
       // Store reference
       this.editors.set(elementId, editor);
 
-      console.log(`SunEditor initialized on ${elementId}`);
+      // console.log(`SunEditor initialized on ${elementId}`);
       return editor;
     } catch (error) {
       console.error(`Failed to initialize SunEditor on ${elementId}:`, error);
@@ -344,7 +344,7 @@ class SunEditorInit {
           editor.setOption('font', [...fontList, ...fontAwesomeFontList]);
         }
         
-        console.log(`FontAwesome ${enable ? 'enabled' : 'disabled'} for editor ${elementId}`);
+        // console.log(`FontAwesome ${enable ? 'enabled' : 'disabled'} for editor ${elementId}`);
         return true;
       } catch (error) {
         console.error(`Failed to configure FontAwesome for editor ${elementId}:`, error);
@@ -364,7 +364,7 @@ class SunEditorInit {
     if (editor) {
       // SunEditor plugins are typically configured during initialization
       // This method can be used to update plugin configurations
-      console.log(`Configuring plugins for editor ${elementId}:`, plugins);
+      // console.log(`Configuring plugins for editor ${elementId}:`, plugins);
     }
   }
 

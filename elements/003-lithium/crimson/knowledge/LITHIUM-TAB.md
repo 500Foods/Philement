@@ -636,7 +636,7 @@ await this.parentTable.loadData();
 
 ## Collapsible Panels with Animated Icons
 
-Managers using LithiumTable often need collapsible panels (left panel, middle panel) with collapse/expand buttons in the toolbar. The shared infrastructure in `lithium-table.css` and `LithiumSplitter` handles most of this automatically.
+Managers using LithiumTable need collapsible panels (left panel, middle panel) with collapse/expand buttons in the toolbar. The shared `panel-collapse.js` utility and CSS in `lithium-table.css` handle all animation logic consistently.
 
 ### Implementation Pattern
 
@@ -644,20 +644,31 @@ When adding collapsible panels to a manager, follow this pattern:
 
 #### 1. HTML Structure
 
-Add the `lithium-collapse-btn` class to the button and `lithium-collapse-icon` to the `<fa>` icon element:
+Add the `lithium-collapse-btn` class, `lithium-collapse-icon` to the `<fa>` icon, and `data-collapse-target` to identify which panel this button controls:
 
 ```html
+<!-- Single panel (left) -->
 <button type="button" class="subpanel-header-btn subpanel-header-close my-collapse-btn lithium-collapse-btn"
-        id="mymanager-collapse-left-btn" title="Toggle Left Panel">
+        id="mymanager-collapse-left-btn" data-collapse-target="left" title="Toggle Left Panel">
   <fa fa-angles-left id="mymanager-collapse-left-icon" class="lithium-collapse-icon"></fa>
+</button>
+
+<!-- Dual panels (left + middle) — each button needs its own target -->
+<button type="button" class="subpanel-header-btn subpanel-header-close my-collapse-left-btn lithium-collapse-btn"
+        id="mymanager-collapse-left-btn" data-collapse-target="left" title="Toggle Left Panel">
+  <fa fa-angles-left id="mymanager-collapse-left-icon" class="lithium-collapse-icon"></fa>
+</button>
+<button type="button" class="subpanel-header-btn subpanel-header-close my-collapse-middle-btn lithium-collapse-btn"
+        id="mymanager-collapse-middle-btn" data-collapse-target="middle" title="Toggle Middle Panel">
+  <fa fa-angles-left id="mymanager-collapse-middle-icon" class="lithium-collapse-icon"></fa>
 </button>
 ```
 
-That's it for CSS — `lithium-table.css` (imported by `LithiumTable`) provides the rotation animation automatically. No manager-specific CSS needed.
+> **Why `data-collapse-target`?** In managers with multiple panels (Style, Lookups), the CSS uses this attribute to rotate only the correct icon when a specific panel collapses. Without it, all icons would rotate together.
 
 #### 2. CSS — None Needed
 
-The shared classes in `lithium-table.css` handle everything:
+The shared classes in `lithium-table.css` handle everything using `--transition-duration`:
 
 ```css
 /* Provided by lithium-table.css — managers do NOT need to duplicate this */
@@ -669,7 +680,7 @@ The shared classes in `lithium-table.css` handle everything:
 .lithium-collapse-icon,
 .lithium-collapse-btn > i,
 .lithium-collapse-btn > svg {
-  transition: transform var(--transition-delay, 350ms) ease;
+  transition: transform var(--transition-duration, 350ms) ease;
   transform: rotate(0deg);
 }
 
@@ -680,42 +691,59 @@ The shared classes in `lithium-table.css` handle everything:
 }
 ```
 
-> **Why cover all stages?** `processIcons()` converts `<fa>` → `<i>` and then Font Awesome's SVG+JS replaces `<i>` → `<svg>`. CSS targets `#id`, `> i`, and `> svg` to work at any pipeline stage. See [LITHIUM-ICN.md](LITHIUM-ICN.md#icon-rotation-pattern).
+Panel width transitions are handled by `manager-panels.css`:
 
-#### 3. JavaScript Toggle Method
-
-```javascript
-toggleLeftPanel() {
-  this.isLeftPanelCollapsed = !this.isLeftPanelCollapsed;
-  this.leftSplitter?.setCollapsed(this.isLeftPanelCollapsed);
-
-  // Toggle rotation class on the collapse button
-  this.elements.collapseLeftBtn?.classList.toggle('collapsed', this.isLeftPanelCollapsed);
-
-  // Save collapsed state
-  this.leftPanelState.saveCollapsed(this.isLeftPanelCollapsed);
-
-  if (!this.isLeftPanelCollapsed) {
-    this.elements.leftPanel.style.width = `${this.leftPanelWidth}px`;
-  }
-
-  // Redraw tables after animation completes
-  setTimeout(() => {
-    this.leftTable?.table?.redraw?.();
-    this.rightTable?.table?.redraw?.();
-  }, 350);
+```css
+/* Panel width animation uses --transition-duration */
+[data-panel="left"] {
+  transition: width var(--transition-duration, 350ms) ease,
+              min-width var(--transition-duration, 350ms) ease;
 }
 ```
 
-#### 4. Restore State (in `init()`)
+> **Why cover all stages?** `processIcons()` converts `<fa>` → `<i>` and then Font Awesome's SVG+JS replaces `<i>` → `<svg>`. CSS targets `> i`, and `> svg` to work at any pipeline stage. See [LITHIUM-ICN.md](LITHIUM-ICN.md#icon-rotation-pattern).
+
+#### 3. JavaScript Toggle Method (Using Shared Utility)
+
+Use the `togglePanelCollapse()` function from `panel-collapse.js`:
 
 ```javascript
+import { togglePanelCollapse, restorePanelState } from '../../core/panel-collapse.js';
+
+toggleLeftPanel() {
+  this.isLeftPanelCollapsed = togglePanelCollapse({
+    panel: this.elements.leftPanel,
+    splitter: this.leftSplitter,
+    collapseBtn: this.elements.collapseLeftBtn,
+    panelWidth: this.leftPanelWidth,
+    isCollapsed: this.isLeftPanelCollapsed,
+    onAfterToggle: () => {
+      this.leftTable?.table?.redraw?.();
+      this.rightTable?.table?.redraw?.();
+    },
+  });
+
+  // Save collapsed state to persistence
+  this.leftPanelState.saveCollapsed(this.isLeftPanelCollapsed);
+}
+```
+
+#### 4. Restore State (Using Shared Utility)
+
+```javascript
+import { togglePanelCollapse, restorePanelState } from '../../core/panel-collapse.js';
+
 restorePanelState() {
-  // Re-read collapsed state from localStorage (handles edge cases)
+  // Re-read collapsed state from localStorage
   this.isLeftPanelCollapsed = this.leftPanelState.loadCollapsed(this.isLeftPanelCollapsed);
 
-  this.elements.collapseLeftBtn?.classList.toggle('collapsed', this.isLeftPanelCollapsed);
-  this.leftSplitter?.setCollapsed(this.isLeftPanelCollapsed);
+  // Restore collapsed state using shared utility
+  restorePanelState({
+    panel: this.elements.leftPanel,
+    splitter: this.leftSplitter,
+    collapseBtn: this.elements.collapseLeftBtn,
+    isCollapsed: this.isLeftPanelCollapsed,
+  });
 
   // Panel width is handled by LithiumTable's setupPersistence():
   // it calls onSetTableWidth(mode) or onSetTableWidth(null)
@@ -734,6 +762,51 @@ restorePanelState() {
 >   this.restorePanelState();   // 3. Restore collapsed state last
 > }
 > ```
+
+### Shared Utility API
+
+The `panel-collapse.js` module exports two functions:
+
+| Function | Description |
+|----------|-------------|
+| `togglePanelCollapse(options)` | Toggles panel collapse/expand with smooth animation |
+| `restorePanelState(options)` | Restores persisted collapsed state on init |
+
+**`togglePanelCollapse()` Options:**
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `panel` | HTMLElement | The panel element to collapse/expand |
+| `splitter` | LithiumSplitter | LithiumSplitter instance for the panel |
+| `collapseBtn` | HTMLElement | The collapse button element |
+| `panelWidth` | number | Target width when expanding (pixels) |
+| `isCollapsed` | boolean | Current collapsed state (will be toggled) |
+| `onAfterToggle` | Function | Optional callback after animation completes |
+
+**Returns:** `boolean` — The new collapsed state
+
+**`restorePanelState()` Options:**
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `panel` | HTMLElement | The panel element |
+| `splitter` | LithiumSplitter | LithiumSplitter instance |
+| `collapseBtn` | HTMLElement | The collapse button element |
+| `isCollapsed` | boolean | The persisted collapsed state |
+
+### Transition Timing
+
+All panel collapse/expand animations use the `--transition-duration` CSS variable defined in `base.css`:
+
+```css
+:root {
+  --transition-duration: 350ms; /* Default, configurable per theme */
+}
+```
+
+This ensures consistent animation timing across:
+- Panel width transitions (expand/collapse)
+- Collapse button icon rotation
 
 ### Width Persistence Across Collapse/Expand
 
@@ -812,11 +885,206 @@ The `PanelStateManager` persists the actual pixel width (from either the Width p
 
 ### Current Implementations
 
-This pattern is used in:
-- **Style Manager** (`style-manager.js`) — Left and middle panel collapse buttons, two-panel `setTableWidth`
-- **Lookups Manager** (`lookups.js`) — Left and middle panel collapse buttons, two-panel `setTableWidth`  
-- **Version Manager** (`version-history.js`) — Left panel collapse button, single `setTableWidth`
-- **Query Manager** (`queries.js`) — Left panel collapse button, single `setTableWidth`
+All managers use the shared `panel-collapse.js` utility for consistent behavior:
+
+| Manager | File | Panels | Collapse Buttons |
+|---------|------|--------|------------------|
+| **Version Manager** | `version-history.js` | Left | `data-collapse-target="left"` |
+| **Query Manager** | `queries.js` | Left | `data-collapse-target="left"` |
+| **Style Manager** | `style-manager.js` | Left + Middle | `data-collapse-target="left"`, `data-collapse-target="middle"` |
+| **Lookups Manager** | `lookups.js` | Left + Middle | `data-collapse-target="left"`, `data-collapse-target="middle"` |
+
+---
+
+## Footer Save/Cancel Buttons
+
+All managers with LithiumTables must include Save/Cancel buttons in the manager footer. These buttons appear in a disabled state when the manager loads and become enabled when a LithiumTable enters edit mode. Even readonly tables require these buttons to be present (they remain disabled).
+
+### Button Layout
+
+The footer layout follows this order (left to right):
+
+```
+[Print] [Email] [Export] [Select] [placeholder flex:1] [Save] [Cancel] [Dummy] [Crimson...] [fixed action icons]
+```
+
+### CSS Classes (Shared)
+
+All Save/Cancel button styles are defined in `manager-ui.css` and are shared across all managers:
+
+| Class | Purpose | Disabled Styling |
+|-------|---------|------------------|
+| `.manager-footer-save-btn` | Save button | `background: var(--accent-disabled); color: var(--text-disabled);` |
+| `.manager-footer-cancel-btn` | Cancel button | `background: var(--accent-disabled); color: var(--text-disabled);` |
+| `.manager-footer-dummy-btn` | Spacer button (60px wide) | `background: var(--accent-primary); border: none; cursor: auto;` |
+
+**Do not duplicate these styles** in manager-specific CSS files — they are inherited from `manager-ui.css`.
+
+### JavaScript Implementation
+
+#### 1. Import the Setup Function
+
+```javascript
+import { setupManagerFooterIcons } from '../../core/manager-ui.js';
+```
+
+#### 2. Add Footer State Properties to Constructor
+
+```javascript
+constructor(app, container) {
+  // ... other properties ...
+  
+  // Footer Save/Cancel state
+  this.footerSaveBtn = null;
+  this.footerCancelBtn = null;
+  this.footerDummyBtn = null;
+  this.activeEditingTable = null;
+}
+```
+
+#### 3. Call `setupFooter()` in `init()`
+
+```javascript
+async init() {
+  await this.render();
+  this.setupEventListeners();
+  await this.initTables();
+  this.setupSplitters();
+  this.setupFooter();  // Add this
+  this.restorePanelState();
+}
+```
+
+#### 4. Implement `setupFooter()` Method
+
+```javascript
+setupFooter() {
+  const slot = this.container.closest('.manager-slot');
+  if (!slot) return;
+
+  const footer = slot.querySelector('.manager-slot-footer');
+  if (!footer) return;
+
+  const group = footer.querySelector('.subpanel-header-group');
+  if (!group) return;
+
+  const placeholder = group.querySelector('.slot-footer-placeholder');
+
+  const footerElements = setupManagerFooterIcons(group, {
+    onPrint: () => this.handleFooterPrint(),
+    onEmail: () => this.handleFooterEmail(),
+    onExport: (e) => this.toggleFooterExportPopup(e),
+    reportOptions: [
+      { value: 'mymanager-view', label: 'My Table View' },
+      { value: 'mymanager-data', label: 'My Table Data' },
+    ],
+    fillerTitle: 'MyManager',
+    anchor: placeholder,
+    showSaveCancel: true,  // IMPORTANT: This enables Save/Cancel buttons
+    onSave: () => this.handleFooterSave(),
+    onCancel: () => this.handleFooterCancel(),
+  });
+
+  this._footerDatasource = footerElements.reportSelect;
+  this.footerSaveBtn = footerElements.saveBtn;
+  this.footerCancelBtn = footerElements.cancelBtn;
+  this.footerDummyBtn = footerElements.dummyBtn;
+
+  // Wire footer Save/Cancel to the active editing table
+  if (this.footerSaveBtn) {
+    this.footerSaveBtn.addEventListener('click', () => {
+      if (this.activeEditingTable?.handleSave) {
+        this.activeEditingTable.handleSave();
+      }
+    });
+  }
+  if (this.footerCancelBtn) {
+    this.footerCancelBtn.addEventListener('click', () => {
+      if (this.activeEditingTable?.handleCancel) {
+        this.activeEditingTable.handleCancel();
+      }
+    });
+  }
+
+  // Show the Save/Cancel buttons (disabled) initially
+  this.updateFooterSaveCancelState(true, false);
+}
+```
+
+#### 5. Implement `updateFooterSaveCancelState()` Method
+
+```javascript
+/**
+ * Show/hide and enable/disable the footer Save/Cancel buttons.
+ * @param {boolean} visible - Whether the buttons should be visible
+ * @param {boolean} enabled - Whether the buttons should be enabled (requires visible=true)
+ */
+updateFooterSaveCancelState(visible, enabled) {
+  if (this.footerSaveBtn) {
+    this.footerSaveBtn.style.display = visible ? '' : 'none';
+    this.footerSaveBtn.disabled = !visible || !enabled;
+  }
+  if (this.footerCancelBtn) {
+    this.footerCancelBtn.style.display = visible ? '' : 'none';
+    this.footerCancelBtn.disabled = !visible || !enabled;
+  }
+  if (this.footerDummyBtn) {
+    this.footerDummyBtn.style.display = visible ? '' : 'none';
+  }
+}
+```
+
+#### 6. Implement `handleTableEditModeChange()` Method
+
+This method is called by each LithiumTable's `onEditModeChange` callback:
+
+```javascript
+/**
+ * Called when any LithiumTable in this manager changes edit mode.
+ * @param {LithiumTable} lithiumTable - The table instance
+ * @param {boolean} isEditing - Whether the table is now in edit mode
+ * @param {Object|null} rowData - The row data being edited (or null)
+ */
+handleTableEditModeChange(lithiumTable, isEditing, rowData) {
+  if (isEditing) {
+    // If another table was already editing, exit its edit mode first
+    if (this.activeEditingTable && this.activeEditingTable !== lithiumTable) {
+      this.activeEditingTable.exitEditMode('cancel');
+    }
+    this.activeEditingTable = lithiumTable;
+    this.updateFooterSaveCancelState(true, true);
+  } else {
+    if (this.activeEditingTable === lithiumTable) {
+      this.activeEditingTable = null;
+    }
+    this.updateFooterSaveCancelState(true, false);
+  }
+}
+```
+
+#### 7. Wire `onEditModeChange` in LithiumTable Constructor
+
+```javascript
+this.myTable = new LithiumTable({
+  container: this.elements.tableContainer,
+  navigatorContainer: this.elements.navigatorContainer,
+  // ... other options ...
+  onEditModeChange: (isEditing, rowData) => this.handleTableEditModeChange(this.myTable, isEditing, rowData),
+});
+```
+
+### Dual Table Behavior
+
+When a manager has two LithiumTables, only one can be in edit mode at a time. The `handleTableEditModeChange()` method handles this by exiting edit mode on the previous table when a different table enters edit mode.
+
+### Current Implementations
+
+| Manager | File | Has Footer Save/Cancel |
+|---------|------|------------------------|
+| **Version Manager** | `version-history.js` | ✅ |
+| **Query Manager** | `queries.js` | ✅ |
+| **Style Manager** | `style-manager.js` | ✅ |
+| **Lookups Manager** | `lookups.js` | ✅ |
 
 ---
 

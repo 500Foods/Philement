@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><title>Code coverage report for managers/version-history/version-history.js</title><meta charset="utf-8"><link rel="stylesheet" href="../../prettify.css"><link rel="stylesheet" href="../../base.css"><link rel="shortcut icon" type="image/x-icon" href="../../favicon.png"><meta name="viewport" content="width=device-width,initial-scale=1"><style type="text/css">.coverage-summary .sorter{background-image:url(../../sort-arrow-sprite.png)}</style></head><body><div class="wrapper"><div class="pad1"><h1><a href="../../index.html">All files</a> / <a href="index.html">managers/version-history</a> version-history.js</h1><div class="clearfix"><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Statements</span> <span class="fraction">0/213</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Branches</span> <span class="fraction">0/105</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Functions</span> <span class="fraction">0/36</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Lines</span> <span class="fraction">0/198</span></div></div><p class="quiet">Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.</p><template id="filterTemplate"><div class="quiet">Filter: <input type="search" id="fileSearch"></div></template></div><div class="status-line low"></div><pre><table class="coverage">
+<!doctype html><html lang="en"><head><title>Code coverage report for managers/version-history/version-history.js</title><meta charset="utf-8"><link rel="stylesheet" href="../../prettify.css"><link rel="stylesheet" href="../../base.css"><link rel="shortcut icon" type="image/x-icon" href="../../favicon.png"><meta name="viewport" content="width=device-width,initial-scale=1"><style type="text/css">.coverage-summary .sorter{background-image:url(../../sort-arrow-sprite.png)}</style></head><body><div class="wrapper"><div class="pad1"><h1><a href="../../index.html">All files</a> / <a href="index.html">managers/version-history</a> version-history.js</h1><div class="clearfix"><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Statements</span> <span class="fraction">0/364</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Branches</span> <span class="fraction">0/188</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Functions</span> <span class="fraction">0/64</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Lines</span> <span class="fraction">0/345</span></div></div><p class="quiet">Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.</p><template id="filterTemplate"><div class="quiet">Filter: <input type="search" id="fileSearch"></div></template></div><div class="status-line low"></div><pre><table class="coverage">
 <tr><td class="line-count quiet"><a name="L1"></a><a href="#L1">1</a>
 <a name="L2"></a><a href="#L2">2</a>
 <a name="L3"></a><a href="#L3">3</a>
@@ -556,7 +556,276 @@
 <a name="L555"></a><a href="#L555">555</a>
 <a name="L556"></a><a href="#L556">556</a>
 <a name="L557"></a><a href="#L557">557</a>
-<a name="L558"></a><a href="#L558">558</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name="L558"></a><a href="#L558">558</a>
+<a name="L559"></a><a href="#L559">559</a>
+<a name="L560"></a><a href="#L560">560</a>
+<a name="L561"></a><a href="#L561">561</a>
+<a name="L562"></a><a href="#L562">562</a>
+<a name="L563"></a><a href="#L563">563</a>
+<a name="L564"></a><a href="#L564">564</a>
+<a name="L565"></a><a href="#L565">565</a>
+<a name="L566"></a><a href="#L566">566</a>
+<a name="L567"></a><a href="#L567">567</a>
+<a name="L568"></a><a href="#L568">568</a>
+<a name="L569"></a><a href="#L569">569</a>
+<a name="L570"></a><a href="#L570">570</a>
+<a name="L571"></a><a href="#L571">571</a>
+<a name="L572"></a><a href="#L572">572</a>
+<a name="L573"></a><a href="#L573">573</a>
+<a name="L574"></a><a href="#L574">574</a>
+<a name="L575"></a><a href="#L575">575</a>
+<a name="L576"></a><a href="#L576">576</a>
+<a name="L577"></a><a href="#L577">577</a>
+<a name="L578"></a><a href="#L578">578</a>
+<a name="L579"></a><a href="#L579">579</a>
+<a name="L580"></a><a href="#L580">580</a>
+<a name="L581"></a><a href="#L581">581</a>
+<a name="L582"></a><a href="#L582">582</a>
+<a name="L583"></a><a href="#L583">583</a>
+<a name="L584"></a><a href="#L584">584</a>
+<a name="L585"></a><a href="#L585">585</a>
+<a name="L586"></a><a href="#L586">586</a>
+<a name="L587"></a><a href="#L587">587</a>
+<a name="L588"></a><a href="#L588">588</a>
+<a name="L589"></a><a href="#L589">589</a>
+<a name="L590"></a><a href="#L590">590</a>
+<a name="L591"></a><a href="#L591">591</a>
+<a name="L592"></a><a href="#L592">592</a>
+<a name="L593"></a><a href="#L593">593</a>
+<a name="L594"></a><a href="#L594">594</a>
+<a name="L595"></a><a href="#L595">595</a>
+<a name="L596"></a><a href="#L596">596</a>
+<a name="L597"></a><a href="#L597">597</a>
+<a name="L598"></a><a href="#L598">598</a>
+<a name="L599"></a><a href="#L599">599</a>
+<a name="L600"></a><a href="#L600">600</a>
+<a name="L601"></a><a href="#L601">601</a>
+<a name="L602"></a><a href="#L602">602</a>
+<a name="L603"></a><a href="#L603">603</a>
+<a name="L604"></a><a href="#L604">604</a>
+<a name="L605"></a><a href="#L605">605</a>
+<a name="L606"></a><a href="#L606">606</a>
+<a name="L607"></a><a href="#L607">607</a>
+<a name="L608"></a><a href="#L608">608</a>
+<a name="L609"></a><a href="#L609">609</a>
+<a name="L610"></a><a href="#L610">610</a>
+<a name="L611"></a><a href="#L611">611</a>
+<a name="L612"></a><a href="#L612">612</a>
+<a name="L613"></a><a href="#L613">613</a>
+<a name="L614"></a><a href="#L614">614</a>
+<a name="L615"></a><a href="#L615">615</a>
+<a name="L616"></a><a href="#L616">616</a>
+<a name="L617"></a><a href="#L617">617</a>
+<a name="L618"></a><a href="#L618">618</a>
+<a name="L619"></a><a href="#L619">619</a>
+<a name="L620"></a><a href="#L620">620</a>
+<a name="L621"></a><a href="#L621">621</a>
+<a name="L622"></a><a href="#L622">622</a>
+<a name="L623"></a><a href="#L623">623</a>
+<a name="L624"></a><a href="#L624">624</a>
+<a name="L625"></a><a href="#L625">625</a>
+<a name="L626"></a><a href="#L626">626</a>
+<a name="L627"></a><a href="#L627">627</a>
+<a name="L628"></a><a href="#L628">628</a>
+<a name="L629"></a><a href="#L629">629</a>
+<a name="L630"></a><a href="#L630">630</a>
+<a name="L631"></a><a href="#L631">631</a>
+<a name="L632"></a><a href="#L632">632</a>
+<a name="L633"></a><a href="#L633">633</a>
+<a name="L634"></a><a href="#L634">634</a>
+<a name="L635"></a><a href="#L635">635</a>
+<a name="L636"></a><a href="#L636">636</a>
+<a name="L637"></a><a href="#L637">637</a>
+<a name="L638"></a><a href="#L638">638</a>
+<a name="L639"></a><a href="#L639">639</a>
+<a name="L640"></a><a href="#L640">640</a>
+<a name="L641"></a><a href="#L641">641</a>
+<a name="L642"></a><a href="#L642">642</a>
+<a name="L643"></a><a href="#L643">643</a>
+<a name="L644"></a><a href="#L644">644</a>
+<a name="L645"></a><a href="#L645">645</a>
+<a name="L646"></a><a href="#L646">646</a>
+<a name="L647"></a><a href="#L647">647</a>
+<a name="L648"></a><a href="#L648">648</a>
+<a name="L649"></a><a href="#L649">649</a>
+<a name="L650"></a><a href="#L650">650</a>
+<a name="L651"></a><a href="#L651">651</a>
+<a name="L652"></a><a href="#L652">652</a>
+<a name="L653"></a><a href="#L653">653</a>
+<a name="L654"></a><a href="#L654">654</a>
+<a name="L655"></a><a href="#L655">655</a>
+<a name="L656"></a><a href="#L656">656</a>
+<a name="L657"></a><a href="#L657">657</a>
+<a name="L658"></a><a href="#L658">658</a>
+<a name="L659"></a><a href="#L659">659</a>
+<a name="L660"></a><a href="#L660">660</a>
+<a name="L661"></a><a href="#L661">661</a>
+<a name="L662"></a><a href="#L662">662</a>
+<a name="L663"></a><a href="#L663">663</a>
+<a name="L664"></a><a href="#L664">664</a>
+<a name="L665"></a><a href="#L665">665</a>
+<a name="L666"></a><a href="#L666">666</a>
+<a name="L667"></a><a href="#L667">667</a>
+<a name="L668"></a><a href="#L668">668</a>
+<a name="L669"></a><a href="#L669">669</a>
+<a name="L670"></a><a href="#L670">670</a>
+<a name="L671"></a><a href="#L671">671</a>
+<a name="L672"></a><a href="#L672">672</a>
+<a name="L673"></a><a href="#L673">673</a>
+<a name="L674"></a><a href="#L674">674</a>
+<a name="L675"></a><a href="#L675">675</a>
+<a name="L676"></a><a href="#L676">676</a>
+<a name="L677"></a><a href="#L677">677</a>
+<a name="L678"></a><a href="#L678">678</a>
+<a name="L679"></a><a href="#L679">679</a>
+<a name="L680"></a><a href="#L680">680</a>
+<a name="L681"></a><a href="#L681">681</a>
+<a name="L682"></a><a href="#L682">682</a>
+<a name="L683"></a><a href="#L683">683</a>
+<a name="L684"></a><a href="#L684">684</a>
+<a name="L685"></a><a href="#L685">685</a>
+<a name="L686"></a><a href="#L686">686</a>
+<a name="L687"></a><a href="#L687">687</a>
+<a name="L688"></a><a href="#L688">688</a>
+<a name="L689"></a><a href="#L689">689</a>
+<a name="L690"></a><a href="#L690">690</a>
+<a name="L691"></a><a href="#L691">691</a>
+<a name="L692"></a><a href="#L692">692</a>
+<a name="L693"></a><a href="#L693">693</a>
+<a name="L694"></a><a href="#L694">694</a>
+<a name="L695"></a><a href="#L695">695</a>
+<a name="L696"></a><a href="#L696">696</a>
+<a name="L697"></a><a href="#L697">697</a>
+<a name="L698"></a><a href="#L698">698</a>
+<a name="L699"></a><a href="#L699">699</a>
+<a name="L700"></a><a href="#L700">700</a>
+<a name="L701"></a><a href="#L701">701</a>
+<a name="L702"></a><a href="#L702">702</a>
+<a name="L703"></a><a href="#L703">703</a>
+<a name="L704"></a><a href="#L704">704</a>
+<a name="L705"></a><a href="#L705">705</a>
+<a name="L706"></a><a href="#L706">706</a>
+<a name="L707"></a><a href="#L707">707</a>
+<a name="L708"></a><a href="#L708">708</a>
+<a name="L709"></a><a href="#L709">709</a>
+<a name="L710"></a><a href="#L710">710</a>
+<a name="L711"></a><a href="#L711">711</a>
+<a name="L712"></a><a href="#L712">712</a>
+<a name="L713"></a><a href="#L713">713</a>
+<a name="L714"></a><a href="#L714">714</a>
+<a name="L715"></a><a href="#L715">715</a>
+<a name="L716"></a><a href="#L716">716</a>
+<a name="L717"></a><a href="#L717">717</a>
+<a name="L718"></a><a href="#L718">718</a>
+<a name="L719"></a><a href="#L719">719</a>
+<a name="L720"></a><a href="#L720">720</a>
+<a name="L721"></a><a href="#L721">721</a>
+<a name="L722"></a><a href="#L722">722</a>
+<a name="L723"></a><a href="#L723">723</a>
+<a name="L724"></a><a href="#L724">724</a>
+<a name="L725"></a><a href="#L725">725</a>
+<a name="L726"></a><a href="#L726">726</a>
+<a name="L727"></a><a href="#L727">727</a>
+<a name="L728"></a><a href="#L728">728</a>
+<a name="L729"></a><a href="#L729">729</a>
+<a name="L730"></a><a href="#L730">730</a>
+<a name="L731"></a><a href="#L731">731</a>
+<a name="L732"></a><a href="#L732">732</a>
+<a name="L733"></a><a href="#L733">733</a>
+<a name="L734"></a><a href="#L734">734</a>
+<a name="L735"></a><a href="#L735">735</a>
+<a name="L736"></a><a href="#L736">736</a>
+<a name="L737"></a><a href="#L737">737</a>
+<a name="L738"></a><a href="#L738">738</a>
+<a name="L739"></a><a href="#L739">739</a>
+<a name="L740"></a><a href="#L740">740</a>
+<a name="L741"></a><a href="#L741">741</a>
+<a name="L742"></a><a href="#L742">742</a>
+<a name="L743"></a><a href="#L743">743</a>
+<a name="L744"></a><a href="#L744">744</a>
+<a name="L745"></a><a href="#L745">745</a>
+<a name="L746"></a><a href="#L746">746</a>
+<a name="L747"></a><a href="#L747">747</a>
+<a name="L748"></a><a href="#L748">748</a>
+<a name="L749"></a><a href="#L749">749</a>
+<a name="L750"></a><a href="#L750">750</a>
+<a name="L751"></a><a href="#L751">751</a>
+<a name="L752"></a><a href="#L752">752</a>
+<a name="L753"></a><a href="#L753">753</a>
+<a name="L754"></a><a href="#L754">754</a>
+<a name="L755"></a><a href="#L755">755</a>
+<a name="L756"></a><a href="#L756">756</a>
+<a name="L757"></a><a href="#L757">757</a>
+<a name="L758"></a><a href="#L758">758</a>
+<a name="L759"></a><a href="#L759">759</a>
+<a name="L760"></a><a href="#L760">760</a>
+<a name="L761"></a><a href="#L761">761</a>
+<a name="L762"></a><a href="#L762">762</a>
+<a name="L763"></a><a href="#L763">763</a>
+<a name="L764"></a><a href="#L764">764</a>
+<a name="L765"></a><a href="#L765">765</a>
+<a name="L766"></a><a href="#L766">766</a>
+<a name="L767"></a><a href="#L767">767</a>
+<a name="L768"></a><a href="#L768">768</a>
+<a name="L769"></a><a href="#L769">769</a>
+<a name="L770"></a><a href="#L770">770</a>
+<a name="L771"></a><a href="#L771">771</a>
+<a name="L772"></a><a href="#L772">772</a>
+<a name="L773"></a><a href="#L773">773</a>
+<a name="L774"></a><a href="#L774">774</a>
+<a name="L775"></a><a href="#L775">775</a>
+<a name="L776"></a><a href="#L776">776</a>
+<a name="L777"></a><a href="#L777">777</a>
+<a name="L778"></a><a href="#L778">778</a>
+<a name="L779"></a><a href="#L779">779</a>
+<a name="L780"></a><a href="#L780">780</a>
+<a name="L781"></a><a href="#L781">781</a>
+<a name="L782"></a><a href="#L782">782</a>
+<a name="L783"></a><a href="#L783">783</a>
+<a name="L784"></a><a href="#L784">784</a>
+<a name="L785"></a><a href="#L785">785</a>
+<a name="L786"></a><a href="#L786">786</a>
+<a name="L787"></a><a href="#L787">787</a>
+<a name="L788"></a><a href="#L788">788</a>
+<a name="L789"></a><a href="#L789">789</a>
+<a name="L790"></a><a href="#L790">790</a>
+<a name="L791"></a><a href="#L791">791</a>
+<a name="L792"></a><a href="#L792">792</a>
+<a name="L793"></a><a href="#L793">793</a>
+<a name="L794"></a><a href="#L794">794</a>
+<a name="L795"></a><a href="#L795">795</a>
+<a name="L796"></a><a href="#L796">796</a>
+<a name="L797"></a><a href="#L797">797</a>
+<a name="L798"></a><a href="#L798">798</a>
+<a name="L799"></a><a href="#L799">799</a>
+<a name="L800"></a><a href="#L800">800</a>
+<a name="L801"></a><a href="#L801">801</a>
+<a name="L802"></a><a href="#L802">802</a>
+<a name="L803"></a><a href="#L803">803</a>
+<a name="L804"></a><a href="#L804">804</a>
+<a name="L805"></a><a href="#L805">805</a>
+<a name="L806"></a><a href="#L806">806</a>
+<a name="L807"></a><a href="#L807">807</a>
+<a name="L808"></a><a href="#L808">808</a>
+<a name="L809"></a><a href="#L809">809</a>
+<a name="L810"></a><a href="#L810">810</a>
+<a name="L811"></a><a href="#L811">811</a>
+<a name="L812"></a><a href="#L812">812</a>
+<a name="L813"></a><a href="#L813">813</a>
+<a name="L814"></a><a href="#L814">814</a>
+<a name="L815"></a><a href="#L815">815</a>
+<a name="L816"></a><a href="#L816">816</a>
+<a name="L817"></a><a href="#L817">817</a>
+<a name="L818"></a><a href="#L818">818</a>
+<a name="L819"></a><a href="#L819">819</a>
+<a name="L820"></a><a href="#L820">820</a>
+<a name="L821"></a><a href="#L821">821</a>
+<a name="L822"></a><a href="#L822">822</a>
+<a name="L823"></a><a href="#L823">823</a>
+<a name="L824"></a><a href="#L824">824</a>
+<a name="L825"></a><a href="#L825">825</a>
+<a name="L826"></a><a href="#L826">826</a>
+<a name="L827"></a><a href="#L827">827</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -586,6 +855,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -610,13 +880,19 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -625,6 +901,7 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -678,17 +955,18 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -741,70 +1019,129 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -813,6 +1150,8 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -821,43 +1160,62 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -867,16 +1225,24 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -885,37 +1251,51 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -923,47 +1303,107 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -974,56 +1414,87 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1031,63 +1502,120 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1098,6 +1626,16 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1138,6 +1676,7 @@ import { log, Subsystems, Status } from '../../core/log.js';
 import { processIcons } from '../../core/icons.js';
 import '../../core/manager-panels.css';
 import './version-history.css';
+import { setupManagerFooterIcons } from '../../core/manager-ui.js';
 &nbsp;
 // Dynamic imports
 let marked;
@@ -1174,6 +1713,12 @@ export default class VersionHistoryManager {
     // Table state
 <span class="cstat-no" title="statement not covered">    this._tableWidthMode = 'compact';</span>
 <span class="cstat-no" title="statement not covered">    this._filtersVisible = false;</span>
+&nbsp;
+    // Footer Save/Cancel state
+<span class="cstat-no" title="statement not covered">    this.footerSaveBtn = null;</span>
+<span class="cstat-no" title="statement not covered">    this.footerCancelBtn = null;</span>
+<span class="cstat-no" title="statement not covered">    this.footerDummyBtn = null;</span>
+<span class="cstat-no" title="statement not covered">    this.activeEditingTable = null;</span>
   }
 &nbsp;
   async <span class="fstat-no" title="function not covered">init(</span>) {
@@ -1181,6 +1726,7 @@ export default class VersionHistoryManager {
 <span class="cstat-no" title="statement not covered">    await this.render();</span>
 <span class="cstat-no" title="statement not covered">    this.setupEventListeners();</span>
 <span class="cstat-no" title="statement not covered">    await this.initVersionsTable();</span>
+<span class="cstat-no" title="statement not covered">    this.setupFooter();</span>
 <span class="cstat-no" title="statement not covered">    this.restorePanelState();</span>
   }
 &nbsp;
@@ -1240,12 +1786,13 @@ export default class VersionHistoryManager {
       tablePath: 'version-manager/version-history',
       app: this.app,
       readonly: true,
+      panel: this.elements.leftPanel,
+      panelStateManager: this.leftPanelState,
       onRowSelected: <span class="fstat-no" title="function not covered">(r</span>owData) =&gt; <span class="cstat-no" title="statement not covered">this.handleVersionSelected(rowData),</span>
       onRowDeselected: <span class="fstat-no" title="function not covered">()</span> =&gt; <span class="cstat-no" title="statement not covered">this.handleVersionDeselected(),</span>
       onDataLoaded: <span class="fstat-no" title="function not covered">(r</span>ows) =&gt; {
 <span class="cstat-no" title="statement not covered">        log(Subsystems.TABLE, Status.INFO, `[VersionHistory] Loaded ${rows.length} versions`);</span>
       },
-      onSetTableWidth: <span class="fstat-no" title="function not covered">(m</span>ode) =&gt; <span class="cstat-no" title="statement not covered">this.setTableWidth(mode),</span>
       onRefresh: <span class="fstat-no" title="function not covered">()</span> =&gt; <span class="cstat-no" title="statement not covered">this.loadVersionList(),</span>
     });
 &nbsp;
@@ -1301,37 +1848,11 @@ export default class VersionHistoryManager {
   }
 &nbsp;
   // ── Table Width Control ────────────────────────────────────────────────────
-&nbsp;
-<span class="fstat-no" title="function not covered">  setTableWidth(</span>mode) {
-    const panel = <span class="cstat-no" title="statement not covered">this.elements.leftPanel;</span>
-<span class="cstat-no" title="statement not covered">    if (!panel) <span class="cstat-no" title="statement not covered">return;</span></span>
-&nbsp;
-    // mode === null means LithiumTable has no saved width mode.
-    // Apply the PanelStateManager pixel width as fallback.
-<span class="cstat-no" title="statement not covered">    if (mode === null) {</span>
-<span class="cstat-no" title="statement not covered">      panel.style.width = `${this.leftPanelWidth}px`;</span>
-<span class="cstat-no" title="statement not covered">      return;</span>
-    }
-&nbsp;
-    // Match Query Manager width setpoints
-    const widths = <span class="cstat-no" title="statement not covered">{ narrow: 160, compact: 314, normal: 468, wide: 622 };</span>
-&nbsp;
-<span class="cstat-no" title="statement not covered">    this._tableWidthMode = mode;</span>
-&nbsp;
-<span class="cstat-no" title="statement not covered">    if (mode === 'auto') {</span>
-<span class="cstat-no" title="statement not covered">      panel.style.width = '';</span>
-      const currentWidth = <span class="cstat-no" title="statement not covered">panel.offsetWidth;</span>
-<span class="cstat-no" title="statement not covered">      this.leftPanelWidth = currentWidth;</span>
-<span class="cstat-no" title="statement not covered">      this.leftPanelState.saveWidth(currentWidth);</span>
-<span class="cstat-no" title="statement not covered">      return;</span>
-    }
-&nbsp;
-    // Named mode: set the panel width but do NOT overwrite this.leftPanelWidth
-    // (which holds the pixel width for collapse/expand).
-    const widthPx = <span class="cstat-no" title="statement not covered">widths[mode] || 314;</span>
-<span class="cstat-no" title="statement not covered">    panel.style.width = `${widthPx}px`;</span>
-<span class="cstat-no" title="statement not covered">    log(Subsystems.MANAGER, Status.INFO, `[VersionHistory] Table width set to: ${mode}`);</span>
-  }
+  // Width persistence is now handled centrally by LithiumTable.
+  // The Width popup in the Navigator calls LithiumTable.setTableWidth() directly,
+  // which saves the mode to localStorage and applies the width to the panel.
+  // Splitter drag clears the width mode via LithiumSplitter._clearWidthModes().
+  // Panel pixel width is saved by the onResizeEnd callback below.
 &nbsp;
   // ── Data Loading ──────────────────────────────────────────────────────────
 &nbsp;
@@ -1624,6 +2145,9 @@ export default class VersionHistoryManager {
 <span class="cstat-no" title="statement not covered">        this.versionsTable?.table?.redraw?.();</span>
       },
     });
+&nbsp;
+    // Bind splitter to table for centralized width mode clearing
+<span class="cstat-no" title="statement not covered">    this.versionsTable?.setSplitter(this.splitter);</span>
   }
 &nbsp;
 <span class="fstat-no" title="function not covered">  toggleLeftPanel(</span>) {
@@ -1636,7 +2160,7 @@ export default class VersionHistoryManager {
       onAfterToggle: <span class="fstat-no" title="function not covered">()</span> =&gt; <span class="cstat-no" title="statement not covered">this.versionsTable?.table?.redraw?.(),</span>
     });
 &nbsp;
-    // Save collapsed state
+    // Save collapsed state via PanelStateManager
 <span class="cstat-no" title="statement not covered">    this.leftPanelState.saveCollapsed(this.isLeftPanelCollapsed);</span>
   }
 &nbsp;
@@ -1644,21 +2168,304 @@ export default class VersionHistoryManager {
     // Re-read collapsed state from localStorage (handles edge cases)
 <span class="cstat-no" title="statement not covered">    this.isLeftPanelCollapsed = this.leftPanelState.loadCollapsed(this.isLeftPanelCollapsed);</span>
 &nbsp;
-    // Restore collapsed state using shared utility
-<span class="cstat-no" title="statement not covered">    restorePanelState({</span>
-      panel: this.elements.leftPanel,
-      splitter: this.splitter,
-      collapseBtn: this.elements.collapseBtn,
-      isCollapsed: this.isLeftPanelCollapsed,
-    });
+    const panel = <span class="cstat-no" title="statement not covered">this.elements.leftPanel;</span>
+    const btn = <span class="cstat-no" title="statement not covered">this.elements.collapseBtn;</span>
+    const splitter = <span class="cstat-no" title="statement not covered">this.splitter;</span>
 &nbsp;
-    // Panel width is handled by LithiumTable's setupPersistence():
-    // - If a width mode was saved, it calls onSetTableWidth(mode)
-    // - If no mode was saved, it calls onSetTableWidth(null), and setTableWidth
-    //   applies the PanelStateManager pixel width as fallback
+<span class="cstat-no" title="statement not covered">    if (!panel || !btn || !splitter) {</span>
+<span class="cstat-no" title="statement not covered">      console.warn('[VersionMgr] restorePanelState: missing elements', {</span>
+        panel: !!panel, btn: !!btn, splitter: !!splitter
+      });
+<span class="cstat-no" title="statement not covered">      return;</span>
+    }
+&nbsp;
+<span class="cstat-no" title="statement not covered">    if (this.isLeftPanelCollapsed) {</span>
+      // Set collapsed state directly via inline styles
+<span class="cstat-no" title="statement not covered">      panel.style.width = '0px';</span>
+<span class="cstat-no" title="statement not covered">      panel.style.minWidth = '0px';</span>
+<span class="cstat-no" title="statement not covered">      panel.style.maxWidth = '0px';</span>
+<span class="cstat-no" title="statement not covered">      panel.style.overflow = 'hidden';</span>
+<span class="cstat-no" title="statement not covered">      btn.classList.add('collapsed');</span>
+<span class="cstat-no" title="statement not covered">      splitter.setCollapsed(true);</span>
+    } else {
+      // Ensure panel is expanded
+<span class="cstat-no" title="statement not covered">      btn.classList.remove('collapsed');</span>
+<span class="cstat-no" title="statement not covered">      splitter.setCollapsed(false);</span>
+    }
+&nbsp;
+    // DEBUG: Watch for any changes to the panel's style after restore
+    const origSetWidth = <span class="cstat-no" title="statement not covered">Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'style')?.set;</span>
+<span class="cstat-no" title="statement not covered">    if (origSetWidth) {</span>
+      const panelEl = <span class="cstat-no" title="statement not covered">panel;</span>
+      const origStyle = <span class="cstat-no" title="statement not covered">panelEl.style;</span>
+      // Monkey-patch the width setter to log any changes
+      let lastLoggedWidth = <span class="cstat-no" title="statement not covered">origStyle.width;</span>
+      const observer = <span class="cstat-no" title="statement not covered">new MutationObserver(<span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
+        const w = <span class="cstat-no" title="statement not covered">panelEl.style.width;</span>
+<span class="cstat-no" title="statement not covered">        if (w !== lastLoggedWidth) {</span>
+<span class="cstat-no" title="statement not covered">          console.trace(`[VersionMgr] Panel width changed from "${lastLoggedWidth}" to "${w}"`);</span>
+<span class="cstat-no" title="statement not covered">          lastLoggedWidth = w;</span>
+        }
+      });
+<span class="cstat-no" title="statement not covered">      observer.observe(panelEl, { attributes: true, attributeFilter: ['style'] });</span>
+<span class="cstat-no" title="statement not covered">      this._debugObserver = observer;</span>
+    }
   }
 &nbsp;
-  // ── Cleanup ────────────────────────────────────────────────────────────────
+  // ── Footer Setup ───────────────────────────────────────────────────────────
+&nbsp;
+<span class="fstat-no" title="function not covered">  setupFooter(</span>) {
+    const slot = <span class="cstat-no" title="statement not covered">this.container.closest('.manager-slot');</span>
+<span class="cstat-no" title="statement not covered">    if (!slot) <span class="cstat-no" title="statement not covered">return;</span></span>
+&nbsp;
+    const footer = <span class="cstat-no" title="statement not covered">slot.querySelector('.manager-slot-footer');</span>
+<span class="cstat-no" title="statement not covered">    if (!footer) <span class="cstat-no" title="statement not covered">return;</span></span>
+&nbsp;
+    const group = <span class="cstat-no" title="statement not covered">footer.querySelector('.subpanel-header-group');</span>
+<span class="cstat-no" title="statement not covered">    if (!group) <span class="cstat-no" title="statement not covered">return;</span></span>
+&nbsp;
+    const placeholder = <span class="cstat-no" title="statement not covered">group.querySelector('.slot-footer-placeholder');</span>
+&nbsp;
+    const footerElements =<span class="cstat-no" title="statement not covered"> setupManagerFooterIcons(group, {</span>
+      onPrint: <span class="fstat-no" title="function not covered">()</span> =&gt; <span class="cstat-no" title="statement not covered">this.handleFooterPrint(),</span>
+      onEmail: <span class="fstat-no" title="function not covered">()</span> =&gt; <span class="cstat-no" title="statement not covered">this.handleFooterEmail(),</span>
+      onExport: <span class="fstat-no" title="function not covered">(e</span>) =&gt; <span class="cstat-no" title="statement not covered">this.toggleFooterExportPopup(e),</span>
+      reportOptions: [
+        { value: 'version-view', label: 'Versions View' },
+        { value: 'version-data', label: 'Versions Data' },
+      ],
+      fillerTitle: 'Versions',
+      anchor: placeholder,
+      showSaveCancel: true,
+    });
+&nbsp;
+<span class="cstat-no" title="statement not covered">    this._footerDatasource = footerElements.reportSelect;</span>
+<span class="cstat-no" title="statement not covered">    this.footerSaveBtn = footerElements.saveBtn;</span>
+<span class="cstat-no" title="statement not covered">    this.footerCancelBtn = footerElements.cancelBtn;</span>
+<span class="cstat-no" title="statement not covered">    this.footerDummyBtn = footerElements.dummyBtn;</span>
+&nbsp;
+    // Wire footer Save/Cancel to the active editing table
+<span class="cstat-no" title="statement not covered">    if (this.footerSaveBtn) {</span>
+<span class="cstat-no" title="statement not covered">      this.footerSaveBtn.addEventListener('click', <span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered">        if (this.activeEditingTable?.handleSave) {</span>
+<span class="cstat-no" title="statement not covered">          this.activeEditingTable.handleSave();</span>
+        }
+      });
+    }
+<span class="cstat-no" title="statement not covered">    if (this.footerCancelBtn) {</span>
+<span class="cstat-no" title="statement not covered">      this.footerCancelBtn.addEventListener('click', <span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered">        if (this.activeEditingTable?.handleCancel) {</span>
+<span class="cstat-no" title="statement not covered">          this.activeEditingTable.handleCancel();</span>
+        }
+      });
+    }
+&nbsp;
+    // Show the Save/Cancel buttons (disabled) initially
+    // Version history is readonly, but buttons should still be visible
+<span class="cstat-no" title="statement not covered">    this.updateFooterSaveCancelState(true, false);</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    log(Subsystems.MANAGER, Status.INFO, '[VersionHistory] Footer controls initialized');</span>
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered">  _getFooterDatasource(</span>) {
+<span class="cstat-no" title="statement not covered">    return this._footerDatasource?.value || 'version-view';</span>
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered">  handleFooterPrint(</span>) {
+    const mode = <span class="cstat-no" title="statement not covered">this._getFooterDatasource();</span>
+    const table = <span class="cstat-no" title="statement not covered">this.versionsTable?.table;</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    if (!table) {</span>
+<span class="cstat-no" title="statement not covered">      return;</span>
+    }
+&nbsp;
+<span class="cstat-no" title="statement not covered">    if (mode.endsWith('-view')) {</span>
+<span class="cstat-no" title="statement not covered">      table.print();</span>
+    } else {
+<span class="cstat-no" title="statement not covered">      table.print('all', true);</span>
+    }
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered">  handleFooterEmail(</span>) {
+    const mode = <span class="cstat-no" title="statement not covered">this._getFooterDatasource();</span>
+    const table = <span class="cstat-no" title="statement not covered">this.versionsTable?.table;</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    if (!table) {</span>
+<span class="cstat-no" title="statement not covered">      return;</span>
+    }
+&nbsp;
+    const isViewMode = <span class="cstat-no" title="statement not covered">mode.endsWith('-view');</span>
+    const rows = <span class="cstat-no" title="statement not covered">isViewMode ? table.getRows('active') : table.getRows();</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    if (rows.length === 0) {</span>
+<span class="cstat-no" title="statement not covered">      return;</span>
+    }
+&nbsp;
+    const visibleCols = <span class="cstat-no" title="statement not covered">isViewMode</span>
+      ? table.getColumns().filter(<span class="fstat-no" title="function not covered">col </span>=&gt; <span class="cstat-no" title="statement not covered">col.isVisible() &amp;&amp; col.getField() !== '_selector')</span>
+      : table.getColumns().filter(<span class="fstat-no" title="function not covered">col </span>=&gt; <span class="cstat-no" title="statement not covered">col.getField() !== '_selector')</span>;
+&nbsp;
+    const headers = <span class="cstat-no" title="statement not covered">visibleCols.map(<span class="fstat-no" title="function not covered">col </span>=&gt; <span class="cstat-no" title="statement not covered">col.getDefinition().title || col.getField())</span>;</span>
+    const separator = <span class="cstat-no" title="statement not covered">headers.map(<span class="fstat-no" title="function not covered">h </span>=&gt; <span class="cstat-no" title="statement not covered">'-'.repeat(h.length))</span>.join('  ');</span>
+&nbsp;
+    const dataLines = <span class="cstat-no" title="statement not covered">rows.slice(0, 50).map(<span class="fstat-no" title="function not covered">row </span>=&gt; {</span>
+      const data = <span class="cstat-no" title="statement not covered">row.getData();</span>
+<span class="cstat-no" title="statement not covered">      return visibleCols.map(<span class="fstat-no" title="function not covered">col </span>=&gt; {</span>
+        const val = <span class="cstat-no" title="statement not covered">data[col.getField()];</span>
+<span class="cstat-no" title="statement not covered">        return val != null ? String(val) : '';</span>
+      }).join('\t');
+    });
+&nbsp;
+    const totalRows = <span class="cstat-no" title="statement not covered">rows.length;</span>
+    const truncated = <span class="cstat-no" title="statement not covered">totalRows &gt; 50 ? `\n... (${totalRows - 50} more rows not shown)` : '';</span>
+    const modeLabel = <span class="cstat-no" title="statement not covered">isViewMode ? 'Filtered View' : 'Full Data';</span>
+&nbsp;
+    const subject = <span class="cstat-no" title="statement not covered">encodeURIComponent(`Versions — ${totalRows} rows (${modeLabel})`);</span>
+    const body = <span class="cstat-no" title="statement not covered">encodeURIComponent(</span>
+      `Versions Export (${modeLabel})\n` +
+      `${totalRows} row(s)\n\n` +
+      `${headers.join('\t')}\n${separator}\n` +
+      `${dataLines.join('\n')}${truncated}\n`
+    );
+&nbsp;
+<span class="cstat-no" title="statement not covered">    window.open(`mailto:?subject=${subject}&amp;body=${body}`, '_self');</span>
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered">  toggleFooterExportPopup(</span>e) {
+<span class="cstat-no" title="statement not covered">    e.stopPropagation();</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    if (this._footerExportPopup) {</span>
+<span class="cstat-no" title="statement not covered">      this._closeFooterExportPopup();</span>
+<span class="cstat-no" title="statement not covered">      return;</span>
+    }
+&nbsp;
+    const btn = <span class="cstat-no" title="statement not covered">e.currentTarget;</span>
+    const mode = <span class="cstat-no" title="statement not covered">this._getFooterDatasource();</span>
+    const formats = <span class="cstat-no" title="statement not covered">[</span>
+      { label: 'PDF', action: <span class="fstat-no" title="function not covered">()</span> =&gt; <span class="cstat-no" title="statement not covered">this.handleFooterExport('pdf', mode) </span>},
+      { label: 'CSV', action: <span class="fstat-no" title="function not covered">()</span> =&gt; <span class="cstat-no" title="statement not covered">this.handleFooterExport('csv', mode) </span>},
+      { label: 'TXT', action: <span class="fstat-no" title="function not covered">()</span> =&gt; <span class="cstat-no" title="statement not covered">this.handleFooterExport('txt', mode) </span>},
+      { label: 'XLS', action: <span class="fstat-no" title="function not covered">()</span> =&gt; <span class="cstat-no" title="statement not covered">this.handleFooterExport('xls', mode) </span>},
+    ];
+&nbsp;
+    const popup = <span class="cstat-no" title="statement not covered">document.createElement('div');</span>
+<span class="cstat-no" title="statement not covered">    popup.className = 'version-footer-export-popup';</span>
+<span class="cstat-no" title="statement not covered">    formats.forEach(<span class="fstat-no" title="function not covered">item </span>=&gt; {</span>
+      const row = <span class="cstat-no" title="statement not covered">document.createElement('button');</span>
+<span class="cstat-no" title="statement not covered">      row.type = 'button';</span>
+<span class="cstat-no" title="statement not covered">      row.className = 'version-footer-export-popup-item';</span>
+<span class="cstat-no" title="statement not covered">      row.textContent = item.label;</span>
+<span class="cstat-no" title="statement not covered">      row.addEventListener('click', <span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered">        this._closeFooterExportPopup();</span>
+<span class="cstat-no" title="statement not covered">        item.action();</span>
+      });
+<span class="cstat-no" title="statement not covered">      popup.appendChild(row);</span>
+    });
+&nbsp;
+    const btnRect = <span class="cstat-no" title="statement not covered">btn.getBoundingClientRect();</span>
+<span class="cstat-no" title="statement not covered">    document.body.appendChild(popup);</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    requestAnimationFrame(<span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
+      const popupRect = <span class="cstat-no" title="statement not covered">popup.getBoundingClientRect();</span>
+<span class="cstat-no" title="statement not covered">      popup.style.position = 'fixed';</span>
+<span class="cstat-no" title="statement not covered">      popup.style.top = `${btnRect.top - popupRect.height - 8}px`;</span>
+<span class="cstat-no" title="statement not covered">      popup.style.left = `${btnRect.left}px`;</span>
+    });
+&nbsp;
+<span class="cstat-no" title="statement not covered">    setTimeout(<span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered">      popup.classList.add('visible');</span>
+    }, 10);
+&nbsp;
+<span class="cstat-no" title="statement not covered">    this._footerExportPopup = popup;</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    this._footerExportCloseHandler = <span class="fstat-no" title="function not covered">(e</span>vt) =&gt; {</span>
+<span class="cstat-no" title="statement not covered">      if (!popup.contains(evt.target) &amp;&amp; !btn.contains(evt.target)) {</span>
+<span class="cstat-no" title="statement not covered">        this._closeFooterExportPopup();</span>
+      }
+    };
+<span class="cstat-no" title="statement not covered">    document.addEventListener('click', this._footerExportCloseHandler);</span>
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered">  _closeFooterExportPopup(</span>) {
+<span class="cstat-no" title="statement not covered">    if (this._footerExportPopup) {</span>
+<span class="cstat-no" title="statement not covered">      this._footerExportPopup.remove();</span>
+<span class="cstat-no" title="statement not covered">      this._footerExportPopup = null;</span>
+    }
+<span class="cstat-no" title="statement not covered">    if (this._footerExportCloseHandler) {</span>
+<span class="cstat-no" title="statement not covered">      document.removeEventListener('click', this._footerExportCloseHandler);</span>
+<span class="cstat-no" title="statement not covered">      this._footerExportCloseHandler = null;</span>
+    }
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered">  handleFooterExport(</span>format, mode) {
+    const table = <span class="cstat-no" title="statement not covered">this.versionsTable?.table;</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    if (!table) {</span>
+<span class="cstat-no" title="statement not covered">      return;</span>
+    }
+&nbsp;
+    const filename = <span class="cstat-no" title="statement not covered">`versions-export-${new Date().toISOString().slice(0, 10)}`;</span>
+    const isViewMode = <span class="cstat-no" title="statement not covered">mode.endsWith('-view');</span>
+    const downloadOpts = <span class="cstat-no" title="statement not covered">isViewMode ? {} : { rowGroups: false };</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    switch (format) {</span>
+      case 'pdf':
+<span class="cstat-no" title="statement not covered">        table.download('pdf', `${filename}.pdf`, { orientation: 'landscape', ...downloadOpts });</span>
+<span class="cstat-no" title="statement not covered">        break;</span>
+      case 'csv':
+<span class="cstat-no" title="statement not covered">        table.download('csv', `${filename}.csv`, downloadOpts);</span>
+<span class="cstat-no" title="statement not covered">        break;</span>
+      case 'txt':
+<span class="cstat-no" title="statement not covered">        table.download('csv', `${filename}.txt`, downloadOpts);</span>
+<span class="cstat-no" title="statement not covered">        break;</span>
+      case 'xls':
+<span class="cstat-no" title="statement not covered">        table.download('xlsx', `${filename}.xlsx`, downloadOpts);</span>
+<span class="cstat-no" title="statement not covered">        break;</span>
+    }
+  }
+&nbsp;
+  /**
+   * Called when any LithiumTable in this manager changes edit mode.
+   * Enables/disables the footer Save/Cancel buttons and binds them to
+   * the table that is currently in edit mode.
+   */
+<span class="fstat-no" title="function not covered">  handleTableEditModeChange(</span>lithiumTable, isEditing, rowData) {
+<span class="cstat-no" title="statement not covered">    if (isEditing) {</span>
+<span class="cstat-no" title="statement not covered">      if (this.activeEditingTable &amp;&amp; this.activeEditingTable !== lithiumTable) {</span>
+<span class="cstat-no" title="statement not covered">        this.activeEditingTable.exitEditMode('cancel');</span>
+      }
+<span class="cstat-no" title="statement not covered">      this.activeEditingTable = lithiumTable;</span>
+<span class="cstat-no" title="statement not covered">      this.updateFooterSaveCancelState(true, true);</span>
+<span class="cstat-no" title="statement not covered">      log(Subsystems.MANAGER, Status.INFO, '[VersionHistory] Footer Save/Cancel enabled for table');</span>
+    } else {
+<span class="cstat-no" title="statement not covered">      if (this.activeEditingTable === lithiumTable) {</span>
+<span class="cstat-no" title="statement not covered">        this.activeEditingTable = null;</span>
+      }
+<span class="cstat-no" title="statement not covered">      this.updateFooterSaveCancelState(true, false);</span>
+<span class="cstat-no" title="statement not covered">      log(Subsystems.MANAGER, Status.INFO, '[VersionHistory] Footer Save/Cancel disabled');</span>
+    }
+  }
+&nbsp;
+  /**
+   * Show/hide and enable/disable the footer Save/Cancel buttons.
+   * @param {boolean} visible - Whether the buttons should be visible
+   * @param {boolean} enabled - Whether the buttons should be enabled (requires visible=true)
+   */
+<span class="fstat-no" title="function not covered">  updateFooterSaveCancelState(</span>visible, enabled) {
+<span class="cstat-no" title="statement not covered">    if (this.footerSaveBtn) {</span>
+<span class="cstat-no" title="statement not covered">      this.footerSaveBtn.style.display = visible ? '' : 'none';</span>
+<span class="cstat-no" title="statement not covered">      this.footerSaveBtn.disabled = !visible || !enabled;</span>
+    }
+<span class="cstat-no" title="statement not covered">    if (this.footerCancelBtn) {</span>
+<span class="cstat-no" title="statement not covered">      this.footerCancelBtn.style.display = visible ? '' : 'none';</span>
+<span class="cstat-no" title="statement not covered">      this.footerCancelBtn.disabled = !visible || !enabled;</span>
+    }
+<span class="cstat-no" title="statement not covered">    if (this.footerDummyBtn) {</span>
+<span class="cstat-no" title="statement not covered">      this.footerDummyBtn.style.display = visible ? '' : 'none';</span>
+    }
+  }
+&nbsp;
+// ── Cleanup ────────────────────────────────────────────────────────────────
 &nbsp;
 <span class="fstat-no" title="function not covered">  cleanup(</span>) {
 <span class="cstat-no" title="statement not covered">    log(Subsystems.MANAGER, Status.INFO, '[VersionHistory] Cleaning up...');</span>
@@ -1670,4 +2477,4 @@ export default class VersionHistoryManager {
 <span class="cstat-no" title="statement not covered">    this.versionsTable = null;</span>
   }
 }
-&nbsp;</pre></td></tr></table></pre><div class="push"></div></div><div class="footer quiet pad2 space-top1 center small">Code coverage generated by <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a> at 2026-03-30T04:23:43.625Z</div><script src="../../prettify.js"></script><script>window.onload=function(){prettyPrint()}</script><script src="../../sorter.js"></script><script src="../../block-navigation.js"></script></body></html>
+&nbsp;</pre></td></tr></table></pre><div class="push"></div></div><div class="footer quiet pad2 space-top1 center small">Code coverage generated by <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a> at 2026-03-30T09:40:42.818Z</div><script src="../../prettify.js"></script><script>window.onload=function(){prettyPrint()}</script><script src="../../sorter.js"></script><script src="../../block-navigation.js"></script></body></html>

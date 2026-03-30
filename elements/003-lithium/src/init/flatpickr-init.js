@@ -18,16 +18,16 @@ class FlatpickrInit {
       defaultDate: null,
       locale: "default",
       onChange: (selectedDates, dateStr, instance) => {
-        console.log('Flatpickr date changed:', dateStr);
+        // console.log('Flatpickr date changed:', dateStr);
       },
       onOpen: (selectedDates, dateStr, instance) => {
-        console.log('Flatpickr opened');
+        // console.log('Flatpickr opened');
       },
       onClose: (selectedDates, dateStr, instance) => {
-        console.log('Flatpickr closed');
+        // console.log('Flatpickr closed');
       },
       onReady: (selectedDates, dateStr, instance) => {
-        console.log('Flatpickr ready');
+        // console.log('Flatpickr ready');
       }
     };
   }
@@ -54,7 +54,7 @@ class FlatpickrInit {
       // Store reference
       this.instances.set(elementId, instance[0]); // flatpickr returns an array
 
-      console.log(`Flatpickr initialized on ${elementId}`);
+      // console.log(`Flatpickr initialized on ${elementId}`);
       return instance[0];
     } catch (error) {
       console.error(`Failed to initialize Flatpickr on ${elementId}:`, error);

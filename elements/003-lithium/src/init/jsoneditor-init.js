@@ -51,7 +51,7 @@ class JSONEditorInit {
       // Store reference
       this.editors.set(elementId, editor);
 
-      console.log(`vanilla-jsoneditor initialized on ${elementId}`);
+      // console.log(`vanilla-jsoneditor initialized on ${elementId}`);
       return editor;
     } catch (error) {
       console.error(`Failed to initialize vanilla-jsoneditor on ${elementId}:`, error);

@@ -66,7 +66,7 @@ class CodeMirrorInit {
       // Store reference
       this.editors.set(elementId, editor);
 
-      console.log(`CodeMirror editor initialized on ${elementId}`);
+      // console.log(`CodeMirror editor initialized on ${elementId}`);
       return editor;
     } catch (error) {
       console.error(`Failed to initialize CodeMirror editor on ${elementId}:`, error);
