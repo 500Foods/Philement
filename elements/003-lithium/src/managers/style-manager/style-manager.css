@@ -811,46 +811,6 @@
   background-color: var(--accent-focus);
 }
 
-/* ── Footer Save/Cancel Buttons ────────────────────────────────────────── */
-
-/* Save button in the footer (appears when a record is being edited) */
-.manager-footer-save-btn {
-  background: var(--accent-toggle);
-  color: white;
-}
-
-.manager-footer-save-btn:hover:not(:disabled) {
-  background: var(--accent-hover);
-}
-
-.manager-footer-save-btn:disabled {
-  background: var(--accent-disabled);
-  color: var(--text-disabled);
-}
-
-/* Cancel button in the footer (appears when a record is being edited) */
-.manager-footer-cancel-btn {
-  background: var(--accent-disabled);
-  color: var(--text-disabled);
-}
-
-.manager-footer-cancel-btn:hover:not(:disabled) {
-  background: var(--accent-toggle);
-  color: white;
-}
-
-.manager-footer-cancel-btn:disabled {
-  background: var(--accent-disabled);
-  color: var(--text-disabled);
-}
-
-/* Dummy button (spacer, same size as other footer buttons) */
-.manager-footer-dummy-btn {
-  background: var(--accent-primary);
-  min-width: 60px;
-  cursor: auto;
-}
-
 /* ── Table Containers (additional styling beyond lithium-table.css) ────── */
 
 .style-lookup-table-container,
