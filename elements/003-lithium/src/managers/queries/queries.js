@@ -19,7 +19,6 @@ import { toast } from '../../shared/toast.js';
 import { log, Subsystems, Status } from '../../core/log.js';
 import { processIcons } from '../../core/icons.js';
 import { setupManagerFooterIcons, createFontPopup } from '../../core/manager-ui.js';
-import { setJsonTreeData } from '../../components/json-tree-component.js';
 
 // Import modular components
 import { createDirtyStateTracker } from './queries-dirty.js';
@@ -222,7 +221,13 @@ export default class QueriesManager {
         try { collectionContent = JSON.parse(collectionContent); } catch { collectionContent = {}; }
       }
       if (this.collectionEditor) {
-        setJsonTreeData(this.elements.collectionEditorContainer, collectionContent);
+        // Update content directly via CodeMirror
+        const jsonStr = JSON.stringify(collectionContent, null, 2);
+        if (this.collectionEditor.state.doc.toString() !== jsonStr) {
+          this.collectionEditor.dispatch({
+            changes: { from: 0, to: this.collectionEditor.state.doc.length, insert: jsonStr }
+          });
+        }
       } else {
         await this.editorManager.initCollectionEditor(collectionContent);
         this.collectionEditor = this.editorManager.collectionEditor;
@@ -299,7 +304,10 @@ export default class QueriesManager {
       this.summaryEditor.dispatch({ changes: { from: 0, to: this.summaryEditor.state.doc.length, insert: '' } });
     }
     if (this.collectionEditor) {
-      setJsonTreeData(this.elements.collectionEditorContainer, {});
+      // Clear JSON editor content
+      this.collectionEditor.dispatch({
+        changes: { from: 0, to: this.collectionEditor.state.doc.length, insert: '{}' }
+      });
     }
   }
 
@@ -319,11 +327,15 @@ export default class QueriesManager {
       }
       this.activeEditingTable = lithiumTable;
       this.updateFooterSaveCancelState(true, true);
+      // Enable CodeMirror editors when entering edit mode
+      this.editorManager._setCodeMirrorEditable(true);
       log(Subsystems.MANAGER, Status.INFO, '[Queries] Footer Save/Cancel enabled for table');
     } else {
       if (this.activeEditingTable === lithiumTable) {
         this.activeEditingTable = null;
       }
+      // Disable CodeMirror editors when exiting edit mode
+      this.editorManager._setCodeMirrorEditable(false);
       this.updateFooterSaveCancelState(true, false);
       log(Subsystems.MANAGER, Status.INFO, '[Queries] Footer Save/Cancel disabled');
     }

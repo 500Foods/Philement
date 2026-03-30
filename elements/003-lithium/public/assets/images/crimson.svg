@@ -1,14 +1,47 @@
-<svg width="397" height="424" viewBox="0 0 397 424" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M335.656 53.5002C303.528 93.2998 298.293 115.151 284.656 177C264.757 111.832 296.586 86.0208 303.656 2.50021C274.733 44.1461 232.458 68.1295 215.156 126.5C191.124 105.584 189.996 51.1147 185.156 28.0002C-64.1361 351.546 -62.1492 422.859 215.156 420.5C492.462 418.142 373.629 334.875 335.656 53.5002Z" fill="url(#paint0_linear_0_1)" stroke="black" stroke-width="5" stroke-linejoin="round"/>
-<circle cx="129.156" cy="233.5" r="47" fill="white" stroke="black" stroke-width="6"/>
-<circle cx="229.156" cy="233.5" r="47" fill="white" stroke="black" stroke-width="6"/>
-<circle cx="121.156" cy="247.5" r="25" fill="black"/>
-<circle cx="221.156" cy="247.5" r="25" fill="black"/>
-<path d="M302.017 265.077C295.043 325.027 256.061 361.212 211.234 372.422C166.635 383.575 116.322 370.01 85.6833 330.367C181.918 341.732 249.72 304.769 302.017 265.077Z" fill="white" stroke="black" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
-<defs>
-<linearGradient id="paint0_linear_0_1" x1="205.585" y1="-68.4998" x2="205.585" y2="420.525" gradientUnits="userSpaceOnUse">
-<stop stop-color="#28FF07"/>
-<stop offset="0.549849" stop-color="#DC143C"/>
-</linearGradient>
-</defs>
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="656" viewBox="0 0 640 656" fill="none">
+  <path 
+    d="M266.8 65.9C269.9 63.3 274.5 63.4 277.4 66.2C288.9 77 299.4 89.2 309.9 102.1C328.5 124.8 344.7 149.2 360.1 174.5C361.5 176.8 363.9 178.2 366.5 178.3C369.1 178.4 371.7 177.2 373.3 175.1C375.7 171.9 378.1 168.6 380.5 165.4C389.1 153.6 397.5 142.2 407.4 132.9C411.8 128.7 414.5 127.9 416 127.9C417.8 127.9 420.5 128.8 424.8 132.9C444.1 151.4 460.4 176.4 474.8 199.7C501.2 242.3 528 301.8 528 367.9C528 482.8 434.9 575.9 320 575.9C205.1 575.9 112 482.9 112 368C112 281.6 151 206 189.5 152.3C208.8 125.4 228.1 103.8 242.5 89C250.6 80.7 258.5 72.9 266.8 65.8V65.9Z" 
+    fill="currentColor" 
+    fill-opacity="0.4" />
+  <path 
+    d="M266.8 65.9C269.9 63.3 274.5 63.4 277.4 66.2C288.9 77 299.4 89.2 309.9 102.1C328.5 124.8 344.7 149.2 360.1 174.5C361.5 176.8 363.9 178.2 366.5 178.3C369.1 178.4 371.7 177.2 373.3 175.1C375.7 171.9 378.1 168.6 380.5 165.4C389.1 153.6 397.5 142.2 407.4 132.9C411.8 128.7 414.5 127.9 416 127.9C417.8 127.9 420.5 128.8 424.8 132.9C444.1 151.4 460.4 176.4 474.8 199.7C501.2 242.3 528 301.8 528 367.9C528 482.8 434.9 575.9 320 575.9C205.1 575.9 112 482.9 112 368C112 281.6 151 206 189.5 152.3C208.8 125.4 228.1 103.8 242.5 89C250.6 80.7 258.5 72.9 266.8 65.8V65.9Z" 
+    fill="transparent" 
+    stroke="currentColor" 
+    stroke-width="17" 
+    stroke-linejoin="round" />
+  <circle 
+    cx="245" 
+    cy="378" 
+    r="66.5" 
+    fill="transparent" 
+    stroke="currentColor" 
+    stroke-width="17" />
+  <circle 
+    cx="402" 
+    cy="357" 
+    r="66.5" 
+    fill="transparent" 
+    stroke="currentColor" 
+    stroke-width="17" />
+  <circle 
+    cx="244.5" 
+    cy="377.5" 
+    r="12" 
+    fill="currentColor" 
+    stroke="currentColor" 
+    stroke-width="7" />
+  <circle 
+    cx="401.5" 
+    cy="356.5" 
+    r="12" 
+    fill="currentColor" 
+    stroke="currentColor" 
+    stroke-width="7" />
+  <path 
+    d="M424.5 482.5C362.88 550.112 306.777 562.338 229.5 499.5C309.072 502.221 352.167 499.592 424.5 482.5Z" 
+    fill="transparent" 
+    stroke="currentColor" 
+    stroke-width="17" 
+    stroke-linecap="round" 
+    stroke-linejoin="round" />
 </svg>

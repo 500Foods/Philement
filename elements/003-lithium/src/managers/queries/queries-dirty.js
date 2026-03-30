@@ -5,7 +5,6 @@
  */
 
 import { log, Subsystems, Status } from '../../core/log.js';
-import { getJsonTreeData } from '../../components/json-tree-component.js';
 
 /**
  * DirtyStateTracker - Manages dirty state for all data sources
@@ -71,7 +70,7 @@ export class DirtyStateTracker {
   /**
    * Revert all changes to original values
    */
-  async revertAllChanges() {
+  revertAllChanges() {
     const mgr = this.manager;
 
     if (this._isDirty.table && mgr.queryTable?.table && this._originalRowData) {
@@ -93,16 +92,18 @@ export class DirtyStateTracker {
       });
     }
 
-    if (this._isDirty.collection && this._originalCollectionContent != null) {
+    if (this._isDirty.collection && mgr.collectionEditor && this._originalCollectionContent != null) {
       try {
-        const { setJsonTreeData } = await import('../../components/json-tree-component.js');
-        const jsonData = typeof this._originalCollectionContent === 'string'
-          ? JSON.parse(this._originalCollectionContent)
-          : this._originalCollectionContent;
-        setJsonTreeData(mgr.elements.collectionEditorContainer, jsonData);
+        const content = typeof this._originalCollectionContent === 'string'
+          ? this._originalCollectionContent
+          : JSON.stringify(this._originalCollectionContent, null, 2);
+        mgr.collectionEditor.dispatch({
+          changes: { from: 0, to: mgr.collectionEditor.state.doc.length, insert: content },
+        });
       } catch (e) {
-        const { setJsonTreeData } = await import('../../components/json-tree-component.js');
-        setJsonTreeData(mgr.elements.collectionEditorContainer, {});
+        mgr.collectionEditor.dispatch({
+          changes: { from: 0, to: mgr.collectionEditor.state.doc.length, insert: '{}' },
+        });
       }
     }
 
@@ -127,8 +128,7 @@ export class DirtyStateTracker {
    * Get current collection content as JSON string
    */
   getCurrentCollectionContent() {
-    const data = getJsonTreeData(this.manager.elements.collectionEditorContainer);
-    return data ? JSON.stringify(data) : '{}';
+    return this.manager.collectionEditor?.state.doc.toString() || '{}';
   }
 
   /**
