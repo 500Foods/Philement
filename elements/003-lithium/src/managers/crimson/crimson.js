@@ -576,7 +576,7 @@ class CrimsonManager {
       this.conversation.innerHTML = `
         <div class="crimson-welcome crimson-welcome-fade-in">
           <div class="crimson-welcome-icon">
-            <img height=33 src="/assets/images/crimson.svg"/>
+            <img height=125 src="/assets/images/crimson.svg"/>
           </div>
           <div class="crimson-welcome-text">Hello, <span class="crimson-username">${this.escapeHtml(this.username)}</span>!</div>
           <div class="crimson-welcome-hint">How can I help you today?</div>

@@ -15,9 +15,7 @@ import { LithiumTable } from '../../core/lithium-table-main.js';
 import { LithiumSplitter } from '../../core/lithium-splitter.js';
 import { PanelStateManager } from '../../core/panel-state-manager.js';
 import { togglePanelCollapse, restorePanelState } from '../../core/panel-collapse.js';
-import '../../styles/vendor-tabulator.css';
-import '../../core/manager-panels.css';
-import './style-manager.css';
+
 import { processIcons } from '../../core/icons.js';
 import { setupManagerFooterIcons, createFontPopup } from '../../core/manager-ui.js';
 import { authQuery } from '../../shared/conduit.js';
@@ -25,6 +23,24 @@ import { toast } from '../../shared/toast.js';
 import { log, Subsystems, Status } from '../../core/log.js';
 import { getClaims } from '../../core/jwt.js';
 import { hasFeature } from '../../core/permissions.js';
+
+// CodeMirror imports from centralized module
+import {
+  EditorView,
+  EditorState,
+  Compartment,
+  lineNumbers,
+  highlightActiveLineGutter,
+  highlightSpecialChars,
+  drawSelection,
+  highlightActiveLine,
+  keymap,
+  defaultKeymap,
+  history,
+  historyKeymap,
+  css,
+  oneDark
+} from '../../core/codemirror.js';
 
 // ── Hardcoded Sections Data ───────────────────────────────────────────────
 
@@ -105,6 +121,20 @@ const SECTION_MOCKUPS = {
               <button type="button" class="login-btn-icon" data-target="login-logs-btn" data-label="Logs Button"><fa fa-receipt></fa></button>
               <button type="button" class="login-btn-icon" data-target="login-help-btn" data-label="Help Button"><fa fa-circle-question></fa></button>
             </div>
+            <div class="login-alt-btn-group" data-target="login-alt-btn-group" data-label="Alternative Login Buttons">
+              <button type="button" class="login-alt-btn" data-target="login-digit-btn" data-label="Digit Button">
+                <img height=50 src="/assets/images/login_digit.jpg" alt="Digit" class="login-alt-icon">
+              </button>
+              <button type="button" class="login-alt-btn" data-target="login-apple-btn" data-label="Apple Button">
+                <img src="/assets/images/login_apple.png" alt="Apple" class="login-alt-icon">
+              </button>
+              <button type="button" class="login-alt-btn" data-target="login-google-btn" data-label="Google Button">
+                <img src="/assets/images/login_google.png" alt="Google" class="login-alt-icon">
+              </button>
+              <button type="button" class="login-alt-btn" data-target="login-microsoft-btn" data-label="Microsoft Button">
+                <img src="/assets/images/login_microsoft.webp" alt="Microsoft" class="login-alt-icon">
+              </button>
+            </div>
           </form>
         </div>
       </div>
@@ -117,6 +147,11 @@ const SECTION_MOCKUPS = {
       { id: 'login-username', selector: '.login-username', label: 'Username Input' },
       { id: 'login-password', selector: '.login-password', label: 'Password Input' },
       { id: 'login-submit', selector: '.login-btn-primary', label: 'Login Button' },
+      { id: 'login-alt-btn-group', selector: '.login-alt-btn-group', label: 'Alternative Login Buttons' },
+      { id: 'login-digit-btn', selector: '[data-target="login-digit-btn"]', label: 'Digit Button' },
+      { id: 'login-apple-btn', selector: '[data-target="login-apple-btn"]', label: 'Apple Button' },
+      { id: 'login-google-btn', selector: '[data-target="login-google-btn"]', label: 'Google Button' },
+      { id: 'login-microsoft-btn', selector: '[data-target="login-microsoft-btn"]', label: 'Microsoft Button' },
     ]
   },
   7: { // Menu
@@ -180,6 +215,11 @@ export default class StyleManager {
 
     // Live preview style element
     this.previewStyleEl = null;
+
+    // CSS editor state
+    this.cssEditor = null;
+    this.isCssEditorInEditMode = false;
+    this._originalCssContent = '';
 
     // Panel state persistence
     this.leftPanelState = new PanelStateManager('lithium_style_left');
@@ -317,6 +357,7 @@ export default class StyleManager {
         log(Subsystems.TABLE, Status.INFO, `[Style] Loaded ${rows.length} lookup elements`);
       },
       onEditModeChange: (isEditing, rowData) => this.handleTableEditModeChange(this.lookupTable, isEditing, rowData),
+      onDirtyChange: (isDirty, rowData) => this.handleTableDirtyChange(this.lookupTable, isDirty, rowData),
     });
 
     await this.lookupTable.init();
@@ -375,6 +416,8 @@ export default class StyleManager {
       panelStateManager: this.middlePanelState,
       onRowSelected: (rowData) => this.handleSectionRowSelected(rowData),
       onRowDeselected: () => this.handleSectionRowDeselected(),
+      onEditModeChange: (isEditing, rowData) => this.handleTableEditModeChange(this.sectionsTable, isEditing, rowData),
+      onDirtyChange: (isDirty, rowData) => this.handleTableDirtyChange(this.sectionsTable, isDirty, rowData),
     });
 
     await this.sectionsTable.init();
@@ -670,30 +713,29 @@ export default class StyleManager {
     if (this.cssEditor) return;
 
     try {
-      // Dynamic imports for CodeMirror
-      const [
-        { EditorView, basicSetup },
-        { EditorState },
-        { css },
-        { oneDark },
-      ] = await Promise.all([
-        import('@codemirror/view'),
-        import('@codemirror/state'),
-        import('@codemirror/lang-css'),
-        import('@codemirror/theme-one-dark'),
-      ]);
-
-      this.EditorView = EditorView;
+      // Use static imports from core/codemirror.js
+      this.cmReadOnlyCompartment = new Compartment();
 
       const state = EditorState.create({
         doc: '',
         extensions: [
-          basicSetup,
+          // Basic setup extensions
+          lineNumbers(),
+          highlightActiveLineGutter(),
+          highlightSpecialChars(),
+          drawSelection(),
+          highlightActiveLine(),
+          keymap.of([...defaultKeymap, ...historyKeymap]),
+          // Language and theme
           css(),
           oneDark,
+          history(),
+          // Readonly compartment
+          this.cmReadOnlyCompartment.of(EditorState.readOnly.of(true)),
+          // Update listener for dirty tracking
           EditorView.updateListener.of((update) => {
-            if (update.docChanged) {
-              // Handle CSS changes if needed
+            if (update.docChanged && this.isCssEditorInEditMode) {
+              this.handleCssEditorDirty();
             }
           }),
           EditorView.theme({
@@ -708,9 +750,68 @@ export default class StyleManager {
         parent: this.elements.cssEditor,
       });
 
+      // Make editor readonly initially (CSS content editable = false)
+      const contentEl = this.cssEditor.dom.querySelector('.cm-content');
+      if (contentEl) contentEl.contentEditable = 'false';
+      this.elements.cssEditor?.classList.add('style-css-readonly');
+
+      // Double-click to enter edit mode
+      this.elements.cssEditor?.addEventListener('dblclick', () => {
+        if (!this.lookupTable?.isEditing && this.lookupTable?.table) {
+          const selected = this.lookupTable.table.getSelectedRows();
+          if (selected.length > 0) {
+            this.lookupTable.enterEditMode(selected[0]);
+          }
+        }
+      });
+
     } catch (error) {
       log(Subsystems.MANAGER, Status.ERROR, `[Style] Failed to load CodeMirror: ${error.message}`);
     }
+  }
+
+  /**
+   * Track CSS editor dirty state
+   */
+  handleCssEditorDirty() {
+    if (!this.cssEditor) return;
+    const currentContent = this.cssEditor.state.doc.toString();
+    const isDirty = currentContent !== this._originalCssContent;
+
+    // Update footer Save/Cancel buttons if we're in edit mode
+    if (this.activeEditingTable === this.lookupTable) {
+      this.updateFooterSaveCancelState(true, isDirty);
+    }
+  }
+
+  /**
+   * Set CSS editor readonly/editable state
+   * @param {boolean} editable - Whether the editor should be editable
+   */
+  setCssEditorEditable(editable) {
+    if (!this.cssEditor || !this.cmReadOnlyCompartment) return;
+
+    this.isCssEditorInEditMode = editable;
+
+    // Update contentEditable on the cm-content element
+    const contentEl = this.cssEditor.dom.querySelector('.cm-content');
+    if (contentEl) contentEl.contentEditable = editable ? 'true' : 'false';
+
+    // Update readonly class
+    this.elements.cssEditor?.classList.toggle('style-css-readonly', !editable);
+
+    // Reconfigure readOnly via compartment
+    // Use statically imported EditorState (same module instance as compartment)
+    this.cssEditor.dispatch({
+      effects: this.cmReadOnlyCompartment.reconfigure(EditorState.readOnly.of(!editable))
+    });
+
+    // Store original content when entering edit mode
+    if (editable) {
+      this._originalCssContent = this.cssEditor.state.doc.toString();
+    }
+
+    log(Subsystems.MANAGER, Status.INFO, `[Style] CSS editor set to ${editable ? 'editable' : 'readonly'}`);
   }
 
   generateCss() {
@@ -1049,8 +1150,6 @@ ${selector}:disabled {
       fillerTitle: 'Styles',
       anchor: placeholder,
       showSaveCancel: true,
-      onSave: () => this.handleFooterSave(),
-      onCancel: () => this.handleFooterCancel(),
     });
 
     // Store footer save/cancel element references for state management
@@ -1256,6 +1355,10 @@ ${selector}:disabled {
    * Enables/disables the footer Save/Cancel buttons and binds them to
    * the table that is currently in edit mode.
    *
+   * Save/Cancel buttons are only enabled when BOTH:
+   * 1. A table is in edit mode (activeEditingTable is set)
+   * 2. The table has dirty changes (isDirty is true)
+   *
    * @param {LithiumTable} lithiumTable - The table instance
    * @param {boolean} isEditing - Whether the table is now in edit mode
    * @param {Object|null} rowData - The row data being edited (or null)
@@ -1267,14 +1370,44 @@ ${selector}:disabled {
         this.activeEditingTable.exitEditMode('cancel');
       }
       this.activeEditingTable = lithiumTable;
-      this.updateFooterSaveCancelState(true, true);
-      log(Subsystems.MANAGER, Status.INFO, `[Style] Footer Save/Cancel enabled for table`);
+
+      // Enable CSS editor when lookup table enters edit mode
+      if (lithiumTable === this.lookupTable) {
+        this.setCssEditorEditable(true);
+      }
+
+      // Enable buttons only if table is dirty (newly entering edit mode won't be dirty yet)
+      this.updateFooterSaveCancelState(true, lithiumTable.isDirty);
+      log(Subsystems.MANAGER, Status.INFO, `[Style] Edit mode entered, dirty: ${lithiumTable.isDirty}`);
     } else {
       if (this.activeEditingTable === lithiumTable) {
         this.activeEditingTable = null;
       }
+
+      // Disable CSS editor when lookup table exits edit mode
+      if (lithiumTable === this.lookupTable) {
+        this.setCssEditorEditable(false);
+      }
+
+      // No table in edit mode - buttons should be disabled
       this.updateFooterSaveCancelState(true, false);
-      log(Subsystems.MANAGER, Status.INFO, `[Style] Footer Save/Cancel disabled`);
+      log(Subsystems.MANAGER, Status.INFO, `[Style] Edit mode exited`);
+    }
+  }
+
+  /**
+   * Called when a LithiumTable's dirty state changes.
+   * Updates the footer Save/Cancel buttons based on dirty state.
+   *
+   * @param {LithiumTable} lithiumTable - The table instance
+   * @param {boolean} isDirty - Whether the table has unsaved changes
+   * @param {Object|null} rowData - The row data being edited (or null)
+   */
+  handleTableDirtyChange(lithiumTable, isDirty, rowData) {
+    // Only update buttons if this is the active editing table
+    if (this.activeEditingTable === lithiumTable) {
+      this.updateFooterSaveCancelState(true, isDirty);
+      log(Subsystems.MANAGER, Status.INFO, `[Style] Dirty state changed: ${isDirty}`);
     }
   }
 
