@@ -202,4 +202,50 @@
   padding: var(--space-1);
 }
 
+/* ── Footer Export Popup ────────────────────────────────────────────────── */
+
+.version-footer-export-popup {
+  position: fixed;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 10001;
+  min-width: 80px;
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: opacity var(--transition-fast), visibility var(--transition-fast), transform var(--transition-fast);
+}
+
+.version-footer-export-popup.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.version-footer-export-popup-item {
+  display: block;
+  width: 100%;
+  padding: 6px 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color var(--transition-fast);
+}
+
+.version-footer-export-popup-item:hover {
+  background-color: var(--accent-primary);
+  color: white;
+}
+
+.version-footer-export-popup-item:active {
+  background-color: var(--accent-focus);
+}
+
 } /* end @layer managers */

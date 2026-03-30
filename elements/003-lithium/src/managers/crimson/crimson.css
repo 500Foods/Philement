@@ -752,7 +752,6 @@
   justify-content: center;
   flex: 1;
   text-align: center;
-  padding: var(--space-6);
   color: var(--text-muted);
   animation: crimson-welcome-fade-in var(--transition-duration) ease-out;
 }
@@ -769,15 +768,7 @@
 }
 
 .crimson-welcome-icon {
-  font-size: 96px;
   margin-bottom: var(--space-4);
-  color: var(--accent-crimson);
-}
-
-.crimson-welcome-icon svg,
-.crimson-welcome-icon i {
-  color: var(--accent-crimson);
-
 }
 
 .crimson-welcome-text {

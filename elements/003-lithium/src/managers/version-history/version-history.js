@@ -23,6 +23,7 @@ import { log, Subsystems, Status } from '../../core/log.js';
 import { processIcons } from '../../core/icons.js';
 import '../../core/manager-panels.css';
 import './version-history.css';
+import { setupManagerFooterIcons } from '../../core/manager-ui.js';
 
 // Dynamic imports
 let marked;
@@ -59,6 +60,12 @@ export default class VersionHistoryManager {
     // Table state
     this._tableWidthMode = 'compact';
     this._filtersVisible = false;
+
+    // Footer Save/Cancel state
+    this.footerSaveBtn = null;
+    this.footerCancelBtn = null;
+    this.footerDummyBtn = null;
+    this.activeEditingTable = null;
   }
 
   async init() {
@@ -66,6 +73,7 @@ export default class VersionHistoryManager {
     await this.render();
     this.setupEventListeners();
     await this.initVersionsTable();
+    this.setupFooter();
     this.restorePanelState();
   }
 
@@ -125,12 +133,13 @@ export default class VersionHistoryManager {
       tablePath: 'version-manager/version-history',
       app: this.app,
       readonly: true,
+      panel: this.elements.leftPanel,
+      panelStateManager: this.leftPanelState,
       onRowSelected: (rowData) => this.handleVersionSelected(rowData),
       onRowDeselected: () => this.handleVersionDeselected(),
       onDataLoaded: (rows) => {
         log(Subsystems.TABLE, Status.INFO, `[VersionHistory] Loaded ${rows.length} versions`);
       },
-      onSetTableWidth: (mode) => this.setTableWidth(mode),
       onRefresh: () => this.loadVersionList(),
     });
 
@@ -186,37 +195,11 @@ export default class VersionHistoryManager {
   }
 
   // ── Table Width Control ────────────────────────────────────────────────────
-
-  setTableWidth(mode) {
-    const panel = this.elements.leftPanel;
-    if (!panel) return;
-
-    // mode === null means LithiumTable has no saved width mode.
-    // Apply the PanelStateManager pixel width as fallback.
-    if (mode === null) {
-      panel.style.width = `${this.leftPanelWidth}px`;
-      return;
-    }
-
-    // Match Query Manager width setpoints
-    const widths = { narrow: 160, compact: 314, normal: 468, wide: 622 };
-
-    this._tableWidthMode = mode;
-
-    if (mode === 'auto') {
-      panel.style.width = '';
-      const currentWidth = panel.offsetWidth;
-      this.leftPanelWidth = currentWidth;
-      this.leftPanelState.saveWidth(currentWidth);
-      return;
-    }
-
-    // Named mode: set the panel width but do NOT overwrite this.leftPanelWidth
-    // (which holds the pixel width for collapse/expand).
-    const widthPx = widths[mode] || 314;
-    panel.style.width = `${widthPx}px`;
-    log(Subsystems.MANAGER, Status.INFO, `[VersionHistory] Table width set to: ${mode}`);
-  }
+  // Width persistence is now handled centrally by LithiumTable.
+  // The Width popup in the Navigator calls LithiumTable.setTableWidth() directly,
+  // which saves the mode to localStorage and applies the width to the panel.
+  // Splitter drag clears the width mode via LithiumSplitter._clearWidthModes().
+  // Panel pixel width is saved by the onResizeEnd callback below.
 
   // ── Data Loading ──────────────────────────────────────────────────────────
 
@@ -509,6 +492,9 @@ export default class VersionHistoryManager {
         this.versionsTable?.table?.redraw?.();
       },
     });
+
+    // Bind splitter to table for centralized width mode clearing
+    this.versionsTable?.setSplitter(this.splitter);
   }
 
   toggleLeftPanel() {
@@ -521,7 +507,7 @@ export default class VersionHistoryManager {
       onAfterToggle: () => this.versionsTable?.table?.redraw?.(),
     });
 
-    // Save collapsed state
+    // Save collapsed state via PanelStateManager
     this.leftPanelState.saveCollapsed(this.isLeftPanelCollapsed);
   }
 
@@ -529,21 +515,304 @@ export default class VersionHistoryManager {
     // Re-read collapsed state from localStorage (handles edge cases)
     this.isLeftPanelCollapsed = this.leftPanelState.loadCollapsed(this.isLeftPanelCollapsed);
 
-    // Restore collapsed state using shared utility
-    restorePanelState({
-      panel: this.elements.leftPanel,
-      splitter: this.splitter,
-      collapseBtn: this.elements.collapseBtn,
-      isCollapsed: this.isLeftPanelCollapsed,
-    });
+    const panel = this.elements.leftPanel;
+    const btn = this.elements.collapseBtn;
+    const splitter = this.splitter;
 
-    // Panel width is handled by LithiumTable's setupPersistence():
-    // - If a width mode was saved, it calls onSetTableWidth(mode)
-    // - If no mode was saved, it calls onSetTableWidth(null), and setTableWidth
-    //   applies the PanelStateManager pixel width as fallback
+    if (!panel || !btn || !splitter) {
+      console.warn('[VersionMgr] restorePanelState: missing elements', {
+        panel: !!panel, btn: !!btn, splitter: !!splitter
+      });
+      return;
+    }
+
+    if (this.isLeftPanelCollapsed) {
+      // Set collapsed state directly via inline styles
+      panel.style.width = '0px';
+      panel.style.minWidth = '0px';
+      panel.style.maxWidth = '0px';
+      panel.style.overflow = 'hidden';
+      btn.classList.add('collapsed');
+      splitter.setCollapsed(true);
+    } else {
+      // Ensure panel is expanded
+      btn.classList.remove('collapsed');
+      splitter.setCollapsed(false);
+    }
+
+    // DEBUG: Watch for any changes to the panel's style after restore
+    const origSetWidth = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'style')?.set;
+    if (origSetWidth) {
+      const panelEl = panel;
+      const origStyle = panelEl.style;
+      // Monkey-patch the width setter to log any changes
+      let lastLoggedWidth = origStyle.width;
+      const observer = new MutationObserver(() => {
+        const w = panelEl.style.width;
+        if (w !== lastLoggedWidth) {
+          console.trace(`[VersionMgr] Panel width changed from "${lastLoggedWidth}" to "${w}"`);
+          lastLoggedWidth = w;
+        }
+      });
+      observer.observe(panelEl, { attributes: true, attributeFilter: ['style'] });
+      this._debugObserver = observer;
+    }
   }
 
-  // ── Cleanup ────────────────────────────────────────────────────────────────
+  // ── Footer Setup ───────────────────────────────────────────────────────────
+
+  setupFooter() {
+    const slot = this.container.closest('.manager-slot');
+    if (!slot) return;
+
+    const footer = slot.querySelector('.manager-slot-footer');
+    if (!footer) return;
+
+    const group = footer.querySelector('.subpanel-header-group');
+    if (!group) return;
+
+    const placeholder = group.querySelector('.slot-footer-placeholder');
+
+    const footerElements = setupManagerFooterIcons(group, {
+      onPrint: () => this.handleFooterPrint(),
+      onEmail: () => this.handleFooterEmail(),
+      onExport: (e) => this.toggleFooterExportPopup(e),
+      reportOptions: [
+        { value: 'version-view', label: 'Versions View' },
+        { value: 'version-data', label: 'Versions Data' },
+      ],
+      fillerTitle: 'Versions',
+      anchor: placeholder,
+      showSaveCancel: true,
+    });
+
+    this._footerDatasource = footerElements.reportSelect;
+    this.footerSaveBtn = footerElements.saveBtn;
+    this.footerCancelBtn = footerElements.cancelBtn;
+    this.footerDummyBtn = footerElements.dummyBtn;
+
+    // Wire footer Save/Cancel to the active editing table
+    if (this.footerSaveBtn) {
+      this.footerSaveBtn.addEventListener('click', () => {
+        if (this.activeEditingTable?.handleSave) {
+          this.activeEditingTable.handleSave();
+        }
+      });
+    }
+    if (this.footerCancelBtn) {
+      this.footerCancelBtn.addEventListener('click', () => {
+        if (this.activeEditingTable?.handleCancel) {
+          this.activeEditingTable.handleCancel();
+        }
+      });
+    }
+
+    // Show the Save/Cancel buttons (disabled) initially
+    // Version history is readonly, but buttons should still be visible
+    this.updateFooterSaveCancelState(true, false);
+
+    log(Subsystems.MANAGER, Status.INFO, '[VersionHistory] Footer controls initialized');
+  }
+
+  _getFooterDatasource() {
+    return this._footerDatasource?.value || 'version-view';
+  }
+
+  handleFooterPrint() {
+    const mode = this._getFooterDatasource();
+    const table = this.versionsTable?.table;
+
+    if (!table) {
+      return;
+    }
+
+    if (mode.endsWith('-view')) {
+      table.print();
+    } else {
+      table.print('all', true);
+    }
+  }
+
+  handleFooterEmail() {
+    const mode = this._getFooterDatasource();
+    const table = this.versionsTable?.table;
+
+    if (!table) {
+      return;
+    }
+
+    const isViewMode = mode.endsWith('-view');
+    const rows = isViewMode ? table.getRows('active') : table.getRows();
+
+    if (rows.length === 0) {
+      return;
+    }
+
+    const visibleCols = isViewMode
+      ? table.getColumns().filter(col => col.isVisible() && col.getField() !== '_selector')
+      : table.getColumns().filter(col => col.getField() !== '_selector');
+
+    const headers = visibleCols.map(col => col.getDefinition().title || col.getField());
+    const separator = headers.map(h => '-'.repeat(h.length)).join('  ');
+
+    const dataLines = rows.slice(0, 50).map(row => {
+      const data = row.getData();
+      return visibleCols.map(col => {
+        const val = data[col.getField()];
+        return val != null ? String(val) : '';
+      }).join('\t');
+    });
+
+    const totalRows = rows.length;
+    const truncated = totalRows > 50 ? `\n... (${totalRows - 50} more rows not shown)` : '';
+    const modeLabel = isViewMode ? 'Filtered View' : 'Full Data';
+
+    const subject = encodeURIComponent(`Versions — ${totalRows} rows (${modeLabel})`);
+    const body = encodeURIComponent(
+      `Versions Export (${modeLabel})\n` +
+      `${totalRows} row(s)\n\n` +
+      `${headers.join('\t')}\n${separator}\n` +
+      `${dataLines.join('\n')}${truncated}\n`
+    );
+
+    window.open(`mailto:?subject=${subject}&body=${body}`, '_self');
+  }
+
+  toggleFooterExportPopup(e) {
+    e.stopPropagation();
+
+    if (this._footerExportPopup) {
+      this._closeFooterExportPopup();
+      return;
+    }
+
+    const btn = e.currentTarget;
+    const mode = this._getFooterDatasource();
+    const formats = [
+      { label: 'PDF', action: () => this.handleFooterExport('pdf', mode) },
+      { label: 'CSV', action: () => this.handleFooterExport('csv', mode) },
+      { label: 'TXT', action: () => this.handleFooterExport('txt', mode) },
+      { label: 'XLS', action: () => this.handleFooterExport('xls', mode) },
+    ];
+
+    const popup = document.createElement('div');
+    popup.className = 'version-footer-export-popup';
+    formats.forEach(item => {
+      const row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'version-footer-export-popup-item';
+      row.textContent = item.label;
+      row.addEventListener('click', () => {
+        this._closeFooterExportPopup();
+        item.action();
+      });
+      popup.appendChild(row);
+    });
+
+    const btnRect = btn.getBoundingClientRect();
+    document.body.appendChild(popup);
+
+    requestAnimationFrame(() => {
+      const popupRect = popup.getBoundingClientRect();
+      popup.style.position = 'fixed';
+      popup.style.top = `${btnRect.top - popupRect.height - 8}px`;
+      popup.style.left = `${btnRect.left}px`;
+    });
+
+    setTimeout(() => {
+      popup.classList.add('visible');
+    }, 10);
+
+    this._footerExportPopup = popup;
+
+    this._footerExportCloseHandler = (evt) => {
+      if (!popup.contains(evt.target) && !btn.contains(evt.target)) {
+        this._closeFooterExportPopup();
+      }
+    };
+    document.addEventListener('click', this._footerExportCloseHandler);
+  }
+
+  _closeFooterExportPopup() {
+    if (this._footerExportPopup) {
+      this._footerExportPopup.remove();
+      this._footerExportPopup = null;
+    }
+    if (this._footerExportCloseHandler) {
+      document.removeEventListener('click', this._footerExportCloseHandler);
+      this._footerExportCloseHandler = null;
+    }
+  }
+
+  handleFooterExport(format, mode) {
+    const table = this.versionsTable?.table;
+
+    if (!table) {
+      return;
+    }
+
+    const filename = `versions-export-${new Date().toISOString().slice(0, 10)}`;
+    const isViewMode = mode.endsWith('-view');
+    const downloadOpts = isViewMode ? {} : { rowGroups: false };
+
+    switch (format) {
+      case 'pdf':
+        table.download('pdf', `${filename}.pdf`, { orientation: 'landscape', ...downloadOpts });
+        break;
+      case 'csv':
+        table.download('csv', `${filename}.csv`, downloadOpts);
+        break;
+      case 'txt':
+        table.download('csv', `${filename}.txt`, downloadOpts);
+        break;
+      case 'xls':
+        table.download('xlsx', `${filename}.xlsx`, downloadOpts);
+        break;
+    }
+  }
+
+  /**
+   * Called when any LithiumTable in this manager changes edit mode.
+   * Enables/disables the footer Save/Cancel buttons and binds them to
+   * the table that is currently in edit mode.
+   */
+  handleTableEditModeChange(lithiumTable, isEditing, rowData) {
+    if (isEditing) {
+      if (this.activeEditingTable && this.activeEditingTable !== lithiumTable) {
+        this.activeEditingTable.exitEditMode('cancel');
+      }
+      this.activeEditingTable = lithiumTable;
+      this.updateFooterSaveCancelState(true, true);
+      log(Subsystems.MANAGER, Status.INFO, '[VersionHistory] Footer Save/Cancel enabled for table');
+    } else {
+      if (this.activeEditingTable === lithiumTable) {
+        this.activeEditingTable = null;
+      }
+      this.updateFooterSaveCancelState(true, false);
+      log(Subsystems.MANAGER, Status.INFO, '[VersionHistory] Footer Save/Cancel disabled');
+    }
+  }
+
+  /**
+   * Show/hide and enable/disable the footer Save/Cancel buttons.
+   * @param {boolean} visible - Whether the buttons should be visible
+   * @param {boolean} enabled - Whether the buttons should be enabled (requires visible=true)
+   */
+  updateFooterSaveCancelState(visible, enabled) {
+    if (this.footerSaveBtn) {
+      this.footerSaveBtn.style.display = visible ? '' : 'none';
+      this.footerSaveBtn.disabled = !visible || !enabled;
+    }
+    if (this.footerCancelBtn) {
+      this.footerCancelBtn.style.display = visible ? '' : 'none';
+      this.footerCancelBtn.disabled = !visible || !enabled;
+    }
+    if (this.footerDummyBtn) {
+      this.footerDummyBtn.style.display = visible ? '' : 'none';
+    }
+  }
+
+// ── Cleanup ────────────────────────────────────────────────────────────────
 
   cleanup() {
     log(Subsystems.MANAGER, Status.INFO, '[VersionHistory] Cleaning up...');

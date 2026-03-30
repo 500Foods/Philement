@@ -896,6 +896,198 @@ All managers use the shared `panel-collapse.js` utility for consistent behavior:
 
 ---
 
+## Footer Save/Cancel Buttons
+
+All managers with LithiumTables must include Save/Cancel buttons in the manager footer. These buttons appear in a disabled state when the manager loads and become enabled when a LithiumTable enters edit mode. Even readonly tables require these buttons to be present (they remain disabled).
+
+### Button Layout
+
+The footer layout follows this order (left to right):
+
+```
+[Print] [Email] [Export] [Select] [placeholder flex:1] [Save] [Cancel] [Dummy] [Crimson...] [fixed action icons]
+```
+
+### CSS Classes (Shared)
+
+All Save/Cancel button styles are defined in `manager-ui.css` and are shared across all managers:
+
+| Class | Purpose | Disabled Styling |
+|-------|---------|------------------|
+| `.manager-footer-save-btn` | Save button | `background: var(--accent-disabled); color: var(--text-disabled);` |
+| `.manager-footer-cancel-btn` | Cancel button | `background: var(--accent-disabled); color: var(--text-disabled);` |
+| `.manager-footer-dummy-btn` | Spacer button (60px wide) | `background: var(--accent-primary); border: none; cursor: auto;` |
+
+**Do not duplicate these styles** in manager-specific CSS files — they are inherited from `manager-ui.css`.
+
+### JavaScript Implementation
+
+#### 1. Import the Setup Function
+
+```javascript
+import { setupManagerFooterIcons } from '../../core/manager-ui.js';
+```
+
+#### 2. Add Footer State Properties to Constructor
+
+```javascript
+constructor(app, container) {
+  // ... other properties ...
+  
+  // Footer Save/Cancel state
+  this.footerSaveBtn = null;
+  this.footerCancelBtn = null;
+  this.footerDummyBtn = null;
+  this.activeEditingTable = null;
+}
+```
+
+#### 3. Call `setupFooter()` in `init()`
+
+```javascript
+async init() {
+  await this.render();
+  this.setupEventListeners();
+  await this.initTables();
+  this.setupSplitters();
+  this.setupFooter();  // Add this
+  this.restorePanelState();
+}
+```
+
+#### 4. Implement `setupFooter()` Method
+
+```javascript
+setupFooter() {
+  const slot = this.container.closest('.manager-slot');
+  if (!slot) return;
+
+  const footer = slot.querySelector('.manager-slot-footer');
+  if (!footer) return;
+
+  const group = footer.querySelector('.subpanel-header-group');
+  if (!group) return;
+
+  const placeholder = group.querySelector('.slot-footer-placeholder');
+
+  const footerElements = setupManagerFooterIcons(group, {
+    onPrint: () => this.handleFooterPrint(),
+    onEmail: () => this.handleFooterEmail(),
+    onExport: (e) => this.toggleFooterExportPopup(e),
+    reportOptions: [
+      { value: 'mymanager-view', label: 'My Table View' },
+      { value: 'mymanager-data', label: 'My Table Data' },
+    ],
+    fillerTitle: 'MyManager',
+    anchor: placeholder,
+    showSaveCancel: true,  // IMPORTANT: This enables Save/Cancel buttons
+    onSave: () => this.handleFooterSave(),
+    onCancel: () => this.handleFooterCancel(),
+  });
+
+  this._footerDatasource = footerElements.reportSelect;
+  this.footerSaveBtn = footerElements.saveBtn;
+  this.footerCancelBtn = footerElements.cancelBtn;
+  this.footerDummyBtn = footerElements.dummyBtn;
+
+  // Wire footer Save/Cancel to the active editing table
+  if (this.footerSaveBtn) {
+    this.footerSaveBtn.addEventListener('click', () => {
+      if (this.activeEditingTable?.handleSave) {
+        this.activeEditingTable.handleSave();
+      }
+    });
+  }
+  if (this.footerCancelBtn) {
+    this.footerCancelBtn.addEventListener('click', () => {
+      if (this.activeEditingTable?.handleCancel) {
+        this.activeEditingTable.handleCancel();
+      }
+    });
+  }
+
+  // Show the Save/Cancel buttons (disabled) initially
+  this.updateFooterSaveCancelState(true, false);
+}
+```
+
+#### 5. Implement `updateFooterSaveCancelState()` Method
+
+```javascript
+/**
+ * Show/hide and enable/disable the footer Save/Cancel buttons.
+ * @param {boolean} visible - Whether the buttons should be visible
+ * @param {boolean} enabled - Whether the buttons should be enabled (requires visible=true)
+ */
+updateFooterSaveCancelState(visible, enabled) {
+  if (this.footerSaveBtn) {
+    this.footerSaveBtn.style.display = visible ? '' : 'none';
+    this.footerSaveBtn.disabled = !visible || !enabled;
+  }
+  if (this.footerCancelBtn) {
+    this.footerCancelBtn.style.display = visible ? '' : 'none';
+    this.footerCancelBtn.disabled = !visible || !enabled;
+  }
+  if (this.footerDummyBtn) {
+    this.footerDummyBtn.style.display = visible ? '' : 'none';
+  }
+}
+```
+
+#### 6. Implement `handleTableEditModeChange()` Method
+
+This method is called by each LithiumTable's `onEditModeChange` callback:
+
+```javascript
+/**
+ * Called when any LithiumTable in this manager changes edit mode.
+ * @param {LithiumTable} lithiumTable - The table instance
+ * @param {boolean} isEditing - Whether the table is now in edit mode
+ * @param {Object|null} rowData - The row data being edited (or null)
+ */
+handleTableEditModeChange(lithiumTable, isEditing, rowData) {
+  if (isEditing) {
+    // If another table was already editing, exit its edit mode first
+    if (this.activeEditingTable && this.activeEditingTable !== lithiumTable) {
+      this.activeEditingTable.exitEditMode('cancel');
+    }
+    this.activeEditingTable = lithiumTable;
+    this.updateFooterSaveCancelState(true, true);
+  } else {
+    if (this.activeEditingTable === lithiumTable) {
+      this.activeEditingTable = null;
+    }
+    this.updateFooterSaveCancelState(true, false);
+  }
+}
+```
+
+#### 7. Wire `onEditModeChange` in LithiumTable Constructor
+
+```javascript
+this.myTable = new LithiumTable({
+  container: this.elements.tableContainer,
+  navigatorContainer: this.elements.navigatorContainer,
+  // ... other options ...
+  onEditModeChange: (isEditing, rowData) => this.handleTableEditModeChange(this.myTable, isEditing, rowData),
+});
+```
+
+### Dual Table Behavior
+
+When a manager has two LithiumTables, only one can be in edit mode at a time. The `handleTableEditModeChange()` method handles this by exiting edit mode on the previous table when a different table enters edit mode.
+
+### Current Implementations
+
+| Manager | File | Has Footer Save/Cancel |
+|---------|------|------------------------|
+| **Version Manager** | `version-history.js` | ✅ |
+| **Query Manager** | `queries.js` | ✅ |
+| **Style Manager** | `style-manager.js` | ✅ |
+| **Lookups Manager** | `lookups.js` | ✅ |
+
+---
+
 ## Related Documentation
 
 - [LITHIUM-MGR.md](LITHIUM-MGR.md) — Manager system overview
