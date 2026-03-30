@@ -275,6 +275,14 @@ export default class LookupsManager {
       if (this.currentDetailData?.summary) {
         this.sunEditor.setContents(this.currentDetailData.summary);
       }
+
+      // Double-click to enter edit mode on child table
+      this.elements.summaryEditor?.addEventListener('dblclick', () => {
+        if (!this.childTable?.isEditing && this.childTable?.table) {
+          const selected = this.childTable.table.getSelectedRows();
+          if (selected.length > 0) void this.childTable.enterEditMode(selected[0]);
+        }
+      });
     } catch (error) {
       console.error('[LookupsManager] Failed to initialize SunEditor:', error);
     }
@@ -307,13 +315,23 @@ export default class LookupsManager {
       this.collectionEditor = await initJsonTree({
         target: this.elements.jsonEditor,
         data: jsonData,
-        readOnly: true,
+        readOnly: !this.childTable?.isEditing,
         onJsonEdit: () => {
           // Track dirty state when editor content changes
-          if (this.elements.jsonEditor) {
-            this.elements.jsonEditor._isDirty = true;
+          if (this.childTable) {
+            this.childTable.isDirty = true;
+            this.childTable.updateSaveCancelButtonState();
+            this.childTable.notifyDirtyChange();
           }
         },
+      });
+
+      // Double-click to enter edit mode on child table
+      this.elements.jsonEditor?.addEventListener('dblclick', () => {
+        if (!this.childTable?.isEditing && this.childTable?.table) {
+          const selected = this.childTable.table.getSelectedRows();
+          if (selected.length > 0) void this.childTable.enterEditMode(selected[0]);
+        }
       });
     } catch (error) {
       console.error('[LookupsManager] Failed to initialize JSON editor:', error);
@@ -1003,14 +1021,59 @@ export default class LookupsManager {
       }
       this.activeEditingTable = lithiumTable;
       this.updateFooterSaveCancelState(true, true);
+
+      // Enable JSON/Summary editors when child table enters edit mode
+      if (lithiumTable === this.childTable) {
+        this.setEditorsEditable(true);
+      }
+
       log(Subsystems.MANAGER, Status.INFO, `[Lookups] Footer Save/Cancel enabled for table`);
     } else {
       if (this.activeEditingTable === lithiumTable) {
         this.activeEditingTable = null;
       }
+
+      // Disable JSON/Summary editors when child table exits edit mode
+      if (lithiumTable === this.childTable) {
+        this.setEditorsEditable(false);
+      }
+
       this.updateFooterSaveCancelState(true, false);
       log(Subsystems.MANAGER, Status.INFO, `[Lookups] Footer Save/Cancel disabled`);
     }
+  }
+
+  /**
+   * Set JSON and Summary editors editable state
+   * @param {boolean} editable - Whether editors should be editable
+   */
+  setEditorsEditable(editable) {
+    // Update JSON editor (initJsonTree uses readOnly option)
+    if (this.collectionEditor) {
+      // The JSON tree component needs to be recreated with new readOnly state
+      // or we need to update its internal state
+      const jsonContainer = this.elements.jsonEditor;
+      if (jsonContainer?._cmView) {
+        const compartment = jsonContainer._cmReadOnlyCompartment;
+        if (compartment) {
+          jsonContainer._cmView.dispatch({
+            effects: compartment.reconfigure(!editable),
+          });
+        }
+      }
+    }
+
+    // Update SunEditor readonly state
+    if (this.sunEditor) {
+      this.sunEditor.disabled = !editable;
+      if (editable) {
+        this.sunEditor.enable();
+      } else {
+        this.sunEditor.disable();
+      }
+    }
+
+    log(Subsystems.MANAGER, Status.INFO, `[Lookups] Editors set to ${editable ? 'editable' : 'readonly'}`);
   }
 
   /**

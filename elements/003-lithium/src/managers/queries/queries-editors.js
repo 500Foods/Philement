@@ -2,20 +2,38 @@
  * Queries Manager - Editors Module
  *
  * Handles SQL, Summary (Markdown), and Collection (JSON) editor initialization.
- * JSON editing uses CodeMirror 6 with @codemirror/lang-json.
+ * All CodeMirror imports come from the centralized core/codemirror.js module
+ * to prevent "multiple instances" errors.
  */
 
 import { log, Subsystems, Status } from '../../core/log.js';
-import { initJsonTree, getJsonTreeData, setJsonTreeData, destroyJsonTree } from '../../components/json-tree-component.js';
+import {
+  EditorState,
+  Compartment,
+  EditorView,
+  keymap,
+  lineNumbers,
+  highlightActiveLineGutter,
+  highlightSpecialChars,
+  drawSelection,
+  highlightActiveLine,
+  defaultKeymap,
+  history,
+  historyKeymap,
+  historyField,
+  sql,
+  markdown,
+  json,
+  oneDark,
+  undo,
+  redo
+} from '../../core/codemirror.js';
 
 // Constants
 const MIN_FONT_SIZE = 10;
 const MAX_FONT_SIZE = 24;
 const DEFAULT_FONT_SIZE = 14;
 const DEFAULT_FONT_FAMILY = '"Vanadium Mono", var(--font-mono, monospace)';
-
-// History field for CodeMirror undo/redo state
-let historyField;
 
 /**
  * EditorManager - Manages all editor instances
@@ -43,23 +61,6 @@ export class EditorManager {
     if (!container || this.sqlEditor) return;
 
     try {
-      const [
-        { EditorState },
-        { EditorView, lineNumbers, highlightActiveLineGutter, highlightSpecialChars, drawSelection, highlightActiveLine, keymap },
-        { defaultKeymap, history, historyKeymap },
-        { sql },
-        { oneDark },
-      ] = await Promise.all([
-        import('@codemirror/state'),
-        import('@codemirror/view'),
-        import('@codemirror/commands'),
-        import('@codemirror/lang-sql'),
-        import('@codemirror/theme-one-dark'),
-      ]);
-
-      const historyModule = await import('@codemirror/commands');
-      historyField = historyModule.historyField;
-
       const startState = EditorState.create({
         doc: initialContent,
         extensions: [
@@ -91,14 +92,16 @@ export class EditorManager {
         parent: container,
       });
 
+      // Check if we're currently in edit mode and set state accordingly
+      const isEditing = this.manager.queryTable?.isEditing || false;
       const contentEl = this.sqlEditor.dom.querySelector('.cm-content');
-      if (contentEl) contentEl.contentEditable = 'false';
-      container?.classList.add('queries-cm-readonly');
+      if (contentEl) contentEl.contentEditable = isEditing ? 'true' : 'false';
+      container?.classList.toggle('queries-cm-readonly', !isEditing);
 
       container.addEventListener('dblclick', () => {
-        if (!this.manager.editModeManager.isEditing() && this.manager.table) {
-          const selected = this.manager.table.getSelectedRows();
-          if (selected.length > 0) void this.manager.editModeManager.enterEditMode(selected[0]);
+        if (!this.manager.queryTable?.isEditing && this.manager.queryTable?.table) {
+          const selected = this.manager.queryTable.table.getSelectedRows();
+          if (selected.length > 0) void this.manager.queryTable.enterEditMode(selected[0]);
         }
       });
     } catch (err) {
@@ -114,20 +117,6 @@ export class EditorManager {
     if (!container || this.summaryEditor) return;
 
     try {
-      const [
-        { EditorState },
-        { EditorView, lineNumbers, highlightActiveLineGutter, highlightSpecialChars, drawSelection, highlightActiveLine, keymap },
-        { defaultKeymap, history, historyKeymap },
-        { markdown },
-        { oneDark },
-      ] = await Promise.all([
-        import('@codemirror/state'),
-        import('@codemirror/view'),
-        import('@codemirror/commands'),
-        import('@codemirror/lang-markdown'),
-        import('@codemirror/theme-one-dark'),
-      ]);
-
       const startState = EditorState.create({
         doc: initialContent,
         extensions: [
@@ -155,15 +144,17 @@ export class EditorManager {
         parent: container,
       });
 
+      // Check if we're currently in edit mode and set state accordingly
+      const isEditing = this.manager.queryTable?.isEditing || false;
       const contentEl = this.summaryEditor.dom.querySelector('.cm-content');
-      if (contentEl) contentEl.contentEditable = 'false';
-      container?.classList.add('queries-summary-readonly');
+      if (contentEl) contentEl.contentEditable = isEditing ? 'true' : 'false';
+      container?.classList.toggle('queries-summary-readonly', !isEditing);
 
       // Double-click to enter edit mode (same behavior as SQL editor)
       container.addEventListener('dblclick', () => {
-        if (!this.manager.editModeManager.isEditing() && this.manager.table) {
-          const selected = this.manager.table.getSelectedRows();
-          if (selected.length > 0) void this.manager.editModeManager.enterEditMode(selected[0]);
+        if (!this.manager.queryTable?.isEditing && this.manager.queryTable?.table) {
+          const selected = this.manager.queryTable.table.getSelectedRows();
+          if (selected.length > 0) void this.manager.queryTable.enterEditMode(selected[0]);
         }
       });
     } catch (error) {
@@ -184,23 +175,56 @@ export class EditorManager {
     }
 
     try {
-      this.collectionEditor = await initJsonTree({
-        target: container,
-        data: data,
-        readOnly: !this.manager.editModeManager.isEditing(),
-        onJsonEdit: () => {
-          // Any edit in the tree is a change — mark dirty unconditionally.
-          // We avoid checkCollectionDirty() here because getJsonTreeData()
-          // may return stale data when the event fires before internal state updates.
-          this.manager.dirtyTracker.setDirty('collection', true);
-        },
+      const jsonStr = JSON.stringify(data, null, 2);
+      
+      // Create a Compartment for readonly state management
+      this._jsonReadOnlyCompartment = new Compartment();
+      
+      const startState = EditorState.create({
+        doc: jsonStr,
+        extensions: [
+          json(),
+          oneDark,
+          history(),
+          keymap.of([...defaultKeymap, ...historyKeymap]),
+          this._jsonReadOnlyCompartment.of(EditorState.readOnly.of(!this.manager.queryTable?.isEditing)),
+          EditorView.theme({
+            '&': { height: '100%', fontSize: '13px' },
+            '.cm-scroller': { overflow: 'auto', fontFamily: 'var(--font-mono, monospace)' },
+            '.cm-content': { caretColor: 'var(--accent-primary, #007acc)' },
+          }),
+          EditorView.updateListener.of((update) => {
+            if (update.docChanged && this.manager.queryTable?.isEditing) {
+              // Mark dirty when content changes in edit mode
+              this.manager.queryTable.isDirty = true;
+              this.manager.queryTable.updateSaveCancelButtonState();
+              this.manager.queryTable.notifyDirtyChange();
+            }
+          }),
+        ],
       });
+
+      container.innerHTML = '';
+      this.collectionEditor = new EditorView({
+        state: startState,
+        parent: container,
+      });
+
+      // Store references on container for compatibility
+      container._cmView = this.collectionEditor;
+      container._cmReadOnlyCompartment = this._jsonReadOnlyCompartment;
+
+      // Check if we're currently in edit mode and set state accordingly
+      const isEditing = this.manager.queryTable?.isEditing || false;
+      const contentEl = this.collectionEditor.dom.querySelector('.cm-content');
+      if (contentEl) contentEl.contentEditable = isEditing ? 'true' : 'false';
+      container?.classList.toggle('queries-json-readonly', !isEditing);
 
       // Double-click to enter edit mode (same behavior as SQL editor)
       container.addEventListener('dblclick', () => {
-        if (!this.manager.editModeManager.isEditing() && this.manager.table) {
-          const selected = this.manager.table.getSelectedRows();
-          if (selected.length > 0) void this.manager.editModeManager.enterEditMode(selected[0]);
+        if (!this.manager.queryTable?.isEditing && this.manager.queryTable?.table) {
+          const selected = this.manager.queryTable.table.getSelectedRows();
+          if (selected.length > 0) void this.manager.queryTable.enterEditMode(selected[0]);
         }
       });
 
@@ -270,12 +294,13 @@ export class EditorManager {
 
     const isReadOnly = !editable;
 
+    // Use EditorState from static import (same module instance)
     view.dispatch({
-      effects: compartment.reconfigure(isReadOnly),
+      effects: compartment.reconfigure(EditorState.readOnly.of(isReadOnly)),
     });
 
     container._cmReadOnly = isReadOnly;
-    container?.classList.toggle('queries-jsoneditor-readonly', isReadOnly);
+    container?.classList.toggle('queries-json-readonly', isReadOnly);
   }
 
   /**
@@ -284,7 +309,7 @@ export class EditorManager {
    */
   resetCollectionEditor() {
     if (this.collectionEditor) {
-      destroyJsonTree(this.manager.elements.collectionEditorContainer);
+      this.collectionEditor.destroy();
       this.collectionEditor = null;
     }
   }
@@ -304,7 +329,7 @@ export class EditorManager {
     }
 
     if (this.collectionEditor) {
-      destroyJsonTree(this.manager.elements.collectionEditorContainer);
+      this.collectionEditor.destroy();
       this.collectionEditor = null;
     }
   }
@@ -314,7 +339,7 @@ export class EditorManager {
    */
   handleUndo() {
     if (this.sqlEditor) {
-      import('@codemirror/commands').then(({ undo }) => undo(this.sqlEditor));
+      undo(this.sqlEditor);
     }
   }
 
@@ -323,7 +348,7 @@ export class EditorManager {
    */
   handleRedo() {
     if (this.sqlEditor) {
-      import('@codemirror/commands').then(({ redo }) => redo(this.sqlEditor));
+      redo(this.sqlEditor);
     }
   }
 
@@ -407,16 +432,17 @@ export class EditorManager {
   getCollectionContent() {
     const container = this.manager.elements.collectionEditorContainer;
 
-    // Force-commit any active inline edit in the JSON tree before reading.
-    // Without this, the tree may still have an open input whose value hasn't
-    // been committed to the internal data model.
+    // Force-commit any active inline edit before reading
     if (container) {
       const activeEl = container.querySelector(':focus');
       if (activeEl) activeEl.blur();
     }
 
-    const data = getJsonTreeData(container);
-    return data ? JSON.stringify(data) : '{}';
+    // Get content directly from CodeMirror editor
+    if (this.collectionEditor) {
+      return this.collectionEditor.state.doc.toString();
+    }
+    return '{}';
   }
 }
 
