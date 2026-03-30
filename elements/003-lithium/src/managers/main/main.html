@@ -63,7 +63,7 @@
         <span class="sidebar-title">Lithium</span>
       </div>
       <!-- Radar status icon (WebSocket + REST API) -->
-      <svg id="radar-icon" class="radar-icon" width="32" height="32" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" data-tooltip="Status: Disconnected">
+      <svg id="radar-icon" class="radar-icon radar-disconnected" width="32" height="32" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" data-tooltip="Status: Disconnected">
         <defs>
           <clipPath id="radar-clip">
             <circle cx="32" cy="32" r="27.5" />
@@ -71,31 +71,31 @@
         </defs>
         <!-- Rotating sweep group (triangles trail) -->
         <g id="sweep-group" clip-path="url(#radar-clip)">
-          <path d="M 32,32 L 32.000,4.500 L 30.561,4.538 Z" fill="#67e8f9" opacity="1.00" />
-          <path d="M 32,32 L 30.561,4.538 L 29.125,4.651 Z" fill="#67e8f9" opacity="0.96" />
-          <path d="M 32,32 L 29.125,4.651 L 27.698,4.839 Z" fill="#67e8f9" opacity="0.92" />
-          <path d="M 32,32 L 27.698,4.839 L 26.282,5.101 Z" fill="#67e8f9" opacity="0.88" />
-          <path d="M 32,32 L 26.282,5.101 L 24.882,5.437 Z" fill="#67e8f9" opacity="0.84" />
-          <path d="M 32,32 L 24.882,5.437 L 23.502,5.846 Z" fill="#67e8f9" opacity="0.80" />
-          <path d="M 32,32 L 23.502,5.846 L 22.145,6.327 Z" fill="#67e8f9" opacity="0.76" />
-          <path d="M 32,32 L 22.145,6.327 L 20.815,6.877 Z" fill="#67e8f9" opacity="0.72" />
-          <path d="M 32,32 L 20.815,6.877 L 19.515,7.497 Z" fill="#67e8f9" opacity="0.68" />
-          <path d="M 32,32 L 19.515,7.497 L 18.25,8.184 Z" fill="#67e8f9" opacity="0.64" />
-          <path d="M 32,32 L 18.25,8.184 L 17.022,8.937 Z" fill="#67e8f9" opacity="0.60" />
-          <path d="M 32,32 L 17.022,8.937 L 15.836,9.752 Z" fill="#67e8f9" opacity="0.56" />
-          <path d="M 32,32 L 15.836,9.752 L 14.694,10.628 Z" fill="#67e8f9" opacity="0.52" />
-          <path d="M 32,32 L 14.694,10.628 L 13.599,11.564 Z" fill="#67e8f9" opacity="0.48" />
-          <path d="M 32,32 L 13.599,11.564 L 12.555,12.555 Z" fill="#67e8f9" opacity="0.44" />
-          <path d="M 32,32 L 12.555,12.555 L 11.564,13.599 Z" fill="#67e8f9" opacity="0.40" />
-          <path d="M 32,32 L 11.564,13.599 L 10.628,14.694 Z" fill="#67e8f9" opacity="0.36" />
-          <path d="M 32,32 L 10.628,14.694 L 9.752,15.836 Z" fill="#67e8f9" opacity="0.32" />
-          <path d="M 32,32 L 9.752,15.836 L 8.937,17.022 Z" fill="#67e8f9" opacity="0.28" />
-          <path d="M 32,32 L 8.937,17.022 L 8.184,18.25 Z" fill="#67e8f9" opacity="0.24" />
-          <path d="M 32,32 L 8.184,18.25 L 7.497,19.515 Z" fill="#67e8f9" opacity="0.20" />
-          <path d="M 32,32 L 7.497,19.515 L 6.877,20.815 Z" fill="#67e8f9" opacity="0.16" />
-          <path d="M 32,32 L 6.877,20.815 L 6.327,22.145 Z" fill="#67e8f9" opacity="0.12" />
-          <path d="M 32,32 L 6.327,22.145 L 5.846,23.502 Z" fill="#67e8f9" opacity="0.08" />
-          <path d="M 32,32 L 5.846,23.502 L 5.437,24.882 Z" fill="#67e8f9" opacity="0.04" />
+          <path d="M 32,32 L 32.000,4.500 L 30.561,4.538 Z" fill="currentColor" opacity="1.00" />
+          <path d="M 32,32 L 30.561,4.538 L 29.125,4.651 Z" fill="currentColor" opacity="0.96" />
+          <path d="M 32,32 L 29.125,4.651 L 27.698,4.839 Z" fill="currentColor" opacity="0.92" />
+          <path d="M 32,32 L 27.698,4.839 L 26.282,5.101 Z" fill="currentColor" opacity="0.88" />
+          <path d="M 32,32 L 26.282,5.101 L 24.882,5.437 Z" fill="currentColor" opacity="0.84" />
+          <path d="M 32,32 L 24.882,5.437 L 23.502,5.846 Z" fill="currentColor" opacity="0.80" />
+          <path d="M 32,32 L 23.502,5.846 L 22.145,6.327 Z" fill="currentColor" opacity="0.76" />
+          <path d="M 32,32 L 22.145,6.327 L 20.815,6.877 Z" fill="currentColor" opacity="0.72" />
+          <path d="M 32,32 L 20.815,6.877 L 19.515,7.497 Z" fill="currentColor" opacity="0.68" />
+          <path d="M 32,32 L 19.515,7.497 L 18.25,8.184 Z" fill="currentColor" opacity="0.64" />
+          <path d="M 32,32 L 18.25,8.184 L 17.022,8.937 Z" fill="currentColor" opacity="0.60" />
+          <path d="M 32,32 L 17.022,8.937 L 15.836,9.752 Z" fill="currentColor" opacity="0.56" />
+          <path d="M 32,32 L 15.836,9.752 L 14.694,10.628 Z" fill="currentColor" opacity="0.52" />
+          <path d="M 32,32 L 14.694,10.628 L 13.599,11.564 Z" fill="currentColor" opacity="0.48" />
+          <path d="M 32,32 L 13.599,11.564 L 12.555,12.555 Z" fill="currentColor" opacity="0.44" />
+          <path d="M 32,32 L 12.555,12.555 L 11.564,13.599 Z" fill="currentColor" opacity="0.40" />
+          <path d="M 32,32 L 11.564,13.599 L 10.628,14.694 Z" fill="currentColor" opacity="0.36" />
+          <path d="M 32,32 L 10.628,14.694 L 9.752,15.836 Z" fill="currentColor" opacity="0.32" />
+          <path d="M 32,32 L 9.752,15.836 L 8.937,17.022 Z" fill="currentColor" opacity="0.28" />
+          <path d="M 32,32 L 8.937,17.022 L 8.184,18.25 Z" fill="currentColor" opacity="0.24" />
+          <path d="M 32,32 L 8.184,18.25 L 7.497,19.515 Z" fill="currentColor" opacity="0.20" />
+          <path d="M 32,32 L 7.497,19.515 L 6.877,20.815 Z" fill="currentColor" opacity="0.16" />
+          <path d="M 32,32 L 6.877,20.815 L 6.327,22.145 Z" fill="currentColor" opacity="0.12" />
+          <path d="M 32,32 L 6.327,22.145 L 5.846,23.502 Z" fill="currentColor" opacity="0.08" />
+          <path d="M 32,32 L 5.846,23.502 L 5.437,24.882 Z" fill="currentColor" opacity="0.04" />
         </g>
         <!-- Static targets layer (added/removed by JS) -->
         <g id="targets-group"></g>
@@ -103,7 +103,7 @@
         <circle cx="32" cy="32" r="27.5" fill="none" stroke="currentColor" stroke-width="4" />
         <!-- Rotating sweep line -->
         <g id="sweep-line">
-          <line id="sweep-arm" x1="32" y1="32" x2="32" y2="4.5" stroke="#67e8f9" stroke-width="1.65" stroke-linecap="round" />
+          <line id="sweep-arm" x1="32" y1="32" x2="32" y2="4.5" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" />
         </g>
         <!-- Center hub -->
         <circle cx="32" cy="32" r="2.5" fill="currentColor" stroke="currentColor" stroke-width="1" />

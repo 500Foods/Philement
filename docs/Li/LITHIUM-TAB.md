@@ -430,6 +430,8 @@ const table = new LithiumTable({
 
 **Exception:** Managers that use raw Tabulator (not LithiumTable), such as the Queries Manager and Login Manager, must still define their own sort icon styles in their CSS files.
 
+**Collapse Button CSS:** The collapse button icon rotation CSS is provided **shared** by `lithium-table.css` via the `.lithium-collapse-btn` and `.lithium-collapse-icon` classes. Add these classes to your HTML — no manager-specific CSS needed. See [Collapsible Panels with Animated Icons](#collapsible-panels-with-animated-icons) below.
+
 ### Container HTML Requirements
 
 **IMPORTANT:** When adding a LithiumTable to a manager, the container elements in the HTML template **must include both** the manager-specific class AND the LithiumTable base classes:
@@ -634,7 +636,7 @@ await this.parentTable.loadData();
 
 ## Collapsible Panels with Animated Icons
 
-Managers using LithiumTable often need collapsible panels (left panel, middle panel) with collapse/expand buttons in the toolbar. The collapse buttons should have a rotation animation on their icons.
+Managers using LithiumTable need collapsible panels (left panel, middle panel) with collapse/expand buttons in the toolbar. The shared `panel-collapse.js` utility and CSS in `lithium-table.css` handle all animation logic consistently.
 
 ### Implementation Pattern
 
@@ -642,81 +644,255 @@ When adding collapsible panels to a manager, follow this pattern:
 
 #### 1. HTML Structure
 
+Add the `lithium-collapse-btn` class, `lithium-collapse-icon` to the `<fa>` icon, and `data-collapse-target` to identify which panel this button controls:
+
 ```html
-<div class="mymanager-tabs-header">
-  <div class="subpanel-header-group">
-    <!-- Collapse button for left panel -->
-    <button type="button" class="subpanel-header-btn subpanel-header-close collapse-btn" 
-            id="mymanager-collapse-left-btn" title="Toggle Left Panel">
-      <fa fa-angles-left id="mymanager-collapse-left-icon"></fa>
-    </button>
-    <!-- Other toolbar buttons... -->
-  </div>
-</div>
+<!-- Single panel (left) -->
+<button type="button" class="subpanel-header-btn subpanel-header-close my-collapse-btn lithium-collapse-btn"
+        id="mymanager-collapse-left-btn" data-collapse-target="left" title="Toggle Left Panel">
+  <fa fa-angles-left id="mymanager-collapse-left-icon" class="lithium-collapse-icon"></fa>
+</button>
+
+<!-- Dual panels (left + middle) — each button needs its own target -->
+<button type="button" class="subpanel-header-btn subpanel-header-close my-collapse-left-btn lithium-collapse-btn"
+        id="mymanager-collapse-left-btn" data-collapse-target="left" title="Toggle Left Panel">
+  <fa fa-angles-left id="mymanager-collapse-left-icon" class="lithium-collapse-icon"></fa>
+</button>
+<button type="button" class="subpanel-header-btn subpanel-header-close my-collapse-middle-btn lithium-collapse-btn"
+        id="mymanager-collapse-middle-btn" data-collapse-target="middle" title="Toggle Middle Panel">
+  <fa fa-angles-left id="mymanager-collapse-middle-icon" class="lithium-collapse-icon"></fa>
+</button>
 ```
 
-#### 2. CSS for Collapse Button Rotation
+> **Why `data-collapse-target`?** In managers with multiple panels (Style, Lookups), the CSS uses this attribute to rotate only the correct icon when a specific panel collapses. Without it, all icons would rotate together.
 
-Add this to your manager's CSS file:
+#### 2. CSS — None Needed
+
+The shared classes in `lithium-table.css` handle everything using `--transition-duration`:
 
 ```css
-/* Collapse button styling */
-.collapse-btn {
+/* Provided by lithium-table.css — managers do NOT need to duplicate this */
+.lithium-collapse-btn {
   flex: 0 0 auto;
   padding: var(--space-1);
 }
 
-/* Collapse icon rotation - base state (pointing left) */
-.collapse-btn > i,
-.collapse-btn > svg {
-  transition: transform var(--transition-delay) ease;
+.lithium-collapse-icon,
+.lithium-collapse-btn > i,
+.lithium-collapse-btn > svg {
+  transition: transform var(--transition-duration, 350ms) ease;
   transform: rotate(0deg);
 }
 
-/* Collapse icon rotation when panel is collapsed (pointing right) */
-.collapse-btn.collapsed > i,
-.collapse-btn.collapsed > svg {
+.lithium-collapse-btn.collapsed .lithium-collapse-icon,
+.lithium-collapse-btn.collapsed > i,
+.lithium-collapse-btn.collapsed > svg {
   transform: rotate(180deg);
 }
 ```
 
-#### 3. JavaScript Toggle Method
+Panel width transitions are handled by `manager-panels.css`:
 
-In your manager's toggle method, toggle the `.collapsed` class on the collapse button:
-
-```javascript
-toggleLeftPanel() {
-  this.isLeftPanelCollapsed = !this.isLeftPanelCollapsed;
-  this.leftSplitter?.setCollapsed(this.isLeftPanelCollapsed);
-
-  // Toggle rotation class on collapse button
-  this.elements.collapseLeftBtn?.classList.toggle('collapsed', this.isLeftPanelCollapsed);
-
-  if (!this.isLeftPanelCollapsed) {
-    this.elements.leftPanel.style.width = `${this.leftPanelWidth}px`;
-  }
-
-  // Redraw tables after animation completes
-  setTimeout(() => {
-    this.leftTable?.table?.redraw?.();
-    this.rightTable?.table?.redraw?.();
-  }, 350);
+```css
+/* Panel width animation uses --transition-duration */
+[data-panel="left"] {
+  transition: width var(--transition-duration, 350ms) ease,
+              min-width var(--transition-duration, 350ms) ease;
 }
 ```
 
-### How It Works
+> **Why cover all stages?** `processIcons()` converts `<fa>` → `<i>` and then Font Awesome's SVG+JS replaces `<i>` → `<svg>`. CSS targets `> i`, and `> svg` to work at any pipeline stage. See [LITHIUM-ICN.md](LITHIUM-ICN.md#icon-rotation-pattern).
 
-1. **LithiumSplitter** adds `.lithium-panel-collapsed` class to the panel and `.lithium-splitter-collapsed` class to the splitter when collapsed
-2. **Manager toggle method** adds `.collapsed` class to the collapse button itself
-3. **CSS transition** smoothly rotates the icon from 0deg to 180deg using `var(--transition-delay)` timing
-4. **Icon direction**: 0deg = pointing left (expand), 180deg = pointing right (collapse)
+#### 3. JavaScript Toggle Method (Using Shared Utility)
+
+Use the `togglePanelCollapse()` function from `panel-collapse.js`:
+
+```javascript
+import { togglePanelCollapse, restorePanelState } from '../../core/panel-collapse.js';
+
+toggleLeftPanel() {
+  this.isLeftPanelCollapsed = togglePanelCollapse({
+    panel: this.elements.leftPanel,
+    splitter: this.leftSplitter,
+    collapseBtn: this.elements.collapseLeftBtn,
+    panelWidth: this.leftPanelWidth,
+    isCollapsed: this.isLeftPanelCollapsed,
+    onAfterToggle: () => {
+      this.leftTable?.table?.redraw?.();
+      this.rightTable?.table?.redraw?.();
+    },
+  });
+
+  // Save collapsed state to persistence
+  this.leftPanelState.saveCollapsed(this.isLeftPanelCollapsed);
+}
+```
+
+#### 4. Restore State (Using Shared Utility)
+
+```javascript
+import { togglePanelCollapse, restorePanelState } from '../../core/panel-collapse.js';
+
+restorePanelState() {
+  // Re-read collapsed state from localStorage
+  this.isLeftPanelCollapsed = this.leftPanelState.loadCollapsed(this.isLeftPanelCollapsed);
+
+  // Restore collapsed state using shared utility
+  restorePanelState({
+    panel: this.elements.leftPanel,
+    splitter: this.leftSplitter,
+    collapseBtn: this.elements.collapseLeftBtn,
+    isCollapsed: this.isLeftPanelCollapsed,
+  });
+
+  // Panel width is handled by LithiumTable's setupPersistence():
+  // it calls onSetTableWidth(mode) or onSetTableWidth(null)
+  // Your setTableWidth handler applies the right width.
+}
+```
+
+> **Init order matters:** Tables must be created **before** splitters, and splitters **before** `restorePanelState()`. The splitter's `tables` option (for width-mode clearing) requires the LithiumTable instance to exist at construction time.
+>
+> ```javascript
+> async init() {
+>   await this.render();
+>   this.setupEventListeners();
+>   await this.initTable();     // 1. Create LithiumTable first
+>   this.setupSplitters();      // 2. Create splitter (passes table via `tables` option)
+>   this.restorePanelState();   // 3. Restore collapsed state last
+> }
+> ```
+
+### Shared Utility API
+
+The `panel-collapse.js` module exports two functions:
+
+| Function | Description |
+|----------|-------------|
+| `togglePanelCollapse(options)` | Toggles panel collapse/expand with smooth animation |
+| `restorePanelState(options)` | Restores persisted collapsed state on init |
+
+**`togglePanelCollapse()` Options:**
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `panel` | HTMLElement | The panel element to collapse/expand |
+| `splitter` | LithiumSplitter | LithiumSplitter instance for the panel |
+| `collapseBtn` | HTMLElement | The collapse button element |
+| `panelWidth` | number | Target width when expanding (pixels) |
+| `isCollapsed` | boolean | Current collapsed state (will be toggled) |
+| `onAfterToggle` | Function | Optional callback after animation completes |
+
+**Returns:** `boolean` — The new collapsed state
+
+**`restorePanelState()` Options:**
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `panel` | HTMLElement | The panel element |
+| `splitter` | LithiumSplitter | LithiumSplitter instance |
+| `collapseBtn` | HTMLElement | The collapse button element |
+| `isCollapsed` | boolean | The persisted collapsed state |
+
+### Transition Timing
+
+All panel collapse/expand animations use the `--transition-duration` CSS variable defined in `base.css`:
+
+```css
+:root {
+  --transition-duration: 350ms; /* Default, configurable per theme */
+}
+```
+
+This ensures consistent animation timing across:
+- Panel width transitions (expand/collapse)
+- Collapse button icon rotation
+
+### Width Persistence Across Collapse/Expand
+
+When a user sets a table width via the Width popup (Narrow/Compact/Normal/Wide/Auto) and then collapses the panel, the width should be preserved. This is handled by two systems working together:
+
+#### 1. LithiumTable Width Mode (saved in `storageKey_width_mode`)
+
+LithiumTable's `setupPersistence()` restores the saved width mode on init:
+- If a mode was saved (e.g., "wide"), it calls `onSetTableWidth("wide")` via `requestAnimationFrame`
+- If **no** mode was saved, it calls `onSetTableWidth(null)` — signaling the manager to apply its fallback
+
+#### 2. Manager's `setTableWidth` handler
+
+The manager handler must handle both cases:
+
+```javascript
+setTableWidth(mode) {
+  const panel = this.elements.leftPanel;
+  if (!panel) return;
+
+  // mode === null: LithiumTable has no saved mode, use PanelStateManager fallback
+  if (mode === null) {
+    panel.style.width = `${this.leftPanelWidth}px`;
+    return;
+  }
+
+  // mode === 'auto': use CSS default
+  if (mode === 'auto') {
+    panel.style.width = '';
+    this.leftPanelWidth = panel.offsetWidth;
+    this.leftPanelState.saveWidth(this.leftPanelWidth);
+    return;
+  }
+
+  // Named mode: apply the preset width
+  const widths = { narrow: 160, compact: 314, normal: 468, wide: 622 };
+  const widthPx = widths[mode];
+  panel.style.width = `${widthPx}px`;
+  this.leftPanelWidth = widthPx;
+  this.leftPanelState.saveWidth(widthPx);
+}
+```
+
+#### 3. Splitter Drag Clears Width Mode
+
+When the user drags the splitter, the width no longer matches any preset. `LithiumSplitter` handles this automatically — pass the LithiumTable instance(s) via the `tables` option:
+
+```javascript
+this.splitter = new LithiumSplitter({
+  element: this.elements.splitter,
+  leftPanel: this.elements.leftPanel,
+  tables: this.queryTable,  // or [tableA, tableB] for multiple
+  onResize: (width) => { this.leftPanelWidth = width; },
+  onResizeEnd: (width) => { this.leftPanelState.saveWidth(width); },
+});
+```
+
+The splitter sets `table.tableWidthMode = null` during drag, so the Width popup shows no checkmark.
+
+#### 4. `PanelStateManager` for Pixel Width
+
+The `PanelStateManager` persists the actual pixel width (from either the Width popup or splitter drag). On reload:
+- Constructor loads `this.leftPanelWidth = this.leftPanelState.loadWidth(defaultWidth)`
+- LithiumTable calls `onSetTableWidth(null)` if no mode was saved → manager applies `this.leftPanelWidth`
+
+#### Persistence Flow
+
+1. User sets width via **Width popup** → `setTableWidth("wide")` updates `leftPanelWidth` + saves to `PanelStateManager` + LithiumTable saves "wide" to `storageKey_width_mode`
+2. User drags **splitter** → `leftPanelWidth` updated + saved to `PanelStateManager` + LithiumTable `tableWidthMode` cleared to `null`
+3. User **collapses** → `toggleLeftPanel()` saves collapsed state to `PanelStateManager`
+4. Page **reloads**:
+   - If LithiumTable mode saved → `onSetTableWidth("wide")` restores preset width
+   - If no LithiumTable mode → `onSetTableWidth(null)` → manager applies `PanelStateManager` pixel width
+   - Collapsed state restored via `loadCollapsed()`
+5. User **expands** → `toggleLeftPanel()` restores from `this.leftPanelWidth`
 
 ### Current Implementations
 
-This pattern is used in:
-- **Style Manager** (`style-manager.js`) — Left and middle panel collapse buttons
-- **Lookups Manager** (`lookups.js`) — Left and middle panel collapse buttons  
-- **Version Manager** (`version-history.js`) — Left panel collapse button
+All managers use the shared `panel-collapse.js` utility for consistent behavior:
+
+| Manager | File | Panels | Collapse Buttons |
+|---------|------|--------|------------------|
+| **Version Manager** | `version-history.js` | Left | `data-collapse-target="left"` |
+| **Query Manager** | `queries.js` | Left | `data-collapse-target="left"` |
+| **Style Manager** | `style-manager.js` | Left + Middle | `data-collapse-target="left"`, `data-collapse-target="middle"` |
+| **Lookups Manager** | `lookups.js` | Left + Middle | `data-collapse-target="left"`, `data-collapse-target="middle"` |
 
 ---
 
@@ -727,6 +903,7 @@ This pattern is used in:
 - [LITHIUM-MGR-LOOKUPS.md](LITHIUM-MGR-LOOKUPS.md) — Lookups Manager (dual-table example)
 - [LITHIUM-LUT.md](LITHIUM-LUT.md) — Lookup Tables integration
 - [LITHIUM-CSS.md](LITHIUM-CSS.md) — CSS architecture, layers, and theming
+- [LITHIUM-ICN.md](LITHIUM-ICN.md) — Icon system, three-stage pipeline, rotation pattern
 
 ---
 

@@ -13,6 +13,53 @@ const DEFAULT_ENGINE = 'Crimson';
 const CHAT_MESSAGE_TYPES = ['chat_chunk', 'chat_done', 'chat_error'];
 
 /**
+ * Get the active tab name for the current manager.
+ * Looks for an active tab button in the visible manager slot and reads its label.
+ * @returns {string|null} Tab display name (e.g. "SQL", "JSON", "Preview") or null
+ */
+function getActiveTabName() {
+  // Find the visible manager slot
+  const slot = document.querySelector('.manager-slot.visible')
+    || document.querySelector('.manager-slot');
+  if (!slot) return null;
+
+  // Look for an active tab button with a <span> label
+  const activeBtn = slot.querySelector('.queries-tab-btn.active, .lookups-tab-btn.active, [data-tab].active');
+  if (!activeBtn) return null;
+
+  // Get the display name from the <span> inside the button
+  const label = activeBtn.querySelector('span');
+  return label?.textContent?.trim() || activeBtn.dataset?.tab || null;
+}
+
+/**
+ * Format a build timestamp as "YYYY-MMM-DD" (e.g. "2026-Mar-29").
+ * @param {string|number|null} buildTimestamp - ISO date string or epoch timestamp
+ * @returns {string|null} Formatted date or null
+ */
+function formatBuildDate(buildTimestamp) {
+  if (!buildTimestamp) return null;
+
+  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  try {
+    const date = typeof buildTimestamp === 'number'
+      ? new Date(buildTimestamp)
+      : new Date(buildTimestamp);
+
+    if (isNaN(date.getTime())) return null;
+
+    const year = date.getFullYear();
+    const month = MONTHS[date.getMonth()];
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
  * Gather context information for the AI assistant
  * @returns {Object} Context packet with user, session, permissions, and view info
  */
@@ -22,7 +69,19 @@ function gatherContext() {
 
   // Get app state from window (exposed in app.js)
   const app = window.lithiumApp || null;
+  const mainManager = app?._getMainManager?.() || app?.mainManagerInstance || null;
   const state = app?.getState?.() || {};
+
+  // permissions.managers: pre-built list from MainManager, populated once
+  // during menu load. Contains exactly the names the user sees in the sidebar.
+  const accessibleManagerNames = mainManager?.accessibleManagerNames || [];
+
+  // Current manager — use the instance's stored name if available
+  const currentManagerId = app?.currentManager?.id || state.currentManager || null;
+  const currentManagerName = app?.currentManager?.name || null;
+
+  // Format the build date from the timestamp in version.json
+  const buildDate = formatBuildDate(app?.timestamp || null);
 
   return {
     user: {
@@ -33,26 +92,30 @@ function gatherContext() {
       preferences: {
         theme: localStorage.getItem('lithium_theme') || 'default',
         language: navigator.language || 'en-US'
+      },
+      login: {
+        count: claims?.login_count || null,
+        age: null
       }
     },
     session: {
       sessionId: window.lithiumLogs?.sessionId || null,
       loginTime: claims?.iat ? new Date(claims.iat * 1000).toISOString() : null,
-      currentManager: state.currentManager || app?.currentManager?.id || null,
+      currentManager: currentManagerName,
       recentActivity: []
     },
     permissions: {
-      managers: claims?.managers || [],
-      features: claims?.features || []
+      managers: accessibleManagerNames,
+      features: {}
     },
     currentView: {
-      managerId: app?.currentManager?.id || null,
-      managerName: app?.currentManager?.name || null,
-      activeTab: null,
+      managerId: currentManagerId,
+      managerName: currentManagerName,
+      activeTab: getActiveTabName(),
       selectedRecord: null
     },
     lithiumVersion: state.version || 'unknown',
-    buildDate: state.build || 'unknown'
+    buildDate: buildDate || 'unknown'
   };
 }
 

@@ -163,6 +163,11 @@ export default class MainManager {
     // Manager registry with icons (populated dynamically from menu data)
     this.managerIcons = {};
 
+    // Flat list of accessible manager names for Crimson context packet.
+    // Built once during menu load from the final filtered menu data,
+    // so it reflects exactly what the user sees in the sidebar.
+    this.accessibleManagerNames = [];
+
     // Utility manager registry with icons
     this.utilityManagerIcons = {
       'session-log': { iconHtml: '<fa fa-receipt></fa>', name: 'Session Log' },
@@ -558,16 +563,23 @@ export default class MainManager {
   async loadMenuData() {
     try {
       this.menuData = await getMenu(this.app.api);
-      
+
       // Build manager icons registry from menu data
       this.managerIcons = buildManagerIconsRegistry(this.menuData);
-      
+
+      // Build flat list of accessible manager names for Crimson context.
+      // This is the final filtered list — only managers that pass config,
+      // permission, and visibility filters appear in the menu.
+      this.accessibleManagerNames = Object.values(this.managerIcons)
+        .map(info => info?.name)
+        .filter(Boolean);
+
       // Update permitted managers from menu data
       const menuManagerIds = Object.keys(this.managerIcons).map(id => parseInt(id, 10));
-      
+
       // Filter to only include managers that are in the menu and permitted
       this.permittedManagers = this.permittedManagers.filter(id => menuManagerIds.includes(id));
-      
+
       // If no permitted managers from permission system, use all menu managers
       if (this.permittedManagers.length === 0) {
         this.permittedManagers = menuManagerIds;
@@ -584,6 +596,9 @@ export default class MainManager {
         4: { iconHtml: '<fa fa-search></fa>', name: 'Queries' },
         5: { iconHtml: '<fa fa-list-check></fa>', name: 'Lookups' },
       };
+      this.accessibleManagerNames = Object.values(this.managerIcons)
+        .map(info => info?.name)
+        .filter(Boolean);
     }
   }
 

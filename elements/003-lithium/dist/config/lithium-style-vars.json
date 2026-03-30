@@ -1,0 +1,1023 @@
+{
+  "_meta": {
+    "description": "CSS custom properties (variables) used across the Lithium codebase",
+    "generated": "2026-03-30T04:46:20.458Z",
+    "sources": {
+      "css": "47 files in src/**/*.css",
+      "js": "75 files in src/**/*.js",
+      "html": "9 files in src/**/*.html + index.html"
+    },
+    "total_variables": 144,
+    "total_occurrences": 2995
+  },
+  "variables": [
+    {
+      "name": "--accent-crimson",
+      "css": 6,
+      "js": 0,
+      "html": 0,
+      "total": 6
+    },
+    {
+      "name": "--accent-crimson-eyes",
+      "css": 1,
+      "js": 16,
+      "html": 0,
+      "total": 17
+    },
+    {
+      "name": "--accent-danger",
+      "css": 25,
+      "js": 0,
+      "html": 0,
+      "total": 25
+    },
+    {
+      "name": "--accent-danger-hover",
+      "css": 3,
+      "js": 0,
+      "html": 0,
+      "total": 3
+    },
+    {
+      "name": "--accent-disabled",
+      "css": 9,
+      "js": 0,
+      "html": 0,
+      "total": 9
+    },
+    {
+      "name": "--accent-focus",
+      "css": 12,
+      "js": 0,
+      "html": 0,
+      "total": 12
+    },
+    {
+      "name": "--accent-hover",
+      "css": 33,
+      "js": 0,
+      "html": 0,
+      "total": 33
+    },
+    {
+      "name": "--accent-info",
+      "css": 4,
+      "js": 0,
+      "html": 0,
+      "total": 4
+    },
+    {
+      "name": "--accent-info-hover",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--accent-primary",
+      "css": 135,
+      "js": 3,
+      "html": 1,
+      "total": 139
+    },
+    {
+      "name": "--accent-primary-hover",
+      "css": 2,
+      "js": 0,
+      "html": 0,
+      "total": 2
+    },
+    {
+      "name": "--accent-primary-rgb",
+      "css": 3,
+      "js": 0,
+      "html": 0,
+      "total": 3
+    },
+    {
+      "name": "--accent-primary-transparent",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--accent-secondary",
+      "css": 9,
+      "js": 0,
+      "html": 0,
+      "total": 9
+    },
+    {
+      "name": "--accent-success",
+      "css": 15,
+      "js": 0,
+      "html": 0,
+      "total": 15
+    },
+    {
+      "name": "--accent-success-hover",
+      "css": 5,
+      "js": 0,
+      "html": 0,
+      "total": 5
+    },
+    {
+      "name": "--accent-toggle",
+      "css": 5,
+      "js": 0,
+      "html": 0,
+      "total": 5
+    },
+    {
+      "name": "--accent-warning",
+      "css": 10,
+      "js": 0,
+      "html": 0,
+      "total": 10
+    },
+    {
+      "name": "--accent-warning-hover",
+      "css": 3,
+      "js": 0,
+      "html": 0,
+      "total": 3
+    },
+    {
+      "name": "--bg-active",
+      "css": 4,
+      "js": 0,
+      "html": 0,
+      "total": 4
+    },
+    {
+      "name": "--bg-elevated",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--bg-hover",
+      "css": 20,
+      "js": 0,
+      "html": 0,
+      "total": 20
+    },
+    {
+      "name": "--bg-input",
+      "css": 7,
+      "js": 0,
+      "html": 0,
+      "total": 7
+    },
+    {
+      "name": "--bg-primary",
+      "css": 45,
+      "js": 0,
+      "html": 1,
+      "total": 46
+    },
+    {
+      "name": "--bg-primary-rgb",
+      "css": 2,
+      "js": 0,
+      "html": 0,
+      "total": 2
+    },
+    {
+      "name": "--bg-row-border",
+      "css": 4,
+      "js": 0,
+      "html": 0,
+      "total": 4
+    },
+    {
+      "name": "--bg-row-even",
+      "css": 2,
+      "js": 0,
+      "html": 0,
+      "total": 2
+    },
+    {
+      "name": "--bg-row-odd",
+      "css": 2,
+      "js": 0,
+      "html": 0,
+      "total": 2
+    },
+    {
+      "name": "--bg-secondary",
+      "css": 73,
+      "js": 2,
+      "html": 1,
+      "total": 76
+    },
+    {
+      "name": "--bg-tertiary",
+      "css": 94,
+      "js": 1,
+      "html": 0,
+      "total": 95
+    },
+    {
+      "name": "--border-color",
+      "css": 53,
+      "js": 0,
+      "html": 0,
+      "total": 53
+    },
+    {
+      "name": "--border-color-focus",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--border-color-hover",
+      "css": 6,
+      "js": 0,
+      "html": 0,
+      "total": 6
+    },
+    {
+      "name": "--border-color-light",
+      "css": 2,
+      "js": 0,
+      "html": 0,
+      "total": 2
+    },
+    {
+      "name": "--border-radius",
+      "css": 6,
+      "js": 0,
+      "html": 0,
+      "total": 6
+    },
+    {
+      "name": "--border-radius-full",
+      "css": 9,
+      "js": 2,
+      "html": 0,
+      "total": 11
+    },
+    {
+      "name": "--border-radius-lg",
+      "css": 12,
+      "js": 0,
+      "html": 0,
+      "total": 12
+    },
+    {
+      "name": "--border-radius-md",
+      "css": 124,
+      "js": 0,
+      "html": 0,
+      "total": 124
+    },
+    {
+      "name": "--border-radius-sm",
+      "css": 67,
+      "js": 0,
+      "html": 0,
+      "total": 67
+    },
+    {
+      "name": "--border-radius-xl",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--border-standard",
+      "css": 74,
+      "js": 1,
+      "html": 0,
+      "total": 75
+    },
+    {
+      "name": "--border-width",
+      "css": 4,
+      "js": 0,
+      "html": 0,
+      "total": 4
+    },
+    {
+      "name": "--border-width-thick",
+      "css": 2,
+      "js": 0,
+      "html": 0,
+      "total": 2
+    },
+    {
+      "name": "--box-shadow",
+      "css": 3,
+      "js": 0,
+      "html": 0,
+      "total": 3
+    },
+    {
+      "name": "--card-bg",
+      "css": 7,
+      "js": 0,
+      "html": 0,
+      "total": 7
+    },
+    {
+      "name": "--color-error",
+      "css": 5,
+      "js": 0,
+      "html": 0,
+      "total": 5
+    },
+    {
+      "name": "--color-info",
+      "css": 5,
+      "js": 0,
+      "html": 0,
+      "total": 5
+    },
+    {
+      "name": "--color-success",
+      "css": 5,
+      "js": 0,
+      "html": 0,
+      "total": 5
+    },
+    {
+      "name": "--color-warning",
+      "css": 5,
+      "js": 0,
+      "html": 0,
+      "total": 5
+    },
+    {
+      "name": "--fa-secondary-opacity",
+      "css": 1,
+      "js": 8,
+      "html": 0,
+      "total": 9
+    },
+    {
+      "name": "--font-family",
+      "css": 5,
+      "js": 0,
+      "html": 0,
+      "total": 5
+    },
+    {
+      "name": "--font-mono",
+      "css": 33,
+      "js": 11,
+      "html": 0,
+      "total": 44
+    },
+    {
+      "name": "--font-sans",
+      "css": 0,
+      "js": 7,
+      "html": 0,
+      "total": 7
+    },
+    {
+      "name": "--font-serif",
+      "css": 0,
+      "js": 1,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--font-size-2xl",
+      "css": 5,
+      "js": 0,
+      "html": 0,
+      "total": 5
+    },
+    {
+      "name": "--font-size-3xl",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--font-size-base",
+      "css": 26,
+      "js": 0,
+      "html": 0,
+      "total": 26
+    },
+    {
+      "name": "--font-size-lg",
+      "css": 26,
+      "js": 0,
+      "html": 0,
+      "total": 26
+    },
+    {
+      "name": "--font-size-md",
+      "css": 6,
+      "js": 0,
+      "html": 0,
+      "total": 6
+    },
+    {
+      "name": "--font-size-sm",
+      "css": 72,
+      "js": 0,
+      "html": 0,
+      "total": 72
+    },
+    {
+      "name": "--font-size-us",
+      "css": 4,
+      "js": 0,
+      "html": 0,
+      "total": 4
+    },
+    {
+      "name": "--font-size-xl",
+      "css": 29,
+      "js": 0,
+      "html": 0,
+      "total": 29
+    },
+    {
+      "name": "--font-size-xs",
+      "css": 30,
+      "js": 0,
+      "html": 0,
+      "total": 30
+    },
+    {
+      "name": "--font-weight-bold",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--font-weight-medium",
+      "css": 7,
+      "js": 0,
+      "html": 0,
+      "total": 7
+    },
+    {
+      "name": "--font-weight-normal",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--font-weight-semibold",
+      "css": 8,
+      "js": 0,
+      "html": 0,
+      "total": 8
+    },
+    {
+      "name": "--icon-count",
+      "css": 3,
+      "js": 0,
+      "html": 0,
+      "total": 3
+    },
+    {
+      "name": "--icon-gap",
+      "css": 3,
+      "js": 1,
+      "html": 0,
+      "total": 4
+    },
+    {
+      "name": "--icon-h",
+      "css": 6,
+      "js": 1,
+      "html": 0,
+      "total": 7
+    },
+    {
+      "name": "--icon-size-nav",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--icon-size-reg",
+      "css": 10,
+      "js": 0,
+      "html": 0,
+      "total": 10
+    },
+    {
+      "name": "--icon-w",
+      "css": 6,
+      "js": 1,
+      "html": 0,
+      "total": 7
+    },
+    {
+      "name": "--light-text",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--line-height-normal",
+      "css": 3,
+      "js": 0,
+      "html": 0,
+      "total": 3
+    },
+    {
+      "name": "--line-height-relaxed",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--line-height-tight",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--panel-left-max",
+      "css": 2,
+      "js": 0,
+      "html": 0,
+      "total": 2
+    },
+    {
+      "name": "--panel-left-min",
+      "css": 3,
+      "js": 0,
+      "html": 0,
+      "total": 3
+    },
+    {
+      "name": "--panel-left-w",
+      "css": 7,
+      "js": 0,
+      "html": 0,
+      "total": 7
+    },
+    {
+      "name": "--panel-middle-max",
+      "css": 2,
+      "js": 0,
+      "html": 0,
+      "total": 2
+    },
+    {
+      "name": "--panel-middle-min",
+      "css": 2,
+      "js": 0,
+      "html": 0,
+      "total": 2
+    },
+    {
+      "name": "--panel-middle-w",
+      "css": 4,
+      "js": 0,
+      "html": 0,
+      "total": 4
+    },
+    {
+      "name": "--panel-right-min",
+      "css": 3,
+      "js": 0,
+      "html": 0,
+      "total": 3
+    },
+    {
+      "name": "--panel-transition",
+      "css": 5,
+      "js": 0,
+      "html": 0,
+      "total": 5
+    },
+    {
+      "name": "--primary-color",
+      "css": 2,
+      "js": 0,
+      "html": 0,
+      "total": 2
+    },
+    {
+      "name": "--radar-fade-duration",
+      "css": 0,
+      "js": 2,
+      "html": 0,
+      "total": 2
+    },
+    {
+      "name": "--radius-lg",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--radius-md",
+      "css": 4,
+      "js": 0,
+      "html": 0,
+      "total": 4
+    },
+    {
+      "name": "--scrollbar-size",
+      "css": 7,
+      "js": 4,
+      "html": 0,
+      "total": 11
+    },
+    {
+      "name": "--scrollbar-thumb",
+      "css": 7,
+      "js": 4,
+      "html": 0,
+      "total": 11
+    },
+    {
+      "name": "--scrollbar-thumb-hover",
+      "css": 4,
+      "js": 2,
+      "html": 0,
+      "total": 6
+    },
+    {
+      "name": "--scrollbar-track",
+      "css": 6,
+      "js": 6,
+      "html": 0,
+      "total": 12
+    },
+    {
+      "name": "--shadow-inset",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--shadow-lg",
+      "css": 10,
+      "js": 0,
+      "html": 0,
+      "total": 10
+    },
+    {
+      "name": "--shadow-md",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--shadow-sm",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--space-1",
+      "css": 43,
+      "js": 1,
+      "html": 0,
+      "total": 44
+    },
+    {
+      "name": "--space-2",
+      "css": 142,
+      "js": 0,
+      "html": 0,
+      "total": 142
+    },
+    {
+      "name": "--space-3",
+      "css": 172,
+      "js": 2,
+      "html": 0,
+      "total": 174
+    },
+    {
+      "name": "--space-4",
+      "css": 101,
+      "js": 0,
+      "html": 0,
+      "total": 101
+    },
+    {
+      "name": "--space-5",
+      "css": 34,
+      "js": 0,
+      "html": 0,
+      "total": 34
+    },
+    {
+      "name": "--space-6",
+      "css": 6,
+      "js": 0,
+      "html": 0,
+      "total": 6
+    },
+    {
+      "name": "--space-7",
+      "css": 4,
+      "js": 0,
+      "html": 0,
+      "total": 4
+    },
+    {
+      "name": "--space-8",
+      "css": 5,
+      "js": 0,
+      "html": 0,
+      "total": 5
+    },
+    {
+      "name": "--space-lg",
+      "css": 7,
+      "js": 0,
+      "html": 0,
+      "total": 7
+    },
+    {
+      "name": "--space-md",
+      "css": 13,
+      "js": 0,
+      "html": 0,
+      "total": 13
+    },
+    {
+      "name": "--space-sm",
+      "css": 6,
+      "js": 0,
+      "html": 0,
+      "total": 6
+    },
+    {
+      "name": "--space-xl",
+      "css": 6,
+      "js": 0,
+      "html": 0,
+      "total": 6
+    },
+    {
+      "name": "--space-xs",
+      "css": 4,
+      "js": 0,
+      "html": 0,
+      "total": 4
+    },
+    {
+      "name": "--spinner-fancy-color-1",
+      "css": 6,
+      "js": 0,
+      "html": 0,
+      "total": 6
+    },
+    {
+      "name": "--spinner-fancy-color-2",
+      "css": 256,
+      "js": 0,
+      "html": 0,
+      "total": 256
+    },
+    {
+      "name": "--spinner-fancy-color-3",
+      "css": 256,
+      "js": 0,
+      "html": 0,
+      "total": 256
+    },
+    {
+      "name": "--spinner-fancy-size",
+      "css": 8,
+      "js": 0,
+      "html": 0,
+      "total": 8
+    },
+    {
+      "name": "--stage-dur",
+      "css": 7,
+      "js": 0,
+      "html": 0,
+      "total": 7
+    },
+    {
+      "name": "--table-popup-width-",
+      "css": 0,
+      "js": 1,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--table-popup-width-compact",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--table-popup-width-narrow",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--table-popup-width-normal",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--table-popup-width-wide",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--table-width-",
+      "css": 0,
+      "js": 2,
+      "html": 0,
+      "total": 2
+    },
+    {
+      "name": "--table-width-compact",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--table-width-narrow",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--table-width-normal",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--table-width-wide",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--text-disabled",
+      "css": 16,
+      "js": 0,
+      "html": 0,
+      "total": 16
+    },
+    {
+      "name": "--text-muted",
+      "css": 60,
+      "js": 5,
+      "html": 0,
+      "total": 65
+    },
+    {
+      "name": "--text-on-accent",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--text-primary",
+      "css": 133,
+      "js": 5,
+      "html": 1,
+      "total": 139
+    },
+    {
+      "name": "--text-secondary",
+      "css": 70,
+      "js": 0,
+      "html": 0,
+      "total": 70
+    },
+    {
+      "name": "--transition",
+      "css": 2,
+      "js": 0,
+      "html": 0,
+      "total": 2
+    },
+    {
+      "name": "--transition-delay",
+      "css": 21,
+      "js": 0,
+      "html": 0,
+      "total": 21
+    },
+    {
+      "name": "--transition-duration",
+      "css": 41,
+      "js": 7,
+      "html": 0,
+      "total": 48
+    },
+    {
+      "name": "--transition-fast",
+      "css": 132,
+      "js": 2,
+      "html": 0,
+      "total": 134
+    },
+    {
+      "name": "--transition-normal",
+      "css": 4,
+      "js": 0,
+      "html": 0,
+      "total": 4
+    },
+    {
+      "name": "--transition-slow",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--transition-std",
+      "css": 17,
+      "js": 0,
+      "html": 0,
+      "total": 17
+    },
+    {
+      "name": "--z-dropdown",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--z-modal",
+      "css": 6,
+      "js": 0,
+      "html": 0,
+      "total": 6
+    },
+    {
+      "name": "--z-popover",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--z-sticky",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--z-tooltip",
+      "css": 9,
+      "js": 0,
+      "html": 0,
+      "total": 9
+    },
+    {
+      "name": "--zoom",
+      "css": 1,
+      "js": 1,
+      "html": 0,
+      "total": 2
+    },
+    {
+      "name": "--zoom-inv",
+      "css": 1,
+      "js": 1,
+      "html": 0,
+      "total": 2
+    }
+  ]
+}

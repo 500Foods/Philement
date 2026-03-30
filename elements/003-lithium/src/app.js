@@ -1067,6 +1067,7 @@ class LithiumApp {
       // Store and show with crossfade
       this.loadedManagers.set(managerId, {
         id: managerId,
+        name: managerDef.name,
         instance: managerInstance,
         slotEl,
         workspaceEl,
@@ -1130,6 +1131,7 @@ class LithiumApp {
       // Store and show with crossfade
       this.loadedManagers.set(loadedKey, {
         id: loadedKey,
+        name: iconInfo.name,
         instance: managerInstance,
         slotEl,
         workspaceEl,
@@ -1151,7 +1153,7 @@ class LithiumApp {
     if (!incoming) return;
 
     await this._crossfadeSlots(loadedKey);
-    this.currentManager = { id: loadedKey, instance: incoming.instance };
+    this.currentManager = { id: loadedKey, name: incoming.name || null, instance: incoming.instance };
 
     const utilityKey = loadedKey.replace('utility:', '');
 
@@ -1176,7 +1178,7 @@ class LithiumApp {
     if (!incoming) return;
 
     await this._crossfadeSlots(managerId);
-    this.currentManager = { id: managerId, instance: incoming.instance };
+    this.currentManager = { id: managerId, name: incoming.name || null, instance: incoming.instance };
 
     // Save as last-used manager and record activity
     this._saveLastManager('manager', managerId);
@@ -1600,11 +1602,12 @@ class LithiumApp {
     return {
       version: this.version,
       build: this.build,
+      buildTimestamp: this.timestamp,
       config: this.config,
       user: this.user,
       currentManager: this.currentManager?.name || null,
       online: navigator.onLine,
-      timestamp: new Date().toISOString(),
+      now: new Date().toISOString(),
     };
   }
 }

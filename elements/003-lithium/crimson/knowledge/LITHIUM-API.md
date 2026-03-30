@@ -155,6 +155,16 @@ The Conduit service provides endpoints for executing pre-defined database querie
 
 All conduit API calls should use the shared conduit module rather than hand-crafting `api.post()` calls. The module ensures correct payload structure (always includes `params`), extracts rows from responses, and is fully unit-tested.
 
+### Radar Target Tracking
+
+Each conduit API wrapper automatically tracks its in-flight request on the radar status icon (see [LITHIUM-WSS.md](LITHIUM-WSS.md#status-indicator)):
+
+- `authQuery()` and `query()` add a **triangle** blip
+- `authQueries()` and `queries()` add a **square** blip
+- Blips are removed in a `finally` block, so they disappear on success or failure
+
+This is transparent to callers — no API changes needed. The radar provides at-a-glance visibility into active REST API requests alongside the WebSocket sweep animation.
+
 ### Pure Helpers (No Network)
 
 | Function | Purpose |

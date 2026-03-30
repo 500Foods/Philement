@@ -42,8 +42,10 @@ Lithium maintains a persistent, app-wide WebSocket connection to the Hydrogen se
 |------|---------|
 | `src/shared/app-ws.js` | App-wide WebSocket client with keepalive |
 | `src/shared/crimson-ws.js` | Crimson-specific chat wrapper using app-ws |
+| `src/shared/radar-controller.js` | Radar status icon controller (sweep, targets, colors) |
+| `src/shared/conduit.js` | Conduit API wrappers (add/remove radar targets per request) |
 | `src/managers/main/main.js` | Status indicator UI and initialization |
-| `src/styles/layout.css` | Status indicator styles |
+| `src/managers/main/main.css` | Radar icon styles (sidebar header) |
 
 ---
 
@@ -86,24 +88,136 @@ export const ConnectionState = {
 
 ## Status Indicator
 
-The WebSocket status is displayed as an icon in the sidebar header:
+The connection status is displayed as an animated **radar icon** in the sidebar header gradient. The radar serves double duty: it visualizes both WebSocket connection health and REST API request activity.
 
-| State | Icon | Color | Description |
-|-------|------|-------|-------------|
-| Disconnected | `fa-octagon` | Red | Connection not available |
-| Connecting | `fa-circle` | Orange (pulsing) | Connection in progress |
-| Connected | `fa-circle` | Green | Connected, idle |
-| Sending | Flash to blue | Blue (100ms) | Data sent over WebSocket |
+### Radar Icon Architecture
+
+The radar is an inline SVG (`#radar-icon`) driven entirely by JavaScript via `src/shared/radar-controller.js`. The animation is **time-based** (uses `performance.now()` timestamps, not frame counting), so rotation speed is deterministic and independent of frame rate.
+
+```
+┌──────────────────────────────────────┐
+│  1. Sweep trail  (25 fading paths)  │  ← Rotates 0.108°/ms (3.333s period)
+│  2. Targets      (dynamic blips)    │  ← 60% radius, flash on sweep pass
+│  3. Outer rim    (static circle)    │  ← Color = WS health (currentColor)
+│  4. Sweep line   (single arm)       │  ← Rotates with trail, white
+│  5. Center hub   (dot)              │  ← Uses currentColor (--accent-primary)
+└──────────────────────────────────────┘
+```
+
+### Timing Model
+
+All timing derives from a single constant:
+
+| Constant | Value | Meaning |
+|----------|-------|---------|
+| `SWEEP_PERIOD_MS` | 3333 | Full 360° rotation period |
+| `SWEEP_DPS` | 0.108°/ms | Angular velocity (360 / 3333) |
+| `HALF_PERIOD_MS` | 1667 | Half rotation — fade-out duration |
+| `TARGET_FLASH_MS` | 300 | Initial bright flash on target add |
+| `PING_DURATION_MS` | 400 | Bright flash when sweep passes target |
+| `PING_THRESHOLD_DEG` | 5° | Angular proximity for sweep-pass detection |
+
+Because the animation loop computes `angle += SWEEP_DPS * (now - lastTimestamp)`, the sweep position is always accurate to wall-clock time regardless of frame drops.
+
+### Connection States
+
+The outer rim and center hub use `currentColor`, which resolves to `--accent-primary` via CSS on `#radar-icon`. State classes override this:
+
+| State | Class | Color | Meaning |
+|-------|-------|-------|---------|
+| Connected | `.radar-connected` | `#86efac` (light green) | WebSocket is live |
+| Flaky | `.radar-flaky` | `#fde68a` (light amber) | Connection is unstable |
+| Disconnected | `.radar-disconnected` | `#fca5a5` (light red) | No active connection |
+| Connecting | `.radar-flaky` | `#fde68a` (light amber) | Connection in progress |
+| Error | `.radar-disconnected` | `#fca5a5` (light red) | Connection failed |
+
+On disconnect, the icon plays a brief shake animation (±8° rotation, 420ms).
+
+### Target Blips (REST API + WebSocket Tracking)
+
+When a request starts, a **target blip** appears at the **current sweep arm position on the 60% radius ring**. The target's angular position is captured at creation time for sweep-pass detection.
+
+| Target Type | Shape | Triggered By |
+|-------------|-------|--------------|
+| `triangle` | Triangle | Single queries (`authQuery`, `query`), WS messages |
+| `square` | Square | Batch queries (`authQueries`, `queries`), WS keepalive |
+
+**Target lifecycle:**
+
+1. **Appear** — Bright white at the sweep arm's current position (60% radius)
+2. **Settle** — After 300ms, fades to normal color: green (`#10b981`) for WS, red (`#ef4444`) for REST
+3. **Sweep pass** — Each time the sweep arm passes within 5° of the target, it flashes bright white with a glow for 400ms, then returns to normal color
+4. **Remove** — Flash sequence (white → color → white → color), then fade to transparent over ~1.67s (half a sweep cycle)
+
+**REST API tracking:** The conduit wrappers (`authQuery`, `authQueries`, `query`, `queries`) call `addTarget(type, 'rest')` before the request and `removeTarget(id)` in a `finally` block.
+
+**WebSocket tracking:** `app-ws.js` calls `addTarget(type, 'ws')` on `send()` and `removeTarget()` (no ID, FIFO) when a response arrives (`keepalive_ok`, `chat_done`, `chat_error`).
+
+### Sweep Animation
+
+The sweep is driven by `requestAnimationFrame` with **time-based delta**:
+
+```javascript
+const dt = timestamp - lastTimestamp;
+angle = (angle + SWEEP_DPS * dt) % 360;
+```
+
+This means a full rotation always takes exactly `SWEEP_PERIOD_MS` (3.333s), regardless of whether the browser drops frames. The animation loop runs only when:
+
+- The WebSocket is connected, **or**
+- At least one target blip exists
+
+### Heartbeat Flash
+
+On each WebSocket keepalive (`onHeartbeat()`), the sweep arm briefly brightens to `#a5f3fc` (140ms), giving visual confirmation that the connection is alive.
+
+### Color Scheme
+
+- **Sweep elements** (trail paths, arm stroke): white (`#ffffff`)
+- **Targets**: start white → settle to green (WS) / red (REST) → flash white on sweep pass → fade out on removal
+- **Rim/center hub**: `currentColor`, set by CSS state classes based on `--accent-primary`
 
 ### CSS Classes
 
 ```css
-.ws-status                /* Container */
-.ws-status.disconnected   /* Red octagon */
-.ws-status.connecting     /* Orange pulsing circle */
-.ws-status.connected      /* Green circle */
-.ws-status.sending        /* Blue flash state */
-.ws-status.flash          /* Active blue flash animation */
+.radar-icon               /* 32×32 SVG container, positioned in sidebar header gradient */
+#targets-group g.ping     /* Target glow effect when sweep passes over */
+```
+
+### API
+
+**Module:** `src/shared/radar-controller.js`
+
+| Function | Purpose |
+|----------|---------|
+| `initRadar()` | Cache DOM refs, inject ping CSS, set initial state |
+| `wsConnected()` | Set rim color to green, start sweep |
+| `wsFlaky()` | Set rim color to amber, start sweep |
+| `wsDisconnected()` | Set rim color to red, stop sweep, shake animation |
+| `onHeartbeat()` | Flash sweep arm bright for 140ms |
+| `addTarget(type, category)` | Add blip (`'triangle'`/`'square'`) at sweep position; `category` is `'ws'` or `'rest'`; returns unique ID |
+| `removeTarget(id?)` | Flash sequence then fade out over ~1.67s; if no ID, removes oldest (FIFO) |
+| `destroyRadar()` | Clean up animation, remove injected CSS |
+
+### Integration Points
+
+- **`main.js`** — Calls `initRadar()` on render, maps `ConnectionState` changes to `wsConnected()`/`wsFlaky()`/`wsDisconnected()`
+- **`app-ws.js`** — Calls `addTarget()` on `send()`, `removeTarget()` on response (`keepalive_ok`, `chat_done`, `chat_error`), calls `onHeartbeat()` via `onSendActivity`
+- **`conduit.js`** — All four API wrappers (`authQuery`, `authQueries`, `query`, `queries`) call `addTarget()` before the request and `removeTarget()` in a `finally` block
+
+### Initialization Sequence
+
+```
+1. User logs in
+2. MainManager.init() called
+3. render() caches #radar-icon element
+4. initRadar() called (sets red, starts no animation)
+5. initWebSocket() called
+6. ws.connect() establishes connection
+7. onStateChange callback → wsConnected() (green, sweep starts)
+8. Keepalive interval starts
+9. Each keepalive → onHeartbeat() (arm flash)
+10. Each conduit API call → addTarget()/removeTarget() (blips appear/disappear)
 ```
 
 ---
@@ -389,4 +503,4 @@ If the server doesn't respond to keepalive pings:
 
 ---
 
-Last updated: March 24, 2026
+Last updated: March 29, 2026
