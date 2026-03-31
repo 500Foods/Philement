@@ -896,9 +896,19 @@ All managers use the shared `panel-collapse.js` utility for consistent behavior:
 
 ---
 
-## Footer Save/Cancel Buttons
+## Footer Save/Cancel Buttons and ManagerEditHelper
 
-All managers with LithiumTables must include Save/Cancel buttons in the manager footer. These buttons appear in a disabled state when the manager loads and become enabled when a LithiumTable enters edit mode. Even readonly tables require these buttons to be present (they remain disabled).
+All managers with LithiumTables include Save/Cancel buttons in the manager footer. These buttons start **disabled** and only become enabled when a record is "dirty" (has changes compared to the snapshot taken at edit mode entry). The transition from disabled → enabled uses a smooth 350ms CSS animation: Save turns green, Cancel turns red. If changes are undone (returning to the original state), the buttons revert to disabled.
+
+### ManagerEditHelper (`manager-edit-helper.js`)
+
+The `ManagerEditHelper` class consolidates all edit mode, dirty tracking, and save/cancel button logic that was previously duplicated across every manager. It handles:
+
+- **`activeEditingTable` tracking** — Only one LithiumTable in edit mode at a time
+- **`onEditModeChange` / `onDirtyChange` callbacks** — Auto-wired when tables are registered
+- **Snapshot-based dirty comparison** — Table row data + registered external editors
+- **Footer save/cancel button state** — Disabled → green/red on dirty, with transitions
+- **External editor enable/disable** — Called automatically on edit mode transitions
 
 ### Button Layout
 
@@ -912,50 +922,68 @@ The footer layout follows this order (left to right):
 
 All Save/Cancel button styles are defined in `manager-ui.css` and are shared across all managers:
 
-| Class | Purpose | Disabled Styling |
-|-------|---------|------------------|
-| `.manager-footer-save-btn` | Save button | `background: var(--accent-disabled); color: var(--text-disabled);` |
-| `.manager-footer-cancel-btn` | Cancel button | `background: var(--accent-disabled); color: var(--text-disabled);` |
-| `.manager-footer-dummy-btn` | Spacer button (60px wide) | `background: var(--accent-primary); border: none; cursor: auto;` |
+| Class | Purpose | Disabled State | Enabled State |
+|-------|---------|----------------|---------------|
+| `.manager-footer-save-btn` | Save button | `--accent-disabled` bg, `--text-disabled` color, `cursor: not-allowed` | `--accent-success` green bg, white color, `cursor: pointer` |
+| `.manager-footer-cancel-btn` | Cancel button | `--accent-disabled` bg, `--text-disabled` color, `cursor: not-allowed` | `--accent-danger` red bg, white color, `cursor: pointer` |
+| `.manager-footer-dummy-btn` | Spacer button (60px wide) | `--accent-primary` bg, `cursor: default` | — |
+
+Both buttons include `transition: background 350ms ease, color 350ms ease` for smooth disabled↔enabled animation.
 
 **Do not duplicate these styles** in manager-specific CSS files — they are inherited from `manager-ui.css`.
 
 ### JavaScript Implementation
 
-#### 1. Import the Setup Function
+#### 1. Import ManagerEditHelper and Footer Setup
 
 ```javascript
 import { setupManagerFooterIcons } from '../../core/manager-ui.js';
+import { ManagerEditHelper } from '../../core/manager-edit-helper.js';
 ```
 
-#### 2. Add Footer State Properties to Constructor
+#### 2. Create EditHelper in Constructor
 
 ```javascript
 constructor(app, container) {
   // ... other properties ...
-  
-  // Footer Save/Cancel state
-  this.footerSaveBtn = null;
-  this.footerCancelBtn = null;
-  this.footerDummyBtn = null;
-  this.activeEditingTable = null;
+  this.editHelper = new ManagerEditHelper({ name: 'MyManager' });
 }
 ```
 
-#### 3. Call `setupFooter()` in `init()`
+#### 3. Register Tables After Creation
 
 ```javascript
-async init() {
-  await this.render();
-  this.setupEventListeners();
-  await this.initTables();
-  this.setupSplitters();
-  this.setupFooter();  // Add this
-  this.restorePanelState();
+async initMyTable() {
+  this.myTable = new LithiumTable({
+    container: this.elements.tableContainer,
+    navigatorContainer: this.elements.navigatorContainer,
+    // ... other options ...
+    // NOTE: Do NOT pass onEditModeChange/onDirtyChange — editHelper wires these automatically
+  });
+
+  // Register with editHelper — auto-wires onEditModeChange + onDirtyChange
+  this.editHelper.registerTable(this.myTable);
+
+  await this.myTable.init();
 }
 ```
 
-#### 4. Implement `setupFooter()` Method
+#### 4. Register External Editors (Optional)
+
+For managers with CodeMirror, SunEditor, or other external editors bound to a table:
+
+```javascript
+// After table creation, register editors
+this.editHelper.registerEditor('css', {
+  getContent:  () => this.cssEditor?.state?.doc?.toString() || '',
+  setEditable: (editable) => this.setCssEditorEditable(editable),
+  boundTable:  this.lookupTable,  // Which table this editor relates to
+});
+```
+
+The `setEditable` callback is called automatically when the bound table enters/exits edit mode. The `getContent` callback is used for snapshot comparison.
+
+#### 5. Wire Footer Buttons in `setupFooter()`
 
 ```javascript
 setupFooter() {
@@ -980,111 +1008,72 @@ setupFooter() {
     ],
     fillerTitle: 'MyManager',
     anchor: placeholder,
-    showSaveCancel: true,  // IMPORTANT: This enables Save/Cancel buttons
-    onSave: () => this.handleFooterSave(),
-    onCancel: () => this.handleFooterCancel(),
+    showSaveCancel: true,
   });
 
   this._footerDatasource = footerElements.reportSelect;
-  this.footerSaveBtn = footerElements.saveBtn;
-  this.footerCancelBtn = footerElements.cancelBtn;
-  this.footerDummyBtn = footerElements.dummyBtn;
 
-  // Wire footer Save/Cancel to the active editing table
-  if (this.footerSaveBtn) {
-    this.footerSaveBtn.addEventListener('click', () => {
-      if (this.activeEditingTable?.handleSave) {
-        this.activeEditingTable.handleSave();
-      }
-    });
-  }
-  if (this.footerCancelBtn) {
-    this.footerCancelBtn.addEventListener('click', () => {
-      if (this.activeEditingTable?.handleCancel) {
-        this.activeEditingTable.handleCancel();
-      }
-    });
-  }
-
-  // Show the Save/Cancel buttons (disabled) initially
-  this.updateFooterSaveCancelState(true, false);
+  // Wire save/cancel buttons to the editHelper (handles all state management)
+  this.editHelper.wireFooterButtons(
+    footerElements.saveBtn,
+    footerElements.cancelBtn,
+    footerElements.dummyBtn,
+  );
 }
 ```
 
-#### 5. Implement `updateFooterSaveCancelState()` Method
+#### 6. Trigger Dirty Check from Editor Change Listeners
+
+When external editors fire change events, call `checkDirtyState()`:
 
 ```javascript
-/**
- * Show/hide and enable/disable the footer Save/Cancel buttons.
- * @param {boolean} visible - Whether the buttons should be visible
- * @param {boolean} enabled - Whether the buttons should be enabled (requires visible=true)
- */
-updateFooterSaveCancelState(visible, enabled) {
-  if (this.footerSaveBtn) {
-    this.footerSaveBtn.style.display = visible ? '' : 'none';
-    this.footerSaveBtn.disabled = !visible || !enabled;
+// CodeMirror updateListener
+EditorView.updateListener.of((update) => {
+  if (update.docChanged && this.editHelper.isEditing()) {
+    this.editHelper.checkDirtyState();
   }
-  if (this.footerCancelBtn) {
-    this.footerCancelBtn.style.display = visible ? '' : 'none';
-    this.footerCancelBtn.disabled = !visible || !enabled;
+}),
+
+// SunEditor onChange
+this.sunEditor.onChange = () => {
+  if (this.childTable?.isEditing) {
+    this.editHelper.checkDirtyState();
   }
-  if (this.footerDummyBtn) {
-    this.footerDummyBtn.style.display = visible ? '' : 'none';
-  }
+};
+```
+
+#### 7. Clean Up in `cleanup()`
+
+```javascript
+cleanup() {
+  this.editHelper?.destroy();
+  // ... other cleanup ...
 }
 ```
 
-#### 6. Implement `handleTableEditModeChange()` Method
+### How Dirty Tracking Works
 
-This method is called by each LithiumTable's `onEditModeChange` callback:
+1. **Edit mode entered** → `editHelper._takeSnapshot()` captures table row data + all registered editors' content
+2. **Editor changes** → `editHelper.checkDirtyState()` compares current state to snapshot
+3. **Anything differs** → Save/Cancel buttons become enabled (green/red)
+4. **Changes undone** → Comparison shows no difference → buttons return to disabled
+5. **Save clicked** → `activeEditingTable.handleSave()` called
+6. **Cancel clicked** → `activeEditingTable.handleCancel()` called
+7. **Edit mode exited** → Snapshot cleared, buttons disabled
 
-```javascript
-/**
- * Called when any LithiumTable in this manager changes edit mode.
- * @param {LithiumTable} lithiumTable - The table instance
- * @param {boolean} isEditing - Whether the table is now in edit mode
- * @param {Object|null} rowData - The row data being edited (or null)
- */
-handleTableEditModeChange(lithiumTable, isEditing, rowData) {
-  if (isEditing) {
-    // If another table was already editing, exit its edit mode first
-    if (this.activeEditingTable && this.activeEditingTable !== lithiumTable) {
-      this.activeEditingTable.exitEditMode('cancel');
-    }
-    this.activeEditingTable = lithiumTable;
-    this.updateFooterSaveCancelState(true, true);
-  } else {
-    if (this.activeEditingTable === lithiumTable) {
-      this.activeEditingTable = null;
-    }
-    this.updateFooterSaveCancelState(true, false);
-  }
-}
-```
+### Dual/Multi Table Behavior
 
-#### 7. Wire `onEditModeChange` in LithiumTable Constructor
-
-```javascript
-this.myTable = new LithiumTable({
-  container: this.elements.tableContainer,
-  navigatorContainer: this.elements.navigatorContainer,
-  // ... other options ...
-  onEditModeChange: (isEditing, rowData) => this.handleTableEditModeChange(this.myTable, isEditing, rowData),
-});
-```
-
-### Dual Table Behavior
-
-When a manager has two LithiumTables, only one can be in edit mode at a time. The `handleTableEditModeChange()` method handles this by exiting edit mode on the previous table when a different table enters edit mode.
+When a manager has two or more LithiumTables, only one can be in edit mode at a time. The `editHelper` handles this automatically: entering edit mode on one table exits edit mode on any other.
 
 ### Current Implementations
 
-| Manager | File | Has Footer Save/Cancel |
-|---------|------|------------------------|
-| **Version Manager** | `version-history.js` | ✅ |
-| **Query Manager** | `queries.js` | ✅ |
-| **Style Manager** | `style-manager.js` | ✅ |
-| **Lookups Manager** | `lookups.js` | ✅ |
+| Manager | File | Tables | External Editors |
+|---------|------|--------|------------------|
+| **Version Manager** | `version-history.js` | 1 (readonly) | None |
+| **Query Manager** | `queries.js` | 1 | SQL, Summary, Collection (CodeMirror) |
+| **Style Manager** | `style-manager.js` | 2 | CSS (CodeMirror) |
+| **Lookups Manager** | `lookups.js` | 2 | JSON (CodeMirror tree), Summary (SunEditor) |
+| **Column Manager** | `lithium-column-manager.js` | 1 (self-contained) | None |
 
 ---
 

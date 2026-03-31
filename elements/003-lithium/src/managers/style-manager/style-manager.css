@@ -720,22 +720,7 @@
   height: 100%;
 }
 
-/* Readonly state for CSS editor */
-.style-css-readonly {
-  opacity: 0.8;
-}
-
-.style-css-readonly .cm-content {
-  cursor: not-allowed;
-}
-
-.style-css-readonly .cm-editor .cm-cursor {
-  display: none !important;
-}
-
-.style-css-readonly .cm-editor .cm-selectionBackground {
-  background: transparent !important;
-}
+/* CSS editor readonly state — now handled by shared .lithium-cm-readonly in base.css */
 
 .style-editor-actions {
   display: flex;

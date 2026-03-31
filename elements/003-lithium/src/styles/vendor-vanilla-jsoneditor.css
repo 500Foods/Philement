@@ -1,10 +1,8 @@
 /**
  * JSON Editor Styles
  *
- * The JSON editor now uses CodeMirror 6 with @codemirror/lang-json
- * instead of the previous JsonTree.js library.
- *
+ * The JSON editor uses CodeMirror 6 with @codemirror/lang-json.
  * CodeMirror's one-dark theme is applied via the @codemirror/theme-one-dark
- * extension. Additional styling for Lithium integration is in each
- * manager's CSS file.
+ * extension. Shared configuration is in core/codemirror-setup.js.
+ * Additional styling for Lithium integration is in each manager's CSS file.
  */
