@@ -21,9 +21,17 @@ import { toast } from '../../shared/toast.js';
 import { log, Subsystems, Status } from '../../core/log.js';
 import { processIcons } from '../../core/icons.js';
 import { setupManagerFooterIcons, createFontPopup } from '../../core/manager-ui.js';
+import { ManagerEditHelper } from '../../core/manager-edit-helper.js';
 import SunEditor from 'suneditor';
 import 'suneditor/css/editor';
-import { initJsonTree, getJsonTreeData, setJsonTreeData, destroyJsonTree } from '../../components/json-tree-component.js';
+import { EditorState, EditorView, undo, redo } from '../../core/codemirror.js';
+import {
+  buildEditorExtensions,
+  createReadOnlyCompartment,
+  setEditorEditable,
+  foldAllInEditor,
+  unfoldAllInEditor,
+} from '../../core/codemirror-setup.js';
 import './lookups.css';
 
 // ── Footer Select Options ───────────────────────────────────────────────────
@@ -67,6 +75,9 @@ export default class LookupsManager {
 
     // Currently selected lookup value
     this.selectedLookupValue = null;
+
+    // Edit helper — consolidates edit mode, dirty tracking, and save/cancel buttons
+    this.editHelper = new ManagerEditHelper({ name: 'Lookups' });
 
     // Panel state persistence
     this.leftPanelState = new PanelStateManager('lithium_lookups_left');
@@ -132,6 +143,10 @@ export default class LookupsManager {
       collapseMiddleBtn: this.container.querySelector('#lookups-collapse-middle-btn'),
       collapseLeftIcon: this.container.querySelector('#lookups-collapse-left-icon'),
       collapseMiddleIcon: this.container.querySelector('#lookups-collapse-middle-icon'),
+      undoBtn: this.container.querySelector('#lookups-undo-btn'),
+      redoBtn: this.container.querySelector('#lookups-redo-btn'),
+      foldAllBtn: this.container.querySelector('#lookups-fold-all-btn'),
+      unfoldAllBtn: this.container.querySelector('#lookups-unfold-all-btn'),
       fontBtn: this.container.querySelector('#lookups-font-btn'),
       tabBtns: this.container.querySelectorAll('.lookups-tab-btn'),
       tabPanes: this.container.querySelectorAll('.lookups-tab-pane'),
@@ -153,6 +168,22 @@ export default class LookupsManager {
     // Collapse/expand middle panel button
     this.elements.collapseMiddleBtn?.addEventListener('click', () => {
       this.toggleMiddlePanel();
+    });
+
+    // Undo/Redo buttons
+    this.elements.undoBtn?.addEventListener('click', () => {
+      if (this.collectionEditor) undo(this.collectionEditor);
+    });
+    this.elements.redoBtn?.addEventListener('click', () => {
+      if (this.collectionEditor) redo(this.collectionEditor);
+    });
+
+    // Fold/Unfold buttons
+    this.elements.foldAllBtn?.addEventListener('click', () => {
+      if (this.collectionEditor) foldAllInEditor(this.collectionEditor);
+    });
+    this.elements.unfoldAllBtn?.addEventListener('click', () => {
+      if (this.collectionEditor) unfoldAllInEditor(this.collectionEditor);
     });
 
     // Font button
@@ -276,6 +307,13 @@ export default class LookupsManager {
         this.sunEditor.setContents(this.currentDetailData.summary);
       }
 
+      // Track dirty state when editor content changes (via onChange callback)
+      this.sunEditor.onChange = () => {
+        if (this.childTable?.isEditing) {
+          this.editHelper.checkDirtyState();
+        }
+      };
+
       // Double-click to enter edit mode on child table
       this.elements.summaryEditor?.addEventListener('dblclick', () => {
         if (!this.childTable?.isEditing && this.childTable?.table) {
@@ -289,7 +327,8 @@ export default class LookupsManager {
   }
 
   /**
-   * Initialize CodeMirror JSON editor for JSON tab
+   * Initialize CodeMirror JSON editor for JSON tab (Collection tab).
+   * Uses the shared codemirror-setup.js for consistent configuration.
    * @param {Object|string} initialContent - Initial JSON content
    */
   async initJsonEditor(initialContent = {}) {
@@ -305,26 +344,44 @@ export default class LookupsManager {
       }
     }
 
+    const jsonStr = typeof jsonData === 'object' ? JSON.stringify(jsonData, null, 2) : jsonData;
+
     // If editor already exists, just update content
     if (this.collectionEditor) {
-      setJsonTreeData(this.elements.jsonEditor, jsonData);
+      this._setJsonEditorContent(jsonStr);
       return;
     }
 
     try {
-      this.collectionEditor = await initJsonTree({
-        target: this.elements.jsonEditor,
-        data: jsonData,
+      this._jsonReadOnlyCompartment = createReadOnlyCompartment();
+
+      const extensions = buildEditorExtensions({
+        language: 'json',
+        readOnlyCompartment: this._jsonReadOnlyCompartment,
         readOnly: !this.childTable?.isEditing,
-        onJsonEdit: () => {
-          // Track dirty state when editor content changes
-          if (this.childTable) {
-            this.childTable.isDirty = true;
-            this.childTable.updateSaveCancelButtonState();
-            this.childTable.notifyDirtyChange();
+        fontSize: 13,
+        onUpdate: (update) => {
+          if (update.docChanged && this.childTable?.isEditing) {
+            this.editHelper.checkDirtyState();
           }
         },
       });
+
+      const state = EditorState.create({ doc: jsonStr, extensions });
+
+      this.elements.jsonEditor.innerHTML = '';
+      this.collectionEditor = new EditorView({
+        state,
+        parent: this.elements.jsonEditor,
+      });
+
+      // Store references on the container for compatibility
+      this.elements.jsonEditor._cmView = this.collectionEditor;
+      this.elements.jsonEditor._cmReadOnlyCompartment = this._jsonReadOnlyCompartment;
+
+      // Set initial visual state
+      const isEditing = this.childTable?.isEditing || false;
+      setEditorEditable(this.collectionEditor, this._jsonReadOnlyCompartment, isEditing, this.elements.jsonEditor);
 
       // Double-click to enter edit mode on child table
       this.elements.jsonEditor?.addEventListener('dblclick', () => {
@@ -335,15 +392,20 @@ export default class LookupsManager {
       });
     } catch (error) {
       console.error('[LookupsManager] Failed to initialize JSON editor:', error);
-      // Fallback to textarea
-      const jsonContent = typeof jsonData === 'object'
-        ? JSON.stringify(jsonData, null, 2)
-        : jsonData;
-      this.elements.jsonEditor.innerHTML = `
-        <textarea id="lookups-json-editor-fallback"
-          style="width:100%;height:100%;background:var(--bg-secondary);color:var(--text-primary);border:none;padding:16px;font-family:var(--font-mono);font-size:14px;">
-          ${jsonContent}
-        </textarea>`;
+    }
+  }
+
+  /**
+   * Helper to set JSON editor content via dispatch.
+   * @param {string} jsonStr - JSON string to set
+   */
+  _setJsonEditorContent(jsonStr) {
+    if (!this.collectionEditor) return;
+    const current = this.collectionEditor.state.doc.toString();
+    if (current !== jsonStr) {
+      this.collectionEditor.dispatch({
+        changes: { from: 0, to: this.collectionEditor.state.doc.length, insert: jsonStr },
+      });
     }
   }
 
@@ -369,8 +431,10 @@ export default class LookupsManager {
       onDataLoaded: (rows) => {
         log(Subsystems.TABLE, Status.INFO, `[Lookups] Loaded ${rows.length} lookups`);
       },
-      onEditModeChange: (isEditing, rowData) => this.handleTableEditModeChange(this.parentTable, isEditing, rowData),
     });
+
+    // Register with editHelper — auto-wires onEditModeChange + onDirtyChange
+    this.editHelper.registerTable(this.parentTable);
 
     await this.parentTable.init();
 
@@ -399,7 +463,21 @@ export default class LookupsManager {
       onDataLoaded: (rows) => {
         log(Subsystems.TABLE, Status.INFO, `[Lookups] Loaded ${rows.length} lookup values`);
       },
-      onEditModeChange: (isEditing, rowData) => this.handleTableEditModeChange(this.childTable, isEditing, rowData),
+    });
+
+    // Register with editHelper — auto-wires onEditModeChange + onDirtyChange
+    this.editHelper.registerTable(this.childTable);
+
+    // Register external editors bound to the child table
+    this.editHelper.registerEditor('json', {
+      getContent: () => this._getJsonEditorContent(),
+      setEditable: (editable) => this.setEditorsEditable(editable),
+      boundTable: this.childTable,
+    });
+    this.editHelper.registerEditor('summary', {
+      getContent: () => this._getSummaryEditorContent(),
+      setEditable: () => {}, // setEditable handled by 'json' editor registration above
+      boundTable: this.childTable,
     });
 
     await this.childTable.init();
@@ -506,7 +584,8 @@ export default class LookupsManager {
     if (this.collectionEditor) {
       // Editor already initialized, just update content
       const jsonData = typeof jsonContent === 'string' ? JSON.parse(jsonContent || '{}') : jsonContent;
-      setJsonTreeData(this.elements.jsonEditor, jsonData);
+      const jsonStr = JSON.stringify(jsonData, null, 2);
+      this._setJsonEditorContent(jsonStr);
     } else if (this.elements.jsonEditor && this.activeTab === 'json') {
       // Initialize editor if JSON tab is active
       this.initJsonEditor(jsonContent);
@@ -528,7 +607,7 @@ export default class LookupsManager {
 
     // Clear JSON editor
     if (this.collectionEditor) {
-      setJsonTreeData(this.elements.jsonEditor, {});
+      this._setJsonEditorContent('{}');
     } else if (this.elements.jsonEditor) {
       this.elements.jsonEditor.innerHTML = '<p class="lookups-preview-placeholder">Select a lookup entry to view details</p>';
     }
@@ -769,29 +848,14 @@ export default class LookupsManager {
 
     this._footerDatasource = footerElements.reportSelect;
 
-    // Store footer save/cancel element references for state management
-    this.footerSaveBtn = footerElements.saveBtn;
-    this.footerCancelBtn = footerElements.cancelBtn;
-    this.footerDummyBtn = footerElements.dummyBtn;
+    this._footerDatasource = footerElements.reportSelect;
 
-    // The LithiumTable instance currently in edit mode (if any)
-    this.activeEditingTable = null;
-
-    // Wire footer Save/Cancel to the active editing table
-    if (this.footerSaveBtn) {
-      this.footerSaveBtn.addEventListener('click', () => {
-        if (this.activeEditingTable?.handleSave) {
-          this.activeEditingTable.handleSave();
-        }
-      });
-    }
-    if (this.footerCancelBtn) {
-      this.footerCancelBtn.addEventListener('click', () => {
-        if (this.activeEditingTable?.handleCancel) {
-          this.activeEditingTable.handleCancel();
-        }
-      });
-    }
+    // Wire save/cancel buttons to the editHelper (handles all state management)
+    this.editHelper.wireFooterButtons(
+      footerElements.saveBtn,
+      footerElements.cancelBtn,
+      footerElements.dummyBtn,
+    );
 
     log(Subsystems.MANAGER, Status.INFO, '[LookupsManager] Footer controls initialized');
   }
@@ -1013,54 +1077,41 @@ export default class LookupsManager {
    * @param {boolean} isEditing - Whether the table is now in edit mode
    * @param {Object|null} rowData - The row data being edited (or null)
    */
-  handleTableEditModeChange(lithiumTable, isEditing, rowData) {
-    if (isEditing) {
-      // If another table was already editing, exit its edit mode first
-      if (this.activeEditingTable && this.activeEditingTable !== lithiumTable) {
-        this.activeEditingTable.exitEditMode('cancel');
-      }
-      this.activeEditingTable = lithiumTable;
-      this.updateFooterSaveCancelState(true, true);
+  // Edit mode, dirty tracking, and save/cancel button management are now
+  // handled by this.editHelper (ManagerEditHelper).
 
-      // Enable JSON/Summary editors when child table enters edit mode
-      if (lithiumTable === this.childTable) {
-        this.setEditorsEditable(true);
-      }
-
-      log(Subsystems.MANAGER, Status.INFO, `[Lookups] Footer Save/Cancel enabled for table`);
-    } else {
-      if (this.activeEditingTable === lithiumTable) {
-        this.activeEditingTable = null;
-      }
-
-      // Disable JSON/Summary editors when child table exits edit mode
-      if (lithiumTable === this.childTable) {
-        this.setEditorsEditable(false);
-      }
-
-      this.updateFooterSaveCancelState(true, false);
-      log(Subsystems.MANAGER, Status.INFO, `[Lookups] Footer Save/Cancel disabled`);
+  /**
+   * Get current JSON editor content as string (for editHelper snapshot comparison).
+   */
+  _getJsonEditorContent() {
+    const jsonContainer = this.elements.jsonEditor;
+    if (jsonContainer?._cmView) {
+      return jsonContainer._cmView.state.doc.toString();
     }
+    const fallback = this.elements.jsonEditor?.querySelector('#lookups-json-editor-fallback');
+    if (fallback) return fallback.value || '';
+    return '';
   }
 
   /**
-   * Set JSON and Summary editors editable state
+   * Get current Summary editor content as string (for editHelper snapshot comparison).
+   */
+  _getSummaryEditorContent() {
+    if (this.sunEditor) {
+      return this.sunEditor.getContents() || '';
+    }
+    return '';
+  }
+
+  /**
+   * Set JSON and Summary editors editable state.
+   * Called by editHelper via the registered editor's setEditable callback.
    * @param {boolean} editable - Whether editors should be editable
    */
   setEditorsEditable(editable) {
-    // Update JSON editor (initJsonTree uses readOnly option)
-    if (this.collectionEditor) {
-      // The JSON tree component needs to be recreated with new readOnly state
-      // or we need to update its internal state
-      const jsonContainer = this.elements.jsonEditor;
-      if (jsonContainer?._cmView) {
-        const compartment = jsonContainer._cmReadOnlyCompartment;
-        if (compartment) {
-          jsonContainer._cmView.dispatch({
-            effects: compartment.reconfigure(!editable),
-          });
-        }
-      }
+    // Update JSON editor via shared utility
+    if (this.collectionEditor && this._jsonReadOnlyCompartment) {
+      setEditorEditable(this.collectionEditor, this._jsonReadOnlyCompartment, editable, this.elements.jsonEditor);
     }
 
     // Update SunEditor readonly state
@@ -1074,25 +1125,6 @@ export default class LookupsManager {
     }
 
     log(Subsystems.MANAGER, Status.INFO, `[Lookups] Editors set to ${editable ? 'editable' : 'readonly'}`);
-  }
-
-  /**
-   * Show/hide and enable/disable the footer Save/Cancel buttons.
-   * @param {boolean} visible - Whether the buttons should be visible
-   * @param {boolean} enabled - Whether the buttons should be enabled (requires visible=true)
-   */
-  updateFooterSaveCancelState(visible, enabled) {
-    if (this.footerSaveBtn) {
-      this.footerSaveBtn.style.display = visible ? '' : 'none';
-      this.footerSaveBtn.disabled = !visible || !enabled;
-    }
-    if (this.footerCancelBtn) {
-      this.footerCancelBtn.style.display = visible ? '' : 'none';
-      this.footerCancelBtn.disabled = !visible || !enabled;
-    }
-    if (this.footerDummyBtn) {
-      this.footerDummyBtn.style.display = visible ? '' : 'none';
-    }
   }
 
   // ── Lifecycle Methods ──────────────────────────────────────────────────────
@@ -1125,15 +1157,18 @@ export default class LookupsManager {
   cleanup() {
     log(Subsystems.MANAGER, Status.INFO, '[Lookups] Cleaning up...');
 
+    // Clean up edit helper
+    this.editHelper?.destroy();
+
     // Destroy SunEditor
     if (this.sunEditor) {
       this.sunEditor.destroy();
       this.sunEditor = null;
     }
 
-    // Destroy JSON editor
+    // Destroy JSON editor (CodeMirror EditorView)
     if (this.collectionEditor) {
-      destroyJsonTree(this.elements.jsonEditor);
+      this.collectionEditor.destroy();
       this.collectionEditor = null;
     }
 

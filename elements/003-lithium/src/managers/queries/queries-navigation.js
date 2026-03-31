@@ -255,11 +255,11 @@ export class NavigationManager {
    */
   async handleNavSave() {
     const mgr = this.manager;
-    
+
     // Always refresh dirty state by comparing editors to snapshots
     // Change events are just triggers - we verify here before saving
     const isDirty = mgr.dirtyTracker.refreshDirtyState();
-    
+
     if (!mgr.table || !isDirty) {
       toast.info('No Changes', { description: 'Nothing to save', duration: 3000 });
       return;

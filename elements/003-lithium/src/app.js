@@ -193,6 +193,7 @@ import './styles/layout.css';
 import './styles/components.css';
 import './styles/transitions.css';
 import './styles/toast.css';
+import './styles/tooltip.css';
 
 import { loadConfig, getConfig, getConfigValue } from './core/config.js';
 import { eventBus, Events } from './core/event-bus.js';
@@ -202,6 +203,7 @@ import { createRequest } from './core/json-request.js';
 import { fetchLookups, init as initLookups } from './shared/lookups.js';
 import { init as initIcons } from './core/icons.js';
 import { getTransitionDuration } from './core/transitions.js';
+import { initTooltips, tip, untip } from './core/tooltip-api.js';
 import { toast } from './shared/toast.js';
 import { log, logGroup, logStartup, logAuth, logManager, Subsystems, Status, flush, getSessionId, getRecentLogs, getRawLog, getDisplayLog, getCounter, setConsoleLogging, getArchivedSessions, removeArchivedSession } from './core/log.js';
 
@@ -421,6 +423,10 @@ class LithiumApp {
       // Step 5: Reveal the page (FOUC prevention) and load login/main UI immediately
       this.revealPage();
       logStartup('Page revealed');
+
+      // Step 5b: Initialize tooltip system (requires revealed DOM)
+      initTooltips();
+      logStartup('Tooltip system initialized');
 
       // Step 6: Check authentication and load appropriate manager
       // The login panel starts with its logs button disabled; it will be enabled
@@ -1644,6 +1650,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     /** Remove an archived session by key (after successful server upload) */
     removeArchived: removeArchivedSession,
   };
+
+  // Expose tooltip API on window for dynamic tooltip management
+  window.lithiumTip = { tip, untip, initTooltips };
 
   await app.init();
 });

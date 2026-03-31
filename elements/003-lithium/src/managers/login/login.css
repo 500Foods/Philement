@@ -357,22 +357,26 @@
 .login-alt-btn-group {
   display: flex;
   justify-content: space-between;
-  margin-top: var(--space-5);
+  margin-top: -160px;
+  height: 160px;
+  padding: 0px var(--space-5);
 }
 
 .login-alt-btn {
   width: 75px;
   height: 75px;
   padding: 0;
-  background-color: white;
-  border: 2px solid var(--accent-primary);
-  border-radius: var(--border-radius-md);
+  background-color: transparent;
+  border: none;
   cursor: pointer;
   transition: background-color var(--transition-fast), transform var(--transition-fast);
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
+
+}
+.login-alt-btn img {
+  filter: drop-shadow(0px 0px 1px black) drop-shadow(0px 0px 10px silver);
 }
 
 .login-alt-btn:hover {
@@ -386,31 +390,6 @@
 .login-alt-icon {
   width: 100%;
   object-fit: contain;
-}
-
-/* Tooltip styling for alternative login buttons */
-.login-alt-btn.tooltip::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%) translateY(-4px);
-  padding: var(--space-1) var(--space-2);
-  background-color: var(--bg-tertiary);
-  border: var(--border-standard);
-  border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-xs);
-  color: var(--text-primary);
-  white-space: nowrap;
-  opacity: 0;
-  visibility: hidden;
-  transition: all var(--transition-fast);
-  z-index: var(--z-tooltip);
-}
-
-.login-alt-btn.tooltip:hover::after {
-  opacity: 1;
-  visibility: visible;
 }
 
 } /* end @layer managers — login-specific styles above */

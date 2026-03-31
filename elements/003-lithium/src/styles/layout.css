@@ -203,31 +203,6 @@ body.hide-password-manager-ui [class*="password-icon"] {
   cursor: not-allowed;
 }
 
-/* Tooltip for header buttons */
-.subpanel-header-close[data-tooltip]::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%) translateY(-4px);
-  padding: var(--space-1) var(--space-2);
-  background-color: var(--bg-tertiary);
-  border: var(--border-standard);
-  border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-xs);
-  color: var(--text-primary);
-  white-space: nowrap;
-  opacity: 0;
-  visibility: hidden;
-  transition: all var(--transition-fast);
-  z-index: var(--z-tooltip);
-}
-
-.subpanel-header-close[data-tooltip]:hover::after {
-  opacity: 1;
-  visibility: visible;
-}
-
 /* Legacy styles - kept for compatibility */
 .subpanel-header h2 {
   font-size: var(--font-size-lg);
@@ -536,31 +511,6 @@ body.hide-password-manager-ui [class*="password-icon"] {
   background-color: var(--bg-hover);
 }
 
-/* Tooltip for input icon buttons */
-.input-icon-btn[data-tooltip]::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  bottom: 100%;
-  right: 0;
-  transform: translateY(-4px);
-  padding: var(--space-1) var(--space-2);
-  background-color: var(--bg-tertiary);
-  border: var(--border-standard);
-  border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-xs);
-  color: var(--text-primary);
-  white-space: nowrap;
-  opacity: 0;
-  visibility: hidden;
-  transition: all var(--transition-fast);
-  z-index: var(--z-tooltip);
-}
-
-.input-icon-btn[data-tooltip]:hover::after {
-  opacity: 1;
-  visibility: visible;
-}
-
 .login-error {
   display: none;
   align-items: center;
@@ -605,11 +555,11 @@ body.hide-password-manager-ui [class*="password-icon"] {
 .login-btn-group {
   display: flex;
   gap: 0;
-  margin-top: var(--space-5);
+  margin-top: 150px;
   outline: 5px solid var(--accent-primary);
   outline-offset: -10px;       
   line-height: 1;
-  height: 35px;
+  height: 35px;  
 }
 
 .login-btn-group > button {
@@ -684,41 +634,6 @@ body.hide-password-manager-ui [class*="password-icon"] {
 .login-btn-icon:disabled {
   /* background-color: var(--text-disabled); */
   cursor: not-allowed;
-}
-
-/* Tooltip styling for login buttons */
-.login-btn-group .tooltip::after,
-#login-language-btn.tooltip::after,
-#login-theme-btn.tooltip::after,
-#login-submit.tooltip::after,
-#login-logs-btn.tooltip::after,
-#login-help-btn.tooltip::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%) translateY(-4px);
-  padding: var(--space-1) var(--space-2);
-  background-color: var(--bg-tertiary);
-  border: var(--border-standard);
-  border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-xs);
-  color: var(--text-primary);
-  white-space: nowrap;
-  opacity: 0;
-  visibility: hidden;
-  transition: all var(--transition-fast);
-  z-index: var(--z-tooltip);
-}
-
-.login-btn-group .tooltip:hover::after,
-#login-language-btn.tooltip:hover::after,
-#login-theme-btn.tooltip:hover::after,
-#login-submit.tooltip:hover::after,
-#login-logs-btn.tooltip:hover::after,
-#login-help-btn.tooltip:hover::after {
-  opacity: 1;
-  visibility: visible;
 }
 
 /* ========================================
@@ -948,32 +863,6 @@ body.hide-password-manager-ui [class*="password-icon"] {
 
 .ws-status.flash .ws-status-icon {
   animation: ws-blue-flash 100ms ease-out;
-}
-
-/* Tooltip - top-left aligned with bottom-left of icon */
-.ws-status[data-tooltip]::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  top: 100%;
-  left: 0;
-  margin-top: 4px;
-  padding: var(--space-1) var(--space-2);
-  background-color: var(--bg-tertiary);
-  border: var(--border-standard);
-  border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-xs);
-  color: var(--text-primary);
-  white-space: nowrap;
-  opacity: 0;
-  visibility: hidden;
-  transition: all var(--transition-fast);
-  z-index: var(--z-tooltip);
-  pointer-events: none;
-}
-
-.ws-status[data-tooltip]:hover::after {
-  opacity: 1;
-  visibility: visible;
 }
 
 /* Workspace */

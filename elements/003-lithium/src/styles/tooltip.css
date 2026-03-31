@@ -1,0 +1,123 @@
+/* ========================================
+   Lithium Tooltip System — FloatingUI
+   ======================================== */
+
+@layer components {
+
+/* Base tooltip */
+.li-tooltip {
+  position: fixed;
+  z-index: var(--z-tooltip, 500);
+  max-width: 320px;
+  padding: 6px 10px;
+  border-radius: var(--border-radius-sm, 4px);
+  font-size: var(--font-size-xs, 12px);
+  line-height: 1.45;
+  white-space: normal;
+  word-wrap: break-word;
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(0.96);
+  transition: opacity 150ms ease, transform 150ms ease;
+  will-change: transform, opacity;
+}
+
+.li-tooltip--visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Content wrapper */
+.li-tooltip__content {
+  position: relative;
+  z-index: 1;
+}
+
+/* Arrow */
+.li-tooltip__arrow {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  transform: rotate(45deg);
+  z-index: 0;
+}
+
+/* ========================================
+   Theme: Default
+   ======================================== */
+.li-tooltip--default {
+  background-color: var(--tip-bg, #2E2E2E);
+  border: 1px solid var(--tip-border, #3A3A3A);
+  color: var(--tip-text, #E0E0E0);
+  box-shadow: var(--tip-shadow, 0 4px 16px rgba(0, 0, 0, 0.4));
+}
+.li-tooltip--default .li-tooltip__arrow {
+  background-color: var(--tip-arrow, #2E2E2E);
+}
+
+/* ========================================
+   Theme: Success
+   ======================================== */
+.li-tooltip--success {
+  background-color: var(--tip-success-bg, #1B3A2A);
+  border: 1px solid var(--tip-success-border, #2D6A4F);
+  color: var(--tip-success-text, #95D5B2);
+  box-shadow: var(--tip-shadow, 0 4px 16px rgba(0, 0, 0, 0.4));
+}
+.li-tooltip--success .li-tooltip__arrow {
+  background-color: var(--tip-success-arrow, #1B3A2A);
+}
+
+/* ========================================
+   Theme: Warning
+   ======================================== */
+.li-tooltip--warning {
+  background-color: var(--tip-warning-bg, #3D2E0A);
+  border: 1px solid var(--tip-warning-border, #B45309);
+  color: var(--tip-warning-text, #FCD34D);
+  box-shadow: var(--tip-shadow, 0 4px 16px rgba(0, 0, 0, 0.4));
+}
+.li-tooltip--warning .li-tooltip__arrow {
+  background-color: var(--tip-warning-arrow, #3D2E0A);
+}
+
+/* ========================================
+   Theme: Danger
+   ======================================== */
+.li-tooltip--danger {
+  background-color: var(--tip-danger-bg, #3B1111);
+  border: 1px solid var(--tip-danger-border, #991B1B);
+  color: var(--tip-danger-text, #FCA5A5);
+  box-shadow: var(--tip-shadow, 0 4px 16px rgba(0, 0, 0, 0.4));
+}
+.li-tooltip--danger .li-tooltip__arrow {
+  background-color: var(--tip-danger-arrow, #3B1111);
+}
+
+/* ========================================
+   Theme: Info
+   ======================================== */
+.li-tooltip--info {
+  background-color: var(--tip-info-bg, #0F1F3A);
+  border: 1px solid var(--tip-info-border, #1E40AF);
+  color: var(--tip-info-text, #93C5FD);
+  box-shadow: var(--tip-shadow, 0 4px 16px rgba(0, 0, 0, 0.4));
+}
+.li-tooltip--info .li-tooltip__arrow {
+  background-color: var(--tip-info-arrow, #0F1F3A);
+}
+
+/* ========================================
+   Theme: Crimson
+   ======================================== */
+.li-tooltip--crimson {
+  background-color: var(--tip-crimson-bg, #2A0A0F);
+  border: 1px solid var(--tip-crimson-border, #DC143C);
+  color: var(--tip-crimson-text, #FDA4AF);
+  box-shadow: var(--tip-shadow, 0 4px 16px rgba(0, 0, 0, 0.4));
+}
+.li-tooltip--crimson .li-tooltip__arrow {
+  background-color: var(--tip-crimson-arrow, #2A0A0F);
+}
+
+} /* end @layer components */

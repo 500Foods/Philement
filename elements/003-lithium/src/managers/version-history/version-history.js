@@ -24,6 +24,7 @@ import { processIcons } from '../../core/icons.js';
 import '../../core/manager-panels.css';
 import './version-history.css';
 import { setupManagerFooterIcons } from '../../core/manager-ui.js';
+import { ManagerEditHelper } from '../../core/manager-edit-helper.js';
 
 // Dynamic imports
 let marked;
@@ -61,11 +62,8 @@ export default class VersionHistoryManager {
     this._tableWidthMode = 'compact';
     this._filtersVisible = false;
 
-    // Footer Save/Cancel state
-    this.footerSaveBtn = null;
-    this.footerCancelBtn = null;
-    this.footerDummyBtn = null;
-    this.activeEditingTable = null;
+    // Edit helper — consolidates edit mode, dirty tracking, and save/cancel buttons
+    this.editHelper = new ManagerEditHelper({ name: 'VersionHistory' });
   }
 
   async init() {
@@ -142,6 +140,9 @@ export default class VersionHistoryManager {
       },
       onRefresh: () => this.loadVersionList(),
     });
+
+    // Register with editHelper — auto-wires onEditModeChange + onDirtyChange
+    this.editHelper.registerTable(this.versionsTable);
 
     await this.versionsTable.init();
 
@@ -587,29 +588,13 @@ export default class VersionHistoryManager {
     });
 
     this._footerDatasource = footerElements.reportSelect;
-    this.footerSaveBtn = footerElements.saveBtn;
-    this.footerCancelBtn = footerElements.cancelBtn;
-    this.footerDummyBtn = footerElements.dummyBtn;
 
-    // Wire footer Save/Cancel to the active editing table
-    if (this.footerSaveBtn) {
-      this.footerSaveBtn.addEventListener('click', () => {
-        if (this.activeEditingTable?.handleSave) {
-          this.activeEditingTable.handleSave();
-        }
-      });
-    }
-    if (this.footerCancelBtn) {
-      this.footerCancelBtn.addEventListener('click', () => {
-        if (this.activeEditingTable?.handleCancel) {
-          this.activeEditingTable.handleCancel();
-        }
-      });
-    }
-
-    // Show the Save/Cancel buttons (disabled) initially
-    // Version history is readonly, but buttons should still be visible
-    this.updateFooterSaveCancelState(true, false);
+    // Wire save/cancel buttons to the editHelper (handles all state management)
+    this.editHelper.wireFooterButtons(
+      footerElements.saveBtn,
+      footerElements.cancelBtn,
+      footerElements.dummyBtn,
+    );
 
     log(Subsystems.MANAGER, Status.INFO, '[VersionHistory] Footer controls initialized');
   }
@@ -771,51 +756,16 @@ export default class VersionHistoryManager {
     }
   }
 
-  /**
-   * Called when any LithiumTable in this manager changes edit mode.
-   * Enables/disables the footer Save/Cancel buttons and binds them to
-   * the table that is currently in edit mode.
-   */
-  handleTableEditModeChange(lithiumTable, isEditing, rowData) {
-    if (isEditing) {
-      if (this.activeEditingTable && this.activeEditingTable !== lithiumTable) {
-        this.activeEditingTable.exitEditMode('cancel');
-      }
-      this.activeEditingTable = lithiumTable;
-      this.updateFooterSaveCancelState(true, true);
-      log(Subsystems.MANAGER, Status.INFO, '[VersionHistory] Footer Save/Cancel enabled for table');
-    } else {
-      if (this.activeEditingTable === lithiumTable) {
-        this.activeEditingTable = null;
-      }
-      this.updateFooterSaveCancelState(true, false);
-      log(Subsystems.MANAGER, Status.INFO, '[VersionHistory] Footer Save/Cancel disabled');
-    }
-  }
-
-  /**
-   * Show/hide and enable/disable the footer Save/Cancel buttons.
-   * @param {boolean} visible - Whether the buttons should be visible
-   * @param {boolean} enabled - Whether the buttons should be enabled (requires visible=true)
-   */
-  updateFooterSaveCancelState(visible, enabled) {
-    if (this.footerSaveBtn) {
-      this.footerSaveBtn.style.display = visible ? '' : 'none';
-      this.footerSaveBtn.disabled = !visible || !enabled;
-    }
-    if (this.footerCancelBtn) {
-      this.footerCancelBtn.style.display = visible ? '' : 'none';
-      this.footerCancelBtn.disabled = !visible || !enabled;
-    }
-    if (this.footerDummyBtn) {
-      this.footerDummyBtn.style.display = visible ? '' : 'none';
-    }
-  }
+  // Edit mode, dirty tracking, and save/cancel button management are now
+  // handled by this.editHelper (ManagerEditHelper).
 
 // ── Cleanup ────────────────────────────────────────────────────────────────
 
   cleanup() {
     log(Subsystems.MANAGER, Status.INFO, '[VersionHistory] Cleaning up...');
+
+    // Clean up edit helper
+    this.editHelper?.destroy();
 
     this.splitter?.destroy();
     this.splitter = null;

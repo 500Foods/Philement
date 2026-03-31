@@ -2,32 +2,25 @@
  * Queries Manager - Editors Module
  *
  * Handles SQL, Summary (Markdown), and Collection (JSON) editor initialization.
- * All CodeMirror imports come from the centralized core/codemirror.js module
- * to prevent "multiple instances" errors.
+ * Uses the shared codemirror-setup.js for consistent configuration across all
+ * managers (line numbers, folding, per-language backgrounds, edit-mode gutter).
  */
 
 import { log, Subsystems, Status } from '../../core/log.js';
 import {
   EditorState,
-  Compartment,
   EditorView,
-  keymap,
-  lineNumbers,
-  highlightActiveLineGutter,
-  highlightSpecialChars,
-  drawSelection,
-  highlightActiveLine,
-  defaultKeymap,
-  history,
-  historyKeymap,
-  historyField,
-  sql,
-  markdown,
-  json,
-  oneDark,
   undo,
-  redo
+  redo,
 } from '../../core/codemirror.js';
+import {
+  buildEditorExtensions,
+  createReadOnlyCompartment,
+  setEditorEditable,
+  foldAllInEditor,
+  unfoldAllInEditor,
+  READONLY_CLASS,
+} from '../../core/codemirror-setup.js';
 
 // Constants
 const MIN_FONT_SIZE = 10;
@@ -61,43 +54,32 @@ export class EditorManager {
     if (!container || this.sqlEditor) return;
 
     try {
-      const startState = EditorState.create({
-        doc: initialContent,
-        extensions: [
-          lineNumbers({ formatNumber: (n) => String(n).padStart(4, '0') }),
-          highlightActiveLineGutter(),
-          highlightSpecialChars(),
-          history(),
-          drawSelection(),
-          highlightActiveLine(),
-          keymap.of([...defaultKeymap, ...historyKeymap]),
-          sql(),
-          oneDark,
-          EditorView.theme({
-            '&': { height: '100%', fontSize: `${this.fontSettings.size}px` },
-            '.cm-scroller': { overflow: 'auto' },
-            '.cm-content': { fontFamily: '"Vanadium Mono", var(--font-mono, monospace)' },
-          }),
-          EditorView.updateListener.of((update) => {
-            // Only track changes when in edit mode - ignore content loading, tab switches, etc.
-            if (update.docChanged && this.manager.editModeManager?.isEditing()) {
-              const isDirty = this.manager.dirtyTracker.checkSqlDirty();
-              this.manager.dirtyTracker.setDirty('sql', isDirty);
-            }
-          }),
-        ],
+      this._sqlReadOnlyCompartment = createReadOnlyCompartment();
+
+      const extensions = buildEditorExtensions({
+        language: 'sql',
+        readOnlyCompartment: this._sqlReadOnlyCompartment,
+        readOnly: !this.manager.queryTable?.isEditing,
+        fontSize: this.fontSettings.size,
+        fontFamily: this.fontSettings.family,
+        onUpdate: (update) => {
+          if (update.docChanged && this.manager.editModeManager?.isEditing()) {
+            const isDirty = this.manager.dirtyTracker.checkSqlDirty();
+            this.manager.dirtyTracker.setDirty('sql', isDirty);
+          }
+        },
       });
+
+      const startState = EditorState.create({ doc: initialContent, extensions });
 
       this.sqlEditor = new EditorView({
         state: startState,
         parent: container,
       });
 
-      // Check if we're currently in edit mode and set state accordingly
+      // Set initial visual state
       const isEditing = this.manager.queryTable?.isEditing || false;
-      const contentEl = this.sqlEditor.dom.querySelector('.cm-content');
-      if (contentEl) contentEl.contentEditable = isEditing ? 'true' : 'false';
-      container?.classList.toggle('queries-cm-readonly', !isEditing);
+      setEditorEditable(this.sqlEditor, this._sqlReadOnlyCompartment, isEditing, container);
 
       container.addEventListener('dblclick', () => {
         if (!this.manager.queryTable?.isEditing && this.manager.queryTable?.table) {
@@ -118,39 +100,32 @@ export class EditorManager {
     if (!container || this.summaryEditor) return;
 
     try {
-      const startState = EditorState.create({
-        doc: initialContent,
-        extensions: [
-          lineNumbers(),
-          highlightActiveLineGutter(),
-          highlightSpecialChars(),
-          history(),
-          drawSelection(),
-          highlightActiveLine(),
-          keymap.of([...defaultKeymap, ...historyKeymap]),
-          markdown(),
-          oneDark,
-          EditorView.theme({ '&': { height: '100%' }, '.cm-scroller': { overflow: 'auto' } }),
-          EditorView.updateListener.of((update) => {
-            // Only track changes when in edit mode - ignore content loading, tab switches, etc.
-            if (update.docChanged && this.manager.editModeManager?.isEditing()) {
-              const isDirty = this.manager.dirtyTracker.checkSummaryDirty();
-              this.manager.dirtyTracker.setDirty('summary', isDirty);
-            }
-          }),
-        ],
+      this._summaryReadOnlyCompartment = createReadOnlyCompartment();
+
+      const extensions = buildEditorExtensions({
+        language: 'markdown',
+        readOnlyCompartment: this._summaryReadOnlyCompartment,
+        readOnly: !this.manager.queryTable?.isEditing,
+        fontSize: this.fontSettings.size,
+        fontFamily: this.fontSettings.family,
+        onUpdate: (update) => {
+          if (update.docChanged && this.manager.editModeManager?.isEditing()) {
+            const isDirty = this.manager.dirtyTracker.checkSummaryDirty();
+            this.manager.dirtyTracker.setDirty('summary', isDirty);
+          }
+        },
       });
+
+      const startState = EditorState.create({ doc: initialContent, extensions });
 
       this.summaryEditor = new EditorView({
         state: startState,
         parent: container,
       });
 
-      // Check if we're currently in edit mode and set state accordingly
+      // Set initial visual state
       const isEditing = this.manager.queryTable?.isEditing || false;
-      const contentEl = this.summaryEditor.dom.querySelector('.cm-content');
-      if (contentEl) contentEl.contentEditable = isEditing ? 'true' : 'false';
-      container?.classList.toggle('queries-summary-readonly', !isEditing);
+      setEditorEditable(this.summaryEditor, this._summaryReadOnlyCompartment, isEditing, container);
 
       // Double-click to enter edit mode (same behavior as SQL editor)
       container.addEventListener('dblclick', () => {
@@ -178,32 +153,23 @@ export class EditorManager {
 
     try {
       const jsonStr = JSON.stringify(data, null, 2);
-      
-      // Create a Compartment for readonly state management
-      this._jsonReadOnlyCompartment = new Compartment();
-      
-      const startState = EditorState.create({
-        doc: jsonStr,
-        extensions: [
-          json(),
-          oneDark,
-          history(),
-          keymap.of([...defaultKeymap, ...historyKeymap]),
-          this._jsonReadOnlyCompartment.of(EditorState.readOnly.of(!this.manager.queryTable?.isEditing)),
-          EditorView.theme({
-            '&': { height: '100%', fontSize: '13px' },
-            '.cm-scroller': { overflow: 'auto', fontFamily: 'var(--font-mono, monospace)' },
-            '.cm-content': { caretColor: 'var(--accent-primary, #007acc)' },
-          }),
-          EditorView.updateListener.of((update) => {
-            // Only track changes when in edit mode - ignore content loading, tab switches, etc.
-            if (update.docChanged && this.manager.editModeManager?.isEditing()) {
-              const isDirty = this.manager.dirtyTracker.checkCollectionDirty();
-              this.manager.dirtyTracker.setDirty('collection', isDirty);
-            }
-          }),
-        ],
+
+      this._jsonReadOnlyCompartment = createReadOnlyCompartment();
+
+      const extensions = buildEditorExtensions({
+        language: 'json',
+        readOnlyCompartment: this._jsonReadOnlyCompartment,
+        readOnly: !this.manager.queryTable?.isEditing,
+        fontSize: 13,
+        onUpdate: (update) => {
+          if (update.docChanged && this.manager.editModeManager?.isEditing()) {
+            const isDirty = this.manager.dirtyTracker.checkCollectionDirty();
+            this.manager.dirtyTracker.setDirty('collection', isDirty);
+          }
+        },
       });
+
+      const startState = EditorState.create({ doc: jsonStr, extensions });
 
       container.innerHTML = '';
       this.collectionEditor = new EditorView({
@@ -215,11 +181,9 @@ export class EditorManager {
       container._cmView = this.collectionEditor;
       container._cmReadOnlyCompartment = this._jsonReadOnlyCompartment;
 
-      // Check if we're currently in edit mode and set state accordingly
+      // Set initial visual state
       const isEditing = this.manager.queryTable?.isEditing || false;
-      const contentEl = this.collectionEditor.dom.querySelector('.cm-content');
-      if (contentEl) contentEl.contentEditable = isEditing ? 'true' : 'false';
-      container?.classList.toggle('queries-json-readonly', !isEditing);
+      setEditorEditable(this.collectionEditor, this._jsonReadOnlyCompartment, isEditing, container);
 
       // Double-click to enter edit mode (same behavior as SQL editor)
       container.addEventListener('dblclick', () => {
@@ -261,19 +225,27 @@ export class EditorManager {
   }
 
   /**
-   * Set CodeMirror editors editable state
+   * Set CodeMirror editors editable state.
+   * Uses the shared setEditorEditable utility for consistent behavior
+   * (compartment reconfigure + contentEditable + CSS class toggle).
    */
   _setCodeMirrorEditable(editable) {
-    const editors = [
-      { view: this.sqlEditor, container: this.manager.elements.sqlEditorContainer, readonlyClass: 'queries-cm-readonly' },
-      { view: this.summaryEditor, container: this.manager.elements.summaryEditorContainer, readonlyClass: 'queries-summary-readonly' },
-    ];
+    if (this.sqlEditor && this._sqlReadOnlyCompartment) {
+      setEditorEditable(
+        this.sqlEditor,
+        this._sqlReadOnlyCompartment,
+        editable,
+        this.manager.elements.sqlEditorContainer,
+      );
+    }
 
-    for (const { view, container, readonlyClass } of editors) {
-      if (!view) continue;
-      const contentEl = view.dom.querySelector('.cm-content');
-      if (contentEl) contentEl.contentEditable = editable ? 'true' : 'false';
-      container?.classList.toggle(readonlyClass, !editable);
+    if (this.summaryEditor && this._summaryReadOnlyCompartment) {
+      setEditorEditable(
+        this.summaryEditor,
+        this._summaryReadOnlyCompartment,
+        editable,
+        this.manager.elements.summaryEditorContainer,
+      );
     }
 
     this._setJsonEditorEditable(editable);
@@ -281,8 +253,7 @@ export class EditorManager {
 
   /**
    * Set JSON editor editable state.
-   * Uses the Compartment stored on the container to reconfigure readOnly
-   * via a dispatch effect — no state recreation needed.
+   * Uses the shared setEditorEditable utility.
    */
   _setJsonEditorEditable(editable) {
     const container = this.manager.elements.collectionEditorContainer;
@@ -290,18 +261,10 @@ export class EditorManager {
 
     const view = container._cmView;
     const compartment = container._cmReadOnlyCompartment;
-
     if (!compartment) return;
 
-    const isReadOnly = !editable;
-
-    // Use EditorState from static import (same module instance)
-    view.dispatch({
-      effects: compartment.reconfigure(EditorState.readOnly.of(isReadOnly)),
-    });
-
-    container._cmReadOnly = isReadOnly;
-    container?.classList.toggle('queries-json-readonly', isReadOnly);
+    setEditorEditable(view, compartment, editable, container);
+    container._cmReadOnly = !editable;
   }
 
   /**
@@ -350,6 +313,35 @@ export class EditorManager {
   handleRedo() {
     if (this.sqlEditor) {
       redo(this.sqlEditor);
+    }
+  }
+
+  /**
+   * Fold all regions in the active editor
+   */
+  handleFoldAll() {
+    const view = this._getActiveEditorView();
+    if (view) foldAllInEditor(view);
+  }
+
+  /**
+   * Unfold all regions in the active editor
+   */
+  handleUnfoldAll() {
+    const view = this._getActiveEditorView();
+    if (view) unfoldAllInEditor(view);
+  }
+
+  /**
+   * Get the currently active editor view based on active tab
+   */
+  _getActiveEditorView() {
+    const activeTab = this.manager._getActiveTabId?.() || 'sql';
+    switch (activeTab) {
+      case 'sql': return this.sqlEditor;
+      case 'summary': return this.summaryEditor;
+      case 'collection': return this.collectionEditor;
+      default: return this.sqlEditor;
     }
   }
 

@@ -155,6 +155,8 @@ Raw JSON editor for the selected style configuration (not yet implemented).
 ### Class Structure
 
 ```javascript
+import { ManagerEditHelper } from '../../core/manager-edit-helper.js';
+
 export default class StyleManager {
   constructor(app, container) {
     this.app = app;
@@ -167,21 +169,33 @@ export default class StyleManager {
     this.rightSplitter = null;    // LithiumSplitter between middle/right
     this.fontPopup = null;
     this.jsonEditor = null;
+    this.cssEditor = null;        // CodeMirror CSS editor
+    this.editHelper = new ManagerEditHelper({ name: 'Style' });
   }
 
   async init() {
     await this.render();
     this.setupEventListeners();
-    this.setupSplitters();
     this.applyPermissions();
     await this.initLookupTable();   // QueryRef 26 + LOOKUPID 41
     await this.initSectionsTable(); // Hardcoded data via setData()
+    this.setupSplitters();
     this.setupModeToggle();
     this.setupToolbar();
     this.initFontPopup();
-    this.setupFooter();
+    this.initPreviewStyle();
+    this.setupFooter();             // Wires editHelper to footer buttons
+    this.restorePanelState();
     this.show();
   }
+
+  // In initLookupTable():
+  //   this.editHelper.registerTable(this.lookupTable);
+  //   this.editHelper.registerEditor('css', { getContent, setEditable, boundTable });
+  // In initSectionsTable():
+  //   this.editHelper.registerTable(this.sectionsTable);
+  // In setupFooter():
+  //   this.editHelper.wireFooterButtons(saveBtn, cancelBtn, dummyBtn);
 
   // Table handlers
   async handleLookupRowSelected(rowData) { /* ... */ }
@@ -206,7 +220,7 @@ export default class StyleManager {
   // Lifecycle
   onActivate() { /* Redraw tables */ }
   onDeactivate() { /* ... */ }
-  cleanup() { /* Destroy tables, splitters, popups */ }
+  cleanup() { this.editHelper?.destroy(); /* Destroy tables, splitters, popups */ }
 }
 ```
 
@@ -540,6 +554,10 @@ The footer includes Print/Email/Export buttons using `setupManagerFooterIcons()`
 - **Email** — Open mailto link with table data
 - **Export** — PDF, CSV, TXT, XLS download options
 - **Datasource selector** — Choose which table to export (Lookup 41 view/data, Sections view/data)
+- **Save** — Enabled (green) only when a dirty record is detected; commits changes
+- **Cancel** — Enabled (red) only when a dirty record is detected; reverts changes
+
+Save/Cancel buttons are managed by `ManagerEditHelper`. See [LITHIUM-TAB.md](LITHIUM-TAB.md#footer-savecancel-buttons-and-manageredithelper) for the full pattern.
 
 ---
 

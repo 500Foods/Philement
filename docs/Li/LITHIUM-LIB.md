@@ -14,6 +14,7 @@ Lithium uses a minimal set of third-party libraries, preferring to build functio
 | Tables | Tabulator |
 | Code Editor | CodeMirror 6 |
 | JSON Editor | vanilla-jsoneditor |
+| Tooltips | Floating UI |
 | Sanitization | DOMPurify |
 | Markdown | marked |
 | SQL Formatting | sql-formatter |
@@ -144,6 +145,36 @@ containerElement.classList.add('jse-theme-dark');
 Then map Lithium design tokens to `--jse-*` CSS custom properties in the stylesheet.
 
 **Migration note:** Replaced legacy `jsoneditor` (v10.x) in March 2026. The old library used `new JSONEditor(container, options)` with `editor.set(data)`. The new library uses `new JSONEditor({ target, props })` with `editor.set({ json: data })`. Modes changed from `tree/view/form/code/text` to `tree/text/table`.
+
+---
+
+### Floating UI
+
+**Purpose:** Intelligent tooltip positioning, popover placement, and floating element computation
+
+**Package:** `@floating-ui/dom`
+
+**Import:** Static (core module used by tooltip system)
+
+```javascript
+import { computePosition, flip, shift, offset, arrow, autoUpdate } from '@floating-ui/dom';
+```
+
+**Usage in Lithium:**
+
+- Tooltip system (`src/core/tooltip.js`) — all tooltip positioning
+- Provides auto-flip when tooltips approach viewport edges
+- Arrow positioning relative to trigger element
+
+**Key features used:**
+
+- `computePosition` — one-shot positioning calculation
+- `autoUpdate` — reactive repositioning on scroll/resize (only while visible)
+- `flip` — automatically flips placement when near viewport edges
+- `shift` — keeps tooltips within viewport horizontally
+- `arrow` — calculates arrow offset relative to tooltip and trigger
+
+**Documentation:** See [LITHIUM-TIP.md](LITHIUM-TIP.md) for the full tooltip system documentation.
 
 ---
 

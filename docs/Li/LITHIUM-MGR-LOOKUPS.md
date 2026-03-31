@@ -155,21 +155,27 @@ export default class LookupsManager {
 
 ### Dual LithiumTable Instances
 
-The manager creates two independent `LithiumTable` instances:
+The manager creates two independent `LithiumTable` instances, both registered with a shared `ManagerEditHelper`:
 
 ```javascript
+import { ManagerEditHelper } from '../../core/manager-edit-helper.js';
+
+// In constructor:
+this.editHelper = new ManagerEditHelper({ name: 'Lookups' });
+
 // Parent table (lookups list)
 this.parentTable = new LithiumTable({
   container: this.elements.parentTableContainer,
   navigatorContainer: this.elements.parentNavigator,
   tablePath: 'lookups/lookups-list',
   queryRef: 30,
-  cssPrefix: 'lookups-parent',
+  cssPrefix: 'lithium',
   storageKey: 'lookups_parent_table',
   app: this.app,
   onRowSelected: (rowData) => this.handleParentRowSelected(rowData),
   onRowDeselected: () => this.handleParentRowDeselected(),
 });
+this.editHelper.registerTable(this.parentTable);
 
 // Child table (lookup values)
 this.childTable = new LithiumTable({
@@ -177,18 +183,32 @@ this.childTable = new LithiumTable({
   navigatorContainer: this.elements.childNavigator,
   tablePath: 'lookups/lookup-values',
   queryRef: 34,
-  cssPrefix: 'lookups-child',
+  cssPrefix: 'lithium',
   storageKey: 'lookups_child_table',
   app: this.app,
+});
+this.editHelper.registerTable(this.childTable);
+
+// Register external editors bound to the child table
+this.editHelper.registerEditor('json', {
+  getContent:  () => this._getJsonEditorContent(),
+  setEditable: (editable) => this.setEditorsEditable(editable),
+  boundTable:  this.childTable,
+});
+this.editHelper.registerEditor('summary', {
+  getContent:  () => this._getSummaryEditorContent(),
+  setEditable: () => {},  // Handled by 'json' editor registration
+  boundTable:  this.childTable,
 });
 ```
 
 Both tables are fully independent with:
 
 - Separate Navigator control bars
-- Independent edit modes
 - Independent column configurations
 - Independent templates (saved to localStorage with different keys)
+- **Shared edit mode tracking** — only one table can be in edit mode at a time (enforced by `ManagerEditHelper`)
+- **Snapshot-based dirty tracking** — table row data + JSON editor + SunEditor content compared against snapshot
 
 ---
 
