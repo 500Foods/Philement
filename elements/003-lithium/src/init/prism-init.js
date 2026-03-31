@@ -1,6 +1,8 @@
 // Prism.js Initialization Module
 // Handles Prism.js syntax highlighting initialization and configuration
 
+import { getTip } from '../core/tooltip-api.js';
+
 class PrismInit {
   constructor() {
     this.highlightedElements = new Map(); // Track highlighted elements
@@ -129,7 +131,7 @@ class PrismInit {
   addCopyButton(element, elementId) {
     const copyButton = document.createElement('button');
     copyButton.className = 'prism-copy-btn btn btn-sm btn-outline-secondary';
-    copyButton.title = 'Copy to clipboard';
+    copyButton.dataset.tooltip = 'Copy to clipboard';
     copyButton.innerHTML = '<fa fa-copy></fa>';
     copyButton.style.position = 'absolute';
     copyButton.style.right = '10px';
@@ -141,10 +143,14 @@ class PrismInit {
       navigator.clipboard.writeText(code).then(() => {
         // Show success feedback
         copyButton.innerHTML = '<fa fa-check></fa>';
-        copyButton.title = 'Copied!';
+        copyButton.dataset.tooltip = 'Copied!';
+        const t = getTip(copyButton);
+        if (t) t.updateContent('Copied!');
         setTimeout(() => {
           copyButton.innerHTML = '<fa fa-copy></fa>';
-          copyButton.title = 'Copy to clipboard';
+          copyButton.dataset.tooltip = 'Copy to clipboard';
+          const t2 = getTip(copyButton);
+          if (t2) t2.updateContent('Copy to clipboard');
         }, 2000);
       }).catch((error) => {
         console.error('Failed to copy code:', error);
@@ -168,7 +174,7 @@ class PrismInit {
   addDownloadButton(element, elementId, language) {
     const downloadButton = document.createElement('button');
     downloadButton.className = 'prism-download-btn btn btn-sm btn-outline-secondary';
-    downloadButton.title = 'Download code';
+    downloadButton.dataset.tooltip = 'Download code';
     downloadButton.innerHTML = '<fa fa-download></fa>';
     downloadButton.style.position = 'absolute';
     downloadButton.style.right = '50px';

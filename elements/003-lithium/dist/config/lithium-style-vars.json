@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS custom properties (variables) used across the Lithium codebase",
-    "generated": "2026-03-31T08:51:03.860Z",
+    "generated": "2026-03-31T17:32:03.394Z",
     "sources": {
       "css": "48 files in src/**/*.css",
       "js": "79 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
-    "total_variables": 179,
-    "total_occurrences": 2972
+    "total_variables": 180,
+    "total_occurrences": 3006
   },
   "variables": [
     {
@@ -447,10 +447,10 @@
     },
     {
       "name": "--font-mono",
-      "css": 32,
+      "css": 33,
       "js": 9,
       "html": 0,
-      "total": 41
+      "total": 42
     },
     {
       "name": "--font-sans",
@@ -993,178 +993,185 @@
     },
     {
       "name": "--tip-arrow",
-      "css": 1,
+      "css": 2,
       "js": 0,
       "html": 0,
-      "total": 1
+      "total": 2
     },
     {
       "name": "--tip-bg",
-      "css": 1,
+      "css": 2,
       "js": 0,
       "html": 0,
-      "total": 1
+      "total": 2
     },
     {
       "name": "--tip-border",
-      "css": 1,
+      "css": 3,
       "js": 0,
       "html": 0,
-      "total": 1
+      "total": 3
     },
     {
       "name": "--tip-crimson-arrow",
-      "css": 1,
+      "css": 2,
       "js": 0,
       "html": 0,
-      "total": 1
+      "total": 2
     },
     {
       "name": "--tip-crimson-bg",
-      "css": 1,
+      "css": 2,
       "js": 0,
       "html": 0,
-      "total": 1
+      "total": 2
     },
     {
       "name": "--tip-crimson-border",
-      "css": 1,
+      "css": 3,
       "js": 0,
       "html": 0,
-      "total": 1
+      "total": 3
     },
     {
       "name": "--tip-crimson-text",
-      "css": 1,
+      "css": 2,
       "js": 0,
       "html": 0,
-      "total": 1
+      "total": 2
     },
     {
       "name": "--tip-danger-arrow",
-      "css": 1,
+      "css": 2,
       "js": 0,
       "html": 0,
-      "total": 1
+      "total": 2
     },
     {
       "name": "--tip-danger-bg",
-      "css": 1,
+      "css": 2,
       "js": 0,
       "html": 0,
-      "total": 1
+      "total": 2
     },
     {
       "name": "--tip-danger-border",
-      "css": 1,
+      "css": 3,
       "js": 0,
       "html": 0,
-      "total": 1
+      "total": 3
     },
     {
       "name": "--tip-danger-text",
-      "css": 1,
+      "css": 2,
       "js": 0,
       "html": 0,
-      "total": 1
+      "total": 2
     },
     {
       "name": "--tip-info-arrow",
-      "css": 1,
+      "css": 2,
       "js": 0,
       "html": 0,
-      "total": 1
+      "total": 2
     },
     {
       "name": "--tip-info-bg",
-      "css": 1,
+      "css": 2,
       "js": 0,
       "html": 0,
-      "total": 1
+      "total": 2
     },
     {
       "name": "--tip-info-border",
-      "css": 1,
+      "css": 3,
       "js": 0,
       "html": 0,
-      "total": 1
+      "total": 3
     },
     {
       "name": "--tip-info-text",
-      "css": 1,
+      "css": 2,
       "js": 0,
       "html": 0,
-      "total": 1
+      "total": 2
+    },
+    {
+      "name": "--tip-kbd",
+      "css": 2,
+      "js": 0,
+      "html": 0,
+      "total": 2
     },
     {
       "name": "--tip-shadow",
-      "css": 6,
+      "css": 7,
       "js": 0,
       "html": 0,
-      "total": 6
+      "total": 7
     },
     {
       "name": "--tip-success-arrow",
-      "css": 1,
+      "css": 2,
       "js": 0,
       "html": 0,
-      "total": 1
+      "total": 2
     },
     {
       "name": "--tip-success-bg",
-      "css": 1,
+      "css": 2,
       "js": 0,
       "html": 0,
-      "total": 1
+      "total": 2
     },
     {
       "name": "--tip-success-border",
-      "css": 1,
+      "css": 3,
       "js": 0,
       "html": 0,
-      "total": 1
+      "total": 3
     },
     {
       "name": "--tip-success-text",
-      "css": 1,
+      "css": 2,
       "js": 0,
       "html": 0,
-      "total": 1
+      "total": 2
     },
     {
       "name": "--tip-text",
-      "css": 1,
+      "css": 2,
       "js": 0,
       "html": 0,
-      "total": 1
+      "total": 2
     },
     {
       "name": "--tip-warning-arrow",
-      "css": 1,
+      "css": 2,
       "js": 0,
       "html": 0,
-      "total": 1
+      "total": 2
     },
     {
       "name": "--tip-warning-bg",
-      "css": 1,
+      "css": 2,
       "js": 0,
       "html": 0,
-      "total": 1
+      "total": 2
     },
     {
       "name": "--tip-warning-border",
-      "css": 1,
+      "css": 3,
       "js": 0,
       "html": 0,
-      "total": 1
+      "total": 3
     },
     {
       "name": "--tip-warning-text",
-      "css": 1,
+      "css": 2,
       "js": 0,
       "html": 0,
-      "total": 1
+      "total": 2
     },
     {
       "name": "--transition",

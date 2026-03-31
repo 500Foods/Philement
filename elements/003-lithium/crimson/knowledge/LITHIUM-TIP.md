@@ -478,6 +478,18 @@ import { initTooltips } from '../core/tooltip-api.js';
 initTooltips();
 ```
 
+### Title attribute (automatic capture)
+
+`initTooltips()` also captures `title` attributes. When a `title` is used, the attribute is removed to prevent the native browser tooltip from appearing. `data-tooltip` takes precedence if both are present.
+
+```html
+<!-- These all become FloatingUI tooltips automatically -->
+<button title="Close">X</button>
+<button title="Search" data-tip-theme="info">Search</button>
+```
+
+This means existing `title="..."` attributes across the codebase (sidebar buttons, menu items, toolbar buttons) work as fancy tooltips with zero changes. No need to convert them to `data-tooltip`.
+
 ### With theme and placement
 
 ```html
@@ -556,35 +568,39 @@ untip(buttonEl);
 
 ## Migration from CSS-only Tooltips
 
-The old system used `::after` pseudo-elements with `data-tooltip`:
+The old system used three `::after` pseudo-element patterns — all removed:
 
 ```css
-/* OLD — remove these */
-.btn[data-tooltip]::after {
-  content: attr(data-tooltip);
-  /* ... */
-}
+/* OLD — all removed */
+.btn[data-tooltip]::after { content: attr(data-tooltip); ... }
+.sidebar-icon-btn[title]::after { content: attr(title); ... }
+.tooltip::after { content: attr(data-tooltip); ... }
 ```
 
-### Migration steps
+### What was done
 
-1. Remove all `::after` tooltip CSS rules from `layout.css`, `login.css`, `base.css`
-2. Add FloatingUI: `npm install @floating-ui/dom`
-3. Import `src/styles/tooltip.css` in `base.css`
-4. Call `initTooltips()` in `app.js` after DOM is ready
-5. All existing `data-tooltip` attributes work without changes
-6. Add `data-tip-theme` / `data-tip-placement` where needed
+1. Removed `::after` tooltip CSS from `layout.css` (4 rule blocks)
+2. Removed `::after` tooltip CSS from `login.css` (`.login-alt-btn.tooltip`)
+3. Removed `.tooltip` class rules from `components.css`
+4. Removed sidebar/menu/zoom `::after` tooltip CSS from `main.css`
+5. Removed `classList.add('tooltip')` calls from `login.js`
+6. `initTooltips()` now captures both `data-tooltip` and `title` attributes
+7. `title` attributes are removed after capture to prevent native browser tooltips
 
-### Files to update
+### Files changed
 
 | File | Action |
 |------|--------|
-| `package.json` | Add `@floating-ui/dom` dependency |
-| `src/styles/base.css` | Add `@import './tooltip.css'` |
-| `src/core/app.js` | Call `initTooltips()` after render |
-| `src/styles/layout.css` | Remove old `::after` tooltip rules |
-| `src/managers/login/login.css` | Remove old tooltip rules |
-| `src/managers/main/main.css` | Remove old tooltip rules |
+| `package.json` | Added `@floating-ui/dom` dependency |
+| `src/core/tooltip.js` | Created — FloatingUI `Tooltip` class |
+| `src/core/tooltip-api.js` | Created — `tip()`, `untip()`, `initTooltips()`, MutationObserver |
+| `src/styles/tooltip.css` | Created — 6 themes, arrows, transitions |
+| `src/app.js` | Import tooltip.css, initTooltips(), expose on window |
+| `src/styles/layout.css` | Removed 4 old tooltip rule blocks |
+| `src/styles/components.css` | Removed `.tooltip` class rules |
+| `src/managers/login/login.css` | Removed tooltip rules |
+| `src/managers/login/login.js` | Removed `classList.add('tooltip')` |
+| `src/managers/main/main.css` | Removed sidebar/menu/zoom tooltip rules |
 
 ---
 

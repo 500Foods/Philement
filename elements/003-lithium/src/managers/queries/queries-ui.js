@@ -76,7 +76,7 @@ export class UIManager {
       clearBtn = document.createElement('span');
       clearBtn.className = 'queries-header-filter-clear';
       clearBtn.innerHTML = '&times;';
-      clearBtn.title = 'Clear filter';
+      clearBtn.dataset.tooltip = 'Clear filter';
       clearBtn.style.display = 'none';
       clearBtn.addEventListener('click', (e) => { e.stopPropagation(); input.value = ''; clearBtn.style.display = 'none'; success(''); });
       parent.appendChild(clearBtn);
@@ -416,7 +416,7 @@ export class UIManager {
         const deleteBtn = document.createElement('button');
         deleteBtn.type = 'button';
         deleteBtn.className = 'queries-nav-popup-template-delete';
-        deleteBtn.title = 'Delete template';
+        deleteBtn.dataset.tooltip = 'Delete template';
         deleteBtn.innerHTML = '<fa fa-trash-can></fa>';
         deleteBtn.addEventListener('click', (evt) => this.manager.templateManager.deleteTemplate(item.template.name, evt));
         row.appendChild(deleteBtn);

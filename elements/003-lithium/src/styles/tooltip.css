@@ -7,19 +7,21 @@
 /* Base tooltip */
 .li-tooltip {
   position: fixed;
-  z-index: var(--z-tooltip, 500);
+  z-index: var(--z-tooltip);
   max-width: 320px;
   padding: 6px 10px;
-  border-radius: var(--border-radius-sm, 4px);
-  font-size: var(--font-size-xs, 12px);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-xs);
   line-height: 1.45;
   white-space: normal;
   word-wrap: break-word;
   pointer-events: none;
   opacity: 0;
-  transform: scale(0.96);
+  transform: scale(0.75);
   transition: opacity 150ms ease, transform 150ms ease;
   will-change: transform, opacity;
+  border-width: 1px;
+  border-style: solid;
 }
 
 .li-tooltip--visible {
@@ -33,91 +35,129 @@
   z-index: 1;
 }
 
-/* Arrow */
+/* Arrow — rotated square with matching 1px border.
+   FloatingUI positions the element; we inset it so
+   the arrow border merges seamlessly with the tooltip body border. */
 .li-tooltip__arrow {
   position: absolute;
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
+  border: 1px solid;
   transform: rotate(45deg);
   z-index: 0;
+}
+
+/* Inset arrow so its inner edges align with the tooltip border edge */
+.li-tooltip[data-placement="top"] .li-tooltip__arrow {
+  bottom: -6px;
+  border-top-color: transparent;
+  border-left-color: transparent;
+}
+.li-tooltip[data-placement="bottom"] .li-tooltip__arrow {
+  top: -6px;
+  border-bottom-color: transparent;
+  border-right-color: transparent;
+}
+.li-tooltip[data-placement="left"] .li-tooltip__arrow {
+  right: -6px;
+  border-top-color: transparent;
+  border-left-color: transparent;
+}
+.li-tooltip[data-placement="right"] .li-tooltip__arrow {
+  left: -6px;
+  border-bottom-color: transparent;
+  border-right-color: transparent;
 }
 
 /* ========================================
    Theme: Default
    ======================================== */
 .li-tooltip--default {
-  background-color: var(--tip-bg, #2E2E2E);
-  border: 1px solid var(--tip-border, #3A3A3A);
-  color: var(--tip-text, #E0E0E0);
-  box-shadow: var(--tip-shadow, 0 4px 16px rgba(0, 0, 0, 0.4));
+  background-color: var(--tip-bg);
+  border-color: var(--tip-border);
+  color: var(--tip-text);
+  box-shadow: var(--tip-shadow);
 }
 .li-tooltip--default .li-tooltip__arrow {
-  background-color: var(--tip-arrow, #2E2E2E);
+  background-color: var(--tip-arrow);
+  border-color: var(--tip-border);
 }
 
 /* ========================================
    Theme: Success
    ======================================== */
 .li-tooltip--success {
-  background-color: var(--tip-success-bg, #1B3A2A);
-  border: 1px solid var(--tip-success-border, #2D6A4F);
-  color: var(--tip-success-text, #95D5B2);
-  box-shadow: var(--tip-shadow, 0 4px 16px rgba(0, 0, 0, 0.4));
+  background-color: var(--tip-success-bg);
+  border-color: var(--tip-success-border);
+  color: var(--tip-success-text);
+  box-shadow: var(--tip-shadow);
 }
 .li-tooltip--success .li-tooltip__arrow {
-  background-color: var(--tip-success-arrow, #1B3A2A);
+  background-color: var(--tip-success-arrow);
+  border-color: var(--tip-success-border);
 }
 
 /* ========================================
    Theme: Warning
    ======================================== */
 .li-tooltip--warning {
-  background-color: var(--tip-warning-bg, #3D2E0A);
-  border: 1px solid var(--tip-warning-border, #B45309);
-  color: var(--tip-warning-text, #FCD34D);
-  box-shadow: var(--tip-shadow, 0 4px 16px rgba(0, 0, 0, 0.4));
+  background-color: var(--tip-warning-bg);
+  border-color: var(--tip-warning-border);
+  color: var(--tip-warning-text);
+  box-shadow: var(--tip-shadow);
 }
 .li-tooltip--warning .li-tooltip__arrow {
-  background-color: var(--tip-warning-arrow, #3D2E0A);
+  background-color: var(--tip-warning-arrow);
+  border-color: var(--tip-warning-border);
 }
 
 /* ========================================
    Theme: Danger
    ======================================== */
 .li-tooltip--danger {
-  background-color: var(--tip-danger-bg, #3B1111);
-  border: 1px solid var(--tip-danger-border, #991B1B);
-  color: var(--tip-danger-text, #FCA5A5);
-  box-shadow: var(--tip-shadow, 0 4px 16px rgba(0, 0, 0, 0.4));
+  background-color: var(--tip-danger-bg);
+  border-color: var(--tip-danger-border);
+  color: var(--tip-danger-text);
+  box-shadow: var(--tip-shadow);
 }
 .li-tooltip--danger .li-tooltip__arrow {
-  background-color: var(--tip-danger-arrow, #3B1111);
+  background-color: var(--tip-danger-arrow);
+  border-color: var(--tip-danger-border);
 }
 
 /* ========================================
    Theme: Info
    ======================================== */
 .li-tooltip--info {
-  background-color: var(--tip-info-bg, #0F1F3A);
-  border: 1px solid var(--tip-info-border, #1E40AF);
-  color: var(--tip-info-text, #93C5FD);
-  box-shadow: var(--tip-shadow, 0 4px 16px rgba(0, 0, 0, 0.4));
+  background-color: var(--tip-info-bg);
+  border-color: var(--tip-info-border);
+  color: var(--tip-info-text);
+  box-shadow: var(--tip-shadow);
 }
 .li-tooltip--info .li-tooltip__arrow {
-  background-color: var(--tip-info-arrow, #0F1F3A);
+  background-color: var(--tip-info-arrow);
+  border-color: var(--tip-info-border);
 }
 
 /* ========================================
    Theme: Crimson
    ======================================== */
 .li-tooltip--crimson {
-  background-color: var(--tip-crimson-bg, #2A0A0F);
-  border: 1px solid var(--tip-crimson-border, #DC143C);
-  color: var(--tip-crimson-text, #FDA4AF);
-  box-shadow: var(--tip-shadow, 0 4px 16px rgba(0, 0, 0, 0.4));
+  background-color: var(--tip-crimson-bg);
+  border-color: var(--tip-crimson-border);
+  color: var(--tip-crimson-text);
+  box-shadow: var(--tip-shadow);
 }
 .li-tooltip--crimson .li-tooltip__arrow {
-  background-color: var(--tip-crimson-arrow, #2A0A0F);
+  background-color: var(--tip-crimson-arrow);
+  border-color: var(--tip-crimson-border);
+}
+
+/* Utility: keyboard shortcut or secondary hint text */
+.li-tip-kbd {
+  color: var(--tip-kbd);
+  font-family: var(--font-mono);
+  font-size: 0.9em;
 }
 
 } /* end @layer components */

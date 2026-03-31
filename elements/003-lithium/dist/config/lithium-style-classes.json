@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS class selectors/names used across the Lithium codebase",
-    "generated": "2026-03-31T08:51:04.766Z",
+    "generated": "2026-03-31T17:32:04.367Z",
     "sources": {
       "css": "48 files in src/**/*.css",
       "js": "79 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
-    "total_selectors": 1433,
-    "total_occurrences": 17360
+    "total_selectors": 1437,
+    "total_occurrences": 17555
   },
   "selectors": [
     {
@@ -6801,6 +6801,23 @@
       }
     },
     {
+      "selector": ".li-tip-kbd",
+      "css": 1,
+      "js": 3,
+      "html": 0,
+      "total": 4,
+      "files": {
+        "css": [
+          "src/styles/tooltip.css"
+        ],
+        "js": [
+          "src/core/manager-ui.js",
+          "src/core/tooltip-api.js"
+        ],
+        "html": []
+      }
+    },
+    {
       "selector": ".li-tooltip",
       "css": 1,
       "js": 4,
@@ -7057,6 +7074,74 @@
     },
     {
       "selector": ".li-tooltip--warning .li-tooltip__arrow",
+      "css": 1,
+      "js": 5,
+      "html": 0,
+      "total": 6,
+      "files": {
+        "css": [
+          "src/styles/tooltip.css"
+        ],
+        "js": [
+          "src/core/tooltip-api.js",
+          "src/core/tooltip.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".li-tooltip[data-placement=\"bottom\"] .li-tooltip__arrow",
+      "css": 1,
+      "js": 5,
+      "html": 0,
+      "total": 6,
+      "files": {
+        "css": [
+          "src/styles/tooltip.css"
+        ],
+        "js": [
+          "src/core/tooltip-api.js",
+          "src/core/tooltip.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".li-tooltip[data-placement=\"left\"] .li-tooltip__arrow",
+      "css": 1,
+      "js": 5,
+      "html": 0,
+      "total": 6,
+      "files": {
+        "css": [
+          "src/styles/tooltip.css"
+        ],
+        "js": [
+          "src/core/tooltip-api.js",
+          "src/core/tooltip.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".li-tooltip[data-placement=\"right\"] .li-tooltip__arrow",
+      "css": 1,
+      "js": 5,
+      "html": 0,
+      "total": 6,
+      "files": {
+        "css": [
+          "src/styles/tooltip.css"
+        ],
+        "js": [
+          "src/core/tooltip-api.js",
+          "src/core/tooltip.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".li-tooltip[data-placement=\"top\"] .li-tooltip__arrow",
       "css": 1,
       "js": 5,
       "html": 0,
@@ -7436,9 +7521,9 @@
     {
       "selector": ".lithium-collapse-btn.collapsed > svg",
       "css": 1,
-      "js": 41,
+      "js": 43,
       "html": 6,
-      "total": 48,
+      "total": 50,
       "files": {
         "css": [
           "src/core/lithium-table.css"
@@ -7446,6 +7531,7 @@
         "js": [
           "src/core/lithium-splitter.js",
           "src/core/panel-collapse.js",
+          "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
@@ -12513,9 +12599,9 @@
     {
       "selector": ".main-sidebar:not(.collapsed) .menu-group-header",
       "css": 1,
-      "js": 54,
+      "js": 56,
       "html": 1,
-      "total": 56,
+      "total": 58,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -12523,6 +12609,7 @@
         "js": [
           "src/core/lithium-splitter.js",
           "src/core/panel-collapse.js",
+          "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
@@ -12538,9 +12625,9 @@
     {
       "selector": ".main-sidebar:not(.collapsed) .menu-group-items",
       "css": 1,
-      "js": 57,
+      "js": 59,
       "html": 1,
-      "total": 59,
+      "total": 61,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -12548,6 +12635,7 @@
         "js": [
           "src/core/lithium-splitter.js",
           "src/core/panel-collapse.js",
+          "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
@@ -12563,9 +12651,9 @@
     {
       "selector": ".main-sidebar:not(.collapsed) .menu-item",
       "css": 1,
-      "js": 49,
+      "js": 51,
       "html": 1,
-      "total": 51,
+      "total": 53,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -12573,6 +12661,7 @@
         "js": [
           "src/core/lithium-splitter.js",
           "src/core/panel-collapse.js",
+          "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
@@ -12588,9 +12677,9 @@
     {
       "selector": ".main-sidebar:not(.collapsed) .menu-item-count",
       "css": 1,
-      "js": 50,
+      "js": 52,
       "html": 1,
-      "total": 52,
+      "total": 54,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -12598,6 +12687,7 @@
         "js": [
           "src/core/lithium-splitter.js",
           "src/core/panel-collapse.js",
+          "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
@@ -12613,9 +12703,9 @@
     {
       "selector": ".main-sidebar:not(.collapsed) .menu-item[title]::after",
       "css": 1,
-      "js": 49,
+      "js": 51,
       "html": 1,
-      "total": 51,
+      "total": 53,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -12623,6 +12713,7 @@
         "js": [
           "src/core/lithium-splitter.js",
           "src/core/panel-collapse.js",
+          "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
@@ -12638,9 +12729,9 @@
     {
       "selector": ".main-sidebar.collapsed",
       "css": 1,
-      "js": 42,
+      "js": 44,
       "html": 1,
-      "total": 44,
+      "total": 46,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -12648,6 +12739,7 @@
         "js": [
           "src/core/lithium-splitter.js",
           "src/core/panel-collapse.js",
+          "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
@@ -12663,9 +12755,9 @@
     {
       "selector": ".main-sidebar.collapsed .menu-group",
       "css": 1,
-      "js": 53,
+      "js": 55,
       "html": 1,
-      "total": 55,
+      "total": 57,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -12673,6 +12765,7 @@
         "js": [
           "src/core/lithium-splitter.js",
           "src/core/panel-collapse.js",
+          "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
@@ -12688,9 +12781,9 @@
     {
       "selector": ".main-sidebar.collapsed .menu-group-header",
       "css": 1,
-      "js": 54,
+      "js": 56,
       "html": 1,
-      "total": 56,
+      "total": 58,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -12698,6 +12791,7 @@
         "js": [
           "src/core/lithium-splitter.js",
           "src/core/panel-collapse.js",
+          "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
@@ -12713,9 +12807,9 @@
     {
       "selector": ".main-sidebar.collapsed .menu-group-items",
       "css": 1,
-      "js": 57,
+      "js": 59,
       "html": 1,
-      "total": 59,
+      "total": 61,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -12723,6 +12817,7 @@
         "js": [
           "src/core/lithium-splitter.js",
           "src/core/panel-collapse.js",
+          "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
@@ -12738,9 +12833,9 @@
     {
       "selector": ".main-sidebar.collapsed .menu-item",
       "css": 1,
-      "js": 49,
+      "js": 51,
       "html": 1,
-      "total": 51,
+      "total": 53,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -12748,6 +12843,7 @@
         "js": [
           "src/core/lithium-splitter.js",
           "src/core/panel-collapse.js",
+          "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
@@ -12763,9 +12859,9 @@
     {
       "selector": ".main-sidebar.collapsed .menu-item span",
       "css": 1,
-      "js": 49,
+      "js": 51,
       "html": 1,
-      "total": 51,
+      "total": 53,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -12773,6 +12869,7 @@
         "js": [
           "src/core/lithium-splitter.js",
           "src/core/panel-collapse.js",
+          "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
@@ -12788,9 +12885,9 @@
     {
       "selector": ".main-sidebar.collapsed .menu-item-count",
       "css": 1,
-      "js": 50,
+      "js": 52,
       "html": 1,
-      "total": 52,
+      "total": 54,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -12798,6 +12895,7 @@
         "js": [
           "src/core/lithium-splitter.js",
           "src/core/panel-collapse.js",
+          "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
@@ -12813,9 +12911,9 @@
     {
       "selector": ".main-sidebar.collapsed .sidebar-header-text",
       "css": 1,
-      "js": 42,
+      "js": 46,
       "html": 2,
-      "total": 45,
+      "total": 49,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -12823,6 +12921,7 @@
         "js": [
           "src/core/lithium-splitter.js",
           "src/core/panel-collapse.js",
+          "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
@@ -12838,9 +12937,9 @@
     {
       "selector": ".main-sidebar.collapsed + .sidebar-splitter",
       "css": 1,
-      "js": 42,
+      "js": 46,
       "html": 2,
-      "total": 45,
+      "total": 49,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -12848,6 +12947,7 @@
         "js": [
           "src/core/lithium-splitter.js",
           "src/core/panel-collapse.js",
+          "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
@@ -14339,9 +14439,9 @@
     {
       "selector": ".menu-group-items.collapsed",
       "css": 1,
-      "js": 56,
+      "js": 58,
       "html": 0,
-      "total": 57,
+      "total": 59,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -14349,6 +14449,7 @@
         "js": [
           "src/core/lithium-splitter.js",
           "src/core/panel-collapse.js",
+          "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
@@ -17973,57 +18074,64 @@
     {
       "selector": ".sidebar-brand",
       "css": 1,
-      "js": 0,
+      "js": 2,
       "html": 0,
-      "total": 1,
+      "total": 3,
       "files": {
         "css": [
           "src/styles/layout.css"
         ],
-        "js": [],
+        "js": [
+          "src/core/tooltip-api.js"
+        ],
         "html": []
       }
     },
     {
       "selector": ".sidebar-brand img",
       "css": 1,
-      "js": 0,
+      "js": 2,
       "html": 0,
-      "total": 1,
+      "total": 3,
       "files": {
         "css": [
           "src/styles/layout.css"
         ],
-        "js": [],
+        "js": [
+          "src/core/tooltip-api.js"
+        ],
         "html": []
       }
     },
     {
       "selector": ".sidebar-brand span",
       "css": 1,
-      "js": 0,
+      "js": 2,
       "html": 0,
-      "total": 1,
+      "total": 3,
       "files": {
         "css": [
           "src/styles/layout.css"
         ],
-        "js": [],
+        "js": [
+          "src/core/tooltip-api.js"
+        ],
         "html": []
       }
     },
     {
       "selector": ".sidebar-footer",
       "css": 2,
-      "js": 1,
+      "js": 3,
       "html": 1,
-      "total": 4,
+      "total": 6,
       "files": {
         "css": [
           "src/managers/main/main.css",
           "src/styles/layout.css"
         ],
         "js": [
+          "src/core/tooltip-api.js",
           "src/managers/main/main.js"
         ],
         "html": [
@@ -18034,28 +18142,32 @@
     {
       "selector": ".sidebar-header",
       "css": 1,
-      "js": 0,
+      "js": 2,
       "html": 0,
-      "total": 1,
+      "total": 3,
       "files": {
         "css": [
           "src/styles/layout.css"
         ],
-        "js": [],
+        "js": [
+          "src/core/tooltip-api.js"
+        ],
         "html": []
       }
     },
     {
       "selector": ".sidebar-header-gradient",
       "css": 1,
-      "js": 0,
+      "js": 2,
       "html": 1,
-      "total": 2,
+      "total": 4,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
-        "js": [],
+        "js": [
+          "src/core/tooltip-api.js"
+        ],
         "html": [
           "src/managers/main/main.html"
         ]
@@ -18063,22 +18175,6 @@
     },
     {
       "selector": ".sidebar-header-gradient .radar-icon",
-      "css": 1,
-      "js": 0,
-      "html": 2,
-      "total": 3,
-      "files": {
-        "css": [
-          "src/managers/main/main.css"
-        ],
-        "js": [],
-        "html": [
-          "src/managers/main/main.html"
-        ]
-      }
-    },
-    {
-      "selector": ".sidebar-header-gradient .radar-icon.radar-connected",
       "css": 1,
       "js": 2,
       "html": 2,
@@ -18088,6 +18184,25 @@
           "src/managers/main/main.css"
         ],
         "js": [
+          "src/core/tooltip-api.js"
+        ],
+        "html": [
+          "src/managers/main/main.html"
+        ]
+      }
+    },
+    {
+      "selector": ".sidebar-header-gradient .radar-icon.radar-connected",
+      "css": 1,
+      "js": 4,
+      "html": 2,
+      "total": 7,
+      "files": {
+        "css": [
+          "src/managers/main/main.css"
+        ],
+        "js": [
+          "src/core/tooltip-api.js",
           "src/shared/radar-controller.js"
         ],
         "html": [
@@ -18098,14 +18213,15 @@
     {
       "selector": ".sidebar-header-gradient .radar-icon.radar-disconnected",
       "css": 1,
-      "js": 1,
+      "js": 3,
       "html": 3,
-      "total": 5,
+      "total": 7,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
+          "src/core/tooltip-api.js",
           "src/shared/radar-controller.js"
         ],
         "html": [
@@ -18116,14 +18232,15 @@
     {
       "selector": ".sidebar-header-gradient .radar-icon.radar-flaky",
       "css": 1,
-      "js": 1,
+      "js": 3,
       "html": 2,
-      "total": 4,
+      "total": 6,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
+          "src/core/tooltip-api.js",
           "src/shared/radar-controller.js"
         ],
         "html": [
@@ -18134,14 +18251,16 @@
     {
       "selector": ".sidebar-header-text",
       "css": 1,
-      "js": 0,
+      "js": 2,
       "html": 1,
-      "total": 2,
+      "total": 4,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
-        "js": [],
+        "js": [
+          "src/core/tooltip-api.js"
+        ],
         "html": [
           "src/managers/main/main.html"
         ]
@@ -18150,14 +18269,15 @@
     {
       "selector": ".sidebar-icon-btn",
       "css": 1,
-      "js": 1,
+      "js": 3,
       "html": 5,
-      "total": 7,
+      "total": 9,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
+          "src/core/tooltip-api.js",
           "src/managers/main/main.js"
         ],
         "html": [
@@ -18168,14 +18288,15 @@
     {
       "selector": ".sidebar-icon-btn:disabled",
       "css": 1,
-      "js": 1,
+      "js": 3,
       "html": 5,
-      "total": 7,
+      "total": 9,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
+          "src/core/tooltip-api.js",
           "src/managers/main/main.js"
         ],
         "html": [
@@ -18186,14 +18307,15 @@
     {
       "selector": ".sidebar-icon-btn:hover",
       "css": 1,
-      "js": 1,
+      "js": 3,
       "html": 5,
-      "total": 7,
+      "total": 9,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
+          "src/core/tooltip-api.js",
           "src/managers/main/main.js"
         ],
         "html": [
@@ -18204,9 +18326,9 @@
     {
       "selector": ".sidebar-icon-btn.active",
       "css": 1,
-      "js": 37,
+      "js": 39,
       "html": 12,
-      "total": 50,
+      "total": 52,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -18214,6 +18336,7 @@
         "js": [
           "src/app.js",
           "src/core/manager-ui.js",
+          "src/core/tooltip-api.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson.js",
           "src/managers/login/login.js",
@@ -18235,9 +18358,9 @@
     {
       "selector": ".sidebar-icon-btn.active:hover",
       "css": 1,
-      "js": 37,
+      "js": 39,
       "html": 12,
-      "total": 50,
+      "total": 52,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -18245,6 +18368,7 @@
         "js": [
           "src/app.js",
           "src/core/manager-ui.js",
+          "src/core/tooltip-api.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson.js",
           "src/managers/login/login.js",
@@ -18266,14 +18390,15 @@
     {
       "selector": ".sidebar-icon-btn.sidebar-logout:hover",
       "css": 1,
-      "js": 1,
+      "js": 3,
       "html": 7,
-      "total": 9,
+      "total": 11,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
+          "src/core/tooltip-api.js",
           "src/managers/main/main.js"
         ],
         "html": [
@@ -18284,14 +18409,16 @@
     {
       "selector": ".sidebar-icon-group",
       "css": 1,
-      "js": 0,
+      "js": 2,
       "html": 1,
-      "total": 2,
+      "total": 4,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
-        "js": [],
+        "js": [
+          "src/core/tooltip-api.js"
+        ],
         "html": [
           "src/managers/main/main.html"
         ]
@@ -18300,9 +18427,9 @@
     {
       "selector": ".sidebar-icon-group:not(.collapsed) .sidebar-icon-btn",
       "css": 1,
-      "js": 42,
+      "js": 46,
       "html": 6,
-      "total": 49,
+      "total": 53,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -18310,6 +18437,7 @@
         "js": [
           "src/core/lithium-splitter.js",
           "src/core/panel-collapse.js",
+          "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
@@ -18325,9 +18453,9 @@
     {
       "selector": ".sidebar-icon-group:not(.collapsed) .sidebar-icon-wrapper:first-child .sidebar-icon-btn",
       "css": 1,
-      "js": 45,
+      "js": 49,
       "html": 11,
-      "total": 57,
+      "total": 61,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -18335,6 +18463,7 @@
         "js": [
           "src/core/lithium-splitter.js",
           "src/core/panel-collapse.js",
+          "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
@@ -18350,9 +18479,9 @@
     {
       "selector": ".sidebar-icon-group:not(.collapsed) .sidebar-icon-wrapper:last-child .sidebar-icon-btn",
       "css": 1,
-      "js": 45,
+      "js": 49,
       "html": 11,
-      "total": 57,
+      "total": 61,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -18360,6 +18489,7 @@
         "js": [
           "src/core/lithium-splitter.js",
           "src/core/panel-collapse.js",
+          "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
@@ -18375,9 +18505,9 @@
     {
       "selector": ".sidebar-icon-group.collapsed",
       "css": 1,
-      "js": 41,
+      "js": 45,
       "html": 1,
-      "total": 43,
+      "total": 47,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -18385,6 +18515,7 @@
         "js": [
           "src/core/lithium-splitter.js",
           "src/core/panel-collapse.js",
+          "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
@@ -18400,9 +18531,9 @@
     {
       "selector": ".sidebar-icon-group.collapsed .sidebar-icon-btn",
       "css": 1,
-      "js": 42,
+      "js": 46,
       "html": 6,
-      "total": 49,
+      "total": 53,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -18410,6 +18541,7 @@
         "js": [
           "src/core/lithium-splitter.js",
           "src/core/panel-collapse.js",
+          "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
@@ -18425,9 +18557,9 @@
     {
       "selector": ".sidebar-icon-group.collapsed .sidebar-icon-wrapper",
       "css": 1,
-      "js": 44,
+      "js": 48,
       "html": 6,
-      "total": 51,
+      "total": 55,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -18435,6 +18567,7 @@
         "js": [
           "src/core/lithium-splitter.js",
           "src/core/panel-collapse.js",
+          "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
@@ -18450,9 +18583,9 @@
     {
       "selector": ".sidebar-icon-group.collapsed.vertical",
       "css": 1,
-      "js": 46,
+      "js": 50,
       "html": 1,
-      "total": 48,
+      "total": 52,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -18460,6 +18593,7 @@
         "js": [
           "src/core/lithium-splitter.js",
           "src/core/panel-collapse.js",
+          "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
@@ -18475,9 +18609,9 @@
     {
       "selector": ".sidebar-icon-group.collapsed.vertical .sidebar-icon-btn",
       "css": 1,
-      "js": 47,
+      "js": 51,
       "html": 6,
-      "total": 54,
+      "total": 58,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -18485,6 +18619,7 @@
         "js": [
           "src/core/lithium-splitter.js",
           "src/core/panel-collapse.js",
+          "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
@@ -18500,9 +18635,9 @@
     {
       "selector": ".sidebar-icon-group.collapsed.vertical .sidebar-icon-wrapper",
       "css": 1,
-      "js": 49,
+      "js": 53,
       "html": 6,
-      "total": 56,
+      "total": 60,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -18510,6 +18645,7 @@
         "js": [
           "src/core/lithium-splitter.js",
           "src/core/panel-collapse.js",
+          "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
@@ -18525,9 +18661,9 @@
     {
       "selector": ".sidebar-icon-group.collapsed.vertical .sidebar-icon-wrapper:first-child .sidebar-icon-btn",
       "css": 1,
-      "js": 50,
+      "js": 54,
       "html": 11,
-      "total": 62,
+      "total": 66,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -18535,6 +18671,7 @@
         "js": [
           "src/core/lithium-splitter.js",
           "src/core/panel-collapse.js",
+          "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
@@ -18550,9 +18687,9 @@
     {
       "selector": ".sidebar-icon-group.collapsed.vertical .sidebar-icon-wrapper:last-child .sidebar-icon-btn",
       "css": 1,
-      "js": 50,
+      "js": 54,
       "html": 11,
-      "total": 62,
+      "total": 66,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -18560,6 +18697,7 @@
         "js": [
           "src/core/lithium-splitter.js",
           "src/core/panel-collapse.js",
+          "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
@@ -18575,14 +18713,15 @@
     {
       "selector": ".sidebar-icon-group.stacking .sidebar-icon-btn",
       "css": 1,
-      "js": 3,
+      "js": 5,
       "html": 6,
-      "total": 10,
+      "total": 12,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
+          "src/core/tooltip-api.js",
           "src/managers/main/main.js"
         ],
         "html": [
@@ -18593,14 +18732,15 @@
     {
       "selector": ".sidebar-icon-wrapper",
       "css": 1,
-      "js": 3,
+      "js": 5,
       "html": 5,
-      "total": 9,
+      "total": 11,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
+          "src/core/tooltip-api.js",
           "src/managers/main/main.js"
         ],
         "html": [
@@ -18611,14 +18751,15 @@
     {
       "selector": ".sidebar-icon-wrapper[data-index=\"0\"]",
       "css": 1,
-      "js": 3,
+      "js": 5,
       "html": 5,
-      "total": 9,
+      "total": 11,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
+          "src/core/tooltip-api.js",
           "src/managers/main/main.js"
         ],
         "html": [
@@ -18629,14 +18770,15 @@
     {
       "selector": ".sidebar-icon-wrapper[data-index=\"1\"]",
       "css": 1,
-      "js": 3,
+      "js": 5,
       "html": 5,
-      "total": 9,
+      "total": 11,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
+          "src/core/tooltip-api.js",
           "src/managers/main/main.js"
         ],
         "html": [
@@ -18647,14 +18789,15 @@
     {
       "selector": ".sidebar-icon-wrapper[data-index=\"2\"]",
       "css": 1,
-      "js": 3,
+      "js": 5,
       "html": 5,
-      "total": 9,
+      "total": 11,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
+          "src/core/tooltip-api.js",
           "src/managers/main/main.js"
         ],
         "html": [
@@ -18665,14 +18808,15 @@
     {
       "selector": ".sidebar-icon-wrapper[data-index=\"3\"]",
       "css": 1,
-      "js": 3,
+      "js": 5,
       "html": 5,
-      "total": 9,
+      "total": 11,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
+          "src/core/tooltip-api.js",
           "src/managers/main/main.js"
         ],
         "html": [
@@ -18683,14 +18827,15 @@
     {
       "selector": ".sidebar-icon-wrapper[data-index=\"4\"]",
       "css": 1,
-      "js": 3,
+      "js": 5,
       "html": 5,
-      "total": 9,
+      "total": 11,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
+          "src/core/tooltip-api.js",
           "src/managers/main/main.js"
         ],
         "html": [
@@ -18701,14 +18846,16 @@
     {
       "selector": ".sidebar-logo",
       "css": 1,
-      "js": 0,
+      "js": 2,
       "html": 1,
-      "total": 2,
+      "total": 4,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
-        "js": [],
+        "js": [
+          "src/core/tooltip-api.js"
+        ],
         "html": [
           "src/managers/main/main.html"
         ]
@@ -18717,14 +18864,16 @@
     {
       "selector": ".sidebar-logout-btn",
       "css": 1,
-      "js": 0,
+      "js": 2,
       "html": 2,
-      "total": 3,
+      "total": 5,
       "files": {
         "css": [
           "src/styles/layout.css"
         ],
-        "js": [],
+        "js": [
+          "src/core/tooltip-api.js"
+        ],
         "html": [
           "src/managers/main/main.html"
         ]
@@ -18733,14 +18882,16 @@
     {
       "selector": ".sidebar-logout-btn:hover",
       "css": 1,
-      "js": 0,
+      "js": 2,
       "html": 2,
-      "total": 3,
+      "total": 5,
       "files": {
         "css": [
           "src/styles/layout.css"
         ],
-        "js": [],
+        "js": [
+          "src/core/tooltip-api.js"
+        ],
         "html": [
           "src/managers/main/main.html"
         ]
@@ -18749,15 +18900,16 @@
     {
       "selector": ".sidebar-menu",
       "css": 2,
-      "js": 1,
+      "js": 3,
       "html": 1,
-      "total": 4,
+      "total": 6,
       "files": {
         "css": [
           "src/managers/main/main.css",
           "src/styles/layout.css"
         ],
         "js": [
+          "src/core/tooltip-api.js",
           "src/managers/main/main.js"
         ],
         "html": [
@@ -18768,14 +18920,15 @@
     {
       "selector": ".sidebar-menu-btn",
       "css": 1,
-      "js": 1,
+      "js": 3,
       "html": 1,
-      "total": 3,
+      "total": 5,
       "files": {
         "css": [
           "src/styles/layout.css"
         ],
         "js": [
+          "src/core/tooltip-api.js",
           "src/managers/main/main.js"
         ],
         "html": [
@@ -18786,14 +18939,15 @@
     {
       "selector": ".sidebar-menu-btn i",
       "css": 1,
-      "js": 1,
+      "js": 3,
       "html": 1,
-      "total": 3,
+      "total": 5,
       "files": {
         "css": [
           "src/styles/layout.css"
         ],
         "js": [
+          "src/core/tooltip-api.js",
           "src/managers/main/main.js"
         ],
         "html": [
@@ -18804,14 +18958,15 @@
     {
       "selector": ".sidebar-menu-btn:hover",
       "css": 1,
-      "js": 1,
+      "js": 3,
       "html": 1,
-      "total": 3,
+      "total": 5,
       "files": {
         "css": [
           "src/styles/layout.css"
         ],
         "js": [
+          "src/core/tooltip-api.js",
           "src/managers/main/main.js"
         ],
         "html": [
@@ -18822,9 +18977,9 @@
     {
       "selector": ".sidebar-menu-btn.active",
       "css": 1,
-      "js": 37,
+      "js": 39,
       "html": 8,
-      "total": 46,
+      "total": 48,
       "files": {
         "css": [
           "src/styles/layout.css"
@@ -18832,6 +18987,7 @@
         "js": [
           "src/app.js",
           "src/core/manager-ui.js",
+          "src/core/tooltip-api.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson.js",
           "src/managers/login/login.js",
@@ -18853,14 +19009,15 @@
     {
       "selector": ".sidebar-menu-item",
       "css": 1,
-      "js": 1,
+      "js": 3,
       "html": 1,
-      "total": 3,
+      "total": 5,
       "files": {
         "css": [
           "src/styles/layout.css"
         ],
         "js": [
+          "src/core/tooltip-api.js",
           "src/managers/main/main.js"
         ],
         "html": [
@@ -18871,29 +19028,33 @@
     {
       "selector": ".sidebar-nav",
       "css": 1,
-      "js": 0,
+      "js": 2,
       "html": 0,
-      "total": 1,
+      "total": 3,
       "files": {
         "css": [
           "src/styles/layout.css"
         ],
-        "js": [],
+        "js": [
+          "src/core/tooltip-api.js"
+        ],
         "html": []
       }
     },
     {
       "selector": ".sidebar-overlay",
       "css": 2,
-      "js": 0,
+      "js": 2,
       "html": 1,
-      "total": 3,
+      "total": 5,
       "files": {
         "css": [
           "src/managers/main/main.css",
           "src/styles/layout.css"
         ],
-        "js": [],
+        "js": [
+          "src/core/tooltip-api.js"
+        ],
         "html": [
           "src/managers/main/main.html"
         ]
@@ -18902,14 +19063,15 @@
     {
       "selector": ".sidebar-overlay.open",
       "css": 1,
-      "js": 2,
+      "js": 4,
       "html": 1,
-      "total": 4,
+      "total": 6,
       "files": {
         "css": [
           "src/styles/layout.css"
         ],
         "js": [
+          "src/core/tooltip-api.js",
           "src/managers/main/main.js"
         ],
         "html": [
@@ -18920,9 +19082,9 @@
     {
       "selector": ".sidebar-overlay.visible",
       "css": 1,
-      "js": 68,
+      "js": 70,
       "html": 1,
-      "total": 70,
+      "total": 72,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -18931,6 +19093,7 @@
           "src/core/lithium-column-manager.js",
           "src/core/lithium-table-ui.js",
           "src/core/manager-ui.js",
+          "src/core/tooltip-api.js",
           "src/managers/crimson/crimson.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
@@ -18951,14 +19114,16 @@
     {
       "selector": ".sidebar-splitter",
       "css": 1,
-      "js": 0,
+      "js": 2,
       "html": 1,
-      "total": 2,
+      "total": 4,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
-        "js": [],
+        "js": [
+          "src/core/tooltip-api.js"
+        ],
         "html": [
           "src/managers/main/main.html"
         ]
@@ -18967,14 +19132,16 @@
     {
       "selector": ".sidebar-splitter::after",
       "css": 1,
-      "js": 0,
+      "js": 2,
       "html": 1,
-      "total": 2,
+      "total": 4,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
-        "js": [],
+        "js": [
+          "src/core/tooltip-api.js"
+        ],
         "html": [
           "src/managers/main/main.html"
         ]
@@ -18983,15 +19150,16 @@
     {
       "selector": ".sidebar-splitter.resizing",
       "css": 1,
-      "js": 14,
+      "js": 16,
       "html": 1,
-      "total": 16,
+      "total": 18,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
           "src/core/lithium-column-manager.js",
+          "src/core/tooltip-api.js",
           "src/managers/crimson/crimson.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js"
@@ -19004,15 +19172,16 @@
     {
       "selector": ".sidebar-splitter.resizing::after",
       "css": 1,
-      "js": 14,
+      "js": 16,
       "html": 1,
-      "total": 16,
+      "total": 18,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
           "src/core/lithium-column-manager.js",
+          "src/core/tooltip-api.js",
           "src/managers/crimson/crimson.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js"
@@ -19025,14 +19194,16 @@
     {
       "selector": ".sidebar-title",
       "css": 1,
-      "js": 0,
+      "js": 2,
       "html": 1,
-      "total": 2,
+      "total": 4,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
-        "js": [],
+        "js": [
+          "src/core/tooltip-api.js"
+        ],
         "html": [
           "src/managers/main/main.html"
         ]
@@ -23375,22 +23546,6 @@
       }
     },
     {
-      "selector": ".tooltip",
-      "css": 0,
-      "js": 5,
-      "html": 4,
-      "total": 9,
-      "files": {
-        "css": [],
-        "js": [
-          "src/managers/login/login.js"
-        ],
-        "html": [
-          "src/managers/login/login.html"
-        ]
-      }
-    },
-    {
       "selector": ".transition-all",
       "css": 1,
       "js": 0,
@@ -24499,9 +24654,9 @@
     {
       "selector": "[data-panel].collapsed",
       "css": 1,
-      "js": 41,
+      "js": 43,
       "html": 0,
-      "total": 42,
+      "total": 44,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -24509,6 +24664,7 @@
         "js": [
           "src/core/lithium-splitter.js",
           "src/core/panel-collapse.js",
+          "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
@@ -24522,9 +24678,9 @@
     {
       "selector": "[data-panel=\"left\"].collapsed ~ [data-splitter] ~ [data-panel=\"middle\"] ~ [data-splitter] ~ [data-panel=\"right\"] [data-collapse-target=\"left\"] .lithium-collapse-icon",
       "css": 1,
-      "js": 41,
+      "js": 43,
       "html": 6,
-      "total": 48,
+      "total": 50,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -24532,6 +24688,7 @@
         "js": [
           "src/core/lithium-splitter.js",
           "src/core/panel-collapse.js",
+          "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
@@ -24550,9 +24707,9 @@
     {
       "selector": "[data-panel=\"left\"].collapsed ~ [data-splitter] ~ [data-panel=\"right\"] [data-collapse-target=\"left\"] .lithium-collapse-icon",
       "css": 1,
-      "js": 41,
+      "js": 43,
       "html": 6,
-      "total": 48,
+      "total": 50,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -24560,6 +24717,7 @@
         "js": [
           "src/core/lithium-splitter.js",
           "src/core/panel-collapse.js",
+          "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
@@ -24578,9 +24736,9 @@
     {
       "selector": "[data-panel=\"middle\"].collapsed ~ [data-splitter] ~ [data-panel=\"right\"] [data-collapse-target=\"middle\"] .lithium-collapse-icon",
       "css": 1,
-      "js": 41,
+      "js": 43,
       "html": 6,
-      "total": 48,
+      "total": 50,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -24588,6 +24746,7 @@
         "js": [
           "src/core/lithium-splitter.js",
           "src/core/panel-collapse.js",
+          "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
@@ -24606,9 +24765,9 @@
     {
       "selector": "[data-splitter].collapsed",
       "css": 1,
-      "js": 41,
+      "js": 43,
       "html": 0,
-      "total": 42,
+      "total": 44,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -24616,6 +24775,7 @@
         "js": [
           "src/core/lithium-splitter.js",
           "src/core/panel-collapse.js",
+          "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",

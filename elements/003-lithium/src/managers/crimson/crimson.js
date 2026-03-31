@@ -18,6 +18,7 @@ import { log, getRawLog, Subsystems, Status } from '../../core/log.js';
 import { formatLogText } from '../../shared/log-formatter.js';
 import { getCrimsonWS } from '../../shared/crimson-ws.js';
 import { getAppWS, isAppWSConnected } from '../../shared/app-ws.js';
+import { getTip, initTooltips } from '../../core/tooltip-api.js';
 import './crimson.css';
 
 // Singleton instance tracking
@@ -85,7 +86,7 @@ export function createCrimsonButton(tooltip = 'Chat with Crimson (Ctrl+Shift+C)'
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'subpanel-header-btn subpanel-header-close crimson-btn';
-  button.title = tooltip;
+  button.setAttribute('data-tooltip', tooltip);
   button.innerHTML = '<i class="fa-kit-duotone fa-crimson"></i>';
 
   button.addEventListener('click', (e) => {
@@ -270,8 +271,8 @@ class CrimsonManager {
     this.popup = document.createElement('div');
     this.popup.className = 'crimson-popup';
     this.popup.innerHTML = `
-      <div class="crimson-resize-handle crimson-resize-handle-tl" title="Resize"></div>
-      <div class="crimson-resize-handle crimson-resize-handle-tr" title="Resize"></div>
+      <div class="crimson-resize-handle crimson-resize-handle-tl" data-tooltip="Resize"></div>
+      <div class="crimson-resize-handle crimson-resize-handle-tr" data-tooltip="Resize"></div>
       <div class="crimson-header">
         <div class="subpanel-header-group">
           <button type="button" class="crimson-header-primary">
@@ -282,26 +283,26 @@ class CrimsonManager {
             <span class="crimson-status-indicator crimson-status-ready"></span>
             <span class="crimson-status-text">Ready</span>
           </button>
-          <button type="button" class="crimson-streaming-btn" title="Toggle streaming">
+          <button type="button" class="crimson-streaming-btn" data-tooltip="Toggle streaming">
             <fa fa-water></fa>
           </button>
-          <button type="button" class="crimson-reasoning-btn" title="Toggle reasoning display">
+          <button type="button" class="crimson-reasoning-btn" data-tooltip="Toggle reasoning display">
             <fa fa-person></fa>
           </button>
-          <button type="button" class="crimson-debug-btn" title="Toggle debug view">
+          <button type="button" class="crimson-debug-btn" data-tooltip="Toggle debug view">
             <fa fa-bug></fa>
           </button>
-          <button type="button" class="crimson-reset-btn" title="Reset conversation">
+          <button type="button" class="crimson-reset-btn" data-tooltip="Reset conversation">
             <fa fa-broom></fa>
           </button>
-          <button type="button" class="crimson-header-close" title="Close (ESC)">
+          <button type="button" class="crimson-header-close" data-tooltip="Close (ESC)">
             <fa fa-xmark></fa>
           </button>
         </div>
       </div>
       <div class="crimson-reasoning-panel">
         <div class="crimson-reasoning-content"></div>
-        <div class="crimson-reasoning-splitter" title="Drag to resize"></div>
+        <div class="crimson-reasoning-splitter" data-tooltip="Drag to resize"></div>
       </div>
       <div class="crimson-conversation">
         <div class="crimson-welcome">
@@ -313,20 +314,21 @@ class CrimsonManager {
         </div>
       </div>
       <div class="crimson-debug-panel">
-        <div class="crimson-debug-splitter" title="Drag to resize"></div>
+        <div class="crimson-debug-splitter" data-tooltip="Drag to resize"></div>
         <pre class="crimson-debug-content"></pre>
       </div>
       <div class="crimson-input-area">
         <textarea class="crimson-input" placeholder="Type your message..." rows="1"></textarea>
-        <button type="button" class="crimson-send-btn" title="Send message">
+        <button type="button" class="crimson-send-btn" data-tooltip="Send message">
           <fa fa-up></fa>
         </button>
       </div>
-      <div class="crimson-resize-handle crimson-resize-handle-bl" title="Resize"></div>
-      <div class="crimson-resize-handle crimson-resize-handle-br" title="Resize"></div>
+      <div class="crimson-resize-handle crimson-resize-handle-bl" data-tooltip="Resize"></div>
+      <div class="crimson-resize-handle crimson-resize-handle-br" data-tooltip="Resize"></div>
     `;
 
     document.body.appendChild(this.popup);
+    initTooltips(this.popup);
 
     // Cache element references
     this.conversation = this.popup.querySelector('.crimson-conversation');
@@ -633,7 +635,11 @@ class CrimsonManager {
       processIcons(this.streamingBtn);
     }
     this.streamingBtn?.classList.toggle('active', !this.streamingEnabled);
-    this.streamingBtn?.setAttribute('title', `Streaming: ${this.streamingEnabled ? 'ON' : 'OFF'}`);
+    this.streamingBtn?.setAttribute('data-tooltip', `Streaming: ${this.streamingEnabled ? 'ON' : 'OFF'}`);
+    if (this.streamingBtn) {
+      const t = getTip(this.streamingBtn);
+      if (t) t.updateContent(`Streaming: ${this.streamingEnabled ? 'ON' : 'OFF'}`);
+    }
   }
 
   /**
@@ -666,7 +672,11 @@ class CrimsonManager {
       icon.setAttribute('fa', this.reasoningMode ? 'person-running' : 'person');
       processIcons(this.reasoningBtn);
     }
-    this.reasoningBtn?.setAttribute('title', `Reasoning: ${this.reasoningMode ? 'SHOWING' : 'HIDDEN'}`);
+    this.reasoningBtn?.setAttribute('data-tooltip', `Reasoning: ${this.reasoningMode ? 'SHOWING' : 'HIDDEN'}`);
+    if (this.reasoningBtn) {
+      const t = getTip(this.reasoningBtn);
+      if (t) t.updateContent(`Reasoning: ${this.reasoningMode ? 'SHOWING' : 'HIDDEN'}`);
+    }
   }
 
   /**

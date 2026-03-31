@@ -604,6 +604,63 @@ The old system used three `::after` pseudo-element patterns — all removed:
 
 ---
 
+## Keyboard Shortcut Integration
+
+Tooltips automatically include keyboard shortcuts when a button declares its shortcut association via `data-shortcut-id`. The tooltip content is updated with a styled key combo.
+
+### How it works
+
+1. Register a shortcut with `registerShortcut()`:
+```javascript
+import { registerShortcut } from '../core/manager-ui.js';
+
+registerShortcut('logout', 'Ctrl+Shift+L', 'Open logout panel', () => {
+  eventBus.emit('logout:show');
+});
+```
+
+2. Add `data-shortcut-id` to the button:
+```html
+<button data-tooltip="Logout" data-shortcut-id="logout">
+  <fa fa-sign-out-alt></fa>
+</button>
+```
+
+The tooltip automatically shows: `Logout<br><span class="li-tip-kbd">Ctrl+Shift+L</span>`
+
+### Dynamic elements
+
+The system handles elements added after shortcut registration. When a new element with `data-shortcut-id` enters the DOM, the MutationObserver picks it up and automatically appends the shortcut if the shortcut is already registered.
+
+### Unregistering
+
+When a shortcut is unregistered, all associated tooltips revert to their original content (without the key combo).
+
+---
+
+## Conditional Tooltips
+
+Tooltips can be shown conditionally based on UI state using `data-tip-when`.
+
+### Sidebar collapsed
+
+Show menu item tooltips only when the sidebar is collapsed:
+
+```html
+<div class="menu-item" data-tooltip="Query Manager" data-tip-when="collapsed">
+  <fa fa-database></fa>
+</div>
+```
+
+| Value | Condition |
+|-------|-----------|
+| `collapsed` | `.sidebar.collapsed` exists |
+| `not:collapsed` | `.sidebar.collapsed` does not exist |
+
+When the condition is not met, the tooltip is suppressed entirely — no delay, no display.
+
+---
+
 ## Keyboard Accessibility
 
 The tooltip system follows WAI-ARIA tooltip patterns:
