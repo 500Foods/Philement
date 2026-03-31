@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS class selectors/names used across the Lithium codebase",
-    "generated": "2026-03-30T20:34:10.931Z",
+    "generated": "2026-03-31T01:45:34.211Z",
     "sources": {
       "css": "47 files in src/**/*.css",
       "js": "76 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
-    "total_selectors": 1433,
-    "total_occurrences": 17488
+    "total_selectors": 1436,
+    "total_occurrences": 17500
   },
   "selectors": [
     {
@@ -4842,6 +4842,21 @@
         "css": [],
         "js": [
           "src/shared/toast.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".fa-kit-duotone",
+      "css": 0,
+      "js": 8,
+      "html": 0,
+      "total": 8,
+      "files": {
+        "css": [],
+        "js": [
+          "src/core/manager-ui.js",
+          "src/managers/crimson/crimson.js"
         ],
         "html": []
       }
@@ -12757,7 +12772,23 @@
       }
     },
     {
-      "selector": ".manager-footer-cancel-btn:hover:not(:disabled)",
+      "selector": ".manager-footer-cancel-btn:not(:disabled)",
+      "css": 1,
+      "js": 1,
+      "html": 0,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/core/manager-ui.css"
+        ],
+        "js": [
+          "src/core/manager-ui.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".manager-footer-cancel-btn:not(:disabled):hover",
       "css": 1,
       "js": 1,
       "html": 0,
@@ -12853,7 +12884,23 @@
       }
     },
     {
-      "selector": ".manager-footer-save-btn:hover:not(:disabled)",
+      "selector": ".manager-footer-save-btn:not(:disabled)",
+      "css": 1,
+      "js": 1,
+      "html": 0,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/core/manager-ui.css"
+        ],
+        "js": [
+          "src/core/manager-ui.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".manager-footer-save-btn:not(:disabled):hover",
       "css": 1,
       "js": 1,
       "html": 0,

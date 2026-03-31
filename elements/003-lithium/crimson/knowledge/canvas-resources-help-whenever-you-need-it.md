@@ -5,7 +5,7 @@ To address this, Lithium has been equipped with a broad array of resources. Each
 ![Help Icons](%24IMS-CC-FILEBASE%24/lithium_help_footer-1.png){width="547" height="81" api-endpoint="https://canvas.500courses.com/api/v1/courses/801/files/4203" api-returntype="File"}\
 *Example Lithium Help Footer*
 
--  **Crimson** - An AI Assistant Inside Lithium
+- **Crimson** - An AI Assistant Inside Lithium
 - **Notifications** - Don\'t Miss A Thing
 - **Concierge** - Make A Reqest
 - **Annotations** - Wisdom For The Ages

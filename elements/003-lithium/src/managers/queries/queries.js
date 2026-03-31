@@ -326,18 +326,35 @@ export default class QueriesManager {
         this.activeEditingTable.exitEditMode('cancel');
       }
       this.activeEditingTable = lithiumTable;
-      this.updateFooterSaveCancelState(true, true);
+      
+      // Sync editModeManager state so isEditing() returns true
+      // This is needed because the table's edit mode callback fires directly,
+      // not through editModeManager.enterEditMode()
+      this.editModeManager._isEditing = true;
+      this.editModeManager._editingRowId = rowData?.query_id;
+      
       // Enable CodeMirror editors when entering edit mode
       this.editorManager._setCodeMirrorEditable(true);
-      log(Subsystems.MANAGER, Status.INFO, '[Queries] Footer Save/Cancel enabled for table');
+      
+      // Buttons start DISABLED - only enable when dirty state is detected
+      // (capturedOriginalData was called by editModeManager.enterEditMode)
+      this.updateFooterSaveCancelState(true, false);
+      
+      // Sync table's isDirty with our dirty tracker state
+      lithiumTable.isDirty = this.dirtyTracker.isAnyDirty();
+      
+      log(Subsystems.MANAGER, Status.INFO, '[Queries] Edit mode entered');
     } else {
+      // Sync editModeManager state
+      this.editModeManager._isEditing = false;
+      this.editModeManager._editingRowId = null;
       if (this.activeEditingTable === lithiumTable) {
         this.activeEditingTable = null;
       }
       // Disable CodeMirror editors when exiting edit mode
       this.editorManager._setCodeMirrorEditable(false);
       this.updateFooterSaveCancelState(true, false);
-      log(Subsystems.MANAGER, Status.INFO, '[Queries] Footer Save/Cancel disabled');
+      log(Subsystems.MANAGER, Status.INFO, '[Queries] Edit mode exited');
     }
   }
 
