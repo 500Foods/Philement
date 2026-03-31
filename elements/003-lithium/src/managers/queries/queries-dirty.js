@@ -32,14 +32,30 @@ export class DirtyStateTracker {
   }
 
   /**
-   * Set dirty state for a specific type
+   * Set dirty state for a specific type.
+   * 
+   * This is called when editors fire change events (which are just triggers
+   * for us to check - we compare against our snapshot, not trust their state).
+   * 
+   * We also sync the table's isDirty flag so that handleSave() works correctly
+   * for CodeMirror/SunEditor changes that don't set the table's isDirty flag.
    */
   setDirty(type, isDirty) {
     const wasDirty = this.isAnyDirty();
     this._isDirty[type] = isDirty;
     const nowDirty = this.isAnyDirty();
+    
+    // Update footer buttons when dirty state changes
     if (wasDirty !== nowDirty) {
-      this.manager.updateFooterSaveCancelState();
+      this.manager.updateFooterSaveCancelState(true, nowDirty);
+      
+      // Sync the table's isDirty so handleSave() can proceed
+      if (this.manager.queryTable) {
+        this.manager.queryTable.isDirty = nowDirty;
+      }
+      
+      log(Subsystems.MANAGER, Status.DEBUG, 
+        `[DirtyTracker] ${type} dirty=${isDirty}, anyDirty=${nowDirty}`);
     }
   }
 
@@ -55,16 +71,45 @@ export class DirtyStateTracker {
   }
 
   /**
-   * Capture original data for change tracking
+   * Capture original data for change tracking.
+   * 
+   * IMPORTANT: We capture content directly from the editors, not from the row data.
+   * The row data might have truncated/different content than what's in the editors.
+   * 
+   * Priority order:
+   * 1. Editor content (if editor exists and has content)
+   * 2. Pending content (full DB content loaded for lazy editors)
+   * 3. Row data (may be truncated)
+   * 
+   * This ensures our snapshot is in "database format" - exactly what we'd save.
+   * Change events just trigger us to regenerate and compare - we don't trust them.
    */
-  captureOriginalData(queryData) {
+  captureOriginalData(queryData, editors = {}) {
     if (!queryData) return;
+    
     this._originalRowData = { ...queryData };
-    this._originalSqlContent = queryData.code || queryData.query_text || queryData.sql || '';
-    this._originalSummaryContent = queryData.summary || queryData.markdown || '';
-    const collection = queryData.collection || queryData.json || {};
+    
+    // Capture SQL: editor > pending content > row data
+    this._originalSqlContent = editors.sql?.state?.doc?.toString()
+      ?? editors.sqlContent
+      ?? queryData.code ?? queryData.query_text ?? queryData.sql ?? '';
+    
+    // Capture Summary: editor > pending content > row data
+    this._originalSummaryContent = editors.summary?.state?.doc?.toString()
+      ?? editors.summaryContent
+      ?? queryData.summary ?? queryData.markdown ?? '';
+    
+    // Capture Collection: editor > pending content > row data
+    const collectionFromEditor = editors.collection?.state?.doc?.toString();
+    const collection = collectionFromEditor
+      ?? editors.collectionContent
+      ?? queryData.collection ?? queryData.json ?? {};
     this._originalCollectionContent = typeof collection === 'string' ? collection : JSON.stringify(collection);
+    
     this.markAllClean();
+    
+    log(Subsystems.MANAGER, Status.DEBUG, 
+      `[DirtyTracker] Snapshot captured - SQL: ${this._originalSqlContent?.length} chars`);
   }
 
   /**
@@ -156,13 +201,24 @@ export class DirtyStateTracker {
   }
 
   /**
-   * Refresh all dirty states
+   * Refresh all dirty states by comparing editors to snapshots.
+   * Called when save button is clicked or other triggers - we always
+   * regenerate and compare because we don't trust change events.
    */
   refreshDirtyState() {
     this._isDirty.sql = this.checkSqlDirty();
     this._isDirty.summary = this.checkSummaryDirty();
     this._isDirty.collection = this.checkCollectionDirty();
-    this.manager.updateFooterSaveCancelState();
+    
+    const nowDirty = this.isAnyDirty();
+    this.manager.updateFooterSaveCancelState(true, nowDirty);
+    
+    // Sync table's isDirty so handleSave() can proceed
+    if (this.manager.queryTable) {
+      this.manager.queryTable.isDirty = nowDirty;
+    }
+    
+    return nowDirty;
   }
 
   /**

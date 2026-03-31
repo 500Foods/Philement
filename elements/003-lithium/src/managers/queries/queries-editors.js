@@ -79,7 +79,8 @@ export class EditorManager {
             '.cm-content': { fontFamily: '"Vanadium Mono", var(--font-mono, monospace)' },
           }),
           EditorView.updateListener.of((update) => {
-            if (update.docChanged) {
+            // Only track changes when in edit mode - ignore content loading, tab switches, etc.
+            if (update.docChanged && this.manager.editModeManager?.isEditing()) {
               const isDirty = this.manager.dirtyTracker.checkSqlDirty();
               this.manager.dirtyTracker.setDirty('sql', isDirty);
             }
@@ -131,7 +132,8 @@ export class EditorManager {
           oneDark,
           EditorView.theme({ '&': { height: '100%' }, '.cm-scroller': { overflow: 'auto' } }),
           EditorView.updateListener.of((update) => {
-            if (update.docChanged) {
+            // Only track changes when in edit mode - ignore content loading, tab switches, etc.
+            if (update.docChanged && this.manager.editModeManager?.isEditing()) {
               const isDirty = this.manager.dirtyTracker.checkSummaryDirty();
               this.manager.dirtyTracker.setDirty('summary', isDirty);
             }
@@ -194,11 +196,10 @@ export class EditorManager {
             '.cm-content': { caretColor: 'var(--accent-primary, #007acc)' },
           }),
           EditorView.updateListener.of((update) => {
-            if (update.docChanged && this.manager.queryTable?.isEditing) {
-              // Mark dirty when content changes in edit mode
-              this.manager.queryTable.isDirty = true;
-              this.manager.queryTable.updateSaveCancelButtonState();
-              this.manager.queryTable.notifyDirtyChange();
+            // Only track changes when in edit mode - ignore content loading, tab switches, etc.
+            if (update.docChanged && this.manager.editModeManager?.isEditing()) {
+              const isDirty = this.manager.dirtyTracker.checkCollectionDirty();
+              this.manager.dirtyTracker.setDirty('collection', isDirty);
             }
           }),
         ],

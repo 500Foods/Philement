@@ -67,7 +67,17 @@ export class EditModeManager {
       this._isEditing = true;
 
       // Capture original data for dirty tracking
-      this.manager.dirtyTracker.captureOriginalData(row.getData());
+      // Pass editors (if they exist) and pending content (for lazy-loaded editors)
+      // so we capture full database content, not truncated table row data
+      this.manager.dirtyTracker.captureOriginalData(row.getData(), {
+        sql: this.manager.sqlEditor,
+        summary: this.manager.summaryEditor,
+        collection: this.manager.collectionEditor,
+        // Pending content for lazy-loaded editors (full DB content)
+        sqlContent: this.manager._pendingSqlContent,
+        summaryContent: this.manager._pendingSummaryContent,
+        collectionContent: this.manager._pendingCollectionContent,
+      });
 
       // Update UI
       this.manager.elements.tableContainer?.classList.add('queries-edit-mode');
