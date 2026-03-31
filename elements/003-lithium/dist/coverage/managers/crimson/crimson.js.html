@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><title>Code coverage report for managers/crimson/crimson.js</title><meta charset="utf-8"><link rel="stylesheet" href="../../prettify.css"><link rel="stylesheet" href="../../base.css"><link rel="shortcut icon" type="image/x-icon" href="../../favicon.png"><meta name="viewport" content="width=device-width,initial-scale=1"><style type="text/css">.coverage-summary .sorter{background-image:url(../../sort-arrow-sprite.png)}</style></head><body><div class="wrapper"><div class="pad1"><h1><a href="../../index.html">All files</a> / <a href="index.html">managers/crimson</a> crimson.js</h1><div class="clearfix"><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Statements</span> <span class="fraction">0/774</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Branches</span> <span class="fraction">0/349</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Functions</span> <span class="fraction">0/91</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Lines</span> <span class="fraction">0/732</span></div></div><p class="quiet">Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.</p><template id="filterTemplate"><div class="quiet">Filter: <input type="search" id="fileSearch"></div></template></div><div class="status-line low"></div><pre><table class="coverage">
+<!doctype html><html lang="en"><head><title>Code coverage report for managers/crimson/crimson.js</title><meta charset="utf-8"><link rel="stylesheet" href="../../prettify.css"><link rel="stylesheet" href="../../base.css"><link rel="shortcut icon" type="image/x-icon" href="../../favicon.png"><meta name="viewport" content="width=device-width,initial-scale=1"><style type="text/css">.coverage-summary .sorter{background-image:url(../../sort-arrow-sprite.png)}</style></head><body><div class="wrapper"><div class="pad1"><h1><a href="../../index.html">All files</a> / <a href="index.html">managers/crimson</a> crimson.js</h1><div class="clearfix"><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Statements</span> <span class="fraction">0/922</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Branches</span> <span class="fraction">0/437</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Functions</span> <span class="fraction">0/113</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Lines</span> <span class="fraction">0/866</span></div></div><p class="quiet">Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.</p><template id="filterTemplate"><div class="quiet">Filter: <input type="search" id="fileSearch"></div></template></div><div class="status-line low"></div><pre><table class="coverage">
 <tr><td class="line-count quiet"><a name="L1"></a><a href="#L1">1</a>
 <a name="L2"></a><a href="#L2">2</a>
 <a name="L3"></a><a href="#L3">3</a>
@@ -1782,7 +1782,376 @@
 <a name="L1781"></a><a href="#L1781">1781</a>
 <a name="L1782"></a><a href="#L1782">1782</a>
 <a name="L1783"></a><a href="#L1783">1783</a>
-<a name="L1784"></a><a href="#L1784">1784</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name="L1784"></a><a href="#L1784">1784</a>
+<a name="L1785"></a><a href="#L1785">1785</a>
+<a name="L1786"></a><a href="#L1786">1786</a>
+<a name="L1787"></a><a href="#L1787">1787</a>
+<a name="L1788"></a><a href="#L1788">1788</a>
+<a name="L1789"></a><a href="#L1789">1789</a>
+<a name="L1790"></a><a href="#L1790">1790</a>
+<a name="L1791"></a><a href="#L1791">1791</a>
+<a name="L1792"></a><a href="#L1792">1792</a>
+<a name="L1793"></a><a href="#L1793">1793</a>
+<a name="L1794"></a><a href="#L1794">1794</a>
+<a name="L1795"></a><a href="#L1795">1795</a>
+<a name="L1796"></a><a href="#L1796">1796</a>
+<a name="L1797"></a><a href="#L1797">1797</a>
+<a name="L1798"></a><a href="#L1798">1798</a>
+<a name="L1799"></a><a href="#L1799">1799</a>
+<a name="L1800"></a><a href="#L1800">1800</a>
+<a name="L1801"></a><a href="#L1801">1801</a>
+<a name="L1802"></a><a href="#L1802">1802</a>
+<a name="L1803"></a><a href="#L1803">1803</a>
+<a name="L1804"></a><a href="#L1804">1804</a>
+<a name="L1805"></a><a href="#L1805">1805</a>
+<a name="L1806"></a><a href="#L1806">1806</a>
+<a name="L1807"></a><a href="#L1807">1807</a>
+<a name="L1808"></a><a href="#L1808">1808</a>
+<a name="L1809"></a><a href="#L1809">1809</a>
+<a name="L1810"></a><a href="#L1810">1810</a>
+<a name="L1811"></a><a href="#L1811">1811</a>
+<a name="L1812"></a><a href="#L1812">1812</a>
+<a name="L1813"></a><a href="#L1813">1813</a>
+<a name="L1814"></a><a href="#L1814">1814</a>
+<a name="L1815"></a><a href="#L1815">1815</a>
+<a name="L1816"></a><a href="#L1816">1816</a>
+<a name="L1817"></a><a href="#L1817">1817</a>
+<a name="L1818"></a><a href="#L1818">1818</a>
+<a name="L1819"></a><a href="#L1819">1819</a>
+<a name="L1820"></a><a href="#L1820">1820</a>
+<a name="L1821"></a><a href="#L1821">1821</a>
+<a name="L1822"></a><a href="#L1822">1822</a>
+<a name="L1823"></a><a href="#L1823">1823</a>
+<a name="L1824"></a><a href="#L1824">1824</a>
+<a name="L1825"></a><a href="#L1825">1825</a>
+<a name="L1826"></a><a href="#L1826">1826</a>
+<a name="L1827"></a><a href="#L1827">1827</a>
+<a name="L1828"></a><a href="#L1828">1828</a>
+<a name="L1829"></a><a href="#L1829">1829</a>
+<a name="L1830"></a><a href="#L1830">1830</a>
+<a name="L1831"></a><a href="#L1831">1831</a>
+<a name="L1832"></a><a href="#L1832">1832</a>
+<a name="L1833"></a><a href="#L1833">1833</a>
+<a name="L1834"></a><a href="#L1834">1834</a>
+<a name="L1835"></a><a href="#L1835">1835</a>
+<a name="L1836"></a><a href="#L1836">1836</a>
+<a name="L1837"></a><a href="#L1837">1837</a>
+<a name="L1838"></a><a href="#L1838">1838</a>
+<a name="L1839"></a><a href="#L1839">1839</a>
+<a name="L1840"></a><a href="#L1840">1840</a>
+<a name="L1841"></a><a href="#L1841">1841</a>
+<a name="L1842"></a><a href="#L1842">1842</a>
+<a name="L1843"></a><a href="#L1843">1843</a>
+<a name="L1844"></a><a href="#L1844">1844</a>
+<a name="L1845"></a><a href="#L1845">1845</a>
+<a name="L1846"></a><a href="#L1846">1846</a>
+<a name="L1847"></a><a href="#L1847">1847</a>
+<a name="L1848"></a><a href="#L1848">1848</a>
+<a name="L1849"></a><a href="#L1849">1849</a>
+<a name="L1850"></a><a href="#L1850">1850</a>
+<a name="L1851"></a><a href="#L1851">1851</a>
+<a name="L1852"></a><a href="#L1852">1852</a>
+<a name="L1853"></a><a href="#L1853">1853</a>
+<a name="L1854"></a><a href="#L1854">1854</a>
+<a name="L1855"></a><a href="#L1855">1855</a>
+<a name="L1856"></a><a href="#L1856">1856</a>
+<a name="L1857"></a><a href="#L1857">1857</a>
+<a name="L1858"></a><a href="#L1858">1858</a>
+<a name="L1859"></a><a href="#L1859">1859</a>
+<a name="L1860"></a><a href="#L1860">1860</a>
+<a name="L1861"></a><a href="#L1861">1861</a>
+<a name="L1862"></a><a href="#L1862">1862</a>
+<a name="L1863"></a><a href="#L1863">1863</a>
+<a name="L1864"></a><a href="#L1864">1864</a>
+<a name="L1865"></a><a href="#L1865">1865</a>
+<a name="L1866"></a><a href="#L1866">1866</a>
+<a name="L1867"></a><a href="#L1867">1867</a>
+<a name="L1868"></a><a href="#L1868">1868</a>
+<a name="L1869"></a><a href="#L1869">1869</a>
+<a name="L1870"></a><a href="#L1870">1870</a>
+<a name="L1871"></a><a href="#L1871">1871</a>
+<a name="L1872"></a><a href="#L1872">1872</a>
+<a name="L1873"></a><a href="#L1873">1873</a>
+<a name="L1874"></a><a href="#L1874">1874</a>
+<a name="L1875"></a><a href="#L1875">1875</a>
+<a name="L1876"></a><a href="#L1876">1876</a>
+<a name="L1877"></a><a href="#L1877">1877</a>
+<a name="L1878"></a><a href="#L1878">1878</a>
+<a name="L1879"></a><a href="#L1879">1879</a>
+<a name="L1880"></a><a href="#L1880">1880</a>
+<a name="L1881"></a><a href="#L1881">1881</a>
+<a name="L1882"></a><a href="#L1882">1882</a>
+<a name="L1883"></a><a href="#L1883">1883</a>
+<a name="L1884"></a><a href="#L1884">1884</a>
+<a name="L1885"></a><a href="#L1885">1885</a>
+<a name="L1886"></a><a href="#L1886">1886</a>
+<a name="L1887"></a><a href="#L1887">1887</a>
+<a name="L1888"></a><a href="#L1888">1888</a>
+<a name="L1889"></a><a href="#L1889">1889</a>
+<a name="L1890"></a><a href="#L1890">1890</a>
+<a name="L1891"></a><a href="#L1891">1891</a>
+<a name="L1892"></a><a href="#L1892">1892</a>
+<a name="L1893"></a><a href="#L1893">1893</a>
+<a name="L1894"></a><a href="#L1894">1894</a>
+<a name="L1895"></a><a href="#L1895">1895</a>
+<a name="L1896"></a><a href="#L1896">1896</a>
+<a name="L1897"></a><a href="#L1897">1897</a>
+<a name="L1898"></a><a href="#L1898">1898</a>
+<a name="L1899"></a><a href="#L1899">1899</a>
+<a name="L1900"></a><a href="#L1900">1900</a>
+<a name="L1901"></a><a href="#L1901">1901</a>
+<a name="L1902"></a><a href="#L1902">1902</a>
+<a name="L1903"></a><a href="#L1903">1903</a>
+<a name="L1904"></a><a href="#L1904">1904</a>
+<a name="L1905"></a><a href="#L1905">1905</a>
+<a name="L1906"></a><a href="#L1906">1906</a>
+<a name="L1907"></a><a href="#L1907">1907</a>
+<a name="L1908"></a><a href="#L1908">1908</a>
+<a name="L1909"></a><a href="#L1909">1909</a>
+<a name="L1910"></a><a href="#L1910">1910</a>
+<a name="L1911"></a><a href="#L1911">1911</a>
+<a name="L1912"></a><a href="#L1912">1912</a>
+<a name="L1913"></a><a href="#L1913">1913</a>
+<a name="L1914"></a><a href="#L1914">1914</a>
+<a name="L1915"></a><a href="#L1915">1915</a>
+<a name="L1916"></a><a href="#L1916">1916</a>
+<a name="L1917"></a><a href="#L1917">1917</a>
+<a name="L1918"></a><a href="#L1918">1918</a>
+<a name="L1919"></a><a href="#L1919">1919</a>
+<a name="L1920"></a><a href="#L1920">1920</a>
+<a name="L1921"></a><a href="#L1921">1921</a>
+<a name="L1922"></a><a href="#L1922">1922</a>
+<a name="L1923"></a><a href="#L1923">1923</a>
+<a name="L1924"></a><a href="#L1924">1924</a>
+<a name="L1925"></a><a href="#L1925">1925</a>
+<a name="L1926"></a><a href="#L1926">1926</a>
+<a name="L1927"></a><a href="#L1927">1927</a>
+<a name="L1928"></a><a href="#L1928">1928</a>
+<a name="L1929"></a><a href="#L1929">1929</a>
+<a name="L1930"></a><a href="#L1930">1930</a>
+<a name="L1931"></a><a href="#L1931">1931</a>
+<a name="L1932"></a><a href="#L1932">1932</a>
+<a name="L1933"></a><a href="#L1933">1933</a>
+<a name="L1934"></a><a href="#L1934">1934</a>
+<a name="L1935"></a><a href="#L1935">1935</a>
+<a name="L1936"></a><a href="#L1936">1936</a>
+<a name="L1937"></a><a href="#L1937">1937</a>
+<a name="L1938"></a><a href="#L1938">1938</a>
+<a name="L1939"></a><a href="#L1939">1939</a>
+<a name="L1940"></a><a href="#L1940">1940</a>
+<a name="L1941"></a><a href="#L1941">1941</a>
+<a name="L1942"></a><a href="#L1942">1942</a>
+<a name="L1943"></a><a href="#L1943">1943</a>
+<a name="L1944"></a><a href="#L1944">1944</a>
+<a name="L1945"></a><a href="#L1945">1945</a>
+<a name="L1946"></a><a href="#L1946">1946</a>
+<a name="L1947"></a><a href="#L1947">1947</a>
+<a name="L1948"></a><a href="#L1948">1948</a>
+<a name="L1949"></a><a href="#L1949">1949</a>
+<a name="L1950"></a><a href="#L1950">1950</a>
+<a name="L1951"></a><a href="#L1951">1951</a>
+<a name="L1952"></a><a href="#L1952">1952</a>
+<a name="L1953"></a><a href="#L1953">1953</a>
+<a name="L1954"></a><a href="#L1954">1954</a>
+<a name="L1955"></a><a href="#L1955">1955</a>
+<a name="L1956"></a><a href="#L1956">1956</a>
+<a name="L1957"></a><a href="#L1957">1957</a>
+<a name="L1958"></a><a href="#L1958">1958</a>
+<a name="L1959"></a><a href="#L1959">1959</a>
+<a name="L1960"></a><a href="#L1960">1960</a>
+<a name="L1961"></a><a href="#L1961">1961</a>
+<a name="L1962"></a><a href="#L1962">1962</a>
+<a name="L1963"></a><a href="#L1963">1963</a>
+<a name="L1964"></a><a href="#L1964">1964</a>
+<a name="L1965"></a><a href="#L1965">1965</a>
+<a name="L1966"></a><a href="#L1966">1966</a>
+<a name="L1967"></a><a href="#L1967">1967</a>
+<a name="L1968"></a><a href="#L1968">1968</a>
+<a name="L1969"></a><a href="#L1969">1969</a>
+<a name="L1970"></a><a href="#L1970">1970</a>
+<a name="L1971"></a><a href="#L1971">1971</a>
+<a name="L1972"></a><a href="#L1972">1972</a>
+<a name="L1973"></a><a href="#L1973">1973</a>
+<a name="L1974"></a><a href="#L1974">1974</a>
+<a name="L1975"></a><a href="#L1975">1975</a>
+<a name="L1976"></a><a href="#L1976">1976</a>
+<a name="L1977"></a><a href="#L1977">1977</a>
+<a name="L1978"></a><a href="#L1978">1978</a>
+<a name="L1979"></a><a href="#L1979">1979</a>
+<a name="L1980"></a><a href="#L1980">1980</a>
+<a name="L1981"></a><a href="#L1981">1981</a>
+<a name="L1982"></a><a href="#L1982">1982</a>
+<a name="L1983"></a><a href="#L1983">1983</a>
+<a name="L1984"></a><a href="#L1984">1984</a>
+<a name="L1985"></a><a href="#L1985">1985</a>
+<a name="L1986"></a><a href="#L1986">1986</a>
+<a name="L1987"></a><a href="#L1987">1987</a>
+<a name="L1988"></a><a href="#L1988">1988</a>
+<a name="L1989"></a><a href="#L1989">1989</a>
+<a name="L1990"></a><a href="#L1990">1990</a>
+<a name="L1991"></a><a href="#L1991">1991</a>
+<a name="L1992"></a><a href="#L1992">1992</a>
+<a name="L1993"></a><a href="#L1993">1993</a>
+<a name="L1994"></a><a href="#L1994">1994</a>
+<a name="L1995"></a><a href="#L1995">1995</a>
+<a name="L1996"></a><a href="#L1996">1996</a>
+<a name="L1997"></a><a href="#L1997">1997</a>
+<a name="L1998"></a><a href="#L1998">1998</a>
+<a name="L1999"></a><a href="#L1999">1999</a>
+<a name="L2000"></a><a href="#L2000">2000</a>
+<a name="L2001"></a><a href="#L2001">2001</a>
+<a name="L2002"></a><a href="#L2002">2002</a>
+<a name="L2003"></a><a href="#L2003">2003</a>
+<a name="L2004"></a><a href="#L2004">2004</a>
+<a name="L2005"></a><a href="#L2005">2005</a>
+<a name="L2006"></a><a href="#L2006">2006</a>
+<a name="L2007"></a><a href="#L2007">2007</a>
+<a name="L2008"></a><a href="#L2008">2008</a>
+<a name="L2009"></a><a href="#L2009">2009</a>
+<a name="L2010"></a><a href="#L2010">2010</a>
+<a name="L2011"></a><a href="#L2011">2011</a>
+<a name="L2012"></a><a href="#L2012">2012</a>
+<a name="L2013"></a><a href="#L2013">2013</a>
+<a name="L2014"></a><a href="#L2014">2014</a>
+<a name="L2015"></a><a href="#L2015">2015</a>
+<a name="L2016"></a><a href="#L2016">2016</a>
+<a name="L2017"></a><a href="#L2017">2017</a>
+<a name="L2018"></a><a href="#L2018">2018</a>
+<a name="L2019"></a><a href="#L2019">2019</a>
+<a name="L2020"></a><a href="#L2020">2020</a>
+<a name="L2021"></a><a href="#L2021">2021</a>
+<a name="L2022"></a><a href="#L2022">2022</a>
+<a name="L2023"></a><a href="#L2023">2023</a>
+<a name="L2024"></a><a href="#L2024">2024</a>
+<a name="L2025"></a><a href="#L2025">2025</a>
+<a name="L2026"></a><a href="#L2026">2026</a>
+<a name="L2027"></a><a href="#L2027">2027</a>
+<a name="L2028"></a><a href="#L2028">2028</a>
+<a name="L2029"></a><a href="#L2029">2029</a>
+<a name="L2030"></a><a href="#L2030">2030</a>
+<a name="L2031"></a><a href="#L2031">2031</a>
+<a name="L2032"></a><a href="#L2032">2032</a>
+<a name="L2033"></a><a href="#L2033">2033</a>
+<a name="L2034"></a><a href="#L2034">2034</a>
+<a name="L2035"></a><a href="#L2035">2035</a>
+<a name="L2036"></a><a href="#L2036">2036</a>
+<a name="L2037"></a><a href="#L2037">2037</a>
+<a name="L2038"></a><a href="#L2038">2038</a>
+<a name="L2039"></a><a href="#L2039">2039</a>
+<a name="L2040"></a><a href="#L2040">2040</a>
+<a name="L2041"></a><a href="#L2041">2041</a>
+<a name="L2042"></a><a href="#L2042">2042</a>
+<a name="L2043"></a><a href="#L2043">2043</a>
+<a name="L2044"></a><a href="#L2044">2044</a>
+<a name="L2045"></a><a href="#L2045">2045</a>
+<a name="L2046"></a><a href="#L2046">2046</a>
+<a name="L2047"></a><a href="#L2047">2047</a>
+<a name="L2048"></a><a href="#L2048">2048</a>
+<a name="L2049"></a><a href="#L2049">2049</a>
+<a name="L2050"></a><a href="#L2050">2050</a>
+<a name="L2051"></a><a href="#L2051">2051</a>
+<a name="L2052"></a><a href="#L2052">2052</a>
+<a name="L2053"></a><a href="#L2053">2053</a>
+<a name="L2054"></a><a href="#L2054">2054</a>
+<a name="L2055"></a><a href="#L2055">2055</a>
+<a name="L2056"></a><a href="#L2056">2056</a>
+<a name="L2057"></a><a href="#L2057">2057</a>
+<a name="L2058"></a><a href="#L2058">2058</a>
+<a name="L2059"></a><a href="#L2059">2059</a>
+<a name="L2060"></a><a href="#L2060">2060</a>
+<a name="L2061"></a><a href="#L2061">2061</a>
+<a name="L2062"></a><a href="#L2062">2062</a>
+<a name="L2063"></a><a href="#L2063">2063</a>
+<a name="L2064"></a><a href="#L2064">2064</a>
+<a name="L2065"></a><a href="#L2065">2065</a>
+<a name="L2066"></a><a href="#L2066">2066</a>
+<a name="L2067"></a><a href="#L2067">2067</a>
+<a name="L2068"></a><a href="#L2068">2068</a>
+<a name="L2069"></a><a href="#L2069">2069</a>
+<a name="L2070"></a><a href="#L2070">2070</a>
+<a name="L2071"></a><a href="#L2071">2071</a>
+<a name="L2072"></a><a href="#L2072">2072</a>
+<a name="L2073"></a><a href="#L2073">2073</a>
+<a name="L2074"></a><a href="#L2074">2074</a>
+<a name="L2075"></a><a href="#L2075">2075</a>
+<a name="L2076"></a><a href="#L2076">2076</a>
+<a name="L2077"></a><a href="#L2077">2077</a>
+<a name="L2078"></a><a href="#L2078">2078</a>
+<a name="L2079"></a><a href="#L2079">2079</a>
+<a name="L2080"></a><a href="#L2080">2080</a>
+<a name="L2081"></a><a href="#L2081">2081</a>
+<a name="L2082"></a><a href="#L2082">2082</a>
+<a name="L2083"></a><a href="#L2083">2083</a>
+<a name="L2084"></a><a href="#L2084">2084</a>
+<a name="L2085"></a><a href="#L2085">2085</a>
+<a name="L2086"></a><a href="#L2086">2086</a>
+<a name="L2087"></a><a href="#L2087">2087</a>
+<a name="L2088"></a><a href="#L2088">2088</a>
+<a name="L2089"></a><a href="#L2089">2089</a>
+<a name="L2090"></a><a href="#L2090">2090</a>
+<a name="L2091"></a><a href="#L2091">2091</a>
+<a name="L2092"></a><a href="#L2092">2092</a>
+<a name="L2093"></a><a href="#L2093">2093</a>
+<a name="L2094"></a><a href="#L2094">2094</a>
+<a name="L2095"></a><a href="#L2095">2095</a>
+<a name="L2096"></a><a href="#L2096">2096</a>
+<a name="L2097"></a><a href="#L2097">2097</a>
+<a name="L2098"></a><a href="#L2098">2098</a>
+<a name="L2099"></a><a href="#L2099">2099</a>
+<a name="L2100"></a><a href="#L2100">2100</a>
+<a name="L2101"></a><a href="#L2101">2101</a>
+<a name="L2102"></a><a href="#L2102">2102</a>
+<a name="L2103"></a><a href="#L2103">2103</a>
+<a name="L2104"></a><a href="#L2104">2104</a>
+<a name="L2105"></a><a href="#L2105">2105</a>
+<a name="L2106"></a><a href="#L2106">2106</a>
+<a name="L2107"></a><a href="#L2107">2107</a>
+<a name="L2108"></a><a href="#L2108">2108</a>
+<a name="L2109"></a><a href="#L2109">2109</a>
+<a name="L2110"></a><a href="#L2110">2110</a>
+<a name="L2111"></a><a href="#L2111">2111</a>
+<a name="L2112"></a><a href="#L2112">2112</a>
+<a name="L2113"></a><a href="#L2113">2113</a>
+<a name="L2114"></a><a href="#L2114">2114</a>
+<a name="L2115"></a><a href="#L2115">2115</a>
+<a name="L2116"></a><a href="#L2116">2116</a>
+<a name="L2117"></a><a href="#L2117">2117</a>
+<a name="L2118"></a><a href="#L2118">2118</a>
+<a name="L2119"></a><a href="#L2119">2119</a>
+<a name="L2120"></a><a href="#L2120">2120</a>
+<a name="L2121"></a><a href="#L2121">2121</a>
+<a name="L2122"></a><a href="#L2122">2122</a>
+<a name="L2123"></a><a href="#L2123">2123</a>
+<a name="L2124"></a><a href="#L2124">2124</a>
+<a name="L2125"></a><a href="#L2125">2125</a>
+<a name="L2126"></a><a href="#L2126">2126</a>
+<a name="L2127"></a><a href="#L2127">2127</a>
+<a name="L2128"></a><a href="#L2128">2128</a>
+<a name="L2129"></a><a href="#L2129">2129</a>
+<a name="L2130"></a><a href="#L2130">2130</a>
+<a name="L2131"></a><a href="#L2131">2131</a>
+<a name="L2132"></a><a href="#L2132">2132</a>
+<a name="L2133"></a><a href="#L2133">2133</a>
+<a name="L2134"></a><a href="#L2134">2134</a>
+<a name="L2135"></a><a href="#L2135">2135</a>
+<a name="L2136"></a><a href="#L2136">2136</a>
+<a name="L2137"></a><a href="#L2137">2137</a>
+<a name="L2138"></a><a href="#L2138">2138</a>
+<a name="L2139"></a><a href="#L2139">2139</a>
+<a name="L2140"></a><a href="#L2140">2140</a>
+<a name="L2141"></a><a href="#L2141">2141</a>
+<a name="L2142"></a><a href="#L2142">2142</a>
+<a name="L2143"></a><a href="#L2143">2143</a>
+<a name="L2144"></a><a href="#L2144">2144</a>
+<a name="L2145"></a><a href="#L2145">2145</a>
+<a name="L2146"></a><a href="#L2146">2146</a>
+<a name="L2147"></a><a href="#L2147">2147</a>
+<a name="L2148"></a><a href="#L2148">2148</a>
+<a name="L2149"></a><a href="#L2149">2149</a>
+<a name="L2150"></a><a href="#L2150">2150</a>
+<a name="L2151"></a><a href="#L2151">2151</a>
+<a name="L2152"></a><a href="#L2152">2152</a>
+<a name="L2153"></a><a href="#L2153">2153</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1806,6 +2175,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1867,6 +2237,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1888,6 +2259,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1981,6 +2355,9 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1994,6 +2371,8 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -2139,7 +2518,10 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -2525,15 +2907,19 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -2542,6 +2928,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -2839,12 +3226,17 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -2868,6 +3260,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -3216,14 +3610,20 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -3240,14 +3640,21 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -3269,32 +3676,72 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -3303,38 +3750,82 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -3344,40 +3835,84 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -3389,37 +3924,81 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -3428,21 +4007,64 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -3452,8 +4074,33 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -3463,13 +4110,22 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -3480,33 +4136,88 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -3514,27 +4225,53 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -3549,6 +4286,7 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -3586,6 +4324,7 @@ import { formatLogText } from '../../shared/log-formatter.js';
 import { getCrimsonWS } from '../../shared/crimson-ws.js';
 import { getAppWS, isAppWSConnected } from '../../shared/app-ws.js';
 import { getTip, initTooltips } from '../../core/tooltip-api.js';
+import { registerShortcut } from '../../core/manager-ui.js';
 import './crimson.css';
 &nbsp;
 // Singleton instance tracking
@@ -3649,11 +4388,12 @@ export function <span class="fstat-no" title="function not covered">toggleCrimso
  * @param {string} [tooltip] - Custom tooltip text
  * @returns {HTMLButtonElement} The configured button element
  */
-export function <span class="fstat-no" title="function not covered">createCrimsonButton(</span>tooltip = <span class="branch-0 cbranch-no" title="branch not covered">'Chat with Crimson (Ctrl+Shift+C)')</span> {
+export function <span class="fstat-no" title="function not covered">createCrimsonButton(</span>tooltip = <span class="branch-0 cbranch-no" title="branch not covered">'Chat with Crimson')</span> {
   const button = <span class="cstat-no" title="statement not covered">document.createElement('button');</span>
 <span class="cstat-no" title="statement not covered">  button.type = 'button';</span>
 <span class="cstat-no" title="statement not covered">  button.className = 'subpanel-header-btn subpanel-header-close crimson-btn';</span>
 <span class="cstat-no" title="statement not covered">  button.setAttribute('data-tooltip', tooltip);</span>
+<span class="cstat-no" title="statement not covered">  button.setAttribute('data-shortcut-id', 'crimson');</span>
 <span class="cstat-no" title="statement not covered">  button.innerHTML = '&lt;i class="fa-kit-duotone fa-crimson"&gt;&lt;/i&gt;';</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered">  button.addEventListener('click', <span class="fstat-no" title="function not covered">(e</span>) =&gt; {</span>
@@ -3674,6 +4414,9 @@ export function <span class="fstat-no" title="function not covered">createCrimso
  */
 export function <span class="fstat-no" title="function not covered">initCrimsonShortcut(</span>) {
 <span class="cstat-no" title="statement not covered">  if (globalKeyHandler) <span class="cstat-no" title="statement not covered">return; </span></span>// Already initialized
+&nbsp;
+  // Register with the shortcut system so tooltips get the key combo
+<span class="cstat-no" title="statement not covered">  registerShortcut('crimson', 'Ctrl+Shift+C', 'Toggle Crimson', <span class="fstat-no" title="function not covered">()</span> =&gt; <span class="cstat-no" title="statement not covered">toggleCrimson())</span>;</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered">  globalKeyHandler = <span class="fstat-no" title="function not covered">(e</span>) =&gt; {</span>
     // Ctrl+Shift+C to toggle Crimson
@@ -3759,6 +4502,11 @@ class CrimsonManager {
 &nbsp;
     // Temporarily enable showing thinking messages for debugging
 <span class="cstat-no" title="statement not covered">    this.showThinkingMessages = true;</span>
+&nbsp;
+    // Citations state
+<span class="cstat-no" title="statement not covered">    this.citations = new Map(); </span>// messageId -&gt; citation[]
+<span class="cstat-no" title="statement not covered">    this.activeCitationPopup = null;</span>
+<span class="cstat-no" title="statement not covered">    this.activeCitationButton = null;</span>
 &nbsp;
     // Bind methods
 <span class="cstat-no" title="statement not covered">    this.handleDragStart = this.handleDragStart.bind(this);</span>
@@ -3924,6 +4672,9 @@ class CrimsonManager {
     // Set up event listeners
 <span class="cstat-no" title="statement not covered">    header.addEventListener('mousedown', this.handleDragStart);</span>
 <span class="cstat-no" title="statement not covered">    closeBtn.addEventListener('click', <span class="fstat-no" title="function not covered">()</span> =&gt; <span class="cstat-no" title="statement not covered">this.hide())</span>;</span>
+&nbsp;
+    // Wire citation link clicks (delegated)
+<span class="cstat-no" title="statement not covered">    this.conversation.addEventListener('click', <span class="fstat-no" title="function not covered">(e</span>) =&gt; <span class="cstat-no" title="statement not covered">this.handleCitationLinkClick(e))</span>;</span>
 <span class="cstat-no" title="statement not covered">    resetBtn?.addEventListener('click', <span class="fstat-no" title="function not covered">()</span> =&gt; <span class="cstat-no" title="statement not covered">this.resetConversation())</span>;</span>
 <span class="cstat-no" title="statement not covered">    this.debugBtn?.addEventListener('click', <span class="fstat-no" title="function not covered">()</span> =&gt; <span class="cstat-no" title="statement not covered">this.toggleDebugPanel())</span>;</span>
 <span class="cstat-no" title="statement not covered">    this.streamingBtn?.addEventListener('click', <span class="fstat-no" title="function not covered">()</span> =&gt; <span class="cstat-no" title="statement not covered">this.toggleStreaming())</span>;</span>
@@ -4317,7 +5068,12 @@ class CrimsonManager {
 <span class="fstat-no" title="function not covered">  handleKeyDown(</span>e) {
 <span class="cstat-no" title="statement not covered">    if (e.key === 'Escape') {</span>
 <span class="cstat-no" title="statement not covered">      e.preventDefault();</span>
-<span class="cstat-no" title="statement not covered">      this.hide();</span>
+      // Close citation popup first if open, otherwise close Crimson
+<span class="cstat-no" title="statement not covered">      if (this.activeCitationPopup) {</span>
+<span class="cstat-no" title="statement not covered">        this.closeCitationPopup();</span>
+      } else {
+<span class="cstat-no" title="statement not covered">        this.hide();</span>
+      }
     }
   }
 &nbsp;
@@ -4619,6 +5375,7 @@ class CrimsonManager {
    * Add a message to the conversation
    * @param {string} sender - 'user' or 'agent'
    * @param {string} text - Message text
+   * @returns {string} The message element ID
    */
 <span class="fstat-no" title="function not covered">  addMessage(</span>sender, text) {
     // Fade out and remove welcome message if present
@@ -4628,8 +5385,12 @@ class CrimsonManager {
 <span class="cstat-no" title="statement not covered">      setTimeout(<span class="fstat-no" title="function not covered">()</span> =&gt; <span class="cstat-no" title="statement not covered">welcome.remove(),</span> 350);</span>
     }
 &nbsp;
+    // Generate unique message ID
+    const messageId = <span class="cstat-no" title="statement not covered">`crimson-msg-${Date.now()}`;</span>
+&nbsp;
     const messageEl = <span class="cstat-no" title="statement not covered">document.createElement('div');</span>
 <span class="cstat-no" title="statement not covered">    messageEl.className = `crimson-message crimson-message-${sender}`;</span>
+<span class="cstat-no" title="statement not covered">    messageEl.id = messageId;</span>
 &nbsp;
     const avatar = <span class="cstat-no" title="statement not covered">sender === 'agent'</span>
       ? `&lt;div class="crimson-message-avatar"&gt;
@@ -4650,6 +5411,8 @@ class CrimsonManager {
 &nbsp;
     // Store message
 <span class="cstat-no" title="statement not covered">    this.messages.push({ sender, text, timestamp: Date.now() });</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    return messageId;</span>
   }
 &nbsp;
   /**
@@ -5006,7 +5769,13 @@ class CrimsonManager {
 <span class="cstat-no" title="statement not covered">        this.addDebugMessage('META', `From done message: ${JSON.stringify(parsedMetadata).substring(0, 200)}`);</span>
       }
 &nbsp;
+      // Generate unique message ID for this response
+      const messageId = <span class="cstat-no" title="statement not covered">`crimson-msg-${Date.now()}`;</span>
+&nbsp;
 <span class="cstat-no" title="statement not covered">      if (this.currentStreamElement) {</span>
+        // Set message ID
+<span class="cstat-no" title="statement not covered">        this.currentStreamElement.id = messageId;</span>
+&nbsp;
         // Remove waiting animation and show content for non-streaming responses
 <span class="cstat-no" title="statement not covered">        if (this.currentStreamElement.classList.contains('crimson-waiting')) {</span>
 <span class="cstat-no" title="statement not covered">          this.currentStreamElement.classList.remove('crimson-waiting');</span>
@@ -5020,15 +5789,22 @@ class CrimsonManager {
 <span class="cstat-no" title="statement not covered">        if (contentEl) {</span>
           // Set the final conversation content with full markdown rendering
 <span class="cstat-no" title="statement not covered">          contentEl.setAttribute('data-raw-content', conversationText);</span>
-          
+&nbsp;
           // Use full markdown rendering for final content
 <span class="cstat-no" title="statement not covered">          this.formatMessageContentMarkdown(conversationText).then(<span class="fstat-no" title="function not covered">htmlContent </span>=&gt; {</span>
+            // Convert citation markers to links
+<span class="cstat-no" title="statement not covered">            htmlContent = this.convertCitationMarkers(htmlContent, messageId);</span>
 <span class="cstat-no" title="statement not covered">            contentEl.innerHTML = htmlContent;</span>
             // Scroll to show new content
 <span class="cstat-no" title="statement not covered">            if (this.conversation) {</span>
 <span class="cstat-no" title="statement not covered">              this.conversation.scrollTop = this.conversation.scrollHeight;</span>
             }
           });
+&nbsp;
+          // Parse and store citations from metadata
+<span class="cstat-no" title="statement not covered">          if (parsedMetadata &amp;&amp; parsedMetadata.citations) {</span>
+<span class="cstat-no" title="statement not covered">            this.parseCitations(messageId, parsedMetadata.citations);</span>
+          }
 &nbsp;
           // Add follow-up questions from metadata if present
 <span class="cstat-no" title="statement not covered">          if (parsedMetadata &amp;&amp; parsedMetadata.followUpQuestions &amp;&amp; parsedMetadata.followUpQuestions.length &gt; 0) {</span>
@@ -5313,10 +6089,340 @@ class CrimsonManager {
 <span class="cstat-no" title="statement not covered">    return div.innerHTML;</span>
   }
 &nbsp;
+  // ==================== CITATIONS ====================
+&nbsp;
+  /**
+   * Parse citations from metadata and store for a message
+   * @param {string} messageId - The message element ID
+   * @param {Array} citations - Array of citation objects from metadata
+   */
+<span class="fstat-no" title="function not covered">  parseCitations(</span>messageId, citations) {
+<span class="cstat-no" title="statement not covered">    if (!citations || !Array.isArray(citations) || citations.length === 0) {</span>
+<span class="cstat-no" title="statement not covered">      return;</span>
+    }
+&nbsp;
+    // Normalize citation data
+    const normalizedCitations = <span class="cstat-no" title="statement not covered">citations.map(<span class="fstat-no" title="function not covered">(c</span>itation, index) =&gt; (<span class="cstat-no" title="statement not covered">{</span></span>
+      number: citation.number || index + 1,
+      name: citation.name || citation.title || 'Untitled',
+      url: citation.url || citation.uri || citation.source || '',
+      type: citation.type || 'web',
+      source: citation.source || '',
+    }));
+&nbsp;
+<span class="cstat-no" title="statement not covered">    this.citations.set(messageId, normalizedCitations);</span>
+&nbsp;
+    // Add citation button to the message
+<span class="cstat-no" title="statement not covered">    this.addCitationButtonToMessage(messageId, normalizedCitations.length);</span>
+  }
+&nbsp;
+  /**
+   * Add a citation button under the Crimson avatar for a message
+   * @param {string} messageId - The message element ID
+   * @param {number} count - Number of citations
+   */
+<span class="fstat-no" title="function not covered">  addCitationButtonToMessage(</span>messageId, count) {
+    const messageEl = <span class="cstat-no" title="statement not covered">document.getElementById(messageId);</span>
+<span class="cstat-no" title="statement not covered">    if (!messageEl) <span class="cstat-no" title="statement not covered">return;</span></span>
+&nbsp;
+    // Check if button already exists
+<span class="cstat-no" title="statement not covered">    if (messageEl.querySelector('.crimson-citation-btn')) <span class="cstat-no" title="statement not covered">return;</span></span>
+&nbsp;
+    const avatarEl = <span class="cstat-no" title="statement not covered">messageEl.querySelector('.crimson-message-avatar');</span>
+<span class="cstat-no" title="statement not covered">    if (!avatarEl) <span class="cstat-no" title="statement not covered">return;</span></span>
+&nbsp;
+    // Create citation button - double height with icon and counter
+    const citationBtn = <span class="cstat-no" title="statement not covered">document.createElement('button');</span>
+<span class="cstat-no" title="statement not covered">    citationBtn.className = 'crimson-citation-btn';</span>
+<span class="cstat-no" title="statement not covered">    citationBtn.setAttribute('data-citation-count', count);</span>
+<span class="cstat-no" title="statement not covered">    citationBtn.setAttribute('data-message-id', messageId);</span>
+<span class="cstat-no" title="statement not covered">    citationBtn.innerHTML = `</span>
+      &lt;fa fa-book-open&gt;&lt;/fa&gt;
+      &lt;span class="crimson-citation-count"&gt;${count.toString().padStart(2, '0')}&lt;/span&gt;
+    `;
+&nbsp;
+<span class="cstat-no" title="statement not covered">    citationBtn.addEventListener('click', <span class="fstat-no" title="function not covered">(e</span>) =&gt; {</span>
+<span class="cstat-no" title="statement not covered">      e.stopPropagation();</span>
+<span class="cstat-no" title="statement not covered">      this.toggleCitationPopup(messageId, citationBtn);</span>
+    });
+&nbsp;
+    // Insert after avatar
+<span class="cstat-no" title="statement not covered">    avatarEl.after(citationBtn);</span>
+<span class="cstat-no" title="statement not covered">    processIcons(citationBtn);</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    log(Subsystems.CRIMSON, Status.DEBUG, `Added citation button with ${count} citations to message ${messageId}`);</span>
+  }
+&nbsp;
+  /**
+   * Toggle citation popup for a message
+   * @param {string} messageId - The message element ID
+   * @param {HTMLElement} button - The citation button
+   */
+<span class="fstat-no" title="function not covered">  toggleCitationPopup(</span>messageId, button) {
+    // Close existing popup if different
+<span class="cstat-no" title="statement not covered">    if (this.activeCitationPopup &amp;&amp; this.activeCitationButton !== button) {</span>
+<span class="cstat-no" title="statement not covered">      this.closeCitationPopup();</span>
+    }
+&nbsp;
+    // Toggle off if same button
+<span class="cstat-no" title="statement not covered">    if (this.activeCitationPopup &amp;&amp; this.activeCitationButton === button) {</span>
+<span class="cstat-no" title="statement not covered">      this.closeCitationPopup();</span>
+<span class="cstat-no" title="statement not covered">      return;</span>
+    }
+&nbsp;
+    const citations = <span class="cstat-no" title="statement not covered">this.citations.get(messageId);</span>
+<span class="cstat-no" title="statement not covered">    if (!citations || citations.length === 0) <span class="cstat-no" title="statement not covered">return;</span></span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    this.showCitationPopup(button, citations);</span>
+  }
+&nbsp;
+  /**
+   * Show citation popup anchored to button
+   * @param {HTMLElement} button - The citation button
+   * @param {Array} citations - Array of citation objects
+   */
+<span class="fstat-no" title="function not covered">  showCitationPopup(</span>button, citations) {
+    // Create popup
+    const popup = <span class="cstat-no" title="statement not covered">document.createElement('div');</span>
+<span class="cstat-no" title="statement not covered">    popup.className = 'crimson-citation-popup';</span>
+<span class="cstat-no" title="statement not covered">    this._citationPopupEl = popup;</span>
+&nbsp;
+    // Build citation table rows
+    const rowsHtml = <span class="cstat-no" title="statement not covered">citations.map(<span class="fstat-no" title="function not covered">(c</span>itation) =&gt; {</span>
+      const isCanvas = <span class="cstat-no" title="statement not covered">citation.url.startsWith('canvas') || citation.source.startsWith('canvas');</span>
+      const canvasIcon = <span class="cstat-no" title="statement not covered">isCanvas ? '&lt;fa fa-graduation-cap&gt;&lt;/fa&gt;' : '';</span>
+      const displayUrl = <span class="cstat-no" title="statement not covered">citation.url.length &gt; 50 ? citation.url.substring(0, 50) + '...' : citation.url;</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">      return `</span>
+        &lt;tr class="crimson-citation-row" data-citation-number="${citation.number}"&gt;
+          &lt;td class="crimson-citation-cell crimson-citation-number"&gt;${citation.number}&lt;/td&gt;
+          &lt;td class="crimson-citation-cell crimson-citation-name" title="${this.escapeHtml(citation.name)}"&gt;${this.escapeHtml(citation.name)}&lt;/td&gt;
+          &lt;td class="crimson-citation-cell crimson-citation-url" title="${this.escapeHtml(citation.url)}"&gt;${this.escapeHtml(displayUrl)}&lt;/td&gt;
+          &lt;td class="crimson-citation-cell crimson-citation-type"&gt;${canvasIcon}&lt;/td&gt;
+          &lt;td class="crimson-citation-cell crimson-citation-actions"&gt;
+            &lt;button type="button" class="crimson-citation-action-btn crimson-citation-open-btn" data-url="${this.escapeHtml(citation.url)}" title="Open in new tab"&gt;
+              &lt;fa fa-arrow-up-right-from-square&gt;&lt;/fa&gt;
+            &lt;/button&gt;
+          &lt;/td&gt;
+        &lt;/tr&gt;
+      `;
+    }).join('');
+&nbsp;
+<span class="cstat-no" title="statement not covered">    popup.innerHTML = `</span>
+      &lt;div class="crimson-citation-popup-header"&gt;
+        &lt;span class="crimson-citation-popup-title"&gt;Citations&lt;/span&gt;
+        &lt;button type="button" class="crimson-citation-popup-close" title="Close (ESC)"&gt;
+          &lt;fa fa-xmark&gt;&lt;/fa&gt;
+        &lt;/button&gt;
+      &lt;/div&gt;
+      &lt;div class="crimson-citation-popup-content"&gt;
+        &lt;table class="crimson-citation-table"&gt;
+          &lt;thead&gt;
+            &lt;tr&gt;
+              &lt;th class="crimson-citation-header"&gt;#&lt;/th&gt;
+              &lt;th class="crimson-citation-header"&gt;Name&lt;/th&gt;
+              &lt;th class="crimson-citation-header"&gt;URL&lt;/th&gt;
+              &lt;th class="crimson-citation-header"&gt;Type&lt;/th&gt;
+              &lt;th class="crimson-citation-header"&gt;Actions&lt;/th&gt;
+            &lt;/tr&gt;
+          &lt;/thead&gt;
+          &lt;tbody&gt;
+            ${rowsHtml}
+          &lt;/tbody&gt;
+        &lt;/table&gt;
+      &lt;/div&gt;
+      &lt;div class="crimson-citation-popup-arrow"&gt;&lt;/div&gt;
+    `;
+&nbsp;
+<span class="cstat-no" title="statement not covered">    document.body.appendChild(popup);</span>
+<span class="cstat-no" title="statement not covered">    processIcons(popup);</span>
+&nbsp;
+    // Position popup
+<span class="cstat-no" title="statement not covered">    this.positionCitationPopup(popup, button);</span>
+&nbsp;
+    // Wire close button
+    const closeBtn = <span class="cstat-no" title="statement not covered">popup.querySelector('.crimson-citation-popup-close');</span>
+<span class="cstat-no" title="statement not covered">    closeBtn?.addEventListener('click', <span class="fstat-no" title="function not covered">()</span> =&gt; <span class="cstat-no" title="statement not covered">this.closeCitationPopup())</span>;</span>
+&nbsp;
+    // Wire open buttons
+<span class="cstat-no" title="statement not covered">    popup.querySelectorAll('.crimson-citation-open-btn').forEach(<span class="fstat-no" title="function not covered">btn </span>=&gt; {</span>
+<span class="cstat-no" title="statement not covered">      btn.addEventListener('click', <span class="fstat-no" title="function not covered">(e</span>) =&gt; {</span>
+<span class="cstat-no" title="statement not covered">        e.stopPropagation();</span>
+        const url = <span class="cstat-no" title="statement not covered">btn.getAttribute('data-url');</span>
+<span class="cstat-no" title="statement not covered">        if (url) {</span>
+          // For canvas URLs, we'll handle them specially later
+<span class="cstat-no" title="statement not covered">          if (url.startsWith('canvas')) {</span>
+            // TODO: Open canvas content in training panel
+<span class="cstat-no" title="statement not covered">            log(Subsystems.CRIMSON, Status.INFO, `Opening canvas citation: ${url}`);</span>
+          } else {
+<span class="cstat-no" title="statement not covered">            window.open(url, '_blank', 'noopener,noreferrer');</span>
+          }
+        }
+      });
+    });
+&nbsp;
+    // Store active popup
+<span class="cstat-no" title="statement not covered">    this.activeCitationPopup = popup;</span>
+<span class="cstat-no" title="statement not covered">    this.activeCitationButton = button;</span>
+<span class="cstat-no" title="statement not covered">    button.classList.add('active');</span>
+&nbsp;
+    // Animate in
+<span class="cstat-no" title="statement not covered">    requestAnimationFrame(<span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered">      popup.classList.add('visible');</span>
+    });
+&nbsp;
+    // Handle clicks outside to close
+<span class="cstat-no" title="statement not covered">    this._citationOutsideHandler = <span class="fstat-no" title="function not covered">(e</span>) =&gt; {</span>
+<span class="cstat-no" title="statement not covered">      if (!popup.contains(e.target) &amp;&amp; !button.contains(e.target)) {</span>
+<span class="cstat-no" title="statement not covered">        this.closeCitationPopup();</span>
+      }
+    };
+<span class="cstat-no" title="statement not covered">    document.addEventListener('click', this._citationOutsideHandler);</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    log(Subsystems.CRIMSON, Status.DEBUG, `Opened citation popup with ${citations.length} citations`);</span>
+  }
+&nbsp;
+  /**
+   * Position citation popup relative to button
+   * @param {HTMLElement} popup - The popup element
+   * @param {HTMLElement} button - The anchor button
+   */
+<span class="fstat-no" title="function not covered">  positionCitationPopup(</span>popup, button) {
+    const buttonRect = <span class="cstat-no" title="statement not covered">button.getBoundingClientRect();</span>
+    const popupRect = <span class="cstat-no" title="statement not covered">popup.getBoundingClientRect();</span>
+&nbsp;
+    // Default: position to the right of the button
+    let left = <span class="cstat-no" title="statement not covered">buttonRect.right + 10;</span>
+    let top = <span class="cstat-no" title="statement not covered">buttonRect.top;</span>
+&nbsp;
+    // Check if popup goes off right edge
+<span class="cstat-no" title="statement not covered">    if (left + popupRect.width &gt; window.innerWidth - 20) {</span>
+      // Position to the left instead
+<span class="cstat-no" title="statement not covered">      left = buttonRect.left - popupRect.width - 10;</span>
+    }
+&nbsp;
+    // Check vertical bounds
+<span class="cstat-no" title="statement not covered">    if (top + popupRect.height &gt; window.innerHeight - 20) {</span>
+<span class="cstat-no" title="statement not covered">      top = window.innerHeight - popupRect.height - 20;</span>
+    }
+<span class="cstat-no" title="statement not covered">    if (top &lt; 20) {</span>
+<span class="cstat-no" title="statement not covered">      top = 20;</span>
+    }
+&nbsp;
+<span class="cstat-no" title="statement not covered">    popup.style.left = `${left}px`;</span>
+<span class="cstat-no" title="statement not covered">    popup.style.top = `${top}px`;</span>
+&nbsp;
+    // Position arrow
+    const arrow = <span class="cstat-no" title="statement not covered">popup.querySelector('.crimson-citation-popup-arrow');</span>
+<span class="cstat-no" title="statement not covered">    if (arrow) {</span>
+      const arrowOffset = <span class="cstat-no" title="statement not covered">buttonRect.top - top + buttonRect.height / 2;</span>
+<span class="cstat-no" title="statement not covered">      arrow.style.top = `${Math.max(10, Math.min(arrowOffset, popupRect.height - 10))}px`;</span>
+&nbsp;
+      // Point arrow left or right depending on popup position
+<span class="cstat-no" title="statement not covered">      if (left &lt; buttonRect.left) {</span>
+<span class="cstat-no" title="statement not covered">        arrow.classList.add('arrow-right');</span>
+      } else {
+<span class="cstat-no" title="statement not covered">        arrow.classList.add('arrow-left');</span>
+      }
+    }
+  }
+&nbsp;
+  /**
+   * Close citation popup
+   */
+<span class="fstat-no" title="function not covered">  closeCitationPopup(</span>) {
+    // Remove outside click handler
+<span class="cstat-no" title="statement not covered">    if (this._citationOutsideHandler) {</span>
+<span class="cstat-no" title="statement not covered">      document.removeEventListener('click', this._citationOutsideHandler);</span>
+<span class="cstat-no" title="statement not covered">      this._citationOutsideHandler = null;</span>
+    }
+&nbsp;
+<span class="cstat-no" title="statement not covered">    if (this.activeCitationPopup) {</span>
+<span class="cstat-no" title="statement not covered">      this.activeCitationPopup.classList.remove('visible');</span>
+<span class="cstat-no" title="statement not covered">      setTimeout(<span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered">        this.activeCitationPopup?.remove();</span>
+<span class="cstat-no" title="statement not covered">        this.activeCitationPopup = null;</span>
+<span class="cstat-no" title="statement not covered">        this._citationPopupEl = null;</span>
+      }, 200);
+    }
+&nbsp;
+<span class="cstat-no" title="statement not covered">    if (this.activeCitationButton) {</span>
+<span class="cstat-no" title="statement not covered">      this.activeCitationButton.classList.remove('active');</span>
+<span class="cstat-no" title="statement not covered">      this.activeCitationButton = null;</span>
+    }
+  }
+&nbsp;
+  /**
+   * Highlight a specific citation in the popup
+   * @param {number} citationNumber - The citation number to highlight
+   */
+<span class="fstat-no" title="function not covered">  highlightCitation(</span>citationNumber) {
+<span class="cstat-no" title="statement not covered">    if (!this.activeCitationPopup) <span class="cstat-no" title="statement not covered">return;</span></span>
+&nbsp;
+    // Remove existing highlight
+<span class="cstat-no" title="statement not covered">    this.activeCitationPopup.querySelectorAll('.crimson-citation-row').forEach(<span class="fstat-no" title="function not covered">row </span>=&gt; {</span>
+<span class="cstat-no" title="statement not covered">      row.classList.remove('highlighted');</span>
+    });
+&nbsp;
+    // Add highlight to target row
+    const targetRow = <span class="cstat-no" title="statement not covered">this.activeCitationPopup.querySelector(`[data-citation-number="${citationNumber}"]`);</span>
+<span class="cstat-no" title="statement not covered">    if (targetRow) {</span>
+<span class="cstat-no" title="statement not covered">      targetRow.classList.add('highlighted');</span>
+<span class="cstat-no" title="statement not covered">      targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });</span>
+    }
+  }
+&nbsp;
+  /**
+   * Convert citation markers [[C1]] in text to clickable links
+   * @param {string} content - The message content
+   * @param {string} messageId - The message element ID
+   * @returns {string} Content with citation links
+   */
+<span class="fstat-no" title="function not covered">  convertCitationMarkers(</span>content, messageId) {
+<span class="cstat-no" title="statement not covered">    if (!content) <span class="cstat-no" title="statement not covered">return '';</span></span>
+&nbsp;
+    // Replace [[C1]], [[C2]], etc. with clickable links
+<span class="cstat-no" title="statement not covered">    return content.replace(/\[\[C(\d+)\]\]/g, <span class="fstat-no" title="function not covered">(m</span>atch, num) =&gt; {</span>
+      const citationNum = <span class="cstat-no" title="statement not covered">parseInt(num, 10);</span>
+<span class="cstat-no" title="statement not covered">      return `&lt;a href="#" class="crimson-citation-link" data-message-id="${messageId}" data-citation="${citationNum}" title="View citation ${citationNum}"&gt;${match}&lt;/a&gt;`;</span>
+    });
+  }
+&nbsp;
+  /**
+   * Handle citation link click
+   * @param {Event} e - Click event
+   */
+<span class="fstat-no" title="function not covered">  handleCitationLinkClick(</span>e) {
+    const link = <span class="cstat-no" title="statement not covered">e.target.closest('.crimson-citation-link');</span>
+<span class="cstat-no" title="statement not covered">    if (!link) <span class="cstat-no" title="statement not covered">return;</span></span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    e.preventDefault();</span>
+<span class="cstat-no" title="statement not covered">    e.stopPropagation();</span>
+&nbsp;
+    const messageId = <span class="cstat-no" title="statement not covered">link.getAttribute('data-message-id');</span>
+    const citationNum = <span class="cstat-no" title="statement not covered">parseInt(link.getAttribute('data-citation'), 10);</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered">    if (!messageId || !citationNum) <span class="cstat-no" title="statement not covered">return;</span></span>
+&nbsp;
+    // Find the citation button for this message
+    const messageEl = <span class="cstat-no" title="statement not covered">document.getElementById(messageId);</span>
+<span class="cstat-no" title="statement not covered">    if (!messageEl) <span class="cstat-no" title="statement not covered">return;</span></span>
+&nbsp;
+    const citationBtn = <span class="cstat-no" title="statement not covered">messageEl.querySelector('.crimson-citation-btn');</span>
+<span class="cstat-no" title="statement not covered">    if (!citationBtn) <span class="cstat-no" title="statement not covered">return;</span></span>
+&nbsp;
+    // Open popup and highlight citation
+<span class="cstat-no" title="statement not covered">    this.toggleCitationPopup(messageId, citationBtn);</span>
+<span class="cstat-no" title="statement not covered">    this.highlightCitation(citationNum);</span>
+  }
+&nbsp;
   /**
    * Clean up the Crimson instance
    */
 <span class="fstat-no" title="function not covered">  destroy(</span>) {
+    // Close citation popup if open
+<span class="cstat-no" title="statement not covered">    this.closeCitationPopup();</span>
+&nbsp;
     // Remove event listeners
 <span class="cstat-no" title="statement not covered">    document.removeEventListener('keydown', this.handleKeyDown);</span>
 <span class="cstat-no" title="statement not covered">    document.removeEventListener('keydown', globalKeyHandler);</span>
@@ -5339,6 +6445,7 @@ class CrimsonManager {
 <span class="cstat-no" title="statement not covered">    this.sendBtn = null;</span>
 <span class="cstat-no" title="statement not covered">    this.currentStreamElement = null;</span>
 <span class="cstat-no" title="statement not covered">    this.conversationHistory = [];</span>
+<span class="cstat-no" title="statement not covered">    this.citations.clear();</span>
 <span class="cstat-no" title="statement not covered">    crimsonInstance = null;</span>
 <span class="cstat-no" title="statement not covered">    globalKeyHandler = null;</span>
 &nbsp;
@@ -5348,4 +6455,4 @@ class CrimsonManager {
 &nbsp;
 // Initialize global shortcut on module load
 <span class="cstat-no" title="statement not covered">initCrimsonShortcut();</span>
-&nbsp;</pre></td></tr></table></pre><div class="push"></div></div><div class="footer quiet pad2 space-top1 center small">Code coverage generated by <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a> at 2026-03-31T17:45:20.019Z</div><script src="../../prettify.js"></script><script>window.onload=function(){prettyPrint()}</script><script src="../../sorter.js"></script><script src="../../block-navigation.js"></script></body></html>
+&nbsp;</pre></td></tr></table></pre><div class="push"></div></div><div class="footer quiet pad2 space-top1 center small">Code coverage generated by <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a> at 2026-03-31T18:46:57.271Z</div><script src="../../prettify.js"></script><script>window.onload=function(){prettyPrint()}</script><script src="../../sorter.js"></script><script src="../../block-navigation.js"></script></body></html>

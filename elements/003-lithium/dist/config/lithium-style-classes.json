@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS class selectors/names used across the Lithium codebase",
-    "generated": "2026-03-31T17:56:48.716Z",
+    "generated": "2026-03-31T19:07:37.626Z",
     "sources": {
       "css": "48 files in src/**/*.css",
       "js": "79 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
-    "total_selectors": 1437,
-    "total_occurrences": 17555
+    "total_selectors": 1472,
+    "total_occurrences": 18017
   },
   "selectors": [
     {
@@ -1667,9 +1667,9 @@
     {
       "selector": ".col-manager-popup.visible",
       "css": 1,
-      "js": 72,
+      "js": 74,
       "html": 0,
-      "total": 73,
+      "total": 75,
       "files": {
         "css": [
           "src/core/lithium-column-manager.css"
@@ -2641,6 +2641,593 @@
       }
     },
     {
+      "selector": ".crimson-citation-action-btn",
+      "css": 1,
+      "js": 1,
+      "html": 0,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-citation-action-btn:hover",
+      "css": 1,
+      "js": 1,
+      "html": 0,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-citation-actions",
+      "css": 1,
+      "js": 1,
+      "html": 0,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-citation-btn",
+      "css": 1,
+      "js": 3,
+      "html": 0,
+      "total": 4,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-citation-btn i",
+      "css": 1,
+      "js": 3,
+      "html": 0,
+      "total": 4,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-citation-btn:hover",
+      "css": 1,
+      "js": 3,
+      "html": 0,
+      "total": 4,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-citation-btn.active",
+      "css": 1,
+      "js": 41,
+      "html": 7,
+      "total": 49,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/app.js",
+          "src/core/manager-ui.js",
+          "src/core/zoom-control.js",
+          "src/managers/crimson/crimson.js",
+          "src/managers/login/login.js",
+          "src/managers/lookups/lookups.js",
+          "src/managers/main/main.js",
+          "src/managers/queries/queries-ui.js",
+          "src/managers/queries/queries.js",
+          "src/managers/style-manager/style-manager.js",
+          "src/shared/crimson-ws.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html"
+        ]
+      }
+    },
+    {
+      "selector": ".crimson-citation-cell",
+      "css": 1,
+      "js": 5,
+      "html": 0,
+      "total": 6,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-citation-count",
+      "css": 1,
+      "js": 1,
+      "html": 0,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-citation-header",
+      "css": 1,
+      "js": 5,
+      "html": 0,
+      "total": 6,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-citation-header:first-child",
+      "css": 1,
+      "js": 5,
+      "html": 0,
+      "total": 6,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-citation-header:last-child",
+      "css": 1,
+      "js": 5,
+      "html": 0,
+      "total": 6,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-citation-link",
+      "css": 1,
+      "js": 2,
+      "html": 0,
+      "total": 3,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-citation-link:hover",
+      "css": 1,
+      "js": 2,
+      "html": 0,
+      "total": 3,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-citation-name",
+      "css": 1,
+      "js": 1,
+      "html": 0,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-citation-number",
+      "css": 1,
+      "js": 1,
+      "html": 0,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-citation-open-btn:hover",
+      "css": 1,
+      "js": 2,
+      "html": 0,
+      "total": 3,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-citation-popup",
+      "css": 1,
+      "js": 8,
+      "html": 0,
+      "total": 9,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-citation-popup-arrow",
+      "css": 1,
+      "js": 10,
+      "html": 0,
+      "total": 11,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-citation-popup-arrow.arrow-left",
+      "css": 1,
+      "js": 11,
+      "html": 0,
+      "total": 12,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-citation-popup-arrow.arrow-left::after",
+      "css": 1,
+      "js": 11,
+      "html": 0,
+      "total": 12,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-citation-popup-arrow.arrow-right",
+      "css": 1,
+      "js": 11,
+      "html": 0,
+      "total": 12,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-citation-popup-arrow.arrow-right::after",
+      "css": 1,
+      "js": 11,
+      "html": 0,
+      "total": 12,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-citation-popup-close",
+      "css": 1,
+      "js": 10,
+      "html": 0,
+      "total": 11,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-citation-popup-close:hover",
+      "css": 1,
+      "js": 10,
+      "html": 0,
+      "total": 11,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-citation-popup-content",
+      "css": 1,
+      "js": 9,
+      "html": 0,
+      "total": 10,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-citation-popup-header",
+      "css": 1,
+      "js": 9,
+      "html": 0,
+      "total": 10,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-citation-popup-title",
+      "css": 1,
+      "js": 9,
+      "html": 0,
+      "total": 10,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-citation-popup.visible",
+      "css": 1,
+      "js": 78,
+      "html": 0,
+      "total": 79,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/core/lithium-column-manager.js",
+          "src/core/lithium-table-ui.js",
+          "src/core/manager-ui.js",
+          "src/managers/crimson/crimson.js",
+          "src/managers/login/login.js",
+          "src/managers/lookups/lookups.js",
+          "src/managers/main/main.js",
+          "src/managers/profile-manager/profile-manager.js",
+          "src/managers/queries/queries-ui.js",
+          "src/managers/queries/queries.js",
+          "src/managers/session-log/session-log.js",
+          "src/managers/style-manager/style-manager.js",
+          "src/managers/version-history/version-history.js",
+          "src/shared/crimson-ws.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-citation-row",
+      "css": 1,
+      "js": 2,
+      "html": 0,
+      "total": 3,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-citation-row:hover",
+      "css": 1,
+      "js": 2,
+      "html": 0,
+      "total": 3,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-citation-row.highlighted",
+      "css": 1,
+      "js": 4,
+      "html": 0,
+      "total": 5,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-citation-table",
+      "css": 1,
+      "js": 1,
+      "html": 0,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-citation-type",
+      "css": 1,
+      "js": 1,
+      "html": 0,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-citation-url",
+      "css": 1,
+      "js": 1,
+      "html": 0,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
       "selector": ".crimson-code",
       "css": 1,
       "js": 1,
@@ -2771,9 +3358,9 @@
     {
       "selector": ".crimson-debug-btn.active",
       "css": 1,
-      "js": 38,
+      "js": 40,
       "html": 7,
-      "total": 46,
+      "total": 48,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -3245,9 +3832,9 @@
     {
       "selector": ".crimson-message",
       "css": 1,
-      "js": 18,
+      "js": 19,
       "html": 0,
-      "total": 19,
+      "total": 20,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -3260,502 +3847,6 @@
     },
     {
       "selector": ".crimson-message-agent",
-      "css": 1,
-      "js": 20,
-      "html": 0,
-      "total": 21,
-      "files": {
-        "css": [
-          "src/managers/crimson/crimson.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".crimson-message-agent .crimson-message-avatar",
-      "css": 1,
-      "js": 24,
-      "html": 0,
-      "total": 25,
-      "files": {
-        "css": [
-          "src/managers/crimson/crimson.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".crimson-message-agent .crimson-message-content",
-      "css": 1,
-      "js": 27,
-      "html": 0,
-      "total": 28,
-      "files": {
-        "css": [
-          "src/managers/crimson/crimson.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".crimson-message-avatar",
-      "css": 1,
-      "js": 22,
-      "html": 0,
-      "total": 23,
-      "files": {
-        "css": [
-          "src/managers/crimson/crimson.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".crimson-message-content",
-      "css": 1,
-      "js": 25,
-      "html": 0,
-      "total": 26,
-      "files": {
-        "css": [
-          "src/managers/crimson/crimson.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".crimson-message-content blockquote",
-      "css": 1,
-      "js": 25,
-      "html": 0,
-      "total": 26,
-      "files": {
-        "css": [
-          "src/managers/crimson/crimson.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".crimson-message-content h6",
-      "css": 1,
-      "js": 25,
-      "html": 0,
-      "total": 26,
-      "files": {
-        "css": [
-          "src/managers/crimson/crimson.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".crimson-message-content hr",
-      "css": 1,
-      "js": 25,
-      "html": 0,
-      "total": 26,
-      "files": {
-        "css": [
-          "src/managers/crimson/crimson.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".crimson-message-content li",
-      "css": 1,
-      "js": 25,
-      "html": 0,
-      "total": 26,
-      "files": {
-        "css": [
-          "src/managers/crimson/crimson.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".crimson-message-content li:last-child",
-      "css": 1,
-      "js": 25,
-      "html": 0,
-      "total": 26,
-      "files": {
-        "css": [
-          "src/managers/crimson/crimson.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".crimson-message-content p",
-      "css": 1,
-      "js": 25,
-      "html": 0,
-      "total": 26,
-      "files": {
-        "css": [
-          "src/managers/crimson/crimson.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".crimson-message-content p br",
-      "css": 1,
-      "js": 25,
-      "html": 0,
-      "total": 26,
-      "files": {
-        "css": [
-          "src/managers/crimson/crimson.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".crimson-message-content p br:last-child",
-      "css": 1,
-      "js": 25,
-      "html": 0,
-      "total": 26,
-      "files": {
-        "css": [
-          "src/managers/crimson/crimson.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".crimson-message-content p:last-child",
-      "css": 1,
-      "js": 25,
-      "html": 0,
-      "total": 26,
-      "files": {
-        "css": [
-          "src/managers/crimson/crimson.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".crimson-message-content pre",
-      "css": 1,
-      "js": 25,
-      "html": 0,
-      "total": 26,
-      "files": {
-        "css": [
-          "src/managers/crimson/crimson.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".crimson-message-content table",
-      "css": 1,
-      "js": 25,
-      "html": 0,
-      "total": 26,
-      "files": {
-        "css": [
-          "src/managers/crimson/crimson.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".crimson-message-content td",
-      "css": 1,
-      "js": 25,
-      "html": 0,
-      "total": 26,
-      "files": {
-        "css": [
-          "src/managers/crimson/crimson.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".crimson-message-content th",
-      "css": 1,
-      "js": 25,
-      "html": 0,
-      "total": 26,
-      "files": {
-        "css": [
-          "src/managers/crimson/crimson.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".crimson-message-content tr:first-child th:first-child",
-      "css": 1,
-      "js": 25,
-      "html": 0,
-      "total": 26,
-      "files": {
-        "css": [
-          "src/managers/crimson/crimson.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".crimson-message-content tr:first-child th:last-child",
-      "css": 1,
-      "js": 25,
-      "html": 0,
-      "total": 26,
-      "files": {
-        "css": [
-          "src/managers/crimson/crimson.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".crimson-message-content tr:last-child td:first-child",
-      "css": 1,
-      "js": 25,
-      "html": 0,
-      "total": 26,
-      "files": {
-        "css": [
-          "src/managers/crimson/crimson.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".crimson-message-content tr:last-child td:last-child",
-      "css": 1,
-      "js": 25,
-      "html": 0,
-      "total": 26,
-      "files": {
-        "css": [
-          "src/managers/crimson/crimson.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".crimson-message-content tr:nth-child(even)",
-      "css": 1,
-      "js": 25,
-      "html": 0,
-      "total": 26,
-      "files": {
-        "css": [
-          "src/managers/crimson/crimson.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".crimson-message-content ul",
-      "css": 1,
-      "js": 25,
-      "html": 0,
-      "total": 26,
-      "files": {
-        "css": [
-          "src/managers/crimson/crimson.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".crimson-message-user",
-      "css": 1,
-      "js": 18,
-      "html": 0,
-      "total": 19,
-      "files": {
-        "css": [
-          "src/managers/crimson/crimson.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".crimson-message-user .crimson-followup-btn",
-      "css": 1,
-      "js": 19,
-      "html": 0,
-      "total": 20,
-      "files": {
-        "css": [
-          "src/managers/crimson/crimson.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".crimson-message-user .crimson-followup-btn:hover",
-      "css": 1,
-      "js": 19,
-      "html": 0,
-      "total": 20,
-      "files": {
-        "css": [
-          "src/managers/crimson/crimson.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".crimson-message-user .crimson-followup-icon",
-      "css": 1,
-      "js": 19,
-      "html": 0,
-      "total": 20,
-      "files": {
-        "css": [
-          "src/managers/crimson/crimson.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".crimson-message-user .crimson-followups",
-      "css": 1,
-      "js": 20,
-      "html": 0,
-      "total": 21,
-      "files": {
-        "css": [
-          "src/managers/crimson/crimson.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".crimson-message-user .crimson-message-avatar",
-      "css": 1,
-      "js": 22,
-      "html": 0,
-      "total": 23,
-      "files": {
-        "css": [
-          "src/managers/crimson/crimson.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".crimson-message-user .crimson-message-content",
-      "css": 1,
-      "js": 25,
-      "html": 0,
-      "total": 26,
-      "files": {
-        "css": [
-          "src/managers/crimson/crimson.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".crimson-message-waiting",
       "css": 1,
       "js": 21,
       "html": 0,
@@ -3771,11 +3862,507 @@
       }
     },
     {
+      "selector": ".crimson-message-agent .crimson-message-avatar",
+      "css": 1,
+      "js": 26,
+      "html": 0,
+      "total": 27,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-message-agent .crimson-message-content",
+      "css": 1,
+      "js": 28,
+      "html": 0,
+      "total": 29,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-message-avatar",
+      "css": 1,
+      "js": 24,
+      "html": 0,
+      "total": 25,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-message-content",
+      "css": 1,
+      "js": 26,
+      "html": 0,
+      "total": 27,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-message-content blockquote",
+      "css": 1,
+      "js": 26,
+      "html": 0,
+      "total": 27,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-message-content h6",
+      "css": 1,
+      "js": 26,
+      "html": 0,
+      "total": 27,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-message-content hr",
+      "css": 1,
+      "js": 26,
+      "html": 0,
+      "total": 27,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-message-content li",
+      "css": 1,
+      "js": 26,
+      "html": 0,
+      "total": 27,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-message-content li:last-child",
+      "css": 1,
+      "js": 26,
+      "html": 0,
+      "total": 27,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-message-content p",
+      "css": 1,
+      "js": 26,
+      "html": 0,
+      "total": 27,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-message-content p br",
+      "css": 1,
+      "js": 26,
+      "html": 0,
+      "total": 27,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-message-content p br:last-child",
+      "css": 1,
+      "js": 26,
+      "html": 0,
+      "total": 27,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-message-content p:last-child",
+      "css": 1,
+      "js": 26,
+      "html": 0,
+      "total": 27,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-message-content pre",
+      "css": 1,
+      "js": 26,
+      "html": 0,
+      "total": 27,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-message-content table",
+      "css": 1,
+      "js": 26,
+      "html": 0,
+      "total": 27,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-message-content td",
+      "css": 1,
+      "js": 26,
+      "html": 0,
+      "total": 27,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-message-content th",
+      "css": 1,
+      "js": 26,
+      "html": 0,
+      "total": 27,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-message-content tr:first-child th:first-child",
+      "css": 1,
+      "js": 26,
+      "html": 0,
+      "total": 27,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-message-content tr:first-child th:last-child",
+      "css": 1,
+      "js": 26,
+      "html": 0,
+      "total": 27,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-message-content tr:last-child td:first-child",
+      "css": 1,
+      "js": 26,
+      "html": 0,
+      "total": 27,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-message-content tr:last-child td:last-child",
+      "css": 1,
+      "js": 26,
+      "html": 0,
+      "total": 27,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-message-content tr:nth-child(even)",
+      "css": 1,
+      "js": 26,
+      "html": 0,
+      "total": 27,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-message-content ul",
+      "css": 1,
+      "js": 26,
+      "html": 0,
+      "total": 27,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-message-user",
+      "css": 1,
+      "js": 19,
+      "html": 0,
+      "total": 20,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-message-user .crimson-followup-btn",
+      "css": 1,
+      "js": 20,
+      "html": 0,
+      "total": 21,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-message-user .crimson-followup-btn:hover",
+      "css": 1,
+      "js": 20,
+      "html": 0,
+      "total": 21,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-message-user .crimson-followup-icon",
+      "css": 1,
+      "js": 20,
+      "html": 0,
+      "total": 21,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-message-user .crimson-followups",
+      "css": 1,
+      "js": 21,
+      "html": 0,
+      "total": 22,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-message-user .crimson-message-avatar",
+      "css": 1,
+      "js": 24,
+      "html": 0,
+      "total": 25,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-message-user .crimson-message-content",
+      "css": 1,
+      "js": 26,
+      "html": 0,
+      "total": 27,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".crimson-message-waiting",
+      "css": 1,
+      "js": 22,
+      "html": 0,
+      "total": 23,
+      "files": {
+        "css": [
+          "src/managers/crimson/crimson.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": []
+      }
+    },
+    {
       "selector": ".crimson-message-waiting .spinner-fancy-sm",
       "css": 1,
-      "js": 27,
+      "js": 28,
       "html": 1,
-      "total": 29,
+      "total": 30,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -3810,9 +4397,9 @@
     {
       "selector": ".crimson-overlay.visible",
       "css": 1,
-      "js": 69,
+      "js": 71,
       "html": 0,
-      "total": 70,
+      "total": 72,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -3989,9 +4576,9 @@
     {
       "selector": ".crimson-popup.visible",
       "css": 1,
-      "js": 69,
+      "js": 71,
       "html": 0,
-      "total": 70,
+      "total": 72,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -4510,9 +5097,9 @@
     {
       "selector": ".crimson-streaming .crimson-message-content",
       "css": 1,
-      "js": 30,
+      "js": 31,
       "html": 0,
-      "total": 31,
+      "total": 32,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -5205,9 +5792,9 @@
     {
       "selector": ".font-popup-style-btn.active",
       "css": 1,
-      "js": 36,
+      "js": 38,
       "html": 7,
-      "total": 44,
+      "total": 46,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -5249,9 +5836,9 @@
     {
       "selector": ".font-popup.visible",
       "css": 1,
-      "js": 68,
+      "js": 70,
       "html": 0,
-      "total": 69,
+      "total": 71,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -5362,9 +5949,9 @@
     {
       "selector": ".footer-export-popup.visible",
       "css": 1,
-      "js": 68,
+      "js": 70,
       "html": 0,
-      "total": 69,
+      "total": 71,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -7440,9 +8027,9 @@
     {
       "selector": ".lithium-col-chooser-popup.visible",
       "css": 1,
-      "js": 68,
+      "js": 70,
       "html": 0,
-      "total": 69,
+      "total": 71,
       "files": {
         "css": [
           "src/core/lithium-table.css"
@@ -8029,9 +8616,9 @@
     {
       "selector": ".lithium-nav-popup.visible",
       "css": 1,
-      "js": 75,
+      "js": 77,
       "html": 0,
-      "total": 76,
+      "total": 78,
       "files": {
         "css": [
           "src/core/lithium-table.css"
@@ -10194,9 +10781,9 @@
     {
       "selector": ".login-container.visible",
       "css": 2,
-      "js": 69,
+      "js": 71,
       "html": 1,
-      "total": 72,
+      "total": 74,
       "files": {
         "css": [
           "src/managers/login/login.css",
@@ -10265,9 +10852,9 @@
     {
       "selector": ".login-error.visible",
       "css": 2,
-      "js": 70,
+      "js": 72,
       "html": 1,
-      "total": 73,
+      "total": 75,
       "files": {
         "css": [
           "src/managers/login/login.css",
@@ -10871,9 +11458,9 @@
     {
       "selector": ".login-mockup .login-error.visible",
       "css": 1,
-      "js": 71,
+      "js": 73,
       "html": 1,
-      "total": 73,
+      "total": 75,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -11173,9 +11760,9 @@
     {
       "selector": ".login-subpanel.visible",
       "css": 1,
-      "js": 68,
+      "js": 70,
       "html": 4,
-      "total": 73,
+      "total": 75,
       "files": {
         "css": [
           "src/styles/layout.css"
@@ -11356,9 +11943,9 @@
     {
       "selector": ".logout-overlay.visible",
       "css": 1,
-      "js": 68,
+      "js": 70,
       "html": 1,
-      "total": 70,
+      "total": 72,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -11556,9 +12143,9 @@
     {
       "selector": ".logout-panel.visible",
       "css": 1,
-      "js": 68,
+      "js": 70,
       "html": 4,
-      "total": 73,
+      "total": 75,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -11767,9 +12354,9 @@
     {
       "selector": ".lookups-footer-export-popup.visible",
       "css": 1,
-      "js": 70,
+      "js": 72,
       "html": 0,
-      "total": 71,
+      "total": 73,
       "files": {
         "css": [
           "src/managers/lookups/lookups.css"
@@ -12340,9 +12927,9 @@
     {
       "selector": ".lookups-tab-btn.active",
       "css": 1,
-      "js": 38,
+      "js": 40,
       "html": 10,
-      "total": 49,
+      "total": 51,
       "files": {
         "css": [
           "src/managers/lookups/lookups.css"
@@ -12424,9 +13011,9 @@
     {
       "selector": ".lookups-tab-pane.active",
       "css": 1,
-      "js": 37,
+      "js": 39,
       "html": 10,
-      "total": 48,
+      "total": 50,
       "files": {
         "css": [
           "src/managers/lookups/lookups.css"
@@ -13155,9 +13742,9 @@
     {
       "selector": ".manager-font-popup-style-btn.active",
       "css": 1,
-      "js": 50,
+      "js": 52,
       "html": 7,
-      "total": 58,
+      "total": 60,
       "files": {
         "css": [
           "src/core/manager-ui.css"
@@ -13201,9 +13788,9 @@
     {
       "selector": ".manager-font-popup.visible",
       "css": 1,
-      "js": 80,
+      "js": 82,
       "html": 0,
-      "total": 81,
+      "total": 83,
       "files": {
         "css": [
           "src/core/manager-ui.css"
@@ -13768,9 +14355,9 @@
     {
       "selector": ".manager-transition-overlay.active",
       "css": 1,
-      "js": 37,
+      "js": 39,
       "html": 7,
-      "total": 45,
+      "total": 47,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -14136,9 +14723,9 @@
     {
       "selector": ".manager-ui-popup.visible",
       "css": 1,
-      "js": 87,
+      "js": 89,
       "html": 0,
-      "total": 88,
+      "total": 90,
       "files": {
         "css": [
           "src/core/manager-ui.css"
@@ -14543,9 +15130,9 @@
     {
       "selector": ".menu-item.active",
       "css": 1,
-      "js": 43,
+      "js": 45,
       "html": 7,
-      "total": 51,
+      "total": 53,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -14573,9 +15160,9 @@
     {
       "selector": ".menu-item.active .menu-item-count",
       "css": 1,
-      "js": 44,
+      "js": 46,
       "html": 7,
-      "total": 52,
+      "total": 54,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -15414,9 +16001,9 @@
     {
       "selector": ".nav-popup.visible",
       "css": 1,
-      "js": 68,
+      "js": 70,
       "html": 0,
-      "total": 69,
+      "total": 71,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -15547,9 +16134,9 @@
     {
       "selector": ".offline-indicator.visible",
       "css": 1,
-      "js": 69,
+      "js": 71,
       "html": 0,
-      "total": 70,
+      "total": 72,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -16664,9 +17251,9 @@
     {
       "selector": ".queries-footer-export-popup.visible",
       "css": 1,
-      "js": 70,
+      "js": 72,
       "html": 0,
-      "total": 71,
+      "total": 73,
       "files": {
         "css": [
           "src/managers/queries/queries.css"
@@ -17355,9 +17942,9 @@
     {
       "selector": ".queries-tab-btn.active",
       "css": 1,
-      "js": 39,
+      "js": 41,
       "html": 12,
-      "total": 52,
+      "total": 54,
       "files": {
         "css": [
           "src/managers/queries/queries.css"
@@ -17439,9 +18026,9 @@
     {
       "selector": ".queries-tab-pane.active",
       "css": 1,
-      "js": 37,
+      "js": 39,
       "html": 12,
-      "total": 50,
+      "total": 52,
       "files": {
         "css": [
           "src/managers/queries/queries.css"
@@ -18326,9 +18913,9 @@
     {
       "selector": ".sidebar-icon-btn.active",
       "css": 1,
-      "js": 39,
+      "js": 41,
       "html": 12,
-      "total": 52,
+      "total": 54,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -18358,9 +18945,9 @@
     {
       "selector": ".sidebar-icon-btn.active:hover",
       "css": 1,
-      "js": 39,
+      "js": 41,
       "html": 12,
-      "total": 52,
+      "total": 54,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -18977,9 +19564,9 @@
     {
       "selector": ".sidebar-menu-btn.active",
       "css": 1,
-      "js": 39,
+      "js": 41,
       "html": 8,
-      "total": 48,
+      "total": 50,
       "files": {
         "css": [
           "src/styles/layout.css"
@@ -19082,9 +19669,9 @@
     {
       "selector": ".sidebar-overlay.visible",
       "css": 1,
-      "js": 70,
+      "js": 72,
       "html": 1,
-      "total": 72,
+      "total": 74,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -19921,9 +20508,9 @@
     {
       "selector": ".style-editor-toolbar .style-state-btn.active",
       "css": 1,
-      "js": 37,
+      "js": 39,
       "html": 13,
-      "total": 51,
+      "total": 53,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -20095,9 +20682,9 @@
     {
       "selector": ".style-font-popup-style-btn.active",
       "css": 1,
-      "js": 36,
+      "js": 38,
       "html": 7,
-      "total": 44,
+      "total": 46,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -20139,9 +20726,9 @@
     {
       "selector": ".style-font-popup.visible",
       "css": 1,
-      "js": 68,
+      "js": 70,
       "html": 0,
-      "total": 69,
+      "total": 71,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -20232,9 +20819,9 @@
     {
       "selector": ".style-footer-export-popup.visible",
       "css": 1,
-      "js": 70,
+      "js": 72,
       "html": 0,
-      "total": 71,
+      "total": 73,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -20293,9 +20880,9 @@
     {
       "selector": ".style-json-view.active",
       "css": 1,
-      "js": 36,
+      "js": 38,
       "html": 8,
-      "total": 45,
+      "total": 47,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -20505,9 +21092,9 @@
     {
       "selector": ".style-mode-btn.active",
       "css": 1,
-      "js": 36,
+      "js": 38,
       "html": 9,
-      "total": 46,
+      "total": 48,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -20817,9 +21404,9 @@
     {
       "selector": ".style-section-view.active",
       "css": 1,
-      "js": 36,
+      "js": 38,
       "html": 8,
-      "total": 45,
+      "total": 47,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -20957,9 +21544,9 @@
     {
       "selector": ".style-target-circle.active",
       "css": 1,
-      "js": 38,
+      "js": 40,
       "html": 7,
-      "total": 46,
+      "total": 48,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -21470,9 +22057,9 @@
     {
       "selector": ".tab-btn.active",
       "css": 1,
-      "js": 36,
+      "js": 38,
       "html": 7,
-      "total": 44,
+      "total": 46,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -21544,9 +22131,9 @@
     {
       "selector": ".tab-pane.active",
       "css": 1,
-      "js": 36,
+      "js": 38,
       "html": 7,
-      "total": 44,
+      "total": 46,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -22060,9 +22647,9 @@
     {
       "selector": ".tabulator-simple .tabulator-page.active",
       "css": 1,
-      "js": 36,
+      "js": 38,
       "html": 7,
-      "total": 44,
+      "total": 46,
       "files": {
         "css": [
           "src/init/tabulator-simple.css"
@@ -23516,9 +24103,9 @@
     {
       "selector": ".toast.visible",
       "css": 1,
-      "js": 96,
+      "js": 98,
       "html": 2,
-      "total": 99,
+      "total": 101,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -23606,9 +24193,9 @@
     {
       "selector": ".transition-overlay.active",
       "css": 1,
-      "js": 36,
+      "js": 38,
       "html": 8,
-      "total": 45,
+      "total": 47,
       "files": {
         "css": [
           "src/styles/layout.css"
@@ -23745,9 +24332,9 @@
     {
       "selector": ".version-footer-export-popup.visible",
       "css": 1,
-      "js": 70,
+      "js": 72,
       "html": 0,
-      "total": 71,
+      "total": 73,
       "files": {
         "css": [
           "src/managers/version-history/version-history.css"
@@ -24400,9 +24987,9 @@
     {
       "selector": ".zoom-popup-detent.active .zoom-popup-detent-mark",
       "css": 1,
-      "js": 67,
+      "js": 69,
       "html": 7,
-      "total": 75,
+      "total": 77,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -25185,9 +25772,9 @@
     {
       "selector": "#main-layout.visible",
       "css": 1,
-      "js": 68,
+      "js": 70,
       "html": 0,
-      "total": 69,
+      "total": 71,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -25230,9 +25817,9 @@
     {
       "selector": "#profile-manager-page.visible",
       "css": 1,
-      "js": 68,
+      "js": 70,
       "html": 0,
-      "total": 69,
+      "total": 71,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -25259,9 +25846,9 @@
     {
       "selector": "#session-log-page.visible",
       "css": 1,
-      "js": 68,
+      "js": 70,
       "html": 0,
-      "total": 69,
+      "total": 71,
       "files": {
         "css": [
           "src/managers/session-log/session-log.css"

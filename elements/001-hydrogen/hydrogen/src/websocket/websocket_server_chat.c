@@ -40,7 +40,7 @@ static void send_chat_error(struct lws *wsi, const char* error_message, const ch
 static void send_chat_done(struct lws *wsi, const char* request_id, const char* content,
                            const char* model, const char* finish_reason,
                            int prompt_tokens, int completion_tokens, int total_tokens,
-                           double response_time_ms);
+                           double response_time_ms, json_t* raw_response);
 static __attribute__((unused)) void send_chat_chunk(struct lws *wsi, const char* request_id, const char* content,
                             const char* reasoning_content, const char* model, int index, const char* finish_reason);
 
@@ -109,37 +109,43 @@ static void send_stream_chunk(StreamContext* ctx, const char* content,
 // Helper: Build and send a chat done message directly to the WebSocket
 static void send_stream_done(StreamContext* ctx, const char* finish_reason,
                              int prompt_tokens, int completion_tokens, int total_tokens,
-                             double response_time_ms) {
+                             double response_time_ms, json_t* raw_response) {
     if (!ctx || !ctx->wsi) return;
-    
+
     // Check connection validity before writing
     if (ctx->connection_valid && !*ctx->connection_valid) {
         return;  // Connection closed, don't write
     }
-    
+
     json_t* response = json_object();
     json_object_set_new(response, "type", json_string("chat_done"));
     if (ctx->request_id) {
         json_object_set_new(response, "id", json_string(ctx->request_id));
     }
-    
+
     json_t* result = json_object();
     json_object_set_new(result, "content", json_string(""));
     if (ctx->model) json_object_set_new(result, "model", json_string(ctx->model));
     if (finish_reason) json_object_set_new(result, "finish_reason", json_string(finish_reason));
-    
+
     json_t* tokens = json_object();
     json_object_set_new(tokens, "prompt", json_integer(prompt_tokens));
     json_object_set_new(tokens, "completion", json_integer(completion_tokens));
     json_object_set_new(tokens, "total", json_integer(total_tokens));
     json_object_set_new(result, "tokens", tokens);
-    
+
     json_object_set_new(result, "response_time_ms", json_real(response_time_ms));
+
+    // Include the full raw provider response for transparency
+    if (raw_response) {
+        json_object_set(result, "raw_provider_response", raw_response);
+    }
+
     json_object_set_new(response, "result", result);
-    
+
     char* json_str = json_dumps(response, JSON_COMPACT);
     json_decref(response);
-    
+
     if (json_str) {
         // Write may fail if connection is closing - that's OK
         ws_write_raw_data(ctx->wsi, json_str, strlen(json_str));
@@ -184,7 +190,7 @@ __attribute__((unused)) static void stream_chunk_callback(const ChatStreamChunk*
         send_stream_done(ctx,
                         ctx->finish_reason ? ctx->finish_reason : "stop",
                         0, 0, 0,  // Token counts not available in streaming mode
-                        elapsed_ms);
+                        elapsed_ms, NULL);  // Raw response not available in streaming callback
         
         // Log streaming summary
         log_this(SR_WEBSOCKET_CHAT, "Stream complete: %d chunks, %.0fms, finish=%s",
@@ -634,7 +640,7 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
         // Send chat_done
         send_chat_done(wsi, request_id, parsed->content, parsed->model, parsed->finish_reason,
                        parsed->prompt_tokens, parsed->completion_tokens, parsed->total_tokens,
-                       response_time_ms);
+                       response_time_ms, parsed->raw_response);
         
         // Log that final response was sent to client
         log_this(SR_WEBSOCKET_CHAT, "Final response sent to client for request %s (%.0fms total, %zu bytes content)", 
@@ -757,30 +763,37 @@ static void send_chat_error(struct lws *wsi, const char* error_message, const ch
     json_decref(response);
 }
 
-static void send_chat_done(struct lws *wsi, const char* request_id, const char* content, 
+static void send_chat_done(struct lws *wsi, const char* request_id, const char* content,
                            const char* model, const char* finish_reason,
                            int prompt_tokens, int completion_tokens, int total_tokens,
-                           double response_time_ms) {
+                           double response_time_ms, json_t* raw_response) {
     json_t* response = json_object();
     json_object_set_new(response, "type", json_string("chat_done"));
     if (request_id) {
         json_object_set_new(response, "id", json_string(request_id));
     }
-    
+
     json_t* result = json_object();
     json_object_set_new(result, "content", json_string(content ? content : ""));
     if (model) json_object_set_new(result, "model", json_string(model));
     if (finish_reason) json_object_set_new(result, "finish_reason", json_string(finish_reason));
-    
+
     json_t* tokens = json_object();
     json_object_set_new(tokens, "prompt", json_integer(prompt_tokens));
     json_object_set_new(tokens, "completion", json_integer(completion_tokens));
     json_object_set_new(tokens, "total", json_integer(total_tokens));
     json_object_set_new(result, "tokens", tokens);
-    
+
     json_object_set_new(result, "response_time_ms", json_real(response_time_ms));
+
+    // Include the full raw provider response for transparency
+    // This allows clients to access new fields as models evolve
+    if (raw_response) {
+        json_object_set(result, "raw_provider_response", raw_response);
+    }
+
     json_object_set_new(response, "result", result);
-    
+
     ws_write_json_response(wsi, response);
     json_decref(response);
 }
