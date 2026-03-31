@@ -768,7 +768,9 @@
 }
 
 .crimson-welcome-icon {
-  margin-bottom: var(--space-4);
+  margin-bottom: -30px;
+  color: var(--accent-crimson);
+  font-size: 128px;
 }
 
 .crimson-welcome-text {

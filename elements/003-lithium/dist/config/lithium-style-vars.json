@@ -1,22 +1,22 @@
 {
   "_meta": {
     "description": "CSS custom properties (variables) used across the Lithium codebase",
-    "generated": "2026-03-30T20:34:09.918Z",
+    "generated": "2026-03-31T01:45:33.110Z",
     "sources": {
       "css": "47 files in src/**/*.css",
       "js": "76 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
     "total_variables": 143,
-    "total_occurrences": 3003
+    "total_occurrences": 3009
   },
   "variables": [
     {
       "name": "--accent-crimson",
-      "css": 4,
+      "css": 5,
       "js": 0,
       "html": 0,
-      "total": 4
+      "total": 5
     },
     {
       "name": "--accent-crimson-eyes",
@@ -27,17 +27,17 @@
     },
     {
       "name": "--accent-danger",
-      "css": 25,
+      "css": 26,
       "js": 0,
       "html": 0,
-      "total": 25
+      "total": 26
     },
     {
       "name": "--accent-danger-hover",
-      "css": 3,
+      "css": 4,
       "js": 0,
       "html": 0,
-      "total": 3
+      "total": 4
     },
     {
       "name": "--accent-disabled",
@@ -55,10 +55,10 @@
     },
     {
       "name": "--accent-hover",
-      "css": 33,
+      "css": 32,
       "js": 0,
       "html": 0,
-      "total": 33
+      "total": 32
     },
     {
       "name": "--accent-info",
@@ -111,24 +111,24 @@
     },
     {
       "name": "--accent-success",
-      "css": 14,
+      "css": 15,
       "js": 0,
       "html": 0,
-      "total": 14
+      "total": 15
     },
     {
       "name": "--accent-success-hover",
-      "css": 4,
+      "css": 5,
       "js": 0,
       "html": 0,
-      "total": 4
+      "total": 5
     },
     {
       "name": "--accent-toggle",
-      "css": 6,
+      "css": 5,
       "js": 0,
       "html": 0,
-      "total": 6
+      "total": 5
     },
     {
       "name": "--accent-warning",
@@ -713,10 +713,10 @@
     },
     {
       "name": "--space-4",
-      "css": 101,
+      "css": 100,
       "js": 0,
       "html": 0,
-      "total": 101
+      "total": 100
     },
     {
       "name": "--space-5",
@@ -930,10 +930,10 @@
     },
     {
       "name": "--transition-duration",
-      "css": 41,
+      "css": 45,
       "js": 8,
       "html": 0,
-      "total": 49
+      "total": 53
     },
     {
       "name": "--transition-fast",

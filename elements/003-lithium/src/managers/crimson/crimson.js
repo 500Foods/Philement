@@ -86,7 +86,7 @@ export function createCrimsonButton(tooltip = 'Chat with Crimson (Ctrl+Shift+C)'
   button.type = 'button';
   button.className = 'subpanel-header-btn subpanel-header-close crimson-btn';
   button.title = tooltip;
-  button.innerHTML = '<img height=33 src="/assets/images/crimson.svg/>';
+  button.innerHTML = '<i class="fa-kit-duotone fa-crimson"></i>';
 
   button.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -275,7 +275,7 @@ class CrimsonManager {
       <div class="crimson-header">
         <div class="subpanel-header-group">
           <button type="button" class="crimson-header-primary">
-              <img height=33 src="/assets/images/crimson.svg"/>
+            <i class="fa-kit-duotone fa-crimson"></i>
             <span>Chat with Crimson</span>
           </button>
           <button type="button" class="crimson-status-placeholder" disabled>
@@ -306,7 +306,7 @@ class CrimsonManager {
       <div class="crimson-conversation">
         <div class="crimson-welcome">
           <div class="crimson-welcome-icon">
-            <img height=125 src="/assets/images/crimson.svg"/>
+            <i class="fa-kit-duotone fa-crimson"></i>
           </div>
           <div class="crimson-welcome-text">Hello, <span class="crimson-username">User</span>!</div>
           <div class="crimson-welcome-hint">How can I help you today?</div>
@@ -576,7 +576,7 @@ class CrimsonManager {
       this.conversation.innerHTML = `
         <div class="crimson-welcome crimson-welcome-fade-in">
           <div class="crimson-welcome-icon">
-            <img height=125 src="/assets/images/crimson.svg"/>
+            <i class="fa-kit-duotone fa-crimson"></i>
           </div>
           <div class="crimson-welcome-text">Hello, <span class="crimson-username">${this.escapeHtml(this.username)}</span>!</div>
           <div class="crimson-welcome-hint">How can I help you today?</div>
@@ -1056,7 +1056,7 @@ class CrimsonManager {
 
     const avatar = sender === 'agent'
       ? `<div class="crimson-message-avatar">
-          <img height=33 src="/assets/images/crimson.svg"/>
+          <i class="fa-kit-duotone fa-crimson"></i>
         </div>`
       : '<div class="crimson-message-avatar"><fa fa-user></fa></div>';
 
@@ -1083,7 +1083,7 @@ class CrimsonManager {
     indicator.className = 'crimson-message crimson-message-agent crimson-typing-indicator';
     indicator.innerHTML = `
       <div class="crimson-message-avatar">
-        <img height=33 src="/assets/images/crimson.svg"/>
+        <i class="fa-kit-duotone fa-crimson"></i>
       </div>
       <div class="crimson-message-content">
         <div class="crimson-typing">
@@ -1650,7 +1650,7 @@ class CrimsonManager {
     messageEl.className = 'crimson-message crimson-message-agent crimson-streaming crimson-waiting';
     messageEl.innerHTML = `
       <div class="crimson-message-avatar">
-        <img height=33 src="/assets/images/crimson.svg"/>
+       <i class="fa-kit-duotone fa-crimson"></i>
       </div>
       <div class="crimson-message-waiting">
         <div class="spinner-fancy spinner-fancy-sm"></div>

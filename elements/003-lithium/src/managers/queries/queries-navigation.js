@@ -247,11 +247,20 @@ export class NavigationManager {
   }
 
   /**
-   * Handle save button click
+   * Handle save button click.
+   * 
+   * We ALWAYS regenerate and compare snapshots here because we don't trust
+   * change events - they may have been missed or may not fire for all edits.
+   * This is the definitive "is there anything to save?" check.
    */
   async handleNavSave() {
     const mgr = this.manager;
-    if (!mgr.table || !mgr.dirtyTracker.isAnyDirty()) {
+    
+    // Always refresh dirty state by comparing editors to snapshots
+    // Change events are just triggers - we verify here before saving
+    const isDirty = mgr.dirtyTracker.refreshDirtyState();
+    
+    if (!mgr.table || !isDirty) {
       toast.info('No Changes', { description: 'Nothing to save', duration: 3000 });
       return;
     }
