@@ -1,5 +1,0 @@
-The creator of this course, your Instructor, is also the creator of the Lithium project. And the Hydrogen project. So you\'re in good hands, at least in terms of being knowledgable about the material!
-
-Andrew Simard started the Philement project, of which Lithium and Hydrogen are key elements, starting around the middle of 2024, in response to having a great dislike for the  Klipper software running on his 3D printer. Along the way, he realized this project was also well-aligned with his regular job - designing traditional Windows client/server software for commercial greenhouses. This doesn\'t seem to be an obvious source of synergy, but it turns out that writing applications tailored for a Kubernetes environment (DigitalOcean\'s DOKS in this case) is a lot like writing software for under-powered Raspberry Pi-level hardware. Individual Kubernetes pods are typically sized to be about the same in terms of resources, so a lot of the constraints apply equally well.
-
-Andrew and his two black cats, Scarlett and Crimson, live in Vancouver, British Columbia, Canada.
