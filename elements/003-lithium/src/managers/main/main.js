@@ -1507,6 +1507,7 @@ export default class MainManager {
         button.dataset.managerId = item.managerId;
         const itemName = item.name || `Manager ${item.managerId}`;
         button.dataset.tooltip = itemName;
+        button.dataset.tipWhen = 'collapsed';
         // Build HTML without extra whitespace to avoid parsing issues
         let htmlContent = item.iconHtml || '<fa fa-cube></fa>';
         htmlContent += `<span class="menu-item-name">${itemName}</span>`;
@@ -1551,6 +1552,7 @@ export default class MainManager {
       button.className = 'menu-item';
       button.dataset.managerId = managerId;
       button.dataset.tooltip = managerInfo.name;
+      button.dataset.tipWhen = 'collapsed';
       button.innerHTML = `${managerInfo.iconHtml}<span class="menu-item-name">${managerInfo.name}</span>`;
 
       button.addEventListener('click', () => {
