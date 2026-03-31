@@ -53,7 +53,7 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2026-03-31 17:42:29 UTC
+Last updated at 2026-03-31 18:01:44 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
@@ -64,7 +64,7 @@ Text                           183            181              0          68508
 Markdown                       653          23506            197          63204
 HTML                            87            465            186          58319
 Lua                            187           4463           3473          31007
-JavaScript                     157           5826           7249          26674
+JavaScript                     157           5827           7250          26679
 Bourne Shell                   117           5681          80056          26454
 CSS                             93           1653            944           8980
 C/C++ Header                   231           2655           7374           7790
@@ -78,7 +78,7 @@ Delphi Form                      1              1              0             43
 YAML                             2              8             13             37
 Pascal                           2             11              2             31
 -------------------------------------------------------------------------------
-SUM:                          3274          92967         148307        1444440
+SUM:                          3274          92968         148308        1444445
 -------------------------------------------------------------------------------
 760 Files were skipped (duplicate, binary, or without source code):
   svg: 574
