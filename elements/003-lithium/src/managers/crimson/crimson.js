@@ -19,6 +19,7 @@ import { formatLogText } from '../../shared/log-formatter.js';
 import { getCrimsonWS } from '../../shared/crimson-ws.js';
 import { getAppWS, isAppWSConnected } from '../../shared/app-ws.js';
 import { getTip, initTooltips } from '../../core/tooltip-api.js';
+import { registerShortcut } from '../../core/manager-ui.js';
 import './crimson.css';
 
 // Singleton instance tracking
@@ -82,11 +83,12 @@ export function toggleCrimson(options = {}) {
  * @param {string} [tooltip] - Custom tooltip text
  * @returns {HTMLButtonElement} The configured button element
  */
-export function createCrimsonButton(tooltip = 'Chat with Crimson (Ctrl+Shift+C)') {
+export function createCrimsonButton(tooltip = 'Chat with Crimson') {
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'subpanel-header-btn subpanel-header-close crimson-btn';
   button.setAttribute('data-tooltip', tooltip);
+  button.setAttribute('data-shortcut-id', 'crimson');
   button.innerHTML = '<i class="fa-kit-duotone fa-crimson"></i>';
 
   button.addEventListener('click', (e) => {
@@ -107,6 +109,9 @@ export function createCrimsonButton(tooltip = 'Chat with Crimson (Ctrl+Shift+C)'
  */
 export function initCrimsonShortcut() {
   if (globalKeyHandler) return; // Already initialized
+
+  // Register with the shortcut system so tooltips get the key combo
+  registerShortcut('crimson', 'Ctrl+Shift+C', 'Toggle Crimson', () => toggleCrimson());
 
   globalKeyHandler = (e) => {
     // Ctrl+Shift+C to toggle Crimson
