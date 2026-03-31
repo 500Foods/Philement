@@ -22,6 +22,8 @@ cp /mnt/extra/Projects/Philement/README.md knowledge/PHILEMENT.md
 cp /mnt/extra/Projects/Philement/docs/H/README.md knowledge/HYDROGEN.md
 cp /mnt/extra/Projects/Philement/docs/He/README.md knowledge/HELIUM.md
 cp /mnt/extra/Projects/Philement/docs/V/README.md knowledge/VANADIUM.md
+cp /mnt/extra/Projects/Philement/elements/001-hydrogen/hydrogen/payloads/swagger.json knowledge/HYDROGEN-OPENAPI.json
+cp /mnt/extra/Projects/Philement/elements/002-helium/acuranzo/README.md knowledge/DATABASE-MIGRATIONS.md
 
 # Find the latest PH-003*.imscc file
 # shellcheck disable=SC2312

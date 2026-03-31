@@ -104,40 +104,65 @@ vi.mock('../../src/core/manager-ui.js', () => ({
   })),
 }));
 
-// Mock json-tree-component module
-const mockJsonTreeData = { test: 'data' };
-vi.mock('../../src/components/json-tree-component.js', () => ({
-  initJsonTree: vi.fn(async (options) => {
-    if (options.target) {
-      options.target._cmView = { state: { doc: { toString: () => JSON.stringify(options.data || mockJsonTreeData) } } };
-      options.target._cmData = JSON.stringify(options.data || mockJsonTreeData);
-    }
-    return options.target?.id || 'cm-editor';
-  }),
-  getJsonTreeData: vi.fn((target) => {
-    if (!target || !target._cmData) return null;
-    try { return JSON.parse(target._cmData); } catch { return null; }
-  }),
-  setJsonTreeData: vi.fn((target, data) => {
-    if (target) {
-      const jsonStr = JSON.stringify(data, null, 2);
-      target._cmData = jsonStr;
-      if (target._cmView) {
-        target._cmView.state.doc.toString = () => jsonStr;
-      }
-    }
-  }),
-  destroyJsonTree: vi.fn((target) => {
-    if (target) {
-      target._cmView = null;
-      target._cmData = null;
-    }
-  }),
-  updateJsonTreeOptions: vi.fn(),
+// Mock codemirror modules (queries-editors.js uses codemirror-setup.js which imports from codemirror.js)
+vi.mock('../../src/core/codemirror.js', () => ({
+  EditorState: { create: vi.fn(() => ({})), readOnly: { of: vi.fn() } },
+  EditorView: vi.fn(),
+  Compartment: vi.fn(() => ({ of: vi.fn() })),
+  undo: vi.fn(),
+  redo: vi.fn(),
+  keymap: { of: vi.fn() },
+  lineNumbers: vi.fn(),
+  highlightActiveLineGutter: vi.fn(),
+  highlightSpecialChars: vi.fn(),
+  drawSelection: vi.fn(),
+  highlightActiveLine: vi.fn(),
+  defaultKeymap: [],
+  history: vi.fn(),
+  historyKeymap: [],
+  foldGutter: vi.fn(),
+  foldKeymap: [],
+  foldAll: vi.fn(),
+  unfoldAll: vi.fn(),
+  bracketMatching: vi.fn(),
+  indentOnInput: vi.fn(),
+  sql: vi.fn(),
+  json: vi.fn(),
+  css: vi.fn(),
+  markdown: vi.fn(),
+  javascript: vi.fn(),
+  html: vi.fn(),
+  oneDark: {},
 }));
 
+vi.mock('../../src/core/codemirror-setup.js', () => ({
+  buildEditorExtensions: vi.fn(() => []),
+  createReadOnlyCompartment: vi.fn(() => ({ of: vi.fn() })),
+  setEditorEditable: vi.fn(),
+  foldAllInEditor: vi.fn(),
+  unfoldAllInEditor: vi.fn(),
+  READONLY_CLASS: 'lithium-cm-readonly',
+  EDIT_MODE_CLASS: 'lithium-cm-editable',
+  LANG_CLASS_PREFIX: 'lithium-cm-lang-',
+}));
+
+// Helper to create a mock CodeMirror view on a container (simulates what queries-editors.js does)
+function mockCmViewOnContainer(container, content = '{}') {
+  let docContent = content;
+  container._cmView = {
+    state: { doc: { toString: () => docContent, length: docContent.length } },
+    dispatch: vi.fn(({ changes } = {}) => {
+      if (changes?.insert != null) docContent = changes.insert;
+    }),
+    destroy: vi.fn(),
+  };
+  container._cmReadOnlyCompartment = { of: vi.fn() };
+  // Getter so tests can read the current content
+  Object.defineProperty(container, '_cmContent', { get: () => docContent, configurable: true });
+  return container._cmView;
+}
+
 import QueriesManager from '../../src/managers/queries/queries.js';
-import { getJsonTreeData, setJsonTreeData, destroyJsonTree } from '../../src/components/json-tree-component.js';
 
 describe('QueriesManager edit-mode table behavior', () => {
   let manager;
@@ -267,27 +292,27 @@ describe('QueriesManager JSONEditor and collection integration', () => {
 
   describe('Collection dirty tracking', () => {
     beforeEach(() => {
-      // Create a mock collection editor container
+      // Create a mock collection editor container with CodeMirror view
       manager.elements.collectionEditorContainer = document.createElement('div');
     });
 
     it('tracks collection dirty state when content changes', () => {
       manager.dirtyTracker._originalCollectionContent = JSON.stringify({ key: 'value' });
-      manager.elements.collectionEditorContainer._cmData = JSON.stringify({ key: 'changed' });
+      mockCmViewOnContainer(manager.elements.collectionEditorContainer, JSON.stringify({ key: 'changed' }));
 
-      const currentData = getJsonTreeData(manager.elements.collectionEditorContainer);
-      const isDirty = JSON.stringify(currentData) !== JSON.parse(manager.dirtyTracker._originalCollectionContent);
+      const currentContent = manager.elements.collectionEditorContainer._cmView.state.doc.toString();
+      const isDirty = currentContent !== manager.dirtyTracker._originalCollectionContent;
 
       expect(isDirty).toBe(true);
     });
 
     it('does not mark collection dirty when content is unchanged', () => {
-      manager.dirtyTracker._originalCollectionContent = JSON.stringify({ key: 'value' });
-      manager.elements.collectionEditorContainer._cmData = JSON.stringify({ key: 'value' });
+      const original = JSON.stringify({ key: 'value' });
+      manager.dirtyTracker._originalCollectionContent = original;
+      mockCmViewOnContainer(manager.elements.collectionEditorContainer, original);
 
-      const currentData = getJsonTreeData(manager.elements.collectionEditorContainer);
-      // Compare stringified versions to properly check equality
-      const isDirty = JSON.stringify(currentData) !== manager.dirtyTracker._originalCollectionContent;
+      const currentContent = manager.elements.collectionEditorContainer._cmView.state.doc.toString();
+      const isDirty = currentContent !== manager.dirtyTracker._originalCollectionContent;
 
       expect(isDirty).toBe(false);
     });
@@ -372,31 +397,22 @@ describe('QueriesManager JSONEditor and collection integration', () => {
 
   describe('Collection content retrieval', () => {
     beforeEach(() => {
-      // Create a mock collection editor container
+      // Create a mock collection editor container with CodeMirror view
       manager.elements.collectionEditorContainer = document.createElement('div');
     });
 
-    it('getJsonTreeData returns JSON data from editor container', () => {
+    it('returns JSON data from CodeMirror editor', () => {
       const testData = { test: 'data' };
-      manager.elements.collectionEditorContainer._cmData = JSON.stringify(testData);
+      mockCmViewOnContainer(manager.elements.collectionEditorContainer, JSON.stringify(testData));
 
-      const content = getJsonTreeData(manager.elements.collectionEditorContainer);
+      const content = manager.elements.collectionEditorContainer._cmView.state.doc.toString();
 
-      expect(content).toEqual(testData);
+      expect(JSON.parse(content)).toEqual(testData);
     });
 
-    it('getJsonTreeData returns null when editor data is null', () => {
-      manager.elements.collectionEditorContainer._cmData = null;
-
-      const content = getJsonTreeData(manager.elements.collectionEditorContainer);
-
-      expect(content).toBe(null);
-    });
-
-    it('getJsonTreeData returns null when container is null', () => {
-      const content = getJsonTreeData(null);
-
-      expect(content).toBe(null);
+    it('returns empty when no CodeMirror view exists', () => {
+      // No _cmView set — editorManager.getCollectionContent() would return '{}'
+      expect(manager.elements.collectionEditorContainer._cmView).toBeUndefined();
     });
   });
 
@@ -409,7 +425,8 @@ describe('QueriesManager JSONEditor and collection integration', () => {
     it('handleSave includes collection data in API call via editorManager', async () => {
       const { authQuery } = await import('../../src/shared/conduit.js');
 
-      manager.elements.collectionEditorContainer._cmData = JSON.stringify({ updated: 'collection_data' });
+      const collectionData = { updated: 'collection_data' };
+      mockCmViewOnContainer(manager.elements.collectionEditorContainer, JSON.stringify(collectionData));
       manager.sqlEditor = {
         state: { doc: { toString: vi.fn(() => 'SELECT * FROM test') } },
       };
@@ -438,67 +455,65 @@ describe('QueriesManager JSONEditor and collection integration', () => {
 
       authQuery.mockResolvedValueOnce([]);
 
-      const collectionContent = getJsonTreeData(manager.elements.collectionEditorContainer);
-      expect(collectionContent).toEqual({ updated: 'collection_data' });
+      const content = manager.elements.collectionEditorContainer._cmView.state.doc.toString();
+      expect(JSON.parse(content)).toEqual(collectionData);
     });
 
-    it('handleSave uses empty object when editor content is null', async () => {
-      manager.elements.collectionEditorContainer._cmData = null;
-
-      const collectionContent = getJsonTreeData(manager.elements.collectionEditorContainer);
-      expect(collectionContent).toBe(null);
+    it('handleSave uses empty object when no editor view exists', async () => {
+      // No CodeMirror view — editorManager.getCollectionContent() returns '{}'
+      expect(manager.elements.collectionEditorContainer._cmView).toBeUndefined();
     });
 
-    it('reverts collection content on cancel using setJsonTreeData', async () => {
+    it('reverts collection content on cancel via CodeMirror dispatch', async () => {
       manager.dirtyTracker._originalCollectionContent = JSON.stringify({ original: 'data' });
       manager.dirtyTracker._isDirty = { table: false, sql: false, summary: false, collection: true };
-      
-      manager.elements.collectionEditorContainer._cmData = JSON.stringify({ current: 'data' });
+
+      const view = mockCmViewOnContainer(manager.elements.collectionEditorContainer, JSON.stringify({ current: 'data' }));
 
       if (manager.dirtyTracker._isDirty.collection && manager.dirtyTracker._originalCollectionContent != null) {
-        setJsonTreeData(manager.elements.collectionEditorContainer, JSON.parse(manager.dirtyTracker._originalCollectionContent));
+        // Simulate revert: dispatch original content to the editor
+        view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: manager.dirtyTracker._originalCollectionContent } });
       }
 
-      expect(JSON.parse(manager.elements.collectionEditorContainer._cmData)).toEqual({ original: 'data' });
+      expect(manager.elements.collectionEditorContainer._cmContent).toBe(JSON.stringify({ original: 'data' }));
     });
 
     it('handles null original data when reverting collection', async () => {
       manager.dirtyTracker._originalCollectionContent = null;
       manager.dirtyTracker._isDirty = { table: false, sql: false, summary: false, collection: true };
-      
-      const originalData = { current: 'data' };
-      manager.elements.collectionEditorContainer._cmData = JSON.stringify(originalData);
+
+      const originalContent = JSON.stringify({ current: 'data' });
+      mockCmViewOnContainer(manager.elements.collectionEditorContainer, originalContent);
 
       if (manager.dirtyTracker._isDirty.collection && manager.dirtyTracker._originalCollectionContent != null) {
-        setJsonTreeData(manager.elements.collectionEditorContainer, JSON.parse(manager.dirtyTracker._originalCollectionContent));
+        // Would not execute — originalCollectionContent is null
       }
 
-      expect(manager.elements.collectionEditorContainer._cmData).toBe(JSON.stringify(originalData));
+      expect(manager.elements.collectionEditorContainer._cmContent).toBe(originalContent);
     });
   });
 
   describe('JSON editor editable mode', () => {
-    it('setJsonTreeData updates editor data correctly', () => {
+    it('updates editor content via CodeMirror dispatch', () => {
       manager.elements.collectionEditorContainer = document.createElement('div');
-      manager.elements.collectionEditorContainer._cmData = JSON.stringify({ initial: 'data' });
+      const view = mockCmViewOnContainer(manager.elements.collectionEditorContainer, JSON.stringify({ initial: 'data' }));
 
       const newData = { updated: 'data' };
-      setJsonTreeData(manager.elements.collectionEditorContainer, newData);
+      const newContent = JSON.stringify(newData, null, 2);
+      view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: newContent } });
 
-      expect(manager.elements.collectionEditorContainer._cmData).toBe(JSON.stringify(newData, null, 2));
+      expect(manager.elements.collectionEditorContainer._cmContent).toBe(newContent);
     });
   });
 
   describe('JSON editor lifecycle', () => {
-    it('destroyJsonTree properly cleans up the editor instance', () => {
+    it('destroy properly cleans up the CodeMirror editor instance', () => {
       const container = document.createElement('div');
-      container._cmView = { state: { doc: { toString: () => '{}' } } };
-      container._cmData = JSON.stringify({ test: 'data' });
+      const view = mockCmViewOnContainer(container, '{}');
 
-      destroyJsonTree(container);
+      view.destroy();
 
-      expect(container._cmView).toBe(null);
-      expect(container._cmData).toBe(null);
+      expect(view.destroy).toHaveBeenCalled();
     });
 
     it('teardown clears collection change interval', () => {

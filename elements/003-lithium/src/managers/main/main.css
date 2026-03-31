@@ -640,67 +640,6 @@
   transition: transform var(--stage-dur) ease;
 }
 
-/* ---- Tooltips ---- */
-
-.sidebar-icon-btn[data-tooltip]::after,
-.sidebar-icon-btn[title]::after {
-  content: attr(title);
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%) translateY(-4px);
-  padding: var(--space-1) var(--space-2);
-  background-color: var(--bg-tertiary);
-  border: var(--border-standard);
-  border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-xs);
-  color: var(--text-primary);
-  white-space: nowrap;
-  opacity: 0;
-  visibility: hidden;
-  transition: all var(--transition-fast);
-  z-index: var(--z-tooltip);
-  pointer-events: none;
-}
-
-.sidebar-icon-btn[data-tooltip]:hover::after,
-.sidebar-icon-btn[title]:hover::after {
-  opacity: 1;
-  visibility: visible;
-}
-
-.main-sidebar:not(.collapsed) .sidebar-icon-btn[title]::after {
-  display: none;
-}
-
-/* Menu item tooltips (only when sidebar collapsed) */
-.menu-item[data-tooltip]::after,
-.menu-item[title]::after {
-  content: attr(title);
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%) translateY(-4px);
-  padding: var(--space-1) var(--space-2);
-  background-color: var(--bg-tertiary);
-  border: var(--border-standard);
-  border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-xs);
-  color: var(--text-primary);
-  white-space: nowrap;
-  opacity: 0;
-  visibility: hidden;
-  transition: all var(--transition-fast);
-  z-index: var(--z-tooltip);
-  pointer-events: none;
-}
-
-.menu-item[data-tooltip]:hover::after,
-.menu-item[title]:hover::after {
-  opacity: 1;
-  visibility: visible;
-}
-
 .main-sidebar:not(.collapsed) .menu-item[title]::after {
   display: none;
 }
@@ -1294,31 +1233,6 @@ body.resizing * {
 /* Zoom button styling */
 .zoom-btn {
   position: relative;
-}
-
-.zoom-btn::after {
-  content: attr(title);
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%) translateY(-4px);
-  padding: var(--space-1) var(--space-2);
-  background-color: var(--bg-tertiary);
-  border: var(--border-standard);
-  border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-xs);
-  color: var(--text-primary);
-  white-space: nowrap;
-  opacity: 0;
-  visibility: hidden;
-  transition: all var(--transition-fast);
-  z-index: var(--z-tooltip);
-  pointer-events: none;
-}
-
-.zoom-btn:hover::after {
-  opacity: 1;
-  visibility: visible;
 }
 
 } /* end @layer managers */

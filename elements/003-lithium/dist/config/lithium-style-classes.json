@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS class selectors/names used across the Lithium codebase",
-    "generated": "2026-03-31T01:45:34.211Z",
+    "generated": "2026-03-31T08:51:04.766Z",
     "sources": {
-      "css": "47 files in src/**/*.css",
-      "js": "76 files in src/**/*.js",
+      "css": "48 files in src/**/*.css",
+      "js": "79 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
-    "total_selectors": 1436,
-    "total_occurrences": 17500
+    "total_selectors": 1433,
+    "total_occurrences": 17360
   },
   "selectors": [
     {
@@ -994,6 +994,20 @@
       }
     },
     {
+      "selector": ".cm-content",
+      "css": 0,
+      "js": 1,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [],
+        "js": [
+          "src/core/codemirror-setup.js"
+        ],
+        "html": []
+      }
+    },
+    {
       "selector": ".codemirror-nav",
       "css": 0,
       "js": 1,
@@ -1018,6 +1032,62 @@
         "js": [
           "src/init/codemirror-init.js"
         ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".col-manager-cancel-btn",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/core/lithium-column-manager.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": ".col-manager-cancel-btn:disabled",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/core/lithium-column-manager.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": ".col-manager-cancel-btn:not(:disabled)",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/core/lithium-column-manager.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": ".col-manager-cancel-btn:not(:disabled):hover",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/core/lithium-column-manager.css"
+        ],
+        "js": [],
         "html": []
       }
     },
@@ -1065,6 +1135,20 @@
     },
     {
       "selector": ".col-manager-header",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/core/lithium-column-manager.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": ".col-manager-header-actions",
       "css": 1,
       "js": 0,
       "html": 0,
@@ -1191,6 +1275,23 @@
     },
     {
       "selector": ".col-manager-popup.depth-2",
+      "css": 1,
+      "js": 5,
+      "html": 0,
+      "total": 6,
+      "files": {
+        "css": [
+          "src/core/lithium-column-manager.css"
+        ],
+        "js": [
+          "src/core/lithium-column-manager.js",
+          "src/core/lithium-table-ui.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".col-manager-popup.depth-2 .col-manager-cancel-btn:disabled",
       "css": 1,
       "js": 5,
       "html": 0,
@@ -1622,6 +1723,34 @@
     },
     {
       "selector": ".col-manager-resize-handle:hover",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/core/lithium-column-manager.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": ".col-manager-save-btn:not(:disabled)",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/core/lithium-column-manager.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": ".col-manager-save-btn:not(:disabled):hover",
       "css": 1,
       "js": 0,
       "html": 0,
@@ -6024,44 +6153,6 @@
       }
     },
     {
-      "selector": ".input-icon-btn[data-tooltip]::after",
-      "css": 1,
-      "js": 4,
-      "html": 3,
-      "total": 8,
-      "files": {
-        "css": [
-          "src/styles/layout.css"
-        ],
-        "js": [
-          "src/managers/login/login.js",
-          "src/managers/style-manager/style-manager.js"
-        ],
-        "html": [
-          "src/managers/login/login.html"
-        ]
-      }
-    },
-    {
-      "selector": ".input-icon-btn[data-tooltip]:hover::after",
-      "css": 1,
-      "js": 4,
-      "html": 3,
-      "total": 8,
-      "files": {
-        "css": [
-          "src/styles/layout.css"
-        ],
-        "js": [
-          "src/managers/login/login.js",
-          "src/managers/style-manager/style-manager.js"
-        ],
-        "html": [
-          "src/managers/login/login.html"
-        ]
-      }
-    },
-    {
       "selector": ".input-with-icon",
       "css": 1,
       "js": 4,
@@ -6365,20 +6456,6 @@
           "src/init/codemirror-init.js",
           "src/init/jsoneditor-init.js",
           "src/init/suneditor-init.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".jsoneditor-readonly",
-      "css": 0,
-      "js": 2,
-      "html": 0,
-      "total": 2,
-      "files": {
-        "css": [],
-        "js": [
-          "src/components/json-tree-component.js"
         ],
         "html": []
       }
@@ -6724,6 +6801,278 @@
       }
     },
     {
+      "selector": ".li-tooltip",
+      "css": 1,
+      "js": 4,
+      "html": 0,
+      "total": 5,
+      "files": {
+        "css": [
+          "src/styles/tooltip.css"
+        ],
+        "js": [
+          "src/core/tooltip-api.js",
+          "src/core/tooltip.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".li-tooltip__arrow",
+      "css": 1,
+      "js": 5,
+      "html": 0,
+      "total": 6,
+      "files": {
+        "css": [
+          "src/styles/tooltip.css"
+        ],
+        "js": [
+          "src/core/tooltip-api.js",
+          "src/core/tooltip.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".li-tooltip__content",
+      "css": 1,
+      "js": 6,
+      "html": 0,
+      "total": 7,
+      "files": {
+        "css": [
+          "src/styles/tooltip.css"
+        ],
+        "js": [
+          "src/core/tooltip-api.js",
+          "src/core/tooltip.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".li-tooltip--crimson",
+      "css": 1,
+      "js": 4,
+      "html": 0,
+      "total": 5,
+      "files": {
+        "css": [
+          "src/styles/tooltip.css"
+        ],
+        "js": [
+          "src/core/tooltip-api.js",
+          "src/core/tooltip.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".li-tooltip--crimson .li-tooltip__arrow",
+      "css": 1,
+      "js": 5,
+      "html": 0,
+      "total": 6,
+      "files": {
+        "css": [
+          "src/styles/tooltip.css"
+        ],
+        "js": [
+          "src/core/tooltip-api.js",
+          "src/core/tooltip.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".li-tooltip--danger",
+      "css": 1,
+      "js": 4,
+      "html": 0,
+      "total": 5,
+      "files": {
+        "css": [
+          "src/styles/tooltip.css"
+        ],
+        "js": [
+          "src/core/tooltip-api.js",
+          "src/core/tooltip.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".li-tooltip--danger .li-tooltip__arrow",
+      "css": 1,
+      "js": 5,
+      "html": 0,
+      "total": 6,
+      "files": {
+        "css": [
+          "src/styles/tooltip.css"
+        ],
+        "js": [
+          "src/core/tooltip-api.js",
+          "src/core/tooltip.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".li-tooltip--default",
+      "css": 1,
+      "js": 4,
+      "html": 0,
+      "total": 5,
+      "files": {
+        "css": [
+          "src/styles/tooltip.css"
+        ],
+        "js": [
+          "src/core/tooltip-api.js",
+          "src/core/tooltip.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".li-tooltip--default .li-tooltip__arrow",
+      "css": 1,
+      "js": 5,
+      "html": 0,
+      "total": 6,
+      "files": {
+        "css": [
+          "src/styles/tooltip.css"
+        ],
+        "js": [
+          "src/core/tooltip-api.js",
+          "src/core/tooltip.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".li-tooltip--info",
+      "css": 1,
+      "js": 4,
+      "html": 0,
+      "total": 5,
+      "files": {
+        "css": [
+          "src/styles/tooltip.css"
+        ],
+        "js": [
+          "src/core/tooltip-api.js",
+          "src/core/tooltip.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".li-tooltip--info .li-tooltip__arrow",
+      "css": 1,
+      "js": 5,
+      "html": 0,
+      "total": 6,
+      "files": {
+        "css": [
+          "src/styles/tooltip.css"
+        ],
+        "js": [
+          "src/core/tooltip-api.js",
+          "src/core/tooltip.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".li-tooltip--success",
+      "css": 1,
+      "js": 4,
+      "html": 0,
+      "total": 5,
+      "files": {
+        "css": [
+          "src/styles/tooltip.css"
+        ],
+        "js": [
+          "src/core/tooltip-api.js",
+          "src/core/tooltip.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".li-tooltip--success .li-tooltip__arrow",
+      "css": 1,
+      "js": 5,
+      "html": 0,
+      "total": 6,
+      "files": {
+        "css": [
+          "src/styles/tooltip.css"
+        ],
+        "js": [
+          "src/core/tooltip-api.js",
+          "src/core/tooltip.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".li-tooltip--visible",
+      "css": 1,
+      "js": 6,
+      "html": 0,
+      "total": 7,
+      "files": {
+        "css": [
+          "src/styles/tooltip.css"
+        ],
+        "js": [
+          "src/core/tooltip-api.js",
+          "src/core/tooltip.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".li-tooltip--warning",
+      "css": 1,
+      "js": 4,
+      "html": 0,
+      "total": 5,
+      "files": {
+        "css": [
+          "src/styles/tooltip.css"
+        ],
+        "js": [
+          "src/core/tooltip-api.js",
+          "src/core/tooltip.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".li-tooltip--warning .li-tooltip__arrow",
+      "css": 1,
+      "js": 5,
+      "html": 0,
+      "total": 6,
+      "files": {
+        "css": [
+          "src/styles/tooltip.css"
+        ],
+        "js": [
+          "src/core/tooltip-api.js",
+          "src/core/tooltip.js"
+        ],
+        "html": []
+      }
+    },
+    {
       "selector": ".line-numbers",
       "css": 0,
       "js": 3,
@@ -6734,6 +7083,90 @@
         "js": [
           "src/init/prism-init.js"
         ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".lithium-cm-editable .cm-activeLineGutter",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/base.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": ".lithium-cm-editable .cm-gutters",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/base.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": ".lithium-cm-readonly .cm-activeLine",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/base.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": ".lithium-cm-readonly .cm-activeLineGutter",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/base.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": ".lithium-cm-readonly .cm-cursor",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/base.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": ".lithium-cm-readonly .cm-selectionBackground",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/base.css"
+        ],
+        "js": [],
         "html": []
       }
     },
@@ -9280,6 +9713,24 @@
       }
     },
     {
+      "selector": ".login-alt-btn img",
+      "css": 1,
+      "js": 5,
+      "html": 5,
+      "total": 11,
+      "files": {
+        "css": [
+          "src/managers/login/login.css"
+        ],
+        "js": [
+          "src/managers/style-manager/style-manager.js"
+        ],
+        "html": [
+          "src/managers/login/login.html"
+        ]
+      }
+    },
+    {
       "selector": ".login-alt-btn-group",
       "css": 1,
       "js": 6,
@@ -9326,44 +9777,6 @@
           "src/managers/login/login.css"
         ],
         "js": [
-          "src/managers/style-manager/style-manager.js"
-        ],
-        "html": [
-          "src/managers/login/login.html"
-        ]
-      }
-    },
-    {
-      "selector": ".login-alt-btn.tooltip::after",
-      "css": 1,
-      "js": 15,
-      "html": 9,
-      "total": 25,
-      "files": {
-        "css": [
-          "src/managers/login/login.css"
-        ],
-        "js": [
-          "src/managers/login/login.js",
-          "src/managers/style-manager/style-manager.js"
-        ],
-        "html": [
-          "src/managers/login/login.html"
-        ]
-      }
-    },
-    {
-      "selector": ".login-alt-btn.tooltip:hover::after",
-      "css": 1,
-      "js": 15,
-      "html": 9,
-      "total": 25,
-      "files": {
-        "css": [
-          "src/managers/login/login.css"
-        ],
-        "js": [
-          "src/managers/login/login.js",
           "src/managers/style-manager/style-manager.js"
         ],
         "html": [
@@ -10937,8 +11350,8 @@
       "selector": ".logout-panel-header .subpanel-header-close",
       "css": 1,
       "js": 17,
-      "html": 49,
-      "total": 67,
+      "html": 57,
+      "total": 75,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -10963,8 +11376,8 @@
       "selector": ".logout-panel-header .subpanel-header-close:hover",
       "css": 1,
       "js": 17,
-      "html": 49,
-      "total": 67,
+      "html": 57,
+      "total": 75,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -12002,8 +12415,8 @@
       "selector": ".lookups-toolbar-btn",
       "css": 1,
       "js": 0,
-      "html": 1,
-      "total": 2,
+      "html": 5,
+      "total": 6,
       "files": {
         "css": [
           "src/managers/lookups/lookups.css"
@@ -12018,8 +12431,8 @@
       "selector": ".lookups-toolbar-btn:disabled",
       "css": 1,
       "js": 0,
-      "html": 1,
-      "total": 2,
+      "html": 5,
+      "total": 6,
       "files": {
         "css": [
           "src/managers/lookups/lookups.css"
@@ -12034,8 +12447,8 @@
       "selector": ".lookups-toolbar-btn:last-child",
       "css": 1,
       "js": 0,
-      "html": 1,
-      "total": 2,
+      "html": 5,
+      "total": 6,
       "files": {
         "css": [
           "src/managers/lookups/lookups.css"
@@ -12203,31 +12616,6 @@
       "js": 49,
       "html": 1,
       "total": 51,
-      "files": {
-        "css": [
-          "src/managers/main/main.css"
-        ],
-        "js": [
-          "src/core/lithium-splitter.js",
-          "src/core/panel-collapse.js",
-          "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
-          "src/managers/queries/queries-ui.js",
-          "src/managers/queries/queries.js",
-          "src/managers/style-manager/style-manager.js",
-          "src/managers/version-history/version-history.js"
-        ],
-        "html": [
-          "src/managers/main/main.html"
-        ]
-      }
-    },
-    {
-      "selector": ".main-sidebar:not(.collapsed) .sidebar-icon-btn[title]::after",
-      "css": 1,
-      "js": 43,
-      "html": 6,
-      "total": 50,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -12742,15 +13130,16 @@
     {
       "selector": ".manager-footer-cancel-btn",
       "css": 1,
-      "js": 1,
+      "js": 3,
       "html": 0,
-      "total": 2,
+      "total": 4,
       "files": {
         "css": [
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/managers/queries/queries.js"
         ],
         "html": []
       }
@@ -12758,15 +13147,16 @@
     {
       "selector": ".manager-footer-cancel-btn:disabled",
       "css": 1,
-      "js": 1,
+      "js": 3,
       "html": 0,
-      "total": 2,
+      "total": 4,
       "files": {
         "css": [
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/managers/queries/queries.js"
         ],
         "html": []
       }
@@ -12774,15 +13164,16 @@
     {
       "selector": ".manager-footer-cancel-btn:not(:disabled)",
       "css": 1,
-      "js": 1,
+      "js": 3,
       "html": 0,
-      "total": 2,
+      "total": 4,
       "files": {
         "css": [
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/managers/queries/queries.js"
         ],
         "html": []
       }
@@ -12790,15 +13181,16 @@
     {
       "selector": ".manager-footer-cancel-btn:not(:disabled):hover",
       "css": 1,
-      "js": 1,
+      "js": 3,
       "html": 0,
-      "total": 2,
+      "total": 4,
       "files": {
         "css": [
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/managers/queries/queries.js"
         ],
         "html": []
       }
@@ -12806,15 +13198,16 @@
     {
       "selector": ".manager-footer-dummy-btn",
       "css": 1,
-      "js": 1,
+      "js": 3,
       "html": 0,
-      "total": 2,
+      "total": 4,
       "files": {
         "css": [
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/managers/queries/queries.js"
         ],
         "html": []
       }
@@ -12854,15 +13247,16 @@
     {
       "selector": ".manager-footer-save-btn",
       "css": 1,
-      "js": 1,
+      "js": 3,
       "html": 0,
-      "total": 2,
+      "total": 4,
       "files": {
         "css": [
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/managers/queries/queries.js"
         ],
         "html": []
       }
@@ -12870,15 +13264,16 @@
     {
       "selector": ".manager-footer-save-btn:disabled",
       "css": 1,
-      "js": 1,
+      "js": 3,
       "html": 0,
-      "total": 2,
+      "total": 4,
       "files": {
         "css": [
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/managers/queries/queries.js"
         ],
         "html": []
       }
@@ -12886,15 +13281,16 @@
     {
       "selector": ".manager-footer-save-btn:not(:disabled)",
       "css": 1,
-      "js": 1,
+      "js": 3,
       "html": 0,
-      "total": 2,
+      "total": 4,
       "files": {
         "css": [
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/managers/queries/queries.js"
         ],
         "html": []
       }
@@ -12902,15 +13298,16 @@
     {
       "selector": ".manager-footer-save-btn:not(:disabled):hover",
       "css": 1,
-      "js": 1,
+      "js": 3,
       "html": 0,
-      "total": 2,
+      "total": 4,
       "files": {
         "css": [
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/managers/queries/queries.js"
         ],
         "html": []
       }
@@ -12951,9 +13348,9 @@
     {
       "selector": ".manager-slot",
       "css": 1,
-      "js": 22,
+      "js": 26,
       "html": 0,
-      "total": 23,
+      "total": 27,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -12973,9 +13370,9 @@
     {
       "selector": ".manager-slot-footer",
       "css": 1,
-      "js": 32,
+      "js": 38,
       "html": 0,
-      "total": 33,
+      "total": 39,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -12996,9 +13393,9 @@
     {
       "selector": ".manager-slot-footer .slot-reports-btn",
       "css": 1,
-      "js": 32,
+      "js": 38,
       "html": 0,
-      "total": 33,
+      "total": 39,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -13019,9 +13416,9 @@
     {
       "selector": ".manager-slot-footer .slot-reports-btn span",
       "css": 1,
-      "js": 32,
+      "js": 38,
       "html": 0,
-      "total": 33,
+      "total": 39,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -13042,9 +13439,9 @@
     {
       "selector": ".manager-slot-footer .subpanel-header-group",
       "css": 1,
-      "js": 46,
+      "js": 52,
       "html": 28,
-      "total": 75,
+      "total": 81,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -13073,9 +13470,9 @@
     {
       "selector": ".manager-slot-header",
       "css": 1,
-      "js": 26,
+      "js": 30,
       "html": 0,
-      "total": 27,
+      "total": 31,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -13096,9 +13493,9 @@
     {
       "selector": ".manager-slot-header .subpanel-header-group",
       "css": 1,
-      "js": 40,
+      "js": 44,
       "html": 28,
-      "total": 69,
+      "total": 73,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -13127,9 +13524,9 @@
     {
       "selector": ".manager-slot-header .subpanel-header-primary",
       "css": 1,
-      "js": 27,
+      "js": 31,
       "html": 37,
-      "total": 65,
+      "total": 69,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -13157,9 +13554,9 @@
     {
       "selector": ".manager-slot-header .subpanel-header-primary span",
       "css": 1,
-      "js": 27,
+      "js": 31,
       "html": 37,
-      "total": 65,
+      "total": 69,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -13187,9 +13584,9 @@
     {
       "selector": ".manager-slot-workspace",
       "css": 1,
-      "js": 23,
+      "js": 27,
       "html": 0,
-      "total": 24,
+      "total": 28,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -13209,9 +13606,9 @@
     {
       "selector": ".manager-slot.slot-hidden",
       "css": 1,
-      "js": 26,
+      "js": 30,
       "html": 0,
-      "total": 27,
+      "total": 31,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -13232,9 +13629,9 @@
     {
       "selector": ".manager-slot.slot-visible",
       "css": 1,
-      "js": 26,
+      "js": 30,
       "html": 0,
-      "total": 27,
+      "total": 31,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -14100,38 +14497,6 @@
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html"
         ]
-      }
-    },
-    {
-      "selector": ".menu-item[title]::after",
-      "css": 1,
-      "js": 7,
-      "html": 0,
-      "total": 8,
-      "files": {
-        "css": [
-          "src/managers/main/main.css"
-        ],
-        "js": [
-          "src/managers/main/main.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".menu-item[title]:hover::after",
-      "css": 1,
-      "js": 7,
-      "html": 0,
-      "total": 8,
-      "files": {
-        "css": [
-          "src/managers/main/main.css"
-        ],
-        "js": [
-          "src/managers/main/main.js"
-        ],
-        "html": []
       }
     },
     {
@@ -15850,54 +16215,6 @@
       }
     },
     {
-      "selector": ".queries-cm-readonly .cm-activeLine",
-      "css": 1,
-      "js": 1,
-      "html": 0,
-      "total": 2,
-      "files": {
-        "css": [
-          "src/managers/queries/queries.css"
-        ],
-        "js": [
-          "src/managers/queries/queries-editors.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".queries-cm-readonly .cm-activeLineGutter",
-      "css": 1,
-      "js": 1,
-      "html": 0,
-      "total": 2,
-      "files": {
-        "css": [
-          "src/managers/queries/queries.css"
-        ],
-        "js": [
-          "src/managers/queries/queries-editors.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".queries-cm-readonly .cm-editor",
-      "css": 1,
-      "js": 1,
-      "html": 0,
-      "total": 2,
-      "files": {
-        "css": [
-          "src/managers/queries/queries.css"
-        ],
-        "js": [
-          "src/managers/queries/queries-editors.js"
-        ],
-        "html": []
-      }
-    },
-    {
       "selector": ".queries-col-chooser-checkbox",
       "css": 0,
       "js": 1,
@@ -16311,51 +16628,6 @@
         "js": [
           "src/managers/queries/queries-ui.js"
         ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".queries-json-readonly",
-      "css": 0,
-      "js": 2,
-      "html": 0,
-      "total": 2,
-      "files": {
-        "css": [],
-        "js": [
-          "src/managers/queries/queries-editors.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".queries-jsoneditor-readonly .cm-content",
-      "css": 1,
-      "js": 6,
-      "html": 0,
-      "total": 7,
-      "files": {
-        "css": [
-          "src/managers/queries/queries.css"
-        ],
-        "js": [
-          "src/managers/queries/queries-editors.js",
-          "src/managers/style-manager/style-manager.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".queries-jsoneditor-readonly .cm-editor",
-      "css": 1,
-      "js": 0,
-      "html": 0,
-      "total": 1,
-      "files": {
-        "css": [
-          "src/managers/queries/queries.css"
-        ],
-        "js": [],
         "html": []
       }
     },
@@ -16942,54 +17214,6 @@
       }
     },
     {
-      "selector": ".queries-summary-readonly .cm-activeLine",
-      "css": 1,
-      "js": 1,
-      "html": 0,
-      "total": 2,
-      "files": {
-        "css": [
-          "src/managers/queries/queries.css"
-        ],
-        "js": [
-          "src/managers/queries/queries-editors.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".queries-summary-readonly .cm-activeLineGutter",
-      "css": 1,
-      "js": 1,
-      "html": 0,
-      "total": 2,
-      "files": {
-        "css": [
-          "src/managers/queries/queries.css"
-        ],
-        "js": [
-          "src/managers/queries/queries-editors.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".queries-summary-readonly .cm-editor",
-      "css": 1,
-      "js": 1,
-      "html": 0,
-      "total": 2,
-      "files": {
-        "css": [
-          "src/managers/queries/queries.css"
-        ],
-        "js": [
-          "src/managers/queries/queries-editors.js"
-        ],
-        "html": []
-      }
-    },
-    {
       "selector": ".queries-tab-btn",
       "css": 1,
       "js": 3,
@@ -17104,43 +17328,6 @@
           "src/managers/queries/queries.css"
         ],
         "js": [
-          "src/managers/queries/queries.js"
-        ],
-        "html": [
-          "src/managers/queries/queries.html"
-        ]
-      }
-    },
-    {
-      "selector": ".queries-tab-pane #queries-tab-collection .cm-scroller",
-      "css": 1,
-      "js": 1,
-      "html": 5,
-      "total": 7,
-      "files": {
-        "css": [
-          "src/managers/queries/queries.css"
-        ],
-        "js": [
-          "src/managers/queries/queries.js"
-        ],
-        "html": [
-          "src/managers/queries/queries.html"
-        ]
-      }
-    },
-    {
-      "selector": ".queries-tab-pane #queries-tab-collection .json-tree-container",
-      "css": 1,
-      "js": 3,
-      "html": 5,
-      "total": 9,
-      "files": {
-        "css": [
-          "src/managers/queries/queries.css"
-        ],
-        "js": [
-          "src/components/json-tree-component.js",
           "src/managers/queries/queries.js"
         ],
         "html": [
@@ -17433,8 +17620,8 @@
       "selector": ".queries-toolbar-btn:disabled",
       "css": 1,
       "js": 0,
-      "html": 4,
-      "total": 5,
+      "html": 6,
+      "total": 7,
       "files": {
         "css": [
           "src/managers/queries/queries.css"
@@ -18082,42 +18269,6 @@
       "js": 1,
       "html": 7,
       "total": 9,
-      "files": {
-        "css": [
-          "src/managers/main/main.css"
-        ],
-        "js": [
-          "src/managers/main/main.js"
-        ],
-        "html": [
-          "src/managers/main/main.html"
-        ]
-      }
-    },
-    {
-      "selector": ".sidebar-icon-btn[title]::after",
-      "css": 1,
-      "js": 1,
-      "html": 5,
-      "total": 7,
-      "files": {
-        "css": [
-          "src/managers/main/main.css"
-        ],
-        "js": [
-          "src/managers/main/main.js"
-        ],
-        "html": [
-          "src/managers/main/main.html"
-        ]
-      }
-    },
-    {
-      "selector": ".sidebar-icon-btn[title]:hover::after",
-      "css": 1,
-      "js": 1,
-      "html": 5,
-      "total": 7,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -19515,71 +19666,6 @@
       }
     },
     {
-      "selector": ".style-css-readonly",
-      "css": 1,
-      "js": 2,
-      "html": 0,
-      "total": 3,
-      "files": {
-        "css": [
-          "src/managers/style-manager/style-manager.css"
-        ],
-        "js": [
-          "src/managers/style-manager/style-manager.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".style-css-readonly .cm-content",
-      "css": 1,
-      "js": 8,
-      "html": 0,
-      "total": 9,
-      "files": {
-        "css": [
-          "src/managers/style-manager/style-manager.css"
-        ],
-        "js": [
-          "src/managers/queries/queries-editors.js",
-          "src/managers/style-manager/style-manager.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".style-css-readonly .cm-editor .cm-cursor",
-      "css": 1,
-      "js": 2,
-      "html": 0,
-      "total": 3,
-      "files": {
-        "css": [
-          "src/managers/style-manager/style-manager.css"
-        ],
-        "js": [
-          "src/managers/style-manager/style-manager.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".style-css-readonly .cm-editor .cm-selectionBackground",
-      "css": 1,
-      "js": 2,
-      "html": 0,
-      "total": 3,
-      "files": {
-        "css": [
-          "src/managers/style-manager/style-manager.css"
-        ],
-        "js": [
-          "src/managers/style-manager/style-manager.js"
-        ],
-        "html": []
-      }
-    },
-    {
       "selector": ".style-editor-actions",
       "css": 1,
       "js": 0,
@@ -20731,8 +20817,8 @@
       "selector": ".style-toolbar-btn",
       "css": 1,
       "js": 0,
-      "html": 4,
-      "total": 5,
+      "html": 6,
+      "total": 7,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -20747,8 +20833,8 @@
       "selector": ".style-toolbar-btn:disabled",
       "css": 1,
       "js": 0,
-      "html": 4,
-      "total": 5,
+      "html": 6,
+      "total": 7,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -20855,8 +20941,8 @@
       "selector": ".subpanel-header-btn",
       "css": 1,
       "js": 21,
-      "html": 64,
-      "total": 86,
+      "html": 72,
+      "total": 94,
       "files": {
         "css": [
           "src/styles/layout.css"
@@ -20881,8 +20967,8 @@
       "selector": ".subpanel-header-close",
       "css": 1,
       "js": 17,
-      "html": 44,
-      "total": 62,
+      "html": 52,
+      "total": 70,
       "files": {
         "css": [
           "src/styles/layout.css"
@@ -20907,8 +20993,8 @@
       "selector": ".subpanel-header-close:disabled",
       "css": 1,
       "js": 17,
-      "html": 44,
-      "total": 62,
+      "html": 52,
+      "total": 70,
       "files": {
         "css": [
           "src/styles/layout.css"
@@ -20933,60 +21019,8 @@
       "selector": ".subpanel-header-close:hover",
       "css": 1,
       "js": 17,
-      "html": 44,
-      "total": 62,
-      "files": {
-        "css": [
-          "src/styles/layout.css"
-        ],
-        "js": [
-          "src/core/manager-ui.js",
-          "src/core/zoom-control.js",
-          "src/managers/crimson/crimson.js",
-          "src/managers/main/main.js"
-        ],
-        "html": [
-          "src/managers/login/login.html",
-          "src/managers/lookups/lookups.html",
-          "src/managers/main/main.html",
-          "src/managers/queries/queries.html",
-          "src/managers/style-manager/style-manager.html",
-          "src/managers/version-history/version-history.html"
-        ]
-      }
-    },
-    {
-      "selector": ".subpanel-header-close[data-tooltip]::after",
-      "css": 1,
-      "js": 17,
-      "html": 44,
-      "total": 62,
-      "files": {
-        "css": [
-          "src/styles/layout.css"
-        ],
-        "js": [
-          "src/core/manager-ui.js",
-          "src/core/zoom-control.js",
-          "src/managers/crimson/crimson.js",
-          "src/managers/main/main.js"
-        ],
-        "html": [
-          "src/managers/login/login.html",
-          "src/managers/lookups/lookups.html",
-          "src/managers/main/main.html",
-          "src/managers/queries/queries.html",
-          "src/managers/style-manager/style-manager.html",
-          "src/managers/version-history/version-history.html"
-        ]
-      }
-    },
-    {
-      "selector": ".subpanel-header-close[data-tooltip]:hover::after",
-      "css": 1,
-      "js": 17,
-      "html": 44,
-      "total": 62,
+      "html": 52,
+      "total": 70,
       "files": {
         "css": [
           "src/styles/layout.css"
@@ -23342,50 +23376,12 @@
     },
     {
       "selector": ".tooltip",
-      "css": 1,
-      "js": 10,
+      "css": 0,
+      "js": 5,
       "html": 4,
-      "total": 15,
+      "total": 9,
       "files": {
-        "css": [
-          "src/styles/components.css"
-        ],
-        "js": [
-          "src/managers/login/login.js"
-        ],
-        "html": [
-          "src/managers/login/login.html"
-        ]
-      }
-    },
-    {
-      "selector": ".tooltip::after",
-      "css": 1,
-      "js": 10,
-      "html": 4,
-      "total": 15,
-      "files": {
-        "css": [
-          "src/styles/components.css"
-        ],
-        "js": [
-          "src/managers/login/login.js"
-        ],
-        "html": [
-          "src/managers/login/login.html"
-        ]
-      }
-    },
-    {
-      "selector": ".tooltip:hover::after",
-      "css": 1,
-      "js": 10,
-      "html": 4,
-      "total": 15,
-      "files": {
-        "css": [
-          "src/styles/components.css"
-        ],
+        "css": [],
         "js": [
           "src/managers/login/login.js"
         ],
@@ -24167,67 +24163,7 @@
       }
     },
     {
-      "selector": ".ws-status[data-tooltip]::after",
-      "css": 1,
-      "js": 0,
-      "html": 0,
-      "total": 1,
-      "files": {
-        "css": [
-          "src/styles/layout.css"
-        ],
-        "js": [],
-        "html": []
-      }
-    },
-    {
-      "selector": ".ws-status[data-tooltip]:hover::after",
-      "css": 1,
-      "js": 0,
-      "html": 0,
-      "total": 1,
-      "files": {
-        "css": [
-          "src/styles/layout.css"
-        ],
-        "js": [],
-        "html": []
-      }
-    },
-    {
       "selector": ".zoom-btn",
-      "css": 1,
-      "js": 2,
-      "html": 0,
-      "total": 3,
-      "files": {
-        "css": [
-          "src/managers/main/main.css"
-        ],
-        "js": [
-          "src/core/zoom-control.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".zoom-btn::after",
-      "css": 1,
-      "js": 2,
-      "html": 0,
-      "total": 3,
-      "files": {
-        "css": [
-          "src/managers/main/main.css"
-        ],
-        "js": [
-          "src/core/zoom-control.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".zoom-btn:hover::after",
       "css": 1,
       "js": 2,
       "html": 0,
@@ -25084,42 +25020,6 @@
         ],
         "js": [],
         "html": []
-      }
-    },
-    {
-      "selector": "#login-help-btn.tooltip::after",
-      "css": 1,
-      "js": 10,
-      "html": 4,
-      "total": 15,
-      "files": {
-        "css": [
-          "src/styles/layout.css"
-        ],
-        "js": [
-          "src/managers/login/login.js"
-        ],
-        "html": [
-          "src/managers/login/login.html"
-        ]
-      }
-    },
-    {
-      "selector": "#login-help-btn.tooltip:hover::after",
-      "css": 1,
-      "js": 10,
-      "html": 4,
-      "total": 15,
-      "files": {
-        "css": [
-          "src/styles/layout.css"
-        ],
-        "js": [
-          "src/managers/login/login.js"
-        ],
-        "html": [
-          "src/managers/login/login.html"
-        ]
       }
     },
     {

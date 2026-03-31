@@ -117,16 +117,30 @@
     --accent-disabled: #8080FF;
     --accent-toggle: #FFFF8F;
     --accent-crimson: #DC143C; 
-    --accent-crimson-eyes: white;
+    --accent-editable: linear-gradient(to right,#a00000 0%,#900000 40%,#800000 100%);
 
     --accent-danger: #EF5350;
     --accent-danger-hover: #E53935;
-    --accent-success: #66BB6A;
+    --accent-success: #66BB6A;                                                     
     --accent-success-hover: #4CAF50;
     --accent-warning: #FFA726;
     --accent-warning-hover: #FB8C00;
     --accent-info: #42A5F5;
     --accent-info-hover: #2196F3;
+
+    /* CodeMirror editor per-language background tints */
+    --edit-lang-sql: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    --edit-lang-json: linear-gradient(135deg, #1a2e1a 0%, #162e21 100%);
+    --edit-lang-css: linear-gradient(135deg, #2e1a2e 0%, #2e1636 100%);
+    --edit-lang-markdown: linear-gradient(135deg, #1a2e2e 0%, #162e2e 100%);
+    --edit-lang-javascript: linear-gradient(135deg, #2e2e1a 0%, #2e2816 100%);
+    --edit-lang-html: linear-gradient(135deg, #2e1a1a 0%, #2e1616 100%);
+    --edit-lang-log: linear-gradient(135deg, #1a1a1a 0%, #222222 100%);
+    --edit-lang-default: var(--bg-primary);
+
+    /* CodeMirror gutter colors */
+    --edit-gutter-bg: var(--bg-tertiary);
+    --edit-gutter-editable: var(--accent-editable);
 
     /* Typography - local-first font strategy */
     --font-family: 'Vanadium Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI',
@@ -345,6 +359,35 @@
     /* Firefox: auto ensures visible scrollbars */
     scrollbar-width: auto !important;
     scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track) !important;
+  }
+
+  /* ── Shared CodeMirror Editor Styles ─────────────────────────────────── */
+
+  /* Readonly state — no opacity change, just mute the active line */
+  .lithium-cm-readonly .cm-activeLine {
+    background-color: transparent !important;
+  }
+
+  .lithium-cm-readonly .cm-activeLineGutter {
+    background-color: transparent !important;
+  }
+
+  .lithium-cm-readonly .cm-cursor {
+    display: none !important;
+  }
+
+  .lithium-cm-readonly .cm-selectionBackground {
+    background: transparent !important;
+  }
+
+  /* Edit mode — gutter turns to --accent-editable color */
+  .lithium-cm-editable .cm-gutters {
+    background: var(--edit-gutter-editable, var(--accent-editable, #800000)) !important;
+    transition: background var(--transition-duration, 350ms) ease;
+  }
+
+  .lithium-cm-editable .cm-activeLineGutter {
+    background: color-mix(in srgb, var(--edit-gutter-editable, var(--accent-editable, #800000)) 80%, white 20%) !important;
   }
 
   /* Reduced motion preference */

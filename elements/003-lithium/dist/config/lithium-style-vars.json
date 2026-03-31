@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS custom properties (variables) used across the Lithium codebase",
-    "generated": "2026-03-31T01:45:33.110Z",
+    "generated": "2026-03-31T08:51:03.860Z",
     "sources": {
-      "css": "47 files in src/**/*.css",
-      "js": "76 files in src/**/*.js",
+      "css": "48 files in src/**/*.css",
+      "js": "79 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
-    "total_variables": 143,
-    "total_occurrences": 3009
+    "total_variables": 179,
+    "total_occurrences": 2972
   },
   "variables": [
     {
@@ -19,25 +19,18 @@
       "total": 5
     },
     {
-      "name": "--accent-crimson-eyes",
-      "css": 1,
-      "js": 0,
-      "html": 0,
-      "total": 1
-    },
-    {
       "name": "--accent-danger",
-      "css": 26,
+      "css": 27,
       "js": 0,
       "html": 0,
-      "total": 26
+      "total": 27
     },
     {
       "name": "--accent-danger-hover",
-      "css": 4,
+      "css": 5,
       "js": 0,
       "html": 0,
-      "total": 4
+      "total": 5
     },
     {
       "name": "--accent-disabled",
@@ -45,6 +38,13 @@
       "js": 0,
       "html": 0,
       "total": 10
+    },
+    {
+      "name": "--accent-editable",
+      "css": 5,
+      "js": 0,
+      "html": 0,
+      "total": 5
     },
     {
       "name": "--accent-focus",
@@ -76,10 +76,10 @@
     },
     {
       "name": "--accent-primary",
-      "css": 137,
-      "js": 4,
+      "css": 136,
+      "js": 3,
       "html": 1,
-      "total": 142
+      "total": 140
     },
     {
       "name": "--accent-primary-hover",
@@ -111,17 +111,17 @@
     },
     {
       "name": "--accent-success",
-      "css": 15,
+      "css": 16,
       "js": 0,
       "html": 0,
-      "total": 15
+      "total": 16
     },
     {
       "name": "--accent-success-hover",
-      "css": 5,
+      "css": 6,
       "js": 0,
       "html": 0,
-      "total": 5
+      "total": 6
     },
     {
       "name": "--accent-toggle",
@@ -174,10 +174,10 @@
     },
     {
       "name": "--bg-primary",
-      "css": 45,
+      "css": 46,
       "js": 0,
       "html": 1,
-      "total": 46
+      "total": 47
     },
     {
       "name": "--bg-primary-rgb",
@@ -210,23 +210,23 @@
     {
       "name": "--bg-secondary",
       "css": 74,
-      "js": 2,
+      "js": 1,
       "html": 1,
-      "total": 77
+      "total": 76
     },
     {
       "name": "--bg-tertiary",
-      "css": 96,
-      "js": 1,
+      "css": 88,
+      "js": 2,
       "html": 0,
-      "total": 97
+      "total": 90
     },
     {
       "name": "--border-color",
       "css": 54,
-      "js": 0,
+      "js": 1,
       "html": 0,
-      "total": 54
+      "total": 55
     },
     {
       "name": "--border-color-focus",
@@ -259,9 +259,9 @@
     {
       "name": "--border-radius-full",
       "css": 9,
-      "js": 2,
+      "js": 0,
       "html": 0,
-      "total": 11
+      "total": 9
     },
     {
       "name": "--border-radius-lg",
@@ -272,17 +272,17 @@
     },
     {
       "name": "--border-radius-md",
-      "css": 127,
+      "css": 126,
       "js": 0,
       "html": 0,
-      "total": 127
+      "total": 126
     },
     {
       "name": "--border-radius-sm",
-      "css": 68,
+      "css": 60,
       "js": 0,
       "html": 0,
-      "total": 68
+      "total": 60
     },
     {
       "name": "--border-radius-xl",
@@ -293,10 +293,10 @@
     },
     {
       "name": "--border-standard",
-      "css": 75,
+      "css": 67,
       "js": 1,
       "html": 0,
-      "total": 76
+      "total": 68
     },
     {
       "name": "--border-width",
@@ -355,6 +355,83 @@
       "total": 5
     },
     {
+      "name": "--edit-gutter-bg",
+      "css": 1,
+      "js": 1,
+      "html": 0,
+      "total": 2
+    },
+    {
+      "name": "--edit-gutter-editable",
+      "css": 3,
+      "js": 0,
+      "html": 0,
+      "total": 3
+    },
+    {
+      "name": "--edit-lang-",
+      "css": 0,
+      "js": 2,
+      "html": 0,
+      "total": 2
+    },
+    {
+      "name": "--edit-lang-css",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--edit-lang-default",
+      "css": 1,
+      "js": 1,
+      "html": 0,
+      "total": 2
+    },
+    {
+      "name": "--edit-lang-html",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--edit-lang-javascript",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--edit-lang-json",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--edit-lang-log",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--edit-lang-markdown",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--edit-lang-sql",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
       "name": "--fa-secondary-opacity",
       "css": 1,
       "js": 0,
@@ -370,10 +447,10 @@
     },
     {
       "name": "--font-mono",
-      "css": 33,
-      "js": 12,
+      "css": 32,
+      "js": 9,
       "html": 0,
-      "total": 45
+      "total": 41
     },
     {
       "name": "--font-sans",
@@ -447,10 +524,10 @@
     },
     {
       "name": "--font-size-xs",
-      "css": 31,
+      "css": 23,
       "js": 0,
       "html": 0,
-      "total": 31
+      "total": 23
     },
     {
       "name": "--font-weight-bold",
@@ -637,30 +714,30 @@
     {
       "name": "--scrollbar-size",
       "css": 7,
-      "js": 4,
+      "js": 0,
       "html": 0,
-      "total": 11
+      "total": 7
     },
     {
       "name": "--scrollbar-thumb",
       "css": 7,
-      "js": 4,
+      "js": 1,
       "html": 0,
-      "total": 11
+      "total": 8
     },
     {
       "name": "--scrollbar-thumb-hover",
       "css": 4,
-      "js": 2,
+      "js": 0,
       "html": 0,
-      "total": 6
+      "total": 4
     },
     {
       "name": "--scrollbar-track",
       "css": 6,
-      "js": 6,
+      "js": 1,
       "html": 0,
-      "total": 12
+      "total": 7
     },
     {
       "name": "--shadow-inset",
@@ -692,17 +769,17 @@
     },
     {
       "name": "--space-1",
-      "css": 44,
+      "css": 35,
       "js": 1,
       "html": 0,
-      "total": 45
+      "total": 36
     },
     {
       "name": "--space-2",
-      "css": 143,
+      "css": 134,
       "js": 0,
       "html": 0,
-      "total": 143
+      "total": 134
     },
     {
       "name": "--space-3",
@@ -720,10 +797,10 @@
     },
     {
       "name": "--space-5",
-      "css": 36,
+      "css": 35,
       "js": 0,
       "html": 0,
-      "total": 36
+      "total": 35
     },
     {
       "name": "--space-6",
@@ -889,9 +966,9 @@
     {
       "name": "--text-muted",
       "css": 60,
-      "js": 5,
+      "js": 6,
       "html": 0,
-      "total": 65
+      "total": 66
     },
     {
       "name": "--text-on-accent",
@@ -902,17 +979,192 @@
     },
     {
       "name": "--text-primary",
-      "css": 135,
+      "css": 126,
       "js": 5,
       "html": 1,
-      "total": 141
+      "total": 132
     },
     {
       "name": "--text-secondary",
       "css": 70,
+      "js": 1,
+      "html": 0,
+      "total": 71
+    },
+    {
+      "name": "--tip-arrow",
+      "css": 1,
       "js": 0,
       "html": 0,
-      "total": 70
+      "total": 1
+    },
+    {
+      "name": "--tip-bg",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--tip-border",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--tip-crimson-arrow",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--tip-crimson-bg",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--tip-crimson-border",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--tip-crimson-text",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--tip-danger-arrow",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--tip-danger-bg",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--tip-danger-border",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--tip-danger-text",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--tip-info-arrow",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--tip-info-bg",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--tip-info-border",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--tip-info-text",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--tip-shadow",
+      "css": 6,
+      "js": 0,
+      "html": 0,
+      "total": 6
+    },
+    {
+      "name": "--tip-success-arrow",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--tip-success-bg",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--tip-success-border",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--tip-success-text",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--tip-text",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--tip-warning-arrow",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--tip-warning-bg",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--tip-warning-border",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--tip-warning-text",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
     },
     {
       "name": "--transition",
@@ -930,17 +1182,17 @@
     },
     {
       "name": "--transition-duration",
-      "css": 45,
-      "js": 8,
+      "css": 48,
+      "js": 9,
       "html": 0,
-      "total": 53
+      "total": 57
     },
     {
       "name": "--transition-fast",
-      "css": 138,
-      "js": 2,
+      "css": 129,
+      "js": 3,
       "html": 0,
-      "total": 140
+      "total": 132
     },
     {
       "name": "--transition-normal",
@@ -993,10 +1245,10 @@
     },
     {
       "name": "--z-tooltip",
-      "css": 10,
+      "css": 2,
       "js": 0,
       "html": 0,
-      "total": 10
+      "total": 2
     },
     {
       "name": "--zoom",

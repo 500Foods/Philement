@@ -1,7 +1,7 @@
 /**
  * Global Vendor Fixes
  * 
- * Contains generic overrides for third-party libraries (Tabulator, JsonTree, etc.)
+ * Contains generic overrides for third-party libraries (Tabulator, CodeMirror, etc.)
  * that are needed by ALL managers. This file must load BEFORE any manager CSS.
  *
  * @layer vendor-fixes

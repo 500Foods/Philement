@@ -19,11 +19,13 @@ import { toast } from '../../shared/toast.js';
 import { log, Subsystems, Status } from '../../core/log.js';
 import { processIcons } from '../../core/icons.js';
 import { setupManagerFooterIcons, createFontPopup } from '../../core/manager-ui.js';
+import { ManagerEditHelper } from '../../core/manager-edit-helper.js';
 
 // Import modular components
 import { createDirtyStateTracker } from './queries-dirty.js';
 import { createEditModeManager } from './queries-edit-mode.js';
 import { createEditorManager } from './queries-editors.js';
+import { createNavigationManager } from './queries-navigation.js';
 
 // Constants
 const SELECTED_ROW_KEY = 'lithium_queries_selected_id';
@@ -55,25 +57,26 @@ export default class QueriesManager {
     this.leftPanelState = new PanelStateManager('lithium_queries_left');
     this.leftPanelWidth = this.leftPanelState.loadWidth(280);
     this.isLeftPanelCollapsed = this.leftPanelState.loadCollapsed(false);
-    
+
     // Initialize modular managers
     this.dirtyTracker = createDirtyStateTracker(this);
     this.editModeManager = createEditModeManager(this);
     this.editorManager = createEditorManager(this);
-    
+    this.navigationManager = createNavigationManager(this);
+
+    // Edit helper — consolidates edit mode, dirty tracking, and save/cancel buttons
+    this.editHelper = new ManagerEditHelper({ name: 'Queries' });
+
     // Font popup state
     this.fontPopup = null;
     this.editorFontSize = 14;
     this.editorFontFamily = 'var(--font-mono)';
     this.editorFontWeight = 'normal';
-    
+
     // Expose editor references for backward compatibility
     this.sqlEditor = null;
     this.summaryEditor = null;
     this.collectionEditor = null;
-    
-    // Active editing table reference (for footer Save/Cancel)
-    this.activeEditingTable = null;
   }
 
   // ============ LIFECYCLE ============
@@ -114,6 +117,8 @@ export default class QueriesManager {
       previewContainer: this.container.querySelector('#queries-tab-preview'),
       undoBtn: this.container.querySelector('#queries-undo-btn'),
       redoBtn: this.container.querySelector('#queries-redo-btn'),
+      foldAllBtn: this.container.querySelector('#queries-fold-all-btn'),
+      unfoldAllBtn: this.container.querySelector('#queries-unfold-all-btn'),
       fontBtn: this.container.querySelector('#queries-font-btn'),
       prettifyBtn: this.container.querySelector('#queries-prettify-btn'),
       tabsHeader: this.container.querySelector('.queries-tabs-header'),
@@ -144,11 +149,44 @@ export default class QueriesManager {
       onDataLoaded: (rows) => {
         log(Subsystems.TABLE, Status.INFO, `[Queries] Loaded ${rows.length} queries`);
       },
-      onEditModeChange: (isEditing, rowData) => this._handleTableEditModeChange(this.queryTable, isEditing, rowData),
+      // Note: onEditModeChange and onDirtyChange are auto-wired by editHelper.registerTable()
     });
+
+    // Register with editHelper — auto-wires onEditModeChange + onDirtyChange
+    this.editHelper.registerTable(this.queryTable);
+
+    // Register external editors (will be bound after editors are created)
+    this._registerEditorsWithEditHelper();
 
     await this.queryTable.init();
     await this.queryTable.loadData();
+  }
+
+  /**
+   * Register CodeMirror editors with editHelper for dirty tracking.
+   * Called after editors are initialized.
+   */
+  _registerEditorsWithEditHelper() {
+    // Register SQL editor
+    this.editHelper.registerEditor('sql', {
+      getContent: () => this.sqlEditor?.state?.doc?.toString() || '',
+      setEditable: (editable) => this.editorManager?._setCodeMirrorEditable(editable),
+      boundTable: this.queryTable,
+    });
+
+    // Register Summary editor
+    this.editHelper.registerEditor('summary', {
+      getContent: () => this.summaryEditor?.state?.doc?.toString() || '',
+      setEditable: () => {}, // Handled by 'sql' editor registration above
+      boundTable: this.queryTable,
+    });
+
+    // Register Collection editor
+    this.editHelper.registerEditor('collection', {
+      getContent: () => this.editorManager?.getCollectionContent() || '{}',
+      setEditable: () => {}, // Handled by 'sql' editor registration above
+      boundTable: this.queryTable,
+    });
   }
 
   // ============ EVENT HANDLERS ============
@@ -165,6 +203,8 @@ export default class QueriesManager {
     // Toolbar buttons
     this.elements.undoBtn?.addEventListener('click', () => this.editorManager.handleUndo());
     this.elements.redoBtn?.addEventListener('click', () => this.editorManager.handleRedo());
+    this.elements.foldAllBtn?.addEventListener('click', () => this.editorManager.handleFoldAll());
+    this.elements.unfoldAllBtn?.addEventListener('click', () => this.editorManager.handleUnfoldAll());
     this.elements.fontBtn?.addEventListener('click', () => this._handleFontClick());
     this.elements.prettifyBtn?.addEventListener('click', () => this.editorManager.handlePrettify());
     
@@ -322,53 +362,74 @@ export default class QueriesManager {
 
   _handleTableEditModeChange(lithiumTable, isEditing, rowData) {
     if (isEditing) {
-      if (this.activeEditingTable && this.activeEditingTable !== lithiumTable) {
-        this.activeEditingTable.exitEditMode('cancel');
-      }
-      this.activeEditingTable = lithiumTable;
-      
+      // Track active editing table in editHelper (for footer save/cancel routing)
+      this.editHelper.activeEditingTable = lithiumTable;
+
       // Sync editModeManager state so isEditing() returns true
-      // This is needed because the table's edit mode callback fires directly,
-      // not through editModeManager.enterEditMode()
       this.editModeManager._isEditing = true;
       this.editModeManager._editingRowId = rowData?.query_id;
-      
+
       // Enable CodeMirror editors when entering edit mode
       this.editorManager._setCodeMirrorEditable(true);
-      
-      // Buttons start DISABLED - only enable when dirty state is detected
-      // (capturedOriginalData was called by editModeManager.enterEditMode)
-      this.updateFooterSaveCancelState(true, false);
-      
+
+      // Capture snapshot for dirty tracking.
+      // This must happen AFTER enabling editors so we capture their current state.
+      this.dirtyTracker.captureOriginalData(rowData, {
+        sql: this.sqlEditor,
+        summary: this.summaryEditor,
+        collection: this.collectionEditor,
+        sqlContent: this._pendingSqlContent,
+        summaryContent: this._pendingSummaryContent,
+        collectionContent: this._pendingCollectionContent,
+      });
+
       // Sync table's isDirty with our dirty tracker state
       lithiumTable.isDirty = this.dirtyTracker.isAnyDirty();
-      
+
       log(Subsystems.MANAGER, Status.INFO, '[Queries] Edit mode entered');
     } else {
       // Sync editModeManager state
       this.editModeManager._isEditing = false;
       this.editModeManager._editingRowId = null;
-      if (this.activeEditingTable === lithiumTable) {
-        this.activeEditingTable = null;
-      }
+
+      // Clear active editing table in editHelper
+      this.editHelper.activeEditingTable = null;
+
       // Disable CodeMirror editors when exiting edit mode
       this.editorManager._setCodeMirrorEditable(false);
-      this.updateFooterSaveCancelState(true, false);
+
+      // Clear snapshot and dirty state
+      this.dirtyTracker.markAllClean();
+      this.dirtyTracker.clearOriginalData();
+
       log(Subsystems.MANAGER, Status.INFO, '[Queries] Edit mode exited');
     }
   }
 
+  /**
+   * Update footer save/cancel button state.
+   * Called by DirtyStateTracker when dirty state changes.
+   */
   updateFooterSaveCancelState(visible, enabled) {
-    if (this.footerSaveBtn) {
-      this.footerSaveBtn.style.display = visible ? '' : 'none';
-      this.footerSaveBtn.disabled = !visible || !enabled;
+    const slot = this.container.closest('.manager-slot');
+    if (!slot) return;
+    const footer = slot.querySelector('.manager-slot-footer');
+    if (!footer) return;
+
+    const saveBtn = footer.querySelector('.manager-footer-save-btn');
+    const cancelBtn = footer.querySelector('.manager-footer-cancel-btn');
+    const dummyBtn = footer.querySelector('.manager-footer-dummy-btn');
+
+    if (saveBtn) {
+      saveBtn.style.display = visible ? '' : 'none';
+      saveBtn.disabled = !visible || !enabled;
     }
-    if (this.footerCancelBtn) {
-      this.footerCancelBtn.style.display = visible ? '' : 'none';
-      this.footerCancelBtn.disabled = !visible || !enabled;
+    if (cancelBtn) {
+      cancelBtn.style.display = visible ? '' : 'none';
+      cancelBtn.disabled = !visible || !enabled;
     }
-    if (this.footerDummyBtn) {
-      this.footerDummyBtn.style.display = visible ? '' : 'none';
+    if (dummyBtn) {
+      dummyBtn.style.display = visible ? '' : 'none';
     }
   }
 
@@ -461,28 +522,48 @@ export default class QueriesManager {
     });
 
     this._footerDatasource = footerElements.reportSelect;
-    this.footerSaveBtn = footerElements.saveBtn;
-    this.footerCancelBtn = footerElements.cancelBtn;
-    this.footerDummyBtn = footerElements.dummyBtn;
 
-    // Wire footer Save/Cancel to the active editing table
-    if (this.footerSaveBtn) {
-      this.footerSaveBtn.addEventListener('click', () => {
-        if (this.activeEditingTable?.handleSave) {
-          this.activeEditingTable.handleSave();
-        }
+    // Wire save/cancel buttons to custom navigation handlers
+    // (Query Manager has custom save logic that includes SQL/Summary/Collection)
+    if (footerElements.saveBtn) {
+      footerElements.saveBtn.addEventListener('click', () => {
+        this.navigationManager?.handleNavSave();
       });
     }
-    if (this.footerCancelBtn) {
-      this.footerCancelBtn.addEventListener('click', () => {
-        if (this.activeEditingTable?.handleCancel) {
-          this.activeEditingTable.handleCancel();
-        }
+    if (footerElements.cancelBtn) {
+      footerElements.cancelBtn.addEventListener('click', () => {
+        this.navigationManager?.handleNavCancel();
       });
     }
 
-    // Show the Save/Cancel buttons (disabled) initially
+    // Initialize button state (disabled until dirty)
     this.updateFooterSaveCancelState(true, false);
+  }
+
+  /**
+   * Update footer save/cancel button state
+   */
+  updateFooterSaveCancelState(visible, enabled) {
+    const slot = this.container.closest('.manager-slot');
+    if (!slot) return;
+    const footer = slot.querySelector('.manager-slot-footer');
+    if (!footer) return;
+
+    const saveBtn = footer.querySelector('.manager-footer-save-btn');
+    const cancelBtn = footer.querySelector('.manager-footer-cancel-btn');
+    const dummyBtn = footer.querySelector('.manager-footer-dummy-btn');
+
+    if (saveBtn) {
+      saveBtn.style.display = visible ? '' : 'none';
+      saveBtn.disabled = !visible || !enabled;
+    }
+    if (cancelBtn) {
+      cancelBtn.style.display = visible ? '' : 'none';
+      cancelBtn.disabled = !visible || !enabled;
+    }
+    if (dummyBtn) {
+      dummyBtn.style.display = visible ? '' : 'none';
+    }
   }
 
   _getFooterDatasource() {
@@ -727,6 +808,9 @@ export default class QueriesManager {
 
   cleanup() {
     log(Subsystems.MANAGER, Status.INFO, '[Queries] Cleaning up...');
+
+    // Clean up edit helper
+    this.editHelper?.destroy();
 
     // Clean up font popup
     if (this.fontPopup) {

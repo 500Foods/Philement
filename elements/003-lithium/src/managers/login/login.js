@@ -338,13 +338,6 @@ export default class LoginManager {
       language: this.elements.languagePanel,
       help: this.elements.helpPanel,
     };
-
-    // Add tooltip classes to buttons
-    this.elements.submit?.classList.add('tooltip');
-    this.elements.languageBtn?.classList.add('tooltip');
-    this.elements.themeBtn?.classList.add('tooltip');
-    this.elements.logsBtn?.classList.add('tooltip');
-    this.elements.helpBtn?.classList.add('tooltip');
   }
 
   /**
@@ -879,82 +872,19 @@ export default class LoginManager {
       return;
     }
 
-    // Build a proper CodeMirror 6 editor from the individual @codemirror packages
-    // (there is no top-level 'codemirror' meta-package in this project)
-    // SQL language is intentionally loaded: logs may contain SQL content in future,
-    // and this also pre-warms the module for the SQL editor elsewhere in the app.
+    // Initialize CodeMirror — uses shared setup for consistent formatting
     try {
-      const [
-        { EditorView, lineNumbers, highlightActiveLine, highlightActiveLineGutter, drawSelection, keymap },
-        { EditorState },
-        { defaultKeymap, historyKeymap, history },
-        { oneDark },
-        { sql },
-      ] = await Promise.all([
-        import('@codemirror/view'),
-        import('@codemirror/state'),
-        import('@codemirror/commands'),
-        import('@codemirror/theme-one-dark'),
-        import('@codemirror/lang-sql'),
-      ]);
+      const { EditorState, EditorView } = await import('../../core/codemirror.js');
+      const { buildEditorExtensions, createReadOnlyCompartment } = await import('../../core/codemirror-setup.js');
 
-      // Custom 4-digit zero-padded line number formatter
-      const zeroPaddedLineNumbers = lineNumbers({
-        formatNumber: (n) => String(n).padStart(4, '0'),
+      const roCompartment = createReadOnlyCompartment();
+      const extensions = buildEditorExtensions({
+        language: 'log',
+        readOnlyCompartment: roCompartment,
+        readOnly: true,
+        fontSize: 10,
+        fontFamily: "'Vanadium Mono', 'Courier New', Courier, monospace",
       });
-
-      const extensions = [
-        // Visual chrome
-        zeroPaddedLineNumbers,
-        highlightActiveLine(),
-        highlightActiveLineGutter(),
-        drawSelection(),
-        history(),
-        keymap.of([...defaultKeymap, ...historyKeymap]),
-
-        // SQL language (pre-warms module; also highlights any SQL snippets in logs)
-        sql(),
-
-        // Dark theme
-        oneDark,
-
-        // Read-only
-        EditorState.readOnly.of(true),
-
-        // Sizing and font - using CSS variables for consistent theming
-        EditorView.theme({
-          '&': {
-            height: '100%',
-            fontSize: '10px',
-            fontFamily: "'Vanadium Mono', 'Courier New', Courier, monospace",
-          },
-          '.cm-scroller': {
-            overflow: 'auto',
-            // Firefox: auto for visible scrollbars, use CSS variables for colors
-            scrollbarWidth: 'auto',
-            scrollbarColor: 'var(--scrollbar-thumb) var(--scrollbar-track)',
-          },
-          // WebKit: use CSS variables for consistent scrollbar styling
-          '.cm-scroller::-webkit-scrollbar': {
-            width: 'var(--scrollbar-size)',
-            height: 'var(--scrollbar-size)',
-          },
-          '.cm-scroller::-webkit-scrollbar-track': {
-            background: 'var(--scrollbar-track)',
-          },
-          '.cm-scroller::-webkit-scrollbar-thumb': {
-            background: 'var(--scrollbar-thumb)',
-            borderRadius: 'var(--border-radius-full)',
-          },
-          '.cm-scroller::-webkit-scrollbar-thumb:hover': {
-            background: 'var(--scrollbar-thumb-hover)',
-          },
-          '.cm-scroller::-webkit-scrollbar-corner': {
-            background: 'var(--scrollbar-track)',
-          },
-          '.cm-content': { whiteSpace: 'pre' },
-        }),
-      ];
 
       const state = EditorState.create({ doc: logText, extensions });
 

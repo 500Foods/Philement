@@ -12,7 +12,10 @@ The Query Manager (Manager ID: 4) provides a dual-panel interface for managing d
 
 **Key Files:**
 
-- `queries.js` — Main manager class
+- `queries.js` — Main manager class (orchestrates LithiumTable + editors)
+- `queries-dirty.js` — Snapshot-based dirty state tracking for all editors
+- `queries-edit-mode.js` — Edit mode transitions, cell editing, and edit gating
+- `queries-editors.js` — CodeMirror editor initialization (SQL, Summary, Collection)
 - `queries.css` — Styling
 - `queries.html` — HTML template
 
@@ -174,29 +177,35 @@ async initTable() {
 
 ### Dirty State Tracking
 
-The manager tracks changes across multiple editors:
+The Query Manager uses a `DirtyStateTracker` (`queries-dirty.js`) that tracks changes across multiple editors with snapshot-based comparison:
 
 ```javascript
-this.isDirty = {
-  table: false,      // Tabulator row edited
-  sql: false,        // SQL editor changed
-  summary: false,    // Summary editor changed
-  collection: false, // Collection editor changed
-};
+// DirtyStateTracker captures original content on edit mode entry
+this.dirtyTracker.captureOriginalData(rowData, {
+  sql: this.sqlEditor,
+  summary: this.summaryEditor,
+  collection: this.collectionEditor,
+  sqlContent: this._pendingSqlContent,       // Full DB content for lazy-loaded editors
+  summaryContent: this._pendingSummaryContent,
+  collectionContent: this._pendingCollectionContent,
+});
 ```
 
-**Tracking:**
+**Tracking method — snapshot comparison (not change events):**
 
-- **Table:** `cellEdited` event
-- **SQL:** CodeMirror `docChanged` listener
-- **Summary:** CodeMirror `docChanged` listener
-- **Collection:** vanilla-jsoneditor `onChange` callback
+- **Table:** `cellEdited` event triggers dirty check
+- **SQL:** CodeMirror `updateListener` compares current content to snapshot via `checkSqlDirty()`
+- **Summary:** CodeMirror `updateListener` compares via `checkSummaryDirty()`
+- **Collection:** CodeMirror `updateListener` compares via `checkCollectionDirty()`
 
 **Behavior:**
 
 - Save/Cancel buttons only enabled when dirty AND in edit mode
+- If changes are undone (e.g., Ctrl+Z in CodeMirror), the snapshot comparison detects no difference and buttons return to disabled
 - Cancel reverts all changes to original values
 - Save commits to API
+
+**Footer button state** is managed by `ManagerEditHelper` (`editHelper`), which the dirty tracker calls via `manager.updateFooterSaveCancelState()`. See [LITHIUM-TAB.md](LITHIUM-TAB.md#footer-savecancel-buttons-and-manageredithelper).
 
 ---
 

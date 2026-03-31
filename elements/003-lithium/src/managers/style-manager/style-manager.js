@@ -11,6 +11,11 @@
  * @module managers/style-manager
  */
 
+// Import Styles
+import '../../styles/vendor-tabulator.css';
+import '../../core/manager-panels.css';
+import './style-manager.css';
+
 import { LithiumTable } from '../../core/lithium-table-main.js';
 import { LithiumSplitter } from '../../core/lithium-splitter.js';
 import { PanelStateManager } from '../../core/panel-state-manager.js';
@@ -18,29 +23,27 @@ import { togglePanelCollapse, restorePanelState } from '../../core/panel-collaps
 
 import { processIcons } from '../../core/icons.js';
 import { setupManagerFooterIcons, createFontPopup } from '../../core/manager-ui.js';
+import { ManagerEditHelper } from '../../core/manager-edit-helper.js';
 import { authQuery } from '../../shared/conduit.js';
 import { toast } from '../../shared/toast.js';
 import { log, Subsystems, Status } from '../../core/log.js';
 import { getClaims } from '../../core/jwt.js';
 import { hasFeature } from '../../core/permissions.js';
 
-// CodeMirror imports from centralized module
+// CodeMirror — shared setup + direct imports for undo/redo
 import {
   EditorView,
   EditorState,
-  Compartment,
-  lineNumbers,
-  highlightActiveLineGutter,
-  highlightSpecialChars,
-  drawSelection,
-  highlightActiveLine,
-  keymap,
-  defaultKeymap,
-  history,
-  historyKeymap,
-  css,
-  oneDark
+  undo,
+  redo,
 } from '../../core/codemirror.js';
+import {
+  buildEditorExtensions,
+  createReadOnlyCompartment,
+  setEditorEditable,
+  foldAllInEditor,
+  unfoldAllInEditor,
+} from '../../core/codemirror-setup.js';
 
 // ── Hardcoded Sections Data ───────────────────────────────────────────────
 
@@ -73,6 +76,7 @@ const SECTIONS_DATA = [
   { sectionId: 26, sectionName: 'Icons', delta: 0, sortoder: 0 },
   { sectionId: 27, sectionName: 'Cursors', delta: 0, sortoder: 0 },
   { sectionId: 28, sectionName: 'Tours', delta: 0, sortoder: 0 },
+  { sectionId: 29, sectionName: 'Tooltips', delta: 0, sortoder: 0 },
 ];
 
 // ── Section Mockups ───────────────────────────────────────────────────────
@@ -122,8 +126,8 @@ const SECTION_MOCKUPS = {
               <button type="button" class="login-btn-icon" data-target="login-help-btn" data-label="Help Button"><fa fa-circle-question></fa></button>
             </div>
             <div class="login-alt-btn-group" data-target="login-alt-btn-group" data-label="Alternative Login Buttons">
-              <button type="button" class="login-alt-btn" data-target="login-digit-btn" data-label="Digit Button">
-                <img height=50 src="/assets/images/login_digit.jpg" alt="Digit" class="login-alt-icon">
+              <button type="button" class="login-alt-btn" data-target="login-didit-btn" data-label="Didit Button">
+                <img height=50 src="/assets/images/login_didit.png" alt="Digit" class="login-alt-icon">
               </button>
               <button type="button" class="login-alt-btn" data-target="login-apple-btn" data-label="Apple Button">
                 <img src="/assets/images/login_apple.png" alt="Apple" class="login-alt-icon">
@@ -132,7 +136,7 @@ const SECTION_MOCKUPS = {
                 <img src="/assets/images/login_google.png" alt="Google" class="login-alt-icon">
               </button>
               <button type="button" class="login-alt-btn" data-target="login-microsoft-btn" data-label="Microsoft Button">
-                <img src="/assets/images/login_microsoft.webp" alt="Microsoft" class="login-alt-icon">
+                <img src="/assets/images/login_microsoft.png" alt="Microsoft" class="login-alt-icon">
               </button>
             </div>
           </form>
@@ -221,9 +225,8 @@ export default class StyleManager {
     this.isCssEditorInEditMode = false;
     this._originalCssContent = '';
     
-    // Edit mode state snapshot for dirty tracking
-    this.editModeSnapshot = null;  // Snapshot taken when entering edit mode
-    this._isFormDirty = false;     // Consolidated dirty state for all editors
+    // Edit helper — consolidates edit mode, dirty tracking, and save/cancel buttons
+    this.editHelper = new ManagerEditHelper({ name: 'Style' });
 
     // Panel state persistence
     this.leftPanelState = new PanelStateManager('lithium_style_left');
@@ -282,6 +285,8 @@ export default class StyleManager {
       jsonBtn: this.container.querySelector('#style-json-btn'),
       undoBtn: this.container.querySelector('#style-undo-btn'),
       redoBtn: this.container.querySelector('#style-redo-btn'),
+      foldAllBtn: this.container.querySelector('#style-fold-all-btn'),
+      unfoldAllBtn: this.container.querySelector('#style-unfold-all-btn'),
       fontBtn: this.container.querySelector('#style-font-btn'),
       prettifyBtn: this.container.querySelector('#style-prettify-btn'),
       sectionView: this.container.querySelector('#style-section-view'),
@@ -360,8 +365,16 @@ export default class StyleManager {
       onDataLoaded: (rows) => {
         log(Subsystems.TABLE, Status.INFO, `[Style] Loaded ${rows.length} lookup elements`);
       },
-      onEditModeChange: (isEditing, rowData) => this.handleTableEditModeChange(this.lookupTable, isEditing, rowData),
-      onDirtyChange: (isDirty, rowData) => this.handleTableDirtyChange(this.lookupTable, isDirty, rowData),
+    });
+
+    // Register with editHelper — auto-wires onEditModeChange + onDirtyChange
+    this.editHelper.registerTable(this.lookupTable);
+
+    // Register CSS editor with editHelper (bound to lookup table)
+    this.editHelper.registerEditor('css', {
+      getContent: () => this.cssEditor?.state?.doc?.toString() || '',
+      setEditable: (editable) => this.setCssEditorEditable(editable),
+      boundTable: this.lookupTable,
     });
 
     await this.lookupTable.init();
@@ -420,9 +433,10 @@ export default class StyleManager {
       panelStateManager: this.middlePanelState,
       onRowSelected: (rowData) => this.handleSectionRowSelected(rowData),
       onRowDeselected: () => this.handleSectionRowDeselected(),
-      onEditModeChange: (isEditing, rowData) => this.handleTableEditModeChange(this.sectionsTable, isEditing, rowData),
-      onDirtyChange: (isDirty, rowData) => this.handleTableDirtyChange(this.sectionsTable, isDirty, rowData),
     });
+
+    // Register with editHelper — auto-wires onEditModeChange + onDirtyChange
+    this.editHelper.registerTable(this.sectionsTable);
 
     await this.sectionsTable.init();
 
@@ -719,47 +733,29 @@ export default class StyleManager {
     if (this.cssEditor) return;
 
     try {
-      // Use static imports from core/codemirror.js
-      this.cmReadOnlyCompartment = new Compartment();
+      this.cmReadOnlyCompartment = createReadOnlyCompartment();
 
-      const state = EditorState.create({
-        doc: '',
-        extensions: [
-          // Basic setup extensions
-          lineNumbers(),
-          highlightActiveLineGutter(),
-          highlightSpecialChars(),
-          drawSelection(),
-          highlightActiveLine(),
-          keymap.of([...defaultKeymap, ...historyKeymap]),
-          // Language and theme
-          css(),
-          oneDark,
-          history(),
-          // Readonly compartment
-          this.cmReadOnlyCompartment.of(EditorState.readOnly.of(true)),
-          // Update listener for dirty tracking
-          EditorView.updateListener.of((update) => {
-            if (update.docChanged && this.isCssEditorInEditMode) {
-              this.handleCssEditorDirty();
-            }
-          }),
-          EditorView.theme({
-            '&': { height: '100%' },
-            '.cm-scroller': { overflow: 'auto' }
-          })
-        ]
+      const extensions = buildEditorExtensions({
+        language: 'css',
+        readOnlyCompartment: this.cmReadOnlyCompartment,
+        readOnly: true,
+        fontSize: 14,
+        onUpdate: (update) => {
+          if (update.docChanged && this.isCssEditorInEditMode) {
+            this.handleCssEditorDirty();
+          }
+        },
       });
+
+      const state = EditorState.create({ doc: '', extensions });
 
       this.cssEditor = new EditorView({
         state,
         parent: this.elements.cssEditor,
       });
 
-      // Make editor readonly initially (CSS content editable = false)
-      const contentEl = this.cssEditor.dom.querySelector('.cm-content');
-      if (contentEl) contentEl.contentEditable = 'false';
-      this.elements.cssEditor?.classList.add('style-css-readonly');
+      // Set initial visual state (readonly)
+      setEditorEditable(this.cssEditor, this.cmReadOnlyCompartment, false, this.elements.cssEditor);
 
       // Double-click to enter edit mode
       this.elements.cssEditor?.addEventListener('dblclick', () => {
@@ -782,112 +778,17 @@ export default class StyleManager {
   handleCssEditorDirty() {
     if (!this.cssEditor || !this.isCssEditorInEditMode) return;
     
-    // Update the overall dirty state
-    this.updateOverallDirtyState();
+    // Delegate to editHelper — compares against snapshot
+    this.editHelper.checkDirtyState();
   }
 
-  /**
-   * Take a snapshot of all editable content when entering edit mode.
-   * 
-   * The snapshot captures data in "database format" - exactly what we'd send
-   * to the server. This handles minor formatting differences between editors
-   * (e.g., extra newlines in CodeMirror) because we always capture data the
-   * same way and compare apples to apples.
-   * 
-   * Change events from editors (Tabulator, CodeMirror, etc.) are just TRIGGERS
-   * to regenerate the snapshot and compare - we don't rely on their internal
-   * dirty tracking because they may not be as precise as we need.
-   */
-  takeEditModeSnapshot() {
-    // Capture current state from all editors in "database format"
-    const selectedRow = this.activeEditingTable?.getSelectedDataRow?.() || null;
-    const rowData = selectedRow?.getData?.() || null;
-    
-    this.editModeSnapshot = {
-      // CSS editor content (plain text - what we'd save to database)
-      cssContent: this.cssEditor?.state?.doc?.toString() || '',
-      // Table row data (deep copy so we have an immutable baseline)
-      tableRowData: rowData ? JSON.parse(JSON.stringify(rowData)) : null,
-      timestamp: Date.now()
-    };
-    
-    this._isFormDirty = false;
-    log(Subsystems.MANAGER, Status.DEBUG, `[Style] Snapshot taken for dirty comparison`);
-  }
+  // Snapshot-based dirty tracking is now handled by editHelper.
+  // See ManagerEditHelper._takeSnapshot(), isAnythingDirty(), checkDirtyState().
 
   /**
-   * Clear the edit mode snapshot when exiting edit mode.
-   */
-  clearEditModeSnapshot() {
-    this.editModeSnapshot = null;
-    this._isFormDirty = false;
-  }
-
-  /**
-   * Compare current state to the edit mode snapshot.
-   * Returns true if ANY editable content differs from what we'd send to the database.
-   * 
-   * This is the definitive dirty check - we always compare data captured in
-   * the same format, so minor editor quirks (extra whitespace, etc.) don't matter.
-   * Change events just trigger us to call this - we don't trust editor dirty flags.
-   */
-  isAnythingDirty() {
-    if (!this.editModeSnapshot) return false;
-
-    // Check CSS editor content against snapshot
-    if (this.cssEditor && this.isCssEditorInEditMode) {
-      const currentCss = this.cssEditor.state.doc.toString();
-      if (currentCss !== this.editModeSnapshot.cssContent) {
-        return true;
-      }
-    }
-
-    // Check table row data against snapshot
-    if (this.activeEditingTable && this.editModeSnapshot.tableRowData) {
-      const selectedRow = this.activeEditingTable.getSelectedDataRow?.();
-      const currentData = selectedRow?.getData?.();
-      const snapshotData = this.editModeSnapshot.tableRowData;
-      
-      if (currentData) {
-        for (const key in snapshotData) {
-          if (key.startsWith('_') || key === 'tabulator') continue;
-          if (!(key in currentData)) continue;
-          
-          if (JSON.stringify(snapshotData[key]) !== JSON.stringify(currentData[key])) {
-            return true;
-          }
-        }
-      }
-    }
-
-    return false;
-  }
-
-  /**
-   * Update the overall dirty state and button states.
-   * Called whenever any editor fires a change event (which just triggers us
-   * to regenerate and compare snapshots - we don't trust their dirty tracking).
-   */
-  updateOverallDirtyState() {
-    // Regenerate snapshot and compare to original
-    const isDirty = this.isAnythingDirty();
-    
-    if (this.activeEditingTable) {
-      // Sync the table's isDirty with our snapshot-based dirty state.
-      // This is needed because handleSave() checks isDirty before proceeding,
-      // and CodeMirror/SunEditor changes don't set the table's isDirty flag.
-      this.activeEditingTable.isDirty = isDirty;
-      this.updateFooterSaveCancelState(true, isDirty);
-      
-      if (this._isFormDirty !== isDirty) {
-        log(Subsystems.MANAGER, Status.DEBUG, `[Style] Dirty state: ${isDirty}`);
-        this._isFormDirty = isDirty;
-      }
-    }
-  }
-
-  /**
-   * Set CSS editor readonly/editable state
+   * Set CSS editor readonly/editable state.
+   * Uses the shared setEditorEditable utility for consistent behavior
+   * (compartment reconfigure + contentEditable + gutter color change).
    * @param {boolean} editable - Whether the editor should be editable
    */
   setCssEditorEditable(editable) {
@@ -895,21 +796,7 @@ export default class StyleManager {
 
     this.isCssEditorInEditMode = editable;
 
-    // Update contentEditable on the cm-content element
-    const contentEl = this.cssEditor.dom.querySelector('.cm-content');
-    if (contentEl) contentEl.contentEditable = editable ? 'true' : 'false';
-
-    // Update readonly class
-    this.elements.cssEditor?.classList.toggle('style-css-readonly', !editable);
-
-    // Reconfigure readOnly via compartment
-    // Use statically imported EditorState (same module instance as compartment)
-    this.cssEditor.dispatch({
-      effects: this.cmReadOnlyCompartment.reconfigure(EditorState.readOnly.of(!editable))
-    });
-
-    // Note: Original content is now captured via takeEditModeSnapshot()
-    // called in handleTableEditModeChange after this method completes
+    setEditorEditable(this.cssEditor, this.cmReadOnlyCompartment, editable, this.elements.cssEditor);
 
     log(Subsystems.MANAGER, Status.INFO, `[Style] CSS editor set to ${editable ? 'editable' : 'readonly'}`);
   }
@@ -968,6 +855,8 @@ ${selector}:disabled {
   setupToolbar() {
     this.elements.undoBtn?.addEventListener('click', () => this.undo());
     this.elements.redoBtn?.addEventListener('click', () => this.redo());
+    this.elements.foldAllBtn?.addEventListener('click', () => { if (this.cssEditor) foldAllInEditor(this.cssEditor); });
+    this.elements.unfoldAllBtn?.addEventListener('click', () => { if (this.cssEditor) unfoldAllInEditor(this.cssEditor); });
     this.elements.prettifyBtn?.addEventListener('click', () => this.prettify());
   }
 
@@ -1252,33 +1141,14 @@ ${selector}:disabled {
       showSaveCancel: true,
     });
 
-    // Store footer save/cancel element references for state management
-    this.footerSaveBtn = footerElements.saveBtn;
-    this.footerCancelBtn = footerElements.cancelBtn;
-    this.footerDummyBtn = footerElements.dummyBtn;
+    this._footerDatasource = footerElements.reportSelect;
 
-    // The LithiumTable instance currently in edit mode (if any)
-    this.activeEditingTable = null;
-
-    // Wire footer Save/Cancel to the active editing table
-    if (this.footerSaveBtn) {
-      this.footerSaveBtn.addEventListener('click', () => {
-        if (this.activeEditingTable?.handleSave) {
-          this.activeEditingTable.handleSave();
-        }
-      });
-    }
-    if (this.footerCancelBtn) {
-      this.footerCancelBtn.addEventListener('click', () => {
-        if (this.activeEditingTable?.handleCancel) {
-          this.activeEditingTable.handleCancel();
-        }
-      });
-    }
-
-    // Show the Save/Cancel buttons (disabled) initially
-    // They will be enabled when a LithiumTable enters edit mode
-    this.updateFooterSaveCancelState(true, false);
+    // Wire save/cancel buttons to the editHelper (handles all state management)
+    this.editHelper.wireFooterButtons(
+      footerElements.saveBtn,
+      footerElements.cancelBtn,
+      footerElements.dummyBtn,
+    );
 
     log(Subsystems.MANAGER, Status.INFO, '[StyleManager] Footer controls initialized');
   }
@@ -1450,95 +1320,10 @@ ${selector}:disabled {
     }
   }
 
-  /**
-   * Called when any LithiumTable in this manager changes edit mode.
-   * Enables/disables the footer Save/Cancel buttons and binds them to
-   * the table that is currently in edit mode.
-   *
-   * Save/Cancel buttons are only enabled when:
-   * 1. A table is in edit mode (activeEditingTable is set)
-   * 2. Any editable content differs from the snapshot taken at edit mode entry
-   *
-   * @param {LithiumTable} lithiumTable - The table instance
-   * @param {boolean} isEditing - Whether the table is now in edit mode
-   * @param {Object|null} rowData - The row data being edited (or null)
-   */
-  handleTableEditModeChange(lithiumTable, isEditing, rowData) {
-    if (isEditing) {
-      // If another table was already editing, exit its edit mode first
-      if (this.activeEditingTable && this.activeEditingTable !== lithiumTable) {
-        this.activeEditingTable.exitEditMode('cancel');
-      }
-      this.activeEditingTable = lithiumTable;
-
-      // Enable CSS editor when lookup table enters edit mode
-      if (lithiumTable === this.lookupTable) {
-        this.setCssEditorEditable(true);
-      }
-
-      // Take a snapshot of current state for dirty comparison
-      // This must happen AFTER enabling editors so we capture their current state
-      // The snapshot captures data in "database format" - exactly what we'd send to the server.
-      // Change events from editors just trigger us to regenerate and compare, not track dirty state.
-      this.takeEditModeSnapshot();
-
-      // Buttons start disabled (nothing is dirty yet)
-      this.updateFooterSaveCancelState(true, false);
-      log(Subsystems.MANAGER, Status.INFO, `[Style] Edit mode entered`);
-    } else {
-      // Exiting edit mode
-      if (this.activeEditingTable === lithiumTable) {
-        this.activeEditingTable = null;
-      }
-
-      // Disable CSS editor when lookup table exits edit mode
-      if (lithiumTable === this.lookupTable) {
-        this.setCssEditorEditable(false);
-      }
-
-      // Clear the snapshot and dirty state
-      this.clearEditModeSnapshot();
-
-      // No table in edit mode - buttons should be disabled
-      this.updateFooterSaveCancelState(true, false);
-      log(Subsystems.MANAGER, Status.INFO, `[Style] Edit mode exited`);
-    }
-  }
-
-  /**
-   * Called when a LithiumTable's dirty state changes.
-   * Updates the footer Save/Cancel buttons based on overall dirty state.
-   *
-   * @param {LithiumTable} lithiumTable - The table instance
-   * @param {boolean} isDirty - Whether the table has unsaved changes
-   * @param {Object|null} rowData - The row data being edited (or null)
-   */
-  handleTableDirtyChange(lithiumTable, isDirty, rowData) {
-    // Only update if this is the active editing table
-    if (this.activeEditingTable === lithiumTable) {
-      // Update the overall dirty state by comparing against snapshot
-      this.updateOverallDirtyState();
-    }
-  }
-
-  /**
-   * Show/hide and enable/disable the footer Save/Cancel buttons.
-   * @param {boolean} visible - Whether the buttons should be visible
-   * @param {boolean} enabled - Whether the buttons should be enabled (requires visible=true)
-   */
-  updateFooterSaveCancelState(visible, enabled) {
-    if (this.footerSaveBtn) {
-      this.footerSaveBtn.style.display = visible ? '' : 'none';
-      this.footerSaveBtn.disabled = !visible || !enabled;
-    }
-    if (this.footerCancelBtn) {
-      this.footerCancelBtn.style.display = visible ? '' : 'none';
-      this.footerCancelBtn.disabled = !visible || !enabled;
-    }
-    if (this.footerDummyBtn) {
-      this.footerDummyBtn.style.display = visible ? '' : 'none';
-    }
-  }
+  // Edit mode, dirty tracking, and save/cancel button management are now
+  // handled by this.editHelper (ManagerEditHelper).
+  // See editHelper.registerTable(), editHelper.registerEditor(), and
+  // editHelper.wireFooterButtons() in init/setup methods above.
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
 
@@ -1565,6 +1350,9 @@ ${selector}:disabled {
 
   cleanup() {
     log(Subsystems.MANAGER, Status.INFO, '[Style] Cleaning up...');
+
+    // Clean up edit helper
+    this.editHelper?.destroy();
 
     // Remove preview style element
     if (this.previewStyleEl) {
