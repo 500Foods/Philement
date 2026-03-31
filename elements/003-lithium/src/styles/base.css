@@ -212,7 +212,47 @@
     --z-sticky: 200;
     --z-modal: 300;
     --z-popover: 400;
-    --z-tooltip: 500;
+    --z-tooltip: 30000;
+
+    /* Tooltip theme: default */
+    --tip-bg: #2E2E2E;
+    --tip-border: #999999;
+    --tip-text: #E0E0E0;
+    --tip-arrow: #2E2E2E;
+    --tip-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+
+    /* Tooltip theme: success */
+    --tip-success-bg: #1B3A2A;
+    --tip-success-border: #2D6A4F;
+    --tip-success-text: #95D5B2;
+    --tip-success-arrow: #1B3A2A;
+
+    /* Tooltip theme: warning */
+    --tip-warning-bg: #3D2E0A;
+    --tip-warning-border: #B45309;
+    --tip-warning-text: #FCD34D;
+    --tip-warning-arrow: #3D2E0A;
+
+    /* Tooltip theme: danger */
+    --tip-danger-bg: #3B1111;
+    --tip-danger-border: #991B1B;
+    --tip-danger-text: #FCA5A5;
+    --tip-danger-arrow: #3B1111;
+
+    /* Tooltip theme: info */
+    --tip-info-bg: #0F1F3A;
+    --tip-info-border: #1E40AF;
+    --tip-info-text: #93C5FD;
+    --tip-info-arrow: #0F1F3A;
+
+    /* Tooltip theme: crimson */
+    --tip-crimson-bg: #2A0A0F;
+    --tip-crimson-border: #DC143C;
+    --tip-crimson-text: #FDA4AF;
+    --tip-crimson-arrow: #2A0A0F;
+
+    /* Tooltip secondary text (keyboard hints, etc.) */
+    --tip-kbd: #707070;
 
     /* Zoom level - controlled via JavaScript */
     --zoom: 1;

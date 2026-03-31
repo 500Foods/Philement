@@ -23,6 +23,7 @@ import { getClaims } from '../../core/jwt.js';
 import { getPermittedManagers, canAccessManager } from '../../core/permissions.js';
 import { setIcon, processIcons } from '../../core/icons.js';
 import { getMenu, buildManagerIconsRegistry, clearMenuCache } from '../../shared/menu.js';
+import { getTip, initTooltips } from '../../core/tooltip-api.js';
 import { log, Subsystems, Status } from '../../core/log.js';
 import {
   initZoom,
@@ -432,7 +433,7 @@ export default class MainManager {
         btn.type = 'button';
         btn.className = 'subpanel-header-btn subpanel-header-close';
         if (def.id)      btn.id = def.id;
-        if (def.title)   btn.title = def.title;
+        if (def.title)   btn.dataset.tooltip = def.title;
         if (def.tooltip) btn.dataset.tooltip = def.tooltip;
         btn.innerHTML = `<fa ${def.icon}></fa>`;
         if (def.onClick) btn.addEventListener('click', def.onClick);
@@ -450,6 +451,7 @@ export default class MainManager {
 
     // Convert any newly injected <fa> tags to Font Awesome <i> elements.
     processIcons(group);
+    initTooltips(group);
   }
 
   /**
@@ -493,7 +495,7 @@ export default class MainManager {
         btn.type = 'button';
         btn.className = 'subpanel-header-btn subpanel-header-close';
         if (def.id)      btn.id = def.id;
-        if (def.title)   btn.title = def.title;
+        if (def.title)   btn.dataset.tooltip = def.title;
         if (def.tooltip) btn.dataset.tooltip = def.tooltip;
         btn.innerHTML = `<fa ${def.icon}></fa>`;
         if (def.onClick) btn.addEventListener('click', def.onClick);
@@ -509,6 +511,7 @@ export default class MainManager {
 
     // Convert any newly injected <fa> tags to Font Awesome <i> elements.
     processIcons(group);
+    initTooltips(group);
   }
 
   /**
@@ -836,6 +839,8 @@ export default class MainManager {
         radarIcon.dataset.tooltip = 'Status: Disconnected';
         break;
     }
+    const tipInstance = getTip(radarIcon);
+    if (tipInstance) tipInstance.updateContent(radarIcon.getAttribute('data-tooltip'));
   }
 
   /**
@@ -1501,7 +1506,7 @@ export default class MainManager {
         button.className = 'menu-item';
         button.dataset.managerId = item.managerId;
         const itemName = item.name || `Manager ${item.managerId}`;
-        button.title = itemName;
+        button.dataset.tooltip = itemName;
         // Build HTML without extra whitespace to avoid parsing issues
         let htmlContent = item.iconHtml || '<fa fa-cube></fa>';
         htmlContent += `<span class="menu-item-name">${itemName}</span>`;
@@ -1525,6 +1530,7 @@ export default class MainManager {
 
     // Process icons
     processIcons(menu);
+    initTooltips(menu);
   }
 
   /**
@@ -1544,7 +1550,7 @@ export default class MainManager {
       const button = document.createElement('div');
       button.className = 'menu-item';
       button.dataset.managerId = managerId;
-      button.title = managerInfo.name;
+      button.dataset.tooltip = managerInfo.name;
       button.innerHTML = `${managerInfo.iconHtml}<span class="menu-item-name">${managerInfo.name}</span>`;
 
       button.addEventListener('click', () => {
@@ -1556,6 +1562,7 @@ export default class MainManager {
     });
 
     processIcons(menu);
+    initTooltips(menu);
   }
 
   /**
