@@ -15,7 +15,7 @@
           <img src="/assets/images/logo-li.svg" alt="" class="login-logo" width="48" height="48">
           <span>Lithium</span>
         </button>
-        <button type="button" class="login-header-btn login-header-version" id="login-version-btn">
+        <button type="button" class="login-header-btn login-header-version" id="login-version-btn"  data-tooltip="Version<br>Year<br>Month/Day<br>Hour/Minute" data-tip-placement="right">
           <div class="version-row" id="login-version-build">1000</div>
           <div class="version-row" id="login-version-year">2026</div>
           <div class="version-row" id="login-version-date">0101</div>
@@ -25,7 +25,7 @@
     </div>
 
     <!-- Login form -->
-    <form class="login-form" id="login-form">
+    <form class="login-form" id="login-form" novalidate>
       <div class="form-group">
         <div class="input-with-icon">
           <input
@@ -36,7 +36,7 @@
             required
             autocomplete="username"
           >
-          <button type="button" class="input-icon-btn" id="login-clear-username" data-tooltip="Clear">
+          <button type="button" class="input-icon-btn" id="login-clear-username" data-tooltip="Clear" data-tip-placement="right">
             <fa fa-xmark></fa>
           </button>
         </div>
@@ -52,7 +52,7 @@
             required
             autocomplete="current-password"
           >
-          <button type="button" class="input-icon-btn" id="login-toggle-password" data-tooltip="Show password">
+          <button type="button" class="input-icon-btn" id="login-toggle-password" data-tooltip="Show password" data-tip-placement="right">
             <fa fa-eye></fa>
           </button>
         </div>
@@ -64,22 +64,22 @@
         <span id="login-error-text">Invalid username or password</span>
       </div>
 
-      
+
       <!-- Button group: Language, Theme, Login, Logs, Help -->
       <div class="login-btn-group">
-        <button type="button" class="login-btn-icon" id="login-language-btn" data-tooltip="Select language">
+        <button type="button" class="login-btn-icon" id="login-language-btn" data-tooltip="Select language" data-tip-placement="top">
           <fa fa-earth-americas></fa>
         </button>
-        <button type="button" class="login-btn-icon" id="login-theme-btn" data-tooltip="Select theme">
+        <button type="button" class="login-btn-icon" id="login-theme-btn" data-tooltip="Select theme" data-tip-placement="top">
           <fa fa-palette></fa>
         </button>
-        <button type="submit" value="Login" class="login-btn-primary" id="login-submit" data-tooltip="Login" aria-label="Login">
+        <button type="submit" value="Login" class="login-btn-primary" id="login-submit" data-tooltip="Login" aria-label="Login" data-tip-placement="top">
           <fa fa-sign-in-alt></fa>
         </button>
-        <button type="button" class="login-btn-icon" id="login-logs-btn" data-tooltip="View Session Log">
+        <button type="button" class="login-btn-icon" id="login-logs-btn" data-tooltip="View Session Log" data-tip-placement="top">
           <fa fa-receipt></fa>
         </button>
-        <button type="button" class="login-btn-icon" id="login-help-btn" data-tooltip="Help">
+        <button type="button" class="login-btn-icon" id="login-help-btn" data-tooltip="Help" data-tip-placement="top">
           <fa fa-circle-question></fa>
         </button>
       </div>
@@ -88,16 +88,16 @@
 
     <!-- Alternative login buttons row -->
       <div class="login-alt-btn-group">
-        <button type="button" class="login-alt-btn tooltip" id="didit-btn" data-tooltip="Sign in with Didit">
+        <button type="button" class="login-alt-btn" id="didit-btn" data-tooltip="Sign in with Didit" data-tip-placement="top">
           <img height=50 src="/assets/images/login_didit.png" alt="Didit" class="login-alt-icon">
         </button>
-        <button type="button" class="login-alt-btn tooltip" id="apple-btn" data-tooltip="Sign in with Apple">      
+        <button type="button" class="login-alt-btn" id="apple-btn" data-tooltip="Sign in with Apple" data-tip-placement="top">
           <img src="/assets/images/login_apple.png" alt="Apple" class="login-alt-icon">
         </button>
-        <button type="button" class="login-alt-btn tooltip" id="google-btn" data-tooltip="Sign in with Google">    
+        <button type="button" class="login-alt-btn" id="google-btn" data-tooltip="Sign in with Google" data-tip-placement="top">
           <img src="/assets/images/login_google.png" alt="Google" class="login-alt-icon">
         </button>
-        <button type="button" class="login-alt-btn tooltip" id="microsoft-btn" data-tooltip="Sign in with Microsoft">
+        <button type="button" class="login-alt-btn" id="microsoft-btn" data-tooltip="Sign in with Microsoft" data-tip-placement="top">
           <img src="/assets/images/login_microsoft.png" alt="Microsoft" class="login-alt-icon">
         </button>
       </div>

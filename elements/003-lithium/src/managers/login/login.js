@@ -13,6 +13,7 @@ import { getTransitionDuration, waitForTransition } from '../../core/transitions
 import { hasLookup } from '../../shared/lookups.js';
 import { log, logGroup, getRawLog, Subsystems, Status } from '../../core/log.js';
 import { formatLogText, getFlagSvg, getPasswordManagerSelectors } from '../../shared/log-formatter.js';
+import { getTip } from '../../core/tooltip-api.js';
 import {
   getBestGuessLocale,
   getLanguageData,
@@ -351,11 +352,11 @@ export default class LoginManager {
             <h1>Lithium</h1>
             <p>A Philement Project</p>
           </div>
-          <form class="login-form" id="login-form">
+          <form class="login-form" id="login-form" novalidate>
             <div class="form-group">
               <div class="input-with-icon">
                 <input type="text" id="login-username" placeholder="Username" required>
-                <button type="button" class="input-icon-btn" id="login-clear-username" data-tooltip="Clear">
+                <button type="button" class="input-icon-btn" id="login-clear-username" data-tooltip="Clear" data-tip-placement="right">
                   <fa fa-xmark></fa>
                 </button>
               </div>
@@ -363,7 +364,7 @@ export default class LoginManager {
             <div class="form-group">
               <div class="input-with-icon">
                 <input type="password" id="login-password" placeholder="Password" required>
-                <button type="button" class="input-icon-btn" id="login-toggle-password" data-tooltip="Show password">
+                <button type="button" class="input-icon-btn" id="login-toggle-password" data-tooltip="Show password" data-tip-placement="right">
                   <fa fa-eye></fa>
                 </button>
               </div>
@@ -372,20 +373,20 @@ export default class LoginManager {
               <span id="login-error-text">Error</span>
             </div>
             <div class="login-btn-group">
-              <button type="button" class="login-btn-icon tooltip" id="login-language-btn" data-tooltip="Select language">
+              <button type="button" class="login-btn-icon" id="login-language-btn" data-tooltip="Select language" data-tip-placement="left">
                 <fa fa-earth-americas></fa>
               </button>
-              <button type="button" class="login-btn-icon tooltip" id="login-theme-btn" data-tooltip="Select theme">
+              <button type="button" class="login-btn-icon" id="login-theme-btn" data-tooltip="Select theme" data-tip-placement="left">
                 <fa fa-palette></fa>
               </button>
-              <button type="submit" class="login-btn-primary tooltip" id="login-submit" data-tooltip="Login">
+              <button type="submit" class="login-btn-primary" id="login-submit" data-tooltip="Login" data-tip-placement="left">
                 <fa fa-sign-in-alt></fa>
                 <span>Login</span>
               </button>
-              <button type="button" class="login-btn-icon tooltip" id="login-logs-btn" data-tooltip="View Session Log">
+              <button type="button" class="login-btn-icon" id="login-logs-btn" data-tooltip="View Session Log" data-tip-placement="left">
                 <fa fa-receipt></fa>
               </button>
-              <button type="button" class="login-btn-icon tooltip" id="login-help-btn" data-tooltip="Help">
+              <button type="button" class="login-btn-icon" id="login-help-btn" data-tooltip="Help" data-tip-placement="left">
                 <fa circle-question></fa>
               </button>
             </div>
@@ -1510,12 +1511,20 @@ export default class LoginManager {
       this.elements.passwordIcon.classList.remove('fa-eye');
       this.elements.passwordIcon.classList.add('fa-eye-slash');
       this.elements.togglePasswordBtn?.setAttribute('data-tooltip', 'Hide password');
+      if (this.elements.togglePasswordBtn) {
+        const t = getTip(this.elements.togglePasswordBtn);
+        if (t) t.updateContent('Hide password');
+      }
     } else {
       // Hide password
       this.elements.password.type = 'password';
       this.elements.passwordIcon.classList.remove('fa-eye-slash');
       this.elements.passwordIcon.classList.add('fa-eye');
       this.elements.togglePasswordBtn?.setAttribute('data-tooltip', 'Show password');
+      if (this.elements.togglePasswordBtn) {
+        const t = getTip(this.elements.togglePasswordBtn);
+        if (t) t.updateContent('Show password');
+      }
     }
   }
 

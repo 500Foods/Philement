@@ -545,7 +545,7 @@ export default class StyleManager {
       const circle = document.createElement('div');
       circle.className = 'style-target-circle';
       circle.dataset.targetId = target.id;
-      circle.title = target.label;
+      circle.dataset.tooltip = target.label;
       circle.textContent = index + 1;
 
       const rect = element.getBoundingClientRect();
