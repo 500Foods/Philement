@@ -1040,8 +1040,300 @@
   color: white;
 }
 
-.crimson-message-user .crimson-followup-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
+ .crimson-message-user .crimson-followup-btn:hover {
+   background: rgba(255, 255, 255, 0.2);
+ }
+
+/* ========================================
+   Citations
+   ======================================== */
+
+/* Citation button - appears under Crimson avatar */
+.crimson-citation-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  min-height: 50px;
+  margin-top: 4px;
+  padding: var(--space-1);
+  background: var(--accent-primary);
+  border: none;
+  border-radius: var(--border-radius-md);
+  color: white;
+  cursor: pointer;
+  transition: all var(--transition-fast) ease;
+  flex-shrink: 0;
 }
 
-} /* end @layer managers */
+.crimson-citation-btn:hover {
+  background: var(--accent-hover);
+  transform: scale(1.05);
+}
+
+.crimson-citation-btn.active {
+  background: var(--accent-toggle);
+  color: var(--bg-primary);
+}
+
+.crimson-citation-btn svg,
+.crimson-citation-btn i {
+  font-size: var(--font-size-md);
+  margin-bottom: 2px;
+}
+
+.crimson-citation-count {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  line-height: 1;
+}
+
+/* Citation link in message content */
+.crimson-citation-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 6px;
+  background: var(--accent-primary);
+  border-radius: var(--border-radius-sm);
+  color: white;
+  text-decoration: none;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  transition: all var(--transition-fast) ease;
+}
+
+.crimson-citation-link:hover {
+  background: var(--accent-hover);
+  transform: scale(1.1);
+}
+
+/* Citation Popup */
+.crimson-citation-popup {
+  position: fixed;
+  z-index: 20002;
+  display: flex;
+  flex-direction: column;
+  width: 500px;
+  max-width: 90vw;
+  max-height: 400px;
+  background: var(--bg-primary);
+  border: var(--border-standard);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-lg);
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(0.95);
+  transition: opacity var(--transition-duration) ease,
+              visibility var(--transition-duration) ease,
+              transform var(--transition-duration) ease;
+}
+
+.crimson-citation-popup.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: scale(1);
+}
+
+/* Popup arrow */
+.crimson-citation-popup-arrow {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-style: solid;
+}
+
+.crimson-citation-popup-arrow.arrow-left {
+  left: -8px;
+  border-width: 8px 8px 8px 0;
+  border-color: transparent var(--border-color) transparent transparent;
+}
+
+.crimson-citation-popup-arrow.arrow-right {
+  right: -8px;
+  border-width: 8px 0 8px 8px;
+  border-color: transparent transparent transparent var(--border-color);
+}
+
+.crimson-citation-popup-arrow.arrow-left::after {
+  content: '';
+  position: absolute;
+  top: -7px;
+  left: 1px;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 7px 7px 7px 0;
+  border-color: transparent var(--bg-primary) transparent transparent;
+}
+
+.crimson-citation-popup-arrow.arrow-right::after {
+  content: '';
+  position: absolute;
+  top: -7px;
+  right: 1px;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 7px 0 7px 7px;
+  border-color: transparent transparent transparent var(--bg-primary);
+}
+
+/* Popup header */
+.crimson-citation-popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-secondary);
+  border-bottom: var(--border-standard);
+  border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+  flex-shrink: 0;
+}
+
+.crimson-citation-popup-title {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.crimson-citation-popup-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--border-radius-md);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast) ease;
+}
+
+.crimson-citation-popup-close:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+/* Popup content */
+.crimson-citation-popup-content {
+  flex: 1;
+  overflow: auto;
+  padding: var(--space-2);
+  min-height: 0;
+}
+
+/* Citation table */
+.crimson-citation-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.crimson-citation-header {
+  position: sticky;
+  top: 0;
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-tertiary);
+  border-bottom: var(--border-standard);
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.crimson-citation-header:first-child {
+  border-radius: var(--border-radius-sm) 0 0 0;
+  width: 40px;
+  text-align: center;
+}
+
+.crimson-citation-header:last-child {
+  border-radius: 0 var(--border-radius-sm) 0 0;
+  width: 60px;
+  text-align: center;
+}
+
+.crimson-citation-row {
+  transition: background-color var(--transition-fast) ease;
+}
+
+.crimson-citation-row:hover {
+  background: var(--bg-secondary);
+}
+
+.crimson-citation-row.highlighted {
+  background: rgba(92, 107, 192, 0.2);
+  border-left: 3px solid var(--accent-primary);
+}
+
+.crimson-citation-cell {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: middle;
+}
+
+.crimson-citation-number {
+  text-align: center;
+  font-weight: 600;
+  color: var(--accent-primary);
+  width: 40px;
+}
+
+.crimson-citation-name {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crimson-citation-url {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+}
+
+.crimson-citation-type {
+  width: 40px;
+  text-align: center;
+  color: var(--accent-primary);
+}
+
+.crimson-citation-actions {
+  width: 60px;
+  text-align: center;
+}
+
+/* Citation action buttons */
+.crimson-citation-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast) ease;
+}
+
+.crimson-citation-action-btn:hover {
+  background: var(--accent-primary);
+  color: white;
+}
+
+.crimson-citation-open-btn:hover {
+  background: var(--accent-primary);
+}
+
+ } /* end @layer managers */

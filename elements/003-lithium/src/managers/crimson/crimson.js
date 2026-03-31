@@ -198,6 +198,11 @@ class CrimsonManager {
     // Temporarily enable showing thinking messages for debugging
     this.showThinkingMessages = true;
 
+    // Citations state
+    this.citations = new Map(); // messageId -> citation[]
+    this.activeCitationPopup = null;
+    this.activeCitationButton = null;
+
     // Bind methods
     this.handleDragStart = this.handleDragStart.bind(this);
     this.handleDragMove = this.handleDragMove.bind(this);
@@ -362,6 +367,9 @@ class CrimsonManager {
     // Set up event listeners
     header.addEventListener('mousedown', this.handleDragStart);
     closeBtn.addEventListener('click', () => this.hide());
+
+    // Wire citation link clicks (delegated)
+    this.conversation.addEventListener('click', (e) => this.handleCitationLinkClick(e));
     resetBtn?.addEventListener('click', () => this.resetConversation());
     this.debugBtn?.addEventListener('click', () => this.toggleDebugPanel());
     this.streamingBtn?.addEventListener('click', () => this.toggleStreaming());
@@ -755,7 +763,12 @@ class CrimsonManager {
   handleKeyDown(e) {
     if (e.key === 'Escape') {
       e.preventDefault();
-      this.hide();
+      // Close citation popup first if open, otherwise close Crimson
+      if (this.activeCitationPopup) {
+        this.closeCitationPopup();
+      } else {
+        this.hide();
+      }
     }
   }
 
@@ -1057,6 +1070,7 @@ class CrimsonManager {
    * Add a message to the conversation
    * @param {string} sender - 'user' or 'agent'
    * @param {string} text - Message text
+   * @returns {string} The message element ID
    */
   addMessage(sender, text) {
     // Fade out and remove welcome message if present
@@ -1066,8 +1080,12 @@ class CrimsonManager {
       setTimeout(() => welcome.remove(), 350);
     }
 
+    // Generate unique message ID
+    const messageId = `crimson-msg-${Date.now()}`;
+
     const messageEl = document.createElement('div');
     messageEl.className = `crimson-message crimson-message-${sender}`;
+    messageEl.id = messageId;
 
     const avatar = sender === 'agent'
       ? `<div class="crimson-message-avatar">
@@ -1088,6 +1106,8 @@ class CrimsonManager {
 
     // Store message
     this.messages.push({ sender, text, timestamp: Date.now() });
+
+    return messageId;
   }
 
   /**
@@ -1422,29 +1442,40 @@ class CrimsonManager {
 
       // Parse metadata JSON if we have it (from chunks) or from content
       let parsedMetadata = metadataFromContent;
-      
+
       // First try to parse from metadata buffer (chunk-based metadata)
       if (!parsedMetadata && this.metadataBuffer && this.metadataBuffer.trim()) {
         try {
           parsedMetadata = JSON.parse(this.metadataBuffer.trim());
-          this.addDebugMessage('META', 'From chunks: ' + JSON.stringify(parsedMetadata).substring(0, 100));
+          this.addDebugMessage('META', 'From chunks: ' + JSON.stringify(parsedMetadata).substring(0, 200));
         } catch (e) {
           log(Subsystems.CRIMSON, Status.WARN, `Failed to parse metadata JSON: ${e.message}`);
         }
       }
-      
+
       // If no metadata from chunks, try from result object (from done message)
       if (!parsedMetadata && result) {
+        // Check raw_provider_response first (new transparent Hydrogen format)
+        const rawResponse = result.raw_provider_response;
+        this.addDebugMessage('META', `Raw provider response: ${JSON.stringify(rawResponse)?.substring(0, 300)}`);
+
         // Result might have followUpQuestions directly or nested in various structures
         parsedMetadata = {
-          followUpQuestions: result.followUpQuestions || result.metadata?.followUpQuestions || [],
-          suggestions: result.suggestions || result.metadata?.suggestions || null,
-          metadata: result.metadata || null,
+          followUpQuestions: result.followUpQuestions || result.metadata?.followUpQuestions || rawResponse?.followUpQuestions || [],
+          suggestions: result.suggestions || result.metadata?.suggestions || rawResponse?.suggestions || null,
+          metadata: result.metadata || rawResponse?.metadata || null,
+          citations: result.citations || result.metadata?.citations || rawResponse?.citations || rawResponse?.retrieval?.retrieved_data || null,
         };
-        this.addDebugMessage('META', `From done message: ${JSON.stringify(parsedMetadata).substring(0, 200)}`);
+        this.addDebugMessage('META', `From done message: ${JSON.stringify(parsedMetadata).substring(0, 300)}`);
       }
 
+      // Generate unique message ID for this response
+      const messageId = `crimson-msg-${Date.now()}`;
+
       if (this.currentStreamElement) {
+        // Set message ID
+        this.currentStreamElement.id = messageId;
+
         // Remove waiting animation and show content for non-streaming responses
         if (this.currentStreamElement.classList.contains('crimson-waiting')) {
           this.currentStreamElement.classList.remove('crimson-waiting');
@@ -1458,15 +1489,23 @@ class CrimsonManager {
         if (contentEl) {
           // Set the final conversation content with full markdown rendering
           contentEl.setAttribute('data-raw-content', conversationText);
-          
+
           // Use full markdown rendering for final content
           this.formatMessageContentMarkdown(conversationText).then(htmlContent => {
+            // Convert citation markers to links
+            htmlContent = this.convertCitationMarkers(htmlContent, messageId);
             contentEl.innerHTML = htmlContent;
             // Scroll to show new content
             if (this.conversation) {
               this.conversation.scrollTop = this.conversation.scrollHeight;
             }
           });
+
+          // Parse and store citations from metadata
+          this.addDebugMessage('META', `Citations check: ${JSON.stringify(parsedMetadata?.citations)}`);
+          if (parsedMetadata && parsedMetadata.citations) {
+            this.parseCitations(messageId, parsedMetadata.citations);
+          }
 
           // Add follow-up questions from metadata if present
           if (parsedMetadata && parsedMetadata.followUpQuestions && parsedMetadata.followUpQuestions.length > 0) {
@@ -1521,7 +1560,7 @@ class CrimsonManager {
   /**
    * Parse Crimson's JSON response
    * @param {string} content - Raw response content
-   * @returns {Object} Parsed response with displayMessage, followUpQuestions, suggestions, metadata
+   * @returns {Object} Parsed response with displayMessage, followUpQuestions, suggestions, metadata, citations
    */
   parseCrimsonResponse(content) {
     const result = {
@@ -1529,6 +1568,7 @@ class CrimsonManager {
       followUpQuestions: [],
       suggestions: null,
       metadata: null,
+      citations: null,
     };
 
     // Try to parse as JSON
@@ -1549,6 +1589,13 @@ class CrimsonManager {
       // Extract metadata
       if (json.metadata) {
         result.metadata = json.metadata;
+      }
+
+      // Extract citations (can be at top level or in metadata)
+      if (json.citations) {
+        result.citations = json.citations;
+      } else if (json.metadata?.citations) {
+        result.citations = json.metadata.citations;
       }
     } catch (e) {
       // Not JSON, use raw content as message
@@ -1751,10 +1798,352 @@ class CrimsonManager {
     return div.innerHTML;
   }
 
+  // ==================== CITATIONS ====================
+
+  /**
+   * Parse citations from metadata and store for a message
+   * @param {string} messageId - The message element ID
+   * @param {Array} citations - Array of citation objects from metadata
+   */
+  parseCitations(messageId, citations) {
+    log(Subsystems.CRIMSON, Status.DEBUG, `parseCitations called for ${messageId}: ${JSON.stringify(citations)?.substring(0, 200)}`);
+    if (!citations || !Array.isArray(citations) || citations.length === 0) {
+      log(Subsystems.CRIMSON, Status.DEBUG, `parseCitations: invalid citations array`);
+      return;
+    }
+
+    // Normalize citation data
+    const normalizedCitations = citations.map((citation, index) => ({
+      number: citation.number || index + 1,
+      name: citation.name || citation.title || 'Untitled',
+      url: citation.url || citation.uri || citation.source || '',
+      type: citation.type || 'web',
+      source: citation.source || '',
+    }));
+
+    this.citations.set(messageId, normalizedCitations);
+
+    // Add citation button to the message
+    this.addCitationButtonToMessage(messageId, normalizedCitations.length);
+  }
+
+  /**
+   * Add a citation button under the Crimson avatar for a message
+   * @param {string} messageId - The message element ID
+   * @param {number} count - Number of citations
+   */
+  addCitationButtonToMessage(messageId, count) {
+    log(Subsystems.CRIMSON, Status.DEBUG, `addCitationButtonToMessage: ${messageId}, count=${count}`);
+    const messageEl = document.getElementById(messageId);
+    if (!messageEl) {
+      log(Subsystems.CRIMSON, Status.WARN, `addCitationButtonToMessage: message element not found: ${messageId}`);
+      return;
+    }
+
+    // Check if button already exists
+    if (messageEl.querySelector('.crimson-citation-btn')) {
+      log(Subsystems.CRIMSON, Status.DEBUG, `addCitationButtonToMessage: button already exists`);
+      return;
+    }
+
+    const avatarEl = messageEl.querySelector('.crimson-message-avatar');
+    if (!avatarEl) {
+      log(Subsystems.CRIMSON, Status.WARN, `addCitationButtonToMessage: avatar not found`);
+      return;
+    }
+
+    // Create citation button - double height with icon and counter
+    const citationBtn = document.createElement('button');
+    citationBtn.className = 'crimson-citation-btn';
+    citationBtn.setAttribute('data-citation-count', count);
+    citationBtn.setAttribute('data-message-id', messageId);
+    citationBtn.innerHTML = `
+      <fa fa-book-open></fa>
+      <span class="crimson-citation-count">${count.toString().padStart(2, '0')}</span>
+    `;
+
+    citationBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.toggleCitationPopup(messageId, citationBtn);
+    });
+
+    // Insert after avatar
+    avatarEl.after(citationBtn);
+    processIcons(citationBtn);
+
+    log(Subsystems.CRIMSON, Status.DEBUG, `Added citation button with ${count} citations to message ${messageId}`);
+  }
+
+  /**
+   * Toggle citation popup for a message
+   * @param {string} messageId - The message element ID
+   * @param {HTMLElement} button - The citation button
+   */
+  toggleCitationPopup(messageId, button) {
+    // Close existing popup if different
+    if (this.activeCitationPopup && this.activeCitationButton !== button) {
+      this.closeCitationPopup();
+    }
+
+    // Toggle off if same button
+    if (this.activeCitationPopup && this.activeCitationButton === button) {
+      this.closeCitationPopup();
+      return;
+    }
+
+    const citations = this.citations.get(messageId);
+    if (!citations || citations.length === 0) return;
+
+    this.showCitationPopup(button, citations);
+  }
+
+  /**
+   * Show citation popup anchored to button
+   * @param {HTMLElement} button - The citation button
+   * @param {Array} citations - Array of citation objects
+   */
+  showCitationPopup(button, citations) {
+    // Create popup
+    const popup = document.createElement('div');
+    popup.className = 'crimson-citation-popup';
+    this._citationPopupEl = popup;
+
+    // Build citation table rows
+    const rowsHtml = citations.map((citation) => {
+      const isCanvas = citation.url.startsWith('canvas') || citation.source.startsWith('canvas');
+      const canvasIcon = isCanvas ? '<fa fa-graduation-cap></fa>' : '';
+      const displayUrl = citation.url.length > 50 ? citation.url.substring(0, 50) + '...' : citation.url;
+
+      return `
+        <tr class="crimson-citation-row" data-citation-number="${citation.number}">
+          <td class="crimson-citation-cell crimson-citation-number">${citation.number}</td>
+          <td class="crimson-citation-cell crimson-citation-name" title="${this.escapeHtml(citation.name)}">${this.escapeHtml(citation.name)}</td>
+          <td class="crimson-citation-cell crimson-citation-url" title="${this.escapeHtml(citation.url)}">${this.escapeHtml(displayUrl)}</td>
+          <td class="crimson-citation-cell crimson-citation-type">${canvasIcon}</td>
+          <td class="crimson-citation-cell crimson-citation-actions">
+            <button type="button" class="crimson-citation-action-btn crimson-citation-open-btn" data-url="${this.escapeHtml(citation.url)}" title="Open in new tab">
+              <fa fa-arrow-up-right-from-square></fa>
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    popup.innerHTML = `
+      <div class="crimson-citation-popup-header">
+        <span class="crimson-citation-popup-title">Citations</span>
+        <button type="button" class="crimson-citation-popup-close" title="Close (ESC)">
+          <fa fa-xmark></fa>
+        </button>
+      </div>
+      <div class="crimson-citation-popup-content">
+        <table class="crimson-citation-table">
+          <thead>
+            <tr>
+              <th class="crimson-citation-header">#</th>
+              <th class="crimson-citation-header">Name</th>
+              <th class="crimson-citation-header">URL</th>
+              <th class="crimson-citation-header">Type</th>
+              <th class="crimson-citation-header">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+      </div>
+      <div class="crimson-citation-popup-arrow"></div>
+    `;
+
+    document.body.appendChild(popup);
+    processIcons(popup);
+
+    // Position popup
+    this.positionCitationPopup(popup, button);
+
+    // Wire close button
+    const closeBtn = popup.querySelector('.crimson-citation-popup-close');
+    closeBtn?.addEventListener('click', () => this.closeCitationPopup());
+
+    // Wire open buttons
+    popup.querySelectorAll('.crimson-citation-open-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const url = btn.getAttribute('data-url');
+        if (url) {
+          // For canvas URLs, we'll handle them specially later
+          if (url.startsWith('canvas')) {
+            // TODO: Open canvas content in training panel
+            log(Subsystems.CRIMSON, Status.INFO, `Opening canvas citation: ${url}`);
+          } else {
+            window.open(url, '_blank', 'noopener,noreferrer');
+          }
+        }
+      });
+    });
+
+    // Store active popup
+    this.activeCitationPopup = popup;
+    this.activeCitationButton = button;
+    button.classList.add('active');
+
+    // Animate in
+    requestAnimationFrame(() => {
+      popup.classList.add('visible');
+    });
+
+    // Handle clicks outside to close
+    this._citationOutsideHandler = (e) => {
+      if (!popup.contains(e.target) && !button.contains(e.target)) {
+        this.closeCitationPopup();
+      }
+    };
+    document.addEventListener('click', this._citationOutsideHandler);
+
+    log(Subsystems.CRIMSON, Status.DEBUG, `Opened citation popup with ${citations.length} citations`);
+  }
+
+  /**
+   * Position citation popup relative to button
+   * @param {HTMLElement} popup - The popup element
+   * @param {HTMLElement} button - The anchor button
+   */
+  positionCitationPopup(popup, button) {
+    const buttonRect = button.getBoundingClientRect();
+    const popupRect = popup.getBoundingClientRect();
+
+    // Default: position to the right of the button
+    let left = buttonRect.right + 10;
+    let top = buttonRect.top;
+
+    // Check if popup goes off right edge
+    if (left + popupRect.width > window.innerWidth - 20) {
+      // Position to the left instead
+      left = buttonRect.left - popupRect.width - 10;
+    }
+
+    // Check vertical bounds
+    if (top + popupRect.height > window.innerHeight - 20) {
+      top = window.innerHeight - popupRect.height - 20;
+    }
+    if (top < 20) {
+      top = 20;
+    }
+
+    popup.style.left = `${left}px`;
+    popup.style.top = `${top}px`;
+
+    // Position arrow
+    const arrow = popup.querySelector('.crimson-citation-popup-arrow');
+    if (arrow) {
+      const arrowOffset = buttonRect.top - top + buttonRect.height / 2;
+      arrow.style.top = `${Math.max(10, Math.min(arrowOffset, popupRect.height - 10))}px`;
+
+      // Point arrow left or right depending on popup position
+      if (left < buttonRect.left) {
+        arrow.classList.add('arrow-right');
+      } else {
+        arrow.classList.add('arrow-left');
+      }
+    }
+  }
+
+  /**
+   * Close citation popup
+   */
+  closeCitationPopup() {
+    // Remove outside click handler
+    if (this._citationOutsideHandler) {
+      document.removeEventListener('click', this._citationOutsideHandler);
+      this._citationOutsideHandler = null;
+    }
+
+    if (this.activeCitationPopup) {
+      this.activeCitationPopup.classList.remove('visible');
+      setTimeout(() => {
+        this.activeCitationPopup?.remove();
+        this.activeCitationPopup = null;
+        this._citationPopupEl = null;
+      }, 200);
+    }
+
+    if (this.activeCitationButton) {
+      this.activeCitationButton.classList.remove('active');
+      this.activeCitationButton = null;
+    }
+  }
+
+  /**
+   * Highlight a specific citation in the popup
+   * @param {number} citationNumber - The citation number to highlight
+   */
+  highlightCitation(citationNumber) {
+    if (!this.activeCitationPopup) return;
+
+    // Remove existing highlight
+    this.activeCitationPopup.querySelectorAll('.crimson-citation-row').forEach(row => {
+      row.classList.remove('highlighted');
+    });
+
+    // Add highlight to target row
+    const targetRow = this.activeCitationPopup.querySelector(`[data-citation-number="${citationNumber}"]`);
+    if (targetRow) {
+      targetRow.classList.add('highlighted');
+      targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+
+  /**
+   * Convert citation markers [[C1]] in text to clickable links
+   * @param {string} content - The message content
+   * @param {string} messageId - The message element ID
+   * @returns {string} Content with citation links
+   */
+  convertCitationMarkers(content, messageId) {
+    if (!content) return '';
+
+    // Replace [[C1]], [[C2]], etc. with clickable links
+    return content.replace(/\[\[C(\d+)\]\]/g, (match, num) => {
+      const citationNum = parseInt(num, 10);
+      return `<a href="#" class="crimson-citation-link" data-message-id="${messageId}" data-citation="${citationNum}" title="View citation ${citationNum}">${match}</a>`;
+    });
+  }
+
+  /**
+   * Handle citation link click
+   * @param {Event} e - Click event
+   */
+  handleCitationLinkClick(e) {
+    const link = e.target.closest('.crimson-citation-link');
+    if (!link) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const messageId = link.getAttribute('data-message-id');
+    const citationNum = parseInt(link.getAttribute('data-citation'), 10);
+
+    if (!messageId || !citationNum) return;
+
+    // Find the citation button for this message
+    const messageEl = document.getElementById(messageId);
+    if (!messageEl) return;
+
+    const citationBtn = messageEl.querySelector('.crimson-citation-btn');
+    if (!citationBtn) return;
+
+    // Open popup and highlight citation
+    this.toggleCitationPopup(messageId, citationBtn);
+    this.highlightCitation(citationNum);
+  }
+
   /**
    * Clean up the Crimson instance
    */
   destroy() {
+    // Close citation popup if open
+    this.closeCitationPopup();
+
     // Remove event listeners
     document.removeEventListener('keydown', this.handleKeyDown);
     document.removeEventListener('keydown', globalKeyHandler);
@@ -1777,6 +2166,7 @@ class CrimsonManager {
     this.sendBtn = null;
     this.currentStreamElement = null;
     this.conversationHistory = [];
+    this.citations.clear();
     crimsonInstance = null;
     globalKeyHandler = null;
 

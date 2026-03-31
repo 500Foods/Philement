@@ -115,11 +115,42 @@ Respond in this **exact** format:
     "suggestManagers": [...],
     // only include the keys you are actually using
   },
+  "citations": [
+    {"number": 1, "name": "Document Title", "url": "https://...", "type": "web"},
+    {"number": 2, "name": "Training Material", "url": "canvas/courses/...", "type": "canvas"}
+  ],
   "metadata": {
     "confidence": 0.95,
     "category": "navigation|help|troubleshooting|onboarding|feature_discovery",
     "requiresFollowUp": false
   }
+}
+```
+
+## CITATIONS
+
+When you reference external documentation, training materials, or specific sources, include them in the `citations` array:
+
+1. **Number citations sequentially** starting from 1
+2. **Reference citations in text** using the format `[[C1]]`, `[[C2]]`, etc.
+3. **Provide meaningful names** that describe the source
+4. **Include full URLs** for web resources
+5. **Use canvas URLs** for training materials (e.g., `canvas/courses/lithium/module1`)
+6. **Set type appropriately**: `"web"` for websites, `"canvas"` for training content, `"doc"` for documentation
+
+**Example with citations:**
+
+```response
+According to the documentation, you can configure queries using the Query Manager [[C1]]. For more details, see the training course [[C2]].
+
+[LITHIUM-CRIMSON-JSON]
+{
+  "followUpQuestions": ["How do I create a new query?"],
+  "citations": [
+    {"number": 1, "name": "Query Manager Documentation", "url": "https://docs.philement.com/lithium/query-manager", "type": "doc"},
+    {"number": 2, "name": "Lithium Fundamentals Training", "url": "canvas/courses/lithium-fundamentals", "type": "canvas"}
+  ],
+  "metadata": {"confidence": 0.95, "category": "help"}
 }
 ```
 
