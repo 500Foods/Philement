@@ -130,6 +130,7 @@ export class CrimsonWebSocket {
     this.engine = options.engine || DEFAULT_ENGINE;
     this.requestTimeoutMs = 120000;
     this.chunkCount = 0; // Track chunk count for throttled logging
+    this.accumulatedRetrieval = null; // Accumulate retrieval data from streaming chunks
 
     this._registerHandlers();
   }
@@ -151,19 +152,41 @@ export class CrimsonWebSocket {
 
     // Handle different possible chunk structures
     let chunkContent, chunkReasoning, chunkIndex, chunkFinishReason;
+    let chunkRetrieval;
 
     if (chunk) {
-      // Structure: { id, chunk: { content, reasoning_content, index, finish_reason } }
+      // Structure: { id, chunk: { content, reasoning_content, index, finish_reason, retrieval } }
       chunkContent = chunk.content;
       chunkReasoning = chunk.reasoning_content;
       chunkIndex = chunk.index;
       chunkFinishReason = chunk.finish_reason;
+      // Check for retrieval data in chunk (provider-specific extra fields)
+      chunkRetrieval = chunk.retrieval;
     } else if (content !== undefined) {
-      // Structure: { id, content, reasoning_content, index, finish_reason }
+      // Structure: { id, content, reasoning_content, index, finish_reason, retrieval }
       chunkContent = content;
       chunkReasoning = reasoning_content;
       chunkIndex = index;
       chunkFinishReason = finish_reason;
+      chunkRetrieval = message.retrieval;
+    }
+
+    // Accumulate retrieval data from chunks if present
+    if (chunkRetrieval) {
+      if (!this.accumulatedRetrieval) {
+        this.accumulatedRetrieval = [];
+      }
+      // Retrieval might be an array or a single object
+      if (Array.isArray(chunkRetrieval.retrieved_data)) {
+        this.accumulatedRetrieval.push(...chunkRetrieval.retrieved_data);
+      } else if (Array.isArray(chunkRetrieval)) {
+        this.accumulatedRetrieval.push(...chunkRetrieval);
+      } else if (chunkRetrieval.retrieved_data) {
+        this.accumulatedRetrieval.push(chunkRetrieval.retrieved_data);
+      } else {
+        this.accumulatedRetrieval.push(chunkRetrieval);
+      }
+      log(Subsystems.CRIMSON, Status.DEBUG, `Accumulated retrieval from chunk: ${this.accumulatedRetrieval.length} items`);
     }
 
     if (this.onChunk && (chunkContent || chunkReasoning || chunkFinishReason)) {
@@ -174,14 +197,54 @@ export class CrimsonWebSocket {
 
   handleDone(message) {
     const { id, result } = message;
-    
+
+    // Debug: log message keys to see what we're getting (concise)
+    log(Subsystems.CRIMSON, Status.DEBUG, `chat_done message keys: ${Object.keys(message).join(', ')}`);
+    if (result) {
+      log(Subsystems.CRIMSON, Status.DEBUG, `chat_done result keys: ${result ? Object.keys(result).join(', ') : 'null'}`);
+    }
+
     if (id && !this.isCurrentRequest(id)) {
       return;
     }
-    
+
     const callbacks = this.pendingRequests.get(id);
-    
-    if (this.onDone && result) {
+
+    // Merge accumulated retrieval data from streaming chunks into the result
+    if (this.accumulatedRetrieval && this.accumulatedRetrieval.length > 0) {
+      log(Subsystems.CRIMSON, Status.DEBUG, `Merging ${this.accumulatedRetrieval.length} accumulated retrieval items into result`);
+      if (!result) {
+        // Shouldn't happen, but handle gracefully
+        result = { content: '' };
+      }
+      if (!result.raw_provider_response) {
+        result.raw_provider_response = {};
+      }
+      if (!result.raw_provider_response.retrieval) {
+        result.raw_provider_response.retrieval = {};
+      }
+      if (!result.raw_provider_response.retrieval.retrieved_data) {
+        result.raw_provider_response.retrieval.retrieved_data = [];
+      }
+      // Merge accumulated items with existing ones (avoiding duplicates by id)
+      const existingIds = new Set(result.raw_provider_response.retrieval.retrieved_data.map(r => r.id || r.filename));
+      for (const item of this.accumulatedRetrieval) {
+        const itemId = item.id || item.filename;
+        if (!existingIds.has(itemId)) {
+          result.raw_provider_response.retrieval.retrieved_data.push(item);
+          existingIds.add(itemId);
+        }
+      }
+    }
+
+    // For streaming requests (chunkCount > 0), store the result so that
+    // handleStreamFinished() in crimson.js can pick it up and finalize with
+    // both the accumulated text buffer AND the result (which may contain
+    // raw_provider_response with citation/retrieval data).
+    // For non-streaming requests, call onDone immediately.
+    if (this.chunkCount > 0) {
+      this.pendingDoneResult = { id, result };
+    } else if (this.onDone && result) {
       this.onDone(result.content, result);
     }
 
@@ -189,7 +252,7 @@ export class CrimsonWebSocket {
       if (callbacks.onDone) callbacks.onDone(result);
       this.pendingRequests.delete(id);
     }
-    
+
     if (id === this.currentRequestId) {
       this.currentRequestId = null;
     }
@@ -260,8 +323,9 @@ export class CrimsonWebSocket {
       ];
     }
 
-    // Reset chunk counter for new request
+    // Reset chunk counter and accumulated retrieval for new request
     this.chunkCount = 0;
+    this.accumulatedRetrieval = null;
 
     const request = { type: 'chat', id: requestId, payload };
 
@@ -314,6 +378,9 @@ export class CrimsonWebSocket {
     this._unregisterHandlers();
     this.pendingRequests.clear();
     this.currentRequestId = null;
+    this.pendingDoneResult = null;
+    this.chunkCount = 0;
+    this.accumulatedRetrieval = null;
   }
 
   disconnect() {

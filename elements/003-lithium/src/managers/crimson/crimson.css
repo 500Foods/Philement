@@ -416,6 +416,18 @@
   flex-direction: column;
   gap: var(--space-3);
   min-width: 0; /* Important for flex children to respect width */
+  justify-content: flex-start;
+}
+
+/* Empty state - centers welcome message vertically */
+.crimson-conversation.crimson-conversation-empty {
+  justify-content: center;
+}
+
+/* Fade out conversation content during reset */
+.crimson-conversation.crimson-conversation-fading {
+  opacity: 0.3;
+  transition: opacity var(--transition-duration) ease;
 }
 
 /* Scrollbar styling */
@@ -684,6 +696,50 @@
   transform: none;
 }
 
+/* Input history navigation buttons */
+.crimson-input-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.crimson-input-prev,
+.crimson-input-next {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 16px;
+  padding: 0;
+  background: var(--accent-primary);
+  border: none;
+  border-radius: var(--border-radius-sm);
+  color: white;
+  font-size: 10px;
+  cursor: pointer;
+  transition: background-color var(--transition-fast) ease;
+}
+
+.crimson-input-prev:hover:not(:disabled),
+.crimson-input-next:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.crimson-input-prev:disabled,
+.crimson-input-next:disabled {
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.crimson-input-prev svg,
+.crimson-input-next svg,
+.crimson-input-prev i,
+.crimson-input-next i {
+  font-size: 10px;
+}
+
 /* ========================================
    Resize Handles - All Four Corners
    ======================================== */
@@ -753,18 +809,14 @@
   flex: 1;
   text-align: center;
   color: var(--text-muted);
-  animation: crimson-welcome-fade-in var(--transition-duration) ease-out;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity var(--transition-duration) ease-out, transform var(--transition-duration) ease-out;
 }
 
-@keyframes crimson-welcome-fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.crimson-welcome.crimson-welcome-visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .crimson-welcome-icon {
@@ -794,6 +846,7 @@
   opacity: 0;
   transform: translateY(-10px);
   transition: opacity var(--transition-duration) ease, transform var(--transition-duration) ease;
+  pointer-events: none;
 }
 
 /* ========================================
@@ -1048,65 +1101,74 @@
    Citations
    ======================================== */
 
-/* Citation button - appears under Crimson avatar */
-.crimson-citation-btn {
+/* Citation header button — lives in the Crimson header bar, double-wide with counter */
+.crimson-citation-header-btn {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  min-height: 50px;
-  margin-top: 4px;
-  padding: var(--space-1);
+  gap: 6px;
+  padding: var(--space-2) var(--space-3);
   background: var(--accent-primary);
   border: none;
-  border-radius: var(--border-radius-md);
   color: white;
   cursor: pointer;
-  transition: all var(--transition-fast) ease;
-  flex-shrink: 0;
+  transition: background-color var(--transition-fast) ease;
+  min-width: 80px;
 }
 
-.crimson-citation-btn:hover {
+.crimson-citation-header-btn:hover {
   background: var(--accent-hover);
-  transform: scale(1.05);
 }
 
-.crimson-citation-btn.active {
+.crimson-citation-header-btn.active {
   background: var(--accent-toggle);
   color: var(--bg-primary);
 }
 
-.crimson-citation-btn svg,
-.crimson-citation-btn i {
-  font-size: var(--font-size-md);
-  margin-bottom: 2px;
+/* Counter color changes when button is active */
+.crimson-citation-header-btn.active .crimson-citation-counter {
+  color: var(--bg-primary);
 }
 
-.crimson-citation-count {
+.crimson-citation-header-btn svg,
+.crimson-citation-header-btn i {
+  font-size: var(--font-size-md);
+}
+
+/* Counter inside the citation header button */
+.crimson-citation-counter {
+  font-family: var(--font-mono);
   font-size: var(--font-size-xs);
   font-weight: 600;
-  line-height: 1;
+  color: white;
+  min-width: 28px;
+  text-align: center;
 }
 
-/* Citation link in message content */
+/* Citation link in message content - icon only */
 .crimson-citation-link {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
-  padding: 2px 6px;
-  background: var(--accent-primary);
+  justify-content: center;
+  padding: 2px 4px;
+  background: transparent;
   border-radius: var(--border-radius-sm);
-  color: white;
+  color: var(--accent-primary);
   text-decoration: none;
-  font-size: var(--font-size-xs);
-  font-weight: 600;
   transition: all var(--transition-fast) ease;
+  vertical-align: middle;
 }
 
 .crimson-citation-link:hover {
-  background: var(--accent-hover);
-  transform: scale(1.1);
+  background: var(--accent-primary);
+  color: white;
+}
+
+/* Citation link icon - small book-open icon */
+.crimson-citation-link-icon {
+  font-size: var(--font-size-sm);
+  width: 14px;
+  height: 14px;
 }
 
 /* Citation Popup */
@@ -1134,6 +1196,150 @@
   opacity: 1;
   visibility: visible;
   transform: scale(1);
+}
+
+/* ── Crimson Themed Popup (for Citation Manager) ─────────────────────────────
+   Similar to column manager popups — uses --accent-crimson for distinction */
+
+.crimson-citation-themed {
+  background: linear-gradient(180deg, #280a14 0%, #360d1a 100%);
+  border: 1px solid #5f1e2e;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(95, 30, 46, 0.3);
+}
+
+.crimson-citation-themed .crimson-citation-popup-header {
+  background: linear-gradient(90deg, #1f0a12 0%, #2a1518 100%);
+  border-bottom: 1px solid #5f1e2e;
+}
+
+.crimson-citation-themed .crimson-citation-popup-title {
+  color: #e8a0a8;
+}
+
+.crimson-citation-themed .crimson-citation-popup-close {
+  color: #b86b76;
+}
+
+.crimson-citation-themed .crimson-citation-popup-close:hover {
+  background: rgba(232, 160, 168, 0.1);
+  color: #e8a0a8;
+}
+
+.crimson-citation-themed .crimson-citation-popup-content {
+  background: #280a14;
+}
+
+/* LithiumTable styling inside crimson-themed citation popup */
+.crimson-citation-themed .crimson-citation-table-wrap.lithium-table-container {
+  background: #280a14 !important;
+}
+
+.crimson-citation-themed .crimson-citation-table-wrap .tabulator {
+  background: #280a14;
+}
+
+.crimson-citation-themed .crimson-citation-table-wrap .tabulator-header {
+  background: linear-gradient(180deg, #1f0a12 0%, #360d1a 100%);
+  border-bottom: 2px solid #5f1e2e;
+  color: #e8a0a8;
+}
+
+.crimson-citation-themed .crimson-citation-table-wrap .tabulator-header .tabulator-col {
+  border-right: 1px solid #5f1e2e;
+}
+
+.crimson-citation-themed .crimson-citation-table-wrap .tabulator-header .tabulator-col-title {
+  color: #c97b84;
+}
+
+.crimson-citation-themed .crimson-citation-table-wrap .tabulator-tableholder {
+  background: #280a14;
+}
+
+.crimson-citation-themed .crimson-citation-table-wrap .tabulator-table {
+  background: #280a14;
+}
+
+.crimson-citation-themed .crimson-citation-table-wrap .tabulator-row {
+  background: #360d1a;
+  border-bottom: 1px solid #4a151a;
+}
+
+.crimson-citation-themed .crimson-citation-table-wrap .tabulator-row:hover {
+  background: #4a151c;
+}
+
+.crimson-citation-themed .crimson-citation-table-wrap .tabulator-row.tabulator-selected {
+  background: #6b2028 !important;
+}
+
+.crimson-citation-themed .crimson-citation-table-wrap .tabulator-cell {
+  border-right: 1px solid #4a151a;
+  color: #e8c8cc;
+}
+
+/* Navigator styling for crimson-themed popup */
+.crimson-citation-themed .crimson-citation-nav-wrap {
+  border-top: 1px solid #5f1e2e;
+  background: linear-gradient(0deg, #1f0a12 0%, #360d1a 100%);
+}
+
+.crimson-citation-themed .crimson-citation-nav-wrap .lithium-nav-block {
+  background: rgba(95, 30, 46, 0.3);
+  border-color: #5f1e2e;
+  outline-color: #5f1e2e;
+}
+
+.crimson-citation-themed .crimson-citation-nav-wrap .lithium-nav-btn {
+  color: #c97b84;
+}
+
+.crimson-citation-themed .crimson-citation-nav-wrap .lithium-nav-btn:hover {
+  background: rgba(220, 20, 60, 0.2);
+  color: #e8a0a8;
+}
+
+.crimson-citation-themed .crimson-citation-nav-wrap .lithium-nav-btn:disabled {
+  color: #5a3036;
+  opacity: 0.5;
+}
+
+/* Popup arrow for crimson theme */
+.crimson-citation-themed .crimson-citation-popup-arrow.arrow-left {
+  border-color: transparent #5f1e2e transparent transparent;
+}
+
+.crimson-citation-themed .crimson-citation-popup-arrow.arrow-left::after {
+  border-color: transparent #280a14 transparent transparent;
+}
+
+.crimson-citation-themed .crimson-citation-popup-arrow.arrow-right {
+  border-color: transparent transparent transparent #5f1e2e;
+}
+
+.crimson-citation-themed .crimson-citation-popup-arrow.arrow-right::after {
+  border-color: transparent transparent transparent #280a14;
+}
+
+.crimson-citation-themed .crimson-citation-popup-arrow.arrow-top {
+  border-color: transparent transparent #5f1e2e transparent;
+}
+
+.crimson-citation-themed .crimson-citation-popup-arrow.arrow-top::after {
+  border-color: transparent transparent #280a14 transparent;
+}
+
+.crimson-citation-themed .crimson-citation-popup-arrow.arrow-bottom {
+  border-color: #5f1e2e transparent transparent transparent;
+}
+
+.crimson-citation-themed .crimson-citation-popup-arrow.arrow-bottom::after {
+  border-color: #280a14 transparent transparent transparent;
+}
+
+/* Resize handle for crimson theme */
+.crimson-citation-themed .crimson-citation-resize-handle::before {
+  background: linear-gradient(135deg, transparent 50%, #b86b76 50%);
 }
 
 /* Popup arrow */
@@ -1180,6 +1386,45 @@
   border-color: transparent transparent transparent var(--bg-primary);
 }
 
+/* Arrow pointing up — popup is below the button */
+.crimson-citation-popup-arrow.arrow-top {
+  top: -8px;
+  border-width: 0 8px 8px 8px;
+  border-color: transparent transparent var(--border-color) transparent;
+}
+
+.crimson-citation-popup-arrow.arrow-top::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: -7px;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 7px 7px 7px;
+  border-color: transparent transparent var(--bg-primary) transparent;
+}
+
+/* Arrow pointing down — popup is above the button */
+.crimson-citation-popup-arrow.arrow-bottom {
+  bottom: -8px;
+  top: auto;
+  border-width: 8px 8px 0 8px;
+  border-color: var(--border-color) transparent transparent transparent;
+}
+
+.crimson-citation-popup-arrow.arrow-bottom::after {
+  content: '';
+  position: absolute;
+  bottom: 1px;
+  left: -7px;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 7px 7px 0 7px;
+  border-color: var(--bg-primary) transparent transparent transparent;
+}
+
 /* Popup header */
 .crimson-citation-popup-header {
   display: flex;
@@ -1218,122 +1463,205 @@
   color: var(--text-primary);
 }
 
-/* Popup content */
+/* Popup content — hosts the LithiumTable */
 .crimson-citation-popup-content {
   flex: 1;
-  overflow: auto;
-  padding: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
   min-height: 0;
 }
 
-/* Citation table */
-.crimson-citation-table {
-  width: 100%;
-  border-collapse: collapse;
+/* LithiumTable container overrides for citation popup */
+.crimson-citation-table-wrap.lithium-table-container {
+  flex: 1;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  min-height: 0;
+}
+
+.crimson-citation-table-wrap .tabulator {
+  border: none;
+  height: 100% !important;
   font-size: var(--font-size-sm);
 }
 
-.crimson-citation-header {
-  position: sticky;
-  top: 0;
-  padding: var(--space-2) var(--space-3);
-  background: var(--bg-tertiary);
-  border-bottom: var(--border-standard);
-  text-align: left;
-  font-weight: 600;
-  color: var(--text-primary);
-  white-space: nowrap;
+/* Navigator sits below the table */
+.crimson-citation-nav-wrap.lithium-navigator-container {
+  padding: var(--space-1) var(--space-2);
+  border-top: var(--border-standard);
+  flex-shrink: 0;
 }
 
-.crimson-citation-header:first-child {
-  border-radius: var(--border-radius-sm) 0 0 0;
-  width: 40px;
-  text-align: center;
-}
-
-.crimson-citation-header:last-child {
-  border-radius: 0 var(--border-radius-sm) 0 0;
-  width: 60px;
-  text-align: center;
-}
-
-.crimson-citation-row {
-  transition: background-color var(--transition-fast) ease;
-}
-
-.crimson-citation-row:hover {
-  background: var(--bg-secondary);
-}
-
-.crimson-citation-row.highlighted {
-  background: rgba(92, 107, 192, 0.2);
-  border-left: 3px solid var(--accent-primary);
-}
-
-.crimson-citation-cell {
-  padding: var(--space-2) var(--space-3);
-  border-bottom: 1px solid var(--border-color);
-  vertical-align: middle;
-}
-
-.crimson-citation-number {
-  text-align: center;
-  font-weight: 600;
-  color: var(--accent-primary);
-  width: 40px;
-}
-
-.crimson-citation-name {
-  max-width: 150px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
+/* URL column styling inside Tabulator cells */
 .crimson-citation-url {
-  max-width: 150px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);
   color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.crimson-citation-type {
-  width: 40px;
-  text-align: center;
-  color: var(--accent-primary);
+/* ========================================
+   Citation Popup - Minimal styling, uses LithiumTable defaults
+   ======================================== */
+
+/* Popup container */
+.crimson-citation-popup {
+  position: fixed;
+  z-index: 20002;
+  display: flex;
+  flex-direction: column;
+  width: 500px;
+  max-width: 90vw;
+  max-height: 400px;
+  background: var(--bg-primary);
+  border: var(--border-standard);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-lg);
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(0.95);
+  transition: opacity var(--transition-duration) ease,
+              visibility var(--transition-duration) ease,
+              transform var(--transition-duration) ease;
+  pointer-events: none;
+  overflow: hidden;
 }
 
-.crimson-citation-actions {
-  width: 60px;
-  text-align: center;
+.crimson-citation-popup.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: scale(1);
+  pointer-events: auto;
 }
 
-/* Citation action buttons */
-.crimson-citation-action-btn {
-  display: inline-flex;
+/* Popup header */
+.crimson-citation-popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-secondary);
+  border-bottom: var(--border-standard);
+  flex-shrink: 0;
+  cursor: grab;
+  user-select: none;
+}
+
+.crimson-citation-popup-header:active {
+  cursor: grabbing;
+}
+
+.crimson-citation-popup-title {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.crimson-citation-popup-close {
+  display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   padding: 0;
   background: transparent;
   border: none;
-  border-radius: var(--border-radius-sm);
+  border-radius: var(--border-radius-md);
   color: var(--text-muted);
   cursor: pointer;
   transition: all var(--transition-fast) ease;
 }
 
-.crimson-citation-action-btn:hover {
-  background: var(--accent-primary);
-  color: white;
+.crimson-citation-popup-close:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
 }
 
-.crimson-citation-open-btn:hover {
-  background: var(--accent-primary);
+/* Popup content area */
+.crimson-citation-popup-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* Resize handles */
+.crimson-citation-resize-handle {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  opacity: 0.5;
+  transition: opacity var(--transition-fast) ease;
+  z-index: 1;
+}
+
+.crimson-citation-resize-handle:hover {
+  opacity: 1;
+}
+
+.crimson-citation-popup.resizing .crimson-citation-resize-handle {
+  opacity: 1;
+}
+
+/* Bottom-right corner (diagonal resize) */
+.crimson-citation-resize-handle-br {
+  bottom: 0px;
+  right: 0px;
+  cursor: nwse-resize;
+  background: linear-gradient(135deg, transparent 50%, var(--border-color) 50%);
+  border-bottom-right-radius: var(--border-radius-sm);
+}
+
+/* Bottom-left corner */
+.crimson-citation-resize-handle-bl {
+  bottom: 0px;
+  left: 0px;
+  cursor: nesw-resize;
+  background: linear-gradient(225deg, transparent 50%, var(--border-color) 50%);
+  border-bottom-left-radius: var(--border-radius-sm);
+}
+
+/* Top-right corner */
+.crimson-citation-resize-handle-tr {
+  top: 0px;
+  right: 0px;
+  cursor: nesw-resize;
+  background: linear-gradient(45deg, transparent 50%, var(--border-color) 50%);
+  border-top-right-radius: var(--border-radius-sm);
+}
+
+/* Top-left corner */
+.crimson-citation-resize-handle-tl {
+  top: 0px;
+  left: 0px;
+  cursor: nwse-resize;
+  background: linear-gradient(315deg, transparent 50%, var(--border-color) 50%);
+  border-top-left-radius: var(--border-radius-sm);
+}
+
+/* LithiumTable container overrides - just layout, no theming */
+.crimson-citation-table-wrap.lithium-table-container {
+  flex: 1;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  min-height: 0;
+}
+
+/* Navigator container - just layout */
+.crimson-citation-nav-wrap.lithium-navigator-container {
+  padding: var(--space-1) var(--space-2);
+  border-top: var(--border-standard);
+  flex-shrink: 0;
 }
 
  } /* end @layer managers */

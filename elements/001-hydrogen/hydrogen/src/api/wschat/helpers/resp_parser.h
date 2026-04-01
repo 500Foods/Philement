@@ -37,6 +37,7 @@ typedef struct ChatStreamChunk {
     char* finish_reason;        // Finish reason (if complete)
     char* model;                // Model name
     bool is_done;               // Whether this is the final chunk
+    json_t* extra_fields;       // Additional provider-specific fields (e.g., retrieval)
 } ChatStreamChunk;
 
 // Function prototypes

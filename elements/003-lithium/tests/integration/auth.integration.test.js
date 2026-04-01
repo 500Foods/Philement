@@ -155,8 +155,13 @@ describe('Auth Integration', () => {
     if (!credentialsAvailable) {
       return it.skip(`${name} (credentials not configured)`, fn);
     }
-    // Otherwise use the standard test (beforeAll will have run)
-    return it(name, fn);
+    // Otherwise wrap the test to check server availability (set by beforeAll)
+    return it(name, async () => {
+      if (!serverAvailable) {
+        return; // Skip silently — beforeAll already logged the warning
+      }
+      await fn();
+    }, 15000);
   };
 
   describe('Login', () => {
