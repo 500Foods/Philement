@@ -280,15 +280,10 @@ Or use `once()` for one-time listeners.
 
 ### Library Migrations
 
-1. **jsoneditor → vanilla-jsoneditor (March 2026):** The legacy `jsoneditor` (v10.x) was replaced by `vanilla-jsoneditor` (v2.x), the maintained successor by the same author. Key differences:
-   - **Constructor:** `new JSONEditor(container, opts)` → `new JSONEditor({ target, props: { content: { json }, mode, ... } })`
-   - **Set data:** `editor.set(data)` → `editor.set({ json: data })`
-   - **Get data:** `editor.get()` → `editor.get()` (returns `{ json }` or `{ text }`)
-   - **Modes:** `tree/view/form/code/text` → `tree/text/table`
-   - **Dark theme:** Manual `.jsoneditor-*` CSS overrides → `.jse-theme-dark` class + `--jse-*` CSS custom properties
-   - **CSS:** External `jsoneditor.min.css` import → self-contained (no vendor CSS needed)
-   - **Vendor CSS layer:** `vendor-jsoneditor.css` (imported old CSS into `vendors.jsoneditor` layer) → `vendor-vanilla-jsoneditor.css` (placeholder — CSS is bundled internally)
-   - The `base.css` layer declaration `vendors.jsoneditor` was kept unchanged for cascade ordering consistency
+1. **jsoneditor → vanilla-jsoneditor → CodeMirror JSON mode:** The JSON editor went through two migrations:
+   - **March 2026:** `jsoneditor` (v10.x) → `vanilla-jsoneditor` (v2.x), the maintained successor by the same author.
+   - **April 2026:** `vanilla-jsoneditor` → CodeMirror 6 with `@codemirror/lang-json`. This consolidated all editor types (SQL, Markdown, JSON, CSS) onto one library. The `init/jsoneditor-init.js` file remains as dead code.
+   - JSON editing now uses the same `buildEditorExtensions()` + `createReadOnlyCompartment()` pattern as all other CodeMirror instances via `codemirror-setup.js`.
 
 ### PWA
 

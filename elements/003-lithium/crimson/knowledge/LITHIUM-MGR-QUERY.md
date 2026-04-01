@@ -12,12 +12,16 @@ The Query Manager (Manager ID: 4) provides a dual-panel interface for managing d
 
 **Key Files:**
 
-- `queries.js` — Main manager class (orchestrates LithiumTable + editors)
-- `queries-dirty.js` — Snapshot-based dirty state tracking for all editors
-- `queries-edit-mode.js` — Edit mode transitions, cell editing, and edit gating
+- `queries.js` — Main manager class (LithiumTable + ManagerEditHelper + editors)
 - `queries-editors.js` — CodeMirror editor initialization (SQL, Summary, Collection)
 - `queries.css` — Styling
 - `queries.html` — HTML template
+
+**Retired Files** (functionality moved to LithiumTable + ManagerEditHelper):
+
+- `queries-dirty.js` — Replaced by ManagerEditHelper snapshot tracking
+- `queries-edit-mode.js` — Replaced by LithiumTable.isEditing + editHelper
+- `queries-navigation.js` — Replaced by LithiumTable nav + `onExecuteSave` callback
 
 ---
 
@@ -81,9 +85,9 @@ Tabbed interface showing different aspects of the selected query.
 
 #### Collection Tab
 
-- **vanilla-jsoneditor** tree view
+- **CodeMirror editor** with JSON syntax highlighting
 - JSON configuration/parameters for the query
-- Expandable/collapsible nodes
+- Fold/unfold support for nested structures
 
 #### Preview Tab
 
@@ -105,107 +109,84 @@ The left panel can be collapsed to maximize the editor:
 
 ### Class Structure
 
+The Query Manager follows the **standard manager pattern** — identical to Lookups and Style managers:
+
 ```javascript
 export default class QueriesManager {
   constructor(app, container) {
-    // Store app reference and container
-    // Initialize state (editing, dirty tracking, etc.)
+    this.queryTable = null;              // LithiumTable instance
+    this.editHelper = new ManagerEditHelper({ name: 'Queries' });
+    this.editorManager = createEditorManager(this);  // CodeMirror init
+    // ... panel state, font popup, editor refs ...
   }
 
   async init() {
-    // Render HTML from template
-    // Setup event listeners
-    // Setup splitter
-    // Initialize LithiumTable
-    // Setup footer controls
-    // Load queries
+    await this._render();
+    this._setupEventListeners();
+    await this._initQueryTable();        // LithiumTable + registerTable + registerEditor
+    this._setupSplitters();
+    this._setupFooter();                 // wireFooterButtons through editHelper
+    this._restorePanelState();
   }
 
-  // Row selection
-  loadQueryDetails(queryData) { /* ... */ }
-  clearQueryDetails() { /* ... */ }
+  // Custom save: assembles table row data + editor content into API params
+  async _executeSave(row, editHelper) { /* ... */ }
 
-  // Tab switching
-  switchTab(tabId) { /* ... */ }
+  // Row selection → loads detail data into editors
+  async _handleRowSelected(rowData) { /* ... */ }
 
-  // Edit mode
-  enterEditMode(row) { /* ... */ }
-  exitEditMode(reason) { /* ... */ }
-
-  // Dirty state tracking
-  isAnyDirty() { /* Check all editors */ }
-  setDirty(type, isDirty) { /* ... */ }
+  // Tab switching → lazy-init editors
+  async switchTab(tabId) { /* ... */ }
 
   // Lifecycle
   onActivate() { /* Redraw table */ }
-  cleanup() { /* Destroy editors */ }
+  cleanup() { /* editHelper.destroy(), editors, table */ }
 }
 ```
 
 ### LithiumTable Integration
 
-The Query Manager uses a single `LithiumTable` instance:
+The Query Manager uses a single `LithiumTable` instance with `ManagerEditHelper`:
 
 ```javascript
-await this.initTable();
-
-// Called within init()
-async initTable() {
-  // Load column configuration from JSON
-  [this.coltypes, this.tableDef] = await Promise.all([
-    loadColtypes(),
-    loadTableDef('queries/query-manager'),
-  ]);
-
-  // Extract query refs from config
-  this.queryRefs = getQueryRefs(this.tableDef);
-  this.primaryKeyField = getPrimaryKeyField(this.tableDef);
-
-  // Build columns with selector
-  const selectorColumn = this.buildSelectorColumn();
-  const dataColumns = resolveColumns(this.tableDef, this.coltypes, {
-    filterEditor: this.createFilterEditor.bind(this),
+async _initQueryTable() {
+  this.queryTable = new LithiumTable({
+    container: this.elements.tableContainer,
+    navigatorContainer: this.elements.navigatorContainer,
+    tablePath: 'queries/query-manager',
+    queryRef: 25,
+    searchQueryRef: 32,
+    app: this.app,
+    // Custom save assembles params from table + editors
+    onExecuteSave: (row, editHelper) => this._executeSave(row, editHelper),
   });
 
-  // Create Tabulator instance
-  this.table = new Tabulator(this.elements.tableContainer, {
-    columns: [selectorColumn, ...dataColumns],
-    // ... other options
+  // Register with editHelper — auto-wires onEditModeChange + onDirtyChange
+  this.editHelper.registerTable(this.queryTable);
+
+  // Register editors for dirty tracking + cancel restore
+  this.editHelper.registerEditor('sql', {
+    getContent:  () => this.sqlEditor?.state?.doc?.toString() || '',
+    setContent:  (content) => { /* dispatch to CodeMirror */ },
+    setEditable: (editable) => this.editorManager._setCodeMirrorEditable(editable),
+    boundTable:  this.queryTable,
   });
+  // ... summary, collection editors similarly ...
 }
 ```
 
 ### Dirty State Tracking
 
-The Query Manager uses a `DirtyStateTracker` (`queries-dirty.js`) that tracks changes across multiple editors with snapshot-based comparison:
+Dirty tracking uses the **standard `ManagerEditHelper` snapshot system** (shared with all managers):
 
-```javascript
-// DirtyStateTracker captures original content on edit mode entry
-this.dirtyTracker.captureOriginalData(rowData, {
-  sql: this.sqlEditor,
-  summary: this.summaryEditor,
-  collection: this.collectionEditor,
-  sqlContent: this._pendingSqlContent,       // Full DB content for lazy-loaded editors
-  summaryContent: this._pendingSummaryContent,
-  collectionContent: this._pendingCollectionContent,
-});
-```
+- **On edit mode enter:** `editHelper._takeSnapshot()` captures table row data + all registered editor content
+- **On cell edit:** Tabulator `cellEdited` → `notifyDirtyChange()` → `editHelper.checkDirtyState()`
+- **On CodeMirror change:** `update.docChanged` → `editHelper.checkDirtyState()`
+- **Comparison:** Current table row + editor content vs. snapshot — field-by-field and string equality
+- **Buttons:** Save/Cancel enabled only when dirty AND in edit mode; revert to disabled if changes are undone
+- **Cancel:** Reverts table row via `originalRowData` + editors via `editHelper.restoreEditorSnapshots()`
 
-**Tracking method — snapshot comparison (not change events):**
-
-- **Table:** `cellEdited` event triggers dirty check
-- **SQL:** CodeMirror `updateListener` compares current content to snapshot via `checkSqlDirty()`
-- **Summary:** CodeMirror `updateListener` compares via `checkSummaryDirty()`
-- **Collection:** CodeMirror `updateListener` compares via `checkCollectionDirty()`
-
-**Behavior:**
-
-- Save/Cancel buttons only enabled when dirty AND in edit mode
-- If changes are undone (e.g., Ctrl+Z in CodeMirror), the snapshot comparison detects no difference and buttons return to disabled
-- Cancel reverts all changes to original values
-- Save commits to API
-
-**Footer button state** is managed by `ManagerEditHelper` (`editHelper`), which the dirty tracker calls via `manager.updateFooterSaveCancelState()`. See [LITHIUM-TAB.md](LITHIUM-TAB.md#footer-savecancel-buttons-and-manageredithelper).
+See [LITHIUM-TAB.md](LITHIUM-TAB.md#footer-savecancel-buttons-and-manageredithelper) for the full pattern.
 
 ---
 
@@ -348,22 +329,38 @@ Click the selector column header (three dots) to open the column chooser:
 ### During Edit Mode
 
 - **Tabulator cells** — Click to edit inline
-- **SQL editor** — Type SQL code
-- **Summary editor** — Type Markdown
-- **Collection editor** — Edit JSON tree
+- **SQL editor** — Type SQL code (CodeMirror)
+- **Summary editor** — Type Markdown (CodeMirror)
+- **Collection editor** — Edit JSON (CodeMirror)
 
 ### Exiting Edit Mode
 
 - **Save** (`💾` or `Ctrl+S`) — Commits to API via QueryRef 28
-- **Cancel** (`🚫` or `Escape`) — Reverts all changes
+- **Cancel** (`🚫` or `Escape`) — Reverts all changes (table row + all CodeMirror editors)
+- **Click another row** — Auto-saves if dirty, then loads new row's details
+- **Click Edit button** (while editing) — Auto-saves if dirty, otherwise exits edit mode
+- **Navigator buttons** (First/Last/Prev/Next/Page) — Auto-saves if dirty, then navigates
 
-### Auto-Save on Navigation
+### Auto-Save on Row Change
 
-When navigating to a different row while dirty:
+When clicking a different row or navigating while in edit mode:
 
-1. Automatically saves current row
-2. If save fails, stays on current row
-3. Shows toast notification
+1. Performs a **synchronous dirty check** (`isActuallyDirty()`) — bypasses the rAF-deferred `isDirty` flag to handle fast type-then-click scenarios
+2. If dirty: saves the **editing row** (not the newly-clicked row), shows "Changes Saved" toast
+3. If save fails: reverts selection back to the editing row and stays in edit mode
+4. If not dirty: exits edit mode silently
+5. Proceeds to select the new row and load its details
+
+### Undo/Redo Toolbar Buttons
+
+The undo/redo buttons in the toolbar operate on the **active tab's CodeMirror editor** (SQL, Summary, or Collection):
+
+- **Disabled** when not in edit mode
+- **Enabled/disabled** based on the active editor's undo/redo history depth
+- When all changes are undone via undo, the dirty comparison returns to "not dirty" and Save/Cancel buttons automatically revert to disabled
+- **Programmatic content loads** (row selection, cancel restore) are excluded from the undo history via `setEditorContentNoHistory()`, so undo only covers user edits made during the editing session
+
+See [LITHIUM-TAB.md](LITHIUM-TAB.md#undoredo-toolbar-buttons-with-codemirror) for the full implementation pattern.
 
 ---
 
@@ -399,31 +396,26 @@ When navigating to a different row while dirty:
 
 ## Implementation Notes
 
-### First LithiumTable Implementation
+### Consolidated Architecture
 
-The Query Manager was the first to use the Tabulator+Navigator pattern. The reusable `LithiumTable` component was extracted from this implementation.
+The Query Manager was originally the first LithiumTable implementation, with custom modules for dirty tracking (`queries-dirty.js`), edit mode (`queries-edit-mode.js`), and navigation/save (`queries-navigation.js`). These have been **retired** — all functionality now flows through the standard `LithiumTable` + `ManagerEditHelper` pattern shared by every manager.
 
-**Key innovations:**
+**Key architectural decisions:**
 
-1. **Edit mode gating** — Editors only active in edit mode
-2. **Multi-editor dirty tracking** — SQL, Summary, Collection tracked separately
-3. **Template system** — Save/load column configurations
-4. **Loading overlay** — Custom spinner pattern
+1. **`onExecuteSave` callback** — Custom save logic lives in the manager, not in a separate module. The callback assembles table row data + editor content into API params.
+2. **`editHelper.registerEditor()`** — Every external editor (CodeMirror, SunEditor, form fields, etc.) provides `getContent`, `setContent`, and `setEditable` callbacks. The editHelper handles snapshot comparison, dirty detection, and cancel restore uniformly.
+3. **`editHelper.wireFooterButtons()`** — Save/Cancel buttons are wired through the editHelper, which delegates to `activeEditingTable.handleSave()` / `handleCancel()`.
+4. **No parallel systems** — One dirty tracker (editHelper snapshots), one edit mode source of truth (`LithiumTable.isEditing`), one button state manager (editHelper).
 
 ### CodeMirror Integration
 
-Editors are created dynamically when tabs are first shown:
+Editors are created dynamically when tabs are first shown (`queries-editors.js`). Each editor's `onUpdate` does two things:
+- If `docChanged` and editing: calls `editHelper.checkDirtyState()` to update Save/Cancel buttons
+- If transactions occurred: calls `_updateUndoRedoButtons()` to update undo/redo button state
 
-```javascript
-switchTab(tabId) {
-  if (tabId === 'sql' && !this.sqlEditor) {
-    this.initSqlEditor(content);
-  }
-  // ... similar for other tabs
-}
-```
+**No-history dispatches:** All programmatic content loads (row selection in `switchTab()`, cancel restore via `setContent` callbacks, clearing in `_clearQueryDetails()`) use `setEditorContentNoHistory()` from `codemirror-setup.js`. This ensures the undo history only contains user edits made during the editing session — undoing all changes returns the editor to its snapshot state, which automatically disables Save/Cancel.
 
-This improves initial load performance.
+**`onAfterEditModeChange` callback:** The editHelper fires this after entering/exiting edit mode. The Query Manager uses it to update undo/redo button state (disabled when not editing).
 
 ### Panel State Persistence
 

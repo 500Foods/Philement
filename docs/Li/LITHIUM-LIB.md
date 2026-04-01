@@ -13,7 +13,7 @@ Lithium uses a minimal set of third-party libraries, preferring to build functio
 | Build | Vite, Vitest |
 | Tables | Tabulator |
 | Code Editor | CodeMirror 6 |
-| JSON Editor | vanilla-jsoneditor |
+| JSON Editor | CodeMirror 6 (JSON mode) |
 | Tooltips | Floating UI |
 | Sanitization | DOMPurify |
 | Markdown | marked |
@@ -83,68 +83,27 @@ const { css } = await import('@codemirror/lang-css');
 
 ---
 
-### vanilla-jsoneditor
+### JSON Editing (CodeMirror JSON mode)
 
-**Purpose:** Tree/text/table JSON editor for viewing and editing structured data
+**Purpose:** JSON editor for viewing and editing structured data
 
-**Package:** `vanilla-jsoneditor` (the vanilla JS wrapper for `svelte-jsoneditor` by Jos de Jong)
-
-**Import:** Dynamic (lazy-loaded)
-
-```javascript
-const { JSONEditor } = await import('vanilla-jsoneditor');
-```
+JSON editing throughout Lithium uses **CodeMirror 6** with `@codemirror/lang-json`. This replaced `vanilla-jsoneditor` (which itself had replaced the older `jsoneditor` library). The consolidation means one editor library (CodeMirror) handles SQL, Markdown, JSON, and CSS across all managers.
 
 **Usage in Lithium:**
 
-- Query Manager "Collection" tab — interactive JSON tree editor
+- Query Manager "Collection" tab — JSON editor with fold/unfold
+- Lookups Manager "JSON" tab — JSON editor for lookup values
+- Style Manager "JSON" mode — JSON theme data editor
 
-**Key features used:**
+**Key features via `codemirror-setup.js`:**
 
-- Tree mode (default), text mode, table mode
-- Built-in dark theme via `.jse-theme-dark` CSS class
-- Navigation bar, status bar, main menu bar
-- Content model: `{ json: data }` or `{ text: '...' }`
-- Self-contained CSS (no external stylesheet import needed)
+- Syntax highlighting, bracket matching
+- Fold/unfold support for nested structures
+- Read-only compartment (toggled on edit mode enter/exit)
+- `onUpdate` callback for dirty detection via `editHelper.checkDirtyState()`
+- Undo/redo via CodeMirror history
 
-**API usage:**
-
-```javascript
-// Create editor
-const editor = new JSONEditor({
-  target: containerElement,
-  props: {
-    content: { json: { key: 'value' } },
-    mode: 'tree',
-    mainMenuBar: true,
-    navigationBar: true,
-    statusBar: true,
-    onChange: (updatedContent, previousContent, { contentErrors }) => {},
-  },
-});
-
-// Update content
-editor.set({ json: newData });
-
-// Get content (returns { json } or { text })
-const content = editor.get();
-
-// Change mode
-editor.updateProps({ mode: 'text' });
-
-// Destroy
-editor.destroy();
-```
-
-**Dark theme integration:**
-
-```javascript
-containerElement.classList.add('jse-theme-dark');
-```
-
-Then map Lithium design tokens to `--jse-*` CSS custom properties in the stylesheet.
-
-**Migration note:** Replaced legacy `jsoneditor` (v10.x) in March 2026. The old library used `new JSONEditor(container, options)` with `editor.set(data)`. The new library uses `new JSONEditor({ target, props })` with `editor.set({ json: data })`. Modes changed from `tree/view/form/code/text` to `tree/text/table`.
+**Migration history:** `jsoneditor` (v10.x) → `vanilla-jsoneditor` (v2.x) → CodeMirror JSON mode (current). The `init/jsoneditor-init.js` file remains as dead code and can be removed.
 
 ---
 
@@ -320,7 +279,8 @@ processIcons(container);
 | React/Vue | Prefer vanilla JS for simplicity |
 | Bootstrap | Custom CSS needed anyway |
 | Highlight.js | CodeMirror handles this |
-| jsoneditor | Replaced by vanilla-jsoneditor (its maintained successor) in March 2026 |
+| jsoneditor | Replaced by vanilla-jsoneditor, then by CodeMirror JSON mode |
+| vanilla-jsoneditor | Replaced by CodeMirror JSON mode (consolidation — one editor library for all languages) |
 | Luxon | Use native Intl.* APIs |
 | SheetJS | Not needed yet |
 | Split.js | Not needed yet |
@@ -357,7 +317,7 @@ const { LoginManager } = await import('./managers/login/login.js');
 |-------------|-------------|----------|
 | Core modules | Static | `event-bus.js`, `jwt.js`, `config.js` |
 | Managers | Dynamic | `login.js`, `main.js`, `style-manager.js` |
-| Heavy libraries | Dynamic | Tabulator, CodeMirror, vanilla-jsoneditor, DOMPurify, marked, sql-formatter |
+| Heavy libraries | Dynamic | Tabulator, CodeMirror, DOMPurify, marked, sql-formatter |
 
 ---
 

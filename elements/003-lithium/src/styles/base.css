@@ -118,6 +118,7 @@
     --accent-toggle: #FFFF8F;
     --accent-crimson: #DC143C; 
     --accent-editable: linear-gradient(to right,#a00000 0%,#900000 40%,#800000 100%);
+    --accent-editing: #FFFF8F;
 
     --accent-danger: #EF5350;
     --accent-danger-hover: #E53935;

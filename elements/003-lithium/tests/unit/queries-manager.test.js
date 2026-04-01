@@ -1,3 +1,14 @@
+/**
+ * Tests for QueriesManager — validates the consolidated architecture
+ * (LithiumTable + ManagerEditHelper + queries-editors.js).
+ *
+ * The Query Manager follows the standard manager pattern:
+ *   - editHelper (ManagerEditHelper) handles dirty tracking, edit mode, save/cancel
+ *   - queryTable (LithiumTable) owns isEditing, editingRowId, originalRowData
+ *   - onExecuteSave callback provides custom save logic
+ *   - External editors registered via editHelper.registerEditor()
+ */
+
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 vi.mock('tabulator-tables', () => ({
@@ -21,11 +32,13 @@ vi.mock('../../src/core/log.js', () => ({
   Subsystems: {
     MANAGER: 'MANAGER',
     CONDUIT: 'CONDUIT',
+    TABLE: 'TABLE',
   },
   Status: {
     INFO: 'INFO',
     WARN: 'WARN',
     ERROR: 'ERROR',
+    DEBUG: 'DEBUG',
   },
 }));
 
@@ -57,11 +70,29 @@ let lastMockLithiumTableInstance = null;
 
 vi.mock('../../src/core/lithium-table-main.js', () => {
   class MockLithiumTable {
-    constructor() {
+    constructor(options) {
       this.table = mockTabulatorTable;
+      this.isEditing = false;
+      this.isDirty = false;
+      this.editingRowId = null;
+      this.originalRowData = null;
+      this.primaryKeyField = 'query_id';
+      this.storageKey = options?.storageKey || 'queries_table';
+      this.cssPrefix = options?.cssPrefix || 'queries';
+      this.queryRefs = { updateQueryRef: 28 };
+      this.onEditModeChange = options?.onEditModeChange || (() => {});
+      this.onDirtyChange = options?.onDirtyChange || null;
+      this.onExecuteSave = options?.onExecuteSave || null;
+      this._editHelper = null;
       this.init = vi.fn(async () => {});
       this.loadData = vi.fn(async () => {});
       this.destroy = vi.fn();
+      this.setSplitter = vi.fn();
+      this.enterEditMode = vi.fn();
+      this.exitEditMode = vi.fn();
+      this.handleSave = vi.fn();
+      this.handleCancel = vi.fn();
+      this.getSelectedDataRow = vi.fn();
       lastMockLithiumTableInstance = this;
     }
   }
@@ -104,7 +135,7 @@ vi.mock('../../src/core/manager-ui.js', () => ({
   })),
 }));
 
-// Mock codemirror modules (queries-editors.js uses codemirror-setup.js which imports from codemirror.js)
+// Mock codemirror modules
 vi.mock('../../src/core/codemirror.js', () => ({
   EditorState: { create: vi.fn(() => ({})), readOnly: { of: vi.fn() } },
   EditorView: vi.fn(),
@@ -146,35 +177,36 @@ vi.mock('../../src/core/codemirror-setup.js', () => ({
   LANG_CLASS_PREFIX: 'lithium-cm-lang-',
 }));
 
-// Helper to create a mock CodeMirror view on a container (simulates what queries-editors.js does)
-function mockCmViewOnContainer(container, content = '{}') {
+// Helper to create a mock CodeMirror view
+function mockCmView(content = '{}') {
   let docContent = content;
-  container._cmView = {
-    state: { doc: { toString: () => docContent, length: docContent.length } },
+  const view = {
+    state: {
+      get doc() {
+        return { toString: () => docContent, length: docContent.length };
+      },
+    },
     dispatch: vi.fn(({ changes } = {}) => {
       if (changes?.insert != null) docContent = changes.insert;
     }),
     destroy: vi.fn(),
   };
-  container._cmReadOnlyCompartment = { of: vi.fn() };
   // Getter so tests can read the current content
-  Object.defineProperty(container, '_cmContent', { get: () => docContent, configurable: true });
-  return container._cmView;
+  Object.defineProperty(view, '_content', { get: () => docContent, configurable: true });
+  return view;
 }
 
 import QueriesManager from '../../src/managers/queries/queries.js';
 
-describe('QueriesManager edit-mode table behavior', () => {
+describe('QueriesManager — row selection', () => {
   let manager;
 
   beforeEach(() => {
-    // Reset mock tabulator table methods
     mockTabulatorTable.getSelectedRows.mockReturnValue([]);
     mockTabulatorTable.getData.mockReturnValue([]);
 
     manager = new QueriesManager({}, document.createElement('div'));
-    
-    // Stub requestAnimationFrame to execute callbacks synchronously
+
     vi.stubGlobal('requestAnimationFrame', (cb) => {
       if (cb) cb();
       return 1;
@@ -204,25 +236,6 @@ describe('QueriesManager edit-mode table behavior', () => {
     expect(manager._loadQueryDetails).toHaveBeenCalledWith(6);
   });
 
-  it('opens cell editor when in edit mode and cell is editable', () => {
-    manager.editModeManager._isEditing = true;
-    manager.editModeManager._editingRowId = 5;
-    manager.editModeManager._columnEditors = new Map([['query_timeout', { editor: 'number' }]]);
-
-    const cell = {
-      getField: () => 'query_timeout',
-      getRow: () => ({
-        isSelected: () => true,
-        getData: () => ({ query_id: 5 }),
-      }),
-      edit: vi.fn(),
-    };
-
-    // Call the internal logic that would trigger the edit
-    // This logic is in edit-mode.js, but we can verify the setup
-    expect(manager.editModeManager._columnEditors.has('query_timeout')).toBe(true);
-  });
-
   it('sets data on table during loadData', async () => {
     manager.app = { api: {} };
     manager.queryTable = {
@@ -234,51 +247,15 @@ describe('QueriesManager edit-mode table behavior', () => {
 
     expect(manager.queryTable.loadData).toHaveBeenCalled();
   });
-
-  it('reverts table row changes when cancelling edits with dirty state', async () => {
-    manager.dirtyTracker._isDirty = { table: true, sql: false, summary: false, collection: false };
-    manager.dirtyTracker._originalRowData = { query_id: 42, name: 'Original Name' };
-    manager.editModeManager._isEditing = true;
-
-    const mockRow = {
-      update: vi.fn(),
-      getData: vi.fn(() => ({ query_id: 42, name: 'Edited Name' })),
-      getCell: vi.fn(() => null),
-    };
-    mockTabulatorTable.getSelectedRows.mockReturnValue([mockRow]);
-
-    // Set up queryTable to point to the mock tabulator table
-    manager.queryTable = { table: mockTabulatorTable };
-
-    manager.updateFooterSaveCancelState = vi.fn();
-
-    await manager.dirtyTracker.revertAllChanges();
-
-    expect(mockRow.update).toHaveBeenCalledWith({ query_id: 42, name: 'Original Name' });
-  });
-
-  it('just exits edit mode when cancelling with no changes', async () => {
-    manager.dirtyTracker._isDirty = { table: false, sql: false, summary: false, collection: false };
-    manager.editModeManager._isEditing = true;
-    manager.updateFooterSaveCancelState = vi.fn();
-
-    await manager.dirtyTracker.revertAllChanges();
-    manager.editModeManager._isEditing = false;
-
-    expect(manager.editModeManager._isEditing).toBe(false);
-  });
 });
 
-describe('QueriesManager JSONEditor and collection integration', () => {
+describe('QueriesManager — editHelper and edit mode', () => {
   let manager;
 
   beforeEach(() => {
-    // Reset mock tabulator table methods
     mockTabulatorTable.getSelectedRows.mockReturnValue([]);
-    mockTabulatorTable.getData.mockReturnValue([]);
-
     manager = new QueriesManager({}, document.createElement('div'));
-    
+
     vi.stubGlobal('requestAnimationFrame', (cb) => {
       if (cb) cb();
       return 1;
@@ -290,46 +267,136 @@ describe('QueriesManager JSONEditor and collection integration', () => {
     vi.clearAllMocks();
   });
 
-  describe('Collection dirty tracking', () => {
-    beforeEach(() => {
-      // Create a mock collection editor container with CodeMirror view
-      manager.elements.collectionEditorContainer = document.createElement('div');
+  it('editHelper exists and has registerTable/registerEditor methods', () => {
+    expect(manager.editHelper).toBeDefined();
+    expect(typeof manager.editHelper.registerTable).toBe('function');
+    expect(typeof manager.editHelper.registerEditor).toBe('function');
+    expect(typeof manager.editHelper.wireFooterButtons).toBe('function');
+    expect(typeof manager.editHelper.checkDirtyState).toBe('function');
+  });
+
+  it('editHelper.isEditing() returns false when no table in edit mode', () => {
+    expect(manager.editHelper.isEditing()).toBe(false);
+    expect(manager.editHelper.activeEditingTable).toBeNull();
+  });
+
+  it('editHelper snapshot is null when not editing', () => {
+    expect(manager.editHelper.editModeSnapshot).toBeNull();
+    expect(manager.editHelper._isFormDirty).toBe(false);
+  });
+
+  it('editHelper.checkDirtyState does nothing when no snapshot', () => {
+    // Should not throw
+    manager.editHelper.checkDirtyState();
+    expect(manager.editHelper._isFormDirty).toBe(false);
+  });
+
+  it('editHelper.isAnythingDirty returns false when no snapshot', () => {
+    expect(manager.editHelper.isAnythingDirty()).toBe(false);
+  });
+
+  it('editHelper.restoreEditorSnapshots does nothing when no snapshot', () => {
+    // Should not throw
+    manager.editHelper.restoreEditorSnapshots();
+  });
+
+  it('editHelper.updateFooterSaveCancelState updates button disabled state', () => {
+    const saveBtn = document.createElement('button');
+    const cancelBtn = document.createElement('button');
+    const dummyBtn = document.createElement('button');
+
+    manager.editHelper.footerSaveBtn = saveBtn;
+    manager.editHelper.footerCancelBtn = cancelBtn;
+    manager.editHelper.footerDummyBtn = dummyBtn;
+
+    // Disabled state (not dirty)
+    manager.editHelper.updateFooterSaveCancelState(true, false);
+    expect(saveBtn.disabled).toBe(true);
+    expect(cancelBtn.disabled).toBe(true);
+
+    // Enabled state (dirty)
+    manager.editHelper.updateFooterSaveCancelState(true, true);
+    expect(saveBtn.disabled).toBe(false);
+    expect(cancelBtn.disabled).toBe(false);
+  });
+});
+
+describe('QueriesManager — CodeMirror collection integration', () => {
+  let manager;
+
+  beforeEach(() => {
+    mockTabulatorTable.getSelectedRows.mockReturnValue([]);
+    mockTabulatorTable.getData.mockReturnValue([]);
+
+    manager = new QueriesManager({}, document.createElement('div'));
+    manager.elements.collectionEditorContainer = document.createElement('div');
+
+    vi.stubGlobal('requestAnimationFrame', (cb) => {
+      if (cb) cb();
+      return 1;
     });
+  });
 
-    it('tracks collection dirty state when content changes', () => {
-      manager.dirtyTracker._originalCollectionContent = JSON.stringify({ key: 'value' });
-      mockCmViewOnContainer(manager.elements.collectionEditorContainer, JSON.stringify({ key: 'changed' }));
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.clearAllMocks();
+  });
 
-      const currentContent = manager.elements.collectionEditorContainer._cmView.state.doc.toString();
-      const isDirty = currentContent !== manager.dirtyTracker._originalCollectionContent;
-
-      expect(isDirty).toBe(true);
-    });
-
-    it('does not mark collection dirty when content is unchanged', () => {
+  describe('Collection dirty tracking via editHelper snapshots', () => {
+    it('detects dirty state when collection content changes from snapshot', () => {
       const original = JSON.stringify({ key: 'value' });
-      manager.dirtyTracker._originalCollectionContent = original;
-      mockCmViewOnContainer(manager.elements.collectionEditorContainer, original);
+      const changed = JSON.stringify({ key: 'changed' });
 
-      const currentContent = manager.elements.collectionEditorContainer._cmView.state.doc.toString();
-      const isDirty = currentContent !== manager.dirtyTracker._originalCollectionContent;
+      // Simulate snapshot state
+      manager.editHelper.editModeSnapshot = {
+        tableRowData: null,
+        editors: { collection: original },
+        timestamp: Date.now(),
+      };
 
-      expect(isDirty).toBe(false);
+      // Register a mock collection editor
+      manager.editHelper.editors.set('collection', {
+        getContent: () => changed,
+        setContent: vi.fn(),
+        setEditable: vi.fn(),
+        boundTable: manager.editHelper.activeEditingTable,
+      });
+
+      expect(manager.editHelper.isAnythingDirty()).toBe(true);
     });
 
-    it('captures original collection data when loading query details', () => {
+    it('detects clean state when collection content matches snapshot', () => {
+      const original = JSON.stringify({ key: 'value' });
+
+      manager.editHelper.editModeSnapshot = {
+        tableRowData: null,
+        editors: { collection: original },
+        timestamp: Date.now(),
+      };
+
+      manager.editHelper.editors.set('collection', {
+        getContent: () => original,
+        setContent: vi.fn(),
+        setEditable: vi.fn(),
+        boundTable: manager.editHelper.activeEditingTable,
+      });
+
+      expect(manager.editHelper.isAnythingDirty()).toBe(false);
+    });
+
+    it('captures collection data correctly from query details', () => {
       const queryData = {
         query_id: 1,
         name: 'Test Query',
         collection: { test: 'data' },
       };
 
-      manager.dirtyTracker._originalCollectionContent = JSON.stringify(queryData.collection || queryData.json || {});
-
-      expect(JSON.parse(manager.dirtyTracker._originalCollectionContent)).toEqual({ test: 'data' });
+      // Manager stores pending content which editors read
+      manager._pendingCollectionContent = queryData.collection || queryData.json || {};
+      expect(manager._pendingCollectionContent).toEqual({ test: 'data' });
     });
 
-    it('handles string collection data from queryData', () => {
+    it('handles string collection data from query details', () => {
       const queryData = {
         query_id: 1,
         name: 'Test Query',
@@ -338,11 +405,11 @@ describe('QueriesManager JSONEditor and collection integration', () => {
 
       let data = queryData.collection;
       if (typeof data === 'string') {
-        try { data = JSON.parse(data); } catch (e) { data = {}; }
+        try { data = JSON.parse(data); } catch { data = {}; }
       }
-      manager.dirtyTracker._originalCollectionContent = JSON.stringify(data);
+      manager._pendingCollectionContent = data;
 
-      expect(JSON.parse(manager.dirtyTracker._originalCollectionContent)).toEqual({ test: 'string_data' });
+      expect(manager._pendingCollectionContent).toEqual({ test: 'string_data' });
     });
 
     it('handles json field as fallback for collection data', () => {
@@ -352,92 +419,74 @@ describe('QueriesManager JSONEditor and collection integration', () => {
         json: { fallback: 'data' },
       };
 
-      manager.dirtyTracker._originalCollectionContent = JSON.stringify(queryData.collection || queryData.json || {});
-
-      expect(JSON.parse(manager.dirtyTracker._originalCollectionContent)).toEqual({ fallback: 'data' });
+      manager._pendingCollectionContent = queryData.collection || queryData.json || {};
+      expect(manager._pendingCollectionContent).toEqual({ fallback: 'data' });
     });
 
-    it('enables save/cancel buttons when collection is dirty', () => {
-      manager.editModeManager._isEditing = true;
-      manager.dirtyTracker._isDirty = { table: false, sql: false, summary: false, collection: true };
-      
-      // Set up footer buttons directly
-      manager.footerSaveBtn = document.createElement('button');
-      manager.footerCancelBtn = document.createElement('button');
-      manager.footerDummyBtn = document.createElement('button');
+    it('enables save/cancel buttons when snapshot detects dirty state', () => {
+      const saveBtn = document.createElement('button');
+      const cancelBtn = document.createElement('button');
+      const dummyBtn = document.createElement('button');
 
-      manager.updateFooterSaveCancelState(true, true);
+      manager.editHelper.footerSaveBtn = saveBtn;
+      manager.editHelper.footerCancelBtn = cancelBtn;
+      manager.editHelper.footerDummyBtn = dummyBtn;
 
-      expect(manager.footerSaveBtn.disabled).toBe(false);
-      expect(manager.footerCancelBtn.disabled).toBe(false);
+      // Enable (dirty)
+      manager.editHelper.updateFooterSaveCancelState(true, true);
+
+      expect(saveBtn.disabled).toBe(false);
+      expect(cancelBtn.disabled).toBe(false);
     });
 
-    it('_isAnyDirty returns true when collection is dirty', () => {
-      manager.dirtyTracker._isDirty = { table: false, sql: false, summary: false, collection: true };
+    it('disables save/cancel buttons when snapshot detects clean state', () => {
+      const saveBtn = document.createElement('button');
+      const cancelBtn = document.createElement('button');
+      const dummyBtn = document.createElement('button');
 
-      expect(manager.dirtyTracker.isAnyDirty()).toBe(true);
-    });
+      manager.editHelper.footerSaveBtn = saveBtn;
+      manager.editHelper.footerCancelBtn = cancelBtn;
+      manager.editHelper.footerDummyBtn = dummyBtn;
 
-    it('marks all clean resets collection dirty state', () => {
-      manager.dirtyTracker._isDirty = { table: true, sql: true, summary: true, collection: true };
-      
-      // Set up footer buttons directly
-      manager.footerSaveBtn = document.createElement('button');
-      manager.footerCancelBtn = document.createElement('button');
-      manager.footerDummyBtn = document.createElement('button');
+      // Disable (clean)
+      manager.editHelper.updateFooterSaveCancelState(true, false);
 
-      manager.dirtyTracker.markAllClean();
-
-      expect(manager.dirtyTracker._isDirty.collection).toBe(false);
-      expect(manager.dirtyTracker._isDirty.table).toBe(false);
-      expect(manager.dirtyTracker._isDirty.sql).toBe(false);
-      expect(manager.dirtyTracker._isDirty.summary).toBe(false);
+      expect(saveBtn.disabled).toBe(true);
+      expect(cancelBtn.disabled).toBe(true);
     });
   });
 
-  describe('Collection content retrieval', () => {
-    beforeEach(() => {
-      // Create a mock collection editor container with CodeMirror view
-      manager.elements.collectionEditorContainer = document.createElement('div');
-    });
-
+  describe('Collection content via CodeMirror', () => {
     it('returns JSON data from CodeMirror editor', () => {
       const testData = { test: 'data' };
-      mockCmViewOnContainer(manager.elements.collectionEditorContainer, JSON.stringify(testData));
+      const view = mockCmView(JSON.stringify(testData));
 
-      const content = manager.elements.collectionEditorContainer._cmView.state.doc.toString();
-
+      const content = view.state.doc.toString();
       expect(JSON.parse(content)).toEqual(testData);
     });
 
     it('returns empty when no CodeMirror view exists', () => {
-      // No _cmView set — editorManager.getCollectionContent() would return '{}'
-      expect(manager.elements.collectionEditorContainer._cmView).toBeUndefined();
+      expect(manager.collectionEditor).toBeNull();
     });
   });
 
   describe('Collection save operations', () => {
-    beforeEach(() => {
-      // Create a mock collection editor container
-      manager.elements.collectionEditorContainer = document.createElement('div');
-    });
-
-    it('handleSave includes collection data in API call via editorManager', async () => {
+    it('_executeSave assembles params from table row + editors', async () => {
       const { authQuery } = await import('../../src/shared/conduit.js');
 
-      const collectionData = { updated: 'collection_data' };
-      mockCmViewOnContainer(manager.elements.collectionEditorContainer, JSON.stringify(collectionData));
       manager.sqlEditor = {
         state: { doc: { toString: vi.fn(() => 'SELECT * FROM test') } },
       };
       manager.summaryEditor = {
         state: { doc: { toString: vi.fn(() => 'Summary text') } },
       };
+      manager.editorManager = {
+        getCollectionContent: vi.fn(() => JSON.stringify({ updated: 'collection_data' })),
+        _setCodeMirrorEditable: vi.fn(),
+        destroy: vi.fn(),
+      };
       manager.app = { api: {}, user: { id: 1 } };
-      manager.editModeManager._isEditing = true;
-      manager.dirtyTracker._isDirty = { table: false, sql: false, summary: false, collection: true };
-      manager.editModeManager._editingRowId = 42;
-      manager.queryTable = { table: mockTabulatorTable };
+      manager.queryTable = lastMockLithiumTableInstance || { queryRefs: { updateQueryRef: 28 }, primaryKeyField: 'query_id' };
 
       const mockRow = {
         getData: vi.fn(() => ({
@@ -450,75 +499,145 @@ describe('QueriesManager JSONEditor and collection integration', () => {
           code: 'SELECT 1',
           summary: 'Original summary',
         })),
+        update: vi.fn(),
       };
-      mockTabulatorTable.getSelectedRows.mockReturnValue([mockRow]);
 
       authQuery.mockResolvedValueOnce([]);
 
-      const content = manager.elements.collectionEditorContainer._cmView.state.doc.toString();
-      expect(JSON.parse(content)).toEqual(collectionData);
+      await manager._executeSave(mockRow);
+
+      expect(authQuery).toHaveBeenCalledWith(
+        expect.anything(),
+        28,
+        expect.objectContaining({
+          INTEGER: expect.objectContaining({ QUERYID: 42 }),
+          STRING: expect.objectContaining({
+            QUERYCODE: 'SELECT * FROM test',
+            QUERYSUMMARY: 'Summary text',
+            COLLECTION: JSON.stringify({ updated: 'collection_data' }),
+          }),
+        }),
+      );
     });
 
-    it('handleSave uses empty object when no editor view exists', async () => {
-      // No CodeMirror view — editorManager.getCollectionContent() returns '{}'
-      expect(manager.elements.collectionEditorContainer._cmView).toBeUndefined();
-    });
+    it('_executeSave uses empty defaults when no editors exist', async () => {
+      const { authQuery } = await import('../../src/shared/conduit.js');
 
-    it('reverts collection content on cancel via CodeMirror dispatch', async () => {
-      manager.dirtyTracker._originalCollectionContent = JSON.stringify({ original: 'data' });
-      manager.dirtyTracker._isDirty = { table: false, sql: false, summary: false, collection: true };
+      manager.sqlEditor = null;
+      manager.summaryEditor = null;
+      manager.editorManager = {
+        getCollectionContent: vi.fn(() => '{}'),
+        _setCodeMirrorEditable: vi.fn(),
+        destroy: vi.fn(),
+      };
+      manager.app = { api: {}, user: { id: 1 } };
+      manager.queryTable = lastMockLithiumTableInstance || { queryRefs: { updateQueryRef: 28 }, primaryKeyField: 'query_id' };
 
-      const view = mockCmViewOnContainer(manager.elements.collectionEditorContainer, JSON.stringify({ current: 'data' }));
+      const mockRow = {
+        getData: vi.fn(() => ({
+          query_id: 10,
+          query_type_a28: 1,
+          query_dialect_a30: 1,
+          query_status_a27: 1,
+          query_ref: 5,
+          name: 'Empty Query',
+        })),
+        update: vi.fn(),
+      };
 
-      if (manager.dirtyTracker._isDirty.collection && manager.dirtyTracker._originalCollectionContent != null) {
-        // Simulate revert: dispatch original content to the editor
-        view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: manager.dirtyTracker._originalCollectionContent } });
-      }
+      authQuery.mockResolvedValueOnce([]);
 
-      expect(manager.elements.collectionEditorContainer._cmContent).toBe(JSON.stringify({ original: 'data' }));
-    });
+      await manager._executeSave(mockRow);
 
-    it('handles null original data when reverting collection', async () => {
-      manager.dirtyTracker._originalCollectionContent = null;
-      manager.dirtyTracker._isDirty = { table: false, sql: false, summary: false, collection: true };
-
-      const originalContent = JSON.stringify({ current: 'data' });
-      mockCmViewOnContainer(manager.elements.collectionEditorContainer, originalContent);
-
-      if (manager.dirtyTracker._isDirty.collection && manager.dirtyTracker._originalCollectionContent != null) {
-        // Would not execute — originalCollectionContent is null
-      }
-
-      expect(manager.elements.collectionEditorContainer._cmContent).toBe(originalContent);
+      expect(authQuery).toHaveBeenCalledWith(
+        expect.anything(),
+        28,
+        expect.objectContaining({
+          STRING: expect.objectContaining({
+            QUERYCODE: '',
+            QUERYSUMMARY: '',
+            COLLECTION: '{}',
+          }),
+        }),
+      );
     });
   });
 
-  describe('JSON editor editable mode', () => {
+  describe('Collection editor cancel restore via editHelper', () => {
+    it('restoreEditorSnapshots dispatches original content to editors', () => {
+      const originalContent = JSON.stringify({ original: 'data' });
+      const setContentMock = vi.fn();
+
+      // Set up a mock active table so boundTable matches
+      const mockTable = {};
+      manager.editHelper.activeEditingTable = mockTable;
+
+      manager.editHelper.editModeSnapshot = {
+        tableRowData: null,
+        editors: { collection: originalContent },
+        timestamp: Date.now(),
+      };
+
+      manager.editHelper.editors.set('collection', {
+        getContent: () => JSON.stringify({ current: 'data' }),
+        setContent: setContentMock,
+        setEditable: vi.fn(),
+        boundTable: mockTable,
+      });
+
+      manager.editHelper.restoreEditorSnapshots();
+
+      expect(setContentMock).toHaveBeenCalledWith(originalContent);
+    });
+
+    it('restoreEditorSnapshots skips editors without setContent', () => {
+      const mockTable = {};
+      manager.editHelper.activeEditingTable = mockTable;
+
+      manager.editHelper.editModeSnapshot = {
+        tableRowData: null,
+        editors: { collection: '{}' },
+        timestamp: Date.now(),
+      };
+
+      // Editor without setContent — should not throw
+      manager.editHelper.editors.set('collection', {
+        getContent: () => '{}',
+        setEditable: vi.fn(),
+        boundTable: mockTable,
+      });
+
+      expect(() => manager.editHelper.restoreEditorSnapshots()).not.toThrow();
+    });
+
+    it('restoreEditorSnapshots does nothing when snapshot is null', () => {
+      manager.editHelper.editModeSnapshot = null;
+
+      // Should not throw
+      manager.editHelper.restoreEditorSnapshots();
+    });
+  });
+
+  describe('CodeMirror editor lifecycle', () => {
     it('updates editor content via CodeMirror dispatch', () => {
-      manager.elements.collectionEditorContainer = document.createElement('div');
-      const view = mockCmViewOnContainer(manager.elements.collectionEditorContainer, JSON.stringify({ initial: 'data' }));
+      const view = mockCmView(JSON.stringify({ initial: 'data' }));
 
       const newData = { updated: 'data' };
       const newContent = JSON.stringify(newData, null, 2);
       view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: newContent } });
 
-      expect(manager.elements.collectionEditorContainer._cmContent).toBe(newContent);
+      expect(view._content).toBe(newContent);
     });
-  });
 
-  describe('JSON editor lifecycle', () => {
     it('destroy properly cleans up the CodeMirror editor instance', () => {
-      const container = document.createElement('div');
-      const view = mockCmViewOnContainer(container, '{}');
-
+      const view = mockCmView('{}');
       view.destroy();
-
       expect(view.destroy).toHaveBeenCalled();
     });
 
     it('teardown clears collection change interval', () => {
       manager._collectionChangeInterval = setInterval(() => {}, 500);
-      
+
       if (manager._collectionChangeInterval) {
         clearInterval(manager._collectionChangeInterval);
         manager._collectionChangeInterval = null;
