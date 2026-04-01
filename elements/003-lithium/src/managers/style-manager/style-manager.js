@@ -366,6 +366,7 @@ export default class StyleManager {
       onDataLoaded: (rows) => {
         log(Subsystems.TABLE, Status.INFO, `[Style] Loaded ${rows.length} lookup elements`);
       },
+      onRefresh: () => this.loadLookupData(),
     });
 
     // Register with editHelper — auto-wires onEditModeChange + onDirtyChange
