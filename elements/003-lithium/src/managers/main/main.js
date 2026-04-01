@@ -1127,6 +1127,15 @@ export default class MainManager {
     const arrow     = this._getArrowEl();
     if (!iconGroup || !sidebar) return;
 
+    // Update collapse button tooltip text
+    const collapseBtn = this.elements.sidebarCollapseBtn;
+    if (collapseBtn) {
+      const tipInstance = getTip(collapseBtn);
+      if (tipInstance) {
+        tipInstance.updateContent(this.isSidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar');
+      }
+    }
+
     const wrappers    = iconGroup.querySelectorAll('.sidebar-icon-wrapper');
     const halfDur     = this.getTransitionDuration() / 2;
     this._isAnimating = true;

@@ -27,8 +27,8 @@ import './crimson.css';
 // Singleton instance tracking
 let crimsonInstance = null;
 
-// Global keyboard shortcut handler
-let globalKeyHandler = null;
+// Crimson shortcut registration flag (handled by global shortcut system)
+let _crimsonShortcutRegistered = false;
 
 // LocalStorage keys for persistent state
 // Using 'lithium_' prefix so these get cleared on public/global logout
@@ -120,33 +120,17 @@ export function createCrimsonButton(tooltip = 'Chat with Crimson') {
 
 /**
  * Initialize global keyboard shortcut (Ctrl+Shift+C to toggle Crimson)
+ * The shortcut is handled by the global shortcut system in manager-ui.js
+ * via registerShortcut() — no need for a separate keydown handler.
  */
 export function initCrimsonShortcut() {
-  if (globalKeyHandler) return; // Already initialized
+  if (_crimsonShortcutRegistered) return;
+  _crimsonShortcutRegistered = true;
 
-  // Register with the shortcut system so tooltips get the key combo
+  // Register with the global shortcut system — handles both keyboard trigger and tooltip display
   registerShortcut('crimson', 'Ctrl+Shift+C', 'Toggle Crimson', () => toggleCrimson());
 
-  globalKeyHandler = (e) => {
-    // Ctrl+Shift+C to toggle Crimson
-    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'C') {
-      // Don't trigger if user is typing in an input/textarea
-      const activeElement = document.activeElement;
-      const isTyping = activeElement && (
-        activeElement.tagName === 'INPUT' ||
-        activeElement.tagName === 'TEXTAREA' ||
-        activeElement.isContentEditable
-      );
-
-      if (!isTyping) {
-        e.preventDefault();
-        toggleCrimson();
-      }
-    }
-  };
-
-  document.addEventListener('keydown', globalKeyHandler);
-  log(Subsystems.CRIMSON, Status.INFO, 'Global keyboard shortcut initialized (Ctrl+Shift+C)');
+  log(Subsystems.CRIMSON, Status.INFO, 'Global keyboard shortcut registered (Ctrl+Shift+C)');
 }
 
 /**
@@ -2970,7 +2954,7 @@ class CrimsonManager {
 
     // Remove event listeners
     document.removeEventListener('keydown', this.handleKeyDown);
-    document.removeEventListener('keydown', globalKeyHandler);
+    // Note: Crimson shortcut (Ctrl+Shift+C) is managed by global shortcut system in manager-ui.js
 
     // Cleanup WebSocket client state (does NOT disconnect - managed by app-ws)
     if (this.wsClient) {
@@ -2996,7 +2980,6 @@ class CrimsonManager {
     this.citationHeaderBtn = null;
     this.citationCounterEl = null;
     crimsonInstance = null;
-    globalKeyHandler = null;
 
     log(Subsystems.CRIMSON, Status.INFO, 'Destroyed');
   }

@@ -17,6 +17,8 @@ import {
   buildEditorExtensions,
   createReadOnlyCompartment,
   setEditorEditable,
+  setEditorContentNoHistory,
+  updateUndoRedoButtons,
   foldAllInEditor,
   unfoldAllInEditor,
   READONLY_CLASS,
@@ -63,9 +65,12 @@ export class EditorManager {
         fontSize: this.fontSettings.size,
         fontFamily: this.fontSettings.family,
         onUpdate: (update) => {
-          if (update.docChanged && this.manager.editModeManager?.isEditing()) {
-            const isDirty = this.manager.dirtyTracker.checkSqlDirty();
-            this.manager.dirtyTracker.setDirty('sql', isDirty);
+          if (update.docChanged && this.manager.queryTable?.isEditing) {
+            this.manager.editHelper.checkDirtyState();
+          }
+          // Update undo/redo button state whenever transaction state changes
+          if (update.transactions.length > 0) {
+            this._updateUndoRedoButtons();
           }
         },
       });
@@ -109,9 +114,11 @@ export class EditorManager {
         fontSize: this.fontSettings.size,
         fontFamily: this.fontSettings.family,
         onUpdate: (update) => {
-          if (update.docChanged && this.manager.editModeManager?.isEditing()) {
-            const isDirty = this.manager.dirtyTracker.checkSummaryDirty();
-            this.manager.dirtyTracker.setDirty('summary', isDirty);
+          if (update.docChanged && this.manager.queryTable?.isEditing) {
+            this.manager.editHelper.checkDirtyState();
+          }
+          if (update.transactions.length > 0) {
+            this._updateUndoRedoButtons();
           }
         },
       });
@@ -162,9 +169,11 @@ export class EditorManager {
         readOnly: !this.manager.queryTable?.isEditing,
         fontSize: 13,
         onUpdate: (update) => {
-          if (update.docChanged && this.manager.editModeManager?.isEditing()) {
-            const isDirty = this.manager.dirtyTracker.checkCollectionDirty();
-            this.manager.dirtyTracker.setDirty('collection', isDirty);
+          if (update.docChanged && this.manager.queryTable?.isEditing) {
+            this.manager.editHelper.checkDirtyState();
+          }
+          if (update.transactions.length > 0) {
+            this._updateUndoRedoButtons();
           }
         },
       });
@@ -299,21 +308,40 @@ export class EditorManager {
   }
 
   /**
-   * Handle undo action
+   * Handle undo action — operates on the active tab's editor.
    */
   handleUndo() {
-    if (this.sqlEditor) {
-      undo(this.sqlEditor);
-    }
+    const view = this._getActiveEditorView();
+    if (view) undo(view);
   }
 
   /**
-   * Handle redo action
+   * Handle redo action — operates on the active tab's editor.
    */
   handleRedo() {
-    if (this.sqlEditor) {
-      redo(this.sqlEditor);
-    }
+    const view = this._getActiveEditorView();
+    if (view) redo(view);
+  }
+
+  // ── Undo/Redo Button State ─────────────────────────────────────────────
+
+  /**
+   * Update the enabled/disabled state of the undo/redo toolbar buttons
+   * based on the active editor's history depth and whether we're in edit mode.
+   * Delegates to the shared `updateUndoRedoButtons()` from codemirror-setup.
+   *
+   * Called from:
+   *   - Each editor's onUpdate listener (after every transaction)
+   *   - editHelper.onAfterEditModeChange (entering/exiting edit mode)
+   *   - switchTab (active editor may have different history)
+   */
+  _updateUndoRedoButtons() {
+    updateUndoRedoButtons({
+      undoBtn: this.manager.elements?.undoBtn,
+      redoBtn: this.manager.elements?.redoBtn,
+      view: this._getActiveEditorView(),
+      isEditing: this.manager.queryTable?.isEditing || false,
+    });
   }
 
   /**
@@ -330,6 +358,17 @@ export class EditorManager {
   handleUnfoldAll() {
     const view = this._getActiveEditorView();
     if (view) unfoldAllInEditor(view);
+  }
+
+  /**
+   * Replace the full content of a CodeMirror editor WITHOUT adding to
+   * the undo history.  Delegates to the shared `setEditorContentNoHistory()`.
+   *
+   * @param {EditorView} view     - The CodeMirror EditorView
+   * @param {string}     content  - New document content
+   */
+  _setContentNoHistory(view, content) {
+    setEditorContentNoHistory(view, content);
   }
 
   /**
@@ -351,9 +390,9 @@ export class EditorManager {
   async handlePrettify() {
     if (!this.sqlEditor) return;
 
-    if (!this.manager.editModeManager.isEditing() && this.manager.table) {
-      const selected = this.manager.table.getSelectedRows();
-      if (selected.length > 0) await this.manager.editModeManager.enterEditMode(selected[0]);
+    if (!this.manager.queryTable?.isEditing && this.manager.queryTable?.table) {
+      const selected = this.manager.queryTable.table.getSelectedRows();
+      if (selected.length > 0) await this.manager.queryTable.enterEditMode(selected[0]);
     }
 
     const currentContent = this.sqlEditor.state.doc.toString();
@@ -406,6 +445,103 @@ export class EditorManager {
   }
 
   /**
+   * Apply font settings to the active tab's content
+   * @param {Object} fontSettings - Font settings with fontSize, fontFamily, fontWeight
+   * @param {string} tabId - The active tab ID ('sql', 'summary', 'preview')
+   */
+  applyFontSettingsToActiveTab(fontSettings, tabId) {
+    const fontSize = parseInt(String(fontSettings.fontSize), 10) || DEFAULT_FONT_SIZE;
+    const fontFamily = fontSettings.fontFamily || DEFAULT_FONT_FAMILY;
+    const fontWeight = fontSettings.fontWeight || 'normal';
+
+    switch (tabId) {
+      case 'sql':
+        this._applyFontToEditor(this.sqlEditor, fontSize, fontFamily, fontWeight);
+        break;
+      case 'summary':
+        this._applyFontToEditor(this.summaryEditor, fontSize, fontFamily, fontWeight);
+        break;
+      case 'preview':
+        this._applyFontToPreviewContainer(fontSize, fontFamily, fontWeight);
+        break;
+      case 'collection':
+        this._applyFontToEditor(this.collectionEditor, fontSize, fontFamily, fontWeight, 13);
+        break;
+    }
+  }
+
+  /**
+   * Apply font styles to a CodeMirror editor with full redraw
+   */
+  _applyFontToEditor(editor, fontSize, fontFamily, fontWeight, baseFontSize = DEFAULT_FONT_SIZE) {
+    if (!editor?.dom) return;
+
+    const editorElement = editor.dom;
+    editorElement.style.fontSize = `${fontSize}px`;
+    editorElement.style.fontFamily = fontFamily;
+    editorElement.style.fontWeight = fontWeight;
+    editorElement.style.fontStyle = 'normal';
+
+    // Force CodeMirror to re-measure and redraw to sync gutter
+    editor.requestMeasure();
+  }
+
+  /**
+   * Apply font styles to the preview container (HTML content)
+   */
+  _applyFontToPreviewContainer(fontSize, fontFamily, fontWeight) {
+    const container = this.manager.elements.previewContainer;
+    if (!container) return;
+
+    const previewContent = container.querySelector('.queries-preview-content');
+    if (previewContent) {
+      previewContent.style.fontSize = `${fontSize}px`;
+      previewContent.style.fontFamily = fontFamily;
+      previewContent.style.fontWeight = fontWeight;
+    }
+  }
+
+  /**
+   * Clear font override from an editor, reverting to theme defaults
+   */
+  clearFontOverride(tabId) {
+    if (tabId === 'preview') {
+      const container = this.manager.elements.previewContainer;
+      if (container) {
+        const previewContent = container.querySelector('.queries-preview-content');
+        if (previewContent) {
+          previewContent.style.fontSize = '';
+          previewContent.style.fontFamily = '';
+          previewContent.style.fontWeight = '';
+        }
+      }
+      return;
+    }
+
+    let editor = null;
+    switch (tabId) {
+      case 'sql':
+        editor = this.sqlEditor;
+        break;
+      case 'summary':
+        editor = this.summaryEditor;
+        break;
+      case 'collection':
+        editor = this.collectionEditor;
+        break;
+    }
+
+    if (editor?.dom) {
+      editor.dom.style.fontSize = '';
+      editor.dom.style.fontFamily = '';
+      editor.dom.style.fontWeight = '';
+      editor.dom.style.fontStyle = '';
+      // Force CodeMirror to re-measure
+      editor.requestMeasure();
+    }
+  }
+
+  /**
    * Get current SQL content
    */
   getSqlContent() {
@@ -420,17 +556,14 @@ export class EditorManager {
   }
 
   /**
-   * Get current collection content
+   * Get current collection content.
+   * NOTE: Do NOT blur the focused element here — this method is called from
+   * editHelper.checkDirtyState() on every keystroke.  Blurring would steal
+   * focus from whichever CodeMirror editor the user is actively typing in.
+   * The old blur() was needed for a legacy JSON-tree inline editor; with
+   * CodeMirror the state is always up-to-date in EditorState.doc.
    */
   getCollectionContent() {
-    const container = this.manager.elements.collectionEditorContainer;
-
-    // Force-commit any active inline edit before reading
-    if (container) {
-      const activeEl = container.querySelector(':focus');
-      if (activeEl) activeEl.blur();
-    }
-
     // Get content directly from CodeMirror editor
     if (this.collectionEditor) {
       return this.collectionEditor.state.doc.toString();

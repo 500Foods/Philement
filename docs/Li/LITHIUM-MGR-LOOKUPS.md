@@ -6,13 +6,13 @@ This document describes the Lookups Manager, a dual-table interface for managing
 
 ## Overview
 
-The Lookups Manager (Manager ID: 5) provides a two-panel interface for managing lookup tables — key-value pairs used throughout the Philement platform for enumerations, status codes, and reference data.
+The Lookups Manager (Manager ID: 5) provides a three-panel interface for managing lookup tables — key-value pairs used throughout the Philement platform for enumerations, status codes, and reference data.
 
 **Key Files:**
 
-- `src/managers/lookups/lookups.js` — Main manager class
+- `src/managers/lookups/lookups.js` — Main manager class (LithiumTable + ManagerEditHelper + editors)
 - `src/managers/lookups/lookups.css` — Styling
-- `src/managers/lookups/lookups.html` — HTML template (optional reference)
+- `src/managers/lookups/lookups.html` — HTML template
 
 ---
 
@@ -123,33 +123,42 @@ The left panel can be collapsed to maximize space for the child table:
 ```javascript
 export default class LookupsManager {
   constructor(app, container) {
-    // Store app reference and container
-    // Initialize state variables
+    this.parentTable = null;           // LithiumTable instance (lookups list)
+    this.childTable = null;            // LithiumTable instance (lookup values)
+    this.editHelper = new ManagerEditHelper({ name: 'Lookups' });
+    this.collectionEditor = null;      // CodeMirror JSON editor
+    this.sunEditor = null;             // SunEditor rich text editor
+    // ... panel state, font popup, editor refs ...
   }
 
   async init() {
-    // Render HTML structure
-    // Setup event listeners
-    // Setup splitter
-    // Initialize parent table (LithiumTable)
-    // Initialize child table (LithiumTable)
-    // Setup footer controls
+    await this.render();
+    this.setupEventListeners();
+    await this.initParentTable();    // LithiumTable + registerTable
+    await this.initChildTable();     // LithiumTable + registerTable + registerEditor
+    this.setupSplitters();
+    this.setupFooter();              // wireFooterButtons through editHelper
+    this.setupTabs();
+    this.restorePanelState();
   }
+
+  // Custom save: assembles table row data + editor content into API params
+  async _executeChildSave(row, editHelper) { /* ... */ }
 
   // Parent/Child relationship handlers
   async handleParentRowSelected(rowData) { /* ... */ }
   handleParentRowDeselected() { /* ... */ }
   async loadChildData(lookupId) { /* ... */ }
 
-  // UI controls
-  toggleLeftPanel() { /* ... */ }
-  setupSplitter() { /* ... */ }
-  setupFooter() { /* ... */ }
+  // Child/Detail relationship handlers
+  async handleChildRowSelected(rowData) { /* ... */ }
+  handleChildRowDeselected() { /* ... */ }
+  async loadDetailData(rowData) { /* ... */ }
 
   // Lifecycle
   onActivate() { /* Redraw tables */ }
   onDeactivate() { /* ... */ }
-  cleanup() { /* Destroy tables */ }
+  cleanup() { /* editHelper.destroy(), editors, tables */ }
 }
 ```
 
@@ -168,7 +177,11 @@ this.parentTable = new LithiumTable({
   container: this.elements.parentTableContainer,
   navigatorContainer: this.elements.parentNavigator,
   tablePath: 'lookups/lookups-list',
-  queryRef: 30,
+  queryRef: 30,           // QueryRef 30 - Get Lookups List
+  searchQueryRef: 31,     // QueryRef 31 - Get Lookups List + Search
+  updateQueryRef: 43,     // QueryRef 43 - Update Lookup
+  insertQueryRef: 42,     // QueryRef 42 - Insert Lookup
+  deleteQueryRef: 44,     // QueryRef 44 - Delete Lookup
   cssPrefix: 'lithium',
   storageKey: 'lookups_parent_table',
   app: this.app,
@@ -182,21 +195,34 @@ this.childTable = new LithiumTable({
   container: this.elements.childTableContainer,
   navigatorContainer: this.elements.childNavigator,
   tablePath: 'lookups/lookup-values',
-  queryRef: 34,
+  queryRef: 34,           // QueryRef 34 - Get Lookup List (requires LOOKUPID param)
+  updateQueryRef: 43,     // QueryRef 43 - Update Lookup Value
+  insertQueryRef: 42,     // QueryRef 42 - Insert Lookup Value
+  deleteQueryRef: 44,     // QueryRef 44 - Delete Lookup Value
   cssPrefix: 'lithium',
   storageKey: 'lookups_child_table',
   app: this.app,
+  // Custom save: assembles table row data + JSON/Summary editor content
+  onExecuteSave: (row, editHelper) => this._executeChildSave(row, editHelper),
+  // Custom refresh: re-query with the current LOOKUPID parameter
+  onRefresh: () => {
+    if (this.selectedLookupId != null) {
+      this.loadChildData(this.selectedLookupId);
+    }
+  },
 });
 this.editHelper.registerTable(this.childTable);
 
 // Register external editors bound to the child table
 this.editHelper.registerEditor('json', {
   getContent:  () => this._getJsonEditorContent(),
+  setContent:  (content) => this._setJsonEditorContent(content),
   setEditable: (editable) => this.setEditorsEditable(editable),
   boundTable:  this.childTable,
 });
 this.editHelper.registerEditor('summary', {
   getContent:  () => this._getSummaryEditorContent(),
+  setContent:  (content) => { if (this.sunEditor) this.sunEditor.setContents(content); },
   setEditable: () => {},  // Handled by 'json' editor registration
   boundTable:  this.childTable,
 });
@@ -234,19 +260,42 @@ Both tables are fully independent with:
 
 ```javascript
 async loadChildData(lookupId) {
-  const rows = await authQuery(this.app.api, 34, {
+  // Restore per-lookup child selection before loading
+  const savedChildId = this._loadChildSelection(lookupId);
+  if (savedChildId != null) {
+    this.childTable.saveSelectedRowId(savedChildId);
+  } else {
+    this.childTable.clearSavedRowSelection();
+  }
+
+  // Load via LithiumTable which handles row restoration
+  await this.childTable.loadData('', {
     INTEGER: { LOOKUPID: lookupId },
   });
-
-  this.childTable.table.setData(rows);
-
-  // Auto-select first row
-  const activeRows = this.childTable.table.getRows('active');
-  if (activeRows.length > 0) {
-    activeRows[0].select();
-  }
 }
 ```
+
+### Per-Lookup Child Selection Persistence
+
+The Lookups Manager remembers the last selected child row **per lookup**. When cycling through lookups in the parent table, each lookup restores its own previously selected child value.
+
+- **Storage key:** `lithium_lookups_child_selections` (JSON object: `{ lookupId → childRowId }`)
+- **Saved on:** child row selection via `handleChildRowSelected()`
+- **Restored on:** `loadChildData()` — sets the target row ID before loading, so `autoSelectRow()` picks it up
+
+### Child Table Refresh
+
+The child table's Navigator refresh button uses an `onRefresh` callback to re-query with the correct `LOOKUPID` parameter:
+
+```javascript
+onRefresh: () => {
+  if (this.selectedLookupId != null) {
+    this.loadChildData(this.selectedLookupId);
+  }
+},
+```
+
+Without this, the refresh button would call `loadData()` with no parameters, which would fail since QueryRef 34 requires `LOOKUPID`.
 
 ---
 
@@ -281,6 +330,12 @@ Returns all lookup tables in the system.
 ]
 ```
 
+### QueryRef 031 — Lookup Names + Search
+
+Same as QueryRef 030 with text search filter.
+
+**Parameters:** `{ STRING: { SEARCH: "term" } }`
+
 ### QueryRef 034 — Get Lookup List
 
 Returns all values for a specific lookup.
@@ -304,6 +359,36 @@ Returns all values for a specific lookup.
   ...
 ]
 ```
+
+### QueryRef 035 — Get Lookup Value Detail
+
+Returns full detail for a single lookup value (including Collection and Summary fields).
+
+**Parameters:** `{ INTEGER: { LOOKUPID: <id>, KEYIDX: <key> } }`
+
+### QueryRef 042 — Insert Lookup / Lookup Value
+
+Inserts a new lookup or lookup value record.
+
+### QueryRef 043 — Update Lookup / Lookup Value
+
+Updates an existing lookup or lookup value record. Used for both the parent table and child table saves.
+
+**Parameters for child table (via `onExecuteSave`):**
+
+```javascript
+{
+  INTEGER: { LOOKUP_VALUE_ID: pkValue, LOOKUPID: lookupId },
+  STRING:  { COLLECTION: jsonContent, SUMMARY: summaryContent },
+  JSON:    rowData,
+}
+```
+
+### QueryRef 044 — Delete Lookup / Lookup Value
+
+Deletes a lookup or lookup value record.
+
+**Note:** QueryRefs 042, 043, and 044 are defined in the JSON table definition files (`config/tabulator/lookups/lookups-list.json` and `lookup-values.json`). They are loaded automatically by LithiumTable during `loadConfiguration()` and do not need to be passed as constructor options.
 
 ---
 

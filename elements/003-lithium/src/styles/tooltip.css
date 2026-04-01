@@ -47,26 +47,31 @@
   z-index: 0;
 }
 
-/* Inset arrow so its inner edges align with the tooltip border edge */
+/* Inset arrow so its inner edges align with the tooltip border edge.
+   Rotation values position the arrow to point toward the trigger element. */
 .li-tooltip[data-placement="top"] .li-tooltip__arrow {
   bottom: -6px;
   border-top-color: transparent;
   border-left-color: transparent;
+  transform: rotate(45deg);
 }
 .li-tooltip[data-placement="bottom"] .li-tooltip__arrow {
   top: -6px;
   border-bottom-color: transparent;
   border-right-color: transparent;
+  transform: rotate(225deg);
 }
 .li-tooltip[data-placement="left"] .li-tooltip__arrow {
   right: -6px;
   border-top-color: transparent;
   border-left-color: transparent;
+  transform: rotate(135deg);
 }
 .li-tooltip[data-placement="right"] .li-tooltip__arrow {
   left: -6px;
   border-bottom-color: transparent;
   border-right-color: transparent;
+  transform: rotate(315deg);
 }
 
 /* ========================================
