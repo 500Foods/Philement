@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS class selectors/names used across the Lithium codebase",
-    "generated": "2026-04-01T22:41:42.710Z",
+    "generated": "2026-04-01T23:09:36.941Z",
     "sources": {
       "css": "48 files in src/**/*.css",
       "js": "79 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
-    "total_selectors": 1524,
-    "total_occurrences": 19163
+    "total_selectors": 1525,
+    "total_occurrences": 19166
   },
   "selectors": [
     {
@@ -9381,6 +9381,22 @@
           "src/managers/style-manager/style-manager.js",
           "src/managers/version-history/version-history.js",
           "src/shared/crimson-ws.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".lithium-nav-refresh-spin > svg",
+      "css": 1,
+      "js": 2,
+      "html": 0,
+      "total": 3,
+      "files": {
+        "css": [
+          "src/core/lithium-table.css"
+        ],
+        "js": [
+          "src/core/lithium-table-ui.js"
         ],
         "html": []
       }
