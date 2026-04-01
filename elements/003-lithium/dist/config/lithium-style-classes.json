@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS class selectors/names used across the Lithium codebase",
-    "generated": "2026-04-01T23:09:36.941Z",
+    "generated": "2026-04-01T23:25:18.376Z",
     "sources": {
       "css": "48 files in src/**/*.css",
       "js": "79 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
     "total_selectors": 1525,
-    "total_occurrences": 19166
+    "total_occurrences": 19168
   },
   "selectors": [
     {
@@ -11050,23 +11050,25 @@
     {
       "selector": ".lithium-table-loader",
       "css": 1,
-      "js": 0,
+      "js": 1,
       "html": 0,
-      "total": 1,
+      "total": 2,
       "files": {
         "css": [
           "src/core/lithium-table.css"
         ],
-        "js": [],
+        "js": [
+          "src/core/lithium-table-ui.js"
+        ],
         "html": []
       }
     },
     {
       "selector": ".lithium-table-loader .spinner-fancy",
       "css": 1,
-      "js": 4,
+      "js": 5,
       "html": 1,
-      "total": 6,
+      "total": 7,
       "files": {
         "css": [
           "src/core/lithium-table.css"
