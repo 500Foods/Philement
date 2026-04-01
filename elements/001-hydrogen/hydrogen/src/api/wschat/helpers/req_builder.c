@@ -143,6 +143,10 @@ json_t* chat_request_build_openai(const ChatEngineConfig* engine,
         json_object_set_new(root, "stream", json_true());
     }
 
+    // Request retrieval info for RAG citations (e.g., DigitalOcean GradientAI)
+    // This is safe to include for all providers - unused ones will ignore it
+    json_object_set_new(root, "include_retrieval_info", json_true());
+
     // Additional params
     if (params->additional_params) {
         const char* key;
@@ -322,6 +326,9 @@ json_t* chat_request_build_anthropic(const ChatEngineConfig* engine,
     if (params->stream) {
         json_object_set_new(root, "stream", json_true());
     }
+
+    // Request retrieval info for RAG citations
+    json_object_set_new(root, "include_retrieval_info", json_true());
 
     return root;
 }

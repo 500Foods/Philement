@@ -22,6 +22,9 @@ temp_*
 *.tmp
 *.upx
 
+# Crimson knowledge base files (RAG content)
+crimson/knowledge/*
+
 # Core files
 0.*
 1.*

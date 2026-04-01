@@ -171,6 +171,13 @@ typedef struct {
     size_t bytes_received;
     size_t chunks_processed;
     bool first_data_logged;
+    // Post-[DONE] buffer: accumulates any data sent after the SSE [DONE] marker.
+    // Providers like DigitalOcean Gradient AI may send retrieval/citation data
+    // as a JSON payload after the SSE stream ends. This ensures nothing is lost.
+    bool seen_done;
+    char* post_done_buffer;
+    size_t post_done_len;
+    size_t post_done_capacity;
 } CurlStreamContext;
 
 // CURL write callback for streaming
@@ -238,43 +245,99 @@ static size_t multi_stream_write_callback(const void* contents, size_t size, siz
         curl_ctx->line_buffer[curl_ctx->line_buffer_len] = '\0';
         
         if (newline) {
-            // Complete line, parse and queue it
-            ChatStreamChunk* chunk = chat_stream_chunk_parse(curl_ctx->line_buffer);
-            if (chunk) {
-                curl_ctx->chunks_processed++;
-                
-                // Build JSON for queue
-                json_t* response = json_object();
-                json_object_set_new(response, "type", json_string("chat_chunk"));
-                if (stream_ctx->request_id) {
-                    json_object_set_new(response, "id", json_string(stream_ctx->request_id));
+            // Log raw SSE data periodically for debugging (first 3 chunks and every 50th)
+            if (curl_ctx->chunks_processed < 3 || curl_ctx->chunks_processed % 50 == 0) {
+                log_this(SR_CHAT, "Raw SSE line #%zu (%zu bytes): %.200s",
+                         LOG_LEVEL_DEBUG, 3, curl_ctx->chunks_processed, 
+                         curl_ctx->line_buffer_len, curl_ctx->line_buffer);
+            }
+
+            // After [DONE], capture any subsequent lines as post-done data
+            // (providers may send retrieval/citation metadata after the SSE stream)
+            if (curl_ctx->seen_done) {
+                // Accumulate non-empty lines into post_done_buffer
+                if (curl_ctx->line_buffer_len > 0) {
+                    // Initialize post_done_buffer lazily
+                    if (!curl_ctx->post_done_buffer) {
+                        curl_ctx->post_done_capacity = 4096;
+                        curl_ctx->post_done_buffer = (char*)malloc(curl_ctx->post_done_capacity);
+                        if (curl_ctx->post_done_buffer) {
+                            curl_ctx->post_done_buffer[0] = '\0';
+                            curl_ctx->post_done_len = 0;
+                        }
+                    }
+                    if (curl_ctx->post_done_buffer) {
+                        size_t needed_cap = curl_ctx->post_done_len + curl_ctx->line_buffer_len + 2;
+                        if (needed_cap > curl_ctx->post_done_capacity) {
+                            size_t new_cap = curl_ctx->post_done_capacity * 2;
+                            while (new_cap < needed_cap) new_cap *= 2;
+                            char* new_buf = realloc(curl_ctx->post_done_buffer, new_cap);
+                            if (new_buf) {
+                                curl_ctx->post_done_buffer = new_buf;
+                                curl_ctx->post_done_capacity = new_cap;
+                            }
+                        }
+                        memcpy(curl_ctx->post_done_buffer + curl_ctx->post_done_len,
+                               curl_ctx->line_buffer, curl_ctx->line_buffer_len);
+                        curl_ctx->post_done_len += curl_ctx->line_buffer_len;
+                        curl_ctx->post_done_buffer[curl_ctx->post_done_len++] = '\n';
+                        curl_ctx->post_done_buffer[curl_ctx->post_done_len] = '\0';
+                    }
+                    log_this(SR_CHAT, "Post-[DONE] data captured (%zu bytes): %.200s",
+                             LOG_LEVEL_DEBUG, 2, curl_ctx->line_buffer_len, curl_ctx->line_buffer);
                 }
-                
-                json_t* chunk_json = json_object();
-                json_object_set_new(chunk_json, "content", json_string(chunk->content ? chunk->content : ""));
-                if (chunk->reasoning_content) {
-                    json_object_set_new(chunk_json, "reasoning_content", json_string(chunk->reasoning_content));
-                }
-                if (chunk->model) json_object_set_new(chunk_json, "model", json_string(chunk->model));
-                json_object_set_new(chunk_json, "index", json_integer(stream_ctx->chunk_index));
-                if (chunk->finish_reason) json_object_set_new(chunk_json, "finish_reason", json_string(chunk->finish_reason));
-                json_object_set_new(response, "chunk", chunk_json);
-                
-                char* json_str = json_dumps(response, JSON_COMPACT);
-                json_decref(response);
-                
-                if (json_str) {
-                    // Enqueue chunk for LWS thread
-                    chunk_queue_enqueue(&stream_ctx->chunk_queue, json_str, strlen(json_str));
+            } else {
+                // Normal SSE processing: parse and queue the line as a stream chunk
+                ChatStreamChunk* chunk = chat_stream_chunk_parse(curl_ctx->line_buffer);
+                if (chunk) {
+                    // Mark when we see [DONE] so subsequent lines go to post_done_buffer
+                    if (chunk->is_done) {
+                        curl_ctx->seen_done = true;
+                    }
+
+                    curl_ctx->chunks_processed++;
                     
-                    // Request writable callback from LWS
-                    chat_proxy_multi_request_writable(stream_ctx);
+                    // Build JSON for queue
+                    json_t* response = json_object();
+                    json_object_set_new(response, "type", json_string("chat_chunk"));
+                    if (stream_ctx->request_id) {
+                        json_object_set_new(response, "id", json_string(stream_ctx->request_id));
+                    }
                     
-                    free(json_str);
+                    json_t* chunk_json = json_object();
+                    json_object_set_new(chunk_json, "content", json_string(chunk->content ? chunk->content : ""));
+                    if (chunk->reasoning_content) {
+                        json_object_set_new(chunk_json, "reasoning_content", json_string(chunk->reasoning_content));
+                    }
+                    if (chunk->model) json_object_set_new(chunk_json, "model", json_string(chunk->model));
+                    json_object_set_new(chunk_json, "index", json_integer(stream_ctx->chunk_index));
+                    if (chunk->finish_reason) json_object_set_new(chunk_json, "finish_reason", json_string(chunk->finish_reason));
+                    // Include any provider-specific extra fields (e.g., retrieval data)
+                    if (chunk->extra_fields) {
+                        const char* key;
+                        json_t* value;
+                        json_object_foreach(chunk->extra_fields, key, value) {
+                            json_object_set(chunk_json, key, value);
+                        }
+                    }
+                    json_object_set_new(response, "chunk", chunk_json);
+                    
+                    char* json_str = json_dumps(response, JSON_COMPACT);
+                    json_decref(response);
+                    
+                    if (json_str) {
+                        // Enqueue chunk for LWS thread
+                        chunk_queue_enqueue(&stream_ctx->chunk_queue, json_str, strlen(json_str));
+                        
+                        // Request writable callback from LWS
+                        chat_proxy_multi_request_writable(stream_ctx);
+                        
+                        free(json_str);
+                    }
+                    
+                    stream_ctx->chunk_index++;
+                    chat_stream_chunk_destroy(chunk);
                 }
-                
-                stream_ctx->chunk_index++;
-                chat_stream_chunk_destroy(chunk);
             }
             // Reset line buffer
             curl_ctx->line_buffer_len = 0;
@@ -472,6 +535,7 @@ void chat_proxy_multi_cleanup(MultiStreamManager* manager) {
         if (priv_data) {
             CurlStreamContext* curl_ctx = (CurlStreamContext*)priv_data;
             free(curl_ctx->line_buffer);
+            free(curl_ctx->post_done_buffer);
             free(curl_ctx);
         }
         
@@ -592,35 +656,68 @@ bool chat_proxy_multi_perform(MultiStreamManager* manager) {
                     
                     // Process any remaining data in line buffer (only for successful responses)
                     if (curl_ctx->line_buffer_len > 0 && res == CURLE_OK && !http_error) {
-                        ChatStreamChunk* chunk = chat_stream_chunk_parse(curl_ctx->line_buffer);
-                        if (chunk) {
-                            // Build and enqueue final chunk
-                            json_t* response = json_object();
-                            json_object_set_new(response, "type", json_string("chat_chunk"));
-                            if (stream_ctx->request_id) {
-                                json_object_set_new(response, "id", json_string(stream_ctx->request_id));
+                        if (curl_ctx->seen_done) {
+                            // After [DONE], remaining data is metadata (retrieval, etc.)
+                            // Append to post_done_buffer for inclusion in chat_done
+                            if (!curl_ctx->post_done_buffer) {
+                                curl_ctx->post_done_capacity = curl_ctx->line_buffer_len + 1;
+                                curl_ctx->post_done_buffer = (char*)malloc(curl_ctx->post_done_capacity);
+                                if (curl_ctx->post_done_buffer) {
+                                    curl_ctx->post_done_len = 0;
+                                }
                             }
-                            
-                            json_t* chunk_json = json_object();
-                            json_object_set_new(chunk_json, "content", json_string(chunk->content ? chunk->content : ""));
-                            if (chunk->model) json_object_set_new(chunk_json, "model", json_string(chunk->model));
-                            json_object_set_new(chunk_json, "index", json_integer(stream_ctx->chunk_index));
-                            if (chunk->finish_reason) {
-                                json_object_set_new(chunk_json, "finish_reason", json_string(chunk->finish_reason));
+                            if (curl_ctx->post_done_buffer) {
+                                size_t needed_cap = curl_ctx->post_done_len + curl_ctx->line_buffer_len + 1;
+                                if (needed_cap > curl_ctx->post_done_capacity) {
+                                    size_t new_cap = needed_cap * 2;
+                                    char* new_buf = realloc(curl_ctx->post_done_buffer, new_cap);
+                                    if (new_buf) {
+                                        curl_ctx->post_done_buffer = new_buf;
+                                        curl_ctx->post_done_capacity = new_cap;
+                                    }
+                                }
+                                memcpy(curl_ctx->post_done_buffer + curl_ctx->post_done_len,
+                                       curl_ctx->line_buffer, curl_ctx->line_buffer_len);
+                                curl_ctx->post_done_len += curl_ctx->line_buffer_len;
+                                curl_ctx->post_done_buffer[curl_ctx->post_done_len] = '\0';
                             }
-                            json_object_set_new(response, "chunk", chunk_json);
-                            
-                            char* json_str = json_dumps(response, JSON_COMPACT);
-                            json_decref(response);
-                            
-                            if (json_str) {
-                                chunk_queue_enqueue(&stream_ctx->chunk_queue, json_str, strlen(json_str));
-                                chat_proxy_multi_request_writable(stream_ctx);
-                                free(json_str);
+                            log_this(SR_CHAT, "Remaining line buffer captured as post-[DONE] data (%zu bytes)",
+                                     LOG_LEVEL_DEBUG, 1, curl_ctx->line_buffer_len);
+                        } else {
+                            // Normal SSE final chunk processing
+                            ChatStreamChunk* chunk = chat_stream_chunk_parse(curl_ctx->line_buffer);
+                            if (chunk) {
+                                if (chunk->is_done) {
+                                    curl_ctx->seen_done = true;
+                                }
+                                // Build and enqueue final chunk
+                                json_t* response = json_object();
+                                json_object_set_new(response, "type", json_string("chat_chunk"));
+                                if (stream_ctx->request_id) {
+                                    json_object_set_new(response, "id", json_string(stream_ctx->request_id));
+                                }
+                                
+                                json_t* chunk_json = json_object();
+                                json_object_set_new(chunk_json, "content", json_string(chunk->content ? chunk->content : ""));
+                                if (chunk->model) json_object_set_new(chunk_json, "model", json_string(chunk->model));
+                                json_object_set_new(chunk_json, "index", json_integer(stream_ctx->chunk_index));
+                                if (chunk->finish_reason) {
+                                    json_object_set_new(chunk_json, "finish_reason", json_string(chunk->finish_reason));
+                                }
+                                json_object_set_new(response, "chunk", chunk_json);
+                                
+                                char* json_str = json_dumps(response, JSON_COMPACT);
+                                json_decref(response);
+                                
+                                if (json_str) {
+                                    chunk_queue_enqueue(&stream_ctx->chunk_queue, json_str, strlen(json_str));
+                                    chat_proxy_multi_request_writable(stream_ctx);
+                                    free(json_str);
+                                }
+                                
+                                stream_ctx->chunk_index++;
+                                chat_stream_chunk_destroy(chunk);
                             }
-                            
-                            stream_ctx->chunk_index++;
-                            chat_stream_chunk_destroy(chunk);
                         }
                     }
                     
@@ -668,6 +765,46 @@ bool chat_proxy_multi_perform(MultiStreamManager* manager) {
                         json_object_set_new(result, "finish_reason", 
                                            json_string(stream_ctx->finish_reason ? stream_ctx->finish_reason : "stop"));
                         json_object_set_new(result, "response_time_ms", json_real(elapsed_ms));
+                        
+                        // Include raw_provider_response for transparency.
+                        // This allows clients to access retrieval/citation data,
+                        // guardrails info, and any other provider metadata.
+                        // Check post-[DONE] buffer first (data sent after SSE stream ends)
+                        log_this(SR_CHAT, "Multi-stream: post_done_buffer state: %s, len=%zu",
+                                 LOG_LEVEL_DEBUG, 2,
+                                 curl_ctx->post_done_buffer ? "exists" : "null",
+                                 curl_ctx->post_done_len);
+                        if (curl_ctx->post_done_buffer && curl_ctx->post_done_len > 0) {
+                            json_error_t json_err;
+                            json_t* post_done_json = json_loads(curl_ctx->post_done_buffer, 0, &json_err);
+                            if (post_done_json) {
+                                json_object_set_new(result, "raw_provider_response", post_done_json);
+                                log_this(SR_CHAT, "Multi-stream: included post-[DONE] data as raw_provider_response (%zu keys)",
+                                         LOG_LEVEL_DEBUG, 1, json_object_size(post_done_json));
+                            } else {
+                                // Not valid JSON — log error and raw data for debugging
+                                log_this(SR_CHAT, "Multi-stream: post-[DONE] data not valid JSON: %s. Raw (first 500 chars): %.500s",
+                                         LOG_LEVEL_DEBUG, 2, json_err.text, curl_ctx->post_done_buffer);
+                            }
+                        } else {
+                            log_this(SR_CHAT, "Multi-stream: no post-[DONE] data available (seen_done=%s)",
+                                     LOG_LEVEL_DEBUG, 1,
+                                     curl_ctx->seen_done ? "true" : "false");
+                        }
+
+                        // Also check the remaining line buffer content—some providers
+                        // send metadata JSON on the last line without a trailing newline
+                        if (!json_object_get(result, "raw_provider_response") &&
+                            curl_ctx->line_buffer_len > 0) {
+                            json_error_t json_err;
+                            json_t* remaining_json = json_loads(curl_ctx->line_buffer, 0, &json_err);
+                            if (remaining_json) {
+                                json_object_set_new(result, "raw_provider_response", remaining_json);
+                                log_this(SR_CHAT, "Multi-stream: included remaining line buffer as raw_provider_response",
+                                         LOG_LEVEL_DEBUG, 0);
+                            }
+                        }
+                        
                         json_object_set_new(done_response, "result", result);
                         
                         log_this(SR_CHAT, "Multi-stream complete: %zu chunks, %.0fms, finish=%s",
@@ -694,6 +831,7 @@ bool chat_proxy_multi_perform(MultiStreamManager* manager) {
                     
                     // Cleanup CURL context (no longer needed)
                     free(curl_ctx->line_buffer);
+                    free(curl_ctx->post_done_buffer);
                     free(curl_ctx);
                     
                     // Mark as completed - cleanup will happen on next iteration when queue is drained
@@ -788,6 +926,7 @@ MultiStreamContext* chat_proxy_multi_stream_start(
     curl_ctx->line_buffer_capacity = 4096;
     curl_ctx->line_buffer = (char*)malloc(curl_ctx->line_buffer_capacity);
     if (!curl_ctx->line_buffer) {
+        free(curl_ctx->post_done_buffer);
         free(curl_ctx);
         curl_easy_cleanup(stream_ctx->easy_handle);
         chunk_queue_destroy(&stream_ctx->chunk_queue);
@@ -851,6 +990,7 @@ MultiStreamContext* chat_proxy_multi_stream_start(
     if (!stream_ctx->request_body) {
         log_this(SR_CHAT, "Failed to copy request body", LOG_LEVEL_ERROR, 0);
         free(curl_ctx->line_buffer);
+        free(curl_ctx->post_done_buffer);
         free(curl_ctx);
         curl_easy_cleanup(stream_ctx->easy_handle);
         chunk_queue_destroy(&stream_ctx->chunk_queue);
@@ -882,6 +1022,7 @@ MultiStreamContext* chat_proxy_multi_stream_start(
     if (mc != CURLM_OK) {
         log_this(SR_CHAT, "Failed to add handle to multi: %s", LOG_LEVEL_ERROR, 1, curl_multi_strerror(mc));
         free(curl_ctx->line_buffer);
+        free(curl_ctx->post_done_buffer);
         free(curl_ctx);
         curl_slist_free_all(stream_ctx->headers);
         curl_easy_cleanup(stream_ctx->easy_handle);

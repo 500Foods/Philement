@@ -11,6 +11,12 @@
     "default_database": "Lithium",
     "session_timeout_minutes": 30
   },
+  "login partners": {
+    "didit": true,
+    "apple": true,
+    "google": true,
+    "microsoft": true
+  },
   "app": {
     "name": "Lithium",
     "tagline": "A Philement Project",
