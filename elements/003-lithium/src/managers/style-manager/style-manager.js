@@ -41,6 +41,7 @@ import {
   buildEditorExtensions,
   createReadOnlyCompartment,
   setEditorEditable,
+  setEditorContentNoHistory,
   foldAllInEditor,
   unfoldAllInEditor,
 } from '../../core/codemirror-setup.js';
@@ -373,6 +374,7 @@ export default class StyleManager {
     // Register CSS editor with editHelper (bound to lookup table)
     this.editHelper.registerEditor('css', {
       getContent: () => this.cssEditor?.state?.doc?.toString() || '',
+      setContent: (content) => setEditorContentNoHistory(this.cssEditor, content),
       setEditable: (editable) => this.setCssEditorEditable(editable),
       boundTable: this.lookupTable,
     });
@@ -717,13 +719,8 @@ export default class StyleManager {
     // Only populate CSS editor if it's empty (first time showing CSS view)
     // Don't repopulate if user has already seen/edited the content
     if (isCssState && this.cssEditor && this.cssEditor.state.doc.length === 0) {
-      this.cssEditor.dispatch({
-        changes: {
-          from: 0,
-          to: 0,
-          insert: this.generateCss()
-        }
-      });
+      // Programmatic content population — exclude from undo history
+      setEditorContentNoHistory(this.cssEditor, this.generateCss());
     }
 
     log(Subsystems.MANAGER, Status.INFO, `[Style] State changed to: ${state}`);

@@ -256,6 +256,7 @@ npm run format
 | [`permissions.js`](elements/003-lithium/src/core/permissions.js) | Punchcard permissions |
 | [`manager-ui.js`](elements/003-lithium/src/core/manager-ui.js) | Shared UI utilities (keyboard shortcuts, footer buttons, font popup) |
 | [`manager-edit-helper.js`](elements/003-lithium/src/core/manager-edit-helper.js) | Consolidated edit mode, dirty tracking, and save/cancel button management for all managers |
+| [`codemirror-setup.js`](elements/003-lithium/src/core/codemirror-setup.js) | Shared CodeMirror config, `setEditorContentNoHistory()`, `updateUndoRedoButtons()` |
 
 ## Shared UI Utilities (`manager-ui.js`)
 

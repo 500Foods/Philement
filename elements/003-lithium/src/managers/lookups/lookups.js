@@ -420,6 +420,9 @@ export default class LookupsManager {
       tablePath: 'lookups/lookups-list',
       queryRef: 30, // QueryRef 30 - Get Lookups List
       searchQueryRef: 31, // QueryRef 31 - Get Lookups List + Search
+      updateQueryRef: 43, // QueryRef 43 - Update Lookup
+      insertQueryRef: 42, // QueryRef 42 - Insert Lookup
+      deleteQueryRef: 44, // QueryRef 44 - Delete Lookup
       cssPrefix: 'lithium', // Use default prefix for shared styling
       storageKey: 'lookups_parent_table',
       app: this.app,
@@ -431,6 +434,8 @@ export default class LookupsManager {
       onDataLoaded: (rows) => {
         log(Subsystems.TABLE, Status.INFO, `[Lookups] Loaded ${rows.length} lookups`);
       },
+      // Custom save: maps aliased field names to QueryRef 43 named params
+      onExecuteSave: (row) => this._executeParentSave(row),
     });
 
     // Register with editHelper — auto-wires onEditModeChange + onDirtyChange
@@ -452,6 +457,9 @@ export default class LookupsManager {
       navigatorContainer: this.elements.childNavigator,
       tablePath: 'lookups/lookup-values',
       queryRef: 34, // QueryRef 34 - Get Lookup List (requires LOOKUPID param)
+      updateQueryRef: 43, // QueryRef 43 - Update Lookup Value
+      insertQueryRef: 42, // QueryRef 42 - Insert Lookup Value
+      deleteQueryRef: 44, // QueryRef 44 - Delete Lookup Value
       cssPrefix: 'lithium', // Use default prefix for shared styling
       storageKey: 'lookups_child_table',
       app: this.app,
@@ -463,6 +471,14 @@ export default class LookupsManager {
       onDataLoaded: (rows) => {
         log(Subsystems.TABLE, Status.INFO, `[Lookups] Loaded ${rows.length} lookup values`);
       },
+      // Custom save: assembles table row data + JSON/Summary editor content
+      onExecuteSave: (row, editHelper) => this._executeChildSave(row, editHelper),
+      // Custom refresh: re-query with the current LOOKUPID parameter
+      onRefresh: () => {
+        if (this.selectedLookupId != null) {
+          this.loadChildData(this.selectedLookupId);
+        }
+      },
     });
 
     // Register with editHelper — auto-wires onEditModeChange + onDirtyChange
@@ -471,11 +487,13 @@ export default class LookupsManager {
     // Register external editors bound to the child table
     this.editHelper.registerEditor('json', {
       getContent: () => this._getJsonEditorContent(),
+      setContent: (content) => this._setJsonEditorContent(content),
       setEditable: (editable) => this.setEditorsEditable(editable),
       boundTable: this.childTable,
     });
     this.editHelper.registerEditor('summary', {
       getContent: () => this._getSummaryEditorContent(),
+      setContent: (content) => { if (this.sunEditor) this.sunEditor.setContents(content); },
       setEditable: () => {}, // setEditable handled by 'json' editor registration above
       boundTable: this.childTable,
     });
@@ -524,6 +542,18 @@ export default class LookupsManager {
     if (!this.childTable || !this.app?.api) return;
 
     try {
+      // Clear any current selection BEFORE getting the saved selection
+      // This prevents loadData() from capturing the old lookup's selected row
+      this.childTable.table?.deselectRow?.();
+
+      // Override the child table's saved row selection with the per-lookup selection
+      const savedChildId = this._loadChildSelection(lookupId);
+      if (savedChildId != null) {
+        this.childTable.saveSelectedRowId(savedChildId);
+      } else {
+        this.childTable.clearSavedRowSelection();
+      }
+
       // Use the child table's loadData() method which handles row restoration
       await this.childTable.loadData('', {
         INTEGER: { LOOKUPID: lookupId },
@@ -546,6 +576,9 @@ export default class LookupsManager {
 
     this.selectedLookupValue = rowData;
 
+    // Persist child selection keyed by current lookup
+    this._saveChildSelection(rowData);
+
     // Fetch full detail using QueryRef 35
     await this.loadDetailData(rowData);
   }
@@ -553,6 +586,102 @@ export default class LookupsManager {
   handleChildRowDeselected() {
     this.selectedLookupValue = null;
     this.clearDetailView();
+  }
+
+  // ── Save Logic ─────────────────────────────────────────────────────────────
+  // Both tables share QueryRef 43 for updates, which expects explicit named
+  // params matching the SQL placeholders (see LITHIUM-MGR-LOOKUPS.md).
+  // The WHERE clause uses a composite key: (lookup_id, key_idx), and the
+  // ORIG variants carry the pre-edit values so the correct row is targeted.
+
+  /**
+   * Build the params object for QueryRef 43 (update) from row data.
+   * Shared by both parent and child saves.
+   *
+   * @param {Object} rowData      - Current (possibly edited) row data
+   * @param {Object} originalData - Row data captured when edit mode was entered
+   * @param {Object} options      - { summary, collection } override strings
+   * @returns {Object} { INTEGER, STRING } params matching QueryRef 43 placeholders
+   */
+  _buildLookupSaveParams(rowData, originalData, { summary = '', collection = '{}' } = {}) {
+    return {
+      INTEGER: {
+        LOOKUPID:     rowData.lookup_id ?? originalData.lookup_id ?? 0,
+        KEYIDX:       rowData.key_idx ?? originalData.key_idx ?? 0,
+        VALUEINT:     rowData.value_int ?? originalData.value_int ?? 0,
+        SORTSEQ:      rowData.sort_seq ?? originalData.sort_seq ?? 0,
+        STATUSA1:     rowData.status_a1 ?? originalData.status_a1 ?? 1,
+        USERID:       this.app?.user?.id ?? 0,
+        ORIGLOOKUPID: originalData.lookup_id ?? rowData.lookup_id ?? 0,
+        ORIGKEYIDX:   originalData.key_idx ?? rowData.key_idx ?? 0,
+      },
+      STRING: {
+        VALUETXT:   rowData.value_txt ?? rowData.name ?? originalData.value_txt ?? '',
+        SUMMARY:    summary,
+        CODE:       rowData.code ?? originalData.code ?? '',
+        COLLECTION: collection,
+      },
+    };
+  }
+
+  /**
+   * Custom save for the parent table (lookups list).
+   * Maps aliased field names from QueryRef 30 to QueryRef 43 named params.
+   *
+   * @param {Tabulator.Row} row - The Tabulator row being saved
+   */
+  async _executeParentSave(row) {
+    const rowData = row.getData();
+    const originalData = this.parentTable.originalRowData || rowData;
+    const pkField = this.parentTable.primaryKeyField || 'lookup_id';
+    const pkValue = rowData[pkField];
+    const isInsert = pkValue == null || pkValue === '' || pkValue === 0;
+    const queryRef = isInsert
+      ? (this.parentTable.queryRefs?.insertQueryRef ?? 42)
+      : (this.parentTable.queryRefs?.updateQueryRef ?? 43);
+
+    const params = this._buildLookupSaveParams(rowData, originalData, {
+      summary:    rowData.summary ?? originalData.summary ?? '',
+      collection: rowData.collection ?? originalData.collection ?? '{}',
+    });
+
+    const result = await authQuery(this.app.api, queryRef, params);
+
+    if (isInsert && result?.[0]?.[pkField] != null) {
+      row.update({ [pkField]: result[0][pkField] });
+    }
+  }
+
+  /**
+   * Custom save for the child table (lookup values).
+   * Includes JSON/Summary editor content alongside table row data.
+   *
+   * @param {Tabulator.Row} row - The Tabulator row being saved
+   */
+  async _executeChildSave(row) {
+    const rowData = row.getData();
+    const originalData = this.childTable.originalRowData || rowData;
+    const pkField = this.childTable.primaryKeyField || 'lookup_value_id';
+    const pkValue = rowData[pkField];
+    const isInsert = pkValue == null || pkValue === '' || pkValue === 0;
+    const queryRef = isInsert
+      ? (this.childTable.queryRefs?.insertQueryRef ?? 42)
+      : (this.childTable.queryRefs?.updateQueryRef ?? 43);
+
+    // Gather content from external editors
+    const jsonContent = this._getJsonEditorContent() || '{}';
+    const summaryContent = this._getSummaryEditorContent() || '';
+
+    const params = this._buildLookupSaveParams(rowData, originalData, {
+      summary:    summaryContent,
+      collection: jsonContent,
+    });
+
+    const result = await authQuery(this.app.api, queryRef, params);
+
+    if (isInsert && result?.[0]?.[pkField] != null) {
+      row.update({ [pkField]: result[0][pkField] });
+    }
   }
 
   async loadDetailData(rowData) {
@@ -1125,6 +1254,49 @@ export default class LookupsManager {
     }
 
     log(Subsystems.MANAGER, Status.INFO, `[Lookups] Editors set to ${editable ? 'editable' : 'readonly'}`);
+  }
+
+  // ── Per-Lookup Child Selection Persistence ──────────────────────────────────
+
+  /**
+   * Save the selected child row for the current lookup.
+   * Stores per-lookup selections so cycling through parents restores the
+   * last-selected child for each.
+   * @param {Object} rowData - The selected child row data
+   */
+  _saveChildSelection(rowData) {
+    if (this.selectedLookupId == null || !rowData) return;
+    const pkField = this.childTable?.primaryKeyField || 'key_idx';
+    const childId = rowData[pkField];
+    if (childId == null) return;
+
+    try {
+      const storageKey = 'lithium_lookups_child_selections';
+      const stored = localStorage.getItem(storageKey);
+      const selections = stored ? JSON.parse(stored) : {};
+      selections[String(this.selectedLookupId)] = String(childId);
+      localStorage.setItem(storageKey, JSON.stringify(selections));
+    } catch {
+      // Ignore storage errors
+    }
+  }
+
+  /**
+   * Load the previously selected child row ID for a given lookup.
+   * @param {number|string} lookupId - The lookup ID
+   * @returns {string|null} - The saved child row ID, or null
+   */
+  _loadChildSelection(lookupId) {
+    if (lookupId == null) return null;
+    try {
+      const storageKey = 'lithium_lookups_child_selections';
+      const stored = localStorage.getItem(storageKey);
+      if (!stored) return null;
+      const selections = JSON.parse(stored);
+      return selections[String(lookupId)] ?? null;
+    } catch {
+      return null;
+    }
   }
 
   // ── Lifecycle Methods ──────────────────────────────────────────────────────

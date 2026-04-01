@@ -2,9 +2,17 @@
  * Queries Manager
  *
  * Query builder and execution interface.
- * Uses LithiumTable component for the query list table.
+ * Uses LithiumTable + ManagerEditHelper (same pattern as Lookups/Style managers).
+ *
+ * Custom modules:
+ *   queries-editors.js — CodeMirror editor init (SQL, Summary, Collection)
+ *
+ * Retired modules (functionality now in LithiumTable + ManagerEditHelper):
+ *   queries-dirty.js      — replaced by ManagerEditHelper snapshot tracking
+ *   queries-edit-mode.js  — replaced by LithiumTable.isEditing / editHelper
+ *   queries-navigation.js — replaced by LithiumTable nav + onExecuteSave callback
  */
-   
+
 // Import Styles
 import '../../styles/vendor-tabulator.css';
 import '../../core/manager-panels.css';
@@ -13,7 +21,7 @@ import './queries.css';
 import { LithiumTable } from '../../core/lithium-table-main.js';
 import { LithiumSplitter } from '../../core/lithium-splitter.js';
 import { PanelStateManager } from '../../core/panel-state-manager.js';
-import { togglePanelCollapse, restorePanelState } from '../../core/panel-collapse.js';
+import { togglePanelCollapse } from '../../core/panel-collapse.js';
 import { authQuery } from '../../shared/conduit.js';
 import { toast } from '../../shared/toast.js';
 import { log, Subsystems, Status } from '../../core/log.js';
@@ -21,59 +29,54 @@ import { processIcons } from '../../core/icons.js';
 import { setupManagerFooterIcons, createFontPopup } from '../../core/manager-ui.js';
 import { ManagerEditHelper } from '../../core/manager-edit-helper.js';
 
-// Import modular components
-import { createDirtyStateTracker } from './queries-dirty.js';
-import { createEditModeManager } from './queries-edit-mode.js';
+// Editor management (CodeMirror init, font, prettify, undo/redo)
 import { createEditorManager } from './queries-editors.js';
-import { createNavigationManager } from './queries-navigation.js';
-
-// Constants
-const SELECTED_ROW_KEY = 'lithium_queries_selected_id';
 
 /**
  * Queries Manager - Main class
- * Orchestrates the Query Manager functionality using LithiumTable
+ * Follows the standard LithiumTable + ManagerEditHelper pattern.
  */
 export default class QueriesManager {
   constructor(app, container) {
     this.app = app;
     this.container = container;
     this.elements = {};
-    
+
     // LithiumTable instance for query list
     this.queryTable = null;
-    
+
     // Manager ID
     this.managerId = 4;
-    
+
     // Current query data
     this.currentQuery = null;
     this._loadedDetailRowId = null;
     this._pendingSqlContent = null;
     this._pendingSummaryContent = null;
     this._pendingCollectionContent = null;
-    
+
     // Panel state persistence
     this.leftPanelState = new PanelStateManager('lithium_queries_left');
     this.leftPanelWidth = this.leftPanelState.loadWidth(280);
     this.isLeftPanelCollapsed = this.leftPanelState.loadCollapsed(false);
 
-    // Initialize modular managers
-    this.dirtyTracker = createDirtyStateTracker(this);
-    this.editModeManager = createEditModeManager(this);
-    this.editorManager = createEditorManager(this);
-    this.navigationManager = createNavigationManager(this);
-
     // Edit helper — consolidates edit mode, dirty tracking, and save/cancel buttons
-    this.editHelper = new ManagerEditHelper({ name: 'Queries' });
+    this.editHelper = new ManagerEditHelper({
+      name: 'Queries',
+      onAfterEditModeChange: (isEditing) => this._onEditModeChanged(isEditing),
+    });
+
+    // Editor manager (CodeMirror init, font, prettify)
+    this.editorManager = createEditorManager(this);
 
     // Font popup state
     this.fontPopup = null;
     this.editorFontSize = 14;
     this.editorFontFamily = 'var(--font-mono)';
     this.editorFontWeight = 'normal';
+    this._fontResetPending = false;
 
-    // Expose editor references for backward compatibility
+    // Expose editor references (set by editorManager after init)
     this.sqlEditor = null;
     this.summaryEditor = null;
     this.collectionEditor = null;
@@ -88,6 +91,19 @@ export default class QueriesManager {
     this._setupSplitters();
     this._setupFooter();
     this._restorePanelState();
+    this._loadSavedFontSettings();
+  }
+
+  /**
+   * Load saved font settings from localStorage for the default tab
+   */
+  _loadSavedFontSettings() {
+    const savedSettings = this._loadFontSettings('sql');
+    if (savedSettings) {
+      this.editorFontSize = savedSettings.fontSize;
+      this.editorFontFamily = savedSettings.fontFamily;
+      this.editorFontWeight = savedSettings.fontWeight;
+    }
   }
 
   async _render() {
@@ -123,7 +139,7 @@ export default class QueriesManager {
       prettifyBtn: this.container.querySelector('#queries-prettify-btn'),
       tabsHeader: this.container.querySelector('.queries-tabs-header'),
     };
-    
+
     processIcons(this.container);
   }
 
@@ -136,8 +152,8 @@ export default class QueriesManager {
       container: this.elements.tableContainer,
       navigatorContainer: this.elements.navigatorContainer,
       tablePath: 'queries/query-manager',
-      queryRef: 25, // QueryRef 25 - Query List
-      searchQueryRef: 32, // QueryRef 32 - Query Search
+      queryRef: 25,           // QueryRef 25 - Query List
+      searchQueryRef: 32,     // QueryRef 32 - Query Search
       cssPrefix: 'queries',
       storageKey: 'queries_table',
       app: this.app,
@@ -149,13 +165,15 @@ export default class QueriesManager {
       onDataLoaded: (rows) => {
         log(Subsystems.TABLE, Status.INFO, `[Queries] Loaded ${rows.length} queries`);
       },
-      // Note: onEditModeChange and onDirtyChange are auto-wired by editHelper.registerTable()
+      // Custom save: Query Manager assembles params from table + editors
+      onExecuteSave: (row, editHelper) => this._executeSave(row, editHelper),
+      // onEditModeChange and onDirtyChange are auto-wired by editHelper.registerTable()
     });
 
     // Register with editHelper — auto-wires onEditModeChange + onDirtyChange
     this.editHelper.registerTable(this.queryTable);
 
-    // Register external editors (will be bound after editors are created)
+    // Register external editors for dirty tracking + cancel restore
     this._registerEditorsWithEditHelper();
 
     await this.queryTable.init();
@@ -164,12 +182,15 @@ export default class QueriesManager {
 
   /**
    * Register CodeMirror editors with editHelper for dirty tracking.
-   * Called after editors are initialized.
    */
   _registerEditorsWithEditHelper() {
     // Register SQL editor
     this.editHelper.registerEditor('sql', {
       getContent: () => this.sqlEditor?.state?.doc?.toString() || '',
+      setContent: (content) => {
+        // Cancel restore — exclude from undo history
+        this.editorManager._setContentNoHistory(this.sqlEditor, content);
+      },
       setEditable: (editable) => this.editorManager?._setCodeMirrorEditable(editable),
       boundTable: this.queryTable,
     });
@@ -177,6 +198,9 @@ export default class QueriesManager {
     // Register Summary editor
     this.editHelper.registerEditor('summary', {
       getContent: () => this.summaryEditor?.state?.doc?.toString() || '',
+      setContent: (content) => {
+        this.editorManager._setContentNoHistory(this.summaryEditor, content);
+      },
       setEditable: () => {}, // Handled by 'sql' editor registration above
       boundTable: this.queryTable,
     });
@@ -184,9 +208,67 @@ export default class QueriesManager {
     // Register Collection editor
     this.editHelper.registerEditor('collection', {
       getContent: () => this.editorManager?.getCollectionContent() || '{}',
+      setContent: (content) => {
+        this.editorManager._setContentNoHistory(this.collectionEditor, content);
+      },
       setEditable: () => {}, // Handled by 'sql' editor registration above
       boundTable: this.queryTable,
     });
+  }
+
+  // ============ CUSTOM SAVE LOGIC ============
+
+  /**
+   * Custom save for Query Manager.
+   * Assembles table row data + CodeMirror editor content into API params.
+   * Called by LithiumTable.executeSave() via onExecuteSave callback.
+   *
+   * @param {Tabulator.Row} row - The Tabulator row being saved
+   * @param {ManagerEditHelper} editHelper - The edit helper (for editor access)
+   */
+  async _executeSave(row) {
+    const rowData = row.getData();
+    const pkField = this.queryTable.primaryKeyField || 'query_id';
+    const pkValue = rowData[pkField];
+    const isInsert = pkValue == null || pkValue === '' || pkValue === 0;
+    const queryRef = isInsert
+      ? (this.queryTable.queryRefs?.insertQueryRef ?? null)
+      : (this.queryTable.queryRefs?.updateQueryRef ?? 28);
+
+    if (!queryRef) {
+      throw Object.assign(new Error('No queryRef configured for save'), {
+        serverError: 'Save not available: no query reference configured.',
+      });
+    }
+
+    // Gather content from all editors
+    const sqlContent = this.sqlEditor?.state?.doc?.toString() || '';
+    const summaryContent = this.summaryEditor?.state?.doc?.toString() || '';
+    const collectionString = this.editorManager?.getCollectionContent() || '{}';
+
+    const params = {
+      INTEGER: {
+        QUERYID: pkValue,
+        QUERYTYPE: rowData.query_type_a28 ?? 1,
+        QUERYDIALECT: rowData.query_dialect_a30 ?? 1,
+        QUERYSTATUS: rowData.query_status_a27 ?? 1,
+        USERID: this.app?.user?.id ?? 0,
+        QUERYREF: parseInt(rowData.query_ref, 10) || 0,
+      },
+      STRING: {
+        QUERYCODE: sqlContent || rowData.code || '',
+        QUERYNAME: rowData.name || '',
+        QUERYSUMMARY: summaryContent || rowData.summary || '',
+        COLLECTION: collectionString,
+      },
+    };
+
+    const result = await authQuery(this.app.api, queryRef, params);
+
+    // Update row with server-returned PK on insert
+    if (isInsert && result?.[0]?.[pkField] != null) {
+      row.update({ [pkField]: result[0][pkField] });
+    }
   }
 
   // ============ EVENT HANDLERS ============
@@ -207,7 +289,7 @@ export default class QueriesManager {
     this.elements.unfoldAllBtn?.addEventListener('click', () => this.editorManager.handleUnfoldAll());
     this.elements.fontBtn?.addEventListener('click', () => this._handleFontClick());
     this.elements.prettifyBtn?.addEventListener('click', () => this.editorManager.handlePrettify());
-    
+
     // Keyboard shortcuts
     document.addEventListener('keydown', (e) => this._handleKeyboardShortcuts(e));
   }
@@ -219,17 +301,36 @@ export default class QueriesManager {
   // Splitter drag clears the width mode via LithiumSplitter._clearWidthModes().
   // Panel pixel width is saved by the onResizeEnd callback in _setupSplitters().
 
+  // ============ EDIT MODE ============
+
+  /**
+   * Called by editHelper.onAfterEditModeChange after edit mode transitions.
+   * Updates undo/redo button state.
+   */
+  _onEditModeChanged(_isEditing) {
+    this.editorManager._updateUndoRedoButtons();
+  }
+
   // ============ TAB SWITCHING ============
 
   async switchTab(tabId) {
     this.elements.tabBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tabId));
     this.elements.tabPanes.forEach(pane => pane.classList.toggle('active', pane.id === `queries-tab-${tabId}`));
 
-    const isSqlTab = tabId === 'sql';
-    if (this.elements.undoBtn) this.elements.undoBtn.disabled = !isSqlTab;
-    if (this.elements.redoBtn) this.elements.redoBtn.disabled = !isSqlTab;
-    if (this.elements.fontBtn) this.elements.fontBtn.disabled = !['sql', 'summary', 'preview'].includes(tabId);
-    if (this.elements.prettifyBtn) this.elements.prettifyBtn.disabled = !isSqlTab;
+    const hasEditor = ['sql', 'summary', 'collection'].includes(tabId);
+    // Undo/redo enabled only for editor tabs; actual enabled state is managed
+    // by _updateUndoRedoButtons based on edit mode + history depth.
+    if (this.elements.fontBtn) this.elements.fontBtn.disabled = !['sql', 'summary', 'preview', 'collection'].includes(tabId);
+    if (this.elements.prettifyBtn) this.elements.prettifyBtn.disabled = tabId !== 'sql';
+    // Disable undo/redo for non-editor tabs (preview/test), otherwise let
+    // the history-aware updater control them.
+    if (!hasEditor) {
+      if (this.elements.undoBtn) this.elements.undoBtn.disabled = true;
+      if (this.elements.redoBtn) this.elements.redoBtn.disabled = true;
+    }
+
+    // Restore font state for the new tab and apply fonts
+    this._restoreFontStateForTab(tabId);
 
     if (tabId === 'sql') {
       const sqlContent = this._pendingSqlContent || this.currentQuery?.code || this.currentQuery?.query_text || this.currentQuery?.sql || '';
@@ -239,9 +340,13 @@ export default class QueriesManager {
       } else {
         const currentContent = this.sqlEditor.state.doc.toString();
         if (currentContent !== sqlContent) {
-          this.sqlEditor.dispatch({ changes: { from: 0, to: this.sqlEditor.state.doc.length, insert: sqlContent } });
+          // Programmatic content load — exclude from undo history
+          this.editorManager._setContentNoHistory(this.sqlEditor, sqlContent);
         }
       }
+      // Apply font after editor is visible
+      requestAnimationFrame(() => this._applyFontToCurrentTab());
+      this.editorManager._updateUndoRedoButtons();
     }
     if (tabId === 'summary') {
       const summaryContent = this._pendingSummaryContent || this.currentQuery?.summary || this.currentQuery?.markdown || '';
@@ -251,9 +356,12 @@ export default class QueriesManager {
       } else {
         const currentContent = this.summaryEditor.state.doc.toString();
         if (currentContent !== summaryContent) {
-          this.summaryEditor.dispatch({ changes: { from: 0, to: this.summaryEditor.state.doc.length, insert: summaryContent } });
+          this.editorManager._setContentNoHistory(this.summaryEditor, summaryContent);
         }
       }
+      // Apply font after editor is visible
+      requestAnimationFrame(() => this._applyFontToCurrentTab());
+      this.editorManager._updateUndoRedoButtons();
     }
     if (tabId === 'collection') {
       let collectionContent = this._pendingCollectionContent || this.currentQuery?.collection || this.currentQuery?.json || {};
@@ -261,21 +369,37 @@ export default class QueriesManager {
         try { collectionContent = JSON.parse(collectionContent); } catch { collectionContent = {}; }
       }
       if (this.collectionEditor) {
-        // Update content directly via CodeMirror
+        // Update content directly via CodeMirror — exclude from undo history
         const jsonStr = JSON.stringify(collectionContent, null, 2);
         if (this.collectionEditor.state.doc.toString() !== jsonStr) {
-          this.collectionEditor.dispatch({
-            changes: { from: 0, to: this.collectionEditor.state.doc.length, insert: jsonStr }
-          });
+          this.editorManager._setContentNoHistory(this.collectionEditor, jsonStr);
         }
       } else {
         await this.editorManager.initCollectionEditor(collectionContent);
         this.collectionEditor = this.editorManager.collectionEditor;
       }
+      // Apply font after editor is visible
+      requestAnimationFrame(() => this._applyFontToCurrentTab());
+      this.editorManager._updateUndoRedoButtons();
     }
     if (tabId === 'preview') {
       this.editorManager.renderMarkdownPreview();
+      // Apply font after preview is rendered
+      requestAnimationFrame(() => this._applyFontToCurrentTab());
     }
+  }
+
+  /**
+   * Apply current font settings to the active tab's content
+   */
+  _applyFontToCurrentTab() {
+    const tabId = this._getActiveTabId();
+    const fontSettings = {
+      fontSize: this.editorFontSize,
+      fontFamily: this.editorFontFamily,
+      fontWeight: this.editorFontWeight,
+    };
+    this.editorManager.applyFontSettingsToActiveTab(fontSettings, tabId);
   }
 
   // ============ ROW SELECTION ============
@@ -293,9 +417,6 @@ export default class QueriesManager {
 
     this.currentQuery = rowData;
     this._loadedDetailRowId = queryId;
-
-    // Persist selection
-    try { localStorage.setItem(SELECTED_ROW_KEY, String(queryId)); } catch {}
 
     // Load full query details
     await this._loadQueryDetails(queryId);
@@ -337,17 +458,15 @@ export default class QueriesManager {
     this._pendingSummaryContent = null;
     this._pendingCollectionContent = null;
 
+    // Programmatic clear — exclude from undo history
     if (this.sqlEditor) {
-      this.sqlEditor.dispatch({ changes: { from: 0, to: this.sqlEditor.state.doc.length, insert: '' } });
+      this.editorManager._setContentNoHistory(this.sqlEditor, '');
     }
     if (this.summaryEditor) {
-      this.summaryEditor.dispatch({ changes: { from: 0, to: this.summaryEditor.state.doc.length, insert: '' } });
+      this.editorManager._setContentNoHistory(this.summaryEditor, '');
     }
     if (this.collectionEditor) {
-      // Clear JSON editor content
-      this.collectionEditor.dispatch({
-        changes: { from: 0, to: this.collectionEditor.state.doc.length, insert: '{}' }
-      });
+      this.editorManager._setContentNoHistory(this.collectionEditor, '{}');
     }
   }
 
@@ -356,81 +475,6 @@ export default class QueriesManager {
   _getActiveTabId() {
     const activeBtn = this.container?.querySelector('.queries-tab-btn.active');
     return activeBtn?.dataset?.tab || 'sql';
-  }
-
-  // ============ TABLE EDIT MODE HANDLER ============
-
-  _handleTableEditModeChange(lithiumTable, isEditing, rowData) {
-    if (isEditing) {
-      // Track active editing table in editHelper (for footer save/cancel routing)
-      this.editHelper.activeEditingTable = lithiumTable;
-
-      // Sync editModeManager state so isEditing() returns true
-      this.editModeManager._isEditing = true;
-      this.editModeManager._editingRowId = rowData?.query_id;
-
-      // Enable CodeMirror editors when entering edit mode
-      this.editorManager._setCodeMirrorEditable(true);
-
-      // Capture snapshot for dirty tracking.
-      // This must happen AFTER enabling editors so we capture their current state.
-      this.dirtyTracker.captureOriginalData(rowData, {
-        sql: this.sqlEditor,
-        summary: this.summaryEditor,
-        collection: this.collectionEditor,
-        sqlContent: this._pendingSqlContent,
-        summaryContent: this._pendingSummaryContent,
-        collectionContent: this._pendingCollectionContent,
-      });
-
-      // Sync table's isDirty with our dirty tracker state
-      lithiumTable.isDirty = this.dirtyTracker.isAnyDirty();
-
-      log(Subsystems.MANAGER, Status.INFO, '[Queries] Edit mode entered');
-    } else {
-      // Sync editModeManager state
-      this.editModeManager._isEditing = false;
-      this.editModeManager._editingRowId = null;
-
-      // Clear active editing table in editHelper
-      this.editHelper.activeEditingTable = null;
-
-      // Disable CodeMirror editors when exiting edit mode
-      this.editorManager._setCodeMirrorEditable(false);
-
-      // Clear snapshot and dirty state
-      this.dirtyTracker.markAllClean();
-      this.dirtyTracker.clearOriginalData();
-
-      log(Subsystems.MANAGER, Status.INFO, '[Queries] Edit mode exited');
-    }
-  }
-
-  /**
-   * Update footer save/cancel button state.
-   * Called by DirtyStateTracker when dirty state changes.
-   */
-  updateFooterSaveCancelState(visible, enabled) {
-    const slot = this.container.closest('.manager-slot');
-    if (!slot) return;
-    const footer = slot.querySelector('.manager-slot-footer');
-    if (!footer) return;
-
-    const saveBtn = footer.querySelector('.manager-footer-save-btn');
-    const cancelBtn = footer.querySelector('.manager-footer-cancel-btn');
-    const dummyBtn = footer.querySelector('.manager-footer-dummy-btn');
-
-    if (saveBtn) {
-      saveBtn.style.display = visible ? '' : 'none';
-      saveBtn.disabled = !visible || !enabled;
-    }
-    if (cancelBtn) {
-      cancelBtn.style.display = visible ? '' : 'none';
-      cancelBtn.disabled = !visible || !enabled;
-    }
-    if (dummyBtn) {
-      dummyBtn.style.display = visible ? '' : 'none';
-    }
   }
 
   // ============ SPLITTER ============
@@ -456,7 +500,6 @@ export default class QueriesManager {
   }
 
   _toggleLeftPanel() {
-    // console.log('[Queries] _toggleLeftPanel called', { isCollapsed: this.isLeftPanelCollapsed });
     this.isLeftPanelCollapsed = togglePanelCollapse({
       panel: this.elements.leftPanel,
       splitter: this.splitter,
@@ -465,16 +508,13 @@ export default class QueriesManager {
       isCollapsed: this.isLeftPanelCollapsed,
       onAfterToggle: () => this.queryTable?.table?.redraw?.(),
     });
-    // console.log('[Queries] After toggle', { isCollapsed: this.isLeftPanelCollapsed });
 
     // Save collapsed state
     this.leftPanelState.saveCollapsed(this.isLeftPanelCollapsed);
-    // console.log('[Queries] After saveCollapsed');
   }
 
   _restorePanelState() {
     // Re-read collapsed state from localStorage as a safety net
-    // (handles cases where constructor loaded before persistence was ready)
     this.isLeftPanelCollapsed = this.leftPanelState.loadCollapsed(this.isLeftPanelCollapsed);
 
     // Restore collapsed state directly via inline styles
@@ -523,47 +563,12 @@ export default class QueriesManager {
 
     this._footerDatasource = footerElements.reportSelect;
 
-    // Wire save/cancel buttons to custom navigation handlers
-    // (Query Manager has custom save logic that includes SQL/Summary/Collection)
-    if (footerElements.saveBtn) {
-      footerElements.saveBtn.addEventListener('click', () => {
-        this.navigationManager?.handleNavSave();
-      });
-    }
-    if (footerElements.cancelBtn) {
-      footerElements.cancelBtn.addEventListener('click', () => {
-        this.navigationManager?.handleNavCancel();
-      });
-    }
-
-    // Initialize button state (disabled until dirty)
-    this.updateFooterSaveCancelState(true, false);
-  }
-
-  /**
-   * Update footer save/cancel button state
-   */
-  updateFooterSaveCancelState(visible, enabled) {
-    const slot = this.container.closest('.manager-slot');
-    if (!slot) return;
-    const footer = slot.querySelector('.manager-slot-footer');
-    if (!footer) return;
-
-    const saveBtn = footer.querySelector('.manager-footer-save-btn');
-    const cancelBtn = footer.querySelector('.manager-footer-cancel-btn');
-    const dummyBtn = footer.querySelector('.manager-footer-dummy-btn');
-
-    if (saveBtn) {
-      saveBtn.style.display = visible ? '' : 'none';
-      saveBtn.disabled = !visible || !enabled;
-    }
-    if (cancelBtn) {
-      cancelBtn.style.display = visible ? '' : 'none';
-      cancelBtn.disabled = !visible || !enabled;
-    }
-    if (dummyBtn) {
-      dummyBtn.style.display = visible ? '' : 'none';
-    }
+    // Wire save/cancel buttons through editHelper (standard pattern)
+    this.editHelper.wireFooterButtons(
+      footerElements.saveBtn,
+      footerElements.cancelBtn,
+      footerElements.dummyBtn,
+    );
   }
 
   _getFooterDatasource() {
@@ -735,32 +740,130 @@ export default class QueriesManager {
     if (!this.fontPopup) {
       this._initFontPopup();
     }
+    // Always reload saved settings when opening the popup
+    this._loadCurrentFontIntoPopup();
     this.fontPopup?.classList.toggle('visible');
   }
 
   _initFontPopup() {
-    const { popup, getState } = createFontPopup({
+    const activeTabId = this._getActiveTabId();
+    const savedSettings = this._loadFontSettings(activeTabId);
+
+    const initialSettings = {
+      fontSize: savedSettings?.fontSize || this.editorFontSize,
+      fontFamily: savedSettings?.fontFamily || this.editorFontFamily,
+      fontWeight: savedSettings?.fontWeight || this.editorFontWeight,
+    };
+
+    const { popup, toggle, getState, setState } = createFontPopup({
       anchor: this.elements.fontBtn,
-      fontSize: parseInt(this.editorFontSize, 10) || 14,
-      fontFamily: this.editorFontFamily,
-      fontWeight: this.editorFontWeight,
-      onChange: () => this._applyFontSettings(),
+      fontSize: initialSettings.fontSize,
+      fontFamily: initialSettings.fontFamily,
+      fontWeight: initialSettings.fontWeight,
+      onPreview: (state) => this._updateFontPreview(state),
+      onSave: (state) => this._saveAndApplyFontSettings(state),
+      onCancel: () => this._cancelFontChanges(),
+      onReset: () => this._resetFontToDefault(),
     });
     this.fontPopup = popup;
+    this._fontPopupToggle = toggle;
     this._fontPopupGetState = getState;
+    this._fontPopupSetState = setState;
   }
 
-  _applyFontSettings() {
-    if (this._fontPopupGetState) {
-      const state = this._fontPopupGetState();
+  _loadCurrentFontIntoPopup() {
+    if (!this._fontPopupSetState) return;
+
+    const activeTabId = this._getActiveTabId();
+    const savedSettings = this._loadFontSettings(activeTabId);
+
+    if (savedSettings) {
+      this.editorFontSize = savedSettings.fontSize;
+      this.editorFontFamily = savedSettings.fontFamily;
+      this.editorFontWeight = savedSettings.fontWeight;
+      this._fontPopupSetState(savedSettings);
+    }
+  }
+
+  _updateFontPreview(_state) {
+    // Preview is handled by the popup itself
+  }
+
+  _saveAndApplyFontSettings(state) {
+    const activeTabId = this._getActiveTabId();
+
+    if (this._fontResetPending) {
+      this._fontResetPending = false;
+      this.editorManager.clearFontOverride(activeTabId);
+    } else {
       this.editorFontSize = state.fontSize;
       this.editorFontFamily = state.fontFamily;
       this.editorFontWeight = state.fontWeight;
+
+      const fontSettings = {
+        fontSize: this.editorFontSize,
+        fontFamily: this.editorFontFamily,
+        fontWeight: this.editorFontWeight,
+      };
+
+      this._saveFontSettings(activeTabId, fontSettings);
+      this.editorManager.applyFontSettingsToActiveTab(fontSettings, activeTabId);
+    }
+  }
+
+  _cancelFontChanges() {
+    this._fontResetPending = false;
+    const activeTabId = this._getActiveTabId();
+    const savedSettings = this._loadFontSettings(activeTabId);
+    if (savedSettings) {
+      this.editorManager.applyFontSettingsToActiveTab(savedSettings, activeTabId);
+    }
+  }
+
+  _resetFontToDefault() {
+    const activeTabId = this._getActiveTabId();
+    this._clearFontSettings(activeTabId);
+    this._fontResetPending = true;
+    return {
+      fontSize: '14px',
+      fontFamily: '"Vanadium Mono", var(--font-mono, monospace)',
+      fontWeight: 'normal',
+    };
+  }
+
+  _clearFontSettings(tabId) {
+    try { localStorage.removeItem(`lithium_queries_font_${tabId}`); } catch { /* ignore */ }
+  }
+
+  _loadFontSettings(tabId) {
+    try {
+      const stored = localStorage.getItem(`lithium_queries_font_${tabId}`);
+      return stored ? JSON.parse(stored) : null;
+    } catch { return null; }
+  }
+
+  _saveFontSettings(tabId, settings) {
+    try { localStorage.setItem(`lithium_queries_font_${tabId}`, JSON.stringify(settings)); } catch { /* ignore */ }
+  }
+
+  _restoreFontStateForTab(tabId) {
+    const savedSettings = this._loadFontSettings(tabId);
+    if (savedSettings) {
+      this.editorFontSize = savedSettings.fontSize;
+      this.editorFontFamily = savedSettings.fontFamily;
+      this.editorFontWeight = savedSettings.fontWeight;
     }
 
-    // Apply font settings to editors
-    if (this.sqlEditor) {
-      // CodeMirror theme customization would go here
+    if (this._fontPopupSetState) {
+      if (savedSettings) {
+        this._fontPopupSetState(savedSettings);
+      } else {
+        this._fontPopupSetState({
+          fontSize: this.editorFontSize,
+          fontFamily: this.editorFontFamily,
+          fontWeight: this.editorFontWeight,
+        });
+      }
     }
   }
 

@@ -20,9 +20,12 @@ This directory contains the canonical documentation for the Lithium web applicat
 
 ## Documentation Index
 
+> **Building a new manager?** Start with **[LITHIUM-MGR-NEW.md](LITHIUM-MGR-NEW.md)** — the step-by-step guide.
+
 | Document | Purpose |
 |----------|---------|
 | [LITHIUM-INS.md](LITHIUM-INS.md) | **⚠️ CODING STANDARDS** — Mandatory reading before any development work |
+| [LITHIUM-MGR-NEW.md](LITHIUM-MGR-NEW.md) | **⚠️ NEW MANAGER GUIDE** — Step-by-step checklist for adding a LithiumTable-based manager |
 | [LITHIUM-TOC.md](LITHIUM-TOC.md) | **This file** — Table of contents and overview |
 | [LITHIUM-DEV.md](LITHIUM-DEV.md) | Development environment setup, build tools, npm scripts |
 | [LITHIUM-TST.md](LITHIUM-TST.md) | Testing framework, Vitest, coverage |
@@ -105,6 +108,7 @@ Lithium is a lightweight, performant, modular single-page application (SPA) buil
 - Start here: [LITHIUM-DEV.md](LITHIUM-DEV.md)
 - Understand libraries: [LITHIUM-LIB.md](LITHIUM-LIB.md)
 - Learn the manager system: [LITHIUM-MGR.md](LITHIUM-MGR.md)
+- **Adding a new manager:** [LITHIUM-MGR-NEW.md](LITHIUM-MGR-NEW.md)
 
 ### For Deployment
 
@@ -127,4 +131,4 @@ Lithium is a lightweight, performant, modular single-page application (SPA) buil
 
 This documentation suite was created to replace the older combined `INSTRUCTIONS.md` and `BLUEPRINT.md` files, which had grown confused and outdated. The new split format allows for easier maintenance and targeted updates.
 
-Last updated: March 2026
+Last updated: April 2026

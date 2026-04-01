@@ -234,6 +234,7 @@
   height: 35px;
   flex-shrink: 0;
   position: relative;
+  overflow: hidden;
 }
 
 /* Radar status icon in sidebar header (replaces old ws-status) */
