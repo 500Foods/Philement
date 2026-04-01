@@ -599,6 +599,18 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
                  engine->provider == CEC_PROVIDER_OLLAMA ? "Ollama" : "OpenAI",
                  proxy_result->total_time_ms,
                  response_size);
+
+        // Log first 500 chars of raw response to see structure
+        if (proxy_result->response_body && response_size > 0) {
+            log_this(SR_WEBSOCKET_CHAT, "Raw response start (%zu bytes): %.300s", LOG_LEVEL_DEBUG, 2,
+                     response_size, proxy_result->response_body);
+            // Check for retrieval in raw response
+            if (strstr(proxy_result->response_body, "\"retrieval\"")) {
+                log_this(SR_WEBSOCKET_CHAT, "Raw response CONTAINS retrieval field", LOG_LEVEL_DEBUG, 0);
+            } else {
+                log_this(SR_WEBSOCKET_CHAT, "Raw response does NOT contain retrieval field", LOG_LEVEL_DEBUG, 0);
+            }
+        }
         
         // Parse response
         ChatParsedResponse *parsed = chat_response_parse(proxy_result->response_body, engine->provider);
@@ -637,6 +649,14 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
                  content_length, message_count,
                  parsed->finish_reason ? parsed->finish_reason : "null");
         
+        // Check if raw_response exists before sending
+        if (parsed->raw_response) {
+            log_this(SR_WEBSOCKET_CHAT, "parsed->raw_response EXISTS, has %zu keys", LOG_LEVEL_DEBUG, 1,
+                     json_object_size(parsed->raw_response));
+        } else {
+            log_this(SR_WEBSOCKET_CHAT, "parsed->raw_response is NULL!", LOG_LEVEL_ERROR, 0);
+        }
+
         // Send chat_done
         send_chat_done(wsi, request_id, parsed->content, parsed->model, parsed->finish_reason,
                        parsed->prompt_tokens, parsed->completion_tokens, parsed->total_tokens,
@@ -789,6 +809,11 @@ static void send_chat_done(struct lws *wsi, const char* request_id, const char* 
     // Include the full raw provider response for transparency
     // This allows clients to access new fields as models evolve
     if (raw_response) {
+        // Check for retrieval data
+        json_t* retrieval = json_object_get(raw_response, "retrieval");
+        if (retrieval) {
+            log_this(SR_WEBSOCKET_CHAT, "Raw response contains retrieval data", LOG_LEVEL_DEBUG, 0);
+        }
         json_object_set(result, "raw_provider_response", raw_response);
     }
 

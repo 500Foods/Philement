@@ -315,6 +315,9 @@ void chat_stream_chunk_destroy(ChatStreamChunk* chunk) {
     free(chunk->reasoning_content);
     free(chunk->finish_reason);
     free(chunk->model);
+    if (chunk->extra_fields) {
+        json_decref(chunk->extra_fields);
+    }
     free(chunk);
 }
 
@@ -442,6 +445,25 @@ ChatStreamChunk* chat_stream_chunk_parse(const char* json_line) {
                     chunk->finish_reason = strdup(json_string_value(finish));
                 }
             }
+        }
+
+        // Check for provider-specific extra fields (e.g., retrieval, citations)
+        // These are typically at the root level, not in choices
+        json_t* retrieval = json_object_get(root, "retrieval");
+        if (retrieval) {
+            if (!chunk->extra_fields) {
+                chunk->extra_fields = json_object();
+            }
+            json_object_set(chunk->extra_fields, "retrieval", retrieval);
+        }
+
+        // Also check for citations at root level
+        json_t* citations = json_object_get(root, "citations");
+        if (citations) {
+            if (!chunk->extra_fields) {
+                chunk->extra_fields = json_object();
+            }
+            json_object_set(chunk->extra_fields, "citations", citations);
         }
     }
 

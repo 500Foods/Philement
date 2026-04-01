@@ -150,7 +150,7 @@
 
 /* Logout type label - left column */
 .logout-option-type {
-  min-width: 60px;
+  min-width: 80px;
   padding: var(--space-3);
   background: var(--accent-primary);
   color: white;
@@ -159,6 +159,10 @@
   text-align: center;
   border-radius: var(--border-radius-sm);
   flex-shrink: 0;
+}
+.logout-option-type svg {
+  font-size: 15px;
+  margin-right: 5px;
 }
 
 /* Logout description - right column, multiline */

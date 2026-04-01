@@ -23,7 +23,7 @@ export default class AnnotationManager {
     this.container.innerHTML = `
       <div class="annotation-manager-container">
         <div class="placeholder-header">
-          <fa fa-sticky-note></fa>
+          <fa fa-note-sticky></fa>
           <h2>Annotation Manager</h2>
         </div>
         <div class="placeholder-content">

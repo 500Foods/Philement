@@ -20,6 +20,8 @@ import { getCrimsonWS } from '../../shared/crimson-ws.js';
 import { getAppWS, isAppWSConnected } from '../../shared/app-ws.js';
 import { getTip, initTooltips } from '../../core/tooltip-api.js';
 import { registerShortcut } from '../../core/manager-ui.js';
+import { LithiumTable } from '../../core/lithium-table-main.js';
+import '../../styles/vendor-tabulator.css';
 import './crimson.css';
 
 // Singleton instance tracking
@@ -29,11 +31,23 @@ let crimsonInstance = null;
 let globalKeyHandler = null;
 
 // LocalStorage keys for persistent state
+// Using 'lithium_' prefix so these get cleared on public/global logout
 const STORAGE_KEYS = {
-  DEBUG_MODE: 'crimson_debug_mode',
-  STREAMING_ENABLED: 'crimson_streaming_enabled',
-  REASONING_MODE: 'crimson_reasoning_mode',
+  DEBUG_MODE: 'lithium_crimson_debug_mode',
+  STREAMING_ENABLED: 'lithium_crimson_streaming_enabled',
+  REASONING_MODE: 'lithium_crimson_reasoning_mode',
+  CITATION_POPUP_X: 'lithium_crimson_citation_popup_x',
+  CITATION_POPUP_Y: 'lithium_crimson_citation_popup_y',
+  CITATION_POPUP_WIDTH: 'lithium_crimson_citation_popup_width',
+  CITATION_POPUP_HEIGHT: 'lithium_crimson_citation_popup_height',
+  MAIN_WINDOW_X: 'lithium_crimson_main_window_x',
+  MAIN_WINDOW_Y: 'lithium_crimson_main_window_y',
+  MAIN_WINDOW_WIDTH: 'lithium_crimson_main_window_width',
+  MAIN_WINDOW_HEIGHT: 'lithium_crimson_main_window_height',
+  INPUT_HISTORY: 'lithium_crimson_input_history',
 };
+
+const MAX_INPUT_HISTORY = 100;
 
 /**
  * Get the singleton Crimson instance (creates if needed)
@@ -159,6 +173,29 @@ class CrimsonManager {
     this.popupStartLeft = 0;
     this.popupStartTop = 0;
     this.resizeCorner = 'br'; // Default to bottom-right
+    
+    // Track citation-to-row mapping for deduplication: global citation number -> row index
+    this.citationToRowMap = new Map();
+
+    // Input history state
+    this.inputHistory = [];      // Array of previous inputs
+    this.inputHistoryIndex = -1; // Current position in history (-1 = at end, typing new)
+
+    // Citation popup drag/resize state
+    this.isCitationDragging = false;
+    this.isCitationResizing = false;
+    this.citationDragStartX = 0;
+    this.citationDragStartY = 0;
+    this.citationPopupStartX = 0;
+    this.citationPopupStartY = 0;
+    this.citationResizeStartX = 0;
+    this.citationResizeStartY = 0;
+    this.citationPopupStartWidth = 0;
+    this.citationPopupStartHeight = 0;
+    this.citationPopupStartLeft = 0;
+    this.citationPopupStartTop = 0;
+    this.citationResizeCorner = 'br';
+    
     this.username = 'User';
     this.messages = [];
 
@@ -198,10 +235,14 @@ class CrimsonManager {
     // Temporarily enable showing thinking messages for debugging
     this.showThinkingMessages = true;
 
-    // Citations state
-    this.citations = new Map(); // messageId -> citation[]
+    // Citations state — single collected list across all turns, deduplicated
+    this.allCitations = [];       // Flat array of normalized citation objects
+    this.citationIndex = new Map(); // dedup key -> index in allCitations
+    this.citationToRowMap = new Map(); // global citation number -> row index for linking
     this.activeCitationPopup = null;
-    this.activeCitationButton = null;
+    this.citationTable = null; // LithiumTable instance for active citation popup
+    this.citationHeaderBtn = null;   // Reference to header citation button
+    this.citationCounterEl = null;   // Reference to the 3-digit counter <span>
 
     // Bind methods
     this.handleDragStart = this.handleDragStart.bind(this);
@@ -220,6 +261,14 @@ class CrimsonManager {
     this.handleReasoningResizeStart = this.handleReasoningResizeStart.bind(this);
     this.handleReasoningResizeMove = this.handleReasoningResizeMove.bind(this);
     this.handleReasoningResizeEnd = this.handleReasoningResizeEnd.bind(this);
+    
+    // Citation popup drag/resize
+    this.handleCitationDragStart = this.handleCitationDragStart.bind(this);
+    this.handleCitationDragMove = this.handleCitationDragMove.bind(this);
+    this.handleCitationDragEnd = this.handleCitationDragEnd.bind(this);
+    this.handleCitationResizeStart = this.handleCitationResizeStart.bind(this);
+    this.handleCitationResizeMove = this.handleCitationResizeMove.bind(this);
+    this.handleCitationResizeEnd = this.handleCitationResizeEnd.bind(this);
 
     // Initialize
     this.init();
@@ -293,6 +342,10 @@ class CrimsonManager {
             <span class="crimson-status-indicator crimson-status-ready"></span>
             <span class="crimson-status-text">Ready</span>
           </button>
+          <button type="button" class="crimson-citation-header-btn" data-tooltip="Citations">
+            <fa fa-book-open-lines></fa>
+            <span class="crimson-citation-counter"></span>
+          </button>
           <button type="button" class="crimson-streaming-btn" data-tooltip="Toggle streaming">
             <fa fa-water></fa>
           </button>
@@ -314,7 +367,7 @@ class CrimsonManager {
         <div class="crimson-reasoning-content"></div>
         <div class="crimson-reasoning-splitter" data-tooltip="Drag to resize"></div>
       </div>
-      <div class="crimson-conversation">
+      <div class="crimson-conversation crimson-conversation-empty">
         <div class="crimson-welcome">
           <div class="crimson-welcome-icon">
             <i class="fa-kit-duotone fa-crimson"></i>
@@ -328,6 +381,14 @@ class CrimsonManager {
         <pre class="crimson-debug-content"></pre>
       </div>
       <div class="crimson-input-area">
+        <div class="crimson-input-nav">
+          <button type="button" class="crimson-input-prev" data-tooltip="Previous input" disabled>
+            <fa fa-chevron-up></fa>
+          </button>
+          <button type="button" class="crimson-input-next" data-tooltip="Next input" disabled>
+            <fa fa-chevron-down></fa>
+          </button>
+        </div>
         <textarea class="crimson-input" placeholder="Type your message..." rows="1"></textarea>
         <button type="button" class="crimson-send-btn" data-tooltip="Send message">
           <fa fa-up></fa>
@@ -351,6 +412,10 @@ class CrimsonManager {
     this.debugContent = this.popup.querySelector('.crimson-debug-content');
     this.reasoningPanel = this.popup.querySelector('.crimson-reasoning-panel');
     this.reasoningContent = this.popup.querySelector('.crimson-reasoning-content');
+    this.citationHeaderBtn = this.popup.querySelector('.crimson-citation-header-btn');
+    this.citationCounterEl = this.popup.querySelector('.crimson-citation-counter');
+    this.inputPrevBtn = this.popup.querySelector('.crimson-input-prev');
+    this.inputNextBtn = this.popup.querySelector('.crimson-input-next');
     this.streamingBtn = this.popup.querySelector('.crimson-streaming-btn');
     this.reasoningBtn = this.popup.querySelector('.crimson-reasoning-btn');
     this.debugBtn = this.popup.querySelector('.crimson-debug-btn');
@@ -371,6 +436,10 @@ class CrimsonManager {
     // Wire citation link clicks (delegated)
     this.conversation.addEventListener('click', (e) => this.handleCitationLinkClick(e));
     resetBtn?.addEventListener('click', () => this.resetConversation());
+    this.citationHeaderBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.toggleCitationPopup();
+    });
     this.debugBtn?.addEventListener('click', () => this.toggleDebugPanel());
     this.streamingBtn?.addEventListener('click', () => this.toggleStreaming());
     this.reasoningBtn?.addEventListener('click', () => this.toggleReasoningPanel());
@@ -387,6 +456,11 @@ class CrimsonManager {
     // Debug and reasoning panel splitters
     debugSplitter?.addEventListener('mousedown', (e) => this.handleDebugResizeStart(e));
     reasoningSplitter?.addEventListener('mousedown', (e) => this.handleReasoningResizeStart(e));
+
+    // Input history navigation
+    this.loadInputHistory();
+    this.inputPrevBtn?.addEventListener('click', () => this.navigateInputHistory(-1));
+    this.inputNextBtn?.addEventListener('click', () => this.navigateInputHistory(1));
 
     // Apply persistent state to UI
     this.applyPersistentState();
@@ -440,6 +514,154 @@ class CrimsonManager {
   }
 
   /**
+   * Load main window position and size from localStorage
+   * @returns {Object|null} Saved position/size or null
+   */
+  loadMainWindowState() {
+    try {
+      const x = localStorage.getItem(STORAGE_KEYS.MAIN_WINDOW_X);
+      const y = localStorage.getItem(STORAGE_KEYS.MAIN_WINDOW_Y);
+      const width = localStorage.getItem(STORAGE_KEYS.MAIN_WINDOW_WIDTH);
+      const height = localStorage.getItem(STORAGE_KEYS.MAIN_WINDOW_HEIGHT);
+      if (x !== null && y !== null && width !== null && height !== null) {
+        return {
+          x: parseInt(x, 10),
+          y: parseInt(y, 10),
+          width: parseInt(width, 10),
+          height: parseInt(height, 10),
+        };
+      }
+    } catch (e) {
+      // localStorage may not be available
+    }
+    return null;
+  }
+
+  /**
+   * Save main window position and size to localStorage
+   */
+  saveMainWindowState() {
+    try {
+      if (!this.popup) return;
+      const rect = this.popup.getBoundingClientRect();
+      localStorage.setItem(STORAGE_KEYS.MAIN_WINDOW_X, String(rect.left));
+      localStorage.setItem(STORAGE_KEYS.MAIN_WINDOW_Y, String(rect.top));
+      localStorage.setItem(STORAGE_KEYS.MAIN_WINDOW_WIDTH, String(rect.width));
+      localStorage.setItem(STORAGE_KEYS.MAIN_WINDOW_HEIGHT, String(rect.height));
+    } catch (e) {
+      // localStorage may not be available
+    }
+  }
+
+  /**
+   * Load input history from localStorage
+   */
+  loadInputHistory() {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.INPUT_HISTORY);
+      if (stored) {
+        this.inputHistory = JSON.parse(stored);
+      }
+    } catch (e) {
+      // localStorage may not be available or data is corrupt
+      this.inputHistory = [];
+    }
+    // Start at the end (ready for new input)
+    this.inputHistoryIndex = -1;
+    this.updateInputHistoryButtons();
+  }
+
+  /**
+   * Save input history to localStorage
+   */
+  saveInputHistory() {
+    try {
+      // Keep only last MAX_INPUT_HISTORY items
+      const toSave = this.inputHistory.slice(-MAX_INPUT_HISTORY);
+      localStorage.setItem(STORAGE_KEYS.INPUT_HISTORY, JSON.stringify(toSave));
+    } catch (e) {
+      // localStorage may not be available
+    }
+  }
+
+  /**
+   * Add input to history and reset pointer
+   * @param {string} text - The input text to save
+   */
+  addInputToHistory(text) {
+    if (!text || !text.trim()) return;
+    
+    // Don't add if it's the same as the last entry
+    if (this.inputHistory.length > 0 && this.inputHistory[this.inputHistory.length - 1] === text.trim()) {
+      this.inputHistoryIndex = -1;
+      this.updateInputHistoryButtons();
+      return;
+    }
+    
+    this.inputHistory.push(text.trim());
+    this.inputHistoryIndex = -1; // Reset to end
+    this.saveInputHistory();
+    this.updateInputHistoryButtons();
+  }
+
+  /**
+   * Navigate through input history
+   * @param {number} direction - -1 for previous, 1 for next
+   */
+  navigateInputHistory(direction) {
+    if (this.inputHistory.length === 0) return;
+    
+    // Calculate new index
+    let newIndex;
+    if (this.inputHistoryIndex === -1) {
+      // Currently at "end" (typing new)
+      if (direction === -1) {
+        newIndex = this.inputHistory.length - 1;
+      } else {
+        return; // Can't go forward from end
+      }
+    } else {
+      newIndex = this.inputHistoryIndex + direction;
+    }
+    
+    // Clamp to valid range (-1 means "at end")
+    if (newIndex < 0) {
+      newIndex = -1;
+    } else if (newIndex >= this.inputHistory.length) {
+      newIndex = -1;
+    }
+    
+    this.inputHistoryIndex = newIndex;
+    
+    // Update input value
+    if (this.inputHistoryIndex === -1) {
+      this.input.value = '';
+    } else {
+      this.input.value = this.inputHistory[this.inputHistoryIndex];
+    }
+    
+    // Move cursor to end
+    this.input.selectionStart = this.input.selectionEnd = this.input.value.length;
+    
+    // Resize and update buttons
+    this.autoResizeInput();
+    this.updateInputHistoryButtons();
+  }
+
+  /**
+   * Update the state of input history navigation buttons
+   */
+  updateInputHistoryButtons() {
+    if (this.inputPrevBtn) {
+      this.inputPrevBtn.disabled = this.inputHistory.length === 0 || this.inputHistoryIndex === 0;
+    }
+    if (this.inputNextBtn) {
+      // Disabled when at end (index === -1)
+      this.inputNextBtn.disabled = this.inputHistoryIndex === -1;
+    }
+  }
+
+  /**
    * Show the Crimson popup
    * @param {Object} options - Show options
    * @param {string} options.username - Username for greeting
@@ -463,6 +685,18 @@ class CrimsonManager {
       return;
     }
 
+    // Restore saved position/size if available
+    const savedState = this.loadMainWindowState();
+    if (savedState) {
+      this.popup.style.left = `${savedState.x}px`;
+      this.popup.style.top = `${savedState.y}px`;
+      this.popup.style.width = `${savedState.width}px`;
+      this.popup.style.height = `${savedState.height}px`;
+    } else if (isFirstShow) {
+      // Center on first show with no saved state
+      this.centerPopup();
+    }
+
     // On first show, force a reflow to ensure initial styles are applied
     // before adding the visible class. This ensures the animation runs.
     if (isFirstShow) {
@@ -474,6 +708,14 @@ class CrimsonManager {
     this.overlay.classList.add('visible');
     this.popup.classList.add('visible');
     this.isVisible = true;
+
+    // Trigger welcome message fade-in if present
+    requestAnimationFrame(() => {
+      const welcome = this.conversation?.querySelector('.crimson-welcome');
+      if (welcome && !welcome.classList.contains('crimson-welcome-visible')) {
+        welcome.classList.add('crimson-welcome-visible');
+      }
+    });
 
     // Add keyboard listener
     document.addEventListener('keydown', this.handleKeyDown);
@@ -491,6 +733,9 @@ class CrimsonManager {
    */
   hide() {
     if (!this.isVisible) return;
+
+    // Save window position/size before hiding
+    this.saveMainWindowState();
 
     this.overlay.classList.remove('visible');
     this.popup.classList.remove('visible');
@@ -527,6 +772,10 @@ class CrimsonManager {
     }
 
     // Reset streaming state
+    if (this._finishTimeout) {
+      clearTimeout(this._finishTimeout);
+      this._finishTimeout = null;
+    }
     this.isStreaming = false;
     this.currentStreamElement = null;
     this.conversationHistory = [];
@@ -547,6 +796,13 @@ class CrimsonManager {
     if (this.sendBtn) {
       this.sendBtn.disabled = false;
     }
+
+    // Clear collected citations
+    this.closeCitationPopup();
+    this.allCitations = [];
+    this.citationIndex.clear();
+    this.citationToRowMap.clear();
+    this.updateCitationHeaderButton();
 
     // Clear reasoning panel
     this.clearReasoningBuffer();
@@ -588,8 +844,9 @@ class CrimsonManager {
    */
   showWelcomeMessage() {
     if (this.conversation) {
+      this.conversation.classList.add('crimson-conversation-empty');
       this.conversation.innerHTML = `
-        <div class="crimson-welcome crimson-welcome-fade-in">
+        <div class="crimson-welcome">
           <div class="crimson-welcome-icon">
             <i class="fa-kit-duotone fa-crimson"></i>
           </div>
@@ -598,6 +855,13 @@ class CrimsonManager {
         </div>
       `;
       processIcons(this.conversation);
+      // Trigger fade-in after a small delay to ensure DOM is ready
+      requestAnimationFrame(() => {
+        const welcome = this.conversation.querySelector('.crimson-welcome');
+        if (welcome) {
+          welcome.classList.add('crimson-welcome-visible');
+        }
+      });
     }
   }
 
@@ -834,6 +1098,9 @@ class CrimsonManager {
     this.isDragging = false;
     this.popup.classList.remove('dragging');
 
+    // Save position after drag
+    this.saveMainWindowState();
+
     document.removeEventListener('mousemove', this.handleDragMove);
     document.removeEventListener('mouseup', this.handleDragEnd);
   }
@@ -944,8 +1211,190 @@ class CrimsonManager {
     this.isResizing = false;
     this.popup.classList.remove('resizing');
 
+    // Save size after resize
+    this.saveMainWindowState();
+
     document.removeEventListener('mousemove', this.handleResizeMove);
     document.removeEventListener('mouseup', this.handleResizeEnd);
+  }
+
+  // ==================== CITATION POPUP DRAG & RESIZE ====================
+
+  /**
+   * Handle citation popup drag start
+   */
+  handleCitationDragStart(e) {
+    // Don't drag if clicking the close button
+    if (e.target.closest('.crimson-citation-popup-close')) return;
+
+    this.isCitationDragging = true;
+    this.activeCitationPopup.classList.add('dragging');
+
+    this.citationDragStartX = e.clientX;
+    this.citationDragStartY = e.clientY;
+
+    const rect = this.activeCitationPopup.getBoundingClientRect();
+    this.citationPopupStartX = rect.left;
+    this.citationPopupStartY = rect.top;
+
+    document.addEventListener('mousemove', this.handleCitationDragMove);
+    document.addEventListener('mouseup', this.handleCitationDragEnd);
+
+    e.preventDefault();
+  }
+
+  /**
+   * Handle citation popup drag move
+   */
+  handleCitationDragMove(e) {
+    if (!this.isCitationDragging || !this.activeCitationPopup) return;
+
+    const deltaX = e.clientX - this.citationDragStartX;
+    const deltaY = e.clientY - this.citationDragStartY;
+
+    let newX = this.citationPopupStartX + deltaX;
+    let newY = this.citationPopupStartY + deltaY;
+
+    // Constrain to viewport
+    const rect = this.activeCitationPopup.getBoundingClientRect();
+    const minVisible = 50; // Minimum visible pixels
+
+    newX = Math.max(-rect.width + minVisible, Math.min(window.innerWidth - minVisible, newX));
+    newY = Math.max(0, Math.min(window.innerHeight - minVisible, newY));
+
+    this.activeCitationPopup.style.left = `${newX}px`;
+    this.activeCitationPopup.style.top = `${newY}px`;
+  }
+
+  /**
+   * Handle citation popup drag end
+   */
+  handleCitationDragEnd() {
+    this.isCitationDragging = false;
+    if (this.activeCitationPopup) {
+      this.activeCitationPopup.classList.remove('dragging');
+      // Save position after drag
+      this.saveCitationPopupState(this.activeCitationPopup);
+    }
+
+    document.removeEventListener('mousemove', this.handleCitationDragMove);
+    document.removeEventListener('mouseup', this.handleCitationDragEnd);
+  }
+
+  /**
+   * Handle citation popup resize start
+   * @param {MouseEvent} e - Mouse event
+   * @param {string} corner - Which corner is being resized: 'br', 'bl', 'tr', 'tl'
+   */
+  handleCitationResizeStart(e, corner = 'br') {
+    this.isCitationResizing = true;
+    this.citationResizeCorner = corner;
+    if (this.activeCitationPopup) {
+      this.activeCitationPopup.classList.add('resizing');
+    }
+
+    this.citationResizeStartX = e.clientX;
+    this.citationResizeStartY = e.clientY;
+
+    const rect = this.activeCitationPopup.getBoundingClientRect();
+    this.citationPopupStartWidth = rect.width;
+    this.citationPopupStartHeight = rect.height;
+    this.citationPopupStartLeft = rect.left;
+    this.citationPopupStartTop = rect.top;
+
+    document.addEventListener('mousemove', this.handleCitationResizeMove);
+    document.addEventListener('mouseup', this.handleCitationResizeEnd);
+
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  /**
+   * Handle citation popup resize move
+   */
+  handleCitationResizeMove(e) {
+    if (!this.isCitationResizing || !this.activeCitationPopup) return;
+
+    const deltaX = e.clientX - this.citationResizeStartX;
+    const deltaY = e.clientY - this.citationResizeStartY;
+
+    let newWidth = this.citationPopupStartWidth;
+    let newHeight = this.citationPopupStartHeight;
+    let newLeft = this.citationPopupStartLeft;
+    let newTop = this.citationPopupStartTop;
+
+    // Calculate new dimensions based on which corner is being dragged
+    switch (this.citationResizeCorner) {
+      case 'br': // Bottom-right
+        newWidth = Math.max(400, Math.min(window.innerWidth * 0.95, this.citationPopupStartWidth + deltaX));
+        newHeight = Math.max(300, Math.min(window.innerHeight * 0.95, this.citationPopupStartHeight + deltaY));
+        break;
+      case 'bl': // Bottom-left
+        newWidth = Math.max(400, Math.min(window.innerWidth * 0.95, this.citationPopupStartWidth - deltaX));
+        newHeight = Math.max(300, Math.min(window.innerHeight * 0.95, this.citationPopupStartHeight + deltaY));
+        if (newWidth !== this.citationPopupStartWidth - deltaX) {
+          // Clamp occurred, adjust left position accordingly
+          const actualDeltaX = this.citationPopupStartWidth - newWidth;
+          newLeft = this.citationPopupStartLeft + actualDeltaX;
+        } else {
+          newLeft = this.citationPopupStartLeft + deltaX;
+        }
+        break;
+      case 'tr': // Top-right
+        newWidth = Math.max(400, Math.min(window.innerWidth * 0.95, this.citationPopupStartWidth + deltaX));
+        newHeight = Math.max(300, Math.min(window.innerHeight * 0.95, this.citationPopupStartHeight - deltaY));
+        if (newHeight !== this.citationPopupStartHeight - deltaY) {
+          // Clamp occurred, adjust top position accordingly
+          const actualDeltaY = this.citationPopupStartHeight - newHeight;
+          newTop = this.citationPopupStartTop + actualDeltaY;
+        } else {
+          newTop = this.citationPopupStartTop + deltaY;
+        }
+        break;
+      case 'tl': // Top-left
+        newWidth = Math.max(400, Math.min(window.innerWidth * 0.95, this.citationPopupStartWidth - deltaX));
+        newHeight = Math.max(300, Math.min(window.innerHeight * 0.95, this.citationPopupStartHeight - deltaY));
+        if (newWidth !== this.citationPopupStartWidth - deltaX) {
+          const actualDeltaX = this.citationPopupStartWidth - newWidth;
+          newLeft = this.citationPopupStartLeft + actualDeltaX;
+        } else {
+          newLeft = this.citationPopupStartLeft + deltaX;
+        }
+        if (newHeight !== this.citationPopupStartHeight - deltaY) {
+          const actualDeltaY = this.citationPopupStartHeight - newHeight;
+          newTop = this.citationPopupStartTop + actualDeltaY;
+        } else {
+          newTop = this.citationPopupStartTop + deltaY;
+        }
+        break;
+    }
+
+    // Apply new dimensions and position
+    this.activeCitationPopup.style.width = `${newWidth}px`;
+    this.activeCitationPopup.style.height = `${newHeight}px`;
+    
+    // Only update position for corners that affect it
+    if (this.citationResizeCorner === 'bl' || this.citationResizeCorner === 'tl') {
+      this.activeCitationPopup.style.left = `${newLeft}px`;
+    }
+    if (this.citationResizeCorner === 'tr' || this.citationResizeCorner === 'tl') {
+      this.activeCitationPopup.style.top = `${newTop}px`;
+    }
+  }
+
+  /**
+   * Handle citation popup resize end
+   */
+  handleCitationResizeEnd() {
+    this.isCitationResizing = false;
+    if (this.activeCitationPopup) {
+      this.activeCitationPopup.classList.remove('resizing');
+      // Save size after resize
+      this.saveCitationPopupState(this.activeCitationPopup);
+    }
+
+    document.removeEventListener('mousemove', this.handleCitationResizeMove);
+    document.removeEventListener('mouseup', this.handleCitationResizeEnd);
   }
 
   /**
@@ -1038,6 +1487,9 @@ class CrimsonManager {
     // Add user message to display
     this.addMessage('user', message);
 
+    // Save to input history and reset pointer
+    this.addInputToHistory(message);
+
     // Clear input
     this.input.value = '';
     this.autoResizeInput();
@@ -1048,12 +1500,31 @@ class CrimsonManager {
   }
 
   /**
-   * Handle input keydown (Enter to send, Shift+Enter for newline)
+   * Handle input keydown
+   * - Enter: send message
+   * - Shift+Enter: newline
+   * - Up Arrow: previous input (when at start of input or input is empty)
+   * - Down Arrow: next input (when at end of input or input is empty)
    */
   handleInputKeydown(e) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       this.handleSend();
+      return;
+    }
+
+    // Up arrow for previous history (when cursor at start or input empty)
+    if (e.key === 'ArrowUp' && (this.input.selectionStart === 0 || this.input.value === '')) {
+      e.preventDefault();
+      this.navigateInputHistory(-1);
+      return;
+    }
+
+    // Down arrow for next history (when cursor at end or input empty)
+    if (e.key === 'ArrowDown' && (this.input.selectionStart === this.input.value.length || this.input.value === '')) {
+      e.preventDefault();
+      this.navigateInputHistory(1);
+      return;
     }
   }
 
@@ -1077,7 +1548,16 @@ class CrimsonManager {
     const welcome = this.conversation.querySelector('.crimson-welcome');
     if (welcome) {
       welcome.classList.add('crimson-welcome-fading');
-      setTimeout(() => welcome.remove(), 350);
+      // Use transitionend for smooth removal matching CSS duration
+      const onTransitionEnd = (e) => {
+        if (e.propertyName === 'opacity') {
+          welcome.remove();
+          welcome.removeEventListener('transitionend', onTransitionEnd);
+        }
+      };
+      welcome.addEventListener('transitionend', onTransitionEnd);
+      // Remove the empty class so messages align to top
+      this.conversation.classList.remove('crimson-conversation-empty');
     }
 
     // Generate unique message ID
@@ -1305,6 +1785,10 @@ class CrimsonManager {
     // Check for delimiter to separate content from metadata
     if (this.seenDelimiter) {
       this.metadataBuffer += content;
+      // Log metadata chunks as they arrive
+      if (this.totalChunksReceived % 100 === 0) {
+        this.addDebugMessage('META', `Chunk #${this.totalChunksReceived} added to metadata buffer (${this.metadataBuffer.length} total)`);
+      }
     } else {
       const fullContent = this.partialDelimiter + content;
       this.partialDelimiter = '';
@@ -1344,17 +1828,26 @@ class CrimsonManager {
       }
     }
 
-    // Handle stream completion
+    // Handle stream completion.
+    // Defer finalization briefly so the chat_done WebSocket message (which may
+    // carry raw_provider_response with citation/retrieval data) has time to
+    // arrive and be stored as pendingDoneResult before we finalize.
     if (finishReason) {
       log(Subsystems.CRIMSON, Status.DEBUG, `Stream complete (${finishReason})`);
       this.addDebugMessage('COMPLETE', `Stream finished with reason: ${finishReason}`);
-      this.handleStreamFinished();
+      if (this._finishTimeout) clearTimeout(this._finishTimeout);
+      this._finishTimeout = setTimeout(() => {
+        this._finishTimeout = null;
+        this.handleStreamFinished();
+      }, 100);
     }
   }
 
   /**
-   * Handle stream completion after all chunks received
-   * This is called when finish_reason arrives in the last chunk
+   * Handle stream completion after all chunks received.
+   * Called ~100ms after the last chunk's finish_reason arrives, giving the
+   * chat_done WebSocket message time to arrive with its result object
+   * (which may contain raw_provider_response with citation/retrieval data).
    */
   handleStreamFinished() {
     // Skip if already completed (prevent duplicate handleStreamDone calls)
@@ -1363,28 +1856,30 @@ class CrimsonManager {
     }
 
     try {
-      // If there's a pending done result, process it now
+      // If there's a pending done result (set by crimson-ws.js handleDone),
+      // finalize with both the conversation buffer AND the result object.
       if (this.wsClient && this.wsClient.pendingDoneResult) {
-        const { id, result } = this.wsClient.pendingDoneResult;
+        const { result } = this.wsClient.pendingDoneResult;
         this.wsClient.pendingDoneResult = null;
-        
-        // Call the onDone callback to update UI
-        this.handleStreamDone(result?.content, result);
+        this.addDebugMessage('DONE', `chat_done result available: keys=${result ? Object.keys(result).join(',') : 'null'}`);
+        this.handleStreamDone(this.conversationBuffer, result);
       } else {
-        // Finalize with current buffers (no done message received yet)
+        // chat_done didn't arrive in time — finalize without result.
+        // Citations won't be available but conversation text is intact.
+        this.addDebugMessage('DONE', 'Finalizing without chat_done result (timeout)');
         this.handleStreamDone(this.conversationBuffer, null);
       }
     } catch (error) {
       log(Subsystems.CRIMSON, Status.ERROR, `Error in handleStreamFinished: ${error.message}`);
     }
-    
-    // Always try to resolve any pending Promise and clear state
+
+    // Resolve any pending send() Promise that wasn't already resolved by
+    // handleDone in crimson-ws.js (fallback for when chat_done never arrives)
     if (this.wsClient) {
       const id = this.wsClient.currentRequestId;
-      
-      if (id && this.wsClient.pendingRequests && this.wsClient.pendingRequests.has(id)) {
+      if (id && this.wsClient.pendingRequests?.has(id)) {
         const callbacks = this.wsClient.pendingRequests.get(id);
-        if (callbacks && callbacks.onDone) {
+        if (callbacks?.onDone) {
           callbacks.onDone({ content: this.conversationBuffer });
           this.wsClient.pendingRequests.delete(id);
         }
@@ -1405,6 +1900,13 @@ class CrimsonManager {
   handleStreamDone(content, result) {
     log(Subsystems.CRIMSON, Status.DEBUG, `handleStreamDone called, isStreaming: ${this.isStreaming}, content length: ${content?.length || 0}`);
 
+    // Log result structure for debugging (keep it concise)
+    if (result) {
+      const resultKeys = Object.keys(result).join(', ');
+      log(Subsystems.CRIMSON, Status.DEBUG, `handleStreamDone result keys: ${resultKeys}`);
+      this.addDebugMessage('META', `Result keys: ${resultKeys}`);
+    }
+
     // Log response received to event bus
     log(Subsystems.EVENTBUS, Status.INFO, `Crimson: Response received (${content?.length || 0} chars)`);
 
@@ -1415,7 +1917,17 @@ class CrimsonManager {
       // We need to parse it to separate conversation text from metadata
       let conversationText = content || '';
       let metadataFromContent = null;
-      
+
+      // Log full metadata buffer for debugging (before it gets parsed)
+      if (this.metadataBuffer) {
+        this.addDebugMessage('META', `Full metadata buffer (${this.metadataBuffer.length} chars): ${this.metadataBuffer}`);
+      }
+
+      // Log conversation buffer too
+      if (this.conversationBuffer) {
+        this.addDebugMessage('STREAM', `Conversation buffer (${this.conversationBuffer.length} chars): ${this.conversationBuffer.substring(0, 300)}...`);
+      }
+
       // Check if content contains delimiter (handles both streaming and non-streaming cases)
       // This can happen when the server sends the full response in chat_done
       if (content) {
@@ -1423,6 +1935,7 @@ class CrimsonManager {
         if (delimiterIndex !== -1) {
           conversationText = content.substring(0, delimiterIndex).replace(/\s+$/, '');
           const metadataStr = content.substring(delimiterIndex + this.DELIMITER.length);
+          this.addDebugMessage('META', `Raw metadata from delimiter: ${metadataStr.substring(0, 600)}`);
           try {
             metadataFromContent = JSON.parse(metadataStr);
             this.addDebugMessage('META', 'Parsed delimiter from content');
@@ -1447,7 +1960,8 @@ class CrimsonManager {
       if (!parsedMetadata && this.metadataBuffer && this.metadataBuffer.trim()) {
         try {
           parsedMetadata = JSON.parse(this.metadataBuffer.trim());
-          this.addDebugMessage('META', 'From chunks: ' + JSON.stringify(parsedMetadata).substring(0, 200));
+          this.addDebugMessage('META', 'Chunk metadata keys: ' + Object.keys(parsedMetadata).join(', '));
+          this.addDebugMessage('META', 'From chunks: ' + JSON.stringify(parsedMetadata).substring(0, 500));
         } catch (e) {
           log(Subsystems.CRIMSON, Status.WARN, `Failed to parse metadata JSON: ${e.message}`);
         }
@@ -1455,9 +1969,15 @@ class CrimsonManager {
 
       // If no metadata from chunks, try from result object (from done message)
       if (!parsedMetadata && result) {
+        // Log full result structure for debugging
+        this.addDebugMessage('META', `Result keys: ${Object.keys(result).join(', ')}`);
+        this.addDebugMessage('META', `Full result: ${JSON.stringify(result).substring(0, 800)}`);
+
         // Check raw_provider_response first (new transparent Hydrogen format)
         const rawResponse = result.raw_provider_response;
-        this.addDebugMessage('META', `Raw provider response: ${JSON.stringify(rawResponse)?.substring(0, 300)}`);
+        if (rawResponse) {
+          this.addDebugMessage('META', `Raw response keys: ${Object.keys(rawResponse).join(', ')}`);
+        }
 
         // Result might have followUpQuestions directly or nested in various structures
         parsedMetadata = {
@@ -1466,7 +1986,57 @@ class CrimsonManager {
           metadata: result.metadata || rawResponse?.metadata || null,
           citations: result.citations || result.metadata?.citations || rawResponse?.citations || rawResponse?.retrieval?.retrieved_data || null,
         };
-        this.addDebugMessage('META', `From done message: ${JSON.stringify(parsedMetadata).substring(0, 300)}`);
+        this.addDebugMessage('META', `Parsed metadata: ${JSON.stringify(parsedMetadata).substring(0, 300)}`);
+      }
+
+      // Log full raw_provider_response for debugging (no size limits)
+      if (result?.raw_provider_response) {
+        const rawResponseJson = JSON.stringify(result.raw_provider_response, null, 2);
+        log(Subsystems.CRIMSON, Status.DEBUG, `Raw provider response: ${rawResponseJson}`);
+        this.addDebugMessage('RAW_RESPONSE', `Full raw response logged to session log (${rawResponseJson.length} chars)`);
+
+        // Log retrieval blocks specifically if present
+        const retrievalData = result.raw_provider_response?.retrieval?.retrieved_data;
+        if (retrievalData && Array.isArray(retrievalData)) {
+          log(Subsystems.CRIMSON, Status.DEBUG, `Retrieval data: ${JSON.stringify(retrievalData, null, 2)}`);
+          this.addDebugMessage('RETRIEVAL', `Found ${retrievalData.length} retrieval blocks`);
+          retrievalData.forEach((item, idx) => {
+            const filename = item.filename || item.name || item.id || 'unknown';
+            const score = item.score !== undefined ? item.score : 'N/A';
+            log(Subsystems.CRIMSON, Status.DEBUG, `Retrieval[${idx}]: filename="${filename}", score=${score}`);
+          });
+        }
+      }
+
+      // For non-streaming responses, log the entire native response
+      if (!this.streamingEnabled && result) {
+        const fullResultJson = JSON.stringify(result, null, 2);
+        log(Subsystems.CRIMSON, Status.DEBUG, `Full result object (non-streaming): ${fullResultJson}`);
+      }
+
+      // Citations come from the model's JSON output in the delimiter metadata.
+      // They are included in the parsedMetadata.citations array when the model
+      // provides them in the [LITHIUM-CRIMSON-JSON] block.
+      // Note: We also check raw_provider_response for RAG citations from the provider
+      // and MERGE them with model citations so both appear in the table.
+      const modelCitations = parsedMetadata?.citations || [];
+      const retrievalCitations = result?.raw_provider_response?.retrieval?.retrieved_data || [];
+
+      if (retrievalCitations.length > 0) {
+        this.addDebugMessage('META', `Retrieval citations found: ${retrievalCitations.length} items`);
+        log(Subsystems.CRIMSON, Status.DEBUG, `Merging ${modelCitations.length} model citations with ${retrievalCitations.length} retrieval citations`);
+      }
+
+      // Merge model citations and retrieval citations
+      // Retrieval citations don't have numbers yet - parseCitations will assign them
+      const mergedCitations = [...modelCitations, ...retrievalCitations];
+
+      if (mergedCitations.length > 0) {
+        if (!parsedMetadata) {
+          parsedMetadata = { followUpQuestions: [], suggestions: null, metadata: null };
+        }
+        parsedMetadata.citations = mergedCitations;
+        this.addDebugMessage('META', `Total citations after merge: ${mergedCitations.length}`);
       }
 
       // Generate unique message ID for this response
@@ -1487,25 +2057,27 @@ class CrimsonManager {
 
         const contentEl = this.currentStreamElement.querySelector('.crimson-message-content');
         if (contentEl) {
+          // Parse and store citations from metadata FIRST so we have the mapping
+          // before converting markers in the rendered HTML
+          let turnMapping = new Map();
+          this.addDebugMessage('META', `Citations check: ${JSON.stringify(parsedMetadata?.citations)}`);
+          if (parsedMetadata && parsedMetadata.citations) {
+            turnMapping = this.parseCitations(messageId, parsedMetadata.citations);
+          }
+
           // Set the final conversation content with full markdown rendering
           contentEl.setAttribute('data-raw-content', conversationText);
 
           // Use full markdown rendering for final content
           this.formatMessageContentMarkdown(conversationText).then(htmlContent => {
-            // Convert citation markers to links
-            htmlContent = this.convertCitationMarkers(htmlContent, messageId);
+            // Convert citation markers to links using turn→global mapping
+            htmlContent = this.convertCitationMarkers(htmlContent, messageId, turnMapping);
             contentEl.innerHTML = htmlContent;
             // Scroll to show new content
             if (this.conversation) {
               this.conversation.scrollTop = this.conversation.scrollHeight;
             }
           });
-
-          // Parse and store citations from metadata
-          this.addDebugMessage('META', `Citations check: ${JSON.stringify(parsedMetadata?.citations)}`);
-          if (parsedMetadata && parsedMetadata.citations) {
-            this.parseCitations(messageId, parsedMetadata.citations);
-          }
 
           // Add follow-up questions from metadata if present
           if (parsedMetadata && parsedMetadata.followUpQuestions && parsedMetadata.followUpQuestions.length > 0) {
@@ -1699,7 +2271,16 @@ class CrimsonManager {
     const welcome = this.conversation.querySelector('.crimson-welcome');
     if (welcome) {
       welcome.classList.add('crimson-welcome-fading');
-      setTimeout(() => welcome.remove(), 350);
+      // Use transitionend for smooth removal matching CSS duration
+      const onTransitionEnd = (e) => {
+        if (e.propertyName === 'opacity') {
+          welcome.remove();
+          welcome.removeEventListener('transitionend', onTransitionEnd);
+        }
+      };
+      welcome.addEventListener('transitionend', onTransitionEnd);
+      // Remove the empty class so messages align to top
+      this.conversation.classList.remove('crimson-conversation-empty');
     }
 
     // Reset delimiter state and buffers for new message
@@ -1801,135 +2382,233 @@ class CrimsonManager {
   // ==================== CITATIONS ====================
 
   /**
-   * Parse citations from metadata and store for a message
-   * @param {string} messageId - The message element ID
+   * No deduplication - citations are added as they come.
+   * This method is kept for compatibility but returns a unique key per citation.
+   * @param {Object} _citation - Raw or normalized citation (unused)
+   * @param {number} index - Citation index for unique key
+   * @returns {string} Unique key
+   */
+  _citationDedup(_citation, index) {
+    // No deduplication - each citation gets a unique key based on its index
+    return `citation_${index}_${Date.now()}`;
+  }
+
+  /**
+   * Parse citations from metadata, deduplicate, and collect into allCitations.
+   * Returns a mapping of original per-turn indices → global citation numbers so
+   * that [[C1]] markers in this turn's text can be remapped.
+   * @param {string} messageId - The message element ID (for logging)
    * @param {Array} citations - Array of citation objects from metadata
+   * @returns {Map<number,number>} turnIndex (1-based) → global citation number
    */
   parseCitations(messageId, citations) {
-    log(Subsystems.CRIMSON, Status.DEBUG, `parseCitations called for ${messageId}: ${JSON.stringify(citations)?.substring(0, 200)}`);
+    log(Subsystems.CRIMSON, Status.DEBUG, `parseCitations called for ${messageId}: ${Array.isArray(citations) ? citations.length : 'invalid'} items`);
     if (!citations || !Array.isArray(citations) || citations.length === 0) {
-      log(Subsystems.CRIMSON, Status.DEBUG, `parseCitations: invalid citations array`);
-      return;
+      log(Subsystems.CRIMSON, Status.DEBUG, `parseCitations: no citations to process`);
+      return new Map();
     }
 
-    // Normalize citation data
-    const normalizedCitations = citations.map((citation, index) => ({
-      number: citation.number || index + 1,
-      name: citation.name || citation.title || 'Untitled',
-      url: citation.url || citation.uri || citation.source || '',
-      type: citation.type || 'web',
-      source: citation.source || '',
-    }));
+    const turnMapping = new Map(); // turnIndex (1-based) → global number
+    const startIndex = this.allCitations.length;
 
-    this.citations.set(messageId, normalizedCitations);
+    citations.forEach((citation, index) => {
+      // Log raw citation for debugging
+      log(Subsystems.CRIMSON, Status.DEBUG, `Raw citation[${index}]: ${JSON.stringify(citation)}`);
 
-    // Add citation button to the message
-    this.addCitationButtonToMessage(messageId, normalizedCitations.length);
-  }
+      const filename = citation.filename || citation.name || citation.title || '';
+      const url = citation.url || citation.uri || citation.source || citation.filename || '';
+      const isCanvas = url.startsWith('canvas') || filename.startsWith('canvas');
+      const turnIndex = index + 1; // 1-based index within this turn
+      const globalNumber = startIndex + turnIndex;
 
-  /**
-   * Add a citation button under the Crimson avatar for a message
-   * @param {string} messageId - The message element ID
-   * @param {number} count - Number of citations
-   */
-  addCitationButtonToMessage(messageId, count) {
-    log(Subsystems.CRIMSON, Status.DEBUG, `addCitationButtonToMessage: ${messageId}, count=${count}`);
-    const messageEl = document.getElementById(messageId);
-    if (!messageEl) {
-      log(Subsystems.CRIMSON, Status.WARN, `addCitationButtonToMessage: message element not found: ${messageId}`);
-      return;
-    }
+      const normalized = {
+        number: globalNumber,
+        name: filename || 'Untitled',
+        url: url,
+        type: isCanvas ? 'canvas' : (citation.type || 'web'),
+        source: citation.source || citation.filename || '',
+        score: citation.score || null,
+        pageContent: citation.page_content || null,
+        dataSourceId: citation.data_source_id || null,
+      };
 
-    // Check if button already exists
-    if (messageEl.querySelector('.crimson-citation-btn')) {
-      log(Subsystems.CRIMSON, Status.DEBUG, `addCitationButtonToMessage: button already exists`);
-      return;
-    }
-
-    const avatarEl = messageEl.querySelector('.crimson-message-avatar');
-    if (!avatarEl) {
-      log(Subsystems.CRIMSON, Status.WARN, `addCitationButtonToMessage: avatar not found`);
-      return;
-    }
-
-    // Create citation button - double height with icon and counter
-    const citationBtn = document.createElement('button');
-    citationBtn.className = 'crimson-citation-btn';
-    citationBtn.setAttribute('data-citation-count', count);
-    citationBtn.setAttribute('data-message-id', messageId);
-    citationBtn.innerHTML = `
-      <fa fa-book-open></fa>
-      <span class="crimson-citation-count">${count.toString().padStart(2, '0')}</span>
-    `;
-
-    citationBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.toggleCitationPopup(messageId, citationBtn);
+      this.allCitations.push(normalized);
+      turnMapping.set(turnIndex, globalNumber);
     });
 
-    // Insert after avatar
-    avatarEl.after(citationBtn);
-    processIcons(citationBtn);
+    // Update the header button counter
+    this.updateCitationHeaderButton();
 
-    log(Subsystems.CRIMSON, Status.DEBUG, `Added citation button with ${count} citations to message ${messageId}`);
+    log(Subsystems.CRIMSON, Status.DEBUG, `Citations collected: ${this.allCitations.length} total, ${citations.length} from this turn`);
+    return turnMapping;
   }
 
   /**
-   * Toggle citation popup for a message
-   * @param {string} messageId - The message element ID
-   * @param {HTMLElement} button - The citation button
+   * Build a canvas URL from a citation filename.
+   * @param {string} filename - The citation filename (e.g., canvas-PH-003-I2L-mod-2-training-learn-at-your-own-pace.md)
+   * @returns {string|null} The constructed URL or null if not a canvas filename
    */
-  toggleCitationPopup(messageId, button) {
-    // Close existing popup if different
-    if (this.activeCitationPopup && this.activeCitationButton !== button) {
-      this.closeCitationPopup();
+  buildCanvasUrl(filename) {
+    if (!filename) return null;
+
+    // Handle path-style URLs: canvas/courses/PH-003-I2L/module-2/notifications-dont-miss-a-thing
+    if (filename.includes('/')) {
+      const parts = filename.split('/');
+      const courseCodeIndex = parts.indexOf('courses') + 1;
+      if (courseCodeIndex > 0 && courseCodeIndex < parts.length) {
+        // Extract page name as the last segment
+        const pageName = parts[parts.length - 1];
+        // TODO: Map courseCode to courseId (currently hardcoded to 801)
+        const courseId = '801';
+        return `https://canvas.500courses.com/courses/${courseId}/pages/${pageName}`;
+      }
     }
 
-    // Toggle off if same button
-    if (this.activeCitationPopup && this.activeCitationButton === button) {
+    // Handle dash-separated filenames: canvas-PH-003-I2L-mod-2-training-learn-at-your-own-pace.md
+    if (filename.startsWith('canvas')) {
+      // Remove .md extension if present
+      const cleanFilename = filename.endsWith('.md') ? filename.slice(0, -3) : filename;
+
+      // Pattern: canvas-{course-code}-mod-{number}-{page-name}
+      // Match the module number pattern (-mod-N-) and extract everything after it
+      const modMatch = cleanFilename.match(/^canvas-[^-]+-[^-]+-[^-]+-mod-(\d+)-(.+)$/);
+      if (modMatch) {
+        const pageName = modMatch[2];
+        const courseId = '801';
+        return `https://canvas.500courses.com/courses/${courseId}/pages/${pageName}`;
+      }
+
+      // Fallback: try simpler pattern (for backwards compatibility)
+      const parts = cleanFilename.split('-');
+      if (parts.length >= 5) {
+        // Look for 'mod' in the parts
+        const modIndex = parts.indexOf('mod');
+        if (modIndex > 0 && modIndex < parts.length - 2) {
+          // Everything after the module number is the page name
+          const pageName = parts.slice(modIndex + 2).join('-');
+          const courseId = '801';
+          return `https://canvas.500courses.com/courses/${courseId}/pages/${pageName}`;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Open a citation URL in a new tab, translating canvas URLs if needed
+   * @param {string} url - The URL to open (may be canvas URL or regular URL)
+   */
+  openCitationUrl(url) {
+    if (!url) return;
+    if (url.startsWith('canvas') || url.includes('canvas/')) {
+      const canvasUrl = this.buildCanvasUrl(url);
+      if (canvasUrl) {
+        window.open(canvasUrl, '_blank', 'noopener,noreferrer');
+      } else {
+        log(Subsystems.CRIMSON, Status.WARN, `Failed to build canvas URL for: ${url}`);
+      }
+    } else {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  }
+
+  /**
+   * Format a URL for display as a Reference.
+   * The model now provides clean filenames for RAG content and full URLs for external links.
+   * @param {string} url - The URL to format
+   * @returns {string} Formatted reference string
+   */
+  formatReference(url) {
+    if (!url) return '';
+    // Return as-is - model is now providing clean filenames
+    return url;
+  }
+
+  /**
+   * Update the citation count in the header button — shows count when > 0, blank when 0
+   */
+  updateCitationHeaderButton() {
+    const count = this.allCitations.length;
+
+    if (this.citationCounterEl) {
+      // Show blank when 0, padded count when > 0 (like Manager footer buttons)
+      this.citationCounterEl.textContent = count > 0 ? String(count).padStart(3, '0') : '';
+    }
+  }
+
+  /**
+   * Toggle citation popup from the header button
+   */
+  toggleCitationPopup() {
+    if (this.activeCitationPopup) {
       this.closeCitationPopup();
       return;
     }
 
-    const citations = this.citations.get(messageId);
-    if (!citations || citations.length === 0) return;
+    if (this.allCitations.length === 0) return;
 
-    this.showCitationPopup(button, citations);
+    this.showCitationPopup(this.citationHeaderBtn, this.allCitations);
   }
 
   /**
-   * Show citation popup anchored to button
-   * @param {HTMLElement} button - The citation button
-   * @param {Array} citations - Array of citation objects
+   * Load citation popup position and size from localStorage
+   * @returns {Object|null} Saved position/size or null
    */
-  showCitationPopup(button, citations) {
-    // Create popup
+  loadCitationPopupState() {
+    try {
+      const x = localStorage.getItem(STORAGE_KEYS.CITATION_POPUP_X);
+      const y = localStorage.getItem(STORAGE_KEYS.CITATION_POPUP_Y);
+      const width = localStorage.getItem(STORAGE_KEYS.CITATION_POPUP_WIDTH);
+      const height = localStorage.getItem(STORAGE_KEYS.CITATION_POPUP_HEIGHT);
+      if (x !== null && y !== null && width !== null && height !== null) {
+        return {
+          x: parseInt(x, 10),
+          y: parseInt(y, 10),
+          width: parseInt(width, 10),
+          height: parseInt(height, 10),
+        };
+      }
+    } catch (e) {
+      // localStorage may not be available
+    }
+    return null;
+  }
+
+  /**
+   * Save citation popup position and size to localStorage
+   * @param {HTMLElement} popup - The popup element
+   */
+  saveCitationPopupState(popup) {
+    try {
+      if (!popup) return;
+      const rect = popup.getBoundingClientRect();
+      localStorage.setItem(STORAGE_KEYS.CITATION_POPUP_X, String(rect.left));
+      localStorage.setItem(STORAGE_KEYS.CITATION_POPUP_Y, String(rect.top));
+      localStorage.setItem(STORAGE_KEYS.CITATION_POPUP_WIDTH, String(rect.width));
+      localStorage.setItem(STORAGE_KEYS.CITATION_POPUP_HEIGHT, String(rect.height));
+    } catch (e) {
+      // localStorage may not be available
+    }
+  }
+
+  /**
+   * Show citation popup anchored to a button, using a LithiumTable for the list.
+   * @param {HTMLElement} button - The anchor button (header citation button)
+   * @param {Array} citations - Array of normalized citation objects
+   */
+  async showCitationPopup(button, citations) {
+    // Create popup container
     const popup = document.createElement('div');
     popup.className = 'crimson-citation-popup';
     this._citationPopupEl = popup;
 
-    // Build citation table rows
-    const rowsHtml = citations.map((citation) => {
-      const isCanvas = citation.url.startsWith('canvas') || citation.source.startsWith('canvas');
-      const canvasIcon = isCanvas ? '<fa fa-graduation-cap></fa>' : '';
-      const displayUrl = citation.url.length > 50 ? citation.url.substring(0, 50) + '...' : citation.url;
-
-      return `
-        <tr class="crimson-citation-row" data-citation-number="${citation.number}">
-          <td class="crimson-citation-cell crimson-citation-number">${citation.number}</td>
-          <td class="crimson-citation-cell crimson-citation-name" title="${this.escapeHtml(citation.name)}">${this.escapeHtml(citation.name)}</td>
-          <td class="crimson-citation-cell crimson-citation-url" title="${this.escapeHtml(citation.url)}">${this.escapeHtml(displayUrl)}</td>
-          <td class="crimson-citation-cell crimson-citation-type">${canvasIcon}</td>
-          <td class="crimson-citation-cell crimson-citation-actions">
-            <button type="button" class="crimson-citation-action-btn crimson-citation-open-btn" data-url="${this.escapeHtml(citation.url)}" title="Open in new tab">
-              <fa fa-arrow-up-right-from-square></fa>
-            </button>
-          </td>
-        </tr>
-      `;
-    }).join('');
+    // Add crimson-themed class for distinct styling
+    popup.classList.add('crimson-citation-themed');
 
     popup.innerHTML = `
+      <div class="crimson-citation-resize-handle crimson-citation-resize-handle-tl" data-tooltip="Resize"></div>
+      <div class="crimson-citation-resize-handle crimson-citation-resize-handle-tr" data-tooltip="Resize"></div>
       <div class="crimson-citation-popup-header">
         <span class="crimson-citation-popup-title">Citations</span>
         <button type="button" class="crimson-citation-popup-close" title="Close (ESC)">
@@ -1937,64 +2616,181 @@ class CrimsonManager {
         </button>
       </div>
       <div class="crimson-citation-popup-content">
-        <table class="crimson-citation-table">
-          <thead>
-            <tr>
-              <th class="crimson-citation-header">#</th>
-              <th class="crimson-citation-header">Name</th>
-              <th class="crimson-citation-header">URL</th>
-              <th class="crimson-citation-header">Type</th>
-              <th class="crimson-citation-header">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rowsHtml}
-          </tbody>
-        </table>
+        <div class="crimson-citation-table-wrap lithium-table-container"></div>
+        <div class="crimson-citation-nav-wrap lithium-navigator-container"></div>
       </div>
       <div class="crimson-citation-popup-arrow"></div>
+      <div class="crimson-citation-resize-handle crimson-citation-resize-handle-bl" data-tooltip="Resize"></div>
+      <div class="crimson-citation-resize-handle crimson-citation-resize-handle-br" data-tooltip="Resize"></div>
     `;
 
     document.body.appendChild(popup);
     processIcons(popup);
 
-    // Position popup
-    this.positionCitationPopup(popup, button);
+    // Wire drag and resize events
+    const header = popup.querySelector('.crimson-citation-popup-header');
+    const resizeHandleBR = popup.querySelector('.crimson-citation-resize-handle-br');
+    const resizeHandleBL = popup.querySelector('.crimson-citation-resize-handle-bl');
+    const resizeHandleTR = popup.querySelector('.crimson-citation-resize-handle-tr');
+    const resizeHandleTL = popup.querySelector('.crimson-citation-resize-handle-tl');
+
+    header?.addEventListener('mousedown', this.handleCitationDragStart);
+    resizeHandleBR?.addEventListener('mousedown', (e) => this.handleCitationResizeStart(e, 'br'));
+    resizeHandleBL?.addEventListener('mousedown', (e) => this.handleCitationResizeStart(e, 'bl'));
+    resizeHandleTR?.addEventListener('mousedown', (e) => this.handleCitationResizeStart(e, 'tr'));
+    resizeHandleTL?.addEventListener('mousedown', (e) => this.handleCitationResizeStart(e, 'tl'));
+
+    // Check for saved position/size
+    const savedState = this.loadCitationPopupState();
+    if (savedState) {
+      popup.style.left = `${savedState.x}px`;
+      popup.style.top = `${savedState.y}px`;
+      popup.style.width = `${savedState.width}px`;
+      popup.style.height = `${savedState.height}px`;
+    } else {
+      // Position popup below/beside the header button (default)
+      this.positionCitationPopup(popup, button);
+    }
 
     // Wire close button
     const closeBtn = popup.querySelector('.crimson-citation-popup-close');
     closeBtn?.addEventListener('click', () => this.closeCitationPopup());
 
-    // Wire open buttons
-    popup.querySelectorAll('.crimson-citation-open-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const url = btn.getAttribute('data-url');
-        if (url) {
-          // For canvas URLs, we'll handle them specially later
-          if (url.startsWith('canvas')) {
-            // TODO: Open canvas content in training panel
-            log(Subsystems.CRIMSON, Status.INFO, `Opening canvas citation: ${url}`);
-          } else {
-            window.open(url, '_blank', 'noopener,noreferrer');
-          }
-        }
+    // Store active popup
+    this.activeCitationPopup = popup;
+    if (button) button.classList.add('active');
+
+    // Animate in — need the popup visible before Tabulator can measure dimensions
+    await new Promise(resolve => {
+      requestAnimationFrame(() => {
+        popup.classList.add('visible');
+        setTimeout(resolve, 50);
       });
     });
 
-    // Store active popup
-    this.activeCitationPopup = popup;
-    this.activeCitationButton = button;
-    button.classList.add('active');
+    // Build LithiumTable with inline tableDef (no JSON config file needed)
+    const tableContainer = popup.querySelector('.crimson-citation-table-wrap');
+    const navContainer = popup.querySelector('.crimson-citation-nav-wrap');
 
-    // Animate in
-    requestAnimationFrame(() => {
-      popup.classList.add('visible');
+    // Get the app instance from the singleton (Crimson always has access)
+    const app = window.lithiumApp || null;
+
+    this.citationTable = new LithiumTable({
+      container: tableContainer,
+      navigatorContainer: navContainer,
+      app: app,
+      readonly: true,
+      cssPrefix: 'lithium',
+      storageKey: 'crimson_citations',
+      tableDef: {
+        title: 'Citations',
+        readonly: true,
+        columnManager: false,
+        layout: 'fitColumns',
+        columns: {
+          number: {
+            field: 'number',
+            display: '#',
+            coltype: 'integer',
+            visible: true,
+            sort: true,
+            filter: false,
+            editable: false,
+            overrides: { width: 45, hozAlign: 'center' },
+          },
+          name: {
+            field: 'name',
+            display: 'Name',
+            coltype: 'string',
+            visible: true,
+            sort: true,
+            filter: true,
+            editable: false,
+            overrides: { minWidth: 100 },
+          },
+          reference: {
+            field: 'url',
+            display: 'Reference',
+            coltype: 'string',
+            visible: true,
+            sort: true,
+            filter: true,
+            editable: false,
+            overrides: {
+              minWidth: 120,
+              tooltip: true,
+              formatter: (cell) => {
+                const url = cell.getValue();
+                return this.formatReference(url);
+              },
+            },
+          },
+          score: {
+            field: 'score',
+            display: 'Score',
+            coltype: 'number',
+            visible: true,
+            sort: true,
+            filter: true,
+            editable: false,
+            overrides: {
+              width: 100,
+              hozAlign: 'right',
+              formatter: (cell) => {
+                const score = cell.getValue();
+                if (score === null || score === undefined) return '';
+                // Format large scores (like DigitalOcean's) with commas
+                return score.toLocaleString();
+              },
+            },
+          },
+          actions: {
+            field: 'url',
+            display: '<fa fa-arrow-up-right-from-square>',
+            coltype: 'string',
+            visible: true,
+            sort: false,
+            filter: false,
+            editable: false,
+            overrides: {
+              width: 40,
+              hozAlign: 'center',
+              headerSort: false,
+              formatter: (cell) => {
+                const url = cell.getValue();
+                if (!url) return '';
+                if (url.startsWith('canvas') || url.includes('canvas/')) {
+                  return '<fa fa-graduation-cap fa-flip-horizontal></fa>';
+                }
+                return '<fa fa-arrow-up-right-from-square></fa>';
+              },
+              cellClick: (_e, cell) => {
+                const url = cell.getValue();
+                this.openCitationUrl(url);
+              },
+            },
+          },
+        },
+      },
+      onRowSelected: (rowData) => {
+        log(Subsystems.CRIMSON, Status.DEBUG, `Citation selected: #${rowData.number} ${rowData.name}`);
+      },
+    });
+
+    await this.citationTable.init();
+    this.citationTable.loadStaticData(citations, { autoSelect: false });
+
+    // Add double-click handler to open the link
+    this.citationTable.table.on('rowDblClick', (_e, row) => {
+      const rowData = row.getData();
+      if (rowData?.url) {
+        this.openCitationUrl(rowData.url);
+      }
     });
 
     // Handle clicks outside to close
     this._citationOutsideHandler = (e) => {
-      if (!popup.contains(e.target) && !button.contains(e.target)) {
+      if (!popup.contains(e.target) && !(button && button.contains(e.target))) {
         this.closeCitationPopup();
       }
     };
@@ -2004,46 +2800,48 @@ class CrimsonManager {
   }
 
   /**
-   * Position citation popup relative to button
+   * Position citation popup relative to button.
+   * For the header button the popup drops below; for other anchors it goes to the side.
    * @param {HTMLElement} popup - The popup element
    * @param {HTMLElement} button - The anchor button
    */
   positionCitationPopup(popup, button) {
     const buttonRect = button.getBoundingClientRect();
-    const popupRect = popup.getBoundingClientRect();
+    const popupWidth = 500; // CSS width
 
-    // Default: position to the right of the button
-    let left = buttonRect.right + 10;
-    let top = buttonRect.top;
+    // Position below the header button, left-aligned
+    let left = buttonRect.left;
+    let top = buttonRect.bottom + 6;
 
     // Check if popup goes off right edge
-    if (left + popupRect.width > window.innerWidth - 20) {
-      // Position to the left instead
-      left = buttonRect.left - popupRect.width - 10;
+    if (left + popupWidth > window.innerWidth - 20) {
+      left = window.innerWidth - popupWidth - 20;
     }
+    if (left < 10) left = 10;
 
     // Check vertical bounds
-    if (top + popupRect.height > window.innerHeight - 20) {
-      top = window.innerHeight - popupRect.height - 20;
-    }
-    if (top < 20) {
-      top = 20;
+    if (top + 400 > window.innerHeight - 20) {
+      // Position above the button instead
+      top = buttonRect.top - 400 - 6;
+      if (top < 10) top = 10;
     }
 
     popup.style.left = `${left}px`;
     popup.style.top = `${top}px`;
 
-    // Position arrow
+    // Position arrow pointing to the button
     const arrow = popup.querySelector('.crimson-citation-popup-arrow');
     if (arrow) {
-      const arrowOffset = buttonRect.top - top + buttonRect.height / 2;
-      arrow.style.top = `${Math.max(10, Math.min(arrowOffset, popupRect.height - 10))}px`;
+      // Arrow points upward to the button center
+      const arrowLeft = buttonRect.left + buttonRect.width / 2 - left;
+      arrow.style.left = `${Math.max(10, Math.min(arrowLeft, popupWidth - 10))}px`;
 
-      // Point arrow left or right depending on popup position
-      if (left < buttonRect.left) {
-        arrow.classList.add('arrow-right');
+      if (top > buttonRect.bottom) {
+        // Popup is below button — arrow points up
+        arrow.classList.add('arrow-top');
       } else {
-        arrow.classList.add('arrow-left');
+        // Popup is above button — arrow points down
+        arrow.classList.add('arrow-bottom');
       }
     }
   }
@@ -2057,6 +2855,16 @@ class CrimsonManager {
       document.removeEventListener('click', this._citationOutsideHandler);
       this._citationOutsideHandler = null;
     }
+    
+    // Ensure drag/resize listeners are cleaned up
+    this.handleCitationDragEnd();
+    this.handleCitationResizeEnd();
+
+    // Destroy LithiumTable instance
+    if (this.citationTable) {
+      this.citationTable.destroy();
+      this.citationTable = null;
+    }
 
     if (this.activeCitationPopup) {
       this.activeCitationPopup.classList.remove('visible');
@@ -2067,50 +2875,69 @@ class CrimsonManager {
       }, 200);
     }
 
-    if (this.activeCitationButton) {
-      this.activeCitationButton.classList.remove('active');
-      this.activeCitationButton = null;
+    if (this.citationHeaderBtn) {
+      this.citationHeaderBtn.classList.remove('active');
     }
   }
 
   /**
-   * Highlight a specific citation in the popup
-   * @param {number} citationNumber - The citation number to highlight
+   * Highlight a specific citation in the popup via LithiumTable row selection
+   * @param {number} citationNumber - The global citation number to highlight
    */
   highlightCitation(citationNumber) {
-    if (!this.activeCitationPopup) return;
+    if (!this.citationTable?.table) return;
 
-    // Remove existing highlight
-    this.activeCitationPopup.querySelectorAll('.crimson-citation-row').forEach(row => {
-      row.classList.remove('highlighted');
-    });
+    // Deselect all rows first
+    this.citationTable.table.deselectRow();
 
-    // Add highlight to target row
-    const targetRow = this.activeCitationPopup.querySelector(`[data-citation-number="${citationNumber}"]`);
-    if (targetRow) {
-      targetRow.classList.add('highlighted');
-      targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // Find and select the row by citation number
+    const rows = this.citationTable.table.getRows();
+    for (const row of rows) {
+      const data = row.getData();
+      if (data.number === citationNumber) {
+        row.select();
+        row.scrollTo();
+        break;
+      }
     }
   }
 
   /**
-   * Convert citation markers [[C1]] in text to clickable links
-   * @param {string} content - The message content
+   * Convert citation markers [[C1]] in text to clickable icons.
+   * Uses turnMapping to remap per-turn indices to global citation numbers.
+   * @param {string} content - The message content (HTML)
    * @param {string} messageId - The message element ID
+   * @param {Map<number,number>} turnMapping - Per-turn index → global number mapping
    * @returns {string} Content with citation links
    */
-  convertCitationMarkers(content, messageId) {
+  convertCitationMarkers(content, messageId, turnMapping) {
     if (!content) return '';
 
-    // Replace [[C1]], [[C2]], etc. with clickable links
+    // Replace [[C1]], [[C2]], etc. with clickable icon links
+    // Even if no mapping exists, create links - they will show the citation popup
     return content.replace(/\[\[C(\d+)\]\]/g, (match, num) => {
-      const citationNum = parseInt(num, 10);
-      return `<a href="#" class="crimson-citation-link" data-message-id="${messageId}" data-citation="${citationNum}" title="View citation ${citationNum}">${match}</a>`;
+      const turnIndex = parseInt(num, 10);
+      // Remap to global number if mapping exists, otherwise use the raw number
+      const globalNum = (turnMapping && turnMapping.has(turnIndex))
+        ? turnMapping.get(turnIndex)
+        : turnIndex;
+      // Look up the citation name for the tooltip
+      const citation = this.allCitations.find(c => c.number === globalNum);
+      // Use formatted reference as tooltip if name is missing or generic
+      let tooltipText;
+      if (citation?.name && citation.name !== 'Untitled') {
+        tooltipText = citation.name;
+      } else if (citation?.url) {
+        tooltipText = this.formatReference(citation.url);
+      } else {
+        tooltipText = `Citation ${globalNum}`;
+      }
+      return `<a href="#" class="crimson-citation-link" data-citation="${globalNum}" title="${this.escapeHtml(tooltipText)}"><fa fa-book-open-lines class="crimson-citation-link-icon"></fa></a>`;
     });
   }
 
   /**
-   * Handle citation link click
+   * Handle citation link click (delegated from conversation container)
    * @param {Event} e - Click event
    */
   handleCitationLinkClick(e) {
@@ -2120,21 +2947,18 @@ class CrimsonManager {
     e.preventDefault();
     e.stopPropagation();
 
-    const messageId = link.getAttribute('data-message-id');
     const citationNum = parseInt(link.getAttribute('data-citation'), 10);
+    if (!citationNum || this.allCitations.length === 0) return;
 
-    if (!messageId || !citationNum) return;
-
-    // Find the citation button for this message
-    const messageEl = document.getElementById(messageId);
-    if (!messageEl) return;
-
-    const citationBtn = messageEl.querySelector('.crimson-citation-btn');
-    if (!citationBtn) return;
-
-    // Open popup and highlight citation
-    this.toggleCitationPopup(messageId, citationBtn);
-    this.highlightCitation(citationNum);
+    // Open popup from header button and highlight the citation
+    if (!this.activeCitationPopup) {
+      this.showCitationPopup(this.citationHeaderBtn, this.allCitations).then(() => {
+        // Need a small delay for Tabulator to render rows
+        setTimeout(() => this.highlightCitation(citationNum), 100);
+      });
+    } else {
+      this.highlightCitation(citationNum);
+    }
   }
 
   /**
@@ -2166,7 +2990,11 @@ class CrimsonManager {
     this.sendBtn = null;
     this.currentStreamElement = null;
     this.conversationHistory = [];
-    this.citations.clear();
+    this.allCitations = [];
+    this.citationIndex.clear();
+    this.citationToRowMap.clear();
+    this.citationHeaderBtn = null;
+    this.citationCounterEl = null;
     crimsonInstance = null;
     globalKeyHandler = null;
 
