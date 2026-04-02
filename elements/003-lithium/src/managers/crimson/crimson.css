@@ -549,8 +549,10 @@
   font-size: var(--font-size-xs);
 }
 
+/* I don't want HRs in my chats, thanks! */
 .crimson-message-content hr {
-  margin: var(--space-5) 0px;
+  margin: 0px;
+  visibility: hidden;
 }                            
 
 .crimson-message-content h1,
