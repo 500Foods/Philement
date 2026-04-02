@@ -4,7 +4,7 @@ The Tour Manager provides in-app guided tours using [Shepherd.js](https://shephe
 
 **Location:** `src/managers/tour/`
 
-**Manager ID:** 6 (System Manager, Group 0)
+**Manager ID:** 6 (System Manager, Group 0, hidden from main menu)
 
 **Type:** Utility / Popup Manager (not a traditional slot-based manager)
 
@@ -14,12 +14,14 @@ The Tour Manager provides in-app guided tours using [Shepherd.js](https://shephe
 
 | Aspect | Details |
 |--------|---------|
-| **Library** | Shepherd.js (dynamic import) |
-| **Data Source** | Lookup #43 — lazy-loaded on first tour request |
-| **Activation** | Tour button in manager toolbars or Crimson suggestions |
+| **Library** | Shepherd.js (dynamic import, bundled separately) |
+| **Data Source** | Lookup #43 — lazy-loaded on first tour request via QueryRef 26 |
+| **Activation** | Tours button in manager footer, or Crimson suggestions |
 | **Key Files** | `tour.js`, `tour.css` |
+| **Z-Index** | 40000 (steps), 40001 (tour list popup) — above all UI |
+| **Panel Width** | 500px fixed |
 
-The Tour Manager is a singleton that wraps Shepherd.js. It does not occupy a workspace slot — tours display as modal overlays with step-by-step highlighting of UI elements.
+The Tour Manager is a singleton that wraps Shepherd.js. It does not occupy a workspace slot — tours display as modal overlays with step-by-step highlighting of UI elements. The design is monochromatic black/white to overlay cleanly on any theme.
 
 ---
 
@@ -27,18 +29,21 @@ The Tour Manager is a singleton that wraps Shepherd.js. It does not occupy a wor
 
 Each tour is a row in Lookup #43 with the tour definition stored in the `collection` JSON column.
 
+**Important:** The `collection` field is stored as a JSON **string**, not an object. It must be parsed before use.
+
 ### Tour JSON Structure
 
 ```json
 {
   "icon": "<fa fa-clipboard-list></fa>",
   "manager": "023.Lookup Manager",
+  "sidebar": true,
   "steps": [
     {
-      "title": "Step Title",
-      "text": "Step description with <b>HTML</b> support.",
-      "element": "#dom-selector",
-      "position": "bottom"
+      "text": "This Module is used to view or edit various app Lookups.",
+      "title": "Lookups Module",
+      "element": "#divLookupsHolder",
+      "position": "right"
     }
   ]
 }
@@ -48,140 +53,185 @@ Each tour is a row in Lookup #43 with the tour definition stored in the `collect
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `icon` | `string` | Yes | Font Awesome `<fa>` tag for the tour's icon |
-| `manager` | `string` | Yes | Manager identifier using lithium.json naming convention (e.g., `"023.Lookup Manager"`). Used to filter tours by accessible managers and to open the manager before the tour starts. |
+| `icon` | `string` | Yes | Font Awesome `<fa>` tag for the tour's icon (shown in tour header and list). See [LITHIUM-ICN.md](LITHIUM-ICN.md) for icon format. |
+| `manager` | `string` | No | Manager identifier using lithium.json naming convention (e.g., `"023.Lookup Manager"`). If omitted, no manager switch occurs. |
+| `sidebar` | `boolean` | No | If `true`, expands the sidebar if it's collapsed. Use for tours that reference sidebar elements. Default: `false` (no action). |
 | `steps` | `array` | Yes | Array of step objects |
 
 ### Step Object Fields
 
-The tour JSON uses a simple format that is extracted and converted to Shepherd's `addStep()` options at runtime.
-
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `title` | `string` | No | Step heading (displayed as `<h3>`) |
+| `title` | `string` | No | Step heading (not displayed — tour name is used in header instead) |
 | `text` | `string` | No | Step content (supports HTML) |
-| `element` | `string` | No | CSS selector for the target element. If omitted or the element is not found, Shepherd displays the step **centered** on screen **without** the modal overlay/mask. |
-| `position` | `string` | No | Placement relative to target: `"top"`, `"bottom"`, `"left"`, `"right"`, `"auto"`. Defaults to `"bottom"`. |
-
-### Shepherd Conversion
-
-At runtime, each step is converted to a Shepherd step:
-
-```javascript
-// Tour JSON step
-{ "title": "Welcome", "text": "Hello!", "element": "#app", "position": "bottom" }
-
-// Becomes Shepherd addStep() options:
-{
-  title: "Welcome",
-  text: "Hello!",
-  attachTo: { element: "#app", on: "bottom" },
-  buttons: [ /* auto-generated */ ]
-}
-```
-
-Button options (Back, Next, Close, Done) are auto-generated based on step position in the array.
+| `element` | `string` | No | CSS selector for the target element. If omitted or element not found, step displays **centered** without modal mask. |
+| `position` | `string` | No | Placement: `"top"`, `"bottom"`, `"left"`, `"right"`, `"auto"`. Defaults to `"bottom"`. |
 
 ### Manager Field Convention
 
-The `manager` field follows the same naming convention as `lithium.json`:
+The `manager` field follows the lithium.json naming convention:
 
 ```
 "###.Manager Name"
 ```
 
-Examples:
+| Value | Manager Type | Notes |
+|-------|--------------|-------|
+| `"003.Profile"` | **Utility Manager** | User profile page (sidebar footer) |
+| `"004.Session Log"` | **Utility Manager** | Session log popup (sidebar footer) |
+| `"023.Lookup Manager"` | **Main Menu Manager** | Standard slot-based manager |
+| `"029.Query Manager"` | **Main Menu Manager** | Standard slot-based manager |
 
-| Value | Meaning |
-|-------|---------|
-| `"023.Lookup Manager"` | Tour for the Lookup Manager (ID 23) |
-| `"029.Query Manager"` | Tour for the Query Manager (ID 29) |
-| `"022.Style Manager"` | Tour for the Style Manager (ID 22) |
+**Utility Managers (001-006):** These are sidebar footer utilities, not main menu items. The tour manager:
+1. Extracts the numeric ID from the manager field
+2. Looks up in `utilityManagerRegistry` by ID
+3. Calls `app.loadUtilityManager(id)` to activate
 
-This field serves two purposes:
+**Main Menu Managers (007+):** These are regular managers that appear in the sidebar menu. The tour manager:
+1. Extracts the numeric ID from the manager field  
+2. Looks up in `managerRegistry` by ID
+3. Calls `app.loadManager(id)` to activate
 
-1. **Access filtering** — Only show tours for managers the user has permission to access
-2. **Auto-open** — Before launching the tour, open the specified manager
+If no `manager` field is specified, the tour launches without switching managers.
 
 ---
 
 ## Lazy Loading Strategy
 
-Tour data is **not** loaded at startup. The Lookup #43 data is fetched only when:
-
-1. A user clicks a tour button in a manager toolbar
-2. Crimson suggests a tour
-3. The user requests a tour from the tour list popup
+Tour data is **not** loaded at startup. Lookup #43 is fetched only when a user requests a tour.
 
 ```javascript
-// First request triggers fetch
 async function getTours(api) {
-  if (!_toursCache) {
-    // QueryRef 26 with LOOKUPID 43 to get tour entries
-    const entries = await authQuery(api, 26, {
-      INTEGER: { LOOKUPID: 43 }
-    });
-    _toursCache = entries
-      .filter(e => e.collection) // Only tours with definitions
-      .map(e => ({
-        id: e.key_idx,
-        name: e.value_txt,
-        definition: e.collection, // The JSON object
-      }));
-  }
+  if (_toursCache) return _toursCache;
+
+  // QueryRef 26 with LOOKUPID 43
+  const entries = await authQuery(api, 26, {
+    INTEGER: { LOOKUPID: 43 }
+  });
+
+  _toursCache = entries
+    .filter(e => e.collection)
+    .map(e => ({
+      id: e.key_idx,        // Numeric tour ID (key_idx from lookup)
+      name: e.value_txt,     // Display name
+      code: e.code || String(e.key_idx),  // Support lookup by code
+      // collection is a JSON STRING — must parse it
+      definition: typeof e.collection === 'string'
+        ? JSON.parse(e.collection)
+        : e.collection,
+    }));
+
   return _toursCache;
 }
 ```
 
-Subsequent calls return the cached array. A `refreshTours()` function can be exposed to force a re-fetch if needed.
+Tour lookup supports multiple identifiers:
+- **Numeric ID:** `launchTour(3, api)` — matches `key_idx`
+- **Code:** `launchTour("welcome", api)` — matches `code` field
+- **Name:** `launchTour("Welcome to Lithium", api)` — matches `value_txt`
+
+Use `refreshTours(api)` to force a re-fetch if needed.
 
 ---
 
 ## Tour UI Controls
 
-Shepherd's default buttons are customized:
+### Layout
 
-### Button Set
+```
+┌────────────────────────────────────────────────┐
+│  [icon] Tour Name                  [↗] [✕]   │  ← Header (black bg, white text)
+├────────────────────────────────────────────────┤
+│                                                │
+│  Step content goes here with HTML support.     │  ← Content (white bg, black text)
+│  <b>Bold</b>, <i>italic</i>, etc.              │
+│                                                │
+├────────────────────────────────────────────────┤
+│  [<]                      3 / 15          [>]  │  ← Footer (gray bg, black buttons)
+└────────────────────────────────────────────────┘
+```
 
-| Button | Icon/Label | Action |
-|--------|-----------|--------|
-| **Back** | `<` | Go to previous step |
-| **Next** | `>` | Go to next step |
-| **Close** | `<fa fa-xmark></fa>` | Cancel/end the tour |
-| **Tour List** | `<fa fa-list></fa>` | Open popup showing all available tours |
+### Header
 
-The **Tour List** button is injected into Shepherd's header or footer area. Clicking it opens a lightweight popup listing all tours the user can access (filtered by their permitted managers).
+The header displays:
+- **Tour icon** (from `definition.icon`, left side)
+- **Tour name** (from `value_txt`)
+- **Tour List button** (`<fa fa-signs-post></fa>`) — ends tour, shows tour list
+- **Close button** (`<fa fa-xmark></fa>`) — ends tour
 
-### Tour List Popup
+### Footer Buttons
+
+| Button | Icon | Position | Action |
+|--------|------|----------|--------|
+| **Back** | `<fa fa-chevron-left></fa>` | Left | Go to previous step (disabled on first step) |
+| **Step Counter** | `3 / 15` | Center | Shows current step / total steps |
+| **Next** | `<fa fa-chevron-right></fa>` | Right | Go to next step |
+| **Done** | `<fa fa-check></fa>` | Right | Complete tour (replaces Next on last step) |
+
+**Icons:** All icons use the `<fa>` tag format per [LITHIUM-ICN.md](LITHIUM-ICN.md).
+
+### Keyboard Controls
+
+| Key | Action |
+|-----|--------|
+| `←` (Left Arrow) | Previous step |
+| `→` (Right Arrow) | Next step |
+| `Esc` | End tour |
+
+### Transitions
+
+Steps fade in/out using CSS transitions:
+
+- **Fade in:** `opacity: 0 → 1` (pure opacity, no transform animation)
+- **Duration:** Controlled by `--transition-duration` CSS variable
+- **Between steps:** Previous step fades out, then next step fades in
+- **Step element:** May require retry logic to find DOM element (async rendering)
+- **Tour end:** Last step fades out before Shepherd cleanup occurs
+
+The CSS selector is `.shepherd-element.lithium-tour-step` (both classes on same element).
+
+**Important CSS note:** Because Shepherd's un-layered CSS (`.shepherd-enabled.shepherd-element { opacity: 1 }`) overrides `@layer` styles, the tour CSS uses `!important` on `opacity` and `visibility` to maintain control. The `.lithium-tour-visible` class is added in a double-`requestAnimationFrame` callback after Floating UI has positioned the element, preventing any visible position jump.
+
+---
+
+## Tour List Popup
 
 ```
 ┌─────────────────────────────────────────────┐
-│  Available Tours                     [✕]   │
+│  Recommended Tours                   [✕]   │  ← Header (black bg)
 ├─────────────────────────────────────────────┤
-│  <fa fa-clipboard-list></fa> Lookups Tour   │
-│  <fa fa-database></fa> Query Tour           │
-│  <fa fa-palette></fa> Style Tour            │
+│  <icon> Welcome to Lithium                  │
+│  <icon> AI Auditor Module 1.0               │  ← Clickable items
+│  <icon> Lookups Tour                        │
 │  ...                                        │
 └─────────────────────────────────────────────┘
 ```
 
-Selecting a tour from the list:
+Each item shows:
+- Tour icon (from `definition.icon`)
+- Tour name (from `value_txt`)
 
-1. Ends the current tour (if running)
-2. Opens the tour's target manager (if different from the current manager)
-3. Launches the selected tour
+The list uses **numeric IDs** internally (from `key_idx`) but displays only friendly names to users.
+
+Selecting a tour:
+1. Closes the tour list popup
+2. Expands sidebar if collapsed (for tours that reference sidebar elements)
+3. Switches to the tour's target manager (if specified)
+4. Launches the selected tour
 
 ---
 
 ## Element Targeting Behavior
 
-When a step's `element` field is:
+| Scenario | Result |
+|----------|--------|
+| Element found | Highlights element with modal overlay |
+| Element not found | Step displays **centered**, no modal mask |
+| No element specified | Step displays **centered**, no modal mask |
 
-- **Present and matches a DOM element** — Shepherd highlights that element with a modal overlay around it
-- **Present but the element is not found** — Shepherd displays the step **centered** on screen **without** the modal mask
-- **Omitted** — Same as not found: centered without mask
+This allows informational steps (e.g., "Welcome to the Lookups Manager") to float in the center of the screen.
 
-This means tour authors can include informational steps (e.g., "Welcome to the Lookups Manager") that float in the center of the screen without masking any UI.
+**Note:** After manager switching, there is a 300ms delay + 600ms settle time to ensure the DOM is ready before the tour starts.
 
 ---
 
@@ -189,196 +239,109 @@ This means tour authors can include informational steps (e.g., "Welcome to the L
 
 ### Manager Footer Tours Button
 
-Each manager's footer includes a **Tours** button (alongside Print, Email, Export). Clicking it triggers the tour flow:
+Each manager's footer includes a Tours button. Clicking it:
 
 ```javascript
-// In footer setup:
-const toursBtn = footer.querySelector('.slot-footer-tours');
-toursBtn.addEventListener('click', () => {
-  this._handleTours();
-});
-
 async _handleTours() {
-  const managerName = '023.Lookup Manager'; // Matches lithium.json key
+  const managerName = '023.Lookup Manager';
   const tours = await getTours(this.app.api);
-  
+
   // Filter tours for this manager
-  const managerTours = tours.filter(t => t.definition.manager === managerName);
-  
+  const managerTours = tours.filter(t =>
+    t.definition.manager === managerName
+  );
+
   if (managerTours.length === 1) {
-    // Single tour — launch directly
-    await launchTour(managerTours[0]);
-  } else if (managerTours.length > 1) {
-    // Multiple tours — show list filtered to this manager
-    showTourList(managerTours);
+    launchTour(managerTours[0].id, api, { anchor: toursBtn });
   } else {
-    // No manager-specific tours — show all available tours
-    showTourList(tours);
+    showTourList(managerTours, toursBtn, {
+      onSelect: (id) => launchTour(id, api)
+    });
   }
 }
 ```
-
-### Tour-to-Manager Mapping
-
-Tours are mapped to managers via the `manager` field in the tour JSON definition:
-
-```json
-{
-  "manager": "023.Lookup Manager",
-  "icon": "<fa fa-clipboard-list></fa>",
-  "steps": [...]
-}
-```
-
-The `manager` value uses the **lithium.json naming convention** — the zero-padded ID prefix followed by the manager name (e.g., `"023.Lookup Manager"`). This field serves two purposes:
-
-1. **Filtering** — When a user clicks the Tours button on a specific manager, only tours with a matching `manager` field are shown
-2. **Auto-open** — Before launching a tour, the system ensures the target manager is loaded and active
 
 ### Fallback Behavior
 
 | Scenario | Behavior |
 |----------|----------|
-| One tour matches current manager | Launch tour directly |
-| Multiple tours match current manager | Show tour list filtered to those tours |
-| No tours match current manager | Show tour list with all available tours |
-| Tours not yet loaded | Fetch from Lookup #43 (QueryRef 26) on first click, then filter |
-| Tour ID not found | Show tour list with all available tours |
-
-### Crimson Integration
-
-Crimson can suggest tours in its response metadata:
-
-```json
-{
-  "suggestions": {
-    "offerTours": [
-      { "tourId": 1, "name": "Lookups Tour" }
-    ]
-  }
-}
-```
-
-See [LITHIUM-MGR-CRIMSON.md](LITHIUM-MGR-CRIMSON.md) — Response Structure section.
-
-### Global Keyboard Shortcut (Optional)
-
-A global shortcut could trigger the tour list:
-
-```javascript
-document.addEventListener('keydown', (e) => {
-  if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'T') {
-    e.preventDefault();
-    openTourList();
-  }
-});
-```
+| One tour matches manager | Launch directly |
+| Multiple tours match manager | Show filtered tour list ("Recommended Tours") |
+| No tours match manager | Show all available tours |
+| Tour ID not found | Show all available tours |
+| Tours not loaded | Fetch from Lookup #43, then proceed |
 
 ---
 
 ## Architecture
 
-### Singleton Pattern
-
-Like Crimson, the Tour Manager uses a singleton pattern:
+### Key Exports
 
 ```javascript
-import Shepherd from 'shepherd.js';
+// Tour loading
+getTours(api)              // Get all tours (cached)
+getToursForManager(api, managerName)  // Get tours for specific manager
+refreshTours(api)          // Force reload from Lookup #43
 
-let tourInstance = null;
-
-export function getTourManager() {
-  if (!tourInstance) {
-    tourInstance = new TourManager();
-  }
-  return tourInstance;
-}
+// Tour execution
+launchTour(tourId, api, options)  // Launch a tour by ID, code, or name
+showTourList(tours, anchor, options)  // Show tour selection popup
+hideTourList()             // Close the popup
+buildShepherdTour(tour, options)  // Build Shepherd instance from tour JSON
 ```
 
-### Class Structure
+### Build Shepherd Tour
+
+The `buildShepherdTour()` function converts tour JSON to a Shepherd tour:
+
+1. Creates `Shepherd.Tour` with `useModalOverlay: true`
+2. Custom header injected into each step's `text` (replaces Shepherd header)
+3. Custom footer with Back/Counter/Next buttons injected into each step's `text`
+4. Document-level click handler captures button clicks via event delegation
+5. Keyboard navigation set up on tour start
+6. Fade-in class added on step show (with retry logic for element detection)
+
+### Button Click Handling
+
+Uses **event delegation** at the document level (capture phase) for reliability:
 
 ```javascript
-class TourManager {
-  constructor() {
-    this.shepherd = null;   // Shepherd Tour instance
-    this.tours = [];        // Cached tour definitions
-    this.isLoaded = false;  // Lookup fetch complete
-  }
+document.addEventListener('click', (e) => {
+  const button = e.target.closest('[data-tour-action]');
+  if (!button) return;
 
-  async loadTours() { /* Fetch from Lookup 43 */ }
-  async launchTour(tourId) { /* Build Shepherd tour and start */ }
-  showTourList() { /* Open tour selection popup */ }
-  endTour() { /* Clean up current tour */ }
-}
+  // Verify click is within active step
+  const stepEl = shepherd.getCurrentStep()?.getElement();
+  if (!stepEl || !stepEl.contains(button)) return;
+
+  // Handle action: close, list, back, next
+}, true); // Capture phase
 ```
 
-### Shepherd Tour Construction
+This ensures clicks are captured even with Shepherd's DOM manipulation.
 
-Each tour definition is converted to a Shepherd tour:
+### Helper Functions
 
-```javascript
-function buildShepherdTour(definition) {
-  const tour = new Shepherd.Tour({
-    useModalOverlay: true,
-    defaultStepOptions: {
-      cancelIcon: { enabled: false }, // We provide our own close button
-      classes: 'lithium-tour-step',
-      scrollTo: { behavior: 'smooth', block: 'center' },
-    },
-  });
-
-  // Add custom buttons to each step
-  definition.steps.forEach((stepDef, index) => {
-    const buttons = [];
-
-    if (index > 0) {
-      buttons.push({ action: tour.back, classes: 'lithium-tour-back', text: 'Back' });
-    }
-    if (index < definition.steps.length - 1) {
-      buttons.push({ action: tour.next, classes: 'lithium-tour-next', text: 'Next' });
-    }
-
-    // Tour list button (only on first step)
-    if (index === 0) {
-      buttons.push({ action: () => this.showTourList(), classes: 'lithium-tour-list', text: '<fa fa-list></fa>' });
-    }
-
-    // Close button
-    buttons.push({ action: tour.cancel, classes: 'lithium-tour-close', text: '<fa fa-xmark></fa>' });
-
-    tour.addStep({
-      title: stepDef.title,
-      text: stepDef.text,
-      attachTo: stepDef.element ? { element: stepDef.element, on: stepDef.position || 'bottom' } : undefined,
-      buttons,
-    });
-  });
-
-  return tour;
-}
-```
+| Function | Purpose |
+|----------|---------|
+| `createHeaderHTML(tour, options)` | Generates header with icon, title, signs-post, xmark |
+| `createFooterHTML(currentStep, totalSteps)` | Generates footer with back, counter, next |
+| `setupDocumentClickHandler(shepherd, totalSteps, options)` | Document-level click delegation |
+| `setupKeyboardNav(shepherd, totalSteps)` | Sets up ←, →, Esc keyboard handlers |
+| `switchToManager(managerName)` | Opens target manager (handles both main and utility) |
+| `expandSidebarIfCollapsed()` | Expands sidebar if needed for tour visibility |
+| `findUtilityKeyById(id)` | Maps numeric ID to utility manager key |
+| `getTransitionDuration()` | Reads CSS transition duration for timing |
+| `cleanupActiveTour()` | Force-removes Shepherd DOM artefacts (overlay, step elements) |
+| `cancelWithTransition(shepherd)` | Fades out current step, then calls `shepherd.cancel()` |
+| `completeWithTransition(shepherd)` | Fades out current step, then calls `shepherd.complete()` |
+| `navigateWithTransition(shepherd, dir)` | Fades out current step, then navigates next/back |
 
 ---
 
 ## CSS Architecture
 
-Tour styles use a **monochromatic black/white palette** via tour-specific CSS variables (`--tour-*`). These variables are completely independent of the main Lithium theme, allowing tours to overlay cleanly on any theme without visual conflict.
-
-### Variable Namespace
-
-All tour variables use the `--tour-` prefix. None of the main Lithium theme variables are used. To restyle tours, override these variables:
-
-```css
-/* Example: dark tour theme */
-:root {
-  --tour-bg: #1a1a1a;
-  --tour-text: #ffffff;
-  --tour-border: #444444;
-  --tour-btn-bg: #333333;
-  --tour-btn-text: #ffffff;
-  /* ... */
-}
-```
+Tour styles use **tour-specific CSS variables** (`--tour-*`) that are independent of the Lithium theme. Default values create a monochromatic black/white design.
 
 ### Variable Reference
 
@@ -387,36 +350,53 @@ All tour variables use the `--tour-` prefix. None of the main Lithium theme vari
 | `--tour-bg` | `#ffffff` | Panel background |
 | `--tour-bg-secondary` | `#f5f5f5` | Footer background |
 | `--tour-text` | `#000000` | Body text color |
-| `--tour-text-muted` | `#666666` | Muted text (counters, manager names) |
-| `--tour-border` | `#000000` | Primary border color |
+| `--tour-text-muted` | `#666666` | Muted text (counters) |
+| `--tour-border` | `#000000` | Primary border |
 | `--tour-border-light` | `#cccccc` | Light border (list items) |
 | `--tour-border-width` | `2px` | Border thickness |
 | `--tour-border-radius` | `8px` | Panel corner radius |
-| `--tour-bar-bg` | `#000000` | Header bar background |
-| `--tour-bar-text` | `#ffffff` | Header bar text |
+| `--tour-header-bg` | `#000000` | Header background |
+| `--tour-header-text` | `#ffffff` | Header text |
 | `--tour-btn-bg` | `#000000` | Button background |
 | `--tour-btn-text` | `#ffffff` | Button text |
-| `--tour-btn-hover-bg` | `#333333` | Button hover state |
+| `--tour-btn-hover-bg` | `#333333` | Button hover |
 | `--tour-btn-disabled-bg` | `#cccccc` | Disabled button |
-| `--tour-shadow` | `0 8px 24px rgba(0,0,0,0.35)` | Panel drop shadow |
+| `--tour-shadow` | `0 8px 24px rgba(0,0,0,0.35)` | Drop shadow |
 | `--tour-overlay` | `rgba(0,0,0,0.45)` | Modal backdrop |
-| `--tour-z-step` | `30000` | Step panel z-index |
-| `--tour-z-popup` | `30001` | Tour list popup z-index |
+| `--tour-z-step` | `40000` | Step z-index |
+| `--tour-z-popup` | `40001` | List popup z-index |
+| `--tour-max-width` | `500px` | Panel width (fixed) |
+| `--tour-step-delay` | `0.15s` | Delay between step transitions |
+
+**Note:** Transitions use `--transition-duration` from the main Lithium theme for consistency.
 
 ### Key Selectors
 
+**Important:** The CSS uses combined selectors (`.class1.class2`) not descendant selectors (`.class1 .class2`) because Shepherd adds both classes to the same element:
+
+```css
+/* Correct - both classes on same element */
+.shepherd-element.lithium-tour-step { ... }
+.shepherd-element.lithium-tour-step.lithium-tour-visible { ... }
+
+/* Incorrect - this looks for descendant */
+.lithium-tour-step .shepherd-element { ... }
+```
+
 | Selector | Purpose |
 |----------|---------|
-| `.lithium-tour-step .shepherd-element` | Main step panel |
-| `.lithium-tour-step .shepherd-header` | Black header bar |
-| `.lithium-tour-step .shepherd-text` | Step content |
-| `.lithium-tour-step .shepherd-button` | Black navigation buttons |
-| `.lithium-tour-step .shepherd-footer` | Light gray button bar |
+| `.shepherd-element.lithium-tour-step` | Main panel (with fade transition) |
+| `.shepherd-element.lithium-tour-step.lithium-tour-visible` | Visible state |
+| `.lithium-tour-header` | Custom header bar |
+| `.lithium-tour-header-icon-title` | Flex container for icon + title |
+| `.lithium-tour-header-btn` | Header buttons (signs-post, xmark) |
+| `.lithium-tour-content` | Step content area |
+| `.lithium-tour-footer` | Custom footer bar |
+| `.lithium-tour-footer-btn` | Footer buttons (back, next) |
+| `.lithium-tour-step-counter` | Step counter display |
 | `.lithium-tour-list-popup` | Tour selection popup |
-| `.lithium-tour-list-item` | Individual tour in list |
+| `.lithium-tour-list-item` | Tour item in list |
 | `.shepherd-modal-overlay-class` | Modal backdrop |
-
-See `src/managers/tour/tour.css` for the complete stylesheet.
 
 ---
 
@@ -424,11 +404,49 @@ See `src/managers/tour/tour.css` for the complete stylesheet.
 
 ```
 src/managers/tour/
-├── tour.js          # TourManager class + exports
-├── tour.css         # Shepherd theme overrides + tour list popup styles
+├── tour.js       # Tour functions: getTours, launchTour, buildShepherdTour, etc.
+├── tour.css      # Monochromatic Shepherd theme + tour list popup styles
 ```
 
-No HTML template is needed — Shepherd generates its own DOM, and the tour list popup is created dynamically (same pattern as Crimson).
+No HTML template needed — Shepherd generates its own DOM, tour list popup is created dynamically.
+
+---
+
+## Implementation Notes
+
+### Step Element Detection
+
+Shepherd creates step elements asynchronously. The 'show' event may fire before the element is in the DOM. The implementation uses retry logic:
+
+```javascript
+const processStep = (retryCount = 0) => {
+  const currentStepEl = step?.getElement();
+
+  if (!currentStepEl && retryCount < 5) {
+    setTimeout(() => processStep(retryCount + 1), 50);
+    return;
+  }
+  // Process icons, add visible class, etc.
+};
+```
+
+### Icon Processing
+
+Icons use the Lithium `<fa>` tag system per [LITHIUM-ICN.md](LITHIUM-ICN.md):
+
+1. HTML contains `<fa fa-icon-name></fa>` tags
+2. `processIcons()` converts to Font Awesome `<i>` elements
+3. Font Awesome SVG+JS kit replaces with inline SVG
+
+### Manager Switching Flow
+
+1. If `definition.sidebar === true`, expand sidebar via `expandSidebarIfCollapsed()`
+2. Parse manager ID from tour JSON (e.g., "003.profile" → 3)
+3. Check `utilityManagerRegistry` first (IDs 1-6)
+4. Fall back to `managerRegistry` (IDs 7+)
+5. Call appropriate loader (`loadUtilityManager` or `loadManager`)
+6. Wait 900ms total for UI to settle (300ms + 600ms)
+7. Build and start the tour
 
 ---
 
@@ -436,24 +454,18 @@ No HTML template is needed — Shepherd generates its own DOM, and the tour list
 
 ### NPM
 
-| Package | Purpose |
-|---------|---------|
-| `shepherd.js` | Guided tour library |
-
-Import dynamically (heavy library):
-
-```javascript
-const shepherdModule = await import('shepherd.js');
-const Shepherd = shepherdModule.default;
-```
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `shepherd.js` | `^15.2.2` | Guided tour library (dynamic import) |
 
 ### Internal
 
-| Module | Purpose |
-|--------|---------|
-| `shared/conduit.js` | `authQuery()` for Lookup #43 fetch |
-| `core/log.js` | Logging |
-| `core/icons.js` | `processIcons()` for `<fa>` tags |
+| Module | Exports Used |
+|--------|--------------|
+| `shared/conduit.js` | `authQuery()` |
+| `core/log.js` | `log()`, `Subsystems`, `Status` |
+| `core/event-bus.js` | `eventBus` |
+| `core/icons.js` | `processIcons()` |
 
 ---
 
@@ -461,12 +473,12 @@ const Shepherd = shepherdModule.default;
 
 | Document | Relevance |
 |----------|-----------|
-| [LITHIUM-MGR-CRIMSON.md](LITHIUM-MGR-CRIMSON.md) | Crimson can suggest tours via WebSocket responses |
-| [LITHIUM-LUT.md](LITHIUM-LUT.md) | Lookup system — how Lookup #43 is structured |
-| [LITHIUM-MGR.md](LITHIUM-MGR.md) | Manager system overview, Manager ID registry |
-| [LITHIUM-LIB.md](LITHIUM-LIB.md) | Library conventions (dynamic imports) |
-| [LITHIUM-CSS.md](LITHIUM-CSS.md) | CSS variables and theming |
+| [LITHIUM-ICN.md](LITHIUM-ICN.md) | Icon system — `<fa>` tag format |
+| [LITHIUM-MGR-CRIMSON.md](LITHIUM-MGR-CRIMSON.md) | Crimson can suggest tours |
+| [LITHIUM-LUT.md](LITHIUM-LUT.md) | Lookup system (Lookup #43) |
+| [LITHIUM-MGR.md](LITHIUM-MGR.md) | Manager system, ID registry |
+| [LITHIUM-LIB.md](LITHIUM-LIB.md) | Library conventions |
 
 ---
 
-Last updated: April 2026
+Last updated: April 2, 2026
