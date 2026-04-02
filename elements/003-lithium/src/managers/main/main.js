@@ -31,6 +31,7 @@ import {
   toggleZoomPopup,
 } from '../../core/zoom-control.js';
 import { initCrimsonShortcut, toggleCrimson } from '../../managers/crimson/crimson.js';
+import '../../managers/tour/tour.js';  // Tour event listeners (imports tour.css)
 import {
   setupHeaderButtons,
   setupFooterButtons,
