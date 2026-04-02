@@ -37,6 +37,7 @@ This directory contains the canonical documentation for the Lithium web applicat
 | [LITHIUM-MGR-LOOKUPS.md](LITHIUM-MGR-LOOKUPS.md) | Lookups Manager — dual-table parent/child design |
 | [LITHIUM-MGR-STYLE.md](LITHIUM-MGR-STYLE.md) | Style Manager — visual CSS editing with interactive mockups |
 | [LITHIUM-MGR-CRIMSON.md](LITHIUM-MGR-CRIMSON.md) | Crimson AI Agent — popup chat interface |
+| [LITHIUM-MGR-TOUR.md](LITHIUM-MGR-TOUR.md) | Tour Manager — Shepherd.js guided tours (Lookup #43) |
 | [LITHIUM-TAB.md](LITHIUM-TAB.md) | LithiumTable Component — reusable Tabulator+Navigator |
 | [LITHIUM-TAB-PLAN.md](LITHIUM-TAB-PLAN.md) | Tabulator implementation plan — gap analysis and phased roadmap |
 | [LITHIUM-LUT.md](LITHIUM-LUT.md) | Lookup Tables — schema, caching, accessor functions, Tabulator integration |

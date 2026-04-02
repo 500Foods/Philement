@@ -1,0 +1,439 @@
+/**
+ * Tour Manager Styles
+ *
+ * Shepherd.js guided tour styling.
+ * Uses tour-specific CSS variables (--tour-*) that are independent
+ * of the main Lithium theme. Override these variables to restyle
+ * tours without affecting the rest of the application.
+ */
+
+@layer managers {
+
+/* ========================================
+   Tour Theme Variables
+   All tour-specific, no Lithium theme vars
+   ======================================== */
+
+:root {
+  /* Panel */
+  --tour-bg: #ffffff;
+  --tour-bg-secondary: #f5f5f5;
+  --tour-text: #000000;
+  --tour-text-muted: #666666;
+
+  /* Borders */
+  --tour-border: #000000;
+  --tour-border-light: #cccccc;
+  --tour-border-width: 2px;
+  --tour-border-radius: 8px;
+  --tour-border-radius-sm: 4px;
+
+  /* Header bar (black) */
+  --tour-header-bg: #000000;
+  --tour-header-text: #ffffff;
+
+  /* Buttons */
+  --tour-btn-bg: #000000;
+  --tour-btn-text: #ffffff;
+  --tour-btn-hover-bg: #333333;
+  --tour-btn-disabled-bg: #cccccc;
+  --tour-btn-disabled-text: #666666;
+  --tour-btn-secondary-bg: #ffffff;
+  --tour-btn-secondary-border: #000000;
+
+  /* Shadows */
+  --tour-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+
+  /* Overlay */
+  --tour-overlay: rgba(0, 0, 0, 0.45);
+
+  /* Transitions (use Lithium's standard if available) */
+  --tour-transition: var(--transition-duration, 0.2s);
+  --tour-transition-ease: ease;
+
+  /* Z-index (above all UI) */
+  --tour-z-step: 40000;
+  --tour-z-popup: 40001;
+
+  /* Sizing */
+  --tour-max-width: 420px;
+  --tour-list-max-width: 360px;
+  --tour-list-min-width: 260px;
+}
+
+/* ========================================
+   Shepherd Modal Overlay
+   ======================================== */
+
+.shepherd-modal-overlay-class {
+  fill: var(--tour-overlay) !important;
+}
+
+/* ========================================
+   Tour Step Element
+   ======================================== */
+
+.lithium-tour-step .shepherd-element {
+  background: var(--tour-bg);
+  border: var(--tour-border-width) solid var(--tour-border);
+  border-radius: var(--tour-border-radius);
+  box-shadow: var(--tour-shadow);
+  max-width: var(--tour-max-width);
+  z-index: var(--tour-z-step);
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity var(--tour-transition) var(--tour-transition-ease),
+              transform var(--tour-transition) var(--tour-transition-ease);
+}
+
+.lithium-tour-step .shepherd-element.lithium-tour-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.lithium-tour-step .shepherd-element:focus {
+  outline: none;
+}
+
+/* Arrow */
+.lithium-tour-step .shepherd-arrow::before {
+  background: var(--tour-bg);
+  border: var(--tour-border-width) solid var(--tour-border);
+}
+
+/* ========================================
+   Header (custom, replaces Shepherd header)
+   ======================================== */
+
+.lithium-tour-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--tour-header-bg);
+  color: var(--tour-header-text);
+}
+
+.lithium-tour-header-title {
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Vanadium Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lithium-tour-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.lithium-tour-header-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--tour-header-text);
+  border-radius: var(--tour-border-radius-sm);
+  color: var(--tour-header-text);
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.lithium-tour-header-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Hide Shepherd's default cancel icon */
+.lithium-tour-step .shepherd-cancel-icon {
+  display: none !important;
+}
+
+/* Hide Shepherd's default title */
+.lithium-tour-step .shepherd-title {
+  display: none !important;
+}
+
+/* ========================================
+   Content Area
+   ======================================== */
+
+.lithium-tour-content {
+  color: var(--tour-text);
+  font-size: 14px;
+  line-height: 1.55;
+  padding: 16px;
+  font-family: 'Vanadium Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.lithium-tour-content p {
+  margin: 0 0 10px 0;
+}
+
+.lithium-tour-content p:last-child {
+  margin-bottom: 0;
+}
+
+.lithium-tour-content i,
+.lithium-tour-content .fa,
+.lithium-tour-content fa {
+  vertical-align: middle;
+}
+
+/* Hide Shepherd's default text container */
+.lithium-tour-step .shepherd-text {
+  padding: 0;
+  margin: 0;
+}
+
+/* ========================================
+   Footer (button bar)
+   ======================================== */
+
+.lithium-tour-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: var(--tour-bg-secondary);
+  border-top: 1px solid var(--tour-border-light);
+}
+
+.lithium-tour-footer-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--tour-btn-bg);
+  color: var(--tour-btn-text);
+  border: var(--tour-border-width) solid var(--tour-btn-bg);
+  border-radius: var(--tour-border-radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: 'Vanadium Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.lithium-tour-footer-btn:hover:not(:disabled) {
+  background: var(--tour-btn-hover-bg);
+  border-color: var(--tour-btn-hover-bg);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+.lithium-tour-footer-btn:disabled {
+  background: var(--tour-btn-disabled-bg);
+  border-color: var(--tour-btn-disabled-border, #cccccc);
+  color: var(--tour-btn-disabled-text);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.lithium-tour-footer-btn fa,
+.lithium-tour-footer-btn .fa {
+  font-size: 12px;
+  line-height: 1;
+}
+
+/* ========================================
+   Step Counter (center of footer)
+   ======================================== */
+
+.lithium-tour-step-counter {
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'Vanadium Mono', 'Consolas', 'Monaco', monospace;
+  color: var(--tour-text-muted);
+  user-select: none;
+}
+
+/* ========================================
+   Tour List Popup
+   ======================================== */
+
+.lithium-tour-list-popup {
+  position: fixed;
+  z-index: var(--tour-z-popup);
+  background: var(--tour-bg);
+  border: var(--tour-border-width) solid var(--tour-border);
+  border-radius: var(--tour-border-radius);
+  box-shadow: var(--tour-shadow);
+  min-width: var(--tour-list-min-width);
+  max-width: var(--tour-list-max-width);
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(0.95);
+  transition: opacity var(--tour-transition) var(--tour-transition-ease),
+              visibility var(--tour-transition) var(--tour-transition-ease),
+              transform var(--tour-transition) var(--tour-transition-ease);
+}
+
+.lithium-tour-list-popup.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: scale(1);
+}
+
+/* List header */
+.lithium-tour-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--tour-header-bg);
+  border-bottom: var(--tour-border-width) solid var(--tour-border);
+}
+
+.lithium-tour-list-title {
+  color: var(--tour-header-text);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Vanadium Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lithium-tour-list-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--tour-header-text);
+  border-radius: var(--tour-border-radius-sm);
+  color: var(--tour-header-text);
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.lithium-tour-list-close:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Scrollable list body */
+.lithium-tour-list-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.lithium-tour-list-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.lithium-tour-list-body::-webkit-scrollbar-track {
+  background: var(--tour-bg-secondary);
+}
+
+.lithium-tour-list-body::-webkit-scrollbar-thumb {
+  background: #999999;
+  border-radius: 3px;
+}
+
+/* Empty state */
+.lithium-tour-list-empty {
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--tour-text-muted);
+  font-size: 13px;
+  font-style: italic;
+}
+
+/* Tour item */
+.lithium-tour-list-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  margin-bottom: 4px;
+  background: var(--tour-bg);
+  border: 1px solid var(--tour-border-light);
+  border-radius: var(--tour-border-radius-sm);
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.lithium-tour-list-item:last-child {
+  margin-bottom: 0;
+}
+
+.lithium-tour-list-item:hover {
+  background: var(--tour-bg-secondary);
+  border-color: var(--tour-border);
+}
+
+.lithium-tour-list-item-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: var(--tour-btn-bg);
+  border-radius: var(--tour-border-radius-sm);
+  color: var(--tour-btn-text);
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.lithium-tour-list-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.lithium-tour-list-item-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tour-text);
+  font-family: 'Vanadium Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lithium-tour-list-item-manager {
+  font-size: 11px;
+  color: var(--tour-text-muted);
+  font-family: 'Vanadium Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  margin-top: 2px;
+}
+
+/* ========================================
+   Responsive Adjustments
+   ======================================== */
+
+@media (max-width: 600px) {
+  .lithium-tour-step .shepherd-element {
+    max-width: calc(100vw - 32px);
+  }
+
+  .lithium-tour-list-popup {
+    max-width: calc(100vw - 32px);
+    left: 16px !important;
+    right: 16px !important;
+  }
+  
+  .lithium-tour-footer-btn span {
+    display: none;
+  }
+  
+  .lithium-tour-footer-btn {
+    padding: 8px 12px;
+  }
+}
+
+} /* end @layer managers */
