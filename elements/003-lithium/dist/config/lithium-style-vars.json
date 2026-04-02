@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS custom properties (variables) used across the Lithium codebase",
-    "generated": "2026-04-02T01:25:02.423Z",
+    "generated": "2026-04-02T19:37:55.742Z",
     "sources": {
       "css": "49 files in src/**/*.css",
       "js": "80 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
-    "total_variables": 210,
-    "total_occurrences": 3212
+    "total_variables": 208,
+    "total_occurrences": 3202
   },
   "variables": [
     {
@@ -1322,10 +1322,10 @@
     },
     {
       "name": "--tour-max-width",
-      "css": 2,
+      "css": 1,
       "js": 0,
       "html": 0,
-      "total": 2
+      "total": 1
     },
     {
       "name": "--tour-overlay",
@@ -1335,11 +1335,11 @@
       "total": 2
     },
     {
-      "name": "--tour-shadow",
-      "css": 3,
+      "name": "--tour-step-delay",
+      "css": 1,
       "js": 0,
       "html": 0,
-      "total": 3
+      "total": 1
     },
     {
       "name": "--tour-text",
@@ -1350,24 +1350,10 @@
     },
     {
       "name": "--tour-text-muted",
-      "css": 4,
+      "css": 3,
       "js": 0,
       "html": 0,
-      "total": 4
-    },
-    {
-      "name": "--tour-transition",
-      "css": 6,
-      "js": 0,
-      "html": 0,
-      "total": 6
-    },
-    {
-      "name": "--tour-transition-ease",
-      "css": 6,
-      "js": 0,
-      "html": 0,
-      "total": 6
+      "total": 3
     },
     {
       "name": "--tour-z-popup",
@@ -1399,10 +1385,10 @@
     },
     {
       "name": "--transition-duration",
-      "css": 57,
-      "js": 9,
+      "css": 62,
+      "js": 10,
       "html": 0,
-      "total": 66
+      "total": 72
     },
     {
       "name": "--transition-fast",

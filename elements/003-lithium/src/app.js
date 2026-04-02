@@ -271,10 +271,10 @@ class LithiumApp {
       32: { id: 32, name: 'Terminal' },
     };
 
-    // Utility manager definitions — key -> name only (module loaded via _importUtilityManager)
+    // Utility manager definitions — key -> definition (matches lithium.json 001-006 range)
     this.utilityManagerRegistry = {
-      'session-log': { key: 'session-log', name: 'Session Log' },
-      'user-profile': { key: 'user-profile', name: 'User Profile' },
+      'user-profile': { id: 3, key: 'user-profile', name: 'User Profile' },
+      'session-log': { id: 4, key: 'session-log', name: 'Session Log' },
     };
 
     // Transition overlay element (created lazily)
@@ -1092,15 +1092,29 @@ class LithiumApp {
   /**
    * Load a utility manager into the workspace.
    * Uses the slot-based system: each utility manager gets a slot.
-   * @param {string} managerKey - The utility manager key (e.g. 'session-log')
+   * @param {number|string} managerIdOrKey - The utility manager ID (e.g., 3) or key (e.g. 'user-profile')
    */
-  async loadUtilityManager(managerKey) {
-    const managerDef = this.utilityManagerRegistry[managerKey];
+  async loadUtilityManager(managerIdOrKey) {
+    // Look up by string key directly
+    let managerDef = this.utilityManagerRegistry[managerIdOrKey];
+
+    // If not found and it's a number, look up by ID
+    if (!managerDef && typeof managerIdOrKey === 'number') {
+      managerDef = Object.values(this.utilityManagerRegistry).find(u => u.id === managerIdOrKey);
+    }
+
+    // If still not found and it's a numeric string, look up by ID
+    if (!managerDef && typeof managerIdOrKey === 'string' && /^\d+$/.test(managerIdOrKey)) {
+      const id = parseInt(managerIdOrKey, 10);
+      managerDef = Object.values(this.utilityManagerRegistry).find(u => u.id === id);
+    }
 
     if (!managerDef) {
-      logManager(Status.ERROR, `Unknown utility manager key: ${managerKey}`);
+      logManager(Status.ERROR, `Unknown utility manager: ${managerIdOrKey}`);
       return;
     }
+
+    const managerKey = managerDef.key;
 
     // Check if already loaded — if so, just show it with crossfade
     const loadedKey = `utility:${managerKey}`;
