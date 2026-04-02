@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS custom properties (variables) used across the Lithium codebase",
-    "generated": "2026-04-01T23:25:17.087Z",
+    "generated": "2026-04-02T01:25:02.423Z",
     "sources": {
-      "css": "48 files in src/**/*.css",
-      "js": "79 files in src/**/*.js",
+      "css": "49 files in src/**/*.css",
+      "js": "80 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
-    "total_variables": 181,
-    "total_occurrences": 3116
+    "total_variables": 210,
+    "total_occurrences": 3212
   },
   "variables": [
     {
@@ -1181,6 +1181,209 @@
       "total": 2
     },
     {
+      "name": "--tour-",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--tour-bg",
+      "css": 5,
+      "js": 0,
+      "html": 0,
+      "total": 5
+    },
+    {
+      "name": "--tour-bg-secondary",
+      "css": 4,
+      "js": 0,
+      "html": 0,
+      "total": 4
+    },
+    {
+      "name": "--tour-border",
+      "css": 6,
+      "js": 0,
+      "html": 0,
+      "total": 6
+    },
+    {
+      "name": "--tour-border-light",
+      "css": 3,
+      "js": 0,
+      "html": 0,
+      "total": 3
+    },
+    {
+      "name": "--tour-border-radius",
+      "css": 3,
+      "js": 0,
+      "html": 0,
+      "total": 3
+    },
+    {
+      "name": "--tour-border-radius-sm",
+      "css": 6,
+      "js": 0,
+      "html": 0,
+      "total": 6
+    },
+    {
+      "name": "--tour-border-width",
+      "css": 6,
+      "js": 0,
+      "html": 0,
+      "total": 6
+    },
+    {
+      "name": "--tour-btn-bg",
+      "css": 4,
+      "js": 0,
+      "html": 0,
+      "total": 4
+    },
+    {
+      "name": "--tour-btn-disabled-bg",
+      "css": 2,
+      "js": 0,
+      "html": 0,
+      "total": 2
+    },
+    {
+      "name": "--tour-btn-disabled-border",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--tour-btn-disabled-text",
+      "css": 2,
+      "js": 0,
+      "html": 0,
+      "total": 2
+    },
+    {
+      "name": "--tour-btn-hover-bg",
+      "css": 3,
+      "js": 0,
+      "html": 0,
+      "total": 3
+    },
+    {
+      "name": "--tour-btn-secondary-bg",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--tour-btn-secondary-border",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--tour-btn-text",
+      "css": 3,
+      "js": 0,
+      "html": 0,
+      "total": 3
+    },
+    {
+      "name": "--tour-header-bg",
+      "css": 3,
+      "js": 0,
+      "html": 0,
+      "total": 3
+    },
+    {
+      "name": "--tour-header-text",
+      "css": 7,
+      "js": 0,
+      "html": 0,
+      "total": 7
+    },
+    {
+      "name": "--tour-list-max-width",
+      "css": 2,
+      "js": 0,
+      "html": 0,
+      "total": 2
+    },
+    {
+      "name": "--tour-list-min-width",
+      "css": 2,
+      "js": 0,
+      "html": 0,
+      "total": 2
+    },
+    {
+      "name": "--tour-max-width",
+      "css": 2,
+      "js": 0,
+      "html": 0,
+      "total": 2
+    },
+    {
+      "name": "--tour-overlay",
+      "css": 2,
+      "js": 0,
+      "html": 0,
+      "total": 2
+    },
+    {
+      "name": "--tour-shadow",
+      "css": 3,
+      "js": 0,
+      "html": 0,
+      "total": 3
+    },
+    {
+      "name": "--tour-text",
+      "css": 3,
+      "js": 0,
+      "html": 0,
+      "total": 3
+    },
+    {
+      "name": "--tour-text-muted",
+      "css": 4,
+      "js": 0,
+      "html": 0,
+      "total": 4
+    },
+    {
+      "name": "--tour-transition",
+      "css": 6,
+      "js": 0,
+      "html": 0,
+      "total": 6
+    },
+    {
+      "name": "--tour-transition-ease",
+      "css": 6,
+      "js": 0,
+      "html": 0,
+      "total": 6
+    },
+    {
+      "name": "--tour-z-popup",
+      "css": 2,
+      "js": 0,
+      "html": 0,
+      "total": 2
+    },
+    {
+      "name": "--tour-z-step",
+      "css": 2,
+      "js": 0,
+      "html": 0,
+      "total": 2
+    },
+    {
       "name": "--transition",
       "css": 2,
       "js": 0,
@@ -1196,10 +1399,10 @@
     },
     {
       "name": "--transition-duration",
-      "css": 56,
+      "css": 57,
       "js": 9,
       "html": 0,
-      "total": 65
+      "total": 66
     },
     {
       "name": "--transition-fast",
