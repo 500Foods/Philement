@@ -484,6 +484,8 @@ export async function buildShepherdTour(tour, options = {}) {
 
   const shepherd = new Shepherd.Tour({
     useModalOverlay: true,
+    exitOnEsc: false,           // We handle Escape ourselves via setupKeyboardNav
+    keyboardNavigation: false,  // We handle arrow keys ourselves via setupKeyboardNav
     defaultStepOptions: {
       cancelIcon: { enabled: false },
       classes: 'lithium-tour-step',
