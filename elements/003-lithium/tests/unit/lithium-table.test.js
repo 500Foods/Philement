@@ -445,7 +445,8 @@ describe('LithiumTable', () => {
       // Override: width: 80 (coltype default is null)
       expect(result.width).toBe(80);
       // Override: bottomCalc: "count" (coltype default is "sum")
-      expect(result.bottomCalc).toBe('count');
+      // Now returns a function (lithiumCount) instead of string 'count'
+      expect(typeof result.bottomCalc).toBe('function');
       // Override: bottomCalcFormatter: "number" — resolveColumn wraps number/money
       // formatters into a closure that calls formatBuiltinValue(), so it's a function
       expect(typeof result.bottomCalcFormatter).toBe('function');

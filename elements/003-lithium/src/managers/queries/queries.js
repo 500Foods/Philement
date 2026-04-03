@@ -28,6 +28,7 @@ import { log, Subsystems, Status } from '../../core/log.js';
 import { processIcons } from '../../core/icons.js';
 import { setupManagerFooterIcons, createFontPopup } from '../../core/manager-ui.js';
 import { ManagerEditHelper } from '../../core/manager-edit-helper.js';
+import { formatSortedJson, parseAndSortJson } from '../../core/codemirror-setup.js';
 
 // Editor management (CodeMirror init, font, prettify, undo/redo)
 import { createEditorManager } from './queries-editors.js';
@@ -167,6 +168,8 @@ export default class QueriesManager {
       },
       // Custom save: Query Manager assembles params from table + editors
       onExecuteSave: (row, editHelper) => this._executeSave(row, editHelper),
+      // Custom duplicate: Clone query via QueryRef 29, then refresh
+      onDuplicate: (rowData) => this._executeDuplicate(rowData),
       // onEditModeChange and onDirtyChange are auto-wired by editHelper.registerTable()
     });
 
@@ -230,7 +233,8 @@ export default class QueriesManager {
     const rowData = row.getData();
     const pkField = this.queryTable.primaryKeyField || 'query_id';
     const pkValue = rowData[pkField];
-    const isInsert = pkValue == null || pkValue === '' || pkValue === 0;
+    // Note: pkValue of 0 is VALID - only null/undefined/empty string indicate insert
+    const isInsert = pkValue == null || pkValue === '';
     const queryRef = isInsert
       ? (this.queryTable.queryRefs?.insertQueryRef ?? null)
       : (this.queryTable.queryRefs?.updateQueryRef ?? 28);
@@ -244,7 +248,9 @@ export default class QueriesManager {
     // Gather content from all editors
     const sqlContent = this.sqlEditor?.state?.doc?.toString() || '';
     const summaryContent = this.summaryEditor?.state?.doc?.toString() || '';
-    const collectionString = this.editorManager?.getCollectionContent() || '{}';
+    // Normalize JSON with sorted keys before saving to ensure consistency
+    const rawCollectionString = this.editorManager?.getCollectionContent() || '{}';
+    const collectionString = parseAndSortJson(rawCollectionString, 2) || rawCollectionString;
 
     const params = {
       INTEGER: {
@@ -269,6 +275,74 @@ export default class QueriesManager {
     if (isInsert && result?.[0]?.[pkField] != null) {
       row.update({ [pkField]: result[0][pkField] });
     }
+  }
+
+  /**
+   * Custom duplicate for Query Manager.
+   * Fetches full query details via QueryRef 27, then calls QueryRef 29 to insert clone.
+   * After insertion, refreshes the table and selects the newly created row.
+   *
+   * @param {Object} rowData - The original row data being duplicated
+   * @returns {null} Returns null to abort default duplicate behavior (handled internally)
+   */
+  async _executeDuplicate(rowData) {
+    const queryId = rowData.query_id ?? rowData.id;
+    if (queryId == null) {
+      throw new Error('No query ID found for duplicate');
+    }
+
+    // Fetch full query details via QueryRef 27 (includes code, summary, collection)
+    let fullDetails = {};
+    try {
+      const details = await authQuery(this.app.api, 27, {
+        INTEGER: { QUERYID: queryId },
+      });
+      if (details && details.length > 0) {
+        fullDetails = details[0];
+      }
+    } catch (error) {
+      log(Subsystems.TABLE, Status.WARN, `[Queries] Failed to load detail for clone: ${error.message}`);
+      // Continue with table row data if detail fetch fails
+    }
+
+    // Use detail data if available, otherwise fall back to row data
+    const sqlContent = fullDetails.code || fullDetails.query_text || fullDetails.sql || '';
+    const summaryContent = fullDetails.summary || fullDetails.markdown || '';
+    const collectionContent = fullDetails.collection || fullDetails.json || '{}';
+
+    // Call QueryRef 29 to insert the cloned query
+    const insertQueryRef = this.queryTable.queryRefs?.insertQueryRef ?? 29;
+    const result = await authQuery(this.app.api, insertQueryRef, {
+      INTEGER: {
+        QUERYTYPE: rowData.query_type_a28 ?? 1,
+        QUERYDIALECT: rowData.query_dialect_a30 ?? 1,
+        QUERYSTATUS: rowData.query_status_a27 ?? 1,
+        USERID: this.app?.user?.id ?? 0,
+        QUERYREF: parseInt(rowData.query_ref, 10) || 0,
+      },
+      STRING: {
+        QUERYCODE: sqlContent,
+        QUERYNAME: rowData.name ? `${rowData.name} (Copy)` : '',
+        QUERYSUMMARY: summaryContent,
+        COLLECTION: collectionContent,
+      },
+    });
+
+    // Get the new query ID from the result
+    const pkField = this.queryTable.primaryKeyField || 'query_id';
+    const newQueryId = result?.[0]?.[pkField];
+    if (newQueryId == null) {
+      throw new Error('Clone operation did not return a new query ID');
+    }
+
+    // Save the new ID so it gets selected after refresh
+    this.queryTable.saveSelectedRowId(newQueryId);
+
+    // Refresh the table data to show the new row
+    await this.queryTable.loadData();
+
+    // Return null to abort default duplicate behavior (we handled it)
+    return null;
   }
 
   // ============ EVENT HANDLERS ============
@@ -370,7 +444,7 @@ export default class QueriesManager {
       }
       if (this.collectionEditor) {
         // Update content directly via CodeMirror — exclude from undo history
-        const jsonStr = JSON.stringify(collectionContent, null, 2);
+        const jsonStr = formatSortedJson(collectionContent, 2);
         if (this.collectionEditor.state.doc.toString() !== jsonStr) {
           this.editorManager._setContentNoHistory(this.collectionEditor, jsonStr);
         }

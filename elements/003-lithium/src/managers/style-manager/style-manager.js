@@ -853,9 +853,31 @@ ${selector}:disabled {
   setupToolbar() {
     this.elements.undoBtn?.addEventListener('click', () => this.undo());
     this.elements.redoBtn?.addEventListener('click', () => this.redo());
-    this.elements.foldAllBtn?.addEventListener('click', () => { if (this.cssEditor) foldAllInEditor(this.cssEditor); });
-    this.elements.unfoldAllBtn?.addEventListener('click', () => { if (this.cssEditor) unfoldAllInEditor(this.cssEditor); });
+    this.elements.foldAllBtn?.addEventListener('click', () => {
+      const editor = this._getActiveEditor();
+      if (editor) foldAllInEditor(editor);
+    });
+    this.elements.unfoldAllBtn?.addEventListener('click', () => {
+      const editor = this._getActiveEditor();
+      if (editor) unfoldAllInEditor(editor);
+    });
     this.elements.prettifyBtn?.addEventListener('click', () => this.prettify());
+  }
+
+  /**
+   * Get the currently active CodeMirror editor (CSS or JSON).
+   * @returns {EditorView|null}
+   */
+  _getActiveEditor() {
+    // Check if JSON view is visible
+    if (this.elements.jsonView?.classList.contains('active')) {
+      return this.jsonEditor;
+    }
+    // Otherwise use CSS editor (when in CSS state)
+    if (this.elements.cssEditor?.style.display !== 'none') {
+      return this.cssEditor;
+    }
+    return null;
   }
 
   undo() {

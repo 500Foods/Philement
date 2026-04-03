@@ -172,6 +172,8 @@ vi.mock('../../src/core/codemirror-setup.js', () => ({
   setEditorEditable: vi.fn(),
   foldAllInEditor: vi.fn(),
   unfoldAllInEditor: vi.fn(),
+  formatSortedJson: vi.fn((data) => JSON.stringify(data, null, 2)),
+  parseAndSortJson: vi.fn((str) => str),
   READONLY_CLASS: 'lithium-cm-readonly',
   EDIT_MODE_CLASS: 'lithium-cm-editable',
   LANG_CLASS_PREFIX: 'lithium-cm-lang-',
