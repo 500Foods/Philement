@@ -50,13 +50,15 @@ describe('LithiumColumnManager', () => {
         getColumns: vi.fn().mockReturnValue([
           {
             getField: () => 'id',
-            getDefinition: () => ({ title: 'ID', coltype: 'integer' }),
+            getDefinition: () => ({ title: 'ID', coltype: 'integer', width: 80 }),
             isVisible: () => true,
+            getElement: () => ({ offsetWidth: 80 }),
           },
           {
             getField: () => 'name',
-            getDefinition: () => ({ title: 'Name', coltype: 'string' }),
+            getDefinition: () => ({ title: 'Name', coltype: 'string', width: 150 }),
             isVisible: () => true,
+            getElement: () => ({ offsetWidth: 150 }),
           },
         ]),
         getColumn: vi.fn().mockReturnValue({
@@ -114,7 +116,9 @@ describe('LithiumColumnManager', () => {
 
       expect(manager.columnData).toHaveLength(2);
       expect(manager.columnData[0].field_name).toBe('id');
+      expect(manager.columnData[0].width).toBe(80);
       expect(manager.columnData[1].field_name).toBe('name');
+      expect(manager.columnData[1].width).toBe(150);
     });
 
     it('should handle missing parent table gracefully', async () => {
@@ -140,7 +144,7 @@ describe('LithiumColumnManager', () => {
 
       const def = manager.buildColumnManagerDefinition();
 
-      expect(def).toHaveProperty('title', 'Column Manager Manager');
+      expect(def).toHaveProperty('title', 'Column Manager');
       expect(def).toHaveProperty('columns');
       expect(def.columns).toHaveProperty('order');
       expect(def.columns).toHaveProperty('visible');
@@ -149,6 +153,10 @@ describe('LithiumColumnManager', () => {
       expect(def.columns).toHaveProperty('format');
       expect(def.columns).toHaveProperty('summary');
       expect(def.columns).toHaveProperty('alignment');
+      expect(def.columns).toHaveProperty('width');
+      // Manual mode (default) should have drag_handle and movableRows
+      expect(def.columns).toHaveProperty('drag_handle');
+      expect(def.movableRows).toBe(true);
     });
   });
 

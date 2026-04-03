@@ -2,6 +2,9 @@
 
 This document describes the `LithiumTable` reusable component — a standardized Tabulator data grid with integrated Navigator control bar.
 
+**Related Documentation:**
+- [LITHIUM-COL.md](LITHIUM-COL.md) — Column Manager documentation
+
 ---
 
 ## Overview
@@ -13,6 +16,7 @@ The `LithiumTable` component combines:
 - **JSON-driven configuration** — Column definitions from `config/tabulator/`
 - **Edit mode** — Inline editing with dirty state tracking
 - **Templates** — Save/load column configurations
+- **Column Manager** — Runtime column customization (see [LITHIUM-COL.md](LITHIUM-COL.md))
 
 The component is modular, reusable across all managers, and provides consistent table behavior throughout Lithium.
 
@@ -378,6 +382,11 @@ Access via **Template** button in Control block:
 - **Save template...** — Save current configuration
 - **Make default...** — Set default template
 - **Delete** — Remove saved template
+- **Copy to Clipboard** — Export configuration as JSON (see [LITHIUM-COL.md](LITHIUM-COL.md))
+
+### Template Format
+
+Templates are stored in Lookup 059 compatible format. See [LITHIUM-COL.md](LITHIUM-COL.md) for the complete JSON schema.
 
 ---
 
@@ -1381,6 +1390,7 @@ When a manager has two or more LithiumTables, only one can be in edit mode at a 
 - [LITHIUM-MGR.md](LITHIUM-MGR.md) — Manager system overview
 - [LITHIUM-MGR-QUERY.md](LITHIUM-MGR-QUERY.md) — Query Manager (first LithiumTable implementation)
 - [LITHIUM-MGR-LOOKUPS.md](LITHIUM-MGR-LOOKUPS.md) — Lookups Manager (dual-table example)
+- [LITHIUM-COL.md](LITHIUM-COL.md) — **Column Manager** — Runtime column customization UI
 - [LITHIUM-LUT.md](LITHIUM-LUT.md) — Lookup Tables integration
 - [LITHIUM-CSS.md](LITHIUM-CSS.md) — CSS architecture, layers, and theming
 - [LITHIUM-ICN.md](LITHIUM-ICN.md) — Icon system, three-stage pipeline, rotation pattern

@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS custom properties (variables) used across the Lithium codebase",
-    "generated": "2026-04-03T01:02:09.129Z",
+    "generated": "2026-04-03T20:13:31.125Z",
     "sources": {
       "css": "49 files in src/**/*.css",
       "js": "80 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
     "total_variables": 209,
-    "total_occurrences": 3202
+    "total_occurrences": 3212
   },
   "variables": [
     {
@@ -20,10 +20,10 @@
     },
     {
       "name": "--accent-danger",
-      "css": 27,
+      "css": 28,
       "js": 0,
       "html": 0,
-      "total": 27
+      "total": 28
     },
     {
       "name": "--accent-danger-hover",
@@ -167,10 +167,10 @@
     },
     {
       "name": "--bg-hover",
-      "css": 22,
+      "css": 23,
       "js": 0,
       "html": 0,
-      "total": 22
+      "total": 23
     },
     {
       "name": "--bg-input",
@@ -216,24 +216,24 @@
     },
     {
       "name": "--bg-secondary",
-      "css": 76,
+      "css": 77,
       "js": 1,
       "html": 1,
-      "total": 78
+      "total": 79
     },
     {
       "name": "--bg-tertiary",
-      "css": 93,
+      "css": 95,
       "js": 2,
       "html": 0,
-      "total": 95
+      "total": 97
     },
     {
       "name": "--border-color",
-      "css": 65,
+      "css": 66,
       "js": 1,
       "html": 0,
-      "total": 66
+      "total": 67
     },
     {
       "name": "--border-color-focus",
@@ -979,10 +979,10 @@
     },
     {
       "name": "--text-muted",
-      "css": 64,
+      "css": 66,
       "js": 6,
       "html": 0,
-      "total": 70
+      "total": 72
     },
     {
       "name": "--text-on-accent",
@@ -993,10 +993,10 @@
     },
     {
       "name": "--text-primary",
-      "css": 133,
+      "css": 135,
       "js": 5,
       "html": 1,
-      "total": 139
+      "total": 141
     },
     {
       "name": "--text-secondary",
