@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS class selectors/names used across the Lithium codebase",
-    "generated": "2026-04-03T20:13:32.257Z",
+    "generated": "2026-04-03T23:08:45.479Z",
     "sources": {
       "css": "49 files in src/**/*.css",
-      "js": "80 files in src/**/*.js",
+      "js": "81 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
-    "total_selectors": 1600,
-    "total_occurrences": 19965
+    "total_selectors": 1606,
+    "total_occurrences": 20070
   },
   "selectors": [
     {
@@ -9556,9 +9556,9 @@
     {
       "selector": ".lithium-nav-popup",
       "css": 1,
-      "js": 10,
+      "js": 14,
       "html": 0,
-      "total": 11,
+      "total": 15,
       "files": {
         "css": [
           "src/core/lithium-table.css"
@@ -9573,9 +9573,26 @@
     {
       "selector": ".lithium-nav-popup-check",
       "css": 1,
-      "js": 11,
+      "js": 16,
       "html": 0,
-      "total": 12,
+      "total": 17,
+      "files": {
+        "css": [
+          "src/core/lithium-table.css"
+        ],
+        "js": [
+          "src/core/lithium-column-manager.js",
+          "src/core/lithium-table-ui.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".lithium-nav-popup-icon",
+      "css": 1,
+      "js": 15,
+      "html": 0,
+      "total": 16,
       "files": {
         "css": [
           "src/core/lithium-table.css"
@@ -9590,9 +9607,9 @@
     {
       "selector": ".lithium-nav-popup-item",
       "css": 1,
-      "js": 13,
+      "js": 18,
       "html": 0,
-      "total": 14,
+      "total": 19,
       "files": {
         "css": [
           "src/core/lithium-table.css"
@@ -9607,9 +9624,9 @@
     {
       "selector": ".lithium-nav-popup-item svg",
       "css": 1,
-      "js": 13,
+      "js": 18,
       "html": 0,
-      "total": 14,
+      "total": 19,
       "files": {
         "css": [
           "src/core/lithium-table.css"
@@ -9624,9 +9641,26 @@
     {
       "selector": ".lithium-nav-popup-item:active",
       "css": 1,
-      "js": 13,
+      "js": 18,
       "html": 0,
-      "total": 14,
+      "total": 19,
+      "files": {
+        "css": [
+          "src/core/lithium-table.css"
+        ],
+        "js": [
+          "src/core/lithium-column-manager.js",
+          "src/core/lithium-table-ui.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".lithium-nav-popup-item:disabled",
+      "css": 1,
+      "js": 18,
+      "html": 0,
+      "total": 19,
       "files": {
         "css": [
           "src/core/lithium-table.css"
@@ -9641,9 +9675,9 @@
     {
       "selector": ".lithium-nav-popup-item:hover",
       "css": 1,
-      "js": 13,
+      "js": 18,
       "html": 0,
-      "total": 14,
+      "total": 19,
       "files": {
         "css": [
           "src/core/lithium-table.css"
@@ -9658,9 +9692,9 @@
     {
       "selector": ".lithium-nav-popup-label",
       "css": 1,
-      "js": 11,
+      "js": 16,
       "html": 0,
-      "total": 12,
+      "total": 17,
       "files": {
         "css": [
           "src/core/lithium-table.css"
@@ -9675,9 +9709,9 @@
     {
       "selector": ".lithium-nav-popup-separator",
       "css": 1,
-      "js": 11,
+      "js": 16,
       "html": 0,
-      "total": 12,
+      "total": 17,
       "files": {
         "css": [
           "src/core/lithium-table.css"
@@ -9692,9 +9726,9 @@
     {
       "selector": ".lithium-nav-popup-title",
       "css": 1,
-      "js": 11,
+      "js": 14,
       "html": 0,
-      "total": 12,
+      "total": 15,
       "files": {
         "css": [
           "src/core/lithium-table.css"
@@ -9709,9 +9743,9 @@
     {
       "selector": ".lithium-nav-popup.visible",
       "css": 1,
-      "js": 90,
+      "js": 94,
       "html": 0,
-      "total": 91,
+      "total": 95,
       "files": {
         "css": [
           "src/core/lithium-table.css"
@@ -11460,55 +11494,35 @@
       }
     },
     {
-      "selector": ".lithium-template-chooser",
-      "css": 1,
-      "js": 1,
-      "html": 0,
-      "total": 2,
-      "files": {
-        "css": [
-          "src/core/lithium-table.css"
-        ],
-        "js": [
-          "src/core/lithium-table-ui.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".lithium-template-date",
-      "css": 1,
-      "js": 1,
-      "html": 0,
-      "total": 2,
-      "files": {
-        "css": [
-          "src/core/lithium-table.css"
-        ],
-        "js": [
-          "src/core/lithium-table-ui.js"
-        ],
-        "html": []
-      }
-    },
-    {
       "selector": ".lithium-template-delete",
       "css": 1,
-      "js": 1,
+      "js": 0,
       "html": 0,
-      "total": 2,
+      "total": 1,
       "files": {
         "css": [
           "src/core/lithium-table.css"
         ],
-        "js": [
-          "src/core/lithium-table-ui.js"
-        ],
+        "js": [],
         "html": []
       }
     },
     {
       "selector": ".lithium-template-delete:hover",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/core/lithium-table.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": ".lithium-template-empty",
       "css": 1,
       "js": 1,
       "html": 0,
@@ -11540,7 +11554,88 @@
       }
     },
     {
+      "selector": ".lithium-template-item .lithium-nav-popup-check",
+      "css": 1,
+      "js": 17,
+      "html": 0,
+      "total": 18,
+      "files": {
+        "css": [
+          "src/core/lithium-table.css"
+        ],
+        "js": [
+          "src/core/lithium-column-manager.js",
+          "src/core/lithium-table-ui.js"
+        ],
+        "html": []
+      }
+    },
+    {
       "selector": ".lithium-template-item:hover",
+      "css": 1,
+      "js": 1,
+      "html": 0,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/core/lithium-table.css"
+        ],
+        "js": [
+          "src/core/lithium-table-ui.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".lithium-template-item.is-selected",
+      "css": 1,
+      "js": 2,
+      "html": 0,
+      "total": 3,
+      "files": {
+        "css": [
+          "src/core/lithium-table.css"
+        ],
+        "js": [
+          "src/core/lithium-table-ui.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".lithium-template-item.is-selected:hover",
+      "css": 1,
+      "js": 2,
+      "html": 0,
+      "total": 3,
+      "files": {
+        "css": [
+          "src/core/lithium-table.css"
+        ],
+        "js": [
+          "src/core/lithium-table-ui.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".lithium-template-list",
+      "css": 1,
+      "js": 1,
+      "html": 0,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/core/lithium-table.css"
+        ],
+        "js": [
+          "src/core/lithium-table-ui.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".lithium-template-menu",
       "css": 1,
       "js": 1,
       "html": 0,

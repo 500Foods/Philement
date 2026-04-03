@@ -1,7 +1,7 @@
 // Lithium PWA Service Worker
 // Cache strategy: cache-first for statics, stale-while-revalidate for API data
 
-const CACHE_VERSION = 1974;
+const CACHE_VERSION = 1984;
 const STATIC_CACHE = `lithium-static-v${CACHE_VERSION}`;
 const API_CACHE = `lithium-api-v${CACHE_VERSION}`;
 
