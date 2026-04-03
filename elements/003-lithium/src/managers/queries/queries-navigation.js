@@ -274,7 +274,8 @@ export class NavigationManager {
     const row = selected[0];
     const rowData = row.getData();
     const pkValue = rowData[mgr.primaryKeyField];
-    const isInsert = pkValue == null || pkValue === '' || pkValue === 0;
+    // Note: pkValue of 0 is VALID - only null/undefined/empty string indicate insert
+    const isInsert = pkValue == null || pkValue === '';
     const queryRef = isInsert ? (mgr.queryRefs?.insertQueryRef ?? null) : (mgr.queryRefs?.updateQueryRef ?? 28);
 
     if (!queryRef) {
@@ -458,7 +459,8 @@ export class NavigationManager {
       const rowData = editingRow.getData();
       const pkField = mgr.primaryKeyField || 'query_id';
       const pkValue = rowData[pkField];
-      const isInsert = pkValue == null || pkValue === '' || pkValue === 0;
+      // Note: pkValue of 0 is VALID - only null/undefined/empty string indicate insert
+      const isInsert = pkValue == null || pkValue === '';
       const queryRef = isInsert ? (mgr.queryRefs?.insertQueryRef ?? null) : (mgr.queryRefs?.updateQueryRef ?? 28);
 
       if (!queryRef) return true;

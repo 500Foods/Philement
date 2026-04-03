@@ -31,6 +31,8 @@ import {
   setEditorEditable,
   foldAllInEditor,
   unfoldAllInEditor,
+  formatSortedJson,
+  parseAndSortJson,
 } from '../../core/codemirror-setup.js';
 import './lookups.css';
 
@@ -344,7 +346,7 @@ export default class LookupsManager {
       }
     }
 
-    const jsonStr = typeof jsonData === 'object' ? JSON.stringify(jsonData, null, 2) : jsonData;
+    const jsonStr = typeof jsonData === 'object' ? formatSortedJson(jsonData, 2) : jsonData;
 
     // If editor already exists, just update content
     if (this.collectionEditor) {
@@ -473,6 +475,8 @@ export default class LookupsManager {
       },
       // Custom save: assembles table row data + JSON/Summary editor content
       onExecuteSave: (row, editHelper) => this._executeChildSave(row, editHelper),
+      // Custom duplicate: clones a lookup value with next available key_idx
+      onDuplicate: (rowData) => this._executeChildDuplicate(rowData),
       // Custom refresh: re-query with the current LOOKUPID parameter
       onRefresh: () => {
         if (this.selectedLookupId != null) {
@@ -598,22 +602,32 @@ export default class LookupsManager {
    * Build the params object for QueryRef 43 (update) from row data.
    * Shared by both parent and child saves.
    *
+   * Uses valueOrFallback() to ensure 0 is treated as a valid value (not falsy).
+   * The JS ?? operator treats 0 as nullish, which would lose valid zero values.
+   *
    * @param {Object} rowData      - Current (possibly edited) row data
    * @param {Object} originalData - Row data captured when edit mode was entered
    * @param {Object} options      - { summary, collection } override strings
    * @returns {Object} { INTEGER, STRING } params matching QueryRef 43 placeholders
    */
   _buildLookupSaveParams(rowData, originalData, { summary = '', collection = '{}' } = {}) {
+    // Helper: return first value that is not null/undefined (0 is valid)
+    const valueOrFallback = (primary, secondary, fallback) => {
+      if (primary != null) return primary;
+      if (secondary != null) return secondary;
+      return fallback;
+    };
+
     return {
       INTEGER: {
-        LOOKUPID:     rowData.lookup_id ?? originalData.lookup_id ?? 0,
-        KEYIDX:       rowData.key_idx ?? originalData.key_idx ?? 0,
-        VALUEINT:     rowData.value_int ?? originalData.value_int ?? 0,
-        SORTSEQ:      rowData.sort_seq ?? originalData.sort_seq ?? 0,
-        STATUSA1:     rowData.status_a1 ?? originalData.status_a1 ?? 1,
+        LOOKUPID:     valueOrFallback(rowData.lookup_id, originalData.lookup_id, 0),
+        KEYIDX:       valueOrFallback(rowData.key_idx, originalData.key_idx, 0),
+        VALUEINT:     valueOrFallback(rowData.value_int, originalData.value_int, 0),
+        SORTSEQ:      valueOrFallback(rowData.sort_seq, originalData.sort_seq, 0),
+        STATUSA1:     valueOrFallback(rowData.status_a1, originalData.status_a1, 1),
         USERID:       this.app?.user?.id ?? 0,
-        ORIGLOOKUPID: originalData.lookup_id ?? rowData.lookup_id ?? 0,
-        ORIGKEYIDX:   originalData.key_idx ?? rowData.key_idx ?? 0,
+        ORIGLOOKUPID: valueOrFallback(originalData.lookup_id, rowData.lookup_id, 0),
+        ORIGKEYIDX:   valueOrFallback(originalData.key_idx, rowData.key_idx, 0),
       },
       STRING: {
         VALUETXT:   rowData.value_txt ?? rowData.name ?? originalData.value_txt ?? '',
@@ -635,7 +649,8 @@ export default class LookupsManager {
     const originalData = this.parentTable.originalRowData || rowData;
     const pkField = this.parentTable.primaryKeyField || 'lookup_id';
     const pkValue = rowData[pkField];
-    const isInsert = pkValue == null || pkValue === '' || pkValue === 0;
+    // Note: pkValue of 0 is VALID - only null/undefined/empty string indicate insert
+    const isInsert = pkValue == null || pkValue === '';
     const queryRef = isInsert
       ? (this.parentTable.queryRefs?.insertQueryRef ?? 42)
       : (this.parentTable.queryRefs?.updateQueryRef ?? 43);
@@ -663,13 +678,16 @@ export default class LookupsManager {
     const originalData = this.childTable.originalRowData || rowData;
     const pkField = this.childTable.primaryKeyField || 'lookup_value_id';
     const pkValue = rowData[pkField];
-    const isInsert = pkValue == null || pkValue === '' || pkValue === 0;
+    // Note: pkValue of 0 is VALID - only null/undefined/empty string indicate insert
+    const isInsert = pkValue == null || pkValue === '';
     const queryRef = isInsert
       ? (this.childTable.queryRefs?.insertQueryRef ?? 42)
       : (this.childTable.queryRefs?.updateQueryRef ?? 43);
 
     // Gather content from external editors
-    const jsonContent = this._getJsonEditorContent() || '{}';
+    // Normalize JSON with sorted keys before saving to ensure consistency
+    const rawJsonContent = this._getJsonEditorContent() || '{}';
+    const jsonContent = parseAndSortJson(rawJsonContent, 2) || rawJsonContent;
     const summaryContent = this._getSummaryEditorContent() || '';
 
     const params = this._buildLookupSaveParams(rowData, originalData, {
@@ -682,6 +700,80 @@ export default class LookupsManager {
     if (isInsert && result?.[0]?.[pkField] != null) {
       row.update({ [pkField]: result[0][pkField] });
     }
+  }
+
+  /**
+   * Custom duplicate for the child table (lookup values).
+   * Calls QueryRef 42 to insert a clone of the selected lookup value.
+   * The server calculates the next key_idx using the CTE in the query.
+   * After insertion, refreshes the table and selects the newly created row.
+   *
+   * @param {Object} rowData - The original row data being duplicated
+   * @returns {null} Returns null to abort default duplicate behavior (handled internally)
+   */
+  async _executeChildDuplicate(rowData) {
+    if (this.selectedLookupId == null) {
+      throw new Error('No lookup selected');
+    }
+
+    // Fetch full detail data (summary, code, collection) via QueryRef 35
+    // These fields aren't in the table row data, they're loaded separately
+    let fullDetail = {};
+    try {
+      const detail = await authQuery(this.app.api, 35, {
+        INTEGER: {
+          LOOKUPID: this.selectedLookupId,
+          KEYIDX: rowData.key_idx,
+        },
+      });
+      if (detail && detail.length > 0) {
+        fullDetail = detail[0];
+      }
+    } catch (error) {
+      log(Subsystems.TABLE, Status.WARN, `[Lookups] Failed to load detail for clone: ${error.message}`);
+      // Continue with empty values if detail fetch fails
+    }
+
+    // Calculate next sort_seq (max + 10)
+    const currentRows = this.childTable?.table?.getData() || [];
+    const maxSortSeq = currentRows.reduce((max, row) => {
+      const sortSeq = row.sort_seq;
+      return sortSeq != null && sortSeq > max ? sortSeq : max;
+    }, 0);
+    const nextSortSeq = maxSortSeq + 10;
+
+    // Call QueryRef 42 to insert the cloned lookup value
+    // The server handles calculating the next key_idx via the next_key_idx CTE
+    const result = await authQuery(this.app.api, 42, {
+      INTEGER: {
+        LOOKUPID: this.selectedLookupId,
+        VALUEINT: rowData.value_int ?? 0,
+        SORTSEQ: nextSortSeq,
+        STATUSLUA1: rowData.status_a1 ?? 1,
+        USERID: this.app?.user?.id ?? 0,
+      },
+      STRING: {
+        VALUETXT: rowData.value_txt ? `${rowData.value_txt} (Copy)` : '',
+        SUMMARY: fullDetail.summary ?? '',
+        CODE: fullDetail.code ?? '',
+        COLLECTION: fullDetail.collection ?? '{}',
+      },
+    });
+
+    // The insert returns the new key_idx
+    const newKeyIdx = result?.[0]?.key_idx;
+    if (newKeyIdx == null) {
+      throw new Error('Clone operation did not return a new key_idx');
+    }
+
+    // Save the new key_idx so it gets selected after refresh
+    this.childTable.saveSelectedRowId(newKeyIdx);
+
+    // Refresh the table data to show the new row
+    await this.loadChildData(this.selectedLookupId);
+
+    // Return null to abort default duplicate behavior (we handled it)
+    return null;
   }
 
   async loadDetailData(rowData) {
@@ -713,7 +805,7 @@ export default class LookupsManager {
     if (this.collectionEditor) {
       // Editor already initialized, just update content
       const jsonData = typeof jsonContent === 'string' ? JSON.parse(jsonContent || '{}') : jsonContent;
-      const jsonStr = JSON.stringify(jsonData, null, 2);
+      const jsonStr = formatSortedJson(jsonData, 2);
       this._setJsonEditorContent(jsonStr);
     } else if (this.elements.jsonEditor && this.activeTab === 'json') {
       // Initialize editor if JSON tab is active

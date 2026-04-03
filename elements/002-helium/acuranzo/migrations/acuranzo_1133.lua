@@ -49,7 +49,7 @@ table.insert(queries,{sql=[[
                 ${QTC_MEDIUM}                                                       AS query_queue_a58,
                 ${TIMEOUT}                                                          AS query_timeout,
                 [==[
-                    ${INSERT_KEYSTART} key_id ${INSERT_KEYEND}
+                    ${INSERT_KEY_START} key_idx ${INSERT_KEY_END}
                         INSERT INTO ${SCHEMA}lookups (
                             lookup_id,
                             key_idx,
@@ -65,14 +65,14 @@ table.insert(queries,{sql=[[
                             updated_at,
                             updated_id
                         )
-                        WITH next_key_id AS (
-                            SELECT COALESCE(MAX(key_id), 0) + 1 AS new_key_id
+                        WITH next_key_idx AS (
+                            SELECT COALESCE(MAX(key_idx), 0) + 1 AS new_key_idx
                             FROM ${SCHEMA}lookups
                             WHERE lookup_id = :LOOKUPID
                         )
                         SELECT
                             :LOOKUPID,
-                            new_key_id,
+                            new_key_idx,
                             :VALUETXT,
                             :VALUEINT,
                             :SORTSEQ,

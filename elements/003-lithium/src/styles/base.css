@@ -116,9 +116,11 @@
     --accent-focus: #3949AB;
     --accent-disabled: #8080FF;
     --accent-toggle: #FFFF8F;
-    --accent-crimson: #DC143C; 
     --accent-editable: linear-gradient(to right,#a00000 0%,#900000 40%,#800000 100%);
     --accent-editing: #FFFF8F;
+
+    --accent-crimson: #DC143C; 
+    --crimson-bg: #400000;
 
     --accent-danger: #EF5350;
     --accent-danger-hover: #E53935;

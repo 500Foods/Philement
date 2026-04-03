@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><title>Code coverage report for managers/queries/queries.js</title><meta charset="utf-8"><link rel="stylesheet" href="../../prettify.css"><link rel="stylesheet" href="../../base.css"><link rel="shortcut icon" type="image/x-icon" href="../../favicon.png"><meta name="viewport" content="width=device-width,initial-scale=1"><style type="text/css">.coverage-summary .sorter{background-image:url(../../sort-arrow-sprite.png)}</style></head><body><div class="wrapper"><div class="pad1"><h1><a href="../../index.html">All files</a> / <a href="index.html">managers/queries</a> queries.js</h1><div class="clearfix"><div class="fl pad1y space-right2"><span class="strong">10.35% </span><span class="quiet">Statements</span> <span class="fraction">44/425</span></div><div class="fl pad1y space-right2"><span class="strong">13.9% </span><span class="quiet">Branches</span> <span class="fraction">31/223</span></div><div class="fl pad1y space-right2"><span class="strong">3.12% </span><span class="quiet">Functions</span> <span class="fraction">3/96</span></div><div class="fl pad1y space-right2"><span class="strong">11.02% </span><span class="quiet">Lines</span> <span class="fraction">43/390</span></div></div><p class="quiet">Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.</p><template id="filterTemplate"><div class="quiet">Filter: <input type="search" id="fileSearch"></div></template></div><div class="status-line low"></div><pre><table class="coverage">
+<!doctype html><html lang="en"><head><title>Code coverage report for managers/queries/queries.js</title><meta charset="utf-8"><link rel="stylesheet" href="../../prettify.css"><link rel="stylesheet" href="../../base.css"><link rel="shortcut icon" type="image/x-icon" href="../../favicon.png"><meta name="viewport" content="width=device-width,initial-scale=1"><style type="text/css">.coverage-summary .sorter{background-image:url(../../sort-arrow-sprite.png)}</style></head><body><div class="wrapper"><div class="pad1"><h1><a href="../../index.html">All files</a> / <a href="index.html">managers/queries</a> queries.js</h1><div class="clearfix"><div class="fl pad1y space-right2"><span class="strong">10.56% </span><span class="quiet">Statements</span> <span class="fraction">45/426</span></div><div class="fl pad1y space-right2"><span class="strong">14.22% </span><span class="quiet">Branches</span> <span class="fraction">32/225</span></div><div class="fl pad1y space-right2"><span class="strong">3.12% </span><span class="quiet">Functions</span> <span class="fraction">3/96</span></div><div class="fl pad1y space-right2"><span class="strong">11.25% </span><span class="quiet">Lines</span> <span class="fraction">44/391</span></div></div><p class="quiet">Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.</p><template id="filterTemplate"><div class="quiet">Filter: <input type="search" id="fileSearch"></div></template></div><div class="status-line low"></div><pre><table class="coverage">
 <tr><td class="line-count quiet"><a name="L1"></a><a href="#L1">1</a>
 <a name="L2"></a><a href="#L2">2</a>
 <a name="L3"></a><a href="#L3">3</a>
@@ -940,7 +940,11 @@
 <a name="L939"></a><a href="#L939">939</a>
 <a name="L940"></a><a href="#L940">940</a>
 <a name="L941"></a><a href="#L941">941</a>
-<a name="L942"></a><a href="#L942">942</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name="L942"></a><a href="#L942">942</a>
+<a name="L943"></a><a href="#L943">943</a>
+<a name="L944"></a><a href="#L944">944</a>
+<a name="L945"></a><a href="#L945">945</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1185,6 +1189,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1911,6 +1917,7 @@ import { log, Subsystems, Status } from '../../core/log.js';
 import { processIcons } from '../../core/icons.js';
 import { setupManagerFooterIcons, createFontPopup } from '../../core/manager-ui.js';
 import { ManagerEditHelper } from '../../core/manager-edit-helper.js';
+import { formatSortedJson, parseAndSortJson } from '../../core/codemirror-setup.js';
 &nbsp;
 // Editor management (CodeMirror init, font, prettify, undo/redo)
 import { createEditorManager } from './queries-editors.js';
@@ -2127,7 +2134,9 @@ export default class QueriesManager {
     // Gather content from all editors
     const sqlContent = this.sqlEditor?.state?.doc?.toString() || '';
     const summaryContent = this.summaryEditor?.state?.doc?.toString() || '';
-    const collectionString = this.editorManager?.getCollectionContent() || <span class="branch-1 cbranch-no" title="branch not covered">'{}';</span>
+    // Normalize JSON with sorted keys before saving to ensure consistency
+    const rawCollectionString = this.editorManager?.getCollectionContent() || <span class="branch-1 cbranch-no" title="branch not covered">'{}';</span>
+    const collectionString = parseAndSortJson(rawCollectionString, 2) || <span class="branch-1 cbranch-no" title="branch not covered">rawCollectionString;</span>
 &nbsp;
     const params = {
       INTEGER: {
@@ -2253,7 +2262,7 @@ export default class QueriesManager {
       }
 <span class="cstat-no" title="statement not covered">      if (this.collectionEditor) {</span>
         // Update content directly via CodeMirror — exclude from undo history
-        const jsonStr = <span class="cstat-no" title="statement not covered">JSON.stringify(collectionContent, null, 2);</span>
+        const jsonStr =<span class="cstat-no" title="statement not covered"> formatSortedJson(collectionContent, 2);</span>
 <span class="cstat-no" title="statement not covered">        if (this.collectionEditor.state.doc.toString() !== jsonStr) {</span>
 <span class="cstat-no" title="statement not covered">          this.editorManager._setContentNoHistory(this.collectionEditor, jsonStr);</span>
         }
@@ -2822,4 +2831,4 @@ export default class QueriesManager {
 <span class="cstat-no" title="statement not covered">    this.queryTable = null;</span>
   }
 }
-&nbsp;</pre></td></tr></table></pre><div class="push"></div></div><div class="footer quiet pad2 space-top1 center small">Code coverage generated by <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a> at 2026-04-02T19:44:41.356Z</div><script src="../../prettify.js"></script><script>window.onload=function(){prettyPrint()}</script><script src="../../sorter.js"></script><script src="../../block-navigation.js"></script></body></html>
+&nbsp;</pre></td></tr></table></pre><div class="push"></div></div><div class="footer quiet pad2 space-top1 center small">Code coverage generated by <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a> at 2026-04-02T22:22:49.961Z</div><script src="../../prettify.js"></script><script>window.onload=function(){prettyPrint()}</script><script src="../../sorter.js"></script><script src="../../block-navigation.js"></script></body></html>
