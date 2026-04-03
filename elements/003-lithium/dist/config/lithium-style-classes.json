@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS class selectors/names used across the Lithium codebase",
-    "generated": "2026-04-02T19:58:26.871Z",
+    "generated": "2026-04-03T01:02:10.571Z",
     "sources": {
       "css": "49 files in src/**/*.css",
       "js": "80 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
     "total_selectors": 1576,
-    "total_occurrences": 19625
+    "total_occurrences": 19651
   },
   "selectors": [
     {
@@ -2744,9 +2744,9 @@
     {
       "selector": ".crimson-citation-header-btn.active",
       "css": 1,
-      "js": 42,
+      "js": 43,
       "html": 7,
-      "total": 50,
+      "total": 51,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -2774,9 +2774,9 @@
     {
       "selector": ".crimson-citation-header-btn.active .crimson-citation-counter",
       "css": 1,
-      "js": 44,
+      "js": 45,
       "html": 7,
-      "total": 52,
+      "total": 53,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -4007,9 +4007,9 @@
     {
       "selector": ".crimson-debug-btn.active",
       "css": 1,
-      "js": 42,
+      "js": 43,
       "html": 7,
-      "total": 50,
+      "total": 51,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -6553,9 +6553,9 @@
     {
       "selector": ".font-popup-style-btn.active",
       "css": 1,
-      "js": 40,
+      "js": 41,
       "html": 7,
-      "total": 48,
+      "total": 49,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -14452,9 +14452,9 @@
     {
       "selector": ".lookups-tab-btn.active",
       "css": 1,
-      "js": 42,
+      "js": 43,
       "html": 10,
-      "total": 53,
+      "total": 54,
       "files": {
         "css": [
           "src/managers/lookups/lookups.css"
@@ -14536,9 +14536,9 @@
     {
       "selector": ".lookups-tab-pane.active",
       "css": 1,
-      "js": 41,
+      "js": 42,
       "html": 10,
-      "total": 52,
+      "total": 53,
       "files": {
         "css": [
           "src/managers/lookups/lookups.css"
@@ -15429,9 +15429,9 @@
     {
       "selector": ".manager-font-popup-style-btn.active",
       "css": 1,
-      "js": 61,
+      "js": 62,
       "html": 7,
-      "total": 69,
+      "total": 70,
       "files": {
         "css": [
           "src/core/manager-ui.css"
@@ -16034,9 +16034,9 @@
     {
       "selector": ".manager-transition-overlay.active",
       "css": 1,
-      "js": 41,
+      "js": 42,
       "html": 7,
-      "total": 49,
+      "total": 50,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -16810,9 +16810,9 @@
     {
       "selector": ".menu-item.active",
       "css": 1,
-      "js": 47,
+      "js": 48,
       "html": 7,
-      "total": 55,
+      "total": 56,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -16840,9 +16840,9 @@
     {
       "selector": ".menu-item.active .menu-item-count",
       "css": 1,
-      "js": 48,
+      "js": 49,
       "html": 7,
-      "total": 56,
+      "total": 57,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -19625,9 +19625,9 @@
     {
       "selector": ".queries-tab-btn.active",
       "css": 1,
-      "js": 43,
+      "js": 44,
       "html": 12,
-      "total": 56,
+      "total": 57,
       "files": {
         "css": [
           "src/managers/queries/queries.css"
@@ -19709,9 +19709,9 @@
     {
       "selector": ".queries-tab-pane.active",
       "css": 1,
-      "js": 41,
+      "js": 42,
       "html": 12,
-      "total": 54,
+      "total": 55,
       "files": {
         "css": [
           "src/managers/queries/queries.css"
@@ -20715,9 +20715,9 @@
     {
       "selector": ".sidebar-icon-btn.active",
       "css": 1,
-      "js": 41,
+      "js": 42,
       "html": 12,
-      "total": 54,
+      "total": 55,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -20746,9 +20746,9 @@
     {
       "selector": ".sidebar-icon-btn.active:hover",
       "css": 1,
-      "js": 41,
+      "js": 42,
       "html": 12,
-      "total": 54,
+      "total": 55,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -21344,9 +21344,9 @@
     {
       "selector": ".sidebar-menu-btn.active",
       "css": 1,
-      "js": 41,
+      "js": 42,
       "html": 8,
-      "total": 50,
+      "total": 51,
       "files": {
         "css": [
           "src/styles/layout.css"
@@ -22273,9 +22273,9 @@
     {
       "selector": ".style-editor-toolbar .style-state-btn.active",
       "css": 1,
-      "js": 41,
+      "js": 42,
       "html": 13,
-      "total": 55,
+      "total": 56,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -22447,9 +22447,9 @@
     {
       "selector": ".style-font-popup-style-btn.active",
       "css": 1,
-      "js": 40,
+      "js": 41,
       "html": 7,
-      "total": 48,
+      "total": 49,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -22647,9 +22647,9 @@
     {
       "selector": ".style-json-view.active",
       "css": 1,
-      "js": 40,
+      "js": 41,
       "html": 8,
-      "total": 49,
+      "total": 50,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -22859,9 +22859,9 @@
     {
       "selector": ".style-mode-btn.active",
       "css": 1,
-      "js": 40,
+      "js": 41,
       "html": 9,
-      "total": 50,
+      "total": 51,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -23171,9 +23171,9 @@
     {
       "selector": ".style-section-view.active",
       "css": 1,
-      "js": 40,
+      "js": 41,
       "html": 8,
-      "total": 49,
+      "total": 50,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -23311,9 +23311,9 @@
     {
       "selector": ".style-target-circle.active",
       "css": 1,
-      "js": 42,
+      "js": 43,
       "html": 7,
-      "total": 50,
+      "total": 51,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -23824,9 +23824,9 @@
     {
       "selector": ".tab-btn.active",
       "css": 1,
-      "js": 40,
+      "js": 41,
       "html": 7,
-      "total": 48,
+      "total": 49,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -23898,9 +23898,9 @@
     {
       "selector": ".tab-pane.active",
       "css": 1,
-      "js": 40,
+      "js": 41,
       "html": 7,
-      "total": 48,
+      "total": 49,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -24414,9 +24414,9 @@
     {
       "selector": ".tabulator-simple .tabulator-page.active",
       "css": 1,
-      "js": 40,
+      "js": 41,
       "html": 7,
-      "total": 48,
+      "total": 49,
       "files": {
         "css": [
           "src/init/tabulator-simple.css"
@@ -25961,9 +25961,9 @@
     {
       "selector": ".transition-overlay.active",
       "css": 1,
-      "js": 40,
+      "js": 41,
       "html": 8,
-      "total": 49,
+      "total": 50,
       "files": {
         "css": [
           "src/styles/layout.css"
@@ -26756,9 +26756,9 @@
     {
       "selector": ".zoom-popup-detent.active .zoom-popup-detent-mark",
       "css": 1,
-      "js": 71,
+      "js": 72,
       "html": 7,
-      "total": 79,
+      "total": 80,
       "files": {
         "css": [
           "src/managers/main/main.css"

@@ -411,7 +411,7 @@
   overflow-y: auto;
   overflow-x: hidden;
   padding: var(--space-4);
-  background: var(--bg-primary);
+  background: var(--crimson-bg);
   display: flex;
   flex-direction: column;
   gap: var(--space-3);

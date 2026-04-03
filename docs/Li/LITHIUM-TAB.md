@@ -108,6 +108,7 @@ await table.loadData();
 | `onDataLoaded` | Function | ❌ | Called when data loaded |
 | `onEditModeChange` | Function | ❌ | Called when edit mode changes |
 | `onExecuteSave` | Function | ❌ | Custom save logic — `async (row, editHelper) => {}` |
+| `onDuplicate` | Function | ❌ | Custom duplicate logic — `async (rowData) => newRowData` |
 | `onRefresh` | Function | ❌ | Custom refresh (e.g. re-query with params) |
 
 ---
@@ -143,11 +144,65 @@ The Navigator provides standard table controls in four groups:
 | Button | Action |
 |--------|--------|
 | ➕ Add | Create new row |
-| 📋 Duplicate | Copy selected row |
+| 📋 Duplicate | Copy selected row (disabled when no row selected) |
 | ✏️ Edit | Enter edit mode |
 | 💾 Save | Commit changes |
 | 🚫 Cancel | Revert changes |
 | 🗑 Delete | Remove selected row |
+
+**Duplicate Button Behavior:**
+
+- Disabled when no row is selected
+- Default behavior: copies row data, removes primary key, appends " (Copy)" to name
+- Custom behavior: provide `onDuplicate` callback for manager-specific clone logic
+
+**Implementing Custom Duplicate Logic:**
+
+For tables that need server-side clone operations (e.g., calling an insert QueryRef):
+
+```javascript
+this.myTable = new LithiumTable({
+  // ... other options ...
+  onDuplicate: async (rowData) => this._executeCustomDuplicate(rowData),
+});
+
+async _executeCustomDuplicate(rowData) {
+  // 1. Fetch any additional data not in the table (like detail data)
+  const fullData = await this._fetchDetailData(rowData.id);
+
+  // 2. Call server to create the clone (e.g., QueryRef 42)
+  const result = await authQuery(this.app.api, 42, {
+    INTEGER: { /* params */ },
+    STRING: { /* params including summary, code, collection */ },
+  });
+
+  // 3. Save the new ID for selection after refresh
+  const newId = result?.[0]?.key_idx;
+  this.myTable.saveSelectedRowId(newId);
+
+  // 4. Refresh the table to show the new row
+  await this.loadTableData();
+
+  // 5. Return null to abort default duplicate behavior
+  return null;
+}
+```
+
+**Key points for custom duplicate:**
+- Return `null` to abort default behavior (you handled the insert)
+- Save the new row ID so it gets selected after refresh
+- Refresh the table data to include the newly created row
+- Fetch any detail data needed that's not in the table row (summary, code, collection, etc.)
+
+**Managers with custom duplicate implemented:**
+- **Lookups Manager (child table)**: Uses QueryRef 42, fetches detail via QueryRef 35
+- **Queries Manager**: Uses QueryRef 29, fetches detail via QueryRef 27
+- **Style Manager**: Uses default duplicate (no custom callback needed for lookup table)
+
+To add custom duplicate to a new manager:
+1. Add `onDuplicate: (rowData) => this._executeDuplicate(rowData)` to LithiumTable options
+2. Implement `_executeDuplicate(rowData)` method following the pattern above
+3. Ensure your insert QueryRef returns the new primary key
 
 **Edit Mode Behavior:**
 
@@ -1149,6 +1204,39 @@ this.queryTable = new LithiumTable({
 ```
 
 If `onExecuteSave` is **not** provided, the default `executeSave()` uses `insertQueryRef`/`updateQueryRef` for simple table-only saves. If neither callback nor queryRefs are configured, save throws an error (no silent no-op).
+
+> **⚠️ Warning: Integer Values and `??` Operator**
+>
+> JavaScript's nullish coalescing operator (`??`) treats `0` as nullish and will fall through to the next value. **Always use `!= null` checks for integer fields that can legitimately be 0.**
+>
+> ```javascript
+> // ❌ BAD: key_idx=0 becomes originalData.key_idx (loses the edit)
+> await authQuery(api, 43, { INTEGER: { KEYIDX: rowData.key_idx ?? originalData.key_idx ?? 0 } });
+>
+> // ✅ GOOD: preserves 0 as a valid value
+> const valueOrFallback = (primary, secondary, fallback) => {
+>   if (primary != null) return primary;
+>   if (secondary != null) return secondary;
+>   return fallback;
+> };
+> await authQuery(api, 43, { INTEGER: { KEYIDX: valueOrFallback(rowData.key_idx, originalData.key_idx, 0) } });
+> ```
+>
+> This applies to any integer field that can have a value of 0: `key_idx`, `lookup_id`, `sort_seq`, `status_a1`, etc.
+
+> **⚠️ Warning: Primary Key Check for Insert vs Update**
+>
+> When determining if a row is an insert (no PK) vs update (has PK), **do not treat `0` as "no primary key"**. A PK of `0` is valid and should trigger an update.
+>
+> ```javascript
+> // ❌ BAD: pkValue=0 triggers INSERT instead of UPDATE
+> const isInsert = pkValue == null || pkValue === '' || pkValue === 0;
+>
+> // ✅ GOOD: only null/undefined/empty string indicate insert
+> const isInsert = pkValue == null || pkValue === '';
+> ```
+>
+> This bug causes record 0 to fail updates because the code tries to insert a new row with an existing PK, or misses ORIG lookup fields required for updates.
 
 ### Custom Refresh (`onRefresh`)
 

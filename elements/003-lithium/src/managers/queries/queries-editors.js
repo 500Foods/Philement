@@ -21,6 +21,7 @@ import {
   updateUndoRedoButtons,
   foldAllInEditor,
   unfoldAllInEditor,
+  formatSortedJson,
   READONLY_CLASS,
 } from '../../core/codemirror-setup.js';
 
@@ -159,7 +160,7 @@ export class EditorManager {
     }
 
     try {
-      const jsonStr = JSON.stringify(data, null, 2);
+      const jsonStr = formatSortedJson(data, 2);
 
       this._jsonReadOnlyCompartment = createReadOnlyCompartment();
 

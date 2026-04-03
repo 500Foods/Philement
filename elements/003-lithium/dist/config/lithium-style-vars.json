@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS custom properties (variables) used across the Lithium codebase",
-    "generated": "2026-04-02T19:58:25.627Z",
+    "generated": "2026-04-03T01:02:09.129Z",
     "sources": {
       "css": "49 files in src/**/*.css",
       "js": "80 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
-    "total_variables": 208,
-    "total_occurrences": 3201
+    "total_variables": 209,
+    "total_occurrences": 3202
   },
   "variables": [
     {
@@ -181,10 +181,10 @@
     },
     {
       "name": "--bg-primary",
-      "css": 55,
+      "css": 54,
       "js": 0,
       "html": 1,
-      "total": 56
+      "total": 55
     },
     {
       "name": "--bg-primary-rgb",
@@ -360,6 +360,13 @@
       "js": 0,
       "html": 0,
       "total": 5
+    },
+    {
+      "name": "--crimson-bg",
+      "css": 2,
+      "js": 0,
+      "html": 0,
+      "total": 2
     },
     {
       "name": "--edit-gutter-bg",
