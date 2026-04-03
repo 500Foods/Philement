@@ -34,5 +34,11 @@
 .tabulator-cell.tabulator-editing > select {
   padding: 4px 0px !important;
 }
+ 
+/* Group rows */
+.lithium-table-container .tabulator-row.tabulator-group {
+  min-height: 28px !important;
+  background: var(--bg-tertiary) !important;
+}               
 
 } /* end @layer vendor-fixes */

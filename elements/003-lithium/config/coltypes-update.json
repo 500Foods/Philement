@@ -1,0 +1,1253 @@
+{
+  "$schema": "./tabledef-schema.json",
+  "$version": "1.0.0",
+  "$description": "Updated coltypes for LithiumTable including new dropdown types",
+
+  "coltypes": {
+    "boolean": {
+      "accessorDownload": null,
+      "align": "center",
+      "blank": null,
+      "bottomCalc": null,
+      "cssClass": "li-col-boolean",
+      "description": "True/false toggle values (tick/cross display)",
+      "editor": "tickCross",
+      "editorParams": {
+        "indeterminateValue": null,
+        "tristate": false
+      },
+      "formatter": "tickCross",
+      "formatterParams": {
+        "allowEmpty": true,
+        "allowTruthy": true
+      },
+      "headerFilterFunc": "=",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 50,
+      "sorter": "boolean",
+      "vertAlign": "middle",
+      "width": 70,
+      "zero": false
+    },
+    "booleanCheckbox": {
+      "accessorDownload": null,
+      "align": "center",
+      "blank": null,
+      "bottomCalc": null,
+      "cssClass": "li-col-boolean-checkbox",
+      "description": "True/false as checkbox only (no text)",
+      "editor": "tickCross",
+      "editorParams": {
+        "indeterminateValue": null,
+        "tristate": false
+      },
+      "formatter": "tickCross",
+      "formatterParams": {
+        "allowEmpty": false,
+        "allowTruthy": true,
+        "crossElement": "",
+        "tickElement": "<i class=\"fa fa-check\"></i>"
+      },
+      "headerFilterFunc": "=",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 40,
+      "sorter": "boolean",
+      "vertAlign": "middle",
+      "width": 50,
+      "zero": false
+    },
+    "booleanIcon": {
+      "accessorDownload": null,
+      "align": "center",
+      "blank": null,
+      "bottomCalc": null,
+      "cssClass": "li-col-boolean-icon",
+      "description": "True/false as icon (checkmark/dot only)",
+      "editor": "tickCross",
+      "editorParams": {
+        "indeterminateValue": null,
+        "tristate": false
+      },
+      "formatter": "tickCross",
+      "formatterParams": {
+        "allowEmpty": true,
+        "allowTruthy": true,
+        "crossElement": "<i class=\"fa fa-circle-o\"></i>",
+        "tickElement": "<i class=\"fa fa-check-circle\"></i>"
+      },
+      "headerFilterFunc": "=",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 40,
+      "sorter": "boolean",
+      "vertAlign": "middle",
+      "width": 50,
+      "zero": false
+    },
+    "booleanSwitch": {
+      "accessorDownload": null,
+      "align": "center",
+      "blank": null,
+      "bottomCalc": null,
+      "cssClass": "li-col-boolean-switch",
+      "description": "True/false as toggle switch",
+      "editor": "tickCross",
+      "editorParams": {
+        "indeterminateValue": null,
+        "tristate": false
+      },
+      "formatter": "toggle",
+      "formatterParams": {
+        "offLabel": "Off",
+        "onLabel": "On"
+      },
+      "headerFilterFunc": "=",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 60,
+      "sorter": "boolean",
+      "vertAlign": "middle",
+      "width": 80,
+      "zero": false
+    },
+    "color": {
+      "accessorDownload": null,
+      "align": "center",
+      "blank": "",
+      "bottomCalc": null,
+      "cssClass": "li-col-color",
+      "description": "Color swatch display (hex color value)",
+      "editor": "input",
+      "editorParams": {
+        "search": false
+      },
+      "formatter": "color",
+      "formatterParams": {},
+      "headerFilterFunc": "like",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 40,
+      "sorter": "alphanum",
+      "vertAlign": "middle",
+      "width": 60,
+      "zero": null
+    },
+    "colorPicker": {
+      "accessorDownload": null,
+      "align": "center",
+      "blank": "",
+      "bottomCalc": null,
+      "cssClass": "li-col-color-picker",
+      "description": "Color picker with native browser color input",
+      "editor": "color",
+      "editorParams": {},
+      "formatter": "color",
+      "formatterParams": {},
+      "headerFilterFunc": "like",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 50,
+      "sorter": "alphanum",
+      "vertAlign": "middle",
+      "width": 70,
+      "zero": null
+    },
+    "currency": {
+      "accessorDownload": null,
+      "align": "right",
+      "blank": "",
+      "bottomCalc": "sum",
+      "bottomCalcFormatter": "money",
+      "bottomCalcFormatterParams": {
+        "decimal": ".",
+        "precision": 2,
+        "symbol": "$",
+        "thousand": ","
+      },
+      "cssClass": "li-col-currency",
+      "description": "Monetary values with currency symbol",
+      "editor": "number",
+      "editorParams": {
+        "max": null,
+        "min": 0,
+        "step": 0.01
+      },
+      "formatter": "money",
+      "formatterParams": {
+        "decimal": ".",
+        "precision": 2,
+        "symbol": "$",
+        "symbolAfter": false,
+        "thousand": ","
+      },
+      "headerFilterFunc": ">=",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 90,
+      "sorter": "number",
+      "vertAlign": "middle",
+      "width": null,
+      "zero": "$0.00"
+    },
+    "date": {
+      "accessorDownload": null,
+      "align": "center",
+      "blank": "",
+      "bottomCalc": null,
+      "cssClass": "li-col-date",
+      "description": "Date values (no time component)",
+      "editor": "date",
+      "editorParams": {},
+      "formatter": "datetime",
+      "formatterParams": {
+        "inputFormat": "yyyy-MM-dd",
+        "invalidPlaceholder": "",
+        "outputFormat": "yyyy-MM-dd"
+      },
+      "headerFilterFunc": "like",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 90,
+      "sorter": "date",
+      "sorterParams": {
+        "format": "yyyy-MM-dd"
+      },
+      "vertAlign": "middle",
+      "width": 110,
+      "zero": null
+    },
+    "dateFlatpickr": {
+      "accessorDownload": null,
+      "align": "center",
+      "blank": "",
+      "bottomCalc": null,
+      "cssClass": "li-col-date-flatpickr",
+      "description": "Date with Flatpickr date picker",
+      "editor": "date",
+      "editorParams": {
+        "flatpickr": true,
+        "format": "Y-m-d"
+      },
+      "formatter": "datetime",
+      "formatterParams": {
+        "inputFormat": "yyyy-MM-dd",
+        "invalidPlaceholder": "",
+        "outputFormat": "yyyy-MM-dd"
+      },
+      "headerFilter": "date",
+      "headerFilterParams": {
+        "flatpickr": true
+      },
+      "headerFilterFunc": "like",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 100,
+      "sorter": "date",
+      "sorterParams": {
+        "format": "yyyy-MM-dd"
+      },
+      "vertAlign": "middle",
+      "width": 120,
+      "zero": null
+    },
+    "datetime": {
+      "accessorDownload": null,
+      "align": "center",
+      "blank": "",
+      "bottomCalc": null,
+      "cssClass": "li-col-datetime",
+      "description": "Date + time values (timestamps in local timezone)",
+      "editor": "datetime-local",
+      "editorParams": {},
+      "formatter": "datetime",
+      "formatterParams": {
+        "inputFormat": "yyyy-MM-dd'T'HH:mm:ss",
+        "invalidPlaceholder": "",
+        "outputFormat": "yyyy-MM-dd HH:mm"
+      },
+      "headerFilterFunc": "like",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 120,
+      "sorter": "datetime",
+      "sorterParams": {
+        "format": "yyyy-MM-dd'T'HH:mm:ss"
+      },
+      "vertAlign": "middle",
+      "width": 150,
+      "zero": null
+    },
+    "datetimeUTC": {
+      "accessorDownload": null,
+      "align": "center",
+      "blank": "",
+      "bottomCalc": null,
+      "cssClass": "li-col-datetime-utc",
+      "description": "Date + time always displayed in UTC (data stored as UTC)",
+      "editor": "datetime-local",
+      "editorParams": {},
+      "formatter": "datetimeUTC",
+      "formatterParams": {
+        "inputFormat": "yyyy-MM-dd'T'HH:mm:ss'Z'",
+        "invalidPlaceholder": "",
+        "outputFormat": "yyyy-MM-dd HH:mm UTC",
+        "timezone": "UTC"
+      },
+      "headerFilterFunc": "like",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 140,
+      "sorter": "datetime",
+      "sorterParams": {
+        "format": "yyyy-MM-dd'T'HH:mm:ss'Z'"
+      },
+      "vertAlign": "middle",
+      "width": 170,
+      "zero": null
+    },
+    "datetimeLocal": {
+      "accessorDownload": null,
+      "align": "center",
+      "blank": "",
+      "bottomCalc": null,
+      "cssClass": "li-col-datetime-local",
+      "description": "UTC timestamp displayed in local timezone",
+      "editor": "datetime-local",
+      "editorParams": {},
+      "formatter": "datetimeLocal",
+      "formatterParams": {
+        "inputFormat": "yyyy-MM-dd'T'HH:mm:ss'Z'",
+        "invalidPlaceholder": "",
+        "outputFormat": "yyyy-MM-dd HH:mm",
+        "timezone": "local"
+      },
+      "headerFilterFunc": "like",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 140,
+      "sorter": "datetime",
+      "sorterParams": {
+        "format": "yyyy-MM-dd'T'HH:mm:ss'Z'"
+      },
+      "vertAlign": "middle",
+      "width": 160,
+      "zero": null
+    },
+    "datetimeISO": {
+      "accessorDownload": null,
+      "align": "left",
+      "blank": "",
+      "bottomCalc": null,
+      "cssClass": "li-col-datetime-iso",
+      "description": "ISO 8601 datetime string (raw, no timezone conversion)",
+      "editor": "input",
+      "editorParams": {},
+      "formatter": "plaintext",
+      "formatterParams": {},
+      "headerFilterFunc": "like",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 160,
+      "sorter": "alphanum",
+      "vertAlign": "middle",
+      "width": 180,
+      "zero": null
+    },
+    "datetimeRelative": {
+      "accessorDownload": null,
+      "align": "left",
+      "blank": "",
+      "bottomCalc": null,
+      "cssClass": "li-col-datetime-relative",
+      "description": "Relative time display (2 hours ago, yesterday, etc.)",
+      "editor": "datetime-local",
+      "editorParams": {},
+      "formatter": "datetimeRelative",
+      "formatterParams": {
+        "inputFormat": "yyyy-MM-dd'T'HH:mm:ss",
+        "suffix": true
+      },
+      "headerFilterFunc": "like",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 100,
+      "sorter": "datetime",
+      "sorterParams": {
+        "format": "yyyy-MM-dd'T'HH:mm:ss"
+      },
+      "vertAlign": "middle",
+      "width": 120,
+      "zero": null
+    },
+    "decimal": {
+      "accessorDownload": null,
+      "align": "right",
+      "blank": "",
+      "bottomCalc": "sum",
+      "bottomCalcFormatter": "number",
+      "bottomCalcFormatterParams": {
+        "precision": 2,
+        "thousand": ","
+      },
+      "cssClass": "li-col-decimal",
+      "description": "Floating-point numbers (prices, measurements, rates)",
+      "editor": "number",
+      "editorParams": {
+        "max": null,
+        "min": null,
+        "step": 0.01
+      },
+      "formatter": "number",
+      "formatterParams": {
+        "decimal": ".",
+        "precision": 2,
+        "thousand": ","
+      },
+      "headerFilterFunc": ">=",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 80,
+      "sorter": "number",
+      "vertAlign": "middle",
+      "width": null,
+      "zero": "0.00"
+    },
+    "duration": {
+      "accessorDownload": null,
+      "align": "right",
+      "blank": "",
+      "bottomCalc": "sum",
+      "bottomCalcFormatter": "duration",
+      "bottomCalcFormatterParams": {
+        "format": "h:mm:ss"
+      },
+      "cssClass": "li-col-duration",
+      "description": "Duration in seconds displayed as HH:MM:SS",
+      "editor": "number",
+      "editorParams": {
+        "max": null,
+        "min": 0,
+        "step": 1
+      },
+      "formatter": "duration",
+      "formatterParams": {
+        "format": "h:mm:ss"
+      },
+      "headerFilterFunc": ">=",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 80,
+      "sorter": "number",
+      "vertAlign": "middle",
+      "width": 100,
+      "zero": "0:00:00"
+    },
+    "email": {
+      "accessorDownload": null,
+      "align": "left",
+      "blank": "",
+      "bottomCalc": null,
+      "cssClass": "li-col-email",
+      "description": "Email address (clickable mailto link)",
+      "editor": "input",
+      "editorParams": {
+        "search": false
+      },
+      "formatter": "link",
+      "formatterParams": {
+        "target": "_blank",
+        "urlPrefix": "mailto:"
+      },
+      "headerFilterFunc": "like",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 120,
+      "sorter": "alphanum",
+      "vertAlign": "middle",
+      "width": null,
+      "zero": null
+    },
+    "emoji": {
+      "accessorDownload": null,
+      "align": "center",
+      "blank": "",
+      "bottomCalc": null,
+      "cssClass": "li-col-emoji",
+      "description": "Emoji character display",
+      "editor": "input",
+      "editorParams": {},
+      "formatter": "plaintext",
+      "formatterParams": {},
+      "headerFilterFunc": "like",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 40,
+      "sorter": "alphanum",
+      "vertAlign": "middle",
+      "width": 50,
+      "zero": null
+    },
+    "enum": {
+      "accessorDownload": null,
+      "align": "left",
+      "blank": "",
+      "bottomCalc": null,
+      "cssClass": "li-col-enum",
+      "description": "Fixed set of values (status codes, categories)",
+      "editor": "list",
+      "editorParams": {
+        "allowEmpty": false,
+        "autocomplete": true,
+        "freetext": false,
+        "listOnEmpty": true,
+        "values": []
+      },
+      "formatter": "plaintext",
+      "formatterParams": {},
+      "headerFilterFunc": "like",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 80,
+      "sorter": "alphanum",
+      "vertAlign": "middle",
+      "width": null,
+      "zero": null
+    },
+    "fileSize": {
+      "accessorDownload": null,
+      "align": "right",
+      "blank": "",
+      "bottomCalc": "sum",
+      "bottomCalcFormatter": "fileSize",
+      "bottomCalcFormatterParams": {},
+      "cssClass": "li-col-file-size",
+      "description": "File size in bytes displayed as KB, MB, GB, etc.",
+      "editor": "number",
+      "editorParams": {
+        "max": null,
+        "min": 0,
+        "step": 1
+      },
+      "formatter": "fileSize",
+      "formatterParams": {
+        "base": 1024,
+        "decimals": 2
+      },
+      "headerFilterFunc": ">=",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 80,
+      "sorter": "number",
+      "vertAlign": "middle",
+      "width": 100,
+      "zero": "0 B"
+    },
+    "html": {
+      "accessorDownload": null,
+      "align": "left",
+      "blank": "",
+      "bottomCalc": null,
+      "cssClass": "li-col-html",
+      "description": "Rich HTML content (rendered in cell)",
+      "editor": "textarea",
+      "editorParams": {},
+      "formatter": "html",
+      "formatterParams": {},
+      "headerFilterFunc": "like",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 150,
+      "sorter": "alphanum",
+      "vertAlign": "top",
+      "width": null,
+      "zero": null
+    },
+    "image": {
+      "accessorDownload": null,
+      "align": "center",
+      "blank": "",
+      "bottomCalc": null,
+      "cssClass": "li-col-image",
+      "description": "Image thumbnail (URL stored in field)",
+      "editor": false,
+      "editorParams": {},
+      "formatter": "image",
+      "formatterParams": {
+        "height": "32px",
+        "urlPrefix": "",
+        "urlSuffix": "",
+        "width": "32px"
+      },
+      "headerFilterFunc": "like",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 40,
+      "sorter": "alphanum",
+      "vertAlign": "middle",
+      "width": 50,
+      "zero": null
+    },
+    "image": {
+      "accessorDownload": null,
+      "align": "center",
+      "blank": "",
+      "bottomCalc": null,
+      "cssClass": "li-col-image",
+      "description": "Image thumbnail (URL stored in field)",
+      "editor": false,
+      "editorParams": {},
+      "formatter": "image",
+      "formatterParams": {
+        "height": "32px",
+        "urlPrefix": "",
+        "urlSuffix": "",
+        "width": "32px"
+      },
+      "headerFilterFunc": "like",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 40,
+      "sorter": "alphanum",
+      "vertAlign": "middle",
+      "width": 50,
+      "zero": null
+    },
+    "imageAvatar": {
+      "accessorDownload": null,
+      "align": "center",
+      "blank": "",
+      "bottomCalc": null,
+      "cssClass": "li-col-image-avatar",
+      "description": "Circular avatar image",
+      "editor": false,
+      "editorParams": {},
+      "formatter": "image",
+      "formatterParams": {
+        "borderRadius": "50%",
+        "height": "32px",
+        "urlPrefix": "",
+        "urlSuffix": "",
+        "width": "32px"
+      },
+      "headerFilterFunc": "like",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 40,
+      "sorter": "alphanum",
+      "vertAlign": "middle",
+      "width": 50,
+      "zero": null
+    },
+    "index": {
+      "accessorDownload": null,
+      "align": "right",
+      "blank": "",
+      "bottomCalc": "count",
+      "bottomCalcFormatter": "number",
+      "bottomCalcFormatterParams": {
+        "precision": 0,
+        "thousand": ""
+      },
+      "cssClass": "li-col-integer",
+      "description": "Simple whole numbers (lookup values)",
+      "editor": "number",
+      "editorParams": {
+        "max": null,
+        "min": null,
+        "step": 1
+      },
+      "formatter": "number",
+      "formatterParams": {
+        "precision": 0,
+        "thousand": ""
+      },
+      "headerFilterFunc": ">=",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 40,
+      "sorter": "number",
+      "vertAlign": "middle",
+      "width": null,
+      "zero": "0"
+    },
+    "integer": {
+      "accessorDownload": null,
+      "align": "right",
+      "blank": "",
+      "bottomCalc": "sum",
+      "bottomCalcFormatter": "number",
+      "bottomCalcFormatterParams": {
+        "precision": 0,
+        "thousand": ","
+      },
+      "cssClass": "li-col-integer",
+      "description": "Whole numbers (IDs, counts, references)",
+      "editor": "number",
+      "editorParams": {
+        "max": null,
+        "min": null,
+        "step": 1
+      },
+      "formatter": "number",
+      "formatterParams": {
+        "precision": 0,
+        "thousand": ","
+      },
+      "headerFilterFunc": ">=",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 40,
+      "sorter": "number",
+      "vertAlign": "middle",
+      "width": null,
+      "zero": ""
+    },
+    "ipAddress": {
+      "accessorDownload": null,
+      "align": "left",
+      "blank": "",
+      "bottomCalc": null,
+      "cssClass": "li-col-ip",
+      "description": "IPv4 or IPv6 address",
+      "editor": "input",
+      "editorParams": {
+        "search": false
+      },
+      "formatter": "plaintext",
+      "formatterParams": {},
+      "headerFilterFunc": "like",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 120,
+      "sorter": "alphanum",
+      "vertAlign": "middle",
+      "width": null,
+      "zero": null
+    },
+    "json": {
+      "accessorDownload": null,
+      "align": "left",
+      "blank": "",
+      "bottomCalc": null,
+      "cssClass": "li-col-json",
+      "description": "JSON object or array (displayed as truncated string)",
+      "editor": "textarea",
+      "editorParams": {},
+      "formatter": "plaintext",
+      "formatterParams": {},
+      "headerFilterFunc": "like",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 120,
+      "sorter": "alphanum",
+      "vertAlign": "top",
+      "width": null,
+      "zero": null
+    },
+    "lookup": {
+      "accessorDownload": null,
+      "align": "left",
+      "blank": "",
+      "bottomCalc": null,
+      "cssClass": "li-col-lookup",
+      "description": "Foreign key reference to a lookup table (displays label, stores ID)",
+      "editor": "list",
+      "editorParams": {
+        "allowEmpty": false,
+        "autocomplete": true,
+        "freetext": false,
+        "listOnEmpty": true,
+        "sort": "asc",
+        "valuesLookup": true
+      },
+      "formatter": "lookup",
+      "formatterParams": {
+        "lookupTable": null
+      },
+      "headerFilterFunc": "like",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 80,
+      "sorter": "alphanum",
+      "vertAlign": "middle",
+      "width": null,
+      "zero": null
+    },
+    "lookupFixed": {
+      "accessorDownload": null,
+      "align": "left",
+      "blank": "",
+      "bottomCalc": null,
+      "cssClass": "li-col-lookup-fixed",
+      "description": "Fixed dropdown list defined in column definition (no database lookup)",
+      "editor": "select",
+      "editorParams": {},
+      "formatter": "lookup",
+      "formatterParams": {},
+      "headerFilterFunc": "like",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 80,
+      "sorter": "alphanum",
+      "vertAlign": "middle",
+      "width": null,
+      "zero": null
+    },
+    "lookupIcon": {
+      "accessorDownload": null,
+      "align": "center",
+      "blank": "",
+      "bottomCalc": null,
+      "cssClass": "li-col-lookup-icon",
+      "description": "Lookup with icon display in cell, icons only in dropdown",
+      "editor": "list",
+      "editorParams": {
+        "allowEmpty": false,
+        "autocomplete": false,
+        "freetext": false,
+        "listOnEmpty": true,
+        "sort": "asc",
+        "valuesLookup": true,
+        "itemFormatter": "iconOnly"
+      },
+      "formatter": "icon",
+      "formatterParams": {},
+      "headerFilterFunc": "like",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 40,
+      "sorter": "alphanum",
+      "vertAlign": "middle",
+      "width": 50,
+      "zero": null
+    },
+    "lookupIconList": {
+      "accessorDownload": null,
+      "align": "center",
+      "blank": "",
+      "bottomCalc": null,
+      "cssClass": "li-col-lookup-icon-list",
+      "description": "Lookup showing icon only in cell, icon+text in dropdown",
+      "editor": "list",
+      "editorParams": {
+        "allowEmpty": false,
+        "autocomplete": false,
+        "freetext": false,
+        "listOnEmpty": true,
+        "sort": "asc",
+        "valuesLookup": true,
+        "itemFormatter": "iconWithText"
+      },
+      "formatter": "icon",
+      "formatterParams": {},
+      "headerFilterFunc": "like",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 40,
+      "sorter": "alphanum",
+      "vertAlign": "middle",
+      "width": 50,
+      "zero": null
+    },
+    "lookupIconText": {
+      "accessorDownload": null,
+      "align": "left",
+      "blank": "",
+      "bottomCalc": null,
+      "cssClass": "li-col-lookup-icon-text",
+      "description": "Lookup with icon+text in both cell and dropdown",
+      "editor": "list",
+      "editorParams": {
+        "allowEmpty": false,
+        "autocomplete": true,
+        "freetext": false,
+        "listOnEmpty": true,
+        "sort": "asc",
+        "valuesLookup": true,
+        "itemFormatter": "iconWithText"
+      },
+      "formatter": "iconText",
+      "formatterParams": {},
+      "headerFilterFunc": "like",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 80,
+      "sorter": "alphanum",
+      "vertAlign": "middle",
+      "width": null,
+      "zero": null
+    },
+    "multiSelect": {
+      "accessorDownload": null,
+      "align": "left",
+      "blank": "",
+      "bottomCalc": null,
+      "cssClass": "li-col-multi-select",
+      "description": "Multiple selection from a list (comma-separated values)",
+      "editor": "list",
+      "editorParams": {
+        "allowEmpty": true,
+        "autocomplete": true,
+        "freetext": true,
+        "listOnEmpty": true,
+        "multiselect": true,
+        "sort": "asc",
+        "valuesLookup": true
+      },
+      "formatter": "tags",
+      "formatterParams": {
+        "delimiter": ",",
+        "tagClass": "li-tag"
+      },
+      "headerFilterFunc": "like",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 120,
+      "sorter": "alphanum",
+      "vertAlign": "middle",
+      "width": null,
+      "zero": null
+    },
+    "password": {
+      "accessorDownload": null,
+      "align": "left",
+      "blank": "",
+      "bottomCalc": null,
+      "cssClass": "li-col-password",
+      "description": "Password field (masked, shows dots)",
+      "editor": "input",
+      "editorParams": {
+        "search": false,
+        "type": "password"
+      },
+      "formatter": "password",
+      "formatterParams": {
+        "mask": "•",
+        "showLength": true
+      },
+      "headerFilterFunc": "like",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 80,
+      "sorter": "alphanum",
+      "vertAlign": "middle",
+      "width": null,
+      "zero": null
+    },
+    "percent": {
+      "accessorDownload": null,
+      "align": "right",
+      "blank": "",
+      "bottomCalc": "avg",
+      "bottomCalcFormatter": "number",
+      "bottomCalcFormatterParams": {
+        "precision": 1,
+        "suffix": "%"
+      },
+      "cssClass": "li-col-percent",
+      "description": "Percentage values (0–100 or 0.0–1.0)",
+      "editor": "number",
+      "editorParams": {
+        "max": 100,
+        "min": 0,
+        "step": 0.1
+      },
+      "formatter": "number",
+      "formatterParams": {
+        "precision": 1,
+        "suffix": "%"
+      },
+      "headerFilterFunc": ">=",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 70,
+      "sorter": "number",
+      "vertAlign": "middle",
+      "width": null,
+      "zero": "0.0%"
+    },
+    "progress": {
+      "accessorDownload": null,
+      "align": "left",
+      "blank": "",
+      "bottomCalc": "avg",
+      "bottomCalcFormatter": "progress",
+      "bottomCalcFormatterParams": {
+        "max": 100,
+        "min": 0
+      },
+      "cssClass": "li-col-progress",
+      "description": "Progress bar (0–100 numeric value displayed as bar)",
+      "editor": "number",
+      "editorParams": {
+        "max": 100,
+        "min": 0,
+        "step": 1
+      },
+      "formatter": "progress",
+      "formatterParams": {
+        "color": [
+          "#ff0000",
+          "#ffaa00",
+          "#00cc00"
+        ],
+        "legendAlign": "center",
+        "legendColor": "#ffffff",
+        "max": 100,
+        "min": 0
+      },
+      "headerFilterFunc": ">=",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 80,
+      "sorter": "number",
+      "vertAlign": "middle",
+      "width": 120,
+      "zero": 0
+    },
+    "rating": {
+      "accessorDownload": null,
+      "align": "center",
+      "blank": "",
+      "bottomCalc": "avg",
+      "bottomCalcFormatter": "number",
+      "bottomCalcFormatterParams": {
+        "precision": 1
+      },
+      "cssClass": "li-col-rating",
+      "description": "Numeric rating (0-10 scale, displayed as stars or number)",
+      "editor": "number",
+      "editorParams": {
+        "max": 10,
+        "min": 0,
+        "step": 0.5
+      },
+      "formatter": "star",
+      "formatterParams": {
+        "stars": 5
+      },
+      "headerFilterFunc": ">=",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 80,
+      "sorter": "number",
+      "vertAlign": "middle",
+      "width": 100,
+      "zero": 0
+    },
+    "rownum": {
+      "accessorDownload": null,
+      "align": "right",
+      "blank": "",
+      "bottomCalc": "count",
+      "bottomCalcFormatter": "number",
+      "bottomCalcFormatterParams": {
+        "thousand": ","
+      },
+      "cssClass": "li-col-rownum",
+      "description": "Auto-incrementing row number (display only, not from data)",
+      "editor": false,
+      "editorParams": {},
+      "formatter": "rownum",
+      "formatterParams": {},
+      "headerFilterFunc": null,
+      "headerFilterPlaceholder": null,
+      "minWidth": 40,
+      "sorter": "number",
+      "vertAlign": "middle",
+      "width": 50,
+      "zero": null
+    },
+    "slug": {
+      "accessorDownload": null,
+      "align": "left",
+      "blank": "",
+      "bottomCalc": null,
+      "cssClass": "li-col-slug",
+      "description": "URL-friendly slug (lowercase, hyphens, auto-generated)",
+      "editor": "input",
+      "editorParams": {
+        "search": false
+      },
+      "formatter": "plaintext",
+      "formatterParams": {},
+      "headerFilterFunc": "like",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 80,
+      "sorter": "alphanum",
+      "vertAlign": "middle",
+      "width": null,
+      "zero": null
+    },
+    "star": {
+      "accessorDownload": null,
+      "align": "center",
+      "blank": "",
+      "bottomCalc": "avg",
+      "bottomCalcFormatter": "star",
+      "bottomCalcFormatterParams": {},
+      "cssClass": "li-col-star",
+      "description": "Star rating (0–5)",
+      "editor": "star",
+      "editorParams": {},
+      "formatter": "star",
+      "formatterParams": {
+        "stars": 5
+      },
+      "headerFilterFunc": ">=",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 80,
+      "sorter": "number",
+      "vertAlign": "middle",
+      "width": 100,
+      "zero": 0
+    },
+    "string": {
+      "accessorDownload": null,
+      "align": "left",
+      "blank": "",
+      "bottomCalc": null,
+      "cssClass": "li-col-string",
+      "description": "General text/string values",
+      "editor": "input",
+      "editorParams": {
+        "search": false
+      },
+      "formatter": "plaintext",
+      "formatterParams": {},
+      "headerFilterFunc": "like",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 80,
+      "sorter": "alphanum",
+      "vertAlign": "middle",
+      "width": null,
+      "zero": null
+    },
+    "stringList": {
+      "accessorDownload": null,
+      "align": "left",
+      "blank": "",
+      "bottomCalc": null,
+      "cssClass": "li-col-string-list",
+      "description": "Text-based lookup from column values with freetext support",
+      "editor": "list",
+      "editorParams": {
+        "allowEmpty": true,
+        "autocomplete": true,
+        "freetext": true,
+        "listOnEmpty": true,
+        "sort": "asc",
+        "valuesLookup": "column"
+      },
+      "formatter": "plaintext",
+      "formatterParams": {},
+      "headerFilterFunc": "like",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 80,
+      "sorter": "alphanum",
+      "vertAlign": "middle",
+      "width": null,
+      "zero": null
+    },
+    "tags": {
+      "accessorDownload": null,
+      "align": "left",
+      "blank": "",
+      "bottomCalc": null,
+      "cssClass": "li-col-tags",
+      "description": "Comma-separated tags with visual tag display",
+      "editor": "input",
+      "editorParams": {},
+      "formatter": "tags",
+      "formatterParams": {
+        "delimiter": ",",
+        "tagClass": "li-tag"
+      },
+      "headerFilterFunc": "like",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 100,
+      "sorter": "alphanum",
+      "vertAlign": "middle",
+      "width": null,
+      "zero": null
+    },
+    "text": {
+      "accessorDownload": null,
+      "align": "left",
+      "blank": "",
+      "bottomCalc": null,
+      "cssClass": "li-col-text",
+      "description": "Long text / multiline content (descriptions, notes)",
+      "editor": "textarea",
+      "editorParams": {},
+      "formatter": "plaintext",
+      "formatterParams": {},
+      "headerFilterFunc": "like",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 150,
+      "sorter": "alphanum",
+      "vertAlign": "top",
+      "width": null,
+      "zero": null
+    },
+    "time": {
+      "accessorDownload": null,
+      "align": "center",
+      "blank": "",
+      "bottomCalc": null,
+      "cssClass": "li-col-time",
+      "description": "Time-only values (HH:mm or HH:mm:ss)",
+      "editor": "time",
+      "editorParams": {},
+      "formatter": "datetime",
+      "formatterParams": {
+        "inputFormat": "HH:mm:ss",
+        "invalidPlaceholder": "",
+        "outputFormat": "HH:mm"
+      },
+      "headerFilterFunc": "like",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 60,
+      "sorter": "time",
+      "sorterParams": {
+        "format": "HH:mm:ss"
+      },
+      "vertAlign": "middle",
+      "width": 80,
+      "zero": null
+    },
+    "url": {
+      "accessorDownload": null,
+      "align": "left",
+      "blank": "",
+      "bottomCalc": null,
+      "cssClass": "li-col-url",
+      "description": "Hyperlink URL (clickable)",
+      "editor": "input",
+      "editorParams": {
+        "search": false
+      },
+      "formatter": "link",
+      "formatterParams": {
+        "target": "_blank",
+        "urlField": null
+      },
+      "headerFilterFunc": "like",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 120,
+      "sorter": "alphanum",
+      "vertAlign": "middle",
+      "width": null,
+      "zero": null
+    },
+    "uuid": {
+      "accessorDownload": null,
+      "align": "left",
+      "blank": "",
+      "bottomCalc": null,
+      "cssClass": "li-col-uuid",
+      "description": "UUID/GUID identifier (displayed truncated, full on hover)",
+      "editor": "input",
+      "editorParams": {
+        "search": false
+      },
+      "formatter": "uuid",
+      "formatterParams": {
+        "length": 8,
+        "prefix": true
+      },
+      "headerFilterFunc": "like",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 100,
+      "sorter": "alphanum",
+      "vertAlign": "middle",
+      "width": 120,
+      "zero": null
+    },
+    "version": {
+      "accessorDownload": null,
+      "align": "left",
+      "blank": "",
+      "bottomCalc": null,
+      "cssClass": "li-col-version",
+      "description": "Semantic version number (e.g., 1.2.3)",
+      "editor": "input",
+      "editorParams": {
+        "search": false
+      },
+      "formatter": "plaintext",
+      "formatterParams": {},
+      "headerFilterFunc": "like",
+      "headerFilterPlaceholder": "filter...",
+      "minWidth": 80,
+      "sorter": "alphanum",
+      "vertAlign": "middle",
+      "width": null,
+      "zero": null
+    }
+  }
+}
