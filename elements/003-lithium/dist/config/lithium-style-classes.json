@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS class selectors/names used across the Lithium codebase",
-    "generated": "2026-04-04T17:27:59.631Z",
+    "generated": "2026-04-04T19:43:37.323Z",
     "sources": {
       "css": "49 files in src/**/*.css",
       "js": "81 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
-    "total_selectors": 1607,
-    "total_occurrences": 20008
+    "total_selectors": 1610,
+    "total_occurrences": 20048
   },
   "selectors": [
     {
@@ -10549,6 +10549,30 @@
       }
     },
     {
+      "selector": ".lithium-table-container .tabulator-header .tabulator-col .tabulator-col-content .tabulator-col-sorter",
+      "css": 1,
+      "js": 8,
+      "html": 6,
+      "total": 15,
+      "files": {
+        "css": [
+          "src/core/lithium-table.css"
+        ],
+        "js": [
+          "src/core/lithium-column-manager.js",
+          "src/core/lithium-table-base.js",
+          "src/core/lithium-table-ui.js",
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
       "selector": ".lithium-table-container .tabulator-header .tabulator-col .tabulator-col-resize-handle",
       "css": 1,
       "js": 8,
@@ -10694,6 +10718,30 @@
     },
     {
       "selector": ".lithium-table-container .tabulator-header .tabulator-col.tabulator-frozen",
+      "css": 1,
+      "js": 8,
+      "html": 6,
+      "total": 15,
+      "files": {
+        "css": [
+          "src/core/lithium-table.css"
+        ],
+        "js": [
+          "src/core/lithium-column-manager.js",
+          "src/core/lithium-table-base.js",
+          "src/core/lithium-table-ui.js",
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container .tabulator-header .tabulator-col.tabulator-sortable .tabulator-col-title",
       "css": 1,
       "js": 8,
       "html": 6,
@@ -28320,6 +28368,29 @@
           "src/managers/queries/queries-ui.js"
         ],
         "html": []
+      }
+    },
+    {
+      "selector": "div.lithium-table-container > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1)",
+      "css": 1,
+      "js": 3,
+      "html": 6,
+      "total": 10,
+      "files": {
+        "css": [
+          "src/core/lithium-table.css"
+        ],
+        "js": [
+          "src/core/lithium-column-manager.js",
+          "src/core/lithium-table-base.js",
+          "src/managers/crimson/crimson.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
       }
     },
     {
