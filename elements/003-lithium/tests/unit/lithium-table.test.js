@@ -31,6 +31,7 @@ import {
   formatBuiltinValue,
   clearCache,
 } from '../../src/core/lithium-table.js';
+import { LithiumTableOpsMixin } from '../../src/core/lithium-table-ops.js';
 
 // Mock the lookups module
 vi.mock('../../src/shared/lookups.js', () => ({
@@ -941,6 +942,15 @@ describe('LithiumTable', () => {
       expect(formatter(mockCell)).toBe('42');
     });
 
+    it('should format lookup values using formatterParams.lookup', () => {
+      const formatter = wrapFormatter('lookup', {
+        lookup: { count: 'Count', sum: 'Sum' },
+      }, '', null);
+      const mockCell = { getValue: () => 'count' };
+
+      expect(formatter(mockCell)).toBe('Count');
+    });
+
     it('should pass through unknown formatter types as raw values', () => {
       const formatter = wrapFormatter('datetime', {}, '', null);
       const mockCell = { getValue: () => '2026-01-15' };
@@ -1076,6 +1086,27 @@ describe('LithiumTable', () => {
 
     it('should default to precision 2 for money when not specified', () => {
       expect(formatBuiltinValue(42, 'money', {})).toBe('42.00');
+    });
+  });
+
+  describe('LithiumTableOpsMixin.openActiveCellEditor', () => {
+    it('opens list/select style editors after cell edit begins', () => {
+      const editorEl = document.createElement('select');
+      const focusSpy = vi.spyOn(editorEl, 'focus');
+      editorEl.showPicker = vi.fn();
+
+      const cell = {
+        getElement: () => {
+          const el = document.createElement('div');
+          el.appendChild(editorEl);
+          return el;
+        },
+      };
+
+      LithiumTableOpsMixin.openActiveCellEditor.call({}, cell, { editor: 'select' });
+
+      expect(focusSpy).toHaveBeenCalled();
+      expect(editorEl.showPicker).toHaveBeenCalled();
     });
   });
 

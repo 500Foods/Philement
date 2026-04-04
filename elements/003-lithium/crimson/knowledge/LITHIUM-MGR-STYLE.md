@@ -6,7 +6,7 @@ This document describes the Style Manager, a visual CSS styling interface for th
 
 ## Overview
 
-The Style Manager (Manager ID: TBD) provides a three-panel interface for managing CSS styles across different UI sections of the Lithium application. It combines a lookup-based style elements table with a hardcoded sections table and a visual, interactive editing area.
+The Style Manager (Manager ID: 22) provides a three-panel interface for managing CSS styles across different UI sections of the Lithium application. It combines a lookup-based style elements table with a hardcoded sections table and a visual, interactive editing area.
 
 **Key Features:**
 
@@ -478,7 +478,7 @@ Returns all values for a given lookup ID.
 
 ### QueryRef 060 — Tabulator Schemas
 
-The `tablePath` options (e.g., `'style-manager/sections'`, `'style-manager/lookup-41'`) reference Tabulator schema definitions stored in Lookup 060. If no schema is found, fallback columns are used.
+QueryRef 060 returns the Tabulator schema definitions stored in Lookup 059. The `tablePath` options (e.g., `'style-manager/sections'`, `'style-manager/lookup-41'`) are resolved by `loadTableDef()` against those Lookup 059 entries. If no matching schema is found, LithiumTable falls back to discovered columns.
 
 ---
 

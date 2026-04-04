@@ -116,7 +116,7 @@
     --accent-focus: #3949AB;
     --accent-disabled: #8080FF;
     --accent-toggle: #FFFF8F;
-    --accent-editable: linear-gradient(to right,#a00000 0%,#900000 40%,#800000 100%);
+    --accent-editable: #FFFF8F;
     --accent-editing: #FFFF8F;
 
     --accent-crimson: #DC143C; 
@@ -143,7 +143,7 @@
 
     /* CodeMirror gutter colors */
     --edit-gutter-bg: var(--bg-tertiary);
-    --edit-gutter-editable: var(--accent-editable);
+    --edit-gutter-editable: linear-gradient(to right,#a00000 0%,#900000 40%,#800000 100%);
 
     /* Typography - local-first font strategy */
     --font-family: 'Vanadium Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI',
