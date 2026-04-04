@@ -1,5 +1,5 @@
 /**
- * Version History Manager — Manager ID 6
+ * Version History Manager — Manager ID 11
  *
  * A two-panel interface for viewing document version history:
  * - Left panel: List of versions from Lookup 44 (Server) and 45 (Client)
@@ -40,8 +40,8 @@ export default class VersionHistoryManager {
     this.container = container;
     this.elements = {};
 
-    // Version History Manager ID = 6
-    this.managerId = 6;
+    // Version History Manager ID = 11
+    this.managerId = 11;
 
     // Main table (version list)
     this.versionsTable = null;
