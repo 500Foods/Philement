@@ -109,7 +109,7 @@ config/tabulator/contacts/
   "readonly": false,
   "selectableRows": 1,
   "layout": "fitColumns",
-  "responsiveLayout": "collapse",
+  "responsiveLayout": false,
   "resizableColumns": true,
   "persistSort": true,
   "persistFilter": true,

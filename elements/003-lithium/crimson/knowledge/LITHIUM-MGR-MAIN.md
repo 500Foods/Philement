@@ -92,17 +92,32 @@ The actual response from QueryRef 046 uses the `acuranzo_schema_lookup` table st
 
 | ID | Manager | Group |
 |----|---------|-------|
-| 2 | Session Logs | System (0) |
-| 3 | Version History | System (0) |
-| 4 | Queries | Data & Queries (2) |
-| 5 | Lookups | Data & Queries (2) |
-| 6 | Chats | AI (3) |
-| 7 | AI Auditor | AI (3) |
-| 8 | Dashboard | Content (1) |
-| 9 | Document Library | Content (1) |
-| 10 | Media Library | Content (1) |
-| 11 | Diagram Library | Content (1) |
-| 12 | Reports | Data & Queries (2) |
+| 7 | Dashboard Manager | Content (1) |
+| 8 | Mail Manager | Content (1) |
+| 9 | Profile Manager | User Management (2) |
+| 10 | Session Manager | User Management (2) |
+| 11 | Version Manager | User Management (2) |
+| 12 | Calendar Manager | Shared (3) |
+| 13 | Contact Manager | Shared (3) |
+| 14 | File Manager | Shared (3) |
+| 15 | Document Manager | Shared (3) |
+| 16 | Media Manager | Shared (3) |
+| 17 | Diagram Manager | Shared (3) |
+| 18 | Chat Manager | AI (4) |
+| 19 | Notification Manager | Support (5) |
+| 20 | Annotation Manager | Support (5) |
+| 21 | Ticketing Manager | Support (5) |
+| 22 | Style Manager | Configuration (6) |
+| 23 | Lookup Manager | Configuration (6) |
+| 24 | Report Manager | Configuration (6) |
+| 25 | Role Manager | Security (7) |
+| 26 | Security Manager | Security (7) |
+| 27 | AI Auditor Manager | Security (7) |
+| 28 | Job Manager | Security (7) |
+| 29 | Query Manager | Security (7) |
+| 30 | Sync Manager | Security (7) |
+| 31 | Camera Manager | Security (7) |
+| 32 | Terminal | Security (7) |
 
 ### Menu Service (`src/shared/menu.js`)
 
@@ -536,7 +551,7 @@ expect(JSON.parse(stored)).toContain(1);
 | `src/shared/menu.js` | Menu service for fetching and caching menu data from QueryRef 046 |
 | `src/managers/session-logs/session-logs.js` | New manager - Session Logs (ID: 2) |
 | `src/managers/session-logs/session-logs.css` | Styles for Session Logs manager |
-| `src/managers/version-history/version-history.js` | New manager - Version History (ID: 3) |
+| `src/managers/version-history/version-history.js` | New manager - Version History (ID: 11) |
 | `src/managers/version-history/version-history.css` | Styles for Version History manager |
 | `src/managers/dashboard/dashboard.js` | New manager - Dashboard (ID: 8) |
 | `src/managers/dashboard/dashboard.css` | Styles for Dashboard manager |

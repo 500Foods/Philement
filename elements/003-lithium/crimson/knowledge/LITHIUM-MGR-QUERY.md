@@ -252,7 +252,7 @@ The Query Manager includes a template system for saving column configurations:
 
 - **Save templates** — Current column layout, visibility, widths
 - **Load templates** — Apply saved configuration
-- **Set default** — Auto-load template on startup
+- **Default template by name** — A saved template named `Default` auto-loads on startup
 - **Delete templates** — Remove unwanted templates
 
 ### Storage
@@ -261,6 +261,8 @@ Templates are stored in localStorage:
 
 - Key: `lithium_queries_templates`
 - Format: Array of template objects
+
+The current LithiumTable template menu actions are `Save Template`, `Clear Template`, `Copy to Clipboard`, and `Delete Template`. There is no separate "Make default" action; using the exact template name `Default` is what marks a saved local template for auto-load at startup.
 
 ```javascript
 {
