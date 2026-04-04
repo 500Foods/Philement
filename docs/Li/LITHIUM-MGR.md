@@ -277,7 +277,7 @@ These are registered in `app.js` but not yet implemented:
 
 ### ⬜ Profile Manager
 
-**Type:** Menu Manager (ID: 11)
+**Type:** Menu Manager (ID: 9)
 
 **Status:** Placeholder
 
@@ -285,7 +285,7 @@ These are registered in `app.js` but not yet implemented:
 
 ### ⬜ Session Manager
 
-**Type:** Menu Manager (ID: 12)
+**Type:** Menu Manager (ID: 10)
 
 **Status:** Placeholder
 
@@ -293,7 +293,7 @@ These are registered in `app.js` but not yet implemented:
 
 ### ⬜ Notification Manager
 
-**Type:** Menu Manager (ID: 14)
+**Type:** Menu Manager (ID: 19)
 
 **Status:** Placeholder
 
@@ -301,7 +301,7 @@ These are registered in `app.js` but not yet implemented:
 
 ### ⬜ Annotation Manager
 
-**Type:** Menu Manager (ID: 15)
+**Type:** Menu Manager (ID: 20)
 
 **Status:** Placeholder
 
@@ -309,7 +309,7 @@ These are registered in `app.js` but not yet implemented:
 
 ### ⬜ Ticketing Manager
 
-**Type:** Menu Manager (ID: 22)
+**Type:** Menu Manager (ID: 21)
 
 **Status:** Placeholder
 
@@ -317,7 +317,7 @@ These are registered in `app.js` but not yet implemented:
 
 ### ⬜ Role Manager
 
-**Type:** Menu Manager (ID: 23)
+**Type:** Menu Manager (ID: 25)
 
 **Status:** Placeholder
 
@@ -325,7 +325,7 @@ These are registered in `app.js` but not yet implemented:
 
 ### ⬜ Security Manager
 
-**Type:** Menu Manager (ID: 24)
+**Type:** Menu Manager (ID: 26)
 
 **Status:** Placeholder
 
@@ -333,7 +333,7 @@ These are registered in `app.js` but not yet implemented:
 
 ### ⬜ Job Manager
 
-**Type:** Menu Manager (ID: 25)
+**Type:** Menu Manager (ID: 28)
 
 **Status:** Placeholder
 
@@ -341,7 +341,7 @@ These are registered in `app.js` but not yet implemented:
 
 ### ⬜ Mail Manager
 
-**Type:** Menu Manager (ID: 26)
+**Type:** Menu Manager (ID: 8)
 
 **Status:** Placeholder
 
@@ -349,7 +349,7 @@ These are registered in `app.js` but not yet implemented:
 
 ### ⬜ Calendar Manager
 
-**Type:** Menu Manager (ID: 27)
+**Type:** Menu Manager (ID: 12)
 
 **Status:** Placeholder
 
@@ -357,7 +357,7 @@ These are registered in `app.js` but not yet implemented:
 
 ### ⬜ Contact Manager
 
-**Type:** Menu Manager (ID: 28)
+**Type:** Menu Manager (ID: 13)
 
 **Status:** Placeholder
 
@@ -365,7 +365,7 @@ These are registered in `app.js` but not yet implemented:
 
 ### ⬜ File Manager
 
-**Type:** Menu Manager (ID: 29)
+**Type:** Menu Manager (ID: 14)
 
 **Status:** Placeholder
 

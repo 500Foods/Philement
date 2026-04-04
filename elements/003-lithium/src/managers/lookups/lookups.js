@@ -101,6 +101,12 @@ export default class LookupsManager {
     // Active tab
     this.activeTab = 'json';
 
+    // In-flight request dedupe for selection-driven loading
+    this._childLoadState = null;
+    this._detailLoadState = null;
+    this._loadedChildLookupKey = null;
+    this._loadedDetailRequestKey = null;
+
     // Font popup state
     this.fontPopup = null;
     this.editorFontSize = 14;
@@ -514,16 +520,37 @@ export default class LookupsManager {
 
   // ── Parent/Child Relationship ──────────────────────────────────────────────
 
+  _toSelectionKey(value) {
+    return value != null ? String(value) : null;
+  }
+
+  _getDetailRequestKey(lookupId, keyIdx) {
+    const lookupKey = this._toSelectionKey(lookupId);
+    const valueKey = this._toSelectionKey(keyIdx);
+    if (lookupKey == null || valueKey == null) return null;
+    return `${lookupKey}:${valueKey}`;
+  }
+
   async handleParentRowSelected(rowData) {
     if (!rowData) return;
 
     const lookupId = rowData.key_idx; // key_idx is the lookup_id for lookup_id=0 entries
     const lookupName = rowData.value_txt;
+    const lookupKey = this._toSelectionKey(lookupId);
+    const isSameLookup = lookupKey != null && lookupKey === this._toSelectionKey(this.selectedLookupId);
 
     if (lookupId == null) return;
 
     this.selectedLookupId = lookupId;
     this.selectedLookupName = lookupName;
+
+    // A single click can surface duplicate selection callbacks while the table
+    // is settling. Reuse the in-flight request or keep the already-loaded child
+    // table rather than re-querying the same lookup twice.
+    if (isSameLookup) {
+      if (this._childLoadState?.lookupKey === lookupKey) return;
+      if (this._loadedChildLookupKey === lookupKey) return;
+    }
 
     // Load child data for this lookup
     await this.loadChildData(lookupId);
@@ -545,31 +572,50 @@ export default class LookupsManager {
   async loadChildData(lookupId) {
     if (!this.childTable || !this.app?.api) return;
 
-    try {
-      // Clear any current selection BEFORE getting the saved selection
-      // This prevents loadData() from capturing the old lookup's selected row
-      this.childTable.table?.deselectRow?.();
+    const lookupKey = this._toSelectionKey(lookupId);
+    if (this._childLoadState?.lookupKey === lookupKey) {
+      return this._childLoadState.promise;
+    }
 
-      // Override the child table's saved row selection with the per-lookup selection
-      const savedChildId = this._loadChildSelection(lookupId);
-      if (savedChildId != null) {
-        this.childTable.saveSelectedRowId(savedChildId);
-      } else {
-        this.childTable.clearSavedRowSelection();
+    const loadPromise = (async () => {
+      try {
+        // Clear any current selection BEFORE getting the saved selection
+        // This prevents loadData() from capturing the old lookup's selected row
+        this.childTable.table?.deselectRow?.();
+
+        // Override the child table's saved row selection with the per-lookup selection
+        const savedChildId = this._loadChildSelection(lookupId);
+        if (savedChildId != null) {
+          this.childTable.saveSelectedRowId(savedChildId);
+        } else {
+          this.childTable.clearSavedRowSelection();
+        }
+
+        // Use the child table's loadData() method which handles row restoration
+        await this.childTable.loadData('', {
+          INTEGER: { LOOKUPID: lookupId },
+        });
+
+        this._loadedChildLookupKey = lookupKey;
+
+        log(Subsystems.TABLE, Status.INFO, `[Lookups] Loaded lookup values for lookup ${lookupId}`);
+      } catch (error) {
+        toast.error('Failed to load lookup values', {
+          serverError: error.serverError,
+          subsystem: 'Conduit',
+          duration: 6000,
+        });
       }
+    })();
 
-      // Use the child table's loadData() method which handles row restoration
-      await this.childTable.loadData('', {
-        INTEGER: { LOOKUPID: lookupId },
-      });
+    this._childLoadState = { lookupKey, promise: loadPromise };
 
-      log(Subsystems.TABLE, Status.INFO, `[Lookups] Loaded lookup values for lookup ${lookupId}`);
-    } catch (error) {
-      toast.error('Failed to load lookup values', {
-        serverError: error.serverError,
-        subsystem: 'Conduit',
-        duration: 6000,
-      });
+    try {
+      return await loadPromise;
+    } finally {
+      if (this._childLoadState?.promise === loadPromise) {
+        this._childLoadState = null;
+      }
     }
   }
 
@@ -578,10 +624,22 @@ export default class LookupsManager {
   async handleChildRowSelected(rowData) {
     if (!rowData) return;
 
+    const detailRequestKey = this._getDetailRequestKey(this.selectedLookupId, rowData.key_idx);
+    const isSameLookupValue = detailRequestKey != null
+      && detailRequestKey === this._getDetailRequestKey(this.selectedLookupId, this.selectedLookupValue?.key_idx);
+
     this.selectedLookupValue = rowData;
 
     // Persist child selection keyed by current lookup
     this._saveChildSelection(rowData);
+
+    // Duplicate selection callbacks can arrive for the same child row while the
+    // first detail request is still in flight. Reuse the active fetch and avoid
+    // a second QueryRef 35 call.
+    if (isSameLookupValue) {
+      if (this._detailLoadState?.requestKey === detailRequestKey) return;
+      if (this._loadedDetailRequestKey === detailRequestKey) return;
+    }
 
     // Fetch full detail using QueryRef 35
     await this.loadDetailData(rowData);
@@ -779,21 +837,46 @@ export default class LookupsManager {
   async loadDetailData(rowData) {
     if (!this.app?.api || this.selectedLookupId == null) return;
 
-    try {
-      const detail = await authQuery(this.app.api, 35, {
-        INTEGER: {
-          LOOKUPID: this.selectedLookupId,
-          KEYIDX: rowData.key_idx,
-        },
-      });
+    const requestLookupId = this.selectedLookupId;
+    const requestKeyIdx = rowData?.key_idx;
+    const requestKey = this._getDetailRequestKey(requestLookupId, requestKeyIdx);
+    if (!requestKey) return;
 
-      if (detail && detail.length > 0) {
-        this.currentDetailData = detail[0];
-        this.updateDetailView();
+    if (this._detailLoadState?.requestKey === requestKey) {
+      return this._detailLoadState.promise;
+    }
+
+    const detailPromise = (async () => {
+      try {
+        const detail = await authQuery(this.app.api, 35, {
+          INTEGER: {
+            LOOKUPID: requestLookupId,
+            KEYIDX: requestKeyIdx,
+          },
+        });
+
+        const selectedDetailKey = this._getDetailRequestKey(this.selectedLookupId, this.selectedLookupValue?.key_idx);
+        if (selectedDetailKey !== requestKey) return;
+
+        if (detail && detail.length > 0) {
+          this.currentDetailData = detail[0];
+          this._loadedDetailRequestKey = requestKey;
+          this.updateDetailView();
+        }
+      } catch (error) {
+        log(Subsystems.TABLE, Status.ERROR, `[Lookups] Failed to load detail: ${error.message}`);
+        // Don't show toast - detail view is optional
       }
-    } catch (error) {
-      log(Subsystems.TABLE, Status.ERROR, `[Lookups] Failed to load detail: ${error.message}`);
-      // Don't show toast - detail view is optional
+    })();
+
+    this._detailLoadState = { requestKey, promise: detailPromise };
+
+    try {
+      return await detailPromise;
+    } finally {
+      if (this._detailLoadState?.promise === detailPromise) {
+        this._detailLoadState = null;
+      }
     }
   }
 

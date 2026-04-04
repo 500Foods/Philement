@@ -276,7 +276,7 @@ Only non-null constructor values override the table definition. If a manager doe
 
 #### Why CRUD QueryRefs Must Be Passed Explicitly
 
-The table definition is loaded from a database lookup (Lookup 059 "Tabulator Schemas"). This lookup may not contain the CRUD queryRefs (`updateQueryRef`, `insertQueryRef`, `deleteQueryRef`), and the `config/tabulator/*.json` files on the filesystem are **not** served by either the Vite dev server or the production web server.
+The table definition is loaded from a database lookup (Lookup 059 "Tabulator Schemas") via QueryRef 060. That runtime schema may not contain the CRUD queryRefs (`updateQueryRef`, `insertQueryRef`, `deleteQueryRef`), and the `config/tabulator/*.json` files on the filesystem are **not** served by either the Vite dev server or the production web server.
 
 **You must always pass CRUD queryRefs explicitly in the LithiumTable constructor.** This is the same pattern used by the Query Manager, Lookups Manager, and Style Manager.
 
@@ -378,11 +378,13 @@ Templates save column configurations to localStorage:
 
 Access via **Template** button in Control block:
 
-- **Saved templates** — List with checkmark for default
-- **Save template...** — Save current configuration
-- **Make default...** — Set default template
-- **Delete** — Remove saved template
+- **Saved templates** — List with checkmark for the currently active template
+- **Save Template** — Save current configuration to localStorage
+- **Clear Template** — Reload the runtime default schema from Lookup 059
 - **Copy to Clipboard** — Export configuration as JSON (see [LITHIUM-COL.md](LITHIUM-COL.md))
+- **Delete Template** — Remove the selected saved template
+
+A saved local template named `Default` auto-loads on startup. There is no separate "Make default" action in the current menu.
 
 ### Template Format
 
