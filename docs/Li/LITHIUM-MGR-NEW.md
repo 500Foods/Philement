@@ -47,11 +47,15 @@ Each manager has a unique integer ID used by the sidebar and `app.loadManager()`
 | ID | Manager |
 |----|---------|
 | 1 | Login |
-| 2 | Main |
-| 3 | Version History |
-| 4 | Query Manager |
-| 5 | Lookups Manager |
-| 6 | Style Manager |
+| 2 | Menu |
+| 3 | Profile |
+| 4 | Session |
+| 5 | Crimson |
+| 6 | Tour |
+| 11 | Version Manager |
+| 22 | Style Manager |
+| 23 | Lookups Manager |
+| 29 | Query Manager |
 | ... | ... |
 
 ---
