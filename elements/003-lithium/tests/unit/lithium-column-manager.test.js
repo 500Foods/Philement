@@ -10,20 +10,30 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { LithiumColumnManager } from '../../src/core/lithium-column-manager.js';
+import { LithiumTable } from '../../src/core/lithium-table-main.js';
 
 // Mock the LithiumTable module
 vi.mock('../../src/core/lithium-table-main.js', () => ({
-  LithiumTable: vi.fn().mockImplementation(() => ({
-    init: vi.fn().mockResolvedValue(),
-    setData: vi.fn(),
-    getColumns: vi.fn().mockReturnValue([]),
-    destroy: vi.fn(),
-    table: {
+  LithiumTable: vi.fn(function LithiumTableMock() {
+    return {
+      init: vi.fn().mockResolvedValue(),
+      setData: vi.fn(),
       getColumns: vi.fn().mockReturnValue([]),
-      getRows: vi.fn().mockReturnValue([]),
-      redraw: vi.fn(),
-    },
-  })),
+      destroy: vi.fn(),
+      cssPrefix: 'lithium',
+      navigatorContainer: document.createElement('div'),
+      onEditModeChange: vi.fn(),
+      onDirtyChange: vi.fn(),
+      table: {
+        getColumns: vi.fn().mockReturnValue([]),
+        getRows: vi.fn().mockReturnValue([]),
+        redraw: vi.fn(),
+        replaceData: vi.fn().mockResolvedValue(),
+        clearSort: vi.fn(),
+        on: vi.fn(),
+      },
+    };
+  }),
 }));
 
 // Mock the icons module
@@ -45,6 +55,12 @@ describe('LithiumColumnManager', () => {
   let mockApp;
 
   beforeEach(() => {
+    if (typeof localStorage?.clear === 'function') {
+      localStorage.clear();
+    } else if (localStorage && typeof localStorage === 'object' && 'store' in localStorage) {
+      localStorage.store = {};
+    }
+
     mockParentTable = {
       table: {
         getColumns: vi.fn().mockReturnValue([
@@ -157,6 +173,139 @@ describe('LithiumColumnManager', () => {
       // Manual mode (default) should have drag_handle and movableRows
       expect(def.columns).toHaveProperty('drag_handle');
       expect(def.movableRows).toBe(true);
+    });
+
+    it('marks the order column editable only in auto mode', () => {
+      const manager = new LithiumColumnManager({
+        parentContainer: mockParentContainer,
+        parentTable: mockParentTable,
+        managerId: 'test',
+      });
+
+      const manualDef = manager.buildColumnManagerDefinition();
+      expect(manualDef.columns.order.editable).toBe(false);
+
+      manager.orderingMode = 'auto';
+      const autoDef = manager.buildColumnManagerDefinition();
+      expect(autoDef.columns.order.editable).toBe(true);
+    });
+  });
+
+  describe('initColumnTable', () => {
+    it('creates a standard LithiumTable with shared template identity', async () => {
+      const manager = new LithiumColumnManager({
+        parentContainer: mockParentContainer,
+        parentTable: mockParentTable,
+        managerId: 'test-column-manager',
+        app: mockApp,
+      });
+
+      manager.popup = document.createElement('div');
+      manager.popup.innerHTML = `
+        <div id="${manager.cssPrefix}-table-container-${manager.managerId}"></div>
+        <div id="${manager.cssPrefix}-navigator-${manager.managerId}"></div>
+      `;
+
+      manager.columnData = [{ field_name: 'name', field: 'name', order: 1 }];
+
+      await manager.initColumnTable();
+
+      expect(LithiumTable).toHaveBeenCalledWith(expect.objectContaining({
+        alwaysEditable: false,
+        tablePath: 'column-manager/column-manager',
+        storageKey: 'lithium_column_manager',
+        useColumnManager: true,
+      }));
+    });
+
+    it('uses the shared manager-manager identity for depth-2 instances', async () => {
+      const popupHost = document.createElement('div');
+      popupHost.className = 'col-manager-popup';
+      popupHost.appendChild(mockParentContainer);
+      document.body.appendChild(popupHost);
+
+      const manager = new LithiumColumnManager({
+        parentContainer: mockParentContainer,
+        parentTable: {
+          ...mockParentTable,
+          container: mockParentContainer,
+        },
+        managerId: 'nested-manager',
+        app: mockApp,
+      });
+
+      manager.popup = document.createElement('div');
+      manager.popup.innerHTML = `
+        <div id="${manager.cssPrefix}-table-container-${manager.managerId}"></div>
+        <div id="${manager.cssPrefix}-navigator-${manager.managerId}"></div>
+      `;
+
+      manager.columnData = [{ field_name: 'name', field: 'name', order: 1 }];
+
+      await manager.initColumnTable();
+
+      expect(LithiumTable).toHaveBeenCalledWith(expect.objectContaining({
+        tablePath: 'column-manager/column-manager-manager',
+        storageKey: 'lithium_column_manager_manager',
+        useColumnManager: false,
+      }));
+
+      popupHost.remove();
+    });
+
+    it('preserves manager edit callbacks while updating popup button state', async () => {
+      const manager = new LithiumColumnManager({
+        parentContainer: mockParentContainer,
+        parentTable: mockParentTable,
+        managerId: 'callback-manager',
+        app: mockApp,
+      });
+
+      manager.popup = document.createElement('div');
+      manager.popup.innerHTML = `
+        <div id="${manager.cssPrefix}-table-container-${manager.managerId}"></div>
+        <div id="${manager.cssPrefix}-navigator-${manager.managerId}"></div>
+      `;
+
+      manager.columnData = [{ field_name: 'name', field: 'name', order: 1 }];
+
+      await manager.initColumnTable();
+
+      const tableInstance = LithiumTable.mock.results.at(-1).value;
+      expect(typeof tableInstance.onEditModeChange).toBe('function');
+      expect(typeof tableInstance.onDirtyChange).toBe('function');
+    });
+
+    it('does not block navigator click handlers for popup buttons', async () => {
+      const manager = new LithiumColumnManager({
+        parentContainer: mockParentContainer,
+        parentTable: mockParentTable,
+        managerId: 'nav-manager',
+        app: mockApp,
+      });
+
+      manager.popup = document.createElement('div');
+      manager.popup.innerHTML = `
+        <div id="${manager.cssPrefix}-table-container-${manager.managerId}"></div>
+        <div id="${manager.cssPrefix}-navigator-${manager.managerId}"></div>
+      `;
+
+      manager.columnData = [{ field_name: 'name', field: 'name', order: 1 }];
+
+      await manager.initColumnTable();
+
+      const tableInstance = LithiumTable.mock.results.at(-1).value;
+      tableInstance.navigatorContainer.innerHTML = '<button id="lithium-nav-width"></button>';
+
+      manager.configureNavigatorButtons();
+
+      const widthBtn = tableInstance.navigatorContainer.querySelector('#lithium-nav-width');
+      const clickSpy = vi.fn();
+      widthBtn.addEventListener('click', clickSpy);
+
+      widthBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+      expect(clickSpy).toHaveBeenCalledTimes(1);
     });
   });
 

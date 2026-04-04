@@ -388,7 +388,7 @@ Updates an existing lookup or lookup value record. Used for both the parent tabl
 
 Deletes a lookup or lookup value record.
 
-**Note:** QueryRefs 042, 043, and 044 are defined in the JSON table definition files (`config/tabulator/lookups/lookups-list.json` and `lookup-values.json`). They are loaded automatically by LithiumTable during `loadConfiguration()` and do not need to be passed as constructor options.
+**Note:** QueryRefs 042, 043, and 044 may be documented in the design-time JSON files (`config/tabulator/lookups/lookups-list.json` and `lookup-values.json`), but the runtime table definition loaded from Lookup 059 may omit CRUD refs. In practice, managers should pass CRUD QueryRefs explicitly in the LithiumTable constructor and keep hardcoded fallbacks in custom save logic.
 
 ---
 

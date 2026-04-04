@@ -23,6 +23,8 @@ The Column Manager is a popup interface that displays all columns from a parent 
 
 Changes are tracked but not applied until the user clicks "Save". The "Cancel" button discards all pending changes.
 
+The embedded LithiumTable runs in `alwaysEditable: true` mode. That means Column Manager cells edit directly on click, while the normal LithiumTable edit-mode workflow (Navigator manage block, Enter/F2/double-click edit entry, ManagerEditHelper footer Save/Cancel) is intentionally disabled inside the popup.
+
 ## Architecture
 
 ### Components
@@ -45,7 +47,7 @@ LithiumColumnManager
 1. **Open**: Load current column state from parent table
 2. **Edit**: Track changes in `pendingChanges` Map
 3. **Reorder**: Track new order in `_pendingReorder` array
-4. **Save**: Apply all changes to parent table via remove/add
+4. **Save**: Build a template-state patch and apply it to the parent LithiumTable
 5. **Cancel**: Discard changes, reload original data
 
 ## Column Manager UI
@@ -72,6 +74,13 @@ Columns are grouped by the "Category" field. Default category is "Default" if no
 ### Row Reordering
 
 Drag-and-drop is enabled via `movableRows: true`. The `rowMoved` event updates the order tracking.
+
+### Embedded LithiumTable Behavior
+
+- Cells are directly editable on click via `alwaysEditable: true`
+- The standard Navigator manage block is hidden inside the popup
+- Header Save/Cancel buttons batch the whole popup state instead of saving a single row
+- Nested "Column Manager Manager" instances reuse the same behavior, but disable recursive column-manager launching at depth 2
 
 ## Coltypes Reference
 
@@ -256,6 +265,22 @@ Like `lookup` but displays only icon in cell, icon + name in dropdown.
 }
 ```
 
+### Embedded LithiumTable Configuration
+
+The popup wraps the shared `LithiumTable` component with a small set of special options:
+
+```javascript
+this.columnTable = new LithiumTable({
+  tableDef: columnDef,
+  readonly: false,
+  alwaysEditable: true,
+  storageKey: `${this.storageKey}_table`,
+  useColumnManager: !isDepth2,
+});
+```
+
+This keeps Column Manager on the shared LithiumTable/LithiumSplitter stack while cleanly opting out of the standard row edit-mode workflow.
+
 ### Change Tracking
 
 ```javascript
@@ -273,47 +298,35 @@ this.isDirty = false;
 
 When Save is clicked:
 
-1. Iterate through `pendingChanges` and apply each to parent table
-2. If `_pendingReorder` exists, reorder columns
-3. Clear dirty state and close
+1. Read the current popup rows, including edited widths/order/visibility
+2. Build a template-style patch with `buildPendingTemplateColumns()`
+3. Call `parentTable.applyTemplateColumns(templateColumns)`
+4. Clear dirty state and close
 
 ```javascript
 async applyAllChangesToParent() {
-  // Apply individual column changes
-  for (const [field, changes] of this.pendingChanges) {
-    await this.updateParentColumn(field, changes);
-  }
-
-  // Apply reorder if pending
-  if (this._pendingReorder) {
-    await this.reorderParentColumns(this._pendingReorder);
+  const templateColumns = this.buildPendingTemplateColumns();
+  if (Object.keys(templateColumns).length > 0) {
+    this.parentTable.applyTemplateColumns(templateColumns);
   }
 
   this.clearDirty();
 }
 ```
 
-### Column Update Process
+### Parent Table Update Process
 
-Tabulator requires remove/add for proper column updates:
+The Column Manager no longer mutates parent columns through ad hoc remove/add logic. It routes changes through the shared LithiumTable template application path, which keeps behavior consistent with saved templates and runtime width/order persistence.
 
 ```javascript
-async updateParentColumn(field, changes) {
-  const column = this.parentTable.table.getColumn(field);
-  const def = column.getDefinition();
-  const updatedDef = { ...def, ...changes };
-
-  // Get current position
-  const allColumns = this.parentTable.table.getColumns();
-  const columnIndex = allColumns.findIndex(col => col.getField() === field);
-
-  // Remove old column
-  column.delete();
-
-  // Add updated column at same position
-  this.parentTable.table.addColumn(updatedDef, false, columnIndex);
+buildPendingTemplateColumns() {
+  // Merge current popup row values into a template-state patch
+  // and preserve column order, visibility, width, alignment,
+  // summary, title, editable flag, and format.
 }
 ```
+
+Because this patch is built from the live parent table state plus current popup edits, resized column widths are preserved when changes are applied or later saved into a table template.
 
 ## API Reference
 

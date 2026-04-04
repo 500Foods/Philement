@@ -16,7 +16,7 @@
 import { LithiumTable } from '../../core/lithium-table-main.js';
 import { LithiumSplitter } from '../../core/lithium-splitter.js';
 import { PanelStateManager } from '../../core/panel-state-manager.js';
-import { togglePanelCollapse, restorePanelState } from '../../core/panel-collapse.js';
+import { togglePanelCollapse, restorePanelState as restoreCollapsedPanelState } from '../../core/panel-collapse.js';
 import '../../styles/vendor-tabulator.css';
 import { authQuery } from '../../shared/conduit.js';
 import { log, Subsystems, Status } from '../../core/log.js';
@@ -129,6 +129,8 @@ export default class VersionHistoryManager {
       container: this.elements.versionsTableContainer,
       navigatorContainer: this.elements.versionsNavigator,
       tablePath: 'version-manager/version-history',
+      cssPrefix: 'version-history',
+      storageKey: 'version_history_table',
       app: this.app,
       readonly: true,
       panel: this.elements.leftPanel,
@@ -513,51 +515,14 @@ export default class VersionHistoryManager {
   }
 
   restorePanelState() {
-    // Re-read collapsed state from localStorage (handles edge cases)
     this.isLeftPanelCollapsed = this.leftPanelState.loadCollapsed(this.isLeftPanelCollapsed);
 
-    const panel = this.elements.leftPanel;
-    const btn = this.elements.collapseBtn;
-    const splitter = this.splitter;
-
-    if (!panel || !btn || !splitter) {
-      console.warn('[VersionMgr] restorePanelState: missing elements', {
-        panel: !!panel, btn: !!btn, splitter: !!splitter
-      });
-      return;
-    }
-
-    if (this.isLeftPanelCollapsed) {
-      // Set collapsed state directly via inline styles
-      panel.style.width = '0px';
-      panel.style.minWidth = '0px';
-      panel.style.maxWidth = '0px';
-      panel.style.overflow = 'hidden';
-      btn.classList.add('collapsed');
-      splitter.setCollapsed(true);
-    } else {
-      // Ensure panel is expanded
-      btn.classList.remove('collapsed');
-      splitter.setCollapsed(false);
-    }
-
-    // DEBUG: Watch for any changes to the panel's style after restore
-    const origSetWidth = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'style')?.set;
-    if (origSetWidth) {
-      const panelEl = panel;
-      const origStyle = panelEl.style;
-      // Monkey-patch the width setter to log any changes
-      let lastLoggedWidth = origStyle.width;
-      const observer = new MutationObserver(() => {
-        const w = panelEl.style.width;
-        if (w !== lastLoggedWidth) {
-          console.trace(`[VersionMgr] Panel width changed from "${lastLoggedWidth}" to "${w}"`);
-          lastLoggedWidth = w;
-        }
-      });
-      observer.observe(panelEl, { attributes: true, attributeFilter: ['style'] });
-      this._debugObserver = observer;
-    }
+    restoreCollapsedPanelState({
+      panel: this.elements.leftPanel,
+      splitter: this.splitter,
+      collapseBtn: this.elements.collapseBtn,
+      isCollapsed: this.isLeftPanelCollapsed,
+    });
   }
 
   // ── Footer Setup ───────────────────────────────────────────────────────────

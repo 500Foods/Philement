@@ -100,8 +100,10 @@ await table.loadData();
 | `tableDef` | Object | ⚪ | Pre-loaded table definition |
 | `coltypes` | Object | ⚪ | Pre-loaded coltypes |
 | `cssPrefix` | string | ❌ | CSS class prefix (default: `'lithium'`) |
-| `storageKey` | string | ❌ | localStorage key (default: `'lithium_table'`) |
+| `storageKey` | string | ❌ | localStorage base key for templates, width/layout state, and row persistence |
 | `readonly` | boolean | ❌ | Disable editing (default: `false`) |
+| `alwaysEditable` | boolean | ❌ | Make cells edit directly on click and disable standard Lithium edit-mode workflow |
+| `useColumnManager` | boolean | ❌ | Enable the shared runtime Column Manager popup (default: `true`) |
 | `searchQueryRef` | number | ⚪ | QueryRef for search |
 | `detailQueryRef` | number | ⚪ | QueryRef for detail loading |
 | `updateQueryRef` | number | ⚪ | QueryRef for updates |
@@ -150,9 +152,11 @@ The Navigator provides standard table controls in four groups:
 | ➕ Add | Create new row |
 | 📋 Duplicate | Copy selected row (disabled when no row selected) |
 | ✏️ Edit | Enter edit mode |
-| 💾 Save | Commit changes |
-| 🚫 Cancel | Revert changes |
+| 🚩 Flag | Optional manager callback |
+| 📝 Annotate | Optional manager callback |
 | 🗑 Delete | Remove selected row |
+
+The Manage block is shown only for standard editable LithiumTables. Tables created with `alwaysEditable: true` hide the block entirely and do not expose the standard Add/Duplicate/Edit/Delete workflow.
 
 **Duplicate Button Behavior:**
 
@@ -210,7 +214,7 @@ To add custom duplicate to a new manager:
 
 **Edit Mode Behavior:**
 
-- Save/Cancel only enabled when in edit mode AND changes exist
+- Save/Cancel footer buttons only enabled when in edit mode AND changes exist
 - Auto-save when navigating away from edited row (configurable)
 - Visual indicator (I-cursor) in selector column during edit
 
@@ -264,6 +268,8 @@ Columns are defined in `config/tabulator/<table-path>.json`:
   }
 }
 ```
+
+At runtime, LithiumTable forces `responsiveLayout: false` for all tables. When a panel is too narrow for the visible columns, the table scrolls horizontally instead of letting Tabulator collapse or hide columns.
 
 ### QueryRef Resolution (Constructor + Table Definition)
 
@@ -327,11 +333,13 @@ const queryRef = isInsert
 - Double-click a row
 - Press `Enter` on selected row
 
+These entry points apply to standard LithiumTables. Tables configured with `alwaysEditable: true` do not enter the shared Lithium edit-mode state.
+
 ### Edit Mode Features
 
 - **Inline editors** appear in cells
 - **I-cursor indicator** shows in selector column
-- **Save/Cancel** buttons become available
+- **Save/Cancel footer buttons** become available
 - **Dirty tracking** — changes detected automatically
 - **Auto-save** when navigating away from a dirty row (always enabled)
 
@@ -357,6 +365,16 @@ When the user clicks a different row while in edit mode, the system:
 If the save fails, the system reverts selection back to the editing row and remains in edit mode.
 
 **Implementation:** `autoSaveBeforeRowChange()` uses `this.getEditingRow()` to find the correct row to save. By the time this method runs, Tabulator has already selected the new row, so `getSelectedRows()` would return the wrong row.
+
+### Always-Editable Tables
+
+`alwaysEditable: true` is a special LithiumTable mode used by the Column Manager popup.
+
+- Cells open editors directly on single click
+- The standard Manage block is hidden from the Navigator
+- `Enter`, `F2`, double-click, and toolbar Edit do not enter Lithium edit mode
+- `ManagerEditHelper` footer Save/Cancel flow is not used
+- The owner component is responsible for batching changes and providing its own Save/Cancel controls
 
 ---
 
@@ -638,8 +656,8 @@ If the default lithium-table.css margins/padding don't fit your layout, override
 |--------|-------------|
 | `addRow()` | Add new row |
 | `duplicateRow()` | Duplicate selected row |
-| `enterEditMode(row?)` | Enter edit mode |
-| `exitEditMode(reason)` | Exit edit mode |
+| `enterEditMode(row?)` | Enter edit mode for standard tables |
+| `exitEditMode(reason)` | Exit edit mode for standard tables |
 | `saveRow()` | Save changes |
 | `cancelEdit()` | Cancel changes |
 | `deleteRow()` | Delete selected row |
@@ -671,7 +689,7 @@ If the default lithium-table.css margins/padding don't fit your layout, override
 Standard Tabulator events are wired automatically:
 
 - `rowClick` — Row selection
-- `rowDblClick` — Enter edit mode
+- `rowDblClick` — Enter edit mode for standard tables
 - `cellEdited` — Cell value changed
 - `rowSelected` / `rowDeselected` — Selection changes
 
@@ -1023,7 +1041,9 @@ All managers use the shared `panel-collapse.js` utility for consistent behavior:
 
 ## Footer Save/Cancel Buttons and ManagerEditHelper
 
-All managers with LithiumTables include Save/Cancel buttons in the manager footer. These buttons start **disabled** and only become enabled when a record is "dirty" (has changes compared to the snapshot taken at edit mode entry). The transition from disabled → enabled uses a smooth 350ms CSS animation: Save turns green, Cancel turns red. If changes are undone (returning to the original state), the buttons revert to disabled.
+All managers with standard LithiumTable edit mode include Save/Cancel buttons in the manager footer. These buttons start **disabled** and only become enabled when a record is "dirty" (has changes compared to the snapshot taken at edit mode entry). The transition from disabled -> enabled uses a smooth 350ms CSS animation: Save turns green, Cancel turns red. If changes are undone (returning to the original state), the buttons revert to disabled.
+
+The Column Manager is the main exception: it uses `alwaysEditable: true` and manages batch Save/Cancel in its own popup header instead of the shared footer flow.
 
 ### ManagerEditHelper (`manager-edit-helper.js`)
 
@@ -1383,7 +1403,7 @@ When a manager has two or more LithiumTables, only one can be in edit mode at a 
 | **Query Manager** | `queries.js` | 1 | SQL, Summary, Collection (CodeMirror) |
 | **Style Manager** | `style-manager.js` | 2 | CSS (CodeMirror) |
 | **Lookups Manager** | `lookups.js` | 2 | JSON (CodeMirror), Summary (SunEditor) |
-| **Column Manager** | `lithium-column-manager.js` | 1 (self-contained) | None |
+| **Column Manager** | `lithium-column-manager.js` | 1 (self-contained alwaysEditable popup) | None |
 
 ---
 
@@ -1410,5 +1430,5 @@ The LithiumTable component was extracted from the Query Manager implementation t
 3. **CSS Two-Tier System** — Navigator always uses `lithium-*` base classes for styling; element IDs use `cssPrefix` for uniqueness; sort icons use `cssPrefix` via auto-injection
 4. **Tri-State Sort** — Always enabled; `headerSortElement` callback receives `(column, dir)` from Tabulator
 5. **Template System** — User preferences persisted to localStorage
-6. **Edit Mode Gate** — Editors only active in edit mode, ensuring consistent row selection
+6. **Edit Mode Gate** — Editors only active in edit mode, except for explicit `alwaysEditable` tables such as the Column Manager popup
 7. **`loadStaticData()` method** — Encapsulates blockRedraw/setData/discoverColumns pattern for hardcoded or pre-fetched data
