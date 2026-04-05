@@ -491,6 +491,7 @@ class LithiumApp {
       // Always emit STARTUP_COMPLETE so the logs button is enabled even on error
       eventBus.emit(Events.STARTUP_COMPLETE);
     }
+    logStartup('────────────────────');
   }
 
   /**
@@ -1046,6 +1047,7 @@ class LithiumApp {
     }
 
     try {
+      logManager(Status.INFO,'────────────────────');
       logManager(Status.INFO, `Loading manager: ${managerDef.name}`);
       const loadStart = Date.now();
       const module = await this._importManager(managerId);
@@ -1084,9 +1086,12 @@ class LithiumApp {
       eventBus.emit(Events.MANAGER_SWITCHED, { from: this.currentManager?.id, to: managerId });
 
       logManager(Status.SUCCESS, `Manager ${managerDef.name} loaded`, Date.now() - loadStart);
+      logManager(Status.INFO, '────────────────────');
     } catch (error) {
       logManager(Status.ERROR, `Failed to load manager ${managerDef.name}: ${error.message}`);
+      logManager(Status.INFO, '────────────────────');
     }
+    
   }
 
   /**

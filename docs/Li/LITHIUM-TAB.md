@@ -28,11 +28,18 @@ The component is modular, reusable across all managers, and provides consistent 
 
 ```structure
 src/core/
-├── lithium-table-base.js      # Core functionality (init, events, navigation)
-├── lithium-table-ops.js       # CRUD operations mixin
-├── lithium-table-ui.js        # Navigator UI and popups mixin
 ├── lithium-table-main.js      # Combined LithiumTable class export
-└── lithium-table.css          # Component styles
+├── lithium-table-base.js    # Core functionality (init, events, navigation)
+├── lithium-table-ops.js      # CRUD operations mixin
+├── lithium-table-ui.js       # Navigator UI and popups mixin
+├── lithium-table.js          # JSON-driven column resolution engine
+├── lithium-table-template.js  # Template system
+├── lithium-column-manager.js  # Standalone column manager popup
+├── lithium-splitter.js      # Panel splitter component
+├── manager-edit-helper.js    # Consolidated edit/dirty helper
+├── panel-collapse.js         # Panel collapse utility
+├── panel-state-manager.js    # Panel state persistence
+└── lithium-table.css      # Component styles
 ```
 
 ### Class Hierarchy
@@ -102,6 +109,7 @@ await table.loadData();
 | `cssPrefix` | string | ❌ | CSS class prefix (default: `'lithium'`) |
 | `storageKey` | string | ❌ | localStorage base key for templates, width/layout state, and row persistence |
 | `readonly` | boolean | ❌ | Disable editing (default: `false`) |
+| `tableWidthMode` | string | ❌ | Default width preset (default: `'compact'`) |
 | `alwaysEditable` | boolean | ❌ | Make cells edit directly on click and disable standard Lithium edit-mode workflow |
 | `useColumnManager` | boolean | ❌ | Enable the shared runtime Column Manager popup (default: `true`) |
 | `searchQueryRef` | number | ⚪ | QueryRef for search |
@@ -113,6 +121,7 @@ await table.loadData();
 | `onRowDeselected` | Function | ❌ | Called when row deselected |
 | `onDataLoaded` | Function | ❌ | Called when data loaded |
 | `onEditModeChange` | Function | ❌ | Called when edit mode changes |
+| `onDirtyChange` | Function | ❌ | Called when dirty state changes — `(isDirty, rowData) => {}` |
 | `onExecuteSave` | Function | ❌ | Custom save logic — `async (row, editHelper) => {}` |
 | `onDuplicate` | Function | ❌ | Custom duplicate logic — `async (rowData) => newRowData` |
 | `onRefresh` | Function | ❌ | Custom refresh (e.g. re-query with params) |
@@ -129,7 +138,7 @@ The Navigator provides standard table controls in four groups:
 |--------|--------|
 | 🔄 Refresh | Reload data from source |
 | 🔽 Filter | Toggle column header filters |
-| ☰ Menu | Table options popup (expand/collapse all) |
+| ☰ Menu | Table options popup (expand/collapse all, toggle row height) |
 | ↔ Width | Table width presets (Narrow/Compact/Normal/Wide/Auto) |
 | ⊞ Layout | Layout mode (fitColumns/fitData/fitDataFill/etc) |
 | 🛠 Template | Save/load column configurations |
@@ -575,6 +584,14 @@ const table = new LithiumTable({
 
 **Collapse Button CSS:** The collapse button icon rotation CSS is provided **shared** by `lithium-table.css` via the `.lithium-collapse-btn` and `.lithium-collapse-icon` classes. Add these classes to your HTML — no manager-specific CSS needed. See [Collapsible Panels with Animated Icons](#collapsible-panels-with-animated-icons) below.
 
+### Splitter CSS Classes
+
+| Class | Element | Description |
+|-------|---------|-------------|
+| `.lithium-splitter` | Splitter element | Draggable panel divider |
+| `.lithium-splitter-resizing` | Applied during drag | Visual feedback during resize |
+| `.lithium-splitter-collapsed` | When splitter hidden | When left panel is collapsed |
+
 ### Container HTML Requirements
 
 **IMPORTANT:** When adding a LithiumTable to a manager, the container elements in the HTML template **must include both** the manager-specific class AND the LithiumTable base classes:
@@ -671,6 +688,8 @@ If the default lithium-table.css margins/padding don't fit your layout, override
 | `setTableWidth(mode)` | Set width preset |
 | `setTableLayout(mode)` | Set layout mode |
 | `discoverColumns(rows)` | Auto-add hidden columns |
+| `applyTemplateColumns(templateColumns)` | Apply column configuration from template/Column Manager |
+| `injectSortIconStyles()` | Inject sort icon CSS for custom cssPrefix |
 
 ### Lifecycle
 
@@ -960,6 +979,7 @@ When a user sets a table width via the Width popup (Narrow/Compact/Normal/Wide/A
 LithiumTable's `setupPersistence()` restores the saved width mode on init:
 - If a mode was saved (e.g., "wide"), it calls `onSetTableWidth("wide")` via `requestAnimationFrame`
 - If **no** mode was saved, it calls `onSetTableWidth(null)` — signaling the manager to apply its fallback
+- Default mode is `'compact'` if no mode was ever saved
 
 #### 2. Manager's `setTableWidth` handler
 

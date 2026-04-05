@@ -23,7 +23,7 @@ import { log, Subsystems, Status } from '../../core/log.js';
 import { processIcons } from '../../core/icons.js';
 import '../../core/manager-panels.css';
 import './version-history.css';
-import { setupManagerFooterIcons } from '../../core/manager-ui.js';
+import { setupManagerFooterIcons, closeExportPopup } from '../../core/manager-ui.js';
 import { ManagerEditHelper } from '../../core/manager-edit-helper.js';
 
 // Dynamic imports
@@ -61,6 +61,9 @@ export default class VersionHistoryManager {
     // Table state
     this._tableWidthMode = 'compact';
     this._filtersVisible = false;
+
+    // Prevent duplicate detail loading calls
+    this.loadingDetails = false;
 
     // Edit helper — consolidates edit mode, dirty tracking, and save/cancel buttons
     this.editHelper = new ManagerEditHelper({ name: 'VersionHistory' });
@@ -212,11 +215,17 @@ export default class VersionHistoryManager {
     try {
       this.versionsTable.showLoading();
 
-      // QueryRef 26 - Get Lookup with collection field
-      const [serverRows, clientRows] = await Promise.all([
+// QueryRef 26 - Get Lookup with collection field (44=Server, 45=Client, 46=Macros)
+      // Note: QueryRef 46 is for menu items, not macros! Use QueryRef 26 with LOOKUPID=46
+      const [serverRows, clientRows, macrosRows] = await Promise.all([
         authQuery(this.app.api, 26, { INTEGER: { LOOKUPID: 44 } }),
         authQuery(this.app.api, 26, { INTEGER: { LOOKUPID: 45 } }),
+        authQuery(this.app.api, 26, { INTEGER: { LOOKUPID: 46 } }), // Macros via lookup table
       ]);
+
+      // Store macros for expansion
+      this._macrosLookup = macrosRows || [];
+      log(Subsystems.MANAGER, Status.INFO, `[VersionHistory] Loaded ${this._macrosLookup?.length || 0} macros from Lookup 46`);
 
       // Tag each row with its source and extract collection fields
       const serverVersions = serverRows.map(row => this.processRow(row, 44, 'Server'));
@@ -310,6 +319,20 @@ export default class VersionHistoryManager {
       return;
     }
 
+    // Skip if this is the same row that's already selected
+    // This prevents duplicate API calls when clicking cells in the same row
+    // (cellMouseDown + cellClick + rowClick all fire on a single click)
+    if (this.selectedVersionId === keyIdx && this.selectedVersionData) {
+      log(Subsystems.MANAGER, Status.DEBUG, '[VersionSelection] Same row already selected, skipping');
+      return;
+    }
+
+    // Prevent duplicate calls if already loading details for a different row
+    if (this.loadingDetails) {
+      log(Subsystems.MANAGER, Status.INFO, '[VersionSelection] Details already loading, skipping duplicate call');
+      return;
+    }
+
     log(Subsystems.MANAGER, Status.INFO, `[VersionSelection] Row selected: key_idx=${keyIdx}, clientserver=${rowData.clientserver}`);
 
     this.selectedVersionId = keyIdx;
@@ -319,7 +342,12 @@ export default class VersionHistoryManager {
     try { localStorage.setItem(SELECTED_VERSION_KEY, String(keyIdx)); } catch (_e) { /* ignore */ }
 
     // Load full document details including Summary from QueryRef 45
-    await this.loadVersionDetails(keyIdx, rowData.clientserver);
+    this.loadingDetails = true;
+    try {
+      await this.loadVersionDetails(keyIdx, rowData.clientserver);
+    } finally {
+      this.loadingDetails = false;
+    }
   }
 
   async loadVersionDetails(keyIdx, clientserver) {
@@ -416,6 +444,105 @@ export default class VersionHistoryManager {
     return 'markdown';
   }
 
+  /**
+   * Expand macros in content using Lookup 46 (Macro Expansion)
+   * Macros appear as {MACRO_NAME} and are replaced with values from the lookup
+   * The lookup's value_txt defines the macro name, and collection contains locale variants
+   * e.g., value_txt: "{ACZ.CLIENT}", collection: {"Default": "Acuranzo", "en-US": "Acuranzo"}
+   */
+  expandMacros(content) {
+    if (!content || typeof content !== 'string') {
+      return content;
+    }
+
+    // Find all {VAR} patterns in content
+    const macroMatches = content.match(/\{[A-Za-z0-9_.]+\}/g);
+    if (!macroMatches || macroMatches.length === 0) {
+      return content;
+    }
+
+    // Get unique macros found in content
+    const uniqueMacros = [...new Set(macroMatches)];
+    log(Subsystems.MANAGER, Status.DEBUG, `[VersionHistory] Found macros: ${uniqueMacros.join(', ')}`);
+
+    // Get macros from pre-loaded lookup (from loadVersionList)
+    const macrosLookup = this._macrosLookup;
+
+    if (!macrosLookup || macrosLookup.length === 0) {
+      log(Subsystems.MANAGER, Status.WARN, '[VersionHistory] Macros lookup not loaded');
+      return content;
+    }
+
+    // Get current locale for variant lookup
+    const currentLocale = navigator.language || 'en-US';
+
+    // Build replacement map
+    const replacements = {};
+    for (const macro of uniqueMacros) {
+      // Find matching entry in lookup (case-insensitive match on value_txt)
+      const macroEntry = macrosLookup.find(m => 
+        m?.value_txt?.toUpperCase() === macro.toUpperCase()
+      );
+
+      if (!macroEntry) {
+        log(Subsystems.MANAGER, Status.DEBUG, `[VersionHistory] Macro not found in lookup: ${macro}`);
+        continue;
+      }
+
+      // Parse collection for locale variants
+      let collection = macroEntry.collection;
+      if (typeof collection === 'string') {
+        try {
+          collection = JSON.parse(collection);
+        } catch (_e) {
+          collection = {};
+        }
+      }
+
+      if (!collection || typeof collection !== 'object') {
+        continue;
+      }
+
+      // Try to find the best locale match
+      // Priority: exact match > language match (en-US > en) > Default
+      let replacement = null;
+
+      // Exact locale match
+      if (collection[currentLocale]) {
+        replacement = collection[currentLocale];
+      }
+      // Language-only match (e.g., "en" matches "en-US")
+      else if (currentLocale.includes('-')) {
+        const langOnly = currentLocale.split('-')[0];
+        for (const key of Object.keys(collection)) {
+          if (key.toLowerCase().startsWith(langOnly.toLowerCase())) {
+            replacement = collection[key];
+            break;
+          }
+        }
+      }
+      // Fall back to Default
+      if (!replacement && collection.Default) {
+        replacement = collection.Default;
+      }
+
+      if (replacement) {
+        replacements[macro] = replacement;
+        log(Subsystems.MANAGER, Status.DEBUG, `[VersionHistory] Expanding ${macro} -> ${replacement}`);
+      }
+    }
+
+    // Apply all replacements
+    let result = content;
+    for (const [macro, replacement] of Object.entries(replacements)) {
+      // Replace all occurrences (global regex)
+      const macroRegex = new RegExp(macro.replace(/[{}]/g, m => `\\${m}`), 'g');
+      result = result.replace(macroRegex, replacement);
+    }
+
+    return result;
+  }
+
   updatePreview() {
     if (!this.elements.previewContent) return;
 
@@ -426,14 +553,18 @@ export default class VersionHistoryManager {
 
     try {
       // Get summary from QueryRef 45 response (or fallback to code field)
-      const summary = this.selectedVersionData.summary
+      let summary = this.selectedVersionData.summary
         || this.selectedVersionData.code
         || '';
+
+      // Expand macros in the content
+      summary = this.expandMacros(summary);
 
       // Get released and focus fields using exact JSON keys
       const released = this.selectedVersionData.Released;
       const focus = this.selectedVersionData.Focus;
-      const status = this.selectedVersionData.value_txt || 'Unknown';
+      // Expand macros in status as well
+      let status = this.expandMacros(this.selectedVersionData.value_txt) || 'Unknown';
 
       let htmlContent = '';
 
@@ -542,17 +673,31 @@ export default class VersionHistoryManager {
     const footerElements = setupManagerFooterIcons(group, {
       onPrint: () => this.handleFooterPrint(),
       onEmail: () => this.handleFooterEmail(),
-      onExport: (e) => this.toggleFooterExportPopup(e),
+      onDownload: () => this.handleFooterDownload(),
+      onExport: (value, label) => this.handleFooterExport(value, label),
+      onClipboard: (value, label) => this.handleFooterClipboard(value, label),
       reportOptions: [
         { value: 'version-view', label: 'Versions View' },
         { value: 'version-data', label: 'Versions Data' },
+        { value: 'version-summary', label: 'Version Summary' },
       ],
       fillerTitle: 'Versions',
       anchor: placeholder,
       showSaveCancel: true,
+      showClipboard: true,
+      exportOptions: [
+        { value: 'pdf', label: 'PDF', icon: 'fa-file-pdf', enabled: true },
+        { value: 'csv', label: 'CSV', icon: 'fa-file-csv', enabled: true },
+        { value: 'xls', label: 'XLS', icon: 'fa-file-excel', enabled: true },
+        { value: 'json', label: 'JSON', icon: 'fa-brackets-curly', enabled: true },
+        { value: 'html', label: 'HTML', icon: 'fa-file-html', enabled: true },
+        { value: 'markdown', label: 'Markdown', icon: 'fa-file-code', enabled: true },
+        { value: 'txt', label: 'Text', icon: 'fa-file-lines', enabled: true },
+      ],
     });
 
     this._footerDatasource = footerElements.reportSelect;
+    this._footerElements = footerElements;
 
     // Wire save/cancel buttons to the editHelper (handles all state management)
     this.editHelper.wireFooterButtons(
@@ -570,6 +715,13 @@ export default class VersionHistoryManager {
 
   handleFooterPrint() {
     const mode = this._getFooterDatasource();
+
+    // Handle Version Summary print
+    if (mode === 'version-summary') {
+      this.handleVersionSummaryExport();
+      return;
+    }
+
     const table = this.versionsTable?.table;
 
     if (!table) {
@@ -585,6 +737,13 @@ export default class VersionHistoryManager {
 
   handleFooterEmail() {
     const mode = this._getFooterDatasource();
+
+    // Handle Version Summary email
+    if (mode === 'version-summary') {
+      this.handleVersionSummaryEmail();
+      return;
+    }
+
     const table = this.versionsTable?.table;
 
     if (!table) {
@@ -694,7 +853,15 @@ export default class VersionHistoryManager {
     }
   }
 
-  handleFooterExport(format, mode) {
+  handleFooterExport(value, label) {
+    const mode = this._getFooterDatasource();
+
+    // Handle Version Summary export - export as markdown regardless of format
+    if (mode === 'version-summary') {
+      this.handleVersionSummaryExport();
+      return;
+    }
+
     const table = this.versionsTable?.table;
 
     if (!table) {
@@ -705,6 +872,33 @@ export default class VersionHistoryManager {
     const isViewMode = mode.endsWith('-view');
     const downloadOpts = isViewMode ? {} : { rowGroups: false };
 
+    this._doDownload(table, value, filename, downloadOpts);
+  }
+
+  handleFooterDownload() {
+    const mode = this._getFooterDatasource();
+
+    // Handle Version Summary download
+    if (mode === 'version-summary') {
+      this.handleVersionSummaryExport();
+      return;
+    }
+
+    const table = this.versionsTable?.table;
+
+    if (!table) {
+      return;
+    }
+
+    const filename = `versions-export-${new Date().toISOString().slice(0, 10)}`;
+    const isViewMode = mode.endsWith('-view');
+    const downloadOpts = isViewMode ? {} : { rowGroups: false };
+
+    const exportFormat = this._footerElements?.exportFormat || 'pdf';
+    this._doDownload(table, exportFormat, filename, downloadOpts);
+  }
+
+  _doDownload(table, format, filename, downloadOpts) {
     switch (format) {
       case 'pdf':
         table.download('pdf', `${filename}.pdf`, { orientation: 'landscape', ...downloadOpts });
@@ -718,7 +912,180 @@ export default class VersionHistoryManager {
       case 'xls':
         table.download('xlsx', `${filename}.xlsx`, downloadOpts);
         break;
+      case 'json':
+        table.download('json', `${filename}.json`, downloadOpts);
+        break;
+      case 'html':
+        table.download('html', `${filename}.html`, downloadOpts);
+        break;
+      case 'markdown':
+        this.handleMarkdownExport(this._getFooterDatasource(), filename);
+        break;
+      default:
+        log(Subsystems.MANAGER, Status.WARN, `[VersionHistory] Unknown export format: ${format}`);
     }
+  }
+
+  handleFooterClipboard(value, label) {
+    const mode = this._getFooterDatasource();
+
+    // Handle Version Summary clipboard copy
+    if (mode === 'version-summary') {
+      this.handleVersionSummaryClipboard();
+      return;
+    }
+
+    const table = this.versionsTable?.table;
+
+    if (!table) {
+      return;
+    }
+
+    const isViewMode = mode.endsWith('-view');
+    const rows = isViewMode ? table.getRows('active') : table.getRows();
+
+    if (rows.length === 0) {
+      return;
+    }
+
+    const visibleCols = isViewMode
+      ? table.getColumns().filter(col => col.isVisible() && col.getField() !== '_selector')
+      : table.getColumns().filter(col => col.getField() !== '_selector');
+
+    const headers = visibleCols.map(col => col.getDefinition().title || col.getField());
+    const dataLines = rows.map(row => {
+      const data = row.getData();
+      return visibleCols.map(col => {
+        const val = data[col.getField()];
+        return val != null ? String(val) : '';
+      }).join('\t');
+    });
+
+    const text = `${headers.join('\t')}\n${dataLines.join('\n')}`;
+
+    navigator.clipboard.writeText(text).then(() => {
+      toast.success('Copied', { description: 'Table data copied to clipboard', duration: 2000 });
+    }).catch(err => {
+      toast.error('Copy Failed', { description: 'Failed to copy to clipboard', duration: 3000 });
+    });
+  }
+
+  handleMarkdownExport(mode, filename) {
+    const table = this.versionsTable?.table;
+    if (!table) return;
+
+    const isViewMode = mode.endsWith('-view');
+    const rows = isViewMode ? table.getRows('active') : table.getRows();
+
+    if (rows.length === 0) return;
+
+    const visibleCols = isViewMode
+      ? table.getColumns().filter(col => col.isVisible() && col.getField() !== '_selector')
+      : table.getColumns().filter(col => col.getField() !== '_selector');
+
+    const headers = visibleCols.map(col => col.getDefinition().title || col.getField());
+    const headerRow = `| ${headers.join(' | ')} |`;
+    const separatorRow = `| ${headers.map(() => '---').join(' | ')} |`;
+    const dataRows = rows.map(row => {
+      const data = row.getData();
+      const rowData = visibleCols.map(col => {
+        const val = data[col.getField()];
+        return val != null ? String(val).replace(/\|/g, '\\|') : '';
+      });
+      return `| ${rowData.join(' | ')} |`;
+    });
+
+    const markdown = `${headerRow}\n${separatorRow}\n${dataRows.join('\n')}`;
+
+    const blob = new Blob([markdown], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${filename}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  handleVersionSummaryExport() {
+    if (!this.selectedVersionData) {
+      toast.info('No Version Selected', { description: 'Please select a version to export', duration: 3000 });
+      return;
+    }
+
+    const v = this.selectedVersionData;
+    const version = v.value_txt || v.key_idx || 'Unknown';
+    const released = v.Released || 'N/A';
+    const focus = v.Focus || 'N/A';
+    const summary = v.summary || v.code || '';
+
+    const markdown = `# Version ${version}
+
+**Released:** ${released}  
+**Focus:** ${focus}
+
+---
+
+## Summary
+
+${summary}
+`;
+
+    const blob = new Blob([markdown], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `version-${version}-summary.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  handleVersionSummaryClipboard() {
+    if (!this.selectedVersionData) {
+      toast.info('No Version Selected', { description: 'Please select a version to copy', duration: 3000 });
+      return;
+    }
+
+    const v = this.selectedVersionData;
+    const version = v.value_txt || v.key_idx || 'Unknown';
+    const released = v.Released || 'N/A';
+    const focus = v.Focus || 'N/A';
+    const summary = v.summary || v.code || '';
+
+    const text = `Version: ${version}
+Released: ${released}
+Focus: ${focus}
+
+Summary:
+${summary}`;
+
+    navigator.clipboard.writeText(text).then(() => {
+      toast.success('Copied', { description: 'Version summary copied to clipboard', duration: 2000 });
+    }).catch(err => {
+      toast.error('Copy Failed', { description: 'Failed to copy to clipboard', duration: 3000 });
+    });
+  }
+
+  handleVersionSummaryEmail() {
+    if (!this.selectedVersionData) {
+      toast.info('No Version Selected', { description: 'Please select a version to email', duration: 3000 });
+      return;
+    }
+
+    const v = this.selectedVersionData;
+    const version = v.value_txt || v.key_idx || 'Unknown';
+    const released = v.Released || 'N/A';
+    const focus = v.Focus || 'N/A';
+    const summary = v.summary || v.code || '';
+
+    const subject = encodeURIComponent(`Version ${version} Summary`);
+    const body = encodeURIComponent(
+      `Version: ${version}\n` +
+      `Released: ${released}\n` +
+      `Focus: ${focus}\n\n` +
+      `Summary:\n${summary}`
+    );
+
+    window.open(`mailto:?subject=${subject}&body=${body}`, '_self');
   }
 
   // Edit mode, dirty tracking, and save/cancel button management are now

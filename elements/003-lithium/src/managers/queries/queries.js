@@ -625,7 +625,9 @@ export default class QueriesManager {
     const footerElements = setupManagerFooterIcons(group, {
       onPrint: () => this._handleFooterPrint(),
       onEmail: () => this._handleFooterEmail(),
-      onExport: (e) => this._toggleFooterExportPopup(e),
+      onDownload: () => this._handleFooterDownload(),
+      onExport: (value, label) => this._handleFooterExport(value, label),
+      onClipboard: (value, label) => this._handleFooterClipboard(value, label),
       reportOptions: [
         { value: 'queries-view', label: 'Queries View' },
         { value: 'queries-data', label: 'Queries Data' },
@@ -633,9 +635,20 @@ export default class QueriesManager {
       fillerTitle: 'Queries',
       anchor: placeholder,
       showSaveCancel: true,
+      showClipboard: true,
+      exportOptions: [
+        { value: 'pdf', label: 'PDF', icon: 'fa-file-pdf', enabled: true },
+        { value: 'csv', label: 'CSV', icon: 'fa-file-csv', enabled: true },
+        { value: 'xls', label: 'XLS', icon: 'fa-file-excel', enabled: true },
+        { value: 'json', label: 'JSON', icon: 'fa-brackets-curly', enabled: true },
+        { value: 'html', label: 'HTML', icon: 'fa-file-html', enabled: true },
+        { value: 'markdown', label: 'Markdown', icon: 'fa-file-code', enabled: true },
+        { value: 'txt', label: 'Text', icon: 'fa-file-lines', enabled: true },
+      ],
     });
 
     this._footerDatasource = footerElements.reportSelect;
+    this._footerElements = footerElements;
 
     // Wire save/cancel buttons through editHelper (standard pattern)
     this.editHelper.wireFooterButtons(
@@ -778,7 +791,8 @@ export default class QueriesManager {
     }
   }
 
-  _handleFooterExport(format, mode) {
+  _handleFooterExport(value, label) {
+    const mode = this._getFooterDatasource();
     const table = this.queryTable?.table;
 
     if (!table) {
@@ -790,6 +804,28 @@ export default class QueriesManager {
     const isViewMode = mode.endsWith('-view');
     const downloadOpts = isViewMode ? {} : { rowGroups: false };
 
+    this._doDownload(table, value, filename, downloadOpts);
+  }
+
+  _handleFooterDownload() {
+    const mode = this._getFooterDatasource();
+    const table = this.queryTable?.table;
+
+    if (!table) {
+      toast.info('No Data', { description: 'No table available to download', duration: 3000 });
+      return;
+    }
+
+    const filename = `queries-export-${new Date().toISOString().slice(0, 10)}`;
+    const isViewMode = mode.endsWith('-view');
+    const downloadOpts = isViewMode ? {} : { rowGroups: false };
+
+    // Get selected export format from footer elements
+    const exportFormat = this._footerElements?.exportFormat || 'pdf';
+    this._doDownload(table, exportFormat, filename, downloadOpts);
+  }
+
+  _doDownload(table, format, filename, downloadOpts) {
     switch (format) {
       case 'pdf':
         table.download('pdf', `${filename}.pdf`, { orientation: 'landscape', ...downloadOpts });
@@ -803,9 +839,90 @@ export default class QueriesManager {
       case 'xls':
         table.download('xlsx', `${filename}.xlsx`, downloadOpts);
         break;
+      case 'json':
+        table.download('json', `${filename}.json`, downloadOpts);
+        break;
+      case 'html':
+        table.download('html', `${filename}.html`, downloadOpts);
+        break;
+      case 'markdown':
+        this._handleMarkdownExport(table, this._getFooterDatasource(), filename);
+        break;
       default:
-        log(Subsystems.MANAGER, Status.WARN, `Unknown export format: ${format}`);
+        log(Subsystems.MANAGER, Status.WARN, `[Queries] Unknown export format: ${format}`);
     }
+  }
+
+  _handleFooterClipboard(value, label) {
+    const mode = this._getFooterDatasource();
+    const table = this.queryTable?.table;
+
+    if (!table) {
+      toast.info('No Data', { description: 'No table available to copy', duration: 3000 });
+      return;
+    }
+
+    const isViewMode = mode.endsWith('-view');
+    const rows = isViewMode ? table.getRows('active') : table.getRows();
+
+    if (rows.length === 0) {
+      toast.info('No Data', { description: 'No rows to copy', duration: 3000 });
+      return;
+    }
+
+    const visibleCols = isViewMode
+      ? table.getColumns().filter(col => col.isVisible() && col.getField() !== '_selector')
+      : table.getColumns().filter(col => col.getField() !== '_selector');
+
+    const headers = visibleCols.map(col => col.getDefinition().title || col.getField());
+    const dataLines = rows.map(row => {
+      const data = row.getData();
+      return visibleCols.map(col => {
+        const val = data[col.getField()];
+        return val != null ? String(val) : '';
+      }).join('\t');
+    });
+
+    const text = `${headers.join('\t')}\n${dataLines.join('\n')}`;
+
+    navigator.clipboard.writeText(text).then(() => {
+      toast.success('Copied', { description: 'Table data copied to clipboard', duration: 2000 });
+    }).catch(err => {
+      toast.error('Copy Failed', { description: 'Failed to copy to clipboard', duration: 3000 });
+    });
+  }
+
+  _handleMarkdownExport(table, mode, filename) {
+    const isViewMode = mode.endsWith('-view');
+    const rows = isViewMode ? table.getRows('active') : table.getRows();
+
+    if (rows.length === 0) return;
+
+    const visibleCols = isViewMode
+      ? table.getColumns().filter(col => col.isVisible() && col.getField() !== '_selector')
+      : table.getColumns().filter(col => col.getField() !== '_selector');
+
+    const headers = visibleCols.map(col => col.getDefinition().title || col.getField());
+    const headerRow = `| ${headers.join(' | ')} |`;
+    const separatorRow = `| ${headers.map(() => '---').join(' | ')} |`;
+    const dataRows = rows.map(row => {
+      const data = row.getData();
+      const rowData = visibleCols.map(col => {
+        const val = data[col.getField()];
+        return val != null ? String(val).replace(/\|/g, '\\|') : '';
+      });
+      return `| ${rowData.join(' | ')} |`;
+    });
+
+    const markdown = `${headerRow}\n${separatorRow}\n${dataRows.join('\n')}`;
+
+    const blob = new Blob([markdown], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${filename}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   // ============ FONT POPUP ============

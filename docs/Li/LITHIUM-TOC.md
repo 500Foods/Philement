@@ -38,10 +38,11 @@ This directory contains the canonical documentation for the Lithium web applicat
 | [LITHIUM-MGR-STYLE.md](LITHIUM-MGR-STYLE.md) | Style Manager — visual CSS editing with interactive mockups |
 | [LITHIUM-MGR-CRIMSON.md](LITHIUM-MGR-CRIMSON.md) | Crimson AI Agent — popup chat interface |
 | [LITHIUM-MGR-TOUR.md](LITHIUM-MGR-TOUR.md) | Tour Manager — Shepherd.js guided tours (Lookup #43) |
+| [LITHIUM-MGR-VERSION.md](LITHIUM-MGR-VERSION.md) | Version Manager — Version history browser (Lookups 44/45) |
 | [LITHIUM-TAB.md](LITHIUM-TAB.md) | LithiumTable Component — reusable Tabulator+Navigator |
 | [LITHIUM-COL.md](LITHIUM-COL.md) | **Column Manager** — Runtime column customization UI |
 | [LITHIUM-TAB-PLAN.md](LITHIUM-TAB-PLAN.md) | Tabulator implementation plan — gap analysis and phased roadmap |
-| [LITHIUM-LUT.md](LITHIUM-LUT.md) | Lookup Tables — schema, caching, accessor functions, Tabulator integration |
+| [LITHIUM-LUT.md](LITHIUM-LUT.md) | Lookup Tables — schema, caching, accessor functions, **debugging tips** |
 | [LITHIUM-API.md](LITHIUM-API.md) | Hydrogen API endpoints and Conduit client library (`conduit.js`) |
 | [LITHIUM-WSS.md](LITHIUM-WSS.md) | WebSocket connection — app-wide persistent connection, keepalive, status indicator |
 | [LITHIUM-CSS.md](LITHIUM-CSS.md) | CSS architecture, variables, theming |

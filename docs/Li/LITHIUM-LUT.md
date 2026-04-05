@@ -135,6 +135,30 @@ When the application starts ([`app.js`](../../elements/003-lithium/src/app.js)):
 
 This dual strategy means the UI has lookup data available almost instantly (from localStorage) while fresh data arrives in the background.
 
+### ⚠️ Critical: QueryRef vs Lookup Table
+
+> **This is the #1 source of confusion when working with lookups.**
+
+A **QueryRef** is a REST API endpoint that returns data. A **Lookup Table** (`lookup_id = N`) is data stored in the database `lookups` table.
+
+**They are NOT the same thing:**
+
+| QueryRef | Example Returns | How to Call |
+|---------|-----------------|-------------|
+| 46 | Menu items (manager list) | `authQuery(api, 46)` |
+| 26 + LOOKUPID: 46 | Rows from lookup table 46 | `authQuery(api, 26, { INTEGER: { LOOKUPID: 46 } })` |
+
+**Common mistakes:**
+- ❌ `authQuery(api, 46)` — Returns menu data, NOT lookup table 46
+- ✅ `authQuery(api, 26, { INTEGER: { LOOKUPID: 46 } })` — Returns lookup table 46
+
+**How to know which you're dealing with:**
+1. Check the SQL query the QueryRef runs — some QueryRefs return lookup table data directly
+2. If a QueryRef has a `LOOKUPID` parameter, it returns lookup table data
+3. The lookup table ID (e.g., 44, 45, 46) is NOT the same as the QueryRef number
+
+See also: **[Debugging Lookup Issues](#debugging-lookup-issues)**
+
 ### Module: `shared/lookups.js`
 
 The [`lookups.js`](../../elements/003-lithium/src/shared/lookups.js) module manages the lookup lifecycle:
@@ -328,6 +352,56 @@ As we fully implement the lookup column type in Tabulator tables, these two syst
 - **Event-driven refresh** — When a lookup is updated on the server (e.g., admin adds a new status value), push a `LOOKUPS_UPDATED` event via the event bus to trigger cache invalidation and table re-render.
 - **Lookup Editor Manager** — The Lookups manager (ID: 4) in the sidebar will provide a CRUD interface for all lookup tables.
 - **Detailed docs** — For complex lookups (like Themes, 041), create `LITHIUM-LUT-041.md` with full documentation of the JSON collection schema and CSS integration.
+
+---
+
+## Debugging Lookup Issues
+
+When lookups aren't working as expected, use this systematic approach:
+
+### 1. Verify the Lookup Table Has Data
+
+Run SQL directly on the database:
+```sql
+SELECT * FROM lithium.lookups WHERE lookup_id = 46;  -- Your lookup ID here
+```
+
+### 2. Identify the Correct QueryRef
+
+- **If the QueryRef takes a `LOOKUPID` parameter**: It returns lookup table data
+  ```javascript
+  authQuery(api, 26, { INTEGER: { LOOKUPID: 46 } })  // Returns lookup_id=46 rows
+  ```
+- **If the QueryRef has NO parameter**: Check what it returns — it might be something else entirely (e.g., QueryRef 46 = menu data)
+
+### 3. Check Pre-Login vs Post-Login
+
+Pre-login lookups:
+- Loaded in batch at startup: QueryRefs 001, 030, 053, 054, 060
+- Available via `shared/lookups.js`
+
+Post-login lookups (require authentication):
+- Must be loaded per-manager using `authQuery(api, ref, params)`
+- Not cached in `shared/lookups.js` by default
+
+### 4. Common Issues and Solutions
+
+| Symptom | Likely Cause | Fix |
+|---------|--------------|-----|
+| `value_txt` is empty | Using wrong QueryRef (e.g., QueryRef 46 for menu instead of QueryRef 26) | Use QueryRef 26 + LOOKUPID parameter |
+| Lookup returns 0 rows | Wrong LOOKUPID or lookup is empty in DB | Verify with SQL first |
+| Data cached but old | localStorage has stale data | `window.lithiumApp.lookups.clearCache()` then reload |
+| 422 HTTP error | QueryRef requires authentication | Use `authQuery` (post-login), not batch fetch |
+
+### 5. Debug Logging Pattern
+
+```javascript
+// In your manager:
+const rows = await authQuery(this.app.api, 26, { INTEGER: { LOOKUPID: 46 } });
+log(Subsystems.MANAGER, Status.INFO, `[MyManager] Loaded ${rows.length} rows`);
+log(Subsystems.MANAGER, Status.DEBUG, `[MyManager] First row:`, rows[0]);
+log(Subsystems.MANAGER, Status.DEBUG, `[MyManager] value_txt samples:`, rows.slice(0, 3).map(r => r.value_txt));
+```
 
 ---
 
