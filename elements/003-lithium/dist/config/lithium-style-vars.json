@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS custom properties (variables) used across the Lithium codebase",
-    "generated": "2026-04-04T19:43:35.959Z",
+    "generated": "2026-04-05T22:24:44.292Z",
     "sources": {
       "css": "49 files in src/**/*.css",
       "js": "81 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
     "total_variables": 209,
-    "total_occurrences": 3213
+    "total_occurrences": 3233
   },
   "variables": [
     {
@@ -55,10 +55,10 @@
     },
     {
       "name": "--accent-focus",
-      "css": 13,
+      "css": 14,
       "js": 0,
       "html": 0,
-      "total": 13
+      "total": 14
     },
     {
       "name": "--accent-hover",
@@ -83,10 +83,10 @@
     },
     {
       "name": "--accent-primary",
-      "css": 146,
+      "css": 149,
       "js": 3,
       "html": 1,
-      "total": 150
+      "total": 153
     },
     {
       "name": "--accent-primary-hover",
@@ -167,10 +167,10 @@
     },
     {
       "name": "--bg-hover",
-      "css": 23,
+      "css": 24,
       "js": 0,
       "html": 0,
-      "total": 23
+      "total": 24
     },
     {
       "name": "--bg-input",
@@ -181,10 +181,10 @@
     },
     {
       "name": "--bg-primary",
-      "css": 51,
+      "css": 50,
       "js": 0,
       "html": 1,
-      "total": 52
+      "total": 51
     },
     {
       "name": "--bg-primary-rgb",
@@ -216,10 +216,10 @@
     },
     {
       "name": "--bg-secondary",
-      "css": 80,
+      "css": 81,
       "js": 1,
       "html": 1,
-      "total": 82
+      "total": 83
     },
     {
       "name": "--bg-tertiary",
@@ -230,10 +230,10 @@
     },
     {
       "name": "--border-color",
-      "css": 66,
+      "css": 68,
       "js": 1,
       "html": 0,
-      "total": 67
+      "total": 69
     },
     {
       "name": "--border-color-focus",
@@ -279,10 +279,10 @@
     },
     {
       "name": "--border-radius-md",
-      "css": 128,
+      "css": 129,
       "js": 0,
       "html": 0,
-      "total": 128
+      "total": 129
     },
     {
       "name": "--border-radius-sm",
@@ -496,10 +496,10 @@
     },
     {
       "name": "--font-size-base",
-      "css": 26,
+      "css": 27,
       "js": 0,
       "html": 0,
-      "total": 26
+      "total": 27
     },
     {
       "name": "--font-size-lg",
@@ -797,17 +797,17 @@
     },
     {
       "name": "--space-3",
-      "css": 175,
+      "css": 177,
       "js": 2,
       "html": 0,
-      "total": 177
+      "total": 179
     },
     {
       "name": "--space-4",
-      "css": 102,
+      "css": 103,
       "js": 0,
       "html": 0,
-      "total": 102
+      "total": 103
     },
     {
       "name": "--space-5",
@@ -993,10 +993,10 @@
     },
     {
       "name": "--text-primary",
-      "css": 135,
+      "css": 138,
       "js": 5,
       "html": 1,
-      "total": 141
+      "total": 144
     },
     {
       "name": "--text-secondary",
@@ -1393,16 +1393,16 @@
     {
       "name": "--transition-duration",
       "css": 62,
-      "js": 10,
+      "js": 11,
       "html": 0,
-      "total": 72
+      "total": 73
     },
     {
       "name": "--transition-fast",
-      "css": 135,
+      "css": 139,
       "js": 3,
       "html": 0,
-      "total": 138
+      "total": 142
     },
     {
       "name": "--transition-normal",

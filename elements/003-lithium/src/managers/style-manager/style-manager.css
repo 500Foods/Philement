@@ -56,7 +56,7 @@
   flex-direction: column;
   width: var(--panel-middle-w, 350px);
   min-width: 157px;
-  background-color: var(--bg-secondary);
+  background: var(--bg-secondary);
   transition: width var(--transition-delay) ease, min-width var(--transition-delay) ease;
   flex-shrink: 0;
 }

@@ -4,6 +4,47 @@ This document describes the development environment, build tools, and workflow f
 
 ---
 
+## IMPORTANT: Use Session Logging, Not console.log
+
+When debugging issues in Lithium, always use the session logging system instead of `console.log`. This ensures:
+
+- All debug output is preserved for later review
+- Debug messages are visible in the browser's Lithium session log panel
+- Messages can be filtered by subsystem and status
+- Debug info persists across hot reloads during development
+
+### How to Log
+
+```javascript
+import { log, Subsystems, Status } from '../core/log.js';
+
+// Basic usage
+log(Subsystems.MANAGER, Status.INFO, 'Export button clicked');
+log(Subsystems.MANAGER, Status.DEBUG, 'Popup rect:', { width: 140, height: 283 });
+
+// For complex objects, log as a group
+log(Subsystems.MANAGER, Status.DEBUG, 'Export options:', { 
+  exportOptions, 
+  extraOptions 
+});
+```
+
+### Status Levels
+
+| Status | Purpose |
+|--------|---------|
+| `Status.DEBUG` | Development debugging info |
+| `Status.INFO` | General information |
+| `Status.WARN` | Warnings (non-critical issues) |
+| `Status.ERROR` | Errors that need attention |
+| `Status.SUCCESS` | Successful operations |
+
+### Subsystems
+
+Use the relevant subsystem: `Subsystems.MANAGER`, `Subsystems.TABLE`, `Subsystems.UI`, etc.
+
+---
+
 ## Prerequisites
 
 | Requirement | Version | Notes |
@@ -296,5 +337,6 @@ Creates the standard footer action icons (Crimson, Notifications, Concierge, Ann
 
 - Learn about JavaScript libraries: [LITHIUM-LIB.md](LITHIUM-LIB.md)
 - Understand the manager system: [LITHIUM-MGR.md](LITHIUM-MGR.md)
+- Lookup tables: [LITHIUM-LUT.md](LITHIUM-LUT.md) (includes debugging tips)
 - Deployment: [LITHIUM-WEB.md](LITHIUM-WEB.md)
 - Troubleshooting: [LITHIUM-FAQ.md](LITHIUM-FAQ.md)

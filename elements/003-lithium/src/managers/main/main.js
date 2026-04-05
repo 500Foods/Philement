@@ -39,7 +39,7 @@ import {
   unregisterManagerShortcuts,
 } from '../../core/manager-ui.js';
 import { getAppWS, ConnectionState } from '../../shared/app-ws.js';
-import { initRadar, wsConnected, wsFlaky, wsDisconnected, onHeartbeat, destroyRadar } from '../../shared/radar-controller.js';
+import { initRadar, setActiveRadar, wsConnected, wsFlaky, wsDisconnected, onHeartbeat, destroyRadar, setRadarTooltip, getRadarTooltip } from '../../shared/radar-controller.js';
 import '../../core/manager-ui.css';
 import './main.css';
 
@@ -142,11 +142,13 @@ export default class MainManager {
     this.currentUtilityKey = null;
     this.user = null;
     this.isLogoutPanelVisible = false;
+    this.selectedLogoutIndex = 0;
     this.isSidebarCollapsed = false;
     this.isResizing = false;
     this._stageTimer = null;
     this._arrowRotation = 0;
     this._isAnimating = false;
+    this._isRadarInSidebar = false;
     
     // Menu data
     this.menuData = null;
@@ -781,6 +783,8 @@ export default class MainManager {
       logoutCloseBtn: this.container.querySelector('#logout-close-btn'),
       logoutOptions: this.container.querySelectorAll('.logout-option'),
       radarIcon: this.container.querySelector('#radar-icon'),
+      radarIconSidebar: this.container.querySelector('#radar-icon-sidebar'),
+      sidebarRadarContainer: this.container.querySelector('#sidebar-radar-container'),
     };
 
     // Move logout overlay and panel to document.body for proper fixed positioning.
@@ -791,6 +795,14 @@ export default class MainManager {
     }
     if (this.elements.logoutPanel) {
       document.body.appendChild(this.elements.logoutPanel);
+    }
+
+    // Initialize tooltips on radar icons
+    if (this.elements.radarIcon) {
+      initTooltips(this.elements.radarIcon);
+    }
+    if (this.elements.radarIconSidebar) {
+      initTooltips(this.elements.radarIconSidebar);
     }
   }
 
@@ -821,27 +833,32 @@ export default class MainManager {
     const radarIcon = this.elements.radarIcon;
     if (!radarIcon) return;
 
+    let tooltipText = 'Status: Disconnected';
     switch (state) {
       case ConnectionState.CONNECTED:
         wsConnected();
-        radarIcon.dataset.tooltip = 'Status: Connected';
+        tooltipText = 'Status: Connected';
         break;
       case ConnectionState.CONNECTING:
         wsFlaky();
-        radarIcon.dataset.tooltip = 'Status: Connecting...';
+        tooltipText = 'Status: Connecting...';
         break;
       case ConnectionState.ERROR:
         wsDisconnected();
-        radarIcon.dataset.tooltip = 'Status: Error';
+        tooltipText = 'Status: Error';
         break;
       case ConnectionState.DISCONNECTED:
       default:
         wsDisconnected();
-        radarIcon.dataset.tooltip = 'Status: Disconnected';
+        tooltipText = 'Status: Disconnected';
         break;
     }
+
+    // Update tooltip on active radar element and track for sync
+    radarIcon.dataset.tooltip = tooltipText;
     const tipInstance = getTip(radarIcon);
-    if (tipInstance) tipInstance.updateContent(radarIcon.getAttribute('data-tooltip'));
+    if (tipInstance) tipInstance.updateContent(tooltipText);
+    setRadarTooltip(tooltipText);
   }
 
   /**
@@ -849,6 +866,123 @@ export default class MainManager {
    */
   flashWSStatus() {
     onHeartbeat();
+  }
+
+  // /**
+  //  * Expand the sidebar if it's collapsed (used before moving radar to sidebar)
+  //  */
+  // _expandSidebarIfCollapsed() {
+  //   const sidebar = this.elements.sidebar;
+  //   const isCollapsedClass = sidebar?.classList?.contains('collapsed');
+  //   const isCollapsedProp = this.isSidebarCollapsed === true;
+  //   const isCollapsed = isCollapsedClass || isCollapsedProp;
+
+  //   if (isCollapsed && typeof this.toggleSidebarCollapse === 'function') {
+  //     log(Subsystems.MANAGER, Status.INFO, '[MainManager] Expanding collapsed sidebar for radar');
+  //     this.toggleSidebarCollapse();
+  //   }
+  // }
+
+/**
+   * Toggle radar position between header and sidebar
+   * Uses --transition-duration to animate opacity
+   */
+  _toggleRadarPosition() {
+    const headerRadar = this.elements.radarIcon;
+    const sidebarRadar = this.elements.radarIconSidebar;
+    if (!headerRadar || !sidebarRadar) return;
+  
+    this._isRadarInSidebar = !this._isRadarInSidebar;
+  
+    const duration = this.getTransitionDuration() || 300;
+    const transitionStr = `opacity ${duration}ms ease`;
+  
+    // Ensure transition is set (safe to call every toggle)
+    headerRadar.style.transition = transitionStr;
+    sidebarRadar.style.transition = transitionStr;
+  
+    // Disable pointer events during the whole animation
+    headerRadar.style.pointerEvents = 'none';
+    sidebarRadar.style.pointerEvents = 'none';
+  
+if (this._isRadarInSidebar) {
+      // === MOVING TO SIDEBAR ===
+      setActiveRadar('sidebar');
+
+      // Sync tooltip text to both radars
+      const tooltipText = getRadarTooltip();
+      headerRadar.dataset.tooltip = tooltipText;
+      sidebarRadar.dataset.tooltip = tooltipText;
+      const headerTip = getTip(headerRadar);
+      const sidebarTip = getTip(sidebarRadar);
+      if (headerTip && headerTip.updateContent) headerTip.updateContent(tooltipText);
+      if (sidebarTip && sidebarTip.updateContent) sidebarTip.updateContent(tooltipText);
+   
+      // 1. Bring sidebar into the render tree at opacity 0
+      sidebarRadar.style.display = 'block';
+      sidebarRadar.style.opacity = '0';
+   
+      // Start fade-out on header immediately (it was already visible)
+      headerRadar.style.opacity = '0';
+   
+      // Double RAF = the trick that makes SVGs fade IN reliably
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          sidebarRadar.style.opacity = '1';
+        });
+      });
+   
+      // Cleanup: hide header once its fade-out finishes
+      headerRadar.addEventListener('transitionend', function handler(e) {
+        if (e.propertyName === 'opacity') {
+          headerRadar.style.display = 'none';
+          headerRadar.removeEventListener('transitionend', handler);
+        }
+      }, { once: true });
+   
+    } else {
+      // === MOVING BACK TO HEADER ===
+      setActiveRadar('header');
+
+      // Sync tooltip text to both radars
+      const tooltipText = getRadarTooltip();
+      headerRadar.dataset.tooltip = tooltipText;
+      sidebarRadar.dataset.tooltip = tooltipText;
+      const headerTip = getTip(headerRadar);
+      const sidebarTip = getTip(sidebarRadar);
+      if (headerTip && headerTip.updateContent) headerTip.updateContent(tooltipText);
+      if (sidebarTip && sidebarTip.updateContent) sidebarTip.updateContent(tooltipText);
+   
+      // 1. Bring header into the render tree at opacity 0
+      headerRadar.style.display = 'block';
+      headerRadar.style.opacity = '0';
+   
+      // Start fade-out on sidebar immediately
+      sidebarRadar.style.opacity = '0';
+   
+      // Double RAF for the incoming header SVG
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          headerRadar.style.opacity = '1';
+        });
+      });
+  
+      // Cleanup: hide sidebar once its fade-out finishes
+      sidebarRadar.addEventListener('transitionend', function handler(e) {
+        if (e.propertyName === 'opacity') {
+          sidebarRadar.style.display = 'none';
+          sidebarRadar.removeEventListener('transitionend', handler);
+        }
+      }, { once: true });
+    }
+  
+    // Re-enable pointer events once everything is definitely done
+    setTimeout(() => {
+      headerRadar.style.pointerEvents = '';
+      sidebarRadar.style.pointerEvents = '';
+    }, duration + 50);
+
+    log(Subsystems.MANAGER, Status.INFO, `[MainManager] Radar moved to ${this._isRadarInSidebar ? 'sidebar' : 'header'}`);
   }
 
   /**
@@ -950,6 +1084,15 @@ export default class MainManager {
 
     eventBus.on(Events.NETWORK_OFFLINE, () => {
       this._setOfflineIndicators(true);
+    });
+
+    // Radar icon click - toggle between header and sidebar
+    this.elements.radarIcon?.addEventListener('click', () => {
+      this._toggleRadarPosition();
+    });
+
+    this.elements.radarIconSidebar?.addEventListener('click', () => {
+      this._toggleRadarPosition();
     });
 
     // Logout event from keyboard shortcut
@@ -1688,6 +1831,7 @@ export default class MainManager {
     if (this.isLogoutPanelVisible) return;
 
     this.isLogoutPanelVisible = true;
+    this.selectedLogoutIndex = 0;
 
     // Show overlay and panel by adding visible class
     // CSS handles the opacity/visibility transition
@@ -1697,10 +1841,9 @@ export default class MainManager {
     // Add keyboard listener
     document.addEventListener('keydown', this.handleKeyDown);
 
-    // Focus the first logout option for accessibility after transition
+    // Focus and select the first logout option for accessibility after transition
     setTimeout(() => {
-      const firstOption = this.elements.logoutOptions?.[0];
-      firstOption?.focus();
+      this._updateLogoutSelection();
     }, 300);
   }
 
@@ -1728,10 +1871,12 @@ export default class MainManager {
 
   /**
    * Handle keyboard shortcuts for logout panel
-   * ESC - cancel, Enter - quick logout, 1-4 - select option
+   * ESC - cancel, Arrow Up/Left - previous, Arrow Down/Right - next, Enter - select, 1-4 - select option
    */
   handleKeyDown(event) {
     if (!this.isLogoutPanelVisible) return;
+
+    const optionsCount = this.elements.logoutOptions?.length || 0;
 
     switch (event.key) {
       case 'Escape':
@@ -1739,33 +1884,80 @@ export default class MainManager {
         this.hideLogoutPanel();
         break;
 
+      case 'ArrowUp':
+      case 'ArrowLeft':
+        event.preventDefault();
+        this.selectedLogoutIndex = (this.selectedLogoutIndex - 1 + optionsCount) % optionsCount;
+        this._updateLogoutSelection();
+        break;
+
+      case 'ArrowDown':
+      case 'ArrowRight':
+        event.preventDefault();
+        this.selectedLogoutIndex = (this.selectedLogoutIndex + 1) % optionsCount;
+        this._updateLogoutSelection();
+        break;
+
       case 'Enter':
         event.preventDefault();
-        this.executeLogout('quick');
+        this._executeSelectedLogout();
         break;
 
       case '1':
         event.preventDefault();
-        this.executeLogout('quick');
+        this.selectedLogoutIndex = 0;
+        this._updateLogoutSelection();
+        this._executeSelectedLogout();
         break;
 
       case '2':
         event.preventDefault();
-        this.executeLogout('normal');
+        this.selectedLogoutIndex = 1;
+        this._updateLogoutSelection();
+        this._executeSelectedLogout();
         break;
 
       case '3':
         event.preventDefault();
-        this.executeLogout('public');
+        this.selectedLogoutIndex = 2;
+        this._updateLogoutSelection();
+        this._executeSelectedLogout();
         break;
 
       case '4':
         event.preventDefault();
-        this.executeLogout('global');
+        this.selectedLogoutIndex = 3;
+        this._updateLogoutSelection();
+        this._executeSelectedLogout();
         break;
 
       default:
         break;
+    }
+  }
+
+  /**
+   * Update visual selection state for logout options
+   */
+  _updateLogoutSelection() {
+    this.elements.logoutOptions?.forEach((option, index) => {
+      if (index === this.selectedLogoutIndex) {
+        option.classList.add('selected');
+        option.focus();
+      } else {
+        option.classList.remove('selected');
+      }
+    });
+  }
+
+  /**
+   * Execute logout based on currently selected option
+   */
+  _executeSelectedLogout() {
+    const selectedOption = this.elements.logoutOptions?.[this.selectedLogoutIndex];
+    if (selectedOption) {
+      const logoutType = selectedOption.dataset.logoutType;
+      this.executeLogout(logoutType);
     }
   }
 

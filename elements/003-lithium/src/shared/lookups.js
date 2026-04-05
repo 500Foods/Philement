@@ -43,6 +43,7 @@ const LOOKUP_META = {
   themes:            { queryRef: '053', label: 'Themes',            countLabel: 'themes' },
   icons:             { queryRef: '054', label: 'Icons',             countLabel: 'icons' },
   tabulator_schemas: { queryRef: '060', label: 'Tabulator Schemas', countLabel: 'schemas' },
+  macros:            { queryRef: '046', label: 'Macro Expansion', countLabel: 'macros' },
 };
 
 /**
@@ -282,6 +283,11 @@ function processBatchResults(batchResults) {
         lookups.icons = rows;
         break;
 
+      case 46:
+        // QueryRef 046 - Macro Expansion
+        lookups.macros = rows;
+        break;
+
       case 60:
         // QueryRef 060 - Tabulator Schemas
         lookups.tabulator_schemas = rows;
@@ -352,6 +358,7 @@ async function fetchFreshLookups(silent = false) {
     }
 
     // Fetch all open lookups in one batch
+    // Note: QueryRef 046 (Macros) is loaded separately post-login - see loadMacrosPostLogin()
     const queryRefs = [1, 30, 53, 54, 60]; // QueryRefs 001, 030, 053, 054, 060
     const qrefLabels = queryRefs.map(r => String(r).padStart(3, '0')).join(', ');
     logger.info(`Loading lookups [${qrefLabels}] from server`);
@@ -536,12 +543,10 @@ export function clearCache() {
  * Refresh lookups from server (clears cache and re-fetches)
  * @param {Object} options - Refresh options
  * @param {boolean} options.silent - Don't emit events
- * @returns {Promise<Object>} Fresh lookup data
  */
 export async function refreshLookups(options = {}) {
-  const { silent = false } = options;
   clearCache();
-  return fetchLookups({ force: true, silent });
+  return fetchLookups({ force: true, silent: options.silent });
 }
 
 /**
