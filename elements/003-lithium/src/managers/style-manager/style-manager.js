@@ -22,7 +22,7 @@ import { PanelStateManager } from '../../core/panel-state-manager.js';
 import { togglePanelCollapse, restorePanelState } from '../../core/panel-collapse.js';
 
 import { processIcons } from '../../core/icons.js';
-import { setupManagerFooterIcons, createFontPopup } from '../../core/manager-ui.js';
+import { setupManagerFooterIcons, createFontPopup, closeExportPopup } from '../../core/manager-ui.js';
 import { ManagerEditHelper } from '../../core/manager-edit-helper.js';
 import { authQuery } from '../../shared/conduit.js';
 import { toast } from '../../shared/toast.js';
@@ -48,36 +48,29 @@ import {
 
 // ── Hardcoded Sections Data ───────────────────────────────────────────────
 
-const SECTIONS_DATA = [
-  { sectionId: 1, sectionName: 'Base Variables', delta: 0, sortoder: 0 },
-  { sectionId: 2, sectionName: 'Semantic Variables', delta: 0, sortoder: 0 },
-  { sectionId: 3, sectionName: 'Custom Variables', delta: 0, sortoder: 0 },
-  { sectionId: 4, sectionName: 'Login', delta: 0, sortoder: 0 },
-  { sectionId: 5, sectionName: 'Progress', delta: 0, sortoder: 0 },           
-  { sectionId: 6, sectionName: 'Menu Title', delta: 0, sortoder: 0 },
-  { sectionId: 7, sectionName: 'Menu', delta: 0, sortoder: 0 },
-  { sectionId: 8, sectionName: 'Menu Footer', delta: 0, sortoder: 0 },
-  { sectionId: 9, sectionName: 'Manager Header', delta: 0, sortoder: 0 },
-  { sectionId: 10, sectionName: 'Manager Toolbar', delta: 0, sortoder: 0 },
-  { sectionId: 11, sectionName: 'Manager Footer', delta: 0, sortoder: 0 },
-  { sectionId: 12, sectionName: 'Table', delta: 0, sortoder: 0 },
-  { sectionId: 13, sectionName: 'Table Columns 1', delta: 0, sortoder: 0 },
-  { sectionId: 14, sectionName: 'Table Columns 2', delta: 0, sortoder: 0 },
-  { sectionId: 15, sectionName: 'SQL Editor', delta: 0, sortoder: 0 },
-  { sectionId: 16, sectionName: 'CSS Editor', delta: 0, sortoder: 0 },
-  { sectionId: 17, sectionName: 'Lua Editor', delta: 0, sortoder: 0 },
-  { sectionId: 18, sectionName: 'HTML Editor', delta: 0, sortoder: 0 },
-  { sectionId: 19, sectionName: 'Markdown Editor', delta: 0, sortoder: 0 },
-  { sectionId: 20, sectionName: 'JSON Editor', delta: 0, sortoder: 0 },
-  { sectionId: 21, sectionName: 'Crimson', delta: 0, sortoder: 0 },
-  { sectionId: 22, sectionName: 'Logout', delta: 0, sortoder: 0 },
-  { sectionId: 23, sectionName: 'Index - Variables', delta: 0 , sortoder: 0},
-  { sectionId: 24, sectionName: 'Index - Classes', delta: 0, sortoder: 0 },
-  { sectionId: 25, sectionName: 'Fonts', delta: 0, sortoder: 0 },
-  { sectionId: 26, sectionName: 'Icons', delta: 0, sortoder: 0 },
-  { sectionId: 27, sectionName: 'Cursors', delta: 0, sortoder: 0 },
-  { sectionId: 28, sectionName: 'Tours', delta: 0, sortoder: 0 },
-  { sectionId: 29, sectionName: 'Tooltips', delta: 0, sortoder: 0 },
+const DEFAULT_SECTIONS_DATA = [
+  { sectionId: 1, sectionName: 'Base Variables', delta: 0 },
+  { sectionId: 2, sectionName: 'Semantic Variables', delta: 0 },
+  { sectionId: 3, sectionName: 'Login', delta: 0 },
+  { sectionId: 4, sectionName: 'Main Menu', delta: 0 },
+  { sectionId: 5, sectionName: 'Sidebar', delta: 0 },
+  { sectionId: 6, sectionName: 'Tables', delta: 0 },
+  { sectionId: 7, sectionName: 'Forms', delta: 0 },
+  { sectionId: 8, sectionName: 'Buttons', delta: 0 },
+  { sectionId: 9, sectionName: 'Modals', delta: 0 },
+  { sectionId: 10, sectionName: 'Tooltips', delta: 0 },
+  { sectionId: 11, sectionName: 'Notifications', delta: 0 },
+  { sectionId: 12, sectionName: 'Icons', delta: 0 },
+  { sectionId: 13, sectionName: 'Animations', delta: 0 },
+  { sectionId: 14, sectionName: 'Themes', delta: 0 },
+  { sectionId: 15, sectionName: 'Responsive', delta: 0 },
+  { sectionId: 16, sectionName: 'Accessibility', delta: 0 },
+  { sectionId: 17, sectionName: 'Print Styles', delta: 0 },
+  { sectionId: 18, sectionName: 'Error States', delta: 0 },
+  { sectionId: 19, sectionName: 'Loading States', delta: 0 },
+  { sectionId: 20, sectionName: 'Focus States', delta: 0 },
+  { sectionId: 21, sectionName: 'Hover States', delta: 0 },
+  { sectionId: 22, sectionName: 'Active States', delta: 0 },
 ];
 
 // ── Section Mockups ───────────────────────────────────────────────────────
@@ -238,6 +231,12 @@ export default class StyleManager {
     this.middlePanelWidth = this.middlePanelState.loadWidth(350);
     this.isLeftPanelCollapsed = this.leftPanelState.loadCollapsed(false);
     this.isMiddlePanelCollapsed = this.middlePanelState.loadCollapsed(false);
+
+    // Sections data storage key
+    this.sectionsStorageKey = 'lithium_style_sections_data';
+
+    // Load sections data
+    this.sectionsData = this._loadSectionsData();
   }
 
   async init() {
@@ -421,6 +420,53 @@ export default class StyleManager {
 
   // ── Sections Table (Hardcoded) ───────────────────────────────────────────
 
+  _loadSectionsData() {
+    try {
+      const stored = localStorage.getItem(this.sectionsStorageKey);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      // Ignore storage errors
+    }
+    return [...DEFAULT_SECTIONS_DATA];
+  }
+
+  _saveSectionsData() {
+    try {
+      localStorage.setItem(this.sectionsStorageKey, JSON.stringify(this.sectionsData));
+    } catch (e) {
+      // Ignore storage errors
+    }
+  }
+
+  async _executeSectionsSave(row, editHelper) {
+    const rowData = row.getData();
+    const pkField = this.sectionsTable.primaryKeyField || 'sectionId';
+    const pkValue = rowData[pkField];
+    const isInsert = pkValue == null || pkValue === '' || pkValue === 0;
+
+    if (isInsert) {
+      // Add new section
+      const newId = Math.max(...this.sectionsData.map(s => s.sectionId), 0) + 1;
+      const newSection = { ...rowData, sectionId: newId };
+      this.sectionsData.push(newSection);
+      // Update the row with the new ID
+      row.update({ [pkField]: newId });
+    } else {
+      // Update existing section
+      const index = this.sectionsData.findIndex(s => s[pkField] == pkValue);
+      if (index >= 0) {
+        this.sectionsData[index] = { ...this.sectionsData[index], ...rowData };
+      }
+    }
+
+    this._saveSectionsData();
+  }
+
   async initSectionsTable() {
     if (!this.elements.sectionsTableContainer || !this.elements.sectionsNavigator) return;
 
@@ -430,12 +476,13 @@ export default class StyleManager {
       tablePath: 'style-manager/sections',
       cssPrefix: 'style-sections',
       storageKey: 'style_sections_table',
-      readonly: true,
+      readonly: false,
       app: this.app,
       panel: this.elements.middlePanel,
       panelStateManager: this.middlePanelState,
       onRowSelected: (rowData) => this.handleSectionRowSelected(rowData),
       onRowDeselected: () => this.handleSectionRowDeselected(),
+      onExecuteSave: (row, editHelper) => this._executeSectionsSave(row, editHelper),
     });
 
     // Register with editHelper — auto-wires onEditModeChange + onDirtyChange
@@ -443,7 +490,7 @@ export default class StyleManager {
 
     await this.sectionsTable.init();
 
-    // Populate with hardcoded sections data (no API call needed)
+    // Populate with sections data
     this.loadSectionsData();
   }
 
@@ -471,10 +518,10 @@ export default class StyleManager {
       },
     ]);
 
-    // Use loadStaticData for the hardcoded sections data
-    this.sectionsTable.loadStaticData(SECTIONS_DATA);
+    // Use loadStaticData for the sections data
+    this.sectionsTable.loadStaticData(this.sectionsData);
 
-    log(Subsystems.TABLE, Status.INFO, `[Style] Loaded ${SECTIONS_DATA.length} hardcoded sections`);
+    log(Subsystems.TABLE, Status.INFO, `[Style] Loaded ${this.sectionsData.length} sections`);
   }
 
   handleSectionRowSelected(rowData) {
@@ -483,7 +530,7 @@ export default class StyleManager {
     this.selectedSectionId = rowData.sectionId;
     this.selectedSectionName = rowData.sectionName;
 
-    log(Subsystems.MANAGER, Status.INFO, `[Style] Section selected: ${this.selectedSectionName}`);
+    log(Subsystems.MANAGER, Status.INFO, `[Style] Section selected: ${this.selectedSectionName} (ID: ${this.selectedSectionId})`);
 
     // Switch to section mode if not already
     if (this.currentMode !== 'section') {
@@ -1149,7 +1196,9 @@ ${selector}:disabled {
     const footerElements = setupManagerFooterIcons(group, {
       onPrint: () => this.handleFooterPrint(),
       onEmail: () => this.handleFooterEmail(),
-      onExport: (e) => this.toggleFooterExportPopup(e),
+      onDownload: () => this.handleFooterDownload(),
+      onExport: (value, label) => this.handleFooterExport(value, label),
+      onClipboard: (value, label) => this.handleFooterClipboard(value, label),
       reportOptions: [
         { value: 'style-lookup-view', label: 'Style Elements View' },
         { value: 'style-lookup-data', label: 'Style Elements Data' },
@@ -1159,9 +1208,20 @@ ${selector}:disabled {
       fillerTitle: 'Styles',
       anchor: placeholder,
       showSaveCancel: true,
+      showClipboard: true,
+      exportOptions: [
+        { value: 'pdf', label: 'PDF', icon: 'fa-file-pdf', enabled: true },
+        { value: 'csv', label: 'CSV', icon: 'fa-file-csv', enabled: true },
+        { value: 'xls', label: 'XLS', icon: 'fa-file-excel', enabled: true },
+        { value: 'json', label: 'JSON', icon: 'fa-brackets-curly', enabled: true },
+        { value: 'html', label: 'HTML', icon: 'fa-file-html', enabled: true },
+        { value: 'markdown', label: 'Markdown', icon: 'fa-file-code', enabled: true },
+        { value: 'txt', label: 'Text', icon: 'fa-file-lines', enabled: true },
+      ],
     });
 
     this._footerDatasource = footerElements.reportSelect;
+    this._footerElements = footerElements;
 
     // Wire save/cancel buttons to the editHelper (handles all state management)
     this.editHelper.wireFooterButtons(
@@ -1322,6 +1382,28 @@ ${selector}:disabled {
     const isViewMode = mode.endsWith('-view');
     const downloadOpts = isViewMode ? {} : { rowGroups: false };
 
+    this._doDownload(table, format, filename, downloadOpts);
+  }
+
+  handleFooterDownload() {
+    const mode = this._getFooterDatasource();
+    const isLookupMode = mode.startsWith('style-lookup');
+    const table = isLookupMode ? this.lookupTable?.table : this.sectionsTable?.table;
+
+    if (!table) {
+      toast.info('No Data', { description: 'No table available to download', duration: 3000 });
+      return;
+    }
+
+    const filename = `style-export-${new Date().toISOString().slice(0, 10)}`;
+    const isViewMode = mode.endsWith('-view');
+    const downloadOpts = isViewMode ? {} : { rowGroups: false };
+
+    const exportFormat = this._footerElements?.exportFormat || 'pdf';
+    this._doDownload(table, exportFormat, filename, downloadOpts);
+  }
+
+  _doDownload(table, format, filename, downloadOpts) {
     switch (format) {
       case 'pdf':
         table.download('pdf', `${filename}.pdf`, { orientation: 'landscape', ...downloadOpts });
@@ -1335,9 +1417,91 @@ ${selector}:disabled {
       case 'xls':
         table.download('xlsx', `${filename}.xlsx`, downloadOpts);
         break;
+      case 'json':
+        table.download('json', `${filename}.json`, downloadOpts);
+        break;
+      case 'html':
+        table.download('html', `${filename}.html`, downloadOpts);
+        break;
+      case 'markdown':
+        this.handleMarkdownExport(table, this._getFooterDatasource(), filename);
+        break;
       default:
         log(Subsystems.MANAGER, Status.WARN, `Unknown export format: ${format}`);
     }
+  }
+
+  handleFooterClipboard(value, label) {
+    const mode = this._getFooterDatasource();
+    const isLookupMode = mode.startsWith('style-lookup');
+    const table = isLookupMode ? this.lookupTable?.table : this.sectionsTable?.table;
+
+    if (!table) {
+      toast.info('No Data', { description: 'No table available to copy', duration: 3000 });
+      return;
+    }
+
+    const isViewMode = mode.endsWith('-view');
+    const rows = isViewMode ? table.getRows('active') : table.getRows();
+
+    if (rows.length === 0) {
+      toast.info('No Data', { description: 'No rows to copy', duration: 3000 });
+      return;
+    }
+
+    const visibleCols = isViewMode
+      ? table.getColumns().filter(col => col.isVisible() && col.getField() !== '_selector')
+      : table.getColumns().filter(col => col.getField() !== '_selector');
+
+    const headers = visibleCols.map(col => col.getDefinition().title || col.getField());
+    const dataLines = rows.map(row => {
+      const data = row.getData();
+      return visibleCols.map(col => {
+        const val = data[col.getField()];
+        return val != null ? String(val) : '';
+      }).join('\t');
+    });
+
+    const text = `${headers.join('\t')}\n${dataLines.join('\n')}`;
+
+    navigator.clipboard.writeText(text).then(() => {
+      toast.success('Copied', { description: 'Table data copied to clipboard', duration: 2000 });
+    }).catch(err => {
+      toast.error('Copy Failed', { description: 'Failed to copy to clipboard', duration: 3000 });
+    });
+  }
+
+  handleMarkdownExport(table, mode, filename) {
+    const isViewMode = mode.endsWith('-view');
+    const rows = isViewMode ? table.getRows('active') : table.getRows();
+
+    if (rows.length === 0) return;
+
+    const visibleCols = isViewMode
+      ? table.getColumns().filter(col => col.isVisible() && col.getField() !== '_selector')
+      : table.getColumns().filter(col => col.getField() !== '_selector');
+
+    const headers = visibleCols.map(col => col.getDefinition().title || col.getField());
+    const headerRow = `| ${headers.join(' | ')} |`;
+    const separatorRow = `| ${headers.map(() => '---').join(' | ')} |`;
+    const dataRows = rows.map(row => {
+      const data = row.getData();
+      const rowData = visibleCols.map(col => {
+        const val = data[col.getField()];
+        return val != null ? String(val).replace(/\|/g, '\\|') : '';
+      });
+      return `| ${rowData.join(' | ')} |`;
+    });
+
+    const markdown = `${headerRow}\n${separatorRow}\n${dataRows.join('\n')}`;
+
+    const blob = new Blob([markdown], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${filename}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   // Edit mode, dirty tracking, and save/cancel button management are now

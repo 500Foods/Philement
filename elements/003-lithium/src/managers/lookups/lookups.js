@@ -20,7 +20,7 @@ import { authQuery } from '../../shared/conduit.js';
 import { toast } from '../../shared/toast.js';
 import { log, Subsystems, Status } from '../../core/log.js';
 import { processIcons } from '../../core/icons.js';
-import { setupManagerFooterIcons, createFontPopup } from '../../core/manager-ui.js';
+import { setupManagerFooterIcons, createFontPopup, closeExportPopup } from '../../core/manager-ui.js';
 import { ManagerEditHelper } from '../../core/manager-edit-helper.js';
 import SunEditor from 'suneditor';
 import 'suneditor/css/editor';
@@ -1138,7 +1138,9 @@ export default class LookupsManager {
     const footerElements = setupManagerFooterIcons(group, {
       onPrint: () => this.handleFooterPrint(),
       onEmail: () => this.handleFooterEmail(),
-      onExport: (e) => this.toggleFooterExportPopup(e),
+      onDownload: () => this.handleFooterDownload(),
+      onExport: (value, label) => this.handleFooterExport(value, label),
+      onClipboard: (value, label) => this.handleFooterClipboard(value, label),
       reportOptions: [
         { value: 'lookups-list-view', label: 'Lookups List View' },
         { value: 'lookups-list-data', label: 'Lookups List Data' },
@@ -1146,11 +1148,22 @@ export default class LookupsManager {
         { value: 'lookup-list-data', label: 'Lookup List Data' },
       ],
       fillerTitle: 'Lookups',
-      anchor: placeholder, // Insert manager buttons before placeholder
+      anchor: placeholder,
       showSaveCancel: true,
+      showClipboard: true,
+      exportOptions: [
+        { value: 'pdf', label: 'PDF', icon: 'fa-file-pdf', enabled: true },
+        { value: 'csv', label: 'CSV', icon: 'fa-file-csv', enabled: true },
+        { value: 'xls', label: 'XLS', icon: 'fa-file-excel', enabled: true },
+        { value: 'json', label: 'JSON', icon: 'fa-brackets-curly', enabled: true },
+        { value: 'html', label: 'HTML', icon: 'fa-file-html', enabled: true },
+        { value: 'markdown', label: 'Markdown', icon: 'fa-file-code', enabled: true },
+        { value: 'txt', label: 'Text', icon: 'fa-file-lines', enabled: true },
+      ],
     });
 
     this._footerDatasource = footerElements.reportSelect;
+    this._footerElements = footerElements;
 
     this._footerDatasource = footerElements.reportSelect;
 
@@ -1333,10 +1346,10 @@ export default class LookupsManager {
 
   /**
    * Handle export from the footer with data source mode.
-   * @param {'pdf'|'csv'|'txt'|'xls'} format
+   * @param {string} format - export format (pdf, csv, txt, xls, json, html, markdown)
    * @param {string} mode - data source mode
    */
-  handleFooterExport(format, mode) {
+   handleFooterExport(format, mode) {
     log(Subsystems.MANAGER, Status.INFO, `[Lookups] Footer: Export ${format.toUpperCase()} (${mode})`);
 
     // Determine which table to export based on mode
@@ -1352,6 +1365,28 @@ export default class LookupsManager {
     const isViewMode = mode.endsWith('-view');
     const downloadOpts = isViewMode ? {} : { rowGroups: false };
 
+    this._doDownload(table, format, filename, downloadOpts);
+  }
+
+  handleFooterDownload() {
+    const mode = this._getFooterDatasource();
+    const isParentMode = mode.startsWith('lookups-list');
+    const table = isParentMode ? this.parentTable?.table : this.childTable?.table;
+
+    if (!table) {
+      toast.info('No Data', { description: 'No table available to download', duration: 3000 });
+      return;
+    }
+
+    const filename = `lookups-export-${new Date().toISOString().slice(0, 10)}`;
+    const isViewMode = mode.endsWith('-view');
+    const downloadOpts = isViewMode ? {} : { rowGroups: false };
+
+    const exportFormat = this._footerElements?.exportFormat || 'pdf';
+    this._doDownload(table, exportFormat, filename, downloadOpts);
+  }
+
+  _doDownload(table, format, filename, downloadOpts) {
     switch (format) {
       case 'pdf':
         table.download('pdf', `${filename}.pdf`, { orientation: 'landscape', ...downloadOpts });
@@ -1365,9 +1400,99 @@ export default class LookupsManager {
       case 'xls':
         table.download('xlsx', `${filename}.xlsx`, downloadOpts);
         break;
+      case 'json':
+        table.download('json', `${filename}.json`, downloadOpts);
+        break;
+      case 'html':
+        table.download('html', `${filename}.html`, downloadOpts);
+        break;
+      case 'markdown':
+        this.handleMarkdownExport(table, this._getFooterDatasource(), filename);
+        break;
       default:
         log(Subsystems.MANAGER, Status.WARN, `Unknown export format: ${format}`);
     }
+  }
+
+  /**
+   * Handle clipboard copy from the footer.
+   * @param {string} value - always 'clipboard'
+   * @param {string} label - 'Clipboard'
+   */
+  handleFooterClipboard(value, label) {
+    const mode = this._getFooterDatasource();
+    const isParentMode = mode.startsWith('lookups-list');
+    const table = isParentMode ? this.parentTable?.table : this.childTable?.table;
+
+    if (!table) {
+      toast.info('No Data', { description: 'No table available to copy', duration: 3000 });
+      return;
+    }
+
+    const isViewMode = mode.endsWith('-view');
+    const rows = isViewMode ? table.getRows('active') : table.getRows();
+
+    if (rows.length === 0) {
+      toast.info('No Data', { description: 'No rows to copy', duration: 3000 });
+      return;
+    }
+
+    const visibleCols = isViewMode
+      ? table.getColumns().filter(col => col.isVisible() && col.getField() !== '_selector')
+      : table.getColumns().filter(col => col.getField() !== '_selector');
+
+    const headers = visibleCols.map(col => col.getDefinition().title || col.getField());
+    const dataLines = rows.map(row => {
+      const data = row.getData();
+      return visibleCols.map(col => {
+        const val = data[col.getField()];
+        return val != null ? String(val) : '';
+      }).join('\t');
+    });
+
+    const text = `${headers.join('\t')}\n${dataLines.join('\n')}`;
+
+    navigator.clipboard.writeText(text).then(() => {
+      toast.success('Copied', { description: 'Table data copied to clipboard', duration: 2000 });
+    }).catch(err => {
+      toast.error('Copy Failed', { description: 'Failed to copy to clipboard', duration: 3000 });
+    });
+  }
+
+  /**
+   * Handle markdown export.
+   */
+  handleMarkdownExport(table, mode, filename) {
+    const isViewMode = mode.endsWith('-view');
+    const rows = isViewMode ? table.getRows('active') : table.getRows();
+
+    if (rows.length === 0) return;
+
+    const visibleCols = isViewMode
+      ? table.getColumns().filter(col => col.isVisible() && col.getField() !== '_selector')
+      : table.getColumns().filter(col => col.getField() !== '_selector');
+
+    const headers = visibleCols.map(col => col.getDefinition().title || col.getField());
+    const headerRow = `| ${headers.join(' | ')} |`;
+    const separatorRow = `| ${headers.map(() => '---').join(' | ')} |`;
+    const dataRows = rows.map(row => {
+      const data = row.getData();
+      const rowData = visibleCols.map(col => {
+        const val = data[col.getField()];
+        return val != null ? String(val).replace(/\|/g, '\\|') : '';
+      });
+      return `| ${rowData.join(' | ')} |`;
+    });
+
+    const markdown = `${headerRow}\n${separatorRow}\n${dataRows.join('\n')}`;
+
+    const blob = new Blob([markdown], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${filename}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   // ── Footer Save/Cancel ─────────────────────────────────────────────────────

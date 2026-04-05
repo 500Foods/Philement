@@ -189,10 +189,15 @@
 /* ── Subpanel Header Title ──────────────────────────────────────────────── */
 
 .subpanel-header-title {
-  font-size: var(--font-size-sm);
-  font-weight: 500;
   color: var(--text-primary);
-  margin-left: var(--space-2);
+ 	color: var(--text-primary);
+	z-index: 1;
+	background: var(--accent-primary);
+	font-size: var(--font-size-base);
+	justify-content: center;
+	display: flex;
+	align-items: center;
+	padding: var(--space-4);
 }
 
 /* ── Collapse Button ───────────────────────────────────────────────────── */

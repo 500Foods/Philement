@@ -21,9 +21,13 @@
 // ─── DOM References (cached on init) ────────────────────────────────────────
 
 let radarIcon = null;
+let radarIconSidebar = null;
 let sweepGroup = null;
 let sweepArm = null;
 let targetsGroup = null;
+let sweepGroupSidebar = null;
+let sweepArmSidebar = null;
+let targetsGroupSidebar = null;
 let styleEl = null;
 
 // ─── Internal State ─────────────────────────────────────────────────────────
@@ -32,8 +36,13 @@ let angle = 0;                   // current sweep angle in degrees (0–360)
 let rafId = null;
 let lastTimestamp = null;        // timestamp of last animation frame
 let isConnected = false;
+let activeRadar = 'header';      // 'header' or 'sidebar'
 const activeTargets = new Map(); // id → { element, category, targetAngle }
 let targetIdCounter = 0;
+
+// Track current connection state for sync on radar switch
+let connectionStateClass = 'radar-disconnected';
+let connectionTooltip = 'Status: Disconnected';
 
 // ─── Timing Constants (time-based, not frame-based) ─────────────────────────
 
@@ -78,18 +87,24 @@ function ensurePingCSS() {
   styleEl = document.createElement('style');
   styleEl.textContent = `
     #targets-group polygon,
-    #targets-group rect {
+    #targets-group rect,
+    #targets-group-sidebar polygon,
+    #targets-group-sidebar rect {
       transition: fill 0.25s ease, opacity 0.25s ease;
     }
     #targets-group g.ping polygon,
-    #targets-group g.ping rect {
+    #targets-group g.ping rect,
+    #targets-group-sidebar g.ping polygon,
+    #targets-group-sidebar g.ping rect {
       filter: brightness(2.0) drop-shadow(0 0 5px #ffffff);
     }
-    #targets-group g.fading {
+    #targets-group g.fading,
+    #targets-group-sidebar g.fading {
       opacity: 0;
       transition: opacity var(--radar-fade-duration, 1.67s) linear;
     }
-    #radar-icon {
+    #radar-icon,
+    #radar-icon-sidebar {
       color: var(--accent-primary, #5C6BC0);
       transition: color 0.4s ease;
     }
@@ -101,23 +116,40 @@ function ensurePingCSS() {
 
 export function initRadar() {
   radarIcon = document.getElementById('radar-icon');
-  if (!radarIcon) return false;
-
+  radarIconSidebar = document.getElementById('radar-icon-sidebar');
+  
+  // Header radar
   sweepGroup = document.getElementById('sweep-group');
   sweepArm = document.getElementById('sweep-arm');
   targetsGroup = document.getElementById('targets-group');
+  
+  // Sidebar radar
+  sweepGroupSidebar = document.getElementById('sweep-group-sidebar');
+  sweepArmSidebar = document.getElementById('sweep-arm-sidebar');
+  targetsGroupSidebar = document.getElementById('targets-group-sidebar');
 
   ensurePingCSS();
   applySweepColors();
+  
+  // Set default active radar to header
+  activeRadar = 'header';
   setConnectionState(false, false);
 
   return true;
 }
 
 function applySweepColors() {
+  // Header radar
   if (sweepArm) sweepArm.setAttribute('stroke', COLOR_SWEEP);
   if (sweepGroup) {
     sweepGroup.querySelectorAll('path').forEach(p => {
+      p.setAttribute('fill', COLOR_SWEEP);
+    });
+  }
+  // Sidebar radar
+  if (sweepArmSidebar) sweepArmSidebar.setAttribute('stroke', COLOR_SWEEP);
+  if (sweepGroupSidebar) {
+    sweepGroupSidebar.querySelectorAll('path').forEach(p => {
       p.setAttribute('fill', COLOR_SWEEP);
     });
   }
@@ -125,27 +157,91 @@ function applySweepColors() {
 
 // ─── Connection State ───────────────────────────────────────────────────────
 
+export function setActiveRadar(location) {
+  activeRadar = location === 'sidebar' ? 'sidebar' : 'header';
+
+  // Sync connection state to the newly-active radar using tracked state variable
+  const targetElement = activeRadar === 'header' ? radarIcon : radarIconSidebar;
+  if (targetElement) {
+    targetElement.classList.remove('radar-connected', 'radar-flaky', 'radar-disconnected');
+    targetElement.classList.add(connectionStateClass);
+  }
+
+  // Sync tooltip text to the newly-active radar
+  syncRadarTooltip();
+}
+
+function syncRadarTooltip() {
+  const targetElement = activeRadar === 'header' ? radarIcon : radarIconSidebar;
+  if (targetElement) {
+    targetElement.dataset.tooltip = connectionTooltip;
+  }
+}
+
+export function setRadarTooltip(text) {
+  connectionTooltip = text;
+  // Also update the active radar's tooltip immediately
+  const activeElement = activeRadar === 'header' ? radarIcon : radarIconSidebar;
+  if (activeElement) {
+    activeElement.dataset.tooltip = text;
+  }
+}
+
+export function getRadarTooltip() {
+  return connectionTooltip;
+}
+
 export function setConnectionState(connected, flaky = false) {
   isConnected = connected;
-  if (!radarIcon) return;
 
-  radarIcon.classList.remove('radar-connected', 'radar-flaky', 'radar-disconnected');
-
+  // Track the state for sync on radar switch
   if (!connected) {
-    radarIcon.classList.add('radar-disconnected');
-    stopRadarLoop();
-    radarIcon.animate([
-      { transform: 'rotate(0deg)' },
-      { transform: 'rotate(8deg)' },
-      { transform: 'rotate(-8deg)' },
-      { transform: 'rotate(0deg)' },
-    ], { duration: 420 });
+    connectionStateClass = 'radar-disconnected';
   } else if (flaky) {
-    radarIcon.classList.add('radar-flaky');
-    startRadarLoop();
+    connectionStateClass = 'radar-flaky';
   } else {
-    radarIcon.classList.add('radar-connected');
-    startRadarLoop();
+    connectionStateClass = 'radar-connected';
+  }
+
+  // Only update the active radar's visual state
+  if (activeRadar === 'header' && radarIcon) {
+    radarIcon.classList.remove('radar-connected', 'radar-flaky', 'radar-disconnected');
+
+    if (!connected) {
+      radarIcon.classList.add('radar-disconnected');
+      stopRadarLoop();
+      radarIcon.animate([
+        { transform: 'rotate(0deg)' },
+        { transform: 'rotate(8deg)' },
+        { transform: 'rotate(-8deg)' },
+        { transform: 'rotate(0deg)' },
+      ], { duration: 420 });
+    } else if (flaky) {
+      radarIcon.classList.add('radar-flaky');
+      startRadarLoop();
+    } else {
+      radarIcon.classList.add('radar-connected');
+      startRadarLoop();
+    }
+  } else if (activeRadar === 'sidebar' && radarIconSidebar) {
+    radarIconSidebar.classList.remove('radar-connected', 'radar-flaky', 'radar-disconnected');
+
+    if (!connected) {
+      radarIconSidebar.classList.add('radar-disconnected');
+      stopRadarLoop();
+      radarIconSidebar.animate([
+        { transform: 'rotate(0deg)' },
+        { transform: 'rotate(8deg)' },
+        { transform: 'rotate(-8deg)' },
+        { transform: 'rotate(0deg)' },
+      ], { duration: 420 });
+    } else if (flaky) {
+      radarIconSidebar.classList.add('radar-flaky');
+      startRadarLoop();
+    } else {
+      radarIconSidebar.classList.add('radar-connected');
+      startRadarLoop();
+    }
   }
 }
 
@@ -156,12 +252,20 @@ export function wsDisconnected() { setConnectionState(false, false); }
 // ─── Heartbeat Flash ────────────────────────────────────────────────────────
 
 export function onHeartbeat() {
-  if (!isConnected || !sweepArm) return;
+  if (!isConnected) return;
 
-  sweepArm.setAttribute('stroke', '#a5f3fc');
-  setTimeout(() => {
-    if (sweepArm) sweepArm.setAttribute('stroke', COLOR_SWEEP);
-  }, 140);
+  // Only flash the active radar
+  if (activeRadar === 'header' && sweepArm) {
+    sweepArm.setAttribute('stroke', '#a5f3fc');
+    setTimeout(() => {
+      if (sweepArm) sweepArm.setAttribute('stroke', COLOR_SWEEP);
+    }, 140);
+  } else if (activeRadar === 'sidebar' && sweepArmSidebar) {
+    sweepArmSidebar.setAttribute('stroke', '#a5f3fc');
+    setTimeout(() => {
+      if (sweepArmSidebar) sweepArmSidebar.setAttribute('stroke', COLOR_SWEEP);
+    }, 140);
+  }
 }
 
 // ─── Position Calculation ───────────────────────────────────────────────────
@@ -192,7 +296,10 @@ function positionAtAngle(deg) {
  * @returns {string} Target ID
  */
 export function addTarget(type = 'triangle', category = 'rest') {
-  if (!targetsGroup) return null;
+  // Add target to the active radar's targets group
+  const activeTargetsGroup = activeRadar === 'sidebar' ? targetsGroupSidebar : targetsGroup;
+  
+  if (!activeTargetsGroup) return null;
 
   const id = `target-${++targetIdCounter}`;
   const pos = positionAtAngle(angle);
@@ -216,7 +323,7 @@ export function addTarget(type = 'triangle', category = 'rest') {
   // Start bright
   shape.setAttribute('fill', COLOR_BRIGHT);
   group.appendChild(shape);
-  targetsGroup.appendChild(group);
+  activeTargetsGroup.appendChild(group);
 
   // After initial flash, settle to normal color
   const normalColor = category === 'ws' ? COLOR_WS : COLOR_REST;
@@ -331,12 +438,21 @@ function startRadarLoop() {
     // Advance angle based on elapsed time
     angle = (angle + SWEEP_DPS * dt) % 360;
 
-    // Update sweep transform
-    if (sweepGroup) {
-      sweepGroup.setAttribute('transform', `rotate(${angle} ${CX} ${CY})`);
-    }
-    if (sweepArm) {
-      sweepArm.setAttribute('transform', `rotate(${angle} ${CX} ${CY})`);
+    // Only update the active radar's sweep
+    if (activeRadar === 'header') {
+      if (sweepGroup) {
+        sweepGroup.setAttribute('transform', `rotate(${angle} ${CX} ${CY})`);
+      }
+      if (sweepArm) {
+        sweepArm.setAttribute('transform', `rotate(${angle} ${CX} ${CY})`);
+      }
+    } else {
+      if (sweepGroupSidebar) {
+        sweepGroupSidebar.setAttribute('transform', `rotate(${angle} ${CX} ${CY})`);
+      }
+      if (sweepArmSidebar) {
+        sweepArmSidebar.setAttribute('transform', `rotate(${angle} ${CX} ${CY})`);
+      }
     }
 
     // Check for sweep-pass pings on active targets
@@ -392,21 +508,11 @@ export function destroyRadar() {
     styleEl = null;
   }
   radarIcon = null;
+  radarIconSidebar = null;
   sweepGroup = null;
   sweepArm = null;
   targetsGroup = null;
+  sweepGroupSidebar = null;
+  sweepArmSidebar = null;
+  targetsGroupSidebar = null;
 }
-
-// ─── Default Export ─────────────────────────────────────────────────────────
-
-export default {
-  initRadar,
-  setConnectionState,
-  wsConnected,
-  wsFlaky,
-  wsDisconnected,
-  onHeartbeat,
-  addTarget,
-  removeTarget,
-  destroyRadar,
-};

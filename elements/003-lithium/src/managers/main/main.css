@@ -148,6 +148,11 @@
   box-shadow: 0 0 0 2px rgba(92, 107, 192, 0.3);
 }
 
+.logout-option.selected {
+  border-color: var(--accent-primary);
+  background: var(--bg-hover);
+}
+
 /* Logout type label - left column */
 .logout-option-type {
   min-width: 80px;
@@ -257,6 +262,30 @@
 }
 .sidebar-header-gradient .radar-icon.radar-disconnected {
   color: #fca5a5;
+}
+
+/* Radar in sidebar body - positioned between menu and footer */
+.sidebar-radar-container {
+  padding: var(--space-3);
+  flex-shrink: 0;
+}
+
+.sidebar-radar-container .radar-icon {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  margin: 0 auto;
+}
+
+/* Header radar (small) */
+#radar-icon {
+  cursor: pointer;
+}
+
+/* Sidebar radar (large) */
+#radar-icon-sidebar {
+  cursor: pointer;
+  display: none;
 }
 
 .sidebar-logo {
@@ -793,7 +822,7 @@ body.resizing * {
 
 .manager-slot-header {
   flex-shrink: 0;
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-2) var(--space-3) 0px var(--space-2);
   background: var(--bg-secondary);
   display: flex;
   align-items: center;
@@ -841,7 +870,7 @@ body.resizing * {
 
 .manager-slot-footer {
   flex-shrink: 0;
-  padding: var(--space-2) var(--space-3);
+  padding: 0px var(--space-3) var(--space-2) var(--space-3);
   background: var(--bg-secondary);
   display: flex;
   align-items: center;

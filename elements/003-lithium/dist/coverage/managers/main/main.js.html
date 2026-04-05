@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><title>Code coverage report for managers/main/main.js</title><meta charset="utf-8"><link rel="stylesheet" href="../../prettify.css"><link rel="stylesheet" href="../../base.css"><link rel="shortcut icon" type="image/x-icon" href="../../favicon.png"><meta name="viewport" content="width=device-width,initial-scale=1"><style type="text/css">.coverage-summary .sorter{background-image:url(../../sort-arrow-sprite.png)}</style></head><body><div class="wrapper"><div class="pad1"><h1><a href="../../index.html">All files</a> / <a href="index.html">managers/main</a> main.js</h1><div class="clearfix"><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Statements</span> <span class="fraction">0/752</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Branches</span> <span class="fraction">0/306</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Functions</span> <span class="fraction">0/132</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Lines</span> <span class="fraction">0/690</span></div></div><p class="quiet">Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.</p><template id="filterTemplate"><div class="quiet">Filter: <input type="search" id="fileSearch"></div></template></div><div class="status-line low"></div><pre><table class="coverage">
+<!doctype html><html lang="en"><head><title>Code coverage report for managers/main/main.js</title><meta charset="utf-8"><link rel="stylesheet" href="../../prettify.css"><link rel="stylesheet" href="../../base.css"><link rel="shortcut icon" type="image/x-icon" href="../../favicon.png"><meta name="viewport" content="width=device-width,initial-scale=1"><style type="text/css">.coverage-summary .sorter{background-image:url(../../sort-arrow-sprite.png)}</style></head><body><div class="wrapper"><div class="pad1"><h1><a href="../../index.html">All files</a> / <a href="index.html">managers/main</a> main.js</h1><div class="clearfix"><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Statements</span> <span class="fraction">0/847</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Branches</span> <span class="fraction">0/342</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Functions</span> <span class="fraction">0/145</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Lines</span> <span class="fraction">0/780</span></div></div><p class="quiet">Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.</p><template id="filterTemplate"><div class="quiet">Filter: <input type="search" id="fileSearch"></div></template></div><div class="status-line low"></div><pre><table class="coverage">
 <tr><td class="line-count quiet"><a name="L1"></a><a href="#L1">1</a>
 <a name="L2"></a><a href="#L2">2</a>
 <a name="L3"></a><a href="#L3">3</a>
@@ -1868,7 +1868,199 @@
 <a name="L1867"></a><a href="#L1867">1867</a>
 <a name="L1868"></a><a href="#L1868">1868</a>
 <a name="L1869"></a><a href="#L1869">1869</a>
-<a name="L1870"></a><a href="#L1870">1870</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name="L1870"></a><a href="#L1870">1870</a>
+<a name="L1871"></a><a href="#L1871">1871</a>
+<a name="L1872"></a><a href="#L1872">1872</a>
+<a name="L1873"></a><a href="#L1873">1873</a>
+<a name="L1874"></a><a href="#L1874">1874</a>
+<a name="L1875"></a><a href="#L1875">1875</a>
+<a name="L1876"></a><a href="#L1876">1876</a>
+<a name="L1877"></a><a href="#L1877">1877</a>
+<a name="L1878"></a><a href="#L1878">1878</a>
+<a name="L1879"></a><a href="#L1879">1879</a>
+<a name="L1880"></a><a href="#L1880">1880</a>
+<a name="L1881"></a><a href="#L1881">1881</a>
+<a name="L1882"></a><a href="#L1882">1882</a>
+<a name="L1883"></a><a href="#L1883">1883</a>
+<a name="L1884"></a><a href="#L1884">1884</a>
+<a name="L1885"></a><a href="#L1885">1885</a>
+<a name="L1886"></a><a href="#L1886">1886</a>
+<a name="L1887"></a><a href="#L1887">1887</a>
+<a name="L1888"></a><a href="#L1888">1888</a>
+<a name="L1889"></a><a href="#L1889">1889</a>
+<a name="L1890"></a><a href="#L1890">1890</a>
+<a name="L1891"></a><a href="#L1891">1891</a>
+<a name="L1892"></a><a href="#L1892">1892</a>
+<a name="L1893"></a><a href="#L1893">1893</a>
+<a name="L1894"></a><a href="#L1894">1894</a>
+<a name="L1895"></a><a href="#L1895">1895</a>
+<a name="L1896"></a><a href="#L1896">1896</a>
+<a name="L1897"></a><a href="#L1897">1897</a>
+<a name="L1898"></a><a href="#L1898">1898</a>
+<a name="L1899"></a><a href="#L1899">1899</a>
+<a name="L1900"></a><a href="#L1900">1900</a>
+<a name="L1901"></a><a href="#L1901">1901</a>
+<a name="L1902"></a><a href="#L1902">1902</a>
+<a name="L1903"></a><a href="#L1903">1903</a>
+<a name="L1904"></a><a href="#L1904">1904</a>
+<a name="L1905"></a><a href="#L1905">1905</a>
+<a name="L1906"></a><a href="#L1906">1906</a>
+<a name="L1907"></a><a href="#L1907">1907</a>
+<a name="L1908"></a><a href="#L1908">1908</a>
+<a name="L1909"></a><a href="#L1909">1909</a>
+<a name="L1910"></a><a href="#L1910">1910</a>
+<a name="L1911"></a><a href="#L1911">1911</a>
+<a name="L1912"></a><a href="#L1912">1912</a>
+<a name="L1913"></a><a href="#L1913">1913</a>
+<a name="L1914"></a><a href="#L1914">1914</a>
+<a name="L1915"></a><a href="#L1915">1915</a>
+<a name="L1916"></a><a href="#L1916">1916</a>
+<a name="L1917"></a><a href="#L1917">1917</a>
+<a name="L1918"></a><a href="#L1918">1918</a>
+<a name="L1919"></a><a href="#L1919">1919</a>
+<a name="L1920"></a><a href="#L1920">1920</a>
+<a name="L1921"></a><a href="#L1921">1921</a>
+<a name="L1922"></a><a href="#L1922">1922</a>
+<a name="L1923"></a><a href="#L1923">1923</a>
+<a name="L1924"></a><a href="#L1924">1924</a>
+<a name="L1925"></a><a href="#L1925">1925</a>
+<a name="L1926"></a><a href="#L1926">1926</a>
+<a name="L1927"></a><a href="#L1927">1927</a>
+<a name="L1928"></a><a href="#L1928">1928</a>
+<a name="L1929"></a><a href="#L1929">1929</a>
+<a name="L1930"></a><a href="#L1930">1930</a>
+<a name="L1931"></a><a href="#L1931">1931</a>
+<a name="L1932"></a><a href="#L1932">1932</a>
+<a name="L1933"></a><a href="#L1933">1933</a>
+<a name="L1934"></a><a href="#L1934">1934</a>
+<a name="L1935"></a><a href="#L1935">1935</a>
+<a name="L1936"></a><a href="#L1936">1936</a>
+<a name="L1937"></a><a href="#L1937">1937</a>
+<a name="L1938"></a><a href="#L1938">1938</a>
+<a name="L1939"></a><a href="#L1939">1939</a>
+<a name="L1940"></a><a href="#L1940">1940</a>
+<a name="L1941"></a><a href="#L1941">1941</a>
+<a name="L1942"></a><a href="#L1942">1942</a>
+<a name="L1943"></a><a href="#L1943">1943</a>
+<a name="L1944"></a><a href="#L1944">1944</a>
+<a name="L1945"></a><a href="#L1945">1945</a>
+<a name="L1946"></a><a href="#L1946">1946</a>
+<a name="L1947"></a><a href="#L1947">1947</a>
+<a name="L1948"></a><a href="#L1948">1948</a>
+<a name="L1949"></a><a href="#L1949">1949</a>
+<a name="L1950"></a><a href="#L1950">1950</a>
+<a name="L1951"></a><a href="#L1951">1951</a>
+<a name="L1952"></a><a href="#L1952">1952</a>
+<a name="L1953"></a><a href="#L1953">1953</a>
+<a name="L1954"></a><a href="#L1954">1954</a>
+<a name="L1955"></a><a href="#L1955">1955</a>
+<a name="L1956"></a><a href="#L1956">1956</a>
+<a name="L1957"></a><a href="#L1957">1957</a>
+<a name="L1958"></a><a href="#L1958">1958</a>
+<a name="L1959"></a><a href="#L1959">1959</a>
+<a name="L1960"></a><a href="#L1960">1960</a>
+<a name="L1961"></a><a href="#L1961">1961</a>
+<a name="L1962"></a><a href="#L1962">1962</a>
+<a name="L1963"></a><a href="#L1963">1963</a>
+<a name="L1964"></a><a href="#L1964">1964</a>
+<a name="L1965"></a><a href="#L1965">1965</a>
+<a name="L1966"></a><a href="#L1966">1966</a>
+<a name="L1967"></a><a href="#L1967">1967</a>
+<a name="L1968"></a><a href="#L1968">1968</a>
+<a name="L1969"></a><a href="#L1969">1969</a>
+<a name="L1970"></a><a href="#L1970">1970</a>
+<a name="L1971"></a><a href="#L1971">1971</a>
+<a name="L1972"></a><a href="#L1972">1972</a>
+<a name="L1973"></a><a href="#L1973">1973</a>
+<a name="L1974"></a><a href="#L1974">1974</a>
+<a name="L1975"></a><a href="#L1975">1975</a>
+<a name="L1976"></a><a href="#L1976">1976</a>
+<a name="L1977"></a><a href="#L1977">1977</a>
+<a name="L1978"></a><a href="#L1978">1978</a>
+<a name="L1979"></a><a href="#L1979">1979</a>
+<a name="L1980"></a><a href="#L1980">1980</a>
+<a name="L1981"></a><a href="#L1981">1981</a>
+<a name="L1982"></a><a href="#L1982">1982</a>
+<a name="L1983"></a><a href="#L1983">1983</a>
+<a name="L1984"></a><a href="#L1984">1984</a>
+<a name="L1985"></a><a href="#L1985">1985</a>
+<a name="L1986"></a><a href="#L1986">1986</a>
+<a name="L1987"></a><a href="#L1987">1987</a>
+<a name="L1988"></a><a href="#L1988">1988</a>
+<a name="L1989"></a><a href="#L1989">1989</a>
+<a name="L1990"></a><a href="#L1990">1990</a>
+<a name="L1991"></a><a href="#L1991">1991</a>
+<a name="L1992"></a><a href="#L1992">1992</a>
+<a name="L1993"></a><a href="#L1993">1993</a>
+<a name="L1994"></a><a href="#L1994">1994</a>
+<a name="L1995"></a><a href="#L1995">1995</a>
+<a name="L1996"></a><a href="#L1996">1996</a>
+<a name="L1997"></a><a href="#L1997">1997</a>
+<a name="L1998"></a><a href="#L1998">1998</a>
+<a name="L1999"></a><a href="#L1999">1999</a>
+<a name="L2000"></a><a href="#L2000">2000</a>
+<a name="L2001"></a><a href="#L2001">2001</a>
+<a name="L2002"></a><a href="#L2002">2002</a>
+<a name="L2003"></a><a href="#L2003">2003</a>
+<a name="L2004"></a><a href="#L2004">2004</a>
+<a name="L2005"></a><a href="#L2005">2005</a>
+<a name="L2006"></a><a href="#L2006">2006</a>
+<a name="L2007"></a><a href="#L2007">2007</a>
+<a name="L2008"></a><a href="#L2008">2008</a>
+<a name="L2009"></a><a href="#L2009">2009</a>
+<a name="L2010"></a><a href="#L2010">2010</a>
+<a name="L2011"></a><a href="#L2011">2011</a>
+<a name="L2012"></a><a href="#L2012">2012</a>
+<a name="L2013"></a><a href="#L2013">2013</a>
+<a name="L2014"></a><a href="#L2014">2014</a>
+<a name="L2015"></a><a href="#L2015">2015</a>
+<a name="L2016"></a><a href="#L2016">2016</a>
+<a name="L2017"></a><a href="#L2017">2017</a>
+<a name="L2018"></a><a href="#L2018">2018</a>
+<a name="L2019"></a><a href="#L2019">2019</a>
+<a name="L2020"></a><a href="#L2020">2020</a>
+<a name="L2021"></a><a href="#L2021">2021</a>
+<a name="L2022"></a><a href="#L2022">2022</a>
+<a name="L2023"></a><a href="#L2023">2023</a>
+<a name="L2024"></a><a href="#L2024">2024</a>
+<a name="L2025"></a><a href="#L2025">2025</a>
+<a name="L2026"></a><a href="#L2026">2026</a>
+<a name="L2027"></a><a href="#L2027">2027</a>
+<a name="L2028"></a><a href="#L2028">2028</a>
+<a name="L2029"></a><a href="#L2029">2029</a>
+<a name="L2030"></a><a href="#L2030">2030</a>
+<a name="L2031"></a><a href="#L2031">2031</a>
+<a name="L2032"></a><a href="#L2032">2032</a>
+<a name="L2033"></a><a href="#L2033">2033</a>
+<a name="L2034"></a><a href="#L2034">2034</a>
+<a name="L2035"></a><a href="#L2035">2035</a>
+<a name="L2036"></a><a href="#L2036">2036</a>
+<a name="L2037"></a><a href="#L2037">2037</a>
+<a name="L2038"></a><a href="#L2038">2038</a>
+<a name="L2039"></a><a href="#L2039">2039</a>
+<a name="L2040"></a><a href="#L2040">2040</a>
+<a name="L2041"></a><a href="#L2041">2041</a>
+<a name="L2042"></a><a href="#L2042">2042</a>
+<a name="L2043"></a><a href="#L2043">2043</a>
+<a name="L2044"></a><a href="#L2044">2044</a>
+<a name="L2045"></a><a href="#L2045">2045</a>
+<a name="L2046"></a><a href="#L2046">2046</a>
+<a name="L2047"></a><a href="#L2047">2047</a>
+<a name="L2048"></a><a href="#L2048">2048</a>
+<a name="L2049"></a><a href="#L2049">2049</a>
+<a name="L2050"></a><a href="#L2050">2050</a>
+<a name="L2051"></a><a href="#L2051">2051</a>
+<a name="L2052"></a><a href="#L2052">2052</a>
+<a name="L2053"></a><a href="#L2053">2053</a>
+<a name="L2054"></a><a href="#L2054">2054</a>
+<a name="L2055"></a><a href="#L2055">2055</a>
+<a name="L2056"></a><a href="#L2056">2056</a>
+<a name="L2057"></a><a href="#L2057">2057</a>
+<a name="L2058"></a><a href="#L2058">2058</a>
+<a name="L2059"></a><a href="#L2059">2059</a>
+<a name="L2060"></a><a href="#L2060">2060</a>
+<a name="L2061"></a><a href="#L2061">2061</a>
+<a name="L2062"></a><a href="#L2062">2062</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -2017,6 +2209,8 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -2615,14 +2809,49 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -2630,9 +2859,20 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -2652,16 +2892,35 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -2669,6 +2928,11 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -2686,36 +2950,98 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -2800,7 +3126,12 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -2813,7 +3144,11 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -3558,6 +3893,7 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -3568,7 +3904,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -3606,6 +3941,27 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -3613,28 +3969,56 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -3778,7 +4162,7 @@ import {
   unregisterManagerShortcuts,
 } from '../../core/manager-ui.js';
 import { getAppWS, ConnectionState } from '../../shared/app-ws.js';
-import { initRadar, wsConnected, wsFlaky, wsDisconnected, onHeartbeat, destroyRadar } from '../../shared/radar-controller.js';
+import { initRadar, setActiveRadar, wsConnected, wsFlaky, wsDisconnected, onHeartbeat, destroyRadar, setRadarTooltip, getRadarTooltip } from '../../shared/radar-controller.js';
 import '../../core/manager-ui.css';
 import './main.css';
 &nbsp;
@@ -3881,11 +4265,13 @@ export default class MainManager {
 <span class="cstat-no" title="statement not covered">    this.currentUtilityKey = null;</span>
 <span class="cstat-no" title="statement not covered">    this.user = null;</span>
 <span class="cstat-no" title="statement not covered">    this.isLogoutPanelVisible = false;</span>
+<span class="cstat-no" title="statement not covered">    this.selectedLogoutIndex = 0;</span>
 <span class="cstat-no" title="statement not covered">    this.isSidebarCollapsed = false;</span>
 <span class="cstat-no" title="statement not covered">    this.isResizing = false;</span>
 <span class="cstat-no" title="statement not covered">    this._stageTimer = null;</span>
 <span class="cstat-no" title="statement not covered">    this._arrowRotation = 0;</span>
 <span class="cstat-no" title="statement not covered">    this._isAnimating = false;</span>
+<span class="cstat-no" title="statement not covered">    this._isRadarInSidebar = false;</span>
     
     // Menu data
 <span class="cstat-no" title="statement not covered">    this.menuData = null;</span>
@@ -4520,6 +4906,8 @@ export default class MainManager {
       logoutCloseBtn: this.container.querySelector('#logout-close-btn'),
       logoutOptions: this.container.querySelectorAll('.logout-option'),
       radarIcon: this.container.querySelector('#radar-icon'),
+      radarIconSidebar: this.container.querySelector('#radar-icon-sidebar'),
+      sidebarRadarContainer: this.container.querySelector('#sidebar-radar-container'),
     };
 &nbsp;
     // Move logout overlay and panel to document.body for proper fixed positioning.
@@ -4530,6 +4918,14 @@ export default class MainManager {
     }
 <span class="cstat-no" title="statement not covered">    if (this.elements.logoutPanel) {</span>
 <span class="cstat-no" title="statement not covered">      document.body.appendChild(this.elements.logoutPanel);</span>
+    }
+&nbsp;
+    // Initialize tooltips on radar icons
+<span class="cstat-no" title="statement not covered">    if (this.elements.radarIcon) {</span>
+<span class="cstat-no" title="statement not covered">      initTooltips(this.elements.radarIcon);</span>
+    }
+<span class="cstat-no" title="statement not covered">    if (this.elements.radarIconSidebar) {</span>
+<span class="cstat-no" title="statement not covered">      initTooltips(this.elements.radarIconSidebar);</span>
     }
   }
 &nbsp;
@@ -4560,27 +4956,32 @@ export default class MainManager {
     const radarIcon = <span class="cstat-no" title="statement not covered">this.elements.radarIcon;</span>
 <span class="cstat-no" title="statement not covered">    if (!radarIcon) <span class="cstat-no" title="statement not covered">return;</span></span>
 &nbsp;
+    let tooltipText = <span class="cstat-no" title="statement not covered">'Status: Disconnected';</span>
 <span class="cstat-no" title="statement not covered">    switch (state) {</span>
       case ConnectionState.CONNECTED:
 <span class="cstat-no" title="statement not covered">        wsConnected();</span>
-<span class="cstat-no" title="statement not covered">        radarIcon.dataset.tooltip = 'Status: Connected';</span>
+<span class="cstat-no" title="statement not covered">        tooltipText = 'Status: Connected';</span>
 <span class="cstat-no" title="statement not covered">        break;</span>
       case ConnectionState.CONNECTING:
 <span class="cstat-no" title="statement not covered">        wsFlaky();</span>
-<span class="cstat-no" title="statement not covered">        radarIcon.dataset.tooltip = 'Status: Connecting...';</span>
+<span class="cstat-no" title="statement not covered">        tooltipText = 'Status: Connecting...';</span>
 <span class="cstat-no" title="statement not covered">        break;</span>
       case ConnectionState.ERROR:
 <span class="cstat-no" title="statement not covered">        wsDisconnected();</span>
-<span class="cstat-no" title="statement not covered">        radarIcon.dataset.tooltip = 'Status: Error';</span>
+<span class="cstat-no" title="statement not covered">        tooltipText = 'Status: Error';</span>
 <span class="cstat-no" title="statement not covered">        break;</span>
       case ConnectionState.DISCONNECTED:
       default:
 <span class="cstat-no" title="statement not covered">        wsDisconnected();</span>
-<span class="cstat-no" title="statement not covered">        radarIcon.dataset.tooltip = 'Status: Disconnected';</span>
+<span class="cstat-no" title="statement not covered">        tooltipText = 'Status: Disconnected';</span>
 <span class="cstat-no" title="statement not covered">        break;</span>
     }
+&nbsp;
+    // Update tooltip on active radar element and track for sync
+<span class="cstat-no" title="statement not covered">    radarIcon.dataset.tooltip = tooltipText;</span>
     const tipInstance =<span class="cstat-no" title="statement not covered"> getTip(radarIcon);</span>
-<span class="cstat-no" title="statement not covered">    if (tipInstance) <span class="cstat-no" title="statement not covered">tipInstance.updateContent(radarIcon.getAttribute('data-tooltip'));</span></span>
+<span class="cstat-no" title="statement not covered">    if (tipInstance) <span class="cstat-no" title="statement not covered">tipInstance.updateContent(tooltipText);</span></span>
+<span class="cstat-no" title="statement not covered">    setRadarTooltip(tooltipText);</span>
   }
 &nbsp;
   /**
@@ -4588,6 +4989,123 @@ export default class MainManager {
    */
 <span class="fstat-no" title="function not covered">  flashWSStatus(</span>) {
 <span class="cstat-no" title="statement not covered">    onHeartbeat();</span>
+  }
+&nbsp;
+  // /**
+  //  * Expand the sidebar if it's collapsed (used before moving radar to sidebar)
+  //  */
+  // _expandSidebarIfCollapsed() {
+  //   const sidebar = this.elements.sidebar;
+  //   const isCollapsedClass = sidebar?.classList?.contains('collapsed');
+  //   const isCollapsedProp = this.isSidebarCollapsed === true;
+  //   const isCollapsed = isCollapsedClass || isCollapsedProp;
+&nbsp;
+  //   if (isCollapsed &amp;&amp; typeof this.toggleSidebarCollapse === 'function') {
+  //     log(Subsystems.MANAGER, Status.INFO, '[MainManager] Expanding collapsed sidebar for radar');
+  //     this.toggleSidebarCollapse();
+  //   }
+  // }
+&nbsp;
+/**
+   * Toggle radar position between header and sidebar
+   * Uses --transition-duration to animate opacity
+   */
+<span class="fstat-no" title="function not covered">  _toggleRadarPosition(</span>) {
+    const headerRadar = <span class="cstat-no" title="statement not covered">this.elements.radarIcon;</span>
+    const sidebarRadar = <span class="cstat-no" title="statement not covered">this.elements.radarIconSidebar;</span>
+<span class="cstat-no" title="statement not covered">    if (!headerRadar || !sidebarRadar) <span class="cstat-no" title="statement not covered">return;</span></span>
+  
+<span class="cstat-no" title="statement not covered">    this._isRadarInSidebar = !this._isRadarInSidebar;</span>
+  
+    const duration = <span class="cstat-no" title="statement not covered">this.getTransitionDuration() || 300;</span>
+    const transitionStr = <span class="cstat-no" title="statement not covered">`opacity ${duration}ms ease`;</span>
+  
+    // Ensure transition is set (safe to call every toggle)
+<span class="cstat-no" title="statement not covered">    headerRadar.style.transition = transitionStr;</span>
+<span class="cstat-no" title="statement not covered">    sidebarRadar.style.transition = transitionStr;</span>
+  
+    // Disable pointer events during the whole animation
+<span class="cstat-no" title="statement not covered">    headerRadar.style.pointerEvents = 'none';</span>
+<span class="cstat-no" title="statement not covered">    sidebarRadar.style.pointerEvents = 'none';</span>
+  
+<span class="cstat-no" title="statement not covered">if (this._isRadarInSidebar) {</span>
+      // === MOVING TO SIDEBAR ===
+<span class="cstat-no" title="statement not covered">      setActiveRadar('sidebar');</span>
+&nbsp;
+      // Sync tooltip text to both radars
+      const tooltipText =<span class="cstat-no" title="statement not covered"> getRadarTooltip();</span>
+<span class="cstat-no" title="statement not covered">      headerRadar.dataset.tooltip = tooltipText;</span>
+<span class="cstat-no" title="statement not covered">      sidebarRadar.dataset.tooltip = tooltipText;</span>
+      const headerTip =<span class="cstat-no" title="statement not covered"> getTip(headerRadar);</span>
+      const sidebarTip =<span class="cstat-no" title="statement not covered"> getTip(sidebarRadar);</span>
+<span class="cstat-no" title="statement not covered">      if (headerTip) <span class="cstat-no" title="statement not covered">headerTip.setContent(tooltipText);</span></span>
+<span class="cstat-no" title="statement not covered">      if (sidebarTip) <span class="cstat-no" title="statement not covered">sidebarTip.setContent(tooltipText);</span></span>
+   
+      // 1. Bring sidebar into the render tree at opacity 0
+<span class="cstat-no" title="statement not covered">      sidebarRadar.style.display = 'block';</span>
+<span class="cstat-no" title="statement not covered">      sidebarRadar.style.opacity = '0';</span>
+   
+      // Start fade-out on header immediately (it was already visible)
+<span class="cstat-no" title="statement not covered">      headerRadar.style.opacity = '0';</span>
+   
+      // Double RAF = the trick that makes SVGs fade IN reliably
+<span class="cstat-no" title="statement not covered">      requestAnimationFrame(<span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered">        requestAnimationFrame(<span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered">          sidebarRadar.style.opacity = '1';</span>
+        });
+      });
+   
+      // Cleanup: hide header once its fade-out finishes
+<span class="cstat-no" title="statement not covered">      headerRadar.addEventListener('transitionend', function <span class="fstat-no" title="function not covered">handler(</span>e) {</span>
+<span class="cstat-no" title="statement not covered">        if (e.propertyName === 'opacity') {</span>
+<span class="cstat-no" title="statement not covered">          headerRadar.style.display = 'none';</span>
+<span class="cstat-no" title="statement not covered">          headerRadar.removeEventListener('transitionend', handler);</span>
+        }
+      }, { once: true });
+   
+    } else {
+      // === MOVING BACK TO HEADER ===
+<span class="cstat-no" title="statement not covered">      setActiveRadar('header');</span>
+&nbsp;
+      // Sync tooltip text to both radars
+      const tooltipText =<span class="cstat-no" title="statement not covered"> getRadarTooltip();</span>
+<span class="cstat-no" title="statement not covered">      headerRadar.dataset.tooltip = tooltipText;</span>
+<span class="cstat-no" title="statement not covered">      sidebarRadar.dataset.tooltip = tooltipText;</span>
+      const headerTip =<span class="cstat-no" title="statement not covered"> getTip(headerRadar);</span>
+      const sidebarTip =<span class="cstat-no" title="statement not covered"> getTip(sidebarRadar);</span>
+<span class="cstat-no" title="statement not covered">      if (headerTip) <span class="cstat-no" title="statement not covered">headerTip.setContent(tooltipText);</span></span>
+<span class="cstat-no" title="statement not covered">      if (sidebarTip) <span class="cstat-no" title="statement not covered">sidebarTip.setContent(tooltipText);</span></span>
+   
+      // 1. Bring header into the render tree at opacity 0
+<span class="cstat-no" title="statement not covered">      headerRadar.style.display = 'block';</span>
+<span class="cstat-no" title="statement not covered">      headerRadar.style.opacity = '0';</span>
+   
+      // Start fade-out on sidebar immediately
+<span class="cstat-no" title="statement not covered">      sidebarRadar.style.opacity = '0';</span>
+   
+      // Double RAF for the incoming header SVG
+<span class="cstat-no" title="statement not covered">      requestAnimationFrame(<span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered">        requestAnimationFrame(<span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered">          headerRadar.style.opacity = '1';</span>
+        });
+      });
+  
+      // Cleanup: hide sidebar once its fade-out finishes
+<span class="cstat-no" title="statement not covered">      sidebarRadar.addEventListener('transitionend', function <span class="fstat-no" title="function not covered">handler(</span>e) {</span>
+<span class="cstat-no" title="statement not covered">        if (e.propertyName === 'opacity') {</span>
+<span class="cstat-no" title="statement not covered">          sidebarRadar.style.display = 'none';</span>
+<span class="cstat-no" title="statement not covered">          sidebarRadar.removeEventListener('transitionend', handler);</span>
+        }
+      }, { once: true });
+    }
+  
+    // Re-enable pointer events once everything is definitely done
+<span class="cstat-no" title="statement not covered">    setTimeout(<span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered">      headerRadar.style.pointerEvents = '';</span>
+<span class="cstat-no" title="statement not covered">      sidebarRadar.style.pointerEvents = '';</span>
+    }, duration + 50);
+&nbsp;
+<span class="cstat-no" title="statement not covered">    log(Subsystems.MANAGER, Status.INFO, `[MainManager] Radar moved to ${this._isRadarInSidebar ? 'sidebar' : 'header'}`);</span>
   }
 &nbsp;
   /**
@@ -4689,6 +5207,15 @@ export default class MainManager {
 &nbsp;
 <span class="cstat-no" title="statement not covered">    eventBus.on(Events.NETWORK_OFFLINE, <span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
 <span class="cstat-no" title="statement not covered">      this._setOfflineIndicators(true);</span>
+    });
+&nbsp;
+    // Radar icon click - toggle between header and sidebar
+<span class="cstat-no" title="statement not covered">    this.elements.radarIcon?.addEventListener('click', <span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered">      this._toggleRadarPosition();</span>
+    });
+&nbsp;
+<span class="cstat-no" title="statement not covered">    this.elements.radarIconSidebar?.addEventListener('click', <span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered">      this._toggleRadarPosition();</span>
     });
 &nbsp;
     // Logout event from keyboard shortcut
@@ -5427,6 +5954,7 @@ export default class MainManager {
 <span class="cstat-no" title="statement not covered">    if (this.isLogoutPanelVisible) <span class="cstat-no" title="statement not covered">return;</span></span>
 &nbsp;
 <span class="cstat-no" title="statement not covered">    this.isLogoutPanelVisible = true;</span>
+<span class="cstat-no" title="statement not covered">    this.selectedLogoutIndex = 0;</span>
 &nbsp;
     // Show overlay and panel by adding visible class
     // CSS handles the opacity/visibility transition
@@ -5436,10 +5964,9 @@ export default class MainManager {
     // Add keyboard listener
 <span class="cstat-no" title="statement not covered">    document.addEventListener('keydown', this.handleKeyDown);</span>
 &nbsp;
-    // Focus the first logout option for accessibility after transition
+    // Focus and select the first logout option for accessibility after transition
 <span class="cstat-no" title="statement not covered">    setTimeout(<span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
-      const firstOption = <span class="cstat-no" title="statement not covered">this.elements.logoutOptions?.[0];</span>
-<span class="cstat-no" title="statement not covered">      firstOption?.focus();</span>
+<span class="cstat-no" title="statement not covered">      this._updateLogoutSelection();</span>
     }, 300);
   }
 &nbsp;
@@ -5467,10 +5994,12 @@ export default class MainManager {
 &nbsp;
   /**
    * Handle keyboard shortcuts for logout panel
-   * ESC - cancel, Enter - quick logout, 1-4 - select option
+   * ESC - cancel, Arrow Up/Left - previous, Arrow Down/Right - next, Enter - select, 1-4 - select option
    */
 <span class="fstat-no" title="function not covered">  handleKeyDown(</span>event) {
 <span class="cstat-no" title="statement not covered">    if (!this.isLogoutPanelVisible) <span class="cstat-no" title="statement not covered">return;</span></span>
+&nbsp;
+    const optionsCount = <span class="cstat-no" title="statement not covered">this.elements.logoutOptions?.length || 0;</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered">    switch (event.key) {</span>
       case 'Escape':
@@ -5478,33 +6007,80 @@ export default class MainManager {
 <span class="cstat-no" title="statement not covered">        this.hideLogoutPanel();</span>
 <span class="cstat-no" title="statement not covered">        break;</span>
 &nbsp;
+      case 'ArrowUp':
+      case 'ArrowLeft':
+<span class="cstat-no" title="statement not covered">        event.preventDefault();</span>
+<span class="cstat-no" title="statement not covered">        this.selectedLogoutIndex = (this.selectedLogoutIndex - 1 + optionsCount) % optionsCount;</span>
+<span class="cstat-no" title="statement not covered">        this._updateLogoutSelection();</span>
+<span class="cstat-no" title="statement not covered">        break;</span>
+&nbsp;
+      case 'ArrowDown':
+      case 'ArrowRight':
+<span class="cstat-no" title="statement not covered">        event.preventDefault();</span>
+<span class="cstat-no" title="statement not covered">        this.selectedLogoutIndex = (this.selectedLogoutIndex + 1) % optionsCount;</span>
+<span class="cstat-no" title="statement not covered">        this._updateLogoutSelection();</span>
+<span class="cstat-no" title="statement not covered">        break;</span>
+&nbsp;
       case 'Enter':
 <span class="cstat-no" title="statement not covered">        event.preventDefault();</span>
-<span class="cstat-no" title="statement not covered">        this.executeLogout('quick');</span>
+<span class="cstat-no" title="statement not covered">        this._executeSelectedLogout();</span>
 <span class="cstat-no" title="statement not covered">        break;</span>
 &nbsp;
       case '1':
 <span class="cstat-no" title="statement not covered">        event.preventDefault();</span>
-<span class="cstat-no" title="statement not covered">        this.executeLogout('quick');</span>
+<span class="cstat-no" title="statement not covered">        this.selectedLogoutIndex = 0;</span>
+<span class="cstat-no" title="statement not covered">        this._updateLogoutSelection();</span>
+<span class="cstat-no" title="statement not covered">        this._executeSelectedLogout();</span>
 <span class="cstat-no" title="statement not covered">        break;</span>
 &nbsp;
       case '2':
 <span class="cstat-no" title="statement not covered">        event.preventDefault();</span>
-<span class="cstat-no" title="statement not covered">        this.executeLogout('normal');</span>
+<span class="cstat-no" title="statement not covered">        this.selectedLogoutIndex = 1;</span>
+<span class="cstat-no" title="statement not covered">        this._updateLogoutSelection();</span>
+<span class="cstat-no" title="statement not covered">        this._executeSelectedLogout();</span>
 <span class="cstat-no" title="statement not covered">        break;</span>
 &nbsp;
       case '3':
 <span class="cstat-no" title="statement not covered">        event.preventDefault();</span>
-<span class="cstat-no" title="statement not covered">        this.executeLogout('public');</span>
+<span class="cstat-no" title="statement not covered">        this.selectedLogoutIndex = 2;</span>
+<span class="cstat-no" title="statement not covered">        this._updateLogoutSelection();</span>
+<span class="cstat-no" title="statement not covered">        this._executeSelectedLogout();</span>
 <span class="cstat-no" title="statement not covered">        break;</span>
 &nbsp;
       case '4':
 <span class="cstat-no" title="statement not covered">        event.preventDefault();</span>
-<span class="cstat-no" title="statement not covered">        this.executeLogout('global');</span>
+<span class="cstat-no" title="statement not covered">        this.selectedLogoutIndex = 3;</span>
+<span class="cstat-no" title="statement not covered">        this._updateLogoutSelection();</span>
+<span class="cstat-no" title="statement not covered">        this._executeSelectedLogout();</span>
 <span class="cstat-no" title="statement not covered">        break;</span>
 &nbsp;
       default:
 <span class="cstat-no" title="statement not covered">        break;</span>
+    }
+  }
+&nbsp;
+  /**
+   * Update visual selection state for logout options
+   */
+<span class="fstat-no" title="function not covered">  _updateLogoutSelection(</span>) {
+<span class="cstat-no" title="statement not covered">    this.elements.logoutOptions?.forEach(<span class="fstat-no" title="function not covered">(o</span>ption, index) =&gt; {</span>
+<span class="cstat-no" title="statement not covered">      if (index === this.selectedLogoutIndex) {</span>
+<span class="cstat-no" title="statement not covered">        option.classList.add('selected');</span>
+<span class="cstat-no" title="statement not covered">        option.focus();</span>
+      } else {
+<span class="cstat-no" title="statement not covered">        option.classList.remove('selected');</span>
+      }
+    });
+  }
+&nbsp;
+  /**
+   * Execute logout based on currently selected option
+   */
+<span class="fstat-no" title="function not covered">  _executeSelectedLogout(</span>) {
+    const selectedOption = <span class="cstat-no" title="statement not covered">this.elements.logoutOptions?.[this.selectedLogoutIndex];</span>
+<span class="cstat-no" title="statement not covered">    if (selectedOption) {</span>
+      const logoutType = <span class="cstat-no" title="statement not covered">selectedOption.dataset.logoutType;</span>
+<span class="cstat-no" title="statement not covered">      this.executeLogout(logoutType);</span>
     }
   }
 &nbsp;
@@ -5606,4 +6182,4 @@ export default class MainManager {
 <span class="cstat-no" title="statement not covered">    this.elements = {};</span>
   }
 }
-&nbsp;</pre></td></tr></table></pre><div class="push"></div></div><div class="footer quiet pad2 space-top1 center small">Code coverage generated by <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a> at 2026-04-04T00:32:26.958Z</div><script src="../../prettify.js"></script><script>window.onload=function(){prettyPrint()}</script><script src="../../sorter.js"></script><script src="../../block-navigation.js"></script></body></html>
+&nbsp;</pre></td></tr></table></pre><div class="push"></div></div><div class="footer quiet pad2 space-top1 center small">Code coverage generated by <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a> at 2026-04-05T22:13:46.893Z</div><script src="../../prettify.js"></script><script>window.onload=function(){prettyPrint()}</script><script src="../../sorter.js"></script><script src="../../block-navigation.js"></script></body></html>
