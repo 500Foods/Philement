@@ -357,8 +357,7 @@
 .login-alt-btn-group {
   display: flex;
   justify-content: space-evenly;
-  margin-top: -160px;
-  height: 160px;
+  height: 90px;
   padding: 0px var(--space-5);
 }
 

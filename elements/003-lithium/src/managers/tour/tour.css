@@ -56,8 +56,9 @@
   --tour-list-max-width: 360px;
   --tour-list-min-width: 260px;
   
-  /* Transition delay between steps */
-  --tour-step-delay: var(--transition-duration);
+  /* Transition delay between steps - set shorter for overlapping transitions
+     100ms creates ~50% overlap with the 200ms transition duration */
+  --tour-step-delay: 100ms;
 }
 
 /* ========================================
@@ -83,14 +84,16 @@
   z-index: var(--tour-z-step);
   overflow: hidden;
   /* !important required to override Shepherd's un-layered
-     .shepherd-enabled.shepherd-element { opacity: 1 } rule,
-     which otherwise wins over our @layer styles. We control
-     visibility ourselves via the .lithium-tour-visible class
-     so steps fade in only after Floating UI has positioned them. */
+     .shepherd-enabled.shepherd-element { opacity: 1 } rule. 
+     Use opacity only (no visibility) to allow crossfade between steps -
+     both elements can be visible simultaneously with different opacities. */
   opacity: 0 !important;
-  visibility: hidden !important;
-  transition: opacity var(--transition-duration, 0.2s) ease,
-              visibility 0s var(--transition-duration, 0.2s) !important;
+  transition: opacity var(--transition-duration, 0.2s) ease !important;
+}
+
+/* Also override Shepherd's .shepherd-enabled rule which sets opacity:1 */
+.shepherd-element.lithium-tour-step.shepherd-enabled {
+  opacity: 0 !important;
 }
 
 /* Ensure inner content doesn't shrink */
@@ -100,9 +103,6 @@
 
 .shepherd-element.lithium-tour-step.lithium-tour-visible {
   opacity: 1 !important;
-  visibility: visible !important;
-  transition: opacity var(--transition-duration, 0.2s) ease,
-              visibility 0s 0s !important;
 }
 
 .shepherd-element.lithium-tour-step:focus {
