@@ -47,7 +47,7 @@
     "sql-formatter": "^15.3.0",
     "suneditor": "^3.0.0-beta.0",
     "tabulator-tables": "^6.2.3",
-    "vite": "^7.3.0"
+    "vite": "^7.3.2"
   },
   "devDependencies": {
     "@codemirror/commands": "^6.10.2",
