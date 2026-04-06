@@ -29,11 +29,11 @@
   --tour-border-radius-sm: 4px;
 
   /* Header bar (black) */
-  --tour-header-bg: linear-gradient(to right, black, silver);
+  --tour-header-bg: linear-gradient(to right, black, #666, black);
   --tour-header-text: #ffffff;
 
   /* Footer bar (black) */
-  --tour-footer-bg: linear-gradient(to right, silver, black);
+  --tour-footer-bg: linear-gradient(to right, black, #666, black);
 
   /* Buttons */
   --tour-btn-bg: #000000;
@@ -138,13 +138,12 @@
   font-size: 24px;
 }
 
-.lithium-tour-header-icon-title i,
-.lithium-tour-header-icon-title .fa,
-.lithium-tour-header-icon-title .fa-solid {
-  font-size: 16px;
-  flex-shrink: 0;
+.lithium-tour-header-icon-title img,
+.lithium-tour-header-icon-title svg {
+  max-height: 35px;
+  filter: drop-shadow(0px 0px 1px white);
 }
-
+                                   
 .lithium-tour-header-title {
   font-size: 16px;
   font-weight: 600;
@@ -169,15 +168,15 @@
 	justify-content: center;
 	background: transparent;
 	border: none;
-	color: black;
+	color: silver;
 	font-size: 24px;
 	cursor: pointer;
-	transition: background-color .15s ease;
+	transition: background-color 300ms ease, color 300ms ease;
 	margin-left: 8px;
 }
 
 .lithium-tour-header-btn:hover {
-  color: silver;
+  color: white;
 }
 
 /* Hide Shepherd's default cancel icon */
@@ -242,25 +241,19 @@
 	gap: 6px;
 	padding: 0px;
 	background: transparent;
-	color: black;
+	color: silver;
 	border: none;
 	font-size: 24px;
 	font-weight: 500;
 	font-family: Vanadium Sans,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;
 	cursor: pointer;
-	transition: background-color .15s ease,border-color .15s ease;
-	filter: drop-shadow(0px 0px 1px white);
+	transition: color 300ms ease, border-color 300ms ease;
 }
 .lithium-tour-footer-btn:hover:not(:disabled) {
-  color: silver;
+  color: white;
 }
 
 .lithium-tour-footer-btn:disabled {
-  background: var(--tour-btn-disabled-bg);
-  border-color: var(--tour-btn-disabled-border, #cccccc);
-  color: var(--tour-btn-disabled-text);
-  cursor: not-allowed;
-  box-shadow: none;
   visibility: hidden;
 }
 
@@ -278,9 +271,8 @@
 .lithium-tour-step-counter {
   font-size: 16px;
   font-weight: 600;
-  font-family: 'Vanadium Mono', 'Consolas', 'Monaco', monospace;
-  color: black;
-  filter: drop-shadow(0px 0px 1px silver);
+  color: silver;
+  filter: drop-shadow(0px 0px 1px black);
   user-select: none;
 }
 
@@ -327,10 +319,25 @@
   color: var(--tour-header-text);
   font-size: 14px;
   font-weight: 600;
-  font-family: 'Vanadium Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 8px;             
+  width: 100%;
+}
+ 
+.lithium-tour-list-title span {
+	margin: auto;
+	white-space: nowrap;
+	padding-right: 12px;
+}
+
+.lithium-tour-list-title svg {
+  filter: drop-shadow(0px 0px 1px black);
+}                                        
+
+.lithium-tour-list-title svg {
+  font-size: 24px;
+  max-height: 35px;
 }
 
 .lithium-tour-list-close {
@@ -341,16 +348,15 @@
   height: 28px;
   padding: 0;
   background: transparent;
-  border: 1px solid var(--tour-header-text);
-  border-radius: var(--tour-border-radius-sm);
-  color: var(--tour-header-text);
-  font-size: 14px;
+  border: none;
+  color: silver;
+  font-size: 24px;
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  transition: color 300ms ease;
 }
 
 .lithium-tour-list-close:hover {
-  background: rgba(255, 255, 255, 0.15);
+  color: white;
 }
 
 /* Scrollable list body */
@@ -386,14 +392,14 @@
 .lithium-tour-list-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
+  gap: 8px;
+  padding: var(--space-2);
   margin-bottom: 4px;
-  background: var(--tour-bg);
-  border: 1px solid var(--tour-border-light);
+  background: silver;
+  border: 1px solid #666;
   border-radius: var(--tour-border-radius-sm);
   cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  transition: background-color 300ms ease, border-color 300ms ease;
 }
 
 .lithium-tour-list-item:last-child {
@@ -401,8 +407,8 @@
 }
 
 .lithium-tour-list-item:hover {
-  background: var(--tour-bg-secondary);
-  border-color: var(--tour-border);
+  background: #ccc;
+  border-color: black;
 }
 
 .lithium-tour-list-item-icon {
@@ -411,10 +417,9 @@
   justify-content: center;
   width: 40px;
   height: 35px;
-  background: var(--tour-btn-bg);
-  border-radius: var(--tour-border-radius-sm);
-  color: var(--tour-btn-text);
-  font-size: 20px;
+  background: transparent;
+  color: black;
+  font-size: 24px;
   flex-shrink: 0;
 }
 
