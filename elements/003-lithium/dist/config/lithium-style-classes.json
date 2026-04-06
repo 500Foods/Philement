@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS class selectors/names used across the Lithium codebase",
-    "generated": "2026-04-05T22:24:45.540Z",
+    "generated": "2026-04-06T00:51:48.847Z",
     "sources": {
       "css": "49 files in src/**/*.css",
       "js": "81 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
     "total_selectors": 1623,
-    "total_occurrences": 20245
+    "total_occurrences": 20368
   },
   "selectors": [
     {
@@ -8465,14 +8465,15 @@
     {
       "selector": ".li-tip-kbd",
       "css": 1,
-      "js": 3,
+      "js": 7,
       "html": 0,
-      "total": 4,
+      "total": 8,
       "files": {
         "css": [
           "src/styles/tooltip.css"
         ],
         "js": [
+          "src/core/lithium-column-manager.js",
           "src/core/manager-ui.js",
           "src/core/tooltip-api.js"
         ],
@@ -16486,9 +16487,9 @@
     {
       "selector": ".manager-slot",
       "css": 1,
-      "js": 22,
+      "js": 25,
       "html": 0,
-      "total": 23,
+      "total": 26,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -16508,9 +16509,9 @@
     {
       "selector": ".manager-slot-footer",
       "css": 1,
-      "js": 32,
+      "js": 35,
       "html": 0,
-      "total": 33,
+      "total": 36,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -16531,9 +16532,9 @@
     {
       "selector": ".manager-slot-footer .slot-reports-btn",
       "css": 1,
-      "js": 32,
+      "js": 35,
       "html": 0,
-      "total": 33,
+      "total": 36,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -16554,9 +16555,9 @@
     {
       "selector": ".manager-slot-footer .slot-reports-btn span",
       "css": 1,
-      "js": 32,
+      "js": 35,
       "html": 0,
-      "total": 33,
+      "total": 36,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -16577,9 +16578,9 @@
     {
       "selector": ".manager-slot-footer .subpanel-header-group",
       "css": 1,
-      "js": 46,
+      "js": 49,
       "html": 28,
-      "total": 75,
+      "total": 78,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -16608,9 +16609,9 @@
     {
       "selector": ".manager-slot-header",
       "css": 1,
-      "js": 26,
+      "js": 29,
       "html": 0,
-      "total": 27,
+      "total": 30,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -16631,9 +16632,9 @@
     {
       "selector": ".manager-slot-header .subpanel-header-group",
       "css": 1,
-      "js": 40,
+      "js": 43,
       "html": 28,
-      "total": 69,
+      "total": 72,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -16662,9 +16663,9 @@
     {
       "selector": ".manager-slot-header .subpanel-header-primary",
       "css": 1,
-      "js": 27,
+      "js": 30,
       "html": 37,
-      "total": 65,
+      "total": 68,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -16692,9 +16693,9 @@
     {
       "selector": ".manager-slot-header .subpanel-header-primary span",
       "css": 1,
-      "js": 27,
+      "js": 30,
       "html": 37,
-      "total": 65,
+      "total": 68,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -16722,9 +16723,9 @@
     {
       "selector": ".manager-slot-workspace",
       "css": 1,
-      "js": 23,
+      "js": 26,
       "html": 0,
-      "total": 24,
+      "total": 27,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -16744,9 +16745,9 @@
     {
       "selector": ".manager-slot.slot-hidden",
       "css": 1,
-      "js": 26,
+      "js": 29,
       "html": 0,
-      "total": 27,
+      "total": 30,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -16767,9 +16768,9 @@
     {
       "selector": ".manager-slot.slot-visible",
       "css": 1,
-      "js": 26,
+      "js": 32,
       "html": 0,
-      "total": 27,
+      "total": 33,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -16867,13 +16868,14 @@
     {
       "selector": ".manager-ui-close-btn",
       "css": 0,
-      "js": 1,
+      "js": 2,
       "html": 0,
-      "total": 1,
+      "total": 2,
       "files": {
         "css": [],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/managers/main/main.js"
         ],
         "html": []
       }
@@ -16941,13 +16943,14 @@
     {
       "selector": ".manager-ui-manager-menu-btn",
       "css": 0,
-      "js": 1,
+      "js": 2,
       "html": 0,
-      "total": 1,
+      "total": 2,
       "files": {
         "css": [],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/managers/main/main.js"
         ],
         "html": []
       }
@@ -17205,13 +17208,14 @@
     {
       "selector": ".manager-ui-shortcuts-btn",
       "css": 0,
-      "js": 1,
+      "js": 2,
       "html": 0,
-      "total": 1,
+      "total": 2,
       "files": {
         "css": [],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/managers/main/main.js"
         ],
         "html": []
       }
@@ -17369,13 +17373,14 @@
     {
       "selector": ".manager-ui-zoom-btn",
       "css": 0,
-      "js": 1,
+      "js": 2,
       "html": 0,
-      "total": 1,
+      "total": 2,
       "files": {
         "css": [],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/managers/main/main.js"
         ],
         "html": []
       }
@@ -22536,22 +22541,6 @@
     {
       "selector": ".slot-header-search",
       "css": 1,
-      "js": 6,
-      "html": 0,
-      "total": 7,
-      "files": {
-        "css": [
-          "src/core/manager-ui.css"
-        ],
-        "js": [
-          "src/managers/main/main.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".slot-header-search-btn",
-      "css": 1,
       "js": 7,
       "html": 0,
       "total": 8,
@@ -22566,11 +22555,27 @@
       }
     },
     {
-      "selector": ".slot-header-search-clear",
+      "selector": ".slot-header-search-btn",
       "css": 1,
       "js": 8,
       "html": 0,
       "total": 9,
+      "files": {
+        "css": [
+          "src/core/manager-ui.css"
+        ],
+        "js": [
+          "src/managers/main/main.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".slot-header-search-clear",
+      "css": 1,
+      "js": 9,
+      "html": 0,
+      "total": 10,
       "files": {
         "css": [
           "src/core/manager-ui.css"
@@ -22584,9 +22589,9 @@
     {
       "selector": ".slot-header-search-input",
       "css": 1,
-      "js": 8,
+      "js": 10,
       "html": 0,
-      "total": 9,
+      "total": 11,
       "files": {
         "css": [
           "src/core/manager-ui.css"
@@ -22600,9 +22605,9 @@
     {
       "selector": ".slot-header-search-input::placeholder",
       "css": 1,
-      "js": 8,
+      "js": 10,
       "html": 0,
-      "total": 9,
+      "total": 11,
       "files": {
         "css": [
           "src/core/manager-ui.css"
@@ -27516,9 +27521,9 @@
     {
       "selector": ".zoom-popup",
       "css": 1,
-      "js": 26,
+      "js": 29,
       "html": 0,
-      "total": 27,
+      "total": 30,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -27532,9 +27537,9 @@
     {
       "selector": ".zoom-popup-detent",
       "css": 1,
-      "js": 30,
+      "js": 34,
       "html": 0,
-      "total": 31,
+      "total": 35,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -27548,9 +27553,9 @@
     {
       "selector": ".zoom-popup-detent-mark",
       "css": 1,
-      "js": 31,
+      "js": 35,
       "html": 0,
-      "total": 32,
+      "total": 36,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -27564,9 +27569,9 @@
     {
       "selector": ".zoom-popup-detent:hover",
       "css": 1,
-      "js": 30,
+      "js": 34,
       "html": 0,
-      "total": 31,
+      "total": 35,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -27580,9 +27585,9 @@
     {
       "selector": ".zoom-popup-detent.active .zoom-popup-detent-mark",
       "css": 1,
-      "js": 73,
+      "js": 77,
       "html": 7,
-      "total": 81,
+      "total": 85,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -27611,9 +27616,9 @@
     {
       "selector": ".zoom-popup-detents",
       "css": 1,
-      "js": 31,
+      "js": 35,
       "html": 0,
-      "total": 32,
+      "total": 36,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -27627,9 +27632,9 @@
     {
       "selector": ".zoom-popup-header",
       "css": 1,
-      "js": 27,
+      "js": 30,
       "html": 0,
-      "total": 28,
+      "total": 31,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -27643,9 +27648,9 @@
     {
       "selector": ".zoom-popup-preset",
       "css": 1,
-      "js": 36,
+      "js": 39,
       "html": 0,
-      "total": 37,
+      "total": 40,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -27659,9 +27664,9 @@
     {
       "selector": ".zoom-popup-preset:active",
       "css": 1,
-      "js": 36,
+      "js": 39,
       "html": 0,
-      "total": 37,
+      "total": 40,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -27675,9 +27680,9 @@
     {
       "selector": ".zoom-popup-preset:hover",
       "css": 1,
-      "js": 36,
+      "js": 39,
       "html": 0,
-      "total": 37,
+      "total": 40,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -27691,9 +27696,9 @@
     {
       "selector": ".zoom-popup-presets",
       "css": 1,
-      "js": 37,
+      "js": 40,
       "html": 0,
-      "total": 38,
+      "total": 41,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -27707,9 +27712,9 @@
     {
       "selector": ".zoom-popup-slider",
       "css": 1,
-      "js": 30,
+      "js": 34,
       "html": 0,
-      "total": 31,
+      "total": 35,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -27723,9 +27728,9 @@
     {
       "selector": ".zoom-popup-slider-container",
       "css": 1,
-      "js": 31,
+      "js": 35,
       "html": 0,
-      "total": 32,
+      "total": 36,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -27739,9 +27744,9 @@
     {
       "selector": ".zoom-popup-slider::-moz-range-thumb",
       "css": 1,
-      "js": 30,
+      "js": 34,
       "html": 0,
-      "total": 31,
+      "total": 35,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -27755,9 +27760,9 @@
     {
       "selector": ".zoom-popup-slider::-moz-range-thumb:hover",
       "css": 1,
-      "js": 30,
+      "js": 34,
       "html": 0,
-      "total": 31,
+      "total": 35,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -27771,9 +27776,9 @@
     {
       "selector": ".zoom-popup-slider::-webkit-slider-thumb",
       "css": 1,
-      "js": 30,
+      "js": 34,
       "html": 0,
-      "total": 31,
+      "total": 35,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -27787,6 +27792,22 @@
     {
       "selector": ".zoom-popup-slider::-webkit-slider-thumb:hover",
       "css": 1,
+      "js": 34,
+      "html": 0,
+      "total": 35,
+      "files": {
+        "css": [
+          "src/managers/main/main.css"
+        ],
+        "js": [
+          "src/core/zoom-control.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".zoom-popup-title",
+      "css": 1,
       "js": 30,
       "html": 0,
       "total": 31,
@@ -27801,27 +27822,11 @@
       }
     },
     {
-      "selector": ".zoom-popup-title",
-      "css": 1,
-      "js": 27,
-      "html": 0,
-      "total": 28,
-      "files": {
-        "css": [
-          "src/managers/main/main.css"
-        ],
-        "js": [
-          "src/core/zoom-control.js"
-        ],
-        "html": []
-      }
-    },
-    {
       "selector": ".zoom-popup-value",
       "css": 1,
-      "js": 29,
+      "js": 33,
       "html": 0,
-      "total": 30,
+      "total": 34,
       "files": {
         "css": [
           "src/managers/main/main.css"
