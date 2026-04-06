@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS class selectors/names used across the Lithium codebase",
-    "generated": "2026-04-06T09:09:31.949Z",
+    "generated": "2026-04-06T18:25:20.579Z",
     "sources": {
       "css": "49 files in src/**/*.css",
       "js": "81 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
-    "total_selectors": 1623,
-    "total_occurrences": 20370
+    "total_selectors": 1625,
+    "total_occurrences": 20377
   },
   "selectors": [
     {
@@ -6607,20 +6607,6 @@
       }
     },
     {
-      "selector": ".fa-icon-name",
-      "css": 0,
-      "js": 1,
-      "html": 0,
-      "total": 1,
-      "files": {
-        "css": [],
-        "js": [
-          "src/managers/tour/tour.js"
-        ],
-        "html": []
-      }
-    },
-    {
       "selector": ".fa-info-circle",
       "css": 0,
       "js": 1,
@@ -11998,7 +11984,7 @@
       }
     },
     {
-      "selector": ".lithium-tour-header-icon-title .fa-solid",
+      "selector": ".lithium-tour-header-icon-title svg",
       "css": 1,
       "js": 7,
       "html": 0,
@@ -12315,6 +12301,38 @@
     },
     {
       "selector": ".lithium-tour-list-title",
+      "css": 1,
+      "js": 1,
+      "html": 0,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/managers/tour/tour.css"
+        ],
+        "js": [
+          "src/managers/tour/tour.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".lithium-tour-list-title span",
+      "css": 1,
+      "js": 1,
+      "html": 0,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/managers/tour/tour.css"
+        ],
+        "js": [
+          "src/managers/tour/tour.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".lithium-tour-list-title svg",
       "css": 1,
       "js": 1,
       "html": 0,
@@ -16972,6 +16990,22 @@
     },
     {
       "selector": ".manager-ui-menu-item",
+      "css": 1,
+      "js": 3,
+      "html": 0,
+      "total": 4,
+      "files": {
+        "css": [
+          "src/core/manager-ui.css"
+        ],
+        "js": [
+          "src/core/manager-ui.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".manager-ui-menu-item i",
       "css": 1,
       "js": 3,
       "html": 0,

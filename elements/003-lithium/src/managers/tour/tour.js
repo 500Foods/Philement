@@ -148,41 +148,19 @@ async function loadShepherd() {
 }
 
 /**
- * Extract icon name from icon HTML string
- * @param {string} iconHtml - HTML like '<fa fa-clipboard-list></fa>' or '<i class="fa-solid fa-..."></i>'
- * @returns {string} Icon name (e.g., 'clipboard-list')
- */
-function extractIconName(iconHtml) {
-  if (!iconHtml) return 'signs-post';
-
-  // Handle <fa fa-icon-name></fa> format
-  const faMatch = iconHtml.match(/<fa\s+fa-([\w-]+)/);
-  if (faMatch) {
-    return faMatch[1];
-  }
-
-  // Handle <i class="fa-solid fa-icon-name"></i> format
-  const iconMatch = iconHtml.match(/fa-([\w-]+)/);
-  if (iconMatch) {
-    return iconMatch[1];
-  }
-
-  return 'signs-post';
-}
-
-/**
  * Create custom header HTML for a step
  * @param {Object} tour - Tour object
  * @param {Object} options - Options including onShowList callback
  * @returns {string} HTML string for the header
  */
 function createHeaderHTML(tour, options) {
-  const iconName = extractIconName(tour.definition?.icon);
+  // Use raw icon HTML from definition, or fallback to default fa icon
+  const iconHtml = tour.definition?.icon || '<fa fa-signs-post></fa>';
 
   return `
     <div class="lithium-tour-header">
       <div class="lithium-tour-header-icon-title">
-        <fa fa-${iconName}></fa>
+        ${iconHtml}
         <div class="lithium-tour-header-title">${tour.name}</div>
       </div>
       <div class="lithium-tour-header-actions">
@@ -216,7 +194,7 @@ function createFooterHTML(currentStep, totalSteps) {
               data-tip-placement="bottom"
               title='Previous<br><span class="li-tip-kbd">← (cursor-left)</span>'
               ${isFirst ? 'disabled' : ''}>
-        <fa fa-chevron-left></fa>
+        <fa fa-left></fa>
       </button>
       <div class="lithium-tour-step-counter" data-tip-placement="bottom" title="Step ${currentStep + 1} of ${totalSteps}">${stepCounter}</div>
       <button type="button"
@@ -224,9 +202,9 @@ function createFooterHTML(currentStep, totalSteps) {
               data-tour-action="next"
               data-tip-placement="bottom"
               title='${isLast ? "Finish tour<br><span class=\"li-tip-kbd\">→ (cursor-right)</span>" : "Next<br><span class=\"li-tip-kbd\">→ (cursor-right)</span>"}'>
-        ${isLast ? '<fa fa-check></fa>' : '<fa fa-chevron-right></fa>'}
+        ${isLast ? '<fa fa-flag-checkered></fa>' : '<fa fa-right></fa>'}
       </button>
-    </div>
+    </div>                               
   `;
 }
 
@@ -876,7 +854,7 @@ export function showTourList(tours, anchor = null, options = {}) {
     <div class="lithium-tour-list-header">
       <span class="lithium-tour-list-title">
         <fa fa-signs-post></fa>
-        <span>Available Tours</span>
+        <span>Available Tours: ${tours.length}</span>
       </span>
       <button type="button" class="lithium-tour-list-close" title="Close">
         <fa fa-xmark></fa>
