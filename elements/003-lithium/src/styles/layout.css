@@ -555,7 +555,6 @@ body.hide-password-manager-ui [class*="password-icon"] {
 .login-btn-group {
   display: flex;
   gap: 0;
-  margin-top: 150px;
   outline: 5px solid var(--accent-primary);
   outline-offset: -10px;       
   line-height: 1;

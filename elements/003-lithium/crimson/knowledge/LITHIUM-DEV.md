@@ -333,6 +333,14 @@ Creates the standard footer action icons (Crimson, Notifications, Concierge, Ann
 
 ---
 
+## Coding Patterns
+
+- Whether in JavaScript or CSS, use --transition-duration or a function of it for most animations. This makes it easy to validate that the animations are working properly by adjusting this variable in CSS. There are functions already for retrieving this value in JavaScript from the CSS environment. Do NOT change the CSS value for this as we change it ourselves during testing.
+- Generally, our default UI avoides the use of opacity for most things just as part of its overall theme
+- Please read additional doc files if you're working on something, like a Manager, that you've not already read a doc file for. The LITHIUM-TOC.md file has a listing of all doc files, and you should read all applicable files when working on the project. There are many and generally you will be guided to those that you need, but read others if your work touches on those topic areas in any way.
+
+---
+
 ## Next Steps
 
 - Learn about JavaScript libraries: [LITHIUM-LIB.md](LITHIUM-LIB.md)
