@@ -638,6 +638,48 @@ When a shortcut is unregistered, all associated tooltips revert to their origina
 
 ---
 
+## Global Keyboard Shortcuts
+
+The main manager registers global keyboard shortcuts that work anywhere in the app. These are implemented in `main.js` using capture-phase event handling to ensure they work regardless of which manager is active.
+
+### Available Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+Shift+X` | Click the close button for the current manager |
+| `Ctrl+Shift+Z` | Toggle the zoom popup |
+| `Ctrl+Shift+?` | Show keyboard shortcuts popup |
+| `Ctrl+Shift+.` | Click the manager settings menu button |
+| `Ctrl+Shift+F` | Focus the search input in the current manager |
+| `Ctrl+Shift+L` | Open logout panel |
+| `F11` | Toggle fullscreen (browser native) |
+
+### Implementation Notes
+
+1. **Capture phase** — The listener uses `{ capture: true }` to run before other handlers
+2. **Event propagation** — `stopPropagation()` is called to prevent other handlers from receiving the event
+3. **Input fields** — Most shortcuts skip input fields (except `Ctrl+Shift+F` which needs focus)
+4. **Active slot** — Use `.manager-slot.slot-visible` to find the currently visible manager
+
+### Finding the Active Slot
+
+```javascript
+// Correct selector for visible slot
+const activeSlot = document.querySelector('.manager-slot.slot-visible');
+
+// Finding buttons in the active slot
+const closeBtn = activeSlot.querySelector('.manager-ui-close-btn');
+const searchInput = activeSlot.querySelector('.slot-header-search-input');
+```
+
+### Common Issues
+
+- **Wrong class name** — The visible class is `slot-visible`, not `visible` or `manager-slot-visible`
+- **Capture mode** — Without `{ capture: true }`, other keydown handlers may intercept the event first
+- **stopPropagation** — Required to prevent other handlers from also handling the shortcut
+
+---
+
 ## Conditional Tooltips
 
 Tooltips can be shown conditionally based on UI state using `data-tip-when`.

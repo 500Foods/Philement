@@ -47,6 +47,7 @@ This directory contains the canonical documentation for the Lithium web applicat
 | [LITHIUM-WSS.md](LITHIUM-WSS.md) | WebSocket connection — app-wide persistent connection, keepalive, status indicator |
 | [LITHIUM-CSS.md](LITHIUM-CSS.md) | CSS architecture, variables, theming |
 | [LITHIUM-TIP.md](LITHIUM-TIP.md) | Tooltip system — FloatingUI, themes, arrows |
+| [LITHIUM-KEY.md](LITHIUM-KEY.md) | Keyboard shortcuts — global and manager-specific |
 | [LITHIUM-ICN.md](LITHIUM-ICN.md) | Icon system, Font Awesome, config |
 | [LITHIUM-OTH.md](LITHIUM-OTH.md) | Utilities — transitions, utils, JSON, log, permissions |
 | [LITHIUM-JWT.md](LITHIUM-JWT.md) | JWT authentication — lifecycle, claims, validation |
