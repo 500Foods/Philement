@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS class selectors/names used across the Lithium codebase",
-    "generated": "2026-04-06T00:51:48.847Z",
+    "generated": "2026-04-06T09:09:31.949Z",
     "sources": {
       "css": "49 files in src/**/*.css",
       "js": "81 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
     "total_selectors": 1623,
-    "total_occurrences": 20368
+    "total_occurrences": 20370
   },
   "selectors": [
     {
@@ -8465,9 +8465,9 @@
     {
       "selector": ".li-tip-kbd",
       "css": 1,
-      "js": 7,
+      "js": 9,
       "html": 0,
-      "total": 8,
+      "total": 10,
       "files": {
         "css": [
           "src/styles/tooltip.css"
@@ -8475,7 +8475,8 @@
         "js": [
           "src/core/lithium-column-manager.js",
           "src/core/manager-ui.js",
-          "src/core/tooltip-api.js"
+          "src/core/tooltip-api.js",
+          "src/managers/tour/tour.js"
         ],
         "html": []
       }

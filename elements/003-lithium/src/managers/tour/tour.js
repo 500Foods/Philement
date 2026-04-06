@@ -186,10 +186,10 @@ function createHeaderHTML(tour, options) {
         <div class="lithium-tour-header-title">${tour.name}</div>
       </div>
       <div class="lithium-tour-header-actions">
-        <button type="button" class="lithium-tour-header-btn lithium-tour-list-btn" data-tour-action="list" title="Show all tours">
+        <button type="button" class="lithium-tour-header-btn lithium-tour-list-btn" data-tour-action="list" title="Available Tours">
           <fa fa-signs-post></fa>
         </button>
-        <button type="button" class="lithium-tour-header-btn lithium-tour-close-btn" data-tour-action="close" title="Close tour (Esc)">
+        <button type="button" class="lithium-tour-header-btn lithium-tour-close-btn" data-tour-action="close" title="Close tour<br><span class='li-tip-kbd'>Esc</span>">
           <fa fa-xmark></fa>
         </button>
       </div>
@@ -213,15 +213,17 @@ function createFooterHTML(currentStep, totalSteps) {
       <button type="button"
               class="lithium-tour-footer-btn lithium-tour-back-btn"
               data-tour-action="back"
-              title="Previous (←)"
+              data-tip-placement="bottom"
+              title='Previous<br><span class="li-tip-kbd">← (cursor-left)</span>'
               ${isFirst ? 'disabled' : ''}>
         <fa fa-chevron-left></fa>
       </button>
-      <div class="lithium-tour-step-counter" title="Step ${currentStep + 1} of ${totalSteps}">${stepCounter}</div>
+      <div class="lithium-tour-step-counter" data-tip-placement="bottom" title="Step ${currentStep + 1} of ${totalSteps}">${stepCounter}</div>
       <button type="button"
               class="lithium-tour-footer-btn lithium-tour-next-btn"
               data-tour-action="next"
-              title="${isLast ? 'Finish tour' : 'Next (→)'}">
+              data-tip-placement="bottom"
+              title='${isLast ? "Finish tour<br><span class=\"li-tip-kbd\">→ (cursor-right)</span>" : "Next<br><span class=\"li-tip-kbd\">→ (cursor-right)</span>"}'>
         ${isLast ? '<fa fa-check></fa>' : '<fa fa-chevron-right></fa>'}
       </button>
     </div>
@@ -874,7 +876,7 @@ export function showTourList(tours, anchor = null, options = {}) {
     <div class="lithium-tour-list-header">
       <span class="lithium-tour-list-title">
         <fa fa-signs-post></fa>
-        <span>Recommended Tours</span>
+        <span>Available Tours</span>
       </span>
       <button type="button" class="lithium-tour-list-close" title="Close">
         <fa fa-xmark></fa>
