@@ -288,7 +288,20 @@ launchTour(tourId, api, options)  // Launch a tour by ID, code, or name
 showTourList(tours, anchor, options)  // Show tour selection popup
 hideTourList()             // Close the popup
 buildShepherdTour(tour, options)  // Build Shepherd instance from tour JSON
+
+// Manager UI integration (from manager-ui.js)
+setManagerTours(managerId, tours)  // Set tours for a manager (with icons)
+loadManagerTours(managerId)        // Load tours from Lookup #43 for a manager
 ```
+
+### Manager Footer Tours Button
+
+The Tours button in each manager's footer uses the `manager-ui.js` module. When clicked, it:
+1. Calls `loadManagerTours(managerId)` to fetch tours from Lookup #43 (if not already cached)
+2. Displays a popup with tour names and their icons from the tour's `definition.icon`
+3. Launches the selected tour via `launchTour()`
+
+The popup shows each tour with its unique icon (e.g., `<fa fa-clipboard-list></fa>`) instead of the stock tour icon.
 
 ### Build Shepherd Tour
 

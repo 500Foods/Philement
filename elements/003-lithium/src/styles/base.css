@@ -215,7 +215,7 @@
     --z-sticky: 200;
     --z-modal: 300;
     --z-popover: 400;
-    --z-tooltip: 30000;
+    --z-tooltip: 50000;
 
     /* Tooltip theme: default */
     --tip-bg: #2E2E2E;
