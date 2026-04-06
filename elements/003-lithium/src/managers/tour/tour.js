@@ -41,6 +41,7 @@ function cleanupActiveTour() {
 
   // Remove any remaining tour elements from DOM
   document.querySelectorAll('.shepherd-element.lithium-tour-step').forEach(el => {
+    el.style.zIndex = ''; // Reset z-index
     el.remove();
   });
 
@@ -209,12 +210,14 @@ function createFooterHTML(currentStep, totalSteps) {
 }
 
 /**
- * Get current step index
+ * Get current step index using step ID comparison
  * @param {Object} shepherd - Shepherd Tour instance
- * @returns {number} Current step index
+ * @returns {number} Current step index (0-based), or -1 if not found
  */
 function getCurrentStepIndex(shepherd) {
-  return shepherd.steps.findIndex(s => s.isOpen());
+  const currentStep = shepherd.getCurrentStep();
+  if (!currentStep) return -1;
+  return shepherd.steps.findIndex(s => s.id === currentStep.id);
 }
 
 /**
@@ -257,7 +260,13 @@ function setupDocumentClickHandler(shepherd, totalSteps, options) {
 
       case 'back':
         if (!button.disabled) {
-          navigateWithTransition(shepherd, 'back');
+          // Double-check we're not at first step - Shepherd.back() at step 0 exits the tour
+          const currentIdx = getCurrentStepIndex(shepherd);
+          if (currentIdx > 0) {
+            navigateWithTransition(shepherd, 'back');
+          } else {
+            log(Subsystems.MANAGER, Status.DEBUG, '[Tour] Back button clicked but already at first step');
+          }
         }
         break;
 
@@ -303,7 +312,7 @@ function getTransitionDuration() {
 }
 
 /**
- * Navigate with fade transition
+ * Navigate with overlapping fade transition (next step fades in before current fades out)
  * @param {Object} shepherd - Shepherd Tour instance
  * @param {string} direction - 'next' or 'back'
  */
@@ -311,10 +320,22 @@ function navigateWithTransition(shepherd, direction) {
   // Don't navigate if tour is ending
   if (_tourEnding) return;
 
+  // CRITICAL FIX: Prevent back from causing Shepherd to exit the tour
+  // Check at the START before doing anything - if at first step and going back, do nothing
+  const currentIndexAtStart = getCurrentStepIndex(shepherd);
+  if (direction === 'back' && currentIndexAtStart <= 0) {
+    log(Subsystems.MANAGER, Status.DEBUG, '[Tour] Back pressed at first step - blocking to prevent tour exit');
+    return;
+  }
+
   const currentStepEl = shepherd.getCurrentStep()?.getElement();
   if (!currentStepEl) {
     if (direction === 'next') shepherd.next();
-    else shepherd.back();
+    else {
+      // Extra protection - still check here
+      const idx = getCurrentStepIndex(shepherd);
+      if (idx > 0) shepherd.back();
+    }
     return;
   }
 
@@ -325,17 +346,81 @@ function navigateWithTransition(shepherd, direction) {
   if (currentStepEl._isTransitioning) return;
   currentStepEl._isTransitioning = true;
 
-  // Fade out current step
-  currentStepEl.classList.remove('lithium-tour-visible');
+  // Store the current step element reference BEFORE fading out
+  const fadingOutEl = currentStepEl;
 
-  // Wait for transition to complete, then navigate
+  // Overlapping transition - fade out current, but trigger navigation
+  // with a reduced delay so the next step starts fading in BEFORE current finishes fading out
+  const overlapDelay = 0; // Start next fade-in immediately when fade-out begins
+
+  fadingOutEl.classList.remove('lithium-tour-visible');
+  // Ensure old step stays on top during fade-out for visible crossfade
+  fadingOutEl.style.zIndex = '40001';
+
+  // Hide the old step after fade-out completes
   setTimeout(() => {
-    currentStepEl._isTransitioning = false;
+    fadingOutEl.style.display = 'none';
+  }, transitionDuration);
+
+  // Wait for shorter delay (overlapping with fade-out), then navigate
+  // IMPORTANT: Use the START index (currentIndexAtStart), not a re-checked index
+  // Re-checking can return -1 or wrong value if step has already started changing
+  setTimeout(() => {
+    fadingOutEl._isTransitioning = false;
     // Re-check guard — tour may have been cancelled during fade-out
     if (_tourEnding) return;
-    if (direction === 'next') shepherd.next();
-    else shepherd.back();
-  }, transitionDuration);
+
+    // CRITICAL: For back navigation, we need to reset the target step's visibility
+    // before navigating to it, otherwise the CSS transition won't re-trigger
+    if (direction === 'back' && currentIndexAtStart > 0) {
+      const targetStep = shepherd.steps[currentIndexAtStart - 1];
+      if (targetStep) {
+        const targetEl = targetStep.getElement();
+        if (targetEl) {
+          // Ensure it's visible for back navigation
+          targetEl.style.display = 'block';
+          // Remove visible class to reset opacity to 0
+          targetEl.classList.remove('lithium-tour-visible');
+          // Force reflow to ensure the removal is processed
+          void targetEl.offsetWidth;
+        }
+      }
+    }
+
+    // Temporarily disable Shepherd's hide method to keep old step visible for overlapping transitions
+    const oldStep = shepherd.getCurrentStep();
+    const originalHide = oldStep.hide;
+    oldStep.hide = () => {
+      // Prevent hiding to enable smooth overlapping fade
+    };
+
+    // Use the index captured at the START of this function
+    // This avoids the race condition where getCurrentStep() changes during the transition
+    if (direction === 'next') {
+      shepherd.next();
+    } else if (currentIndexAtStart > 0) {
+      shepherd.back();
+    } else {
+      log(Subsystems.MANAGER, Status.DEBUG, '[Tour] Back navigation blocked - was at first step');
+    }
+
+    // Restore the original hide method
+    oldStep.hide = originalHide;
+
+    // Ensure the new step is visible (in case show event doesn't fire reliably)
+    const newCurrentStep = shepherd.getCurrentStep();
+    if (newCurrentStep) {
+      setTimeout(() => {
+        const el = newCurrentStep.getElement();
+        if (el) {
+          if (typeof processIcons === 'function') {
+            processIcons(el);
+          }
+          el.classList.add('lithium-tour-visible');
+        }
+      }, 0);
+    }
+  }, overlapDelay);
 }
 
 /**
@@ -409,7 +494,13 @@ function setupKeyboardNav(shepherd, totalSteps) {
     switch (e.key) {
       case 'ArrowLeft':
         e.preventDefault();
-        navigateWithTransition(shepherd, 'back');
+        // Check we're not at first step - Shepherd.back() at step 0 exits the tour
+        {
+          const idx = getCurrentStepIndex(shepherd);
+          if (idx > 0) {
+            navigateWithTransition(shepherd, 'back');
+          }
+        }
         break;
       case 'ArrowRight':
         e.preventDefault();
@@ -545,13 +636,12 @@ export async function buildShepherdTour(tour, options = {}) {
         processIcons(currentStepEl);
       }
 
-      // Add visible class with double RAF to ensure CSS transition triggers
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          currentStepEl.classList.add('lithium-tour-visible');
-          log(Subsystems.MANAGER, Status.DEBUG, `[Tour] Step ${currentStepIndex + 1} is now visible`);
-        });
-      });
+      // Add visible class immediately for instant crossfade start
+      currentStepEl.classList.add('lithium-tour-visible');
+      // Override Shepherd's styling - control z-index and display ourselves
+      currentStepEl.style.zIndex = '40000';
+      currentStepEl.style.display = 'block';
+      log(Subsystems.MANAGER, Status.DEBUG, `[Tour] Step ${currentStepIndex + 1} is now visible`);
     };
 
     processStep();
