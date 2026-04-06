@@ -1565,21 +1565,141 @@ if (this._isRadarInSidebar) {
 
   /**
    * Set up global keyboard shortcuts
-   * Ctrl+Shift+L - Open logout panel
+   * Registers all shortcuts with the manager-ui system for tooltip display
    */
   setupGlobalKeyboardShortcuts() {
-    document.addEventListener('keydown', this.handleGlobalKeyDown);
+    // Register all global shortcuts with manager-ui for tooltip display
+    registerShortcut('close', 'Ctrl+Shift+X', 'Close manager', () => this.handleCloseManager());
+    registerShortcut('zoom', 'Ctrl+Shift+Z', 'Toggle zoom', () => this._handleZoomShortcut());
+    registerShortcut('shortcuts', 'Ctrl+Shift+?', 'Show keyboard shortcuts', () => this._handleKeyboardShortcutsShortcut());
+    registerShortcut('settings', 'Ctrl+Shift+.', 'Open settings', () => this._handleSettingsShortcut());
+    registerShortcut('search', 'Ctrl+Shift+F', 'Focus search', () => this._handleSearchShortcut());
+    
+    // Set up global keydown listener in CAPTURE mode so it fires first
+    // This ensures shortcuts work regardless of other keydown handlers
+    document.addEventListener('keydown', this.handleGlobalKeyDown, true);
   }
 
   /**
    * Handle global keyboard shortcuts
    */
   handleGlobalKeyDown(event) {
-    // Ctrl+Shift+L or Cmd+Shift+L to open logout panel
-    if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key === 'L') {
+    const isCtrlOrCmd = event.ctrlKey || event.metaKey;
+    
+    // Don't trigger in input fields (except for search focus which needs it)
+    const target = event.target;
+    const isInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
+    
+    // Always allow search shortcut even in inputs
+    if (isCtrlOrCmd && event.shiftKey && event.key === 'F') {
+      // For search, we want it even in inputs
       event.preventDefault();
+      this._handleSearchShortcut();
+      event.stopPropagation();
+      return;
+    }
+    
+    // Don't trigger other shortcuts in input fields
+    if (isInput) return;
+
+    // Ctrl+Shift+L or Cmd+Shift+L to open logout panel
+    if (isCtrlOrCmd && event.shiftKey && event.key === 'L') {
+      event.preventDefault();
+      event.stopPropagation();
       if (!this.isLogoutPanelVisible) {
         this.showLogoutPanel();
+      }
+      return;
+    }
+
+    // Ctrl+Shift+X or Cmd+Shift+X to close current manager
+    if (isCtrlOrCmd && event.shiftKey && event.key === 'X') {
+      event.preventDefault();
+      event.stopPropagation();
+      this.handleCloseManager();
+      return;
+    }
+
+    // Ctrl+Shift+Z or Cmd+Shift+Z to toggle zoom popup
+    if (isCtrlOrCmd && event.shiftKey && event.key === 'Z') {
+      event.preventDefault();
+      event.stopPropagation();
+      this._handleZoomShortcut();
+      return;
+    }
+
+    // Ctrl+Shift+? or Ctrl+Shift+/ to show keyboard shortcuts
+    if (isCtrlOrCmd && event.shiftKey && (event.key === '?' || event.key === '/')) {
+      event.preventDefault();
+      event.stopPropagation();
+      this._handleKeyboardShortcutsShortcut();
+      return;
+    }
+
+    // Ctrl+Shift+. (period) or Cmd+Shift+. to open settings (profile manager)
+    // Also check keyCode 190 for Period key
+    if (isCtrlOrCmd && event.shiftKey && (event.key === '.' || event.keyCode === 190)) {
+      event.preventDefault();
+      event.stopPropagation();
+      this._handleSettingsShortcut();
+      return;
+    }
+
+    // Ctrl+Shift+F - already handled above for input focus
+  }
+
+  /**
+   * Handle close manager action - click the close button
+   */
+  handleCloseManager() {
+    const closeBtn = document.querySelector('.manager-slot.slot-visible .manager-ui-close-btn');
+    if (closeBtn) {
+      closeBtn.click();
+    }
+  }
+
+  /**
+   * Handle zoom shortcut - toggle zoom popup
+   */
+  _handleZoomShortcut() {
+    const zoomBtn = document.querySelector('.manager-ui-zoom-btn');
+    if (zoomBtn) {
+      import('../../core/zoom-control.js').then(({ toggleZoomPopup }) => {
+        toggleZoomPopup(zoomBtn);
+      });
+    }
+  }
+
+  /**
+   * Handle keyboard shortcuts popup shortcut
+   */
+  _handleKeyboardShortcutsShortcut() {
+    const kbBtn = document.querySelector('.manager-ui-shortcuts-btn');
+    if (kbBtn) {
+      kbBtn.click();
+    }
+  }
+
+  /**
+   * Handle settings shortcut - click the manager menu button (gear icon)
+   */
+  _handleSettingsShortcut() {
+    const menuBtn = document.querySelector('.manager-slot.slot-visible .manager-ui-manager-menu-btn');
+    if (menuBtn) {
+      menuBtn.click();
+    }
+  }
+
+  /**
+   * Handle search shortcut - focus search input
+   */
+  _handleSearchShortcut() {
+    const activeSlot = document.querySelector('.manager-slot.slot-visible');
+    if (activeSlot) {
+      const searchInput = activeSlot.querySelector('.slot-header-search-input');
+      if (searchInput) {
+        searchInput.focus();
+        searchInput.select();
       }
     }
   }
