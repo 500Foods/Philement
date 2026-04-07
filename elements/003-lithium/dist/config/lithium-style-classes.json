@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS class selectors/names used across the Lithium codebase",
-    "generated": "2026-04-07T19:04:24.364Z",
+    "generated": "2026-04-07T19:33:23.603Z",
     "sources": {
       "css": "49 files in src/**/*.css",
       "js": "82 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
-    "total_selectors": 1632,
-    "total_occurrences": 20570
+    "total_selectors": 1633,
+    "total_occurrences": 20572
   },
   "selectors": [
     {
@@ -26847,6 +26847,22 @@
         "html": [
           "src/managers/profile-manager/profile-manager.html"
         ]
+      }
+    },
+    {
+      "selector": ".tooltip-container",
+      "css": 1,
+      "js": 1,
+      "html": 0,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/styles/tooltip.css"
+        ],
+        "js": [
+          "src/core/tooltip.js"
+        ],
+        "html": []
       }
     },
     {
