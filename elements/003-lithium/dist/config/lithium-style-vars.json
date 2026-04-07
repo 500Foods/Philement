@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS custom properties (variables) used across the Lithium codebase",
-    "generated": "2026-04-07T19:04:23.057Z",
+    "generated": "2026-04-07T19:33:22.309Z",
     "sources": {
       "css": "49 files in src/**/*.css",
       "js": "82 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
     "total_variables": 210,
-    "total_occurrences": 3217
+    "total_occurrences": 3218
   },
   "variables": [
     {
@@ -1462,10 +1462,10 @@
     },
     {
       "name": "--z-tooltip",
-      "css": 2,
+      "css": 3,
       "js": 0,
       "html": 0,
-      "total": 2
+      "total": 3
     },
     {
       "name": "--zoom",
