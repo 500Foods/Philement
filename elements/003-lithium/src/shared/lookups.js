@@ -550,6 +550,159 @@ export async function refreshLookups(options = {}) {
 }
 
 /**
+ * Load macros lookup post-login (requires authentication)
+ * This should be called after successful login when JWT is available
+ * Checks cache first, then fetches from server if needed
+ * @param {Object} api - The API/conduit instance with auth
+ * @param {Object} options - Options
+ * @param {boolean} options.force - Force refresh even if cached
+ * @returns {Promise<boolean>} True if macros loaded successfully
+ */
+export async function loadMacrosPostLogin(api, options = {}) {
+  const { force = false } = options;
+
+  // DEBUG: Always log when this function is called
+  logger.info(`[Lookups] loadMacrosPostLogin called, force=${force}`);
+
+  // Check if already loaded in memory cache (and has content)
+  if (!force && cache?.macros && Object.keys(cache.macros).length > 0) {
+    logger.info(`[Lookups] Macros already loaded (${Object.keys(cache.macros).length} entries)`);
+    return true;
+  }
+
+  // Check localStorage cache before making API call
+  if (!force && !cache?.macros) {
+    const localData = loadFromLocalStorage();
+    if (localData?.macros && Object.keys(localData.macros).length > 0) {
+      // Merge with existing cache, don't replace (preserve other lookups like tabulator_schemas)
+      cache = { ...localData, ...cache };
+      logger.info(`[Lookups] Macros loaded from localStorage (${Object.keys(cache.macros).length} entries)`);
+      eventBus.emitSilent('lookups:macros:loaded', { count: Object.keys(cache.macros).length, source: 'cache' });
+      // Still fetch fresh in background
+      fetchMacrosInBackground(api);
+      return true;
+    }
+  }
+
+  // Fetch from server
+  return fetchMacrosFromServer(api);
+}
+
+/**
+ * Fetch macros from server (internal)
+ * Uses QueryRef 26 with LOOKUPID=46 (same as Version Manager)
+ * @private
+ */
+async function fetchMacrosFromServer(api) {
+  try {
+    logger.info('[Lookups] Loading macros from server (QueryRef 026, LOOKUPID=46)');
+
+    // Import authQuery dynamically to avoid circular dependency
+    const { authQuery } = await import('./conduit.js');
+
+    // QueryRef 026 with LOOKUPID=46 returns macro definitions from lookup table
+    const rows = await authQuery(api, 26, { INTEGER: { LOOKUPID: 46 } });
+
+    // Process macros into a simple key-value map
+    // Each row has: key_idx, value_txt (macro name like "{ACZ.CLIENT}"), code (macro value), collection (locale variants)
+    const macros = {};
+    if (Array.isArray(rows)) {
+      rows.forEach(row => {
+        // value_txt contains the macro name like "{ACZ.CLIENT}"
+        // Strip the braces to get the clean key for lookup
+        let key = row.value_txt;
+        if (!key) return;
+        
+        // Remove { and } from key if present
+        key = key.replace(/^\{/, '').replace(/\}$/, '');
+
+        // Try to get value from code first, then parse collection for locale
+        let value = row.code || '';
+
+        // If collection exists, try to get locale-specific value
+        if (row.collection) {
+          let collection = row.collection;
+          if (typeof collection === 'string') {
+            try {
+              collection = JSON.parse(collection);
+            } catch (_e) {
+              collection = {};
+            }
+          }
+          if (collection && typeof collection === 'object') {
+            const currentLocale = navigator.language || 'en-US';
+            // Priority: exact locale > language match > Default
+            if (collection[currentLocale]) {
+              value = collection[currentLocale];
+            } else if (currentLocale.includes('-')) {
+              const langOnly = currentLocale.split('-')[0];
+              for (const [k, v] of Object.entries(collection)) {
+                if (k.toLowerCase().startsWith(langOnly.toLowerCase())) {
+                  value = v;
+                  break;
+                }
+              }
+            } else if (collection.Default) {
+              value = collection.Default;
+            }
+          }
+        }
+
+        macros[key] = value;
+        logger.info(`[Lookups] Macro loaded: "${key}" = "${value}"`);
+      });
+    }
+
+    // Store in cache
+    if (!cache) cache = {};
+    cache.macros = macros;
+
+    // Save to localStorage
+    saveToLocalStorage(cache);
+
+    logger.info(`[Lookups] Loaded ${Object.keys(macros).length} macros from server`);
+    logger.info(`[Lookups] Macro keys: ${Object.keys(macros).join(', ')}`);
+    eventBus.emitSilent('lookups:macros:loaded', { count: Object.keys(macros).length, source: 'server' });
+
+    return true;
+  } catch (error) {
+    logger.error(`[Lookups] Failed to load macros: ${error.message}`);
+    return false;
+  }
+}
+
+/**
+ * Fetch macros in background (don't await)
+ * @private
+ */
+function fetchMacrosInBackground(api) {
+  fetchMacrosFromServer(api).catch(err => {
+    logger.warn(`[Lookups] Background macros refresh failed: ${err.message}`);
+  });
+}
+
+/**
+ * Get all macros as a key-value object
+ * @returns {Object|null} Macros object or null if not loaded
+ */
+export function getMacros() {
+  return cache?.macros || null;
+}
+
+/**
+ * Get a specific macro value by name
+ * @param {string} name - Macro name (e.g., 'APP_NAME')
+ * @param {string} defaultValue - Default value if not found
+ * @returns {string} Macro value or default
+ */
+export function getMacro(name, defaultValue = '') {
+  if (!cache?.macros) {
+    return defaultValue !== '' ? defaultValue : name;
+  }
+  return cache.macros[name] !== undefined ? cache.macros[name] : defaultValue;
+}
+
+/**
  * Initialize lookups module
  * Sets up event listeners for auto-refresh
  */
@@ -585,4 +738,7 @@ export default {
   clearCache,
   refresh: refreshLookups,
   init,
+  loadMacrosPostLogin,
+  getMacros,
+  getMacro,
 };

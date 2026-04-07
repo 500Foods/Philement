@@ -198,7 +198,7 @@
     --shadow-inset: inset 0 2px 4px rgba(0, 0, 0, 0.3);
 
     /* Transitions - configurable duration for theming */
-    --transition-duration: 2500ms; /* 2500ms for testing. DO NOT TOUCH THIS VALUE */
+    --transition-duration: 750ms; /* 2500ms for testing. DO NOT TOUCH THIS VALUE */
     --transition-fast: calc(var(--transition-duration) * 0.3) ease;
     --transition-std: var(--transition-duration) ease;
     --transition-slow: calc(var(--transition-duration) * 2) ease;

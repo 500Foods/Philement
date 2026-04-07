@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS custom properties (variables) used across the Lithium codebase",
-    "generated": "2026-04-06T23:26:35.369Z",
+    "generated": "2026-04-07T19:04:23.057Z",
     "sources": {
       "css": "49 files in src/**/*.css",
-      "js": "81 files in src/**/*.js",
+      "js": "82 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
-    "total_variables": 209,
-    "total_occurrences": 3212
+    "total_variables": 210,
+    "total_occurrences": 3217
   },
   "variables": [
     {
@@ -503,10 +503,10 @@
     },
     {
       "name": "--font-size-lg",
-      "css": 26,
+      "css": 27,
       "js": 0,
       "html": 0,
-      "total": 26
+      "total": 27
     },
     {
       "name": "--font-size-md",
@@ -517,10 +517,10 @@
     },
     {
       "name": "--font-size-sm",
-      "css": 76,
+      "css": 75,
       "js": 0,
       "html": 0,
-      "total": 76
+      "total": 75
     },
     {
       "name": "--font-size-us",
@@ -1363,6 +1363,13 @@
       "total": 2
     },
     {
+      "name": "--tour-z-overlay",
+      "css": 2,
+      "js": 0,
+      "html": 0,
+      "total": 2
+    },
+    {
       "name": "--tour-z-popup",
       "css": 2,
       "js": 0,
@@ -1371,10 +1378,10 @@
     },
     {
       "name": "--tour-z-step",
-      "css": 2,
+      "css": 4,
       "js": 0,
       "html": 0,
-      "total": 2
+      "total": 4
     },
     {
       "name": "--transition",
@@ -1392,10 +1399,10 @@
     },
     {
       "name": "--transition-duration",
-      "css": 59,
+      "css": 60,
       "js": 11,
       "html": 0,
-      "total": 70
+      "total": 71
     },
     {
       "name": "--transition-fast",

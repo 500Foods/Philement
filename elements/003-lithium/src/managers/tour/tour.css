@@ -10,9 +10,18 @@
 @layer managers {
 
 /* ========================================
-   Tour Theme Variables
-   All tour-specific, no Lithium theme vars
-   ======================================== */
+    Tour Container
+    ======================================== */
+
+.tour-container {
+  /* Container for organizing tour elements, but don't interfere with positioning */
+  position: static;
+}
+
+/* ========================================
+    Tour Theme Variables
+    All tour-specific, no Lithium theme vars
+    ======================================== */
 
 :root {
   /* Panel */
@@ -48,6 +57,7 @@
   --tour-overlay: rgba(0, 0, 0, 0.45);
 
   /* Z-index (above all UI) */
+  --tour-z-overlay: 39998;
   --tour-z-step: 40000;
   --tour-z-popup: 40001;
 
@@ -65,6 +75,23 @@
    Shepherd Modal Overlay
    ======================================== */
 
+/* Shepherd modal overlay container - full screen behind tour steps */
+.shepherd-modal-overlay-container {
+  z-index: var(--tour-z-overlay) !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  pointer-events: auto !important;
+  opacity: 0 !important;
+  transition: opacity var(--transition-duration, 0.2s) ease !important;
+}
+
+.shepherd-modal-overlay-container.shepherd-modal-is-visible {
+  opacity: 0.9 !important;
+}
+
 .shepherd-modal-overlay-class {
   fill: var(--tour-overlay) !important;
 }
@@ -78,9 +105,9 @@
   border: var(--tour-border-width) solid var(--tour-border);
   border-radius: var(--tour-border-radius);
   filter: drop-shadow(0px 0px 2px white);
-  width: 500px !important;
-  min-width: 500px !important;
-  max-width: 500px !important;
+  width: 500px;
+  min-width: 300px;
+  max-width: 500px;
   z-index: var(--tour-z-step);
   overflow: hidden;
   /* !important required to override Shepherd's un-layered
@@ -103,10 +130,29 @@
 
 .shepherd-element.lithium-tour-step.lithium-tour-visible {
   opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
 }
 
 .shepherd-element.lithium-tour-step:focus {
   outline: none;
+}
+
+/* Ensure all tour steps are above the overlay */
+.shepherd-element.lithium-tour-step {
+  z-index: var(--tour-z-step) !important;
+}
+
+/* Ensure centered tour steps are properly positioned and visible above overlay */
+.shepherd-element.lithium-tour-step.shepherd-centered.lithium-tour-visible {
+  z-index: var(--tour-z-step) !important;
+  /* Shepherd handles positioning, but ensure it's visible */
+  position: fixed !important;
+}
+
+.shepherd-element.lithium-tour-step.dragging {
+  transition: none;
+  cursor: grabbing;
 }
 
 /* Arrow */
@@ -127,6 +173,7 @@
   background: var(--tour-header-bg);
   color: var(--tour-header-text);
   border-bottom: 1px solid black;
+  cursor: grab;
 }
 
 .lithium-tour-header-icon-title {
@@ -153,6 +200,7 @@
   text-overflow: ellipsis;
   color: silver;
   filter: drop-shadow(0px 0px 1px black);
+  user-select: none;
 }
 
 .lithium-tour-header-actions {
@@ -175,6 +223,10 @@
 	margin-left: 8px;
 }
 
+.lithium-tour-header-btn:hover:not(:disabled) {
+  color: white;
+}
+
 .lithium-tour-header-btn:hover {
   color: white;
 }
@@ -186,6 +238,11 @@
 
 /* Hide Shepherd's default title */
 .shepherd-element.lithium-tour-step .shepherd-title {
+  display: none !important;
+}
+
+/* Hide Shepherd arrows for cleaner design */
+.shepherd-element.lithium-tour-step .shepherd-arrow {
   display: none !important;
 }
 
@@ -282,6 +339,7 @@
 
 .lithium-tour-list-popup {
   position: fixed;
+  user-select: none;
   z-index: var(--tour-z-popup);
   background: var(--tour-bg);
   border: var(--tour-border-width) solid var(--tour-border);

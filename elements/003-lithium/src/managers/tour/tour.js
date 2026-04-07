@@ -9,6 +9,9 @@ import { authQuery } from '../../shared/conduit.js';
 import { log, Subsystems, Status } from '../../core/log.js';
 import { eventBus, Events } from '../../core/event-bus.js';
 import { processIcons } from '../../core/icons.js';
+import { expandMacros, hasMacros } from '../../core/macro-expansion.js';
+import { getMacros } from '../../shared/lookups.js';
+import { offset, flip, shift } from '@floating-ui/dom';
 import './tour.css';
 
 // ========================================
@@ -21,6 +24,38 @@ let _activeTourOptions = null;
 let _listPopup = null;
 let _documentClickHandler = null;
 let _tourEnding = false;  // Guard against navigate during cancel/complete
+let _tourContainer = null; // Dedicated container for tour step elements
+
+/**
+ * Initialize the tour container in the DOM
+ * @private
+ */
+function initTourContainer() {
+  if (_tourContainer) return _tourContainer;
+
+  // Check if container already exists
+  _tourContainer = document.getElementById('tour-container');
+
+  if (!_tourContainer) {
+    _tourContainer = document.createElement('div');
+    _tourContainer.id = 'tour-container';
+    _tourContainer.className = 'tour-container';
+    document.body.appendChild(_tourContainer);
+    log(Subsystems.MANAGER, Status.DEBUG, '[Tour] Created tour container');
+  }
+
+  return _tourContainer;
+}
+
+/**
+ * Fade out the modal overlay
+ */
+function fadeOutOverlay() {
+  const overlay = document.querySelector('.shepherd-modal-overlay-container');
+  if (overlay) {
+    overlay.classList.remove('shepherd-modal-is-visible');
+  }
+}
 
 /**
  * Force cleanup of any active tour state
@@ -39,11 +74,11 @@ function cleanupActiveTour() {
   _activeTourOptions = null;
   _tourEnding = false;
 
-  // Remove any remaining tour elements from DOM
-  document.querySelectorAll('.shepherd-element.lithium-tour-step').forEach(el => {
-    el.style.zIndex = ''; // Reset z-index
-    el.remove();
-  });
+  // Remove the entire tour container (all tour elements are inside it)
+  if (_tourContainer) {
+    _tourContainer.remove();
+    _tourContainer = null;
+  }
 
   // Remove Shepherd modal overlay if present
   document.querySelectorAll('.shepherd-modal-overlay-container').forEach(el => {
@@ -158,11 +193,14 @@ function createHeaderHTML(tour, options) {
   // Use raw icon HTML from definition, or fallback to default fa icon
   const iconHtml = tour.definition?.icon || '<fa fa-signs-post></fa>';
 
+  // Expand macros in tour name
+  const tourName = expandMacros(tour.name);
+
   return `
     <div class="lithium-tour-header">
       <div class="lithium-tour-header-icon-title">
         ${iconHtml}
-        <div class="lithium-tour-header-title">${tour.name}</div>
+        <div class="lithium-tour-header-title">${tourName}</div>
       </div>
       <div class="lithium-tour-header-actions">
         <button type="button" class="lithium-tour-header-btn lithium-tour-list-btn" data-tour-action="list" title="Available Tours">
@@ -429,6 +467,8 @@ function navigateWithTransition(shepherd, direction) {
  */
 function cancelWithTransition(shepherd) {
   _tourEnding = true;
+  // Start overlay fade-out at the same time as step fade-out
+  fadeOutOverlay();
   const currentStepEl = shepherd.getCurrentStep()?.getElement();
   if (currentStepEl) {
     const transitionDuration = getTransitionDuration();
@@ -456,6 +496,8 @@ function cancelWithTransition(shepherd) {
  */
 function completeWithTransition(shepherd) {
   _tourEnding = true;
+  // Start overlay fade-out at the same time as step fade-out
+  fadeOutOverlay();
   const currentStepEl = shepherd.getCurrentStep()?.getElement();
   if (currentStepEl) {
     const transitionDuration = getTransitionDuration();
@@ -475,6 +517,104 @@ function completeWithTransition(shepherd) {
     shepherd.complete();
     _tourEnding = false;
   }
+}
+
+/**
+ * Setup drag functionality for a specific tour step element
+ * @param {HTMLElement} stepElement - The tour step element
+ */
+function setupDragForElement(stepElement) {
+  const headerEl = stepElement.querySelector('.lithium-tour-header');
+
+  if (!headerEl) {
+    // console.log('No header element found for drag setup');
+    return;
+  }
+
+  // console.log('Setting up drag for step element:', stepElement);
+
+  // Clean up any existing drag state and listeners
+  if (headerEl._tourDragCleanup) {
+    // console.log('Cleaning up existing drag handlers');
+    headerEl._tourDragCleanup();
+  }
+
+  // Only remove dragging class, DON'T clear positioning styles
+  // The styles are needed for proper step positioning (especially centered steps)
+  stepElement.classList.remove('dragging');
+
+  let isDragging = false;
+  let dragStartX = 0;
+  let dragStartY = 0;
+  let popupStartX = 0;
+  let popupStartY = 0;
+
+          const handleDragStart = (e) => {
+            // Don't drag if clicking buttons
+            if (e.target.closest('.lithium-tour-header-btn')) return;
+
+            // console.log('Tour drag start');
+            isDragging = true;
+            stepElement.classList.add('dragging');
+
+            dragStartX = e.clientX;
+            dragStartY = e.clientY;
+
+            // Switch to left/top positioning at current location
+            const rect = stepElement.getBoundingClientRect();
+            stepElement.style.left = `${rect.left}px`;
+            stepElement.style.top = `${rect.top}px`;
+            stepElement.style.transform = '';
+
+            popupStartX = rect.left;
+            popupStartY = rect.top;
+
+            document.addEventListener('mousemove', handleDragMove);
+            document.addEventListener('mouseup', handleDragEnd);
+
+            e.preventDefault();
+            e.stopPropagation(); // Prevent other handlers from firing
+          };
+
+          const handleDragMove = (e) => {
+            if (!isDragging) return;
+
+            const deltaX = e.clientX - dragStartX;
+            const deltaY = e.clientY - dragStartY;
+
+            let newX = popupStartX + deltaX;
+            let newY = popupStartY + deltaY;
+
+            // Constrain to viewport
+            const rect = stepElement.getBoundingClientRect();
+            const minVisible = 50;
+
+            newX = Math.max(-rect.width + minVisible, Math.min(window.innerWidth - minVisible, newX));
+            newY = Math.max(0, Math.min(window.innerHeight - minVisible, newY));
+
+            stepElement.style.left = `${newX}px`;
+            stepElement.style.top = `${newY}px`;
+          };
+
+          const handleDragEnd = () => {
+            isDragging = false;
+            stepElement.classList.remove('dragging');
+
+            document.removeEventListener('mousemove', handleDragMove);
+            document.removeEventListener('mouseup', handleDragEnd);
+          };
+
+          // Store cleanup function on the header element for future cleanup
+          headerEl._tourDragCleanup = () => {
+            document.removeEventListener('mousemove', handleDragMove);
+            document.removeEventListener('mouseup', handleDragEnd);
+            stepElement.classList.remove('dragging');
+            // Don't clear positioning styles here - preserve Shepherd's positioning
+            isDragging = false;
+          };
+
+  headerEl.addEventListener('mousedown', handleDragStart);
+  // console.log('Drag handlers attached to header');
 }
 
 /**
@@ -553,40 +693,89 @@ export async function buildShepherdTour(tour, options = {}) {
   // Generate unique tour instance ID to prevent step ID conflicts on restart
   const tourInstanceId = `t${Date.now()}`;
 
+  // Ensure tour container exists
+  const tourContainer = initTourContainer();
+
   const shepherd = new Shepherd.Tour({
     useModalOverlay: true,
     exitOnEsc: false,           // We handle Escape ourselves via setupKeyboardNav
     keyboardNavigation: false,  // We handle arrow keys ourselves via setupKeyboardNav
+    stepsContainer: tourContainer, // Use our dedicated container
+    modalOverlayOpeningPadding: 30, // Add padding around highlighted elements
+    modalOverlayOpeningRadius: 8,  // Rounded corners for cutout
     defaultStepOptions: {
       cancelIcon: { enabled: false },
       classes: 'lithium-tour-step',
       scrollTo: { behavior: 'smooth', block: 'center' },
+      // Disable arrows for cleaner look, add spacing from elements
+      showOn: false,
+      // Floating UI middleware for consistent 30px offset and viewport containment
+      floatingUIOptions: {
+        middleware: [
+          offset(30),                    // 30px distance from target element
+          flip({                         // Flip if would go off-screen
+            padding: 30,
+          }),
+          shift({                        // Keep within viewport
+            padding: 30,                 // 30px padding from viewport edges
+          }),
+        ],
+      },
     },
     // Custom step content handler
     steps: steps.map((stepDef, index) => {
       const element = stepDef.element || stepDef.Element;
       const position = stepDef.position || stepDef.Position || 'bottom';
 
+      // Expand macros in step content (e.g., {APP_NAME} -> Lithium)
+      const rawStepText = stepDef.text || stepDef.Text || '';
+      const stepText = expandMacros(rawStepText, { debug: true });
+
+      // Debug logging for macro expansion
+      if (hasMacros(rawStepText)) {
+        const macrosAvailable = getMacros();
+        const macroKeys = macrosAvailable ? Object.keys(macrosAvailable) : [];
+        log(Subsystems.MANAGER, Status.DEBUG, `[Tour] Step ${index + 1} has macros. Available keys: ${macroKeys.join(', ')}`);
+        if (!macrosAvailable || macroKeys.length === 0) {
+          log(Subsystems.MANAGER, Status.WARN, `[Tour] Macros not loaded yet, step content may have unresolved {VARS}`);
+        }
+      }
+
       const stepOptions = {
         id: `${tourInstanceId}-step-${index}`,
         title: '',
         text: `
           ${createHeaderHTML(tour, options)}
-          <div class="lithium-tour-content">${stepDef.text || stepDef.Text || ''}</div>
+          <div class="lithium-tour-content">${stepText}</div>
           ${createFooterHTML(index, totalSteps)}
         `,
         classes: 'lithium-tour-step',
       };
 
-      if (element) {
-        const el = document.querySelector(element);
-        if (el) {
-          stepOptions.attachTo = {
-            element: el,
-            on: position,
-          };
-        }
-      }
+       if (element) {
+         const el = document.querySelector(element);
+         if (el) {
+           stepOptions.attachTo = {
+             element: el,
+             on: position,
+           };
+            // Per-step Floating UI options with 30px offset and viewport containment
+            stepOptions.floatingUIOptions = {
+              middleware: [
+                offset(30),                  // 30px distance from target element
+                flip({                       // Flip if would go off-screen
+                  padding: 30,
+                }),
+                shift({                      // Keep within viewport
+                  padding: 30,               // 30px padding from viewport edges
+                }),
+              ],
+            };
+         } else {
+           // Element not found, make it centered
+           stepOptions.attachTo = null;
+         }
+       }
 
       return stepOptions;
     }),
@@ -599,12 +788,52 @@ export async function buildShepherdTour(tour, options = {}) {
   // Cleanup functions
   let cleanupKeyboard = null;
   let cleanupClickHandler = null;
+  let cleanupContextMenu = null;
+  let visibilityObserver = null;
+
+  // Set up a mutation observer to detect when tour steps become visible or hidden
+  // This ensures drag functionality works even when Shepherd reuses elements
+  visibilityObserver = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+        const target = mutation.target;
+        const wasVisible = mutation.oldValue && mutation.oldValue.includes('lithium-tour-visible');
+        const isVisible = target.classList.contains('lithium-tour-visible');
+
+        if (target.classList.contains('lithium-tour-step')) {
+          if (isVisible && !wasVisible) {
+            // console.log('Tour step became visible, ensuring drag is set up');
+            // Check if this step already has drag set up
+            const headerEl = target.querySelector('.lithium-tour-header');
+            if (headerEl && !headerEl._tourDragCleanup) {
+              // console.log('Setting up drag for newly visible step');
+              setupDragForElement(target);
+            }
+          } else if (wasVisible && !isVisible) {
+            // console.log('Tour step became hidden - this should not happen during normal operation!');
+            // console.log('Step element:', target);
+            // console.log('Step classes:', target.className);
+            // console.trace('Visibility change trace');
+          }
+        }
+      }
+    });
+  });
+
+  // Observe changes to the tour container for tour step visibility
+  visibilityObserver.observe(tourContainer, {
+    attributes: true,
+    attributeFilter: ['class'],
+    attributeOldValue: true,
+    subtree: true
+  });
 
   // Track current step index manually
   let currentStepIndex = 0;
 
   // Single show handler for all step updates
   shepherd.on('show', (event) => {
+    // console.log('Tour show event fired');
     // Get step from event or fallback to getCurrentStep
     const step = event?.step || shepherd.getCurrentStep();
 
@@ -613,13 +842,15 @@ export async function buildShepherdTour(tour, options = {}) {
     if (currentIndex >= 0) {
       currentStepIndex = currentIndex;
     }
+    // console.log(`Tour show event for step ${currentIndex}`);
 
     // Element might not be ready immediately, try to get it with a small delay
     const processStep = (retryCount = 0) => {
       const currentStepEl = step?.getElement();
 
-      if (!currentStepEl && retryCount < 5) {
+      if (!currentStepEl && retryCount < 50) {
         // Retry in 50ms
+        // console.log(`Tour step element not ready, retry ${retryCount + 1}/50`);
         setTimeout(() => processStep(retryCount + 1), 50);
         return;
       }
@@ -631,16 +862,80 @@ export async function buildShepherdTour(tour, options = {}) {
         return;
       }
 
+      log(Subsystems.MANAGER, Status.DEBUG, `[Tour] Processing step element:`, currentStepEl);
+
       // Process icons first before showing
       if (typeof processIcons === 'function') {
         processIcons(currentStepEl);
       }
 
-      // Add visible class immediately for instant crossfade start
-      currentStepEl.classList.add('lithium-tour-visible');
-      // Override Shepherd's styling - control z-index and display ourselves
-      currentStepEl.style.zIndex = '40000';
+      // Ensure element is visible - override any Shepherd hiding
+      currentStepEl.style.visibility = 'visible';
+      currentStepEl.style.opacity = '1';
       currentStepEl.style.display = 'block';
+      currentStepEl.style.zIndex = '40000';
+
+      // Add visible class for smooth transitions FIRST
+      currentStepEl.classList.add('lithium-tour-visible');
+
+      // Ensure proper positioning for centered steps (AFTER visible class is added)
+      if (currentStepEl.classList.contains('shepherd-centered')) {
+        // Centered step - position in viewport center
+        currentStepEl.style.top = '50%';
+        currentStepEl.style.left = '50%';
+        currentStepEl.style.transform = 'translate(-50%, -50%)';
+      } else {
+        // For attached steps, ensure they stay within viewport bounds
+        // Floating UI should handle this, but double-check as a safeguard
+        const rect = currentStepEl.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        const padding = 30;
+
+        let needsClamp = false;
+        let newLeft = rect.left;
+        let newTop = rect.top;
+
+        // Check if step is off-screen and clamp if necessary
+        if (rect.right > viewportWidth - padding) {
+          newLeft = viewportWidth - rect.width - padding;
+          needsClamp = true;
+        }
+        if (rect.left < padding) {
+          newLeft = padding;
+          needsClamp = true;
+        }
+        if (rect.bottom > viewportHeight - padding) {
+          newTop = viewportHeight - rect.height - padding;
+          needsClamp = true;
+        }
+        if (rect.top < padding) {
+          newTop = padding;
+          needsClamp = true;
+        }
+
+        if (needsClamp) {
+          currentStepEl.style.left = `${newLeft}px`;
+          currentStepEl.style.top = `${newTop}px`;
+          // Remove transform to use absolute positioning
+          currentStepEl.style.transform = '';
+          log(Subsystems.MANAGER, Status.DEBUG, `[Tour] Clamped step position to keep in viewport`);
+        }
+      }
+
+      // Force visibility after a short delay to override any Shepherd changes
+      setTimeout(() => {
+        if (currentStepEl && currentStepEl.isConnected) {
+          currentStepEl.style.opacity = '1';
+          currentStepEl.style.visibility = 'visible';
+        }
+      }, 10);
+
+      // console.log(`Setting up drag for step ${currentIndex}`);
+
+      // Setup drag functionality for this step element
+      setupDragForElement(currentStepEl);
+
       log(Subsystems.MANAGER, Status.DEBUG, `[Tour] Step ${currentStepIndex + 1} is now visible`);
     };
 
@@ -648,30 +943,66 @@ export async function buildShepherdTour(tour, options = {}) {
   });
 
   shepherd.on('start', () => {
+    // console.log('Shepherd tour started');
+
+    // Check if modal overlay was created
+    setTimeout(() => {
+      const overlay = document.querySelector('.shepherd-modal-overlay-container');
+      // console.log('Modal overlay element:', overlay);
+      if (overlay) {
+        // console.log('Modal overlay styles:', getComputedStyle(overlay));
+      } else {
+        // console.log('No modal overlay found!');
+      }
+    }, 100);
+
     cleanupKeyboard = setupKeyboardNav(shepherd, totalSteps);
     cleanupClickHandler = setupDocumentClickHandler(shepherd, totalSteps, options);
+
+    // Prevent context menu on tour elements to avoid interference
+    const contextMenuHandler = (e) => {
+      const tourContainer = document.getElementById('tour-container');
+      if (tourContainer && tourContainer.contains(e.target)) {
+        // console.log('Preventing context menu on tour element');
+        e.preventDefault();
+        return false;
+      }
+    };
+
+    document.addEventListener('contextmenu', contextMenuHandler, true);
+    cleanupContextMenu = () => {
+      document.removeEventListener('contextmenu', contextMenuHandler, true);
+    };
+  });
+
+  shepherd.on('hide', (event) => {
+    // console.log('Shepherd hide event:', event);
   });
 
   shepherd.on('cancel', () => {
     log(Subsystems.MANAGER, Status.INFO, `[Tour] Tour cancelled: ${tour.name}`);
+    // Overlay fade-out is now handled in cancelWithTransition for sync
     if (cleanupKeyboard) cleanupKeyboard();
     if (cleanupClickHandler) cleanupClickHandler();
+    if (cleanupContextMenu) cleanupContextMenu();
+    if (visibilityObserver) visibilityObserver.disconnect();
     _activeShepherdTour = null;
     _activeTourOptions = null;
-    // Ensure all Shepherd DOM artefacts are removed (overlay, step elements)
-    // so they don't block subsequent UI interactions
-    requestAnimationFrame(() => cleanupActiveTour());
+    // Clean up drag state and remove tour container after overlay fade
+    setTimeout(() => cleanupActiveTour(), getTransitionDuration());
   });
 
   shepherd.on('complete', () => {
     log(Subsystems.MANAGER, Status.INFO, `[Tour] Tour completed: ${tour.name}`);
+    // Overlay fade-out is now handled in completeWithTransition for sync
     if (cleanupKeyboard) cleanupKeyboard();
     if (cleanupClickHandler) cleanupClickHandler();
+    if (cleanupContextMenu) cleanupContextMenu();
+    if (visibilityObserver) visibilityObserver.disconnect();
     _activeShepherdTour = null;
     _activeTourOptions = null;
-    // Ensure all Shepherd DOM artefacts are removed (overlay, step elements)
-    // so they don't block subsequent UI interactions
-    requestAnimationFrame(() => cleanupActiveTour());
+    // Clean up drag state and remove tour container after overlay fade
+    setTimeout(() => cleanupActiveTour(), getTransitionDuration());
   });
 
   return shepherd;
