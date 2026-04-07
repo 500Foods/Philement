@@ -200,7 +200,7 @@ import { eventBus, Events } from './core/event-bus.js';
 import { validateJWT, retrieveJWT, getClaims, getRenewalTime, getTimeUntilExpiry, storeJWT, clearJWT } from './core/jwt.js';
 import { getPermittedManagers } from './core/permissions.js';
 import { createRequest } from './core/json-request.js';
-import { fetchLookups, init as initLookups } from './shared/lookups.js';
+import { fetchLookups, init as initLookups, loadMacrosPostLogin } from './shared/lookups.js';
 import { init as initIcons } from './core/icons.js';
 import { getTransitionDuration } from './core/transitions.js';
 import { initTooltips, tip, untip } from './core/tooltip-api.js';
@@ -645,11 +645,29 @@ class LithiumApp {
       // Set up token renewal
       this.scheduleTokenRenewal(token);
 
+      // Load macros and other post-login lookups (async, non-blocking)
+      this.loadPostLoginLookups();
+
       // Load main menu manager
       await this.loadMainManager();
     } else {
       logAuth(Status.INFO, 'No valid JWT, loading login');
       await this.loadLoginManager();
+    }
+  }
+
+  /**
+   * Load lookups that require authentication (post-login)
+   * Called when JWT is available - loads from cache first, then refreshes from server
+   */
+  async loadPostLoginLookups() {
+    logAuth(Status.INFO, '[App] Loading post-login lookups...');
+    try {
+      // Load macros lookup (QueryRef 046) - requires auth
+      const result = await loadMacrosPostLogin(this.api);
+      logAuth(Status.INFO, `[App] Post-login lookups loaded: ${result}`);
+    } catch (error) {
+      logAuth(Status.WARN, `Failed to load post-login lookups: ${error.message}`);
     }
   }
 
@@ -1319,6 +1337,14 @@ class LithiumApp {
     if (token) {
       this.scheduleTokenRenewal(token);
     }
+
+    // Load macros lookup post-login (requires authentication)
+    logAuth(Status.INFO, '[App] Login complete, loading post-login lookups...');
+    loadMacrosPostLogin(this.api).then(result => {
+      logAuth(Status.INFO, `[App] Post-login lookups loaded: ${result}`);
+    }).catch(err => {
+      logAuth(Status.WARN, `Failed to load macros post-login: ${err.message}`);
+    });
 
     // Crossfade transition from login to main manager
     await this.transitionToMainManager();
