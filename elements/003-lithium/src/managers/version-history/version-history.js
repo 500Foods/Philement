@@ -21,6 +21,8 @@ import '../../styles/vendor-tabulator.css';
 import { authQuery } from '../../shared/conduit.js';
 import { log, Subsystems, Status } from '../../core/log.js';
 import { processIcons } from '../../core/icons.js';
+import { expandMacros } from '../../core/macro-expansion.js';
+import { getMacros } from '../../shared/lookups.js';
 import '../../core/manager-panels.css';
 import './version-history.css';
 import { setupManagerFooterIcons, closeExportPopup } from '../../core/manager-ui.js';
@@ -215,17 +217,24 @@ export default class VersionHistoryManager {
     try {
       this.versionsTable.showLoading();
 
-// QueryRef 26 - Get Lookup with collection field (44=Server, 45=Client, 46=Macros)
-      // Note: QueryRef 46 is for menu items, not macros! Use QueryRef 26 with LOOKUPID=46
-      const [serverRows, clientRows, macrosRows] = await Promise.all([
+      // Check if macros are already loaded from shared lookups (must have entries)
+      const sharedMacros = getMacros();
+      if (sharedMacros && Object.keys(sharedMacros).length > 0) {
+        log(Subsystems.MANAGER, Status.INFO, `[VersionHistory] Using ${Object.keys(sharedMacros).length} shared macros from lookups`);
+        this._macrosLookup = null; // Signal to use shared macros
+      } else {
+        // Fallback: load macros directly via QueryRef 26
+        log(Subsystems.MANAGER, Status.INFO, `[VersionHistory] Loading macros directly from Lookup 46`);
+        const macrosRows = await authQuery(this.app.api, 26, { INTEGER: { LOOKUPID: 46 } });
+        this._macrosLookup = macrosRows || [];
+        log(Subsystems.MANAGER, Status.INFO, `[VersionHistory] Loaded ${this._macrosLookup?.length || 0} macros from Lookup 46`);
+      }
+
+      // QueryRef 26 - Get Lookup with collection field (44=Server, 45=Client)
+      const [serverRows, clientRows] = await Promise.all([
         authQuery(this.app.api, 26, { INTEGER: { LOOKUPID: 44 } }),
         authQuery(this.app.api, 26, { INTEGER: { LOOKUPID: 45 } }),
-        authQuery(this.app.api, 26, { INTEGER: { LOOKUPID: 46 } }), // Macros via lookup table
       ]);
-
-      // Store macros for expansion
-      this._macrosLookup = macrosRows || [];
-      log(Subsystems.MANAGER, Status.INFO, `[VersionHistory] Loaded ${this._macrosLookup?.length || 0} macros from Lookup 46`);
 
       // Tag each row with its source and extract collection fields
       const serverVersions = serverRows.map(row => this.processRow(row, 44, 'Server'));
@@ -445,12 +454,31 @@ export default class VersionHistoryManager {
   }
 
   /**
-   * Expand macros in content using Lookup 46 (Macro Expansion)
-   * Macros appear as {MACRO_NAME} and are replaced with values from the lookup
-   * The lookup's value_txt defines the macro name, and collection contains locale variants
-   * e.g., value_txt: "{ACZ.CLIENT}", collection: {"Default": "Acuranzo", "en-US": "Acuranzo"}
+   * Expand macros in content using shared macro expansion system
+   * Falls back to legacy lookup-based expansion if shared macros not available
+   * Macros appear as {MACRO_NAME} and are replaced with their values
    */
-  expandMacros(content) {
+  expandContentMacros(content) {
+    if (!content || typeof content !== 'string') {
+      return content;
+    }
+
+    // Check if we have shared macros available
+    const sharedMacros = getMacros();
+    if (sharedMacros && Object.keys(sharedMacros).length > 0) {
+      // Use shared macro expansion system
+      return expandMacros(content, { keepUnknown: true });
+    }
+
+    // Fallback: use legacy lookup-based expansion
+    return this.expandMacrosLegacy(content);
+  }
+
+  /**
+   * Legacy macro expansion using direct lookup data
+   * Used when shared macros are not available
+   */
+  expandMacrosLegacy(content) {
     if (!content || typeof content !== 'string') {
       return content;
     }
@@ -463,7 +491,7 @@ export default class VersionHistoryManager {
 
     // Get unique macros found in content
     const uniqueMacros = [...new Set(macroMatches)];
-    log(Subsystems.MANAGER, Status.DEBUG, `[VersionHistory] Found macros: ${uniqueMacros.join(', ')}`);
+    log(Subsystems.MANAGER, Status.DEBUG, `[VersionHistory] Found macros (legacy): ${uniqueMacros.join(', ')}`);
 
     // Get macros from pre-loaded lookup (from loadVersionList)
     const macrosLookup = this._macrosLookup;
@@ -480,7 +508,7 @@ export default class VersionHistoryManager {
     const replacements = {};
     for (const macro of uniqueMacros) {
       // Find matching entry in lookup (case-insensitive match on value_txt)
-      const macroEntry = macrosLookup.find(m => 
+      const macroEntry = macrosLookup.find(m =>
         m?.value_txt?.toUpperCase() === macro.toUpperCase()
       );
 
@@ -558,13 +586,13 @@ export default class VersionHistoryManager {
         || '';
 
       // Expand macros in the content
-      summary = this.expandMacros(summary);
+      summary = this.expandContentMacros(summary);
 
       // Get released and focus fields using exact JSON keys
       const released = this.selectedVersionData.Released;
       const focus = this.selectedVersionData.Focus;
       // Expand macros in status as well
-      let status = this.expandMacros(this.selectedVersionData.value_txt) || 'Unknown';
+      let status = this.expandContentMacros(this.selectedVersionData.value_txt) || 'Unknown';
 
       let htmlContent = '';
 
