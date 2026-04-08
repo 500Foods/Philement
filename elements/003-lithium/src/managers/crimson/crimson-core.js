@@ -13,7 +13,7 @@
 
 import { processIcons } from '../../core/icons.js';
 import { log, Subsystems, Status } from '../../core/log.js';
-import { getTip, initTooltips } from '../../core/tooltip-api.js';
+import { initTooltips } from '../../core/tooltip-api.js';
 import { registerShortcut } from '../../core/manager-ui.js';
 
 // Singleton instance tracking
@@ -144,7 +144,7 @@ export class CrimsonManager {
     this.popupStartTop = 0;
     this.resizeCorner = 'br';
 
-    // Track citation-to-row mapping for deduplication
+    // Track citation-to-row mapping
     this.citationToRowMap = new Map();
 
     // Input history state
@@ -213,9 +213,23 @@ export class CrimsonManager {
     this.citationHeaderBtn = null;
     this.citationCounterEl = null;
 
-    // Bind core methods
+    // Bind event handlers so document-level listeners keep the Crimson instance context
     this.handleKeyDown = this.handleKeyDown.bind(this);
     this.handleOverlayClick = this.handleOverlayClick.bind(this);
+    this.handleDragStart = this.handleDragStart.bind(this);
+    this.handleDragMove = this.handleDragMove.bind(this);
+    this.handleDragEnd = this.handleDragEnd.bind(this);
+    this.handleResizeMove = this.handleResizeMove.bind(this);
+    this.handleResizeEnd = this.handleResizeEnd.bind(this);
+    this.handleCitationDragStart = this.handleCitationDragStart.bind(this);
+    this.handleCitationDragMove = this.handleCitationDragMove.bind(this);
+    this.handleCitationDragEnd = this.handleCitationDragEnd.bind(this);
+    this.handleCitationResizeMove = this.handleCitationResizeMove.bind(this);
+    this.handleCitationResizeEnd = this.handleCitationResizeEnd.bind(this);
+    this.handleDebugResizeMove = this.handleDebugResizeMove.bind(this);
+    this.handleDebugResizeEnd = this.handleDebugResizeEnd.bind(this);
+    this.handleReasoningResizeMove = this.handleReasoningResizeMove.bind(this);
+    this.handleReasoningResizeEnd = this.handleReasoningResizeEnd.bind(this);
 
     // Initialize
     this.init();
@@ -369,25 +383,46 @@ export class CrimsonManager {
     // Wire events - event methods defined in crimson-events.js
     const closeBtn = this.popup.querySelector('.crimson-header-close');
     const resetBtn = this.popup.querySelector('.crimson-reset-btn');
+    const header = this.popup.querySelector('.crimson-header');
 
     closeBtn.addEventListener('click', () => this.hide());
-    this.conversation.addEventListener('click', (e) => this.handleCitationLinkClick?.(e));
-    resetBtn?.addEventListener('click', () => this.resetConversation?.());
+    this.conversation.addEventListener('click', (e) => this.handleCitationLinkClick(e));
+    resetBtn?.addEventListener('click', () => this.resetConversation());
     this.citationHeaderBtn?.addEventListener('click', (e) => {
       e.stopPropagation();
-      this.toggleCitationPopup?.();
+      this.toggleCitationPopup();
     });
-    this.debugBtn?.addEventListener('click', () => this.toggleDebugPanel?.());
-    this.streamingBtn?.addEventListener('click', () => this.toggleStreaming?.());
-    this.reasoningBtn?.addEventListener('click', () => this.toggleReasoningPanel?.());
+    this.debugBtn?.addEventListener('click', () => this.toggleDebugPanel());
+    this.streamingBtn?.addEventListener('click', () => this.toggleStreaming());
+    this.reasoningBtn?.addEventListener('click', () => this.toggleReasoningPanel());
+
+    // Drag handlers (defined in crimson-events.js)
+    header?.addEventListener('mousedown', (e) => this.handleDragStart(e));
+
+    // Resize handlers (defined in crimson-events.js)
+    this.popup.querySelector('.crimson-resize-handle-br')?.addEventListener('mousedown', (e) => this.handleResizeStart(e, 'br'));
+    this.popup.querySelector('.crimson-resize-handle-bl')?.addEventListener('mousedown', (e) => this.handleResizeStart(e, 'bl'));
+    this.popup.querySelector('.crimson-resize-handle-tr')?.addEventListener('mousedown', (e) => this.handleResizeStart(e, 'tr'));
+    this.popup.querySelector('.crimson-resize-handle-tl')?.addEventListener('mousedown', (e) => this.handleResizeStart(e, 'tl'));
+
+    // Debug panel resize (defined in crimson-events.js)
+    this.popup.querySelector('.crimson-debug-splitter')?.addEventListener('mousedown', (e) => this.handleDebugResizeStart(e));
+
+    // Reasoning panel resize (defined in crimson-events.js)
+    this.popup.querySelector('.crimson-reasoning-splitter')?.addEventListener('mousedown', (e) => this.handleReasoningResizeStart(e));
+
+    // Send and input handling (defined in crimson-events.js)
+    this.sendBtn?.addEventListener('click', () => this.handleSend());
+    this.input?.addEventListener('keydown', (e) => this.handleInputKeydown(e));
+    this.input?.addEventListener('input', () => this.autoResizeInput());
 
     // Input history navigation
     this.loadInputHistory();
-    this.inputPrevBtn?.addEventListener('click', () => this.navigateInputHistory?.(-1));
-    this.inputNextBtn?.addEventListener('click', () => this.navigateInputHistory?.(1));
+    this.inputPrevBtn?.addEventListener('click', () => this.navigateInputHistory(-1));
+    this.inputNextBtn?.addEventListener('click', () => this.navigateInputHistory(1));
 
     // Apply persistent state to UI
-    this.applyPersistentState?.();
+    this.applyPersistentState();
 
     // Process icons
     processIcons(this.popup);
@@ -450,47 +485,6 @@ export class CrimsonManager {
       localStorage.setItem(STORAGE_KEYS.MAIN_WINDOW_Y, String(rect.top));
       localStorage.setItem(STORAGE_KEYS.MAIN_WINDOW_WIDTH, String(rect.width));
       localStorage.setItem(STORAGE_KEYS.MAIN_WINDOW_HEIGHT, String(rect.height));
-    } catch (e) {
-      // localStorage may not be available
-    }
-  }
-
-  /**
-   * Load citation popup position and size from localStorage
-   * @returns {Object|null} Saved position/size or null
-   */
-  loadCitationPopupState() {
-    try {
-      const x = localStorage.getItem(STORAGE_KEYS.CITATION_POPUP_X);
-      const y = localStorage.getItem(STORAGE_KEYS.CITATION_POPUP_Y);
-      const width = localStorage.getItem(STORAGE_KEYS.CITATION_POPUP_WIDTH);
-      const height = localStorage.getItem(STORAGE_KEYS.CITATION_POPUP_HEIGHT);
-      if (x !== null && y !== null && width !== null && height !== null) {
-        return {
-          x: parseInt(x, 10),
-          y: parseInt(y, 10),
-          width: parseInt(width, 10),
-          height: parseInt(height, 10),
-        };
-      }
-    } catch (e) {
-      // localStorage may not be available
-    }
-    return null;
-  }
-
-  /**
-   * Save citation popup position and size to localStorage
-   * @param {HTMLElement} popup - The popup element
-   */
-  saveCitationPopupState(popup) {
-    try {
-      if (!popup) return;
-      const rect = popup.getBoundingClientRect();
-      localStorage.setItem(STORAGE_KEYS.CITATION_POPUP_X, String(rect.left));
-      localStorage.setItem(STORAGE_KEYS.CITATION_POPUP_Y, String(rect.top));
-      localStorage.setItem(STORAGE_KEYS.CITATION_POPUP_WIDTH, String(rect.width));
-      localStorage.setItem(STORAGE_KEYS.CITATION_POPUP_HEIGHT, String(rect.height));
     } catch (e) {
       // localStorage may not be available
     }
@@ -581,7 +575,7 @@ export class CrimsonManager {
     if (e.key === 'Escape') {
       e.preventDefault();
       if (this.activeCitationPopup) {
-        this.closeCitationPopup?.();
+        this.closeCitationPopup();
       } else {
         this.hide();
       }
@@ -606,6 +600,39 @@ export class CrimsonManager {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+  }
+
+  /**
+   * Clean up the Crimson instance
+   */
+  destroy() {
+    this.closeCitationPopup();
+
+    document.removeEventListener('keydown', this.handleKeyDown);
+
+    if (this.wsClient) {
+      this.wsClient.cleanup();
+      this.wsClient = null;
+    }
+
+    this.overlay?.remove();
+    this.popup?.remove();
+
+    this.overlay = null;
+    this.popup = null;
+    this.conversation = null;
+    this.input = null;
+    this.sendBtn = null;
+    this.currentStreamElement = null;
+    this.conversationHistory = [];
+    this.allCitations = [];
+    this.citationIndex.clear();
+    this.citationToRowMap.clear();
+    this.citationHeaderBtn = null;
+    this.citationCounterEl = null;
+    crimsonInstance = null;
+
+    log(Subsystems.CRIMSON, Status.INFO, 'Destroyed');
   }
 }
 

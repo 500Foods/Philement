@@ -841,4 +841,54 @@ Event listeners are attached directly to elements during initialization. No even
 
 ---
 
-Last updated: March 24, 2026
+## Module Architecture
+
+As of April 2026, Crimson has been refactored from a single 2,989-line file into focused modules under `src/managers/crimson/`:
+
+| Module | Lines | Responsibility |
+|--------|-------|----------------|
+| `crimson-core.js` | 609 | Constructor, state initialization, DOM creation, show/hide, singleton pattern |
+| `crimson-events.js` | 478 | Drag/resize handlers (main popup + citation popup), input handling |
+| `crimson-ui.js` | 389 | Debug panel, reasoning panel, status display, welcome message, reset |
+| `crimson-chat.js` | 727 | WebSocket communication, streaming, message formatting, follow-ups |
+| `crimson-citations.js` | 552 | Citation parsing, LithiumTable popup, marker conversion |
+| `crimson.js` (barrel) | 39 | Imports all modules, re-exports public API |
+
+### How Modules Connect
+
+The modules use **prototype extension** pattern:
+
+```javascript
+// crimson-core.js defines the base class
+export class CrimsonManager { ... }
+
+// crimson-events.js extends it
+import { CrimsonManager } from './crimson-core.js';
+CrimsonManager.prototype.handleDragStart = function(e) { ... };
+```
+
+The barrel file (`crimson.js`) imports all modules to ensure they load:
+
+```javascript
+import './crimson-core.js';
+import './crimson-events.js';
+import './crimson-ui.js';
+import './crimson-chat.js';
+import './crimson-citations.js';
+```
+
+### Adding New Functionality
+
+To add a new feature to Crimson:
+
+1. **For UI features**: Add methods to `crimson-ui.js`
+2. **For chat/WebSocket**: Add methods to `crimson-chat.js`
+3. **For citations**: Add methods to `crimson-citations.js`
+4. **For events**: Add methods to `crimson-events.js`
+5. **For core state**: Modify `crimson-core.js` constructor
+
+Always use `CrimsonManager.prototype.methodName = function() { ... }` pattern.
+
+---
+
+Last updated: April 8, 2026
