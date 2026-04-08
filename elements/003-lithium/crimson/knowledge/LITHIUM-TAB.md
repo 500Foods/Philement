@@ -3,6 +3,7 @@
 This document describes the `LithiumTable` reusable component — a standardized Tabulator data grid with integrated Navigator control bar.
 
 **Related Documentation:**
+
 - [LITHIUM-COL.md](LITHIUM-COL.md) — Column Manager documentation
 
 ---
@@ -24,22 +25,52 @@ The component is modular, reusable across all managers, and provides consistent 
 
 ## Architecture
 
-### File Structure
+### File Structure (Refactored)
+
+As of the latest refactoring, all table-related files are organized under `src/tables/`:
 
 ```structure
-src/core/
-├── lithium-table-main.js      # Combined LithiumTable class export
-├── lithium-table-base.js    # Core functionality (init, events, navigation)
-├── lithium-table-ops.js      # CRUD operations mixin
-├── lithium-table-ui.js       # Navigator UI and popups mixin
-├── lithium-table.js          # JSON-driven column resolution engine
-├── lithium-table-template.js  # Template system
-├── lithium-column-manager.js  # Standalone column manager popup
-├── lithium-splitter.js      # Panel splitter component
-├── manager-edit-helper.js    # Consolidated edit/dirty helper
-├── panel-collapse.js         # Panel collapse utility
-├── panel-state-manager.js    # Panel state persistence
-└── lithium-table.css      # Component styles
+src/tables/
+├── lithium-table-main.js       # Combined LithiumTable class export
+├── lithium-table.js            # JSON-driven column resolution engine
+├── lithium-table-base.js       # Core functionality (init, events, navigation)
+├── lithium-table-ops.js        # CRUD operations mixin
+├── lithium-table-ui.js         # Navigator UI mixin (delegated to modules)
+├── lithium-table-template.js   # Template system
+├── lithium-column-manager.js   # Column manager (now modular)
+├── navigator/
+│   └── navigator-builder.js    # Navigator HTML & button wiring
+├── popups/
+│   ├── popup-manager.js        # Standard nav popups (menu, width, layout)
+│   └── template-popup.js       # Template menu popup
+├── filters/
+│   └── filter-editor.js        # Header filter editor creation
+├── settings/
+│   └── table-settings.js       # Width/layout mode management
+├── visual/
+│   ├── visual-updates.js       # Column boundary classes
+│   └── loading-indicator.js    # Loading spinner
+├── persistence/
+│   └── persistence.js          # localStorage helpers
+└── column-manager/             # Modular column manager components
+    ├── cm-state.js             # Dirty tracking, persistence
+    ├── cm-drag-resize.js       # Resize handle, keyboard events
+    ├── cm-data.js              # Column data loading
+    ├── cm-columns.js           # Column definition builder
+    ├── cm-actions.js           # Apply/discard changes
+    ├── cm-ui.js                # Popup DOM, positioning
+    └── cm-table.js             # Inner LithiumTable setup
+
+src/core/                       # Core utilities (unchanged)
+├── lithium-splitter.js         # Panel splitter component
+├── manager-edit-helper.js      # Consolidated edit/dirty helper
+├── panel-collapse.js           # Panel collapse utility
+├── panel-state-manager.js      # Panel state persistence
+└── ...
+
+src/styles/
+├── lithium-table.css           # Component styles
+└── ...
 ```
 
 ### Class Hierarchy
@@ -58,7 +89,22 @@ Object.assign(LithiumTable.prototype, LithiumTableOpsMixin, LithiumTableUIMixin)
 
 - **LithiumTableBase** — Initialization, config loading, Tabulator management, events, navigation
 - **LithiumTableOpsMixin** — Add, duplicate, edit, save, cancel, delete operations
-- **LithiumTableUIMixin** — Navigator UI, popups, column chooser, filter editors
+- **LithiumTableUIMixin** — Navigator UI, popups, column chooser, filter editors (delegates to modules)
+
+### Modular UI Architecture
+
+The `LithiumTableUIMixin` now delegates to focused modules rather than containing all logic inline:
+
+| Module | Responsibility | Key Exports |
+|--------|----------------|-------------|
+| `navigator-builder.js` | Build navigator HTML, wire buttons | `buildNavigator()`, `updateMoveButtonState()` |
+| `popup-manager.js` | Standard nav popups | `toggleNavPopup()`, `closeNavPopup()` |
+| `template-popup.js` | Template menu with save/load/delete | `buildTemplatePopup()`, `getSavedTemplates()` |
+| `table-settings.js` | Width/layout mode persistence | `setTableWidth()`, `setTableLayout()` |
+| `filter-editor.js` | Header filter editor factory | `createFilterEditorFunction()` |
+| `visual-updates.js` | Column boundary CSS classes | `updateVisibleColumnClasses()` |
+| `loading-indicator.js` | Loading spinner show/hide | `showLoading()`, `hideLoading()` |
+| `persistence.js` | Row selection, filters state | `saveSelectedRowId()`, `restoreFiltersVisible()` |
 
 ---
 
@@ -67,7 +113,7 @@ Object.assign(LithiumTable.prototype, LithiumTableOpsMixin, LithiumTableUIMixin)
 ### Basic Usage
 
 ```javascript
-import { LithiumTable } from '../../core/lithium-table-main.js';
+import { LithiumTable } from '../../tables/lithium-table-main.js';
 
 const table = new LithiumTable({
   // Required
@@ -143,6 +189,13 @@ The Navigator provides standard table controls in four groups:
 | ⊞ Layout | Layout mode (fitColumns/fitData/fitDataFill/etc) |
 | 🛠 Template | Save/load column configurations |
 
+**Width Presets:** The width button uses CSS custom properties defined in `base.css`:
+
+- `--table-width-narrow: 160px`
+- `--table-width-compact: 314px`
+- `--table-width-normal: 468px`
+- `--table-width-wide: 622px`
+
 ### 2. Move Block
 
 | Button | Action | Keyboard |
@@ -206,17 +259,20 @@ async _executeCustomDuplicate(rowData) {
 ```
 
 **Key points for custom duplicate:**
+
 - Return `null` to abort default behavior (you handled the insert)
 - Save the new row ID so it gets selected after refresh
 - Refresh the table data to include the newly created row
 - Fetch any detail data needed that's not in the table row (summary, code, collection, etc.)
 
 **Managers with custom duplicate implemented:**
+
 - **Lookups Manager (child table)**: Uses QueryRef 42, fetches detail via QueryRef 35
 - **Queries Manager**: Uses QueryRef 29, fetches detail via QueryRef 27
 - **Style Manager**: Uses default duplicate (no custom callback needed for lookup table)
 
 To add custom duplicate to a new manager:
+
 1. Add `onDuplicate: (rowData) => this._executeDuplicate(rowData)` to LithiumTable options
 2. Implement `_executeDuplicate(rowData)` method following the pattern above
 3. Ensure your insert QueryRef returns the new primary key
@@ -685,7 +741,7 @@ If the default lithium-table.css margins/padding don't fit your layout, override
 |--------|-------------|
 | `toggleColumnChooser(e, column)` | Show/hide column chooser |
 | `toggleColumnFilters()` | Show/hide header filters |
-| `setTableWidth(mode)` | Set width preset |
+| `setTableWidth(mode)` | Set width preset (uses CSS vars) |
 | `setTableLayout(mode)` | Set layout mode |
 | `discoverColumns(rows)` | Auto-add hidden columns |
 | `applyTemplateColumns(templateColumns)` | Apply column configuration from template/Column Manager |
@@ -796,637 +852,6 @@ await this.parentTable.loadData();
 
 ---
 
-## Collapsible Panels with Animated Icons
-
-Managers using LithiumTable need collapsible panels (left panel, middle panel) with collapse/expand buttons in the toolbar. The shared `panel-collapse.js` utility and CSS in `lithium-table.css` handle all animation logic consistently.
-
-### Implementation Pattern
-
-When adding collapsible panels to a manager, follow this pattern:
-
-#### 1. HTML Structure
-
-Add the `lithium-collapse-btn` class, `lithium-collapse-icon` to the `<fa>` icon, and `data-collapse-target` to identify which panel this button controls:
-
-```html
-<!-- Single panel (left) -->
-<button type="button" class="subpanel-header-btn subpanel-header-close my-collapse-btn lithium-collapse-btn"
-        id="mymanager-collapse-left-btn" data-collapse-target="left" title="Toggle Left Panel">
-  <fa fa-angles-left id="mymanager-collapse-left-icon" class="lithium-collapse-icon"></fa>
-</button>
-
-<!-- Dual panels (left + middle) — each button needs its own target -->
-<button type="button" class="subpanel-header-btn subpanel-header-close my-collapse-left-btn lithium-collapse-btn"
-        id="mymanager-collapse-left-btn" data-collapse-target="left" title="Toggle Left Panel">
-  <fa fa-angles-left id="mymanager-collapse-left-icon" class="lithium-collapse-icon"></fa>
-</button>
-<button type="button" class="subpanel-header-btn subpanel-header-close my-collapse-middle-btn lithium-collapse-btn"
-        id="mymanager-collapse-middle-btn" data-collapse-target="middle" title="Toggle Middle Panel">
-  <fa fa-angles-left id="mymanager-collapse-middle-icon" class="lithium-collapse-icon"></fa>
-</button>
-```
-
-> **Why `data-collapse-target`?** In managers with multiple panels (Style, Lookups), the CSS uses this attribute to rotate only the correct icon when a specific panel collapses. Without it, all icons would rotate together.
-
-#### 2. CSS — None Needed
-
-The shared classes in `lithium-table.css` handle everything using `--transition-duration`:
-
-```css
-/* Provided by lithium-table.css — managers do NOT need to duplicate this */
-.lithium-collapse-btn {
-  flex: 0 0 auto;
-  padding: var(--space-1);
-}
-
-.lithium-collapse-icon,
-.lithium-collapse-btn > i,
-.lithium-collapse-btn > svg {
-  transition: transform var(--transition-duration, 350ms) ease;
-  transform: rotate(0deg);
-}
-
-.lithium-collapse-btn.collapsed .lithium-collapse-icon,
-.lithium-collapse-btn.collapsed > i,
-.lithium-collapse-btn.collapsed > svg {
-  transform: rotate(180deg);
-}
-```
-
-Panel width transitions are handled by `manager-panels.css`:
-
-```css
-/* Panel width animation uses --transition-duration */
-[data-panel="left"] {
-  transition: width var(--transition-duration, 350ms) ease,
-              min-width var(--transition-duration, 350ms) ease;
-}
-```
-
-> **Why cover all stages?** `processIcons()` converts `<fa>` → `<i>` and then Font Awesome's SVG+JS replaces `<i>` → `<svg>`. CSS targets `> i`, and `> svg` to work at any pipeline stage. See [LITHIUM-ICN.md](LITHIUM-ICN.md#icon-rotation-pattern).
-
-#### 3. JavaScript Toggle Method (Using Shared Utility)
-
-Use the `togglePanelCollapse()` function from `panel-collapse.js`:
-
-```javascript
-import { togglePanelCollapse, restorePanelState } from '../../core/panel-collapse.js';
-
-toggleLeftPanel() {
-  this.isLeftPanelCollapsed = togglePanelCollapse({
-    panel: this.elements.leftPanel,
-    splitter: this.leftSplitter,
-    collapseBtn: this.elements.collapseLeftBtn,
-    panelWidth: this.leftPanelWidth,
-    isCollapsed: this.isLeftPanelCollapsed,
-    onAfterToggle: () => {
-      this.leftTable?.table?.redraw?.();
-      this.rightTable?.table?.redraw?.();
-    },
-  });
-
-  // Save collapsed state to persistence
-  this.leftPanelState.saveCollapsed(this.isLeftPanelCollapsed);
-}
-```
-
-#### 4. Restore State (Using Shared Utility)
-
-```javascript
-import { togglePanelCollapse, restorePanelState } from '../../core/panel-collapse.js';
-
-restorePanelState() {
-  // Re-read collapsed state from localStorage
-  this.isLeftPanelCollapsed = this.leftPanelState.loadCollapsed(this.isLeftPanelCollapsed);
-
-  // Restore collapsed state using shared utility
-  restorePanelState({
-    panel: this.elements.leftPanel,
-    splitter: this.leftSplitter,
-    collapseBtn: this.elements.collapseLeftBtn,
-    isCollapsed: this.isLeftPanelCollapsed,
-  });
-
-  // Panel width is handled by LithiumTable's setupPersistence():
-  // it calls onSetTableWidth(mode) or onSetTableWidth(null)
-  // Your setTableWidth handler applies the right width.
-}
-```
-
-> **Init order matters:** Tables must be created **before** splitters, and splitters **before** `restorePanelState()`. The splitter's `tables` option (for width-mode clearing) requires the LithiumTable instance to exist at construction time.
->
-> ```javascript
-> async init() {
->   await this.render();
->   this.setupEventListeners();
->   await this.initTable();     // 1. Create LithiumTable first
->   this.setupSplitters();      // 2. Create splitter (passes table via `tables` option)
->   this.restorePanelState();   // 3. Restore collapsed state last
-> }
-> ```
-
-### Shared Utility API
-
-The `panel-collapse.js` module exports two functions:
-
-| Function | Description |
-|----------|-------------|
-| `togglePanelCollapse(options)` | Toggles panel collapse/expand with smooth animation |
-| `restorePanelState(options)` | Restores persisted collapsed state on init |
-
-**`togglePanelCollapse()` Options:**
-
-| Option | Type | Description |
-|--------|------|-------------|
-| `panel` | HTMLElement | The panel element to collapse/expand |
-| `splitter` | LithiumSplitter | LithiumSplitter instance for the panel |
-| `collapseBtn` | HTMLElement | The collapse button element |
-| `panelWidth` | number | Target width when expanding (pixels) |
-| `isCollapsed` | boolean | Current collapsed state (will be toggled) |
-| `onAfterToggle` | Function | Optional callback after animation completes |
-
-**Returns:** `boolean` — The new collapsed state
-
-**`restorePanelState()` Options:**
-
-| Option | Type | Description |
-|--------|------|-------------|
-| `panel` | HTMLElement | The panel element |
-| `splitter` | LithiumSplitter | LithiumSplitter instance |
-| `collapseBtn` | HTMLElement | The collapse button element |
-| `isCollapsed` | boolean | The persisted collapsed state |
-
-### Transition Timing
-
-All panel collapse/expand animations use the `--transition-duration` CSS variable defined in `base.css`:
-
-```css
-:root {
-  --transition-duration: 350ms; /* Default, configurable per theme */
-}
-```
-
-This ensures consistent animation timing across:
-- Panel width transitions (expand/collapse)
-- Collapse button icon rotation
-
-### Width Persistence Across Collapse/Expand
-
-When a user sets a table width via the Width popup (Narrow/Compact/Normal/Wide/Auto) and then collapses the panel, the width should be preserved. This is handled by two systems working together:
-
-#### 1. LithiumTable Width Mode (saved in `storageKey_width_mode`)
-
-LithiumTable's `setupPersistence()` restores the saved width mode on init:
-- If a mode was saved (e.g., "wide"), it calls `onSetTableWidth("wide")` via `requestAnimationFrame`
-- If **no** mode was saved, it calls `onSetTableWidth(null)` — signaling the manager to apply its fallback
-- Default mode is `'compact'` if no mode was ever saved
-
-#### 2. Manager's `setTableWidth` handler
-
-The manager handler must handle both cases:
-
-```javascript
-setTableWidth(mode) {
-  const panel = this.elements.leftPanel;
-  if (!panel) return;
-
-  // mode === null: LithiumTable has no saved mode, use PanelStateManager fallback
-  if (mode === null) {
-    panel.style.width = `${this.leftPanelWidth}px`;
-    return;
-  }
-
-  // mode === 'auto': use CSS default
-  if (mode === 'auto') {
-    panel.style.width = '';
-    this.leftPanelWidth = panel.offsetWidth;
-    this.leftPanelState.saveWidth(this.leftPanelWidth);
-    return;
-  }
-
-  // Named mode: apply the preset width
-  const widths = { narrow: 160, compact: 314, normal: 468, wide: 622 };
-  const widthPx = widths[mode];
-  panel.style.width = `${widthPx}px`;
-  this.leftPanelWidth = widthPx;
-  this.leftPanelState.saveWidth(widthPx);
-}
-```
-
-#### 3. Splitter Drag Clears Width Mode
-
-When the user drags the splitter, the width no longer matches any preset. `LithiumSplitter` handles this automatically — pass the LithiumTable instance(s) via the `tables` option:
-
-```javascript
-this.splitter = new LithiumSplitter({
-  element: this.elements.splitter,
-  leftPanel: this.elements.leftPanel,
-  tables: this.queryTable,  // or [tableA, tableB] for multiple
-  onResize: (width) => { this.leftPanelWidth = width; },
-  onResizeEnd: (width) => { this.leftPanelState.saveWidth(width); },
-});
-```
-
-The splitter sets `table.tableWidthMode = null` during drag, so the Width popup shows no checkmark.
-
-#### 4. `PanelStateManager` for Pixel Width
-
-The `PanelStateManager` persists the actual pixel width (from either the Width popup or splitter drag). On reload:
-- Constructor loads `this.leftPanelWidth = this.leftPanelState.loadWidth(defaultWidth)`
-- LithiumTable calls `onSetTableWidth(null)` if no mode was saved → manager applies `this.leftPanelWidth`
-
-#### Persistence Flow
-
-1. User sets width via **Width popup** → `setTableWidth("wide")` updates `leftPanelWidth` + saves to `PanelStateManager` + LithiumTable saves "wide" to `storageKey_width_mode`
-2. User drags **splitter** → `leftPanelWidth` updated + saved to `PanelStateManager` + LithiumTable `tableWidthMode` cleared to `null`
-3. User **collapses** → `toggleLeftPanel()` saves collapsed state to `PanelStateManager`
-4. Page **reloads**:
-   - If LithiumTable mode saved → `onSetTableWidth("wide")` restores preset width
-   - If no LithiumTable mode → `onSetTableWidth(null)` → manager applies `PanelStateManager` pixel width
-   - Collapsed state restored via `loadCollapsed()`
-5. User **expands** → `toggleLeftPanel()` restores from `this.leftPanelWidth`
-
-### Current Implementations
-
-All managers use the shared `panel-collapse.js` utility for consistent behavior:
-
-| Manager | File | Panels | Collapse Buttons |
-|---------|------|--------|------------------|
-| **Version Manager** | `version-history.js` | Left | `data-collapse-target="left"` |
-| **Query Manager** | `queries.js` | Left | `data-collapse-target="left"` |
-| **Style Manager** | `style-manager.js` | Left + Middle | `data-collapse-target="left"`, `data-collapse-target="middle"` |
-| **Lookups Manager** | `lookups.js` | Left + Middle | `data-collapse-target="left"`, `data-collapse-target="middle"` |
-
----
-
-## Footer Save/Cancel Buttons and ManagerEditHelper
-
-All managers with standard LithiumTable edit mode include Save/Cancel buttons in the manager footer. These buttons start **disabled** and only become enabled when a record is "dirty" (has changes compared to the snapshot taken at edit mode entry). The transition from disabled -> enabled uses a smooth 350ms CSS animation: Save turns green, Cancel turns red. If changes are undone (returning to the original state), the buttons revert to disabled.
-
-The Column Manager is the main exception: it uses `alwaysEditable: true` and manages batch Save/Cancel in its own popup header instead of the shared footer flow.
-
-### ManagerEditHelper (`manager-edit-helper.js`)
-
-The `ManagerEditHelper` class consolidates all edit mode, dirty tracking, and save/cancel button logic that was previously duplicated across every manager. It handles:
-
-- **`activeEditingTable` tracking** — Only one LithiumTable in edit mode at a time
-- **`onEditModeChange` / `onDirtyChange` callbacks** — Auto-wired when tables are registered
-- **Snapshot-based dirty comparison** — Table row data + registered external editors
-- **Footer save/cancel button state** — Disabled → green/red on dirty, with transitions
-- **External editor enable/disable** — Called automatically on edit mode transitions
-
-### Button Layout
-
-The footer layout follows this order (left to right):
-
-```
-[Print] [Email] [Export] [Select] [placeholder flex:1] [Save] [Cancel] [Dummy] [Crimson...] [fixed action icons]
-```
-
-### CSS Classes (Shared)
-
-All Save/Cancel button styles are defined in `manager-ui.css` and are shared across all managers:
-
-| Class | Purpose | Disabled State | Enabled State |
-|-------|---------|----------------|---------------|
-| `.manager-footer-save-btn` | Save button | `--accent-disabled` bg, `--text-disabled` color, `cursor: not-allowed` | `--accent-success` green bg, white color, `cursor: pointer` |
-| `.manager-footer-cancel-btn` | Cancel button | `--accent-disabled` bg, `--text-disabled` color, `cursor: not-allowed` | `--accent-danger` red bg, white color, `cursor: pointer` |
-| `.manager-footer-dummy-btn` | Spacer button (60px wide) | `--accent-primary` bg, `cursor: default` | — |
-
-Both buttons include `transition: background 350ms ease, color 350ms ease` for smooth disabled↔enabled animation.
-
-**Do not duplicate these styles** in manager-specific CSS files — they are inherited from `manager-ui.css`.
-
-### JavaScript Implementation
-
-#### 1. Import ManagerEditHelper and Footer Setup
-
-```javascript
-import { setupManagerFooterIcons } from '../../core/manager-ui.js';
-import { ManagerEditHelper } from '../../core/manager-edit-helper.js';
-```
-
-#### 2. Create EditHelper in Constructor
-
-```javascript
-constructor(app, container) {
-  // ... other properties ...
-  this.editHelper = new ManagerEditHelper({
-    name: 'MyManager',
-    // Optional: called after edit mode enters/exits — use for undo/redo button updates
-    onAfterEditModeChange: (isEditing) => this._updateUndoRedoButtons(),
-  });
-}
-```
-
-#### 3. Register Tables After Creation
-
-```javascript
-async initMyTable() {
-  this.myTable = new LithiumTable({
-    container: this.elements.tableContainer,
-    navigatorContainer: this.elements.navigatorContainer,
-    // ... other options ...
-    // NOTE: Do NOT pass onEditModeChange/onDirtyChange — editHelper wires these automatically
-  });
-
-  // Register with editHelper — auto-wires onEditModeChange + onDirtyChange
-  this.editHelper.registerTable(this.myTable);
-
-  await this.myTable.init();
-}
-```
-
-#### 4. Register External Editors (Optional)
-
-For managers with CodeMirror, SunEditor, or other external editors bound to a table:
-
-```javascript
-// After table creation, register editors
-this.editHelper.registerEditor('css', {
-  getContent:  () => this.cssEditor?.state?.doc?.toString() || '',
-  setContent:  (content) => {
-    if (this.cssEditor) {
-      this.cssEditor.dispatch({
-        changes: { from: 0, to: this.cssEditor.state.doc.length, insert: content },
-      });
-    }
-  },
-  setEditable: (editable) => this.setCssEditorEditable(editable),
-  boundTable:  this.lookupTable,  // Which table this editor relates to
-});
-```
-
-| Callback | Purpose |
-|----------|---------|
-| `getContent` | Returns current editor content as string — used for snapshot comparison |
-| `setContent` | Restores editor content from snapshot string — called on cancel to revert changes |
-| `setEditable` | Called with `(boolean)` when the bound table enters/exits edit mode |
-| `boundTable` | Associates this editor with a specific LithiumTable for snapshot scoping |
-
-The `setContent` callback is **required** for cancel to properly revert external editor changes. Without it, cancel will only revert Tabulator row data — the editor will retain dirty content until the user navigates to a different row.
-
-#### 5. Wire Footer Buttons in `setupFooter()`
-
-```javascript
-setupFooter() {
-  const slot = this.container.closest('.manager-slot');
-  if (!slot) return;
-
-  const footer = slot.querySelector('.manager-slot-footer');
-  if (!footer) return;
-
-  const group = footer.querySelector('.subpanel-header-group');
-  if (!group) return;
-
-  const placeholder = group.querySelector('.slot-footer-placeholder');
-
-  const footerElements = setupManagerFooterIcons(group, {
-    onPrint: () => this.handleFooterPrint(),
-    onEmail: () => this.handleFooterEmail(),
-    onExport: (e) => this.toggleFooterExportPopup(e),
-    reportOptions: [
-      { value: 'mymanager-view', label: 'My Table View' },
-      { value: 'mymanager-data', label: 'My Table Data' },
-    ],
-    fillerTitle: 'MyManager',
-    anchor: placeholder,
-    showSaveCancel: true,
-  });
-
-  this._footerDatasource = footerElements.reportSelect;
-
-  // Wire save/cancel buttons to the editHelper (handles all state management)
-  this.editHelper.wireFooterButtons(
-    footerElements.saveBtn,
-    footerElements.cancelBtn,
-    footerElements.dummyBtn,
-  );
-}
-```
-
-#### 6. Trigger Dirty Check from Editor Change Listeners
-
-When external editors fire change events, call `checkDirtyState()`:
-
-```javascript
-// CodeMirror updateListener
-EditorView.updateListener.of((update) => {
-  if (update.docChanged && this.editHelper.isEditing()) {
-    this.editHelper.checkDirtyState();
-  }
-}),
-
-// SunEditor onChange
-this.sunEditor.onChange = () => {
-  if (this.childTable?.isEditing) {
-    this.editHelper.checkDirtyState();
-  }
-};
-```
-
-#### 7. Clean Up in `cleanup()`
-
-```javascript
-cleanup() {
-  this.editHelper?.destroy();
-  // ... other cleanup ...
-}
-```
-
-### Custom Save Logic (`onExecuteSave`)
-
-Most managers need to assemble save params from both the Tabulator row data AND external editor content (SQL, JSON, summary, etc.). The `onExecuteSave` callback lets each manager provide its own save logic while LithiumTable handles the shared boilerplate (dirty check, exit edit mode, toast, error handling):
-
-```javascript
-this.queryTable = new LithiumTable({
-  // ...
-  onExecuteSave: async (row, editHelper) => {
-    const rowData = row.getData();
-    const sqlContent = this.sqlEditor?.state?.doc?.toString() || '';
-    const jsonContent = this.collectionEditor?.state?.doc?.toString() || '{}';
-
-    await authQuery(this.app.api, 28, {
-      INTEGER: { QUERYID: rowData.query_id },
-      STRING: { QUERYCODE: sqlContent, COLLECTION: jsonContent },
-    });
-  },
-});
-```
-
-If `onExecuteSave` is **not** provided, the default `executeSave()` uses `insertQueryRef`/`updateQueryRef` for simple table-only saves. If neither callback nor queryRefs are configured, save throws an error (no silent no-op).
-
-> **⚠️ Warning: Integer Values and `??` Operator**
->
-> JavaScript's nullish coalescing operator (`??`) treats `0` as nullish and will fall through to the next value. **Always use `!= null` checks for integer fields that can legitimately be 0.**
->
-> ```javascript
-> // ❌ BAD: key_idx=0 becomes originalData.key_idx (loses the edit)
-> await authQuery(api, 43, { INTEGER: { KEYIDX: rowData.key_idx ?? originalData.key_idx ?? 0 } });
->
-> // ✅ GOOD: preserves 0 as a valid value
-> const valueOrFallback = (primary, secondary, fallback) => {
->   if (primary != null) return primary;
->   if (secondary != null) return secondary;
->   return fallback;
-> };
-> await authQuery(api, 43, { INTEGER: { KEYIDX: valueOrFallback(rowData.key_idx, originalData.key_idx, 0) } });
-> ```
->
-> This applies to any integer field that can have a value of 0: `key_idx`, `lookup_id`, `sort_seq`, `status_a1`, etc.
-
-> **⚠️ Warning: Primary Key Check for Insert vs Update**
->
-> When determining if a row is an insert (no PK) vs update (has PK), **do not treat `0` as "no primary key"**. A PK of `0` is valid and should trigger an update.
->
-> ```javascript
-> // ❌ BAD: pkValue=0 triggers INSERT instead of UPDATE
-> const isInsert = pkValue == null || pkValue === '' || pkValue === 0;
->
-> // ✅ GOOD: only null/undefined/empty string indicate insert
-> const isInsert = pkValue == null || pkValue === '';
-> ```
->
-> This bug causes record 0 to fail updates because the code tries to insert a new row with an existing PK, or misses ORIG lookup fields required for updates.
-
-### Custom Refresh (`onRefresh`)
-
-When a table requires parameters for its data query (e.g. child table needs a parent ID), provide `onRefresh` so the Navigator refresh button re-queries correctly:
-
-```javascript
-this.childTable = new LithiumTable({
-  queryRef: 34,
-  onRefresh: () => {
-    if (this.selectedLookupId != null) {
-      this.loadChildData(this.selectedLookupId);
-    }
-  },
-});
-```
-
-Without `onRefresh`, the refresh button calls `loadData()` with no parameters.
-
-### How Dirty Tracking Works
-
-1. **Edit mode entered** → `editHelper._takeSnapshot()` captures table row data + all registered editors' content
-2. **Editor changes** → `editHelper.checkDirtyState()` compares current state to snapshot
-3. **Anything differs** → Save/Cancel buttons become enabled (green/red)
-4. **Changes undone** → Comparison shows no difference → buttons return to disabled
-5. **Save clicked** → `activeEditingTable.handleSave()` called
-6. **Cancel clicked** → `activeEditingTable.handleCancel()` called → table row data reverted from `originalRowData`, then `editHelper.restoreEditorSnapshots()` reverts all registered editors via their `setContent` callbacks
-7. **Edit mode exited** → Snapshot cleared, buttons disabled
-
-### Undo/Redo Toolbar Buttons with CodeMirror
-
-Managers with CodeMirror editors and undo/redo toolbar buttons use two shared utilities from `codemirror-setup.js`:
-
-#### `setEditorContentNoHistory(view, content)`
-
-Replaces the full content of a CodeMirror editor WITHOUT adding to the undo history. **Always use this for programmatic content loads** — row selection, cancel restore, clearing editors. This ensures undo only covers user edits made during the current editing session.
-
-```javascript
-import { setEditorContentNoHistory } from '../../core/codemirror-setup.js';
-
-// Loading new row content into editor — NOT undoable
-setEditorContentNoHistory(this.sqlEditor, newSqlContent);
-
-// Clearing editor — NOT undoable
-setEditorContentNoHistory(this.sqlEditor, '');
-```
-
-**Where to use it:**
-- `switchTab()` — when populating editors with a newly-selected row's content
-- `_clearQueryDetails()` — when clearing editors on row deselection
-- `editHelper.registerEditor().setContent` callbacks — called during cancel to restore snapshot
-- Any other programmatic content replacement
-
-#### `updateUndoRedoButtons({ undoBtn, redoBtn, view, isEditing })`
-
-Updates the enabled/disabled state of undo/redo toolbar buttons based on the active editor's history depth and whether the manager is in edit mode.
-
-```javascript
-import { updateUndoRedoButtons } from '../../core/codemirror-setup.js';
-
-_updateUndoRedoButtons() {
-  updateUndoRedoButtons({
-    undoBtn: this.elements.undoBtn,
-    redoBtn: this.elements.redoBtn,
-    view: this._getActiveEditorView(),  // Currently active CodeMirror EditorView
-    isEditing: this.editHelper?.isEditing() || false,
-  });
-}
-```
-
-**Call this from three places:**
-1. Each editor's `onUpdate` listener — `if (update.transactions.length > 0) this._updateUndoRedoButtons()`
-2. `editHelper.onAfterEditModeChange` — `(isEditing) => this._updateUndoRedoButtons()`
-3. Tab switching — after switching the active editor
-
-**Button behavior:**
-- **Not editing** → both buttons disabled
-- **Editing, no undo history** → undo disabled, redo disabled
-- **Editing, user made changes** → undo enabled, redo disabled
-- **Editing, user undid changes** → undo may be enabled, redo enabled
-- **All changes undone** → dirty comparison returns to "not dirty" → Save/Cancel buttons automatically return to disabled
-
-#### Complete Integration Pattern
-
-```javascript
-import { setEditorContentNoHistory, updateUndoRedoButtons } from '../../core/codemirror-setup.js';
-
-// 1. EditHelper with onAfterEditModeChange
-this.editHelper = new ManagerEditHelper({
-  name: 'MyManager',
-  onAfterEditModeChange: () => this._updateUndoRedoButtons(),
-});
-
-// 2. Register editor with setContent using no-history helper
-this.editHelper.registerEditor('myeditor', {
-  getContent: () => this.myEditor?.state?.doc?.toString() || '',
-  setContent: (content) => setEditorContentNoHistory(this.myEditor, content),
-  setEditable: (editable) => { /* ... */ },
-  boundTable: this.myTable,
-});
-
-// 3. CM onUpdate listener
-buildEditorExtensions({
-  onUpdate: (update) => {
-    if (update.docChanged && this.myTable?.isEditing) {
-      this.editHelper.checkDirtyState();
-    }
-    if (update.transactions.length > 0) {
-      this._updateUndoRedoButtons();
-    }
-  },
-});
-
-// 4. _updateUndoRedoButtons method
-_updateUndoRedoButtons() {
-  updateUndoRedoButtons({
-    undoBtn: this.elements.undoBtn,
-    redoBtn: this.elements.redoBtn,
-    view: this.myEditor,
-    isEditing: this.editHelper?.isEditing() || false,
-  });
-}
-```
-
-### Dual/Multi Table Behavior
-
-When a manager has two or more LithiumTables, only one can be in edit mode at a time. The `editHelper` handles this automatically: entering edit mode on one table exits edit mode on any other.
-
-### Current Implementations
-
-| Manager | File | Tables | External Editors |
-|---------|------|--------|------------------|
-| **Version Manager** | `version-history.js` | 1 (readonly) | None |
-| **Query Manager** | `queries.js` | 1 | SQL, Summary, Collection (CodeMirror) |
-| **Style Manager** | `style-manager.js` | 2 | CSS (CodeMirror) |
-| **Lookups Manager** | `lookups.js` | 2 | JSON (CodeMirror), Summary (SunEditor) |
-| **Column Manager** | `lithium-column-manager.js` | 1 (self-contained alwaysEditable popup) | None |
-
----
-
 ## Related Documentation
 
 - [LITHIUM-MGR.md](LITHIUM-MGR.md) — Manager system overview
@@ -1443,6 +868,13 @@ When a manager has two or more LithiumTables, only one can be in edit mode at a 
 
 The LithiumTable component was extracted from the Query Manager implementation to provide a reusable table solution for all managers. It represents a significant architectural improvement over inline table code.
 
+**2025 Refactoring:** The table system was reorganized into a modular architecture:
+
+- Files moved from `src/core/` to `src/tables/`
+- `lithium-table-ui.js` split into focused modules (`navigator/`, `popups/`, `settings/`, etc.)
+- `lithium-column-manager.js` split into `column-manager/` submodules
+- All modules now under 750 lines for maintainability
+
 **Key Design Decisions:**
 
 1. **Mixin Pattern** — Functionality split into logical modules (base, ops, UI)
@@ -1452,3 +884,4 @@ The LithiumTable component was extracted from the Query Manager implementation t
 5. **Template System** — User preferences persisted to localStorage
 6. **Edit Mode Gate** — Editors only active in edit mode, except for explicit `alwaysEditable` tables such as the Column Manager popup
 7. **`loadStaticData()` method** — Encapsulates blockRedraw/setData/discoverColumns pattern for hardcoded or pre-fetched data
+8. **CSS Variable Width Presets** — Width modes use CSS custom properties (`--table-width-narrow`, etc.) for consistent theming
