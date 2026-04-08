@@ -8,6 +8,8 @@
  *   - Persistence
  */
 
+/* globals MouseEvent */
+
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { LithiumColumnManager } from '../../src/core/lithium-column-manager.js';
 import { LithiumTable } from '../../src/core/lithium-table-main.js';

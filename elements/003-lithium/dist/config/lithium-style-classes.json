@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS class selectors/names used across the Lithium codebase",
-    "generated": "2026-04-08T01:28:37.537Z",
+    "generated": "2026-04-08T04:57:16.150Z",
     "sources": {
       "css": "50 files in src/**/*.css",
       "js": "82 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
-    "total_selectors": 1667,
-    "total_occurrences": 23733
+    "total_selectors": 1668,
+    "total_occurrences": 23950
   },
   "selectors": [
     {
@@ -174,9 +174,9 @@
     {
       "selector": ".app-sidebar.open",
       "css": 1,
-      "js": 2,
+      "js": 3,
       "html": 0,
-      "total": 3,
+      "total": 4,
       "files": {
         "css": [
           "src/styles/layout.css"
@@ -1206,9 +1206,9 @@
     {
       "selector": ".col-manager-mode-btn.active",
       "css": 1,
-      "js": 46,
+      "js": 47,
       "html": 7,
-      "total": 54,
+      "total": 55,
       "files": {
         "css": [
           "src/core/lithium-column-manager.css"
@@ -1499,9 +1499,9 @@
     {
       "selector": ".col-manager-popup.depth-2 .col-manager-mode-btn.active",
       "css": 1,
-      "js": 51,
+      "js": 52,
       "html": 7,
-      "total": 59,
+      "total": 60,
       "files": {
         "css": [
           "src/core/lithium-column-manager.css"
@@ -1838,9 +1838,9 @@
     {
       "selector": ".col-manager-popup.visible",
       "css": 1,
-      "js": 89,
+      "js": 88,
       "html": 0,
-      "total": 90,
+      "total": 89,
       "files": {
         "css": [
           "src/core/lithium-column-manager.css"
@@ -3022,9 +3022,9 @@
     {
       "selector": ".crimson-citation-header-btn.active",
       "css": 1,
-      "js": 48,
+      "js": 49,
       "html": 7,
-      "total": 56,
+      "total": 57,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -3053,9 +3053,9 @@
     {
       "selector": ".crimson-citation-header-btn.active .crimson-citation-counter",
       "css": 1,
-      "js": 50,
+      "js": 51,
       "html": 7,
-      "total": 58,
+      "total": 59,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -3429,9 +3429,9 @@
     {
       "selector": ".crimson-citation-popup.visible",
       "css": 1,
-      "js": 95,
+      "js": 94,
       "html": 0,
-      "total": 96,
+      "total": 95,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -4287,9 +4287,9 @@
     {
       "selector": ".crimson-debug-btn.active",
       "css": 1,
-      "js": 48,
+      "js": 49,
       "html": 7,
-      "total": 56,
+      "total": 57,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -5417,9 +5417,9 @@
     {
       "selector": ".crimson-overlay.visible",
       "css": 1,
-      "js": 86,
+      "js": 85,
       "html": 0,
-      "total": 87,
+      "total": 86,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -5598,9 +5598,9 @@
     {
       "selector": ".crimson-popup.visible",
       "css": 1,
-      "js": 86,
+      "js": 85,
       "html": 0,
-      "total": 87,
+      "total": 86,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -6845,9 +6845,9 @@
     {
       "selector": ".font-popup-style-btn.active",
       "css": 1,
-      "js": 46,
+      "js": 47,
       "html": 7,
-      "total": 54,
+      "total": 55,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -6890,9 +6890,9 @@
     {
       "selector": ".font-popup.visible",
       "css": 1,
-      "js": 85,
+      "js": 84,
       "html": 0,
-      "total": 86,
+      "total": 85,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -7004,9 +7004,9 @@
     {
       "selector": ".footer-export-popup.visible",
       "css": 1,
-      "js": 85,
+      "js": 84,
       "html": 0,
-      "total": 86,
+      "total": 85,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -7375,9 +7375,9 @@
     {
       "selector": ".group-toggle-icon",
       "css": 1,
-      "js": 4,
+      "js": 5,
       "html": 0,
-      "total": 5,
+      "total": 6,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -7850,9 +7850,9 @@
     {
       "selector": ".is-collapsed",
       "css": 0,
-      "js": 4,
+      "js": 5,
       "html": 0,
-      "total": 4,
+      "total": 5,
       "files": {
         "css": [],
         "js": [
@@ -9085,9 +9085,9 @@
     {
       "selector": ".lithium-col-chooser-popup.visible",
       "css": 1,
-      "js": 85,
+      "js": 84,
       "html": 0,
-      "total": 86,
+      "total": 85,
       "files": {
         "css": [
           "src/core/lithium-table.css"
@@ -9171,9 +9171,9 @@
     {
       "selector": ".lithium-collapse-btn.collapsed > svg",
       "css": 1,
-      "js": 42,
+      "js": 44,
       "html": 6,
-      "total": 49,
+      "total": 51,
       "files": {
         "css": [
           "src/core/lithium-table.css"
@@ -9744,9 +9744,9 @@
     {
       "selector": ".lithium-nav-popup.visible",
       "css": 1,
-      "js": 99,
+      "js": 98,
       "html": 0,
-      "total": 100,
+      "total": 99,
       "files": {
         "css": [
           "src/core/lithium-table.css"
@@ -11907,9 +11907,9 @@
     {
       "selector": ".lithium-toolbar-btn.active",
       "css": 1,
-      "js": 65,
+      "js": 66,
       "html": 80,
-      "total": 146,
+      "total": 147,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -11939,9 +11939,9 @@
     {
       "selector": ".lithium-toolbar-btn.active:hover",
       "css": 1,
-      "js": 65,
+      "js": 66,
       "html": 80,
-      "total": 146,
+      "total": 147,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -12034,9 +12034,9 @@
     {
       "selector": ".lithium-toolbar-btn.lithium-collapse-btn.collapsed i",
       "css": 1,
-      "js": 61,
+      "js": 63,
       "html": 79,
-      "total": 141,
+      "total": 143,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -12168,9 +12168,9 @@
     {
       "selector": ".lithium-toolbar-popup.visible",
       "css": 1,
-      "js": 102,
+      "js": 101,
       "html": 50,
-      "total": 153,
+      "total": 152,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -12308,9 +12308,9 @@
     {
       "selector": ".lithium-toolbar-state-btn.active",
       "css": 1,
-      "js": 64,
+      "js": 65,
       "html": 62,
-      "total": 127,
+      "total": 128,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -12445,9 +12445,9 @@
     {
       "selector": ".lithium-toolbar-tab.active",
       "css": 1,
-      "js": 64,
+      "js": 65,
       "html": 67,
-      "total": 132,
+      "total": 133,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -12498,9 +12498,9 @@
     {
       "selector": ".lithium-toolbar.collapsed-text .lithium-toolbar-state-btn[data-collapsible-text]",
       "css": 1,
-      "js": 69,
+      "js": 71,
       "html": 55,
-      "total": 125,
+      "total": 127,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -12527,9 +12527,9 @@
     {
       "selector": ".lithium-toolbar.collapsed-text .lithium-toolbar-tab[data-collapsible-text]",
       "css": 1,
-      "js": 69,
+      "js": 71,
       "html": 60,
-      "total": 130,
+      "total": 132,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -12556,9 +12556,9 @@
     {
       "selector": ".lithium-toolbar.collapsed-text .lithium-toolbar-title[data-collapsible-text]",
       "css": 1,
-      "js": 70,
+      "js": 72,
       "html": 52,
-      "total": 123,
+      "total": 125,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -13155,9 +13155,9 @@
     {
       "selector": ".lithium-tour-list-popup.visible",
       "css": 1,
-      "js": 86,
+      "js": 85,
       "html": 0,
-      "total": 87,
+      "total": 86,
       "files": {
         "css": [
           "src/managers/tour/tour.css"
@@ -13791,9 +13791,9 @@
     {
       "selector": ".login-container.visible",
       "css": 2,
-      "js": 86,
+      "js": 85,
       "html": 1,
-      "total": 89,
+      "total": 88,
       "files": {
         "css": [
           "src/managers/login/login.css",
@@ -13863,9 +13863,9 @@
     {
       "selector": ".login-error.visible",
       "css": 2,
-      "js": 87,
+      "js": 86,
       "html": 1,
-      "total": 90,
+      "total": 89,
       "files": {
         "css": [
           "src/managers/login/login.css",
@@ -14470,9 +14470,9 @@
     {
       "selector": ".login-mockup .login-error.visible",
       "css": 1,
-      "js": 88,
+      "js": 87,
       "html": 1,
-      "total": 90,
+      "total": 89,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -14773,9 +14773,9 @@
     {
       "selector": ".login-subpanel.visible",
       "css": 1,
-      "js": 85,
+      "js": 84,
       "html": 4,
-      "total": 90,
+      "total": 89,
       "files": {
         "css": [
           "src/styles/layout.css"
@@ -14993,9 +14993,9 @@
     {
       "selector": ".logout-overlay.visible",
       "css": 1,
-      "js": 85,
+      "js": 84,
       "html": 1,
-      "total": 87,
+      "total": 86,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -15178,9 +15178,9 @@
     {
       "selector": ".logout-panel.visible",
       "css": 1,
-      "js": 85,
+      "js": 84,
       "html": 4,
-      "total": 90,
+      "total": 89,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -15374,9 +15374,9 @@
     {
       "selector": ".lookups-footer-export-popup.visible",
       "css": 1,
-      "js": 87,
+      "js": 86,
       "html": 0,
-      "total": 88,
+      "total": 87,
       "files": {
         "css": [
           "src/managers/lookups/lookups.css"
@@ -15942,9 +15942,9 @@
     {
       "selector": ".lookups-tab-btn.active",
       "css": 1,
-      "js": 47,
+      "js": 48,
       "html": 7,
-      "total": 55,
+      "total": 56,
       "files": {
         "css": [
           "src/managers/lookups/lookups.css"
@@ -16027,9 +16027,9 @@
     {
       "selector": ".lookups-tab-pane.active",
       "css": 1,
-      "js": 47,
+      "js": 48,
       "html": 10,
-      "total": 58,
+      "total": 59,
       "files": {
         "css": [
           "src/managers/lookups/lookups.css"
@@ -16194,9 +16194,9 @@
     {
       "selector": ".main-sidebar:not(.collapsed) .menu-group-header",
       "css": 1,
-      "js": 56,
+      "js": 61,
       "html": 1,
-      "total": 58,
+      "total": 63,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -16219,9 +16219,9 @@
     {
       "selector": ".main-sidebar:not(.collapsed) .menu-group-items",
       "css": 1,
-      "js": 59,
+      "js": 65,
       "html": 1,
-      "total": 61,
+      "total": 67,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -16243,131 +16243,6 @@
     },
     {
       "selector": ".main-sidebar:not(.collapsed) .menu-item",
-      "css": 1,
-      "js": 51,
-      "html": 1,
-      "total": 53,
-      "files": {
-        "css": [
-          "src/managers/main/main.css"
-        ],
-        "js": [
-          "src/core/lithium-splitter.js",
-          "src/core/panel-collapse.js",
-          "src/core/tooltip-api.js",
-          "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
-          "src/managers/queries/queries-ui.js",
-          "src/managers/queries/queries.js",
-          "src/managers/style-manager/style-manager.js"
-        ],
-        "html": [
-          "src/managers/main/main.html"
-        ]
-      }
-    },
-    {
-      "selector": ".main-sidebar:not(.collapsed) .menu-item-count",
-      "css": 1,
-      "js": 52,
-      "html": 1,
-      "total": 54,
-      "files": {
-        "css": [
-          "src/managers/main/main.css"
-        ],
-        "js": [
-          "src/core/lithium-splitter.js",
-          "src/core/panel-collapse.js",
-          "src/core/tooltip-api.js",
-          "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
-          "src/managers/queries/queries-ui.js",
-          "src/managers/queries/queries.js",
-          "src/managers/style-manager/style-manager.js"
-        ],
-        "html": [
-          "src/managers/main/main.html"
-        ]
-      }
-    },
-    {
-      "selector": ".main-sidebar:not(.collapsed) .menu-item[title]::after",
-      "css": 1,
-      "js": 51,
-      "html": 1,
-      "total": 53,
-      "files": {
-        "css": [
-          "src/managers/main/main.css"
-        ],
-        "js": [
-          "src/core/lithium-splitter.js",
-          "src/core/panel-collapse.js",
-          "src/core/tooltip-api.js",
-          "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
-          "src/managers/queries/queries-ui.js",
-          "src/managers/queries/queries.js",
-          "src/managers/style-manager/style-manager.js"
-        ],
-        "html": [
-          "src/managers/main/main.html"
-        ]
-      }
-    },
-    {
-      "selector": ".main-sidebar.collapsed",
-      "css": 1,
-      "js": 44,
-      "html": 1,
-      "total": 46,
-      "files": {
-        "css": [
-          "src/managers/main/main.css"
-        ],
-        "js": [
-          "src/core/lithium-splitter.js",
-          "src/core/panel-collapse.js",
-          "src/core/tooltip-api.js",
-          "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
-          "src/managers/queries/queries-ui.js",
-          "src/managers/queries/queries.js",
-          "src/managers/style-manager/style-manager.js"
-        ],
-        "html": [
-          "src/managers/main/main.html"
-        ]
-      }
-    },
-    {
-      "selector": ".main-sidebar.collapsed .menu-group",
-      "css": 1,
-      "js": 55,
-      "html": 1,
-      "total": 57,
-      "files": {
-        "css": [
-          "src/managers/main/main.css"
-        ],
-        "js": [
-          "src/core/lithium-splitter.js",
-          "src/core/panel-collapse.js",
-          "src/core/tooltip-api.js",
-          "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
-          "src/managers/queries/queries-ui.js",
-          "src/managers/queries/queries.js",
-          "src/managers/style-manager/style-manager.js"
-        ],
-        "html": [
-          "src/managers/main/main.html"
-        ]
-      }
-    },
-    {
-      "selector": ".main-sidebar.collapsed .menu-group-header",
       "css": 1,
       "js": 56,
       "html": 1,
@@ -16392,11 +16267,136 @@
       }
     },
     {
+      "selector": ".main-sidebar:not(.collapsed) .menu-item-count",
+      "css": 1,
+      "js": 57,
+      "html": 1,
+      "total": 59,
+      "files": {
+        "css": [
+          "src/managers/main/main.css"
+        ],
+        "js": [
+          "src/core/lithium-splitter.js",
+          "src/core/panel-collapse.js",
+          "src/core/tooltip-api.js",
+          "src/managers/lookups/lookups.js",
+          "src/managers/main/main.js",
+          "src/managers/queries/queries-ui.js",
+          "src/managers/queries/queries.js",
+          "src/managers/style-manager/style-manager.js"
+        ],
+        "html": [
+          "src/managers/main/main.html"
+        ]
+      }
+    },
+    {
+      "selector": ".main-sidebar:not(.collapsed) .menu-item[title]::after",
+      "css": 1,
+      "js": 56,
+      "html": 1,
+      "total": 58,
+      "files": {
+        "css": [
+          "src/managers/main/main.css"
+        ],
+        "js": [
+          "src/core/lithium-splitter.js",
+          "src/core/panel-collapse.js",
+          "src/core/tooltip-api.js",
+          "src/managers/lookups/lookups.js",
+          "src/managers/main/main.js",
+          "src/managers/queries/queries-ui.js",
+          "src/managers/queries/queries.js",
+          "src/managers/style-manager/style-manager.js"
+        ],
+        "html": [
+          "src/managers/main/main.html"
+        ]
+      }
+    },
+    {
+      "selector": ".main-sidebar.collapsed",
+      "css": 1,
+      "js": 46,
+      "html": 1,
+      "total": 48,
+      "files": {
+        "css": [
+          "src/managers/main/main.css"
+        ],
+        "js": [
+          "src/core/lithium-splitter.js",
+          "src/core/panel-collapse.js",
+          "src/core/tooltip-api.js",
+          "src/managers/lookups/lookups.js",
+          "src/managers/main/main.js",
+          "src/managers/queries/queries-ui.js",
+          "src/managers/queries/queries.js",
+          "src/managers/style-manager/style-manager.js"
+        ],
+        "html": [
+          "src/managers/main/main.html"
+        ]
+      }
+    },
+    {
+      "selector": ".main-sidebar.collapsed .menu-group",
+      "css": 1,
+      "js": 60,
+      "html": 1,
+      "total": 62,
+      "files": {
+        "css": [
+          "src/managers/main/main.css"
+        ],
+        "js": [
+          "src/core/lithium-splitter.js",
+          "src/core/panel-collapse.js",
+          "src/core/tooltip-api.js",
+          "src/managers/lookups/lookups.js",
+          "src/managers/main/main.js",
+          "src/managers/queries/queries-ui.js",
+          "src/managers/queries/queries.js",
+          "src/managers/style-manager/style-manager.js"
+        ],
+        "html": [
+          "src/managers/main/main.html"
+        ]
+      }
+    },
+    {
+      "selector": ".main-sidebar.collapsed .menu-group-header",
+      "css": 1,
+      "js": 61,
+      "html": 1,
+      "total": 63,
+      "files": {
+        "css": [
+          "src/managers/main/main.css"
+        ],
+        "js": [
+          "src/core/lithium-splitter.js",
+          "src/core/panel-collapse.js",
+          "src/core/tooltip-api.js",
+          "src/managers/lookups/lookups.js",
+          "src/managers/main/main.js",
+          "src/managers/queries/queries-ui.js",
+          "src/managers/queries/queries.js",
+          "src/managers/style-manager/style-manager.js"
+        ],
+        "html": [
+          "src/managers/main/main.html"
+        ]
+      }
+    },
+    {
       "selector": ".main-sidebar.collapsed .menu-group-items",
       "css": 1,
-      "js": 59,
+      "js": 65,
       "html": 1,
-      "total": 61,
+      "total": 67,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -16419,9 +16419,9 @@
     {
       "selector": ".main-sidebar.collapsed .menu-item",
       "css": 1,
-      "js": 51,
+      "js": 56,
       "html": 1,
-      "total": 53,
+      "total": 58,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -16444,9 +16444,9 @@
     {
       "selector": ".main-sidebar.collapsed .menu-item span",
       "css": 1,
-      "js": 51,
+      "js": 56,
       "html": 1,
-      "total": 53,
+      "total": 58,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -16469,9 +16469,9 @@
     {
       "selector": ".main-sidebar.collapsed .menu-item-count",
       "css": 1,
-      "js": 52,
+      "js": 57,
       "html": 1,
-      "total": 54,
+      "total": 59,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -16494,9 +16494,9 @@
     {
       "selector": ".main-sidebar.collapsed .sidebar-header-text",
       "css": 1,
-      "js": 44,
+      "js": 46,
       "html": 2,
-      "total": 47,
+      "total": 49,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -16519,9 +16519,9 @@
     {
       "selector": ".main-sidebar.collapsed + .sidebar-splitter",
       "css": 1,
-      "js": 44,
+      "js": 46,
       "html": 2,
-      "total": 47,
+      "total": 49,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -16544,9 +16544,9 @@
     {
       "selector": ".main-sidebar.open",
       "css": 1,
-      "js": 5,
+      "js": 6,
       "html": 1,
-      "total": 7,
+      "total": 8,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -16897,9 +16897,9 @@
     {
       "selector": ".manager-font-popup-style-btn.active",
       "css": 1,
-      "js": 67,
+      "js": 68,
       "html": 7,
-      "total": 75,
+      "total": 76,
       "files": {
         "css": [
           "src/core/manager-ui.css"
@@ -16944,9 +16944,9 @@
     {
       "selector": ".manager-font-popup.visible",
       "css": 1,
-      "js": 104,
+      "js": 103,
       "html": 0,
-      "total": 105,
+      "total": 104,
       "files": {
         "css": [
           "src/core/manager-ui.css"
@@ -17182,9 +17182,9 @@
     {
       "selector": ".manager-footer-export-popup.visible",
       "css": 1,
-      "js": 89,
+      "js": 88,
       "html": 0,
-      "total": 90,
+      "total": 89,
       "files": {
         "css": [
           "src/core/manager-ui.css"
@@ -17645,9 +17645,9 @@
     {
       "selector": ".manager-transition-overlay.active",
       "css": 1,
-      "js": 47,
+      "js": 48,
       "html": 7,
-      "total": 55,
+      "total": 56,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -18032,9 +18032,9 @@
     {
       "selector": ".manager-ui-popup.visible",
       "css": 1,
-      "js": 104,
+      "js": 103,
       "html": 0,
-      "total": 105,
+      "total": 104,
       "files": {
         "css": [
           "src/core/manager-ui.css"
@@ -18274,9 +18274,9 @@
     {
       "selector": ".menu-group",
       "css": 1,
-      "js": 11,
+      "js": 14,
       "html": 0,
-      "total": 12,
+      "total": 15,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -18289,38 +18289,6 @@
     },
     {
       "selector": ".menu-group-header",
-      "css": 1,
-      "js": 12,
-      "html": 0,
-      "total": 13,
-      "files": {
-        "css": [
-          "src/managers/main/main.css"
-        ],
-        "js": [
-          "src/managers/main/main.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".menu-group-header:hover",
-      "css": 1,
-      "js": 12,
-      "html": 0,
-      "total": 13,
-      "files": {
-        "css": [
-          "src/managers/main/main.css"
-        ],
-        "js": [
-          "src/managers/main/main.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".menu-group-items",
       "css": 1,
       "js": 15,
       "html": 0,
@@ -18336,11 +18304,43 @@
       }
     },
     {
+      "selector": ".menu-group-header:hover",
+      "css": 1,
+      "js": 15,
+      "html": 0,
+      "total": 16,
+      "files": {
+        "css": [
+          "src/managers/main/main.css"
+        ],
+        "js": [
+          "src/managers/main/main.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".menu-group-items",
+      "css": 1,
+      "js": 19,
+      "html": 0,
+      "total": 20,
+      "files": {
+        "css": [
+          "src/managers/main/main.css"
+        ],
+        "js": [
+          "src/managers/main/main.js"
+        ],
+        "html": []
+      }
+    },
+    {
       "selector": ".menu-group-items.collapsed",
       "css": 1,
-      "js": 56,
+      "js": 62,
       "html": 0,
-      "total": 57,
+      "total": 63,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -18361,9 +18361,9 @@
     {
       "selector": ".menu-item",
       "css": 1,
-      "js": 7,
+      "js": 10,
       "html": 0,
-      "total": 8,
+      "total": 11,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -18377,9 +18377,9 @@
     {
       "selector": ".menu-item i",
       "css": 1,
-      "js": 7,
+      "js": 10,
       "html": 0,
-      "total": 8,
+      "total": 11,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -18393,9 +18393,9 @@
     {
       "selector": ".menu-item-count",
       "css": 1,
-      "js": 8,
+      "js": 11,
       "html": 0,
-      "total": 9,
+      "total": 12,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -18409,9 +18409,9 @@
     {
       "selector": ".menu-item-name",
       "css": 1,
-      "js": 9,
+      "js": 12,
       "html": 0,
-      "total": 10,
+      "total": 13,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -18425,9 +18425,9 @@
     {
       "selector": ".menu-item:hover",
       "css": 1,
-      "js": 7,
+      "js": 10,
       "html": 0,
-      "total": 8,
+      "total": 11,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -18441,9 +18441,9 @@
     {
       "selector": ".menu-item.active",
       "css": 1,
-      "js": 53,
+      "js": 57,
       "html": 7,
-      "total": 61,
+      "total": 65,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -18472,9 +18472,40 @@
     {
       "selector": ".menu-item.active .menu-item-count",
       "css": 1,
-      "js": 54,
+      "js": 58,
       "html": 7,
-      "total": 62,
+      "total": 66,
+      "files": {
+        "css": [
+          "src/managers/main/main.css"
+        ],
+        "js": [
+          "src/app.js",
+          "src/core/lithium-column-manager.js",
+          "src/core/manager-ui.js",
+          "src/core/zoom-control.js",
+          "src/managers/crimson/crimson.js",
+          "src/managers/login/login.js",
+          "src/managers/lookups/lookups.js",
+          "src/managers/main/main.js",
+          "src/managers/queries/queries-ui.js",
+          "src/managers/queries/queries.js",
+          "src/managers/style-manager/style-manager.js",
+          "src/shared/crimson-ws.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html"
+        ]
+      }
+    },
+    {
+      "selector": ".menu-item.manager-open:not(.active):not(:hover)",
+      "css": 1,
+      "js": 58,
+      "html": 7,
+      "total": 66,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -19314,9 +19345,9 @@
     {
       "selector": ".nav-popup.visible",
       "css": 1,
-      "js": 85,
+      "js": 84,
       "html": 0,
-      "total": 86,
+      "total": 85,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -19448,9 +19479,9 @@
     {
       "selector": ".offline-indicator.visible",
       "css": 1,
-      "js": 86,
+      "js": 85,
       "html": 0,
-      "total": 87,
+      "total": 86,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -20564,9 +20595,9 @@
     {
       "selector": ".queries-footer-export-popup.visible",
       "css": 1,
-      "js": 87,
+      "js": 86,
       "html": 0,
-      "total": 88,
+      "total": 87,
       "files": {
         "css": [
           "src/managers/queries/queries.css"
@@ -21252,9 +21283,9 @@
     {
       "selector": ".queries-tab-btn.active",
       "css": 1,
-      "js": 48,
+      "js": 49,
       "html": 7,
-      "total": 56,
+      "total": 57,
       "files": {
         "css": [
           "src/managers/queries/queries.css"
@@ -21337,9 +21368,9 @@
     {
       "selector": ".queries-tab-pane.active",
       "css": 1,
-      "js": 47,
+      "js": 48,
       "html": 12,
-      "total": 60,
+      "total": 61,
       "files": {
         "css": [
           "src/managers/queries/queries.css"
@@ -22402,9 +22433,9 @@
     {
       "selector": ".sidebar-icon-btn.active",
       "css": 1,
-      "js": 47,
+      "js": 48,
       "html": 12,
-      "total": 60,
+      "total": 61,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -22434,9 +22465,9 @@
     {
       "selector": ".sidebar-icon-btn.active:hover",
       "css": 1,
-      "js": 47,
+      "js": 48,
       "html": 12,
-      "total": 60,
+      "total": 61,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -22500,9 +22531,9 @@
     {
       "selector": ".sidebar-icon-group:not(.collapsed) .sidebar-icon-btn",
       "css": 1,
-      "js": 42,
+      "js": 44,
       "html": 6,
-      "total": 49,
+      "total": 51,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -22525,9 +22556,9 @@
     {
       "selector": ".sidebar-icon-group:not(.collapsed) .sidebar-icon-wrapper:first-child .sidebar-icon-btn",
       "css": 1,
-      "js": 45,
+      "js": 47,
       "html": 11,
-      "total": 57,
+      "total": 59,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -22550,9 +22581,9 @@
     {
       "selector": ".sidebar-icon-group:not(.collapsed) .sidebar-icon-wrapper:last-child .sidebar-icon-btn",
       "css": 1,
-      "js": 45,
+      "js": 47,
       "html": 11,
-      "total": 57,
+      "total": 59,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -22575,9 +22606,9 @@
     {
       "selector": ".sidebar-icon-group.collapsed",
       "css": 1,
-      "js": 41,
+      "js": 43,
       "html": 1,
-      "total": 43,
+      "total": 45,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -22599,31 +22630,6 @@
     },
     {
       "selector": ".sidebar-icon-group.collapsed .sidebar-icon-btn",
-      "css": 1,
-      "js": 42,
-      "html": 6,
-      "total": 49,
-      "files": {
-        "css": [
-          "src/managers/main/main.css"
-        ],
-        "js": [
-          "src/core/lithium-splitter.js",
-          "src/core/panel-collapse.js",
-          "src/core/tooltip-api.js",
-          "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
-          "src/managers/queries/queries-ui.js",
-          "src/managers/queries/queries.js",
-          "src/managers/style-manager/style-manager.js"
-        ],
-        "html": [
-          "src/managers/main/main.html"
-        ]
-      }
-    },
-    {
-      "selector": ".sidebar-icon-group.collapsed .sidebar-icon-wrapper",
       "css": 1,
       "js": 44,
       "html": 6,
@@ -22648,11 +22654,36 @@
       }
     },
     {
-      "selector": ".sidebar-icon-group.collapsed.vertical",
+      "selector": ".sidebar-icon-group.collapsed .sidebar-icon-wrapper",
       "css": 1,
       "js": 46,
+      "html": 6,
+      "total": 53,
+      "files": {
+        "css": [
+          "src/managers/main/main.css"
+        ],
+        "js": [
+          "src/core/lithium-splitter.js",
+          "src/core/panel-collapse.js",
+          "src/core/tooltip-api.js",
+          "src/managers/lookups/lookups.js",
+          "src/managers/main/main.js",
+          "src/managers/queries/queries-ui.js",
+          "src/managers/queries/queries.js",
+          "src/managers/style-manager/style-manager.js"
+        ],
+        "html": [
+          "src/managers/main/main.html"
+        ]
+      }
+    },
+    {
+      "selector": ".sidebar-icon-group.collapsed.vertical",
+      "css": 1,
+      "js": 48,
       "html": 1,
-      "total": 48,
+      "total": 50,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -22674,31 +22705,6 @@
     },
     {
       "selector": ".sidebar-icon-group.collapsed.vertical .sidebar-icon-btn",
-      "css": 1,
-      "js": 47,
-      "html": 6,
-      "total": 54,
-      "files": {
-        "css": [
-          "src/managers/main/main.css"
-        ],
-        "js": [
-          "src/core/lithium-splitter.js",
-          "src/core/panel-collapse.js",
-          "src/core/tooltip-api.js",
-          "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
-          "src/managers/queries/queries-ui.js",
-          "src/managers/queries/queries.js",
-          "src/managers/style-manager/style-manager.js"
-        ],
-        "html": [
-          "src/managers/main/main.html"
-        ]
-      }
-    },
-    {
-      "selector": ".sidebar-icon-group.collapsed.vertical .sidebar-icon-wrapper",
       "css": 1,
       "js": 49,
       "html": 6,
@@ -22723,11 +22729,36 @@
       }
     },
     {
+      "selector": ".sidebar-icon-group.collapsed.vertical .sidebar-icon-wrapper",
+      "css": 1,
+      "js": 51,
+      "html": 6,
+      "total": 58,
+      "files": {
+        "css": [
+          "src/managers/main/main.css"
+        ],
+        "js": [
+          "src/core/lithium-splitter.js",
+          "src/core/panel-collapse.js",
+          "src/core/tooltip-api.js",
+          "src/managers/lookups/lookups.js",
+          "src/managers/main/main.js",
+          "src/managers/queries/queries-ui.js",
+          "src/managers/queries/queries.js",
+          "src/managers/style-manager/style-manager.js"
+        ],
+        "html": [
+          "src/managers/main/main.html"
+        ]
+      }
+    },
+    {
       "selector": ".sidebar-icon-group.collapsed.vertical .sidebar-icon-wrapper:first-child .sidebar-icon-btn",
       "css": 1,
-      "js": 50,
+      "js": 52,
       "html": 11,
-      "total": 62,
+      "total": 64,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -22750,9 +22781,9 @@
     {
       "selector": ".sidebar-icon-group.collapsed.vertical .sidebar-icon-wrapper:last-child .sidebar-icon-btn",
       "css": 1,
-      "js": 50,
+      "js": 52,
       "html": 11,
-      "total": 62,
+      "total": 64,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -23022,9 +23053,9 @@
     {
       "selector": ".sidebar-menu-btn.active",
       "css": 1,
-      "js": 47,
+      "js": 48,
       "html": 8,
-      "total": 56,
+      "total": 57,
       "files": {
         "css": [
           "src/styles/layout.css"
@@ -23103,9 +23134,9 @@
     {
       "selector": ".sidebar-overlay.open",
       "css": 1,
-      "js": 2,
+      "js": 3,
       "html": 1,
-      "total": 4,
+      "total": 5,
       "files": {
         "css": [
           "src/styles/layout.css"
@@ -23121,9 +23152,9 @@
     {
       "selector": ".sidebar-overlay.visible",
       "css": 1,
-      "js": 85,
+      "js": 84,
       "html": 1,
-      "total": 87,
+      "total": 86,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -23964,9 +23995,9 @@
     {
       "selector": ".style-editor-toolbar .style-state-btn.active",
       "css": 1,
-      "js": 47,
+      "js": 48,
       "html": 7,
-      "total": 55,
+      "total": 56,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -24133,9 +24164,9 @@
     {
       "selector": ".style-font-popup-style-btn.active",
       "css": 1,
-      "js": 46,
+      "js": 47,
       "html": 7,
-      "total": 54,
+      "total": 55,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -24178,9 +24209,9 @@
     {
       "selector": ".style-font-popup.visible",
       "css": 1,
-      "js": 85,
+      "js": 84,
       "html": 0,
-      "total": 86,
+      "total": 85,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -24272,9 +24303,9 @@
     {
       "selector": ".style-footer-export-popup.visible",
       "css": 1,
-      "js": 87,
+      "js": 86,
       "html": 0,
-      "total": 88,
+      "total": 87,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -24334,9 +24365,9 @@
     {
       "selector": ".style-json-view.active",
       "css": 1,
-      "js": 46,
+      "js": 47,
       "html": 8,
-      "total": 55,
+      "total": 56,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -24543,9 +24574,9 @@
     {
       "selector": ".style-mode-btn.active",
       "css": 1,
-      "js": 46,
+      "js": 47,
       "html": 7,
-      "total": 54,
+      "total": 55,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -24854,9 +24885,9 @@
     {
       "selector": ".style-section-view.active",
       "css": 1,
-      "js": 46,
+      "js": 47,
       "html": 8,
-      "total": 55,
+      "total": 56,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -24993,9 +25024,9 @@
     {
       "selector": ".style-target-circle.active",
       "css": 1,
-      "js": 48,
+      "js": 49,
       "html": 7,
-      "total": 56,
+      "total": 57,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -25460,9 +25491,9 @@
     {
       "selector": ".tab-btn.active",
       "css": 1,
-      "js": 46,
+      "js": 47,
       "html": 7,
-      "total": 54,
+      "total": 55,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -25533,9 +25564,9 @@
     {
       "selector": ".tab-pane.active",
       "css": 1,
-      "js": 46,
+      "js": 47,
       "html": 7,
-      "total": 54,
+      "total": 55,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -26048,9 +26079,9 @@
     {
       "selector": ".tabulator-simple .tabulator-page.active",
       "css": 1,
-      "js": 46,
+      "js": 47,
       "html": 7,
-      "total": 54,
+      "total": 55,
       "files": {
         "css": [
           "src/init/tabulator-simple.css"
@@ -27505,9 +27536,9 @@
     {
       "selector": ".toast.visible",
       "css": 1,
-      "js": 113,
+      "js": 112,
       "html": 2,
-      "total": 116,
+      "total": 115,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -27628,9 +27659,9 @@
     {
       "selector": ".transition-overlay.active",
       "css": 1,
-      "js": 46,
+      "js": 47,
       "html": 8,
-      "total": 55,
+      "total": 56,
       "files": {
         "css": [
           "src/styles/layout.css"
@@ -27768,9 +27799,9 @@
     {
       "selector": ".version-footer-export-popup.visible",
       "css": 1,
-      "js": 87,
+      "js": 86,
       "html": 0,
-      "total": 88,
+      "total": 87,
       "files": {
         "css": [
           "src/managers/version-history/version-history.css"
@@ -28438,9 +28469,9 @@
     {
       "selector": ".zoom-popup-detent.active .zoom-popup-detent-mark",
       "css": 1,
-      "js": 81,
+      "js": 82,
       "html": 7,
-      "total": 89,
+      "total": 90,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -28693,9 +28724,9 @@
     {
       "selector": "[data-panel].collapsed",
       "css": 1,
-      "js": 41,
+      "js": 43,
       "html": 0,
-      "total": 42,
+      "total": 44,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -28716,9 +28747,9 @@
     {
       "selector": "[data-panel=\"left\"].collapsed ~ [data-splitter] ~ [data-panel=\"middle\"] ~ [data-splitter] ~ [data-panel=\"right\"] [data-collapse-target=\"left\"] .lithium-collapse-icon",
       "css": 1,
-      "js": 42,
+      "js": 44,
       "html": 6,
-      "total": 49,
+      "total": 51,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -28745,9 +28776,9 @@
     {
       "selector": "[data-panel=\"left\"].collapsed ~ [data-splitter] ~ [data-panel=\"right\"] [data-collapse-target=\"left\"] .lithium-collapse-icon",
       "css": 1,
-      "js": 42,
+      "js": 44,
       "html": 6,
-      "total": 49,
+      "total": 51,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -28774,9 +28805,9 @@
     {
       "selector": "[data-panel=\"middle\"].collapsed ~ [data-splitter] ~ [data-panel=\"right\"] [data-collapse-target=\"middle\"] .lithium-collapse-icon",
       "css": 1,
-      "js": 42,
+      "js": 44,
       "html": 6,
-      "total": 49,
+      "total": 51,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -28803,9 +28834,9 @@
     {
       "selector": "[data-splitter].collapsed",
       "css": 1,
-      "js": 41,
+      "js": 43,
       "html": 0,
-      "total": 42,
+      "total": 44,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -29222,9 +29253,9 @@
     {
       "selector": "#main-layout.visible",
       "css": 1,
-      "js": 85,
+      "js": 84,
       "html": 0,
-      "total": 86,
+      "total": 85,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -29268,9 +29299,9 @@
     {
       "selector": "#profile-manager-page.visible",
       "css": 1,
-      "js": 85,
+      "js": 84,
       "html": 0,
-      "total": 86,
+      "total": 85,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -29298,9 +29329,9 @@
     {
       "selector": "#session-log-page.visible",
       "css": 1,
-      "js": 85,
+      "js": 84,
       "html": 0,
-      "total": 86,
+      "total": 85,
       "files": {
         "css": [
           "src/managers/session-log/session-log.css"

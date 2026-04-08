@@ -31,8 +31,8 @@ function base64UrlDecode(base64Url) {
       return decodeURIComponent(decoded.split('').map(c => 
         '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
       ).join(''));
-    } catch (e) {
-      throw new Error('Invalid Base64Url encoding');
+    } catch (_e) {
+    throw new Error('Invalid Base64Url encoding', { cause: _e });
     }
   }
   
@@ -62,8 +62,8 @@ export function decodeJWT(token) {
   try {
     const payload = base64UrlDecode(parts[1]);
     return JSON.parse(payload);
-  } catch (e) {
-    throw new Error('Failed to decode JWT payload: ' + e.message);
+  } catch (_e) {
+    throw new Error('Failed to decode JWT payload: ' + _e.message, { cause: _e });
   }
 }
 
@@ -83,7 +83,7 @@ export function isExpired(token, clockSkew = 60) {
 
     const now = Math.floor(Date.now() / 1000);
     return now >= (claims.exp - clockSkew);
-  } catch (e) {
+  } catch (_err) {
     return true; // Invalid token = treat as expired
   }
 }
@@ -106,8 +106,8 @@ export function validateJWT(token) {
     }
 
     return { valid: true, claims };
-  } catch (e) {
-    return { valid: false, error: e.message };
+  } catch (_e) {
+    return { valid: false, error: _e.message };
   }
 }
 
@@ -119,7 +119,7 @@ export function validateJWT(token) {
 export function getClaims(token) {
   try {
     return decodeJWT(token);
-  } catch (e) {
+  } catch (_e) {
     return null;
   }
 }
@@ -165,7 +165,7 @@ export function getTimeUntilExpiry(token) {
 
     const now = Math.floor(Date.now() / 1000);
     return (claims.exp - now) * 1000;
-  } catch (e) {
+  } catch (_e) {
     return -1;
   }
 }

@@ -75,11 +75,11 @@ function emitLookupsLoaded(source, categoryKeys, categoryData) {
     const countLabel = meta ? meta.countLabel : 'items';
 
     // Compute byte size of the serialised data
-    let sizeStr = '';
+    let sizeStr;
     try {
       const bytes = new TextEncoder().encode(JSON.stringify(data)).length;
       sizeStr = bytes.toLocaleString() + ' bytes';
-    } catch (_) {
+    } catch {
       sizeStr = 'unknown';
     }
 
@@ -99,18 +99,18 @@ function emitLookupsLoaded(source, categoryKeys, categoryData) {
   });
 }
 
-// Lookup categories and their QueryRefs
-const LOOKUP_QUERYREFS = {
-  system_info: 1,      // QueryRef 001 - System Information
-  themes: 53,          // QueryRef 053 - Themes
-  icons: 54,           // QueryRef 054 - Icons
-  lookup_names: 30,    // QueryRef 030 - Names of all lookups
-  managers: 1,         // Derived from system_info
-  tabulator_schemas: 60, // QueryRef 060 - Tabulator Schemas
-};
+// Lookup categories and their QueryRefs (reserved for future use)
+// const LOOKUP_QUERYREFS = {
+//   system_info: 1,      // QueryRef 001 - System Information
+//   themes: 53,          // QueryRef 053 - Themes
+//   icons: 54,           // QueryRef 054 - Icons
+//   lookup_names: 30,    // QueryRef 030 - Names of all lookups
+//   managers: 1,         // Derived from system_info
+//   tabulator_schemas: 60, // QueryRef 060 - Tabulator Schemas
+// };
 
-// Categories that are "open" (available before login)
-const OPEN_CATEGORIES = ['system_info', 'themes', 'icons', 'managers', 'tabulator_schemas'];
+// Categories that are "open" (available before login) (reserved for future use)
+// const OPEN_CATEGORIES = ['system_info', 'themes', 'icons', 'managers', 'tabulator_schemas'];
 
 // localStorage key for caching lookups
 const STORAGE_KEY = 'lithium_lookups';
@@ -178,7 +178,7 @@ function clearLocalStorage() {
  * @param {string} requestId - Identifier for logging this request
  * @returns {Promise<Object>} Combined lookup data
  */
-async function fetchBatchQueries(queryRefs, requestId) {
+async function fetchBatchQueries(queryRefs, _requestId) {
   const serverUrl = getConfigValue('server.url', 'http://localhost:8080');
   const apiPrefix = getConfigValue('server.api_prefix', '/api');
   const database = getConfigValue('auth.default_database', 'Lithium');

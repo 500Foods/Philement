@@ -321,17 +321,36 @@ describe('LithiumTable', () => {
       expect(result.queryRef).toBe(25);
     });
 
-    it('should return cached tabledef on second call', async () => {
+    it('should return cached tabledef on second call for non-Lookup59 schemas', async () => {
+      // Create a schema entry with a key_idx that's NOT in tableToKeyIdx (not a Lookup 59 schema)
+      // key_idx 999 is not in the tableToKeyIdx map, so it won't be treated as a Lookup 59 schema
+      getTabulatorSchemas.mockReturnValue([
+        { key_idx: 0, collection: MOCK_COLTYPES },
+        { key_idx: 999, collection: MOCK_TABLEDEF },
+      ]);
+
+      // Use a path that will match via fallback matching (table name matching)
+      // 'query-manager' matches MOCK_TABLEDEF.table = 'query-manager'
+      await loadTableDef('query-manager');
+      const second = await loadTableDef('query-manager');
+
+      // Second call uses module cache for non-Lookup59 schemas
+      expect(getTabulatorSchemas).toHaveBeenCalledTimes(1);
+      expect(second.title).toBe('Query Manager');
+    });
+
+    it('should fetch fresh data on each call for Lookup 59 schemas', async () => {
       getTabulatorSchemas.mockReturnValue([
         { key_idx: 0, collection: MOCK_COLTYPES },
         { key_idx: 1, collection: MOCK_TABLEDEF },
       ]);
 
+      // queries/query-manager is a Lookup 59 schema (key_idx: 1)
       await loadTableDef('queries/query-manager');
       const second = await loadTableDef('queries/query-manager');
 
-      // Second call uses module cache
-      expect(getTabulatorSchemas).toHaveBeenCalledTimes(1);
+      // Lookup 59 schemas skip cache to ensure fresh data
+      expect(getTabulatorSchemas).toHaveBeenCalledTimes(2);
       expect(second.title).toBe('Query Manager');
     });
 
@@ -370,12 +389,16 @@ describe('LithiumTable', () => {
     });
 
     it('should strip .json extension from path', async () => {
+      // Create a schema entry with a key_idx that's NOT in tableToKeyIdx
+      // This allows us to test non-Lookup 59 caching with .json stripping
       getTabulatorSchemas.mockReturnValue([
-        { key_idx: 1, collection: MOCK_TABLEDEF },
+        { key_idx: 0, collection: MOCK_COLTYPES },
+        { key_idx: 999, collection: MOCK_TABLEDEF },
       ]);
 
-      await loadTableDef('queries/query-manager.json');
-      const second = await loadTableDef('queries/query-manager');
+      // 'query-manager' matches MOCK_TABLEDEF.table = 'query-manager'
+      await loadTableDef('query-manager.json');
+      const second = await loadTableDef('query-manager');
 
       // Should hit cache, not re-query lookups
       expect(getTabulatorSchemas).toHaveBeenCalledTimes(1);
@@ -392,18 +415,20 @@ describe('LithiumTable', () => {
     });
 
     it('should cache provided data for subsequent calls', async () => {
-      await loadTableDef('queries/query-manager', MOCK_TABLEDEF);
-      const second = await loadTableDef('queries/query-manager');
+      // Use a non-Lookup 59 path to test caching behavior
+      await loadTableDef('custom/my-table', MOCK_TABLEDEF);
+      const second = await loadTableDef('custom/my-table');
 
       expect(getTabulatorSchemas).not.toHaveBeenCalled();
       expect(second.title).toBe('Query Manager');
     });
 
     it('should store provided data under the normalised path key', async () => {
+      // Use a non-Lookup 59 path to test caching behavior
       // Load with .json extension in the path
-      await loadTableDef('queries/query-manager.json', MOCK_TABLEDEF);
+      await loadTableDef('custom/my-table.json', MOCK_TABLEDEF);
       // Retrieve without .json extension — should hit the same cache entry
-      const result = await loadTableDef('queries/query-manager');
+      const result = await loadTableDef('custom/my-table');
 
       expect(getTabulatorSchemas).not.toHaveBeenCalled();
       expect(result.title).toBe('Query Manager');

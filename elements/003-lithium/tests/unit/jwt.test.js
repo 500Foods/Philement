@@ -50,7 +50,7 @@ import {
   getRenewalTime,
 } from '../../src/core/jwt.js';
 
-const STORAGE_KEY = 'lithium_jwt';
+// STORAGE_KEY is imported from the module
 
 describe('JWT', () => {
   beforeEach(() => {

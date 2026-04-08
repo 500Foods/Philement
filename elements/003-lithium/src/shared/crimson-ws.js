@@ -54,7 +54,7 @@ function formatBuildDate(buildTimestamp) {
     const month = MONTHS[date.getMonth()];
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
-  } catch (e) {
+  } catch (_e) {
     return null;
   }
 }
@@ -196,7 +196,8 @@ export class CrimsonWebSocket {
   }
 
   handleDone(message) {
-    const { id, result } = message;
+    const { id } = message;
+    let { result } = message;
 
     // Debug: log message keys to see what we're getting (concise)
     log(Subsystems.CRIMSON, Status.DEBUG, `chat_done message keys: ${Object.keys(message).join(', ')}`);

@@ -5,17 +5,7 @@
  * JWT punchcard claim. Falls back to allow-all if no punchcard present.
  */
 
-import { getClaims } from './jwt.js';
-
-/**
- * Get punchcard from current JWT
- * @returns {Object|null} Punchcard object or null
- */
-function getPunchcard() {
-  // In a real implementation, this would get the token from storage
-  // For now, we accept a token parameter in the functions
-  return null;
-}
+// Note: getClaims available for future use if needed
 
 /**
  * Check if user can access a manager

@@ -88,7 +88,7 @@ export function getFlagSvg(countryCode, options = {}) {
       /<svg /,
       `<svg width="${width}" height="${height}" style="border-radius: 3px; display: block; box-shadow: 0 1px 3px rgba(0,0,0,0.3);" `
     );
-  } catch (e) {
+  } catch (_e) {
     // Fallback to text
     return `<span style="display: inline-block; width: ${width}px; height: ${height}px; background: var(--bg-tertiary); border-radius: 3px; text-align: center; line-height: ${height}px; font-size: 10px; font-weight: 600;">${fallbackText}</span>`;
   }
