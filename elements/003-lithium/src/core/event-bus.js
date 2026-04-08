@@ -105,6 +105,7 @@ export const Events = {
   // Manager events
   MANAGER_LOADED: 'manager:loaded',
   MANAGER_SWITCHED: 'manager:switched',
+  MANAGER_CLOSED: 'manager:closed',
 
   // Theme events
   THEME_CHANGED: 'theme:changed',

@@ -352,11 +352,8 @@ export default class MainManager {
       unregisterManagerShortcuts(String(managerId));
     }
 
-    // Hide the slot
-    const slotEl = document.getElementById(slotId);
-    if (slotEl) {
-      slotEl.classList.remove('visible');
-    }
+    // Remove the slot from DOM and clean up via app
+    this.app.closeManager(managerId);
 
     // Try to find a previously open manager to switch to
     const previousManager = this._findPreviousManager(slotId);
@@ -1349,8 +1346,8 @@ if (this._isRadarInSidebar) {
     } else {
       /* ---- EXPANDING ---- */
       
-      // Expand all groups when sidebar expands
-      this._expandAllGroups();
+      // Expand groups containing open managers when sidebar expands
+      this._expandGroupsWithOpenManagers();
 
       // Stage 1: collapse vertically back to stack, full rounding
       iconGroup.classList.add('stacking');
@@ -1393,6 +1390,8 @@ if (this._isRadarInSidebar) {
         // Mark animation complete after stage 2 finishes
         this._stageTimer = setTimeout(() => {
           this._isAnimating = false;
+          // Scroll the active manager into view after expansion completes
+          this._scrollActiveManagerIntoView();
         }, halfDur);
       }, halfDur);
     }
@@ -1444,6 +1443,74 @@ if (this._isRadarInSidebar) {
       const groupId = parseInt(el.dataset.groupId, 10);
       el.classList.toggle('is-collapsed', this.collapsedGroups.has(groupId));
     });
+  }
+
+  /**
+   * Expand groups that contain open managers.
+   * This is called when expanding the sidebar to ensure open managers are visible.
+   * @returns {Set<number>} The group IDs that were expanded
+   */
+  _expandGroupsWithOpenManagers() {
+    if (!this.elements.sidebarMenu || !this.app?.openManagers) return new Set();
+    
+    // Find all groups that contain open managers
+    const groupsToExpand = new Set();
+    const openManagers = this.app.openManagers;
+    
+    this.elements.sidebarMenu.querySelectorAll('.menu-group').forEach(groupEl => {
+      const groupId = parseInt(groupEl.dataset.groupId, 10);
+      if (isNaN(groupId)) return;
+      
+      // Check if this group contains any open managers
+      const menuItems = groupEl.querySelectorAll('.menu-item');
+      for (const item of menuItems) {
+        const managerId = parseInt(item.dataset.managerId, 10);
+        if (!isNaN(managerId) && openManagers.has(managerId)) {
+          groupsToExpand.add(groupId);
+          break;
+        }
+      }
+    });
+    
+    // Expand the identified groups (remove from collapsed set)
+    groupsToExpand.forEach(groupId => {
+      this.collapsedGroups.delete(groupId);
+    });
+    
+    // Update DOM
+    this.elements.sidebarMenu.querySelectorAll('.menu-group').forEach(groupEl => {
+      const groupId = parseInt(groupEl.dataset.groupId, 10);
+      if (isNaN(groupId)) return;
+      
+      const isCollapsed = this.collapsedGroups.has(groupId);
+      const itemsEl = groupEl.querySelector('.menu-group-items');
+      const toggleIcon = groupEl.querySelector('.group-toggle-icon');
+      
+      if (itemsEl) {
+        itemsEl.classList.toggle('collapsed', isCollapsed);
+      }
+      if (toggleIcon) {
+        toggleIcon.style.transform = isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
+      }
+      groupEl.classList.toggle('is-collapsed', isCollapsed);
+    });
+    
+    // Save the updated state
+    this._saveCollapsedGroups();
+    
+    return groupsToExpand;
+  }
+
+  /**
+   * Scroll the active menu item into view within the sidebar.
+   */
+  _scrollActiveManagerIntoView() {
+    if (!this.elements.sidebarMenu) return;
+    
+    const activeItem = this.elements.sidebarMenu.querySelector('.menu-item.active');
+    if (activeItem) {
+      activeItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
   }
 
   /**
@@ -1870,6 +1937,22 @@ if (this._isRadarInSidebar) {
       } else {
         item.classList.remove('active');
       }
+    });
+  }
+
+  /**
+   * Update which menu items show as "open" (loaded but not active).
+   * Applies 'manager-open' class to items whose manager is in the openManagers set.
+   */
+  updateOpenMenuItems() {
+    const items = this.elements.sidebarMenu?.querySelectorAll('.menu-item');
+    const openManagers = this.app?.openManagers;
+
+    items?.forEach((item) => {
+      const managerId = parseInt(item.dataset.managerId, 10);
+      // Check if this manager is in the open set (and is a numeric ID, not utility)
+      const isOpen = !isNaN(managerId) && openManagers?.has(managerId);
+      item.classList.toggle('manager-open', isOpen);
     });
   }
 

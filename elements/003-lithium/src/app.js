@@ -221,6 +221,7 @@ class LithiumApp {
     this.api = null;
     this.currentManager = null;
     this.loadedManagers = new Map();
+    this.openManagers = new Set();    // Track open (loaded) manager IDs for menu highlighting
     this.mainManagerInstance = null;  // Reference to the MainManager for header updates
     this.user = null;
     this.deferredInstallPrompt = null;
@@ -1099,6 +1100,10 @@ class LithiumApp {
         workspaceEl,
       });
 
+      // Track as open for menu highlighting
+      this.openManagers.add(managerId);
+      mainMgr.updateOpenMenuItems();
+
       await this.showManager(managerId);
       eventBus.emit(Events.MANAGER_LOADED, { managerId });
       eventBus.emit(Events.MANAGER_SWITCHED, { from: this.currentManager?.id, to: managerId });
@@ -1180,6 +1185,10 @@ class LithiumApp {
         workspaceEl,
       });
 
+      // Track as open for menu highlighting (utility managers use string keys)
+      this.openManagers.add(loadedKey);
+      mainMgr.updateOpenMenuItems();
+
       await this.showUtilityManager(loadedKey);
       logManager(Status.SUCCESS, `Utility manager ${managerDef.name} loaded`, Date.now() - loadStart);
     } catch (error) {
@@ -1233,6 +1242,47 @@ class LithiumApp {
     if (mainMgr) {
       mainMgr.clearActiveUtilityButtons();
     }
+  }
+
+  /**
+   * Close a manager and remove it from open managers.
+   * Called when the user clicks the close button on a slot.
+   * @param {number|string} managerId - The manager ID or utility key
+   */
+  closeManager(managerId) {
+    const isUtility = typeof managerId === 'string' && !/^\d+$/.test(managerId);
+    const loadedKey = isUtility ? `utility:${managerId}` : managerId;
+
+    // Remove from open managers set
+    if (this.openManagers.has(loadedKey)) {
+      this.openManagers.delete(loadedKey);
+    }
+
+    // Remove from loaded managers map
+    if (this.loadedManagers.has(loadedKey)) {
+      const entry = this.loadedManagers.get(loadedKey);
+      // Call teardown if available
+      if (entry.instance?.teardown) {
+        try {
+          entry.instance.teardown();
+        } catch (e) {
+          // Non-fatal
+        }
+      }
+      // Remove slot from DOM
+      if (entry.slotEl) {
+        entry.slotEl.remove();
+      }
+      this.loadedManagers.delete(loadedKey);
+    }
+
+    // Update menu highlighting
+    const mainMgr = this._getMainManager();
+    if (mainMgr) {
+      mainMgr.updateOpenMenuItems();
+    }
+
+    eventBus.emit(Events.MANAGER_CLOSED, { managerId });
   }
 
   /**

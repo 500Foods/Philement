@@ -4,7 +4,7 @@
  * Tests the pure functions for formatting log entries and generating flag SVGs.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { formatLogText, getFlagSvg, getPasswordManagerSelectors } from '../../src/shared/log-formatter.js';
 
 describe('Log Formatter', () => {

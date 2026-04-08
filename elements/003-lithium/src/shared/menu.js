@@ -171,7 +171,7 @@ export function parseCollection(collection) {
       index,
       visible: index >= 0, // Only show items with index >= 0
     };
-  } catch (e) {
+  } catch (_e) {
     return fallback;
   }
 }
@@ -300,7 +300,7 @@ export function getCachedMenuData() {
     }
 
     return JSON.parse(cached);
-  } catch (e) {
+  } catch (_e) {
     return null;
   }
 }
@@ -313,7 +313,7 @@ function cacheMenuData(data) {
   try {
     localStorage.setItem(MENU_CACHE_KEY, JSON.stringify(data));
     localStorage.setItem(MENU_CACHE_TIMESTAMP_KEY, String(Date.now()));
-  } catch (e) {
+  } catch (_e) {
     // Non-fatal - localStorage may be unavailable or full
     log(Subsystems.MANAGER, Status.WARN, '[MenuService] Failed to cache menu data');
   }
@@ -327,7 +327,7 @@ export function clearMenuCache() {
   try {
     localStorage.removeItem(MENU_CACHE_KEY);
     localStorage.removeItem(MENU_CACHE_TIMESTAMP_KEY);
-  } catch (e) {
+  } catch (_e) {
     // Non-fatal
   }
 }

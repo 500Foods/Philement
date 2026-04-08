@@ -4,7 +4,6 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
-  getMenu,
   fetchMenu,
   clearMenuCache,
   buildManagerIconsRegistry,
@@ -15,7 +14,6 @@ import {
   clearEnabledManagerCache,
   MENU_CACHE_KEY,
   MENU_CACHE_TIMESTAMP_KEY,
-  CACHE_TTL_MS,
 } from '../../src/shared/menu.js';
 
 // Mock conduit.js for fetchMenu tests

@@ -414,6 +414,10 @@
   color: white;
 }
 
+.menu-item.manager-open:not(.active):not(:hover) {
+  background: var(--accent-active);
+}
+
 .menu-item fa-icon,
 .menu-item i {
   width: 20px;

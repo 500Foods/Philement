@@ -300,7 +300,7 @@ function _resolveIconName(parseResult) {
  * @returns {Array} Utility classes
  * @private
  */
-function _resolveUtilityClasses(parseResult, finalIconName) {
+function _resolveUtilityClasses(parseResult, _finalIconName) {
   let utilityClasses = [];
   
   if (parseResult.lookupName) {
@@ -376,7 +376,7 @@ export function processIcons(container = document) {
   faElements.forEach((element) => {
     try {
       processIconElement(element);
-    } catch (error) {
+    } catch (_error) {
       // Silently ignore icon processing errors
     }
   });

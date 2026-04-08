@@ -32,7 +32,7 @@ export function getPreferences() {
     if (stored) {
       return { ...DEFAULT_PREFS, ...JSON.parse(stored) };
     }
-  } catch (e) {
+  } catch (_e) {
     console.warn('Failed to parse preferences from localStorage');
   }
 
@@ -57,8 +57,8 @@ export function savePreferences(prefs) {
     const current = getPreferences();
     const updated = { ...current, ...prefs };
     localStorage.setItem(PREFS_KEY, JSON.stringify(updated));
-  } catch (e) {
-    console.error('Failed to save preferences:', e);
+  } catch (_e) {
+    console.warn('Failed to parse preferences from localStorage');
   }
 }
 
@@ -328,7 +328,7 @@ export function deepClone(obj) {
   }
   const cloned = {};
   for (const key in obj) {
-    if (obj.hasOwnProperty(key)) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
       cloned[key] = deepClone(obj[key]);
     }
   }
