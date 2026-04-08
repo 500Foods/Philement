@@ -2,13 +2,27 @@
   Session Log Manager Template
   Utility Manager — always available from sidebar footer (fa-scroll button)
   Full-width workspace viewer for the current session's client-side action log.
-
-  Note: The Refresh, Coverage, and Clear action buttons are injected directly
-  into the slot header's unified subpanel-header-group by SessionLogManager via
-  mainManager.addHeaderButtons().  No separate toolbar is needed here — this
-  template contains only the log viewer itself.
 -->
 <div id="session-log-page">
+
+  <!-- Toolbar with refresh, font selector, and coverage link -->
+  <div class="lithium-toolbar" id="session-log-toolbar">
+    <!-- Left: Refresh button -->
+    <button type="button" class="lithium-toolbar-btn" id="session-log-refresh-btn" title="Refresh log">
+      <fa fa-arrows-rotate></fa>
+    </button>
+
+    <!-- Placeholder fills available space -->
+    <div class="lithium-toolbar-placeholder"></div>
+
+    <!-- Right: Font selector and Coverage link -->
+    <button type="button" class="lithium-toolbar-btn" id="session-log-font-btn" title="Font settings">
+      <fa fa-font-case></fa>
+    </button>
+    <button type="button" class="lithium-toolbar-btn" id="session-log-coverage-btn" title="View coverage report">
+      <fa fa-chart-simple-horizontal></fa>
+    </button>
+  </div>
 
   <!-- Log viewer (CodeMirror will be initialized here) -->
   <div class="session-log-viewer" id="session-log-viewer">

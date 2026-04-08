@@ -389,8 +389,15 @@ export default class QueriesManager {
   // ============ TAB SWITCHING ============
 
   async switchTab(tabId) {
-    this.elements.tabBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tabId));
-    this.elements.tabPanes.forEach(pane => pane.classList.toggle('active', pane.id === `queries-tab-${tabId}`));
+    // Check if we're already on this tab - avoid unnecessary UI toggling
+    const currentActiveTab = this._getActiveTabId();
+    const isAlreadyActive = currentActiveTab === tabId;
+
+    // Only toggle UI classes if actually switching tabs
+    if (!isAlreadyActive) {
+      this.elements.tabBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tabId));
+      this.elements.tabPanes.forEach(pane => pane.classList.toggle('active', pane.id === `queries-tab-${tabId}`));
+    }
 
     const hasEditor = ['sql', 'summary', 'collection'].includes(tabId);
     // Undo/redo enabled only for editor tabs; actual enabled state is managed
@@ -548,7 +555,7 @@ export default class QueriesManager {
   // ============ ACTIVE TAB HELPER ============
 
   _getActiveTabId() {
-    const activeBtn = this.container?.querySelector('.queries-tab-btn.active');
+    const activeBtn = this.container?.querySelector('.lithium-toolbar-tab.active');
     return activeBtn?.dataset?.tab || 'sql';
   }
 
@@ -934,7 +941,7 @@ export default class QueriesManager {
     }
     // Always reload saved settings when opening the popup
     this._loadCurrentFontIntoPopup();
-    this.fontPopup?.classList.toggle('visible');
+    this._fontPopupToggle?.();
   }
 
   _initFontPopup() {

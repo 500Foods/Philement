@@ -2,11 +2,11 @@
  * Session Log Manager Styles
  *
  * Utility manager — renders in the manager-slot workspace.
- * The slot header (title + action buttons + close) is provided by MainManager's
- * slot system.  Action buttons are injected via addHeaderButtons() so they sit
- * in the same unified subpanel-header-group — no separate toolbar needed.
- * This file only styles the CodeMirror log viewer inside the workspace.
+ * Features a toolbar with refresh, font selector, and coverage buttons,
+ * plus a full-height CodeMirror log viewer.
  */
+
+@import '../../core/lithium-toolbar.css';
 
 @layer managers {
 
@@ -18,10 +18,15 @@
   flex-direction: column;
   overflow: hidden;
   margin: var(--space-1) var(--space-3);
-  border-radius: var(--border-radius-md);  
+  border-radius: var(--border-radius-md);
 }
 
-/* Viewer takes all vertical space (no toolbar above it) */
+/* Toolbar styling (lithium-toolbar classes are in lithium-toolbar.css) */
+#session-log-toolbar {
+  flex-shrink: 0;
+}
+
+/* Viewer takes remaining vertical space */
 .session-log-viewer {
   flex: 1 1 auto;
   overflow: hidden;
@@ -52,6 +57,17 @@
   font-family: var(--font-mono) !important;
 }
 
+/* Refresh button spin animation (matches LithiumTable navigator) */
+.session-log-refresh-spin > i,
+.session-log-refresh-spin > svg {
+  animation: session-log-refresh-spin 0.75s ease-in-out;
+}
+
+@keyframes session-log-refresh-spin {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 /* Fade-in on show */
 #session-log-page {
   opacity: 0;
@@ -66,6 +82,11 @@
 @media (prefers-reduced-motion: reduce) {
   #session-log-page {
     transition: none;
+  }
+  
+  .session-log-refresh-spin > i,
+  .session-log-refresh-spin > svg {
+    animation: none;
   }
 }
 
