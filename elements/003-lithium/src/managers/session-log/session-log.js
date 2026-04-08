@@ -2,18 +2,19 @@
  * Session Log Manager
  *
  * Utility Manager — always available from the sidebar footer (fa-scroll).
- * Displays the current session's client-side action log using the same
- * CodeMirror viewer as the login panel's System Logs subpanel.
+ * Displays the current session's client-side action log using CodeMirror.
  *
- * Additional features over the login panel viewer:
- *   - Refresh button — re-reads getRawLog() and updates editor content
- *   - Coverage link button — opens /coverage/index.html in a new tab
- *   - Clear archived sessions button — removes previous-session archives
- *     from localStorage (window.lithiumLogs.archived)
+ * Features:
+ *   - Toolbar with Refresh, Font selector, and Coverage link
+ *   - Animated refresh button (matches LithiumTable navigator)
+ *   - Font settings popup (size, family, weight)
+ *   - Auto-refresh and scroll-to-bottom when opened
  */
 
-import { log, getRawLog, getArchivedSessions, removeArchivedSession, Subsystems, Status } from '../../core/log.js';
+import { log, getRawLog, Subsystems, Status } from '../../core/log.js';
 import { formatLogText } from '../../shared/log-formatter.js';
+import { createFontPopup, initToolbars } from '../../core/manager-ui.js';
+import { processIcons } from '../../core/icons.js';
 import './session-log.css';
 
 // Convenience alias for this module's subsystem
@@ -28,6 +29,12 @@ export default class SessionLogManager {
     this.container = container;
     this.elements = {};
     this._logEditor = null;
+    this._fontPopup = null;
+    
+    // Font settings state
+    this._fontSize = 10;
+    this._fontFamily = "'Vanadium Mono', 'Courier New', Courier, monospace";
+    this._fontWeight = 'normal';
   }
 
   /**
@@ -36,16 +43,19 @@ export default class SessionLogManager {
   async init() {
     log(SESSIONLOG, Status.INFO, 'Session Log manager initializing');
     await this.render();
-    this._injectSlotHeaderButtons();
     this.setupEventListeners();
     await this.populateLog();
     this.show();
+    
+    // Auto-refresh and scroll to bottom when opened
+    await this.refreshLog();
+    this.scrollToBottom();
+    
     log(SESSIONLOG, Status.SUCCESS, 'Session Log manager ready');
   }
 
   /**
-   * Render the session log page (workspace content only — no toolbar).
-   * Action buttons are injected into the slot header via _injectSlotHeaderButtons().
+   * Render the session log page with toolbar and viewer.
    */
   async render() {
     try {
@@ -56,100 +66,120 @@ export default class SessionLogManager {
       this.renderFallback();
     }
 
-    // Cache workspace DOM elements (buttons are in the slot header, not here)
+    // Cache DOM elements
     this.elements = {
       page: this.container.querySelector('#session-log-page'),
+      toolbar: this.container.querySelector('#session-log-toolbar'),
       viewer: this.container.querySelector('#session-log-viewer'),
-      // refreshBtn, coverageBtn, clearBtn will be populated by _injectSlotHeaderButtons
+      refreshBtn: this.container.querySelector('#session-log-refresh-btn'),
+      fontBtn: this.container.querySelector('#session-log-font-btn'),
+      coverageBtn: this.container.querySelector('#session-log-coverage-btn'),
     };
+
+    // Initialize toolbar collapse behavior
+    initToolbars();
+    processIcons(this.container);
   }
 
   /**
-   * Inject the Refresh, Coverage, and Clear buttons into the slot header via
-   * MainManager.addHeaderButtons().  This keeps all buttons in one unified
-   * subpanel-header-group — no separate toolbar, no visual break.
-   *
-   * Falls back gracefully if MainManager is not available (e.g. tests).
-   */
-  _injectSlotHeaderButtons() {
-    const mainMgr = this.app?._getMainManager?.();
-    if (!mainMgr) {
-      return;
-    }
-
-    const slotId = mainMgr._utilitySlotId('session-log');
-
-    mainMgr.addHeaderButtons(slotId, [
-      {
-        id:      'session-log-refresh-btn',
-        icon:    'fa-rotate',
-        title:   'Refresh log',
-        tooltip: 'Refresh',
-        onClick: () => {
-          log(SESSIONLOG, Status.INFO, 'Button clicked: Refresh');
-          this.refreshLog();
-        },
-      },
-      {
-        id:      'session-log-coverage-btn',
-        icon:    'fa-chart-simple-horizontal',
-        title:   'View coverage report',
-        tooltip: 'Coverage',
-        onClick: () => {
-          log(SESSIONLOG, Status.INFO, 'Button clicked: Coverage report');
-          window.open('/coverage/index.html', '_blank');
-        },
-      },
-      {
-        id:      'session-log-clear-btn',
-        icon:    'fa-trash-can',
-        title:   'Clear archived sessions',
-        tooltip: 'Clear archived',
-        onClick: () => {
-          log(SESSIONLOG, Status.INFO, 'Button clicked: Clear archived sessions');
-          this.clearArchivedSessions();
-        },
-      },
-    ]);
-
-    // Cache references to the injected buttons now that they're in the DOM
-    const area = mainMgr.elements?.managerArea;
-    if (area) {
-      const slot = area.querySelector(`#${slotId}`);
-      if (slot) {
-        this.elements.refreshBtn  = slot.querySelector('#session-log-refresh-btn');
-        this.elements.coverageBtn = slot.querySelector('#session-log-coverage-btn');
-        this.elements.clearBtn    = slot.querySelector('#session-log-clear-btn');
-      }
-    }
-  }
-
-  /**
-   * Minimal fallback if template fetch fails (no toolbar — buttons are in slot header)
-   */
-  renderFallback() {
-    this.container.innerHTML = `
-      <div id="session-log-page">
-        <div class="session-log-viewer" id="session-log-viewer">
-          <div class="log-placeholder"><p>Loading session log...</p></div>
-        </div>
-      </div>
-    `;
-  }
-
-  /**
-   * Set up event listeners.
-   * Note: action button listeners are wired inline in _injectSlotHeaderButtons();
-   * this method handles any remaining workspace-level listeners.
+   * Set up event listeners for toolbar buttons.
    */
   setupEventListeners() {
-    // Action button listeners are already attached in _injectSlotHeaderButtons().
-    // Add any workspace-level event listeners here if needed in the future.
+    // Refresh button with animation
+    this.elements.refreshBtn?.addEventListener('click', () => {
+      log(SESSIONLOG, Status.INFO, 'Button clicked: Refresh');
+      this.refreshLogWithAnimation();
+    });
+
+    // Font selector popup
+    this.elements.fontBtn?.addEventListener('click', (e) => {
+      log(SESSIONLOG, Status.INFO, 'Button clicked: Font');
+      this.toggleFontPopup(e);
+    });
+
+    // Coverage link
+    this.elements.coverageBtn?.addEventListener('click', () => {
+      log(SESSIONLOG, Status.INFO, 'Button clicked: Coverage report');
+      window.open('/coverage/index.html', '_blank');
+    });
+  }
+
+  /**
+   * Toggle the font popup.
+   */
+  toggleFontPopup() {
+    if (!this._fontPopup) {
+      this._initFontPopup();
+    }
+    this._fontPopupToggle?.();
+  }
+
+  /**
+   * Initialize the font popup (created once and reused).
+   */
+  _initFontPopup() {
+    const { popup, toggle, hide } = createFontPopup({
+      anchor: this.elements.fontBtn,
+      fontSize: this._fontSize,
+      fontFamily: this._fontFamily,
+      fontWeight: this._fontWeight,
+      onSave: ({ fontSize, fontFamily, fontWeight }) => {
+        this._fontSize = parseInt(fontSize, 10) || 10;
+        this._fontFamily = fontFamily;
+        this._fontWeight = fontWeight;
+        this.applyFontSettings();
+      },
+    });
+
+    this._fontPopup = popup;
+    this._fontPopupToggle = toggle;
+    this._fontPopupHide = hide;
+  }
+
+  /**
+   * Apply current font settings to the CodeMirror editor.
+   */
+  applyFontSettings() {
+    if (!this._logEditor) return;
+
+    const editorEl = this._logEditor.dom;
+    if (editorEl) {
+      const scroller = editorEl.querySelector('.cm-scroller');
+      const content = editorEl.querySelector('.cm-content');
+      
+      if (scroller) {
+        scroller.style.fontSize = `${this._fontSize}px`;
+        scroller.style.fontFamily = this._fontFamily;
+        scroller.style.fontWeight = this._fontWeight;
+      }
+      
+      if (content) {
+        content.style.fontSize = `${this._fontSize}px`;
+        content.style.fontFamily = this._fontFamily;
+        content.style.fontWeight = this._fontWeight;
+      }
+    }
+
+    log(SESSIONLOG, Status.INFO, `Font settings applied: ${this._fontSize}px, ${this._fontFamily}`);
+  }
+
+  /**
+   * Refresh the log with spinning animation (matches LithiumTable navigator).
+   */
+  async refreshLogWithAnimation() {
+    // Add spin animation class
+    if (this.elements.refreshBtn) {
+      this.elements.refreshBtn.classList.add('session-log-refresh-spin');
+      setTimeout(() => {
+        this.elements.refreshBtn?.classList.remove('session-log-refresh-spin');
+      }, 750);
+    }
+
+    await this.refreshLog();
   }
 
   /**
    * Refresh the log by re-reading the buffer and updating the CodeMirror editor.
-   * If the editor is not yet initialized, fall back to a full populate.
    */
   async refreshLog() {
     if (this._logEditor) {
@@ -164,23 +194,24 @@ export default class SessionLogManager {
   }
 
   /**
-   * Clear all previous-session log archives from localStorage
+   * Scroll to the bottom of the log viewer.
    */
-  clearArchivedSessions() {
-    const archives = getArchivedSessions();
-    if (archives.length === 0) {
-      log(SESSIONLOG, Status.INFO, 'No archived sessions to clear');
-      return;
-    }
-    for (const { key } of archives) {
-      removeArchivedSession(key);
-    }
-    log(SESSIONLOG, Status.SUCCESS, `Cleared ${archives.length} archived session(s) from localStorage`);
+  scrollToBottom() {
+    if (!this._logEditor) return;
+
+    // Use CodeMirror's scrollIntoView to go to the end of the document
+    const docLength = this._logEditor.state.doc.length;
+    this._logEditor.dispatch({
+      effects: [],
+      selection: { anchor: docLength },
+      scrollIntoView: true,
+    });
+
+    log(SESSIONLOG, Status.DEBUG, 'Scrolled to bottom of log');
   }
 
   /**
    * Build the display text from the raw log buffer.
-   * Mirrors the login panel's populateLogsPanel() rendering logic exactly.
    * @returns {string} Formatted log text for CodeMirror
    */
   _buildLogText() {
@@ -190,7 +221,6 @@ export default class SessionLogManager {
 
   /**
    * Populate the log viewer with the current session log using CodeMirror.
-   * If CodeMirror is already initialized, updates the content in-place.
    */
   async populateLog() {
     const viewer = this.elements.viewer;
@@ -208,7 +238,7 @@ export default class SessionLogManager {
       return;
     }
 
-    // Initialize CodeMirror — uses shared setup for consistent formatting
+    // Initialize CodeMirror
     try {
       const { EditorState, EditorView } = await import('../../core/codemirror.js');
       const { buildEditorExtensions, createReadOnlyCompartment } = await import('../../core/codemirror-setup.js');
@@ -218,15 +248,18 @@ export default class SessionLogManager {
         language: 'log',
         readOnlyCompartment: roCompartment,
         readOnly: true,
-        fontSize: 10,
-        fontFamily: "'Vanadium Mono', 'Courier New', Courier, monospace",
+        fontSize: this._fontSize,
+        fontFamily: this._fontFamily,
       });
 
       const state = EditorState.create({ doc: logText, extensions });
       viewer.innerHTML = '';
       this._logEditor = new EditorView({ state, parent: viewer });
+      
+      // Apply current font settings
+      this.applyFontSettings();
     } catch (error) {
-      viewer.innerHTML = `<pre class="log-content" style="padding:1em;font-size:10px;overflow:auto;height:100%;margin:0;">${logText}</pre>`;
+      viewer.innerHTML = `<pre class="log-content" style="padding:1em;font-size:${this._fontSize}px;overflow:auto;height:100%;margin:0;font-family:${this._fontFamily};">${logText}</pre>`;
     }
   }
 
@@ -240,9 +273,40 @@ export default class SessionLogManager {
   }
 
   /**
+   * Minimal fallback if template fetch fails
+   */
+  renderFallback() {
+    this.container.innerHTML = `
+      <div id="session-log-page">
+        <div class="lithium-toolbar" id="session-log-toolbar">
+          <button type="button" class="lithium-toolbar-btn" id="session-log-refresh-btn">
+            <fa fa-arrows-rotate></fa>
+            <span>Refresh</span>
+          </button>
+          <div class="lithium-toolbar-placeholder"></div>
+          <button type="button" class="lithium-toolbar-btn" id="session-log-coverage-btn">
+            <fa fa-chart-simple-horizontal></fa>
+            <span>Coverage</span>
+          </button>
+        </div>
+        <div class="session-log-viewer" id="session-log-viewer">
+          <div class="log-placeholder"><p>Loading session log...</p></div>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
    * Teardown the session log manager
    */
   teardown() {
+    // Hide font popup if open
+    if (this._fontPopupHide) {
+      this._fontPopupHide();
+      this._fontPopupHide = null;
+      this._fontPopup = null;
+    }
+
     // Destroy the CodeMirror editor if present
     if (this._logEditor) {
       this._logEditor.destroy();
