@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS class selectors/names used across the Lithium codebase",
-    "generated": "2026-04-08T04:57:16.150Z",
+    "generated": "2026-04-08T16:18:24.133Z",
     "sources": {
       "css": "50 files in src/**/*.css",
       "js": "82 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
-    "total_selectors": 1668,
-    "total_occurrences": 23950
+    "total_selectors": 1669,
+    "total_occurrences": 24354
   },
   "selectors": [
     {
@@ -996,13 +996,14 @@
     {
       "selector": ".cm-content",
       "css": 0,
-      "js": 1,
+      "js": 2,
       "html": 0,
-      "total": 1,
+      "total": 2,
       "files": {
         "css": [],
         "js": [
-          "src/core/codemirror-setup.js"
+          "src/core/codemirror-setup.js",
+          "src/managers/session-log/session-log.js"
         ],
         "html": []
       }
@@ -11718,19 +11719,21 @@
     {
       "selector": ".lithium-toolbar",
       "css": 1,
-      "js": 17,
-      "html": 50,
-      "total": 68,
+      "js": 21,
+      "html": 55,
+      "total": 77,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/managers/session-log/session-log.js"
         ],
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/queries/queries.html",
+          "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
         ]
@@ -11739,19 +11742,21 @@
     {
       "selector": ".lithium-toolbar > *:first-child",
       "css": 1,
-      "js": 17,
-      "html": 50,
-      "total": 68,
+      "js": 21,
+      "html": 55,
+      "total": 77,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/managers/session-log/session-log.js"
         ],
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/queries/queries.html",
+          "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
         ]
@@ -11760,19 +11765,21 @@
     {
       "selector": ".lithium-toolbar > *:last-child",
       "css": 1,
-      "js": 17,
-      "html": 50,
-      "total": 68,
+      "js": 21,
+      "html": 55,
+      "total": 77,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/managers/session-log/session-log.js"
         ],
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/queries/queries.html",
+          "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
         ]
@@ -11781,19 +11788,21 @@
     {
       "selector": ".lithium-toolbar-btn",
       "css": 1,
-      "js": 19,
-      "html": 73,
-      "total": 93,
+      "js": 25,
+      "html": 81,
+      "total": 107,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/managers/session-log/session-log.js"
         ],
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/queries/queries.html",
+          "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
         ]
@@ -11802,19 +11811,21 @@
     {
       "selector": ".lithium-toolbar-btn .lithium-toolbar-icon",
       "css": 1,
-      "js": 19,
-      "html": 73,
-      "total": 93,
+      "js": 25,
+      "html": 81,
+      "total": 107,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/managers/session-log/session-log.js"
         ],
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/queries/queries.html",
+          "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
         ]
@@ -11823,19 +11834,21 @@
     {
       "selector": ".lithium-toolbar-btn .lithium-toolbar-label",
       "css": 1,
-      "js": 19,
-      "html": 73,
-      "total": 93,
+      "js": 25,
+      "html": 81,
+      "total": 107,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/managers/session-log/session-log.js"
         ],
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/queries/queries.html",
+          "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
         ]
@@ -11844,19 +11857,21 @@
     {
       "selector": ".lithium-toolbar-btn:active",
       "css": 1,
-      "js": 19,
-      "html": 73,
-      "total": 93,
+      "js": 25,
+      "html": 81,
+      "total": 107,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/managers/session-log/session-log.js"
         ],
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/queries/queries.html",
+          "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
         ]
@@ -11865,19 +11880,21 @@
     {
       "selector": ".lithium-toolbar-btn:disabled",
       "css": 1,
-      "js": 19,
-      "html": 73,
-      "total": 93,
+      "js": 25,
+      "html": 81,
+      "total": 107,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/managers/session-log/session-log.js"
         ],
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/queries/queries.html",
+          "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
         ]
@@ -11886,19 +11903,21 @@
     {
       "selector": ".lithium-toolbar-btn:hover",
       "css": 1,
-      "js": 19,
-      "html": 73,
-      "total": 93,
+      "js": 25,
+      "html": 81,
+      "total": 107,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/managers/session-log/session-log.js"
         ],
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/queries/queries.html",
+          "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
         ]
@@ -11907,9 +11926,9 @@
     {
       "selector": ".lithium-toolbar-btn.active",
       "css": 1,
-      "js": 66,
-      "html": 80,
-      "total": 147,
+      "js": 72,
+      "html": 88,
+      "total": 161,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -11925,12 +11944,14 @@
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
+          "src/managers/session-log/session-log.js",
           "src/managers/style-manager/style-manager.js",
           "src/shared/crimson-ws.js"
         ],
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/queries/queries.html",
+          "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
         ]
@@ -11939,9 +11960,9 @@
     {
       "selector": ".lithium-toolbar-btn.active:hover",
       "css": 1,
-      "js": 66,
-      "html": 80,
-      "total": 147,
+      "js": 72,
+      "html": 88,
+      "total": 161,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -11957,12 +11978,14 @@
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
+          "src/managers/session-log/session-log.js",
           "src/managers/style-manager/style-manager.js",
           "src/shared/crimson-ws.js"
         ],
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/queries/queries.html",
+          "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
         ]
@@ -11971,19 +11994,21 @@
     {
       "selector": ".lithium-toolbar-btn.icon-only",
       "css": 1,
-      "js": 19,
-      "html": 73,
-      "total": 93,
+      "js": 25,
+      "html": 81,
+      "total": 107,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/managers/session-log/session-log.js"
         ],
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/queries/queries.html",
+          "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
         ]
@@ -11992,19 +12017,21 @@
     {
       "selector": ".lithium-toolbar-btn.lithium-collapse-btn",
       "css": 1,
-      "js": 20,
-      "html": 79,
-      "total": 100,
+      "js": 26,
+      "html": 87,
+      "total": 114,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/managers/session-log/session-log.js"
         ],
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/queries/queries.html",
+          "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
         ]
@@ -12013,19 +12040,21 @@
     {
       "selector": ".lithium-toolbar-btn.lithium-collapse-btn i",
       "css": 1,
-      "js": 20,
-      "html": 79,
-      "total": 100,
+      "js": 26,
+      "html": 87,
+      "total": 114,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/managers/session-log/session-log.js"
         ],
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/queries/queries.html",
+          "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
         ]
@@ -12034,9 +12063,9 @@
     {
       "selector": ".lithium-toolbar-btn.lithium-collapse-btn.collapsed i",
       "css": 1,
-      "js": 63,
-      "html": 79,
-      "total": 143,
+      "js": 69,
+      "html": 87,
+      "total": 157,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -12050,11 +12079,13 @@
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
+          "src/managers/session-log/session-log.js",
           "src/managers/style-manager/style-manager.js"
         ],
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/queries/queries.html",
+          "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
         ]
@@ -12063,19 +12094,21 @@
     {
       "selector": ".lithium-toolbar-placeholder",
       "css": 1,
-      "js": 25,
-      "html": 55,
-      "total": 81,
+      "js": 30,
+      "html": 61,
+      "total": 92,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/managers/session-log/session-log.js"
         ],
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/queries/queries.html",
+          "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
         ]
@@ -12084,19 +12117,21 @@
     {
       "selector": ".lithium-toolbar-popup",
       "css": 1,
-      "js": 17,
-      "html": 50,
-      "total": 68,
+      "js": 21,
+      "html": 55,
+      "total": 77,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/managers/session-log/session-log.js"
         ],
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/queries/queries.html",
+          "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
         ]
@@ -12105,19 +12140,21 @@
     {
       "selector": ".lithium-toolbar-popup-item",
       "css": 1,
-      "js": 17,
-      "html": 50,
-      "total": 68,
+      "js": 21,
+      "html": 55,
+      "total": 77,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/managers/session-log/session-log.js"
         ],
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/queries/queries.html",
+          "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
         ]
@@ -12126,19 +12163,21 @@
     {
       "selector": ".lithium-toolbar-popup-item i",
       "css": 1,
-      "js": 17,
-      "html": 50,
-      "total": 68,
+      "js": 21,
+      "html": 55,
+      "total": 77,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/managers/session-log/session-log.js"
         ],
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/queries/queries.html",
+          "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
         ]
@@ -12147,19 +12186,21 @@
     {
       "selector": ".lithium-toolbar-popup-item:hover",
       "css": 1,
-      "js": 17,
-      "html": 50,
-      "total": 68,
+      "js": 21,
+      "html": 55,
+      "total": 77,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/managers/session-log/session-log.js"
         ],
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/queries/queries.html",
+          "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
         ]
@@ -12168,9 +12209,9 @@
     {
       "selector": ".lithium-toolbar-popup.visible",
       "css": 1,
-      "js": 101,
-      "html": 50,
-      "total": 152,
+      "js": 105,
+      "html": 55,
+      "total": 161,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -12195,6 +12236,7 @@
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/queries/queries.html",
+          "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
         ]
@@ -12203,19 +12245,21 @@
     {
       "selector": ".lithium-toolbar-stack",
       "css": 1,
-      "js": 17,
-      "html": 50,
-      "total": 68,
+      "js": 21,
+      "html": 55,
+      "total": 77,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/managers/session-log/session-log.js"
         ],
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/queries/queries.html",
+          "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
         ]
@@ -12224,19 +12268,21 @@
     {
       "selector": ".lithium-toolbar-stack .lithium-toolbar",
       "css": 1,
-      "js": 17,
-      "html": 50,
-      "total": 68,
+      "js": 21,
+      "html": 55,
+      "total": 77,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/managers/session-log/session-log.js"
         ],
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/queries/queries.html",
+          "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
         ]
@@ -12245,19 +12291,21 @@
     {
       "selector": ".lithium-toolbar-state-btn",
       "css": 1,
-      "js": 18,
-      "html": 55,
-      "total": 74,
+      "js": 22,
+      "html": 60,
+      "total": 83,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/managers/session-log/session-log.js"
         ],
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/queries/queries.html",
+          "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
         ]
@@ -12266,19 +12314,21 @@
     {
       "selector": ".lithium-toolbar-state-btn:disabled",
       "css": 1,
-      "js": 18,
-      "html": 55,
-      "total": 74,
+      "js": 22,
+      "html": 60,
+      "total": 83,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/managers/session-log/session-log.js"
         ],
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/queries/queries.html",
+          "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
         ]
@@ -12287,19 +12337,21 @@
     {
       "selector": ".lithium-toolbar-state-btn:hover",
       "css": 1,
-      "js": 18,
-      "html": 55,
-      "total": 74,
+      "js": 22,
+      "html": 60,
+      "total": 83,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/managers/session-log/session-log.js"
         ],
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/queries/queries.html",
+          "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
         ]
@@ -12308,9 +12360,9 @@
     {
       "selector": ".lithium-toolbar-state-btn.active",
       "css": 1,
-      "js": 65,
-      "html": 62,
-      "total": 128,
+      "js": 69,
+      "html": 67,
+      "total": 137,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -12326,12 +12378,14 @@
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
+          "src/managers/session-log/session-log.js",
           "src/managers/style-manager/style-manager.js",
           "src/shared/crimson-ws.js"
         ],
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/queries/queries.html",
+          "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
         ]
@@ -12340,19 +12394,21 @@
     {
       "selector": ".lithium-toolbar-state-btn.css-state",
       "css": 1,
-      "js": 19,
-      "html": 56,
-      "total": 76,
+      "js": 23,
+      "html": 61,
+      "total": 85,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/managers/session-log/session-log.js"
         ],
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/queries/queries.html",
+          "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
         ]
@@ -12361,19 +12417,22 @@
     {
       "selector": ".lithium-toolbar-tab",
       "css": 1,
-      "js": 18,
-      "html": 60,
-      "total": 79,
+      "js": 23,
+      "html": 65,
+      "total": 89,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/managers/queries/queries.js",
+          "src/managers/session-log/session-log.js"
         ],
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/queries/queries.html",
+          "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
         ]
@@ -12382,19 +12441,22 @@
     {
       "selector": ".lithium-toolbar-tab i",
       "css": 1,
-      "js": 18,
-      "html": 60,
-      "total": 79,
+      "js": 23,
+      "html": 65,
+      "total": 89,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/managers/queries/queries.js",
+          "src/managers/session-log/session-log.js"
         ],
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/queries/queries.html",
+          "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
         ]
@@ -12403,19 +12465,22 @@
     {
       "selector": ".lithium-toolbar-tab:disabled",
       "css": 1,
-      "js": 18,
-      "html": 60,
-      "total": 79,
+      "js": 23,
+      "html": 65,
+      "total": 89,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/managers/queries/queries.js",
+          "src/managers/session-log/session-log.js"
         ],
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/queries/queries.html",
+          "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
         ]
@@ -12424,19 +12489,22 @@
     {
       "selector": ".lithium-toolbar-tab:hover",
       "css": 1,
-      "js": 18,
-      "html": 60,
-      "total": 79,
+      "js": 23,
+      "html": 65,
+      "total": 89,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/managers/queries/queries.js",
+          "src/managers/session-log/session-log.js"
         ],
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/queries/queries.html",
+          "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
         ]
@@ -12445,9 +12513,9 @@
     {
       "selector": ".lithium-toolbar-tab.active",
       "css": 1,
-      "js": 65,
-      "html": 67,
-      "total": 133,
+      "js": 70,
+      "html": 72,
+      "total": 143,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -12463,12 +12531,14 @@
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
+          "src/managers/session-log/session-log.js",
           "src/managers/style-manager/style-manager.js",
           "src/shared/crimson-ws.js"
         ],
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/queries/queries.html",
+          "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
         ]
@@ -12477,19 +12547,21 @@
     {
       "selector": ".lithium-toolbar-title",
       "css": 1,
-      "js": 19,
-      "html": 52,
-      "total": 72,
+      "js": 23,
+      "html": 57,
+      "total": 81,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/managers/session-log/session-log.js"
         ],
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/queries/queries.html",
+          "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
         ]
@@ -12498,9 +12570,9 @@
     {
       "selector": ".lithium-toolbar.collapsed-text .lithium-toolbar-state-btn[data-collapsible-text]",
       "css": 1,
-      "js": 71,
-      "html": 55,
-      "total": 127,
+      "js": 75,
+      "html": 60,
+      "total": 136,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -12514,11 +12586,13 @@
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
+          "src/managers/session-log/session-log.js",
           "src/managers/style-manager/style-manager.js"
         ],
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/queries/queries.html",
+          "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
         ]
@@ -12527,9 +12601,9 @@
     {
       "selector": ".lithium-toolbar.collapsed-text .lithium-toolbar-tab[data-collapsible-text]",
       "css": 1,
-      "js": 71,
-      "html": 60,
-      "total": 132,
+      "js": 76,
+      "html": 65,
+      "total": 142,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -12543,11 +12617,13 @@
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
+          "src/managers/session-log/session-log.js",
           "src/managers/style-manager/style-manager.js"
         ],
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/queries/queries.html",
+          "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
         ]
@@ -12556,9 +12632,9 @@
     {
       "selector": ".lithium-toolbar.collapsed-text .lithium-toolbar-title[data-collapsible-text]",
       "css": 1,
-      "js": 72,
-      "html": 52,
-      "total": 125,
+      "js": 76,
+      "html": 57,
+      "total": 134,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -12572,11 +12648,13 @@
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
+          "src/managers/session-log/session-log.js",
           "src/managers/style-manager/style-manager.js"
         ],
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/queries/queries.html",
+          "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
         ]
@@ -15478,14 +15556,16 @@
     {
       "selector": ".lookups-json-editor .cm-scroller",
       "css": 1,
-      "js": 0,
+      "js": 1,
       "html": 1,
-      "total": 2,
+      "total": 3,
       "files": {
         "css": [
           "src/managers/lookups/lookups.css"
         ],
-        "js": [],
+        "js": [
+          "src/managers/session-log/session-log.js"
+        ],
         "html": [
           "src/managers/lookups/lookups.html"
         ]
@@ -21205,14 +21285,16 @@
     {
       "selector": ".queries-sql-editor .cm-scroller",
       "css": 1,
-      "js": 0,
+      "js": 1,
       "html": 1,
-      "total": 2,
+      "total": 3,
       "files": {
         "css": [
           "src/managers/queries/queries.css"
         ],
-        "js": [],
+        "js": [
+          "src/managers/session-log/session-log.js"
+        ],
         "html": [
           "src/managers/queries/queries.html"
         ]
@@ -21249,15 +21331,14 @@
     {
       "selector": ".queries-tab-btn",
       "css": 1,
-      "js": 2,
+      "js": 1,
       "html": 0,
-      "total": 3,
+      "total": 2,
       "files": {
         "css": [
           "src/managers/queries/queries.css"
         ],
         "js": [
-          "src/managers/queries/queries.js",
           "src/shared/crimson-ws.js"
         ],
         "html": []
@@ -21266,15 +21347,14 @@
     {
       "selector": ".queries-tab-btn:hover",
       "css": 1,
-      "js": 2,
+      "js": 1,
       "html": 0,
-      "total": 3,
+      "total": 2,
       "files": {
         "css": [
           "src/managers/queries/queries.css"
         ],
         "js": [
-          "src/managers/queries/queries.js",
           "src/shared/crimson-ws.js"
         ],
         "html": []
@@ -21283,9 +21363,9 @@
     {
       "selector": ".queries-tab-btn.active",
       "css": 1,
-      "js": 49,
+      "js": 48,
       "html": 7,
-      "total": 57,
+      "total": 56,
       "files": {
         "css": [
           "src/managers/queries/queries.css"
@@ -21871,6 +21951,22 @@
           "src/styles/components.css"
         ],
         "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": ".session-log-refresh-spin > svg",
+      "css": 1,
+      "js": 2,
+      "html": 0,
+      "total": 3,
+      "files": {
+        "css": [
+          "src/managers/session-log/session-log.css"
+        ],
+        "js": [
+          "src/managers/session-log/session-log.js"
+        ],
         "html": []
       }
     },

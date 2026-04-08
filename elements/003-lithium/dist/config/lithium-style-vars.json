@@ -1,7 +1,7 @@
 {
   "_meta": {
     "description": "CSS custom properties (variables) used across the Lithium codebase",
-    "generated": "2026-04-08T04:57:14.703Z",
+    "generated": "2026-04-08T16:18:22.658Z",
     "sources": {
       "css": "50 files in src/**/*.css",
       "js": "82 files in src/**/*.js",
