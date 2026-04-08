@@ -30,8 +30,8 @@ import {
   needsBlankZeroWrapper,
   formatBuiltinValue,
   clearCache,
-} from '../../src/core/lithium-table.js';
-import { LithiumTableOpsMixin } from '../../src/core/lithium-table-ops.js';
+} from '../../src/tables/lithium-table.js';
+import { LithiumTableOpsMixin } from '../../src/tables/lithium-table-ops.js';
 
 // Mock the lookups module
 vi.mock('../../src/shared/lookups.js', () => ({

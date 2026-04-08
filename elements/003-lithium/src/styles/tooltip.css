@@ -176,4 +176,11 @@
   font-size: 0.9em;
 }
 
+/* Utility: field name display in column header tooltips */
+.li-tip-field {
+  color: var(--tip-kbd);
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+}
+
 } /* end @layer components */

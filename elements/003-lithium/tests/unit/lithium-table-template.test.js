@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { extractTemplateColumnFromColumn } from '../../src/core/lithium-table-template.js';
+import { extractTemplateColumnFromColumn } from '../../src/tables/lithium-table-template.js';
 
 function createMockColumn({
   field = 'query_name',
