@@ -28,49 +28,51 @@
   <!-- Right Panel: Tabbed View (JSON, Summary, Preview) -->
   <div class="lookups-right-panel" data-panel="right" id="lookups-right-panel">
     <!-- Toolbar Header -->
-    <div class="lookups-tabs-header">
-      <div class="subpanel-header-group" style="flex:1;min-width:0;">
-        <!-- Collapse/Expand buttons for tables -->
-        <button type="button" class="subpanel-header-btn subpanel-header-close lookups-collapse-left-btn lithium-collapse-btn" id="lookups-collapse-left-btn" data-collapse-target="left" title="Toggle Left Panel">
-          <fa fa-angles-left id="lookups-collapse-left-icon" class="lithium-collapse-icon"></fa>
-        </button>
-        <button type="button" class="subpanel-header-btn subpanel-header-close lookups-collapse-middle-btn lithium-collapse-btn" id="lookups-collapse-middle-btn" data-collapse-target="middle" title="Toggle Middle Panel">
-          <fa fa-angles-left id="lookups-collapse-middle-icon" class="lithium-collapse-icon"></fa>
-        </button>
-        <!-- Tab buttons -->
-        <button type="button" class="subpanel-header-btn subpanel-header-primary lookups-tab-btn active" data-tab="json">
-          <fa fa-brackets-curly></fa>
-          <span>Collection</span>
-        </button>
-        <button type="button" class="subpanel-header-btn subpanel-header-primary lookups-tab-btn" data-tab="summary">
-          <fa fa-file-lines></fa>
-          <span>Summary</span>
-        </button>
-        <button type="button" class="subpanel-header-btn subpanel-header-primary lookups-tab-btn" data-tab="preview">
-          <fa fa-eye></fa>
-          <span>Preview</span>
-        </button>
-        <!-- Placeholder to fill space -->
-        <button type="button" class="subpanel-header-btn subpanel-header-primary lookups-toolbar-placeholder" tabindex="-1" aria-hidden="true"></button>
-        <!-- Undo/Redo -->
-        <button type="button" class="subpanel-header-btn subpanel-header-close lookups-toolbar-btn" id="lookups-undo-btn" title="Undo (Ctrl+Z)" disabled>
-          <fa fa-rotate-left></fa>
-        </button>
-        <button type="button" class="subpanel-header-btn subpanel-header-close lookups-toolbar-btn" id="lookups-redo-btn" title="Redo (Ctrl+Y)" disabled>
-          <fa fa-rotate-right></fa>
-        </button>
-        <!-- Fold/Unfold -->
-        <button type="button" class="subpanel-header-btn subpanel-header-close lookups-toolbar-btn" id="lookups-fold-all-btn" title="Collapse All Folds">
-          <fa fa-compress></fa>
-        </button>
-        <button type="button" class="subpanel-header-btn subpanel-header-close lookups-toolbar-btn" id="lookups-unfold-all-btn" title="Expand All Folds">
-          <fa fa-expand></fa>
-        </button>
-        <!-- Font button -->
-        <button type="button" class="subpanel-header-btn subpanel-header-close lookups-toolbar-btn" id="lookups-font-btn" title="Font Settings">
-          <fa fa-font-case></fa>
-        </button>
-      </div>
+    <div class="lithium-toolbar" id="lookups-toolbar">
+      <!-- Collapse/Expand buttons for tables -->
+      <button type="button" class="lithium-toolbar-btn lithium-collapse-btn" id="lookups-collapse-left-btn" data-collapse-target="left" title="Toggle Left Panel">
+        <fa fa-angles-left class="lithium-collapse-icon"></fa>
+      </button>
+      <button type="button" class="lithium-toolbar-btn lithium-collapse-btn" id="lookups-collapse-middle-btn" data-collapse-target="middle" title="Toggle Middle Panel">
+        <fa fa-angles-left class="lithium-collapse-icon"></fa>
+      </button>
+      <!-- Tab buttons -->
+      <button type="button" class="lithium-toolbar-tab active" data-tab="json" data-collapsible-text>
+        <fa fa-brackets-curly></fa>
+        <span>Collection</span>
+      </button>
+      <button type="button" class="lithium-toolbar-tab" data-tab="summary" data-collapsible-text>
+        <fa fa-file-lines></fa>
+        <span>Summary</span>
+      </button>
+      <button type="button" class="lithium-toolbar-tab" data-tab="preview" data-collapsible-text>
+        <fa fa-eye></fa>
+        <span>Preview</span>
+      </button>
+      <!-- Placeholder fills available space -->
+      <div class="lithium-toolbar-placeholder"></div>
+      <!-- Undo/Redo -->
+      <button type="button" class="lithium-toolbar-btn" id="lookups-undo-btn" data-collapsible-text title="Undo (Ctrl+Z)" disabled>
+        <fa fa-rotate-left></fa>
+        <span>Undo</span>
+      </button>
+      <button type="button" class="lithium-toolbar-btn" id="lookups-redo-btn" data-collapsible-text title="Redo (Ctrl+Y)" disabled>
+        <fa fa-rotate-right></fa>
+        <span>Redo</span>
+      </button>
+      <!-- Fold/Unfold -->
+      <button type="button" class="lithium-toolbar-btn" id="lookups-fold-all-btn" data-collapsible-text title="Collapse All Folds">
+        <fa fa-compress></fa>
+        <span>Fold</span>
+      </button>
+      <button type="button" class="lithium-toolbar-btn" id="lookups-unfold-all-btn" data-collapsible-text title="Expand All Folds">
+        <fa fa-expand></fa>
+        <span>Unfold</span>
+      </button>
+      <!-- Font button -->
+      <button type="button" class="lithium-toolbar-btn" id="lookups-font-btn" title="Font Settings">
+        <fa fa-font-case></fa>
+      </button>
     </div>
 
     <!-- Tab Panes -->

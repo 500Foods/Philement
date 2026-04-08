@@ -1260,12 +1260,15 @@ class LithiumApp {
       if (entry.slotEl && entry.slotEl !== incomingSlot && entry.slotEl !== outgoingSlot) {
         entry.slotEl.classList.remove('slot-visible');
         entry.slotEl.classList.add('slot-hidden');
+        entry.slotEl.style.display = 'none';
       }
     }
 
     // If no outgoing, just show incoming immediately with fade-in
     if (!outgoingSlot || outgoingSlot === incomingSlot) {
       incomingSlot.classList.remove('slot-hidden');
+      // Reset display if it was set to none during a previous hide
+      incomingSlot.style.display = '';
       void incomingSlot.offsetHeight;  // force reflow
       incomingSlot.classList.add('slot-visible');
       return;
@@ -1280,6 +1283,8 @@ class LithiumApp {
     // Both slots visible simultaneously during crossfade (absolute positioning handles overlap)
     // Step 1: Show incoming (initially opacity 0 per CSS), make it active
     incomingSlot.classList.remove('slot-hidden');
+    // Reset display if it was set to none during a previous hide
+    incomingSlot.style.display = '';
 
     // Force reflow
     void incomingSlot.offsetHeight;
@@ -1293,6 +1298,8 @@ class LithiumApp {
 
     // Step 4: Fully hide outgoing (visibility:hidden after opacity transition)
     outgoingSlot.classList.add('slot-hidden');
+    // Also set display:none to ensure no mouse events are captured by the hidden slot
+    outgoingSlot.style.display = 'none';
 
     // Step 5: Hide overlay
     this.hideTransitionOverlay();

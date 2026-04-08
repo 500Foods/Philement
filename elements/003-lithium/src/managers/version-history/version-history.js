@@ -25,7 +25,7 @@ import { expandMacros } from '../../core/macro-expansion.js';
 import { getMacros } from '../../shared/lookups.js';
 import '../../core/manager-panels.css';
 import './version-history.css';
-import { setupManagerFooterIcons, closeExportPopup } from '../../core/manager-ui.js';
+import { setupManagerFooterIcons, closeExportPopup, initToolbars } from '../../core/manager-ui.js';
 import { ManagerEditHelper } from '../../core/manager-edit-helper.js';
 
 // Dynamic imports
@@ -116,6 +116,7 @@ export default class VersionHistoryManager {
     };
 
     processIcons(this.container);
+    initToolbars();
   }
 
   setupEventListeners() {

@@ -95,7 +95,7 @@
   background-color: var(--bg-primary);
 }
 
-/* Toolbar / Tab Header */
+/* Toolbar overrides (uses lithium-toolbar.css as base) */
 .style-tabs-header {
   display: flex;
   background-color: var(--bg-secondary);
@@ -103,7 +103,7 @@
   flex-shrink: 0;
 }
 
-/* Mode Toggle */
+/* Mode Toggle - deprecated, use lithium-toolbar-tab instead */
 .style-mode-toggle {
   display: flex;
   gap: 2px;
@@ -136,13 +136,7 @@
   color: white;
 }
 
-/* Placeholder button stretches to fill space between tabs and toolbar */
-.style-toolbar-placeholder {
-  flex: 1;
-  min-width: 16px;
-}
-
-/* Toolbar buttons styling */
+/* Toolbar buttons styling - kept for backwards compatibility */
 .style-toolbar-btn {
   min-width: 24px;
 }
@@ -567,7 +561,7 @@
   color: var(--accent-primary);
 }
 
-/* ── Editor Panel (Toolbar Style) ───────────────────────────────────────── */
+/* ── Editor Panel ───────────────────────────────────────────────────────── */
 
 .style-editor-panel {
   flex-shrink: 0;
@@ -577,7 +571,7 @@
   border-top: var(--border-standard);
 }
 
-/* Editor Toolbar - matches the top toolbar style */
+/* Editor Toolbar - uses lithium-toolbar.css as base */
 .style-editor-toolbar {
   display: flex;
   background-color: var(--bg-secondary);
@@ -606,7 +600,7 @@
   font-size: var(--font-size-sm);
 }
 
-/* State buttons in editor toolbar */
+/* State buttons - deprecated, use lithium-toolbar-state-btn */
 .style-editor-toolbar .style-state-btn {
   flex: 0 0 auto;
 }

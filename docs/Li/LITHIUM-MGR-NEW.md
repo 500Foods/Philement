@@ -259,6 +259,36 @@ config/tabulator/contacts/
 | `data-panel="left"` / `data-panel="right"` | Required by LithiumSplitter |
 | `data-collapse-target="left"` (or `"middle"`) | Identifies which panel the button controls |
 
+### Using the Standardized Toolbar
+
+For new managers, use the **Lithium Toolbar** component instead of the legacy toolbar pattern above. See [LITHIUM-BAR.md](LITHIUM-BAR.md) for full documentation.
+
+**Quick example:**
+
+```html
+<div class="lithium-toolbar">
+  <div class="lithium-toolbar-left">
+    <button class="lithium-toolbar-btn lithium-collapse-btn" data-collapse-target="left">
+      <fa fa-angles-left class="lithium-collapse-icon"></fa>
+    </button>
+    <button class="lithium-toolbar-tab active" data-tab="editor">Editor</button>
+    <button class="lithium-toolbar-tab" data-tab="preview">Preview</button>
+  </div>
+  <div class="lithium-toolbar-placeholder"></div>
+  <div class="lithium-toolbar-right">
+    <button class="lithium-toolbar-btn" data-collapsible-text>
+      <fa fa-undo></fa><span>Undo</span>
+    </button>
+  </div>
+</div>
+```
+
+The toolbar system provides:
+- Consistent 24px height matching Navigator control bars
+- Nav-block styling with outline and 1px gap between buttons
+- Automatic text collapsing when toolbar shrinks
+- Support for multiple toolbars per manager
+
 ---
 
 ## Step 5: Write the CSS
@@ -735,6 +765,7 @@ Navigator, sort icon, save/cancel button, and collapse icon styles are all share
 | Document | What to read |
 |----------|-------------|
 | [LITHIUM-TAB.md](LITHIUM-TAB.md) | LithiumTable component, Navigator, edit mode, queryRef resolution, collapsible panels, ManagerEditHelper |
+| [LITHIUM-BAR.md](LITHIUM-BAR.md) | **Toolbar System** — Standardized toolbars for managers |
 | [LITHIUM-MGR-QUERY.md](LITHIUM-MGR-QUERY.md) | Reference single-table implementation |
 | [LITHIUM-MGR-LOOKUPS.md](LITHIUM-MGR-LOOKUPS.md) | Reference dual-table (parent/child) implementation |
 | [LITHIUM-MGR.md](LITHIUM-MGR.md) | Manager system overview |

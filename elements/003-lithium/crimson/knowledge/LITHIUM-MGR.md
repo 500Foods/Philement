@@ -271,6 +271,133 @@ await table.loadData();
 
 ---
 
+## LithiumToolbar Component
+
+The **LithiumToolbar** is a standardized toolbar component for manager toolbars. It provides consistent styling, automatic text collapsing, and support for multiple toolbars per manager.
+
+### Architecture
+
+**Files:**
+
+- `src/core/lithium-toolbar.css` — Toolbar styles (24px height, matching Navigator)
+- `src/core/manager-ui.js` — `LithiumToolbar` class and helper functions
+
+### Features
+
+| Feature | Description |
+|---------|-------------|
+| **Smaller size** | 24px height, matching LithiumTable navigator |
+| **Left/right sections** | Standardized button placement |
+| **Text collapsing** | Automatically hides button text when toolbar shrinks |
+| **Auto-calculated breakpoint** | Calculates collapse threshold from actual button widths |
+| **Multiple toolbars** | Support for multiple toolbars per manager (e.g., Style Manager) |
+| **Tab buttons** | Built-in tab-style buttons with active state |
+| **State buttons** | CSS state toggle buttons (Default, :HOVER, :FOCUS, etc.) |
+
+### Usage
+
+```javascript
+import { createToolbar } from '../../core/manager-ui.js';
+
+// Create toolbar
+const toolbar = createToolbar(document.getElementById('toolbar'), {
+  onCollapseChange: (isCollapsed) => {
+    log(Subsystems.MANAGER, Status.INFO, `Toolbar collapsed: ${isCollapsed}`);
+  }
+});
+
+// Add tab buttons (left side)
+toolbar.addTab({
+  icon: 'fa-database',
+  label: 'SQL',
+  active: true,
+  onClick: () => this.switchTab('sql')
+});
+
+toolbar.addTab({
+  icon: 'fa-file-lines',
+  label: 'Summary',
+  onClick: () => this.switchTab('summary')
+});
+
+// Add action buttons (right side, with collapsible text)
+toolbar.addRightButton({
+  icon: 'fa-rotate-left',
+  label: 'Undo',
+  collapsibleText: true,  // Text will hide when toolbar shrinks
+  onClick: () => this.handleUndo()
+});
+
+toolbar.addRightButton({
+  icon: 'fa-rotate-right',
+  label: 'Redo',
+  collapsibleText: true,
+  onClick: () => this.handleRedo()
+});
+
+// Add state buttons (for Style Manager pattern)
+toolbar.addStateButton({
+  label: ':HOVER',
+  state: 'hover',
+  onClick: (btn, state) => this.handleStateToggle(state)
+});
+
+// Cleanup
+toolbar.destroy();
+```
+
+### HTML Structure (for static markup)
+
+If you prefer to write HTML directly:
+
+```html
+<div class="lithium-toolbar">
+  <div class="lithium-toolbar-left">
+    <button class="lithium-toolbar-tab active">
+      <fa fa-eye></fa>
+      <span>Preview</span>
+    </button>
+    <button class="lithium-toolbar-tab">
+      <fa fa-brackets-curly></fa>
+      <span>JSON</span>
+    </button>
+  </div>
+  <div class="lithium-toolbar-placeholder"></div>
+  <div class="lithium-toolbar-right">
+    <button class="lithium-toolbar-btn" data-collapsible-text>
+      <fa fa-rotate-left></fa>
+      <span>Undo</span>
+    </button>
+  </div>
+</div>
+```
+
+### Text Collapsing Behavior
+
+The toolbar automatically collapses button text when space is constrained:
+
+1. **Calculate breakpoint once**: Sum of button widths + gaps + 50px buffer
+2. **Monitor toolbar width**: Uses ResizeObserver on the toolbar container
+3. **Collapse when needed**: When toolbar width < breakpoint, text collapses
+4. **Cached for performance**: Breakpoint is calculated once and reused
+
+**Usage:**
+```javascript
+// Create toolbar (breakpoint auto-calculated from button widths)
+const toolbar = createToolbar(container);
+
+// Recalculate after language change
+toolbar.recalculateBreakpoint();
+```
+
+Buttons with `data-collapsible-text` attribute will:
+- Show both icon and text when toolbar is wide
+- Show only icon when toolbar is narrow
+
+**Status:** ✅ Implemented
+
+---
+
 ## Placeholder Managers
 
 These are registered in `app.js` but not yet implemented:

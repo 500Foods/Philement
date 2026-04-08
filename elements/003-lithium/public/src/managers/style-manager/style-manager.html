@@ -27,49 +27,49 @@
 
   <!-- Right Panel: Editor Area -->
   <div data-panel="right" id="style-right-panel">
-    <!-- Toolbar Header -->
-    <div class="style-tabs-header">
-      <div class="subpanel-header-group" style="flex:1;min-width:0;">
-        <!-- Collapse/Expand buttons for tables -->
-        <button type="button" class="subpanel-header-btn subpanel-header-close style-collapse-left-btn lithium-collapse-btn" id="style-collapse-left-btn" data-collapse-target="left" title="Toggle Left Panel">
-          <fa fa-angles-left id="style-collapse-left-icon" class="lithium-collapse-icon"></fa>
-        </button>
-        <button type="button" class="subpanel-header-btn subpanel-header-close style-collapse-middle-btn lithium-collapse-btn" id="style-collapse-middle-btn" data-collapse-target="middle" title="Toggle Middle Panel">
-          <fa fa-angles-left id="style-collapse-middle-icon" class="lithium-collapse-icon"></fa>
-        </button>
-        <!-- Section/JSON Mode Toggle -->
-        <div class="style-mode-toggle">
-          <button type="button" class="style-mode-btn active" id="style-section-btn" title="Section View">
-            <fa fa-eye></fa>
-            <span>Section</span>
-          </button>
-          <button type="button" class="style-mode-btn" id="style-json-btn" title="JSON View">
-            <fa fa-brackets-curly></fa>
-            <span>JSON</span>
-          </button>
-        </div>
-        <!-- Placeholder to fill space -->
-        <button type="button" class="subpanel-header-btn subpanel-header-primary style-toolbar-placeholder" tabindex="-1" aria-hidden="true"></button>
-        <!-- Right toolbar buttons -->
-        <button type="button" class="subpanel-header-btn subpanel-header-close style-toolbar-btn" id="style-undo-btn" title="Undo (Ctrl+Z)" disabled>
-          <fa fa-rotate-left></fa>
-        </button>
-        <button type="button" class="subpanel-header-btn subpanel-header-close style-toolbar-btn" id="style-redo-btn" title="Redo (Ctrl+Shift+Z)" disabled>
-          <fa fa-rotate-right></fa>
-        </button>
-        <button type="button" class="subpanel-header-btn subpanel-header-close style-toolbar-btn" id="style-fold-all-btn" title="Collapse All Folds">
-          <fa fa-compress></fa>
-        </button>
-        <button type="button" class="subpanel-header-btn subpanel-header-close style-toolbar-btn" id="style-unfold-all-btn" title="Expand All Folds">
-          <fa fa-expand></fa>
-        </button>
-        <button type="button" class="subpanel-header-btn subpanel-header-close style-toolbar-btn" id="style-font-btn" title="Font Settings">
-          <fa fa-font-case></fa>
-        </button>
-        <button type="button" class="subpanel-header-btn subpanel-header-close style-toolbar-btn" id="style-prettify-btn" title="Prettify (Ctrl+P)" disabled>
-          <fa fa-flower-tulip></fa>
-        </button>
-      </div>
+    <!-- Main Toolbar: Section/JSON toggle + action buttons -->
+    <div class="lithium-toolbar" id="style-main-toolbar">
+      <!-- Collapse/Expand buttons for tables -->
+      <button type="button" class="lithium-toolbar-btn lithium-collapse-btn" id="style-collapse-left-btn" data-collapse-target="left" title="Toggle Left Panel">
+        <fa fa-angles-left class="lithium-collapse-icon"></fa>
+      </button>
+      <button type="button" class="lithium-toolbar-btn lithium-collapse-btn" id="style-collapse-middle-btn" data-collapse-target="middle" title="Toggle Middle Panel">
+        <fa fa-angles-left class="lithium-collapse-icon"></fa>
+      </button>
+      <!-- Section/JSON Mode Toggle (as tab buttons) -->
+      <button type="button" class="lithium-toolbar-tab active" id="style-section-btn" data-mode="section" data-collapsible-text>
+        <fa fa-eye></fa>
+        <span>Section</span>
+      </button>
+      <button type="button" class="lithium-toolbar-tab" id="style-json-btn" data-mode="json" data-collapsible-text>
+        <fa fa-brackets-curly></fa>
+        <span>JSON</span>
+      </button>
+      <!-- Placeholder fills available space -->
+      <div class="lithium-toolbar-placeholder"></div>
+      <!-- Action buttons with collapsible text -->
+      <button type="button" class="lithium-toolbar-btn" id="style-undo-btn" data-collapsible-text title="Undo (Ctrl+Z)" disabled>
+        <fa fa-rotate-left></fa>
+        <span>Undo</span>
+      </button>
+      <button type="button" class="lithium-toolbar-btn" id="style-redo-btn" data-collapsible-text title="Redo (Ctrl+Shift+Z)" disabled>
+        <fa fa-rotate-right></fa>
+        <span>Redo</span>
+      </button>
+      <button type="button" class="lithium-toolbar-btn" id="style-fold-all-btn" data-collapsible-text title="Collapse All Folds">
+        <fa fa-compress></fa>
+        <span>Fold</span>
+      </button>
+      <button type="button" class="lithium-toolbar-btn" id="style-unfold-all-btn" data-collapsible-text title="Expand All Folds">
+        <fa fa-expand></fa>
+        <span>Unfold</span>
+      </button>
+      <button type="button" class="lithium-toolbar-btn" id="style-font-btn" title="Font Settings">
+        <fa fa-font-case></fa>
+      </button>
+      <button type="button" class="lithium-toolbar-btn" id="style-prettify-btn" title="Prettify (Ctrl+P)" disabled>
+        <fa fa-flower-tulip></fa>
+      </button>
     </div>
 
     <!-- Editor Content Area -->
@@ -80,21 +80,16 @@
           <p class="style-placeholder">Select a section to view its mockup</p>
         </div>
         <div class="style-editor-panel" id="style-editor-panel" style="display: none;">
-          <!-- Editor Toolbar -->
-          <div class="style-editor-toolbar">
-            <div class="subpanel-header-group" style="flex:1;min-width:0;">
-              <button type="button" class="subpanel-header-btn subpanel-header-primary" id="style-target-name-btn" title="Target Element">
-                <span id="style-target-name">Select a target</span>
-              </button>
-              <!-- Placeholder to fill space -->
-              <button type="button" class="subpanel-header-btn subpanel-header-primary style-toolbar-placeholder" tabindex="-1" aria-hidden="true"></button>
-              <!-- State toggle buttons -->
-              <button type="button" class="subpanel-header-btn subpanel-header-close style-state-btn active" data-state="default">Default</button>
-              <button type="button" class="subpanel-header-btn subpanel-header-close style-state-btn" data-state=":hover">:HOVER</button>
-              <button type="button" class="subpanel-header-btn subpanel-header-close style-state-btn" data-state=":focus">:FOCUS</button>
-              <button type="button" class="subpanel-header-btn subpanel-header-close style-state-btn" data-state=":disabled">:DISABLED</button>
-              <button type="button" class="subpanel-header-btn subpanel-header-close style-state-btn style-state-css" data-state="css">CSS</button>
-            </div>
+          <!-- Secondary Toolbar: Target name + state buttons -->
+          <div class="lithium-toolbar" id="style-state-toolbar">
+            <span class="lithium-toolbar-title" id="style-target-name">Select a target</span>
+            <!-- Placeholder fills available space -->
+            <div class="lithium-toolbar-placeholder"></div>
+            <button type="button" class="lithium-toolbar-state-btn active" data-state="default" data-collapsible-text>Default</button>
+            <button type="button" class="lithium-toolbar-state-btn" data-state=":hover" data-collapsible-text>:HOVER</button>
+            <button type="button" class="lithium-toolbar-state-btn" data-state=":focus" data-collapsible-text>:FOCUS</button>
+            <button type="button" class="lithium-toolbar-state-btn" data-state=":disabled" data-collapsible-text>:DISABLED</button>
+            <button type="button" class="lithium-toolbar-state-btn css-state" data-state="css" data-collapsible-text>CSS</button>
           </div>
           <div class="style-property-editor" id="style-property-editor"></div>
           <div class="style-css-editor" id="style-css-editor" style="display: none;"></div>

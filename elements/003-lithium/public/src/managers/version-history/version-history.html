@@ -15,17 +15,16 @@
   <!-- Right Panel: Markdown Preview -->
   <div data-panel="right" id="version-right-panel">
     <!-- Header -->
-    <div class="tab-header">
-      <div class="subpanel-header-group" style="flex:1;min-width:0;">
-        <!-- Collapse button -->
-        <button type="button" class="subpanel-header-btn subpanel-header-close collapse-btn lithium-collapse-btn" id="version-collapse-btn" data-collapse-target="left" title="Toggle Version List">
-          <fa fa-angles-left id="version-collapse-icon" class="lithium-collapse-icon"></fa>
-        </button>
-        <!-- Title -->
-        <span class="subpanel-header-title">Version Summary</span>
-        <!-- Filler -->
-        <button type="button" class="subpanel-header-btn subpanel-header-primary tab-spacer" tabindex="-1" aria-hidden="true"></button>
-      </div>
+    <div class="lithium-toolbar" id="version-toolbar">
+      <!-- Collapse button -->
+      <button type="button" class="lithium-toolbar-btn lithium-collapse-btn" id="version-collapse-btn" data-collapse-target="left" title="Toggle Version List">
+        <fa fa-angles-left class="lithium-collapse-icon"></fa>
+      </button>
+      <!-- Title -->
+      <span class="lithium-toolbar-title">Version Summary</span>
+      <!-- Placeholder fills available space -->
+      <div class="lithium-toolbar-placeholder"></div>
+      <!-- Right buttons can be added here later -->
     </div>
 
     <!-- Preview Content -->
