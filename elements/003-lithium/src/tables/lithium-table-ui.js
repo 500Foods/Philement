@@ -7,7 +7,6 @@
  * @module tables/lithium-table-ui
  */
 
-import { processIcons } from '../core/icons.js';
 import { log, Subsystems, Status } from '../core/log.js';
 import { LithiumColumnManager } from './lithium-column-manager.js';
 import { toast } from '../shared/toast.js';
@@ -154,7 +153,7 @@ export const LithiumTableUIMixin = {
       popup.style.right = 'auto';
 
       requestAnimationFrame(() => {
-        const newRect = popup.getBoundingClientRect();
+        popup.getBoundingClientRect();
         const newTop = Math.min(Math.max(parseFloat(popup.style.top), viewportPadding), maxTop);
         popup.style.top = `${newTop}px`;
       });
@@ -176,16 +175,16 @@ export const LithiumTableUIMixin = {
     toggleNavPopup(this, e, popupId);
   },
 
-  buildStandardNavPopup(items) {
+  buildStandardNavPopup(_items) {
     // Delegated to popup-manager
     return null;
   },
 
-  showNavPopup(btn, popup, popupId) {
+  showNavPopup(_btn, _popup, _popupId) {
     // Delegated to popup-manager via toggleNavPopup
   },
 
-  positionNavPopup(btn, popup) {
+  positionNavPopup(_btn, _popup) {
     // Delegated to popup-manager
   },
 
@@ -193,7 +192,7 @@ export const LithiumTableUIMixin = {
     return buildTemplatePopup(this);
   },
 
-  createTemplateMenuAction(label, action, options = {}) {
+  createTemplateMenuAction(_label, _action, _options = {}) {
     // Delegated to template-popup
   },
 
@@ -250,7 +249,7 @@ export const LithiumTableUIMixin = {
     closeTransientPopups(this);
   },
 
-  getPopupItems(popupId) {
+  getPopupItems(_popupId) {
     // Delegated to popup-manager
     return [];
   },
@@ -261,7 +260,7 @@ export const LithiumTableUIMixin = {
     setTableWidth(this, mode);
   },
 
-  saveTableWidth(mode) {
+  saveTableWidth(_mode) {
     // Delegated
   },
 
@@ -303,7 +302,7 @@ export const LithiumTableUIMixin = {
     await setTableLayout(this, mode);
   },
 
-  saveLayoutMode(mode) {
+  saveLayoutMode(_mode) {
     // Delegated
   },
 
