@@ -11,11 +11,11 @@
 /* globals MouseEvent */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { LithiumColumnManager } from '../../src/core/lithium-column-manager.js';
-import { LithiumTable } from '../../src/core/lithium-table-main.js';
+import { LithiumColumnManager } from '../../src/tables/lithium-column-manager.js';
+import { LithiumTable } from '../../src/tables/lithium-table-main.js';
 
 // Mock the LithiumTable module
-vi.mock('../../src/core/lithium-table-main.js', () => ({
+vi.mock('../../src/tables/lithium-table-main.js', () => ({
   LithiumTable: vi.fn(function LithiumTableMock() {
     return {
       init: vi.fn().mockResolvedValue(),

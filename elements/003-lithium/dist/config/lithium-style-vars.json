@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS custom properties (variables) used across the Lithium codebase",
-    "generated": "2026-04-08T16:38:15.799Z",
+    "generated": "2026-04-08T21:47:35.069Z",
     "sources": {
       "css": "50 files in src/**/*.css",
-      "js": "82 files in src/**/*.js",
+      "js": "97 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
-    "total_variables": 211,
-    "total_occurrences": 3285
+    "total_variables": 213,
+    "total_occurrences": 3305
   },
   "variables": [
     {
@@ -90,10 +90,10 @@
     },
     {
       "name": "--accent-primary",
-      "css": 156,
+      "css": 159,
       "js": 3,
       "html": 1,
-      "total": 160
+      "total": 163
     },
     {
       "name": "--accent-primary-hover",
@@ -181,17 +181,17 @@
     },
     {
       "name": "--bg-input",
-      "css": 7,
+      "css": 5,
       "js": 0,
       "html": 0,
-      "total": 7
+      "total": 5
     },
     {
       "name": "--bg-primary",
-      "css": 50,
+      "css": 59,
       "js": 0,
       "html": 1,
-      "total": 51
+      "total": 60
     },
     {
       "name": "--bg-primary-rgb",
@@ -355,6 +355,13 @@
       "total": 5
     },
     {
+      "name": "--color-muted",
+      "css": 7,
+      "js": 0,
+      "html": 0,
+      "total": 7
+    },
+    {
       "name": "--color-success",
       "css": 5,
       "js": 0,
@@ -468,10 +475,10 @@
     },
     {
       "name": "--font-mono",
-      "css": 36,
+      "css": 37,
       "js": 8,
       "html": 0,
-      "total": 44
+      "total": 45
     },
     {
       "name": "--font-sans",
@@ -797,10 +804,10 @@
     },
     {
       "name": "--space-2",
-      "css": 150,
+      "css": 152,
       "js": 0,
       "html": 0,
-      "total": 150
+      "total": 152
     },
     {
       "name": "--space-3",
@@ -950,6 +957,13 @@
       "total": 1
     },
     {
+      "name": "--table-width-",
+      "css": 0,
+      "js": 2,
+      "html": 0,
+      "total": 2
+    },
+    {
       "name": "--table-width-compact",
       "css": 1,
       "js": 0,
@@ -986,10 +1000,10 @@
     },
     {
       "name": "--text-muted",
-      "css": 66,
+      "css": 63,
       "js": 6,
       "html": 0,
-      "total": 72
+      "total": 69
     },
     {
       "name": "--text-on-accent",
@@ -1119,10 +1133,10 @@
     },
     {
       "name": "--tip-kbd",
-      "css": 2,
+      "css": 3,
       "js": 0,
       "html": 0,
-      "total": 2
+      "total": 3
     },
     {
       "name": "--tip-shadow",

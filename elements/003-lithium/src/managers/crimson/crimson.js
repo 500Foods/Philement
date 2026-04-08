@@ -20,7 +20,7 @@ import { getCrimsonWS } from '../../shared/crimson-ws.js';
 import { getAppWS, isAppWSConnected } from '../../shared/app-ws.js';
 import { getTip, initTooltips } from '../../core/tooltip-api.js';
 import { registerShortcut } from '../../core/manager-ui.js';
-import { LithiumTable } from '../../core/lithium-table-main.js';
+import { LithiumTable } from '../../tables/lithium-table-main.js';
 import '../../styles/vendor-tabulator.css';
 import './crimson.css';
 

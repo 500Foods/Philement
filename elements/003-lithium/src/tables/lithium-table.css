@@ -1,0 +1,1139 @@
+/* ═════════════════════════════════════════════════════════════════════════════
+   LITHIUM-TABLE.css — Reusable Tabulator + Navigator + Splitter Styles
+   ═════════════════════════════════════════════════════════════════════════════
+
+   NOTE: This file is NOT wrapped in @layer to allow height rules to override
+   Tabulator's inline styles. CSS cascade layers would prevent !important rules
+   inside a layer from overriding unlayered inline styles.
+*/
+
+/* ── Column Height Override (unlayered to beat Tabulator's inline styles) ─── */
+
+.lithium-table-container .tabulator-header .tabulator-col {
+  height: auto !important;
+}
+
+.lithium-table-container.lithium-filters-visible .tabulator-header .tabulator-col {
+  min-height: 40px;
+}
+
+@layer managers {
+
+/* ── Splitter ─────────────────────────────────────────────────────────────── */
+
+.lithium-splitter {
+  width: 6px;
+  background: transparent;
+  cursor: col-resize;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+  transition: background-color 0.2s ease;
+  margin: 4px 0px;
+  border-radius: 3px;
+}
+
+.lithium-splitter:hover,
+.lithium-splitter-resizing {
+  background-color: var(--accent-primary);
+}
+
+/* Visual indicator line in the splitter */
+.lithium-splitter::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 40px;
+  background-color: var(--border-color);
+  border-radius: 1px;
+  transition: background-color 0.2s ease;
+  display: none;
+}
+
+.lithium-splitter:hover::after,
+.lithium-splitter-resizing::after {
+  background-color: white;
+}
+
+.lithium-splitter-collapsed {
+  display: none;
+}
+
+/* Collapsible panel base styles */
+.lithium-panel-collapsed {
+  width: 0 !important;
+  min-width: 0 !important;
+  max-width: 0 !important;
+  border-right: none;
+  overflow: hidden;
+}
+
+/* ── Collapse Button (shared) ────────────────────────────────────────────── */
+
+/* Any button with .lithium-collapse-btn gets standard collapse styling.
+ * The icon element should have .lithium-collapse-icon (applied to the <i>
+ * element after processIcons() converts <fa> tags).
+ *
+ * Usage in HTML:
+ *   <button class="... lithium-collapse-btn" id="my-collapse-btn">
+ *     <fa fa-angles-left id="my-collapse-icon"></fa>
+ *   </button>
+ *
+ * After processIcons(), the <fa> becomes <i id="my-collapse-icon" class="fas fa-angles-left">.
+ * The CSS below targets both the intermediate <i> and final <svg> stages.
+ */
+.lithium-collapse-btn {
+  flex: 0 0 auto;
+  padding: var(--space-1);
+}
+
+.lithium-collapse-icon,
+.lithium-collapse-btn > i,
+.lithium-collapse-btn > svg {
+  transition: transform var(--transition-duration, 350ms) ease;
+  transform: rotate(0deg);
+}
+
+.lithium-collapse-btn.collapsed .lithium-collapse-icon,
+.lithium-collapse-btn.collapsed > i,
+.lithium-collapse-btn.collapsed > svg {
+  transform: rotate(180deg);
+}
+
+/* ── Table Container ──────────────────────────────────────────────────────── */
+
+.lithium-table-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  margin: var(--space-2) var(--space-3);
+  border-radius: var(--border-radius-md);
+  border: var(--border-standard);
+  background: var(--bg-secondary);
+  position: relative;
+  min-width: 150px; /* Match nav block width */
+}
+
+/* ── Navigator Control Bar ────────────────────────────────────────────────── */
+
+.lithium-navigator-container {
+  padding: 0px var(--space-2) var(--space-2) var(--space-3);
+}
+
+.lithium-nav-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+/* Navigation Block */
+.lithium-nav-block {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 1px;
+  outline: 3px solid var(--accent-primary);
+  outline-offset: -5px;
+  border-radius: var(--border-radius-sm);
+  overflow: hidden;
+  height: 24px;
+  line-height: 1;
+  min-width: 150px;
+}
+
+.lithium-nav-block > *:first-child {
+  border-top-left-radius: var(--border-radius-sm);
+  border-bottom-left-radius: var(--border-radius-sm);
+}
+
+.lithium-nav-block > *:last-child {
+  border-top-right-radius: var(--border-radius-sm);
+  border-bottom-right-radius: var(--border-radius-sm);
+}
+
+/* Navigator Button */
+.lithium-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  max-width: 24px;
+  height: 24px;
+  padding: 0 var(--space-2);
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  background-color: var(--accent-primary);
+  color: white;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+  line-height: 1;
+  z-index: 1;
+}
+
+.lithium-nav-btn:hover {
+  background-color: var(--accent-hover);
+}
+
+.lithium-nav-btn:active {
+  background-color: var(--accent-focus);
+}
+
+.lithium-nav-btn:disabled {
+  background-color: var(--accent-disabled);
+  color: var(--text-disabled);
+  cursor: not-allowed;
+}
+
+/* Active state for toggle buttons */
+.lithium-nav-btn-active {
+  background-color: var(--accent-toggle) !important;
+  color: #1a1a1a !important;
+}
+
+.lithium-nav-btn-active:hover {
+  background-color: var(--accent-toggle) !important;
+  color: #1a1a1a !important;
+  filter: brightness(1.1);
+}
+
+.lithium-nav-btn-active svg,
+.lithium-nav-btn-active i {
+  color: #1a1a1a !important;
+}
+
+/* Danger variant (Delete) */
+.lithium-nav-btn-danger:hover {
+  background-color: var(--accent-danger);
+}
+
+/* Refresh button spin animation */
+.lithium-nav-refresh-spin > i,
+.lithium-nav-refresh-spin > svg {
+  animation: lithium-refresh-spin 0.75s ease-in-out;
+}
+
+@keyframes lithium-refresh-spin {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Save button icon color when enabled */
+.lithium-nav-btn-save:not(:disabled) svg,
+.lithium-nav-btn-save:not(:disabled) i {
+  color: var(--accent-success, #66BB6A);
+}
+
+/* Cancel button icon color when enabled */
+.lithium-nav-btn-cancel:not(:disabled) svg,
+.lithium-nav-btn-cancel:not(:disabled) i {
+  color: var(--accent-danger, #EF5350);
+}
+
+/* SVG icons inside nav buttons */
+.lithium-nav-btn svg,
+.lithium-nav-btn i {
+  font-size: 14px;
+  width: 11px;
+  height: 11px;
+}
+
+/* Search block */
+.lithium-nav-block-search {
+  flex: 1;
+  outline: none;
+  border: 2px solid var(--accent-primary);
+  background: var(--accent-primary);
+  min-width: 149px;
+  margin-right: 1px;
+}
+
+.lithium-nav-block-search .lithium-nav-btn {
+  margin-top: -2px;
+}
+
+.lithium-nav-search-input {
+  flex: 1;
+  min-width: 0;
+  height: 20px;
+  padding: 0px var(--space-2) 0px var(--space-2);
+  border: none;                     
+  border-color: 0.5px solid var(--bg-primary);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: var(--font-size-xs);
+  outline: none;
+  border-radius: var(--border-radius-sm);
+  transition: background-color 300ms ease, border-color 300ms ease;  
+}
+.lithium-nav-search-input:placeholder-shown {
+  border: 0.5px solid var(--color-muted);
+  background-color: var(--accent-primary);
+}
+.lithium-nav-search-input:placeholder-shown::placeholder {
+  color: var(--color-muted);
+}
+.lithium-nav-search-input:focus {
+  border-color: var(--bg-primary);
+  background-color: var(--bg-primary);
+}
+
+
+/* ── Navigator Popup Menus ────────────────────────────────────────────────── */
+
+.lithium-nav-popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  margin-bottom: 0;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 4000;
+  min-width: 120px;
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(4px);
+  transition: opacity var(--transition-fast), visibility var(--transition-fast), transform var(--transition-fast);
+}
+
+.lithium-nav-popup.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.lithium-nav-popup-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color var(--transition-fast);
+}
+
+.lithium-nav-popup-item:disabled {
+  opacity: 0.45;
+  cursor: default;
+  pointer-events: none;
+}
+
+.lithium-nav-popup-item:hover {
+  background-color: var(--accent-primary);
+  color: white;
+}
+
+.lithium-nav-popup-item:active {
+  background-color: var(--accent-focus);
+}
+
+/* Checkmark column for aligned popups */
+.lithium-nav-popup-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  flex-shrink: 0;
+  text-align: center;
+  font-weight: 600;
+}
+
+.lithium-nav-popup-label {
+  flex: 1;
+}
+
+.lithium-nav-popup-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  flex-shrink: 0;
+}
+
+/* Icon in popup menu items */
+.lithium-nav-popup-item i,
+.lithium-nav-popup-item svg {
+  font-size: 11px;
+  width: 11px;
+  height: 11px;
+  margin-right: 6px;
+  opacity: 0.8;
+}
+
+/* Separator */
+.lithium-nav-popup-separator {
+  height: 1px;
+  background-color: var(--border-color);
+  margin: 4px 0;
+  width: 100%;
+}
+
+} /* end @layer managers */
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   TABULATOR THEME OVERRIDES (Vendor Fixes)
+   ═════════════════════════════════════════════════════════════════════════════ */
+
+@layer vendor-fixes {
+
+/* Base Tabulator styling */
+.lithium-table-container .tabulator {
+  flex: 1;
+  min-height: 0;
+  height: auto;
+  border: none;
+  font-size: var(--font-size-xs);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.lithium-table-container .tabulator-header {
+  background: var(--bg-tertiary);
+  border-bottom: var(--border-standard);
+  color: var(--text-primary);
+  font-weight: 500;
+  height: auto !important;
+  min-height: 22px !important;
+  flex-shrink: 0;
+  transition: min-height var(--transition-std);
+}
+
+.lithium-table-container.lithium-filters-visible .tabulator-header {
+  min-height: 48px !important;
+}
+
+.lithium-table-container .tabulator-header .tabulator-col {
+  background: var(--bg-tertiary);
+  border-right: var(--border-standard);
+  min-height: 22px;
+  padding: 0px 0px 0px 6px;
+  transition: min-height var(--transition-std);
+}                              
+                                                                           
+div.lithium-table-container > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) {
+  padding: 0px;
+  border-bottom: none;
+}
+
+.lithium-table-container.lithium-filters-visible .tabulator-header .tabulator-col {
+  min-height: 48px;
+}
+
+.lithium-table-container .tabulator-header .tabulator-col:last-child {
+  border-right: none;
+}
+
+.lithium-table-container .tabulator-header .tabulator-col-content {
+  padding: 0;
+  height: auto;
+  min-height: 22px;
+  transition: min-height var(--transition-std);
+}
+
+.lithium-table-container.lithium-filters-visible .tabulator-header .tabulator-col-content {
+  min-height: 48px;
+}
+
+.lithium-table-container .tabulator-header .tabulator-col-title {
+  line-height: 20px;
+  font-size: 12px;
+}
+
+/* Tweaks to layout of header cells */
+.lithium-table-container .tabulator-header .tabulator-col.tabulator-sortable .tabulator-col-title {
+	padding-right: 16px;
+}
+
+.lithium-table-container .tabulator-header .tabulator-col .tabulator-col-content .tabulator-col-sorter {
+	right: 6px;
+}
+
+/* Table holder */
+.lithium-table-container .tabulator-tableholder {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: auto;
+  outline: none;
+  height: calc(100% - 40px) !important;
+  max-height: calc(100% - 40px) !important;  
+}
+
+/* Row styling */
+.lithium-table-container .tabulator-row {
+  border-bottom: 1px solid var(--bg-row-border);
+  border-left: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  height: 20px !important;
+  min-height: 20px !important;
+  max-height: 20px !important;
+  overflow: visible;
+}
+
+.lithium-table-container .tabulator-row.tabulator-row-odd {
+  background: var(--bg-row-odd);
+}
+
+.lithium-table-container .tabulator-row.tabulator-row-even {
+  background: var(--bg-row-even);
+}
+
+.lithium-table-container .tabulator-cell {
+  padding: 0px 6px;
+  border-left: none;
+  line-height: 20px !important;
+  height: 20px !important;
+  font-size: 12px;
+  border-right: 1px solid var(--bg-row-border);
+}
+
+/* Row hover */
+.lithium-table-container .tabulator-row:hover {
+  background: var(--bg-tertiary);
+}
+
+/* Selected row styling */
+.lithium-table-container .tabulator-row.tabulator-selected {
+  background: var(--accent-primary) !important;
+  color: white !important;
+}
+
+.lithium-table-container .tabulator-row.tabulator-selected:hover {
+  background: var(--accent-hover) !important;
+}
+
+/* Scrollbar styling */
+.lithium-table-container .tabulator-tableholder::-webkit-scrollbar {
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
+}
+
+.lithium-table-container .tabulator-tableholder::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+.lithium-table-container .tabulator-tableholder::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: var(--border-radius-full);
+}
+
+.lithium-table-container .tabulator-tableholder::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* ── Custom Sort Icons ────────────────────────────────────────────────────── */
+
+.lithium-sort-icons {
+  display: inline-flex;
+  flex-direction: column;
+  line-height: 1;
+  font-size: 7px;
+  margin-left: var(--space-1);
+  vertical-align: middle;
+  gap: 0;
+}
+
+.lithium-sort-asc,
+.lithium-sort-desc {
+  color: var(--text-muted);
+  opacity: 0.35;
+  transition: opacity var(--transition-fast), color var(--transition-fast);
+}
+
+.lithium-table-container .tabulator-col[aria-sort="ascending"] .lithium-sort-asc {
+  color: white;
+  opacity: 1;
+}
+
+.lithium-table-container .tabulator-col[aria-sort="descending"] .lithium-sort-desc {
+  color: white;
+  opacity: 1;
+}
+
+/* Tri-state: unsorted columns show both arrows dimmed */
+.lithium-table-container .tabulator-col[aria-sort="none"] .lithium-sort-asc,
+.lithium-table-container .tabulator-col[aria-sort="none"] .lithium-sort-desc {
+  color: var(--text-muted);
+  opacity: 0.35;
+}
+
+/* Hide default Tabulator sort arrows */
+.lithium-table-container .tabulator-col .tabulator-col-sorter .tabulator-arrow {
+  display: none;
+}
+                        
+/* ── Table Loading Overlay ────────────────────────────────────────────────── */
+
+.lithium-table-loader {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(var(--bg-primary-rgb, 26, 26, 26), 0.8);
+  backdrop-filter: blur(2px);
+  z-index: 100;
+}
+
+.lithium-table-loader .spinner-fancy {
+  z-index: 101;
+}
+
+/* Column resize handles - header only */
+.lithium-table-container .tabulator-row .tabulator-col-resize-handle,
+.lithium-table-container .tabulator-calcs-bottom .tabulator-col-resize-handle {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+.lithium-table-container .tabulator-header .tabulator-col .tabulator-col-resize-handle {
+  pointer-events: auto;
+}
+
+/* Edit mode transition cursor */
+.lithium-edit-transition,
+.lithium-table-container.lithium-edit-transition,
+.lithium-navigator-container.lithium-edit-transition {
+  cursor: progress !important;
+}
+
+/* ── Selector Column ─────────────────────────────────────────────────────── */
+
+.lithium-selector-col {
+  padding: 0 !important;
+  text-align: center;
+}
+
+.lithium-table-container .tabulator-col.lithium-selector-col {
+  cursor: pointer;
+  width: 16px !important;
+  min-width: 16px !important;
+  max-width: 16px !important;
+}
+
+.lithium-selector-col i,
+.lithium-selector-col svg {
+  font-size: 10px;
+  width: 10px;
+  height: 10px;
+}
+
+/* Selected row indicator */
+.lithium-selector-indicator {
+  display: inline-block;
+  width: 100%;
+}
+
+.lithium-selector-active {
+  color: white;
+}
+
+/* Edit mode indicator */
+.lithium-selector-edit {
+  color: var(--accent-success, #66BB6A);
+  animation: lithium-caret-blink 1s step-end infinite;
+}
+
+@keyframes lithium-caret-blink {
+  50% { opacity: 0; }
+}
+
+/* ── Column Chooser ──────────────────────────────────────────────────────── */
+
+.lithium-col-chooser-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  color: var(--text-secondary);
+  line-height: 1;
+  user-select: none;
+  transition: color var(--transition-fast);
+  position: absolute;
+  left: 0px;
+  top: 10px;
+}
+
+.lithium-col-chooser-btn i,
+.lithium-col-chooser-btn svg {
+  font-size: 12px !important;
+  width: 12px !important;
+  height: 12px !important;
+}
+
+.lithium-col-chooser-btn:hover {
+  color: var(--text-primary);
+}
+
+/* Column chooser dropdown */
+.lithium-col-chooser-popup {
+  position: absolute;
+  z-index: 200;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  min-width: 160px;
+  max-width: 280px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: opacity var(--transition-fast), visibility var(--transition-fast), transform var(--transition-fast);
+}
+
+.lithium-col-chooser-popup.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.lithium-col-chooser-title {
+  padding: 8px 12px 6px;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.lithium-col-chooser-list {
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.lithium-col-chooser-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.lithium-col-chooser-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.lithium-col-chooser-list::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 3px;
+}
+
+.lithium-col-chooser-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: var(--space-1) var(--space-3);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  transition: background-color var(--transition-fast);
+  white-space: nowrap;
+}
+
+.lithium-col-chooser-item:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.lithium-col-chooser-checkbox {
+  accent-color: var(--accent-primary);
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.lithium-col-chooser-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Header Filter Inputs ─────────────────────────────────────────────────── */
+
+.lithium-table-container .tabulator-header-filter {
+  display: block;
+  height: 0;
+  min-height: 0;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: height var(--transition-std), min-height var(--transition-std), max-height var(--transition-std), opacity var(--transition-fast);
+}
+
+.lithium-table-container.lithium-filters-visible .tabulator-header-filter {
+  height: 28px;
+  min-height: 28px;
+  max-height: 28px;
+  opacity: 1;
+  padding: 0px 2px 0px 0px;
+  box-sizing: border-box;
+  margin-left: -2px;
+}
+
+.lithium-table-container .tabulator-header-filter input {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  padding: 0px 6px;
+  font-size: var(--font-size-xs);
+  width: 100%;
+  height: 22px;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.lithium-table-container .tabulator-header-filter input:focus {
+  border-color: var(--accent-primary);
+}
+
+.lithium-table-container .tabulator-header-filter input::placeholder {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Clear filter button */
+.lithium-header-filter-clear {
+  position: absolute;
+  right: 3px;
+  top: 42%;
+  transform: translateY(-50%);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 50%;
+  transition: color var(--transition-fast), background-color var(--transition-fast);
+  user-select: none;
+  z-index: 5;
+}
+
+.lithium-header-filter-clear:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-tertiary);
+}
+
+/* ── Table Footer (bottom calc row) ──────────────────────────────────────── */
+
+.lithium-table-container .tabulator-footer,
+.lithium-table-container .tabulator-calcs,
+.lithium-table-container .tabulator-calcs-bottom,
+.lithium-table-container .tabulator-calcs-holder {
+  border-top: none;
+  border-bottom: none;
+  background: unset;
+}
+
+.lithium-table-container .tabulator-calcs-holder {
+  background: var(--bg-tertiary);
+  border-top: var(--border-standard);
+  height: 20px;
+}
+
+.lithium-table-container .tabulator-row .tabulator-cell.tabulator-editing {
+  border: unset;
+  padding: 0;
+}
+
+.lithium-table-container .tabulator-cell.tabulator-editing > input,
+.lithium-table-container .tabulator-cell.tabulator-editing > select {
+  padding: 4px 0px !important;
+}
+
+.lithium-table-container .tabulator-calcs-bottom {
+  border-top: none;
+  border-bottom: none;
+  color: var(--text-primary);
+  font-weight: 500;
+  height: 20px !important;
+  min-height: 20px !important;
+  max-height: 20px !important;
+  pointer-events: none;
+}
+
+.lithium-table-container .tabulator-calcs-bottom .tabulator-cell {
+  border-right: var(--border-standard);
+  border-top: none;
+  border-bottom: none;
+  padding: 0px 6px;
+  height: 20px !important;
+  line-height: 20px !important;
+  pointer-events: none;
+}
+
+.lithium-table-container .tabulator-calcs-bottom .tabulator-cell:first-child {
+  border-left: none;
+}
+
+.lithium-table-container .tabulator-calcs-bottom .tabulator-cell:last-child {
+  border-right: none !important;
+}
+
+/* ── Frozen Column Styling ────────────────────────────────────────────────── */
+
+.lithium-table-container .tabulator-frozen {
+  z-index: 10;
+  border-bottom: var(--border-standard);
+}                                
+
+.lithium-table-container .tabulator-header .tabulator-col.tabulator-frozen {
+  outline: none;
+}
+
+.lithium-table-container .tabulator-row .tabulator-cell.tabulator-frozen {
+  outline: none;
+}
+
+.lithium-table-container .tabulator-row.tabulator-selected .tabulator-cell.tabulator-frozen {
+  background: var(--accent-primary) !important;
+}
+
+.lithium-table-container .tabulator-row:hover .tabulator-cell.tabulator-frozen {
+  background: var(--bg-tertiary);
+}
+
+.lithium-table-container .tabulator-row.tabulator-selected:hover .tabulator-cell.tabulator-frozen {
+  background: var(--accent-hover) !important;
+}
+
+/* ── First/Last Visible Column Classes ───────────────────────────────────── */
+
+.lithium-table-container .tabulator-cell.first-visible-col,
+.lithium-table-container .tabulator-header .tabulator-col.first-visible-col {
+  border-left: none;
+}
+
+.lithium-table-container .tabulator-cell.last-visible-col,
+.lithium-table-container .tabulator-header .tabulator-col.last-visible-col {
+  border-right: none !important;
+}
+
+/* ── Edit Mode ────────────────────────────────────────────────────────────── */
+
+.lithium-table-container.lithium-edit-mode .tabulator-row.tabulator-selected {
+  background: var(--accent-editable, #FFA726) !important;
+  color: #1a1a1a !important;
+}
+
+.lithium-table-container.lithium-edit-mode .tabulator-row.tabulator-selected:hover {
+  background: var(--accent-warning-hover, #FB8C00) !important;
+  color: #1a1a1a !important;
+}
+
+.lithium-table-container.lithium-edit-mode .tabulator-row.tabulator-selected .tabulator-cell.tabulator-frozen {
+  background: var(--accent-editing, #FFA726) !important;
+}
+
+.lithium-table-container.lithium-edit-mode .tabulator-row.tabulator-selected:hover .tabulator-cell.tabulator-frozen {
+  background: var(--accent-warning-hover, #FB8C00) !important;
+}
+
+.lithium-table-container.lithium-edit-mode .lithium-selector-edit {
+  color: #1a1a1a;
+}
+
+.lithium-table-container.lithium-edit-mode .tabulator-row.tabulator-selected .tabulator-cell {
+  cursor: text;
+}
+
+/* ── Column Chooser Popup (Legacy) ────────────────────────────────────────── */
+
+.lithium-col-chooser-popup {
+  position: absolute;
+  background: var(--bg-primary, #1e1e1e);
+  border: 1px solid var(--border-color, #333);
+  border-radius: var(--border-radius-md, 6px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  min-width: 200px;
+  max-height: 400px;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.lithium-col-chooser-popup.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.lithium-col-chooser-title {
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #e0e0e0);
+  border-bottom: 1px solid var(--border-color, #333);
+  background: var(--bg-secondary, #252525);
+}
+
+.lithium-col-chooser-list {
+  padding: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.lithium-col-chooser-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: var(--border-radius-sm, 4px);
+  transition: background 0.2s ease;
+}
+
+.lithium-col-chooser-item:hover {
+  background: var(--bg-tertiary, #333);
+}
+
+.lithium-col-chooser-checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent-primary, #0078d4);
+  cursor: pointer;
+}
+
+.lithium-col-chooser-label {
+  font-size: 13px;
+  color: var(--text-primary, #e0e0e0);
+  flex: 1;
+}
+
+/* ── Scrollbar Styles ──────────────────────────────────────────────────────── */
+
+.lithium-col-chooser-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.lithium-col-chooser-list::-webkit-scrollbar-track {
+  background: var(--bg-secondary, #252525);
+}
+
+.lithium-col-chooser-list::-webkit-scrollbar-thumb {
+  background: var(--border-color, #333);
+  border-radius: 3px;
+}
+
+.lithium-col-chooser-list::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary, #666);
+}
+
+} /* end @layer vendor-fixes */
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   Column Chooser Styles (unlayered to ensure proper cursor behavior)
+   ═════════════════════════════════════════════════════════════════════════════ */
+
+/* Column chooser button in header - clickable to open Column Manager */
+[class$="-col-chooser-btn"] {
+  cursor: pointer;
+}
+
+/* Disabled column chooser in depth-2 Column Manager Manager */
+.depth-2 [class$="-col-chooser-btn"] {
+  cursor: auto;
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   Template Chooser Styles
+   ═════════════════════════════════════════════════════════════════════════════ */
+
+.lithium-template-menu {
+  min-width: 320px;
+  max-width: 440px;
+}
+
+.lithium-nav-popup-title {
+  padding: 8px 12px;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
+}
+
+.lithium-template-list {
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.lithium-template-empty {
+  padding: 10px 12px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.lithium-template-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.lithium-template-item .lithium-nav-popup-check {
+  margin-left: 24px;
+}
+
+.lithium-template-item:hover {
+  background: var(--bg-hover);
+}
+
+.lithium-template-item.is-selected {
+  background: color-mix(in srgb, var(--accent-primary) 22%, transparent);
+}
+
+.lithium-template-item.is-selected:hover {
+  background: color-mix(in srgb, var(--accent-primary) 32%, transparent);
+}
+
+.lithium-template-name {
+  flex: 1;
+  font-size: 12px;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lithium-template-delete {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 3px;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.lithium-template-delete:hover {
+  color: var(--accent-danger);
+  background: var(--bg-secondary);
+}
