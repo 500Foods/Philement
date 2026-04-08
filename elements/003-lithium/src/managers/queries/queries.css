@@ -396,13 +396,43 @@
   background-color: var(--accent-focus);
 }
 
-/* ── Container Query - Hide Text Labels ─────────────────────────────────── */
+/* ── Toolbar Styles ──────────────────────────────────────────────────────── */
 
-@container (max-width: 700px) {
-  .queries-tabs-header .queries-tab-btn span {
-    display: none;
-  }
- 
+/* Uses lithium-toolbar.css as base - these are manager-specific overrides */
+
+.queries-tabs-header {
+  display: flex;
+  background-color: var(--bg-secondary);
+  padding: var(--space-2) var(--space-3);
+  container-type: inline-size;
+  flex-shrink: 0;
+}
+
+/* Legacy tab button styles - deprecated, use lithium-toolbar-tab */
+.queries-tab-btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.queries-tab-btn.active {
+  background-color: var(--accent-focus);
+}
+
+.queries-tab-btn:hover {
+  background-color: var(--accent-hover);
+}
+
+/* Legacy placeholder - deprecated, use lithium-toolbar-placeholder */
+.queries-toolbar-placeholder {
+  flex: 1;
+  min-width: 16px;
+}
+
+/* Legacy toolbar buttons - deprecated, use lithium-toolbar-btn */
+.queries-toolbar-btn:disabled {
+  cursor: not-allowed;
+  background-color: var(--accent-disabled);
+  color: var(--text-disabled);
 }
 
 } /* end @layer managers */

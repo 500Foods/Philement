@@ -16,11 +16,12 @@ import { LithiumSplitter } from '../../core/lithium-splitter.js';
 import { PanelStateManager } from '../../core/panel-state-manager.js';
 import { togglePanelCollapse, restorePanelState } from '../../core/panel-collapse.js';
 import '../../styles/vendor-tabulator.css';
+import '../../core/manager-panels.css';
 import { authQuery } from '../../shared/conduit.js';
 import { toast } from '../../shared/toast.js';
 import { log, Subsystems, Status } from '../../core/log.js';
 import { processIcons } from '../../core/icons.js';
-import { setupManagerFooterIcons, createFontPopup, closeExportPopup } from '../../core/manager-ui.js';
+import { setupManagerFooterIcons, createFontPopup, closeExportPopup, initToolbars } from '../../core/manager-ui.js';
 import { ManagerEditHelper } from '../../core/manager-edit-helper.js';
 import SunEditor from 'suneditor';
 import 'suneditor/css/editor';
@@ -156,7 +157,7 @@ export default class LookupsManager {
       foldAllBtn: this.container.querySelector('#lookups-fold-all-btn'),
       unfoldAllBtn: this.container.querySelector('#lookups-unfold-all-btn'),
       fontBtn: this.container.querySelector('#lookups-font-btn'),
-      tabBtns: this.container.querySelectorAll('.lookups-tab-btn'),
+      tabBtns: this.container.querySelectorAll('[data-tab]'),
       tabPanes: this.container.querySelectorAll('.lookups-tab-pane'),
       jsonEditor: this.container.querySelector('#lookups-json-editor'),
       summaryEditor: this.container.querySelector('#lookups-summary-editor'),
@@ -165,6 +166,9 @@ export default class LookupsManager {
 
     // Process icons
     processIcons(this.container);
+
+    // Initialize toolbar collapse behavior
+    initToolbars();
   }
 
   setupEventListeners() {

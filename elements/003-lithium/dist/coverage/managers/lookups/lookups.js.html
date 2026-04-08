@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><title>Code coverage report for managers/lookups/lookups.js</title><meta charset="utf-8"><link rel="stylesheet" href="../../prettify.css"><link rel="stylesheet" href="../../base.css"><link rel="shortcut icon" type="image/x-icon" href="../../favicon.png"><meta name="viewport" content="width=device-width,initial-scale=1"><style type="text/css">.coverage-summary .sorter{background-image:url(../../sort-arrow-sprite.png)}</style></head><body><div class="wrapper"><div class="pad1"><h1><a href="../../index.html">All files</a> / <a href="index.html">managers/lookups</a> lookups.js</h1><div class="clearfix"><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Statements</span> <span class="fraction">0/674</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Branches</span> <span class="fraction">0/429</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Functions</span> <span class="fraction">0/130</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Lines</span> <span class="fraction">0/632</span></div></div><p class="quiet">Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.</p><template id="filterTemplate"><div class="quiet">Filter: <input type="search" id="fileSearch"></div></template></div><div class="status-line low"></div><pre><table class="coverage">
+<!doctype html><html lang="en"><head><title>Code coverage report for managers/lookups/lookups.js</title><meta charset="utf-8"><link rel="stylesheet" href="../../prettify.css"><link rel="stylesheet" href="../../base.css"><link rel="shortcut icon" type="image/x-icon" href="../../favicon.png"><meta name="viewport" content="width=device-width,initial-scale=1"><style type="text/css">.coverage-summary .sorter{background-image:url(../../sort-arrow-sprite.png)}</style></head><body><div class="wrapper"><div class="pad1"><h1><a href="../../index.html">All files</a> / <a href="index.html">managers/lookups</a> lookups.js</h1><div class="clearfix"><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Statements</span> <span class="fraction">0/675</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Branches</span> <span class="fraction">0/429</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Functions</span> <span class="fraction">0/130</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Lines</span> <span class="fraction">0/633</span></div></div><p class="quiet">Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.</p><template id="filterTemplate"><div class="quiet">Filter: <input type="search" id="fileSearch"></div></template></div><div class="status-line low"></div><pre><table class="coverage">
 <tr><td class="line-count quiet"><a name="L1"></a><a href="#L1">1</a>
 <a name="L2"></a><a href="#L2">2</a>
 <a name="L3"></a><a href="#L3">3</a>
@@ -1668,7 +1668,10 @@
 <a name="L1667"></a><a href="#L1667">1667</a>
 <a name="L1668"></a><a href="#L1668">1668</a>
 <a name="L1669"></a><a href="#L1669">1669</a>
-<a name="L1670"></a><a href="#L1670">1670</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name="L1670"></a><a href="#L1670">1670</a>
+<a name="L1671"></a><a href="#L1671">1671</a>
+<a name="L1672"></a><a href="#L1672">1672</a>
+<a name="L1673"></a><a href="#L1673">1673</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1832,6 +1835,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -3359,7 +3365,7 @@ import { authQuery } from '../../shared/conduit.js';
 import { toast } from '../../shared/toast.js';
 import { log, Subsystems, Status } from '../../core/log.js';
 import { processIcons } from '../../core/icons.js';
-import { setupManagerFooterIcons, createFontPopup, closeExportPopup } from '../../core/manager-ui.js';
+import { setupManagerFooterIcons, createFontPopup, closeExportPopup, initToolbars } from '../../core/manager-ui.js';
 import { ManagerEditHelper } from '../../core/manager-edit-helper.js';
 import SunEditor from 'suneditor';
 import 'suneditor/css/editor';
@@ -3495,7 +3501,7 @@ export default class LookupsManager {
       foldAllBtn: this.container.querySelector('#lookups-fold-all-btn'),
       unfoldAllBtn: this.container.querySelector('#lookups-unfold-all-btn'),
       fontBtn: this.container.querySelector('#lookups-font-btn'),
-      tabBtns: this.container.querySelectorAll('.lookups-tab-btn'),
+      tabBtns: this.container.querySelectorAll('[data-tab]'),
       tabPanes: this.container.querySelectorAll('.lookups-tab-pane'),
       jsonEditor: this.container.querySelector('#lookups-json-editor'),
       summaryEditor: this.container.querySelector('#lookups-summary-editor'),
@@ -3504,6 +3510,9 @@ export default class LookupsManager {
 &nbsp;
     // Process icons
 <span class="cstat-no" title="statement not covered">    processIcons(this.container);</span>
+&nbsp;
+    // Initialize toolbar collapse behavior
+<span class="cstat-no" title="statement not covered">    initToolbars();</span>
   }
 &nbsp;
 <span class="fstat-no" title="function not covered">  setupEventListeners(</span>) {
@@ -5006,4 +5015,4 @@ export default class LookupsManager {
 <span class="cstat-no" title="statement not covered">    this.childTable = null;</span>
   }
 }
-&nbsp;</pre></td></tr></table></pre><div class="push"></div></div><div class="footer quiet pad2 space-top1 center small">Code coverage generated by <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a> at 2026-04-07T19:03:29.825Z</div><script src="../../prettify.js"></script><script>window.onload=function(){prettyPrint()}</script><script src="../../sorter.js"></script><script src="../../block-navigation.js"></script></body></html>
+&nbsp;</pre></td></tr></table></pre><div class="push"></div></div><div class="footer quiet pad2 space-top1 center small">Code coverage generated by <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a> at 2026-04-07T22:04:30.854Z</div><script src="../../prettify.js"></script><script>window.onload=function(){prettyPrint()}</script><script src="../../sorter.js"></script><script src="../../block-navigation.js"></script></body></html>
