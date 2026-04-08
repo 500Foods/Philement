@@ -162,7 +162,7 @@ describe('JSON Request', () => {
       });
 
       const config = { server: { url: 'https://api.example.com', api_prefix: '/api' } };
-      const result = await put('/users/1', { name: 'Jane' }, { config });
+      await put('/users/1', { name: 'Jane' }, { config });
 
       expect(mockFetch).toHaveBeenCalledWith(
         'https://api.example.com/api/users/1',
@@ -198,7 +198,7 @@ describe('JSON Request', () => {
       });
 
       const config = { server: { url: 'https://api.example.com', api_prefix: '/api' } };
-      const result = await patch('/users/1', { name: 'Jane' }, { config });
+      await patch('/users/1', { name: 'Jane' }, { config });
 
       expect(mockFetch).toHaveBeenCalledWith(
         'https://api.example.com/api/users/1',

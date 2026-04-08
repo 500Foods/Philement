@@ -164,7 +164,7 @@ export function getLanguageName(locale) {
   try {
     const langCode = locale.split('-')[0];
     return new Intl.DisplayNames(['en'], { type: 'language' }).of(langCode);
-  } catch (e) {
+  } catch (_e) {
     // Fallback to language code
     return locale.split('-')[0];
   }
@@ -180,7 +180,7 @@ export function getCountryName(locale) {
     const region = locale.split('-')[1];
     if (!region) return '';
     return new Intl.DisplayNames(['en'], { type: 'region' }).of(region);
-  } catch (e) {
+  } catch (_e) {
     // Fallback to region code
     const region = locale.split('-')[1];
     return region || '';
@@ -200,7 +200,7 @@ export function getLocaleDisplayName(locale) {
     if (!region) return langPart;
     const regionPart = new Intl.DisplayNames(['en'], { type: 'region' }).of(region);
     return `${langPart} (${regionPart})`;
-  } catch (e) {
+  } catch (_e) {
     // Fallback to simple formatting
     const [lang, region] = locale.split('-');
     return `${lang.toUpperCase()} (${region})`;
@@ -219,7 +219,7 @@ export function getLocaleNativeName(locale) {
     if (!region) return langPart;
     const regionPart = new Intl.DisplayNames([locale], { type: 'region' }).of(region);
     return `${langPart} (${regionPart})`;
-  } catch (e) {
+  } catch (_e) {
     return getLocaleDisplayName(locale);
   }
 }
@@ -305,7 +305,7 @@ async function _getIpGeolocationLocale(ipinfoToken) {
     
     const data = await response.json();
     return _resolveLocaleFromCountry(data.country, data.region);
-  } catch (e) {
+  } catch (_e) {
     // Network/VPN fail silently
     return null;
   }
@@ -353,8 +353,8 @@ export function getSortedLanguageList() {
 export function saveLocalePreference(locale) {
   try {
     localStorage.setItem('lithium_user_locale', locale);
-  } catch (e) {
-    console.warn('[Languages] Could not save locale preference:', e);
+  } catch (_e) {
+    console.warn('[Languages] Could not save locale preference:', _e);
   }
 }
 
@@ -365,7 +365,7 @@ export function saveLocalePreference(locale) {
 export function getSavedLocale() {
   try {
     return localStorage.getItem('lithium_user_locale');
-  } catch (e) {
+  } catch (_e) {
     return null;
   }
 }

@@ -19,8 +19,8 @@ vi.mock('../../src/core/log.js', () => ({
   Status: { INFO: 'INFO', WARN: 'WARN', ERROR: 'ERROR', SUCCESS: 'SUCCESS' },
 }));
 
-import { toast, TOAST_TYPES } from '../../src/shared/toast.js';
-import { log, logGroup, Subsystems, Status } from '../../src/core/log.js';
+import { toast } from '../../src/shared/toast.js';
+import { log, logGroup } from '../../src/core/log.js';
 
 describe('Toast System', () => {
   let container;

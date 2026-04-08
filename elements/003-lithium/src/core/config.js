@@ -90,7 +90,7 @@ export async function loadConfig() {
     cachedConfig = deepMerge(DEFAULT_CONFIG, config);
     
     return cachedConfig;
-  } catch (error) {
+  } catch (_error) {
     cachedConfig = DEFAULT_CONFIG;
     return cachedConfig;
   }

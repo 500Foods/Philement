@@ -136,7 +136,7 @@ function _archiveSessionLog(sessionId, entries) {
     const ts = new Date().toISOString().replace(/[:.]/g, '-');
     const key = `${LOG_ARCHIVE_PREFIX}${shortId}_${ts}`;
     localStorage.setItem(key, JSON.stringify({ sessionId, entries }));
-  } catch (e) {
+  } catch (_e) {
     // Ignore storage errors (quota exceeded, private browsing, etc.)
   }
 }
@@ -164,10 +164,10 @@ function _loadFromStorage() {
     // Clear sessionStorage so this session starts fresh
     try {
       sessionStorage.removeItem(LOG_STORAGE_KEY);
-    } catch (e) {
+    } catch (_e) {
       // Ignore
     }
-  } catch (e) {
+  } catch (_e) {
     // Ignore storage errors
   }
 }
@@ -178,7 +178,7 @@ function _loadFromStorage() {
 function _saveToStorage() {
   try {
     sessionStorage.setItem(LOG_STORAGE_KEY, JSON.stringify(_buffer));
-  } catch (e) {
+  } catch (_e) {
     // Ignore storage errors (quota exceeded, private browsing, etc.)
   }
 }
@@ -530,7 +530,7 @@ function _parseArchivedEntry(key) {
     const value = localStorage.getItem(key);
     const parsed = JSON.parse(value);
     return { key, ...parsed };
-  } catch (e) {
+  } catch (_e) {
     // Skip malformed entries
     return null;
   }
@@ -569,7 +569,7 @@ export function getArchivedSessions() {
         results.push(entry);
       }
     }
-  } catch (e) {
+  } catch (_e) {
     // Ignore storage errors
   }
   
@@ -585,7 +585,7 @@ export function getArchivedSessions() {
 export function removeArchivedSession(key) {
   try {
     localStorage.removeItem(key);
-  } catch (e) {
+  } catch (_e) {
     // Ignore storage errors
   }
 }

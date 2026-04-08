@@ -65,7 +65,7 @@ async function handleResponse(response, requestNum) {
   if (contentType && contentType.includes('application/json')) {
     try {
       data = await response.json();
-    } catch (e) {
+    } catch (_e) {
       // JSON parse error, continue with null data
     }
   }

@@ -118,7 +118,6 @@ describe('Auth Integration', () => {
   // Check availability at describe level
   const credentialsAvailable = hasCredentials();
   let serverAvailable = false;
-  let checked = false;
 
   // Synchronous check for credentials
   if (!credentialsAvailable) {
@@ -130,7 +129,6 @@ describe('Auth Integration', () => {
     if (!credentialsAvailable) return;
 
     serverAvailable = await isServerAvailable();
-    checked = true;
 
     if (!serverAvailable) {
       console.warn(`\n⚠️  Hydrogen server not available at ${SERVER_URL}`);
