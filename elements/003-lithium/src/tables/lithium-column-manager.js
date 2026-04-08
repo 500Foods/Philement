@@ -15,7 +15,6 @@
  * @module tables/column-manager
  */
 
-import { LithiumTable } from './lithium-table-main.js';
 import { log, Subsystems, Status } from '../core/log.js';
 
 // Import modular components
