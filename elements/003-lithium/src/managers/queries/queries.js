@@ -26,7 +26,7 @@ import { authQuery } from '../../shared/conduit.js';
 import { toast } from '../../shared/toast.js';
 import { log, Subsystems, Status } from '../../core/log.js';
 import { processIcons } from '../../core/icons.js';
-import { setupManagerFooterIcons, createFontPopup } from '../../core/manager-ui.js';
+import { setupManagerFooterIcons, createFontPopup, initToolbars } from '../../core/manager-ui.js';
 import { ManagerEditHelper } from '../../core/manager-edit-helper.js';
 import { formatSortedJson, parseAndSortJson } from '../../core/codemirror-setup.js';
 
@@ -125,7 +125,7 @@ export default class QueriesManager {
       navigatorContainer: this.container.querySelector('#queries-navigator-container'),
       splitter: this.container.querySelector('#queries-splitter'),
       rightPanel: this.container.querySelector('.queries-right-panel'),
-      tabBtns: this.container.querySelectorAll('.queries-tab-btn:not(.queries-collapse-btn)'),
+      tabBtns: this.container.querySelectorAll('[data-tab]'),
       tabPanes: this.container.querySelectorAll('.queries-tab-pane'),
       collapseBtn: this.container.querySelector('#queries-collapse-btn'),
       sqlEditorContainer: this.container.querySelector('#queries-sql-editor'),
@@ -142,6 +142,7 @@ export default class QueriesManager {
     };
 
     processIcons(this.container);
+    initToolbars();
   }
 
   // ============ QUERY TABLE INITIALIZATION ============

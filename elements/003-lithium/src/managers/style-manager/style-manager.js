@@ -22,7 +22,7 @@ import { PanelStateManager } from '../../core/panel-state-manager.js';
 import { togglePanelCollapse, restorePanelState } from '../../core/panel-collapse.js';
 
 import { processIcons } from '../../core/icons.js';
-import { setupManagerFooterIcons, createFontPopup, closeExportPopup } from '../../core/manager-ui.js';
+import { setupManagerFooterIcons, createFontPopup, closeExportPopup, initToolbars } from '../../core/manager-ui.js';
 import { ManagerEditHelper } from '../../core/manager-edit-helper.js';
 import { authQuery } from '../../shared/conduit.js';
 import { toast } from '../../shared/toast.js';
@@ -248,6 +248,7 @@ export default class StyleManager {
     this.setupSplitters();
     this.setupModeToggle();
     this.setupToolbar();
+    initToolbars();
     this.initFontPopup();
     this.initPreviewStyle();
     this.setupFooter();

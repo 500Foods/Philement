@@ -9,51 +9,55 @@
   </div>
   <div class="lithium-splitter" data-splitter="left" id="queries-splitter"></div>
   <div class="queries-right-panel" data-panel="right">
-    <div class="queries-tabs-header">
-      <div class="subpanel-header-group" style="flex:1;min-width:0;">
-        <button type="button" class="subpanel-header-btn subpanel-header-close queries-collapse-btn lithium-collapse-btn" id="queries-collapse-btn" data-collapse-target="left" title="Toggle Table">
-          <fa fa-angles-left id="queries-collapse-icon" class="lithium-collapse-icon"></fa>
-        </button>
-        <button type="button" class="subpanel-header-btn subpanel-header-primary queries-tab-btn active" data-tab="sql">
-          <fa fa-database></fa>
-          <span>SQL</span>
-        </button>
-        <button type="button" class="subpanel-header-btn subpanel-header-primary queries-tab-btn" data-tab="test">
-          <fa fa-flask></fa>
-          <span>Test</span>
-        </button>
-        <button type="button" class="subpanel-header-btn subpanel-header-primary queries-tab-btn" data-tab="summary">
-          <fa fa-file-lines></fa>
-          <span>Summary</span>
-        </button>
-        <button type="button" class="subpanel-header-btn subpanel-header-primary queries-tab-btn" data-tab="preview">
-          <fa fa-eye></fa>
-          <span>Preview</span>
-        </button>
-        <button type="button" class="subpanel-header-btn subpanel-header-primary queries-tab-btn" data-tab="collection">
-          <fa fa-brackets-curly></fa>
-          <span>Collection</span>
-        </button>
-        <button type="button" class="subpanel-header-btn subpanel-header-primary queries-toolbar-placeholder" tabindex="-1" aria-hidden="true"></button>
-        <button type="button" class="subpanel-header-btn subpanel-header-close queries-toolbar-btn" id="queries-undo-btn" title="Undo (Ctrl+Z)" disabled>
-          <fa fa-rotate-left></fa>
-        </button>
-        <button type="button" class="subpanel-header-btn subpanel-header-close queries-toolbar-btn" id="queries-redo-btn" title="Redo (Ctrl+Y)" disabled>
-          <fa fa-rotate-right></fa>
-        </button>
-        <button type="button" class="subpanel-header-btn subpanel-header-close queries-toolbar-btn" id="queries-fold-all-btn" title="Collapse All Folds">
-          <fa fa-compress></fa>
-        </button>
-        <button type="button" class="subpanel-header-btn subpanel-header-close queries-toolbar-btn" id="queries-unfold-all-btn" title="Expand All Folds">
-          <fa fa-expand></fa>
-        </button>
-        <button type="button" class="subpanel-header-btn subpanel-header-close queries-toolbar-btn" id="queries-font-btn" title="Font Settings">
-          <fa fa-font-case></fa>
-        </button>
-        <button type="button" class="subpanel-header-btn subpanel-header-close queries-toolbar-btn" id="queries-prettify-btn" title="Pretty Print SQL">
-          <fa fa-flower-tulip></fa>
-        </button>
-      </div>
+    <!-- Standardized Toolbar -->
+    <div class="lithium-toolbar" id="queries-toolbar">
+      <button type="button" class="lithium-toolbar-btn lithium-collapse-btn" id="queries-collapse-btn" data-collapse-target="left" title="Toggle Table">
+        <fa fa-angles-left class="lithium-collapse-icon"></fa>
+      </button>
+      <button type="button" class="lithium-toolbar-tab active" data-tab="sql" data-collapsible-text>
+        <fa fa-database></fa>
+        <span>SQL</span>
+      </button>
+      <button type="button" class="lithium-toolbar-tab" data-tab="test" data-collapsible-text>
+        <fa fa-flask></fa>
+        <span>Test</span>
+      </button>
+      <button type="button" class="lithium-toolbar-tab" data-tab="summary" data-collapsible-text>
+        <fa fa-file-lines></fa>
+        <span>Summary</span>
+      </button>
+      <button type="button" class="lithium-toolbar-tab" data-tab="preview" data-collapsible-text>
+        <fa fa-eye></fa>
+        <span>Preview</span>
+      </button>
+      <button type="button" class="lithium-toolbar-tab" data-tab="collection" data-collapsible-text>
+        <fa fa-brackets-curly></fa>
+        <span>Collection</span>
+      </button>
+      <!-- Placeholder fills available space -->
+      <div class="lithium-toolbar-placeholder"></div>
+      <button type="button" class="lithium-toolbar-btn" id="queries-undo-btn" data-collapsible-text title="Undo (Ctrl+Z)" disabled>
+        <fa fa-rotate-left></fa>
+        <span>Undo</span>
+      </button>
+      <button type="button" class="lithium-toolbar-btn" id="queries-redo-btn" data-collapsible-text title="Redo (Ctrl+Y)" disabled>
+        <fa fa-rotate-right></fa>
+        <span>Redo</span>
+      </button>
+      <button type="button" class="lithium-toolbar-btn" id="queries-fold-all-btn" data-collapsible-text title="Collapse All Folds">
+        <fa fa-compress></fa>
+        <span>Fold</span>
+      </button>
+      <button type="button" class="lithium-toolbar-btn" id="queries-unfold-all-btn" data-collapsible-text title="Expand All Folds">
+        <fa fa-expand></fa>
+        <span>Unfold</span>
+      </button>
+      <button type="button" class="lithium-toolbar-btn" id="queries-font-btn" title="Font Settings">
+        <fa fa-font-case></fa>
+      </button>
+      <button type="button" class="lithium-toolbar-btn" id="queries-prettify-btn" title="Pretty Print SQL">
+        <fa fa-flower-tulip></fa>
+      </button>
     </div>
     <div class="queries-tabs-content">
       <div class="queries-tab-pane active" id="queries-tab-sql">
