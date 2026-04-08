@@ -19,7 +19,15 @@ import { CrimsonManager } from './crimson-core.js';
  * Handle drag start on header
  */
 CrimsonManager.prototype.handleDragStart = function(e) {
-  if (e.target.closest('.crimson-header-close')) return;
+  // Allow dragging from the title/status area, but not from actionable header controls
+  if (e.target.closest([
+    '.crimson-header-close',
+    '.crimson-reset-btn',
+    '.crimson-debug-btn',
+    '.crimson-streaming-btn',
+    '.crimson-reasoning-btn',
+    '.crimson-citation-header-btn',
+  ].join(', '))) return;
 
   this.isDragging = true;
   this.popup.classList.add('dragging');
@@ -436,13 +444,13 @@ CrimsonManager.prototype.handleSend = function() {
   const message = this.input.value.trim();
   if (!message || this.isStreaming) return;
 
-  this.addMessage?.('user', message);
-  this.addInputToHistory?.(message);
+  this.addMessage('user', message);
+  this.addInputToHistory(message);
 
   this.input.value = '';
-  this.autoResizeInput?.();
+  this.autoResizeInput();
 
-  this.sendChatMessage?.(message);
+  this.sendChatMessage(message);
 };
 
 /**
@@ -457,13 +465,13 @@ CrimsonManager.prototype.handleInputKeydown = function(e) {
 
   if (e.key === 'ArrowUp' && (this.input.selectionStart === 0 || this.input.value === '')) {
     e.preventDefault();
-    this.navigateInputHistory?.(-1);
+    this.navigateInputHistory(-1);
     return;
   }
 
   if (e.key === 'ArrowDown' && (this.input.selectionStart === this.input.value.length || this.input.value === '')) {
     e.preventDefault();
-    this.navigateInputHistory?.(1);
+    this.navigateInputHistory(1);
     return;
   }
 };
