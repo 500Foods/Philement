@@ -1,0 +1,821 @@
+/**
+ * LithiumColumnManager Styles
+ *
+ * Styling for the column manager popup interface
+ * Features a dark blue theme to distinguish from tables below
+ */
+
+/* ── Main Popup Container ──────────────────────────────────────────────────── */
+
+.col-manager-popup {
+  position: fixed;
+  z-index: 30000;
+  background: linear-gradient(180deg, #0a1628 0%, #0d1e36 100%);
+  border: 1px solid #1e3a5f;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(30, 58, 95, 0.3);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(0.95);
+  transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
+  min-width: 300px;
+  min-height: 200px;
+  pointer-events: none;
+}
+
+.col-manager-popup.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: scale(1);
+  pointer-events: auto;
+}
+
+.col-manager-popup.resizing {
+  user-select: none;
+  transition: none;
+}
+
+/* ── Depth-2 Column Manager (Dark Red Theme) ───────────────────────────────── */
+
+.col-manager-popup.depth-2 {
+  background: linear-gradient(180deg, #280a0a 0%, #360d0d 100%);
+  border: 1px solid #5f1e1e;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(95, 30, 30, 0.3);
+}
+
+.col-manager-popup.depth-2 .col-manager-header {
+  background: linear-gradient(90deg, #1f0a0a 0%, #2a1515 100%);
+  border-bottom: 1px solid #5f1e1e;
+}
+
+.col-manager-popup.depth-2 .col-manager-title {
+  color: #e8a0a0;
+}
+
+.col-manager-popup.depth-2 .col-manager-close-btn {
+  color: #b86b6b;
+}
+
+.col-manager-popup.depth-2 .col-manager-close-btn:hover {
+  background: rgba(232, 160, 160, 0.1);
+  color: #e8a0a0;
+}
+
+.col-manager-popup.depth-2 .col-manager-save-btn:disabled,
+.col-manager-popup.depth-2 .col-manager-cancel-btn:disabled {
+  background: rgba(160, 100, 100, 0.15);
+  color: #5a3030;
+}
+
+.col-manager-popup.depth-2 .col-manager-content {
+  background: #280a0a;
+}
+
+.col-manager-popup.depth-2 .col-manager-table-container {
+  background: #280a0a;
+}
+
+.col-manager-popup.depth-2 .col-manager-navigator {
+  border-top: 1px solid #5f1e1e;
+  background: linear-gradient(0deg, #1f0a0a 0%, #360d0d 100%);
+}
+
+/* Depth-2 LithiumTable inside Column Manager */
+.col-manager-popup.depth-2 .col-manager-table-container .lithium-table-container {
+  background: #280a0a !important;
+}
+
+.col-manager-popup.depth-2 .col-manager-table-container .tabulator {
+  background: #280a0a;
+}
+
+.col-manager-popup.depth-2 .col-manager-table-container .tabulator-header {
+  background: linear-gradient(180deg, #1f0a0a 0%, #360d0d 100%);
+  border-bottom: 2px solid #5f1e1e;
+  color: #e8a0a0;
+}
+
+.col-manager-popup.depth-2 .col-manager-table-container .tabulator-col {
+  border-right: 1px solid #5f1e1e;
+}
+
+.col-manager-popup.depth-2 .col-manager-table-container .tabulator-col-title {
+  color: #c97b7b;
+}
+
+.col-manager-popup.depth-2 .col-manager-table-container .tabulator-tableholder {
+  background: #280a0a;
+}
+
+.col-manager-popup.depth-2 .col-manager-table-container .tabulator-table {
+  background: #280a0a;
+}
+
+.col-manager-popup.depth-2 .col-manager-table-container .tabulator-row {
+  background: #360d0d;
+}
+
+.col-manager-popup.depth-2 .col-manager-table-container .tabulator-row:nth-child(even) {
+  background: #3d1010;
+}
+
+.col-manager-popup.depth-2 .col-manager-table-container .tabulator-row:hover {
+  background: #4a1515;
+}
+
+.col-manager-popup.depth-2 .col-manager-table-container .tabulator-row.tabulator-selected {
+  background: #6b2020 !important;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────────── */
+
+.col-manager-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: linear-gradient(90deg, #0f1f35 0%, #152a45 100%);
+  border-bottom: 1px solid #1e3a5f;
+  flex-shrink: 0;
+  gap: 4px;
+}
+
+.col-manager-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #a0c4e8;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Mode Toggle (Manual/Auto) ──────────────────────────────────────────────── */
+
+.col-manager-mode-toggle {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  background: rgba(30, 58, 95, 0.3);
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 0 8px;
+}
+
+.col-manager-mode-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: transparent;
+  border: none;
+  color: #6b8cb8;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.col-manager-mode-btn:hover {
+  background: rgba(74, 144, 217, 0.15);
+  color: #a0c4e8;
+}
+
+.col-manager-mode-btn.active {
+  background: rgba(74, 144, 217, 0.3);
+  color: #a0c4e8;
+  font-weight: 600;
+}
+
+.col-manager-mode-btn svg,
+.col-manager-mode-btn i {
+  font-size: 11px;
+}
+
+/* Depth-2 mode toggle colors */
+.col-manager-popup.depth-2 .col-manager-mode-toggle {
+  background: rgba(95, 30, 30, 0.3);
+}
+
+.col-manager-popup.depth-2 .col-manager-mode-btn {
+  color: #b86b6b;
+}
+
+.col-manager-popup.depth-2 .col-manager-mode-btn:hover {
+  background: rgba(232, 160, 160, 0.1);
+  color: #e8a0a0;
+}
+
+.col-manager-popup.depth-2 .col-manager-mode-btn.active {
+  background: rgba(232, 160, 160, 0.2);
+  color: #e8a0a0;
+}
+
+/* ── Header Actions (save/cancel/close button group) ───────────────────────── */
+
+.col-manager-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.col-manager-close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: #6b8cb8;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.col-manager-close-btn:hover {
+  background: rgba(160, 196, 232, 0.1);
+  color: #a0c4e8;
+}
+
+/* ── Save/Cancel Buttons (in header, beside close) ─────────────────────────── */
+
+.col-manager-save-btn,
+.col-manager-cancel-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: not-allowed;
+  transition: background 350ms ease,
+              color 350ms ease,
+              cursor 0s 350ms;
+}
+
+/* Disabled state (default — no dirty record) */
+.col-manager-save-btn:disabled,
+.col-manager-cancel-btn:disabled {
+  background: rgba(100, 130, 160, 0.15);
+  color: #3d5a78;
+  cursor: not-allowed;
+}
+
+/* Enabled Save — green */
+.col-manager-save-btn:not(:disabled) {
+  background: var(--accent-success, #22c55e);
+  color: white;
+  cursor: pointer;
+}
+
+.col-manager-save-btn:not(:disabled):hover {
+  background: var(--accent-success-hover, #4CAF50);
+}
+
+/* Enabled Cancel — red */
+.col-manager-cancel-btn:not(:disabled) {
+  background: var(--accent-danger, #ef4444);
+  color: white;
+  cursor: pointer;
+}
+
+.col-manager-cancel-btn:not(:disabled):hover {
+  background: var(--accent-danger-hover, #E53935);
+}
+
+/* ── Content Area ──────────────────────────────────────────────────────────── */
+
+.col-manager-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #0a1628;
+}
+
+/* ── Table Container ───────────────────────────────────────────────────────── */
+
+.col-manager-table-container {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  background: #0a1628;
+  min-height: 100px;
+}
+
+/* Override lithium-table-container flex to prevent double flex */
+.col-manager-table-container .lithium-table-container {
+  flex: none;
+  height: 100%;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+}
+
+/* ── Navigator ─────────────────────────────────────────────────────────────── */
+
+.col-manager-navigator {
+  flex-shrink: 0;
+  border-top: 1px solid #1e3a5f;
+  background: linear-gradient(0deg, #0f1f35 0%, #0d1e36 100%);
+  padding: 6px 8px;
+}
+
+/* ── Resize Handle ─────────────────────────────────────────────────────────── */
+
+.col-manager-resize-handle {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  width: 16px;
+  height: 16px;
+  cursor: nwse-resize;
+  z-index: 1;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+.col-manager-resize-handle::before {
+  content: '';
+  position: absolute;
+  bottom: 3px;
+  right: 3px;
+  width: 10px;
+  height: 10px;
+  background: linear-gradient(135deg, transparent 50%, #4a7aa8 50%);
+  border-bottom-right-radius: 2px;
+}
+
+.col-manager-resize-handle:hover {
+  opacity: 1;
+}
+
+.col-manager-popup.resizing .col-manager-resize-handle {
+  opacity: 1;
+}
+
+/* ── LithiumTable Inside Column Manager ────────────────────────────────────── */
+
+/* Target the LithiumTable container inside the column manager */
+.col-manager-table-container .lithium-table-container {
+  background: #0a1628 !important;
+  border: none !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+}
+
+/* Tabulator wrapper inside LithiumTable */
+.col-manager-table-container .lithium-table-container .tabulator {
+  background: #0a1628;
+  border: none;
+}
+
+/* Tabulator Header */
+.col-manager-table-container .lithium-table-container .tabulator .tabulator-header {
+  background: linear-gradient(180deg, #0f1f35 0%, #0d1e36 100%);
+  border-bottom: 2px solid #1e3a5f;
+  color: #a0c4e8;
+}
+
+.col-manager-table-container .lithium-table-container .tabulator .tabulator-header .tabulator-col {
+  background: transparent;
+  border-right: 1px solid #1e3a5f;
+}
+
+.col-manager-table-container .lithium-table-container .tabulator .tabulator-header .tabulator-col .tabulator-col-content {
+  padding: 8px 10px;
+}
+
+.col-manager-table-container .lithium-table-container .tabulator .tabulator-header .tabulator-col .tabulator-col-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: #7ba3c9;
+}
+
+/* Tabulator Table Holder */
+.col-manager-table-container .lithium-table-container .tabulator .tabulator-tableholder {
+  background: #0a1628;
+}
+
+.col-manager-table-container .lithium-table-container .tabulator .tabulator-tableholder .tabulator-table {
+  background: #0a1628;
+}
+
+/* Tabulator Rows */
+.col-manager-table-container .lithium-table-container .tabulator .tabulator-row {
+  background: #0d1e36;
+  border-bottom: 1px solid #152a45;
+  color: #c8ddf0;
+  transition: background 0.15s ease;
+}
+
+.col-manager-table-container .lithium-table-container .tabulator .tabulator-row:hover {
+  background: #132840;
+}
+
+.col-manager-table-container .lithium-table-container .tabulator .tabulator-row.tabulator-selected {
+  background: #1a3a5c !important;
+  color: #ffffff;
+}
+
+.col-manager-table-container .lithium-table-container .tabulator .tabulator-row.tabulator-group {
+  background: linear-gradient(90deg, #0f1f35 0%, #132840 100%);
+  border-bottom: 1px solid #1e3a5f;
+}
+
+.col-manager-table-container .lithium-table-container .tabulator .tabulator-row.tabulator-group:hover {
+  background: linear-gradient(90deg, #132840 0%, #183050 100%);
+}
+
+/* Tabulator Cells */
+.col-manager-table-container .lithium-table-container .tabulator .tabulator-cell {
+  padding: 6px 10px;
+  font-size: 12px;
+  border-right: 1px solid #152a45;
+  color: #c8ddf0;
+}
+
+/* ── Cell-specific Styles ──────────────────────────────────────────────────── */
+
+/* Drag handle column - frozen column for row reordering (Manual mode) */
+.col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="drag_handle"] {
+  cursor: grab;
+  color: #4a6a8a;
+  font-size: 13px;
+  text-align: center;
+  user-select: none;
+  -webkit-user-select: none;
+  padding: 0 4px;
+}
+
+.col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="drag_handle"]:hover {
+  color: #a0c4e8;
+  background: rgba(74, 144, 217, 0.15);
+}
+
+.col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="drag_handle"]:active,
+.col-manager-table-container .lithium-table-container .tabulator-row.tabulator-row-moving .tabulator-cell[data-tabulator-field="drag_handle"] {
+  cursor: grabbing;
+  color: #ffffff;
+}
+
+/* Drag handle header - minimal */
+.col-manager-table-container .lithium-table-container .tabulator-header .tabulator-col[data-tabulator-field="drag_handle"] .tabulator-col-title {
+  font-size: 11px;
+  color: #4a6a8a;
+  text-align: center;
+}
+
+/* Make drag handle column frozen style distinct */
+.col-manager-table-container .lithium-table-container .tabulator-header .tabulator-col[data-tabulator-field="drag_handle"] {
+  border-right: 2px solid #2a5a8c !important;
+}
+
+.col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="drag_handle"] {
+  border-right: 2px solid #1e3a5f !important;
+}
+
+/* Order column */
+.col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="order"] {
+  color: #6b8cb8;
+  font-family: 'Monaco', 'Menlo', monospace;
+  font-size: 11px;
+}
+
+/* Order column header frozen style */
+.col-manager-table-container .lithium-table-container .tabulator-header .tabulator-col[data-tabulator-field="order"] {
+  border-right: 2px solid #2a5a8c !important;
+}
+
+.col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="order"] {
+  border-right: 2px solid #1e3a5f !important;
+}
+
+/* Visible column (checkbox) */
+.col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="visible"] {
+  text-align: center;
+}
+
+.col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="visible"] input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  accent-color: #4a90d9;
+  cursor: pointer;
+}
+
+/* Field name column */
+.col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="field_name"] {
+  font-family: 'Monaco', 'Menlo', monospace;
+  font-size: 11px;
+  color: #7ba3c9;
+}
+
+/* Column name column */
+.col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="column_name"] {
+  font-weight: 500;
+  color: #e0eaf5;
+}
+
+/* Dropdown columns */
+.col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="format"],
+.col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="summary"],
+.col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="alignment"] {
+  font-size: 11px;
+  color: #5a9ad8;
+}
+
+/* ── Edit Mode Styles ──────────────────────────────────────────────────────── */
+
+.col-manager-table-container .lithium-table-container .tabulator-cell .tabulator-editor {
+  background: #0d1e36;
+  border: 1px solid #4a90d9;
+  color: #e0eaf5;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.col-manager-table-container .lithium-table-container .tabulator-cell .tabulator-editor input {
+  background: #0d1e36;
+  border: 1px solid #4a90d9;
+  color: #e0eaf5;
+  padding: 6px 10px;
+}
+
+.col-manager-table-container .lithium-table-container .tabulator-cell .tabulator-editor select {
+  background: #0d1e36;
+  border: 1px solid #4a90d9;
+  color: #e0eaf5;
+  padding: 6px 10px;
+  font-size: 12px;
+  width: 100%;
+}
+
+/* ── Group Headers ─────────────────────────────────────────────────────────── */
+
+.col-manager-table-container .lithium-table-container .tabulator-group .tabulator-group-toggle {
+  color: #6b8cb8;
+}
+
+.col-manager-table-container .lithium-table-container .tabulator-group .tabulator-group-toggle:hover {
+  color: #a0c4e8;
+}
+
+.col-manager-table-container .lithium-table-container .tabulator-group .tabulator-group-title {
+  color: #7ba3c9;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+/* ── Dragging States ───────────────────────────────────────────────────────── */
+
+/* Prevent text selection on all rows — drag handle initiates row move, not text select */
+.col-manager-table-container .lithium-table-container .tabulator-row {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.col-manager-table-container .lithium-table-container .tabulator-row.tabulator-row-moving {
+  background: #1a3a5c !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.col-manager-table-container .lithium-table-container .tabulator-row.tabulator-row-dragging {
+  background: #2a5a8c !important;
+  color: #ffffff !important;
+  opacity: 0.95;
+}
+
+/* ── Navigator Button Styles (matching dark blue theme) ────────────────────── */
+
+.col-manager-navigator .lithium-nav-block {
+  background: rgba(30, 58, 95, 0.3);
+  border-color: #1e3a5f;
+  outline-color: #1e3a5f;
+}
+
+.col-manager-navigator .lithium-nav-btn {
+  background: transparent;
+  border: none;
+  color: #7ba3c9;
+  transition: all 0.15s ease;
+}
+
+.col-manager-navigator .lithium-nav-btn:hover {
+  background: rgba(74, 144, 217, 0.2);
+  color: #a0c4e8;
+}
+
+.col-manager-navigator .lithium-nav-btn:disabled {
+  color: #3d5a78;
+  opacity: 0.5;
+}
+
+.col-manager-navigator .lithium-nav-btn-active {
+  background: rgba(74, 144, 217, 0.3);
+  color: #4a90d9;
+}
+
+/* ── Scrollbar Styles ──────────────────────────────────────────────────────── */
+
+.col-manager-table-container .lithium-table-container .tabulator-tableholder::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.col-manager-table-container .lithium-table-container .tabulator-tableholder::-webkit-scrollbar-track {
+  background: #0a1628;
+}
+
+.col-manager-table-container .lithium-table-container .tabulator-tableholder::-webkit-scrollbar-thumb {
+  background: #1e3a5f;
+  border-radius: 4px;
+}
+
+.col-manager-table-container .lithium-table-container .tabulator-tableholder::-webkit-scrollbar-thumb:hover {
+  background: #2a5a8c;
+}
+
+/* ── Responsive Adjustments ────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .col-manager-popup {
+    left: 10px !important;
+    right: 10px !important;
+    width: auto !important;
+  }
+}
+
+/* ── Light Mode Support (optional) ─────────────────────────────────────────── */
+
+@media (prefers-color-scheme: light) {
+  .col-manager-popup {
+    background: linear-gradient(180deg, #f5f8fc 0%, #e8f0f8 100%);
+    border-color: #c0d4e8;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(192, 212, 232, 0.5);
+  }
+  
+  .col-manager-header {
+    background: linear-gradient(90deg, #e8f0f8 0%, #dce8f4 100%);
+    border-bottom-color: #c0d4e8;
+  }
+  
+  .col-manager-title {
+    color: #2a4a6a;
+  }
+  
+  .col-manager-close-btn {
+    color: #6b88a8;
+  }
+  
+  .col-manager-close-btn:hover {
+    background: rgba(42, 74, 106, 0.1);
+    color: #2a4a6a;
+  }
+  
+  .col-manager-save-btn:disabled,
+  .col-manager-cancel-btn:disabled {
+    background: rgba(100, 130, 160, 0.1);
+    color: #a0b0c0;
+  }
+  
+  .col-manager-content {
+    background: #f5f8fc;
+  }
+  
+  .col-manager-table-container {
+    background: #f5f8fc;
+  }
+  
+  .col-manager-navigator {
+    background: linear-gradient(0deg, #e8f0f8 0%, #f0f5fb 100%);
+    border-top-color: #c0d4e8;
+  }
+  
+  .col-manager-resize-handle::before {
+    background: linear-gradient(135deg, transparent 50%, #a0b8d0 50%);
+  }
+  
+  /* Table styles for light mode */
+  .col-manager-table-container .lithium-table-container {
+    background: #f5f8fc !important;
+  }
+  
+  .col-manager-table-container .lithium-table-container .tabulator {
+    background: #f5f8fc;
+  }
+  
+  .col-manager-table-container .lithium-table-container .tabulator .tabulator-header {
+    background: linear-gradient(180deg, #e8f0f8 0%, #f0f5fb 100%);
+    border-bottom-color: #c0d4e8;
+  }
+  
+  .col-manager-table-container .lithium-table-container .tabulator .tabulator-header .tabulator-col {
+    border-right-color: #d0e0f0;
+  }
+  
+  .col-manager-table-container .lithium-table-container .tabulator .tabulator-header .tabulator-col .tabulator-col-title {
+    color: #4a6a8a;
+  }
+  
+  .col-manager-table-container .lithium-table-container .tabulator .tabulator-tableholder {
+    background: #f5f8fc;
+  }
+  
+  .col-manager-table-container .lithium-table-container .tabulator .tabulator-row {
+    background: #ffffff;
+    border-bottom-color: #e0eaf4;
+    color: #2a4a6a;
+  }
+  
+  .col-manager-table-container .lithium-table-container .tabulator .tabulator-row:hover {
+    background: #f0f5fb;
+  }
+  
+  .col-manager-table-container .lithium-table-container .tabulator .tabulator-row.tabulator-selected {
+    background: #dce8f4 !important;
+    color: #1a3a5c;
+  }
+  
+  .col-manager-table-container .lithium-table-container .tabulator .tabulator-row.tabulator-group {
+    background: linear-gradient(90deg, #e8f0f8 0%, #f0f5fb 100%);
+    border-bottom-color: #c0d4e8;
+  }
+  
+  .col-manager-table-container .lithium-table-container .tabulator .tabulator-cell {
+    border-right-color: #e0eaf4;
+    color: #2a4a6a;
+  }
+  
+  .col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="drag_handle"] {
+    color: #8aa8c8;
+  }
+  
+  .col-manager-mode-toggle {
+    background: rgba(100, 130, 160, 0.15);
+  }
+  
+  .col-manager-mode-btn {
+    color: #6b88a8;
+  }
+  
+  .col-manager-mode-btn:hover {
+    background: rgba(58, 122, 184, 0.1);
+    color: #2a5a8a;
+  }
+  
+  .col-manager-mode-btn.active {
+    background: rgba(58, 122, 184, 0.2);
+    color: #2a5a8a;
+  }
+  
+  .col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="order"] {
+    color: #6b88a8;
+  }
+  
+  .col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="field_name"] {
+    color: #5a7a9a;
+  }
+  
+  .col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="column_name"] {
+    color: #1a3a5c;
+  }
+  
+  .col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="format"],
+  .col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="summary"],
+  .col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="alignment"] {
+    color: #3a7ab8;
+  }
+  
+  .col-manager-table-container .lithium-table-container .tabulator-cell .tabulator-editor {
+    background: #ffffff;
+    border-color: #3a7ab8;
+    color: #2a4a6a;
+  }
+  
+  .col-manager-table-container .lithium-table-container .tabulator-cell .tabulator-editor input,
+  .col-manager-table-container .lithium-table-container .tabulator-cell .tabulator-editor select {
+    background: #ffffff;
+    border-color: #3a7ab8;
+    color: #2a4a6a;
+  }
+  
+  .col-manager-navigator .lithium-nav-btn {
+    color: #4a6a8a;
+  }
+  
+  .col-manager-navigator .lithium-nav-btn:hover {
+    background: rgba(58, 122, 184, 0.15);
+    color: #2a5a8a;
+  }
+}

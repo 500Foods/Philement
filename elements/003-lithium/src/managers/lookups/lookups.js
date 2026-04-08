@@ -11,7 +11,7 @@
  * @module managers/lookups
  */
 
-import { LithiumTable } from '../../core/lithium-table-main.js';
+import { LithiumTable } from '../../tables/lithium-table-main.js';
 import { LithiumSplitter } from '../../core/lithium-splitter.js';
 import { PanelStateManager } from '../../core/panel-state-manager.js';
 import { togglePanelCollapse, restorePanelState } from '../../core/panel-collapse.js';
