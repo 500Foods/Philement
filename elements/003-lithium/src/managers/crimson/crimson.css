@@ -5,6 +5,9 @@
  * Styled to match the Lithium design system with subpanel-header-group styling.
  */
 
+/* Import LithiumTable styles for the citation popup */
+@import '../../tables/lithium-table.css';
+
 @layer managers {
 
 /* ========================================
@@ -754,7 +757,7 @@
   height: 12px;
   opacity: 0.5;
   transition: opacity var(--transition-fast) ease;
-  z-index: 1;
+  z-index: 10;
 }
 
 .crimson-resize-handle:hover {
@@ -1205,147 +1208,6 @@
 /* ── Crimson Themed Popup (for Citation Manager) ─────────────────────────────
    Similar to column manager popups — uses --accent-crimson for distinction */
 
-.crimson-citation-themed {
-  background: linear-gradient(180deg, #280a14 0%, #360d1a 100%);
-  border: 1px solid #5f1e2e;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(95, 30, 46, 0.3);
-}
-
-.crimson-citation-themed .crimson-citation-popup-header {
-  background: linear-gradient(90deg, #1f0a12 0%, #2a1518 100%);
-  border-bottom: 1px solid #5f1e2e;
-}
-
-.crimson-citation-themed .crimson-citation-popup-title {
-  color: #e8a0a8;
-}
-
-.crimson-citation-themed .crimson-citation-popup-close {
-  color: #b86b76;
-}
-
-.crimson-citation-themed .crimson-citation-popup-close:hover {
-  background: rgba(232, 160, 168, 0.1);
-  color: #e8a0a8;
-}
-
-.crimson-citation-themed .crimson-citation-popup-content {
-  background: #280a14;
-}
-
-/* LithiumTable styling inside crimson-themed citation popup */
-.crimson-citation-themed .crimson-citation-table-wrap.lithium-table-container {
-  background: #280a14 !important;
-}
-
-.crimson-citation-themed .crimson-citation-table-wrap .tabulator {
-  background: #280a14;
-}
-
-.crimson-citation-themed .crimson-citation-table-wrap .tabulator-header {
-  background: linear-gradient(180deg, #1f0a12 0%, #360d1a 100%);
-  border-bottom: 2px solid #5f1e2e;
-  color: #e8a0a8;
-}
-
-.crimson-citation-themed .crimson-citation-table-wrap .tabulator-header .tabulator-col {
-  border-right: 1px solid #5f1e2e;
-}
-
-.crimson-citation-themed .crimson-citation-table-wrap .tabulator-header .tabulator-col-title {
-  color: #c97b84;
-}
-
-.crimson-citation-themed .crimson-citation-table-wrap .tabulator-tableholder {
-  background: #280a14;
-}
-
-.crimson-citation-themed .crimson-citation-table-wrap .tabulator-table {
-  background: #280a14;
-}
-
-.crimson-citation-themed .crimson-citation-table-wrap .tabulator-row {
-  background: #360d1a;
-  border-bottom: 1px solid #4a151a;
-}
-
-.crimson-citation-themed .crimson-citation-table-wrap .tabulator-row:hover {
-  background: #4a151c;
-}
-
-.crimson-citation-themed .crimson-citation-table-wrap .tabulator-row.tabulator-selected {
-  background: #6b2028 !important;
-}
-
-.crimson-citation-themed .crimson-citation-table-wrap .tabulator-cell {
-  border-right: 1px solid #4a151a;
-  color: #e8c8cc;
-}
-
-/* Navigator styling for crimson-themed popup */
-.crimson-citation-themed .crimson-citation-nav-wrap {
-  border-top: 1px solid #5f1e2e;
-  background: linear-gradient(0deg, #1f0a12 0%, #360d1a 100%);
-}
-
-.crimson-citation-themed .crimson-citation-nav-wrap .lithium-nav-block {
-  background: rgba(95, 30, 46, 0.3);
-  border-color: #5f1e2e;
-  outline-color: #5f1e2e;
-}
-
-.crimson-citation-themed .crimson-citation-nav-wrap .lithium-nav-btn {
-  color: #c97b84;
-}
-
-.crimson-citation-themed .crimson-citation-nav-wrap .lithium-nav-btn:hover {
-  background: rgba(220, 20, 60, 0.2);
-  color: #e8a0a8;
-}
-
-.crimson-citation-themed .crimson-citation-nav-wrap .lithium-nav-btn:disabled {
-  color: #5a3036;
-  opacity: 0.5;
-}
-
-/* Popup arrow for crimson theme */
-.crimson-citation-themed .crimson-citation-popup-arrow.arrow-left {
-  border-color: transparent #5f1e2e transparent transparent;
-}
-
-.crimson-citation-themed .crimson-citation-popup-arrow.arrow-left::after {
-  border-color: transparent #280a14 transparent transparent;
-}
-
-.crimson-citation-themed .crimson-citation-popup-arrow.arrow-right {
-  border-color: transparent transparent transparent #5f1e2e;
-}
-
-.crimson-citation-themed .crimson-citation-popup-arrow.arrow-right::after {
-  border-color: transparent transparent transparent #280a14;
-}
-
-.crimson-citation-themed .crimson-citation-popup-arrow.arrow-top {
-  border-color: transparent transparent #5f1e2e transparent;
-}
-
-.crimson-citation-themed .crimson-citation-popup-arrow.arrow-top::after {
-  border-color: transparent transparent #280a14 transparent;
-}
-
-.crimson-citation-themed .crimson-citation-popup-arrow.arrow-bottom {
-  border-color: #5f1e2e transparent transparent transparent;
-}
-
-.crimson-citation-themed .crimson-citation-popup-arrow.arrow-bottom::after {
-  border-color: #280a14 transparent transparent transparent;
-}
-
-/* Resize handle for crimson theme */
-.crimson-citation-themed .crimson-citation-resize-handle::before {
-  background: linear-gradient(135deg, transparent 50%, #b86b76 50%);
-}
-
 /* Popup arrow */
 .crimson-citation-popup-arrow {
   position: absolute;
@@ -1541,6 +1403,11 @@
   visibility: visible;
   transform: scale(1);
   pointer-events: auto;
+}
+
+.crimson-citation-popup.dragging,
+.crimson-citation-popup.resizing {
+  transition: none;
 }
 
 /* Popup header */
