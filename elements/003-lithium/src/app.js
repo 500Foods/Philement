@@ -276,6 +276,7 @@ class LithiumApp {
     this.utilityManagerRegistry = {
       'user-profile': { id: 3, key: 'user-profile', name: 'User Profile' },
       'session-log': { id: 4, key: 'session-log', name: 'Session Log' },
+      'terminal': { id: 5, key: 'terminal', name: 'Terminal' },
     };
 
     // Transition overlay element (created lazily)
@@ -1032,6 +1033,7 @@ class LithiumApp {
     switch (managerKey) {
       case 'session-log': return import('./managers/session-log/session-log.js');
       case 'user-profile': return import('./managers/profile-manager/profile-manager.js');
+      case 'terminal': return import('./managers/terminal/terminal.js');
       default: throw new Error(`No import mapping for utility manager key: ${managerKey}`);
     }
   }
