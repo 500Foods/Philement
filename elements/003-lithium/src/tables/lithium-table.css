@@ -251,6 +251,7 @@
   background: var(--accent-primary);
   min-width: 149px;
   margin-right: 1px;
+  max-width: 457px;
 }
 
 .lithium-nav-block-search .lithium-nav-btn {

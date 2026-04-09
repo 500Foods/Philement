@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS custom properties (variables) used across the Lithium codebase",
-    "generated": "2026-04-08T23:49:20.332Z",
+    "generated": "2026-04-09T02:36:17.364Z",
     "sources": {
       "css": "50 files in src/**/*.css",
       "js": "102 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
     "total_variables": 213,
-    "total_occurrences": 3305
+    "total_occurrences": 3350
   },
   "variables": [
     {
@@ -69,10 +69,10 @@
     },
     {
       "name": "--accent-hover",
-      "css": 40,
+      "css": 42,
       "js": 0,
       "html": 0,
-      "total": 40
+      "total": 42
     },
     {
       "name": "--accent-info",
@@ -90,10 +90,10 @@
     },
     {
       "name": "--accent-primary",
-      "css": 159,
+      "css": 167,
       "js": 3,
       "html": 1,
-      "total": 163
+      "total": 171
     },
     {
       "name": "--accent-primary-hover",
@@ -188,10 +188,10 @@
     },
     {
       "name": "--bg-primary",
-      "css": 59,
+      "css": 61,
       "js": 0,
       "html": 1,
-      "total": 60
+      "total": 62
     },
     {
       "name": "--bg-primary-rgb",
@@ -223,17 +223,17 @@
     },
     {
       "name": "--bg-secondary",
-      "css": 84,
+      "css": 85,
       "js": 1,
       "html": 1,
-      "total": 86
+      "total": 87
     },
     {
       "name": "--bg-tertiary",
-      "css": 95,
+      "css": 94,
       "js": 2,
       "html": 0,
-      "total": 97
+      "total": 96
     },
     {
       "name": "--border-color",
@@ -279,17 +279,17 @@
     },
     {
       "name": "--border-radius-lg",
-      "css": 16,
+      "css": 21,
       "js": 0,
       "html": 0,
-      "total": 16
+      "total": 21
     },
     {
       "name": "--border-radius-md",
-      "css": 129,
+      "css": 134,
       "js": 0,
       "html": 0,
-      "total": 129
+      "total": 134
     },
     {
       "name": "--border-radius-sm",
@@ -517,10 +517,10 @@
     },
     {
       "name": "--font-size-lg",
-      "css": 27,
+      "css": 28,
       "js": 0,
       "html": 0,
-      "total": 27
+      "total": 28
     },
     {
       "name": "--font-size-md",
@@ -545,10 +545,10 @@
     },
     {
       "name": "--font-size-xl",
-      "css": 29,
+      "css": 32,
       "js": 0,
       "html": 0,
-      "total": 29
+      "total": 32
     },
     {
       "name": "--font-size-xs",
@@ -776,10 +776,10 @@
     },
     {
       "name": "--shadow-lg",
-      "css": 12,
+      "css": 13,
       "js": 0,
       "html": 0,
-      "total": 12
+      "total": 13
     },
     {
       "name": "--shadow-md",
@@ -804,24 +804,24 @@
     },
     {
       "name": "--space-2",
-      "css": 152,
+      "css": 158,
       "js": 0,
       "html": 0,
-      "total": 152
+      "total": 158
     },
     {
       "name": "--space-3",
-      "css": 184,
+      "css": 190,
       "js": 2,
       "html": 0,
-      "total": 186
+      "total": 192
     },
     {
       "name": "--space-4",
-      "css": 105,
+      "css": 106,
       "js": 0,
       "html": 0,
-      "total": 105
+      "total": 106
     },
     {
       "name": "--space-5",
@@ -1000,10 +1000,10 @@
     },
     {
       "name": "--text-muted",
-      "css": 63,
+      "css": 62,
       "js": 6,
       "html": 0,
-      "total": 69
+      "total": 68
     },
     {
       "name": "--text-on-accent",
@@ -1014,17 +1014,17 @@
     },
     {
       "name": "--text-primary",
-      "css": 139,
+      "css": 138,
       "js": 5,
       "html": 1,
-      "total": 145
+      "total": 144
     },
     {
       "name": "--text-secondary",
-      "css": 73,
+      "css": 72,
       "js": 1,
       "html": 0,
-      "total": 74
+      "total": 73
     },
     {
       "name": "--tip-arrow",
@@ -1420,17 +1420,17 @@
     },
     {
       "name": "--transition-duration",
-      "css": 61,
+      "css": 66,
       "js": 11,
       "html": 0,
-      "total": 72
+      "total": 77
     },
     {
       "name": "--transition-fast",
-      "css": 146,
+      "css": 149,
       "js": 3,
       "html": 0,
-      "total": 149
+      "total": 152
     },
     {
       "name": "--transition-normal",
