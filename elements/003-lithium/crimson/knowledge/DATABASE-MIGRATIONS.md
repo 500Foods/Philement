@@ -89,7 +89,7 @@ in the migrations themselves so that they get populated in the database directly
 | [1052](/elements/002-helium/acuranzo/migrations/acuranzo_1052.lua) | lookups | 1.0.1 | 2026-03-18 | 6 | ✗ | Defaults for Lookup 027 - Query Status |
 | [1053](/elements/002-helium/acuranzo/migrations/acuranzo_1053.lua) | lookups | 1.0.1 | 2026-03-18 | 6 | ✗ | Defaults for Lookup 028 - Query Type |
 | [1054](/elements/002-helium/acuranzo/migrations/acuranzo_1054.lua) | lookups | 1.0.0 | 2025-11-22 | 6 | ✗ | Defaults for Lookup 029 - Query Quadrant |
-| [1055](/elements/002-helium/acuranzo/migrations/acuranzo_1055.lua) | lookups | 1.0.0 | 2025-11-24 | 6 | ✗ | Defaults for Lookup 030 - Query Dialect |
+| [1055](/elements/002-helium/acuranzo/migrations/acuranzo_1055.lua) | lookups | 1.1.0 | 2026-04-09 | 6 | ✗ | Defaults for Lookup 030 - Query Dialect |
 | [1056](/elements/002-helium/acuranzo/migrations/acuranzo_1056.lua) | lookups | 1.0.0 | 2025-11-24 | 6 | ✗ | Defaults for Lookup 031 - List Types |
 | [1057](/elements/002-helium/acuranzo/migrations/acuranzo_1057.lua) | lookups | 1.0.0 | 2025-11-24 | 6 | ✗ | Defaults for Lookup 032 - List Status |
 | [1058](/elements/002-helium/acuranzo/migrations/acuranzo_1058.lua) | lookups | 1.0.0 | 2025-11-24 | 6 | ✗ | Defaults for Lookup 033 - Login Controls |
@@ -209,4 +209,7 @@ in the migrations themselves so that they get populated in the database directly
 | [1172](/elements/002-helium/acuranzo/migrations/acuranzo_1172.lua) | convo_segs | 1.0.0 | 2026-03-23 | 4 | ✗ | Extend convo_segs table with content_type, mime_type, metadata columns for Phase 12 |
 | [1173](/elements/002-helium/acuranzo/migrations/acuranzo_1173.lua) | queries | 1.0.0 | 2026-03-23 | 3 | ✗ | QueryRef #071: Store Media Asset (with deduplication) |
 | [1174](/elements/002-helium/acuranzo/migrations/acuranzo_1174.lua) | queries | 1.0.0 | 2026-03-23 | 3 | ✗ | QueryRef #072: Retrieve Media Asset by Hash |
-| **175** | | | | **897** | **175** | |
+| [1175](/elements/002-helium/acuranzo/migrations/acuranzo_1175.lua) | accounts | 1.0.0 | 2026-04-09 | 6 | ✓ | Creates the account_settings table |
+| [1176](/elements/002-helium/acuranzo/migrations/acuranzo_1176.lua) | queries | 1.0.0 | 2026-04-09 | 4 | ✗ | QueryRef #073 - Get Account Settings |
+| [1177](/elements/002-helium/acuranzo/migrations/acuranzo_1177.lua) | queries | 1.0.0 | 2026-04-09 | 4 | ✗ | QueryRef #074 - Update Account Settings |
+| **178** | | | | **911** | **178** | |
