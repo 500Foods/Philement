@@ -1,20 +1,19 @@
--- Migration: acuranzo_155.lua
--- Defaults for Lookup 030 - Query Dialect
+-- Migration: acuranzo_1178.lua
+-- Defaults for Lookup 060 - App UI Lists
 
 -- luacheck: no max line length
 -- luacheck: no unused args
 
 -- CHANGELOG
--- 1.1.0 - 2026-04-09 - Changed to "icon" and updated to use <img> links pointing at assets/images
--- 1.0.0 - 2025-11-24 - Initial creation
+-- 1.0.0 - 2026-04-09 - Initial creation
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
 
 cfg.TABLE = "lookups"
-cfg.MIGRATION = "1055"
-cfg.LOOKUP_ID = "030"
-cfg.LOOKUP_NAME = "Query Dialect"
+cfg.MIGRATION = "1178"
+cfg.LOOKUP_ID = "060"
+cfg.LOOKUP_NAME = "App UI Lists"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
@@ -58,15 +57,18 @@ table.insert(queries,{sql=[[
                 [==[
                     # ${LOOKUP_ID} - ${LOOKUP_NAME}
 
-                    Query Dialect - essentially the list of database engines supported.
+                    This lookup stores JSON lists for UI elements, like the list of profile
+                    sections, that sort of thing. Where we might want it to be internationalized
+                    or even controlled in some respects, like limiting per-user or something.
+
                 ]==],                           -- summary
                 ${JSON_INGEST_START}
                 [==[
                     {
-                        "Default": "HTMLEditor",
+                        "Default": "JSONEditor",
                         "CSSEditor": false,
-                        "HTMLEditor": true,
-                        "JSONEditor": false,
+                        "HTMLEditor": false,
+                        "JSONEditor": true,
                         "LookupEditor": false
                     }
                 ]==]
@@ -79,12 +81,28 @@ table.insert(queries,{sql=[[
             INSERT INTO ${SCHEMA}${TABLE}
                 (lookup_id, key_idx, status_a1, value_txt, value_int, sort_seq, code, summary, collection, ${COMMON_FIELDS})
             VALUES
-                (${LOOKUP_ID}, 0, 1, 'SQL',             0, 0, '', '', '{"icon":"<fa fa-database></fa>"}', ${COMMON_VALUES}),
-                (${LOOKUP_ID}, 1, 1, 'PostgreSQL',      0, 1, '', '', '{"icon":"<img src='assets/images/sql_dialect_postgres.png' />"}', ${COMMON_VALUES}),
-                (${LOOKUP_ID}, 2, 1, 'SQLite',          0, 2, '', '', '{"icon":"<img src='assets/images/sql_dialect_sqlite.png' />"}', ${COMMON_VALUES}),
-                (${LOOKUP_ID}, 3, 1, 'MySQL/MariaDB',   0, 3, '', '', '{"icon":"<img src='assets/images/sql_dialect_mysql.png' />"}', ${COMMON_VALUES}),
-                (${LOOKUP_ID}, 4, 1, 'IBM DB2',         0, 4, '', '', '{"icon":"<img src='assets/images/sql_dialect_db2.png' />"}', ${COMMON_VALUES}),
-                (${LOOKUP_ID}, 5, 1, 'MS SQL Server',   0, 5, '', '', '{"icon":"<img src='assets/images/sql_dialect_mssql.png' />"}', ${COMMON_VALUES});
+                (${LOOKUP_ID},  0, 1, 'Profile Sections', 0, 0, '', '', ${JIS}[==[
+                    {
+                        "default": [
+                            ["<fa fa-user></fa>", "Account and Names"],
+                            ["<fa fa-key></fa>", "Authentication"],
+                            ["<fa fa-globe></fa>", "Langauge"],
+                            ["fa fa-calendar></fa>", "Date/Time Formats"],
+                            ["fa fa-00></fa>", "Number Formats"],
+                            ["fa fa-flag-pennant></fa>", "Startup"],
+                            ["fa fa-bell></fa>", "Notifications"]
+                        ],
+                        "en-US": [
+                            ["<fa fa-user></fa>", "Account and Names"],
+                            ["<fa fa-key></fa>", "Authentication"],
+                            ["<fa fa-globe></fa>", "Langauge"],
+                            ["fa fa-calendar></fa>", "Date/Time Formats"],
+                            ["fa fa-00></fa>", "Number Formats"],
+                            ["fa fa-flag-pennant></fa>", "Startup"],
+                            ["fa fa-bell></fa>", "Notifications"]
+                        ]
+                    }
+                ]==]${JIE}, ${COMMON_VALUES})
 
             ${SUBQUERY_DELIMITER}
 
@@ -96,9 +114,10 @@ table.insert(queries,{sql=[[
                                                                             AS code,
         'Populate Lookup ${LOOKUP_ID} in ${TABLE} table'                    AS name,
         [=[
-            # Forward Migration ${MIGRATION}: Poulate Lookup ${LOOKUP_ID} - ${LOOKUP_NAME}
+            # Forward Migration ${MIGRATION}: Populate Lookup ${LOOKUP_ID} - ${LOOKUP_NAME}
 
-            This migration creates the lookup values for Lookup ${LOOKUP_ID} - ${LOOKUP_NAME}
+            This migration creates the lookup entry for Lookup ${LOOKUP_ID} - ${LOOKUP_NAME}.
+            This lookup stores JSON lists of elements used by the application.
         ]=]
                                                                             AS summary,
         '{}'                                                                AS collection,
@@ -131,19 +150,13 @@ table.insert(queries,{sql=[[
 
             ${SUBQUERY_DELIMITER}
 
-            DELETE FROM ${SCHEMA}${TABLE}
-            WHERE lookup_id = ${LOOKUP_ID}
-            AND key_idx IN (0, 1, 2, 3, 4, 5);
-
-            ${SUBQUERY_DELIMITER}
-
             UPDATE ${SCHEMA}${QUERIES}
               SET query_type_a28 = ${TYPE_FORWARD_MIGRATION}
             WHERE query_ref = ${MIGRATION}
               and query_type_a28 = ${TYPE_APPLIED_MIGRATION};
         ]=]
                                                                             AS code,
-        'Remove Lookup ${LOOKUP_ID} from ${TABLE} Table'                             AS name,
+        'Remove Lookup ${LOOKUP_ID} from ${TABLE} Table'                    AS name,
         [=[
             # Reverse Migration ${MIGRATION}: Remove Lookup ${LOOKUP_ID} - ${LOOKUP_NAME} from ${TABLE} Table
 
