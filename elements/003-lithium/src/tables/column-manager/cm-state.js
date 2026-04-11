@@ -135,13 +135,17 @@ export function restoreSetting(cm, key, defaultValue = null) {
  */
 export async function handlePrimarySave(cm) {
   if (cm.columnTable?.isEditing) {
-    if (!cm.columnTable.isActuallyDirty?.()) return;
+    if (!cm.columnTable.isActuallyDirty?.()) {
+      // No edits in the table, but still apply column changes and close
+      await cm.applyAllChangesToParent();
+      cm.close();
+      return;
+    }
     await cm.columnTable.handleSave();
     syncDirtyState(cm);
-    return;
   }
 
-  if (!cm.isDirty) return;
+  // Always apply changes and close, regardless of dirty state
   await cm.applyAllChangesToParent();
   cm.close();
 }
@@ -152,13 +156,17 @@ export async function handlePrimarySave(cm) {
  */
 export async function handlePrimaryCancel(cm) {
   if (cm.columnTable?.isEditing) {
-    if (!cm.columnTable.isActuallyDirty?.()) return;
+    if (!cm.columnTable.isActuallyDirty?.()) {
+      // No edits in the table, just discard and close
+      await cm.discardAllChanges();
+      cm.close();
+      return;
+    }
     await cm.columnTable.handleCancel();
     syncDirtyState(cm);
-    return;
   }
 
-  if (!cm.isDirty) return;
+  // Always discard changes and close, regardless of dirty state
   await cm.discardAllChanges();
   cm.close();
 }

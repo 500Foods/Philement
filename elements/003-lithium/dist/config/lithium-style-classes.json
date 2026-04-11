@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS class selectors/names used across the Lithium codebase",
-    "generated": "2026-04-09T02:36:18.765Z",
+    "generated": "2026-04-11T15:34:19.652Z",
     "sources": {
       "css": "50 files in src/**/*.css",
       "js": "102 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
-    "total_selectors": 1672,
-    "total_occurrences": 24289
+    "total_selectors": 1687,
+    "total_occurrences": 25098
   },
   "selectors": [
     {
@@ -289,8 +289,8 @@
       "selector": ".btn",
       "css": 2,
       "js": 25,
-      "html": 2,
-      "total": 29,
+      "html": 3,
+      "total": 30,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css",
@@ -313,8 +313,8 @@
       "selector": ".btn i",
       "css": 1,
       "js": 25,
-      "html": 2,
-      "total": 28,
+      "html": 3,
+      "total": 29,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -336,8 +336,8 @@
       "selector": ".btn-counter",
       "css": 2,
       "js": 31,
-      "html": 2,
-      "total": 35,
+      "html": 3,
+      "total": 36,
       "files": {
         "css": [
           "src/core/manager-ui.css",
@@ -361,8 +361,8 @@
       "selector": ".btn-counter[style*=\"display: none\"]",
       "css": 1,
       "js": 31,
-      "html": 2,
-      "total": 34,
+      "html": 3,
+      "total": 35,
       "files": {
         "css": [
           "src/core/manager-ui.css"
@@ -385,8 +385,8 @@
       "selector": ".btn-danger",
       "css": 1,
       "js": 25,
-      "html": 2,
-      "total": 28,
+      "html": 3,
+      "total": 29,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -408,8 +408,8 @@
       "selector": ".btn-danger:hover",
       "css": 1,
       "js": 25,
-      "html": 2,
-      "total": 28,
+      "html": 3,
+      "total": 29,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -431,8 +431,8 @@
       "selector": ".btn-ghost",
       "css": 1,
       "js": 25,
-      "html": 2,
-      "total": 28,
+      "html": 3,
+      "total": 29,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -454,8 +454,8 @@
       "selector": ".btn-ghost:hover",
       "css": 1,
       "js": 25,
-      "html": 2,
-      "total": 28,
+      "html": 3,
+      "total": 29,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -477,8 +477,8 @@
       "selector": ".btn-group-sm",
       "css": 0,
       "js": 2,
-      "html": 2,
-      "total": 4,
+      "html": 3,
+      "total": 5,
       "files": {
         "css": [],
         "js": [
@@ -494,8 +494,8 @@
       "selector": ".btn-lg",
       "css": 1,
       "js": 25,
-      "html": 2,
-      "total": 28,
+      "html": 3,
+      "total": 29,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -517,8 +517,8 @@
       "selector": ".btn-loading",
       "css": 1,
       "js": 25,
-      "html": 2,
-      "total": 28,
+      "html": 3,
+      "total": 29,
       "files": {
         "css": [
           "src/styles/transitions.css"
@@ -540,8 +540,8 @@
       "selector": ".btn-loading::after",
       "css": 1,
       "js": 25,
-      "html": 2,
-      "total": 28,
+      "html": 3,
+      "total": 29,
       "files": {
         "css": [
           "src/styles/transitions.css"
@@ -563,8 +563,8 @@
       "selector": ".btn-outline-primary",
       "css": 0,
       "js": 3,
-      "html": 2,
-      "total": 5,
+      "html": 3,
+      "total": 6,
       "files": {
         "css": [],
         "js": [
@@ -581,8 +581,8 @@
       "selector": ".btn-outline-secondary",
       "css": 0,
       "js": 19,
-      "html": 2,
-      "total": 21,
+      "html": 3,
+      "total": 22,
       "files": {
         "css": [],
         "js": [
@@ -601,8 +601,8 @@
       "selector": ".btn-primary",
       "css": 2,
       "js": 26,
-      "html": 3,
-      "total": 31,
+      "html": 4,
+      "total": 32,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css",
@@ -625,8 +625,8 @@
       "selector": ".btn-primary:disabled",
       "css": 1,
       "js": 26,
-      "html": 3,
-      "total": 30,
+      "html": 4,
+      "total": 31,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -648,8 +648,8 @@
       "selector": ".btn-primary:hover",
       "css": 1,
       "js": 26,
-      "html": 3,
-      "total": 30,
+      "html": 4,
+      "total": 31,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -671,8 +671,8 @@
       "selector": ".btn-primary:hover:not(:disabled)",
       "css": 1,
       "js": 26,
-      "html": 3,
-      "total": 30,
+      "html": 4,
+      "total": 31,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -694,8 +694,8 @@
       "selector": ".btn-secondary",
       "css": 2,
       "js": 25,
-      "html": 3,
-      "total": 30,
+      "html": 4,
+      "total": 31,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css",
@@ -718,8 +718,8 @@
       "selector": ".btn-secondary:hover:not(:disabled)",
       "css": 1,
       "js": 25,
-      "html": 3,
-      "total": 29,
+      "html": 4,
+      "total": 30,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -741,8 +741,8 @@
       "selector": ".btn-sm",
       "css": 1,
       "js": 40,
-      "html": 2,
-      "total": 43,
+      "html": 3,
+      "total": 44,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -764,8 +764,8 @@
       "selector": ".btn-success",
       "css": 1,
       "js": 25,
-      "html": 2,
-      "total": 28,
+      "html": 3,
+      "total": 29,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -787,8 +787,8 @@
       "selector": ".btn-success:hover",
       "css": 1,
       "js": 25,
-      "html": 2,
-      "total": 28,
+      "html": 3,
+      "total": 29,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -810,8 +810,8 @@
       "selector": ".btn:disabled",
       "css": 1,
       "js": 25,
-      "html": 2,
-      "total": 28,
+      "html": 3,
+      "total": 29,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -833,8 +833,8 @@
       "selector": ".btn:focus",
       "css": 1,
       "js": 25,
-      "html": 2,
-      "total": 28,
+      "html": 3,
+      "total": 29,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -856,8 +856,8 @@
       "selector": ".btn:hover",
       "css": 1,
       "js": 25,
-      "html": 2,
-      "total": 28,
+      "html": 3,
+      "total": 29,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -1163,6 +1163,20 @@
       }
     },
     {
+      "selector": ".col-manager-header:active",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/tables/lithium-column-manager.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
       "selector": ".col-manager-mode-btn",
       "css": 1,
       "js": 0,
@@ -1207,9 +1221,9 @@
     {
       "selector": ".col-manager-mode-btn.active",
       "css": 1,
-      "js": 47,
-      "html": 7,
-      "total": 55,
+      "js": 51,
+      "html": 9,
+      "total": 61,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
@@ -1223,6 +1237,7 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
+          "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js",
@@ -1231,6 +1246,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html"
         ]
@@ -1349,15 +1365,31 @@
     {
       "selector": ".col-manager-popup",
       "css": 1,
-      "js": 4,
+      "js": 3,
       "html": 0,
-      "total": 5,
+      "total": 4,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-drag-resize.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-ui.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".col-manager-popup:hover .col-manager-resize-handle",
+      "css": 1,
+      "js": 3,
+      "html": 0,
+      "total": 4,
+      "files": {
+        "css": [
+          "src/tables/lithium-column-manager.css"
+        ],
+        "js": [
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-ui.js"
         ],
@@ -1367,15 +1399,14 @@
     {
       "selector": ".col-manager-popup.depth-2",
       "css": 1,
-      "js": 5,
+      "js": 4,
       "html": 0,
-      "total": 6,
+      "total": 5,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-ui.js"
         ],
@@ -1385,15 +1416,14 @@
     {
       "selector": ".col-manager-popup.depth-2 .col-manager-cancel-btn:disabled",
       "css": 1,
-      "js": 5,
+      "js": 4,
       "html": 0,
-      "total": 6,
+      "total": 5,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-ui.js"
         ],
@@ -1403,15 +1433,14 @@
     {
       "selector": ".col-manager-popup.depth-2 .col-manager-close-btn",
       "css": 1,
-      "js": 5,
+      "js": 4,
       "html": 0,
-      "total": 6,
+      "total": 5,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-ui.js"
         ],
@@ -1421,15 +1450,14 @@
     {
       "selector": ".col-manager-popup.depth-2 .col-manager-close-btn:hover",
       "css": 1,
-      "js": 5,
+      "js": 4,
       "html": 0,
-      "total": 6,
+      "total": 5,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-ui.js"
         ],
@@ -1439,15 +1467,14 @@
     {
       "selector": ".col-manager-popup.depth-2 .col-manager-content",
       "css": 1,
-      "js": 5,
+      "js": 4,
       "html": 0,
-      "total": 6,
+      "total": 5,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-ui.js"
         ],
@@ -1457,15 +1484,14 @@
     {
       "selector": ".col-manager-popup.depth-2 .col-manager-header",
       "css": 1,
-      "js": 5,
+      "js": 4,
       "html": 0,
-      "total": 6,
+      "total": 5,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-ui.js"
         ],
@@ -1475,15 +1501,14 @@
     {
       "selector": ".col-manager-popup.depth-2 .col-manager-mode-btn",
       "css": 1,
-      "js": 5,
+      "js": 4,
       "html": 0,
-      "total": 6,
+      "total": 5,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-ui.js"
         ],
@@ -1493,15 +1518,14 @@
     {
       "selector": ".col-manager-popup.depth-2 .col-manager-mode-btn:hover",
       "css": 1,
-      "js": 5,
+      "js": 4,
       "html": 0,
-      "total": 6,
+      "total": 5,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-ui.js"
         ],
@@ -1511,9 +1535,9 @@
     {
       "selector": ".col-manager-popup.depth-2 .col-manager-mode-btn.active",
       "css": 1,
-      "js": 52,
-      "html": 7,
-      "total": 60,
+      "js": 55,
+      "html": 9,
+      "total": 65,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
@@ -1527,17 +1551,18 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
+          "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js",
           "src/shared/crimson-ws.js",
-          "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-table.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-ui.js"
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html"
         ]
@@ -1546,15 +1571,14 @@
     {
       "selector": ".col-manager-popup.depth-2 .col-manager-mode-toggle",
       "css": 1,
-      "js": 5,
+      "js": 4,
       "html": 0,
-      "total": 6,
+      "total": 5,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-ui.js"
         ],
@@ -1564,15 +1588,14 @@
     {
       "selector": ".col-manager-popup.depth-2 .col-manager-navigator",
       "css": 1,
-      "js": 5,
+      "js": 4,
       "html": 0,
-      "total": 6,
+      "total": 5,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-ui.js"
         ],
@@ -1582,15 +1605,14 @@
     {
       "selector": ".col-manager-popup.depth-2 .col-manager-table-container",
       "css": 1,
-      "js": 5,
+      "js": 4,
       "html": 0,
-      "total": 6,
+      "total": 5,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-ui.js"
         ],
@@ -1600,8 +1622,8 @@
     {
       "selector": ".col-manager-popup.depth-2 .col-manager-table-container .lithium-table-container",
       "css": 1,
-      "js": 8,
-      "html": 6,
+      "js": 7,
+      "html": 7,
       "total": 15,
       "files": {
         "css": [
@@ -1609,13 +1631,13 @@
         ],
         "js": [
           "src/managers/crimson/crimson-citations.js",
-          "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
           "src/tables/lithium-table-ui.js"
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -1625,15 +1647,14 @@
     {
       "selector": ".col-manager-popup.depth-2 .col-manager-table-container .tabulator",
       "css": 1,
-      "js": 5,
+      "js": 4,
       "html": 0,
-      "total": 6,
+      "total": 5,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-ui.js"
         ],
@@ -1643,15 +1664,14 @@
     {
       "selector": ".col-manager-popup.depth-2 .col-manager-table-container .tabulator-col",
       "css": 1,
-      "js": 9,
+      "js": 8,
       "html": 0,
-      "total": 10,
+      "total": 9,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
           "src/tables/lithium-table-ui.js",
@@ -1663,15 +1683,14 @@
     {
       "selector": ".col-manager-popup.depth-2 .col-manager-table-container .tabulator-col-title",
       "css": 1,
-      "js": 10,
+      "js": 9,
       "html": 0,
-      "total": 11,
+      "total": 10,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
           "src/tables/lithium-table-ui.js",
@@ -1683,15 +1702,14 @@
     {
       "selector": ".col-manager-popup.depth-2 .col-manager-table-container .tabulator-header",
       "css": 1,
-      "js": 8,
+      "js": 7,
       "html": 0,
-      "total": 9,
+      "total": 8,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-ui.js",
           "src/tables/visual/visual-updates.js"
@@ -1702,15 +1720,14 @@
     {
       "selector": ".col-manager-popup.depth-2 .col-manager-table-container .tabulator-row",
       "css": 1,
-      "js": 7,
+      "js": 6,
       "html": 0,
-      "total": 8,
+      "total": 7,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
           "src/tables/lithium-table-ui.js",
@@ -1722,15 +1739,14 @@
     {
       "selector": ".col-manager-popup.depth-2 .col-manager-table-container .tabulator-row:hover",
       "css": 1,
-      "js": 7,
+      "js": 6,
       "html": 0,
-      "total": 8,
+      "total": 7,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
           "src/tables/lithium-table-ui.js",
@@ -1742,15 +1758,14 @@
     {
       "selector": ".col-manager-popup.depth-2 .col-manager-table-container .tabulator-row:nth-child(even)",
       "css": 1,
-      "js": 7,
+      "js": 6,
       "html": 0,
-      "total": 8,
+      "total": 7,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
           "src/tables/lithium-table-ui.js",
@@ -1762,15 +1777,14 @@
     {
       "selector": ".col-manager-popup.depth-2 .col-manager-table-container .tabulator-row.tabulator-selected",
       "css": 1,
-      "js": 7,
+      "js": 6,
       "html": 0,
-      "total": 8,
+      "total": 7,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
           "src/tables/lithium-table-ui.js",
@@ -1782,15 +1796,14 @@
     {
       "selector": ".col-manager-popup.depth-2 .col-manager-table-container .tabulator-table",
       "css": 1,
-      "js": 5,
+      "js": 4,
       "html": 0,
-      "total": 6,
+      "total": 5,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-ui.js"
         ],
@@ -1800,15 +1813,14 @@
     {
       "selector": ".col-manager-popup.depth-2 .col-manager-table-container .tabulator-tableholder",
       "css": 1,
-      "js": 7,
+      "js": 6,
       "html": 0,
-      "total": 8,
+      "total": 7,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
           "src/tables/lithium-table-ui.js",
@@ -1820,15 +1832,14 @@
     {
       "selector": ".col-manager-popup.depth-2 .col-manager-title",
       "css": 1,
-      "js": 5,
+      "js": 4,
       "html": 0,
-      "total": 6,
+      "total": 5,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-ui.js"
         ],
@@ -1836,20 +1847,19 @@
       }
     },
     {
-      "selector": ".col-manager-popup.resizing",
+      "selector": ".col-manager-popup.dragging",
       "css": 1,
-      "js": 22,
+      "js": 15,
       "html": 0,
-      "total": 23,
+      "total": 16,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
           "src/managers/crimson/crimson-events.js",
-          "src/managers/main/main.js",
-          "src/managers/queries/queries-ui.js",
           "src/managers/terminal/terminal.js",
+          "src/managers/tour/tour.js",
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-ui.js"
@@ -1860,9 +1870,9 @@
     {
       "selector": ".col-manager-popup.resizing .col-manager-resize-handle",
       "css": 1,
-      "js": 22,
+      "js": 21,
       "html": 0,
-      "total": 23,
+      "total": 22,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
@@ -1882,9 +1892,9 @@
     {
       "selector": ".col-manager-popup.visible",
       "css": 1,
-      "js": 82,
+      "js": 80,
       "html": 0,
-      "total": 83,
+      "total": 81,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
@@ -1930,7 +1940,39 @@
       }
     },
     {
-      "selector": ".col-manager-resize-handle::before",
+      "selector": ".col-manager-resize-handle-bl",
+      "css": 1,
+      "js": 1,
+      "html": 0,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/tables/lithium-column-manager.css"
+        ],
+        "js": [
+          "src/tables/column-manager/cm-drag-resize.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".col-manager-resize-handle-bl::before",
+      "css": 1,
+      "js": 1,
+      "html": 0,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/tables/lithium-column-manager.css"
+        ],
+        "js": [
+          "src/tables/column-manager/cm-drag-resize.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".col-manager-resize-handle-br",
       "css": 1,
       "js": 0,
       "html": 0,
@@ -1944,7 +1986,85 @@
       }
     },
     {
-      "selector": ".col-manager-resize-handle:hover",
+      "selector": ".col-manager-resize-handle-br::before",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/tables/lithium-column-manager.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": ".col-manager-resize-handle-tl",
+      "css": 1,
+      "js": 1,
+      "html": 0,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/tables/lithium-column-manager.css"
+        ],
+        "js": [
+          "src/tables/column-manager/cm-drag-resize.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".col-manager-resize-handle-tl::before",
+      "css": 1,
+      "js": 1,
+      "html": 0,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/tables/lithium-column-manager.css"
+        ],
+        "js": [
+          "src/tables/column-manager/cm-drag-resize.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".col-manager-resize-handle-tr",
+      "css": 1,
+      "js": 1,
+      "html": 0,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/tables/lithium-column-manager.css"
+        ],
+        "js": [
+          "src/tables/column-manager/cm-drag-resize.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".col-manager-resize-handle-tr::before",
+      "css": 1,
+      "js": 1,
+      "html": 0,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/tables/lithium-column-manager.css"
+        ],
+        "js": [
+          "src/tables/column-manager/cm-drag-resize.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".col-manager-resize-handle::before",
       "css": 1,
       "js": 0,
       "html": 0,
@@ -2003,8 +2123,8 @@
       "selector": ".col-manager-table-container .lithium-table-container",
       "css": 1,
       "js": 3,
-      "html": 6,
-      "total": 10,
+      "html": 7,
+      "total": 11,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
@@ -2016,6 +2136,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -2026,8 +2147,8 @@
       "selector": ".col-manager-table-container .lithium-table-container .tabulator",
       "css": 1,
       "js": 3,
-      "html": 6,
-      "total": 10,
+      "html": 7,
+      "total": 11,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
@@ -2039,6 +2160,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -2049,8 +2171,8 @@
       "selector": ".col-manager-table-container .lithium-table-container .tabulator .tabulator-cell",
       "css": 1,
       "js": 4,
-      "html": 6,
-      "total": 11,
+      "html": 7,
+      "total": 12,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
@@ -2063,6 +2185,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -2073,8 +2196,8 @@
       "selector": ".col-manager-table-container .lithium-table-container .tabulator .tabulator-header",
       "css": 1,
       "js": 6,
-      "html": 6,
-      "total": 13,
+      "html": 7,
+      "total": 14,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
@@ -2088,6 +2211,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -2098,8 +2222,8 @@
       "selector": ".col-manager-table-container .lithium-table-container .tabulator .tabulator-header .tabulator-col",
       "css": 1,
       "js": 10,
-      "html": 6,
-      "total": 17,
+      "html": 7,
+      "total": 18,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
@@ -2113,6 +2237,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -2123,8 +2248,8 @@
       "selector": ".col-manager-table-container .lithium-table-container .tabulator .tabulator-header .tabulator-col .tabulator-col-content",
       "css": 1,
       "js": 10,
-      "html": 6,
-      "total": 17,
+      "html": 7,
+      "total": 18,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
@@ -2138,6 +2263,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -2148,8 +2274,8 @@
       "selector": ".col-manager-table-container .lithium-table-container .tabulator .tabulator-header .tabulator-col .tabulator-col-title",
       "css": 1,
       "js": 11,
-      "html": 6,
-      "total": 18,
+      "html": 7,
+      "total": 19,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
@@ -2163,6 +2289,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -2173,8 +2300,8 @@
       "selector": ".col-manager-table-container .lithium-table-container .tabulator .tabulator-row",
       "css": 1,
       "js": 5,
-      "html": 6,
-      "total": 12,
+      "html": 7,
+      "total": 13,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
@@ -2187,6 +2314,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -2197,8 +2325,8 @@
       "selector": ".col-manager-table-container .lithium-table-container .tabulator .tabulator-row:hover",
       "css": 1,
       "js": 5,
-      "html": 6,
-      "total": 12,
+      "html": 7,
+      "total": 13,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
@@ -2211,6 +2339,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -2221,8 +2350,8 @@
       "selector": ".col-manager-table-container .lithium-table-container .tabulator .tabulator-row.tabulator-group",
       "css": 1,
       "js": 6,
-      "html": 6,
-      "total": 13,
+      "html": 7,
+      "total": 14,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
@@ -2235,6 +2364,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -2245,7 +2375,32 @@
       "selector": ".col-manager-table-container .lithium-table-container .tabulator .tabulator-row.tabulator-group:hover",
       "css": 1,
       "js": 6,
-      "html": 6,
+      "html": 7,
+      "total": 14,
+      "files": {
+        "css": [
+          "src/tables/lithium-column-manager.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js",
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".col-manager-table-container .lithium-table-container .tabulator .tabulator-row.tabulator-selected",
+      "css": 1,
+      "js": 5,
+      "html": 7,
       "total": 13,
       "files": {
         "css": [
@@ -2259,30 +2414,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
-          "src/managers/queries/queries.html",
-          "src/managers/style-manager/style-manager.html",
-          "src/managers/version-history/version-history.html"
-        ]
-      }
-    },
-    {
-      "selector": ".col-manager-table-container .lithium-table-container .tabulator .tabulator-row.tabulator-selected",
-      "css": 1,
-      "js": 5,
-      "html": 6,
-      "total": 12,
-      "files": {
-        "css": [
-          "src/tables/lithium-column-manager.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson-citations.js",
-          "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-table-base.js",
-          "src/tables/visual/visual-updates.js"
-        ],
-        "html": [
-          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -2293,8 +2425,8 @@
       "selector": ".col-manager-table-container .lithium-table-container .tabulator .tabulator-tableholder",
       "css": 1,
       "js": 5,
-      "html": 6,
-      "total": 12,
+      "html": 7,
+      "total": 13,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
@@ -2307,6 +2439,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -2317,7 +2450,32 @@
       "selector": ".col-manager-table-container .lithium-table-container .tabulator .tabulator-tableholder .tabulator-table",
       "css": 1,
       "js": 5,
-      "html": 6,
+      "html": 7,
+      "total": 13,
+      "files": {
+        "css": [
+          "src/tables/lithium-column-manager.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js",
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".col-manager-table-container .lithium-table-container .tabulator-cell .tabulator-editor",
+      "css": 1,
+      "js": 4,
+      "html": 7,
       "total": 12,
       "files": {
         "css": [
@@ -2331,30 +2489,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
-          "src/managers/queries/queries.html",
-          "src/managers/style-manager/style-manager.html",
-          "src/managers/version-history/version-history.html"
-        ]
-      }
-    },
-    {
-      "selector": ".col-manager-table-container .lithium-table-container .tabulator-cell .tabulator-editor",
-      "css": 1,
-      "js": 4,
-      "html": 6,
-      "total": 11,
-      "files": {
-        "css": [
-          "src/tables/lithium-column-manager.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson-citations.js",
-          "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-table-base.js",
-          "src/tables/visual/visual-updates.js"
-        ],
-        "html": [
-          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -2365,8 +2500,8 @@
       "selector": ".col-manager-table-container .lithium-table-container .tabulator-cell .tabulator-editor input",
       "css": 1,
       "js": 4,
-      "html": 6,
-      "total": 11,
+      "html": 7,
+      "total": 12,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
@@ -2379,6 +2514,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -2389,8 +2525,8 @@
       "selector": ".col-manager-table-container .lithium-table-container .tabulator-cell .tabulator-editor select",
       "css": 1,
       "js": 4,
-      "html": 6,
-      "total": 11,
+      "html": 7,
+      "total": 12,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
@@ -2403,6 +2539,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -2413,8 +2550,8 @@
       "selector": ".col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field=\"alignment\"]",
       "css": 1,
       "js": 4,
-      "html": 6,
-      "total": 11,
+      "html": 7,
+      "total": 12,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
@@ -2427,6 +2564,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -2437,8 +2575,8 @@
       "selector": ".col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field=\"column_name\"]",
       "css": 1,
       "js": 4,
-      "html": 6,
-      "total": 11,
+      "html": 7,
+      "total": 12,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
@@ -2451,6 +2589,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -2461,8 +2600,8 @@
       "selector": ".col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field=\"drag_handle\"]",
       "css": 1,
       "js": 4,
-      "html": 6,
-      "total": 11,
+      "html": 7,
+      "total": 12,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
@@ -2475,6 +2614,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -2485,8 +2625,8 @@
       "selector": ".col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field=\"drag_handle\"]:hover",
       "css": 1,
       "js": 4,
-      "html": 6,
-      "total": 11,
+      "html": 7,
+      "total": 12,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
@@ -2499,6 +2639,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -2509,8 +2650,8 @@
       "selector": ".col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field=\"field_name\"]",
       "css": 1,
       "js": 4,
-      "html": 6,
-      "total": 11,
+      "html": 7,
+      "total": 12,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
@@ -2523,6 +2664,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -2533,8 +2675,8 @@
       "selector": ".col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field=\"order\"]",
       "css": 1,
       "js": 4,
-      "html": 6,
-      "total": 11,
+      "html": 7,
+      "total": 12,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
@@ -2547,6 +2689,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -2557,8 +2700,8 @@
       "selector": ".col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field=\"visible\"]",
       "css": 1,
       "js": 4,
-      "html": 6,
-      "total": 11,
+      "html": 7,
+      "total": 12,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
@@ -2571,6 +2714,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -2581,8 +2725,8 @@
       "selector": ".col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field=\"visible\"] input[type=\"checkbox\"]",
       "css": 1,
       "js": 4,
-      "html": 6,
-      "total": 11,
+      "html": 7,
+      "total": 12,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
@@ -2595,6 +2739,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -2605,8 +2750,8 @@
       "selector": ".col-manager-table-container .lithium-table-container .tabulator-group .tabulator-group-title",
       "css": 1,
       "js": 4,
-      "html": 6,
-      "total": 11,
+      "html": 7,
+      "total": 12,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
@@ -2619,6 +2764,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -2629,8 +2775,8 @@
       "selector": ".col-manager-table-container .lithium-table-container .tabulator-group .tabulator-group-toggle",
       "css": 1,
       "js": 4,
-      "html": 6,
-      "total": 11,
+      "html": 7,
+      "total": 12,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
@@ -2643,6 +2789,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -2653,8 +2800,8 @@
       "selector": ".col-manager-table-container .lithium-table-container .tabulator-group .tabulator-group-toggle:hover",
       "css": 1,
       "js": 4,
-      "html": 6,
-      "total": 11,
+      "html": 7,
+      "total": 12,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
@@ -2667,6 +2814,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -2677,32 +2825,7 @@
       "selector": ".col-manager-table-container .lithium-table-container .tabulator-header .tabulator-col[data-tabulator-field=\"drag_handle\"]",
       "css": 1,
       "js": 10,
-      "html": 6,
-      "total": 17,
-      "files": {
-        "css": [
-          "src/tables/lithium-column-manager.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson-citations.js",
-          "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
-          "src/tables/visual/visual-updates.js"
-        ],
-        "html": [
-          "src/managers/lookups/lookups.html",
-          "src/managers/queries/queries.html",
-          "src/managers/style-manager/style-manager.html",
-          "src/managers/version-history/version-history.html"
-        ]
-      }
-    },
-    {
-      "selector": ".col-manager-table-container .lithium-table-container .tabulator-header .tabulator-col[data-tabulator-field=\"drag_handle\"] .tabulator-col-title",
-      "css": 1,
-      "js": 11,
-      "html": 6,
+      "html": 7,
       "total": 18,
       "files": {
         "css": [
@@ -2717,6 +2840,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -2724,11 +2848,11 @@
       }
     },
     {
-      "selector": ".col-manager-table-container .lithium-table-container .tabulator-header .tabulator-col[data-tabulator-field=\"order\"]",
+      "selector": ".col-manager-table-container .lithium-table-container .tabulator-header .tabulator-col[data-tabulator-field=\"drag_handle\"] .tabulator-col-title",
       "css": 1,
-      "js": 10,
-      "html": 6,
-      "total": 17,
+      "js": 11,
+      "html": 7,
+      "total": 19,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
@@ -2742,6 +2866,33 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".col-manager-table-container .lithium-table-container .tabulator-header .tabulator-col[data-tabulator-field=\"order\"]",
+      "css": 1,
+      "js": 10,
+      "html": 7,
+      "total": 18,
+      "files": {
+        "css": [
+          "src/tables/lithium-column-manager.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js",
+          "src/tables/lithium-table-ui.js",
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -2752,79 +2903,7 @@
       "selector": ".col-manager-table-container .lithium-table-container .tabulator-row",
       "css": 1,
       "js": 5,
-      "html": 6,
-      "total": 12,
-      "files": {
-        "css": [
-          "src/tables/lithium-column-manager.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson-citations.js",
-          "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-table-base.js",
-          "src/tables/visual/visual-updates.js"
-        ],
-        "html": [
-          "src/managers/lookups/lookups.html",
-          "src/managers/queries/queries.html",
-          "src/managers/style-manager/style-manager.html",
-          "src/managers/version-history/version-history.html"
-        ]
-      }
-    },
-    {
-      "selector": ".col-manager-table-container .lithium-table-container .tabulator-row.tabulator-row-dragging",
-      "css": 1,
-      "js": 5,
-      "html": 6,
-      "total": 12,
-      "files": {
-        "css": [
-          "src/tables/lithium-column-manager.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson-citations.js",
-          "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-table-base.js",
-          "src/tables/visual/visual-updates.js"
-        ],
-        "html": [
-          "src/managers/lookups/lookups.html",
-          "src/managers/queries/queries.html",
-          "src/managers/style-manager/style-manager.html",
-          "src/managers/version-history/version-history.html"
-        ]
-      }
-    },
-    {
-      "selector": ".col-manager-table-container .lithium-table-container .tabulator-row.tabulator-row-moving",
-      "css": 1,
-      "js": 5,
-      "html": 6,
-      "total": 12,
-      "files": {
-        "css": [
-          "src/tables/lithium-column-manager.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson-citations.js",
-          "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-table-base.js",
-          "src/tables/visual/visual-updates.js"
-        ],
-        "html": [
-          "src/managers/lookups/lookups.html",
-          "src/managers/queries/queries.html",
-          "src/managers/style-manager/style-manager.html",
-          "src/managers/version-history/version-history.html"
-        ]
-      }
-    },
-    {
-      "selector": ".col-manager-table-container .lithium-table-container .tabulator-row.tabulator-row-moving .tabulator-cell[data-tabulator-field=\"drag_handle\"]",
-      "css": 1,
-      "js": 6,
-      "html": 6,
+      "html": 7,
       "total": 13,
       "files": {
         "css": [
@@ -2838,6 +2917,82 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".col-manager-table-container .lithium-table-container .tabulator-row.tabulator-row-dragging",
+      "css": 1,
+      "js": 5,
+      "html": 7,
+      "total": 13,
+      "files": {
+        "css": [
+          "src/tables/lithium-column-manager.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js",
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".col-manager-table-container .lithium-table-container .tabulator-row.tabulator-row-moving",
+      "css": 1,
+      "js": 5,
+      "html": 7,
+      "total": 13,
+      "files": {
+        "css": [
+          "src/tables/lithium-column-manager.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js",
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".col-manager-table-container .lithium-table-container .tabulator-row.tabulator-row-moving .tabulator-cell[data-tabulator-field=\"drag_handle\"]",
+      "css": 1,
+      "js": 6,
+      "html": 7,
+      "total": 14,
+      "files": {
+        "css": [
+          "src/tables/lithium-column-manager.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js",
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -2848,8 +3003,8 @@
       "selector": ".col-manager-table-container .lithium-table-container .tabulator-tableholder::-webkit-scrollbar",
       "css": 1,
       "js": 5,
-      "html": 6,
-      "total": 12,
+      "html": 7,
+      "total": 13,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
@@ -2862,6 +3017,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -2872,8 +3028,8 @@
       "selector": ".col-manager-table-container .lithium-table-container .tabulator-tableholder::-webkit-scrollbar-thumb",
       "css": 1,
       "js": 5,
-      "html": 6,
-      "total": 12,
+      "html": 7,
+      "total": 13,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
@@ -2886,6 +3042,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -2896,8 +3053,8 @@
       "selector": ".col-manager-table-container .lithium-table-container .tabulator-tableholder::-webkit-scrollbar-thumb:hover",
       "css": 1,
       "js": 5,
-      "html": 6,
-      "total": 12,
+      "html": 7,
+      "total": 13,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
@@ -2910,6 +3067,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -2920,8 +3078,8 @@
       "selector": ".col-manager-table-container .lithium-table-container .tabulator-tableholder::-webkit-scrollbar-track",
       "css": 1,
       "js": 5,
-      "html": 6,
-      "total": 12,
+      "html": 7,
+      "total": 13,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
@@ -2934,6 +3092,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -3079,9 +3238,9 @@
     {
       "selector": ".crimson-citation-header-btn.active",
       "css": 1,
-      "js": 49,
-      "html": 7,
-      "total": 57,
+      "js": 53,
+      "html": 9,
+      "total": 63,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -3096,6 +3255,7 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
+          "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js",
@@ -3104,6 +3264,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html"
         ]
@@ -3112,9 +3273,9 @@
     {
       "selector": ".crimson-citation-header-btn.active .crimson-citation-counter",
       "css": 1,
-      "js": 51,
-      "html": 7,
-      "total": 59,
+      "js": 55,
+      "html": 9,
+      "total": 65,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -3129,6 +3290,7 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
+          "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js",
@@ -3137,6 +3299,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html"
         ]
@@ -3194,8 +3357,8 @@
       "selector": ".crimson-citation-nav-wrap.lithium-navigator-container",
       "css": 1,
       "js": 4,
-      "html": 6,
-      "total": 11,
+      "html": 7,
+      "total": 12,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -3206,6 +3369,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -3515,9 +3679,9 @@
     {
       "selector": ".crimson-citation-popup.visible",
       "css": 1,
-      "js": 87,
+      "js": 86,
       "html": 0,
-      "total": 88,
+      "total": 87,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -3664,8 +3828,8 @@
       "selector": ".crimson-citation-table-wrap.lithium-table-container",
       "css": 1,
       "js": 5,
-      "html": 6,
-      "total": 12,
+      "html": 7,
+      "total": 13,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -3677,6 +3841,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -3864,9 +4029,9 @@
     {
       "selector": ".crimson-debug-btn.active",
       "css": 1,
-      "js": 49,
-      "html": 7,
-      "total": 57,
+      "js": 53,
+      "html": 9,
+      "total": 63,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -3881,6 +4046,7 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
+          "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js",
@@ -3889,6 +4055,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html"
         ]
@@ -5032,9 +5199,9 @@
     {
       "selector": ".crimson-overlay.visible",
       "css": 1,
-      "js": 79,
+      "js": 78,
       "html": 0,
-      "total": 80,
+      "total": 79,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -5169,9 +5336,9 @@
     {
       "selector": ".crimson-popup.dragging",
       "css": 1,
-      "js": 11,
+      "js": 13,
       "html": 0,
-      "total": 12,
+      "total": 14,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -5180,7 +5347,8 @@
           "src/managers/crimson/crimson-core.js",
           "src/managers/crimson/crimson-events.js",
           "src/managers/terminal/terminal.js",
-          "src/managers/tour/tour.js"
+          "src/managers/tour/tour.js",
+          "src/tables/column-manager/cm-drag-resize.js"
         ],
         "html": []
       }
@@ -5230,9 +5398,9 @@
     {
       "selector": ".crimson-popup.visible",
       "css": 1,
-      "js": 79,
+      "js": 78,
       "html": 0,
-      "total": 80,
+      "total": 79,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -6511,9 +6679,9 @@
     {
       "selector": ".font-popup-style-btn.active",
       "css": 1,
-      "js": 47,
-      "html": 7,
-      "total": 55,
+      "js": 51,
+      "html": 9,
+      "total": 61,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -6527,6 +6695,7 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
+          "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js",
@@ -6535,6 +6704,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html"
         ]
@@ -6557,9 +6727,9 @@
     {
       "selector": ".font-popup.visible",
       "css": 1,
-      "js": 78,
+      "js": 77,
       "html": 0,
-      "total": 79,
+      "total": 78,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -6677,9 +6847,9 @@
     {
       "selector": ".footer-export-popup.visible",
       "css": 1,
-      "js": 78,
+      "js": 77,
       "html": 0,
-      "total": 79,
+      "total": 78,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -7373,8 +7543,8 @@
       "selector": ".info-item",
       "css": 1,
       "js": 0,
-      "html": 4,
-      "total": 5,
+      "html": 9,
+      "total": 10,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -7389,8 +7559,8 @@
       "selector": ".info-label",
       "css": 1,
       "js": 0,
-      "html": 4,
-      "total": 5,
+      "html": 9,
+      "total": 10,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -7405,8 +7575,8 @@
       "selector": ".info-value",
       "css": 1,
       "js": 0,
-      "html": 4,
-      "total": 5,
+      "html": 9,
+      "total": 10,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -7676,8 +7846,8 @@
       "selector": ".jsoneditor-nav .btn",
       "css": 1,
       "js": 26,
-      "html": 2,
-      "total": 29,
+      "html": 3,
+      "total": 30,
       "files": {
         "css": [
           "src/init/jsoneditor.css"
@@ -7699,8 +7869,8 @@
       "selector": ".jsoneditor-nav .btn-group",
       "css": 1,
       "js": 28,
-      "html": 2,
-      "total": 31,
+      "html": 3,
+      "total": 32,
       "files": {
         "css": [
           "src/init/jsoneditor.css"
@@ -7722,8 +7892,8 @@
       "selector": ".jsoneditor-nav .btn-group .btn",
       "css": 1,
       "js": 28,
-      "html": 2,
-      "total": 31,
+      "html": 3,
+      "total": 32,
       "files": {
         "css": [
           "src/init/jsoneditor.css"
@@ -7745,8 +7915,8 @@
       "selector": ".jsoneditor-nav .btn:last-child",
       "css": 1,
       "js": 26,
-      "html": 2,
-      "total": 29,
+      "html": 3,
+      "total": 30,
       "files": {
         "css": [
           "src/init/jsoneditor.css"
@@ -8780,9 +8950,9 @@
     {
       "selector": ".lithium-col-chooser-popup.visible",
       "css": 1,
-      "js": 78,
+      "js": 77,
       "html": 0,
-      "total": 79,
+      "total": 78,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -8831,8 +9001,8 @@
       "selector": ".lithium-collapse-btn",
       "css": 1,
       "js": 1,
-      "html": 6,
-      "total": 8,
+      "html": 7,
+      "total": 9,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -8842,6 +9012,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -8852,8 +9023,8 @@
       "selector": ".lithium-collapse-btn > svg",
       "css": 1,
       "js": 1,
-      "html": 6,
-      "total": 8,
+      "html": 7,
+      "total": 9,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -8863,6 +9034,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -8873,8 +9045,8 @@
       "selector": ".lithium-collapse-btn.collapsed > svg",
       "css": 1,
       "js": 44,
-      "html": 6,
-      "total": 51,
+      "html": 7,
+      "total": 52,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -8892,6 +9064,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -9261,15 +9434,14 @@
     {
       "selector": ".lithium-nav-popup",
       "css": 1,
-      "js": 14,
+      "js": 12,
       "html": 0,
-      "total": 15,
+      "total": 13,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
         ],
@@ -9279,15 +9451,14 @@
     {
       "selector": ".lithium-nav-popup-check",
       "css": 1,
-      "js": 16,
+      "js": 14,
       "html": 0,
-      "total": 17,
+      "total": 15,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
         ],
@@ -9297,15 +9468,14 @@
     {
       "selector": ".lithium-nav-popup-icon",
       "css": 1,
-      "js": 15,
+      "js": 13,
       "html": 0,
-      "total": 16,
+      "total": 14,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
         ],
@@ -9315,15 +9485,14 @@
     {
       "selector": ".lithium-nav-popup-item",
       "css": 1,
-      "js": 18,
+      "js": 15,
       "html": 0,
-      "total": 19,
+      "total": 16,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
         ],
@@ -9333,15 +9502,14 @@
     {
       "selector": ".lithium-nav-popup-item svg",
       "css": 1,
-      "js": 18,
+      "js": 15,
       "html": 0,
-      "total": 19,
+      "total": 16,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
         ],
@@ -9351,15 +9519,14 @@
     {
       "selector": ".lithium-nav-popup-item:active",
       "css": 1,
-      "js": 18,
+      "js": 15,
       "html": 0,
-      "total": 19,
+      "total": 16,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
         ],
@@ -9369,15 +9536,14 @@
     {
       "selector": ".lithium-nav-popup-item:disabled",
       "css": 1,
-      "js": 18,
+      "js": 15,
       "html": 0,
-      "total": 19,
+      "total": 16,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
         ],
@@ -9387,15 +9553,14 @@
     {
       "selector": ".lithium-nav-popup-item:hover",
       "css": 1,
-      "js": 18,
+      "js": 15,
       "html": 0,
-      "total": 19,
+      "total": 16,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
         ],
@@ -9405,15 +9570,14 @@
     {
       "selector": ".lithium-nav-popup-label",
       "css": 1,
-      "js": 16,
+      "js": 14,
       "html": 0,
-      "total": 17,
+      "total": 15,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
         ],
@@ -9423,15 +9587,14 @@
     {
       "selector": ".lithium-nav-popup-separator",
       "css": 1,
-      "js": 16,
+      "js": 14,
       "html": 0,
-      "total": 17,
+      "total": 15,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
         ],
@@ -9441,15 +9604,14 @@
     {
       "selector": ".lithium-nav-popup-title",
       "css": 1,
-      "js": 14,
+      "js": 12,
       "html": 0,
-      "total": 15,
+      "total": 13,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
         ],
@@ -9459,9 +9621,9 @@
     {
       "selector": ".lithium-nav-popup.visible",
       "css": 1,
-      "js": 92,
+      "js": 89,
       "html": 0,
-      "total": 93,
+      "total": 90,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -9592,8 +9754,8 @@
       "selector": ".lithium-navigator-container",
       "css": 1,
       "js": 2,
-      "html": 6,
-      "total": 9,
+      "html": 7,
+      "total": 10,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -9604,6 +9766,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -9614,8 +9777,8 @@
       "selector": ".lithium-navigator-container.lithium-edit-transition",
       "css": 1,
       "js": 4,
-      "html": 6,
-      "total": 11,
+      "html": 7,
+      "total": 12,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -9627,6 +9790,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -9749,8 +9913,8 @@
       "selector": ".lithium-splitter",
       "css": 1,
       "js": 0,
-      "html": 6,
-      "total": 7,
+      "html": 7,
+      "total": 8,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -9758,6 +9922,7 @@
         "js": [],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -9768,8 +9933,8 @@
       "selector": ".lithium-splitter-collapsed",
       "css": 1,
       "js": 0,
-      "html": 6,
-      "total": 7,
+      "html": 7,
+      "total": 8,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -9777,6 +9942,7 @@
         "js": [],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -9787,8 +9953,8 @@
       "selector": ".lithium-splitter-resizing",
       "css": 1,
       "js": 3,
-      "html": 6,
-      "total": 10,
+      "html": 7,
+      "total": 11,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -9798,6 +9964,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -9808,8 +9975,8 @@
       "selector": ".lithium-splitter-resizing::after",
       "css": 1,
       "js": 3,
-      "html": 6,
-      "total": 10,
+      "html": 7,
+      "total": 11,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -9819,6 +9986,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -9829,8 +9997,8 @@
       "selector": ".lithium-splitter::after",
       "css": 1,
       "js": 0,
-      "html": 6,
-      "total": 7,
+      "html": 7,
+      "total": 8,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -9838,6 +10006,7 @@
         "js": [],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -9848,8 +10017,8 @@
       "selector": ".lithium-table-container",
       "css": 1,
       "js": 3,
-      "html": 6,
-      "total": 10,
+      "html": 7,
+      "total": 11,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -9861,6 +10030,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -9871,8 +10041,8 @@
       "selector": ".lithium-table-container .tabulator",
       "css": 1,
       "js": 3,
-      "html": 6,
-      "total": 10,
+      "html": 7,
+      "total": 11,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -9884,6 +10054,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -9894,8 +10065,8 @@
       "selector": ".lithium-table-container .tabulator-calcs-bottom",
       "css": 1,
       "js": 4,
-      "html": 6,
-      "total": 11,
+      "html": 7,
+      "total": 12,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -9908,6 +10079,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -9918,8 +10090,8 @@
       "selector": ".lithium-table-container .tabulator-calcs-bottom .tabulator-cell",
       "css": 1,
       "js": 5,
-      "html": 6,
-      "total": 12,
+      "html": 7,
+      "total": 13,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -9932,6 +10104,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -9942,8 +10115,8 @@
       "selector": ".lithium-table-container .tabulator-calcs-bottom .tabulator-cell:first-child",
       "css": 1,
       "js": 5,
-      "html": 6,
-      "total": 12,
+      "html": 7,
+      "total": 13,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -9956,6 +10129,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -9966,7 +10140,58 @@
       "selector": ".lithium-table-container .tabulator-calcs-bottom .tabulator-cell:last-child",
       "css": 1,
       "js": 5,
-      "html": 6,
+      "html": 7,
+      "total": 13,
+      "files": {
+        "css": [
+          "src/tables/lithium-table.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js",
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container .tabulator-calcs-bottom .tabulator-col-resize-handle",
+      "css": 1,
+      "js": 8,
+      "html": 7,
+      "total": 16,
+      "files": {
+        "css": [
+          "src/tables/lithium-table.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js",
+          "src/tables/lithium-table-ui.js",
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container .tabulator-calcs-holder",
+      "css": 1,
+      "js": 4,
+      "html": 7,
       "total": 12,
       "files": {
         "css": [
@@ -9980,6 +10205,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -9987,10 +10213,60 @@
       }
     },
     {
-      "selector": ".lithium-table-container .tabulator-calcs-bottom .tabulator-col-resize-handle",
+      "selector": ".lithium-table-container .tabulator-cell",
       "css": 1,
-      "js": 8,
-      "html": 6,
+      "js": 4,
+      "html": 7,
+      "total": 12,
+      "files": {
+        "css": [
+          "src/tables/lithium-table.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js",
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container .tabulator-cell.tabulator-editing > select",
+      "css": 1,
+      "js": 4,
+      "html": 7,
+      "total": 12,
+      "files": {
+        "css": [
+          "src/tables/lithium-table.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js",
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container .tabulator-col .tabulator-col-sorter .tabulator-arrow",
+      "css": 1,
+      "js": 7,
+      "html": 7,
       "total": 15,
       "files": {
         "css": [
@@ -10005,103 +10281,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
-          "src/managers/queries/queries.html",
-          "src/managers/style-manager/style-manager.html",
-          "src/managers/version-history/version-history.html"
-        ]
-      }
-    },
-    {
-      "selector": ".lithium-table-container .tabulator-calcs-holder",
-      "css": 1,
-      "js": 4,
-      "html": 6,
-      "total": 11,
-      "files": {
-        "css": [
-          "src/tables/lithium-table.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson-citations.js",
-          "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-table-base.js",
-          "src/tables/visual/visual-updates.js"
-        ],
-        "html": [
-          "src/managers/lookups/lookups.html",
-          "src/managers/queries/queries.html",
-          "src/managers/style-manager/style-manager.html",
-          "src/managers/version-history/version-history.html"
-        ]
-      }
-    },
-    {
-      "selector": ".lithium-table-container .tabulator-cell",
-      "css": 1,
-      "js": 4,
-      "html": 6,
-      "total": 11,
-      "files": {
-        "css": [
-          "src/tables/lithium-table.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson-citations.js",
-          "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-table-base.js",
-          "src/tables/visual/visual-updates.js"
-        ],
-        "html": [
-          "src/managers/lookups/lookups.html",
-          "src/managers/queries/queries.html",
-          "src/managers/style-manager/style-manager.html",
-          "src/managers/version-history/version-history.html"
-        ]
-      }
-    },
-    {
-      "selector": ".lithium-table-container .tabulator-cell.tabulator-editing > select",
-      "css": 1,
-      "js": 4,
-      "html": 6,
-      "total": 11,
-      "files": {
-        "css": [
-          "src/tables/lithium-table.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson-citations.js",
-          "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-table-base.js",
-          "src/tables/visual/visual-updates.js"
-        ],
-        "html": [
-          "src/managers/lookups/lookups.html",
-          "src/managers/queries/queries.html",
-          "src/managers/style-manager/style-manager.html",
-          "src/managers/version-history/version-history.html"
-        ]
-      }
-    },
-    {
-      "selector": ".lithium-table-container .tabulator-col .tabulator-col-sorter .tabulator-arrow",
-      "css": 1,
-      "js": 7,
-      "html": 6,
-      "total": 14,
-      "files": {
-        "css": [
-          "src/tables/lithium-table.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson-citations.js",
-          "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
-          "src/tables/visual/visual-updates.js"
-        ],
-        "html": [
-          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -10112,8 +10292,8 @@
       "selector": ".lithium-table-container .tabulator-col.lithium-selector-col",
       "css": 1,
       "js": 7,
-      "html": 6,
-      "total": 14,
+      "html": 7,
+      "total": 15,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -10127,6 +10307,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -10137,8 +10318,8 @@
       "selector": ".lithium-table-container .tabulator-col[aria-sort=\"ascending\"] .lithium-sort-asc",
       "css": 1,
       "js": 7,
-      "html": 6,
-      "total": 14,
+      "html": 7,
+      "total": 15,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -10152,6 +10333,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -10162,8 +10344,8 @@
       "selector": ".lithium-table-container .tabulator-col[aria-sort=\"descending\"] .lithium-sort-desc",
       "css": 1,
       "js": 7,
-      "html": 6,
-      "total": 14,
+      "html": 7,
+      "total": 15,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -10177,6 +10359,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -10187,8 +10370,8 @@
       "selector": ".lithium-table-container .tabulator-col[aria-sort=\"none\"] .lithium-sort-desc",
       "css": 1,
       "js": 7,
-      "html": 6,
-      "total": 14,
+      "html": 7,
+      "total": 15,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -10202,6 +10385,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -10212,8 +10396,8 @@
       "selector": ".lithium-table-container .tabulator-frozen",
       "css": 1,
       "js": 3,
-      "html": 6,
-      "total": 10,
+      "html": 7,
+      "total": 11,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -10225,6 +10409,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -10235,8 +10420,8 @@
       "selector": ".lithium-table-container .tabulator-header",
       "css": 1,
       "js": 6,
-      "html": 6,
-      "total": 13,
+      "html": 7,
+      "total": 14,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -10250,6 +10435,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -10260,8 +10446,8 @@
       "selector": ".lithium-table-container .tabulator-header .tabulator-col",
       "css": 1,
       "js": 10,
-      "html": 6,
-      "total": 17,
+      "html": 7,
+      "total": 18,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -10275,6 +10461,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -10285,8 +10472,8 @@
       "selector": ".lithium-table-container .tabulator-header .tabulator-col .tabulator-col-content .tabulator-col-sorter",
       "css": 1,
       "js": 10,
-      "html": 6,
-      "total": 17,
+      "html": 7,
+      "total": 18,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -10300,6 +10487,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -10310,8 +10498,8 @@
       "selector": ".lithium-table-container .tabulator-header .tabulator-col .tabulator-col-resize-handle",
       "css": 1,
       "js": 10,
-      "html": 6,
-      "total": 17,
+      "html": 7,
+      "total": 18,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -10325,6 +10513,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -10335,8 +10524,8 @@
       "selector": ".lithium-table-container .tabulator-header .tabulator-col-content",
       "css": 1,
       "js": 10,
-      "html": 6,
-      "total": 17,
+      "html": 7,
+      "total": 18,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -10350,6 +10539,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -10360,8 +10550,8 @@
       "selector": ".lithium-table-container .tabulator-header .tabulator-col-title",
       "css": 1,
       "js": 11,
-      "html": 6,
-      "total": 18,
+      "html": 7,
+      "total": 19,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -10375,6 +10565,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -10385,107 +10576,7 @@
       "selector": ".lithium-table-container .tabulator-header .tabulator-col:last-child",
       "css": 1,
       "js": 10,
-      "html": 6,
-      "total": 17,
-      "files": {
-        "css": [
-          "src/tables/lithium-table.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson-citations.js",
-          "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
-          "src/tables/visual/visual-updates.js"
-        ],
-        "html": [
-          "src/managers/lookups/lookups.html",
-          "src/managers/queries/queries.html",
-          "src/managers/style-manager/style-manager.html",
-          "src/managers/version-history/version-history.html"
-        ]
-      }
-    },
-    {
-      "selector": ".lithium-table-container .tabulator-header .tabulator-col.first-visible-col",
-      "css": 1,
-      "js": 13,
-      "html": 6,
-      "total": 20,
-      "files": {
-        "css": [
-          "src/tables/lithium-table.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson-citations.js",
-          "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
-          "src/tables/visual/visual-updates.js"
-        ],
-        "html": [
-          "src/managers/lookups/lookups.html",
-          "src/managers/queries/queries.html",
-          "src/managers/style-manager/style-manager.html",
-          "src/managers/version-history/version-history.html"
-        ]
-      }
-    },
-    {
-      "selector": ".lithium-table-container .tabulator-header .tabulator-col.last-visible-col",
-      "css": 1,
-      "js": 13,
-      "html": 6,
-      "total": 20,
-      "files": {
-        "css": [
-          "src/tables/lithium-table.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson-citations.js",
-          "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
-          "src/tables/visual/visual-updates.js"
-        ],
-        "html": [
-          "src/managers/lookups/lookups.html",
-          "src/managers/queries/queries.html",
-          "src/managers/style-manager/style-manager.html",
-          "src/managers/version-history/version-history.html"
-        ]
-      }
-    },
-    {
-      "selector": ".lithium-table-container .tabulator-header .tabulator-col.tabulator-frozen",
-      "css": 1,
-      "js": 10,
-      "html": 6,
-      "total": 17,
-      "files": {
-        "css": [
-          "src/tables/lithium-table.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson-citations.js",
-          "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
-          "src/tables/visual/visual-updates.js"
-        ],
-        "html": [
-          "src/managers/lookups/lookups.html",
-          "src/managers/queries/queries.html",
-          "src/managers/style-manager/style-manager.html",
-          "src/managers/version-history/version-history.html"
-        ]
-      }
-    },
-    {
-      "selector": ".lithium-table-container .tabulator-header .tabulator-col.tabulator-sortable .tabulator-col-title",
-      "css": 1,
-      "js": 11,
-      "html": 6,
+      "html": 7,
       "total": 18,
       "files": {
         "css": [
@@ -10500,6 +10591,111 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container .tabulator-header .tabulator-col.first-visible-col",
+      "css": 1,
+      "js": 13,
+      "html": 7,
+      "total": 21,
+      "files": {
+        "css": [
+          "src/tables/lithium-table.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js",
+          "src/tables/lithium-table-ui.js",
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container .tabulator-header .tabulator-col.last-visible-col",
+      "css": 1,
+      "js": 13,
+      "html": 7,
+      "total": 21,
+      "files": {
+        "css": [
+          "src/tables/lithium-table.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js",
+          "src/tables/lithium-table-ui.js",
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container .tabulator-header .tabulator-col.tabulator-frozen",
+      "css": 1,
+      "js": 10,
+      "html": 7,
+      "total": 18,
+      "files": {
+        "css": [
+          "src/tables/lithium-table.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js",
+          "src/tables/lithium-table-ui.js",
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container .tabulator-header .tabulator-col.tabulator-sortable .tabulator-col-title",
+      "css": 1,
+      "js": 11,
+      "html": 7,
+      "total": 19,
+      "files": {
+        "css": [
+          "src/tables/lithium-table.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js",
+          "src/tables/lithium-table-ui.js",
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -10510,8 +10706,8 @@
       "selector": ".lithium-table-container .tabulator-header-filter",
       "css": 1,
       "js": 7,
-      "html": 6,
-      "total": 14,
+      "html": 7,
+      "total": 15,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -10525,6 +10721,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -10535,8 +10732,8 @@
       "selector": ".lithium-table-container .tabulator-header-filter input",
       "css": 1,
       "js": 7,
-      "html": 6,
-      "total": 14,
+      "html": 7,
+      "total": 15,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -10550,6 +10747,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -10560,8 +10758,8 @@
       "selector": ".lithium-table-container .tabulator-header-filter input::placeholder",
       "css": 1,
       "js": 7,
-      "html": 6,
-      "total": 14,
+      "html": 7,
+      "total": 15,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -10575,6 +10773,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -10585,8 +10784,8 @@
       "selector": ".lithium-table-container .tabulator-header-filter input:focus",
       "css": 1,
       "js": 7,
-      "html": 6,
-      "total": 14,
+      "html": 7,
+      "total": 15,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -10600,6 +10799,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -10610,8 +10810,8 @@
       "selector": ".lithium-table-container .tabulator-row",
       "css": 1,
       "js": 5,
-      "html": 6,
-      "total": 12,
+      "html": 7,
+      "total": 13,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -10624,6 +10824,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -10634,8 +10835,8 @@
       "selector": ".lithium-table-container .tabulator-row .tabulator-cell.tabulator-editing",
       "css": 1,
       "js": 6,
-      "html": 6,
-      "total": 13,
+      "html": 7,
+      "total": 14,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -10648,6 +10849,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -10658,8 +10860,8 @@
       "selector": ".lithium-table-container .tabulator-row .tabulator-cell.tabulator-frozen",
       "css": 1,
       "js": 6,
-      "html": 6,
-      "total": 13,
+      "html": 7,
+      "total": 14,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -10672,6 +10874,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -10682,8 +10885,8 @@
       "selector": ".lithium-table-container .tabulator-row:hover",
       "css": 1,
       "js": 5,
-      "html": 6,
-      "total": 12,
+      "html": 7,
+      "total": 13,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -10696,6 +10899,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -10706,8 +10910,8 @@
       "selector": ".lithium-table-container .tabulator-row:hover .tabulator-cell.tabulator-frozen",
       "css": 1,
       "js": 6,
-      "html": 6,
-      "total": 13,
+      "html": 7,
+      "total": 14,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -10720,6 +10924,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -10730,8 +10935,8 @@
       "selector": ".lithium-table-container .tabulator-row.tabulator-group",
       "css": 1,
       "js": 6,
-      "html": 6,
-      "total": 13,
+      "html": 7,
+      "total": 14,
       "files": {
         "css": [
           "src/styles/vendor-fixes.css"
@@ -10744,6 +10949,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -10754,8 +10960,8 @@
       "selector": ".lithium-table-container .tabulator-row.tabulator-row-even",
       "css": 1,
       "js": 5,
-      "html": 6,
-      "total": 12,
+      "html": 7,
+      "total": 13,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -10768,6 +10974,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -10778,8 +10985,8 @@
       "selector": ".lithium-table-container .tabulator-row.tabulator-row-odd",
       "css": 1,
       "js": 5,
-      "html": 6,
-      "total": 12,
+      "html": 7,
+      "total": 13,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -10792,6 +10999,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -10802,8 +11010,8 @@
       "selector": ".lithium-table-container .tabulator-row.tabulator-selected",
       "css": 1,
       "js": 5,
-      "html": 6,
-      "total": 12,
+      "html": 7,
+      "total": 13,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -10816,6 +11024,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -10826,8 +11035,8 @@
       "selector": ".lithium-table-container .tabulator-row.tabulator-selected .tabulator-cell.tabulator-frozen",
       "css": 1,
       "js": 6,
-      "html": 6,
-      "total": 13,
+      "html": 7,
+      "total": 14,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -10840,6 +11049,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -10850,31 +11060,7 @@
       "selector": ".lithium-table-container .tabulator-row.tabulator-selected:hover",
       "css": 1,
       "js": 5,
-      "html": 6,
-      "total": 12,
-      "files": {
-        "css": [
-          "src/tables/lithium-table.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson-citations.js",
-          "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-table-base.js",
-          "src/tables/visual/visual-updates.js"
-        ],
-        "html": [
-          "src/managers/lookups/lookups.html",
-          "src/managers/queries/queries.html",
-          "src/managers/style-manager/style-manager.html",
-          "src/managers/version-history/version-history.html"
-        ]
-      }
-    },
-    {
-      "selector": ".lithium-table-container .tabulator-row.tabulator-selected:hover .tabulator-cell.tabulator-frozen",
-      "css": 1,
-      "js": 6,
-      "html": 6,
+      "html": 7,
       "total": 13,
       "files": {
         "css": [
@@ -10888,6 +11074,32 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container .tabulator-row.tabulator-selected:hover .tabulator-cell.tabulator-frozen",
+      "css": 1,
+      "js": 6,
+      "html": 7,
+      "total": 14,
+      "files": {
+        "css": [
+          "src/tables/lithium-table.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js",
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -10898,8 +11110,8 @@
       "selector": ".lithium-table-container .tabulator-tableholder",
       "css": 1,
       "js": 5,
-      "html": 6,
-      "total": 12,
+      "html": 7,
+      "total": 13,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -10912,6 +11124,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -10922,8 +11135,8 @@
       "selector": ".lithium-table-container .tabulator-tableholder::-webkit-scrollbar",
       "css": 1,
       "js": 5,
-      "html": 6,
-      "total": 12,
+      "html": 7,
+      "total": 13,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -10936,6 +11149,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -10946,8 +11160,8 @@
       "selector": ".lithium-table-container .tabulator-tableholder::-webkit-scrollbar-thumb",
       "css": 1,
       "js": 5,
-      "html": 6,
-      "total": 12,
+      "html": 7,
+      "total": 13,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -10960,6 +11174,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -10970,8 +11185,8 @@
       "selector": ".lithium-table-container .tabulator-tableholder::-webkit-scrollbar-thumb:hover",
       "css": 1,
       "js": 5,
-      "html": 6,
-      "total": 12,
+      "html": 7,
+      "total": 13,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -10984,6 +11199,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -10994,8 +11210,8 @@
       "selector": ".lithium-table-container .tabulator-tableholder::-webkit-scrollbar-track",
       "css": 1,
       "js": 5,
-      "html": 6,
-      "total": 12,
+      "html": 7,
+      "total": 13,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -11008,6 +11224,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -11018,8 +11235,8 @@
       "selector": ".lithium-table-container.lithium-edit-mode .lithium-selector-edit",
       "css": 1,
       "js": 5,
-      "html": 6,
-      "total": 12,
+      "html": 7,
+      "total": 13,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -11032,6 +11249,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -11042,8 +11260,8 @@
       "selector": ".lithium-table-container.lithium-edit-mode .tabulator-row.tabulator-selected",
       "css": 1,
       "js": 7,
-      "html": 6,
-      "total": 14,
+      "html": 7,
+      "total": 15,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -11057,6 +11275,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -11067,8 +11286,8 @@
       "selector": ".lithium-table-container.lithium-edit-mode .tabulator-row.tabulator-selected .tabulator-cell",
       "css": 1,
       "js": 8,
-      "html": 6,
-      "total": 15,
+      "html": 7,
+      "total": 16,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -11082,6 +11301,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -11092,8 +11312,8 @@
       "selector": ".lithium-table-container.lithium-edit-mode .tabulator-row.tabulator-selected .tabulator-cell.tabulator-frozen",
       "css": 1,
       "js": 8,
-      "html": 6,
-      "total": 15,
+      "html": 7,
+      "total": 16,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -11107,6 +11327,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -11117,32 +11338,7 @@
       "selector": ".lithium-table-container.lithium-edit-mode .tabulator-row.tabulator-selected:hover",
       "css": 1,
       "js": 7,
-      "html": 6,
-      "total": 14,
-      "files": {
-        "css": [
-          "src/tables/lithium-table.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson-citations.js",
-          "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ops.js",
-          "src/tables/visual/visual-updates.js"
-        ],
-        "html": [
-          "src/managers/lookups/lookups.html",
-          "src/managers/queries/queries.html",
-          "src/managers/style-manager/style-manager.html",
-          "src/managers/version-history/version-history.html"
-        ]
-      }
-    },
-    {
-      "selector": ".lithium-table-container.lithium-edit-mode .tabulator-row.tabulator-selected:hover .tabulator-cell.tabulator-frozen",
-      "css": 1,
-      "js": 8,
-      "html": 6,
+      "html": 7,
       "total": 15,
       "files": {
         "css": [
@@ -11157,6 +11353,33 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container.lithium-edit-mode .tabulator-row.tabulator-selected:hover .tabulator-cell.tabulator-frozen",
+      "css": 1,
+      "js": 8,
+      "html": 7,
+      "total": 16,
+      "files": {
+        "css": [
+          "src/tables/lithium-table.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js",
+          "src/tables/lithium-table-ops.js",
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -11167,85 +11390,7 @@
       "selector": ".lithium-table-container.lithium-filters-visible .tabulator-header",
       "css": 1,
       "js": 11,
-      "html": 6,
-      "total": 18,
-      "files": {
-        "css": [
-          "src/tables/lithium-table.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson-citations.js",
-          "src/managers/version-history/version-history.js",
-          "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
-          "src/tables/visual/visual-updates.js"
-        ],
-        "html": [
-          "src/managers/lookups/lookups.html",
-          "src/managers/queries/queries.html",
-          "src/managers/style-manager/style-manager.html",
-          "src/managers/version-history/version-history.html"
-        ]
-      }
-    },
-    {
-      "selector": ".lithium-table-container.lithium-filters-visible .tabulator-header .tabulator-col",
-      "css": 1,
-      "js": 15,
-      "html": 6,
-      "total": 22,
-      "files": {
-        "css": [
-          "src/tables/lithium-table.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson-citations.js",
-          "src/managers/version-history/version-history.js",
-          "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
-          "src/tables/visual/visual-updates.js"
-        ],
-        "html": [
-          "src/managers/lookups/lookups.html",
-          "src/managers/queries/queries.html",
-          "src/managers/style-manager/style-manager.html",
-          "src/managers/version-history/version-history.html"
-        ]
-      }
-    },
-    {
-      "selector": ".lithium-table-container.lithium-filters-visible .tabulator-header .tabulator-col-content",
-      "css": 1,
-      "js": 15,
-      "html": 6,
-      "total": 22,
-      "files": {
-        "css": [
-          "src/tables/lithium-table.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson-citations.js",
-          "src/managers/version-history/version-history.js",
-          "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
-          "src/tables/visual/visual-updates.js"
-        ],
-        "html": [
-          "src/managers/lookups/lookups.html",
-          "src/managers/queries/queries.html",
-          "src/managers/style-manager/style-manager.html",
-          "src/managers/version-history/version-history.html"
-        ]
-      }
-    },
-    {
-      "selector": ".lithium-table-container.lithium-filters-visible .tabulator-header-filter",
-      "css": 1,
-      "js": 12,
-      "html": 6,
+      "html": 7,
       "total": 19,
       "files": {
         "css": [
@@ -11261,6 +11406,88 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container.lithium-filters-visible .tabulator-header .tabulator-col",
+      "css": 1,
+      "js": 15,
+      "html": 7,
+      "total": 23,
+      "files": {
+        "css": [
+          "src/tables/lithium-table.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson-citations.js",
+          "src/managers/version-history/version-history.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js",
+          "src/tables/lithium-table-ui.js",
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container.lithium-filters-visible .tabulator-header .tabulator-col-content",
+      "css": 1,
+      "js": 15,
+      "html": 7,
+      "total": 23,
+      "files": {
+        "css": [
+          "src/tables/lithium-table.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson-citations.js",
+          "src/managers/version-history/version-history.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js",
+          "src/tables/lithium-table-ui.js",
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container.lithium-filters-visible .tabulator-header-filter",
+      "css": 1,
+      "js": 12,
+      "html": 7,
+      "total": 20,
+      "files": {
+        "css": [
+          "src/tables/lithium-table.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson-citations.js",
+          "src/managers/version-history/version-history.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js",
+          "src/tables/lithium-table-ui.js",
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -11367,15 +11594,14 @@
     {
       "selector": ".lithium-template-item .lithium-nav-popup-check",
       "css": 1,
-      "js": 17,
+      "js": 15,
       "html": 0,
-      "total": 18,
+      "total": 16,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
         ],
@@ -11482,8 +11708,8 @@
       "selector": ".lithium-toolbar",
       "css": 1,
       "js": 21,
-      "html": 55,
-      "total": 77,
+      "html": 61,
+      "total": 83,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -11494,6 +11720,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
@@ -11505,8 +11732,8 @@
       "selector": ".lithium-toolbar > *:first-child",
       "css": 1,
       "js": 21,
-      "html": 55,
-      "total": 77,
+      "html": 61,
+      "total": 83,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -11517,6 +11744,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
@@ -11528,8 +11756,8 @@
       "selector": ".lithium-toolbar > *:last-child",
       "css": 1,
       "js": 21,
-      "html": 55,
-      "total": 77,
+      "html": 61,
+      "total": 83,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -11540,6 +11768,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
@@ -11551,8 +11780,8 @@
       "selector": ".lithium-toolbar-btn",
       "css": 1,
       "js": 25,
-      "html": 81,
-      "total": 107,
+      "html": 88,
+      "total": 114,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -11563,6 +11792,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
@@ -11574,8 +11804,8 @@
       "selector": ".lithium-toolbar-btn .lithium-toolbar-icon",
       "css": 1,
       "js": 25,
-      "html": 81,
-      "total": 107,
+      "html": 88,
+      "total": 114,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -11586,6 +11816,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
@@ -11597,8 +11828,8 @@
       "selector": ".lithium-toolbar-btn .lithium-toolbar-label",
       "css": 1,
       "js": 25,
-      "html": 81,
-      "total": 107,
+      "html": 88,
+      "total": 114,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -11609,6 +11840,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
@@ -11620,8 +11852,8 @@
       "selector": ".lithium-toolbar-btn:active",
       "css": 1,
       "js": 25,
-      "html": 81,
-      "total": 107,
+      "html": 88,
+      "total": 114,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -11632,6 +11864,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
@@ -11643,8 +11876,8 @@
       "selector": ".lithium-toolbar-btn:disabled",
       "css": 1,
       "js": 25,
-      "html": 81,
-      "total": 107,
+      "html": 88,
+      "total": 114,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -11655,6 +11888,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
@@ -11666,8 +11900,8 @@
       "selector": ".lithium-toolbar-btn:hover",
       "css": 1,
       "js": 25,
-      "html": 81,
-      "total": 107,
+      "html": 88,
+      "total": 114,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -11678,6 +11912,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
@@ -11688,9 +11923,9 @@
     {
       "selector": ".lithium-toolbar-btn.active",
       "css": 1,
-      "js": 72,
-      "html": 88,
-      "total": 161,
+      "js": 76,
+      "html": 97,
+      "total": 174,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -11704,6 +11939,7 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
+          "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/session-log/session-log.js",
@@ -11713,6 +11949,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
@@ -11723,9 +11960,9 @@
     {
       "selector": ".lithium-toolbar-btn.active:hover",
       "css": 1,
-      "js": 72,
-      "html": 88,
-      "total": 161,
+      "js": 76,
+      "html": 97,
+      "total": 174,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -11739,6 +11976,7 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
+          "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/session-log/session-log.js",
@@ -11748,6 +11986,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
@@ -11759,8 +11998,8 @@
       "selector": ".lithium-toolbar-btn.icon-only",
       "css": 1,
       "js": 25,
-      "html": 81,
-      "total": 107,
+      "html": 88,
+      "total": 114,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -11771,6 +12010,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
@@ -11782,8 +12022,8 @@
       "selector": ".lithium-toolbar-btn.lithium-collapse-btn",
       "css": 1,
       "js": 26,
-      "html": 87,
-      "total": 114,
+      "html": 95,
+      "total": 122,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -11794,6 +12034,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
@@ -11805,8 +12046,8 @@
       "selector": ".lithium-toolbar-btn.lithium-collapse-btn i",
       "css": 1,
       "js": 26,
-      "html": 87,
-      "total": 114,
+      "html": 95,
+      "total": 122,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -11817,6 +12058,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
@@ -11828,8 +12070,8 @@
       "selector": ".lithium-toolbar-btn.lithium-collapse-btn.collapsed i",
       "css": 1,
       "js": 69,
-      "html": 87,
-      "total": 157,
+      "html": 95,
+      "total": 165,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -11848,6 +12090,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
@@ -11859,8 +12102,8 @@
       "selector": ".lithium-toolbar-placeholder",
       "css": 1,
       "js": 30,
-      "html": 61,
-      "total": 92,
+      "html": 68,
+      "total": 99,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -11871,6 +12114,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
@@ -11882,8 +12126,8 @@
       "selector": ".lithium-toolbar-popup",
       "css": 1,
       "js": 21,
-      "html": 55,
-      "total": 77,
+      "html": 61,
+      "total": 83,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -11894,6 +12138,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
@@ -11905,8 +12150,8 @@
       "selector": ".lithium-toolbar-popup-item",
       "css": 1,
       "js": 21,
-      "html": 55,
-      "total": 77,
+      "html": 61,
+      "total": 83,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -11917,6 +12162,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
@@ -11928,8 +12174,8 @@
       "selector": ".lithium-toolbar-popup-item i",
       "css": 1,
       "js": 21,
-      "html": 55,
-      "total": 77,
+      "html": 61,
+      "total": 83,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -11940,6 +12186,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
@@ -11951,8 +12198,8 @@
       "selector": ".lithium-toolbar-popup-item:hover",
       "css": 1,
       "js": 21,
-      "html": 55,
-      "total": 77,
+      "html": 61,
+      "total": 83,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -11963,6 +12210,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
@@ -11973,9 +12221,9 @@
     {
       "selector": ".lithium-toolbar-popup.visible",
       "css": 1,
-      "js": 99,
-      "html": 55,
-      "total": 155,
+      "js": 98,
+      "html": 61,
+      "total": 160,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -12005,6 +12253,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
@@ -12016,8 +12265,8 @@
       "selector": ".lithium-toolbar-stack",
       "css": 1,
       "js": 21,
-      "html": 55,
-      "total": 77,
+      "html": 61,
+      "total": 83,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -12028,6 +12277,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
@@ -12039,8 +12289,8 @@
       "selector": ".lithium-toolbar-stack .lithium-toolbar",
       "css": 1,
       "js": 21,
-      "html": 55,
-      "total": 77,
+      "html": 61,
+      "total": 83,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -12051,6 +12301,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
@@ -12062,8 +12313,8 @@
       "selector": ".lithium-toolbar-state-btn",
       "css": 1,
       "js": 22,
-      "html": 60,
-      "total": 83,
+      "html": 66,
+      "total": 89,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -12074,6 +12325,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
@@ -12085,8 +12337,8 @@
       "selector": ".lithium-toolbar-state-btn:disabled",
       "css": 1,
       "js": 22,
-      "html": 60,
-      "total": 83,
+      "html": 66,
+      "total": 89,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -12097,6 +12349,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
@@ -12108,8 +12361,8 @@
       "selector": ".lithium-toolbar-state-btn:hover",
       "css": 1,
       "js": 22,
-      "html": 60,
-      "total": 83,
+      "html": 66,
+      "total": 89,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -12120,6 +12373,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
@@ -12130,9 +12384,9 @@
     {
       "selector": ".lithium-toolbar-state-btn.active",
       "css": 1,
-      "js": 69,
-      "html": 67,
-      "total": 137,
+      "js": 73,
+      "html": 75,
+      "total": 149,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -12146,6 +12400,7 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
+          "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/session-log/session-log.js",
@@ -12155,6 +12410,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
@@ -12166,8 +12422,8 @@
       "selector": ".lithium-toolbar-state-btn.css-state",
       "css": 1,
       "js": 23,
-      "html": 61,
-      "total": 85,
+      "html": 67,
+      "total": 91,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -12178,6 +12434,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
@@ -12189,8 +12446,8 @@
       "selector": ".lithium-toolbar-tab",
       "css": 1,
       "js": 23,
-      "html": 65,
-      "total": 89,
+      "html": 73,
+      "total": 97,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -12202,6 +12459,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
@@ -12213,8 +12471,8 @@
       "selector": ".lithium-toolbar-tab i",
       "css": 1,
       "js": 23,
-      "html": 65,
-      "total": 89,
+      "html": 73,
+      "total": 97,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -12226,6 +12484,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
@@ -12237,8 +12496,8 @@
       "selector": ".lithium-toolbar-tab:disabled",
       "css": 1,
       "js": 23,
-      "html": 65,
-      "total": 89,
+      "html": 73,
+      "total": 97,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -12250,6 +12509,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
@@ -12261,8 +12521,8 @@
       "selector": ".lithium-toolbar-tab:hover",
       "css": 1,
       "js": 23,
-      "html": 65,
-      "total": 89,
+      "html": 73,
+      "total": 97,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -12274,6 +12534,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
@@ -12284,9 +12545,9 @@
     {
       "selector": ".lithium-toolbar-tab.active",
       "css": 1,
-      "js": 70,
-      "html": 72,
-      "total": 143,
+      "js": 74,
+      "html": 82,
+      "total": 157,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -12300,6 +12561,7 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
+          "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/session-log/session-log.js",
@@ -12309,6 +12571,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
@@ -12320,8 +12583,8 @@
       "selector": ".lithium-toolbar-title",
       "css": 1,
       "js": 23,
-      "html": 57,
-      "total": 81,
+      "html": 64,
+      "total": 88,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -12332,6 +12595,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
@@ -12343,38 +12607,7 @@
       "selector": ".lithium-toolbar.collapsed-text .lithium-toolbar-state-btn[data-collapsible-text]",
       "css": 1,
       "js": 75,
-      "html": 60,
-      "total": 136,
-      "files": {
-        "css": [
-          "src/core/lithium-toolbar.css"
-        ],
-        "js": [
-          "src/core/lithium-splitter.js",
-          "src/core/manager-ui.js",
-          "src/core/panel-collapse.js",
-          "src/core/tooltip-api.js",
-          "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
-          "src/managers/queries/queries-ui.js",
-          "src/managers/queries/queries.js",
-          "src/managers/session-log/session-log.js",
-          "src/managers/style-manager/style-manager.js"
-        ],
-        "html": [
-          "src/managers/lookups/lookups.html",
-          "src/managers/queries/queries.html",
-          "src/managers/session-log/session-log.html",
-          "src/managers/style-manager/style-manager.html",
-          "src/managers/version-history/version-history.html"
-        ]
-      }
-    },
-    {
-      "selector": ".lithium-toolbar.collapsed-text .lithium-toolbar-tab[data-collapsible-text]",
-      "css": 1,
-      "js": 76,
-      "html": 65,
+      "html": 66,
       "total": 142,
       "files": {
         "css": [
@@ -12394,6 +12627,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
@@ -12402,11 +12636,11 @@
       }
     },
     {
-      "selector": ".lithium-toolbar.collapsed-text .lithium-toolbar-title[data-collapsible-text]",
+      "selector": ".lithium-toolbar.collapsed-text .lithium-toolbar-tab[data-collapsible-text]",
       "css": 1,
       "js": 76,
-      "html": 57,
-      "total": 134,
+      "html": 73,
+      "total": 150,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -12425,6 +12659,39 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/session-log/session-log.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-toolbar.collapsed-text .lithium-toolbar-title[data-collapsible-text]",
+      "css": 1,
+      "js": 76,
+      "html": 64,
+      "total": 141,
+      "files": {
+        "css": [
+          "src/core/lithium-toolbar.css"
+        ],
+        "js": [
+          "src/core/lithium-splitter.js",
+          "src/core/manager-ui.js",
+          "src/core/panel-collapse.js",
+          "src/core/tooltip-api.js",
+          "src/managers/lookups/lookups.js",
+          "src/managers/main/main.js",
+          "src/managers/queries/queries-ui.js",
+          "src/managers/queries/queries.js",
+          "src/managers/session-log/session-log.js",
+          "src/managers/style-manager/style-manager.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
           "src/managers/style-manager/style-manager.html",
@@ -13005,9 +13272,9 @@
     {
       "selector": ".lithium-tour-list-popup.visible",
       "css": 1,
-      "js": 79,
+      "js": 78,
       "html": 0,
-      "total": 80,
+      "total": 79,
       "files": {
         "css": [
           "src/managers/tour/tour.css"
@@ -13647,9 +13914,9 @@
     {
       "selector": ".login-container.visible",
       "css": 2,
-      "js": 79,
+      "js": 78,
       "html": 1,
-      "total": 82,
+      "total": 81,
       "files": {
         "css": [
           "src/managers/login/login.css",
@@ -13725,9 +13992,9 @@
     {
       "selector": ".login-error.visible",
       "css": 2,
-      "js": 80,
+      "js": 79,
       "html": 1,
-      "total": 83,
+      "total": 82,
       "files": {
         "css": [
           "src/managers/login/login.css",
@@ -14338,9 +14605,9 @@
     {
       "selector": ".login-mockup .login-error.visible",
       "css": 1,
-      "js": 81,
+      "js": 80,
       "html": 1,
-      "total": 83,
+      "total": 82,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -14647,9 +14914,9 @@
     {
       "selector": ".login-subpanel.visible",
       "css": 1,
-      "js": 78,
+      "js": 77,
       "html": 4,
-      "total": 83,
+      "total": 82,
       "files": {
         "css": [
           "src/styles/layout.css"
@@ -14873,9 +15140,9 @@
     {
       "selector": ".logout-overlay.visible",
       "css": 1,
-      "js": 78,
+      "js": 77,
       "html": 1,
-      "total": 80,
+      "total": 79,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -15067,9 +15334,9 @@
     {
       "selector": ".logout-panel.visible",
       "css": 1,
-      "js": 78,
+      "js": 77,
       "html": 4,
-      "total": 83,
+      "total": 82,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -15269,9 +15536,9 @@
     {
       "selector": ".lookups-footer-export-popup.visible",
       "css": 1,
-      "js": 80,
+      "js": 79,
       "html": 0,
-      "total": 81,
+      "total": 80,
       "files": {
         "css": [
           "src/managers/lookups/lookups.css"
@@ -15845,9 +16112,9 @@
     {
       "selector": ".lookups-tab-btn.active",
       "css": 1,
-      "js": 48,
-      "html": 7,
-      "total": 56,
+      "js": 52,
+      "html": 9,
+      "total": 62,
       "files": {
         "css": [
           "src/managers/lookups/lookups.css"
@@ -15861,6 +16128,7 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
+          "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js",
@@ -15869,6 +16137,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html"
         ]
@@ -15931,9 +16200,9 @@
     {
       "selector": ".lookups-tab-pane.active",
       "css": 1,
-      "js": 48,
-      "html": 10,
-      "total": 59,
+      "js": 52,
+      "html": 12,
+      "total": 65,
       "files": {
         "css": [
           "src/managers/lookups/lookups.css"
@@ -15947,6 +16216,7 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
+          "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js",
@@ -15955,6 +16225,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html"
         ]
@@ -16802,9 +17073,9 @@
     {
       "selector": ".manager-font-popup-style-btn.active",
       "css": 1,
-      "js": 68,
-      "html": 7,
-      "total": 76,
+      "js": 72,
+      "html": 9,
+      "total": 82,
       "files": {
         "css": [
           "src/core/manager-ui.css"
@@ -16818,6 +17089,7 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
+          "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js",
@@ -16826,6 +17098,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html"
         ]
@@ -16850,9 +17123,9 @@
     {
       "selector": ".manager-font-popup.visible",
       "css": 1,
-      "js": 97,
+      "js": 96,
       "html": 0,
-      "total": 98,
+      "total": 97,
       "files": {
         "css": [
           "src/core/manager-ui.css"
@@ -17094,9 +17367,9 @@
     {
       "selector": ".manager-footer-export-popup.visible",
       "css": 1,
-      "js": 82,
+      "js": 81,
       "html": 0,
-      "total": 83,
+      "total": 82,
       "files": {
         "css": [
           "src/core/manager-ui.css"
@@ -17241,8 +17514,8 @@
       "selector": ".manager-panels",
       "css": 1,
       "js": 0,
-      "html": 4,
-      "total": 5,
+      "html": 5,
+      "total": 6,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -17250,6 +17523,7 @@
         "js": [],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -17565,9 +17839,9 @@
     {
       "selector": ".manager-transition-overlay.active",
       "css": 1,
-      "js": 48,
-      "html": 7,
-      "total": 56,
+      "js": 52,
+      "html": 9,
+      "total": 62,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -17581,6 +17855,7 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
+          "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js",
@@ -17589,6 +17864,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html"
         ]
@@ -17954,9 +18230,9 @@
     {
       "selector": ".manager-ui-popup.visible",
       "css": 1,
-      "js": 97,
+      "js": 96,
       "html": 0,
-      "total": 98,
+      "total": 97,
       "files": {
         "css": [
           "src/core/manager-ui.css"
@@ -18384,9 +18660,9 @@
     {
       "selector": ".menu-item.active",
       "css": 1,
-      "js": 57,
-      "html": 7,
-      "total": 65,
+      "js": 61,
+      "html": 9,
+      "total": 71,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -18400,6 +18676,7 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
+          "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js",
@@ -18408,6 +18685,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html"
         ]
@@ -18416,9 +18694,9 @@
     {
       "selector": ".menu-item.active .menu-item-count",
       "css": 1,
-      "js": 58,
-      "html": 7,
-      "total": 66,
+      "js": 62,
+      "html": 9,
+      "total": 72,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -18432,6 +18710,7 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
+          "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js",
@@ -18440,6 +18719,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html"
         ]
@@ -18448,9 +18728,9 @@
     {
       "selector": ".menu-item.manager-open:not(.active):not(:hover)",
       "css": 1,
-      "js": 58,
-      "html": 7,
-      "total": 66,
+      "js": 62,
+      "html": 9,
+      "total": 72,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -18464,6 +18744,7 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
+          "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js",
@@ -18472,6 +18753,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html"
         ]
@@ -19291,9 +19573,9 @@
     {
       "selector": ".nav-popup.visible",
       "css": 1,
-      "js": 78,
+      "js": 77,
       "html": 0,
-      "total": 79,
+      "total": 78,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -19384,14 +19666,15 @@
       "selector": ".navigator-container",
       "css": 1,
       "js": 0,
-      "html": 1,
-      "total": 2,
+      "html": 2,
+      "total": 3,
       "files": {
         "css": [
           "src/core/manager-panels.css"
         ],
         "js": [],
         "html": [
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/version-history/version-history.html"
         ]
       }
@@ -19431,9 +19714,9 @@
     {
       "selector": ".offline-indicator.visible",
       "css": 1,
-      "js": 79,
+      "js": 78,
       "html": 0,
-      "total": 80,
+      "total": 79,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -20104,24 +20387,8 @@
       "selector": ".profile-content",
       "css": 1,
       "js": 0,
-      "html": 1,
-      "total": 2,
-      "files": {
-        "css": [
-          "src/managers/profile-manager/profile-manager.css"
-        ],
-        "js": [],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
-      }
-    },
-    {
-      "selector": ".profile-header",
-      "css": 1,
-      "js": 0,
-      "html": 1,
-      "total": 2,
+      "html": 2,
+      "total": 3,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -20134,6 +20401,22 @@
     },
     {
       "selector": ".profile-info-grid",
+      "css": 1,
+      "js": 0,
+      "html": 3,
+      "total": 4,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
+      }
+    },
+    {
+      "selector": ".profile-manager-container",
       "css": 1,
       "js": 0,
       "html": 1,
@@ -20152,8 +20435,8 @@
       "selector": ".profile-section",
       "css": 1,
       "js": 0,
-      "html": 3,
-      "total": 4,
+      "html": 5,
+      "total": 6,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -20165,31 +20448,13 @@
       }
     },
     {
-      "selector": ".profile-subtitle",
-      "css": 1,
+      "selector": ".profile-tab-content",
+      "css": 0,
       "js": 0,
       "html": 1,
-      "total": 2,
+      "total": 1,
       "files": {
-        "css": [
-          "src/managers/profile-manager/profile-manager.css"
-        ],
-        "js": [],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
-      }
-    },
-    {
-      "selector": ".profile-title",
-      "css": 1,
-      "js": 0,
-      "html": 1,
-      "total": 2,
-      "files": {
-        "css": [
-          "src/managers/profile-manager/profile-manager.css"
-        ],
+        "css": [],
         "js": [],
         "html": [
           "src/managers/profile-manager/profile-manager.html"
@@ -20543,9 +20808,9 @@
     {
       "selector": ".queries-footer-export-popup.visible",
       "css": 1,
-      "js": 80,
+      "js": 79,
       "html": 0,
-      "total": 81,
+      "total": 80,
       "files": {
         "css": [
           "src/managers/queries/queries.css"
@@ -21237,9 +21502,9 @@
     {
       "selector": ".queries-tab-btn.active",
       "css": 1,
-      "js": 48,
-      "html": 7,
-      "total": 56,
+      "js": 52,
+      "html": 9,
+      "total": 62,
       "files": {
         "css": [
           "src/managers/queries/queries.css"
@@ -21253,6 +21518,7 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
+          "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js",
@@ -21261,6 +21527,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html"
         ]
@@ -21323,9 +21590,9 @@
     {
       "selector": ".queries-tab-pane.active",
       "css": 1,
-      "js": 48,
-      "html": 12,
-      "total": 61,
+      "js": 52,
+      "html": 14,
+      "total": 67,
       "files": {
         "css": [
           "src/managers/queries/queries.css"
@@ -21339,6 +21606,7 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
+          "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js",
@@ -21347,6 +21615,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html"
         ]
@@ -21744,8 +22013,8 @@
       "selector": ".section-title",
       "css": 1,
       "js": 0,
-      "html": 3,
-      "total": 4,
+      "html": 5,
+      "total": 6,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -21760,8 +22029,8 @@
       "selector": ".section-title i",
       "css": 1,
       "js": 0,
-      "html": 3,
-      "total": 4,
+      "html": 5,
+      "total": 6,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -22049,9 +22318,9 @@
     {
       "selector": ".shepherd-element.lithium-tour-step.dragging",
       "css": 1,
-      "js": 12,
+      "js": 14,
       "html": 0,
-      "total": 13,
+      "total": 15,
       "files": {
         "css": [
           "src/managers/tour/tour.css"
@@ -22059,7 +22328,8 @@
         "js": [
           "src/managers/crimson/crimson-events.js",
           "src/managers/terminal/terminal.js",
-          "src/managers/tour/tour.js"
+          "src/managers/tour/tour.js",
+          "src/tables/column-manager/cm-drag-resize.js"
         ],
         "html": []
       }
@@ -22406,9 +22676,9 @@
     {
       "selector": ".sidebar-icon-btn.active",
       "css": 1,
-      "js": 48,
-      "html": 12,
-      "total": 61,
+      "js": 52,
+      "html": 14,
+      "total": 67,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -22422,6 +22692,7 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
+          "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js",
@@ -22431,6 +22702,7 @@
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/main/main.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html"
         ]
@@ -22439,9 +22711,9 @@
     {
       "selector": ".sidebar-icon-btn.active:hover",
       "css": 1,
-      "js": 48,
-      "html": 12,
-      "total": 61,
+      "js": 52,
+      "html": 14,
+      "total": 67,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -22455,6 +22727,7 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
+          "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js",
@@ -22464,6 +22737,7 @@
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/main/main.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html"
         ]
@@ -23028,9 +23302,9 @@
     {
       "selector": ".sidebar-menu-btn.active",
       "css": 1,
-      "js": 48,
-      "html": 8,
-      "total": 57,
+      "js": 52,
+      "html": 10,
+      "total": 63,
       "files": {
         "css": [
           "src/styles/layout.css"
@@ -23044,6 +23318,7 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
+          "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js",
@@ -23053,6 +23328,7 @@
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/main/main.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html"
         ]
@@ -23128,9 +23404,9 @@
     {
       "selector": ".sidebar-overlay.visible",
       "css": 1,
-      "js": 78,
+      "js": 77,
       "html": 1,
-      "total": 80,
+      "total": 79,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -23361,8 +23637,8 @@
       "selector": ".slot-annotations-btn .btn-counter",
       "css": 1,
       "js": 31,
-      "html": 2,
-      "total": 34,
+      "html": 3,
+      "total": 35,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -23575,8 +23851,8 @@
       "selector": ".slot-notifications-btn .btn-counter",
       "css": 1,
       "js": 32,
-      "html": 2,
-      "total": 35,
+      "html": 3,
+      "total": 36,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -23600,8 +23876,8 @@
       "selector": ".slot-tickets-btn .btn-counter",
       "css": 1,
       "js": 31,
-      "html": 2,
-      "total": 34,
+      "html": 3,
+      "total": 35,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -24011,9 +24287,9 @@
     {
       "selector": ".style-editor-toolbar .style-state-btn.active",
       "css": 1,
-      "js": 48,
-      "html": 7,
-      "total": 56,
+      "js": 52,
+      "html": 9,
+      "total": 62,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -24027,6 +24303,7 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
+          "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js",
@@ -24035,6 +24312,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html"
         ]
@@ -24182,9 +24460,9 @@
     {
       "selector": ".style-font-popup-style-btn.active",
       "css": 1,
-      "js": 47,
-      "html": 7,
-      "total": 55,
+      "js": 51,
+      "html": 9,
+      "total": 61,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -24198,6 +24476,7 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
+          "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js",
@@ -24206,6 +24485,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html"
         ]
@@ -24228,9 +24508,9 @@
     {
       "selector": ".style-font-popup.visible",
       "css": 1,
-      "js": 78,
+      "js": 77,
       "html": 0,
-      "total": 79,
+      "total": 78,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -24328,9 +24608,9 @@
     {
       "selector": ".style-footer-export-popup.visible",
       "css": 1,
-      "js": 80,
+      "js": 79,
       "html": 0,
-      "total": 81,
+      "total": 80,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -24396,9 +24676,9 @@
     {
       "selector": ".style-json-view.active",
       "css": 1,
-      "js": 47,
-      "html": 8,
-      "total": 56,
+      "js": 51,
+      "html": 10,
+      "total": 62,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -24412,6 +24692,7 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
+          "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js",
@@ -24420,6 +24701,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html"
         ]
@@ -24606,9 +24888,9 @@
     {
       "selector": ".style-mode-btn.active",
       "css": 1,
-      "js": 47,
-      "html": 7,
-      "total": 55,
+      "js": 51,
+      "html": 9,
+      "total": 61,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -24622,6 +24904,7 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
+          "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js",
@@ -24630,6 +24913,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html"
         ]
@@ -24918,9 +25202,9 @@
     {
       "selector": ".style-section-view.active",
       "css": 1,
-      "js": 47,
-      "html": 8,
-      "total": 56,
+      "js": 51,
+      "html": 10,
+      "total": 62,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -24934,6 +25218,7 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
+          "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js",
@@ -24942,6 +25227,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html"
         ]
@@ -25058,9 +25344,9 @@
     {
       "selector": ".style-target-circle.active",
       "css": 1,
-      "js": 49,
-      "html": 7,
-      "total": 57,
+      "js": 53,
+      "html": 9,
+      "total": 63,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -25074,6 +25360,7 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
+          "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js",
@@ -25082,6 +25369,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html"
         ]
@@ -25534,9 +25822,9 @@
     {
       "selector": ".tab-btn.active",
       "css": 1,
-      "js": 47,
-      "html": 7,
-      "total": 55,
+      "js": 51,
+      "html": 9,
+      "total": 61,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -25550,6 +25838,7 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
+          "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js",
@@ -25558,6 +25847,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html"
         ]
@@ -25608,9 +25898,9 @@
     {
       "selector": ".tab-pane.active",
       "css": 1,
-      "js": 47,
-      "html": 7,
-      "total": 55,
+      "js": 51,
+      "html": 9,
+      "total": 61,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -25624,6 +25914,7 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
+          "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js",
@@ -25632,6 +25923,57 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html"
+        ]
+      }
+    },
+    {
+      "selector": ".tab-panel",
+      "css": 1,
+      "js": 0,
+      "html": 2,
+      "total": 3,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
+      }
+    },
+    {
+      "selector": ".tab-panel.active",
+      "css": 1,
+      "js": 51,
+      "html": 11,
+      "total": 63,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [
+          "src/app.js",
+          "src/core/manager-ui.js",
+          "src/core/zoom-control.js",
+          "src/managers/crimson/crimson-citations.js",
+          "src/managers/crimson/crimson-ui.js",
+          "src/managers/login/login.js",
+          "src/managers/lookups/lookups.js",
+          "src/managers/main/main.js",
+          "src/managers/profile-manager/profile-manager.js",
+          "src/managers/queries/queries-ui.js",
+          "src/managers/queries/queries.js",
+          "src/managers/style-manager/style-manager.js",
+          "src/shared/crimson-ws.js",
+          "src/tables/column-manager/cm-table.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html"
         ]
@@ -25725,8 +26067,8 @@
       "selector": ".table-container",
       "css": 2,
       "js": 0,
-      "html": 1,
-      "total": 3,
+      "html": 2,
+      "total": 4,
       "files": {
         "css": [
           "src/core/manager-panels.css",
@@ -25734,6 +26076,7 @@
         ],
         "js": [],
         "html": [
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/version-history/version-history.html"
         ]
       }
@@ -25828,8 +26171,8 @@
       "selector": ".tabulator-nav .btn",
       "css": 1,
       "js": 25,
-      "html": 2,
-      "total": 28,
+      "html": 3,
+      "total": 29,
       "files": {
         "css": [
           "src/init/tabulator-full.css"
@@ -25851,8 +26194,8 @@
       "selector": ".tabulator-nav .btn-export",
       "css": 1,
       "js": 25,
-      "html": 2,
-      "total": 28,
+      "html": 3,
+      "total": 29,
       "files": {
         "css": [
           "src/init/tabulator-full.css"
@@ -25874,8 +26217,8 @@
       "selector": ".tabulator-nav .btn-export .dropdown-menu",
       "css": 1,
       "js": 25,
-      "html": 2,
-      "total": 28,
+      "html": 3,
+      "total": 29,
       "files": {
         "css": [
           "src/init/tabulator-full.css"
@@ -25897,8 +26240,8 @@
       "selector": ".tabulator-nav .btn-export:hover .dropdown-menu",
       "css": 1,
       "js": 25,
-      "html": 2,
-      "total": 28,
+      "html": 3,
+      "total": 29,
       "files": {
         "css": [
           "src/init/tabulator-full.css"
@@ -25920,8 +26263,8 @@
       "selector": ".tabulator-nav .btn:last-child",
       "css": 1,
       "js": 25,
-      "html": 2,
-      "total": 28,
+      "html": 3,
+      "total": 29,
       "files": {
         "css": [
           "src/init/tabulator-full.css"
@@ -26125,9 +26468,9 @@
     {
       "selector": ".tabulator-simple .tabulator-page.active",
       "css": 1,
-      "js": 47,
-      "html": 7,
-      "total": 55,
+      "js": 51,
+      "html": 9,
+      "total": 61,
       "files": {
         "css": [
           "src/init/tabulator-simple.css"
@@ -26141,6 +26484,7 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
+          "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js",
@@ -26149,6 +26493,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html"
         ]
@@ -26474,9 +26819,9 @@
     {
       "selector": ".terminal-overlay.visible",
       "css": 1,
-      "js": 79,
+      "js": 78,
       "html": 0,
-      "total": 80,
+      "total": 79,
       "files": {
         "css": [
           "src/managers/terminal/terminal.css"
@@ -26526,9 +26871,9 @@
     {
       "selector": ".terminal-popup.dragging",
       "css": 1,
-      "js": 11,
+      "js": 13,
       "html": 0,
-      "total": 12,
+      "total": 14,
       "files": {
         "css": [
           "src/managers/terminal/terminal.css"
@@ -26536,7 +26881,8 @@
         "js": [
           "src/managers/crimson/crimson-events.js",
           "src/managers/terminal/terminal.js",
-          "src/managers/tour/tour.js"
+          "src/managers/tour/tour.js",
+          "src/tables/column-manager/cm-drag-resize.js"
         ],
         "html": []
       }
@@ -26616,9 +26962,9 @@
     {
       "selector": ".terminal-popup.visible",
       "css": 1,
-      "js": 79,
+      "js": 78,
       "html": 0,
-      "total": 80,
+      "total": 79,
       "files": {
         "css": [
           "src/managers/terminal/terminal.css"
@@ -28092,9 +28438,9 @@
     {
       "selector": ".toast.visible",
       "css": 1,
-      "js": 106,
+      "js": 105,
       "html": 2,
-      "total": 109,
+      "total": 108,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -28221,9 +28567,9 @@
     {
       "selector": ".transition-overlay.active",
       "css": 1,
-      "js": 47,
-      "html": 8,
-      "total": 56,
+      "js": 51,
+      "html": 10,
+      "total": 62,
       "files": {
         "css": [
           "src/styles/layout.css"
@@ -28237,6 +28583,7 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
+          "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js",
@@ -28246,6 +28593,7 @@
         "html": [
           "src/managers/login/login.html",
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html"
         ]
@@ -28362,9 +28710,9 @@
     {
       "selector": ".version-footer-export-popup.visible",
       "css": 1,
-      "js": 80,
+      "js": 79,
       "html": 0,
-      "total": 81,
+      "total": 80,
       "files": {
         "css": [
           "src/managers/version-history/version-history.css"
@@ -29038,9 +29386,9 @@
     {
       "selector": ".zoom-popup-detent.active .zoom-popup-detent-mark",
       "css": 1,
-      "js": 82,
-      "html": 7,
-      "total": 90,
+      "js": 86,
+      "html": 9,
+      "total": 96,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -29054,6 +29402,7 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
+          "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js",
@@ -29062,6 +29411,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html"
         ]
@@ -29318,8 +29668,8 @@
       "selector": "[data-panel=\"left\"].collapsed ~ [data-splitter] ~ [data-panel=\"middle\"] ~ [data-splitter] ~ [data-panel=\"right\"] [data-collapse-target=\"left\"] .lithium-collapse-icon",
       "css": 1,
       "js": 44,
-      "html": 6,
-      "total": 51,
+      "html": 7,
+      "total": 52,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -29337,6 +29687,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -29347,8 +29698,8 @@
       "selector": "[data-panel=\"left\"].collapsed ~ [data-splitter] ~ [data-panel=\"right\"] [data-collapse-target=\"left\"] .lithium-collapse-icon",
       "css": 1,
       "js": 44,
-      "html": 6,
-      "total": 51,
+      "html": 7,
+      "total": 52,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -29366,6 +29717,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -29376,8 +29728,8 @@
       "selector": "[data-panel=\"middle\"].collapsed ~ [data-splitter] ~ [data-panel=\"right\"] [data-collapse-target=\"middle\"] .lithium-collapse-icon",
       "css": 1,
       "js": 44,
-      "html": 6,
-      "total": 51,
+      "html": 7,
+      "total": 52,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -29395,6 +29747,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"
@@ -29839,9 +30192,9 @@
     {
       "selector": "#main-layout.visible",
       "css": 1,
-      "js": 78,
+      "js": 77,
       "html": 0,
-      "total": 79,
+      "total": 78,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -29889,11 +30242,58 @@
       }
     },
     {
+      "selector": "#profile-left-panel .lithium-toolbar",
+      "css": 1,
+      "js": 21,
+      "html": 61,
+      "total": 83,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [
+          "src/core/manager-ui.js",
+          "src/managers/session-log/session-log.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/session-log/session-log.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": "#profile-left-panel.collapsed",
+      "css": 1,
+      "js": 43,
+      "html": 0,
+      "total": 44,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [
+          "src/core/lithium-splitter.js",
+          "src/core/panel-collapse.js",
+          "src/core/tooltip-api.js",
+          "src/managers/lookups/lookups.js",
+          "src/managers/main/main.js",
+          "src/managers/queries/queries-ui.js",
+          "src/managers/queries/queries.js",
+          "src/managers/style-manager/style-manager.js"
+        ],
+        "html": []
+      }
+    },
+    {
       "selector": "#profile-manager-page.visible",
       "css": 1,
-      "js": 78,
+      "js": 77,
       "html": 0,
-      "total": 79,
+      "total": 78,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -29925,11 +30325,68 @@
       }
     },
     {
+      "selector": "#profile-splitter.collapsed",
+      "css": 1,
+      "js": 43,
+      "html": 0,
+      "total": 44,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [
+          "src/core/lithium-splitter.js",
+          "src/core/panel-collapse.js",
+          "src/core/tooltip-api.js",
+          "src/managers/lookups/lookups.js",
+          "src/managers/main/main.js",
+          "src/managers/queries/queries-ui.js",
+          "src/managers/queries/queries.js",
+          "src/managers/style-manager/style-manager.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": "#profile-splitter.resizing",
+      "css": 1,
+      "js": 18,
+      "html": 0,
+      "total": 19,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson-events.js",
+          "src/managers/main/main.js",
+          "src/managers/queries/queries-ui.js",
+          "src/managers/terminal/terminal.js",
+          "src/tables/column-manager/cm-drag-resize.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": "#profile-table-container .tabulator",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
       "selector": "#session-log-page.visible",
       "css": 1,
-      "js": 78,
+      "js": 77,
       "html": 0,
-      "total": 79,
+      "total": 78,
       "files": {
         "css": [
           "src/managers/session-log/session-log.css"
@@ -30094,8 +30551,8 @@
       "selector": "div.lithium-table-container > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1)",
       "css": 1,
       "js": 3,
-      "html": 6,
-      "total": 10,
+      "html": 7,
+      "total": 11,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -30107,6 +30564,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
           "src/managers/version-history/version-history.html"

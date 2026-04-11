@@ -20,7 +20,7 @@ function removeHiddenHeaderFilters(columns) {
   });
 }
 
-function createTemplateColumnFromTableDef(fieldName, colDef = {}) {
+export function createTemplateColumnFromTableDef(fieldName, colDef = {}) {
   const display = colDef.display || colDef.title || colDef.field || fieldName;
   const templateCol = {
     display,
@@ -41,8 +41,21 @@ function createTemplateColumnFromTableDef(fieldName, colDef = {}) {
   if (colDef.rowHandle === true) templateCol.rowHandle = true;
   if (colDef.resizable === false) templateCol.resizable = false;
   if (typeof colDef.formatter === 'function') templateCol.formatter = colDef.formatter;
-  if (colDef.overrides && Object.keys(colDef.overrides).length > 0) {
-    templateCol.overrides = { ...colDef.overrides };
+
+  // Flatten Tabulator properties directly onto the column definition
+  // (replacing the old overrides pattern)
+  const tabulatorProps = [
+    'width', 'minWidth', 'maxWidth', 'align', 'vertAlign',
+    'bottomCalc', 'bottomCalcFormatter', 'bottomCalcFormatterParams',
+    'formatterParams', 'editorParams', 'sorterParams',
+    'headerSort', 'headerFilter', 'headerFilterFunc', 'headerFilterParams',
+    'hozAlign'
+  ];
+  
+  for (const prop of tabulatorProps) {
+    if (colDef[prop] != null) {
+      templateCol[prop] = colDef[prop];
+    }
   }
 
   return templateCol;
@@ -92,24 +105,20 @@ export function extractTemplateColumnFromColumn(column, primaryKeyField = null) 
   if (def.resizable === false) colDef.resizable = false;
   if (typeof def.formatter === 'function') colDef.formatter = def.formatter;
 
-  const overrides = {};
+  // Flatten Tabulator runtime properties directly onto the column definition
+  // These will overlay coltype defaults in resolveColumn
   const runtimeWidth = getRuntimeColumnWidth(column, def);
-
-  if (runtimeWidth != null) overrides.width = runtimeWidth;
-  if (def.minWidth != null) overrides.minWidth = def.minWidth;
-  if (def.maxWidth != null) overrides.maxWidth = def.maxWidth;
-  if (def.hozAlign) overrides.align = def.hozAlign;
-  if (def.vertAlign) overrides.vertAlign = def.vertAlign;
-  if (hasOwn(def, 'bottomCalc')) overrides.bottomCalc = def.bottomCalc ?? null;
-  if (def.bottomCalcFormatter) overrides.bottomCalcFormatter = def.bottomCalcFormatter;
-  if (def.bottomCalcFormatterParams) overrides.bottomCalcFormatterParams = def.bottomCalcFormatterParams;
-  if (def.formatterParams) overrides.formatterParams = def.formatterParams;
-  if (def.editorParams) overrides.editorParams = def.editorParams;
-  if (def.sorterParams) overrides.sorterParams = def.sorterParams;
-
-  if (Object.keys(overrides).length > 0) {
-    colDef.overrides = overrides;
-  }
+  if (runtimeWidth != null) colDef.width = runtimeWidth;
+  if (def.minWidth != null) colDef.minWidth = def.minWidth;
+  if (def.maxWidth != null) colDef.maxWidth = def.maxWidth;
+  if (def.hozAlign) colDef.hozAlign = def.hozAlign;
+  if (def.vertAlign) colDef.vertAlign = def.vertAlign;
+  if (hasOwn(def, 'bottomCalc')) colDef.bottomCalc = def.bottomCalc ?? null;
+  if (def.bottomCalcFormatter) colDef.bottomCalcFormatter = def.bottomCalcFormatter;
+  if (def.bottomCalcFormatterParams) colDef.bottomCalcFormatterParams = def.bottomCalcFormatterParams;
+  if (def.formatterParams) colDef.formatterParams = def.formatterParams;
+  if (def.editorParams) colDef.editorParams = def.editorParams;
+  if (def.sorterParams) colDef.sorterParams = def.sorterParams;
 
   return colDef;
 }
@@ -117,9 +126,9 @@ export function extractTemplateColumnFromColumn(column, primaryKeyField = null) 
 export function mergeTemplateColumn(baseColumn, patchColumn = {}) {
   const merged = {
     ...baseColumn,
-    overrides: { ...(baseColumn.overrides || {}) },
   };
 
+  // FlattenLithium properties (top-level metadata)
   [
     'display',
     'field',
@@ -142,16 +151,22 @@ export function mergeTemplateColumn(baseColumn, patchColumn = {}) {
     }
   });
 
+  // Flatten overrides from both base and patch into the main object
+  // This ensures template properties are at top level for resolveColumn
+  const baseOverrides = baseColumn.overrides || {};
+  const patchOverrides = patchColumn.overrides || {};
+  const mergedOverrides = { ...baseOverrides, ...patchOverrides };
+  
+  // Copy all override properties to top level
+  Object.assign(merged, mergedOverrides);
+
+  // Keep overrides for backward compatibility, but flatten them
+  if (Object.keys(mergedOverrides).length > 0) {
+    merged.overrides = mergedOverrides;
+  }
+
   if (typeof patchColumn.formatter === 'function') {
     merged.formatter = patchColumn.formatter;
-  }
-
-  if (patchColumn.overrides) {
-    merged.overrides = mergeOverrides(merged.overrides, patchColumn.overrides);
-  }
-
-  if (Object.keys(merged.overrides).length === 0) {
-    delete merged.overrides;
   }
 
   return merged;

@@ -1,8 +1,9 @@
 /**
  * Profile Manager
- * 
+ *
  * User preferences and profile settings management.
  * Handles language, date/time format, number format, default database, and theme preferences.
+ * Includes a LithiumTable showing user options from Lookup 60 (App UI Lists).
  */
 
 import { eventBus, Events } from '../../core/event-bus.js';
@@ -10,6 +11,18 @@ import { getClaims, storeJWT } from '../../core/jwt.js';
 import { getConfigValue } from '../../core/config.js';
 import { createRequest } from '../../core/json-request.js';
 import { setIcon } from '../../core/icons.js';
+import { LithiumTable } from '../../tables/lithium-table-main.js';
+import { LithiumSplitter } from '../../core/lithium-splitter.js';
+import { PanelStateManager } from '../../core/panel-state-manager.js';
+import { togglePanelCollapse, restorePanelState as restoreCollapsedPanelState } from '../../core/panel-collapse.js';
+import { authQuery } from '../../shared/conduit.js';
+import { log, Subsystems, Status } from '../../core/log.js';
+import { processIcons } from '../../core/icons.js';
+import { initToolbars } from '../../core/manager-ui.js';
+import { ManagerEditHelper } from '../../core/manager-edit-helper.js';
+import '../../styles/vendor-tabulator.css';
+import '../../core/manager-panels.css';
+import './profile-manager.css';
 
 /**
  * Profile Manager Class
@@ -25,8 +38,23 @@ export default class ProfileManager {
     this.databases = [];
     this.api = null;
 
-    // Profile Manager ID = 2
+    // Profile Manager ID = 2 (Utility)
     this.managerId = 2;
+
+    // User options table
+    this.optionsTable = null;
+    this.userOptions = [];
+
+    // Panel state persistence
+    this.leftPanelState = new PanelStateManager('lithium_profile_left');
+
+    // Splitter
+    this.splitter = null;
+    this.leftPanelWidth = this.leftPanelState.loadWidth(314);
+    this.isLeftPanelCollapsed = this.leftPanelState.loadCollapsed(false);
+
+    // Edit helper
+    this.editHelper = new ManagerEditHelper({ name: 'Profile' });
 
     // Default preferences
     this.defaultPreferences = {
@@ -40,6 +68,9 @@ export default class ProfileManager {
 
     // Preview update timer
     this.previewTimer = null;
+
+    // Current tab
+    this.currentTab = 'settings';
   }
 
   /**
@@ -49,14 +80,17 @@ export default class ProfileManager {
     // Initialize API client
     this.api = createRequest();
 
-    // Load CSS
-    this.loadStyles();
-
     // Render template
     await this.render();
 
     // Load user info from JWT
     this.loadUserInfo();
+
+    // Initialize the options table (Lookup 60)
+    await this.initOptionsTable();
+
+    // Setup splitter
+    this.setupSplitter();
 
     // Load themes and databases
     await Promise.all([this.loadThemes(), this.loadDatabases()]);
@@ -67,25 +101,17 @@ export default class ProfileManager {
     // Setup event listeners
     this.setupEventListeners();
 
+    // Setup footer
+    this.setupFooter();
+
+    // Restore panel state
+    this.restorePanelState();
+
     // Initialize preview
     this.updatePreview();
 
     // Show the page
     this.show();
-  }
-
-  /**
-   * Load manager-specific CSS
-   */
-  loadStyles() {
-    // Check if styles are already loaded
-    if (document.getElementById('profile-manager-styles')) return;
-
-    const link = document.createElement('link');
-    link.id = 'profile-manager-styles';
-    link.rel = 'stylesheet';
-    link.href = '/src/managers/profile-manager/profile-manager.css';
-    document.head.appendChild(link);
   }
 
   /**
@@ -97,13 +123,25 @@ export default class ProfileManager {
       const html = await response.text();
       this.container.innerHTML = html;
     } catch (error) {
-      console.error('[ProfileManager] Failed to load template:', error);
+      log(Subsystems.MANAGER, Status.ERROR, '[ProfileManager] Failed to load template:', error);
       this.renderFallback();
     }
 
     // Cache DOM elements
     this.elements = {
       page: this.container.querySelector('#profile-manager-page'),
+      leftPanel: this.container.querySelector('#profile-left-panel'),
+      rightPanel: this.container.querySelector('#profile-right-panel'),
+      tableContainer: this.container.querySelector('#profile-table-container'),
+      navigatorContainer: this.container.querySelector('#profile-navigator'),
+      splitter: this.container.querySelector('#profile-splitter'),
+      collapseBtn: this.container.querySelector('#profile-collapse-btn'),
+      collapseIcon: this.container.querySelector('#profile-collapse-icon'),
+      tabToolbar: this.container.querySelector('#profile-tab-toolbar'),
+      tabSettings: this.container.querySelector('#tab-settings'),
+      tabAccount: this.container.querySelector('#tab-account'),
+      panelSettings: this.container.querySelector('#panel-settings'),
+      panelAccount: this.container.querySelector('#panel-account'),
       username: this.container.querySelector('#profile-username'),
       email: this.container.querySelector('#profile-email'),
       roles: this.container.querySelector('#profile-roles'),
@@ -123,6 +161,9 @@ export default class ProfileManager {
       previewCurrency: this.container.querySelector('#preview-currency'),
       toast: this.container.querySelector('#profile-toast'),
     };
+
+    processIcons(this.container);
+    initToolbars();
   }
 
   /**
@@ -134,6 +175,219 @@ export default class ProfileManager {
         <p>Profile Manager loading...</p>
       </div>
     `;
+  }
+
+  /**
+   * Initialize the User Options table (Lookup 60)
+   */
+  async initOptionsTable() {
+    if (!this.elements.tableContainer || !this.elements.navigatorContainer) return;
+
+    this.optionsTable = new LithiumTable({
+      container: this.elements.tableContainer,
+      navigatorContainer: this.elements.navigatorContainer,
+      tablePath: 'profile-manager/user-options',
+      lookupKeyIdx: 8,
+      cssPrefix: 'profile-options',
+      storageKey: 'profile_options_table',
+      app: this.app,
+      readonly: true,
+      panel: this.elements.leftPanel,
+      panelStateManager: this.leftPanelState,
+      onRowSelected: (rowData) => this.handleOptionSelected(rowData),
+      onRowDeselected: () => this.handleOptionDeselected(),
+      onDataLoaded: (rows) => {
+        log(Subsystems.TABLE, Status.INFO, `[ProfileManager] Loaded ${rows.length} user options`);
+      },
+      onRefresh: () => this.loadUserOptions(),
+    });
+
+    // Register with editHelper
+    this.editHelper.registerTable(this.optionsTable);
+
+    await this.optionsTable.init();
+
+    // Load the user options data
+    await this.loadUserOptions();
+  }
+
+  /**
+   * Load user options from Lookup 60 (App UI Lists)
+   * Uses QueryRef 26 with LOOKUPID=60 to get the Profile Sections (key_idx=0)
+   */
+  async loadUserOptions() {
+    if (!this.app?.api || !this.optionsTable?.table) return;
+
+    try {
+      this.optionsTable.showLoading();
+
+      // QueryRef 26 with LOOKUPID=60 to get Lookup 60 (App UI Lists)
+      const rows = await authQuery(this.app.api, 26, { INTEGER: { LOOKUPID: 60 } });
+
+      // Find the Profile Sections entry (key_idx=0)
+      const profileSectionsRow = rows?.find(row => row.key_idx === 0);
+
+      if (profileSectionsRow && profileSectionsRow.collection) {
+        // Parse the collection JSON which contains the profile sections
+        let collection = profileSectionsRow.collection;
+        if (typeof collection === 'string') {
+          try {
+            collection = JSON.parse(collection);
+          } catch (_e) {
+            collection = {};
+          }
+        }
+
+        // Get the sections array (use current locale or default)
+        const locale = navigator.language || 'en-US';
+        const sections = collection[locale] || collection.default || [];
+
+        // Transform into table rows
+        // Format: ["Section", "Icon", "Label"]
+        this.userOptions = sections.map((section, index) => ({
+          key_idx: index + 1,
+          section: section[0] || '',
+          icon: section[1] || '',
+          label: section[2] || '',
+          status_a1: 1,
+        }));
+      } else {
+        // Fallback to default options if lookup data not available
+        this.userOptions = this.getDefaultUserOptions();
+      }
+
+      // Load data into the table
+      this.optionsTable.loadStaticData(this.userOptions);
+
+      log(Subsystems.TABLE, Status.INFO, `[ProfileManager] Loaded ${this.userOptions.length} user options from Lookup 60`);
+    } catch (error) {
+      log(Subsystems.TABLE, Status.ERROR, `[ProfileManager] Failed to load user options: ${error.message}`);
+      // Load default options on error
+      this.userOptions = this.getDefaultUserOptions();
+      this.optionsTable.loadStaticData(this.userOptions);
+    } finally {
+      this.optionsTable.hideLoading();
+    }
+  }
+
+  /**
+   * Get default user options when lookup data is not available
+   */
+  getDefaultUserOptions() {
+    return [
+      { key_idx: 1, section: 'General', icon: '<fa fa-user></fa>', label: 'Account and Names', status_a1: 1 },
+      { key_idx: 2, section: 'Security', icon: '<fa fa-key></fa>', label: 'Authentication', status_a1: 1 },
+      { key_idx: 3, section: 'Formatting', icon: '<fa fa-globe></fa>', label: 'Language', status_a1: 1 },
+      { key_idx: 4, section: 'Formatting', icon: '<fa fa-calendar></fa>', label: 'Date/Time Formats', status_a1: 1 },
+      { key_idx: 5, section: 'Formatting', icon: '<fa fa-00></fa>', label: 'Number Formats', status_a1: 1 },
+      { key_idx: 6, section: 'Application', icon: '<fa fa-flag-pennant></fa>', label: 'Startup', status_a1: 1 },
+      { key_idx: 7, section: 'Application', icon: '<fa fa-bell></fa>', label: 'Notifications', status_a1: 1 },
+    ];
+  }
+
+  /**
+   * Handle when an option is selected from the table
+   */
+  handleOptionSelected(rowData) {
+    if (!rowData) return;
+
+    log(Subsystems.MANAGER, Status.INFO, `[ProfileManager] Option selected: ${rowData.label}`);
+
+    // Map option labels to tabs
+    const labelToTab = {
+      'Account and Names': 'account',
+      'Authentication': 'account',
+      'Language': 'settings',
+      'Date/Time Formats': 'settings',
+      'Number Formats': 'settings',
+      'Startup': 'settings',
+      'Notifications': 'settings',
+    };
+
+    const targetTab = labelToTab[rowData.label];
+    if (targetTab && targetTab !== this.currentTab) {
+      this.switchTab(targetTab);
+    }
+  }
+
+  /**
+   * Handle when an option is deselected
+   */
+  handleOptionDeselected() {
+    log(Subsystems.MANAGER, Status.DEBUG, '[ProfileManager] Option deselected');
+  }
+
+  /**
+   * Setup the splitter between panels
+   */
+  setupSplitter() {
+    this.splitter = new LithiumSplitter({
+      element: this.elements.splitter,
+      leftPanel: this.elements.leftPanel,
+      minWidth: 157,
+      maxWidth: 600,
+      tables: this.optionsTable,
+      onResize: (width) => {
+        this.leftPanelWidth = width;
+      },
+      onResizeEnd: (width) => {
+        this.leftPanelState.saveWidth(width);
+        this.optionsTable?.table?.redraw?.();
+      },
+    });
+
+    // Bind splitter to table
+    this.optionsTable?.setSplitter(this.splitter);
+  }
+
+  /**
+   * Toggle left panel collapse
+   */
+  toggleLeftPanel() {
+    this.isLeftPanelCollapsed = togglePanelCollapse({
+      panel: this.elements.leftPanel,
+      splitter: this.splitter,
+      collapseBtn: this.elements.collapseBtn,
+      panelWidth: this.leftPanelWidth,
+      isCollapsed: this.isLeftPanelCollapsed,
+      onAfterToggle: () => this.optionsTable?.table?.redraw?.(),
+    });
+
+    // Save collapsed state
+    this.leftPanelState.saveCollapsed(this.isLeftPanelCollapsed);
+  }
+
+  /**
+   * Restore panel state from persistence
+   */
+  restorePanelState() {
+    this.isLeftPanelCollapsed = this.leftPanelState.loadCollapsed(this.isLeftPanelCollapsed);
+
+    restoreCollapsedPanelState({
+      panel: this.elements.leftPanel,
+      splitter: this.splitter,
+      collapseBtn: this.elements.collapseBtn,
+      isCollapsed: this.isLeftPanelCollapsed,
+    });
+  }
+
+  /**
+   * Switch between tabs
+   */
+  switchTab(tabId) {
+    if (!['settings', 'account'].includes(tabId)) return;
+
+    this.currentTab = tabId;
+
+    // Update tab buttons
+    this.elements.tabSettings?.classList.toggle('active', tabId === 'settings');
+    this.elements.tabAccount?.classList.toggle('active', tabId === 'account');
+
+    // Update panels
+    this.elements.panelSettings?.classList.toggle('active', tabId === 'settings');
+    this.elements.panelAccount?.classList.toggle('active', tabId === 'account');
+
+    log(Subsystems.MANAGER, Status.DEBUG, `[ProfileManager] Switched to tab: ${tabId}`);
   }
 
   /**
@@ -178,7 +432,7 @@ export default class ProfileManager {
       try {
         this.themes = JSON.parse(storedThemes);
       } catch (error) {
-        console.warn('[ProfileManager] Failed to parse stored themes:', error);
+        log(Subsystems.MANAGER, Status.WARN, '[ProfileManager] Failed to parse stored themes:', error);
       }
     }
 
@@ -268,7 +522,7 @@ export default class ProfileManager {
         const parsed = JSON.parse(stored);
         this.preferences = { ...this.defaultPreferences, ...parsed };
       } catch (error) {
-        console.warn('[ProfileManager] Failed to parse preferences:', error);
+        log(Subsystems.MANAGER, Status.WARN, '[ProfileManager] Failed to parse preferences:', error);
         this.preferences = { ...this.defaultPreferences };
       }
     } else {
@@ -307,6 +561,15 @@ export default class ProfileManager {
    * Setup event listeners
    */
   setupEventListeners() {
+    // Collapse button
+    this.elements.collapseBtn?.addEventListener('click', () => {
+      this.toggleLeftPanel();
+    });
+
+    // Tab buttons
+    this.elements.tabSettings?.addEventListener('click', () => this.switchTab('settings'));
+    this.elements.tabAccount?.addEventListener('click', () => this.switchTab('account'));
+
     // Form submission
     this.elements.preferencesForm?.addEventListener('submit', (e) => {
       e.preventDefault();
@@ -336,6 +599,15 @@ export default class ProfileManager {
     this.elements.activeTheme?.addEventListener('change', () => {
       this.applyTheme();
     });
+  }
+
+  /**
+   * Setup footer controls
+   */
+  setupFooter() {
+    // Footer controls can be added here if needed
+    // For now, the profile manager doesn't need print/email/export
+    log(Subsystems.MANAGER, Status.INFO, '[ProfileManager] Footer setup complete');
   }
 
   /**
@@ -464,7 +736,7 @@ export default class ProfileManager {
     try {
       await this.savePreferencesToApi(newPreferences);
     } catch (error) {
-      console.warn('[ProfileManager] API save failed, preferences stored locally:', error);
+      log(Subsystems.MANAGER, Status.WARN, '[ProfileManager] API save failed, preferences stored locally:', error);
     }
 
     // Check if language changed
@@ -578,6 +850,17 @@ export default class ProfileManager {
       clearTimeout(this.previewTimer);
       this.previewTimer = null;
     }
+
+    // Clean up edit helper
+    this.editHelper?.destroy();
+
+    // Clean up splitter
+    this.splitter?.destroy();
+    this.splitter = null;
+
+    // Clean up table
+    this.optionsTable?.destroy();
+    this.optionsTable = null;
 
     // Clear elements
     this.elements = {};

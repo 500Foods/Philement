@@ -154,6 +154,7 @@ export default class QueriesManager {
       container: this.elements.tableContainer,
       navigatorContainer: this.elements.navigatorContainer,
       tablePath: 'queries/query-manager',
+      lookupKeyIdx: 1,
       queryRef: 25,           // QueryRef 25 - Query List
       searchQueryRef: 32,     // QueryRef 32 - Query Search
       cssPrefix: 'queries',
