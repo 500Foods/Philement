@@ -80,11 +80,11 @@ table.insert(queries,{sql=[[
                 (lookup_id, key_idx, status_a1, value_txt, value_int, sort_seq, code, summary, collection, ${COMMON_FIELDS})
             VALUES
                 (${LOOKUP_ID}, 0, 1, 'SQL',             0, 0, '', '', '{"icon":"<fa fa-database></fa>"}', ${COMMON_VALUES}),
-                (${LOOKUP_ID}, 1, 1, 'PostgreSQL',      0, 1, '', '', '{"icon":"<img src='assets/images/sql_dialect_postgres.png' />"}', ${COMMON_VALUES}),
-                (${LOOKUP_ID}, 2, 1, 'SQLite',          0, 2, '', '', '{"icon":"<img src='assets/images/sql_dialect_sqlite.png' />"}', ${COMMON_VALUES}),
-                (${LOOKUP_ID}, 3, 1, 'MySQL/MariaDB',   0, 3, '', '', '{"icon":"<img src='assets/images/sql_dialect_mysql.png' />"}', ${COMMON_VALUES}),
-                (${LOOKUP_ID}, 4, 1, 'IBM DB2',         0, 4, '', '', '{"icon":"<img src='assets/images/sql_dialect_db2.png' />"}', ${COMMON_VALUES}),
-                (${LOOKUP_ID}, 5, 1, 'MS SQL Server',   0, 5, '', '', '{"icon":"<img src='assets/images/sql_dialect_mssql.png' />"}', ${COMMON_VALUES});
+                (${LOOKUP_ID}, 1, 1, 'PostgreSQL',      0, 1, '', '', '{"icon":"<img src=\"assets/images/sql_dialect_postgres.png\" />"}', ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 2, 1, 'SQLite',          0, 2, '', '', '{"icon":"<img src=\"assets/images/sql_dialect_sqlite.png\" />"}', ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 3, 1, 'MySQL/MariaDB',   0, 3, '', '', '{"icon":"<img src=\"assets/images/sql_dialect_mysql.png\" />"}', ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 4, 1, 'IBM DB2',         0, 4, '', '', '{"icon":"<img src=\"assets/images/sql_dialect_db2.png\" />"}', ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 5, 1, 'MS SQL Server',   0, 5, '', '', '{"icon":"<img src=\"assets/images/sql_dialect_mssql.png\" />"}', ${COMMON_VALUES});
 
             ${SUBQUERY_DELIMITER}
 

@@ -25,6 +25,9 @@ void test_convert_named_to_positional_postgresql(void);
 void test_convert_named_to_positional_mysql(void);
 void test_convert_named_to_positional_no_parameters(void);
 void test_convert_named_to_positional_parameter_not_found(void);
+void test_convert_named_to_positional_duplicate_params(void);
+void test_convert_named_to_positional_mixed_duplicates(void);
+void test_convert_named_to_positional_inside_string_literal(void);
 void test_build_parameter_array_simple(void);
 void test_build_parameter_array_no_matches(void);
 void test_free_typed_parameter(void);
@@ -591,6 +594,258 @@ void test_free_parameter_list(void) {
     free_parameter_list(params);
 }
 
+// Test duplicate parameter handling (same parameter used multiple times in SQL)
+void test_convert_named_to_positional_duplicate_params(void) {
+    // Create test parameters - only ONE mediaHash param, but it appears TWICE in SQL
+    ParameterList* params = (ParameterList*)malloc(sizeof(ParameterList));
+    if (!params) {
+        TEST_FAIL_MESSAGE("Failed to allocate ParameterList");
+        return;
+    }
+    params->count = 1;
+    params->params = (TypedParameter**)malloc(sizeof(TypedParameter*));
+    if (!params->params) {
+        free(params);
+        TEST_FAIL_MESSAGE("Failed to allocate params array");
+        return;
+    }
+
+    params->params[0] = (TypedParameter*)malloc(sizeof(TypedParameter));
+    if (!params->params[0]) {
+        free(params->params);
+        free(params);
+        TEST_FAIL_MESSAGE("Failed to allocate parameter");
+        return;
+    }
+    params->params[0]->name = strdup("mediaHash");
+    if (!params->params[0]->name) {
+        free(params->params[0]);
+        free(params->params);
+        free(params);
+        TEST_FAIL_MESSAGE("Failed to allocate parameter name");
+        return;
+    }
+    params->params[0]->type = PARAM_TYPE_STRING;
+    params->params[0]->value.string_value = strdup("abc123hash");
+    if (!params->params[0]->value.string_value) {
+        free(params->params[0]->name);
+        free(params->params[0]);
+        free(params->params);
+        free(params);
+        TEST_FAIL_MESSAGE("Failed to allocate parameter value");
+        return;
+    }
+
+    // SQL with duplicate parameter usage (like the user's INSERT...SELECT...WHERE NOT EXISTS pattern)
+    const char* sql_template = "INSERT INTO media_assets (media_hash, media_data) SELECT :mediaHash, :mediaHash WHERE NOT EXISTS (SELECT 1 FROM media_assets WHERE media_hash = :mediaHash)";
+    TypedParameter** ordered_params = NULL;
+    size_t param_count = 0;
+
+    char* result = convert_named_to_positional(sql_template, params, DB_ENGINE_POSTGRESQL, &ordered_params, &param_count, NULL);
+
+    TEST_ASSERT_NOT_NULL(result);
+    // All three occurrences of :mediaHash should be replaced with $1 (same parameter)
+    TEST_ASSERT_EQUAL_STRING("INSERT INTO media_assets (media_hash, media_data) SELECT $1, $1 WHERE NOT EXISTS (SELECT 1 FROM media_assets WHERE media_hash = $1)", result);
+    // param_count should be 1 (unique parameters only), not 3
+    TEST_ASSERT_EQUAL(1, param_count);
+    TEST_ASSERT_NOT_NULL(ordered_params);
+    TEST_ASSERT_EQUAL_STRING("mediaHash", ordered_params[0]->name);
+
+    free(result);
+    free(ordered_params);
+    free_parameter_list(params);
+}
+
+// Test multiple unique parameters where some appear multiple times
+void test_convert_named_to_positional_mixed_duplicates(void) {
+    // Create test parameters
+    ParameterList* params = (ParameterList*)malloc(sizeof(ParameterList));
+    if (!params) {
+        TEST_FAIL_MESSAGE("Failed to allocate ParameterList");
+        return;
+    }
+    params->count = 3;
+    params->params = (TypedParameter**)malloc(3 * sizeof(TypedParameter*));
+    if (!params->params) {
+        free(params);
+        TEST_FAIL_MESSAGE("Failed to allocate params array");
+        return;
+    }
+
+    // First param: id
+    params->params[0] = (TypedParameter*)malloc(sizeof(TypedParameter));
+    if (!params->params[0]) {
+        free(params->params);
+        free(params);
+        TEST_FAIL_MESSAGE("Failed to allocate first parameter");
+        return;
+    }
+    params->params[0]->name = strdup("id");
+    if (!params->params[0]->name) {
+        free(params->params[0]);
+        free(params->params);
+        free(params);
+        TEST_FAIL_MESSAGE("Failed to allocate first parameter name");
+        return;
+    }
+    params->params[0]->type = PARAM_TYPE_INTEGER;
+    params->params[0]->value.int_value = 42;
+
+    // Second param: name
+    params->params[1] = (TypedParameter*)malloc(sizeof(TypedParameter));
+    if (!params->params[1]) {
+        free(params->params[0]->name);
+        free(params->params[0]);
+        free(params->params);
+        free(params);
+        TEST_FAIL_MESSAGE("Failed to allocate second parameter");
+        return;
+    }
+    params->params[1]->name = strdup("name");
+    if (!params->params[1]->name) {
+        free(params->params[1]);
+        free(params->params[0]->name);
+        free(params->params[0]);
+        free(params->params);
+        free(params);
+        TEST_FAIL_MESSAGE("Failed to allocate second parameter name");
+        return;
+    }
+    params->params[1]->type = PARAM_TYPE_STRING;
+    params->params[1]->value.string_value = strdup("testname");
+    if (!params->params[1]->value.string_value) {
+        free(params->params[1]->name);
+        free(params->params[1]);
+        free(params->params[0]->name);
+        free(params->params[0]);
+        free(params->params);
+        free(params);
+        TEST_FAIL_MESSAGE("Failed to allocate second parameter value");
+        return;
+    }
+
+    // Third param: status
+    params->params[2] = (TypedParameter*)malloc(sizeof(TypedParameter));
+    if (!params->params[2]) {
+        free(params->params[1]->value.string_value);
+        free(params->params[1]->name);
+        free(params->params[1]);
+        free(params->params[0]->name);
+        free(params->params[0]);
+        free(params->params);
+        free(params);
+        TEST_FAIL_MESSAGE("Failed to allocate third parameter");
+        return;
+    }
+    params->params[2]->name = strdup("status");
+    if (!params->params[2]->name) {
+        free(params->params[2]);
+        free(params->params[1]->value.string_value);
+        free(params->params[1]->name);
+        free(params->params[1]);
+        free(params->params[0]->name);
+        free(params->params[0]);
+        free(params->params);
+        free(params);
+        TEST_FAIL_MESSAGE("Failed to allocate third parameter name");
+        return;
+    }
+    params->params[2]->type = PARAM_TYPE_STRING;
+    params->params[2]->value.string_value = strdup("active");
+    if (!params->params[2]->value.string_value) {
+        free(params->params[2]->name);
+        free(params->params[2]);
+        free(params->params[1]->value.string_value);
+        free(params->params[1]->name);
+        free(params->params[1]);
+        free(params->params[0]->name);
+        free(params->params[0]);
+        free(params->params);
+        free(params);
+        TEST_FAIL_MESSAGE("Failed to allocate third parameter value");
+        return;
+    }
+
+    // SQL with mixed duplicates - id appears twice, name once, status twice
+    const char* sql_template = "UPDATE users SET name = :name, status = :status WHERE id = :id AND status = :status AND owner_id = :id";
+    TypedParameter** ordered_params = NULL;
+    size_t param_count = 0;
+
+    char* result = convert_named_to_positional(sql_template, params, DB_ENGINE_POSTGRESQL, &ordered_params, &param_count, NULL);
+
+    TEST_ASSERT_NOT_NULL(result);
+    // Order should be: name ($1), status ($2), id ($3) based on first occurrence in SQL
+    // id appears at positions 3 and 5 in SQL (0-indexed: after "WHERE " and "owner_id = ")
+    // Actually order is: name (first), status (second), id (third)
+    TEST_ASSERT_EQUAL_STRING("UPDATE users SET name = $1, status = $2 WHERE id = $3 AND status = $2 AND owner_id = $3", result);
+    TEST_ASSERT_EQUAL(3, param_count); // 3 unique params, not 5 total occurrences
+    TEST_ASSERT_NOT_NULL(ordered_params);
+    TEST_ASSERT_EQUAL_STRING("name", ordered_params[0]->name);
+    TEST_ASSERT_EQUAL_STRING("status", ordered_params[1]->name);
+    TEST_ASSERT_EQUAL_STRING("id", ordered_params[2]->name);
+
+    free(result);
+    free(ordered_params);
+    free_parameter_list(params);
+}
+
+// Test that parameters inside string literals are NOT converted
+// This tests the fix for migrations that store SQL templates containing :paramName
+void test_convert_named_to_positional_inside_string_literal(void) {
+    // Create a parameter (only one, which appears both outside and inside a string)
+    ParameterList* params = (ParameterList*)malloc(sizeof(ParameterList));
+    if (!params) {
+        TEST_FAIL_MESSAGE("Failed to allocate ParameterList");
+        return;
+    }
+    params->count = 1;
+    params->params = (TypedParameter**)malloc(sizeof(TypedParameter*));
+    if (!params->params) {
+        free(params);
+        TEST_FAIL_MESSAGE("Failed to allocate params array");
+        return;
+    }
+
+    params->params[0] = (TypedParameter*)malloc(sizeof(TypedParameter));
+    if (!params->params[0]) {
+        free(params->params);
+        free(params);
+        TEST_FAIL_MESSAGE("Failed to allocate parameter");
+        return;
+    }
+    params->params[0]->name = strdup("id");
+    if (!params->params[0]->name) {
+        free(params->params[0]);
+        free(params->params);
+        free(params);
+        TEST_FAIL_MESSAGE("Failed to allocate parameter name");
+        return;
+    }
+    params->params[0]->type = PARAM_TYPE_INTEGER;
+    params->params[0]->value.int_value = 42;
+
+    // SQL with :id both outside AND inside a string literal
+    // The :id inside the string should NOT be converted
+    // This simulates the migration pattern: INSERT ... SELECT ':id is a param'
+    const char* sql_template = "INSERT INTO queries (code) SELECT 'This query uses :id as param' WHERE query_id = :id";
+    TypedParameter** ordered_params = NULL;
+    size_t param_count = 0;
+
+    char* result = convert_named_to_positional(sql_template, params, DB_ENGINE_POSTGRESQL, &ordered_params, &param_count, NULL);
+
+    TEST_ASSERT_NOT_NULL(result);
+    // Only the :id outside the string should be converted to $1
+    // The :id inside '...' should remain as :id
+    TEST_ASSERT_EQUAL_STRING("INSERT INTO queries (code) SELECT 'This query uses :id as param' WHERE query_id = $1", result);
+    TEST_ASSERT_EQUAL(1, param_count);
+    TEST_ASSERT_NOT_NULL(ordered_params);
+    TEST_ASSERT_EQUAL_STRING("id", ordered_params[0]->name);
+
+    free(result);
+    free(ordered_params);
+    free_parameter_list(params);
+}
+
 int main(void) {
     UNITY_BEGIN();
 
@@ -613,6 +868,9 @@ int main(void) {
     RUN_TEST(test_convert_named_to_positional_mysql);
     RUN_TEST(test_convert_named_to_positional_no_parameters);
     RUN_TEST(test_convert_named_to_positional_parameter_not_found);
+    RUN_TEST(test_convert_named_to_positional_duplicate_params);
+    RUN_TEST(test_convert_named_to_positional_mixed_duplicates);
+    RUN_TEST(test_convert_named_to_positional_inside_string_literal);
 
     // Parameter array building tests
     RUN_TEST(test_build_parameter_array_simple);

@@ -197,7 +197,7 @@ void test_handle_message_type_unknown_message_type(void) {
 }
 
 void test_handle_message_type_terminal_protocol_mismatch(void) {
-    // Test: Terminal message with wrong protocol (line 188-189)
+    // Test: Terminal message with wrong protocol (line 221-223)
     struct lws *test_wsi = (struct lws *)0x12345678;
 
     // Mock lws_get_protocol to return non-terminal protocol
@@ -205,8 +205,8 @@ void test_handle_message_type_terminal_protocol_mismatch(void) {
 
     int result = handle_message_type(test_wsi, "input");
 
-    // Should return -1 for wrong protocol
-    TEST_ASSERT_EQUAL_INT(-1, result);
+    // Function returns 0 (graceful ignore) for non-terminal protocol, not -1
+    TEST_ASSERT_EQUAL_INT(0, result);
 }
 
 void test_find_or_create_terminal_session_null_parameters(void) {

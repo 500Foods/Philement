@@ -54,7 +54,7 @@ if (typeof Tabulator !== 'undefined' && Tabulator.registerFormatter) {
 let _coltypesCache = null;
 
 /** @type {Map<string, Object>} Cached table definitions keyed by path */
-const _tableDefCache = new Map();
+export const _tableDefCache = new Map();
 
 /** @type {Map<string, Array<{id: number, label: string}>>} Cached lookup tables */
 const _lookupCache = new Map();
@@ -313,9 +313,12 @@ export async function loadColtypes(providedData) {
  * @param {string} tablePath - Relative path under config/tabulator/
  *   e.g. 'queries/query-manager' (no .json extension needed)
  * @param {Object} [providedData] - Pre-loaded tabledef JSON object
+ * @param {number} [lookupKeyIdx] - Optional direct Lookup 59 key_idx.
+ *   When provided, this takes precedence over the tablePath mapping.
+ *   Use this for unambiguous schema loading from Lookup 59.
  * @returns {Promise<Object>} The parsed table definition
  */
-export async function loadTableDef(tablePath, providedData) {
+export async function loadTableDef(tablePath, providedData, lookupKeyIdx) {
   // Normalise path: strip trailing .json if present
   const normalised = tablePath.replace(/\.json$/, '');
 
@@ -328,17 +331,27 @@ export async function loadTableDef(tablePath, providedData) {
     return providedData;
   }
 
-  // ── Priority 2: Lookup cache (from database via QueryRef 060) ──────
+  // ── Priority 2: Direct lookupKeyIdx (overrides path mapping) ───────────
+  // When lookupKeyIdx is provided directly, use it without ambiguity
+  const keyIdx = lookupKeyIdx ?? null;
+  const isLookup59Schema = lookupKeyIdx != null;
+
+  // ── Priority 3: Lookup cache (from database via QueryRef 060) ────────
   // Map table paths to lookup key_idx values (Lookup 059 - Tabulator Schemas)
-  const tableToKeyIdx = {
-    'queries/query-manager': 1,      // Query Manager table schema
-    'lookups/lookups-list': 2,       // Lookups Manager parent table schema
-    'lookups/lookup-values': 3,      // Lookups Manager child table schema
-    'style-manager/lookup-41': 6,    // Style Manager main table schema
-    'version-manager/version-history': 7, // Version Manager table schema
-  };
-  const keyIdx = tableToKeyIdx[normalised];
-  const isLookup59Schema = keyIdx != null;
+  // Only used when lookupKeyIdx is not provided
+  if (!isLookup59Schema) {
+    const tableToKeyIdx = {
+      'queries/query-manager': 1,      // Query Manager table schema
+      'lookups/lookups-list': 2,       // Lookups Manager parent table schema
+      'lookups/lookup-values': 3,      // Lookups Manager child table schema
+      'style-manager/lookup-41': 6,    // Style Manager main table schema
+      'version-manager/version-history': 7, // Version Manager table schema
+    };
+    const mappedKeyIdx = tableToKeyIdx[normalised];
+    if (mappedKeyIdx != null) {
+      return loadTableDef(tablePath, null, mappedKeyIdx);
+    }
+  }
 
   // For static schemas (non-Lookup 59), check the cache first
   if (!isLookup59Schema && _tableDefCache.has(normalised)) {
@@ -360,7 +373,17 @@ export async function loadTableDef(tablePath, providedData) {
 
     if (keyIdx != null) {
       const keyedEntry = schemas.find(s => String(s.key_idx) === String(keyIdx));
+      if (!keyedEntry) {
+        log(Subsystems.MANAGER, Status.WARN,
+          `[LithiumTable] Lookup 59 key_idx ${keyIdx} not found, using auto-discovery`);
+        return createAutoDiscoverTableDef(normalised);
+      }
       const keyedData = parseSchemaCollection(keyedEntry?.collection);
+      if (!keyedData) {
+        log(Subsystems.MANAGER, Status.WARN,
+          `[LithiumTable] Lookup 59 key_idx ${keyIdx} has invalid/empty JSON, using auto-discovery`);
+        return createAutoDiscoverTableDef(normalised);
+      }
       if (keyedEntry && keyedData) {
         matchedEntry = keyedEntry;
         matchedData = keyedData;
@@ -387,8 +410,28 @@ export async function loadTableDef(tablePath, providedData) {
   }
 
   log(Subsystems.MANAGER, Status.WARN,
-    `[LithiumTable] No tabledef found for "${normalised}", using defaults`);
-  return null;
+    `[LithiumTable] No tabledef found for "${normalised}", using auto-discovery`);
+  return createAutoDiscoverTableDef(normalised);
+}
+
+/**
+ * Create an auto-discover table definition from data.
+ * This is used when Lookup 59 doesn't have a schema or has invalid JSON.
+ * The table will discover columns at runtime from the loaded data.
+ *
+ * @param {string} tablePath - The table path (used for title)
+ * @returns {Object} A table definition with discoverable columns
+ */
+function createAutoDiscoverTableDef(tablePath) {
+  const title = tablePath.split('/').pop() || 'Table';
+  return {
+    title: title,
+    readonly: false,
+    layout: 'fitColumns',
+    responsiveLayout: false,
+    _autoDiscover: true,  // Flag to indicate columns should be discovered
+    columns: {},  // Empty columns - will be discovered from data
+  };
 }
 
 /**
@@ -547,10 +590,35 @@ export async function preloadLookups(lookupRefs, authQueryFn, api) {
  */
 export function resolveColumn(fieldName, colDef, coltypes, options = {}) {
   const coltype = coltypes[colDef.coltype] || {};
-  const overrides = colDef.overrides || {};
 
-  // Start with coltype defaults, then apply overrides
-  const merged = { ...coltype, ...overrides };
+  // Merge strategy: coltype defaults → column definition
+  // The entire colDef (minus Lithium-specific metadata) overlays coltype
+  const merged = { ...coltype, ...colDef };
+
+  // Extract Lithium-specific metadata (not passed to Tabulator)
+  const lithiumMeta = {
+    display: colDef.display,
+    field: colDef.field,
+    coltype: colDef.coltype,
+    visible: colDef.visible,
+    sort: colDef.sort,
+    filter: colDef.filter,
+    group: colDef.group,
+    editable: colDef.editable,
+    calculated: colDef.calculated,
+    primaryKey: colDef.primaryKey,
+    description: colDef.description,
+    lookupRef: colDef.lookupRef,
+  };
+
+  // Filter out Lithium-specific keys from merged (rest goes to Tabulator)
+  const tabulatorProps = {};
+  for (const [key, value] of Object.entries(merged)) {
+    if (!(key in lithiumMeta)) {
+      tabulatorProps[key] = value;
+    }
+  }
+
   const normalizedEditor = merged.editor === 'select' ? 'list' : merged.editor;
   const normalizedEditorParams = merged.editor === 'select'
     ? {
@@ -767,7 +835,36 @@ export function resolveTableOptions(tableDef) {
   if (tableDef.selectableRows != null) opts.selectableRows = tableDef.selectableRows;
   if (tableDef.resizableColumns != null) opts.resizableColumns = tableDef.resizableColumns;
   if (tableDef.initialSort) opts.initialSort = tableDef.initialSort;
-  if (tableDef.groupBy) opts.groupBy = tableDef.groupBy;
+
+  // Resolve groupBy: if explicitly set in tableDef, use it; otherwise compute from column group values
+  if (tableDef.groupBy) {
+    // Explicit groupBy string takes precedence
+    opts.groupBy = tableDef.groupBy;
+  } else if (tableDef.columns) {
+    // Auto-compute groupBy from column group properties
+    // group: null/undefined/false/0/negative = not grouped
+    // group: true = grouped with order 1
+    // group: positive number = grouped with that order
+    const groupedCols = [];
+    for (const [fieldName, colDef] of Object.entries(tableDef.columns)) {
+      const groupOrder = colDef.group;
+      // Skip if null, undefined, false, 0, or negative
+      if (groupOrder == null || groupOrder === false || groupOrder === 0 || groupOrder < 0) {
+        continue;
+      }
+      // true becomes 1, numbers are used as-is
+      const order = groupOrder === true ? 1 : Number(groupOrder);
+      if (order > 0) {
+        groupedCols.push({ field: fieldName, order });
+      }
+    }
+    // Sort by group order (ascending), then build array of field names
+    if (groupedCols.length > 0) {
+      groupedCols.sort((a, b) => a.order - b.order);
+      opts.groupBy = groupedCols.map(c => c.field);
+    }
+  }
+
   if (tableDef.groupStartOpen != null) opts.groupStartOpen = tableDef.groupStartOpen;
   if (tableDef.groupToggleElement) opts.groupToggleElement = tableDef.groupToggleElement;
   if (tableDef.movableRows === true) opts.movableRows = true;
@@ -889,6 +986,7 @@ export function formatBuiltinValue(value, formatterName, params) {
     case 'plaintext':
       return value != null ? String(value) : '';
 
+    case 'html':
     case 'lookup': {
       if (value == null || value === '') return '';
       const lookup = params?.lookup || {};
@@ -925,6 +1023,11 @@ export function wrapFormatter(formatter, formatterParams, blankValue, zeroValue)
   // If no special handling needed, return the original formatter as-is
   if (!needsBlankZeroWrapper(blankValue, zeroValue)) {
     return formatter;
+  }
+
+  // Don't wrap 'html' formatter - let Tabulator render it as HTML
+  if (formatter === 'html') {
+    return 'html';
   }
 
   // Return a wrapper function that handles blank/zero before delegating
@@ -998,6 +1101,7 @@ export function clearLookup59Cache() {
     'lookups/lookup-values',
     'style-manager/lookup-41',
     'version-manager/version-history',
+    'profile-manager/user-options',
   ];
 
   let clearedCount = 0;
@@ -1008,10 +1112,8 @@ export function clearLookup59Cache() {
     }
   });
 
-  if (clearedCount > 0) {
-    log(Subsystems.MANAGER, Status.DEBUG,
-      `[LithiumTable] Cleared ${clearedCount} Lookup 59 table definition(s) from cache`);
-  }
+  log(Subsystems.MANAGER, Status.DEBUG,
+    `[LithiumTable] Cleared ${clearedCount} Lookup 59 table definition(s) from cache`);
 }
 
 // ── Event Listeners ─────────────────────────────────────────────────────────
@@ -1023,4 +1125,9 @@ eventBus.on(Events.LOOKUPS_LOADED, (e) => {
   if (e?.detail?.source === 'server' || e?.detail?.source === 'cache_fallback') {
     clearLookup59Cache();
   }
+});
+
+// Also clear cache when a specific lookup category is refreshed (e.g., tabulator_schemas)
+eventBus.on(Events.LOOKUPS_REFRESHED, () => {
+  clearLookup59Cache();
 });

@@ -21,6 +21,7 @@ import { log, logGroup, Subsystems, Status, logHttpRequest, logHttpResponse } fr
 // In-memory cache for lookups
 let cache = null;
 let fetchPromise = null;
+let tabulatorSchemasTimestamp = null;  // Timestamp of last server fetch for version comparison
 
 // Simple logger that works before any manager is loaded
 const logger = {
@@ -367,6 +368,12 @@ async function fetchFreshLookups(silent = false) {
     // Process results into lookup categories
     const freshLookups = processBatchResults(batchResults);
 
+    // Track timestamp for tabulator_schemas to enable version comparison
+    if (freshLookups.tabulator_schemas) {
+      tabulatorSchemasTimestamp = Date.now();
+      logger.info(`Tabulator schemas fetched at ${new Date(tabulatorSchemasTimestamp).toISOString()}`);
+    }
+
     // Merge with existing cache if present
     cache = { ...cache, ...freshLookups };
 
@@ -471,6 +478,50 @@ export function getIcons() {
  */
 export function getTabulatorSchemas() {
   return cache?.tabulator_schemas || null;
+}
+
+/**
+ * Force-refresh tabulator schemas from server, bypassing cache.
+ * Returns the fresh data.
+ * @returns {Promise<Object|null>} Fresh tabulator schemas data
+ */
+export async function refreshTabulatorSchemas() {
+  if (!cache?.tabulator_schemas) {
+    // Not cached yet, fetch fresh
+    await fetchLookups({ force: true, silent: false });
+    return cache?.tabulator_schemas || null;
+  }
+
+  logger.info('Force-refreshing tabulator schemas from server...');
+
+  try {
+    const batchResults = await fetchBatchQueries([60], '060');
+
+    const freshSchemas = batchResults[0] || [];
+    cache.tabulator_schemas = freshSchemas;
+    tabulatorSchemasTimestamp = Date.now();
+
+    // Update localStorage without overwriting other lookups
+    saveToLocalStorage(cache);
+
+    logger.info(`Tabulator schemas refreshed: ${freshSchemas.length} entries`);
+
+    // Emit event so LithiumTable can clear its internal cache
+    eventBus.emitSilent(Events.LOOKUPS_REFRESHED, { category: 'tabulator_schemas' });
+
+    return freshSchemas;
+  } catch (error) {
+    logger.warn(`Failed to refresh tabulator schemas: ${error.message}`);
+    return cache?.tabulator_schemas || null;
+  }
+}
+
+/**
+ * Get the timestamp of the last tabulator schemas server fetch.
+ * @returns {number|null} Timestamp in ms, or null if never fetched
+ */
+export function getTabulatorSchemasTimestamp() {
+  return tabulatorSchemasTimestamp;
 }
 
 /**

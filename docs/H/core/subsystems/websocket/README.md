@@ -14,3 +14,7 @@ WebSockets are essential for applications that need immediate updates and intera
 - **Notifications**: Instant alerts for important events like job completions, errors, or system changes.
 
 This real-time capability transforms the user experience from static page refreshes to dynamic, live interactions, making Hydrogen more responsive and user-friendly for managing 3D printing operations.
+
+## Streaming
+
+In order to give the most familiar chat interface for AI chatbots, a streaming system has been added to Hydrogen. Check [websocket_chat_streaming.md](/docs/H/core/subsystems/websocket/websocket_chat_streaming.md) for more information.

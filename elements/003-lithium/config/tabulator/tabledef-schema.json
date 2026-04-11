@@ -94,7 +94,7 @@
       }
     },
     "groupBy": {
-      "description": "Field name(s) to group rows by (string or array of strings)",
+      "description": "Field name(s) to group rows by (string or array of strings). If not specified, groupBy is computed from column 'group' values.",
       "oneOf": [
         { "type": "string" },
         { "type": "array", "items": { "type": "string" } }
@@ -141,8 +141,12 @@
           "description": "Whether the column has a header filter"
         },
         "group": {
-          "type": "boolean",
-          "description": "Whether the column can be used as a grouping field"
+          "description": "Group order for auto-computed grouping. Non-zero values enable grouping, sorted ascending. Boolean preserved for legacy compatibility (false = no grouping, true = group with order 1).",
+          "anyOf": [
+            { "type": "boolean" },
+            { "type": "integer" },
+            { "type": "number" }
+          ]
         },
         "editable": {
           "type": "boolean",
@@ -166,11 +170,11 @@
         },
         "overrides": {
           "type": "object",
-          "description": "Coltype property overrides for this specific column. Any coltype property can be overridden here.",
+          "description": "[DEPRECATED] Use direct Tabulator properties instead. Kept for backward compatibility.",
           "additionalProperties": true
         }
       },
-      "additionalProperties": false
+      "additionalProperties": true
     }
   }
 }

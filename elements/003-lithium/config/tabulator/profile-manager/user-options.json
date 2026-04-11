@@ -1,0 +1,91 @@
+{
+  "$schema": "../tabledef-schema.json",
+  "$version": "1.0.0",
+  "$description": "Column definitions for User Options from Lookup 060 (App UI Lists). Displays profile sections and user preferences.",
+
+  "table": "user-options",
+  "title": "User Options",
+  "queryRef": 26,
+  "readonly": true,
+  "selectableRows": 1,
+  "layout": "fitColumns",
+  "responsiveLayout": "collapse",
+  "resizableColumns": true,
+  "persistSort": false,
+  "persistFilter": false,
+
+  "columns": {
+
+    "key_idx": {
+      "display": "ID#",
+      "field": "key_idx",
+      "coltype": "index",
+      "visible": false,
+      "sort": true,
+      "filter": true,
+      "editable": false,
+      "calculated": false,
+      "primaryKey": true,
+      "description": "Database primary key — hidden from display",
+      "bottomCalc": null
+    },
+
+    "section": {
+      "display": "Section",
+      "field": "section",
+      "coltype": "string",
+      "visible": true,
+      "sort": true,
+      "filter": true,
+      "editable": false,
+      "calculated": true,
+      "primaryKey": false,
+      "description": "Group/section the option belongs to",
+      "group": 1,
+      "width": 120
+    },
+
+    "icon": {
+      "display": "Icon",
+      "field": "icon",
+      "coltype": "string",
+      "visible": true,
+      "sort": false,
+      "filter": false,
+      "editable": false,
+      "calculated": true,
+      "primaryKey": false,
+      "description": "Icon HTML for the option",
+      "width": 50,
+      "formatter": "html",
+      "hozAlign": "center"
+    },
+
+    "label": {
+      "display": "Option",
+      "field": "label",
+      "coltype": "string",
+      "visible": true,
+      "sort": true,
+      "filter": true,
+      "editable": false,
+      "calculated": true,
+      "primaryKey": false,
+      "description": "User option label/name"
+    },
+
+    "status": {
+      "display": "Status",
+      "field": "status_a1",
+      "coltype": "lookup",
+      "visible": false,
+      "sort": false,
+      "filter": false,
+      "editable": false,
+      "calculated": false,
+      "primaryKey": false,
+      "description": "Active/Inactive status",
+      "lookupRef": "a1"
+    }
+  }
+}

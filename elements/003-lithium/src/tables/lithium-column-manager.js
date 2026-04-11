@@ -30,6 +30,9 @@ import {
 } from './column-manager/cm-state.js';
 
 import {
+  handleDragStart,
+  handleDragMove,
+  handleDragEnd,
   handleResizeStart,
   handleResizeMove,
   handleResizeEnd,
@@ -99,6 +102,16 @@ export class LithiumColumnManager {
     this.resizeStartY = 0;
     this.popupStartWidth = 0;
     this.popupStartHeight = 0;
+    this.popupStartLeft = 0;
+    this.popupStartTop = 0;
+    this.resizeCorner = 'br';
+
+    // Drag state
+    this.isDragging = false;
+    this.dragStartX = 0;
+    this.dragStartY = 0;
+    this.popupStartX = 0;
+    this.popupStartY = 0;
 
     // Storage key
     this.storageKey = `lithium_col_manager_${this.managerId}`;
@@ -117,6 +130,8 @@ export class LithiumColumnManager {
     // Bind methods for event handlers
     this.handleResizeMove = (e) => handleResizeMove(this, e);
     this.handleResizeEnd = () => handleResizeEnd(this);
+    this.handleDragMove = (e) => handleDragMove(this, e);
+    this.handleDragEnd = () => handleDragEnd(this);
     this.handleKeyDown = (e) => handleKeyDown(this, e);
     this.handleClickOutside = (e) => handleClickOutside(this, e);
   }
@@ -159,6 +174,9 @@ export class LithiumColumnManager {
     await loadColumnData(this);
     await initColumnTable(this);
 
+    // Wire event handlers for buttons and drag/resize
+    this.wireEventHandlers();
+
     this.isInitialized = true;
     log(Subsystems.TABLE, Status.INFO, `[ColumnManager] Initialized for ${this.managerId}`);
   }
@@ -190,22 +208,31 @@ export class LithiumColumnManager {
    * Wire event handlers
    */
   wireEventHandlers() {
-    // Close button
+    // Close button - always applies changes and closes
     const closeBtn = this.popup.querySelector(`.${this.cssPrefix}-close-btn`);
-    closeBtn?.addEventListener('click', () => this.close());
+    closeBtn?.addEventListener('click', () => {
+      void this.handleClose();
+    });
 
-    // Save/Cancel buttons
+    // Save button - saves current row edit only
     this.saveBtn = this.popup.querySelector(`.${this.cssPrefix}-save-btn`);
+    this.saveBtn?.addEventListener('click', async () => {
+      if (this.columnTable?.isEditing) {
+        await this.columnTable.handleSave();
+        this.syncDirtyState();
+      }
+    });
+
+    // Cancel button - cancels row edit only
     this.cancelBtn = this.popup.querySelector(`.${this.cssPrefix}-cancel-btn`);
-
-    this.saveBtn?.addEventListener('click', () => {
-      void handlePrimarySave(this);
+    this.cancelBtn?.addEventListener('click', async () => {
+      if (this.columnTable?.isEditing) {
+        await this.columnTable.handleCancel();
+        this.syncDirtyState();
+      }
     });
 
-    this.cancelBtn?.addEventListener('click', () => {
-      void handlePrimaryCancel(this);
-    });
-
+    // Update button state (enabled when row is being edited)
     updateButtonState(this);
 
     // Mode toggle buttons
@@ -219,9 +246,19 @@ export class LithiumColumnManager {
       });
     });
 
-    // Resize handle
-    const resizeHandle = this.popup.querySelector(`.${this.cssPrefix}-resize-handle`);
-    resizeHandle?.addEventListener('mousedown', (e) => handleResizeStart(this, e));
+    // Resize handles (four corners)
+    const resizeHandleBR = this.popup.querySelector(`.${this.cssPrefix}-resize-handle-br`);
+    const resizeHandleBL = this.popup.querySelector(`.${this.cssPrefix}-resize-handle-bl`);
+    const resizeHandleTR = this.popup.querySelector(`.${this.cssPrefix}-resize-handle-tr`);
+    const resizeHandleTL = this.popup.querySelector(`.${this.cssPrefix}-resize-handle-tl`);
+    resizeHandleBR?.addEventListener('mousedown', (e) => handleResizeStart(this, e));
+    resizeHandleBL?.addEventListener('mousedown', (e) => handleResizeStart(this, e));
+    resizeHandleTR?.addEventListener('mousedown', (e) => handleResizeStart(this, e));
+    resizeHandleTL?.addEventListener('mousedown', (e) => handleResizeStart(this, e));
+
+    // Header for dragging
+    const header = this.popup.querySelector(`.${this.cssPrefix}-header`);
+    header?.addEventListener('mousedown', (e) => this.handleDragStart(e));
 
     // Keyboard handler
     document.addEventListener('keydown', this.handleKeyDown);
@@ -240,6 +277,9 @@ export class LithiumColumnManager {
   restoreSetting(key, defaultValue) { return restoreSetting(this, key, defaultValue); }
   handlePrimarySave() { return handlePrimarySave(this); }
   handlePrimaryCancel() { return handlePrimaryCancel(this); }
+
+  // Delegate drag/resize methods
+  handleDragStart(e) { handleDragStart(this, e); }
 
   // Delegate data methods
   loadColumnData() { return loadColumnData(this); }
@@ -261,6 +301,34 @@ export class LithiumColumnManager {
   hide() { hide(this); }
   close() { close(this); }
   setTableWidth(mode) { setTableWidth(this, mode); }
+
+  // Handle close (always applies changes and closes)
+  async handleClose() {
+    await this.applyAllChangesToParent();
+    this.close();
+  }
+
+  // Handle save (saves row edit if any, applies changes to parent)
+  async handleSave() {
+    // Save any current row edit
+    if (this.columnTable?.isEditing) {
+      await this.columnTable.handleSave();
+    }
+    // Apply changes to parent and close
+    await this.applyAllChangesToParent();
+    this.close();
+  }
+
+  // Handle cancel (cancels row edit if any, discards changes and closes)
+  async handleCancel() {
+    // Cancel any current row edit
+    if (this.columnTable?.isEditing) {
+      await this.columnTable.handleCancel();
+    }
+    // Discard changes and close
+    await this.discardAllChanges();
+    this.close();
+  }
 
   // Delegate table methods
   async initColumnTable() { return initColumnTable(this); }

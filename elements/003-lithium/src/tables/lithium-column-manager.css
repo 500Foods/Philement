@@ -33,9 +33,14 @@
   pointer-events: auto;
 }
 
-.col-manager-popup.resizing {
+.col-manager-popup.resizing,
+.col-manager-popup.dragging {
   user-select: none;
   transition: none;
+}
+
+.col-manager-popup.dragging {
+  cursor: grabbing;
 }
 
 /* ── Depth-2 Column Manager (Dark Red Theme) ───────────────────────────────── */
@@ -141,6 +146,12 @@
   border-bottom: 1px solid #1e3a5f;
   flex-shrink: 0;
   gap: 4px;
+  cursor: move;
+  user-select: none;
+}
+
+.col-manager-header:active {
+  cursor: grabbing;
 }
 
 .col-manager-title {
@@ -329,37 +340,89 @@
   padding: 6px 8px;
 }
 
-/* ── Resize Handle ─────────────────────────────────────────────────────────── */
+/* ── Resize Handles (Four Corners) ─────────────────────────────────────────── */
 
 .col-manager-resize-handle {
   position: absolute;
-  bottom: -4px;
-  right: -4px;
-  width: 16px;
-  height: 16px;
-  cursor: nwse-resize;
-  z-index: 1;
-  opacity: 0.6;
-  transition: opacity 0.2s ease;
+  width: 20px;
+  height: 20px;
+  z-index: 100;
+  opacity: 0.3;
+  transition: opacity 0.15s ease, background 0.15s ease;
+  background: transparent;
 }
 
-.col-manager-resize-handle::before {
-  content: '';
-  position: absolute;
-  bottom: 3px;
-  right: 3px;
-  width: 10px;
-  height: 10px;
-  background: linear-gradient(135deg, transparent 50%, #4a7aa8 50%);
-  border-bottom-right-radius: 2px;
-}
-
-.col-manager-resize-handle:hover {
-  opacity: 1;
+.col-manager-popup:hover .col-manager-resize-handle {
+  opacity: 0.7;
+  background: rgba(74, 122, 168, 0.15);
 }
 
 .col-manager-popup.resizing .col-manager-resize-handle {
   opacity: 1;
+  background: rgba(74, 122, 168, 0.3);
+}
+
+/* Bottom-right */
+.col-manager-resize-handle-br {
+  bottom: 0;
+  right: 0;
+  cursor: nwse-resize;
+  border-bottom-right-radius: 6px;
+}
+
+/* Bottom-left */
+.col-manager-resize-handle-bl {
+  bottom: 0;
+  left: 0;
+  cursor: nesw-resize;
+  border-bottom-left-radius: 6px;
+}
+
+/* Top-right */
+.col-manager-resize-handle-tr {
+  top: 0;
+  right: 0;
+  cursor: nesw-resize;
+  border-top-right-radius: 6px;
+}
+
+/* Top-left */
+.col-manager-resize-handle-tl {
+  top: 0;
+  left: 0;
+  cursor: nwse-resize;
+  border-top-left-radius: 6px;
+}
+
+/* Resize handle visual indicator (small dots at corners) */
+.col-manager-resize-handle::before {
+  content: '';
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #4a7aa8;
+}
+
+/* Position the dots */
+.col-manager-resize-handle-br::before {
+  bottom: 3px;
+  right: 3px;
+}
+
+.col-manager-resize-handle-bl::before {
+  bottom: 3px;
+  left: 3px;
+}
+
+.col-manager-resize-handle-tr::before {
+  top: 3px;
+  right: 3px;
+}
+
+.col-manager-resize-handle-tl::before {
+  top: 3px;
+  left: 3px;
 }
 
 /* ── LithiumTable Inside Column Manager ────────────────────────────────────── */

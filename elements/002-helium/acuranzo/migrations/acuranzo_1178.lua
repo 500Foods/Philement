@@ -84,22 +84,42 @@ table.insert(queries,{sql=[[
                 (${LOOKUP_ID},  0, 1, 'Profile Sections', 0, 0, '', '', ${JIS}[==[
                     {
                         "default": [
-                            ["<fa fa-user></fa>", "Account and Names"],
-                            ["<fa fa-key></fa>", "Authentication"],
-                            ["<fa fa-globe></fa>", "Langauge"],
-                            ["fa fa-calendar></fa>", "Date/Time Formats"],
-                            ["fa fa-00></fa>", "Number Formats"],
-                            ["fa fa-flag-pennant></fa>", "Startup"],
-                            ["fa fa-bell></fa>", "Notifications"]
+                            ["General", "<fa fa-id-card></fa>", "Account"],
+                            ["General", "<fa fa-id-badge></fa>", "Names"],
+                            ["General", "<fa fa-address-book></fa>", "Addresses"],
+                            ["General", "<fa fa-at></fa>", "E-Mail"],
+                            ["General", "<fa fa-phone></fa>", "Phone"],
+                            ["Security", "<fa fa-key></fa>", "Authentication"]
+                            ["Security", "<fa fa-receipt></fa>", "Login History"],
+                            ["Security", "<fa fa-user-key></fa>", "Tokens"],
+                            ["Formatting", "<fa fa-globe></fa>", "Langauge"],
+                            ["Formatting", "<fa fa-calendar></fa>", "Date/Time Formats"],
+                            ["Formatting", "<fa fa-00></fa>", "Number Formats"],
+                            ["Application", "<fa fa-flag-pennant></fa>", "Startup"],
+                            ["Application", "<fa fa-bell></fa>", "Notifications"]
+                            ["Application", "<fa fa-bell-concierge></fa>", "Concierge"]
+                            ["Application", "<fa fa-note-sticky></fa>", "Annotations"]
+                            ["Application", "<fa fa-note-sticky></fa>", "Tours"]
+                            ["Application", "<fa fa-note-sticky></fa>", "Training"]
                         ],
                         "en-US": [
-                            ["<fa fa-user></fa>", "Account and Names"],
-                            ["<fa fa-key></fa>", "Authentication"],
-                            ["<fa fa-globe></fa>", "Langauge"],
-                            ["fa fa-calendar></fa>", "Date/Time Formats"],
-                            ["fa fa-00></fa>", "Number Formats"],
-                            ["fa fa-flag-pennant></fa>", "Startup"],
-                            ["fa fa-bell></fa>", "Notifications"]
+                            ["General", "<fa fa-id-card></fa>", "Account"],
+                            ["General", "<fa fa-id-badge></fa>", "Names"],
+                            ["General", "<fa fa-address-book></fa>", "Addresses"],
+                            ["General", "<fa fa-at></fa>", "E-Mail"],
+                            ["General", "<fa fa-phone></fa>", "Phone"],
+                            ["Security", "<fa fa-key></fa>", "Authentication"]
+                            ["Security", "<fa fa-receipt></fa>", "Login History"],
+                            ["Security", "<fa fa-user-key></fa>", "Tokens"],
+                            ["Formatting", "<fa fa-globe></fa>", "Langauge"],
+                            ["Formatting", "<fa fa-calendar></fa>", "Date/Time Formats"],
+                            ["Formatting", "<fa fa-00></fa>", "Number Formats"],
+                            ["Application", "<fa fa-flag-pennant></fa>", "Startup"],
+                            ["Application", "<fa fa-bell></fa>", "Notifications"]
+                            ["Application", "<fa fa-bell-concierge></fa>", "Concierge"]
+                            ["Application", "<fa fa-note-sticky></fa>", "Annotations"]
+                            ["Application", "<fa fa-note-sticky></fa>", "Tours"]
+                            ["Application", "<fa fa-note-sticky></fa>", "Training"]
                         ]
                     }
                 ]==]${JIE}, ${COMMON_VALUES})
@@ -147,6 +167,12 @@ table.insert(queries,{sql=[[
             DELETE FROM ${SCHEMA}${TABLE}
             WHERE lookup_id = 0
             AND key_idx = ${LOOKUP_ID};
+
+            ${SUBQUERY_DELIMITER}
+
+            DELETE FROM ${SCHEMA}${TABLE}
+            WHERE lookup_id = ${LOOKUP_ID}
+            AND key_idx IN (0);
 
             ${SUBQUERY_DELIMITER}
 

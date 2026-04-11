@@ -135,6 +135,7 @@ export default class VersionHistoryManager {
       container: this.elements.versionsTableContainer,
       navigatorContainer: this.elements.versionsNavigator,
       tablePath: 'version-manager/version-history',
+      lookupKeyIdx: 7,
       cssPrefix: 'version-history',
       storageKey: 'version_history_table',
       app: this.app,
