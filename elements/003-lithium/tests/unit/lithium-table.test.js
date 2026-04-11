@@ -149,7 +149,7 @@ const MOCK_TABLEDEF = {
       editable: false,
       calculated: false,
       primaryKey: true,
-      overrides: { bottomCalc: null },
+      bottomCalc: null,
     },
     query_ref: {
       display: 'Ref',
@@ -161,12 +161,10 @@ const MOCK_TABLEDEF = {
       editable: false,
       calculated: false,
       primaryKey: false,
-      overrides: {
-        width: 80,
-        bottomCalc: 'count',
-        bottomCalcFormatter: 'number',
-        bottomCalcFormatterParams: { thousand: ',' },
-      },
+      width: 80,
+      bottomCalc: 'count',
+      bottomCalcFormatter: 'number',
+      bottomCalcFormatterParams: { thousand: ',' },
     },
     name: {
       display: 'Name',
@@ -369,23 +367,31 @@ describe('LithiumTable', () => {
       expect(result.title).toBe('Query Manager');
     });
 
-    it('should return null when lookup data unavailable', async () => {
+    it('should return auto-discover fallback when lookup data unavailable', async () => {
       getTabulatorSchemas.mockReturnValue(null);
       fetchLookups.mockResolvedValue({});
 
       const result = await loadTableDef('queries/query-manager');
 
-      expect(result).toBeNull();
+      expect(result).toEqual(expect.objectContaining({
+        _autoDiscover: true,
+        title: 'query-manager',
+        columns: {},
+      }));
     });
 
-    it('should return null when tabledef entry missing', async () => {
+    it('should return auto-discover fallback when tabledef entry missing', async () => {
       getTabulatorSchemas.mockReturnValue([
         { key_idx: 0, collection: MOCK_COLTYPES },
       ]);
 
       const result = await loadTableDef('queries/query-manager');
 
-      expect(result).toBeNull();
+      expect(result).toEqual(expect.objectContaining({
+        _autoDiscover: true,
+        title: 'query-manager',
+        columns: {},
+      }));
     });
 
     it('should strip .json extension from path', async () => {

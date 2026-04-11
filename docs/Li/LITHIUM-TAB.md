@@ -150,6 +150,7 @@ await table.loadData();
 | `app` | Object | ✅ | App instance (for API access) |
 | `queryRef` | number | ⚪ | QueryRef for data loading |
 | `tablePath` | string | ⚪ | Path to JSON table definition |
+| `lookupKeyIdx` | number | ⚪ | Direct Lookup 59 key_idx. When provided, this takes precedence over `tablePath` mapping for unambiguous schema loading. |
 | `tableDef` | Object | ⚪ | Pre-loaded table definition |
 | `coltypes` | Object | ⚪ | Pre-loaded coltypes |
 | `cssPrefix` | string | ❌ | CSS class prefix (default: `'lithium'`) |
@@ -316,10 +317,8 @@ Columns are defined in `config/tabulator/<table-path>.json`:
       "sort": true,
       "filter": true,
       "editable": false,
-      "overrides": {
-        "width": 80,
-        "bottomCalc": "count"
-      }
+      "width": 80,
+      "bottomCalc": "count"
     },
     "name": {
       "field": "name",
@@ -334,6 +333,13 @@ Columns are defined in `config/tabulator/<table-path>.json`:
 }
 ```
 
+**Column Definition Merge Order:**
+
+1. **Coltype defaults** (Lookup 59, key_idx = 0) — base defaults for each type (e.g., `string`, `integer`, `lookup`)
+2. **Table definition** — column properties overlay coltype defaults
+
+Any property in the column definition replaces the corresponding coltype default. For example, a column with `coltype: "string"` but `width: 80` will use width 80 instead of the string coltype default.
+
 At runtime, LithiumTable forces `responsiveLayout: false` for all tables. When a panel is too narrow for the visible columns, the table scrolls horizontally instead of letting Tabulator collapse or hide columns.
 
 ### QueryRef Resolution (Constructor + Table Definition)
@@ -344,6 +350,32 @@ QueryRefs can be specified in two places: the LithiumTable constructor and the J
 2. **Table definition** (base) — loaded from the database lookup cache (Lookup 059 via `loadTableDef()`)
 
 Only non-null constructor values override the table definition. If a manager doesn't pass a particular queryRef, the value from the database schema is used.
+
+#### Direct Lookup 59 Key_idx with `lookupKeyIdx`
+
+For unambiguous schema loading from Lookup 59 (Tabulator Schemas), pass the `lookupKeyIdx` option directly:
+
+```javascript
+this.table = new LithiumTable({
+  tablePath: 'mymanager/my-table',
+  lookupKeyIdx: 8,  // Direct key_idx from Lookup 59 — no path mapping needed
+  queryRef: 50,
+  // ...
+});
+```
+
+| Lookup 59 key_idx | Manager / Table |
+|-------------------|-----------------|
+| 1 | Query Manager |
+| 2 | Lookups Manager (parent) |
+| 3 | Lookups Manager (child) |
+| 4 | Column Manager |
+| 5 | Column Manager Manager |
+| 6 | Style Manager |
+| 7 | Version Manager |
+| 8 | User Profile Manager |
+
+When `lookupKeyIdx` is provided, it takes precedence over any `tablePath` mapping, eliminating ambiguity between database lookups and filesystem JSON files.
 
 #### Why CRUD QueryRefs Must Be Passed Explicitly
 
@@ -386,7 +418,9 @@ const queryRef = isInsert
 | `editable` | boolean | Allow editing |
 | `primaryKey` | boolean | Is primary key field |
 | `lookupRef` | string | Lookup table reference (e.g., `"a27"`) |
-| `overrides` | Object | Override any coltype property |
+| **Tabulator properties** | any | Any Tabulator column property (e.g., `width`, `formatter`, `hozAlign`, `bottomCalc`) can be specified directly in the column definition and will override the coltype default. |
+
+**Note:** Any Tabulator property can be specified directly in the column definition. These values overlay the coltype defaults from Lookup 59 key_idx 0.
 
 ---
 

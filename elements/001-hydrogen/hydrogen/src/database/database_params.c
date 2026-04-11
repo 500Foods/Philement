@@ -191,6 +191,39 @@ ParameterList* parse_typed_parameters(const char* json_params, const char* dqm_l
     return param_list;
 }
 
+// Helper function: Check if a position in SQL is inside a single-quoted string literal
+// This prevents converting :paramName when it appears inside '...:paramName...'
+static bool is_inside_string_literal(const char* sql, const char* position) {
+    if (!sql || !position || position < sql) {
+        return false;
+    }
+
+    bool in_string = false;
+    const char* ptr = sql;
+
+    while (*ptr && ptr < position) {
+        if (*ptr == '\'') {
+            if (in_string) {
+                // Check for escaped quote '' (two consecutive single quotes)
+                if (*(ptr + 1) == '\'' && (ptr + 1) < position) {
+                    // It's an escaped quote, skip both quotes and stay in string
+                    ptr += 2;
+                    continue;
+                } else {
+                    // End of string
+                    in_string = false;
+                }
+            } else {
+                // Start of string
+                in_string = true;
+            }
+        }
+        ptr++;
+    }
+
+    return in_string;
+}
+
 // Convert SQL template from named to positional parameters
 char* convert_named_to_positional(
     const char* sql_template,
@@ -228,6 +261,7 @@ char* convert_named_to_positional(
     }
 
     // Replace named parameters with positional placeholders
+    // Replace ALL occurrences of each unique parameter name
     char* result = modified_sql;
     size_t param_index = 1; // 1-based for PostgreSQL, 0-based for others
 
@@ -251,30 +285,42 @@ char* convert_named_to_positional(
                 break;
         }
 
-        // Replace :paramName with placeholder
+        // Replace :paramName with placeholder (ALL occurrences)
         char named_param[256];
         snprintf(named_param, sizeof(named_param), ":%s", param->name);
+        size_t named_param_len = strlen(named_param);
+        size_t placeholder_len = strlen(param_placeholder);
 
-        // Simple string replacement (could be optimized with more sophisticated replacement)
+        // Keep replacing until no more occurrences found
         const char* pos = strstr(result, named_param);
-        if (pos) {
-            size_t prefix_len = (size_t)(pos - result);
-            size_t suffix_len = (size_t)strlen(pos + strlen(named_param));
-            size_t placeholder_len = (size_t)strlen(param_placeholder);
+        while (pos) {
+            // Check if this occurrence is inside a string literal
+            if (is_inside_string_literal(result, pos)) {
+                // Skip this occurrence - don't convert params inside string literals
+                // Move past this match and continue searching
+                pos = strstr(pos + 1, named_param);
+                continue;
+            }
 
-            char* new_sql = (char*)malloc((size_t)strlen(result) + placeholder_len - (size_t)strlen(named_param) + 1);
+            size_t prefix_len = (size_t)(pos - result);
+            size_t suffix_len = strlen(pos + named_param_len);
+
+            char* new_sql = (char*)malloc(strlen(result) + placeholder_len - named_param_len + 1);
             if (!new_sql) {
                 log_this(dqm_label ? dqm_label : SR_DATABASE, "Failed to allocate modified SQL", LOG_LEVEL_ERROR, 0);
-                free(modified_sql);
+                free(result);
                 return NULL;
             }
 
             memcpy(new_sql, result, prefix_len);
             memcpy(new_sql + prefix_len, param_placeholder, placeholder_len);
-            memcpy(new_sql + prefix_len + placeholder_len, pos + strlen(named_param), suffix_len + 1);
+            memcpy(new_sql + prefix_len + placeholder_len, pos + named_param_len, suffix_len + 1);
 
             free(result);
             result = new_sql;
+
+            // Look for next occurrence
+            pos = strstr(result, named_param);
         }
     }
 
@@ -282,6 +328,7 @@ char* convert_named_to_positional(
 }
 
 // Build parameter array in correct order for database execution
+// Only includes UNIQUE parameters - duplicates in the SQL are tracked but only appear once in the array
 bool build_parameter_array(
     const char* sql_template,
     ParameterList* params,
@@ -303,10 +350,14 @@ bool build_parameter_array(
         return false;
     }
 
-    // Count matches
-    size_t match_count = 0;
+    // First pass: Count unique matches only
+    size_t unique_count = 0;
     regmatch_t match;
     const char* search_ptr = sql_template;
+    
+    // Track unique parameter names we've already seen (max 100 unique params)
+    char seen_params[100][MAX_PARAM_NAME_LEN];
+    size_t seen_count = 0;
 
     while (regexec(&regex, search_ptr, 1, &match, 0) == 0) {
         // Check if this match is inside a ${} macro
@@ -335,7 +386,10 @@ bool build_parameter_array(
             is_inside_macro = true;
         }
         
-        if (!is_inside_macro) {
+        // Check if match is inside a string literal (e.g., '...:param...')
+        bool is_in_string = is_inside_string_literal(sql_template, match_start);
+        
+        if (!is_inside_macro && !is_in_string) {
             // Extract parameter name to check if it's "interval" (PostgreSQL type)
             size_t name_len = (size_t)(match.rm_eo - match.rm_so - 1);
             char param_name[MAX_PARAM_NAME_LEN];
@@ -345,7 +399,26 @@ bool build_parameter_array(
                 
                 // Skip the :interval parameter (it's a PostgreSQL type, not a parameter)
                 if (strcmp(param_name, "interval") != 0) {
-                    match_count++;
+                    // Check if we've already seen this parameter
+                    bool already_seen = false;
+                    for (size_t i = 0; i < seen_count; i++) {
+                        if (strcmp(seen_params[i], param_name) == 0) {
+                            already_seen = true;
+                            break;
+                        }
+                    }
+                    
+                    // Only count unique parameters
+                    if (!already_seen && seen_count < 100) {
+                        size_t copy_len = strlen(param_name);
+                        if (copy_len >= MAX_PARAM_NAME_LEN) {
+                            copy_len = MAX_PARAM_NAME_LEN - 1;
+                        }
+                        memcpy(seen_params[seen_count], param_name, copy_len);
+                        seen_params[seen_count][copy_len] = '\0';
+                        seen_count++;
+                        unique_count++;
+                    }
                 }
             }
         }
@@ -353,7 +426,7 @@ bool build_parameter_array(
         search_ptr += match.rm_eo;
     }
 
-    if (match_count == 0) {
+    if (unique_count == 0) {
         *ordered_params = NULL;
         *param_count = 0;
         regfree(&regex);
@@ -361,25 +434,28 @@ bool build_parameter_array(
     }
 
     // Limit parameter count to prevent excessive memory usage
-    if (match_count > 100) {
-        log_this(dqm_label ? dqm_label : SR_DATABASE, "Too many parameters in SQL template: %zu", LOG_LEVEL_ERROR, 1, match_count);
+    if (unique_count > 100) {
+        log_this(dqm_label ? dqm_label : SR_DATABASE, "Too many parameters in SQL template: %zu", LOG_LEVEL_ERROR, 1, unique_count);
         regfree(&regex);
         return false;
     }
 
-    // Allocate ordered parameter array
-    *ordered_params = (TypedParameter**)malloc(match_count * sizeof(TypedParameter*));
+    // Allocate ordered parameter array for unique params only
+    *ordered_params = (TypedParameter**)malloc(unique_count * sizeof(TypedParameter*));
     if (!*ordered_params) {
         log_this(dqm_label ? dqm_label : SR_DATABASE, "Failed to allocate ordered parameter array", LOG_LEVEL_ERROR, 0);
         regfree(&regex);
         return false;
     }
 
-    // Build ordered array by finding parameters in SQL order
+    // Build ordered array by finding parameters in SQL order (only adding each unique param once)
     search_ptr = sql_template;
     size_t param_idx = 0;
+    
+    // Reset seen tracking for second pass
+    seen_count = 0;
 
-    while (regexec(&regex, search_ptr, 1, &match, 0) == 0 && param_idx < match_count) {
+    while (regexec(&regex, search_ptr, 1, &match, 0) == 0 && param_idx < unique_count) {
         // Check if this match is inside a ${} macro
         bool is_inside_macro = false;
         const char* current_ptr = sql_template;
@@ -406,7 +482,10 @@ bool build_parameter_array(
             is_inside_macro = true;
         }
         
-        if (!is_inside_macro) {
+        // Check if match is inside a string literal (e.g., '...:param...')
+        bool is_in_string = is_inside_string_literal(sql_template, match_start);
+        
+        if (!is_inside_macro && !is_in_string) {
             // Check if this is a PostgreSQL type cast (::pattern)
             // The regex matches ":text" in "::text", but this is a type cast, not a parameter
             if (match.rm_so > 0 && *(search_ptr + match.rm_so - 1) == ':') {
@@ -433,6 +512,21 @@ bool build_parameter_array(
                 continue;
             }
 
+            // Check if we've already added this parameter to the ordered array
+            bool already_added = false;
+            for (size_t i = 0; i < seen_count; i++) {
+                if (strcmp(seen_params[i], param_name) == 0) {
+                    already_added = true;
+                    break;
+                }
+            }
+            
+            // Skip if already added (duplicate occurrence in SQL)
+            if (already_added) {
+                search_ptr += match.rm_eo;
+                continue;
+            }
+
             // Find matching parameter in our list
             TypedParameter* found_param = NULL;
             for (size_t i = 0; i < params->count; i++) {
@@ -450,7 +544,17 @@ bool build_parameter_array(
                 return false;
             }
 
+            // Add to ordered array and track that we've seen it
             (*ordered_params)[param_idx++] = found_param;
+            if (seen_count < 100) {
+                size_t copy_len = strlen(param_name);
+                if (copy_len >= MAX_PARAM_NAME_LEN) {
+                    copy_len = MAX_PARAM_NAME_LEN - 1;
+                }
+                memcpy(seen_params[seen_count], param_name, copy_len);
+                seen_params[seen_count][copy_len] = '\0';
+                seen_count++;
+            }
         }
         
         search_ptr += match.rm_eo;

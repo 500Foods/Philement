@@ -24,10 +24,30 @@ extern WebSocketServerContext *ws_context;
 
 /* External functions */
 extern int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
-                        void *user, void *in, size_t len);
+                         void *user, void *in, size_t len);
 extern int callback_hydrogen(struct lws *wsi, enum lws_callback_reasons reason,
-                           void *user, void *in, size_t len);
+                            void *user, void *in, size_t len);
 extern void custom_lws_log(int level, const char *line);
+
+/*
+ * WebSocket Extensions - permessage-deflate compression (RFC 7692)
+ * 
+ * This enables transparent compression for all WebSocket messages.
+ * Client-side requires no changes - modern browsers support this natively.
+ * 
+ * no_context_takeover flags keep per-connection memory usage low by
+ * not reusing compression contexts between messages.
+ */
+static const struct lws_extension lws_extensions[] = {
+    {
+        "permessage-deflate",
+        lws_extension_callback_pm_deflate,
+        "permessage-deflate; "
+        "client_no_context_takeover; "
+        "server_no_context_takeover"
+    },
+    { NULL, NULL, NULL }  // Terminator
+};
 
 // Validate WebSocket server initialization parameters
 int validate_websocket_params(int port, const char* protocol, const char* key) {
@@ -90,6 +110,7 @@ void configure_lws_context_info(struct lws_context_creation_info* info,
 
     info->port = context->port;
     info->protocols = protocols;
+    info->extensions = lws_extensions;  // Enable permessage-deflate compression
     info->gid = (gid_t)-1;
     info->uid = (uid_t)-1;
     info->user = context;
@@ -104,6 +125,7 @@ void configure_lws_vhost_info(struct lws_context_creation_info* vhost_info,
 
     vhost_info->port = port;
     vhost_info->protocols = protocols;
+    vhost_info->extensions = lws_extensions;  // Enable permessage-deflate compression
     vhost_info->vhost_name = "hydrogen";
     vhost_info->user = context;
     vhost_info->options = LWS_SERVER_OPTION_ALLOW_LISTEN_SHARE |
@@ -220,6 +242,7 @@ int init_websocket_server(int port, const char* protocol, const char* key)
     }
 
     ws_context->port = port;
+    log_this(SR_WEBSOCKET, "WebSocket compression enabled (permessage-deflate)", LOG_LEVEL_STATE, 0);
     log_this(SR_WEBSOCKET, "Successfully bound to 0.0.0.0:%d", LOG_LEVEL_STATE, 1, port);
     log_this(SR_WEBSOCKET, "Server initialized on port %d with protocol %s", LOG_LEVEL_STATE, 2, ws_context->port, protocol);
     return 0;

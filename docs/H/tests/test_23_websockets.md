@@ -99,6 +99,7 @@ This test verifies the WebSocket server functionality in the Hydrogen system, en
 - WebSocket handshake validation
 - Subprotocol negotiation
 - Connection lifecycle management
+- **Compression:** permessage-deflate (RFC 7692) extension support
 
 ## Expected Outcomes
 

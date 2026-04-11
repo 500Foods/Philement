@@ -78,11 +78,12 @@ table.insert(queries,{sql=[[
         ${QTC_SLOW}                                                         AS query_queue_a58,
         ${TIMEOUT}                                                          AS query_timeout,
         [=[
-            DELETE FROM ${SCHEMA}${TABLE}
-            WHERE lookup_id = 0
-            AND key_idx = ${LOOKUP_ID};
+            -- This is not the first set in this looup, so we should not delete it here
+            -- DELETE FROM ${SCHEMA}${TABLE}
+            -- WHERE lookup_id = 0
+            -- AND key_idx = ${LOOKUP_ID};
 
-            ${SUBQUERY_DELIMITER}
+            --
 
             DELETE FROM ${SCHEMA}${TABLE}
             WHERE lookup_id = ${LOOKUP_ID}

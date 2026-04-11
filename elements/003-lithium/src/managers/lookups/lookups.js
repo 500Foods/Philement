@@ -430,6 +430,7 @@ export default class LookupsManager {
       container: this.elements.parentTableContainer,
       navigatorContainer: this.elements.parentNavigator,
       tablePath: 'lookups/lookups-list',
+      lookupKeyIdx: 2,
       queryRef: 30, // QueryRef 30 - Get Lookups List
       searchQueryRef: 31, // QueryRef 31 - Get Lookups List + Search
       updateQueryRef: 43, // QueryRef 43 - Update Lookup
@@ -468,6 +469,7 @@ export default class LookupsManager {
       container: this.elements.childTableContainer,
       navigatorContainer: this.elements.childNavigator,
       tablePath: 'lookups/lookup-values',
+      lookupKeyIdx: 3,
       queryRef: 34, // QueryRef 34 - Get Lookup List (requires LOOKUPID param)
       updateQueryRef: 43, // QueryRef 43 - Update Lookup Value
       insertQueryRef: 42, // QueryRef 42 - Insert Lookup Value

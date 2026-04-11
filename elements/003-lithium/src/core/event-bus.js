@@ -121,6 +121,7 @@ export const Events = {
   LOOKUPS_LOADING: 'lookups:loading',
   LOOKUPS_LOADED: 'lookups:loaded',
   LOOKUPS_ERROR: 'lookups:error',
+  LOOKUPS_REFRESHED: 'lookups:refreshed',
 
   // Lookup-specific events (for monitoring specific lookup categories)
   // Pattern: lookups:{category}:loaded - e.g., lookups:themes:loaded

@@ -24,7 +24,13 @@ import {
   getQueryRefs,
   getPrimaryKeyField,
   preloadLookups,
+  _tableDefCache,
 } from './lithium-table.js';
+
+import {
+  getSavedTemplates,
+  getTemplateName,
+} from './popups/template-popup.js';
 
 // ── Column Utility Functions ────────────────────────────────────────────────
 
@@ -49,6 +55,7 @@ export class LithiumTableBase {
     this.container = options.container;
     this.navigatorContainer = options.navigatorContainer;
     this.tablePath = options.tablePath;
+    this.lookupKeyIdx = options.lookupKeyIdx || null;  // Direct Lookup 59 key_idx
     this.cssPrefix = options.cssPrefix || 'lithium';
 
     // Configuration (can be provided or loaded)
@@ -210,7 +217,7 @@ export class LithiumTableBase {
     }
 
     if (!this.tableDef && this.tablePath) {
-      this.tableDef = await loadTableDef(this.tablePath);
+      this.tableDef = await loadTableDef(this.tablePath, null, this.lookupKeyIdx);
     }
 
     if (this.tableDef) {
@@ -252,7 +259,13 @@ export class LithiumTableBase {
         })
       : this.getFallbackColumns();
 
-    this.applyEditModeGate(dataColumns);
+    // If tableDef has _autoDiscover flag and columns are empty, use fallback
+    const needsAutoDiscover = this.tableDef?._autoDiscover && dataColumns.length === 0;
+    const finalColumns = needsAutoDiscover
+      ? this.getFallbackColumns()
+      : dataColumns;
+
+    this.applyEditModeGate(finalColumns);
 
     const tableOptions = this.tableDef
       ? resolveTableOptions(this.tableDef)
@@ -271,12 +284,22 @@ export class LithiumTableBase {
 
     const selectorColumn = this.buildSelectorColumn();
 
-    const columns = [selectorColumn, ...dataColumns];
+    const columns = [selectorColumn, ...finalColumns];
     columns.forEach(col => {
       if (col.title && !col.cssClass?.includes('first-visible-col')) {
         col.cssClass = [col.cssClass, sanitizeColumnTitle(col.title)].filter(Boolean).join(' ');
       }
     });
+
+    // Build dataLoaded handler for auto-discover tables
+    let dataLoadedCallback;
+    if (this.tableDef?._autoDiscover) {
+      dataLoadedCallback = (data) => {
+        if (data && data.length > 0) {
+          this.discoverColumns(data);
+        }
+      };
+    }
 
     this.table = new Tabulator(this.container, {
       ...tableOptions,
@@ -293,6 +316,7 @@ export class LithiumTableBase {
         const prefix = this.cssPrefix;
         return `<span class="${prefix}-sort-icons" data-sort-dir="${dir || 'none'}"><span class="${prefix}-sort-asc">&#9650;</span><span class="${prefix}-sort-desc">&#9660;</span></span>`;
       },
+      dataLoaded: dataLoadedCallback,
       columns: columns,
     });
 
@@ -961,6 +985,55 @@ export class LithiumTableBase {
     }
 
     this.hideLoading();
+  }
+
+  /**
+   * Reload the table configuration (schema) from Lookup 59.
+   * This is called when the user clicks the refresh button to pick up
+   * any changes to the table definition in Lookup 59.
+   */
+  async reloadConfiguration() {
+    log(Subsystems.TABLE, Status.INFO, `[${this.cssPrefix}] Reloading table configuration...`);
+
+    // 1. Clear the table definition for this path so it re-fetches from Lookup 59
+    if (this.tablePath && _tableDefCache.has(this.tablePath)) {
+      _tableDefCache.delete(this.tablePath);
+      log(Subsystems.TABLE, Status.DEBUG, `[${this.cssPrefix}] Cleared tableDef cache for "${this.tablePath}"`);
+    }
+
+    // 2. Reload configuration (fetches fresh tableDef from Lookup 59)
+    this.tableDef = null;
+    await this.loadConfiguration();
+
+    // 3. Destroy existing Tabulator table
+    if (this.table) {
+      this.table.destroy();
+      this.table = null;
+    }
+
+    // 4. Recreate the Tabulator table with new configuration
+    await this.initTable();
+
+    // 5. Restore filters visible state (if previously enabled)
+    if (this.filtersVisible && this.table) {
+      this.toggleHeaderFilters(true);
+    }
+
+    // 6. Restore saved template (e.g., "Default" or user's selected template)
+    const templates = getSavedTemplates?.(this) || [];
+    const defaultTemplate = templates.find((t) => getTemplateName?.(this, t) === 'Default');
+    if (defaultTemplate) {
+      await this.loadTemplate?.(defaultTemplate);
+    }
+
+    // 7. Reload data (call the appropriate method based on what was configured)
+    if (typeof this.onRefresh === 'function') {
+      this.onRefresh();
+    } else {
+      this.loadData?.();
+    }
+
+    log(Subsystems.TABLE, Status.INFO, `[${this.cssPrefix}] Table configuration reloaded`);
   }
 
   // ── Splitter Binding ────────────────────────────────────────────────────────

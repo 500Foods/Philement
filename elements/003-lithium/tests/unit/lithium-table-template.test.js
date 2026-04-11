@@ -38,7 +38,7 @@ describe('lithium-table-template', () => {
 
       const result = extractTemplateColumnFromColumn(column);
 
-      expect(result.overrides.width).toBe(214);
+      expect(result.width).toBe(214);
     });
 
     it('falls back to DOM width when the column component width is unavailable', () => {
@@ -49,7 +49,7 @@ describe('lithium-table-template', () => {
 
       const result = extractTemplateColumnFromColumn(column);
 
-      expect(result.overrides.width).toBe(187);
+      expect(result.width).toBe(187);
     });
 
     it('falls back to the definition width when no live width can be read', () => {
@@ -59,7 +59,7 @@ describe('lithium-table-template', () => {
 
       const result = extractTemplateColumnFromColumn(column);
 
-      expect(result.overrides.width).toBe(143);
+      expect(result.width).toBe(143);
     });
   });
 });

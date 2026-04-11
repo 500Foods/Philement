@@ -174,6 +174,7 @@ int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
 }
 
 // Main callback dispatcher for all WebSocket events
+// cppcheck-suppress constParameterPointer
 int callback_hydrogen(struct lws *wsi, enum lws_callback_reasons reason,
                        void *user, const void *in, size_t len)
 {

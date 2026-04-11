@@ -310,7 +310,7 @@ export class CrimsonManager {
             <fa fa-water></fa>
           </button>
           <button type="button" class="crimson-reasoning-btn" data-tooltip="Toggle reasoning display">
-            <fa fa-person></fa>
+            <fa fa-thought-bubble></fa>
           </button>
           <button type="button" class="crimson-debug-btn" data-tooltip="Toggle debug view">
             <fa fa-bug></fa>

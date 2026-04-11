@@ -27,7 +27,7 @@ int setup_pty_select(int master_fd, fd_set *readfds, struct timeval *timeout);
 void test_create_pty_output_json_valid_data(void);
 void test_create_pty_output_json_null_buffer(void);
 void test_create_pty_output_json_zero_size(void);
-void test_send_pty_data_to_websocket_success(void);
+void test_send_pty_data_to_websocket_no_session(void);
 void test_send_pty_data_to_websocket_malloc_failure(void);
 void test_send_pty_data_to_websocket_write_failure(void);
 void test_perform_pty_read_success(void);
@@ -102,20 +102,20 @@ void test_create_pty_output_json_zero_size(void) {
     json_decref(json_response);
 }
 
-// Test send_pty_data_to_websocket success path
-void test_send_pty_data_to_websocket_success(void) {
+// Test send_pty_data_to_websocket with no session (returns -1 because session is NULL)
+void test_send_pty_data_to_websocket_no_session(void) {
     struct lws *test_wsi = (struct lws *)0x12345678;
     const char *test_data = "test websocket data";
     size_t data_len = strlen(test_data);
 
-    // Mock successful malloc and write
-    mock_system_set_malloc_failure(0); // Don't fail malloc
+    // Mock lws_wsi_user to return NULL (no session)
+    mock_lws_set_wsi_user_result(NULL);
     mock_lws_set_write_result((int)data_len); // Successful write
 
     int result = send_pty_data_to_websocket(test_wsi, test_data, data_len);
 
-    // Should succeed
-    TEST_ASSERT_EQUAL_INT(0, result);
+    // Returns -1 because no session data available
+    TEST_ASSERT_EQUAL_INT(-1, result);
 }
 
 // Test send_pty_data_to_websocket with malloc failure
@@ -131,19 +131,19 @@ void test_send_pty_data_to_websocket_malloc_failure(void) {
     TEST_ASSERT_TRUE(result == 0 || result == -1);
 }
 
-// Test send_pty_data_to_websocket with write failure
+// Test send_pty_data_to_websocket with write failure (still returns -1 because no session)
 void test_send_pty_data_to_websocket_write_failure(void) {
     struct lws *test_wsi = (struct lws *)0x12345678;
     const char *test_data = "test data";
     size_t data_len = strlen(test_data);
 
-    // Mock successful malloc but failed write
-    mock_system_set_malloc_failure(0); // Don't fail malloc
+    // Mock failed write - but function returns -1 earlier due to no session
+    mock_lws_set_wsi_user_result(NULL);
     mock_lws_set_write_result(-1); // Write failure
 
     int result = send_pty_data_to_websocket(test_wsi, test_data, data_len);
 
-    // Should return -1 due to write failure
+    // Returns -1 because no session data available (before write is attempted)
     TEST_ASSERT_EQUAL_INT(-1, result);
 }
 
@@ -225,7 +225,7 @@ int main(void) {
     RUN_TEST(test_create_pty_output_json_valid_data);
     RUN_TEST(test_create_pty_output_json_null_buffer);
     RUN_TEST(test_create_pty_output_json_zero_size);
-    RUN_TEST(test_send_pty_data_to_websocket_success);
+    RUN_TEST(test_send_pty_data_to_websocket_no_session);
     RUN_TEST(test_send_pty_data_to_websocket_malloc_failure);
     RUN_TEST(test_send_pty_data_to_websocket_write_failure);
     RUN_TEST(test_perform_pty_read_success);

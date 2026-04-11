@@ -1,49 +1,145 @@
 /**
  * Profile Manager Styles
- * 
- * User preferences and profile settings
+ *
+ * User preferences and profile settings with LithiumTable for options
  */
 
 @layer managers {
 
 /* Page Container */
 #profile-manager-page {
-  padding: var(--space-xl);
-  max-width: 800px;
-  margin: 0 auto;
   opacity: 0;
   transition: opacity var(--transition-normal);
+  height: 100%;
+  overflow: hidden;
 }
 
 #profile-manager-page.visible {
   opacity: 1;
 }
 
-/* Header */
-.profile-header {
-  margin-bottom: var(--space-xl);
-  padding-bottom: var(--space-lg);
+/* Manager Panels Layout */
+.profile-manager-container {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Left Panel: Options Table */
+#profile-left-panel {
+  display: flex;
+  flex-direction: column;
+  width: 314px;
+  background: var(--bg-secondary);
+  overflow: hidden;
+  padding-bottom: 0;
+}
+
+#profile-left-panel.collapsed {
+  width: 0 !important;
+  min-width: 0 !important;
+  border-right: none;
+  overflow: hidden;
+}
+
+/* Toolbar in left panel */
+#profile-left-panel .lithium-toolbar {
+  flex-shrink: 0;
+  border-radius: 0;
+  border: none;
+  outline: none;
+  outline-offset: 0;
+}
+
+/* Table Container */
+#profile-table-container {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  margin: var(--space-2) var(--space-3);
+}
+
+#profile-table-container .tabulator {
+  border: none;
+  height: 100% !important;
+  border-radius: var(--border-radius-sm);
+}
+
+#profile-table-container .tabulator {
+  border: none;
+  height: 100% !important;
+}
+
+/* Navigator */
+#profile-navigator {
+  flex-shrink: 0;
+  background: var(--bg-secondary);
+  border-radius: 0 0 var(--border-radius-sm) var(--border-radius-sm);
+}
+
+/* Splitter */
+#profile-splitter {
+  flex-shrink: 0;
+  width: 6px;
+  cursor: col-resize;
+  transition: background var(--transition-fast);
+}
+
+#profile-splitter:hover,
+#profile-splitter.resizing {
+  background: var(--accent-primary);
+}
+
+#profile-splitter.collapsed {
+  display: none;
+}
+
+/* Right Panel: Settings */
+#profile-right-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--bg-primary);
+}
+
+/* Tab Toolbar */
+#profile-tab-toolbar {
+  flex-shrink: 0;
+  border-radius: 0;
+  border: none;
   border-bottom: 1px solid var(--border-color);
+  outline: none;
+  outline-offset: 0;
+  padding: 0 var(--space-2);
 }
 
-.profile-title {
-  font-size: var(--font-size-2xl);
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 0 0 var(--space-xs) 0;
+/* Tab Content */
+#profile-tab-content {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--space-lg);
 }
 
-.profile-subtitle {
-  font-size: var(--font-size-md);
-  color: var(--text-secondary);
-  margin: 0;
+/* Tab Panels */
+.tab-panel {
+  display: none;
 }
 
-/* Content Sections */
+.tab-panel.active {
+  display: block;
+}
+
+/* Profile Content Sections */
 .profile-content {
   display: flex;
   flex-direction: column;
   gap: var(--space-xl);
+  max-width: 800px;
+  margin: 0 auto;
 }
 
 .profile-section {
@@ -309,8 +405,23 @@
 }
 
 /* Responsive Adjustments */
-@media (max-width: 640px) {
-  #profile-manager-page {
+@media (max-width: 768px) {
+  #profile-left-panel {
+    position: absolute;
+    z-index: 100;
+    height: 100%;
+    box-shadow: var(--shadow-lg);
+  }
+
+  #profile-left-panel.collapsed {
+    transform: translateX(-100%);
+  }
+
+  #profile-splitter {
+    display: none;
+  }
+
+  .profile-content {
     padding: var(--space-md);
   }
 
@@ -327,7 +438,7 @@
   }
 
   .preview-panel {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
   }
 
   .toast {
@@ -337,9 +448,16 @@
   }
 }
 
+@media (max-width: 480px) {
+  .preview-panel {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Reduced Motion */
 @media (prefers-reduced-motion: reduce) {
   #profile-manager-page,
+  #profile-left-panel,
   .toast,
   .btn,
   .form-select {

@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS custom properties (variables) used across the Lithium codebase",
-    "generated": "2026-04-09T02:36:17.364Z",
+    "generated": "2026-04-11T15:34:18.438Z",
     "sources": {
       "css": "50 files in src/**/*.css",
       "js": "102 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
     "total_variables": 213,
-    "total_occurrences": 3350
+    "total_occurrences": 3355
   },
   "variables": [
     {
@@ -90,10 +90,10 @@
     },
     {
       "name": "--accent-primary",
-      "css": 167,
+      "css": 168,
       "js": 3,
       "html": 1,
-      "total": 171
+      "total": 172
     },
     {
       "name": "--accent-primary-hover",
@@ -188,10 +188,10 @@
     },
     {
       "name": "--bg-primary",
-      "css": 61,
+      "css": 62,
       "js": 0,
       "html": 1,
-      "total": 62
+      "total": 63
     },
     {
       "name": "--bg-primary-rgb",
@@ -223,10 +223,10 @@
     },
     {
       "name": "--bg-secondary",
-      "css": 85,
+      "css": 87,
       "js": 1,
       "html": 1,
-      "total": 87
+      "total": 89
     },
     {
       "name": "--bg-tertiary",
@@ -293,10 +293,10 @@
     },
     {
       "name": "--border-radius-sm",
-      "css": 74,
+      "css": 77,
       "js": 0,
       "html": 0,
-      "total": 74
+      "total": 77
     },
     {
       "name": "--border-radius-xl",
@@ -496,10 +496,10 @@
     },
     {
       "name": "--font-size-2xl",
-      "css": 5,
+      "css": 4,
       "js": 0,
       "html": 0,
-      "total": 5
+      "total": 4
     },
     {
       "name": "--font-size-3xl",
@@ -524,10 +524,10 @@
     },
     {
       "name": "--font-size-md",
-      "css": 9,
+      "css": 8,
       "js": 0,
       "html": 0,
-      "total": 9
+      "total": 8
     },
     {
       "name": "--font-size-sm",
@@ -776,10 +776,10 @@
     },
     {
       "name": "--shadow-lg",
-      "css": 13,
+      "css": 14,
       "js": 0,
       "html": 0,
-      "total": 13
+      "total": 14
     },
     {
       "name": "--shadow-md",
@@ -804,17 +804,17 @@
     },
     {
       "name": "--space-2",
-      "css": 158,
+      "css": 160,
       "js": 0,
       "html": 0,
-      "total": 158
+      "total": 160
     },
     {
       "name": "--space-3",
-      "css": 190,
+      "css": 191,
       "js": 2,
       "html": 0,
-      "total": 192
+      "total": 193
     },
     {
       "name": "--space-4",
@@ -874,17 +874,17 @@
     },
     {
       "name": "--space-xl",
-      "css": 6,
-      "js": 0,
-      "html": 0,
-      "total": 6
-    },
-    {
-      "name": "--space-xs",
       "css": 4,
       "js": 0,
       "html": 0,
       "total": 4
+    },
+    {
+      "name": "--space-xs",
+      "css": 3,
+      "js": 0,
+      "html": 0,
+      "total": 3
     },
     {
       "name": "--spinner-fancy-color-1",
@@ -1014,17 +1014,17 @@
     },
     {
       "name": "--text-primary",
-      "css": 138,
+      "css": 137,
       "js": 5,
       "html": 1,
-      "total": 144
+      "total": 143
     },
     {
       "name": "--text-secondary",
-      "css": 72,
+      "css": 71,
       "js": 1,
       "html": 0,
-      "total": 73
+      "total": 72
     },
     {
       "name": "--tip-arrow",
@@ -1427,10 +1427,10 @@
     },
     {
       "name": "--transition-fast",
-      "css": 149,
+      "css": 150,
       "js": 3,
       "html": 0,
-      "total": 152
+      "total": 153
     },
     {
       "name": "--transition-normal",

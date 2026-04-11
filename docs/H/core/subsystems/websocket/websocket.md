@@ -10,6 +10,7 @@ This document describes the WebSocket interface provided by the Hydrogen server 
 - **Initialization:** Robust startup with port fallback and session validation
 - **State Management:** Thread-safe context handling throughout connection lifecycle
 - **Buffer Size:** Configurable `RxBufferSize` for WebSocket frames (default 64KB)
+- **Compression:** permessage-deflate (RFC 7692) enabled by default for all connections
 
 The server will automatically try alternative ports (5001-5010) if the default port is unavailable. Check the server logs or use the system info endpoint to determine the actual bound port.
 
@@ -300,6 +301,11 @@ For a complete overview of the shutdown architecture across all components, see 
 
 ### Performance Optimizations
 
+- **WebSocket Compression:** permessage-deflate (RFC 7692) automatically enabled for all connections
+  - Transparent compression of WebSocket messages (both text and binary)
+  - No client-side changes required - modern browsers support this natively
+  - Uses `no_context_takeover` for low per-connection memory usage
+  - Reduces bandwidth for repetitive JSON payloads (e.g., status updates, chat messages)
 - Efficient JSON generation
 - Message batching
 - Connection pooling

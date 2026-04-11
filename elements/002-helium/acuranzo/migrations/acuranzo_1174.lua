@@ -32,48 +32,83 @@ table.insert(queries,{sql=[[
         ${DIALECT}                                                          AS query_dialect_a30,
         ${QTC_SLOW}                                                         AS query_queue_a58,
         ${TIMEOUT}                                                          AS query_timeout,
-        [==[
+        [=[
+            INSERT INTO ${SCHEMA}${QUERIES} (
+                ${QUERIES_INSERT}
+            )
+            WITH next_query_id AS (
+                SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+                FROM ${SCHEMA}${QUERIES}
+            )
             SELECT
-                media_hash,
-                media_data,
-                media_size,
-                mime_type,
-                created_at,
-                last_accessed,
-                access_count
-            FROM ${SCHEMA}media_assets
-            WHERE media_hash = :MEDIAHASH
-        ]==]                                                                AS code,
-        '${QUERY_NAME}'                                                     AS name,
-        [==[
-            # QueryRef ${QUERY_REF} - ${QUERY_NAME}
+                new_query_id                                                        AS query_id,
+                ${QUERY_REF}                                                        AS query_ref,
+                ${STATUS_ACTIVE}                                                    AS query_status_a27,
+                ${TYPE_SQL}                                                         AS query_type_a28,
+                ${DIALECT}                                                          AS query_dialect_a30,
+                ${QTC_SLOW}                                                         AS query_queue_a58,
+                ${TIMEOUT}                                                          AS query_timeout,
+                [==[
+                    SELECT
+                        media_hash,
+                        media_data,
+                        media_size,
+                        mime_type,
+                        created_at,
+                        last_accessed,
+                        access_count
+                    FROM ${SCHEMA}media_assets
+                    WHERE media_hash = :MEDIAHASH
+                ]==]                                                                AS code,
+                '${QUERY_NAME}'                                                     AS name,
+                [==[
+                    # QueryRef ${QUERY_REF} - ${QUERY_NAME}
 
-            This INTERNAL query retrieves a media asset by its hash.
+                    This INTERNAL query retrieves a media asset by its hash.
 
-            ## Parameters
+                    ## Parameters
 
-            - MEDIA_HASH: SHA-256 hash of the media content
+                    - MEDIA_HASH: SHA-256 hash of the media content
 
-            ## Returns
+                    ## Returns
 
-            - media_hash: SHA-256 hash
-            - media_data: Binary media content (as hex string)
-            - media_size: Size in bytes
-            - mime_type: MIME type
-            - created_at: Timestamp when created
-            - last_accessed: Timestamp of last access
-            - access_count: Number of times accessed
+                    - media_hash: SHA-256 hash
+                    - media_data: Binary media content (as hex string)
+                    - media_size: Size in bytes
+                    - mime_type: MIME type
+                    - created_at: Timestamp when created
+                    - last_accessed: Timestamp of last access
+                    - access_count: Number of times accessed
 
-            ## Tables
+                    ## Tables
 
-            - `${SCHEMA}media_assets`: Media asset storage
+                    - `${SCHEMA}media_assets`: Media asset storage
 
-            ## Security Notes
+                    ## Security Notes
 
-            - query_type = 0 (internal_sql) prevents access via REST API
-            - For internal Chat Storage implementation only
+                    - query_type = 0 (internal_sql) prevents access via REST API
+                    - For internal Chat Storage implementation only
 
-        ]==]
+                ]==]
+                                                                            AS summary,
+                '{}'                                                                AS collection,
+                ${COMMON_INSERT}
+            FROM next_query_id;
+
+            ${SUBQUERY_DELIMITER}
+
+            UPDATE ${SCHEMA}${QUERIES}
+              SET query_type_a28 = ${TYPE_APPLIED_MIGRATION}
+            WHERE query_ref = ${MIGRATION}
+              and query_type_a28 = ${TYPE_FORWARD_MIGRATION};
+        ]=]
+                                                                            AS code,
+        'Populate QueryRef #${QUERY_REF} - ${QUERY_NAME}'                   AS name,
+        [=[
+            # Forward Migration ${MIGRATION}: Populate QueryRef #${QUERY_REF} - ${QUERY_NAME}
+
+            This migration creates the query for QueryRef #${QUERY_REF} - ${QUERY_NAME}
+        ]=]
                                                                             AS summary,
         '{}'                                                                AS collection,
         ${COMMON_INSERT}
@@ -99,7 +134,8 @@ table.insert(queries,{sql=[[
         ${QTC_SLOW}                                                         AS query_queue_a58,
         ${TIMEOUT}                                                          AS query_timeout,
         [=[
-            ${DROP_CHECK};
+            DELETE FROM ${SCHEMA}${TABLE}
+            WHERE query_ref = ${QUERY_REF};
 
             ${SUBQUERY_DELIMITER}
 

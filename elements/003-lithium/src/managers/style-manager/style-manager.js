@@ -354,6 +354,7 @@ export default class StyleManager {
       container: this.elements.lookupTableContainer,
       navigatorContainer: this.elements.lookupNavigator,
       tablePath: 'style-manager/lookup-41',
+      lookupKeyIdx: 6,
       queryRef: 26, // QueryRef 26 - Get Lookup with LOOKUPID=41
       cssPrefix: 'style-lookup',
       storageKey: 'style_lookup_table',

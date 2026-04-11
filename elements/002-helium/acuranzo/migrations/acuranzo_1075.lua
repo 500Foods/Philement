@@ -116,7 +116,7 @@ table.insert(queries,{sql=[[
                 (${LOOKUP_ID}, 29, 1, 'Queries',            5, 29, '', '', ${JIS}[==[{"index": 29, "icon":"<fa fa-clipboard-question></fa>"}]==]${JIE}, ${COMMON_VALUES}),
                 (${LOOKUP_ID}, 30, 1, 'Sync',               5, 30, '', '', ${JIS}[==[{"index": 30, "icon":"<fa fa-arrows-spin></fa>"}]==]${JIE}, ${COMMON_VALUES});
 
-            ${SUBQUERY_DELIMITER}
+                ${SUBQUERY_DELIMITER}
 
             UPDATE ${SCHEMA}${QUERIES}
               SET query_type_a28 = ${TYPE_APPLIED_MIGRATION}
@@ -163,7 +163,7 @@ table.insert(queries,{sql=[[
 
             DELETE FROM ${SCHEMA}${TABLE}
             WHERE lookup_id = ${LOOKUP_ID}
-            AND key_idx IN (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29.30);
+            AND key_idx IN (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30);
 
             ${SUBQUERY_DELIMITER}
 

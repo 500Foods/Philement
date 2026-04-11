@@ -13,6 +13,7 @@ import { toast } from '../shared/toast.js';
 import {
   buildColumnDefinitionsFromTemplateState,
   extractTemplateColumnFromColumn,
+  createTemplateColumnFromTableDef,
 } from './lithium-table-template.js';
 
 // Import modular UI components
@@ -66,6 +67,8 @@ import {
   saveFiltersVisible,
   restoreFiltersVisible,
 } from './persistence/persistence.js';
+
+import { refreshTabulatorSchemas } from '../shared/lookups.js';
 
 // ── Mixin for UI Operations ─────────────────────────────────────────────────
 
@@ -545,6 +548,20 @@ export const LithiumTableUIMixin = {
       await this.exitEditMode?.('cancel');
     }
 
+    // If this table uses Lookup 59 (indicated by lookupKeyIdx), refresh the schemas first
+    // This ensures any changes to Lookup 59 are picked up without requiring a page reload
+    if (this.lookupKeyIdx != null) {
+      try {
+        await refreshTabulatorSchemas();
+        // After refreshing Lookup 59, reload the table configuration (schema + template)
+        await this.reloadConfiguration?.();
+        return;
+      } catch (err) {
+        log(Subsystems.TABLE, Status.WARN, `[LithiumTable] Schema refresh failed: ${err.message}`);
+      }
+    }
+
+    // Fallback: just refresh data if no Lookup 59
     if (typeof this.onRefresh === 'function') {
       this.onRefresh();
     } else {
@@ -766,6 +783,15 @@ export const LithiumTableUIMixin = {
       }
     }
 
+    // First, include ALL columns from the base tableDef (from Lookup 59 or auto-discovered)
+    // This ensures new columns are included in the saved template
+    const baseColumns = this.tableDef?.columns || {};
+    for (const [fieldName, colDef] of Object.entries(baseColumns)) {
+      if (!fieldName || fieldName === '_selector') continue;
+      columnDefs[fieldName] = createTemplateColumnFromTableDef(fieldName, colDef);
+    }
+
+    // Then overlay with current visible columns (may have user changes like width, visible, etc.)
     columns.forEach((col) => {
       const field = col.getField();
 
@@ -953,6 +979,15 @@ export const LithiumTableUIMixin = {
 
     try {
       const templateName = template._templateMeta?.name || template.name || 'Template';
+
+      // Ensure we have a base tableDef (from Lookup 59 or auto-discovered)
+      // before applying the template. This ensures all columns are available
+      // in the Column Manager, including new columns that may have been
+      // added since the template was saved.
+      if (!this.tableDef && this.tablePath) {
+        log(Subsystems.TABLE, Status.INFO, `[${this.cssPrefix}] Reloading tableDef before applying template...`);
+        await this.loadConfiguration?.();
+      }
 
       const widthMode = template._templateMeta?.widthMode || template.layout?.widthMode;
       if (widthMode && this.setTableWidth) {

@@ -32,57 +32,92 @@ table.insert(queries,{sql=[[
         ${DIALECT}                                                          AS query_dialect_a30,
         ${QTC_SLOW}                                                         AS query_queue_a58,
         ${TIMEOUT}                                                          AS query_timeout,
-        [==[
-            INSERT INTO ${SCHEMA}media_assets (
-                media_hash,
-                media_data,
-                media_size,
-                mime_type,
-                created_at,
-                last_accessed,
-                access_count
+        [=[
+            INSERT INTO ${SCHEMA}${QUERIES} (
+                ${QUERIES_INSERT}
+            )
+            WITH next_query_id AS (
+                SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+                FROM ${SCHEMA}${QUERIES}
             )
             SELECT
-                :MEDIAHASH,
-                :MEDIADATA,
-                :MEDIASIZE,
-                :MIMETYPE,
-                ${NOW},
-                ${NOW},
-                1
-            WHERE NOT EXISTS (
-                SELECT 1 FROM ${SCHEMA}media_assets
-                WHERE media_hash = :MEDIAHASH
-            )
-        ]==]                                                                AS code,
-        '${QUERY_NAME}'                                                     AS name,
-        [==[
-            # QueryRef ${QUERY_REF} - ${QUERY_NAME}
+                new_query_id                                                        AS query_id,
+                ${QUERY_REF}                                                        AS query_ref,
+                ${STATUS_ACTIVE}                                                    AS query_status_a27,
+                ${TYPE_SQL}                                                         AS query_type_a28,
+                ${DIALECT}                                                          AS query_dialect_a30,
+                ${QTC_SLOW}                                                         AS query_queue_a58,
+                ${TIMEOUT}                                                          AS query_timeout,
+                [==[
+                    INSERT INTO ${SCHEMA}media_assets (
+                        media_hash,
+                        media_data,
+                        media_size,
+                        mime_type,
+                        created_at,
+                        last_accessed,
+                        access_count
+                    )
+                    SELECT
+                        :MEDIAHASH,
+                        :MEDIADATA,
+                        :MEDIASIZE,
+                        :MIMETYPE,
+                        ${NOW},
+                        ${NOW},
+                        1
+                    WHERE NOT EXISTS (
+                        SELECT 1 FROM ${SCHEMA}media_assets
+                        WHERE media_hash = :MEDIAHASH
+                    )
+                ]==]                                                                AS code,
+                '${QUERY_NAME}'                                                     AS name,
+                [==[
+                    # QueryRef ${QUERY_REF} - ${QUERY_NAME}
 
-            This INTERNAL query stores a media asset with deduplication.
-            Only inserts if the media_hash doesn't already exist.
+                    This INTERNAL query stores a media asset with deduplication.
+                    Only inserts if the media_hash doesn't already exist.
 
-            ## Parameters
+                    ## Parameters
 
-            - MEDIA_HASH: SHA-256 hash of the media content
-            - MEDIA_DATA: Binary media content (as hex string)
-            - MEDIA_SIZE: Size of the media in bytes
-            - MIME_TYPE: MIME type of the media (e.g., image/jpeg)
+                    - MEDIA_HASH: SHA-256 hash of the media content
+                    - MEDIA_DATA: Binary media content (as hex string)
+                    - MEDIA_SIZE: Size of the media in bytes
+                    - MIME_TYPE: MIME type of the media (e.g., image/jpeg)
 
-            ## Returns
+                    ## Returns
 
-            - No data returned (INSERT with WHERE NOT EXISTS)
+                    - No data returned (INSERT with WHERE NOT EXISTS)
 
-            ## Tables
+                    ## Tables
 
-            - `${SCHEMA}media_assets`: Media asset storage
+                    - `${SCHEMA}media_assets`: Media asset storage
 
-            ## Security Notes
+                    ## Security Notes
 
-            - query_type = 0 (internal_sql) prevents access via REST API
-            - For internal Chat Storage implementation only
+                    - query_type = 0 (internal_sql) prevents access via REST API
+                    - For internal Chat Storage implementation only
 
-        ]==]
+                ]==]
+                                                                            AS summary,
+                '{}'                                                                AS collection,
+                ${COMMON_INSERT}
+            FROM next_query_id;
+
+            ${SUBQUERY_DELIMITER}
+
+            UPDATE ${SCHEMA}${QUERIES}
+              SET query_type_a28 = ${TYPE_APPLIED_MIGRATION}
+            WHERE query_ref = ${MIGRATION}
+              and query_type_a28 = ${TYPE_FORWARD_MIGRATION};
+        ]=]
+                                                                            AS code,
+        'Populate QueryRef #${QUERY_REF} - ${QUERY_NAME}'                   AS name,
+        [=[
+            # Forward Migration ${MIGRATION}: Populate QueryRef #${QUERY_REF} - ${QUERY_NAME}
+
+            This migration creates the query for QueryRef #${QUERY_REF} - ${QUERY_NAME}
+        ]=]
                                                                             AS summary,
         '{}'                                                                AS collection,
         ${COMMON_INSERT}
@@ -108,7 +143,8 @@ table.insert(queries,{sql=[[
         ${QTC_SLOW}                                                         AS query_queue_a58,
         ${TIMEOUT}                                                          AS query_timeout,
         [=[
-            ${DROP_CHECK};
+            DELETE FROM ${SCHEMA}${TABLE}
+            WHERE query_ref = ${QUERY_REF};
 
             ${SUBQUERY_DELIMITER}
 

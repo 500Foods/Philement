@@ -306,6 +306,14 @@ void test_chat_request_validate_image_count(void) {
     free(error);
     chat_message_list_destroy(messages);
 
+    // Engine needs image modality support to validate images
+    chat_engine_config_destroy(engine);
+    engine = chat_engine_config_create(
+        1, "test-engine", CEC_PROVIDER_OPENAI, "test-model",
+        "https://api.test.com/v1/chat", "sk-test123",
+        4096, 0.7, true, 300, 2, 10, 100, MODALITY_TEXT | MODALITY_IMAGE, false);
+    TEST_ASSERT_NOT_NULL(engine);
+
     // Message with 1 image (should pass)
     const char* single_image = "[{\"type\": \"text\", \"text\": \"Look\"}, {\"type\": \"image_url\", \"image_url\": {\"url\": \"http://example.com/1.jpg\"}}]";
     messages = chat_message_create(CHAT_ROLE_USER, single_image, NULL);

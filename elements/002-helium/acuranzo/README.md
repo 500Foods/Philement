@@ -195,7 +195,7 @@ in the migrations themselves so that they get populated in the database directly
 | [1158](/elements/002-helium/acuranzo/migrations/acuranzo_1158.lua) | queries | 1.0.1 | 2026-03-20 | 4 | ✗ | QueryRef #061 - Internal: Get AI Chat Engines with API Keys |
 | [1159](/elements/002-helium/acuranzo/migrations/acuranzo_1159.lua) | convo_segs | 1.0.0 | 2026-03-22 | 8 | ✓ | Creates the convo_segs table for Phase 6: Conversation History with Content-Addressable Storage + Brotli |
 | [1160](/elements/002-helium/acuranzo/migrations/acuranzo_1160.lua) | convos | 1.0.0 | 2026-03-22 | 5 | ✓ | Extend convos table with segment_refs and usage tracking columns for Phase 6 |
-| [1161](/elements/002-helium/acuranzo/migrations/acuranzo_1161.lua) | lookups | 1.0.0 | 2026-03-22 | 5 | ✗ | Additions to Lookup 042 - Modules |
+| [1161](/elements/002-helium/acuranzo/migrations/acuranzo_1161.lua) | lookups | 1.0.0 | 2026-03-22 | 4 | ✗ | Additions to Lookup 042 - Modules |
 | [1162](/elements/002-helium/acuranzo/migrations/acuranzo_1162.lua) | queries | 1.0.0 | 2026-03-22 | 4 | ✗ | QueryRef #062: Get Conversation Segments by Hash (batch retrieval) |
 | [1163](/elements/002-helium/acuranzo/migrations/acuranzo_1163.lua) | queries | 1.0.0 | 2026-03-22 | 4 | ✗ | QueryRef #063: Store Conversation Segment (with deduplication) |
 | [1164](/elements/002-helium/acuranzo/migrations/acuranzo_1164.lua) | queries | 1.0.0 | 2026-03-22 | 4 | ✗ | QueryRef #064: Reconstruct Conversation (get hashes + metadata) |
@@ -207,9 +207,10 @@ in the migrations themselves so that they get populated in the database directly
 | [1170](/elements/002-helium/acuranzo/migrations/acuranzo_1170.lua) | queries | 1.0.0 | 2026-03-23 | 4 | ✗ | QueryRef #070: Get Conversation Segments by Hash (BATCH retrieval) |
 | [1171](/elements/002-helium/acuranzo/migrations/acuranzo_1171.lua) | media_assets | 1.0.0 | 2026-03-23 | 8 | ✓ | Creates the media_assets table for Phase 12: Advanced Multi-modal Features |
 | [1172](/elements/002-helium/acuranzo/migrations/acuranzo_1172.lua) | convo_segs | 1.0.0 | 2026-03-23 | 4 | ✗ | Extend convo_segs table with content_type, mime_type, metadata columns for Phase 12 |
-| [1173](/elements/002-helium/acuranzo/migrations/acuranzo_1173.lua) | queries | 1.0.0 | 2026-03-23 | 3 | ✗ | QueryRef #071: Store Media Asset (with deduplication) |
-| [1174](/elements/002-helium/acuranzo/migrations/acuranzo_1174.lua) | queries | 1.0.0 | 2026-03-23 | 3 | ✗ | QueryRef #072: Retrieve Media Asset by Hash |
-| [1175](/elements/002-helium/acuranzo/migrations/acuranzo_1175.lua) | accounts | 1.0.0 | 2026-04-09 | 6 | ✓ | Creates the account_settings table |
+| [1173](/elements/002-helium/acuranzo/migrations/acuranzo_1173.lua) | queries | 1.0.0 | 2026-03-23 | 4 | ✗ | QueryRef #071: Store Media Asset (with deduplication) |
+| [1174](/elements/002-helium/acuranzo/migrations/acuranzo_1174.lua) | queries | 1.0.0 | 2026-03-23 | 4 | ✗ | QueryRef #072: Retrieve Media Asset by Hash |
+| [1175](/elements/002-helium/acuranzo/migrations/acuranzo_1175.lua) | account_settings | 1.0.0 | 2026-04-09 | 6 | ✓ | Creates the account_settings table |
 | [1176](/elements/002-helium/acuranzo/migrations/acuranzo_1176.lua) | queries | 1.0.0 | 2026-04-09 | 4 | ✗ | QueryRef #073 - Get Account Settings |
 | [1177](/elements/002-helium/acuranzo/migrations/acuranzo_1177.lua) | queries | 1.0.0 | 2026-04-09 | 4 | ✗ | QueryRef #074 - Update Account Settings |
-| **178** | | | | **911** | **178** | |
+| [1178](/elements/002-helium/acuranzo/migrations/acuranzo_1178.lua) | lookups | 1.0.0 | 2026-04-09 | 6 | ✗ | Defaults for Lookup 060 - App UI Lists |
+| **179** | | | | **918** | **179** | |

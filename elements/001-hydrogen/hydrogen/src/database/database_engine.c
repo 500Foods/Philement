@@ -8,6 +8,7 @@
 #include <src/hydrogen.h>
 #include "database.h"
 #include "database_connstring.h"
+#include "database_params.h"
 #include "dbqueue/dbqueue.h"
 
 // Forward declarations for database engines
@@ -375,8 +376,59 @@ bool database_engine_execute(DatabaseHandle* connection, QueryRequest* request, 
             log_this(designator, "database_engine_execute: Creating new prepared statement: %s", LOG_LEVEL_TRACE, 1,
                      request->prepared_statement_name);
 
+            // Convert named parameters to positional format for prepared statements
+            // This ensures :paramName syntax is converted to $1, $2, etc. before PREPARE
+            char* sql_for_prepare = (char*)request->sql_template;
+            char* converted_sql = NULL;
+            
+            // Always attempt to convert named parameters, even with empty parameter list
+            // This handles migrations where SQL has :paramName but no JSON parameters are provided
+            ParameterList* param_list = NULL;
+            if (request->parameters_json && strlen(request->parameters_json) > 0) {
+                param_list = parse_typed_parameters(request->parameters_json, designator);
+            }
+            
+            // Create empty parameter list if none provided (so convert_named_to_positional can still work)
+            if (!param_list) {
+                param_list = (ParameterList*)malloc(sizeof(ParameterList));
+                if (param_list) {
+                    param_list->count = 0;
+                    param_list->params = NULL;
+                }
+            }
+            
+            if (param_list) {
+                TypedParameter** ordered_params = NULL;
+                size_t ordered_param_count = 0;
+                
+                converted_sql = convert_named_to_positional(
+                    request->sql_template,
+                    param_list,
+                    connection->engine_type,
+                    &ordered_params,
+                    &ordered_param_count,
+                    designator
+                );
+                
+                if (converted_sql) {
+                    sql_for_prepare = converted_sql;
+                    log_this(designator, "database_engine_execute: Converted SQL for prepared statement (%zu params)", LOG_LEVEL_TRACE, 1, ordered_param_count);
+                }
+                
+                // Clean up temporary parameter data
+                if (ordered_params) {
+                    free(ordered_params);
+                }
+                free_parameter_list(param_list);
+            }
+
             bool prepared = engine->prepare_statement(connection, request->prepared_statement_name,
-                                                    request->sql_template, &stmt, false);
+                                                    sql_for_prepare, &stmt, false);
+            
+            // Clean up converted SQL if it was allocated
+            if (converted_sql) {
+                free(converted_sql);
+            }
             if (prepared && stmt) {
                 stmt_was_created = true;
                 __sync_add_and_fetch(&db_prepared_statements_cached, 1);

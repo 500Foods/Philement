@@ -44,12 +44,21 @@ export function createPopup(cm) {
   cm.popup.style.width = `${savedWidth}px`;
   cm.popup.style.height = `${savedHeight}px`;
 
-  // Position relative to anchor element
-  positionPopup(cm);
-
   // Build popup structure
   const isDepth2 = isDepth2ColumnManager(cm);
   const title = isDepth2 ? 'Column Manager Manager' : 'Column Manager';
+
+  // Restore saved position (only if exists)
+  const savedX = restoreSetting(cm, 'x', null);
+  const savedY = restoreSetting(cm, 'y', null);
+  if (savedX !== null && savedY !== null) {
+    cm.popup.style.left = `${savedX}px`;
+    cm.popup.style.top = `${savedY}px`;
+  } else {
+    // Only position relative to anchor if no saved position
+    positionPopup(cm);
+  }
+
   cm.popup.innerHTML = `
     <div class="${cm.cssPrefix}-header">
       <span class="${cm.cssPrefix}-title">${title}</span>
@@ -62,13 +71,13 @@ export function createPopup(cm) {
         </button>
       </div>
       <div class="${cm.cssPrefix}-header-actions">
-        <button type="button" class="${cm.cssPrefix}-save-btn" title="Save" disabled data-tooltip='Save changes<br><span class="li-tip-kbd">Ctrl+Enter</span>' data-shortcut-id="editsave" data-tooltip-original='Save changes<br><span class="li-tip-kbd">Ctrl+Enter</span>'>
+        <button type="button" class="${cm.cssPrefix}-save-btn" title="Save" disabled data-tooltip='Save row edit<br><span class="li-tip-kbd">Ctrl+Enter</span>' data-shortcut-id="editsave" data-tooltip-original='Save row edit<br><span class="li-tip-kbd">Ctrl+Enter</span>'>
           <fa fa-floppy-disk></fa>
         </button>
-        <button type="button" class="${cm.cssPrefix}-cancel-btn" title="Cancel" disabled data-tooltip='Cancel changes<br><span class="li-tip-kbd">Esc</span>' data-shortcut-id="editcancel" data-tooltip-original='Cancel changes<br><span class="li-tip-kbd">Esc</span>'>
+        <button type="button" class="${cm.cssPrefix}-cancel-btn" title="Cancel" disabled data-tooltip='Cancel row edit<br><span class="li-tip-kbd">Esc</span>' data-shortcut-id="editcancel" data-tooltip-original='Cancel row edit<br><span class="li-tip-kbd">Esc</span>'>
           <fa fa-ban></fa>
         </button>
-        <button type="button" class="${cm.cssPrefix}-close-btn" title="Close">
+        <button type="button" class="${cm.cssPrefix}-close-btn" title="Close" data-tooltip='Close and apply changes to table'>
           <fa fa-xmark></fa>
         </button>
       </div>
@@ -77,7 +86,10 @@ export function createPopup(cm) {
       <div class="lithium-table-container" id="${cm.cssPrefix}-table-container-${cm.managerId}"></div>
       <div class="lithium-navigator-container" id="${cm.cssPrefix}-navigator-${cm.managerId}"></div>
     </div>
-    <div class="${cm.cssPrefix}-resize-handle" title="Resize"></div>
+    <div class="${cm.cssPrefix}-resize-handle ${cm.cssPrefix}-resize-handle-tl" title="Resize"></div>
+    <div class="${cm.cssPrefix}-resize-handle ${cm.cssPrefix}-resize-handle-tr" title="Resize"></div>
+    <div class="${cm.cssPrefix}-resize-handle ${cm.cssPrefix}-resize-handle-bl" title="Resize"></div>
+    <div class="${cm.cssPrefix}-resize-handle ${cm.cssPrefix}-resize-handle-br" title="Resize"></div>
   `;
 
   // Append to body (separate from table container)
@@ -123,7 +135,13 @@ export function positionPopup(cm) {
  */
 export function show(cm) {
   if (cm.popup) {
-    positionPopup(cm);
+    // Only reposition if no saved position exists
+    const savedX = restoreSetting(cm, 'x', null);
+    const savedY = restoreSetting(cm, 'y', null);
+    if (savedX === null || savedY === null) {
+      positionPopup(cm);
+    }
+    
     cm.popup.classList.add('visible');
 
     if (cm.columnTable?.table) {
