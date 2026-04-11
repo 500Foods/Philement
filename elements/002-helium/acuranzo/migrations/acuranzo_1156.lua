@@ -6,6 +6,8 @@
 
 -- CHANGELOG
 -- 1.0.0 - 2026-03-17 - Initial creation
+-- 1.1.0 - 2026-04-11 - Renamed properties: display→title, sort→headerSort, filter→headerFilter, group→groupable
+-- 1.2.0 - 2026-04-11 - Removed redundant properties matching coltype defaults; moved overrides to top-level
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
@@ -99,276 +101,206 @@ table.insert(queries,{sql=[[
   "columns": {
 
     "key_idx": {
-      "display": "ID#",
+      "title": "ID#",
       "field": "key_idx",
       "coltype": "index",
       "visible": true,
-      "sort": true,
-      "filter": true,
-      "group": false,
+      "headerFilter": true,
       "editable": false,
-      "calculated": false,
       "primaryKey": true,
       "description": "Lookup ID (primary key) - identifies the lookup table",
-      "overrides": {
-        "width": 60
-      }
+      "width": 60
     },
 
     "value_txt": {
-      "display": "Name",
+      "title": "Name",
       "field": "value_txt",
       "coltype": "string",
       "visible": true,
-      "sort": true,
-      "filter": true,
-      "group": false,
+      "headerFilter": true,
       "editable": true,
-      "calculated": false,
-      "primaryKey": false,
       "description": "Lookup display name"
     },
 
     "value_int": {
-      "display": "Entries",
+      "title": "Entries",
       "field": "value_int",
       "coltype": "integer",
       "visible": true,
-      "sort": true,
-      "filter": true,
-      "group": false,
+      "headerFilter": true,
       "editable": false,
       "calculated": true,
-      "primaryKey": false,
       "description": "Number of entries in this lookup (from lookup entry)",
-      "overrides": {
-        "width": 70,
-        "formatterParams": {
-          "thousand": ",",
-          "precision": 0
-        }
+      "width": 70,
+      "formatterParams": {
+        "thousand": ",",
+        "precision": 0
       }
     },
 
     "lookup_count": {
-      "display": "Total",
+      "title": "Total",
       "field": "lookup_count",
       "coltype": "integer",
       "visible": true,
-      "sort": true,
-      "filter": true,
-      "group": false,
+      "headerFilter": true,
       "editable": false,
       "calculated": true,
-      "primaryKey": false,
       "description": "Total count of entries for this lookup (calculated)",
-      "overrides": {
-        "width": 70,
-        "formatterParams": {
-          "thousand": ",",
-          "precision": 0
-        }
+      "width": 70,
+      "formatterParams": {
+        "thousand": ",",
+        "precision": 0
       }
     },
 
     "lookup_size": {
-      "display": "Size",
+      "title": "Size",
       "field": "lookup_size",
       "coltype": "integer",
       "visible": false,
-      "sort": true,
-      "filter": true,
-      "group": false,
+      "headerFilter": true,
       "editable": false,
       "calculated": true,
-      "primaryKey": false,
       "description": "Total size in bytes of all entries for this lookup",
-      "overrides": {
-        "width": 80,
-        "formatterParams": {
-          "thousand": ",",
-          "precision": 0,
-          "suffix": " B"
-        }
+      "width": 80,
+      "formatterParams": {
+        "thousand": ",",
+        "precision": 0,
+        "suffix": " B"
       }
     },
 
     "sort_seq": {
-      "display": "Sort",
+      "title": "Sort",
       "field": "sort_seq",
       "coltype": "integer",
       "visible": false,
-      "sort": true,
-      "filter": true,
-      "group": false,
+      "headerFilter": true,
       "editable": true,
-      "calculated": false,
-      "primaryKey": false,
       "description": "Sort sequence for ordering lookups",
-      "overrides": {
-        "width": 60
-      }
+      "width": 60
     },
 
     "status_a1": {
-      "display": "Status",
+      "title": "Status",
       "field": "status_a1",
       "coltype": "lookup",
       "visible": false,
-      "sort": true,
-      "filter": true,
-      "group": true,
+      "headerFilter": true,
+      "groupable": true,
       "editable": true,
-      "calculated": false,
-      "primaryKey": false,
       "description": "Lookup status — references lookup table 1 (Active, Inactive, etc.)",
       "lookupRef": "1"
     },
 
     "summary": {
-      "display": "Description",
+      "title": "Description",
       "field": "summary",
       "coltype": "string",
       "visible": false,
-      "sort": true,
-      "filter": true,
-      "group": false,
+      "headerFilter": true,
       "editable": true,
-      "calculated": false,
-      "primaryKey": false,
       "description": "Detailed description of the lookup's purpose"
     },
 
     "code": {
-      "display": "Code",
+      "title": "Code",
       "field": "code",
       "coltype": "string",
       "visible": false,
-      "sort": true,
-      "filter": true,
-      "group": false,
+      "headerFilter": true,
       "editable": true,
-      "calculated": false,
-      "primaryKey": false,
       "description": "Optional code associated with the lookup"
     },
 
     "collection": {
-      "display": "Collection",
+      "title": "Collection",
       "field": "collection",
       "coltype": "json",
       "visible": false,
-      "sort": false,
-      "filter": false,
-      "group": false,
+      "headerFilter": false,
       "editable": true,
-      "calculated": false,
-      "primaryKey": false,
       "description": "JSON metadata for the lookup"
     },
 
     "valid_after": {
-      "display": "Valid After",
+      "title": "Valid After",
       "field": "valid_after",
       "coltype": "datetime",
       "visible": false,
-      "sort": true,
-      "filter": true,
-      "group": false,
+      "headerFilter": true,
       "editable": true,
-      "calculated": false,
-      "primaryKey": false,
       "description": "Timestamp when the lookup becomes valid"
     },
 
     "valid_until": {
-      "display": "Valid Until",
+      "title": "Valid Until",
       "field": "valid_until",
       "coltype": "datetime",
       "visible": false,
-      "sort": true,
-      "filter": true,
-      "group": false,
+      "headerFilter": true,
       "editable": true,
-      "calculated": false,
-      "primaryKey": false,
       "description": "Timestamp when the lookup expires"
     },
 
     "created_at": {
-      "display": "Created",
+      "title": "Created",
       "field": "created_at",
       "coltype": "datetime",
       "visible": false,
-      "sort": true,
-      "filter": true,
-      "group": false,
+      "headerFilter": true,
       "editable": false,
       "calculated": true,
-      "primaryKey": false,
       "description": "Record creation timestamp"
     },
 
     "updated_at": {
-      "display": "Updated",
+      "title": "Updated",
       "field": "updated_at",
       "coltype": "datetime",
       "visible": false,
-      "sort": true,
-      "filter": true,
-      "group": false,
+      "headerFilter": true,
       "editable": false,
       "calculated": true,
-      "primaryKey": false,
       "description": "Last modification timestamp"
     },
 
     "created_id": {
-      "display": "Created By",
+      "title": "Created By",
       "field": "created_id",
       "coltype": "index",
       "visible": false,
-      "sort": true,
-      "filter": true,
-      "group": false,
+      "headerFilter": true,
       "editable": false,
       "calculated": true,
-      "primaryKey": false,
       "description": "User ID who created the record"
     },
 
     "updated_id": {
-      "display": "Updated By",
+      "title": "Updated By",
       "field": "updated_id",
       "coltype": "index",
       "visible": false,
-      "sort": true,
-      "filter": true,
-      "group": false,
+      "headerFilter": true,
       "editable": false,
       "calculated": true,
-      "primaryKey": false,
       "description": "User ID who last modified the record"
     },
 
     "record_size": {
-      "display": "Size",
+      "title": "Size",
       "field": "record_size",
       "coltype": "integer",
       "visible": false,
-      "sort": true,
-      "filter": true,
-      "group": false,
+      "headerFilter": true,
       "editable": false,
       "calculated": true,
-      "primaryKey": false,
       "description": "Calculated size of this record in bytes",
-      "overrides": {
-        "formatterParams": {
-          "thousand": ",",
-          "precision": 0,
-          "suffix": " B"
-        }
+      "formatterParams": {
+        "thousand": ",",
+        "precision": 0,
+        "suffix": " B"
       }
     }
   }

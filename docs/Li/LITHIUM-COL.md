@@ -5,11 +5,13 @@ The Column Manager provides a user interface for managing table columns at runti
 ## Table of Contents
 
 1. [Overview](#overview)
-2. [Architecture](#architecture)
-3. [Column Manager UI](#column-manager-ui)
-4. [Coltypes Reference](#coltypes-reference)
-5. [Implementation Details](#implementation-details)
-6. [API Reference](#api-reference)
+2. [Stage 3: User Customization](#stage-3-user-customization)
+3. [Architecture](#architecture)
+4. [Column Manager UI](#column-manager-ui)
+5. [Export/Import Workflow](#exportimport-workflow)
+6. [Coltypes Reference](#coltypes-reference)
+7. [Implementation Details](#implementation-details)
+8. [API Reference](#api-reference)
 
 ## Overview
 
@@ -24,6 +26,33 @@ The Column Manager is a popup interface that displays all columns from a parent 
 Changes are tracked but not applied until the user clicks "Save". The "Cancel" button discards all pending changes.
 
 The embedded LithiumTable runs in `alwaysEditable: true` mode. That means Column Manager cells edit directly on click, while the normal LithiumTable edit-mode workflow (Navigator manage block, Enter/F2/double-click edit entry, ManagerEditHelper footer Save/Cancel) is intentionally disabled inside the popup.
+
+---
+
+## Stage 3: User Customization
+
+The Column Manager is the **Stage 3** component in the [tableDef resolution process](LITHIUM-TAB-TABLES.md). It applies user preferences on top of the Stage 2 table definition:
+
+| Stage | Source | Description |
+|-------|--------|-------------|
+| Stage 1 | Query data + Lookup 059 Key 0 | Auto-detected coltype + merged defaults |
+| Stage 2 | Lookup 059 Keys 1+ (table definitions) | Per-column overrides from tabledef |
+| **Stage 3** | **Column Manager** | User preferences (customized view) |
+
+The Column Manager allows users to override virtually **any** property from Stage 2, including:
+- Column visibility
+- Column width
+- Column order (`columnPri`)
+- `title`
+- `coltype`
+- `formatter`, `formatterParams`
+- `editor`, `editorParams`
+- `bottomCalc`, `bottomCalcFormatter`
+- Any other property from the coltype system
+
+Once a user customizes a table via the Column Manager, their preferences are stored as a user template and applied to subsequent table renders.
+
+---
 
 ## Architecture
 
@@ -50,22 +79,24 @@ LithiumColumnManager
 4. **Save**: Build a template-state patch and apply it to the parent LithiumTable
 5. **Cancel**: Discard changes, reload original data
 
+---
+
 ## Column Manager UI
 
 ### Columns Displayed
 
-| Column | Type | Editable | Description |
-|--------|------|----------|-------------|
-| Order | integer | No | Display order (1, 2, 3...) |
-| Drag Handle | string | No | Drag handle (⠿) for reordering |
-| Visible | boolean | Yes | Show/hide column |
-| Field Name | string | No | Database field name |
-| Column Name | string | Yes | Display title |
-| Format | lookupFixed | Yes | Data type (string, integer, etc.) |
-| Summary | lookupFixed | Yes | Bottom calculation (count, sum, etc.) |
-| Alignment | lookupFixed | Yes | Horizontal alignment |
-| Category | stringList | Yes | Grouping category |
-| Width | integer | Yes | Column width in pixels |
+| Column | Property | Type | Editable | Description |
+|--------|----------|------|----------|-------------|
+| Order | `columnPri` | integer | No | Display order (1, 2, 3...) |
+| Drag Handle | — | string | No | Drag handle (⠿) for reordering |
+| Visible | `visible` | boolean | Yes | Show/hide column |
+| Field Name | `field` | string | No | Database field name |
+| Column Name | `title` | string | Yes | Display title |
+| Format | `coltype` | lookupFixed | Yes | Data type (string, integer, etc.) |
+| Summary | `bottomCalc` | lookupFixed | Yes | Bottom calculation (count, sum, etc.) |
+| Alignment | `hozAlign` | lookupFixed | Yes | Horizontal alignment |
+| Category | `category` | stringList | Yes | Grouping category |
+| Width | `width` | integer | Yes | Column width in pixels |
 
 ### Grouping
 
@@ -82,171 +113,104 @@ Drag-and-drop is enabled via `movableRows: true`. The `rowMoved` event updates t
 - Header Save/Cancel buttons batch the whole popup state instead of saving a single row
 - Nested "Column Manager Manager" instances reuse the same behavior, but disable recursive column-manager launching at depth 2
 
+---
+
+## Export/Import Workflow
+
+The Column Manager serves as our primary tableDef editor. The workflow for capturing and storing table definitions:
+
+### Step 1: Customize in Column Manager
+
+Use the Column Manager UI to adjust the table:
+- Reorder columns (drag-and-drop)
+- Toggle visibility
+- Edit properties (title, width, alignment, format, summary)
+- Group by category
+
+### Step 2: Export as JSON
+
+From the Templates menu, select "Copy tableDef as JSON". This copies the current tableDef to the clipboard:
+
+```javascript
+// Example exported tableDef
+{
+  "title": "My Table",
+  "columns": {
+    "query_id": {
+      "title": "ID#",
+      "field": "query_id",
+      "coltype": "index",
+      "visible": true,
+      "width": 60,
+      "columnPri": 1
+    },
+    "name": {
+      "title": "Name",
+      "field": "name",
+      "coltype": "string",
+      "visible": true,
+      "width": 200,
+      "columnPri": 2
+    }
+  }
+}
+```
+
+### Step 3: Import to Lookup 059
+
+The exported JSON can be pasted directly into a Lookup 059 entry:
+
+- **Lookup 059 Key 1+**: Store as a table definition (Stage 2)
+- This becomes the new default for that table
+
+### Why This Matters
+
+This workflow gives you absolute control:
+1. Design the table with full UI (Column Manager)
+2. Export the configuration
+3. Store as the database default
+4. Future renders use your custom configuration as Stage 2
+
+---
+
 ## Coltypes Reference
 
 ### Standard Coltypes
 
-These coltypes are defined in the coltypes system and used throughout Lithium tables.
+These coltypes are defined in the coltypes system (Lookup 059 Key 0) and used throughout Lithium tables.
 
-### Dropdown Coltypes (New)
+### Column Manager Coltypes (To Be Migrated)
 
-These coltypes provide dropdown/select functionality with different data sources:
+The Column Manager currently uses hardcoded internal coltypes. These should be replaced with proper lookup table references (to Lookup entries in the database):
 
-#### `lookup`
+| Internal Coltype | Current Use | Should Be Replaced With |
+|-----------------|-------------|------------------------|
+| `lookupFixed` | Format, Summary, Alignment columns | Lookup table with predefined values |
+| `stringList` | Category column | Lookup table or enum |
 
-Foreign key reference to a lookup table. Displays the label, stores the ID.
+This is a known cleanup item. The goal is to remove hardcoded coltypes and use the standard lookup system for all dropdown/picklist functionality.
 
-```json
-{
-  "coltype": "lookup",
-  "lookupRef": "27",
-  "formatter": "lookup",
-  "editor": "list",
-  "editorParams": {
-    "valuesLookup": "27"
-  }
-}
-```
+> **Note:** These internal coltypes will be migrated to proper lookup references in a future update. After that, all coltypes will be defined in Lookup 059 Key 0.
 
-**Characteristics:**
-- Dropdown populated from database lookup table
-- Shows text label in cell and dropdown
-- Stores integer ID
-- Supports autocomplete
-
-#### `lookupFixed`
-
-Fixed list of options defined in the coltype itself. No database lookup required.
-
-```json
-{
-  "coltype": "lookupFixed",
-  "editor": "select",
-  "editorParams": {
-    "values": {
-      "left": "Left",
-      "center": "Center",
-      "right": "Right"
-    }
-  },
-  "formatter": "lookup",
-  "formatterParams": {
-    "lookup": {
-      "left": "Left",
-      "center": "Center",
-      "right": "Right"
-    }
-  }
-}
-```
-
-**Characteristics:**
-- Dropdown values defined in column definition
-- Shows text label in cell and dropdown
-- Stores the key value (usually string)
-- Good for small, fixed lists (alignment, format, summary)
-
-**Used in Column Manager for:**
-- Format column (string, integer, decimal, etc.)
-- Summary column (none, count, sum, avg, min, max)
-- Alignment column (left, center, right)
-
-#### `stringList`
-
-Editable text lookup where values come from another column in the table. Supports creating new values.
-
-```json
-{
-  "coltype": "stringList",
-  "sourceColumn": "category",
-  "editor": "list",
-  "editorParams": {
-    "autocomplete": true,
-    "freetext": true,
-    "valuesLookup": "column"
-  }
-}
-```
-
-**Characteristics:**
-- Dropdown shows unique values from specified column
-- Allows typing new values
-- Stores text value
-- Good for category/tag fields
-
-**Used in Column Manager for:**
-- Category column (groups columns by category)
-
-#### `lookupIcon`
-
-Like `lookup` but displays an icon in the cell, shows icons only in dropdown.
-
-```json
-{
-  "coltype": "lookupIcon",
-  "lookupRef": "42",
-  "formatter": "icon",
-  "editor": "list",
-  "editorParams": {
-    "valuesLookup": "42",
-    "itemFormatter": "iconOnly"
-  }
-}
-```
-
-**Characteristics:**
-- Shows icon in cell
-- Shows icons only (no text) in dropdown
-- Stores integer ID
-- Good for status indicators
-
-#### `lookupIconText`
-
-Like `lookup` but displays icon + name in cell and dropdown.
-
-```json
-{
-  "coltype": "lookupIconText",
-  "lookupRef": "42",
-  "formatter": "iconText",
-  "editor": "list",
-  "editorParams": {
-    "valuesLookup": "42",
-    "itemFormatter": "iconWithText"
-  }
-}
-```
-
-**Characteristics:**
-- Shows icon + text label in cell
-- Shows icon + text label in dropdown
-- Stores integer ID
-- Good for priority levels, types with icons
-
-#### `lookupIconList`
-
-Like `lookup` but displays only icon in cell, icon + name in dropdown.
-
-```json
-{
-  "coltype": "lookupIconList",
-  "lookupRef": "42",
-  "formatter": "icon",
-  "editor": "list",
-  "editorParams": {
-    "valuesLookup": "42",
-    "itemFormatter": "iconWithText"
-  }
-}
-```
-
-**Characteristics:**
-- Shows icon only in cell (compact)
-- Shows icon + text label in dropdown
-- Stores integer ID
-- Good for compact status displays
+---
 
 ## Implementation Details
+
+### Column Manager is a Table Too
+
+The Column Manager is itself a LithiumTable, meaning:
+- It has its own Lookup 059 entry (table definition)
+- It can be customized via the Column Manager Manager
+- All standard coltype system features apply
+
+### Column Manager Manager
+
+To customize the Column Manager itself, use the "Column Manager Manager" (recursion depth 2):
+- Opens the Column Manager's table definition
+- Allows editing its columns, visibility, order, etc.
+- At depth 2, recursive column manager launching is disabled
+
+This gives you complete control over the tool that controls all other tables.
 
 ### Column Manager Table Definition
 
@@ -328,6 +292,8 @@ buildPendingTemplateColumns() {
 
 Because this patch is built from the live parent table state plus current popup edits, resized column widths are preserved when changes are applied or later saved into a table template.
 
+---
+
 ## API Reference
 
 ### LithiumColumnManager
@@ -366,4 +332,5 @@ Because this patch is built from the live parent table state plus current popup 
 
 **See Also:**
 - [LITHIUM-TAB.md](LITHIUM-TAB.md) - LithiumTable documentation
+- [LITHIUM-TAB-TABLES.md](LITHIUM-TAB-TABLES.md) - tableDef resolution process
 - [LITHIUM-MGR.md](LITHIUM-MGR.md) - Manager development guide
