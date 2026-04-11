@@ -40,6 +40,8 @@ This directory contains the canonical documentation for the Lithium web applicat
 | [LITHIUM-MGR-TOUR.md](LITHIUM-MGR-TOUR.md) | Tour Manager — Shepherd.js guided tours (Lookup #43) |
 | [LITHIUM-MGR-VERSION.md](LITHIUM-MGR-VERSION.md) | Version Manager — Version history browser (Lookups 44/45) |
 | [LITHIUM-TAB.md](LITHIUM-TAB.md) | LithiumTable Component — reusable Tabulator+Navigator |
+| [LITHIUM-TAB-TABLES.md](LITHIUM-TAB-TABLES.md) | Table Configuration — column types to database, tableDef flow |
+| [LITHIUM-TAB-TYPES.md](LITHIUM-TAB-TYPES.md) | Column Types — type definitions & property reference |
 | [LITHIUM-BAR.md](LITHIUM-BAR.md) | **Toolbar System** — Standardized toolbars for managers |
 | [LITHIUM-COL.md](LITHIUM-COL.md) | **Column Manager** — Runtime column customization UI |
 | [LITHIUM-TAB-PLAN.md](LITHIUM-TAB-PLAN.md) | Tabulator implementation plan — gap analysis and phased roadmap |

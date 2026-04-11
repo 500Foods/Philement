@@ -342,6 +342,55 @@ Creates the standard footer action icons (Crimson, Notifications, Concierge, Ann
 
 ---
 
+## Working with Column Types (AI Guide)
+
+When working with LithiumTable column definitions, use the column type documentation:
+
+### Quick Reference
+
+For a fast overview of all available types, see the **Quick Reference** table in:
+→ [LITHIUM-TAB-TYPES.md](LITHIUM-TAB-TYPES.md#quick-reference)
+
+### Detailed Type Documentation
+
+Each column type has its own dedicated document in `docs/Li/LITHIUM-TAB-TYPES-*.md`:
+
+| Task | Document |
+|------|----------|
+| Find a type's default properties | `LITHIUM-TAB-TYPES-DEFAULT.md` |
+| Configure a string column | `LITHIUM-TAB-TYPES-STRING.md` |
+| Configure a lookup column | `LITHIUM-TAB-TYPES-LOOKUP.md` |
+| Use icon lookups | `LITHIUM-TAB-TYPES-LOOKUPICON.md`, `LOOKUPICONTEXT.md`, `LOOKUPICONLIST.md` |
+| Numeric types | `INTEGER.md`, `DECIMAL.md`, `CURRENCY.md`, `PERCENT.md` |
+| Date/time types | `DATE.md`, `DATETIME.md`, `TIME.md` |
+
+### JSON Schema (Programmatic Access)
+
+For validation or code generation, use the JSON Schema:
+→ [LITHIUM-TAB-TYPES.schema.json](LITHIUM-TAB-TYPES.schema.json)
+
+This schema defines all 25 column types and can be used to:
+- Validate column definitions
+- Generate TypeScript types
+- Enable autocomplete in JSON editors
+
+### Key Patterns
+
+1. **Type selection**: Choose the type that matches your data semantics (e.g., `integer` for IDs, `currency` for money)
+2. **Property override**: Column definitions override type defaults; only specify what differs
+3. **Lookup types**: Require `lookupRef` on the column definition (not in the type)
+4. **Enum types**: Require `values` in `editorParams` on the column definition
+
+### For AI Agents
+
+When writing code that defines or modifies LithiumTable columns:
+1. First check the Quick Reference table to identify the appropriate type
+2. Read the detailed type document for exact property values
+3. Validate column definitions against the JSON Schema
+4. Remember: column definitions go in table configs; types are the base defaults
+
+---
+
 ## Next Steps
 
 - Learn about JavaScript libraries: [LITHIUM-LIB.md](LITHIUM-LIB.md)

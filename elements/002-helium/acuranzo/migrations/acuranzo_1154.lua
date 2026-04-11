@@ -6,6 +6,8 @@
 
 -- CHANGELOG
 -- 1.0.0 - 2026-03-15 - Initial creation
+-- 1.1.0 - 2026-04-11 - Renamed properties: display→title, sort→headerSort, filter→headerFilter, group→groupable
+-- 1.2.0 - 2026-04-11 - Removed redundant properties matching coltype defaults; moved overrides to top-level
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
@@ -99,197 +101,149 @@ table.insert(queries,{sql=[[
   "columns": {
 
     "query_id": {
-      "display": "ID#",
+      "title": "ID#",
       "field": "query_id",
       "coltype": "index",
-      "visible": false,
-      "sort": true,
-      "filter": true,
-      "group": false,
-      "editable": false,
-      "calculated": false,
+      "headerFilter": true,
       "primaryKey": true,
-      "description": "Database primary key — hidden from display, used for API calls",
-      "overrides": {
-        "bottomCalc": null
-      }
+      "description": "Database primary key — hidden from display, used for API calls"
     },
 
     "query_ref": {
-      "display": "Ref",
+      "title": "Ref",
       "field": "query_ref",
       "coltype": "index",
       "visible": true,
-      "sort": true,
-      "filter": true,
-      "group": false,
+      "headerFilter": true,
       "editable": false,
-      "calculated": false,
-      "primaryKey": false,
       "description": "Human-readable query reference number",
-      "overrides": {
-        "width": 80,
-        "bottomCalc": "count",
-        "bottomCalcFormatter": "number",
-        "bottomCalcFormatterParams": {
-          "thousand": ""
-        }
+      "width": 80,
+      "bottomCalc": "count",
+      "bottomCalcFormatter": "number",
+      "bottomCalcFormatterParams": {
+        "thousand": ""
       }
     },
 
     "name": {
-      "display": "Name",
+      "title": "Name",
       "field": "name",
       "coltype": "string",
       "visible": true,
-      "sort": true,
-      "filter": true,
-      "group": false,
+      "headerFilter": true,
       "editable": true,
-      "calculated": false,
-      "primaryKey": false,
       "description": "Query display name"
     },
 
     "query_status_a27": {
-      "display": "Status",
+      "title": "Status",
       "field": "query_status_a27",
       "coltype": "lookup",
       "visible": false,
-      "sort": true,
-      "filter": true,
-      "group": true,
+      "headerFilter": true,
+      "groupable": true,
       "editable": true,
-      "calculated": false,
-      "primaryKey": false,
       "description": "Query status — references lookup table 27 (Active, Inactive, etc.)",
       "lookupRef": "27",
-      "overrides": {
-        "editorParams": {
-          "valuesLookup": "27"
-        }
+      "editorParams": {
+        "valuesLookup": "27"
       }
     },
 
     "query_type_a28": {
-      "display": "Type",
+      "title": "Type",
       "field": "query_type_a28",
       "coltype": "lookup",
       "visible": false,
-      "sort": true,
-      "filter": true,
-      "group": true,
+      "headerFilter": true,
+      "groupable": true,
       "editable": false,
-      "calculated": false,
-      "primaryKey": false,
       "description": "Query type — references lookup table 28 (SQL, Migration, Diagram, etc.)",
       "lookupRef": "28"
     },
 
     "query_dialect_a30": {
-      "display": "Dialect",
+      "title": "Dialect",
       "field": "query_dialect_a30",
       "coltype": "lookup",
       "visible": false,
-      "sort": true,
-      "filter": true,
-      "group": true,
+      "headerFilter": true,
+      "groupable": true,
       "editable": true,
-      "calculated": false,
-      "primaryKey": false,
       "description": "SQL dialect — references lookup table 30 (SQLite, PostgreSQL, MySQL, DB2)",
       "lookupRef": "30"
     },
 
     "query_queue_a58": {
-      "display": "Queue",
+      "title": "Queue",
       "field": "query_queue_a58",
       "coltype": "lookup",
       "visible": false,
-      "sort": true,
-      "filter": true,
-      "group": true,
+      "headerFilter": true,
+      "groupable": true,
       "editable": true,
-      "calculated": false,
-      "primaryKey": false,
       "description": "Query execution queue — references lookup table 58 (Fast, Slow, etc.)",
       "lookupRef": "58"
     },
 
     "query_timeout": {
-      "display": "Timeout",
+      "title": "Timeout",
       "field": "query_timeout",
       "coltype": "integer",
       "visible": false,
-      "sort": true,
-      "filter": true,
-      "group": false,
+      "headerFilter": true,
       "editable": true,
-      "calculated": false,
-      "primaryKey": false,
       "description": "Query execution timeout in seconds",
-      "overrides": {
-        "formatterParams": {
-          "thousand": ",",
-          "precision": 0,
-          "suffix": "s"
-        }
+      "formatterParams": {
+        "thousand": ",",
+        "precision": 0,
+        "suffix": "s"
       }
     },
 
    "created_at": {
-      "display": "Created",
+      "title": "Created",
       "field": "created_at",
       "coltype": "datetime",
       "visible": false,
-      "sort": true,
-      "filter": true,
-      "group": false,
+      "headerFilter": true,
       "editable": false,
       "calculated": true,
-      "primaryKey": false,
       "description": "Record creation timestamp (system-generated)"
     },
 
     "updated_at": {
-      "display": "Updated",
+      "title": "Updated",
       "field": "updated_at",
       "coltype": "datetime",
       "visible": false,
-      "sort": true,
-      "filter": true,
-      "group": false,
+      "headerFilter": true,
       "editable": false,
       "calculated": true,
-      "primaryKey": false,
       "description": "Last modification timestamp (system-generated)"
     },
 
     "created_by": {
-      "display": "Created By",
+      "title": "Created By",
       "field": "created_by",
       "coltype": "string",
       "visible": false,
-      "sort": true,
-      "filter": true,
-      "group": true,
+      "headerFilter": true,
+      "groupable": true,
       "editable": false,
       "calculated": true,
-      "primaryKey": false,
       "description": "User who created the record (system-generated)"
     },
 
     "updated_by": {
-      "display": "Updated By",
+      "title": "Updated By",
       "field": "updated_by",
       "coltype": "string",
       "visible": false,
-      "sort": true,
-      "filter": true,
-      "group": true,
+      "headerFilter": true,
+      "groupable": true,
       "editable": false,
       "calculated": true,
-      "primaryKey": false,
       "description": "User who last modified the record (system-generated)"
     }
   }
