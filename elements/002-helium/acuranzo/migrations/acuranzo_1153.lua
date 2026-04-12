@@ -1,10 +1,11 @@
 -- Migration: acuranzo_1153.lua
--- Tabulator Schema: coltypes.json (Lookup 059, Key 0)
+-- LithiumTable Column Types (lookup_id 059, key_idx 0)
 
 -- luacheck: no max line length
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 1.0.1 - 2026-04-11 - Updated some of the text/terminology, overhauled with new plan
 -- 1.0.0 - 2026-03-15 - Initial creation
 
 return function(engine, design_name, schema_name, cfg)
