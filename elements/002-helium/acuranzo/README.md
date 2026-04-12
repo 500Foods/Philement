@@ -186,9 +186,9 @@ in the migrations themselves so that they get populated in the database directly
 | [1149](/elements/002-helium/acuranzo/migrations/acuranzo_1149.lua) | queries | 1.0.0 | 2026-01-19 | 4 | ✗ | QueryRef #055 - Get Number Range |
 | [1150](/elements/002-helium/acuranzo/migrations/acuranzo_1150.lua) | queries | 1.0.0 | 2026-01-20 | 4 | ✗ | QueryRef #056 - Query Error Handling |
 | [1151](/elements/002-helium/acuranzo/migrations/acuranzo_1151.lua) | queries | 1.3.0 | 2026-01-22 | 6 | ✗ | QueryRef #057 - Query Params Test |
-| [1152](/elements/002-helium/acuranzo/migrations/acuranzo_1152.lua) | lookups | 1.0.0 | 2026-03-15 | 4 | ✗ | Defaults for Lookup 059 - Tabulator Schemas |
-| [1153](/elements/002-helium/acuranzo/migrations/acuranzo_1153.lua) | lookups | 1.0.0 | 2026-03-15 | 4 | ✗ | Tabulator Schema: coltypes.json (Lookup 059, Key 0) |
-| [1154](/elements/002-helium/acuranzo/migrations/acuranzo_1154.lua) | lookups | 1.0.0 | 2026-03-15 | 4 | ✗ | Tabulator Schema: query-manager.json (Lookup 059, Key 1) |
+| [1152](/elements/002-helium/acuranzo/migrations/acuranzo_1152.lua) | lookups | 1.0.1 | 2026-04-11 | 4 | ✗ | Lookup 059 - Table Definitions |
+| [1153](/elements/002-helium/acuranzo/migrations/acuranzo_1153.lua) | lookups | 1.0.1 | 2026-04-11 | 4 | ✗ | LithiumTable Column Types (lookup_id 059, key_idx 0) |
+| [1154](/elements/002-helium/acuranzo/migrations/acuranzo_1154.lua) | lookups | 1.3.0 | 2026-04-12 | 4 | ✗ | LithiumTable JSON Schema (lookup_id 059, key_idx 1) |
 | [1155](/elements/002-helium/acuranzo/migrations/acuranzo_1155.lua) | queries | 1.0.0 | 2026-03-15 | 4 | ✗ | QueryRef #060 - Get Tabulator Schemas |
 | [1156](/elements/002-helium/acuranzo/migrations/acuranzo_1156.lua) | lookups | 1.0.0 | 2026-03-17 | 4 | ✗ | Tabulator Schema: lookups-list.json (Lookup 059, Key 2) |
 | [1157](/elements/002-helium/acuranzo/migrations/acuranzo_1157.lua) | lookups | 1.0.0 | 2026-03-17 | 4 | ✗ | Tabulator Schema: lookup-values.json (Lookup 059, Key 3) |
@@ -213,4 +213,13 @@ in the migrations themselves so that they get populated in the database directly
 | [1176](/elements/002-helium/acuranzo/migrations/acuranzo_1176.lua) | queries | 1.0.0 | 2026-04-09 | 4 | ✗ | QueryRef #073 - Get Account Settings |
 | [1177](/elements/002-helium/acuranzo/migrations/acuranzo_1177.lua) | queries | 1.0.0 | 2026-04-09 | 4 | ✗ | QueryRef #074 - Update Account Settings |
 | [1178](/elements/002-helium/acuranzo/migrations/acuranzo_1178.lua) | lookups | 1.0.0 | 2026-04-09 | 6 | ✗ | Defaults for Lookup 060 - App UI Lists |
-| **179** | | | | **918** | **179** | |
+| [1179](/elements/002-helium/acuranzo/migrations/acuranzo_1179.lua) | lookups | 1.0.0 | 2026-04-12 | 4 | ✗ | LithiumTable column-manager tableDef (lookup_id 059, key_idx 2) |
+| [1180](/elements/002-helium/acuranzo/migrations/acuranzo_1180.lua) | lookups | 1.0.0 | 2026-04-12 | 4 | ✗ | LithiumTable column-manager-manager tableDef (lookup_id 059, key_idx 3) |
+| [1181](/elements/002-helium/acuranzo/migrations/acuranzo_1181.lua) | lookups | 1.0.0 | 2026-04-12 | 4 | ✗ | LithiumTable user-profile-sections (lookup_id 059, key_idx 4) |
+| [1182](/elements/002-helium/acuranzo/migrations/acuranzo_1182.lua) | lookups | 1.0.0 | 2026-04-12 | 4 | ✗ | LithiumTable query-manager (lookup_id 059, key_idx 5) |
+| [1183](/elements/002-helium/acuranzo/migrations/acuranzo_1183.lua) | lookups | 1.0.0 | 2026-04-12 | 4 | ✗ | LithiumTable lookups-manager-list (lookup_id 059, key_idx 6) |
+| [1184](/elements/002-helium/acuranzo/migrations/acuranzo_1184.lua) | lookups | 1.0.0 | 2026-04-12 | 4 | ✗ | LithiumTable lookups-manager-values (lookup_id 059, key_idx 7) |
+| [1185](/elements/002-helium/acuranzo/migrations/acuranzo_1185.lua) | lookups | 1.0.0 | 2026-04-12 | 4 | ✗ | LithiumTable style-manager-list (lookup_id 059, key_idx 8) |
+| [1186](/elements/002-helium/acuranzo/migrations/acuranzo_1186.lua) | lookups | 1.0.0 | 2026-04-12 | 4 | ✗ | LithiumTable style-manager-sections (lookup_id 059, key_idx 9) |
+| [1187](/elements/002-helium/acuranzo/migrations/acuranzo_1187.lua) | lookups | 1.0.0 | 2026-03-15 | 4 | ✗ | LithiumTable version-manager (lookup_id 059, key_idx 10) |
+| **188** | | | | **954** | **188** | |

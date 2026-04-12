@@ -589,11 +589,14 @@ export async function preloadLookups(lookupRefs, authQueryFn, api) {
  * @returns {Object} Tabulator column definition
  */
 export function resolveColumn(fieldName, colDef, coltypes, options = {}) {
-  const coltype = coltypes[colDef.coltype] || {};
+  // CRITICAL: Start with coltypes.default, then overlay specific coltype, then column definition
+  // This is the foundation - all coltypes inherit from the "default" stanza
+  // Merge order: default → type-specific → column definition (later stages override earlier)
+  const defaultCol = coltypes.default || {};
+  const typeCol = coltypes[colDef.coltype] || {};
 
-  // Merge strategy: coltype defaults → column definition
-  // The entire colDef (minus Lithium-specific metadata) overlays coltype
-  const merged = { ...coltype, ...colDef };
+  // Merge strategy: coltypes.default → coltype specific → column definition
+  const merged = { ...defaultCol, ...typeCol, ...colDef };
 
   // Extract Lithium-specific metadata (not passed to Tabulator)
   const lithiumMeta = {

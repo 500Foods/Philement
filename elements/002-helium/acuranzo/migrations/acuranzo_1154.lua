@@ -1,13 +1,14 @@
 -- Migration: acuranzo_1154.lua
--- Tabulator Schema: query-manager.json (Lookup 059, Key 1)
+-- LithiumTable JSON Schema (lookup_id 059, key_idx 1)
 
 -- luacheck: no max line length
 -- luacheck: no unused args
 
 -- CHANGELOG
--- 1.0.0 - 2026-03-15 - Initial creation
--- 1.1.0 - 2026-04-11 - Renamed properties: display→title, sort→headerSort, filter→headerFilter, group→groupable
+-- 1.3.0 - 2026-04-12 - Rearranged migrations to better match evolving documentation
 -- 1.2.0 - 2026-04-11 - Removed redundant properties matching coltype defaults; moved overrides to top-level
+-- 1.1.0 - 2026-04-11 - Renamed properties: display→title, sort→headerSort, filter→headerFilter, group→groupable
+-- 1.0.0 - 2026-03-15 - Initial creation
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
@@ -16,7 +17,7 @@ cfg.TABLE = "lookups"
 cfg.MIGRATION = "1154"
 cfg.LOOKUP_ID = "059"
 cfg.KEY_IDX = "1"
-cfg.SCHEMA_NAME = "query-manager"
+cfg.TABLEDEF_NAME = "tabledef-json-schema"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
@@ -39,216 +40,379 @@ table.insert(queries,{sql=[[
             INSERT INTO ${SCHEMA}${TABLE}
                 (lookup_id, key_idx, status_a1, value_txt, value_int, sort_seq, code, summary, collection, ${COMMON_FIELDS})
             VALUES
-                (${LOOKUP_ID}, ${KEY_IDX}, 1, '${SCHEMA_NAME}', 0, 1, '',
+                (${LOOKUP_ID}, ${KEY_IDX}, 1, '${TABLEDEF_NAME}', 0, 1, '',
                 [==[
-                    # Query Manager Table Definition
+                    # tableDef JSON Schema
 
-                    Column definitions for the Query Manager table (left panel). Maps query
-                    result fields to display properties and coltypes.
+                    This is the JSON schema used to validate tableDefs after they are generated either
+                    from the base data, after applying a tableDef from Lookup 59, or generating one from
+                    one of the Column Managers.
 
-                    ## Table Configuration
-
-                    - **Table**: query-manager
-                    - **Title**: Query Manager
-                    - **QueryRef**: 25 (Get Queries List)
-                    - **SearchQueryRef**: 32 (Get Queries List + Search)
-                    - **DetailQueryRef**: 27 (Get System Query)
-                    - **Readonly**: false
-                    - **SelectableRows**: 1
-
-                    ## Columns
-
-                    - **query_id**: ID# (hidden, primary key)
-                    - **query_ref**: Ref (index, visible)
-                    - **name**: Name (string, visible, editable)
-                    - **query_status_a27**: Status (lookup, references lookup 27)
-                    - **query_type_a28**: Type (lookup, references lookup 28)
-                    - **query_dialect_a30**: Dialect (lookup, references lookup 30)
-                    - **query_queue_a58**: Queue (lookup, references lookup 58)
-                    - **query_timeout**: Timeout (integer, hidden)
-                    - **created_at**: Created (datetime, hidden)
-                    - **updated_at**: Updated (datetime, hidden)
-                    - **created_by**: Created By (string, hidden)
-                    - **updated_by**: Updated By (string, hidden)
-
-                    ## Schema Location
-
-                    Source: `elements/003-lithium/config/tabulator/queries/query-manager.json`
                 ]==],
                 ${JSON_INGEST_START}
 [===[
-{
-  "$schema": "../tabledef-schema.json",
-  "$version": "1.0.0",
-  "$description": "Column definitions for the Query Manager table (left panel). Maps query result fields to display properties and coltypes.",
-
-  "table": "query-manager",
-  "title": "Query Manager",
-  "queryRef": 25,
-  "searchQueryRef": 32,
-  "detailQueryRef": 27,
-  "readonly": false,
-  "selectableRows": 1,
-  "layout": "fitColumns",
-  "responsiveLayout": "collapse",
-  "resizableColumns": true,
-  "persistSort": true,
-  "persistFilter": true,
-  "initialSort": [
-    { "column": "query_ref", "dir": "asc" }
-  ],
-
-  "columns": {
-
-    "query_id": {
-      "title": "ID#",
-      "field": "query_id",
-      "coltype": "index",
-      "headerFilter": true,
-      "primaryKey": true,
-      "description": "Database primary key — hidden from display, used for API calls"
+  {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://philement.com/schemas/lithium-column-types.json",
+    "title": "Lithium Column Types Schema",
+    "description": "JSON Schema for LithiumTable column type definitions",
+    "type": "object",
+    "additionalProperties": true,
+    "properties": {
+      "default": { "$ref": "#/definitions/columnType" },
+      "string": { "$ref": "#/definitions/columnType" },
+      "text": { "$ref": "#/definitions/columnType" },
+      "integer": { "$ref": "#/definitions/columnType" },
+      "index": { "$ref": "#/definitions/columnType" },
+      "decimal": { "$ref": "#/definitions/columnType" },
+      "boolean": { "$ref": "#/definitions/columnType" },
+      "date": { "$ref": "#/definitions/columnType" },
+      "datetime": { "$ref": "#/definitions/columnType" },
+      "time": { "$ref": "#/definitions/columnType" },
+      "currency": { "$ref": "#/definitions/columnType" },
+      "percent": { "$ref": "#/definitions/columnType" },
+      "progress": { "$ref": "#/definitions/columnType" },
+      "email": { "$ref": "#/definitions/columnType" },
+      "url": { "$ref": "#/definitions/columnType" },
+      "lookup": { "$ref": "#/definitions/columnType" },
+      "lookupIcon": { "$ref": "#/definitions/columnType" },
+      "lookupIconText": { "$ref": "#/definitions/columnType" },
+      "lookupIconList": { "$ref": "#/definitions/columnType" },
+      "enum": { "$ref": "#/definitions/columnType" },
+      "html": { "$ref": "#/definitions/columnType" },
+      "image": { "$ref": "#/definitions/columnType" },
+      "color": { "$ref": "#/definitions/columnType" },
+      "star": { "$ref": "#/definitions/columnType" },
+      "rownum": { "$ref": "#/definitions/columnType" },
+      "json": { "$ref": "#/definitions/columnType" }
     },
-
-    "query_ref": {
-      "title": "Ref",
-      "field": "query_ref",
-      "coltype": "index",
-      "visible": true,
-      "headerFilter": true,
-      "editable": false,
-      "description": "Human-readable query reference number",
-      "width": 80,
-      "bottomCalc": "count",
-      "bottomCalcFormatter": "number",
-      "bottomCalcFormatterParams": {
-        "thousand": ""
+    "definitions": {
+      "columnType": {
+        "type": "object",
+        "description": "A LithiumTable column type definition",
+        "properties": {
+          "description": {
+            "type": "string",
+            "description": "Human-readable description of the column type"
+          },
+          "title": {
+            "type": "string",
+            "default": "Column",
+            "description": "Default column header title"
+          },
+          "field": {
+            "type": ["string", "null"],
+            "default": null,
+            "description": "Data field name (JSON key)"
+          },
+          "visible": {
+            "type": "boolean",
+            "default": true,
+            "description": "Show/hide column in table"
+          },
+          "hozAlign": {
+            "type": "string",
+            "enum": ["left", "center", "right"],
+            "default": "left",
+            "description": "Horizontal text alignment"
+          },
+          "vertAlign": {
+            "type": "string",
+            "enum": ["top", "middle", "bottom"],
+            "default": "middle",
+            "description": "Vertical text alignment"
+          },
+          "headerHozAlign": {
+            "type": ["string", "null"],
+            "enum": ["left", "center", "right", null],
+            "default": null,
+            "description": "Header title horizontal alignment"
+          },
+          "headerVertical": {
+            "type": "boolean",
+            "default": false,
+            "description": "Rotate header text vertically"
+          },
+          "width": {
+            "type": ["number", "null"],
+            "default": null,
+            "description": "Column width in pixels",
+            "minimum": 0
+          },
+          "minWidth": {
+            "type": "number",
+            "default": 40,
+            "description": "Minimum column width in pixels",
+            "minimum": 0
+          },
+          "maxWidth": {
+            "type": ["number", "null"],
+            "default": null,
+            "description": "Maximum column width in pixels",
+            "minimum": 0
+          },
+          "frozen": {
+            "type": ["boolean", "string"],
+            "enum": [false, true, "right"],
+            "default": false,
+            "description": "Freeze position"
+          },
+          "resizable": {
+            "type": "boolean",
+            "default": true,
+            "description": "Allow column resizing"
+          },
+          "responsive": {
+            "type": ["number", "null"],
+            "default": null,
+            "description": "Responsive hide priority"
+          },
+          "formatter": {
+            "type": "string",
+            "enum": [
+              "plaintext", "number", "money", "datetime", "tickCross",
+              "star", "progress", "image", "link", "lookup",
+              "html", "color", "rownum", "icon", "iconText"
+            ],
+            "default": "plaintext",
+            "description": "Cell content formatter name"
+          },
+          "formatterParams": {
+            "type": "object",
+            "default": {},
+            "description": "Parameters passed to the formatter"
+          },
+          "cssClass": {
+            "type": "string",
+            "default": "",
+            "description": "CSS class applied to cells"
+          },
+          "cellStyle": {
+            "type": ["string", "object", "null"],
+            "default": null,
+            "description": "Inline CSS for cells"
+          },
+          "headerStyle": {
+            "type": ["string", "object", "null"],
+            "default": null,
+            "description": "Inline CSS for header"
+          },
+          "rowStyle": {
+            "type": ["string", "object", "null"],
+            "default": null,
+            "description": "Inline CSS for entire row"
+          },
+          "rowHandle": {
+            "type": "boolean",
+            "default": false,
+            "description": "Use column as row handle"
+          },
+          "tooltip": {
+            "type": ["string", "null"],
+            "default": null,
+            "description": "Cell tooltip content"
+          },
+          "headerTooltip": {
+            "type": ["string", "null"],
+            "default": null,
+            "description": "Header tooltip content"
+          },
+          "download": {
+            "type": "boolean",
+            "default": true,
+            "description": "Include in download/export"
+          },
+          "headerWordWrap": {
+            "type": "boolean",
+            "default": false,
+            "description": "Allow word wrap in header"
+          },
+          "editor": {
+            "type": ["string", "boolean"],
+            "enum": [
+              "input", "number", "textarea", "list", "select",
+              "date", "datetime-local", "time", "tickCross", "star", false
+            ],
+            "default": "input",
+            "description": "Cell editor name"
+          },
+          "editorParams": {
+            "type": "object",
+            "default": {},
+            "description": "Parameters passed to the editor"
+          },
+          "editable": {
+            "type": ["boolean", "null"],
+            "default": null,
+            "description": "Conditional cell editing"
+          },
+          "validator": {
+            "type": ["string", "array", "object", "null"],
+            "default": null,
+            "description": "Validation rules"
+          },
+          "sorter": {
+            "type": "string",
+            "enum": ["alphanum", "number", "date", "datetime", "time", "boolean"],
+            "default": "alphanum",
+            "description": "Sort function name"
+          },
+          "sorterParams": {
+            "type": "object",
+            "default": {},
+            "description": "Parameters passed to the sorter"
+          },
+          "headerSort": {
+            "type": "boolean",
+            "default": true,
+            "description": "Enable sorting on this column"
+          },
+          "sortPri": {
+            "type": ["number", "null"],
+            "default": null,
+            "description": "Sort priority for multi-column sorting"
+          },
+          "headerFilter": {
+            "type": "boolean",
+            "default": false,
+            "description": "Show header filter input"
+          },
+          "headerFilterFunc": {
+            "type": ["string", "null"],
+            "enum": [null, "=", "!=", "like", ">=", ">", "<=", "<"],
+            "default": "like",
+            "description": "Header filter function"
+          },
+          "headerFilterPlaceholder": {
+            "type": "string",
+            "default": "filter...",
+            "description": "Filter input placeholder"
+          },
+          "groupable": {
+            "type": "boolean",
+            "default": false,
+            "description": "Enable grouping by this column"
+          },
+          "groupPri": {
+            "type": ["number", "null"],
+            "default": null,
+            "description": "Group priority"
+          },
+          "groupOrd": {
+            "type": "string",
+            "enum": ["asc", "desc"],
+            "default": "asc",
+            "description": "Group sort order"
+          },
+          "columnPri": {
+            "type": ["number", "null"],
+            "default": null,
+            "description": "Display order priority"
+          },
+          "blank": {
+            "type": ["string", "null"],
+            "default": "",
+            "description": "Display value when data is blank/empty"
+          },
+          "zero": {
+            "type": ["string", "number", "boolean", "null"],
+            "default": null,
+            "description": "Display value when data is zero"
+          },
+          "accessor": {
+            "type": ["string", "null"],
+            "default": null,
+            "description": "Transform data on read"
+          },
+          "accessorParams": {
+            "type": "object",
+            "default": {},
+            "description": "Parameters for accessor"
+          },
+          "accessorDownload": {
+            "type": ["string", "null"],
+            "default": null,
+            "description": "Transform data on download"
+          },
+          "mutator": {
+            "type": ["string", "null"],
+            "default": null,
+            "description": "Transform data on write"
+          },
+          "mutatorParams": {
+            "type": "object",
+            "default": {},
+            "description": "Parameters for mutator"
+          },
+          "bottomCalc": {
+            "type": ["string", "null"],
+            "enum": [null, "count", "sum", "avg", "min", "max"],
+            "default": null,
+            "description": "Footer calculation type"
+          },
+          "bottomCalcFormatter": {
+            "type": ["string", "null"],
+            "enum": [null, "plaintext", "number", "money", "datetime", "tickCross", "star", "progress"],
+            "default": null,
+            "description": "Formatter for calculation result"
+          },
+          "bottomCalcFormatterParams": {
+            "type": "object",
+            "default": {},
+            "description": "Parameters for bottomCalcFormatter"
+          },
+          "bottomCalcHozAlign": {
+            "type": ["string", "null"],
+            "default": null,
+            "description": "Footer cell horizontal alignment"
+          },
+          "bottomCalcStyle": {
+            "type": ["string", "object", "null"],
+            "default": null,
+            "description": "Inline CSS for footer cell"
+          },
+          "lookupRef": {
+            "type": ["string", "null"],
+            "default": null,
+            "description": "Lookup table reference identifier"
+          },
+          "lookupStyle": {
+            "type": ["string", "null"],
+            "enum": [null, "iconText", "icon", "text"],
+            "default": null,
+            "description": "How lookup values are displayed in cells"
+          },
+          "lookupEdit": {
+            "type": ["string", "null"],
+            "enum": [null, "iconText", "icon", "text"],
+            "default": null,
+            "description": "How lookup values are displayed in edit dropdown"
+          },
+          "contextMenu": {
+            "type": ["array", "object", "null"],
+            "default": null,
+            "description": "Right-click context menu for cells"
+          },
+          "headerClickMenu": {
+            "type": ["array", "object", "null"],
+            "default": null,
+            "description": "Menu shown when clicking column header"
+          },
+          "cellClick": {
+            "type": ["object", "null"],
+            "default": null,
+            "description": "Cell click callback"
+          },
+          "headerClick": {
+            "type": ["object", "null"],
+            "default": null,
+            "description": "Header click callback"
+          }
+        }
       }
-    },
-
-    "name": {
-      "title": "Name",
-      "field": "name",
-      "coltype": "string",
-      "visible": true,
-      "headerFilter": true,
-      "editable": true,
-      "description": "Query display name"
-    },
-
-    "query_status_a27": {
-      "title": "Status",
-      "field": "query_status_a27",
-      "coltype": "lookup",
-      "visible": false,
-      "headerFilter": true,
-      "groupable": true,
-      "editable": true,
-      "description": "Query status — references lookup table 27 (Active, Inactive, etc.)",
-      "lookupRef": "27",
-      "editorParams": {
-        "valuesLookup": "27"
-      }
-    },
-
-    "query_type_a28": {
-      "title": "Type",
-      "field": "query_type_a28",
-      "coltype": "lookup",
-      "visible": false,
-      "headerFilter": true,
-      "groupable": true,
-      "editable": false,
-      "description": "Query type — references lookup table 28 (SQL, Migration, Diagram, etc.)",
-      "lookupRef": "28"
-    },
-
-    "query_dialect_a30": {
-      "title": "Dialect",
-      "field": "query_dialect_a30",
-      "coltype": "lookup",
-      "visible": false,
-      "headerFilter": true,
-      "groupable": true,
-      "editable": true,
-      "description": "SQL dialect — references lookup table 30 (SQLite, PostgreSQL, MySQL, DB2)",
-      "lookupRef": "30"
-    },
-
-    "query_queue_a58": {
-      "title": "Queue",
-      "field": "query_queue_a58",
-      "coltype": "lookup",
-      "visible": false,
-      "headerFilter": true,
-      "groupable": true,
-      "editable": true,
-      "description": "Query execution queue — references lookup table 58 (Fast, Slow, etc.)",
-      "lookupRef": "58"
-    },
-
-    "query_timeout": {
-      "title": "Timeout",
-      "field": "query_timeout",
-      "coltype": "integer",
-      "visible": false,
-      "headerFilter": true,
-      "editable": true,
-      "description": "Query execution timeout in seconds",
-      "formatterParams": {
-        "thousand": ",",
-        "precision": 0,
-        "suffix": "s"
-      }
-    },
-
-   "created_at": {
-      "title": "Created",
-      "field": "created_at",
-      "coltype": "datetime",
-      "visible": false,
-      "headerFilter": true,
-      "editable": false,
-      "calculated": true,
-      "description": "Record creation timestamp (system-generated)"
-    },
-
-    "updated_at": {
-      "title": "Updated",
-      "field": "updated_at",
-      "coltype": "datetime",
-      "visible": false,
-      "headerFilter": true,
-      "editable": false,
-      "calculated": true,
-      "description": "Last modification timestamp (system-generated)"
-    },
-
-    "created_by": {
-      "title": "Created By",
-      "field": "created_by",
-      "coltype": "string",
-      "visible": false,
-      "headerFilter": true,
-      "groupable": true,
-      "editable": false,
-      "calculated": true,
-      "description": "User who created the record (system-generated)"
-    },
-
-    "updated_by": {
-      "title": "Updated By",
-      "field": "updated_by",
-      "coltype": "string",
-      "visible": false,
-      "headerFilter": true,
-      "groupable": true,
-      "editable": false,
-      "calculated": true,
-      "description": "User who last modified the record (system-generated)"
     }
   }
-}
-]===]
+  ]===]
                 ${JSON_INGEST_END}, ${COMMON_VALUES});
 
             ${SUBQUERY_DELIMITER}
@@ -259,13 +423,13 @@ table.insert(queries,{sql=[[
               and query_type_a28 = ${TYPE_FORWARD_MIGRATION};
         ]=]
                                                                             AS code,
-        'Populate ${SCHEMA_NAME} schema in Lookup ${LOOKUP_ID}'             AS name,
+        'Populate ${TABLEDEF_NAME} tableDef in Lookup ${LOOKUP_ID}'             AS name,
         [=[
-            # Forward Migration ${MIGRATION}: Populate ${SCHEMA_NAME} schema in Lookup ${LOOKUP_ID}
+            # Forward Migration ${MIGRATION}: Populate ${TABLEDEF_NAME} in Lookup ${LOOKUP_ID}
 
-            This migration inserts the query-manager.json table definition into the lookups table
-            as Lookup ${LOOKUP_ID}, Key ${KEY_IDX}. This schema defines the column layout
-            and configuration for the Query Manager table.
+            This migration inserts ${TABLEDEF_NAME} into the lookups table
+            as Lookup ${LOOKUP_ID}, Key ${KEY_IDX}. This defines schema used to validate
+            tableDefs for LithiumTable-based tables.
         ]=]
                                                                             AS summary,
         '{}'                                                                AS collection,

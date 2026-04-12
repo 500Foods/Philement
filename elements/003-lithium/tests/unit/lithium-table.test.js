@@ -45,6 +45,24 @@ import { getTabulatorSchemas, fetchLookups } from '../../src/shared/lookups.js';
 
 const MOCK_COLTYPES = {
   coltypes: {
+    default: {
+      align: 'left',
+      vertAlign: 'middle',
+      formatter: 'plaintext',
+      formatterParams: {},
+      editor: 'input',
+      editorParams: { search: false },
+      sorter: 'alphanum',
+      headerFilterFunc: 'like',
+      headerFilterPlaceholder: 'filter...',
+      blank: '',
+      zero: null,
+      cssClass: '',
+      bottomCalc: null,
+      bottomCalcFormatter: null,
+      width: null,
+      minWidth: 40,
+    },
     integer: {
       align: 'right',
       vertAlign: 'middle',
@@ -212,7 +230,8 @@ describe('LithiumTable', () => {
       expect(getTabulatorSchemas).toHaveBeenCalledTimes(1);
       expect(result).toHaveProperty('integer');
       expect(result).toHaveProperty('string');
-      expect(Object.keys(result)).toHaveLength(4);
+      expect(result).toHaveProperty('default'); // Now includes default stanza
+      expect(Object.keys(result)).toHaveLength(5); // default + 4 types = 5
     });
 
     it('should return cached data on subsequent calls', async () => {
@@ -265,7 +284,8 @@ describe('LithiumTable', () => {
       expect(getTabulatorSchemas).not.toHaveBeenCalled();
       expect(result).toHaveProperty('integer');
       expect(result).toHaveProperty('string');
-      expect(Object.keys(result)).toHaveLength(4);
+      expect(result).toHaveProperty('default'); // Now includes default stanza
+      expect(Object.keys(result)).toHaveLength(5); // default + 4 types = 5
     });
 
     it('should cache provided data for subsequent calls', async () => {
@@ -482,6 +502,52 @@ describe('LithiumTable', () => {
       // Override: bottomCalcFormatter: "number" — resolveColumn wraps number/money
       // formatters into a closure that calls formatBuiltinValue(), so it's a function
       expect(typeof result.bottomCalcFormatter).toBe('function');
+    });
+
+    it('should merge from default stanza first (default → coltype → colDef)', () => {
+      // Test that the merge order is correct:
+      // 1. Start with coltypes.default (vertAlign: 'middle' from default)
+      // 2. Overlay coltype (integer has align: 'right') — overrides default's align
+      // 3. Overlay column definition colDef (width: 80) — overrides coltype's width
+      const colDef = {
+        display: 'Ref',
+        field: 'query_ref',
+        coltype: 'integer',
+        visible: true,
+        sort: true,
+        filter: true,
+        editable: false,
+        calculated: false,
+        width: 80, // Override from colDef
+      };
+      const result = resolveColumn('query_ref', colDef, coltypes);
+
+      // default provides vertAlign: 'middle'
+      expect(result.vertAlign).toBe('middle');
+      // integer (coltype) provides align: 'right', overriding default's align: 'left'
+      expect(result.hozAlign).toBe('right');
+      // colDef provides width: 80
+      expect(result.width).toBe(80);
+    });
+
+    it('should merge from default stanza - no type in colDef', () => {
+      // When colDef doesn't specify a coltype, should still work (use default)
+      const colDef = {
+        display: 'Name',
+        field: 'name',
+        visible: true,
+        sort: true,
+        filter: true,
+        editable: true,
+        calculated: false,
+      };
+      // Note: No coltype set - should fall back to default's properties
+      const result = resolveColumn('name', colDef, coltypes);
+
+      // Should use default's align: 'left'
+      expect(result.hozAlign).toBe('left');
+      // Formatter is wrapped (returns function), but the default is plaintext-based
+      expect(typeof result.formatter).toBe('function');
     });
 
     it('should respect visible: false', () => {

@@ -1,642 +1,595 @@
-# Lithium Tabulator Implementation Plan
+# LithiumTable Implementation Plan
 
-This document analyses the gap between the JSON-driven column configuration system
-(schemas, coltypes, table definitions) and the current runtime implementation, then
-lays out a phased plan to close that gap.
-
-**Status: Phases 1–4 complete; Phase 4b (lookup wiring + detailQueryRef + persistSort/Filter) complete; March 2026 edit-mode follow-up applied for row-scoped editors, consistent row selection, header-only resize handles, non-selectable footer calcs, same-row edit handoff without detail-query churn, stronger queued cell-editor activation, and row-change popup cleanup; `tabulator-init.js` removed** (March 2026).
+This document outlines the plan to align the runtime implementation with the documented tableDef resolution process.
 
 ---
 
-## Current State Summary
+## Quick Start (Start Here)
 
-### What Exists (JSON Configuration Layer) ✅
+For a new developer or anyone needing to understand the system quickly:
 
-The configuration layer is **complete and well-designed**:
+1. **Read [LITHIUM-TAB-TABLES.md](LITHIUM-TAB-TABLES.md)** — The core process document. Focus on:
+   - Stage 1: Auto-detection from data
+   - Stage 2: Table definitions from Lookup 059
+   - Stage 3: User customization via Column Manager
+   - Property precedence (later stages override earlier)
 
-| File | Status | Notes |
-|------|--------|-------|
-| `config/tabulator/coltypes.json` | ✅ Complete | 21 column types with full formatting, editing, sorting, blank/zero rules |
-| `config/tabulator/coltypes-schema.json` | ✅ Complete | JSON Schema validation for coltypes |
-| `config/tabulator/tabledef-schema.json` | ✅ Complete | JSON Schema for per-table definitions |
-| `config/tabulator/queries/query-manager.json` | ✅ Complete | 14 columns defined for Query Manager |
-| `scripts/validate-tabulator-config.js` | ✅ Complete | Build-time validation with cross-reference checks |
+2. **Read [LITHIUM-TAB-TYPES.md](LITHIUM-TAB-TYPES.md)** — The coltype reference. Key sections:
+   - Table Definition Properties (`coltype`, `primaryKey`, `calculated`)
+   - Base Properties table (all available properties)
+   - Quick Reference (all 25 coltypes at a glance)
 
-### What Exists (Runtime Implementation) ✅ Implemented
+3. **Read [LITHIUM-COL.md](LITHIUM-COL.md)** — Column Manager is Stage 3. Key sections:
+   - Stage 3: User Customization
+   - Export/Import Workflow (how to capture tableDef as JSON)
 
-| Component | Status | Notes |
-|-----------|--------|-------|
-| `src/core/lithium-table.js` | ✅ Complete | Config loader, column resolver, blank/zero wrapper, lookup support |
-| `src/managers/queries/queries.js` | ✅ Refactored | Uses `resolveColumns()` from JSON config with fallback to hardcoded |
-| `src/init/tabulator-init.js` | 🗑️ Removed | Was dead code — superseded by `lithium-table.js`, deleted in Phase 4 |
-| Navigator (Control/Move/Manage/Search) | ✅ Working | All buttons wired with real implementations |
-| Column chooser | ✅ Working | Shows JSON-config columns + discovers extra API fields |
-| Column filters (header filters) | ✅ Working | Toggle via Table Options menu, with custom clear buttons |
-| Row selection + keyboard nav | ✅ Working | Arrow keys, Page Up/Down, Home/End, localStorage persistence |
-| Unit tests | ✅ Complete | 76 tests in `tests/unit/lithium-table.test.js` |
+**TL;DR:** Data comes in → Stage 1 detects coltype → Stage 2 applies tableDef from Lookup 059 → Stage 3 user edits. All stages produce a usable tableDef.
 
 ---
 
-## Gap Analysis (Original — Preserved for Reference)
+## Architecture: Async Non-Blocking Data-First Approach
 
-### ~~🔴 Critical Gap: JSON Configs Are Not Loaded at Runtime~~
+### Critical: Always Async, Never Blocking
 
-~~The core issue: **none of the JSON configuration files are fetched or used at runtime**~~
+The implementation MUST be fully async throughout. Key principles:
 
-**Resolved:** `lithium-table.js` loads coltypes.json and tabledef JSON at runtime,
-with singleton caching per session.
+1. **Prefetch data before init** — When possible, start fetching data before table initialization begins
+2. **Never block** — All operations (data loading, column resolution, table init) are async
+3. **Pipeline pattern** — Load config → Fetch data → Detect columns → Build tableDef → Init table
 
-### Specific Gaps — Resolution Status
-
-| # | Gap | Status | Resolution |
-|---|-----|--------|------------|
-| 1 | **No config loader** | ✅ Fixed | `loadColtypes()`, `loadTableDef()` in `lithium-table.js` |
-| 2 | **No column resolver** | ✅ Fixed | `resolveColumn()`, `resolveColumns()` |
-| 3 | **No blank/zero formatter** | ✅ Fixed | `wrapFormatter()`, `needsBlankZeroWrapper()` |
-| 4 | **Table-level props ignored** | ✅ Fixed | `resolveTableOptions()` |
-| 5 | **Editable/readonly logic** | ✅ Fixed | `resolveColumn()` handles editable/calculated/tableReadonly |
-| 6 | **Header filters from config** | ✅ Fixed | `filter: true` → `headerFilter` with custom editor |
-| 7 | **Sort from config** | ✅ Fixed | `sort: true/false` → `headerSort` |
-| 8 | **Visibility from config** | ✅ Fixed | `visible: true/false` |
-| 9 | **CSS classes from coltype** | ✅ Fixed | `cssClass` from coltype applied |
-| 10 | **Bottom calc from config** | ✅ Fixed | `bottomCalc`, `bottomCalcFormatter`, `bottomCalcFormatterParams` |
-| 11 | **Lookup column resolver** | ✅ Fixed | `loadLookup()`, `createLookupFormatter()`, `createLookupEditor()` |
-| 12 | **Query refs from config** | ✅ Fixed | `getQueryRefs()` + fallback in `queries.js` |
-| 13 | **No `LithiumTable` module** | ✅ Fixed | `src/core/lithium-table.js` (functional API, not class) |
-| 14 | **`tabulator-init.js` unused** | ✅ Removed | Deleted — was dead code, not imported anywhere |
-
-### What Works Well (Preserved Through Refactor)
-
-- Navigator UI layout and button groups (Control, Move, Manage, Search)
-- Popup menu system (Table Options, Export, Import)
-- Column chooser popup with checkbox list
-- Custom header-filter editor with clear (×) button
-- Selector column with ▸ / I-cursor indicators
-- Custom dual-arrow sort indicator (▲/▼)
-- Keyboard navigation (arrows, PageUp/Down, Home/End)
-- Row selection persistence (localStorage)
-- CSS styling for all Tabulator elements
-
----
-
-## Implementation Plan
-
-### Phase 1: Column Resolution Engine ✅ Complete
-
-Created `src/core/lithium-table.js` — a functional module API (not a class).
-
-#### 1a. Config Loader ✅
-
-```javascript
-export async function loadColtypes()     // Singleton: fetched once, cached in module variable
-export async function loadTableDef(path) // Cached per-path in a Map
+```
+Manager.create()                 // Returns immediately
+  .prefetchData()                // Starts async, returns promise
+  .init();                      // Continues with data ready
 ```
 
-Caching: `coltypes.json` is loaded once per session. Table definitions are
-cached per-path. `clearCache()` resets everything (useful for tests).
-
-#### 1b. Column Resolver ✅
+### Initialization Flow
 
 ```javascript
-export function resolveColumn(fieldName, colDef, coltypes, options)
-export function resolveColumns(tableDef, coltypes, options)
-```
-
-The resolution order (per LITHIUM-TAB.md §Resolution Order):
-
-1. Start with **coltype defaults** from `coltypes.json`
-2. Apply **column-level overrides** via spread: `{ ...coltype, ...overrides }`
-3. Map to Tabulator property names:
-   - `align` → `hozAlign`, `vertAlign` → `vertAlign`
-   - `display` → `title`, `field` → `field`, `visible` → `visible`
-   - `sort` → `headerSort`, `filter` → `headerFilter`
-   - `editable` + `readonly` + `calculated` → `editor` (with `tableReadonly` override)
-   - `cssClass`, `bottomCalc` / `bottomCalcFormatter` / `bottomCalcFormatterParams`
-   - `width` / `minWidth`, `sorter` / `sorterParams`
-
-**Design decision:** The module uses named function exports rather than a class.
-This keeps the API simple and tree-shakeable. The plan originally described a
-`LithiumTable` class, but a functional approach proved cleaner since config loading
-is inherently async/cached at module scope.
-
-#### 1c. Blank/Zero Formatter Wrapper ✅
-
-```javascript
-export function wrapFormatter(formatter, formatterParams, blankValue, zeroValue)
-export function needsBlankZeroWrapper(blankValue, zeroValue)
-```
-
-**Key behaviour:** When `blankValue` and `zeroValue` are both `null`, the
-wrapper is skipped entirely (returns the original formatter string/function).
-This avoids unnecessary function wrapping for columns that don't need it.
-
-**Caveat:** When a built-in Tabulator formatter (string name like `"number"`)
-is wrapped, the wrapper intercepts blank/zero but then falls through to
-returning the raw cell value for non-blank cases. This means the built-in
-formatter's params (thousands separator, precision) won't apply to the
-wrapper's output. For the current use case (where blank/zero returns a
-literal string like `""` or `"—"`), this is fine. If full formatting is
-needed for non-blank values, the wrapper would need access to Tabulator's
-internal formatter registry — a future enhancement.
-
-#### 1d. Table-Level Property Mapping ✅
-
-```javascript
-export function resolveTableOptions(tableDef)
-```
-
-| tabledef | Tabulator |
-|----------|-----------|
-| `layout` | `layout` |
-| `responsiveLayout` | `responsiveLayout` |
-| `selectableRows` | `selectableRows` |
-| `resizableColumns` | `resizableColumns` |
-| `initialSort` | `initialSort` |
-| `groupBy` | `groupBy` |
-| `persistSort` | `persistSort` |
-| `persistFilter` | `persistFilter` |
-
----
-
-### Phase 2: Refactor Query Manager ✅ Complete
-
-#### 2a. Replace Hardcoded Column Definitions ✅
-
-`queries.js` → `initTable()` now:
-
-```javascript
-[this.coltypes, this.tableDef] = await Promise.all([
-  loadColtypes(),
-  loadTableDef('queries/query-manager'),
-]);
-
-const dataColumns = this.tableDef && this.coltypes
-  ? resolveColumns(this.tableDef, this.coltypes, {
-      filterEditor: this._createFilterEditor.bind(this),
-    })
-  : this._getFallbackColumns();
-```
-
-The `_getFallbackColumns()` method provides the original 2-column hardcoded
-array as a safety net if the JSON config fails to load.
-
-#### 2b. Use Config Query Refs ✅
-
-```javascript
-const listRef = this.queryRefs?.queryRef ?? 25;
-const searchRef = this.queryRefs?.searchQueryRef ?? 32;
-const queryRef = searchTerm ? searchRef : listRef;
-```
-
-The `?? fallback` pattern ensures the app still works if the JSON config
-is unavailable (e.g., network error, dev server without config files).
-
-#### 2c. `_discoverColumns()` Retained (Design Decision)
-
-The plan originally called for removing `_discoverColumns()`. In practice,
-it was **kept** because:
-
-- The JSON config defines 14 columns, but the API may return additional
-  fields not in the config.
-- `_discoverColumns()` adds those as hidden columns, making them available
-  in the column chooser without needing config updates.
-- It runs after `setData()` and is idempotent (skips already-defined fields).
-
-This hybrid approach (config-driven + discovery) provides the best of both
-worlds: structured columns from JSON config, plus automatic discovery of
-new API fields.
-
----
-
-### Phase 3: Lookup Column Support ✅ Complete
-
-#### 3a. Lookup Data Loader ✅
-
-```javascript
-export async function loadLookup(lookupRef, authQueryFn, api)
-export async function preloadLookups(lookupRefs, authQueryFn, api)
-export function getLookup(lookupRef)
-```
-
-Lookup data is fetched via the Conduit API (**QueryRef 34** — Get Lookup List)
-and cached in a module-level `Map`. The `preloadLookups()` function loads
-multiple lookups in parallel.
-
-**Fix (March 2026):** Corrected `loadLookup()` to use QueryRef 34 (was incorrectly
-using QueryRef 3 which expects `IPADDRESS`). The function now:
-
-- Parses numeric lookup ID from reference strings (e.g., "a27" → 27, "28" → 28)
-- Sends `INTEGER: { LOOKUPID: <id> }` parameter (was `STRING: { LOOKUP_REF }`)
-- Maps API response fields correctly: `key_idx` → `id`, `value_txt` → `label`
-
-#### 3b. Lookup Formatter ✅
-
-```javascript
-export function createLookupFormatter(lookupRef)
-export function resolveLookupLabel(id, lookupRef)
-```
-
-The formatter resolves a stored integer ID to its human-readable label using
-the cached lookup data.
-
-#### 3c. Lookup Editor ✅
-
-```javascript
-export function createLookupEditor(lookupRef, lookupData)
-```
-
-Returns a Tabulator `list` editor configuration with autocomplete, populated
-from the lookup table. Falls back to `'input'` if lookup data is empty.
-
-#### 3d. Resolver Integration ✅
-
-`resolveColumn()` now detects `lookupRef` on a column definition and, if the
-lookup data is in cache, automatically wires:
-
-- **Formatter:** `createLookupFormatter(lookupRef)` instead of the coltype's
-  default formatter — resolves integer IDs → human-readable labels
-- **Editor:** `createLookupEditor(lookupRef, lookupData)` with `list` +
-  autocomplete instead of the coltype's default editor
-
-When the lookup data is **not** cached (e.g., API unavailable), the column
-falls back to the coltype's standard formatter and editor — no runtime error.
-
-`queries.js` → `initTable()` now calls `preloadLookups()` with all unique
-`lookupRef` values from the column definitions, so lookup data is in cache
-before `resolveColumns()` runs:
-
-```javascript
-const lookupRefs = Object.values(this.tableDef.columns || {})
-  .map(col => col.lookupRef)
-  .filter(Boolean);
-const uniqueRefs = [...new Set(lookupRefs)];
-if (uniqueRefs.length > 0 && this.app?.api) {
-  await preloadLookups(uniqueRefs, this.app.api);
+// NEW: Data-first async flow
+async init() {
+  // 1. Load config (async, non-blocking)
+  await this.loadConfiguration();
+  
+  // 2. Prefetch data ASAP (can start before init if manager knows queryRef)
+  const dataPromise = this.loadData();
+  
+  // 3. Resolve columns from config WHILE data loads
+  const columns = resolveColumns(this.tableDef, this.coltypes);
+  
+  // 4. Wait for data, then detect/discover columns
+  const data = await dataPromise;
+  const stage1TableDef = detectColumnsFromData(data, this.coltypes);
+  
+  // 5. Merge with Lookup 059 (Stage 2)
+  const stage2TableDef = mergeWithTableDef(stage1TableDef, this.tableDef);
+  
+  // 6. Apply user template (Stage 3)
+  const finalTableDef = applyUserTemplate(stage2TableDef);
+  
+  // 7. Init Tabulator with complete tableDef
+  await this.initTable(finalTableDef);
 }
 ```
 
----
-
-### Phase 4: Navigator Functionality ✅ Complete
-
-| Button | Status | Implementation |
-|--------|--------|----------------|
-| Refresh | ✅ Working | `loadQueries()` with row selection persistence |
-| Search | ✅ Working | Uses config refs (`queryRefs.searchQueryRef`) with fallback |
-| Width | ✅ Working | Popup: Narrow (160px), Compact (314px), Normal (468px), Wide (622px), Auto (calculated) |
-| Export PDF | ✅ Working | `table.download('pdf', ...)` with landscape orientation |
-| Export CSV | ✅ Working | `table.download('csv', ...)` |
-| Export TXT | ✅ Working | `table.download('csv', ...)` with `.txt` extension |
-| Export XLS | ✅ Working | `table.download('xlsx', ...)` |
-| Import CSV/TXT/XLS | ✅ Working | File picker + `table.import()` |
-| Add | ✅ Working | `addRow({}, true)` + auto-edit Name cell |
-| Duplicate | ✅ Working | Copy selected row, clear PK, append "(Copy)" to name |
-| Edit | ✅ Working | Set `_editingRowId`, show I-cursor indicator, edit Name cell |
-| Save | ✅ Wired | Uses `insertQueryRef`/`updateQueryRef` from config; falls back to local-only if refs not defined |
-| Cancel | ✅ Working | `table.undo()` + clear edit state |
-| Delete | ✅ Wired | Uses `deleteQueryRef` from config; falls back to local-only if ref not defined |
-| Layout | ✅ Working | Popup: Fit Columns, Fit Data, Fit Fill, Fit Stretch, Fit Table (persisted to localStorage) |
-| Column Filters | ✅ Working | Toggle with custom clear (×) buttons |
-| Expand All | ✅ Working | Expand all groups/tree rows |
-| Collapse All | ✅ Working | Collapse all groups/tree rows |
-
-#### 4a. Save/Delete API Integration ✅
-
-The `handleNavSave()` and `handleNavDelete()` methods now use config-driven
-QueryRefs (`insertQueryRef`, `updateQueryRef`, `deleteQueryRef`) from the
-tabledef JSON. When the refs are not yet defined in the backend, the handlers
-degrade gracefully:
-
-- **Save:** Detects insert vs. update by checking whether the primary key is
-  set. Calls `authQuery()` with the appropriate QueryRef and the row data as
-  a JSON payload. If no QueryRef is configured, shows a "Saved Locally" toast.
-
-- **Delete:** Confirms with the user (including row name if available), then
-  calls `authQuery()` with the delete QueryRef and the primary key. On API
-  failure, the row is **not** removed from the table. If no QueryRef is
-  configured, proceeds with local-only deletion.
-
-The tabledef schema (`tabledef-schema.json`) now includes the three new
-optional integer fields: `insertQueryRef`, `updateQueryRef`, `deleteQueryRef`.
-The `getQueryRefs()` function in `lithium-table.js` returns all six refs.
-
-**To activate for Query Manager:** Add the actual QueryRef numbers to
-`query-manager.json` once the Hydrogen backend has the corresponding
-insert/update/delete queries defined.
+This avoids the costly column add/remove operations after table creation.
 
 ---
 
-### Phase 5: Reusability — Extract into Generic Component (Future)
+## Database Structure
 
-When a second manager (e.g., User Manager, Lookup Manager) needs a table,
-extract the shared patterns into a higher-level wrapper:
+### Lookup 059 Key 0 - coltypes (acuranzo_1153.lua)
 
-```javascript
-import { loadColtypes, loadTableDef, resolveColumns, resolveTableOptions } from '../../core/lithium-table.js';
+Migration `acuranzo_1153.lua` defines the coltypes structure in Lookup 059 Key 0:
+
+- **Location**: `elements/002-helium/acuranzo/migrations/acuranzo_1153.lua`
+- **Lookup ID**: 059
+- **Key Index**: 0
+- **Schema Name**: column-types
+
+The JSON structure has a `"default"` stanza (base properties) plus each coltype with ONLY properties that differ from default:
+
+```json
+{
+  "coltypes": {
+    "default": {
+      "description": "Default column configuration",
+      "title": "Column",
+      "field": null,
+      "visible": false,
+      "hozAlign": "left",
+      "vertAlign": "middle",
+      "formatter": "plaintext",
+      "editor": "input",
+      "sorter": "alphanum",
+      "headerSort": true,
+      "headerFilter": false,
+      "groupable": false,
+      "columnPri": null,
+      "blank": "",
+      "zero": null,
+      // ... all base properties
+    },
+    "boolean": {
+      "description": "True/false toggle values",
+      "hozAlign": "center",
+      "formatter": "tickCross",
+      // ... only properties that differ from default
+    },
+    "integer": {
+      "description": "Whole numbers (IDs, counts, references)",
+      "hozAlign": "right",
+      "formatter": "number",
+      // ...
+    }
+    // ... all 25 coltypes
+  }
+}
 ```
 
-The current functional API in `lithium-table.js` is already designed for
-reuse. The main extraction work would be the **navigator component** (HTML
-template, button wiring, move/manage logic), which is currently embedded in
-`queries.js`.
+### Lookup 059 Keys 1+ - Table Definitions
 
-`tabulator-init.js` has been removed (was dead code, not imported anywhere).
-
----
-
-## File Changes Summary
-
-### New Files
-
-| File | Purpose | Status |
-|------|---------|--------|
-| `src/core/lithium-table.js` | Config loader, column resolver, blank/zero wrapper, lookup support | ✅ Complete |
-| `tests/unit/lithium-table.test.js` | 76 unit tests covering all exports | ✅ Complete |
-
-### Modified Files
-
-| File | Changes | Status |
-|------|---------|--------|
-| `src/managers/queries/queries.js` | JSON-driven columns, config query refs (incl. detailQueryRef), Save/Delete API integration, lookup pre-loading, async row-scoped editor activation, consistent selection-before-edit, row-change popup cleanup, stronger queued same-row cell handoff | ✅ Complete |
-| `src/core/lithium-table.js` | Lookup auto-wiring in resolveColumn(), persistSort/persistFilter in resolveTableOptions() | ✅ Complete |
-| `src/managers/queries/queries.css` | Restrict resize handles to header row only; suppress body/footer handle hit areas | ✅ Complete |
-| `tests/unit/queries-manager.test.js` | Covers edit gating, async editor enable/disable, consistent selection/edit click behaviour, row-change popup cleanup, and queued same-row handoff | ✅ Complete |
-| `config/tabulator/tabledef-schema.json` | Added `insertQueryRef`, `updateQueryRef`, `deleteQueryRef` fields | ✅ Complete |
-| `config/tabulator/queries/query-manager.json` | Added `detailQueryRef: 27` | ✅ Complete |
-
-### Removed Files
-
-| File | Notes |
-|------|-------|
-| `src/init/tabulator-init.js` | Dead code — was not imported anywhere; fully superseded by `lithium-table.js` |
-
-### Unchanged Files
-
-| File | Notes |
-|------|-------|
-| `config/tabulator/coltypes.json` | No changes needed |
-| `config/tabulator/coltypes-schema.json` | No changes needed |
-| `config/tabulator/queries/query-manager.json` | CRUD refs will be added when Hydrogen backend is ready |
-| `scripts/validate-tabulator-config.js` | No changes needed |
+| Key | Name | Purpose |
+|-----|------|---------|
+| 0 | column-types | All coltype definitions (with "default" stanza) |
+| 1 | query-manager | Query Manager table definition |
+| 2 | lookups-list | Lookups List table definition |
+| 3 | lookup-values | Lookup Values table definition |
+| ... | ... | Additional table definitions |
 
 ---
 
-## Execution Order — Completion Status
+## Current State
 
-| Step | Phase | Description | Status |
-|------|-------|-------------|--------|
-| 1 | 1a | Config loader (fetch + cache coltypes/tabledef) | ✅ Done |
-| 2 | 1b | Column resolver (coltype → Tabulator column def) | ✅ Done |
-| 3 | 1c | Blank/zero formatter wrapper | ✅ Done |
-| 4 | 1d | Table-level property mapping (incl. persistSort/persistFilter) | ✅ Done |
-| 5 | 2a | Refactor `queries.js` to use resolved columns | ✅ Done |
-| 6 | 2b | Use config query refs instead of hardcoded (incl. detailQueryRef) | ✅ Done |
-| 7 | 2c | `_discoverColumns()` — kept as hybrid approach | ✅ Done (design decision) |
-| 8 | 3 | Lookup column support (load, format, edit) | ✅ Done |
-| 8a | 3d | Lookup resolver integration + preloadLookups() in initTable | ✅ Done |
-| 9 | 4 | Navigator button implementations | ✅ Done |
-| 9a | 4a | Save/Delete API wiring + CRUD QueryRef schema | ✅ Done |
-| 10 | 4b | Remove dead `tabulator-init.js` | ✅ Done |
-| 11 | 5 | Extract to generic component | ⏳ Future |
+### Documentation ✅ Complete
+
+| Document | Status |
+|----------|--------|
+| [LITHIUM-TAB-TABLES.md](LITHIUM-TAB-TABLES.md) | Complete - documents Stage 1/2/3 resolution |
+| [LITHIUM-TAB-TYPES.md](LITHIUM-TAB-TYPES.md) | Complete - all 25 coltypes documented |
+| [LITHIUM-TAB-TYPES-*.md](LITHIUM-TAB-TYPES-DEFAULT.md) | Complete - individual type docs |
+| [LITHIUM-TAB-TYPES.schema.json](LITHIUM-TAB-TYPES.schema.json) | Complete - validation schema |
+| [LITHIUM-COL.md](LITHIUM-COL.md) | Complete - Column Manager docs |
+
+### Database/Migrations ✅ Complete
+
+| Migration | Status |
+|-----------|--------|
+| acuranzo_1153.lua | ✅ Complete - coltypes with "default" stanza (Key 0) |
+| acuranzo_1154.lua | ✅ Complete - query-manager tableDef (Key 1) |
+| acuranzo_1156.lua | ✅ Complete - lookups-list tableDef (Key 2) |
+| acuranzo_1157.lua | ✅ Complete - lookup-values tableDef (Key 3) |
+
+### Current Runtime Implementation ⚠️ Needs Updates
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| `loadColtypes()` | ✅ Works | Loads from Lookup 059 Key 0 |
+| `loadTableDef()` | ✅ Works | Loads from Lookup 059, has auto-discover fallback |
+| `resolveColumn()` | ⚠️ Partial | Works but does NOT merge from coltypes.default first |
+| `discoverColumns()` | ⚠️ Partial | Basic fallback exists, no coltype detection |
+| `columnPri` ordering | ❌ Missing | Not implemented |
+| Schema validation | ❌ Missing | Not implemented |
+| Data-first init | ⚠️ Partial | Loads config, then data - should load data FIRST |
 
 ---
 
-## Testing Strategy
+## The Target Architecture
 
-Per LITHIUM-TOC.md: **do not run the dev server** — validate through:
+```stages
+Stage 1: Auto-Detection (Runtime)
+├── Input: Query data (JSON array)
+├── Process: 
+│   1. Detect coltype from JSON data type (string → string, number → integer/decimal, boolean → boolean)
+│   2. Load coltypes.default + detected coltype from Lookup 059 Key 0
+│   3. Merge: default → coltype → derived (title from field name, columnPri from order)
+└── Output: Fully populated tableDef
 
-- `npm run build` — ensure no import/syntax errors
-- `npm run validate:tabulator` — ensure JSON configs remain valid
-- `npm test` — 490 tests across 17 files (all passing)
-- Unit tests for `resolveColumn()`, `wrapFormatter()`, `resolveColumns()`,
-  `resolveTableOptions()`, `getPrimaryKeyField()`, `getQueryRefs()`, lookup
-  functions, lookup resolver integration, persistSort/persistFilter, and
-  cache management (84 tests in `lithium-table.test.js`)
+Stage 2: Table Definition (Lookup 059 Keys 1+)
+├── Input: Stage 1 tableDef + tableDef from Lookup 059 Key N
+├── Process: Merge per-column overrides from table definition
+└── Output: Enhanced tableDef with developer-defined defaults
 
----
-
-## Implementation Notes & Lessons Learned
-
-### Architecture: Functional API vs. Class
-
-The plan originally described a `LithiumTable` class with static methods. The
-implementation uses **named function exports** instead:
-
-```javascript
-export function resolveColumn(...)
-export function resolveColumns(...)
-export async function loadColtypes()
+Stage 3: User Customization (Column Manager)
+├── Input: Stage 2 tableDef + user preferences
+├── Process: Apply user template overrides
+└── Output: Final personalized tableDef
 ```
 
-**Why:** Module-level caching (via closure variables `_coltypesCache`,
-`_tableDefCache`, `_lookupCache`) is simpler and more testable than static class
-properties. The functional approach also enables tree-shaking — consumers only
-import the functions they need.
+---
 
-### Fallback Pattern
+## Implementation Phases (Sequenced with Testing Gates)
 
-All JSON config consumption uses a fallback-with-nullish-coalescing pattern:
-
-```javascript
-const listRef = this.queryRefs?.queryRef ?? 25;
-```
-
-This ensures the app degrades gracefully if configs fail to load (e.g., during
-local development without the config directory served).
-
-### `_discoverColumns()` Kept as Hybrid
-
-The original plan said to remove `_discoverColumns()`. In practice, it provides
-value as a discovery layer for API fields that aren't in the JSON config yet.
-New fields automatically appear in the column chooser as hidden columns,
-without requiring a config update.
-
-### Null Overrides Remove Properties
-
-When a column override sets a property to `null` (e.g., `"bottomCalc": null`),
-the spread `{ ...coltype, ...overrides }` produces `null`. The resolver's
-`if (merged.bottomCalc != null)` check then skips it, effectively removing
-the property from the Tabulator column definition. This is intentional and
-allows overrides to suppress coltype defaults.
-
-### wrapFormatter and Built-in Formatters
-
-The `wrapFormatter()` function works perfectly for intercepting blank/zero
-values. However, when wrapping a built-in Tabulator formatter (string name),
-the wrapper can't invoke Tabulator's internal formatter for non-blank values.
-It returns the raw cell value instead. This is acceptable because:
-
-1. Blank/zero handling is the primary use case (show `""` or `"—"`)
-2. Non-blank values pass through to Tabulator which applies the formatter
-   via the `formatter` property on the column definition
-3. The wrapper only activates when `needsBlankZeroWrapper()` returns true
-
-### Duplicate Import Method Bug
-
-A subtle bug existed where two `handleImport()` method definitions appeared
-in `queries.js`. JavaScript uses the **last** definition, so the working
-implementation (file picker + `table.import()`) was silently overwritten by
-a TODO stub. This was fixed by removing the duplicate.
-
-### Edit Mode Follow-up: Row-Scoped Editors + Selection Stability
-
-The first pass at inline editing exposed three related issues in the Queries
-manager:
-
-1. Column editor updates were asynchronous, so a call to `cell.edit()` could
-   run before the new editor definition had been attached to the column.
-2. Row selection could vary by cell type because some cell interactions reached
-   Tabulator's selection flow differently once edit-capable columns were present.
-3. Resize handles could still appear in non-header sections, making resizing
-   feel available from the wrong place.
-
-The follow-up fix in `src/managers/queries/queries.js` now:
-
-- makes `_enterEditMode()` / `_exitEditMode()` await async
-  `updateColumnDefinition()` work,
-- forces row selection consistently on `cellMouseDown` and `cellClick` before
-  any edit attempt,
-- defers `cell.edit()` with `requestAnimationFrame()` so the newly attached
-  editor is available before Tabulator opens it.
-
-The companion CSS update in `src/managers/queries/queries.css` hides
-non-header `.tabulator-col-resize-handle` elements with `!important`, leaving
-column resizing active only in header cells.
-
-An additional follow-up tightened event handling around footer calcs and
-same-row edit handoff:
-
-- footer calc rows/cells are now ignored by selection/edit handlers and have
-  pointer events disabled so they cannot become the active row,
-- switching from one editable cell to another on the same row now blurs the
-  current editor first so Tabulator saves the value before opening the next
-  field,
-- detail reloads are suppressed while the currently edited row remains selected,
-  preventing redundant REST calls during intra-row editing.
-
-One more pass addressed two remaining rough edges observed during manual use:
-
-- row-selection changes now explicitly close transient popups (column chooser,
-  navigator popup, footer export popup, font popup), which covers cases where a
-  document-level click handler never fires because the selection change came from
-  keyboard navigation or a Tabulator event path that stops propagation,
-- programmatic cell-editor activation now uses a tokenised double
-  `requestAnimationFrame()` handoff so number/list editors have more time to
-  open cleanly after the previous inline editor blurs and commits.
-
-### detailQueryRef Wiring
-
-`query-manager.json` now includes `detailQueryRef: 27`, and `queries.js` →
-`fetchQueryDetails()` reads this from `this.queryRefs?.detailQueryRef ?? 27`
-instead of hardcoding `27`. This ensures the detail-fetch query reference is
-config-driven, consistent with all other QueryRefs.
-
-### persistSort / persistFilter
-
-The tabledef schema already supported `persistSort` and `persistFilter` as
-boolean properties, and `query-manager.json` had them set to `true`. However,
-`resolveTableOptions()` did not map them. Now it does — both properties are
-passed through to the Tabulator constructor when present.
-
-### Table Width Presets
-
-The Print button was removed from the first nav block (Control) and replaced
-with a **Table Width** popup button (`fa-left-right` icon). Print, Email, and
-Export are now handled exclusively by the query manager footer's data-source
-controls (which support View vs. Data modes).
-
-The width popup offers five presets based on the nav-block unit:
-
-| Preset | Blocks | Pixel Width | Formula |
-|--------|--------|-------------|---------|
-| Narrow | 1 | 160px | 150 + 10 |
-| Compact | 2 | 314px | 300 + 4 + 10 |
-| Normal | 3 | 468px | 450 + 8 + 10 |
-| Wide | 4 | 622px | 600 + 12 + 10 |
-| Auto | — | calculated | sum of visible column widths + 28px margin |
-
-Where: nav block = 150px, gap = 4px (`--space-2`), container pad = 10px (6 + 4).
-
-**Auto** mode sums visible column widths via the Tabulator column API
-(`col.getWidth()`) after a forced redraw. When the current layout is
-`fitColumns` (columns stretched to fill), it temporarily switches to
-`fitDataTable` and expands the panel to 2000px so columns can spread to
-their natural content widths, measures, then restores the original layout.
-When a data-fitting layout (`fitData`, `fitDataFill`, `fitDataStretch`,
-`fitDataTable`) is active, columns are already at natural width and no
-layout switching is needed.
-
-A double `requestAnimationFrame` ensures the browser has fully committed
-the redraw before measuring. This fixes a timing issue where the previous
-single-rAF approach could measure stale layout dimensions.
-
-**Persistence:** The panel width is saved to `localStorage` (`PANEL_WIDTH_KEY`)
-after every preset selection **and** every manual splitter resize. On init, the
-stored value is restored and the width mode indicator is auto-detected (±8px
-tolerance per preset, falling back to `'custom'`).
-
-### Table Layout Mode
-
-The Email button was removed from the first nav block (Control) — email is
-now handled exclusively by the footer's data-source controls — and replaced
-with a **Table Layout** popup button (`fa-table-columns` icon).
-
-The layout popup offers five Tabulator layout modes:
-
-| Popup Label | Tabulator Setting | Behaviour |
-|-------------|-------------------|-----------|
-| Fit Columns | `fitColumns` | Columns stretch proportionally to fill the table width (default) |
-| Fit Data | `fitData` | Columns size to their data content; table may be narrower than panel |
-| Fit Fill | `fitDataFill` | Size to data, then stretch the **last** column to fill remaining space |
-| Fit Stretch | `fitDataStretch` | Size to data, then stretch **all** columns proportionally to fill |
-| Fit Table | `fitDataTable` | Size to data; table element itself shrinks to match column widths |
-
-**Persistence:** The layout mode is saved to `localStorage` (`LAYOUT_MODE_KEY`)
-and restored on init, overriding the JSON config default. This lets the user's
-preferred layout survive refresh and re-login.
-
-**Auto width integration:** When the layout mode changes while the panel is in
-auto-width mode, `setTableLayout()` automatically triggers `_applyAutoWidth()`
-to resize the panel to match the new natural column widths. This enables a
-workflow of: set layout to Fit Data → set width to Auto → panel sizes itself
-to exactly fit the table content.
-
-### Lookup Resolver Auto-Wiring
-
-`resolveColumn()` now checks for a `lookupRef` property on the column
-definition. If the lookup data is in the module cache (populated by
-`preloadLookups()`), the resolver automatically assigns:
-
-- `formatter` → `createLookupFormatter(lookupRef)` (replaces the coltype
-  default)
-- `editor` → list editor from `createLookupEditor()` with autocomplete
-
-If the lookup is **not** cached, the column falls through to the coltype's
-standard formatter/editor. This means the feature is entirely non-breaking:
-without a live API to populate lookups, columns render their raw integer IDs
-using the coltype formatter.
+**IMPORTANT:** Each phase MUST have passing tests before continuing to the next phase.
 
 ---
 
-## Remaining Work
+### Phase 1: Default Merge Engine (FOUNDATION)
 
-1. **Hydrogen Backend: Define CRUD QueryRefs** (prerequisite for live Save/Delete)
-   - Define insert, update, and delete queries in Hydrogen for the Query Manager
-   - Add the resulting QueryRef numbers to `query-manager.json`
-     (`insertQueryRef`, `updateQueryRef`, `deleteQueryRef`)
-   - The frontend code is ready — it will use the refs automatically
+**Goal:** Implement the critical merge order: `coltypes.default` → `{coltype}`
 
-2. **Phase 5: Reusable Navigator Component**
-   - Extract navigator HTML template into a shared module
-   - Move button wiring and move/manage logic into reusable functions
-   - Enable new managers to spin up a table with minimal boilerplate
+**Why first:** This is the foundation. Nearly everything builds on top of this hierarchy being correct.
+- The "default" stanza in Lookup 059 Key 0 is the root of everything
+- Each coltype stanza only contains properties that DIFFER from default
+- We MUST merge default FIRST, then overlay the specific coltype
 
-3. ~~**Lookup Integration at Runtime** (Phase 3 enhancement)~~ ✅ Done
-   - ~~Call `preloadLookups()` during table init to pre-fetch lookup data~~
-   - ~~Wire `createLookupFormatter()` into the column resolver for lookup columns~~
-   - `resolveColumn()` now auto-detects `lookupRef` + cached data → wires
-     formatter and editor automatically
-   - `queries.js` → `initTable()` collects `lookupRef` values from the
-     tabledef and calls `preloadLookups()` before resolving columns
-   - Falls back gracefully to coltype defaults when lookups are not cached
-   - Requires a live Hydrogen API for lookup data to be available
+**Testing Gate:** Unit tests MUST pass for merge logic before Phase 2
+
+1. **Default + Coltype Merge Engine** - The critical merge order:
+   ```
+   // WRONG (current):
+   merged = { ...coltype[colDef.coltype], ...colDef }
+   
+   // CORRECT (new):
+   const defaultCol = coltypes.default || {};
+   const typeCol = coltypes[colDef.coltype] || {};
+   merged = { ...defaultCol, ...typeCol, ...colDef };
+   ```
+   Each coltype stanza only contains properties that differ from default.
+
+2. **Resolve Column Refactor** - Update `resolveColumn()` to use correct merge order
+
+3. **Coltypes Caching** - After first merge, cache resolved coltypes per session
+
+4. **Lookup 059 Fresh Fetch** - Always fetch from DB, only cache merged result
+
+**Validation:**
+- Unit test: merge produces expected properties (default + type combined)
+- Unit test: unknown properties pass through unchanged
+- Unit test: derived values (title) correct
+
+---
+
+### Phase 2: Auto-Discovery with Coltype Detection
+
+**Goal:** Implement `discoverColumns()` with JSON type → coltype detection
+
+**Testing Gate:** Unit tests MUST pass for detection logic before Phase 3
+
+1. **JSON Type Detection** - Map JSON types to coltypes:
+   - `string` → `string`
+   - `number` (no decimals) → `integer`
+   - `number` (with decimals) → `decimal`
+   - `boolean` → `boolean`
+   - `null` → `string` (treated as empty string)
+
+2. **discoverColumns() Enhancement** - Detect coltypes from data, not just generic columns:
+   - Sample each field's values to determine type
+   - Apply default merge (from Phase 1) for each discovered column
+   - Derive `title` from field name (e.g., `query_id` → "Query Id")
+
+3. **Derived Values** - For auto-detected columns:
+   - `title`: Derive from field name
+   - `columnPri`: Assign based on field order in data (1, 2, 3...)
+
+**Validation:**
+- Unit test: JSON type → coltype mapping for each type
+- Unit test: derived title matches field name pattern
+- Unit test: columnPri assigned in field order
+
+---
+
+### Phase 3: Schema Validation
+
+**Goal:** Validate tableDef after each stage
+
+**Testing Gate:** Unit tests MUST pass for validation before Phase 4
+
+1. **Schema Validation** - Validate tableDef after each stage (dev mode only):
+   - Fetch schema from `LITHIUM-TAB-TYPES.schema.json` or Lookup 059
+   - Validate Stage 1 auto-detected tableDef
+   - Validate Stage 2 merged tableDef
+   - Validate Stage 3 user-modified tableDef
+   - Unknown properties ignored (pass through for extensibility)
+
+2. **Dev Mode Flag:** `localStorage.getItem('li_dev_validate') === true`
+   - Production skips validation for performance
+
+**Validation:**
+- Unit test: schema validation rejects invalid tableDef
+- Unit test: schema validation accepts valid tableDef
+- Unit test: unknown properties pass through
+
+---
+
+### Phase 4: Data-First Initialization
+
+**Goal:** Refactor initialization to load data BEFORE init table
+
+**Why:** In Tabulator, redefining columns is a costly operation.
+- If we need to do all this to get the tableDef in shape anyway,
+  there's no point drawing the table and then redoing it again.
+- Just get the tableDef ready FIRST, then touch Tabulator.
+
+**Testing Gate:** Integration tests MUST pass before Phase 5
+
+1. **Data Prefetch** - Load data BEFORE config/table init
+   - Get data and determine the FULL tableDef before Tabulator
+   - This includes Stage 1 (auto-detection), Stage 2 (Lookup 059), Stage 3 (user)
+
+2. **Async Pipeline** - Full async flow (never block):
+   ```
+   async init() {
+     // 1. Start loading data FIRST (async, non-blocking)
+     const dataPromise = this.loadData();
+     
+     // 2. Wait for data, then do ALL column resolution
+     const data = await dataPromise;
+     
+     // 3. Stage 1: Detect columns from data types
+     const stage1TableDef = detectColumnsFromData(data, this.coltypes);
+     
+     // 4. Stage 2: Merge with Lookup 059 table definition
+     const stage2TableDef = mergeWithTableDef(stage1TableDef, this.tableDef);
+     
+     // 5. Stage 3: Apply user template (if saved)
+     const finalTableDef = applyUserTemplate(stage2TableDef);
+     
+     // 6. NOW init Tabulator with complete tableDef - no columns to add!
+     await this.initTable(finalTableDef);
+   }
+   ```
+
+3. **columnPri Sorting** - Sort columns by `columnPri` before passing to Tabulator:
+   ```
+   columns.sort((a, b) => {
+     const priA = a.columnPri ?? Infinity;
+     const priB = b.columnPri ?? Infinity;
+     return priA - priB;
+   });
+   ```
+
+**Validation:**
+- Integration test: Table renders with complete tableDef on first draw
+- Integration test: No column add/remove operations after initial render
+
+---
+
+### Phase 5: Lookup 059 Integration
+
+**Goal:** Full table definition loading from database
+
+**Testing Gate:** Integration tests MUST pass before Phase 6
+
+1. **Database Loader** - Fetch from lookups table:
+   - Key 0: `column-types` (coltypes with "default" stanza)
+   - Keys 1+: Table definitions
+
+2. **No Caching of Lookup Data** - Fetch fresh each time
+3. **Fallback** - If Lookup 059 unavailable, fall back to Stage 1 auto-detection
+
+**Validation:**
+- Integration test: Lookup 059 Key 0 loads correctly
+- Integration test: Table definitions load from Keys 1+
+- Manual: Verify existing tables (Query Manager, Lookups List) render with DB config
+
+---
+
+### Phase 6: Column Manager (Stage 3)
+
+**Goal:** Full property editing via Column Manager
+
+**Testing Gate:** Manual tests MUST pass before Phase 7
+
+1. **Expand Properties** - Support all coltype properties:
+   - `title`, `visible`, `width`, `columnPri`
+   - `coltype` (change type)
+   - `formatter`, `formatterParams`
+   - `editor`, `editorParams`
+   - `bottomCalc`, `bottomCalcFormatter`
+
+2. **Export/Import** - "Copy tableDef as JSON" → paste into Lookup 059
+
+3. **Column Manager TableDef** - The Column Manager itself has a Lookup 059 entry
+
+**Validation:**
+- Manual: Open Column Manager, change a property, verify it applies
+- Manual: Export tableDef as JSON, verify it's valid
+
+---
+
+### Phase 7: Migrate Internal Coltypes
+
+**Goal:** Remove hardcoded coltypes from Column Manager
+
+**Testing Gate:** Unit tests MUST pass before complete
+
+1. **Remove Hardcoded Coltypes** - No `lookupFixed`, `stringList` hardcoded
+2. **Use Standard Coltypes** - Use existing coltypes from Lookup 059
+
+**Validation:**
+- Unit test: All coltypes come from database
+- Manual: Verify Column Manager dropdowns still work
+
+---
+
+---
+
+## Dependencies & Sequencing
+
+```stages
+Phase 1 (Default Merge Engine - FOUNDATION)
+    ↓ Testing Gate
+Phase 2 (Auto-Discovery + Coltype Detection)
+    ↓ Testing Gate
+Phase 3 (Schema Validation)
+    ↓ Testing Gate
+Phase 4 (Data-First Initialization)
+    ↓ Testing Gate
+Phase 5 (Lookup 059 Integration)
+    ↓ Testing Gate
+Phase 6 (Column Manager)
+    ↓ Testing Gate
+Phase 7 (Migrate Internal Coltypes)
+```
+
+**Critical Path:** Phases 1-4 are critical. Phases 5-7 can happen in parallel or after.
+
+---
+
+## Property Mapping Reference
+
+New implementation uses clean property names:
+
+| New | Description |
+|-----|-------------|
+| `title` | Column header |
+| `hozAlign` | Horizontal alignment |
+| `headerSort` | Header click to sort |
+| `headerFilter` | Header filter input |
+| `groupable` | Enable grouping |
+| `coltype` | References Lookup 059 Key 0 |
+| `columnPri` | Display order (1, 2, 3... based on field order) |
+| `primaryKey` | DB primary key marker |
+| `calculated` | Runtime-computed value marker |
+
+---
+
+## Test Plan
+
+### Test Infrastructure
+
+- **Framework**: Vitest (`npm run test` = `vitest run`)
+- **Location**: `elements/003-lithium/tests/unit/`
+- **Existing tests**:
+  - `lithium-table.test.js` - Core table resolution tests (123 tests)
+  - `lithium-table-template.test.js` - Template tests (3 tests)
+  - `lithium-column-manager.test.js` - Column Manager tests (19 tests)
+  - Multiple other unit tests
+
+**Current test status** (pre-change):
+- 21 test files passed
+- 597 tests passed
+
+### Running Tests
+
+```bash
+# Run unit tests (Vitest)
+npm run test
+
+# Run unit tests in watch mode
+npm run test:watch
+
+# Run with coverage
+npm run test:coverage
+
+# Run CI test suite
+npm run test:ci
+```
+
+### Phase 1 Tests (Default Merge Engine)
+
+- Unit: merge produces expected properties (default + type combined)
+- Unit: unknown properties pass through unchanged
+
+### Phase 2 Tests (Auto-Discovery)
+
+- Unit: JSON type → coltype mapping for each type
+- Unit: derived title matches field name pattern
+- Unit: columnPri assigned in field order
+
+### Phase 3 Tests (Schema Validation)
+
+- Unit: schema validation rejects invalid tableDef
+- Unit: schema validation accepts valid tableDef
+- Unit: unknown properties pass through
+
+### Phase 4 Tests (Data-First Init)
+
+- Integration: Table renders with complete tableDef on first draw
+- Integration: No column add/remove operations after initial render
+- Manual: Verify existing tables work
+
+### Phase 5 Tests (Lookup 059 Integration)
+
+- Integration: Lookup 059 Key 0 loads correctly
+- Integration: Table definitions load from Keys 1+
+- Manual: Verify existing tables (Query Manager, Lookups List) render with DB config
+
+### Phase 6 Tests (Column Manager)
+
+- Manual: Open Column Manager, change a property, verify it applies
+- Manual: Export tableDef as JSON, verify it's valid
+
+### Phase 7 Tests (Migrate Internal)
+
+- Unit: All coltypes come from database
+- Manual: Column Manager dropdowns still work
+
+**Pre-change baseline:** 597 tests passing
+
+---
+
+## Implementation Details
+
+### Stage 1: Data-First Initialization (Reference)
+
+1. **Load data** (via queryRef)
+2. **Detect columns** from data types → Stage 1 tableDef
+3. **Merge with Lookup 059** table definition → Stage 2 tableDef
+4. **Apply user template** (if saved) → Stage 3 tableDef
+5. **Resolve to Tabulator format** and init table
+
+### columnPri and Column Ordering
+
+Tabulator uses the columns array order for display (first in array = leftmost column). Implementation:
+
+```javascript
+// Resolve columns to array, then sort by columnPri before passing to Tabulator
+columns.sort((a, b) => {
+  const priA = a.columnPri ?? Infinity;
+  const priB = b.columnPri ?? Infinity;
+  return priA - priB;
+});
+```
+
+The `columnPri` property flow:
+1. **Stage 1 assignment:** `columnPri` is set to field order (1, 2, 3...) based on `Object.keys(data[0])`
+2. **Stage 2 override:** Table definition in Lookup 059 can set explicit `columnPri` values
+3. **Stage 3 user override:** Column Manager or drag-to-reorder updates `columnPri`
+
+### Caching Strategy
+
+1. **Never cache raw Lookup 059 data** - Always fetch fresh from database
+2. **Cache merged resolved coltypes** - After merging default + coltype stanzas, cache the result
+3. **On Refresh button click:** Always re-fetch Lookup 059 (invalidate cache before fetch)
+
+### Schema Validation
+
+Validate tableDef after each stage using `LITHIUM-TAB-TYPES.schema.json`:
+
+- Stage 1: Validate auto-detected tableDef
+- Stage 2: Validate merged tableDef from Lookup 059
+- Stage 3: Validate user-modified tableDef from Column Manager
+
+Unknown properties should be ignored (pass through) to allow future extensibility.
+
+**Dev mode only:** Validation enabled via flag (e.g., `localStorage.getItem('li_dev_validate') === true`). Production skips validation for performance.
+
+---
+
+## Notes
+
+- **"default" stanza is the ROOT of everything** - all coltypes inherit from it
+- **Merge order:** Start with `coltypes.default`, then overlay `coltypes.{type}` (NOT the reverse)
+- Each coltype stanza only contains variances from default
+- Implementation should ignore unknown properties (pass through)
+- **No caching of Lookup 059 data** - fetch fresh from database each time
+- **Cache merged coltypes** - after first resolve, cache the merged result for the session
+- **Data-first:** Get tableDef ready BEFORE touching Tabulator
+- **`columnPri`** is the property for column display order (Stage 1 assigns from field order)
+- The Column Manager is our primary tableDef editor
+- Export JSON → paste to Lookup 059 = way to capture Stage 2 defaults
+
+---
+
+## Migration Reference
+
+| Migration | File | Key | Purpose |
+|------------|------|-----|---------|
+| acuranzo_1153.lua | elements/002-helium/acuranzo/migrations/acuranzo_1153.lua | 0 | coltypes with "default" stanza |
+| acuranzo_1154.lua | — | 1 | query-manager tableDef |
+| acuranzo_1156.lua | — | 2 | lookups-list tableDef |
+| acuranzo_1157.lua | — | 3 | lookup-values tableDef |
+
+(End of file)

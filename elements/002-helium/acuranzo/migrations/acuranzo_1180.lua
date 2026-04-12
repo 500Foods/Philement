@@ -1,20 +1,20 @@
--- Migration: acuranzo_1152.lua
--- Lookup 059 - Table Definitions
+-- Migration: acuranzo_1180.lua
+-- LithiumTable column-manager-manager tableDef (lookup_id 059, key_idx 3)
 
 -- luacheck: no max line length
 -- luacheck: no unused args
 
 -- CHANGELOG
--- 1.0.1 - 2026-04-11 - Updated some of the text/terminology
--- 1.0.0 - 2026-03-15 - Initial creation
+-- 1.0.0 - 2026-04-12 - Initial creation
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
 
 cfg.TABLE = "lookups"
-cfg.MIGRATION = "1152"
+cfg.MIGRATION = "1154"
 cfg.LOOKUP_ID = "059"
-cfg.LOOKUP_NAME = "Table Definitions"
+cfg.KEY_IDX = "1"
+cfg.TABLEDEF_NAME = "tabledef-json-schema"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
@@ -35,70 +35,19 @@ table.insert(queries,{sql=[[
         ${TIMEOUT}                                                          AS query_timeout,
         [=[
             INSERT INTO ${SCHEMA}${TABLE}
-            (
-                lookup_id,
-                key_idx,
-                status_a1,
-                value_txt,
-                value_int,
-                sort_seq,
-                code,
-                summary,
-                collection,
-                ${COMMON_FIELDS}
-            )
-            VALUES (
-                0,                              -- lookup_id
-                ${LOOKUP_ID},                   -- key_idx
-                1,                              -- status_a1
-                '${LOOKUP_NAME}',               -- value_txt
-                0,                              -- value_int
-                0,                              -- sort_seq
-                '',                             -- code
+                (lookup_id, key_idx, status_a1, value_txt, value_int, sort_seq, code, summary, collection, ${COMMON_FIELDS})
+            VALUES
+                (${LOOKUP_ID}, ${KEY_IDX}, 1, '${TABLEDEF_NAME}', 0, 1, '',
                 [==[
-                    # ${LOOKUP_ID} - ${LOOKUP_NAME}
+                    # Column Manager Manager tableDef
 
-                    This lookup stores JSON schema definitions for the LithiumTable (Tabulator) component.
-                    The schemas define column types (coltypes) and table definitions (tableDefs)
-                    that drive the dynamic table configuration system.
-
-                    ## Key Entries
-
-                    These will evolve in subsequent migrations, but when this was created these were
-                    the relevent entries. There's a separate migration for each of these.
-
-                    key_idx - reference - migration
-                    0 - column-types
-                    1 - tabledef-schema
-                    2 - column-manager
-                    3 - column-manager-manager
-                    4 - user-profile-sections
-                    5 - query-manager
-                    6 - lookups-manager-list
-                    7 - lookups-manager-values
-                    8 - style-manager-list
-                    9 - style-manager-sections
-                    10 - version-manager
-
-                    ## Usage
-
-                    These schemas are loaded at runtime by the Lithium application to configure
-                    Tabulator tables dynamically. Changes to these schemas affect how data is
-                    displayed, edited, and sorted across the application.
-                ]==],                           -- summary
+                ]==],
                 ${JSON_INGEST_START}
-                [==[
-                    {
-                        "Default": "JSONEditor",
-                        "CSSEditor": false,
-                        "HTMLEditor": false,
-                        "JSONEditor": true,
-                        "LookupEditor": false
-                    }
-                ]==]
-                ${JSON_INGEST_END},             -- collection
-                ${COMMON_VALUES}
-            );
+[===[
+{
+}
+]===]
+                ${JSON_INGEST_END}, ${COMMON_VALUES});
 
             ${SUBQUERY_DELIMITER}
 
@@ -108,12 +57,13 @@ table.insert(queries,{sql=[[
               and query_type_a28 = ${TYPE_FORWARD_MIGRATION};
         ]=]
                                                                             AS code,
-        'Populate Lookup ${LOOKUP_ID} in ${TABLE} table'                    AS name,
+        'Populate ${TABLEDEF_NAME} tableDef in Lookup ${LOOKUP_ID}'             AS name,
         [=[
-            # Forward Migration ${MIGRATION}: Populate Lookup ${LOOKUP_ID} - ${LOOKUP_NAME}
+            # Forward Migration ${MIGRATION}: Populate ${TABLEDEF_NAME} tableDef in Lookup ${LOOKUP_ID}
 
-            This migration creates the lookup entry for Lookup ${LOOKUP_ID} - ${LOOKUP_NAME}.
-            This lookup stores JSON schema definitions for the Lithium Tabulator component.
+            This migration inserts the ${TABLEDEF_NAME} table definition into the lookups table
+            as Lookup ${LOOKUP_ID}, Key ${KEY_IDX}. This defines the column layout
+            and configuration for the ${TABLEDEF_NAME} table.
         ]=]
                                                                             AS summary,
         '{}'                                                                AS collection,
@@ -141,8 +91,8 @@ table.insert(queries,{sql=[[
         ${TIMEOUT}                                                          AS query_timeout,
         [=[
             DELETE FROM ${SCHEMA}${TABLE}
-            WHERE lookup_id = 0
-            AND key_idx = ${LOOKUP_ID};
+            WHERE lookup_id = ${LOOKUP_ID}
+            AND key_idx = ${KEY_IDX};
 
             ${SUBQUERY_DELIMITER}
 
@@ -152,9 +102,9 @@ table.insert(queries,{sql=[[
               and query_type_a28 = ${TYPE_APPLIED_MIGRATION};
         ]=]
                                                                             AS code,
-        'Remove Lookup ${LOOKUP_ID} from ${TABLE} Table'                    AS name,
+        'Remove ${SCHEMA_NAME} schema from Lookup ${LOOKUP_ID}'             AS name,
         [=[
-            # Reverse Migration ${MIGRATION}: Remove Lookup ${LOOKUP_ID} - ${LOOKUP_NAME} from ${TABLE} Table
+            # Reverse Migration ${MIGRATION}: Remove ${SCHEMA_NAME} schema from Lookup ${LOOKUP_ID}
 
             This is provided for completeness when testing the migration system
             to ensure that forward and reverse migrations are complete.
