@@ -15,6 +15,65 @@ import { offset, flip, shift } from '@floating-ui/dom';
 import './tour.css';
 
 // ========================================
+// Video Tour State Persistence
+// ========================================
+
+const VIDEO_STORAGE_KEYS = {
+  CAPTIONS: 'lithium_video_captions_enabled',
+  SPEED: 'lithium_video_playback_speed',
+  VOLUME: 'lithium_video_volume',
+  MUTED: 'lithium_video_muted',
+  X: 'lithium_video_x',
+  Y: 'lithium_video_y',
+  WIDTH: 'lithium_video_width',
+  HEIGHT: 'lithium_video_height',
+};
+
+function loadVideoState() {
+  try {
+    const volume = parseFloat(localStorage.getItem(VIDEO_STORAGE_KEYS.VOLUME));
+    const x = parseInt(localStorage.getItem(VIDEO_STORAGE_KEYS.X), 10);
+    const y = parseInt(localStorage.getItem(VIDEO_STORAGE_KEYS.Y), 10);
+    const width = parseInt(localStorage.getItem(VIDEO_STORAGE_KEYS.WIDTH), 10);
+    const height = parseInt(localStorage.getItem(VIDEO_STORAGE_KEYS.HEIGHT), 10);
+    return {
+      captionsEnabled: localStorage.getItem(VIDEO_STORAGE_KEYS.CAPTIONS) !== 'false',
+      playbackSpeed: parseFloat(localStorage.getItem(VIDEO_STORAGE_KEYS.SPEED)) || 1,
+      volume: (volume !== null && !isNaN(volume)) ? volume : 1,
+      muted: localStorage.getItem(VIDEO_STORAGE_KEYS.MUTED) === 'true',
+      x: (!isNaN(x) && x >= 0) ? x : null,
+      y: (!isNaN(y) && y >= 0) ? y : null,
+      width: (!isNaN(width) && width > 0) ? width : null,
+      height: (!isNaN(height) && height > 0) ? height : null,
+    };
+  } catch (e) {
+    return null;
+  }
+}
+
+function saveVideoState(state) {
+  try {
+    // Validate all numeric values to prevent NaN/Infinity issues
+    const safeVolume = (typeof state.volume === 'number' && isFinite(state.volume)) ? state.volume : 1;
+    const safeX = (typeof state.x === 'number' && isFinite(state.x)) ? Math.round(state.x) : 0;
+    const safeY = (typeof state.y === 'number' && isFinite(state.y)) ? Math.round(state.y) : 0;
+    const safeWidth = (typeof state.width === 'number' && isFinite(state.width)) ? Math.round(state.width) : 640;
+    const safeHeight = (typeof state.height === 'number' && isFinite(state.height)) ? Math.round(state.height) : 360;
+    
+    localStorage.setItem(VIDEO_STORAGE_KEYS.CAPTIONS, String(state.captionsEnabled));
+    localStorage.setItem(VIDEO_STORAGE_KEYS.SPEED, String(state.playbackSpeed));
+    localStorage.setItem(VIDEO_STORAGE_KEYS.VOLUME, String(safeVolume));
+    localStorage.setItem(VIDEO_STORAGE_KEYS.MUTED, String(state.muted ?? false));
+    localStorage.setItem(VIDEO_STORAGE_KEYS.X, String(safeX));
+    localStorage.setItem(VIDEO_STORAGE_KEYS.Y, String(safeY));
+    localStorage.setItem(VIDEO_STORAGE_KEYS.WIDTH, String(safeWidth));
+    localStorage.setItem(VIDEO_STORAGE_KEYS.HEIGHT, String(safeHeight));
+  } catch (e) {
+    // localStorage may not be available
+  }
+}
+
+// ========================================
 // State
 // ========================================
 
@@ -25,6 +84,7 @@ let _listPopup = null;
 let _documentClickHandler = null;
 let _tourEnding = false;  // Guard against navigate during cancel/complete
 let _tourContainer = null; // Dedicated container for tour step elements
+let _videoStateCleanup = null; // Cleanup function for video state saving
 
 /**
  * Initialize the tour container in the DOM
@@ -161,13 +221,66 @@ export async function refreshTours(api) {
 
 /**
  * Get tours for a specific manager
+ * Supports both:
+ * - Single manager: "023.Lookup Manager" (exact match)
+ * - Multiple managers: ["029.Query Manager", "023.Lookup Manager"] (array match)
  * @param {Object} api - The API/conduit instance
  * @param {string} managerName - Manager name (e.g., "023.Lookup Manager")
  * @returns {Promise<Array>} Filtered tour objects
  */
 export async function getToursForManager(api, managerName) {
   const tours = await getTours(api);
-  return tours.filter(t => t.definition.manager === managerName);
+  return tours.filter(t => {
+    const def = t.definition;
+    if (!def) return false;
+    // Single manager (existing format)
+    if (def.manager === managerName) return true;
+    // Multiple managers (new array format)
+    if (Array.isArray(def.managers)) {
+      return def.managers.includes(managerName);
+    }
+    return false;
+  });
+}
+
+/**
+ * Check if a tour is a video tour
+ * @param {Object} tour - Tour object
+ * @returns {boolean} True if tour has video field
+ */
+export function isVideoTour(tour) {
+  return !!(tour?.definition?.video);
+}
+
+/**
+ * Get all video tours
+ * @param {Object} api - The API/conduit instance
+ * @returns {Promise<Array>} Array of video tour objects
+ */
+export async function getVideoTours(api) {
+  const tours = await getTours(api);
+  return tours.filter(t => isVideoTour(t));
+}
+
+/**
+ * Get video tours for a specific manager
+ * @param {Object} api - The API/conduit instance
+ * @param {string} managerName - Manager name (e.g., "023.Lookup Manager")
+ * @returns {Promise<Array>} Filtered video tour objects
+ */
+export async function getVideoToursForManager(api, managerName) {
+  const allVideoTours = await getVideoTours(api);
+  return allVideoTours.filter(t => {
+    const def = t.definition;
+    if (!def) return false;
+    // Single manager (existing format)
+    if (def.manager === managerName) return true;
+    // Multiple managers (new array format)
+    if (Array.isArray(def.managers)) {
+      return def.managers.includes(managerName);
+    }
+    return false;
+  });
 }
 
 // ========================================
@@ -1178,6 +1291,13 @@ export async function launchTour(tourId, api, options = {}) {
 
     const { definition } = tour;
 
+    // Check for video tour - launch directly without Shepherd
+    if (definition.video) {
+      log(Subsystems.MANAGER, Status.INFO, `[Tour] Launching video tour: ${tour.name}`);
+      await launchVideoTour(tour, options);
+      return;
+    }
+
     // Expand sidebar if tour requires it (sidebar: true in definition)
     // Use truthy check — the value may arrive as boolean true or string "true"
     const needsSidebar = definition.sidebar === true || definition.sidebar === 'true';
@@ -1260,16 +1380,23 @@ export function showTourList(tours, anchor = null, options = {}) {
   const popup = document.createElement('div');
   popup.className = 'lithium-tour-list-popup';
 
-  const tourItems = tours.map(t => `
-    <div class="lithium-tour-list-item" data-tour-id="${t.id}">
+  const tourItems = tours.map(t => {
+    // Video tours get a play icon override (can still be customized via icon field)
+    const isVideo = isVideoTour(t);
+    const iconHtml = isVideo
+      ? (t.definition.icon || '<fa fa-play></fa>')
+      : (t.definition.icon || '<fa fa-signs-post></fa>');
+    return `
+    <div class="lithium-tour-list-item${isVideo ? ' video-tour' : ''}" data-tour-id="${t.id}">
       <div class="lithium-tour-list-item-icon">
-        ${t.definition.icon || '<fa fa-signs-post></fa>'}
+        ${iconHtml}
       </div>
       <div class="lithium-tour-list-item-info">
         <div class="lithium-tour-list-item-name">${t.name}</div>
       </div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 
   popup.innerHTML = `
     <div class="lithium-tour-list-header">
@@ -1397,6 +1524,845 @@ export function hideTourList(options = {}) {
 }
 
 // ========================================
+// Video Tour Player
+// ========================================
+
+let _activeVideoPopup = null;
+let _activeVideoElement = null;
+
+const VIDEO_PLAYBACK_SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2];
+
+/**
+ * Create and show video tour popup
+ * @param {Object} tour - Video tour object
+ * @param {Object} options - Options
+ */
+export async function launchVideoTour(tour, options = {}) {
+  const { definition } = tour;
+  const videoSrc = definition.video;
+
+  if (!videoSrc) {
+    log(Subsystems.MANAGER, Status.ERROR, '[VideoTour] No video source defined');
+    return;
+  }
+
+  log(Subsystems.MANAGER, Status.INFO, `[VideoTour] Launching: ${tour.name}`);
+
+  // Close any existing video popup
+  if (_activeVideoPopup) {
+    closeVideoTour();
+  }
+
+  // Get icon from definition
+  const iconHtml = definition.icon || '<fa fa-play></fa>';
+  const tourName = expandMacros(tour.name);
+
+  // Create popup element with new layout
+  const popup = document.createElement('div');
+  popup.className = 'lithium-video-tour-popup';
+  popup.innerHTML = `
+    <div class="lithium-video-tour-header">
+      <div class="subpanel-header-group">
+        <div class="lithium-video-tour-header-primary">
+          ${iconHtml}
+          <span class="lithium-video-tour-header-title">${tourName}</span>
+        </div>
+        <div class="lithium-video-tour-header-placeholder"></div>
+        <button type="button" class="lithium-video-tour-header-close" data-video-action="close" title="Close">
+          <fa fa-xmark></fa>
+        </button>
+      </div>
+    </div>
+    <div class="lithium-video-tour-content">
+      <video class="lithium-video-tour-player" preload="metadata" autoplay>
+        <source src="${videoSrc}" type="video/mp4">
+      </video>
+      <div class="lithium-video-tour-play-overlay">
+        <button type="button" class="lithium-video-tour-back-btn" data-video-action="back" title="Back 10 seconds">
+          <fa fa-arrow-rotate-left-10></fa>
+        </button>
+        <button type="button" class="lithium-video-tour-big-play-btn" data-video-action="play">
+          <fa fa-pause></fa>
+        </button>
+        <button type="button" class="lithium-video-tour-forward-btn" data-video-action="forward" title="Forward 10 seconds">
+          <fa fa-arrow-rotate-right-10></fa>
+        </button>
+      </div>
+      <div class="lithium-video-tour-captions-container"></div>
+    </div>
+    <div class="lithium-video-tour-scrubber-row">
+      <input type="range" class="lithium-video-tour-scrubber" min="0" max="100" value="0">
+    </div>
+    <div class="lithium-video-tour-controls">
+      <div class="lithium-video-tour-buttons">
+        <div class="lithium-video-tour-volume">
+          <button type="button" class="lithium-video-tour-mute-btn" data-video-action="mute">
+            <fa fa-volume-high></fa>
+          </button>
+          <input type="range" class="lithium-video-tour-volume-slider" min="0" max="100" value="100">
+        </div>
+        <div class="lithium-video-tour-time">0:00 / 0:00</div>
+        <div class="lithium-video-tour-spacer"></div>
+        <button type="button" class="lithium-video-tour-captions-btn active" data-video-action="captions" title="Toggle Captions">
+          <fa fa-closed-captioning></fa>
+        </button>
+        <button type="button" class="lithium-video-tour-speed-btn" data-video-action="speed">
+          <span>1x</span>
+        </button>
+      </div>
+    </div>
+    <div class="lithium-video-tour-resize-handle-br"></div>
+    <div class="lithium-video-tour-resize-handle-bl"></div>
+    <div class="lithium-video-tour-resize-handle-tr"></div>
+    <div class="lithium-video-tour-resize-handle-tl"></div>
+  `;
+
+  document.body.appendChild(popup);
+
+  // Load saved video tour state
+  const savedState = loadVideoState();
+  console.log('[VideoTour] Loaded state:', savedState);
+  
+  // Video aspect ratio is 2:3 (vertical video) - calculate popup dimensions with 92px overhead
+  const VIDEO_ASPECT_RATIO = 2 / 3;
+  const OVERHEAD = 92;
+  const MIN_WIDTH = 450;
+  const MIN_HEIGHT = MIN_WIDTH / VIDEO_ASPECT_RATIO + OVERHEAD; // ~767
+  
+  // Set initial size from saved state or defaults
+  // Use saved width/height directly if available (but enforce minimums)
+  let initialWidth = (savedState?.width && savedState.width > 0) ? Math.max(savedState.width, MIN_WIDTH) : 464;
+  let initialHeight = (savedState?.height && savedState.height > 0) ? Math.max(savedState.height, MIN_HEIGHT) : Math.round(464 / VIDEO_ASPECT_RATIO + OVERHEAD);
+  
+  // If we have both width and height from saved state, use them directly (with min enforcement)
+  if (savedState?.width && savedState.width > 0 && savedState?.height && savedState.height > 0) {
+    initialWidth = Math.max(savedState.width, MIN_WIDTH);
+    initialHeight = Math.max(savedState.height, MIN_HEIGHT);
+  }
+  
+  const initialX = (savedState?.x !== undefined && savedState.x !== null && !isNaN(savedState.x)) ? savedState.x : null;
+  const initialY = (savedState?.y !== undefined && savedState.y !== null && !isNaN(savedState.y)) ? savedState.y : null;
+  
+  console.log('[VideoTour] initialWidth:', initialWidth, 'initialHeight:', initialHeight, 'initialX:', initialX, 'initialY:', initialY);
+  
+  popup.style.width = `${initialWidth}px`;
+  popup.style.height = `${initialHeight}px`;
+  
+  // Center in viewport or restore saved position
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  if (initialX !== null && initialY !== null) {
+    // Validate saved position is within viewport bounds
+    const maxX = window.innerWidth - 100;
+    const maxY = window.innerHeight - 100;
+    popup.style.left = `${Math.max(0, Math.min(initialX, maxX))}px`;
+    popup.style.top = `${Math.max(0, Math.min(initialY, maxY))}px`;
+  } else {
+    popup.style.left = `${Math.max(0, (viewportWidth - initialWidth) / 2)}px`;
+    popup.style.top = `${Math.max(0, (viewportHeight - initialHeight) / 2)}px`;
+  }
+
+  const video = popup.querySelector('.lithium-video-tour-player');
+  const scrubber = popup.querySelector('.lithium-video-tour-scrubber');
+  const timeDisplay = popup.querySelector('.lithium-video-tour-time');
+  const bigPlayBtn = popup.querySelector('.lithium-video-tour-big-play-btn');
+  const muteBtn = popup.querySelector('.lithium-video-tour-mute-btn');
+  const volumeSlider = popup.querySelector('.lithium-video-tour-volume-slider');
+  const speedBtn = popup.querySelector('.lithium-video-tour-speed-btn');
+  const header = popup.querySelector('.lithium-video-tour-header');
+  const playOverlay = popup.querySelector('.lithium-video-tour-play-overlay');
+
+  // Track initial aspect ratio (2:3 for vertical video + 92px overhead)
+  const DEFAULT_WIDTH = 464;
+  const DEFAULT_HEIGHT = Math.round(DEFAULT_WIDTH / VIDEO_ASPECT_RATIO + OVERHEAD); // ~780
+  let aspectRatio = DEFAULT_WIDTH / DEFAULT_HEIGHT; // ~0.595
+
+  // Get video natural size for initial dimensions
+  const setInitialSize = () => {
+    // If we have valid saved dimensions, don't override - use those (they reflect user's drag/resize)
+    if (savedState?.width && savedState.width > 0 && savedState?.height && savedState.height > 0) {
+      console.log('[VideoTour] Using saved dimensions, not overriding with video metadata');
+      return;
+    }
+    
+    if (video.videoWidth && video.videoHeight) {
+      aspectRatio = video.videoWidth / video.videoHeight;
+      const maxWidth = window.innerWidth * 0.9;
+      const maxHeight = window.innerHeight * 0.85;
+      let width = video.videoWidth;
+      let height = video.videoHeight;
+
+      // Scale down if needed
+      if (width > maxWidth) {
+        const ratio = maxWidth / width;
+        width = maxWidth;
+        height = height * ratio;
+      }
+      if (height > maxHeight) {
+        const ratio = maxHeight / height;
+        height = maxHeight;
+        width = width / ratio;
+      }
+
+      // Calculate overall popup dimensions: video width + 92px overhead
+      const popupWidth = Math.round(width);
+      const popupHeight = Math.round(height) + OVERHEAD;
+      aspectRatio = popupWidth / popupHeight;
+
+      popup.style.width = `${Math.max(popupWidth, MIN_WIDTH)}px`;
+      popup.style.height = `${Math.max(popupHeight, MIN_HEIGHT)}px`;
+    } else {
+      // Default size if metadata not loaded yet and no saved state
+      popup.style.width = `${DEFAULT_WIDTH}px`;
+      popup.style.height = `${DEFAULT_HEIGHT}px`;
+      aspectRatio = DEFAULT_WIDTH / DEFAULT_HEIGHT;
+    }
+
+    // Only center if no saved position
+    if (!savedState?.x || !savedState?.y) {
+      centerPopup(popup);
+    }
+  };
+
+  const centerPopup = (el) => {
+    const rect = el.getBoundingClientRect();
+    const left = (window.innerWidth - rect.width) / 2;
+    const top = (window.innerHeight - rect.height) / 2;
+    el.style.left = `${Math.max(0, left)}px`;
+    el.style.top = `${Math.max(0, top)}px`;
+  };
+
+  // Set initial size after metadata loads (only if no saved state)
+  if (!savedState?.width || savedState.width <= 0 || !savedState?.height || savedState.height <= 0) {
+    video.addEventListener('loadedmetadata', setInitialSize, { once: true });
+    setTimeout(() => {
+      if (!video.videoWidth && (!savedState?.width || savedState.width <= 0)) {
+        popup.style.width = `${DEFAULT_WIDTH}px`;
+        popup.style.height = `${DEFAULT_HEIGHT}px`;
+        centerPopup(popup);
+      }
+    }, 1000);
+  }
+
+  // Fade in after a small delay, then autoplay
+  requestAnimationFrame(() => {
+    popup.classList.add('visible');
+    
+    // Start playing after fade-in completes (200ms)
+    setTimeout(() => {
+      const playPromise = video.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(err => {
+          log(Subsystems.MANAGER, Status.DEBUG, `[VideoTour] Autoplay prevented: ${err.message}`);
+        });
+      }
+    }, 200);
+  });
+
+  // Make draggable via header
+  let isDragging = false;
+  let dragStartX = 0;
+  let dragStartY = 0;
+  let popupStartX = 0;
+  let popupStartY = 0;
+
+  const handleDragStart = (e) => {
+    if (e.target.closest('.lithium-video-tour-header-btn')) return;
+    isDragging = true;
+    popup.classList.add('dragging');
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+    const rect = popup.getBoundingClientRect();
+    popupStartX = rect.left;
+    popupStartY = rect.top;
+    document.addEventListener('mousemove', handleDragMove);
+    document.addEventListener('mouseup', handleDragEnd);
+    e.preventDefault();
+  };
+
+  const handleDragMove = (e) => {
+    if (!isDragging) return;
+    const deltaX = e.clientX - dragStartX;
+    const deltaY = e.clientY - dragStartY;
+    let newX = popupStartX + deltaX;
+    let newY = popupStartY + deltaY;
+
+    // Constrain to viewport
+    const rect = popup.getBoundingClientRect();
+    const minVisible = 50;
+    newX = Math.max(-rect.width + minVisible, Math.min(window.innerWidth - minVisible, newX));
+    newY = Math.max(0, Math.min(window.innerHeight - minVisible, newY));
+
+    popup.style.left = `${newX}px`;
+    popup.style.top = `${newY}px`;
+  };
+
+  const handleDragEnd = () => {
+    isDragging = false;
+    popup.classList.remove('dragging');
+    document.removeEventListener('mousemove', handleDragMove);
+    document.removeEventListener('mouseup', handleDragEnd);
+    // Save state after drag ends
+    saveVideoState({
+      captionsEnabled,
+      playbackSpeed: VIDEO_PLAYBACK_SPEEDS[currentSpeedIndex],
+      volume: video.volume,
+      muted: video.muted,
+      x: parseInt(popup.style.left, 10),
+      y: parseInt(popup.style.top, 10),
+      width: popup.offsetWidth,
+      height: popup.offsetHeight,
+    });
+  };
+
+  header.addEventListener('mousedown', handleDragStart);
+
+  // Resize handles - maintain aspect ratio
+  const setupResizeHandle = (handleEl, direction) => {
+    let startX, startY, startWidth, startHeight, startLeft, startTop;
+
+    const startResize = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      popup.classList.add('resizing');
+      startX = e.clientX;
+      startY = e.clientY;
+      startWidth = popup.offsetWidth;
+      startHeight = popup.offsetHeight;
+      const rect = popup.getBoundingClientRect();
+      startLeft = rect.left;
+      startTop = rect.top;
+      document.addEventListener('mousemove', doResize);
+      document.addEventListener('mouseup', stopResize);
+    };
+
+    const doResize = (e) => {
+      const deltaX = e.clientX - startX;
+      const deltaY = e.clientY - startY;
+
+      let newWidth = startWidth;
+      let newHeight = startHeight;
+      let newLeft = startLeft;
+      let newTop = startTop;
+
+      // Use the recorded aspect ratio
+      const currentAspect = aspectRatio || (startWidth / startHeight);
+      const startRight = startLeft + startWidth;
+      const startBottom = startTop + startHeight;
+
+      if (direction === 'br') {
+        // Bottom-right: keep top-left fixed, expand right and down
+        newWidth = startWidth + deltaX;
+        newHeight = newWidth / currentAspect;
+        // newLeft and newTop stay at start values
+      } else if (direction === 'tr') {
+        // Top-right: keep bottom-left fixed, expand right and up
+        newWidth = startWidth + deltaX;
+        newHeight = newWidth / currentAspect;
+        newTop = startBottom - newHeight;
+        // newLeft stays at start value
+      } else if (direction === 'bl') {
+        // Bottom-left: keep top-right fixed, expand left and down
+        newWidth = startWidth - deltaX;
+        newHeight = newWidth / currentAspect;
+        newLeft = startRight - newWidth;
+        // newTop stays at start value
+      } else if (direction === 'tl') {
+        // Top-left: keep bottom-right fixed, expand left and up
+        newWidth = startWidth - deltaX;
+        newHeight = newWidth / currentAspect;
+        newLeft = startRight - newWidth;
+        newTop = startBottom - newHeight;
+      }
+
+      // Constrain to viewport
+      if (newLeft < -newWidth + 100) newLeft = -newWidth + 100;
+      if (newTop < -newHeight + 100) newTop = -newHeight + 100;
+      if (newLeft + newWidth > window.innerWidth - 50) {
+        newWidth = window.innerWidth - newLeft - 50;
+        newHeight = newWidth / currentAspect;
+      }
+      if (newTop + newHeight > window.innerHeight - 50) {
+        newHeight = window.innerHeight - newTop - 50;
+        newWidth = newHeight * currentAspect;
+      }
+
+      popup.style.width = `${Math.round(newWidth)}px`;
+      popup.style.height = `${Math.round(newHeight)}px`;
+      popup.style.left = `${newLeft}px`;
+      popup.style.top = `${newTop}px`;
+    };
+
+    const stopResize = () => {
+      popup.classList.remove('resizing');
+      document.removeEventListener('mousemove', doResize);
+      document.removeEventListener('mouseup', stopResize);
+      // Save state after resize ends
+      saveVideoState({
+        captionsEnabled,
+        playbackSpeed: VIDEO_PLAYBACK_SPEEDS[currentSpeedIndex],
+        volume: video.volume,
+        muted: video.muted,
+        x: parseInt(popup.style.left, 10),
+        y: parseInt(popup.style.top, 10),
+        width: popup.offsetWidth,
+        height: popup.offsetHeight,
+      });
+    };
+
+    handleEl.addEventListener('mousedown', startResize);
+  };
+
+  popup.querySelectorAll('.lithium-video-tour-resize-handle-br').forEach(h => setupResizeHandle(h, 'br'));
+  popup.querySelectorAll('.lithium-video-tour-resize-handle-bl').forEach(h => setupResizeHandle(h, 'bl'));
+  popup.querySelectorAll('.lithium-video-tour-resize-handle-tr').forEach(h => setupResizeHandle(h, 'tr'));
+  popup.querySelectorAll('.lithium-video-tour-resize-handle-tl').forEach(h => setupResizeHandle(h, 'tl'));
+
+  // Format time helper
+  const formatTime = (seconds) => {
+    if (isNaN(seconds)) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Update time display and scrubber
+  const updateTimeDisplay = () => {
+    const current = formatTime(video.currentTime);
+    const duration = formatTime(video.duration || 0);
+    timeDisplay.textContent = `${current} / ${duration}`;
+    if (video.duration) {
+      scrubber.value = (video.currentTime / video.duration) * 100;
+    }
+  };
+
+  // Video event handlers
+  video.addEventListener('timeupdate', updateTimeDisplay);
+  video.addEventListener('loadedmetadata', updateTimeDisplay);
+
+  // Play/pause toggle
+  const togglePlay = () => {
+    if (video.paused) {
+      video.play();
+      bigPlayBtn.innerHTML = '<fa fa-pause></fa>';
+      popup.classList.remove('paused');
+    } else {
+      video.pause();
+      bigPlayBtn.innerHTML = '<fa fa-play></fa>';
+      popup.classList.add('paused');
+    }
+  };
+
+  // Also handle click on the big play overlay
+  playOverlay.addEventListener('click', () => {
+    if (video.ended) {
+      // Restart from beginning
+      video.currentTime = 0;
+      video.play();
+    } else {
+      togglePlay();
+    }
+  });
+
+  video.addEventListener('play', () => {
+    log(Subsystems.MANAGER, Status.DEBUG, '[VideoTour] Play event');
+    bigPlayBtn.innerHTML = '<fa fa-pause></fa>';
+    playOverlay.classList.remove('always-visible');
+    popup.classList.remove('paused');
+  });
+  video.addEventListener('pause', () => {
+    log(Subsystems.MANAGER, Status.DEBUG, '[VideoTour] Pause event');
+    bigPlayBtn.innerHTML = '<fa fa-play></fa>';
+    playOverlay.classList.add('always-visible');
+    popup.classList.add('paused');
+  });
+  video.addEventListener('ended', () => {
+    log(Subsystems.MANAGER, Status.DEBUG, '[VideoTour] Video ended event fired');
+    bigPlayBtn.innerHTML = '<fa fa-rotate-left></fa>';
+    playOverlay.classList.add('always-visible');
+    popup.classList.add('paused');
+  });
+
+  // Scrubber seeking
+  scrubber.addEventListener('input', () => {
+    if (video.duration) {
+      video.currentTime = (scrubber.value / 100) * video.duration;
+      // Update captions immediately on scrub without fade animation
+      if (captionsEnabled && captionsData.length > 0) {
+        updateCaptionsForTime(video.currentTime * 1000, false);
+      }
+    }
+    saveState();
+  });
+
+  // Drag on video to seek
+  let isDraggingVideo = false;
+  let videoDragStartX = 0;
+  let videoDragStartTime = 0;
+
+  const contentArea = popup.querySelector('.lithium-video-tour-content');
+  
+  contentArea.addEventListener('mousedown', (e) => {
+    // Only handle left click, not on controls or overlay
+    if (e.button !== 0) return;
+    if (e.target.closest('.lithium-video-tour-controls')) return;
+    if (e.target.closest('.lithium-video-tour-play-overlay')) return;
+    
+    isDraggingVideo = true;
+    videoDragStartX = e.clientX;
+    videoDragStartTime = video.currentTime;
+    contentArea.style.cursor = 'grabbing';
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!isDraggingVideo) return;
+    
+    const deltaX = e.clientX - videoDragStartX;
+    const pixelsPerSecond = (video.duration || 1) / 10; // 10% of video per 100px
+    let newTime = videoDragStartTime + (deltaX * pixelsPerSecond);
+    
+    // Clamp to valid range
+    newTime = Math.max(0, Math.min(video.duration || 0, newTime));
+    video.currentTime = newTime;
+    
+    // Update captions without animation
+    if (captionsEnabled && captionsData.length > 0) {
+      updateCaptionsForTime(newTime * 1000, false);
+    }
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (isDraggingVideo) {
+      isDraggingVideo = false;
+      contentArea.style.cursor = '';
+    }
+  });
+
+  // Captions - parse and display
+  const captionsContainer = popup.querySelector('.lithium-video-tour-captions-container');
+  const captionsBtn = popup.querySelector('.lithium-video-tour-captions-btn');
+  let captionsEnabled = true;
+  let currentCaptionEl = null;
+  let captionTimeout = null;
+
+  // Parse captions from definition
+  const captionsData = [];
+  if (Array.isArray(definition.captions)) {
+    for (const cap of definition.captions) {
+      if (cap.length >= 3) {
+        // Format: [startSeconds, endSeconds, "text"]
+        // Start/end can be like "000.500" or "2.500" - parse as float
+        const startTime = parseFloat(cap[0]) * 1000; // Convert to ms
+        const endTime = parseFloat(cap[1]) * 1000;
+        const text = cap[2];
+        if (!isNaN(startTime) && !isNaN(endTime) && text) {
+          captionsData.push({ startTime, endTime, text });
+        }
+      }
+    }
+    captionsData.sort((a, b) => a.startTime - b.startTime);
+  }
+
+  const CAPTION_FADE_MS = 500; // Match CSS transition duration
+
+  const updateCaptionsForTime = (timeMs, animate = true) => {
+    if (!captionsEnabled || captionsData.length === 0) return;
+
+    // Find caption for current time
+    const activeCaption = captionsData.find(c => 
+      timeMs >= c.startTime && timeMs < c.endTime
+    );
+
+    // Clear any pending timers
+    if (captionTimeout) {
+      clearTimeout(captionTimeout);
+      captionTimeout = null;
+    }
+
+    if (activeCaption) {
+      // Different caption or no caption
+      if (!currentCaptionEl || currentCaptionEl.dataset.text !== activeCaption.text) {
+        // Remove existing with fade out - but only if it's a different text
+        if (currentCaptionEl) {
+          currentCaptionEl.classList.remove('visible');
+          // Schedule removal after fade out - don't null out immediately
+          const oldEl = currentCaptionEl;
+          setTimeout(() => {
+            if (oldEl && oldEl.parentNode) {
+              oldEl.remove();
+            }
+          }, CAPTION_FADE_MS);
+        }
+
+        // Create new caption - CSS sets initial opacity:0
+        const newCaption = document.createElement('div');
+        newCaption.className = 'lithium-video-tour-caption';
+        newCaption.dataset.text = activeCaption.text;
+        newCaption.textContent = activeCaption.text;
+        
+        // Remove any old captions from container first
+        while (captionsContainer.firstChild) {
+          captionsContainer.removeChild(captionsContainer.firstChild);
+        }
+        
+        captionsContainer.appendChild(newCaption);
+
+        if (animate) {
+          // Force reflow so browser applies the initial opacity:0
+          void newCaption.offsetWidth;
+          
+          // Add visible class to trigger CSS transition from 0 to 1 over 0.5s
+          newCaption.classList.add('visible');
+        } else {
+          // No animation (scrubbing) - show immediately
+          newCaption.classList.add('visible');
+        }
+
+        currentCaptionEl = newCaption;
+      }
+      // If same text, do nothing - caption is already showing
+    } else {
+      // No caption for current time - fade out and remove existing
+      if (currentCaptionEl) {
+        currentCaptionEl.classList.remove('visible');
+        const oldEl = currentCaptionEl;
+        currentCaptionEl = null;
+        // Wait for fade out before removing
+        setTimeout(() => {
+          if (oldEl && oldEl.parentNode) {
+            oldEl.remove();
+          }
+        }, CAPTION_FADE_MS);
+      }
+    }
+  };
+
+  // Update captions on time update
+  const handleCaptionTimeUpdate = () => {
+    if (captionsEnabled && captionsData.length > 0) {
+      updateCaptionsForTime(video.currentTime * 1000, true);
+    }
+  };
+
+  video.addEventListener('timeupdate', handleCaptionTimeUpdate);
+
+  // Toggle captions
+  captionsBtn.addEventListener('click', () => {
+    captionsEnabled = !captionsEnabled;
+    captionsBtn.classList.toggle('active', captionsEnabled);
+    popup.classList.toggle('captions-off', !captionsEnabled);
+
+    if (captionsEnabled) {
+      // Show caption for current time
+      handleCaptionTimeUpdate();
+    } else {
+      // Hide all captions
+      if (currentCaptionEl) {
+        currentCaptionEl.remove();
+        currentCaptionEl = null;
+      }
+      if (captionTimeout) {
+        clearTimeout(captionTimeout);
+        captionTimeout = null;
+      }
+    }
+
+    // Save state when captions toggle changes
+    saveState();
+  });
+
+  // Volume control
+  const updateVolumeIcon = () => {
+    if (video.muted || video.volume === 0) {
+      muteBtn.innerHTML = '<fa fa-volume-xmark></fa>';
+    } else if (video.volume < 0.5) {
+      muteBtn.innerHTML = '<fa fa-volume-low></fa>';
+    } else {
+      muteBtn.innerHTML = '<fa fa-volume-high></fa>';
+    }
+  };
+
+  muteBtn.addEventListener('click', () => {
+    video.muted = !video.muted;
+    updateVolumeIcon();
+    saveState();
+  });
+
+  volumeSlider.addEventListener('input', () => {
+    video.volume = volumeSlider.value / 100;
+    video.muted = false;
+    updateVolumeIcon();
+    saveState();
+  });
+
+  // Apply saved volume and mute state
+  if (savedState?.volume !== undefined) {
+    video.volume = savedState.volume;
+    volumeSlider.value = savedState.volume * 100;
+  }
+  if (savedState?.muted) {
+    video.muted = true;
+  }
+  updateVolumeIcon();
+
+  // Playback speed - load saved or default to 1x
+  let currentSpeedIndex = VIDEO_PLAYBACK_SPEEDS.indexOf(savedState?.playbackSpeed || 1);
+  if (currentSpeedIndex === -1) currentSpeedIndex = 2; // Default to 1x
+  video.playbackRate = VIDEO_PLAYBACK_SPEEDS[currentSpeedIndex];
+  speedBtn.querySelector('span').textContent = `${VIDEO_PLAYBACK_SPEEDS[currentSpeedIndex]}x`;
+
+  speedBtn.addEventListener('click', () => {
+    currentSpeedIndex = (currentSpeedIndex + 1) % VIDEO_PLAYBACK_SPEEDS.length;
+    const newSpeed = VIDEO_PLAYBACK_SPEEDS[currentSpeedIndex];
+    video.playbackRate = newSpeed;
+    speedBtn.querySelector('span').textContent = `${newSpeed}x`;
+    // Save state when speed changes
+    saveState();
+  });
+
+  // Captions - load saved state
+  captionsEnabled = savedState?.captionsEnabled !== false;
+  captionsBtn.classList.toggle('active', captionsEnabled);
+  popup.classList.toggle('captions-off', !captionsEnabled);
+
+  // Set up state saving on drag/resize end and close
+  const saveState = () => {
+    saveVideoState({
+      captionsEnabled,
+      playbackSpeed: VIDEO_PLAYBACK_SPEEDS[currentSpeedIndex],
+      volume: video.volume,
+      muted: video.muted,
+      x: parseInt(popup.style.left, 10),
+      y: parseInt(popup.style.top, 10),
+      width: popup.offsetWidth,
+      height: popup.offsetHeight,
+    });
+  };
+
+  // Keyboard handler - Space for play/pause, Left/Right for back/forward, ESC to close
+  const handleKeyDown = (e) => {
+    if (e.key === 'Escape') {
+      closeVideoTour();
+      document.removeEventListener('keydown', handleKeyDown);
+    } else if (e.key === ' ' || e.key === 'Spacebar') {
+      e.preventDefault();
+      togglePlay();
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      video.currentTime = Math.max(0, video.currentTime - 10);
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      video.currentTime = Math.min(video.duration || 0, video.currentTime + 10);
+    }
+  };
+  document.addEventListener('keydown', handleKeyDown);
+
+  // Save state on resize end - inline in each stopResize function
+  _videoStateCleanup = () => {
+    saveState();
+    video.removeEventListener('timeupdate', handleCaptionTimeUpdate);
+  };
+
+  const closeBtn = popup.querySelector('.lithium-video-tour-header-close');
+  closeBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    console.log('[VideoTour] Close button clicked');
+    closeVideoTour();
+  });
+
+  // Button click handler
+  const handleButtonClick = (e) => {
+    const button = e.target.closest('[data-video-action]');
+    if (!button) return;
+
+    const action = button.dataset.videoAction;
+    switch (action) {
+      case 'close':
+        closeVideoTour();
+        break;
+      case 'play':
+        togglePlay();
+        break;
+      case 'back':
+        video.currentTime = Math.max(0, video.currentTime - 10);
+        break;
+      case 'forward':
+        video.currentTime = Math.min(video.duration || 0, video.currentTime + 10);
+        break;
+      case 'mute':
+        video.muted = !video.muted;
+        updateVolumeIcon();
+        break;
+      case 'speed':
+        currentSpeedIndex = (currentSpeedIndex + 1) % VIDEO_PLAYBACK_SPEEDS.length;
+        const newSpeed = VIDEO_PLAYBACK_SPEEDS[currentSpeedIndex];
+        video.playbackRate = newSpeed;
+        speedBtn.querySelector('span').textContent = `${newSpeed}x`;
+        break;
+      case 'captions':
+        // Toggle handled by dedicated click listener
+        break;
+    }
+  };
+
+  popup.addEventListener('click', handleButtonClick);
+
+  // Store references for cleanup
+  _activeVideoPopup = popup;
+  _activeVideoElement = video;
+
+  // Process icons
+  if (typeof processIcons === 'function') {
+    processIcons(popup);
+  }
+
+  log(Subsystems.MANAGER, Status.INFO, `[VideoTour] Popup created for: ${tour.name}`);
+}
+
+/**
+ * Close video tour popup with fade out
+ */
+export function closeVideoTour() {
+  console.log('[VideoTour] closeVideoTour called, _activeVideoPopup:', !!_activeVideoPopup);
+  if (_activeVideoElement) {
+    _activeVideoElement.pause();
+    _activeVideoElement = null;
+  }
+
+  if (_activeVideoPopup) {
+    // Save state before closing
+    if (_videoStateCleanup) {
+      const popup = _activeVideoPopup;
+      const videoEl = popup.querySelector('.lithium-video-tour-player');
+      const speedIndex = VIDEO_PLAYBACK_SPEEDS.indexOf(videoEl?.playbackRate || 1);
+      const captionsEnabled = !popup.classList.contains('captions-off');
+      saveVideoState({
+        captionsEnabled,
+        playbackSpeed: VIDEO_PLAYBACK_SPEEDS[speedIndex >= 0 ? speedIndex : 2],
+        volume: videoEl?.volume ?? 1,
+        muted: videoEl?.muted ?? false,
+        x: parseInt(popup.style.left, 10),
+        y: parseInt(popup.style.top, 10),
+        width: popup.offsetWidth,
+        height: popup.offsetHeight,
+      });
+      _videoStateCleanup = null;
+    }
+
+    // Fade out then remove
+    _activeVideoPopup.classList.remove('visible');
+    const duration = getTransitionDuration();
+    setTimeout(() => {
+      if (_activeVideoPopup) {
+        _activeVideoPopup.remove();
+        _activeVideoPopup = null;
+      }
+    }, duration);
+  }
+}
+
+// ========================================
 // Event Bus Integration
 // ========================================
 
@@ -1414,7 +2380,20 @@ export function initTours() {
       log(Subsystems.MANAGER, Status.ERROR, '[Tour] API not available');
       return;
     }
-    await launchTour(tourId, api);
+
+    // Check if this is a video tour
+    const tours = await getTours(api);
+    const tour = tours.find(t =>
+      String(t.id) === String(tourId) ||
+      t.code === tourId ||
+      t.name === tourId
+    );
+
+    if (tour && isVideoTour(tour)) {
+      await launchVideoTour(tour);
+    } else {
+      await launchTour(tourId, api);
+    }
   });
 
   log(Subsystems.MANAGER, Status.INFO, '[Tour] Initialized');
