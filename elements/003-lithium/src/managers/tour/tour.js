@@ -57,8 +57,9 @@ function saveVideoState(state) {
     const safeVolume = (typeof state.volume === 'number' && isFinite(state.volume)) ? state.volume : 1;
     const safeX = (typeof state.x === 'number' && isFinite(state.x)) ? Math.round(state.x) : 0;
     const safeY = (typeof state.y === 'number' && isFinite(state.y)) ? Math.round(state.y) : 0;
-    const safeWidth = (typeof state.width === 'number' && isFinite(state.width)) ? Math.round(state.width) : 640;
-    const safeHeight = (typeof state.height === 'number' && isFinite(state.height)) ? Math.round(state.height) : 360;
+    // Only save valid positive dimensions
+    const safeWidth = (typeof state.width === 'number' && isFinite(state.width) && state.width > 0) ? Math.round(state.width) : 0;
+    const safeHeight = (typeof state.height === 'number' && isFinite(state.height) && state.height > 0) ? Math.round(state.height) : 0;
     
     localStorage.setItem(VIDEO_STORAGE_KEYS.CAPTIONS, String(state.captionsEnabled));
     localStorage.setItem(VIDEO_STORAGE_KEYS.SPEED, String(state.playbackSpeed));
@@ -1621,29 +1622,37 @@ export async function launchVideoTour(tour, options = {}) {
 
   // Load saved video tour state
   const savedState = loadVideoState();
-  console.log('[VideoTour] Loaded state:', savedState);
   
   // Video aspect ratio is 2:3 (vertical video) - calculate popup dimensions with 92px overhead
   const VIDEO_ASPECT_RATIO = 2 / 3;
   const OVERHEAD = 92;
   const MIN_WIDTH = 450;
-  const MIN_HEIGHT = MIN_WIDTH / VIDEO_ASPECT_RATIO + OVERHEAD; // ~767
+  const MIN_HEIGHT = Math.round(MIN_WIDTH / VIDEO_ASPECT_RATIO + OVERHEAD); // ~767
+  const DEFAULT_WIDTH = 464;
+  const DEFAULT_HEIGHT = Math.round(DEFAULT_WIDTH / VIDEO_ASPECT_RATIO + OVERHEAD); // ~780
   
   // Set initial size from saved state or defaults
-  // Use saved width/height directly if available (but enforce minimums)
-  let initialWidth = (savedState?.width && savedState.width > 0) ? Math.max(savedState.width, MIN_WIDTH) : 464;
-  let initialHeight = (savedState?.height && savedState.height > 0) ? Math.max(savedState.height, MIN_HEIGHT) : Math.round(464 / VIDEO_ASPECT_RATIO + OVERHEAD);
+  // Check for valid saved dimensions - be explicit about checking for number type
+  let initialWidth = DEFAULT_WIDTH;
+  let initialHeight = DEFAULT_HEIGHT;
+  let hasSavedSize = false;
   
-  // If we have both width and height from saved state, use them directly (with min enforcement)
-  if (savedState?.width && savedState.width > 0 && savedState?.height && savedState.height > 0) {
-    initialWidth = Math.max(savedState.width, MIN_WIDTH);
-    initialHeight = Math.max(savedState.height, MIN_HEIGHT);
+  if (savedState && typeof savedState.width === 'number' && savedState.width > 0) {
+    initialWidth = savedState.width;
+    hasSavedSize = true;
+  }
+  if (savedState && typeof savedState.height === 'number' && savedState.height > 0) {
+    initialHeight = savedState.height;
+  }
+  
+  // Only enforce minimums if no saved size (minimums should not override user's saved size)
+  if (!hasSavedSize) {
+    initialWidth = Math.max(initialWidth, MIN_WIDTH);
+    initialHeight = Math.max(initialHeight, MIN_HEIGHT);
   }
   
   const initialX = (savedState?.x !== undefined && savedState.x !== null && !isNaN(savedState.x)) ? savedState.x : null;
   const initialY = (savedState?.y !== undefined && savedState.y !== null && !isNaN(savedState.y)) ? savedState.y : null;
-  
-  console.log('[VideoTour] initialWidth:', initialWidth, 'initialHeight:', initialHeight, 'initialX:', initialX, 'initialY:', initialY);
   
   popup.style.width = `${initialWidth}px`;
   popup.style.height = `${initialHeight}px`;
@@ -1673,15 +1682,15 @@ export async function launchVideoTour(tour, options = {}) {
   const playOverlay = popup.querySelector('.lithium-video-tour-play-overlay');
 
   // Track initial aspect ratio (2:3 for vertical video + 92px overhead)
-  const DEFAULT_WIDTH = 464;
-  const DEFAULT_HEIGHT = Math.round(DEFAULT_WIDTH / VIDEO_ASPECT_RATIO + OVERHEAD); // ~780
   let aspectRatio = DEFAULT_WIDTH / DEFAULT_HEIGHT; // ~0.595
 
   // Get video natural size for initial dimensions
   const setInitialSize = () => {
     // If we have valid saved dimensions, don't override - use those (they reflect user's drag/resize)
-    if (savedState?.width && savedState.width > 0 && savedState?.height && savedState.height > 0) {
-      console.log('[VideoTour] Using saved dimensions, not overriding with video metadata');
+    // Use explicit type check
+    const hasSavedWidth = savedState && typeof savedState.width === 'number' && savedState.width > 0;
+    const hasSavedHeight = savedState && typeof savedState.height === 'number' && savedState.height > 0;
+    if (hasSavedWidth && hasSavedHeight) {
       return;
     }
     
@@ -2148,7 +2157,8 @@ export async function launchVideoTour(tour, options = {}) {
   video.addEventListener('timeupdate', handleCaptionTimeUpdate);
 
   // Toggle captions
-  captionsBtn.addEventListener('click', () => {
+  captionsBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
     captionsEnabled = !captionsEnabled;
     captionsBtn.classList.toggle('active', captionsEnabled);
     popup.classList.toggle('captions-off', !captionsEnabled);
@@ -2183,13 +2193,15 @@ export async function launchVideoTour(tour, options = {}) {
     }
   };
 
-  muteBtn.addEventListener('click', () => {
+  muteBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
     video.muted = !video.muted;
     updateVolumeIcon();
     saveState();
   });
 
-  volumeSlider.addEventListener('input', () => {
+  volumeSlider.addEventListener('input', (e) => {
+    e.stopPropagation();
     video.volume = volumeSlider.value / 100;
     video.muted = false;
     updateVolumeIcon();
@@ -2212,7 +2224,8 @@ export async function launchVideoTour(tour, options = {}) {
   video.playbackRate = VIDEO_PLAYBACK_SPEEDS[currentSpeedIndex];
   speedBtn.querySelector('span').textContent = `${VIDEO_PLAYBACK_SPEEDS[currentSpeedIndex]}x`;
 
-  speedBtn.addEventListener('click', () => {
+  speedBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
     currentSpeedIndex = (currentSpeedIndex + 1) % VIDEO_PLAYBACK_SPEEDS.length;
     const newSpeed = VIDEO_PLAYBACK_SPEEDS[currentSpeedIndex];
     video.playbackRate = newSpeed;
@@ -2267,7 +2280,6 @@ export async function launchVideoTour(tour, options = {}) {
   const closeBtn = popup.querySelector('.lithium-video-tour-header-close');
   closeBtn.addEventListener('click', (e) => {
     e.stopPropagation();
-    console.log('[VideoTour] Close button clicked');
     closeVideoTour();
   });
 
@@ -2324,7 +2336,6 @@ export async function launchVideoTour(tour, options = {}) {
  * Close video tour popup with fade out
  */
 export function closeVideoTour() {
-  console.log('[VideoTour] closeVideoTour called, _activeVideoPopup:', !!_activeVideoPopup);
   if (_activeVideoElement) {
     _activeVideoElement.pause();
     _activeVideoElement = null;

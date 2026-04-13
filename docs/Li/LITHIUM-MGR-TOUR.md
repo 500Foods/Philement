@@ -81,23 +81,46 @@ Video tours play MP4 videos in a custom styled popup player instead of step-by-s
 {
   "icon": "<fa fa-play></fa>",
   "managers": ["029.Query Manager", "023.Lookup Manager"],
-  "video": "/assets/videos/scarlett-en-US-welcome-to-lithium.mp4"
+  "video": "/assets/videos/scarlett-en-US-welcome-to-lithium.mp4",
+  "captions": [
+    ["0.000", "2.500", "Hello and welcome to Lithium"],
+    ["2.500", "5.000", "Our web application"]
+  ]
 }
 ```
 
-**Video Tour Features:**
+#### Optional: Captions
+
+Video tours can include captions stored in the `captions` field. This is an array of triples `[startTime, endTime, text]` where times are in seconds (can use leading zeros like "000.500"):
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `captions` | `array` | Array of `[startSeconds, endSeconds, "text"]` triples |
+
+#### Video Tour Features
 
 - **Custom player** — Themed to match the Lithium design system (similar to Terminal popup styling)
-- **Native size** — Window size matches video dimensions (scaled to fit viewport if larger)
 - **Draggable** — Click and drag the header to reposition
-- **Resizable** — Corner handles for resizing (min 300x200)
+- **Resizable** — Corner handles for resizing with aspect ratio preservation
+  - Top-left: bottom-right stays fixed
+  - Top-right: bottom-left stays fixed
+  - Bottom-left: top-right stays fixed
+  - Bottom-right: top-left stays fixed
+- **State persistence** — Popup position, size, volume, mute, playback speed, and captions toggle are saved to localStorage and restored on next tour launch
 - **Custom controls:**
-  - Play/Pause button
+  - Back 10s / Play/Pause / Forward 10s buttons in overlay
   - Scrubber for seeking
   - Time display (current / duration)
   - Volume slider + mute toggle
   - Playback speed selector (0.5x, 0.75x, 1x, 1.25x, 1.5x, 2x)
-- **Initial positioning** — Centered in viewport, bounded to viewport edges
+  - Captions toggle
+- **Keyboard shortcuts:**
+  - `Space` — Play/Pause
+  - `←` — Back 10 seconds
+  - `→` — Forward 10 seconds
+  - `Esc` — Close popup
+- **Caption transitions** — 0.5s fade in/out with crossfade support for overlapping timestamps
+- **Initial positioning** — Centered in viewport, or restored from saved position
 
 ### Manager Field Convention
 
@@ -514,6 +537,59 @@ Icons use the Lithium `<fa>` tag system per [LITHIUM-ICN.md](LITHIUM-ICN.md):
 
 ---
 
+## Video Tour Implementation Notes
+
+### Size Calculation
+
+Video tour popup dimensions are calculated from video metadata plus overhead for header/scrubber/controls:
+
+- **Video aspect ratio** — Detected from video metadata (`videoWidth / videoHeight`)
+- **Default aspect ratio** — 2:3 (vertical video) with 92px overhead for header (~44px), scrubber row (~32px), and controls (~16px)
+- **Minimum dimensions** — 450px width, calculated height (~767px)
+- **State restoration** — Saved dimensions are validated with explicit type checks (`typeof === 'number'`) before use
+
+### Resize Handle Behavior
+
+Each corner resize handle maintains the opposite corner's position:
+
+| Handle | Fixed Corner |
+|--------|---------------|
+| Bottom-right (br) | Top-left |
+| Top-right (tr) | Bottom-left |
+| Bottom-left (bl) | Top-right |
+| Top-left (tl) | Bottom-right |
+
+### Caption Transitions
+
+Caption fade animations require proper DOM timing:
+
+1. **Fade in:** Element added to DOM (opacity: 0), force reflow (`void element.offsetWidth`), then add `.visible` class to trigger CSS transition
+2. **Fade out:** Remove `.visible` class, wait for transition duration (500ms), then remove element from DOM
+3. **Overlapping captions:** Use `position: absolute` on captions within a relative container to allow overlap for crossfade effect
+
+### State Persistence
+
+Video tour state is saved to localStorage with these keys:
+
+```
+lithium_video_captions_enabled
+lithium_video_playback_speed
+lithium_video_volume
+lithium_video_muted
+lithium_video_x
+lithium_video_y
+lithium_video_width
+lithium_video_height
+```
+
+**Important:** When saving, validate all numeric values to prevent NaN/Infinity. When loading, use explicit type checks (`typeof === 'number' && > 0`) rather than truthy checks.
+
+### Event Handler Best Practices
+
+When adding click listeners to elements inside a container that also has a click handler, use `e.stopPropagation()` to prevent event bubbling issues. For example, the speed button click handler should stop propagation to avoid being caught by the popup's delegated click handler.
+
+---
+
 ## Related Documentation
 
 | Document | Relevance |
@@ -526,4 +602,4 @@ Icons use the Lithium `<fa>` tag system per [LITHIUM-ICN.md](LITHIUM-ICN.md):
 
 ---
 
-Last updated: April 2, 2026
+Last updated: April 13, 2026

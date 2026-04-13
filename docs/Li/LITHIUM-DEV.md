@@ -391,6 +391,96 @@ When writing code that defines or modifies LithiumTable columns:
 
 ---
 
+## Lessons Learned
+
+This section captures patterns and gotchas discovered during development that can help avoid similar issues in future work.
+
+### CSS Transitions and Animations
+
+**Problem:** Transitions not working when adding elements to the DOM.
+
+**Solution:** When you need a transition on a newly added element:
+1. Add element to DOM with initial state (e.g., `opacity: 0`)
+2. Force a browser reflow: `void element.offsetWidth` 
+3. Change to final state (e.g., add `.visible` class) to trigger transition
+
+Similarly for removal:
+1. Change to initial state (e.g., remove `.visible` class)
+2. Wait for transition duration (`setTimeout` with same duration)
+3. Remove element from DOM
+
+### Event Propagation in Nested Handlers
+
+**Problem:** Click handlers on child elements firing multiple times due to parent delegation.
+
+**Solution:** When a child element is inside a container that also has a click handler, use `e.stopPropagation()` in the child handler:
+
+```javascript
+childButton.addEventListener('click', (e) => {
+  e.stopPropagation(); // Prevents parent's delegated handler from catching this
+  doAction();
+});
+```
+
+### localStorage State Persistence
+
+**Problem:** NaN or Infinity values being saved to localStorage, causing errors on reload.
+
+**Solution:** Always validate numeric values before saving and loading:
+
+```javascript
+// Saving - validate with isFinite
+const safeWidth = (typeof state.width === 'number' && isFinite(state.width) && state.width > 0) 
+  ? Math.round(state.width) : 0;
+
+// Loading - explicit type check
+if (savedState && typeof savedState.width === 'number' && savedState.width > 0) {
+  initialWidth = savedState.width;
+}
+```
+
+Avoid truthy checks like `if (savedState.width)` because `0` is falsy even when valid.
+
+### JavaScript Variable Scope with Closures
+
+**Problem:** Using `const` functions inside closures that get reassigned later.
+
+**Solution:** Be careful when trying to wrap functions like:
+```javascript
+const originalFn = fn;
+fn = () => { originalFn(); doSomething(); }; // Works
+```
+
+But this doesn't:
+```javascript
+const handleDragEnd = () => { /* ... */ };
+handleDragEnd = () => { /* adds extra logic */ }; // Error: can't reassign const
+```
+
+Instead, modify the function directly or use a different pattern:
+```javascript
+let handleDragEnd = () => { /* ... */ };
+handleDragEnd = () => { /* replaces */ };
+```
+
+### Defining Constants Before Use
+
+**Problem:** ReferenceError when using constants before they're defined in the file.
+
+**Solution:** Ensure all constants and variables are declared before any code that references them. In long functions, define helper constants at the beginning of the function scope.
+
+### Video Player State
+
+**Problem:** HTMLMediaElement.volume setter throwing errors with NaN values.
+
+**Solution:** Always validate volume before setting:
+```javascript
+const volume = parseFloat(localStorage.getItem('volume'));
+video.volume = (volume !== null && !isNaN(volume)) ? volume : 1;
+```
+
+---
+
 ## Next Steps
 
 - Learn about JavaScript libraries: [LITHIUM-LIB.md](LITHIUM-LIB.md)
