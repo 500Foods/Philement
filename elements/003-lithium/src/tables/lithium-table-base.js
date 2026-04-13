@@ -112,6 +112,9 @@ export class LithiumTableBase {
     // Data cache
     this.currentData = [];
 
+    // Last data load parameters (for re-submit on refresh)
+    this.lastLoadParams = null;
+
     // Metadata (primaryKeyField already set in constructor if explicitly provided)
 
     // References for cleanup
@@ -756,6 +759,12 @@ export class LithiumTableBase {
         params.STRING = { SEARCH: searchTerm.toUpperCase() };
       }
 
+      // Track last load params for refresh re-submit
+      this.lastLoadParams = {
+        searchTerm: searchTerm || '',
+        extraParams: extraParams ? { ...extraParams } : {},
+      };
+
       const rows = await authQuery(this.app.api, queryRef, Object.keys(params).length > 0 ? params : undefined);
 
       if (!this.table) return;
@@ -1142,52 +1151,267 @@ export class LithiumTableBase {
   }
 
   /**
+   * Capture the complete current state as a template.
+   * This captures everything about the current table including:
+   * - All column definitions (visible and hidden)
+   * - Column order (as they appear at runtime)
+   * - Column widths, visibility, sorting, filtering, etc.
+   * - Sort order
+   * - Filter values
+   * - Layout mode
+   * - Width mode
+   * @returns {Object|null} Complete template or null if no table
+   */
+  captureCurrentState() {
+    if (!this.table) return null;
+
+    const columns = this.table.getColumns();
+
+    // Capture columns in RUNTIME ORDER - this preserves user column reordering
+    // and doesn't include columns user may have hidden/removed
+    const columnDefs = {};
+    columns.forEach((col) => {
+      const field = col.getField();
+      if (field === '_selector') return;
+      columnDefs[field] = this._extractTemplateColumnFromColumn(col);
+    });
+
+    // Also include any new columns from tableDef that might not be in the table yet
+    // (columns added to Lookup 59 but not yet loaded)
+    const baseColumns = this.tableDef?.columns || {};
+    for (const fieldName of Object.keys(baseColumns)) {
+      if (!fieldName || fieldName === '_selector') continue;
+      if (!columnDefs[fieldName]) {
+        columnDefs[fieldName] = this._createTemplateColumnFromTableDef(fieldName, baseColumns[fieldName]);
+      }
+    }
+
+    // Capture sort order
+    const sorters = this.table.getSorters?.() || [];
+    const initialSort = sorters.map((s) => ({
+      column: s.field,
+      dir: s.dir,
+    }));
+
+    // Capture filter values
+    const filterValues = {};
+    if (this.table.headerFilters) {
+      for (const [field, filter] of Object.entries(this.table.headerFilters)) {
+        if (filter?.value != null && filter.value !== '') {
+          filterValues[field] = filter.value;
+        }
+      }
+    }
+
+    const capturedState = {
+      $schema: '../tabledef-schema.json',
+      $version: '1.0.0',
+      $description: `Captured state for ${this.tableDef?.title || this.tablePath}`,
+      table: this.tablePath?.split('/').pop() || 'table',
+      title: this.tableDef?.title || 'Table',
+      queryRef: this.queryRefs?.queryRef || null,
+      searchQueryRef: this.queryRefs?.searchQueryRef || null,
+      detailQueryRef: this.queryRefs?.detailQueryRef || null,
+      readonly: this.readonly || false,
+      selectableRows: 1,
+      layout: this.tableLayoutMode || 'fitColumns',
+      resizableColumns: true,
+      columns: columnDefs,
+    };
+
+    if (initialSort.length > 0) {
+      capturedState.initialSort = initialSort;
+    }
+
+    // Capture whether filters are visible
+    capturedState._filtersVisible = this.filtersVisible;
+
+    if (Object.keys(filterValues).length > 0) {
+      capturedState._filterValues = filterValues;
+    }
+
+    capturedState._templateMeta = {
+      name: this.tableDef?.title || 'Captured State',
+      tablePath: this.tablePath,
+      managerId: this.storageKey,
+      createdAt: new Date().toISOString(),
+      widthMode: this.tableWidthMode,
+    };
+
+    return capturedState;
+  }
+
+  /**
+   * Create a template column from tableDef (helper for captureCurrentState)
+   * Just copy everything - no whitelist
+   */
+  _createTemplateColumnFromTableDef(fieldName, colDef = {}) {
+    // Copy all properties from the colDef - captures everything about the column
+    return { ...colDef };
+  }
+
+  /**
+   * Extract template column from Tabulator column (helper for captureCurrentState)
+   * Just copy everything - no whitelist
+   */
+  _extractTemplateColumnFromColumn(column) {
+    const def = column.getDefinition();
+
+    // Copy ALL properties from the column definition
+    // This captures everything about the column - widths, formatting, editors, etc.
+    const colDef = { ...def };
+
+    // Override width with current runtime width (may have changed from user resizing)
+    const runtimeWidth = column.getWidth?.();
+    if (Number.isFinite(runtimeWidth) && runtimeWidth > 0) {
+      colDef.width = Math.round(runtimeWidth);
+    }
+
+    return colDef;
+  }
+
+  /**
    * Reload the table configuration (schema) from Lookup 59.
    * This is called when the user clicks the refresh button to pick up
    * any changes to the table definition in Lookup 59.
+   *
+   * Enhanced to:
+   * 0. Cancel edit mode first (save if dirty)
+   * 1. Capture complete current state before refresh
+   * 2. Reload Lookup 59
+   * 3. Apply captured template instead of Default
+   * 4. Re-submit original data request
+   * 5. Re-select originally selected row and fire selection events
    */
   async reloadConfiguration() {
     log(Subsystems.TABLE, Status.INFO, `[${this.cssPrefix}] Reloading table configuration...`);
 
-    // 1. Clear the table definition for this path so it re-fetches from Lookup 59
+    // 0. CANCEL EDIT MODE FIRST - save if dirty, otherwise cancel
+    if (this.isEditing) {
+      if (this.isDirty) {
+        // Save any pending changes before refresh
+        await this.handleSave?.();
+        log(Subsystems.TABLE, Status.DEBUG, `[${this.cssPrefix}] Saved changes before refresh`);
+      }
+      // Cancel edit mode
+      await this.exitEditMode?.('cancel');
+      log(Subsystems.TABLE, Status.DEBUG, `[${this.cssPrefix}] Exited edit mode before refresh`);
+    }
+
+    // 1. CAPTURE COMPLETE CURRENT STATE before clearing anything
+    const capturedState = this.captureCurrentState();
+    const capturedRowId = this.getSelectedRowId?.() || this._getCurrentlySelectedRowId?.();
+
+    log(Subsystems.TABLE, Status.DEBUG,
+      `[${this.cssPrefix}] Captured state: ${capturedRowId ? 'row selected' : 'no row'}, ${Object.keys(capturedState?.columns || {}).length} columns`);
+
+    // 2. Clear the table definition cache for this path so it re-fetches from Lookup 59
     if (this.tablePath && _tableDefCache.has(this.tablePath)) {
       _tableDefCache.delete(this.tablePath);
       log(Subsystems.TABLE, Status.DEBUG, `[${this.cssPrefix}] Cleared tableDef cache for "${this.tablePath}"`);
     }
 
-    // 2. Reload configuration (fetches fresh tableDef from Lookup 59)
+    // 3. Reload configuration (fetches fresh tableDef from Lookup 59)
     this.tableDef = null;
     await this.loadConfiguration();
 
-    // 3. Destroy existing Tabulator table
+    // 4. Destroy existing Tabulator table
     if (this.table) {
       this.table.destroy();
       this.table = null;
     }
 
-    // 4. Recreate the Tabulator table with new configuration
+    // 5. Recreate the Tabulator table with new configuration
     await this.initTable();
 
-    // 5. Restore filters visible state (if previously enabled)
+    // 6. Restore filters visible state (if previously enabled)
     if (this.filtersVisible && this.table) {
       this.toggleHeaderFilters(true);
     }
 
-    // 6. Restore saved template (e.g., "Default" or user's selected template)
-    const templates = getSavedTemplates?.(this) || [];
-    const defaultTemplate = templates.find((t) => getTemplateName?.(this, t) === 'Default');
-    if (defaultTemplate) {
-      await this.loadTemplate?.(defaultTemplate);
+    // 7. Apply the CAPTURED STATE (NOT the Default template!)
+    // This preserves all column widths, order, visibility, sort, etc.
+    if (capturedState) {
+      // Debug: log some column widths from captured state
+      const sampleWidth = Object.values(capturedState.columns || {})[0]?.width;
+      log(Subsystems.TABLE, Status.DEBUG, `[${this.cssPrefix}] Captured state has ${Object.keys(capturedState.columns || {}).length} columns, first width: ${sampleWidth}`);
+
+      await this.loadTemplate?.(capturedState);
+      log(Subsystems.TABLE, Status.DEBUG, `[${this.cssPrefix}] Applied captured state template`);
+
+      // Debug: verify widths were applied after setColumns
+      if (this.table) {
+        const cols = this.table.getColumns();
+        const firstCol = cols.find(c => c.getField() !== '_selector');
+        const afterWidth = firstCol?.getWidth?.();
+        log(Subsystems.TABLE, Status.DEBUG, `[${this.cssPrefix}] After template, first column width: ${afterWidth}`);
+      }
     }
 
-    // 7. Reload data (call the appropriate method based on what was configured)
+    // 8. CRITICAL: Set saved row ID BEFORE loading data
+    // This ensures loadData uses our captured row, not localStorage (which would have old/no selection)
+    if (capturedRowId) {
+      this.saveSelectedRowId?.(capturedRowId);
+      log(Subsystems.TABLE, Status.DEBUG, `[${this.cssPrefix}] Set saved row ID to: ${capturedRowId} before reload`);
+    } else {
+      this.clearSavedRowSelection?.();
+    }
+
+    // 9. Re-submit the SAME data request that was originally used
+    // This is the key - we re-query with the same params (e.g., LOOKUPID for child tables)
     if (typeof this.onRefresh === 'function') {
       this.onRefresh();
+    } else if (this.lastLoadParams) {
+      // If we have the last params, use them
+      this.loadData?.(this.lastLoadParams.searchTerm, this.lastLoadParams.extraParams);
     } else {
       this.loadData?.();
     }
 
+    // 10. Re-select the originally selected row AND fire the selection event
+    // This is critical for parent/child relationships (like Lookup Manager)
+    // After loadData completes, verify selection and fire event
+    if (capturedRowId && this.table) {
+      log(Subsystems.TABLE, Status.DEBUG, `[${this.cssPrefix}] Verifying row selection: ${capturedRowId}`);
+
+      // Force restore the row selection to ensure it's correct
+      const restored = await this.restoreSelectedRow?.(capturedRowId);
+      if (restored) {
+        // Fire the selection event to trigger downstream effects
+        // (like loading child table data in Lookup Manager)
+        if (typeof this.onRowSelected === 'function') {
+          const selectedRows = this.table.getSelectedRows();
+          if (selectedRows.length > 0) {
+            const rowData = selectedRows[0].getData();
+            log(Subsystems.TABLE, Status.DEBUG, `[${this.cssPrefix}] Restored row selection, firing onRowSelected`);
+            this.onRowSelected(rowData);
+          }
+        }
+      }
+    }
+
     log(Subsystems.TABLE, Status.INFO, `[${this.cssPrefix}] Table configuration reloaded`);
+  }
+
+  /**
+   * Get the currently selected row ID directly from Tabulator
+   * @returns {string|null} Selected row ID
+   */
+  _getCurrentlySelectedRowId() {
+    if (!this.table) return null;
+    const selectedRows = this.table.getSelectedRows();
+    if (selectedRows.length === 0) return null;
+
+    const row = selectedRows[0];
+    const data = row.getData();
+
+    // For compound keys, construct composite ID
+    if (Array.isArray(this.primaryKeyField)) {
+      return this.primaryKeyField.map(f => data[f]).join('::');
+    }
+
+    // For single keys
+    return data[this.primaryKeyField] ?? data.key_idx ?? data.id ?? null;
   }
 
   // ── Splitter Binding ────────────────────────────────────────────────────────

@@ -54,9 +54,13 @@ Each tour is a row in Lookup #43 with the tour definition stored in the `collect
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `icon` | `string` | Yes | Font Awesome `<fa>` tag for the tour's icon (shown in tour header and list). See [LITHIUM-ICN.md](LITHIUM-ICN.md) for icon format. |
-| `manager` | `string` | No | Manager identifier using lithium.json naming convention (e.g., `"023.Lookup Manager"`). If omitted, no manager switch occurs. |
+| `manager` | `string` | No | Single manager identifier using lithium.json naming convention (e.g., `"023.Lookup Manager"`). For a single manager target. |
+| `managers` | `array` | No | Array of manager identifiers for multiple managers (e.g., `["029.Query Manager", "023.Lookup Manager"]`). Each entry uses the same convention as `manager`. When this field is present, the tour appears in the Tours list for all listed managers. |
 | `sidebar` | `boolean` | No | If `true`, expands the sidebar if it's collapsed. Use for tours that reference sidebar elements. Default: `false` (no action). |
-| `steps` | `array` | Yes | Array of step objects |
+| `steps` | `array` | No* | Array of step objects. Required for step-based tours, mutually exclusive with `video`. |
+| `video` | `string` | No* | Path to MP4 video file (e.g., `"/assets/videos/scarlett-en-US-welcome-to-lithium.mp4"`). Required for video tours, mutually exclusive with `steps`. |
+
+**Note:** Tours must have either `steps` (step-based tour) OR `video` (video tour), but not both.
 
 ### Step Object Fields
 
@@ -66,6 +70,34 @@ Each tour is a row in Lookup #43 with the tour definition stored in the `collect
 | `text` | `string` | No | Step content (supports HTML) |
 | `element` | `string` | No | CSS selector for the target element. If omitted or element not found, step displays **centered** without modal mask. |
 | `position` | `string` | No | Placement: `"top"`, `"bottom"`, `"left"`, `"right"`, `"auto"`. Defaults to `"bottom"`. |
+
+### Video Tours
+
+Video tours play MP4 videos in a custom styled popup player instead of step-by-step guided tours.
+
+**Example Video Tour JSON:**
+
+```json
+{
+  "icon": "<fa fa-play></fa>",
+  "managers": ["029.Query Manager", "023.Lookup Manager"],
+  "video": "/assets/videos/scarlett-en-US-welcome-to-lithium.mp4"
+}
+```
+
+**Video Tour Features:**
+
+- **Custom player** — Themed to match the Lithium design system (similar to Terminal popup styling)
+- **Native size** — Window size matches video dimensions (scaled to fit viewport if larger)
+- **Draggable** — Click and drag the header to reposition
+- **Resizable** — Corner handles for resizing (min 300x200)
+- **Custom controls:**
+  - Play/Pause button
+  - Scrubber for seeking
+  - Time display (current / duration)
+  - Volume slider + mute toggle
+  - Playback speed selector (0.5x, 0.75x, 1x, 1.25x, 1.5x, 2x)
+- **Initial positioning** — Centered in viewport, bounded to viewport edges
 
 ### Manager Field Convention
 

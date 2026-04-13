@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS custom properties (variables) used across the Lithium codebase",
-    "generated": "2026-04-13T02:26:03.289Z",
+    "generated": "2026-04-13T20:24:30.697Z",
     "sources": {
       "css": "50 files in src/**/*.css",
       "js": "102 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
-    "total_variables": 214,
-    "total_occurrences": 3356
+    "total_variables": 216,
+    "total_occurrences": 3446
   },
   "variables": [
     {
@@ -76,10 +76,10 @@
     },
     {
       "name": "--accent-hover",
-      "css": 42,
+      "css": 46,
       "js": 0,
       "html": 0,
-      "total": 42
+      "total": 46
     },
     {
       "name": "--accent-info",
@@ -97,10 +97,10 @@
     },
     {
       "name": "--accent-primary",
-      "css": 152,
+      "css": 170,
       "js": 3,
       "html": 1,
-      "total": 156
+      "total": 174
     },
     {
       "name": "--accent-primary-hover",
@@ -195,10 +195,10 @@
     },
     {
       "name": "--bg-primary",
-      "css": 62,
+      "css": 64,
       "js": 0,
       "html": 1,
-      "total": 63
+      "total": 65
     },
     {
       "name": "--bg-primary-rgb",
@@ -230,10 +230,10 @@
     },
     {
       "name": "--bg-secondary",
-      "css": 87,
+      "css": 90,
       "js": 1,
       "html": 1,
-      "total": 89
+      "total": 92
     },
     {
       "name": "--bg-tertiary",
@@ -286,17 +286,17 @@
     },
     {
       "name": "--border-radius-lg",
-      "css": 21,
+      "css": 26,
       "js": 0,
       "html": 0,
-      "total": 21
+      "total": 26
     },
     {
       "name": "--border-radius-md",
-      "css": 134,
+      "css": 140,
       "js": 0,
       "html": 0,
-      "total": 134
+      "total": 140
     },
     {
       "name": "--border-radius-sm",
@@ -314,10 +314,10 @@
     },
     {
       "name": "--border-standard",
-      "css": 73,
+      "css": 74,
       "js": 1,
       "html": 0,
-      "total": 74
+      "total": 75
     },
     {
       "name": "--border-width",
@@ -481,6 +481,13 @@
       "total": 5
     },
     {
+      "name": "--font-family-sans",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
       "name": "--font-mono",
       "css": 37,
       "js": 8,
@@ -524,10 +531,10 @@
     },
     {
       "name": "--font-size-lg",
-      "css": 28,
+      "css": 34,
       "js": 0,
       "html": 0,
-      "total": 28
+      "total": 34
     },
     {
       "name": "--font-size-md",
@@ -538,10 +545,10 @@
     },
     {
       "name": "--font-size-sm",
-      "css": 76,
+      "css": 79,
       "js": 0,
       "html": 0,
-      "total": 76
+      "total": 79
     },
     {
       "name": "--font-size-us",
@@ -552,10 +559,10 @@
     },
     {
       "name": "--font-size-xl",
-      "css": 32,
+      "css": 34,
       "js": 0,
       "html": 0,
-      "total": 32
+      "total": 34
     },
     {
       "name": "--font-size-xs",
@@ -614,6 +621,13 @@
       "total": 7
     },
     {
+      "name": "--icon-size-lg",
+      "css": 2,
+      "js": 0,
+      "html": 0,
+      "total": 2
+    },
+    {
       "name": "--icon-size-nav",
       "css": 1,
       "js": 0,
@@ -622,10 +636,10 @@
     },
     {
       "name": "--icon-size-reg",
-      "css": 10,
+      "css": 11,
       "js": 0,
       "html": 0,
-      "total": 10
+      "total": 11
     },
     {
       "name": "--icon-w",
@@ -804,31 +818,31 @@
     },
     {
       "name": "--space-1",
-      "css": 39,
+      "css": 40,
       "js": 1,
       "html": 0,
-      "total": 40
+      "total": 41
     },
     {
       "name": "--space-2",
-      "css": 160,
+      "css": 170,
       "js": 0,
       "html": 0,
-      "total": 160
+      "total": 170
     },
     {
       "name": "--space-3",
-      "css": 191,
+      "css": 198,
       "js": 2,
       "html": 0,
-      "total": 193
+      "total": 200
     },
     {
       "name": "--space-4",
-      "css": 106,
+      "css": 109,
       "js": 0,
       "html": 0,
-      "total": 106
+      "total": 109
     },
     {
       "name": "--space-5",
@@ -1427,17 +1441,17 @@
     },
     {
       "name": "--transition-duration",
-      "css": 66,
+      "css": 69,
       "js": 11,
       "html": 0,
-      "total": 77
+      "total": 80
     },
     {
       "name": "--transition-fast",
-      "css": 150,
+      "css": 162,
       "js": 3,
       "html": 0,
-      "total": 153
+      "total": 165
     },
     {
       "name": "--transition-normal",
