@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS custom properties (variables) used across the Lithium codebase",
-    "generated": "2026-04-13T20:24:30.697Z",
+    "generated": "2026-04-13T21:33:20.824Z",
     "sources": {
       "css": "50 files in src/**/*.css",
       "js": "102 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
     "total_variables": 216,
-    "total_occurrences": 3446
+    "total_occurrences": 3445
   },
   "variables": [
     {
@@ -314,10 +314,10 @@
     },
     {
       "name": "--border-standard",
-      "css": 74,
+      "css": 73,
       "js": 1,
       "html": 0,
-      "total": 75
+      "total": 74
     },
     {
       "name": "--border-width",

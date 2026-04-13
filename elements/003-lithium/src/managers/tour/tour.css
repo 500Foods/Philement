@@ -514,6 +514,8 @@
   visibility: hidden;
   transition: opacity var(--transition-duration, 0.2s) ease,
               visibility var(--transition-duration, 0.2s) ease;
+  min-width: 250px;
+  min-height: 425px;
 }
 
 .lithium-video-tour-popup.visible {
@@ -652,9 +654,10 @@
 .lithium-video-tour-player {
   width: 100%;
   height: 100%;
-  background: black;
   display: block;
-  object-fit: contain;
+  /* We should need this to set aspect ratio */
+  /* but we've set it in other ways, so it should be ok without it. */
+  object-fit: cover;
 }
 
 /* Scrubber row - directly between video and controls */
@@ -768,13 +771,11 @@
 /* Captions overlay */
 .lithium-video-tour-captions-container {
   position: absolute;
-  bottom: 100px;
-  left: 50%;
-  transform: translateX(-50%);
+  bottom: 75px;
   z-index: 4;
   pointer-events: none;
-  width: 100%;
-  max-width: 100%;
+  width: 150%;
+  max-width: 150%;
 }
 
 .lithium-video-tour-caption {
@@ -815,7 +816,6 @@
   align-items: center;
   padding: var(--space-4) var(--space-3) var(--space-2) var(--space-3);
   background: var(--bg-secondary);
-  border-top: var(--border-standard);
 }
 
 .lithium-video-tour-buttons {
