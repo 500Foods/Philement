@@ -19,6 +19,7 @@ import { tip, getTip } from '../core/tooltip-api.js';
 import {
   loadColtypes,
   loadTableDef,
+  resolveColumn,
   resolveColumns,
   resolveTableOptions,
   getQueryRefs,
@@ -57,6 +58,15 @@ export class LithiumTableBase {
     this.tablePath = options.tablePath;
     this.lookupKeyIdx = options.lookupKeyIdx || null;  // Direct Lookup 59 key_idx
     this.cssPrefix = options.cssPrefix || 'lithium';
+
+    // Primary key field (explicit override, set before tableDef loading)
+    if (options.primaryKeyField != null) {
+      this.primaryKeyField = options.primaryKeyField;
+      this._explicitPrimaryKeyField = true;
+    } else {
+      this.primaryKeyField = null;
+      this._explicitPrimaryKeyField = false;
+    }
 
     // Configuration (can be provided or loaded)
     this.tableDef = options.tableDef || null;
@@ -102,8 +112,7 @@ export class LithiumTableBase {
     // Data cache
     this.currentData = [];
 
-    // Metadata
-    this.primaryKeyField = null;
+    // Metadata (primaryKeyField already set in constructor if explicitly provided)
 
     // References for cleanup
     this.table = null;
@@ -138,10 +147,38 @@ export class LithiumTableBase {
   async init() {
     await this.loadConfiguration();
     this.injectSortIconStyles();
-    await this.initTable();
+
+    // Skip initial data load - wait for explicit loadData() call
+    // This is needed for tables that require runtime params (e.g., child tables)
+    // The parent table will trigger loadData() after selection
+
+    this.table = null;
+    await this.initTable(null);
+
     this.buildNavigator();
     this.setupKeyboardHandling();
     await this.setupPersistence();
+  }
+
+  async _loadInitialData(extraParams = null) {
+    if (!this.app?.api || !this.queryRefs.queryRef) return null;
+
+    try {
+      const rows = await authQuery(this.app.api, this.queryRefs.queryRef, extraParams);
+      this.currentData = rows;
+      return rows;
+    } catch (err) {
+      const isMissingParam = err.message?.includes('Missing required parameters') || 
+                           err.message?.includes('Required:') ||
+                           err.message?.includes('missing');
+      if (isMissingParam) {
+        log(Subsystems.CONDUIT, Status.DEBUG, 
+          `[LithiumTable] Initial load skipped - requires runtime params (${err.message})`);
+      } else {
+        log(Subsystems.CONDUIT, Status.ERROR, `[LithiumTable] Failed to load initial data: ${err.message}`);
+      }
+      return null;
+    }
   }
 
   /**
@@ -229,7 +266,10 @@ export class LithiumTableBase {
         Object.entries(this.queryRefs).filter(([, v]) => v != null)
       );
       this.queryRefs = { ...defQueryRefs, ...nonNullOverrides };
-      this.primaryKeyField = getPrimaryKeyField(this.tableDef);
+      // Only set primaryKeyField from tableDef if not explicitly provided in constructor
+      if (!this._explicitPrimaryKeyField) {
+        this.primaryKeyField = getPrimaryKeyField(this.tableDef);
+      }
 
       const lookupRefs = Object.values(this.tableDef.columns || {})
         .map(col => col.lookupRef)
@@ -249,23 +289,35 @@ export class LithiumTableBase {
     }
   }
 
-  async initTable() {
+  async initTable(preloadedData = null) {
     // Add base LithiumTable class for shared styling
     this.container.classList.add('lithium-table-container');
 
-    const dataColumns = this.tableDef && this.coltypes
-      ? resolveColumns(this.tableDef, this.coltypes, {
-          filterEditor: this.createFilterEditorFunction(),
-        })
-      : this.getFallbackColumns();
+    let dataColumns = [];
+    const data = preloadedData || this.currentData;
 
-    // If tableDef has _autoDiscover flag and columns are empty, use fallback
-    const needsAutoDiscover = this.tableDef?._autoDiscover && dataColumns.length === 0;
-    const finalColumns = needsAutoDiscover
-      ? this.getFallbackColumns()
-      : dataColumns;
+    if (this.tableDef && this.coltypes) {
+      dataColumns = resolveColumns(this.tableDef, this.coltypes, {
+        filterEditor: this.createFilterEditorFunction(),
+      });
+    } else if (this.tableDef?.columns && Object.keys(this.tableDef.columns).length > 0) {
+      dataColumns = resolveColumns(this.tableDef, this.coltypes || {}, {
+        filterEditor: this.createFilterEditorFunction(),
+      });
+    }
 
-    this.applyEditModeGate(finalColumns);
+    if (data && data.length > 0 && dataColumns.length === 0) {
+      dataColumns = this._buildColumnsFromData(data);
+    }
+
+    if (dataColumns.length === 0) {
+      log(Subsystems.TABLE, Status.WARN, 
+        `[LithiumTable] No columns defined for table "${this.tablePath}" - table will be empty`);
+    }
+
+    dataColumns = this._sortColumnsByPriority(dataColumns);
+
+    this.applyEditModeGate(dataColumns);
 
     const tableOptions = this.tableDef
       ? resolveTableOptions(this.tableDef)
@@ -284,7 +336,7 @@ export class LithiumTableBase {
 
     const selectorColumn = this.buildSelectorColumn();
 
-    const columns = [selectorColumn, ...finalColumns];
+    const columns = [selectorColumn, ...dataColumns];
     columns.forEach(col => {
       if (col.title && !col.cssClass?.includes('first-visible-col')) {
         col.cssClass = [col.cssClass, sanitizeColumnTitle(col.title)].filter(Boolean).join(' ');
@@ -478,8 +530,8 @@ export class LithiumTableBase {
   // ── Row Selection & Navigation ────────────────────────────────────────────
 
   async handleRowSelected(row) {
-    const pkField = this.primaryKeyField || 'id';
-    const newRowId = row.getData()?.[pkField];
+    const pkFields = this.primaryKeyField;
+    const newRowId = this._getCompositeRowId(row.getData(), pkFields);
 
     if (this.isEditing && this.editingRowId !== newRowId) {
       // Synchronous dirty check — the rAF-deferred isDirty flag may be stale
@@ -534,9 +586,12 @@ export class LithiumTableBase {
   getEditingRow() {
     if (!this.table || !this.isEditing || this.editingRowId == null) return null;
 
-    const pkField = this.primaryKeyField || 'id';
+    const pkFields = this.primaryKeyField;
     const rows = this.table.getRows('active');
-    return rows.find(row => row.getData()?.[pkField] === this.editingRowId) || null;
+    return rows.find(row => {
+      const rowId = this._getCompositeRowId(row.getData(), pkFields);
+      return rowId === this.editingRowId;
+    }) || null;
   }
 
   isCalcRow(row) {
@@ -558,9 +613,9 @@ export class LithiumTableBase {
     if (!rowA || !rowB) return false;
     if (rowA === rowB) return true;
 
-    const pkField = this.primaryKeyField || 'id';
-    const rowAId = rowA.getData?.()?.[pkField];
-    const rowBId = rowB.getData?.()?.[pkField];
+    const pkFields = this.primaryKeyField;
+    const rowAId = this._getCompositeRowId(rowA.getData?.(), pkFields);
+    const rowBId = this._getCompositeRowId(rowB.getData?.(), pkFields);
     return rowAId != null && rowBId != null && String(rowAId) === String(rowBId);
   }
 
@@ -682,6 +737,16 @@ export class LithiumTableBase {
         return;
       }
 
+      // Check if extraParams are required but missing
+      if (extraParams === null || extraParams === undefined) {
+        const hasParams = extraParams && Object.keys(extraParams).length > 0;
+        if (!hasParams) {
+          log(Subsystems.TABLE, Status.DEBUG, 
+            `[LithiumTable] Data load skipped - requires runtime params (no extraParams provided)`);
+          return;
+        }
+      }
+
       log(Subsystems.CONDUIT, Status.INFO,
         `[LithiumTable] Loading data (queryRef: ${queryRef}${searchTerm ? `, search: "${searchTerm}"` : ''})`);
 
@@ -737,8 +802,8 @@ export class LithiumTableBase {
     if (!this.table) return null;
     const selected = this.table.getSelectedRows();
     if (selected.length > 0) {
-      const pkField = this.primaryKeyField || 'id';
-      return selected[0].getData()[pkField] ?? null;
+      const pkFields = this.primaryKeyField;
+      return this._getCompositeRowId(selected[0].getData(), pkFields);
     }
     return null;
   }
@@ -757,11 +822,12 @@ export class LithiumTableBase {
     const rows = this.table.getRows('active');
     if (rows.length === 0) return;
 
-    const pkField = this.primaryKeyField;
+    const pkFields = this.primaryKeyField;
 
-    if (targetId != null && pkField !== null) {
+    if (targetId != null && pkFields !== null && pkFields.length > 0) {
       for (const row of rows) {
-        if (String(row.getData()[pkField]) === String(targetId)) {
+        const rowId = this._getCompositeRowId(row.getData(), pkFields);
+        if (String(rowId) === String(targetId)) {
           row.select();
           row.scrollTo();
           return;
@@ -771,6 +837,22 @@ export class LithiumTableBase {
 
     rows[0].select();
     rows[0].scrollTo();
+  }
+
+  /**
+   * Get composite row ID from row data using primary key fields
+   * @param {Object} rowData - Row data object
+   * @param {string[]} pkFields - Array of primary key field names
+   * @returns {string} Composite ID
+   */
+  _getCompositeRowId(rowData, pkFields) {
+    if (!pkFields || pkFields.length === 0) {
+      return rowData.id ?? String(rowData.lookup_id ?? rowData.key_idx ?? '');
+    }
+    if (pkFields.length === 1) {
+      return String(rowData[pkFields[0]] ?? '');
+    }
+    return pkFields.map(f => String(rowData[f] ?? '')).join('::');
   }
 
   /**
@@ -835,10 +917,11 @@ export class LithiumTableBase {
       },
       formatter: (cell) => {
         const row = cell.getRow();
-        const pkField = this.primaryKeyField || 'id';
+        const pkFields = this.primaryKeyField;
         const rowData = row.getData?.() || {};
+        const rowId = this._getCompositeRowId(rowData, pkFields);
         if (row.isSelected()) {
-          if (this.isEditing && this.editingRowId === rowData[pkField]) {
+          if (this.isEditing && this.editingRowId === rowId) {
             return `<span class="${this.cssPrefix}-selector-indicator ${this.cssPrefix}-selector-edit">&#10073;</span>`;
           }
           return `<span class="${this.cssPrefix}-selector-indicator ${this.cssPrefix}-selector-active">&#9658;</span>`;
@@ -881,11 +964,11 @@ export class LithiumTableBase {
       col.editable = (cell) => {
         if (!this.isEditing) return false;
 
-        const pkField = this.primaryKeyField || 'id';
+        const pkFields = this.primaryKeyField;
         const row = cell.getRow();
         if (!row || this.isCalcRow(row)) return false;
 
-        const rowId = row.getData?.()?.[pkField];
+        const rowId = this._getCompositeRowId(row.getData?.(), pkFields);
         return this.editingRowId != null
           ? rowId === this.editingRowId
           : row.isSelected?.();
@@ -896,11 +979,13 @@ export class LithiumTableBase {
   discoverColumns(rows) {
     if (!this.table || !rows || rows.length === 0) return;
 
-    const allKeys = new Set();
+    const allKeys = [];
+    const keyIndex = new Map();
     for (const row of rows) {
       for (const key of Object.keys(row)) {
-        if (key !== '_selector') {
-          allKeys.add(key);
+        if (key !== '_selector' && !keyIndex.has(key)) {
+          keyIndex.set(key, allKeys.length);
+          allKeys.push(key);
         }
       }
     }
@@ -917,51 +1002,120 @@ export class LithiumTableBase {
         .replace(/_/g, ' ')
         .replace(/\b\w/g, c => c.toUpperCase());
 
-      this.table.addColumn({
-        title,
+      const inferredColtype = this._detectColtype(rows, key);
+      const columnPri = keyIndex.get(key) + 1;
+
+      const colDef = {
         field: key,
-        resizable: true,
-        headerSort: true,
-        headerFilter: filterEditorFn,
-        headerFilterFunc: 'like',
+        display: title,
+        coltype: inferredColtype,
+        columnPri,
+      };
+
+      const resolvedCol = resolveColumn(key, colDef, this.coltypes || {}, {
+        filterEditor: filterEditorFn,
+      });
+
+      this.table.addColumn({
+        ...resolvedCol,
+        headerFilterFunc: resolvedCol.headerFilter ? 'like' : undefined,
         visible: false,
       });
     }
 
-    // Attach tooltips to newly discovered columns
     this.initColumnHeaderTooltips();
   }
 
-  getFallbackColumns() {
-    log(Subsystems.TABLE, Status.WARN, `[LithiumTable] Using fallback columns`);
-    const filterEditorFn = this.createFilterEditorFunction();
-    const cols = [
-      {
-        title: 'ID',
-        field: 'id',
-        width: 80,
-        resizable: true,
-        headerSort: true,
-        headerSortTristate: true,
-        headerFilter: filterEditorFn,
-        headerFilterFunc: 'like',
-      },
-      {
-        title: 'Name',
-        field: 'name',
-        resizable: true,
-        headerSort: true,
-        headerSortTristate: true,
-        headerFilter: filterEditorFn,
-        headerFilterFunc: 'like',
-      },
-    ];
-    cols.forEach(col => {
-      if (col.title) {
-        col.cssClass = sanitizeColumnTitle(col.title);
+  _detectColtype(rows, field) {
+    let hasNumber = false;
+    let hasDecimal = false;
+    let hasBoolean = false;
+    let hasString = false;
+    let hasNull = false;
+
+    const sampleSize = Math.min(rows.length, 50);
+    for (let i = 0; i < sampleSize; i++) {
+      const value = rows[i][field];
+      const type = typeof value;
+
+      if (value === null || value === undefined) {
+        hasNull = true;
+      } else if (type === 'number') {
+        hasNumber = true;
+        if (value !== Math.floor(value)) {
+          hasDecimal = true;
+        }
+      } else if (type === 'boolean') {
+        hasBoolean = true;
+      } else if (type === 'string') {
+        hasString = true;
+        if (value !== '') {
+          const num = parseFloat(value);
+          if (!isNaN(num) && isFinite(num)) {
+            hasNumber = true;
+            if (String(num) !== value.trim()) {
+              hasDecimal = true;
+            }
+          }
+        }
       }
+    }
+
+    if (hasBoolean && !hasNumber && !hasString) return 'boolean';
+    if (hasDecimal) return 'decimal';
+    if (hasNumber) return 'integer';
+    if (hasString || hasNull) return 'string';
+    return 'string';
+  }
+
+  _buildColumnsFromData(data) {
+    if (!data || data.length === 0) return [];
+
+    const fields = [];
+    const fieldIndex = new Map();
+    for (const row of data) {
+      for (const key of Object.keys(row)) {
+        if (key !== '_selector' && !fieldIndex.has(key)) {
+          fieldIndex.set(key, fields.length);
+          fields.push(key);
+        }
+      }
+    }
+
+    const filterEditorFn = this.createFilterEditorFunction();
+    const columns = [];
+
+    for (const field of fields) {
+      const title = field
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, c => c.toUpperCase());
+
+      const inferredColtype = this._detectColtype(data, field);
+      const columnPri = fieldIndex.get(field) + 1;
+
+      const colDef = {
+        field,
+        display: title,
+        coltype: inferredColtype,
+        columnPri,
+      };
+
+      const resolvedCol = resolveColumn(field, colDef, this.coltypes || {}, {
+        filterEditor: filterEditorFn,
+      });
+
+      columns.push(resolvedCol);
+    }
+
+    return columns;
+  }
+
+  _sortColumnsByPriority(columns) {
+    return [...columns].sort((a, b) => {
+      const priA = a.columnPri ?? Infinity;
+      const priB = b.columnPri ?? Infinity;
+      return priA - priB;
     });
-    return cols;
   }
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────

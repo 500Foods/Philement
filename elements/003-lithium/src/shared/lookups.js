@@ -615,28 +615,34 @@ export async function loadMacrosPostLogin(api, options = {}) {
   // DEBUG: Always log when this function is called
   logger.info(`[Lookups] loadMacrosPostLogin called, force=${force}`);
 
-  // Check if already loaded in memory cache (and has content)
+  // Load macros if not already loaded
   if (!force && cache?.macros && Object.keys(cache.macros).length > 0) {
     logger.info(`[Lookups] Macros already loaded (${Object.keys(cache.macros).length} entries)`);
-    return true;
+  } else {
+    await fetchMacrosFromServer(api);
   }
 
-  // Check localStorage cache before making API call
-  if (!force && !cache?.macros) {
-    const localData = loadFromLocalStorage();
-    if (localData?.macros && Object.keys(localData.macros).length > 0) {
-      // Merge with existing cache, don't replace (preserve other lookups like tabulator_schemas)
-      cache = { ...localData, ...cache };
-      logger.info(`[Lookups] Macros loaded from localStorage (${Object.keys(cache.macros).length} entries)`);
-      eventBus.emitSilent('lookups:macros:loaded', { count: Object.keys(cache.macros).length, source: 'cache' });
-      // Still fetch fresh in background
-      fetchMacrosInBackground(api);
-      return true;
+  // Also fetch tabulator_schemas (QueryRef 060) - needed for table column definitions
+  // This is separate from the main fetchLookups because it needs to run post-login
+  // when the full auth context is available
+  const schemas = cache?.tabulator_schemas;
+  if (!force && schemas && schemas.length > 0) {
+    logger.info(`[Lookups] Tabulator schemas already loaded (${schemas.length} entries)`);
+  } else {
+    logger.info('[Lookups] Loading tabulator schemas from server (QueryRef 060)');
+    try {
+      const { authQuery } = await import('./conduit.js');
+      const schemaRows = await authQuery(api, 60);
+      if (schemaRows && Array.isArray(schemaRows)) {
+        cache.tabulator_schemas = schemaRows;
+        logger.info(`[Lookups] Tabulator schemas loaded (${schemaRows.length} entries)`);
+      }
+    } catch (err) {
+      logger.warn(`[Lookups] Failed to load tabulator schemas: ${err.message}`);
     }
   }
 
-  // Fetch from server
-  return fetchMacrosFromServer(api);
+  return true;
 }
 
 /**

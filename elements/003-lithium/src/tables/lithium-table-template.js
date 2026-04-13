@@ -85,6 +85,10 @@ export function extractTemplateColumnFromColumn(column, primaryKeyField = null) 
   const field = column.getField();
   const display = def.title || field;
 
+  // Handle both single field and array of fields for compound keys
+  const isPrimaryKey = def.primaryKey === true || 
+    (Array.isArray(primaryKeyField) ? primaryKeyField.includes(field) : field === primaryKeyField);
+
   const colDef = {
     display,
     field,
@@ -94,7 +98,7 @@ export function extractTemplateColumnFromColumn(column, primaryKeyField = null) 
     filter: def.lithiumFilter ?? !!def.headerFilter,
     editable: def.lithiumEditable ?? (def.editable === true),
     calculated: def.lithiumCalculated ?? false,
-    primaryKey: def.lithiumPrimaryKey ?? (def.primaryKey === true || field === primaryKeyField),
+    primaryKey: isPrimaryKey,
     description: def.lithiumDescription || def.description || `${display} column`,
   };
 

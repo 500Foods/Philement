@@ -532,8 +532,8 @@ Manager IDs correspond to the `lithium.json` `managers` section. Group 0 (IDs 1-
 |----|---------|--------|
 | 1 | Login | System (pre-auth) |
 | 2 | Menu | System (wrapper) |
-| 3 | Profile | System (utility) |
-| 4 | Session | System (utility) |
+| 3 | Profile | ✅ Implemented (Utility) |
+| 4 | Session | ✅ Implemented (Utility) |
 | 5 | Crimson | System (AI agent) |
 | 6 | Tour | System (onboarding) |
 

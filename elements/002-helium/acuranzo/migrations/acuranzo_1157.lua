@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1157.lua
--- Tabulator Schema: lookup-values.json (Lookup 059, Key 3)
+-- LithiumTable style-manager-semantic-vars (lookup_id 59 key_idx 12)
 
 -- luacheck: no max line length
 -- luacheck: no unused args
@@ -15,8 +15,8 @@ local queries = {}
 cfg.TABLE = "lookups"
 cfg.MIGRATION = "1157"
 cfg.LOOKUP_ID = "059"
-cfg.KEY_IDX = "3"
-cfg.SCHEMA_NAME = "lookup-values"
+cfg.KEY_IDX = "12"
+cfg.SCHEMA_NAME = "style-manager-semantic-vars"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
@@ -41,202 +41,13 @@ table.insert(queries,{sql=[[
             VALUES
                 (${LOOKUP_ID}, ${KEY_IDX}, 1, '${SCHEMA_NAME}', 0, 3, '',
                 [==[
-                    # Lookup Values Table Definition
+                    # Style Manager Semantic Variables
 
-                    Column definitions for the Lookups Manager child table (middle panel). Maps query
-                    result fields from QueryRef 034 to display properties and coltypes.
 
-                    ## Table Configuration
-
-                    - **Table**: lookup-values
-                    - **Title**: Lookup Values
-                    - **QueryRef**: 34 (Get Lookup List)
-                    - **DetailQueryRef**: 35 (Get Lookup Key)
-                    - **Readonly**: false
-                    - **SelectableRows**: 1
-
-                    ## Columns
-
-                    - **key_idx**: Key (integer, visible - the lookup entry key)
-                    - **value_txt**: Value (string, visible - the text value)
-                    - **value_int**: Int Value (integer, visible)
-                    - **sort_seq**: Sort (integer, visible)
-                    - **status_a1**: Status (lookup, references lookup 1)
-                    - **valid_after**: Valid After (datetime, hidden)
-                    - **valid_until**: Valid Until (datetime, hidden)
-                    - **created_at**: Created (datetime, hidden)
-                    - **updated_at**: Updated (datetime, hidden)
-                    - **record_size**: Size (integer, hidden)
-
-                    ## Schema Location
-
-                    Source: `elements/003-lithium/config/tabulator/lookups/lookup-values.json`
                 ]==],
                 ${JSON_INGEST_START}
 [===[
 {
-  "$schema": "../../tabledef-schema.json",
-  "$version": "1.0.0",
-  "$description": "Column definitions for the Lookups Manager child table (middle panel). Maps QueryRef 034 result fields to display properties.",
-
-  "table": "lookup-values",
-  "title": "Lookup Values",
-  "queryRef": 34,
-  "detailQueryRef": 35,
-  "readonly": false,
-  "selectableRows": 1,
-  "layout": "fitColumns",
-  "responsiveLayout": "collapse",
-  "resizableColumns": true,
-  "persistSort": true,
-  "persistFilter": true,
-  "initialSort": [
-    { "column": "sort_seq", "dir": "asc" }
-  ],
-
-  "columns": {
-
-    "key_idx": {
-      "title": "Key",
-      "field": "key_idx",
-      "coltype": "index",
-      "visible": true,
-      "headerFilter": true,
-      "editable": true,
-      "primaryKey": true,
-      "description": "Lookup entry key (unique within the lookup)",
-      "width": 60
-    },
-
-    "value_txt": {
-      "title": "Value",
-      "field": "value_txt",
-      "coltype": "string",
-      "visible": true,
-      "headerFilter": true,
-      "editable": true,
-      "description": "Text value for this lookup entry"
-    },
-
-    "value_int": {
-      "title": "Int Value",
-      "field": "value_int",
-      "coltype": "integer",
-      "visible": false,
-      "headerFilter": true,
-      "editable": true,
-      "description": "Optional integer value for this lookup entry",
-      "width": 80,
-      "formatterParams": {
-        "thousand": ",",
-        "precision": 0
-      }
-    },
-
-    "sort_seq": {
-      "title": "Sort",
-      "field": "sort_seq",
-      "coltype": "integer",
-      "visible": true,
-      "headerFilter": true,
-      "editable": true,
-      "description": "Sort sequence for ordering entries",
-      "width": 60
-    },
-
-    "status_a1": {
-      "title": "Status",
-      "field": "status_a1",
-      "coltype": "lookup",
-      "visible": true,
-      "headerFilter": true,
-      "groupable": true,
-      "editable": true,
-      "description": "Entry status — references lookup table 1 (Active, Inactive, etc.)",
-      "lookupRef": "1",
-      "width": 80
-    },
-
-    "valid_after": {
-      "title": "Valid After",
-      "field": "valid_after",
-      "coltype": "datetime",
-      "visible": false,
-      "headerFilter": true,
-      "editable": true,
-      "description": "Timestamp when this entry becomes valid"
-    },
-
-    "valid_until": {
-      "title": "Valid Until",
-      "field": "valid_until",
-      "coltype": "datetime",
-      "visible": false,
-      "headerFilter": true,
-      "editable": true,
-      "description": "Timestamp when this entry expires"
-    },
-
-    "created_at": {
-      "title": "Created",
-      "field": "created_at",
-      "coltype": "datetime",
-      "visible": false,
-      "headerFilter": true,
-      "editable": false,
-      "calculated": true,
-      "description": "Record creation timestamp"
-    },
-
-    "updated_at": {
-      "title": "Updated",
-      "field": "updated_at",
-      "coltype": "datetime",
-      "visible": false,
-      "headerFilter": true,
-      "editable": false,
-      "calculated": true,
-      "description": "Last modification timestamp"
-    },
-
-    "created_id": {
-      "title": "Created By",
-      "field": "created_id",
-      "coltype": "index",
-      "visible": false,
-      "headerFilter": true,
-      "editable": false,
-      "calculated": true,
-      "description": "User ID who created the record"
-    },
-
-    "updated_id": {
-      "title": "Updated By",
-      "field": "updated_id",
-      "coltype": "index",
-      "visible": false,
-      "headerFilter": true,
-      "editable": false,
-      "calculated": true,
-      "description": "User ID who last modified the record"
-    },
-
-    "record_size": {
-      "title": "Size",
-      "field": "record_size",
-      "coltype": "integer",
-      "visible": false,
-      "headerFilter": true,
-      "editable": false,
-      "calculated": true,
-      "description": "Calculated size of this record in bytes",
-      "formatterParams": {
-        "thousand": ",",
-        "precision": 0,
-        "suffix": " B"
-      }
-    }
-  }
 }
 ]===]
                 ${JSON_INGEST_END}, ${COMMON_VALUES});

@@ -136,7 +136,7 @@
   display: flex;
   flex-wrap: nowrap;
   gap: 1px;
-  outline: 3px solid var(--accent-primary);
+  outline: 3px solid var(--accent-alt-primary);
   outline-offset: -5px;
   border-radius: var(--border-radius-sm);
   overflow: hidden;
@@ -167,7 +167,7 @@
   margin: 0;
   border: none;
   border-radius: 0;
-  background-color: var(--accent-primary);
+  background-color: var(--accent-alt-primary);
   color: white;
   font-size: 11px;
   cursor: pointer;
@@ -247,8 +247,8 @@
 .lithium-nav-block-search {
   flex: 1;
   outline: none;
-  border: 2px solid var(--accent-primary);
-  background: var(--accent-primary);
+  border: 2px solid var(--accent-alt-primary);
+  background: var(--accent-alt-primary); 
   min-width: 149px;
   margin-right: 1px;
   max-width: 457px;
@@ -274,7 +274,7 @@
 }
 .lithium-nav-search-input:placeholder-shown {
   border: 0.5px solid var(--color-muted);
-  background-color: var(--accent-primary);
+  background-color: var(--accent-alt-primary);
 }
 .lithium-nav-search-input:placeholder-shown::placeholder {
   color: var(--color-muted);
@@ -334,7 +334,7 @@
 }
 
 .lithium-nav-popup-item:hover {
-  background-color: var(--accent-primary);
+  background-color: var(--accent-alt-primary);
   color: white;
 }
 
@@ -751,7 +751,7 @@ div.lithium-table-container > div:nth-child(1) > div:nth-child(1) > div:nth-chil
 }
 
 .lithium-col-chooser-checkbox {
-  accent-color: var(--accent-primary);
+  accent-color: var(--accent-alt-primary);
   width: 14px;
   height: 14px;
   cursor: pointer;
@@ -801,7 +801,7 @@ div.lithium-table-container > div:nth-child(1) > div:nth-child(1) > div:nth-chil
 }
 
 .lithium-table-container .tabulator-header-filter input:focus {
-  border-color: var(--accent-primary);
+  border-color: var(--accent-alt-primary);
 }
 
 .lithium-table-container .tabulator-header-filter input::placeholder {
@@ -1012,7 +1012,7 @@ div.lithium-table-container > div:nth-child(1) > div:nth-child(1) > div:nth-chil
 .lithium-col-chooser-checkbox {
   width: 16px;
   height: 16px;
-  accent-color: var(--accent-primary, #0078d4);
+  accent-color: var(--accent-alt-primary, #0078d4);
   cursor: pointer;
 }
 

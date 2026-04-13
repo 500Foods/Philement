@@ -6,13 +6,56 @@ This document describes the Lookups Manager, a dual-table interface for managing
 
 ## Overview
 
-The Lookups Manager (Manager ID: 5) provides a three-panel interface for managing lookup tables — key-value pairs used throughout the Philement platform for enumerations, status codes, and reference data.
+The Lookups Manager (Manager ID: 23) provides a dual-table interface for managing lookup tables — key-value pairs used throughout the Philement platform for enumerations, status codes, and reference data.
 
 **Key Files:**
 
 - `src/managers/lookups/lookups.js` — Main manager class (LithiumTable + ManagerEditHelper + editors)
 - `src/managers/lookups/lookups.css` — Styling
 - `src/managers/lookups/lookups.html` — HTML template
+
+---
+
+## Schema Configuration
+
+The Lookups Manager loads its table definitions from **Lookup 59 (Tabulator Schemas)**:
+
+| key_idx | Table | Description |
+|---------|-------|-------------|
+| 6 | `lookups-manager-list` | Parent table - list of all lookups |
+| 7 | `lookups-manager-values` | Child table - values for selected lookup |
+
+The schema must include column definitions with `primaryKey: true` flags for primary key columns. For compound primary keys (like lookup_id + key_idx), mark each field with `"primaryKey": true`.
+
+### Schema Requirements
+
+Each column in the table definition should have:
+
+```json
+"lookup_id": {
+  "field": "lookup_id",
+  "display": "Lookup ID",
+  "primaryKey": true,
+  ...
+}
+```
+
+For compound keys, mark all participating fields:
+
+```json
+"lookup_id": {
+  "field": "lookup_id",
+  "display": "Lookup ID",
+  "primaryKey": true,
+  ...
+},
+"key_idx": {
+  "field": "key_idx",
+  "display": "Key Index",
+  "primaryKey": true,
+  ...
+}
+```
 
 ---
 
@@ -240,6 +283,35 @@ Both tables are fully independent with:
 
 ## Parent/Child Relationship
 
+### Selection Persistence
+
+The Lookups Manager supports selection persistence for both parent and child tables:
+
+#### Parent Selection (Last Selected Lookup)
+
+- **Storage key:** `lithium_lookups_parent_selection`
+- **Saved on:** parent row selection via `handleParentRowSelected()`
+- **Restored on:** `initParentTable()` after parent data loads
+
+```javascript
+// Save parent selection
+this._saveParentSelection(lookupId);
+
+// Load on init
+const savedParentId = this._loadParentSelection();
+if (savedParentId != null) {
+  this.parentTable.autoSelectRow(savedParentId);
+}
+```
+
+#### Child Selection (Per-Lookup Child Row)
+
+- **Storage key:** `lithium_lookups_child_selections` (JSON object: `{ lookupId → { lookup_id, key_idx } }`)
+- **Saved on:** child row selection via `handleChildRowSelected()`
+- **Restored on:** `loadChildData()` — sets the target row ID before loading
+
+For **compound primary keys**, the saved child ID is stored as a composite string (`key_idx::lookup_id`) to match the table's compound key format.
+
 ### Selection Flow
 
 1. User clicks a row in the **parent table**
@@ -274,14 +346,6 @@ async loadChildData(lookupId) {
   });
 }
 ```
-
-### Per-Lookup Child Selection Persistence
-
-The Lookups Manager remembers the last selected child row **per lookup**. When cycling through lookups in the parent table, each lookup restores its own previously selected child value.
-
-- **Storage key:** `lithium_lookups_child_selections` (JSON object: `{ lookupId → childRowId }`)
-- **Saved on:** child row selection via `handleChildRowSelected()`
-- **Restored on:** `loadChildData()` — sets the target row ID before loading, so `autoSelectRow()` picks it up
 
 ### Child Table Refresh
 

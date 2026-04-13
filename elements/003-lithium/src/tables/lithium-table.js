@@ -341,11 +341,17 @@ export async function loadTableDef(tablePath, providedData, lookupKeyIdx) {
   // Only used when lookupKeyIdx is not provided
   if (!isLookup59Schema) {
     const tableToKeyIdx = {
-      'queries/query-manager': 1,      // Query Manager table schema
-      'lookups/lookups-list': 2,       // Lookups Manager parent table schema
-      'lookups/lookup-values': 3,      // Lookups Manager child table schema
-      'style-manager/lookup-41': 6,    // Style Manager main table schema
-      'version-manager/version-history': 7, // Version Manager table schema
+      'column-manager': 2,             // acuranzo_1179
+      'column-manager-manager': 3,      // acuranzo_1180
+      'user-profile-sections': 4,          // acuranzo_1181
+      'queries/query-manager': 5,        // acuranzo_1182
+      'lookups/lookups-list': 6,      // acuranzo_1183 (legacy path)
+      'lookups-manager-list': 6,       // acuranzo_1183
+      'lookups/lookup-values': 7,     // acuranzo_1184 (legacy path)
+      'lookups-manager-values': 7,    // acuranzo_1184
+      'style-manager-list': 8,        // acuranzo_1185
+      'style-manager-sections': 9,     // acuranzo_1186
+      'version-manager': 10,          // acuranzo_1187
     };
     const mappedKeyIdx = tableToKeyIdx[normalised];
     if (mappedKeyIdx != null) {
@@ -364,6 +370,15 @@ export async function loadTableDef(tablePath, providedData, lookupKeyIdx) {
     log(Subsystems.MANAGER, Status.INFO,
       '[LithiumTable] Tabulator schemas not in cache, triggering lookup fetch...');
     await fetchLookups();
+    schemas = getTabulatorSchemas();
+  }
+
+  // If a direct key_idx was requested but schemas still not available,
+  // this may be the first time we're trying to load them. Try force-refresh.
+  if (!schemas && keyIdx != null) {
+    log(Subsystems.MANAGER, Status.INFO,
+      `[LithiumTable] Schemas not loaded yet, force-fetching for key_idx ${keyIdx}...`);
+    await fetchLookups({ force: true, silent: false });
     schemas = getTabulatorSchemas();
   }
 
@@ -651,6 +666,7 @@ export function resolveColumn(fieldName, colDef, coltypes, options = {}) {
     lithiumCalculated: colDef.calculated === true,
     lithiumPrimaryKey: colDef.primaryKey === true,
     lithiumDescription: colDef.description || `${colDef.display || colDef.field} column`,
+    columnPri: colDef.columnPri,
 
     // Alignment
     hozAlign: merged.align || 'left',
@@ -881,17 +897,18 @@ export function resolveTableOptions(tableDef) {
  * Get the primary key field name from a table definition.
  *
  * @param {Object} tableDef - Parsed table definition
- * @returns {string|null} The field name of the primary key column, or null
+ * @returns {string[]|null} Array of field names for compound primary key, or single-field array, or null
  */
 export function getPrimaryKeyField(tableDef) {
   if (!tableDef?.columns) return null;
 
+  const pkFields = [];
   for (const [, colDef] of Object.entries(tableDef.columns)) {
     if (colDef.primaryKey === true) {
-      return colDef.field;
+      pkFields.push(colDef.field);
     }
   }
-  return null;
+  return pkFields.length > 0 ? pkFields : null;
 }
 
 /**
@@ -940,10 +957,12 @@ export function formatBuiltinValue(value, formatterName, params) {
       const precision = params?.precision ?? 0;
       let formatted = num.toFixed(precision);
 
-      // Thousands separator
-      if (params?.thousand) {
+      // Thousands separator - check for !== undefined (empty string "" disables separator)
+      if (params?.thousand !== undefined) {
         const parts = formatted.split('.');
-        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, params.thousand);
+        if (params.thousand) {
+          parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, params.thousand);
+        }
         formatted = parts.join('.');
       }
 
@@ -967,10 +986,12 @@ export function formatBuiltinValue(value, formatterName, params) {
       const precision = params?.precision ?? 2;
       let formatted = num.toFixed(precision);
 
-      // Thousands separator
-      if (params?.thousand) {
+      // Thousands separator - check for !== undefined (empty string "" disables separator)
+      if (params?.thousand !== undefined) {
         const parts = formatted.split('.');
-        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, params.thousand);
+        if (params.thousand) {
+          parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, params.thousand);
+        }
         formatted = parts.join(params?.decimal || '.');
       } else if (params?.decimal && formatted.includes('.')) {
         formatted = formatted.replace('.', params.decimal);
@@ -1102,9 +1123,12 @@ export function clearLookup59Cache() {
     'queries/query-manager',
     'lookups/lookups-list',
     'lookups/lookup-values',
+    'lookups-manager-list',
+    'lookups-manager-values',
     'style-manager/lookup-41',
     'version-manager/version-history',
     'profile-manager/user-options',
+    'column-manager',
   ];
 
   let clearedCount = 0;
@@ -1117,6 +1141,78 @@ export function clearLookup59Cache() {
 
   log(Subsystems.MANAGER, Status.DEBUG,
     `[LithiumTable] Cleared ${clearedCount} Lookup 59 table definition(s) from cache`);
+}
+
+const TABLEDEF_VALID_PROPS = new Set([
+  'title', 'table', 'columns', 'queryRef', 'layout', 'responsiveLayout',
+  'groupBy', 'pagination', 'paginationSize', 'persistSort', 'persistFilter',
+  'readonly', '_autoDiscover', '_templateMeta',
+]);
+
+const COLUMN_VALID_PROPS = new Set([
+  'field', 'display', 'title', 'coltype', 'description', 'visible',
+  'width', 'minWidth', 'maxWidth', 'hozAlign', 'vertAlign',
+  'formatter', 'formatterParams', 'editor', 'editorParams',
+  'sorter', 'sorterParams', 'headerSort', 'headerFilter', 'headerFilterFunc',
+  'headerFilterPlaceholder', 'headerFilterParams', 'headerVisible',
+  'headerHozAlign', 'headerVertical', 'headerSortTristate',
+  'resizable', 'frozen', 'clipboard', 'cssClass', 'rowCssClass',
+  'vertHandle', 'hozHandle', 'contextMenu', 'tapComprehensive',
+  'tooltip', 'tooltipHeader', 'bottomCalc', 'bottomCalcParams',
+  'bottomCalcFormatter', 'bottomCalcFormatterParams',
+  'columnPri', 'primaryKey', 'calculated', 'sort', 'filter', 'group', 'editable',
+  'display', 'lookupRef', 'lookupFixed', 'blank', 'zero',
+]);
+
+const VALID_COLTYPES = new Set([
+  'default', 'string', 'text', 'integer', 'index', 'decimal',
+  'boolean', 'date', 'datetime', 'time', 'currency', 'percent',
+  'progress', 'email', 'url', 'lookup', 'lookupIcon',
+  'lookupIconText', 'lookupIconList', 'enum', 'html',
+  'image', 'color', 'star', 'rownum', 'json',
+]);
+
+export function validateTableDef(tableDef, stageName = 'unknown') {
+  if (!tableDef) {
+    return { valid: true, errors: [] };
+  }
+
+  const errors = [];
+
+  if (typeof tableDef !== 'object') {
+    errors.push(`Stage ${stageName}: tableDef must be an object`);
+    return { valid: false, errors };
+  }
+
+  const tableProps = Object.keys(tableDef);
+  for (const prop of tableProps) {
+    if (!TABLEDEF_VALID_PROPS.has(prop) && !prop.startsWith('_')) {
+      errors.push(`Stage ${stageName}: Unknown table property "${prop}"`);
+    }
+  }
+
+  const columns = tableDef.columns;
+  if (columns && typeof columns === 'object') {
+    for (const [field, colDef] of Object.entries(columns)) {
+      if (!colDef || typeof colDef !== 'object') {
+        errors.push(`Stage ${stageName}: Column "${field}" must be an object`);
+        continue;
+      }
+
+      const colProps = Object.keys(colDef);
+      for (const prop of colProps) {
+        if (!COLUMN_VALID_PROPS.has(prop) && !prop.startsWith('_')) {
+          errors.push(`Stage ${stageName}: Column "${field}" has unknown property "${prop}"`);
+        }
+      }
+
+      if (colDef.coltype && !VALID_COLTYPES.has(colDef.coltype)) {
+        errors.push(`Stage ${stageName}: Column "${field}" has invalid coltype "${colDef.coltype}"`);
+      }
+    }
+  }
+
+  return { valid: errors.length === 0, errors };
 }
 
 // ── Event Listeners ─────────────────────────────────────────────────────────

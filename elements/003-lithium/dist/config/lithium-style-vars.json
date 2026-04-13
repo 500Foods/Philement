@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS custom properties (variables) used across the Lithium codebase",
-    "generated": "2026-04-12T19:16:01.885Z",
+    "generated": "2026-04-13T02:26:03.289Z",
     "sources": {
       "css": "50 files in src/**/*.css",
       "js": "102 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
-    "total_variables": 213,
-    "total_occurrences": 3355
+    "total_variables": 214,
+    "total_occurrences": 3356
   },
   "variables": [
     {
@@ -17,6 +17,13 @@
       "js": 0,
       "html": 0,
       "total": 2
+    },
+    {
+      "name": "--accent-alt-primary",
+      "css": 17,
+      "js": 0,
+      "html": 0,
+      "total": 17
     },
     {
       "name": "--accent-crimson",
@@ -90,10 +97,10 @@
     },
     {
       "name": "--accent-primary",
-      "css": 168,
+      "css": 152,
       "js": 3,
       "html": 1,
-      "total": 172
+      "total": 156
     },
     {
       "name": "--accent-primary-hover",

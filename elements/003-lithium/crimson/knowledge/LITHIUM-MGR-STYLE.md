@@ -146,7 +146,7 @@ When Section mode is active and a section is selected:
 
 #### JSON Mode
 
-Raw JSON editor for the selected style configuration (not yet implemented).
+Raw JSON editor for the selected style configuration. Toggle via the **JSON** button in the toolbar.
 
 ---
 

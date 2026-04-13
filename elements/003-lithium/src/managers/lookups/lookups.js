@@ -429,15 +429,14 @@ export default class LookupsManager {
     this.parentTable = new LithiumTable({
       container: this.elements.parentTableContainer,
       navigatorContainer: this.elements.parentNavigator,
-      tablePath: 'lookups/lookups-list',
-      lookupKeyIdx: 2,
+      tablePath: 'lookups-manager-list',
+      lookupKeyIdx: 6, // key_idx 6 in Lookup 059
       queryRef: 30, // QueryRef 30 - Get Lookups List
       searchQueryRef: 31, // QueryRef 31 - Get Lookups List + Search
       updateQueryRef: 43, // QueryRef 43 - Update Lookup
       insertQueryRef: 42, // QueryRef 42 - Insert Lookup
-      deleteQueryRef: 44, // QueryRef 44 - Delete Lookup
       cssPrefix: 'lithium', // Use default prefix for shared styling
-      storageKey: 'lookups_parent_table',
+      storageKey: 'lookups-manager-list',
       app: this.app,
       readonly: false,
       panel: this.elements.leftPanel,
@@ -458,6 +457,14 @@ export default class LookupsManager {
 
     // Load parent data
     await this.parentTable.loadData();
+
+    // Restore previously selected parent lookup (if any)
+    const savedParentId = this._loadParentSelection();
+    if (savedParentId != null) {
+      requestAnimationFrame(() => {
+        this.parentTable.autoSelectRow(savedParentId);
+      });
+    }
   }
 
   // ── Child Table Initialization ─────────────────────────────────────────────
@@ -468,14 +475,13 @@ export default class LookupsManager {
     this.childTable = new LithiumTable({
       container: this.elements.childTableContainer,
       navigatorContainer: this.elements.childNavigator,
-      tablePath: 'lookups/lookup-values',
-      lookupKeyIdx: 3,
+      tablePath: 'lookups-manager-values',
+      lookupKeyIdx: 7, // key_idx 7 in Lookup 059
       queryRef: 34, // QueryRef 34 - Get Lookup List (requires LOOKUPID param)
       updateQueryRef: 43, // QueryRef 43 - Update Lookup Value
       insertQueryRef: 42, // QueryRef 42 - Insert Lookup Value
-      deleteQueryRef: 44, // QueryRef 44 - Delete Lookup Value
       cssPrefix: 'lithium', // Use default prefix for shared styling
-      storageKey: 'lookups_child_table',
+      storageKey: 'lookups-manager-values',
       app: this.app,
       readonly: false,
       panel: this.elements.middlePanel,
@@ -526,6 +532,20 @@ export default class LookupsManager {
 
   // ── Parent/Child Relationship ──────────────────────────────────────────────
 
+  _saveParentSelection(lookupId) {
+    if (lookupId == null) return;
+    try {
+      localStorage.setItem('lithium_lookups_parent_selection', String(lookupId));
+    } catch { /* ignore */ }
+  }
+
+  _loadParentSelection() {
+    try {
+      const stored = localStorage.getItem('lithium_lookups_parent_selection');
+      return stored ? String(stored) : null;
+    } catch { return null; }
+  }
+
   _toSelectionKey(value) {
     return value != null ? String(value) : null;
   }
@@ -549,6 +569,9 @@ export default class LookupsManager {
 
     this.selectedLookupId = lookupId;
     this.selectedLookupName = lookupName;
+
+    // Persist parent selection for restoration on next manager load
+    this._saveParentSelection(lookupId);
 
     // A single click can surface duplicate selection callbacks while the table
     // is settling. Reuse the in-flight request or keep the already-loaded child
@@ -601,6 +624,14 @@ export default class LookupsManager {
         await this.childTable.loadData('', {
           INTEGER: { LOOKUPID: lookupId },
         });
+
+        // If no saved selection was found (first time viewing this lookup),
+        // select the first row automatically
+        if (savedChildId == null) {
+          requestAnimationFrame(() => {
+            this.childTable.autoSelectRow(null); // null triggers first-row selection
+          });
+        }
 
         this._loadedChildLookupKey = lookupKey;
 
@@ -674,7 +705,7 @@ export default class LookupsManager {
    * @param {Object} options      - { summary, collection } override strings
    * @returns {Object} { INTEGER, STRING } params matching QueryRef 43 placeholders
    */
-  _buildLookupSaveParams(rowData, originalData, { summary = '', collection = '{}' } = {}) {
+  _buildLookupSaveParams(rowData, originalData, isInsert, { summary = '', collection = '{}' } = {}) {
     // Helper: return first value that is not null/undefined (0 is valid)
     const valueOrFallback = (primary, secondary, fallback) => {
       if (primary != null) return primary;
@@ -682,21 +713,46 @@ export default class LookupsManager {
       return fallback;
     };
 
+    const lookupId = valueOrFallback(rowData.lookup_id, originalData.lookup_id, 0);
+    const keyIdx = valueOrFallback(rowData.key_idx, originalData.key_idx, 0);
+    const status = valueOrFallback(rowData.status_a1, originalData.status_a1, 1);
+
+    // INSERT (QueryRef 42) vs UPDATE (QueryRef 43) have different param requirements
+    if (isInsert) {
+      return {
+        INTEGER: {
+          LOOKUPID: lookupId,
+          KEYIDX: keyIdx,
+          VALUEINT: valueOrFallback(rowData.value_int, originalData.value_int, 0),
+          SORTSEQ: valueOrFallback(rowData.sort_seq, originalData.sort_seq, 0),
+          STATUSLUA1: status,
+          USERID: this.app?.user?.id ?? 0,
+        },
+        STRING: {
+          VALUETXT: rowData.value_txt ?? rowData.name ?? originalData.value_txt ?? '',
+          SUMMARY: summary,
+          CODE: rowData.code ?? originalData.code ?? '',
+          COLLECTION: collection,
+        },
+      };
+    }
+
+    // UPDATE (QueryRef 43)
     return {
       INTEGER: {
-        LOOKUPID:     valueOrFallback(rowData.lookup_id, originalData.lookup_id, 0),
-        KEYIDX:       valueOrFallback(rowData.key_idx, originalData.key_idx, 0),
-        VALUEINT:     valueOrFallback(rowData.value_int, originalData.value_int, 0),
-        SORTSEQ:      valueOrFallback(rowData.sort_seq, originalData.sort_seq, 0),
-        STATUSA1:     valueOrFallback(rowData.status_a1, originalData.status_a1, 1),
-        USERID:       this.app?.user?.id ?? 0,
+        LOOKUPID: lookupId,
+        KEYIDX: keyIdx,
+        VALUEINT: valueOrFallback(rowData.value_int, originalData.value_int, 0),
+        SORTSEQ: valueOrFallback(rowData.sort_seq, originalData.sort_seq, 0),
+        STATUSA1: status,
+        USERID: this.app?.user?.id ?? 0,
         ORIGLOOKUPID: valueOrFallback(originalData.lookup_id, rowData.lookup_id, 0),
-        ORIGKEYIDX:   valueOrFallback(originalData.key_idx, rowData.key_idx, 0),
+        ORIGKEYIDX: valueOrFallback(originalData.key_idx, rowData.key_idx, 0),
       },
       STRING: {
-        VALUETXT:   rowData.value_txt ?? rowData.name ?? originalData.value_txt ?? '',
-        SUMMARY:    summary,
-        CODE:       rowData.code ?? originalData.code ?? '',
+        VALUETXT: rowData.value_txt ?? rowData.name ?? originalData.value_txt ?? '',
+        SUMMARY: summary,
+        CODE: rowData.code ?? originalData.code ?? '',
         COLLECTION: collection,
       },
     };
@@ -719,7 +775,7 @@ export default class LookupsManager {
       ? (this.parentTable.queryRefs?.insertQueryRef ?? 42)
       : (this.parentTable.queryRefs?.updateQueryRef ?? 43);
 
-    const params = this._buildLookupSaveParams(rowData, originalData, {
+    const params = this._buildLookupSaveParams(rowData, originalData, isInsert, {
       summary:    rowData.summary ?? originalData.summary ?? '',
       collection: rowData.collection ?? originalData.collection ?? '{}',
     });
@@ -740,10 +796,14 @@ export default class LookupsManager {
   async _executeChildSave(row) {
     const rowData = row.getData();
     const originalData = this.childTable.originalRowData || rowData;
-    const pkField = this.childTable.primaryKeyField || 'lookup_value_id';
-    const pkValue = rowData[pkField];
-    // Note: pkValue of 0 is VALID - only null/undefined/empty string indicate insert
-    const isInsert = pkValue == null || pkValue === '';
+    
+    // Child table has COMPOSITE primary key (lookup_id + key_idx)
+    const lookupId = rowData.lookup_id ?? originalData?.lookup_id;
+    const keyIdx = rowData.key_idx ?? originalData?.key_idx;
+    const isInsert = lookupId == null || keyIdx == null || lookupId === '' || keyIdx === '';
+    
+    log(Subsystems.MANAGER, Status.DEBUG, 
+      `[Lookups] Save: lookupId=${lookupId}, keyIdx=${keyIdx}, isInsert=${isInsert}, rowData=${JSON.stringify(rowData).slice(0,100)}`);
     const queryRef = isInsert
       ? (this.childTable.queryRefs?.insertQueryRef ?? 42)
       : (this.childTable.queryRefs?.updateQueryRef ?? 43);
@@ -754,10 +814,13 @@ export default class LookupsManager {
     const jsonContent = parseAndSortJson(rawJsonContent, 2) || rawJsonContent;
     const summaryContent = this._getSummaryEditorContent() || '';
 
-    const params = this._buildLookupSaveParams(rowData, originalData, {
+    const params = this._buildLookupSaveParams(rowData, originalData, isInsert, {
       summary:    summaryContent,
       collection: jsonContent,
     });
+
+    log(Subsystems.MANAGER, Status.DEBUG, 
+      `[Lookups] Save params: queryRef=${queryRef}, ${JSON.stringify(params).slice(0,200)}`);
 
     const result = await authQuery(this.app.api, queryRef, params);
 
@@ -1570,17 +1633,24 @@ export default class LookupsManager {
    * last-selected child for each.
    * @param {Object} rowData - The selected child row data
    */
-  _saveChildSelection(rowData) {
-    if (this.selectedLookupId == null || !rowData) return;
-    const pkField = this.childTable?.primaryKeyField || 'key_idx';
-    const childId = rowData[pkField];
-    if (childId == null) return;
+_saveChildSelection(rowData) {
+    // Use explicit checks to avoid falsey issues with 0
+    if (this.selectedLookupId === null || this.selectedLookupId === undefined) return;
+    if (!rowData) return;
+    
+    const childLookupId = rowData.lookup_id;
+    const childKeyIdx = rowData.key_idx;
+    
+    // Both must be valid (0+ is valid, null/undefined is not)
+    if (childLookupId === null || childLookupId === undefined) return;
+    if (childKeyIdx === null || childKeyIdx === undefined) return;
 
     try {
       const storageKey = 'lithium_lookups_child_selections';
       const stored = localStorage.getItem(storageKey);
       const selections = stored ? JSON.parse(stored) : {};
-      selections[String(this.selectedLookupId)] = String(childId);
+      // Store composite key
+      selections[String(this.selectedLookupId)] = { lookup_id: childLookupId, key_idx: childKeyIdx };
       localStorage.setItem(storageKey, JSON.stringify(selections));
     } catch {
       // Ignore storage errors
@@ -1590,16 +1660,21 @@ export default class LookupsManager {
   /**
    * Load the previously selected child row ID for a given lookup.
    * @param {number|string} lookupId - The lookup ID
-   * @returns {string|null} - The saved child row ID, or null
+   * @returns {string|null} - The saved composite row ID (key_idx::lookup_id), or null
    */
   _loadChildSelection(lookupId) {
-    if (lookupId == null) return null;
+    if (lookupId === null || lookupId === undefined) return null;
     try {
       const storageKey = 'lithium_lookups_child_selections';
       const stored = localStorage.getItem(storageKey);
       if (!stored) return null;
       const selections = JSON.parse(stored);
-      return selections[String(lookupId)] ?? null;
+      const saved = selections[String(lookupId)];
+      if (saved && saved.key_idx !== undefined) {
+        // Return composite key format matching compound primary key
+        return `${saved.key_idx}::${saved.lookup_id}`;
+      }
+      return null;
     } catch {
       return null;
     }

@@ -28,6 +28,7 @@ import {
   getQueryRefs,
   wrapFormatter,
   needsBlankZeroWrapper,
+  validateTableDef,
   formatBuiltinValue,
   clearCache,
 } from '../../src/tables/lithium-table.js';
@@ -329,7 +330,7 @@ describe('LithiumTable', () => {
     it('should load tabledef from lookup cache', async () => {
       getTabulatorSchemas.mockReturnValue([
         { key_idx: 0, collection: MOCK_COLTYPES },
-        { key_idx: 1, collection: MOCK_TABLEDEF },
+        { key_idx: 5, collection: MOCK_TABLEDEF },
       ]);
 
       const result = await loadTableDef('queries/query-manager');
@@ -360,10 +361,10 @@ describe('LithiumTable', () => {
     it('should fetch fresh data on each call for Lookup 59 schemas', async () => {
       getTabulatorSchemas.mockReturnValue([
         { key_idx: 0, collection: MOCK_COLTYPES },
-        { key_idx: 1, collection: MOCK_TABLEDEF },
+        { key_idx: 5, collection: MOCK_TABLEDEF },
       ]);
 
-      // queries/query-manager is a Lookup 59 schema (key_idx: 1)
+      // queries/query-manager is a Lookup 59 schema (key_idx: 5)
       await loadTableDef('queries/query-manager');
       const second = await loadTableDef('queries/query-manager');
 
@@ -377,7 +378,7 @@ describe('LithiumTable', () => {
         .mockReturnValueOnce(null)
         .mockReturnValueOnce([
           { key_idx: 0, collection: MOCK_COLTYPES },
-          { key_idx: 1, collection: MOCK_TABLEDEF },
+          { key_idx: 5, collection: MOCK_TABLEDEF },
         ]);
       fetchLookups.mockResolvedValue({});
 
@@ -462,7 +463,7 @@ describe('LithiumTable', () => {
 
     it('should handle string JSON in lookup collection', async () => {
       getTabulatorSchemas.mockReturnValue([
-        { key_idx: 1, collection: JSON.stringify(MOCK_TABLEDEF) },
+        { key_idx: 5, collection: JSON.stringify(MOCK_TABLEDEF) },
       ]);
 
       const result = await loadTableDef('queries/query-manager');
@@ -898,8 +899,18 @@ describe('LithiumTable', () => {
   // ── getPrimaryKeyField ─────────────────────────────────────────────────
 
   describe('getPrimaryKeyField', () => {
-    it('should return the field name of the primary key column', () => {
-      expect(getPrimaryKeyField(MOCK_TABLEDEF)).toBe('query_id');
+    it('should return an array with the primary key field name', () => {
+      expect(getPrimaryKeyField(MOCK_TABLEDEF)).toEqual(['query_id']);
+    });
+
+    it('should return array of fields for compound primary key', () => {
+      const compoundPK = {
+        columns: {
+          lookup_id: { display: 'Lookup ID', field: 'lookup_id', primaryKey: true },
+          key_idx: { display: 'Key', field: 'key_idx', primaryKey: true },
+        },
+      };
+      expect(getPrimaryKeyField(compoundPK)).toEqual(['lookup_id', 'key_idx']);
     });
 
     it('should return null if no primary key is defined', () => {
@@ -1177,6 +1188,10 @@ describe('LithiumTable', () => {
       expect(formatBuiltinValue(-1234, 'number', { thousand: ',', precision: 0 })).toBe('-1,234');
     });
 
+    it('should not add thousands separator when thousand is empty string', () => {
+      expect(formatBuiltinValue(1234567, 'number', { thousand: '', precision: 0 })).toBe('1234567');
+    });
+
     it('should default to precision 0 for number when not specified', () => {
       expect(formatBuiltinValue(42.789, 'number', {})).toBe('43');
     });
@@ -1430,7 +1445,7 @@ describe('LithiumTable', () => {
     it('should clear all caches so data is re-loaded', async () => {
       getTabulatorSchemas.mockReturnValue([
         { key_idx: 0, collection: MOCK_COLTYPES },
-        { key_idx: 1, collection: MOCK_TABLEDEF },
+        { key_idx: 5, collection: MOCK_TABLEDEF },
       ]);
 
       await loadColtypes();
@@ -1448,5 +1463,205 @@ describe('LithiumTable', () => {
       // Should be called again after cache clear
       expect(getTabulatorSchemas).toHaveBeenCalledTimes(2);
     });
+  });
+});
+
+// ── validateTableDef ────────────────────────────────────────────────────────────────────────
+
+describe('validateTableDef', () => {
+  it('should return valid for null tableDef', () => {
+    const result = validateTableDef(null, 'test');
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it('should return valid for empty object', () => {
+    const result = validateTableDef({}, 'test');
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it('should return valid for correct tableDef', () => {
+    const tableDef = {
+      title: 'Test Table',
+      queryRef: 1,
+      columns: {
+        id: { field: 'id', coltype: 'integer', primaryKey: true },
+        name: { field: 'name', coltype: 'string' },
+      },
+    };
+    const result = validateTableDef(tableDef, 'test');
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it('should report invalid coltype as error', () => {
+    const tableDef = {
+      title: 'Test Table',
+      columns: {
+        id: { field: 'id', coltype: 'invalid-type' },
+      },
+    };
+    const result = validateTableDef(tableDef, 'stage1');
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain('Stage stage1: Column "id" has invalid coltype "invalid-type"');
+  });
+
+it('should report unknown table properties as warnings', () => {
+    const tableDef = {
+      title: 'Test Table',
+      unknownProperty: 'should pass through',
+      columns: {},
+    };
+    const result = validateTableDef(tableDef, 'test');
+    // Unknown properties should be valid (pass-through with warnings)
+    expect(result.errors.some(e => e.includes('Unknown table property'))).toBe(true);
+  });
+
+  it('should ignore unknown column properties (pass-through)', () => {
+    const tableDef = {
+      title: 'Test Table',
+      columns: {
+        id: { field: 'id', unknownProp: 'value' },
+      },
+    };
+    const result = validateTableDef(tableDef, 'test');
+    // Unknown column properties should be valid (pass-through with warnings)
+    expect(result.errors.some(e => e.includes('unknown property'))).toBe(true);
+  });
+
+  it('should validate column properties', () => {
+    const tableDef = {
+      title: 'Test Table',
+      columns: {
+        id: { field: 'id', coltype: 'integer' },
+        status: { field: 'status', coltype: 'boolean' },
+      },
+    };
+    const result = validateTableDef(tableDef, 'stage2');
+    expect(result.valid).toBe(true);
+  });
+
+  it('should fail for non-object tableDef', () => {
+    const result = validateTableDef('not an object', 'test');
+    expect(result.valid).toBe(false);
+    expect(result.errors[0]).toContain('must be an object');
+  });
+
+  it('should report invalid column object', () => {
+    const tableDef = {
+      title: 'Test',
+      columns: {
+        id: 'not an object',
+      },
+    };
+    const result = validateTableDef(tableDef, 'stage1');
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContainEqual('Stage stage1: Column "id" must be an object');
+  });
+
+  it('should accept all valid coltypes', () => {
+    const validColtypes = [
+      'string', 'text', 'integer', 'index', 'decimal',
+      'boolean', 'date', 'datetime', 'time', 'currency',
+      'percent', 'progress', 'email', 'url', 'lookup',
+      'lookupIcon', 'lookupIconText', 'lookupIconList', 'enum',
+      'html', 'image', 'color', 'star', 'rownum', 'json',
+    ];
+
+    for (const coltype of validColtypes) {
+      const tableDef = {
+        title: 'Test',
+        columns: {
+          field: { field: 'field', coltype },
+        },
+      };
+      const result = validateTableDef(tableDef, 'test');
+      expect(result.errors).not.toContainEqual(expect.stringContaining(`invalid coltype "${coltype}"`));
+    }
+  });
+});
+
+// ── Column Resolution with Derived Values ─────────────────────────────────
+
+describe('resolveColumn derived values', () => {
+  const coltypes = MOCK_COLTYPES.coltypes;
+
+  it('should derive title from field name (query_id -> "Query Id")', () => {
+    const colDef = { field: 'query_id', display: 'query_id', coltype: 'integer' };
+    const result = resolveColumn('query_id', colDef, coltypes);
+    expect(result.title).toBe('query_id');
+  });
+
+  it('should apply columnPri from colDef', () => {
+    const colDef = {
+      field: 'id',
+      display: 'ID',
+      coltype: 'integer',
+      columnPri: 1,
+    };
+    const result = resolveColumn('id', colDef, coltypes);
+    expect(result.columnPri).toBe(1);
+  });
+
+  it('should apply primaryKey from colDef', () => {
+    const colDef = {
+      field: 'id',
+      display: 'ID',
+      coltype: 'integer',
+      primaryKey: true,
+    };
+    const result = resolveColumn('id', colDef, coltypes);
+    expect(result.lithiumPrimaryKey).toBe(true);
+  });
+
+  it('should apply calculated from colDef', () => {
+    const colDef = {
+      field: 'full_name',
+      display: 'Full Name',
+      coltype: 'string',
+      calculated: true,
+    };
+    const result = resolveColumn('full_name', colDef, coltypes);
+    expect(result.lithiumCalculated).toBe(true);
+  });
+
+  it('should apply description from colDef', () => {
+    const colDef = {
+      field: 'id',
+      display: 'ID',
+      coltype: 'integer',
+      description: 'Primary key field',
+    };
+    const result = resolveColumn('id', colDef, coltypes);
+    expect(result.lithiumDescription).toBe('Primary key field');
+  });
+
+  it('should pass through columnPri to resolved column', () => {
+    const tableDef = {
+      title: 'Test',
+      columns: {
+        third: { field: 'third', display: 'Third', coltype: 'string', columnPri: 3 },
+        first: { field: 'first', display: 'First', coltype: 'string', columnPri: 1 },
+        second: { field: 'second', display: 'Second', coltype: 'string', columnPri: 2 },
+      },
+    };
+    const columns = resolveColumns(tableDef, coltypes);
+    // Verify columnPri is passed through in resolved columns
+    const fieldMap = Object.fromEntries(columns.map(c => [c.field, c]));
+    expect(fieldMap['first'].columnPri).toBe(1);
+    expect(fieldMap['second'].columnPri).toBe(2);
+    expect(fieldMap['third'].columnPri).toBe(3);
+  });
+
+  it('should not have columnPri for columns without it defined', () => {
+    const tableDef = {
+      title: 'Test',
+      columns: {
+        no_pri: { field: 'no_pri', display: 'No Priority', coltype: 'string' },
+      },
+    };
+    const columns = resolveColumns(tableDef, coltypes);
+    expect(columns[0].columnPri).toBeUndefined();
   });
 });

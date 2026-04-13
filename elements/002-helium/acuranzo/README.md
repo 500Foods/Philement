@@ -190,8 +190,8 @@ in the migrations themselves so that they get populated in the database directly
 | [1153](/elements/002-helium/acuranzo/migrations/acuranzo_1153.lua) | lookups | 1.0.1 | 2026-04-11 | 4 | ✗ | LithiumTable Column Types (lookup_id 059, key_idx 0) |
 | [1154](/elements/002-helium/acuranzo/migrations/acuranzo_1154.lua) | lookups | 1.3.0 | 2026-04-12 | 4 | ✗ | LithiumTable JSON Schema (lookup_id 059, key_idx 1) |
 | [1155](/elements/002-helium/acuranzo/migrations/acuranzo_1155.lua) | queries | 1.0.0 | 2026-03-15 | 4 | ✗ | QueryRef #060 - Get Tabulator Schemas |
-| [1156](/elements/002-helium/acuranzo/migrations/acuranzo_1156.lua) | lookups | 1.0.0 | 2026-03-17 | 4 | ✗ | Tabulator Schema: lookups-list.json (Lookup 059, Key 2) |
-| [1157](/elements/002-helium/acuranzo/migrations/acuranzo_1157.lua) | lookups | 1.0.0 | 2026-03-17 | 4 | ✗ | Tabulator Schema: lookup-values.json (Lookup 059, Key 3) |
+| [1156](/elements/002-helium/acuranzo/migrations/acuranzo_1156.lua) | lookups | 1.3.0 | 2026-04-12 | 4 | ✗ | LithiumTable style-manager-base-vars (lookup_id 59 key_idx 11) |
+| [1157](/elements/002-helium/acuranzo/migrations/acuranzo_1157.lua) | lookups | 1.0.0 | 2026-03-17 | 4 | ✗ | LithiumTable style-manager-semantic-vars (lookup_id 59 key_idx 12) |
 | [1158](/elements/002-helium/acuranzo/migrations/acuranzo_1158.lua) | queries | 1.0.1 | 2026-03-20 | 4 | ✗ | QueryRef #061 - Internal: Get AI Chat Engines with API Keys |
 | [1159](/elements/002-helium/acuranzo/migrations/acuranzo_1159.lua) | convo_segs | 1.0.0 | 2026-03-22 | 8 | ✓ | Creates the convo_segs table for Phase 6: Conversation History with Content-Addressable Storage + Brotli |
 | [1160](/elements/002-helium/acuranzo/migrations/acuranzo_1160.lua) | convos | 1.0.0 | 2026-03-22 | 5 | ✓ | Extend convos table with segment_refs and usage tracking columns for Phase 6 |

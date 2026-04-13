@@ -76,7 +76,7 @@ this.optionsTable = new LithiumTable({
   container: this.elements.tableContainer,
   navigatorContainer: this.elements.navigatorContainer,
   tablePath: 'profile-manager/user-options',
-  lookupKeyIdx: 8,  // Direct Lookup 59 key_idx for unambiguous schema loading
+  lookupKeyIdx: 4,  // Direct Lookup 59 key_idx 4 = user-profile-sections (acuranzo_1181)
   cssPrefix: 'profile-options',
   storageKey: 'profile_options_table',
   app: this.app,
@@ -162,18 +162,24 @@ The manager uses nav-block styling for toolbars, matching LithiumTable Navigator
 
 The table definition is loaded from Lookup 59 (Tabulator Schemas) via the `loadTableDef()` function.
 
-### Path Mapping
+### Key Index
 
-The `profile-manager/user-options` table path must be mapped in `lithium-table.js`:
+The User Profile Manager uses key_idx 4 (user-profile-sections per acuranzo_1181):
 
+```javascript
+this.optionsTable = new LithiumTable({
+  // ...
+  lookupKeyIdx: 4,  // Direct Lookup 59 key_idx 4 = user-profile-sections
+});
+```
+
+ Alternatively, configure `tablePath` mapping in `lithium-table.js`:
 ```javascript
 const tableToKeyIdx = {
   // ... existing mappings
-  'profile-manager/user-options': 8,  // Profile Manager user options
+  'profile-manager/user-options': 4,  // Profile Manager user options
 };
 ```
-
-If this mapping is missing, the table will have no columns.
 
 ---
 

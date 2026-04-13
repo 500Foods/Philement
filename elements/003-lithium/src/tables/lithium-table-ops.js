@@ -76,9 +76,15 @@ export const LithiumTableOpsMixin = {
       // Default duplicate behavior
       duplicateData = { ...originalData };
 
-      // Remove primary key for new record
-      const pkField = this.primaryKeyField || 'id';
-      delete duplicateData[pkField];
+      // Remove primary key fields for new record
+      const pkFields = this.primaryKeyField;
+      if (Array.isArray(pkFields)) {
+        pkFields.forEach(f => delete duplicateData[f]);
+      } else if (pkFields) {
+        delete duplicateData[pkFields];
+      } else {
+        delete duplicateData.id;
+      }
 
       // Append " (Copy)" to name if it exists
       if (duplicateData.name) {
@@ -105,8 +111,8 @@ export const LithiumTableOpsMixin = {
       return;
     }
 
-    const pkField = this.primaryKeyField || 'id';
-    const selectedId = selected[0].getData()?.[pkField];
+    const pkFields = this.primaryKeyField;
+    const selectedId = this._getCompositeRowId(selected[0].getData(), pkFields);
 
     // Toggle edit mode if already editing this row
     if (this.isEditing && this.editingRowId === selectedId) {

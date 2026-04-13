@@ -138,4 +138,4 @@ Lithium is a lightweight, performant, modular single-page application (SPA) buil
 
 This documentation suite was created to replace the older combined `INSTRUCTIONS.md` and `BLUEPRINT.md` files, which had grown confused and outdated. The new split format allows for easier maintenance and targeted updates.
 
-Last updated: April 2026
+Last reviewed: April 2026
