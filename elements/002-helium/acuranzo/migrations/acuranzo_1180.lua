@@ -11,10 +11,10 @@ return function(engine, design_name, schema_name, cfg)
 local queries = {}
 
 cfg.TABLE = "lookups"
-cfg.MIGRATION = "1154"
+cfg.MIGRATION = "1180"
 cfg.LOOKUP_ID = "059"
-cfg.KEY_IDX = "1"
-cfg.TABLEDEF_NAME = "tabledef-json-schema"
+cfg.KEY_IDX = "3"
+cfg.TABLEDEF_NAME = "column-manager-manager"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 

@@ -333,12 +333,22 @@ Columns are defined in `config/tabulator/<table-path>.json`:
 }
 ```
 
-**Column Definition Merge Order:**
+**Column Definition Merge Order (Three Stages):**
 
-1. **Coltype defaults** (Lookup 59, key_idx = 0) — base defaults for each type (e.g., `string`, `integer`, `lookup`)
-2. **Table definition** — column properties overlay coltype defaults
+1. **Stage 1: Auto-Detection** — Column properties derived from data at runtime (see [LITHIUM-TAB-TABLES.md](LITHIUM-TAB-TABLES.md#stage-1-auto-detection))
+   - Coltype detected from JSON data type (`string`, `integer`, `decimal`, `boolean`)
+   - `title` derived from field name (e.g., `query_id` → "Query Id")
+   - `columnPri` assigned by field order (1, 2, 3...)
 
-Any property in the column definition replaces the corresponding coltype default. For example, a column with `coltype: "string"` but `width: 80` will use width 80 instead of the string coltype default.
+2. **Stage 2: Table Definition** — Lookup 59 database schema (see [LITHIUM-TAB-TABLES.md](LITHIUM-TAB-TABLES.md#stage-2-table-definition))
+   - Column properties from Lookup 59 Keys 1+ overlay Stage 1
+   - Uses correct key_idx values per migration (Key 5 = query-manager, Key 6 = lookups-list, etc.)
+
+3. **Stage 3: User Customization** — Column Manager (see [LITHIUM-COL.md](LITHIUM-COL.md))
+   - User preferences from localStorage templates overlay Stage 2
+   - Full runtime column customization
+
+**Merge priority:** Later stages override earlier ones. Any property in Stage 2 replaces Stage 1; Stage 3 replaces both.
 
 At runtime, LithiumTable forces `responsiveLayout: false` for all tables. When a panel is too narrow for the visible columns, the table scrolls horizontally instead of letting Tabulator collapse or hide columns.
 
@@ -364,18 +374,21 @@ this.table = new LithiumTable({
 });
 ```
 
-| Lookup 59 key_idx | Manager / Table |
-|-------------------|-----------------|
-| 1 | Query Manager |
-| 2 | Lookups Manager (parent) |
-| 3 | Lookups Manager (child) |
-| 4 | Column Manager |
-| 5 | Column Manager Manager |
-| 6 | Style Manager |
-| 7 | Version Manager |
-| 8 | User Profile Manager |
+| Lookup 59 key_idx | Manager / Table | Migration |
+|-------------------|-----------------|-----------|
+| 0 | column-types | acuranzo_1153 | All coltype definitions (with "default" stanza) |
+| 1 | tabledef-json-schema | acuranzo_1154 | JSON Schema for validation |
+| 2 | column-manager | acuranzo_1179 | Column Manager table |
+| 3 | column-manager-manager | acuranzo_1180 | Column Manager Manager table |
+| 4 | user-profile-sections | acuranzo_1181 | User Profile Sections |
+| 5 | query-manager | acuranzo_1182 | Query Manager |
+| 6 | lookups-manager-list | acuranzo_1183 | Lookups Manager (parent/list) |
+| 7 | lookups-manager-values | acuranzo_1184 | Lookups Manager (child/values) |
+| 8 | style-manager-list | acuranzo_1185 | Style Manager List |
+| 9 | style-manager-sections | acuranzo_1186 | Style Manager Sections |
+| 10 | version-manager | acuranzo_1187 | Version Manager |
 
-When `lookupKeyIdx` is provided, it takes precedence over any `tablePath` mapping, eliminating ambiguity between database lookups and filesystem JSON files.
+**Tip:** Use `lookupKeyIdx` for unambiguous schema loading. When `lookupKeyIdx` is provided, it takes precedence over any `tablePath` mapping.
 
 #### Why CRUD QueryRefs Must Be Passed Explicitly
 
@@ -421,6 +434,70 @@ const queryRef = isInsert
 | **Tabulator properties** | any | Any Tabulator column property (e.g., `width`, `formatter`, `hozAlign`, `bottomCalc`) can be specified directly in the column definition and will override the coltype default. |
 
 **Note:** Any Tabulator property can be specified directly in the column definition. These values overlay the coltype defaults from Lookup 59 key_idx 0.
+
+---
+
+## Primary Key Configuration
+
+### Single Primary Key
+
+For tables with a single primary key column, add `"primaryKey": true` to that column definition:
+
+```json
+{
+  "columns": {
+    "id": {
+      "field": "id",
+      "display": "ID",
+      "coltype": "integer",
+      "primaryKey": true
+    }
+  }
+}
+```
+
+### Compound (Composite) Primary Keys
+
+Lithium supports tables with compound primary keys (multiple columns forming a unique key). Add `"primaryKey": true` to each column in the compound key:
+
+```json
+{
+  "columns": {
+    "lookup_id": {
+      "field": "lookup_id",
+      "display": "Lookup ID",
+      "coltype": "integer",
+      "primaryKey": true
+    },
+    "key_idx": {
+      "field": "key_idx",
+      "display": "Key Index",
+      "coltype": "integer",
+      "primaryKey": true
+    }
+  }
+}
+```
+
+The table automatically computes a **composite row ID** using `::` as separator (e.g., `"42::5"` for lookup_id=42, key_idx=5). This composite ID is used for:
+- Row selection and matching
+- Persistence (saving/restoring selected row across sessions)
+- Edit mode tracking
+- Duplicate operations
+
+### Selection Persistence
+
+When a row is selected, the row ID is automatically saved to localStorage using the table's `storageKey`. On next load:
+1. `loadData()` checks for a saved row ID
+2. If found, `autoSelectRow()` restores that selection
+
+For child tables in parent-child relationships, managers can override the saved selection before calling `loadData()`:
+
+```javascript
+// Set target row before load (for compound keys, use composite format)
+this.childTable.saveSelectedRowId('5::42');  // key_idx::lookup_id
+await this.childTable.loadData('', { INTEGER: { LOOKUPID: 42 } });
+```
 
 ---
 
@@ -909,6 +986,17 @@ The LithiumTable component was extracted from the Query Manager implementation t
 - `lithium-column-manager.js` split into `column-manager/` submodules
 - All modules now under 750 lines for maintainability
 
+**April 2026: All Implementation Phases Complete** — Per [LITHIUM-TAB-PLAN.md](LITHIUM-TAB-PLAN.md), all 7 phases of the implementation plan have been completed:
+
+- Phase 0: Lookup 059 Key Mapping (correct key_idx values)
+- Phase 1: Default Merge Engine (default → coltype → colDef)
+- Phase 2: Auto-Discovery with Coltype Detection
+- Phase 3: Schema Validation
+- Phase 4: Data-First Initialization
+- Phase 5: Lookup 059 Integration
+- Phase 6: Column Manager (Stage 3)
+- Phase 7: Migrate Internal Coltypes
+
 **Key Design Decisions:**
 
 1. **Mixin Pattern** — Functionality split into logical modules (base, ops, UI)
@@ -919,3 +1007,4 @@ The LithiumTable component was extracted from the Query Manager implementation t
 6. **Edit Mode Gate** — Editors only active in edit mode, except for explicit `alwaysEditable` tables such as the Column Manager popup
 7. **`loadStaticData()` method** — Encapsulates blockRedraw/setData/discoverColumns pattern for hardcoded or pre-fetched data
 8. **CSS Variable Width Presets** — Width modes use CSS custom properties (`--table-width-narrow`, etc.) for consistent theming
+9. **Three-Stage Column Resolution** — Stage 1 auto-detection → Stage 2 Lookup 059 → Stage 3 user customization (see [LITHIUM-TAB-TABLES.md](LITHIUM-TAB-TABLES.md))
