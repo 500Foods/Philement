@@ -183,12 +183,23 @@ The Navigator provides standard table controls in four groups:
 
 | Button | Action |
 |--------|--------|
-| 🔄 Refresh | Reload data from source |
+| 🔄 Refresh | Reload data from source with full state preservation |
 | 🔽 Filter | Toggle column header filters |
 | ☰ Menu | Table options popup (expand/collapse all, toggle row height) |
 | ↔ Width | Table width presets (Narrow/Compact/Normal/Wide/Auto) |
 | ⊞ Layout | Layout mode (fitColumns/fitData/fitDataFill/etc) |
 | 🛠 Template | Save/load column configurations |
+
+**Refresh Button Enhanced Behavior:**
+
+When clicked, the Refresh button performs a complete refresh including:
+
+1. **Cancel edit mode** — Save any pending changes if dirty, otherwise cancel
+2. **Capture complete current state** — All column definitions (visible and hidden), widths, visibility, order, sort order, filter values, layout mode, width mode
+3. **Reload Lookup 59** — Fetch the latest table definitions from the database
+4. **Apply captured template** — Instead of Default template, apply the captured state with all column configurations
+5. **Re-submit original data request** — Use the same search term and parameters as the original load
+6. **Re-select row and fire events** — Restore the originally selected row and fire `onRowSelected` to trigger downstream effects (e.g., loading child table data in parent/child managers)
 
 **Width Presets:** The width button uses CSS custom properties defined in `base.css`:
 

@@ -81,99 +81,39 @@ function getRuntimeColumnWidth(column, def = {}) {
 }
 
 export function extractTemplateColumnFromColumn(column, primaryKeyField = null) {
+  // Copy ALL properties from the column definition
+  // This captures everything about the column - widths, formatting, editors, etc.
   const def = column.getDefinition();
   const field = column.getField();
   const display = def.title || field;
 
   // Handle both single field and array of fields for compound keys
-  const isPrimaryKey = def.primaryKey === true || 
+  const isPrimaryKey = def.primaryKey === true ||
     (Array.isArray(primaryKeyField) ? primaryKeyField.includes(field) : field === primaryKeyField);
 
-  const colDef = {
-    display,
-    field,
-    coltype: def.lithiumColtype || def.coltype || 'string',
-    visible: column.isVisible(),
-    sort: def.lithiumSort ?? (def.headerSort !== false),
-    filter: def.lithiumFilter ?? !!def.headerFilter,
-    editable: def.lithiumEditable ?? (def.editable === true),
-    calculated: def.lithiumCalculated ?? false,
-    primaryKey: isPrimaryKey,
-    description: def.lithiumDescription || def.description || `${display} column`,
-  };
+  // Start with all definition properties
+  const colDef = { ...def };
 
-  if (def.lookupRef) colDef.lookupRef = def.lookupRef;
-  if (def.group != null) colDef.group = def.group;
-  if (def.frozen === true) colDef.frozen = true;
-  if (def.rowHandle === true) colDef.rowHandle = true;
-  if (def.resizable === false) colDef.resizable = false;
-  if (typeof def.formatter === 'function') colDef.formatter = def.formatter;
+  // Override with specific values to ensure correctness
+  colDef.display = display;
+  colDef.field = field;
+  colDef.coltype = def.lithiumColtype || def.coltype || 'string';
+  colDef.visible = column.isVisible();
+  colDef.primaryKey = isPrimaryKey;
 
-  // Flatten Tabulator runtime properties directly onto the column definition
-  // These will overlay coltype defaults in resolveColumn
+  // Capture runtime width (may differ from definition width)
   const runtimeWidth = getRuntimeColumnWidth(column, def);
-  if (runtimeWidth != null) colDef.width = runtimeWidth;
-  if (def.minWidth != null) colDef.minWidth = def.minWidth;
-  if (def.maxWidth != null) colDef.maxWidth = def.maxWidth;
-  if (def.hozAlign) colDef.hozAlign = def.hozAlign;
-  if (def.vertAlign) colDef.vertAlign = def.vertAlign;
-  if (hasOwn(def, 'bottomCalc')) colDef.bottomCalc = def.bottomCalc ?? null;
-  if (def.bottomCalcFormatter) colDef.bottomCalcFormatter = def.bottomCalcFormatter;
-  if (def.bottomCalcFormatterParams) colDef.bottomCalcFormatterParams = def.bottomCalcFormatterParams;
-  if (def.formatterParams) colDef.formatterParams = def.formatterParams;
-  if (def.editorParams) colDef.editorParams = def.editorParams;
-  if (def.sorterParams) colDef.sorterParams = def.sorterParams;
+  if (runtimeWidth != null) {
+    colDef.width = runtimeWidth;
+  }
 
   return colDef;
 }
 
 export function mergeTemplateColumn(baseColumn, patchColumn = {}) {
-  const merged = {
-    ...baseColumn,
-  };
-
-  // FlattenLithium properties (top-level metadata)
-  [
-    'display',
-    'field',
-    'coltype',
-    'visible',
-    'sort',
-    'filter',
-    'group',
-    'editable',
-    'calculated',
-    'primaryKey',
-    'description',
-    'lookupRef',
-    'frozen',
-    'rowHandle',
-    'resizable',
-  ].forEach((key) => {
-    if (hasOwn(patchColumn, key)) {
-      merged[key] = patchColumn[key];
-    }
-  });
-
-  // Flatten overrides from both base and patch into the main object
-  // This ensures template properties are at top level for resolveColumn
-  const baseOverrides = baseColumn.overrides || {};
-  const patchOverrides = patchColumn.overrides || {};
-  const mergedOverrides = { ...baseOverrides, ...patchOverrides };
-  
-  // Copy all override properties to top level
-  Object.assign(merged, mergedOverrides);
-
-  // Keep overrides for backward compatibility, but flatten them
-  if (Object.keys(mergedOverrides).length > 0) {
-    merged.overrides = mergedOverrides;
-  }
-
-  if (typeof patchColumn.formatter === 'function') {
-    merged.formatter = patchColumn.formatter;
-  }
-
-  return merged;
+  // The patch column IS the captured state we want to restore
+  // So we just use it entirely - no need to cherry-pick properties
+  return { ...patchColumn };
 }
 
 export function buildColumnDefinitionsFromTemplateState({

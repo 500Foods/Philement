@@ -1021,6 +1021,26 @@ export const LithiumTableUIMixin = {
         }
       }
 
+      // Restore filter visibility state
+      if (template._filtersVisible === true && !this.filtersVisible) {
+        this.toggleHeaderFilters?.(true);
+      } else if (template._filtersVisible === false && this.filtersVisible) {
+        this.toggleHeaderFilters?.(false);
+      }
+
+      // Restore filter values
+      if (template._filterValues && typeof template._filterValues === 'object') {
+        try {
+          for (const [field, value] of Object.entries(template._filterValues)) {
+            if (value != null && value !== '') {
+              this.table.setHeaderFilterValue?.(field, value);
+            }
+          }
+        } catch (e) {
+          log(Subsystems.TABLE, Status.WARN, `[LithiumTable] Failed to apply filter values: ${e.message}`);
+        }
+      }
+
       if (typeof this.table.redraw === 'function') {
         this.table.redraw(true);
       }
