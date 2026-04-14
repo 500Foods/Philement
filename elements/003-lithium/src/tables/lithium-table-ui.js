@@ -793,6 +793,16 @@ export const LithiumTableUIMixin = {
       }
     }
 
+    // Start with ALL properties from the current tableDef to ensure exhaustiveness
+    const tableDef = {
+      ...this.tableDef,
+      columns: {}, // Will be rebuilt below
+    };
+
+    // Override runtime properties that may differ from the loaded tableDef
+    tableDef.layout = this.tableLayoutMode || tableDef.layout || 'fitColumns';
+    tableDef.selectableRows = 1; // Always single-select for templates
+
     // First, include ALL columns from the base tableDef (from Lookup 59 or auto-discovered)
     // This ensures new columns are included in the saved template
     const baseColumns = this.tableDef?.columns || {};
@@ -801,13 +811,18 @@ export const LithiumTableUIMixin = {
       columnDefs[fieldName] = createTemplateColumnFromTableDef(fieldName, colDef);
     }
 
-    // Then overlay with current visible columns (may have user changes like width, visible, etc.)
+    // Then merge with current visible columns (may have user changes like width, visible, etc.)
+    // This preserves base properties while adding runtime changes
     columns.forEach((col) => {
       const field = col.getField();
 
       if (field === '_selector') return;
 
-      columnDefs[field] = extractTemplateColumnFromColumn(col, this.primaryKeyField);
+      const baseCol = columnDefs[field] || {};
+      const runtimeCol = extractTemplateColumnFromColumn(col, this.primaryKeyField);
+
+      // Merge: base properties first, then runtime overrides
+      columnDefs[field] = { ...baseCol, ...runtimeCol };
     });
 
     const sorters = this.table.getSorters?.() || [];
@@ -816,23 +831,7 @@ export const LithiumTableUIMixin = {
       dir: s.dir,
     }));
 
-    const tableDef = {
-      $schema: '../tabledef-schema.json',
-      $version: '1.0.0',
-      $description: `Table definition for ${this.tableDef?.title || this.tablePath}`,
-
-      table: this.tablePath?.split('/').pop() || 'table',
-      title: this.tableDef?.title || 'Table',
-      queryRef: this.queryRefs?.queryRef || null,
-      searchQueryRef: this.queryRefs?.searchQueryRef || null,
-      detailQueryRef: this.queryRefs?.detailQueryRef || null,
-      readonly: this.readonly || false,
-      selectableRows: 1,
-      layout: this.tableLayoutMode || 'fitColumns',
-      resizableColumns: true,
-
-      columns: columnDefs,
-    };
+    tableDef.columns = columnDefs;
 
     if (initialSort.length > 0) {
       tableDef.initialSort = initialSort;

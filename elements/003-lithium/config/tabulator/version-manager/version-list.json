@@ -21,7 +21,7 @@
   "columns": {
 
     "version_id": {
-      "display": "ID#",
+      "title": "ID#",
       "field": "version_id",
       "coltype": "index",
       "visible": false,
@@ -32,13 +32,11 @@
       "calculated": false,
       "primaryKey": true,
       "description": "Database primary key — hidden from display",
-      "overrides": {
-        "bottomCalc": null
-      }
+      "bottomCalc": null
     },
 
     "version_num": {
-      "display": "Version",
+      "title": "Version",
       "field": "version_num",
       "coltype": "string",
       "visible": true,
@@ -49,18 +47,16 @@
       "calculated": false,
       "primaryKey": false,
       "description": "Version number (semantic versioning)",
-      "overrides": {
-        "width": 100,
-        "bottomCalc": "count",
-        "bottomCalcFormatter": "number",
-        "bottomCalcFormatterParams": {
-          "thousand": ""
-        }
+      "width": 100,
+      "bottomCalc": "count",
+      "bottomCalcFormatter": "number",
+      "bottomCalcFormatterParams": {
+        "thousand": ""
       }
     },
 
     "codename": {
-      "display": "Codename",
+      "title": "Codename",
       "field": "codename",
       "coltype": "string",
       "visible": true,
@@ -74,7 +70,7 @@
     },
 
     "status": {
-      "display": "Status",
+      "title": "Status",
       "field": "status",
       "coltype": "lookup",
       "visible": true,
@@ -89,7 +85,7 @@
     },
 
     "release_date": {
-      "display": "Released",
+      "title": "Released",
       "field": "release_date",
       "coltype": "datetime",
       "visible": true,
@@ -103,7 +99,7 @@
     },
 
     "created_at": {
-      "display": "Created",
+      "title": "Created",
       "field": "created_at",
       "coltype": "datetime",
       "visible": false,

@@ -607,6 +607,7 @@ export function resolveColumn(fieldName, colDef, coltypes, options = {}) {
   // CRITICAL: Start with coltypes.default, then overlay specific coltype, then column definition
   // This is the foundation - all coltypes inherit from the "default" stanza
   // Merge order: default → type-specific → column definition (later stages override earlier)
+
   const defaultCol = coltypes.default || {};
   const typeCol = coltypes[colDef.coltype] || {};
 
@@ -615,7 +616,7 @@ export function resolveColumn(fieldName, colDef, coltypes, options = {}) {
 
   // Extract Lithium-specific metadata (not passed to Tabulator)
   const lithiumMeta = {
-    display: colDef.display,
+    title: colDef.title || colDef.display,
     field: colDef.field,
     coltype: colDef.coltype,
     visible: colDef.visible,
@@ -652,7 +653,7 @@ export function resolveColumn(fieldName, colDef, coltypes, options = {}) {
 
   // Build Tabulator column definition
   const tabulatorCol = {
-    title: colDef.display,
+    title: colDef.title || colDef.display,
     field: colDef.field,
     visible: colDef.visible !== false,
 
@@ -665,11 +666,11 @@ export function resolveColumn(fieldName, colDef, coltypes, options = {}) {
     lithiumFilter: colDef.filter !== false,
     lithiumCalculated: colDef.calculated === true,
     lithiumPrimaryKey: colDef.primaryKey === true,
-    lithiumDescription: colDef.description || `${colDef.display || colDef.field} column`,
+    lithiumDescription: colDef.description || `${colDef.title || colDef.display || colDef.field} column`,
     columnPri: colDef.columnPri,
 
     // Alignment
-    hozAlign: merged.align || 'left',
+    hozAlign: colDef.hozAlign || merged.align || 'left',
     vertAlign: merged.vertAlign || 'middle',
 
     // Sorting

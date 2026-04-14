@@ -27,6 +27,12 @@ The Lookups Manager loads its table definitions from **Lookup 59 (Tabulator Sche
 
 The schema must include column definitions with `primaryKey: true` flags for primary key columns. For compound primary keys (like lookup_id + key_idx), mark each field with `"primaryKey": true`.
 
+**Note:** For tables requiring compound primary keys that differ from the database schema, override `primaryKeyField` in the LithiumTable constructor:
+
+```javascript
+primaryKeyField: ['lookup_id', 'key_idx'] // Explicit compound key override
+```
+
 ### Schema Requirements
 
 Each column in the table definition should have:
@@ -311,6 +317,30 @@ if (savedParentId != null) {
 - **Restored on:** `loadChildData()` — sets the target row ID before loading
 
 For **compound primary keys**, the saved child ID is stored as a composite string (`key_idx::lookup_id`) to match the table's compound key format.
+
+### Child Table Configuration
+
+The child table uses **compound primary keys** for reliable per-parent selection:
+
+```javascript
+this.childTable = new LithiumTable({
+  // ... other options
+  primaryKeyField: ['lookup_id', 'key_idx'], // Compound key for child table
+  // ...
+});
+```
+
+This ensures proper persistence and selection matching when child data is filtered by `lookup_id`.
+
+### Smooth Transitions During Parent Selection
+
+When switching between parent lookup records, the child table reloads data without navigation button flashing:
+
+- **Transition protection** — `_inSelectionTransition` flag prevents button updates during child data reload
+- **Coordinated loading** — deselection, data loading, and selection restoration happen atomically
+- **Deferred updates** — navigation buttons update only after final selection is established
+
+This provides a seamless experience when navigating between different lookup tables.
 
 ### Selection Flow
 

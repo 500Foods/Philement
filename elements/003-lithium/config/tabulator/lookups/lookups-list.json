@@ -24,7 +24,7 @@
   "columns": {
 
     "lookup_id": {
-      "display": "ID#",
+      "title": "ID#",
       "field": "lookup_id",
       "coltype": "index",
       "visible": false,
@@ -35,13 +35,11 @@
       "calculated": false,
       "primaryKey": true,
       "description": "Database primary key — hidden from display",
-      "overrides": {
-        "bottomCalc": null
-      }
+      "bottomCalc": null
     },
 
     "lookup_ref": {
-      "display": "Ref",
+      "title": "Ref",
       "field": "lookup_ref",
       "coltype": "index",
       "visible": true,
@@ -52,18 +50,16 @@
       "calculated": false,
       "primaryKey": false,
       "description": "Human-readable lookup reference number",
-      "overrides": {
-        "width": 80,
-        "bottomCalc": "count",
-        "bottomCalcFormatter": "number",
-        "bottomCalcFormatterParams": {
-          "thousand": ""
-        }
+      "width": 80,
+      "bottomCalc": "count",
+      "bottomCalcFormatter": "number",
+      "bottomCalcFormatterParams": {
+        "thousand": ""
       }
     },
 
     "name": {
-      "display": "Name",
+      "title": "Name",
       "field": "name",
       "coltype": "string",
       "visible": true,
@@ -77,7 +73,7 @@
     },
 
     "description": {
-      "display": "Description",
+      "title": "Description",
       "field": "description",
       "coltype": "string",
       "visible": false,
@@ -91,7 +87,7 @@
     },
 
     "created_at": {
-      "display": "Created",
+      "title": "Created",
       "field": "created_at",
       "coltype": "datetime",
       "visible": false,
@@ -105,7 +101,7 @@
     },
 
     "updated_at": {
-      "display": "Updated",
+      "title": "Updated",
       "field": "updated_at",
       "coltype": "datetime",
       "visible": false,
