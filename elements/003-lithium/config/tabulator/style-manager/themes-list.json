@@ -1,13 +1,16 @@
 {
   "$schema": "../tabledef-schema.json",
   "$version": "1.0.0",
-  "$description": "Column definitions for the Themes List table (parent table in Style Manager). Shows all available themes.",
+  "$description": "Column definitions for the Themes List table (parent table). Shows all lookup tables.",
 
   "table": "themes-list",
   "title": "Themes List",
-  "queryRef": 50,
-  "searchQueryRef": 51,
+  "queryRef": 30,
+  "searchQueryRef": 31,
   "readonly": false,
+  "updateQueryRef": 43,
+  "insertQueryRef": 42,
+  "deleteQueryRef": 44,
   "selectableRows": 1,
   "layout": "fitColumns",
   "responsiveLayout": "collapse",
@@ -21,7 +24,7 @@
   "columns": {
 
     "theme_id": {
-      "display": "ID#",
+      "title": "ID#",
       "field": "theme_id",
       "coltype": "index",
       "visible": false,
@@ -32,13 +35,11 @@
       "calculated": false,
       "primaryKey": true,
       "description": "Database primary key — hidden from display",
-      "overrides": {
-        "bottomCalc": null
-      }
+      "bottomCalc": null
     },
 
     "name": {
-      "display": "Name",
+      "title": "Name",
       "field": "name",
       "coltype": "string",
       "visible": true,
@@ -52,7 +53,7 @@
     },
 
     "owner_name": {
-      "display": "Owner",
+      "title": "Owner",
       "field": "owner_name",
       "coltype": "string",
       "visible": true,
@@ -66,7 +67,7 @@
     },
 
     "is_public": {
-      "display": "Public",
+      "title": "Public",
       "field": "is_public",
       "coltype": "boolean",
       "visible": true,
@@ -80,7 +81,7 @@
     },
 
     "created_at": {
-      "display": "Created",
+      "title": "Created",
       "field": "created_at",
       "coltype": "datetime",
       "visible": false,
@@ -91,20 +92,18 @@
       "calculated": true,
       "primaryKey": false,
       "description": "Record creation timestamp",
-      "overrides": {
-        "bottomCalc": "count",
-        "bottomCalcFormatter": "number",
-        "bottomCalcFormatterParams": {
-          "thousand": ""
-        }
+      "bottomCalc": "count",
+      "bottomCalcFormatter": "number",
+      "bottomCalcFormatterParams": {
+        "thousand": ""
       }
     },
 
     "updated_at": {
-      "display": "Updated",
+      "title": "Updated",
       "field": "updated_at",
       "coltype": "datetime",
-      "visible": true,
+      "visible": false,
       "sort": true,
       "filter": true,
       "group": false,

@@ -479,6 +479,78 @@ const volume = parseFloat(localStorage.getItem('volume'));
 video.volume = (volume !== null && !isNaN(volume)) ? volume : 1;
 ```
 
+### Table Selection & Navigation Best Practices
+
+When implementing table functionality, follow these patterns established for smooth user experience:
+
+#### Single Row Selection Enforcement
+
+Always ensure tables enforce single row selection:
+
+```javascript
+// In row selection handlers
+const selectedRows = this.table.getSelectedRows();
+const otherRows = selectedRows.filter(row => row !== selectedRow);
+if (otherRows.length > 0) {
+  this.table.deselectRow(otherRows);
+}
+```
+
+#### Transition-Aware UI Updates
+
+Prevent button flashing during selection operations:
+
+```javascript
+// Set transition flag before operations
+this._inSelectionTransition = true;
+
+try {
+  // Perform selection changes
+  await this.loadData();
+  this.autoSelectRow(targetId);
+} finally {
+  // Clear flag after completion
+  this._inSelectionTransition = false;
+}
+```
+
+#### View-Based Navigation
+
+Navigation buttons should reflect the current filtered view:
+
+```javascript
+// Use 'active' rows instead of all rows
+const activeRows = this.table.getRows('active');
+const selectedIndex = activeRows.findIndex(row => row === selectedRow);
+```
+
+#### Robust Primary Key Handling
+
+Support tables with or without explicit primary key definitions:
+
+```javascript
+// Fallback logic for ID detection
+const idFields = ['id', 'query_id', 'lookup_id', 'key_idx'];
+const primaryId = idFields.find(field => rowData[field] != null) || Object.keys(rowData).find(key => key.toLowerCase().includes('id'));
+```
+
+#### Per-Parent Child Selection Persistence
+
+For parent-child table relationships, implement per-parent selection memory:
+
+```javascript
+// Save per-parent selections
+const selections = JSON.parse(localStorage.getItem('child_selections') || '{}');
+selections[parentId] = childCompositeId;
+localStorage.setItem('child_selections', JSON.stringify(selections));
+
+// Restore on parent selection
+const savedChildId = selections[parentId];
+if (savedChildId) {
+  this.childTable.saveSelectedRowId(savedChildId);
+}
+```
+
 ---
 
 ## Next Steps

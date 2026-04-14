@@ -79,14 +79,14 @@ export function buildColumnManagerDefinition(cm) {
     width: 42,
     hozAlign: 'center',
     headerSort: false,
-    overrides: !isManual ? {
+    ...(isManual ? {} : {
       editor: 'number',
       editorParams: {
         min: 1,
         max: 999,
         step: 1,
       },
-    } : undefined,
+    }),
   };
 
   // --- Data columns ---
@@ -147,15 +147,13 @@ export function buildColumnManagerDefinition(cm) {
     width: 120,
     hozAlign: 'left',
     headerSort: !isManual,
-    overrides: {
-      editor: 'select',
-      editorParams: {
-        values: formatLookup,
-      },
-      formatter: 'lookup',
-      formatterParams: {
-        lookup: formatLookup,
-      },
+    editor: 'select',
+    editorParams: {
+      values: formatLookup,
+    },
+    formatter: 'lookup',
+    formatterParams: {
+      lookup: formatLookup,
     },
   };
 
@@ -170,15 +168,13 @@ export function buildColumnManagerDefinition(cm) {
     width: 100,
     hozAlign: 'left',
     headerSort: !isManual,
-    overrides: {
-      editor: 'select',
-      editorParams: {
-        values: summaryLookup,
-      },
-      formatter: 'lookup',
-      formatterParams: {
-        lookup: summaryLookup,
-      },
+    editor: 'select',
+    editorParams: {
+      values: summaryLookup,
+    },
+    formatter: 'lookup',
+    formatterParams: {
+      lookup: summaryLookup,
     },
   };
 
@@ -193,15 +189,13 @@ export function buildColumnManagerDefinition(cm) {
     width: 90,
     hozAlign: 'left',
     headerSort: !isManual,
-    overrides: {
-      editor: 'select',
-      editorParams: {
-        values: alignmentLookup,
-      },
-      formatter: 'lookup',
-      formatterParams: {
-        lookup: alignmentLookup,
-      },
+    editor: 'select',
+    editorParams: {
+      values: alignmentLookup,
+    },
+    formatter: 'lookup',
+    formatterParams: {
+      lookup: alignmentLookup,
     },
   };
 
@@ -229,12 +223,10 @@ export function buildColumnManagerDefinition(cm) {
     width: 80,
     hozAlign: 'right',
     headerSort: false,
-    overrides: {
-      editor: 'number',
-      editorParams: {
-        min: 20,
-        max: 1000,
-      },
+    editor: 'number',
+    editorParams: {
+      min: 20,
+      max: 1000,
     },
   };
 

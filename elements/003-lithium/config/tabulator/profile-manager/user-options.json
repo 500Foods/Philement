@@ -17,7 +17,7 @@
   "columns": {
 
     "key_idx": {
-      "display": "ID#",
+      "title": "ID#",
       "field": "key_idx",
       "coltype": "index",
       "visible": false,
@@ -31,7 +31,7 @@
     },
 
     "section": {
-      "display": "Section",
+      "title": "Section",
       "field": "section",
       "coltype": "string",
       "visible": true,
@@ -46,7 +46,7 @@
     },
 
     "icon": {
-      "display": "Icon",
+      "title": "Icon",
       "field": "icon",
       "coltype": "string",
       "visible": true,
@@ -62,7 +62,7 @@
     },
 
     "label": {
-      "display": "Option",
+      "title": "Option",
       "field": "label",
       "coltype": "string",
       "visible": true,
@@ -75,7 +75,7 @@
     },
 
     "status": {
-      "display": "Status",
+      "title": "Status",
       "field": "status_a1",
       "coltype": "lookup",
       "visible": false,

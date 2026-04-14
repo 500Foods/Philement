@@ -275,6 +275,9 @@ export class LithiumTableBase {
         this.primaryKeyField = getPrimaryKeyField(this.tableDef);
       }
 
+      // Apply default template if available (last step before building table)
+      this._applyDefaultTemplate();
+
       const lookupRefs = Object.values(this.tableDef.columns || {})
         .map(col => col.lookupRef)
         .filter(Boolean);
@@ -300,23 +303,61 @@ export class LithiumTableBase {
     let dataColumns = [];
     const data = preloadedData || this.currentData;
 
-    if (this.tableDef && this.coltypes) {
-      dataColumns = resolveColumns(this.tableDef, this.coltypes, {
-        filterEditor: this.createFilterEditorFunction(),
-      });
-    } else if (this.tableDef?.columns && Object.keys(this.tableDef.columns).length > 0) {
-      dataColumns = resolveColumns(this.tableDef, this.coltypes || {}, {
-        filterEditor: this.createFilterEditorFunction(),
-      });
+    // Track if we're initializing without data (for data-first rebuild later)
+    this._wasInitializedWithoutData = !data || data.length === 0;
+
+    // First, auto-discover columns from data if available (data-first approach)
+    if (data && data.length > 0) {
+      dataColumns = this._buildColumnsFromData(data);
+      log(Subsystems.TABLE, Status.DEBUG,
+        `[${this.cssPrefix}] Auto-discovered ${dataColumns.length} columns from ${data.length} data rows`);
     }
 
-    if (data && data.length > 0 && dataColumns.length === 0) {
-      dataColumns = this._buildColumnsFromData(data);
+    // Then apply tableDef overlays if available
+    if (this.tableDef && this.coltypes) {
+      const tableDefColumns = resolveColumns(this.tableDef, this.coltypes, {
+        filterEditor: this.createFilterEditorFunction(),
+      });
+
+      if (dataColumns.length > 0) {
+        // Merge: apply tableDef properties to auto-discovered columns
+        dataColumns = this._mergeColumnsWithTableDef(dataColumns, tableDefColumns);
+        log(Subsystems.TABLE, Status.DEBUG,
+          `[${this.cssPrefix}] Applied tableDef overlays to ${dataColumns.length} columns`);
+      } else {
+        // No data available yet, use tableDef columns
+        dataColumns = tableDefColumns;
+      }
+    } else if (this.tableDef?.columns && Object.keys(this.tableDef.columns).length > 0) {
+      const tableDefColumns = resolveColumns(this.tableDef, this.coltypes || {}, {
+        filterEditor: this.createFilterEditorFunction(),
+      });
+
+      if (dataColumns.length > 0) {
+        // Merge: apply tableDef properties to auto-discovered columns
+        dataColumns = this._mergeColumnsWithTableDef(dataColumns, tableDefColumns);
+      } else {
+        dataColumns = tableDefColumns;
+      }
     }
 
     if (dataColumns.length === 0) {
-      log(Subsystems.TABLE, Status.WARN, 
-        `[LithiumTable] No columns defined for table "${this.tablePath}" - table will be empty`);
+      if (this._wasInitializedWithoutData) {
+        // For data-first tables, create with placeholder column until data loads
+        log(Subsystems.TABLE, Status.INFO,
+          `[${this.cssPrefix}] No data available yet, creating table with placeholder column`);
+        dataColumns = [{
+          field: '_placeholder',
+          title: 'Loading...',
+          visible: true,
+          editable: false,
+          resizable: false,
+        }];
+      } else {
+        log(Subsystems.TABLE, Status.WARN,
+          `[LithiumTable] No columns defined for table "${this.tablePath}" - table will be empty`);
+        return;
+      }
     }
 
     dataColumns = this._sortColumnsByPriority(dataColumns);
@@ -794,6 +835,11 @@ export class LithiumTableBase {
       if (!this.table) return;
 
       this.currentData = rows;
+
+      // If table was initialized without data but we now have data, rebuild columns
+      if (this.table && rows.length > 0 && this._wasInitializedWithoutData) {
+        await this._rebuildColumnsWithData(rows);
+      }
 
       this.table.blockRedraw?.();
       try {
@@ -1413,12 +1459,11 @@ export class LithiumTableBase {
       this.toggleHeaderFilters(true);
     }
 
-    // 7. Apply the CAPTURED STATE (NOT the Default template!)
-    // This preserves all column widths, order, visibility, sort, etc.
+    // 7. Apply captured state (user customizations) for all tables
     if (capturedState) {
       // Debug: log some column widths from captured state
       const sampleWidth = Object.values(capturedState.columns || {})[0]?.width;
-      log(Subsystems.TABLE, Status.DEBUG, `[${this.cssPrefix}] Captured state has ${Object.keys(capturedState.columns || {}).length} columns, first width: ${sampleWidth}`);
+      log(Subsystems.TABLE, Status.DEBUG, `[${this.cssPrefix}] Applying captured state: ${Object.keys(capturedState.columns || {}).length} columns, first width: ${sampleWidth}`);
 
       await this.loadTemplate?.(capturedState);
       log(Subsystems.TABLE, Status.DEBUG, `[${this.cssPrefix}] Applied captured state template`);
@@ -1684,6 +1729,127 @@ export class LithiumTableBase {
         delay: { show: 600, hide: 100 },
       });
     });
+  }
+
+  /**
+   * Rebuild table columns using data-first approach after data becomes available.
+   * This is called when the table was initialized without data but now has data.
+   * @param {Array} data - The loaded data rows
+   */
+  async _rebuildColumnsWithData(data) {
+    if (!this.table || !data || data.length === 0) return;
+
+    log(Subsystems.TABLE, Status.INFO, `[${this.cssPrefix}] Rebuilding columns with data-first approach`);
+
+    // Auto-discover columns from data
+    let dataColumns = this._buildColumnsFromData(data);
+
+    // Apply tableDef overlays if available
+    if (this.tableDef && this.coltypes) {
+      const tableDefColumns = resolveColumns(this.tableDef, this.coltypes, {
+        filterEditor: this.createFilterEditorFunction(),
+      });
+      dataColumns = this._mergeColumnsWithTableDef(dataColumns, tableDefColumns);
+    }
+
+    if (dataColumns.length === 0) return;
+
+    dataColumns = this._sortColumnsByPriority(dataColumns);
+    this.applyEditModeGate(dataColumns);
+
+    // Build new column definitions for Tabulator
+    const selectorColumn = this.buildSelectorColumn();
+    const columns = [selectorColumn, ...dataColumns];
+    columns.forEach(col => {
+      if (col.title && !col.cssClass?.includes('first-visible-col')) {
+        col.cssClass = [col.cssClass, sanitizeColumnTitle(col.title)].filter(Boolean).join(' ');
+      }
+    });
+
+    // Replace columns on the existing table
+    this.table.setColumns(columns);
+
+    // Clear the flag
+    this._wasInitializedWithoutData = false;
+
+    log(Subsystems.TABLE, Status.INFO, `[${this.cssPrefix}] Rebuilt with ${dataColumns.length} columns`);
+  }
+
+  /**
+   * Merge auto-discovered columns with tableDef overlays.
+   * This applies tableDef properties to matching auto-discovered columns by field name.
+   * Columns not in tableDef are kept as auto-discovered.
+   * @param {Array} autoColumns - Auto-discovered columns from data
+   * @param {Array} tableDefColumns - Columns from tableDef resolution
+   * @returns {Array} Merged columns
+   */
+  _mergeColumnsWithTableDef(autoColumns, tableDefColumns) {
+    // Create a map of tableDef columns by field name for quick lookup
+    const tableDefMap = new Map();
+    for (const col of tableDefColumns) {
+      if (col.field) {
+        tableDefMap.set(col.field, col);
+      }
+    }
+
+    // Merge: start with auto-discovered columns, overlay tableDef properties
+    const mergedColumns = autoColumns.map(autoCol => {
+      const tableDefCol = tableDefMap.get(autoCol.field);
+      if (tableDefCol) {
+        // Apply tableDef properties over auto-discovered properties
+        // tableDef takes precedence for conflicting properties
+        return { ...autoCol, ...tableDefCol };
+      }
+      return autoCol;
+    });
+
+    // Add any tableDef columns that weren't in the auto-discovered set
+    // (e.g., calculated columns not present in data)
+    for (const tableDefCol of tableDefColumns) {
+      if (!mergedColumns.find(col => col.field === tableDefCol.field)) {
+        mergedColumns.push(tableDefCol);
+      }
+    }
+
+    return mergedColumns;
+  }
+
+  /**
+   * Apply default template to tableDef if available.
+   * This is the last step before building the table, applied after loading tableDef from Lookup 59.
+   */
+  _applyDefaultTemplate() {
+    if (!this.tableDef || !this.storageKey) return;
+
+    const defaultTemplateKey = `lithium_table_template_${this.storageKey}_Default`;
+    try {
+      const defaultTemplateJson = localStorage.getItem(defaultTemplateKey);
+      if (defaultTemplateJson) {
+        const defaultTemplate = JSON.parse(defaultTemplateJson);
+        log(Subsystems.TABLE, Status.INFO,
+          `[${this.cssPrefix}] Applying default template from localStorage`);
+
+        // Merge default template with tableDef
+        // Template properties override tableDef properties
+        const mergedColumns = { ...this.tableDef.columns };
+        if (defaultTemplate.columns) {
+          for (const [field, col] of Object.entries(defaultTemplate.columns)) {
+            if (mergedColumns[field]) {
+              mergedColumns[field] = { ...mergedColumns[field], ...col };
+            } else {
+              mergedColumns[field] = col;
+            }
+          }
+        }
+
+        // Apply other template properties, excluding columns which are already merged
+        const { columns, ...templateProps } = defaultTemplate;
+        this.tableDef = { ...this.tableDef, ...templateProps, columns: mergedColumns };
+      }
+    } catch (e) {
+      log(Subsystems.TABLE, Status.WARN,
+        `[${this.cssPrefix}] Failed to apply default template: ${e.message}`);
+    }
   }
 
   /**
