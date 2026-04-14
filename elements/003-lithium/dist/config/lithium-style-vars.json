@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS custom properties (variables) used across the Lithium codebase",
-    "generated": "2026-04-13T21:33:20.824Z",
+    "generated": "2026-04-14T01:16:46.829Z",
     "sources": {
       "css": "50 files in src/**/*.css",
       "js": "102 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
     "total_variables": 216,
-    "total_occurrences": 3445
+    "total_occurrences": 3453
   },
   "variables": [
     {
@@ -76,10 +76,10 @@
     },
     {
       "name": "--accent-hover",
-      "css": 46,
+      "css": 47,
       "js": 0,
       "html": 0,
-      "total": 46
+      "total": 47
     },
     {
       "name": "--accent-info",
@@ -97,10 +97,10 @@
     },
     {
       "name": "--accent-primary",
-      "css": 170,
+      "css": 172,
       "js": 3,
       "html": 1,
-      "total": 174
+      "total": 176
     },
     {
       "name": "--accent-primary-hover",
@@ -559,10 +559,10 @@
     },
     {
       "name": "--font-size-xl",
-      "css": 34,
+      "css": 35,
       "js": 0,
       "html": 0,
-      "total": 34
+      "total": 35
     },
     {
       "name": "--font-size-xs",
@@ -825,10 +825,10 @@
     },
     {
       "name": "--space-2",
-      "css": 170,
+      "css": 171,
       "js": 0,
       "html": 0,
-      "total": 170
+      "total": 171
     },
     {
       "name": "--space-3",
@@ -1035,10 +1035,10 @@
     },
     {
       "name": "--text-primary",
-      "css": 137,
+      "css": 138,
       "js": 5,
       "html": 1,
-      "total": 143
+      "total": 144
     },
     {
       "name": "--text-secondary",
@@ -1448,10 +1448,10 @@
     },
     {
       "name": "--transition-fast",
-      "css": 162,
+      "css": 164,
       "js": 3,
       "html": 0,
-      "total": 165
+      "total": 167
     },
     {
       "name": "--transition-normal",
