@@ -63,8 +63,8 @@
 
   /* Sizing */
   --tour-max-width: 500px;
-  --tour-list-max-width: 360px;
-  --tour-list-min-width: 260px;
+  --tour-list-max-width: 410px;
+  --tour-list-min-width: 310px;
   
   /* Transition delay between steps - set shorter for overlapping transitions
      100ms creates ~50% overlap with the 200ms transition duration */
@@ -481,6 +481,18 @@
   flex-shrink: 0;
 }
 
+.lithium-tour-list-item-video-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 35px;
+  background: transparent;
+  color: var(--accent-primary, #4a90d9);
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
 .lithium-tour-list-item-info {
   flex: 1;
   min-width: 0;
@@ -618,6 +630,24 @@
   align-items: center;
   gap: var(--space-2);
   flex-shrink: 0;
+}
+
+.lithium-video-tour-header-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  padding: var(--space-2);
+  background: var(--accent-primary);
+  border: none;
+  color: white;
+  font-size: var(--font-size-xl);
+  cursor: pointer;
+  transition: background-color var(--transition-fast, 0.15s) ease;
+}
+
+.lithium-video-tour-header-btn:hover {
+  background: var(--accent-hover);
 }
 
 .lithium-video-tour-header-close {
@@ -794,6 +824,7 @@
   filter: drop-shadow(0px 0px 1px black) drop-shadow(0px 0px 5px silver);
   opacity: 0;
   transition: opacity 0.5s ease;
+  text-align: center;
 }
 
 .lithium-video-tour-caption.visible {

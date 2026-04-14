@@ -1257,18 +1257,27 @@ async function switchToManager(managerName) {
  */
 export async function launchTour(tourId, api, options = {}) {
   try {
-    // End any active tour first, waiting for fade-out transition
+    // End any active tour first (Shepherd or video), waiting for fade-out transition
+    
+    // Handle Shepherd tour
     if (_activeShepherdTour) {
-      log(Subsystems.MANAGER, Status.DEBUG, '[Tour] Cancelling active tour before launching new one');
+      log(Subsystems.MANAGER, Status.DEBUG, '[Tour] Cancelling active Shepherd tour before launching new one');
       const transitionDuration = getTransitionDuration();
       try {
         _activeShepherdTour.cancel();
       } catch (err) {
         log(Subsystems.MANAGER, Status.WARN, `[Tour] Error cancelling previous tour: ${err.message}`);
       }
-      // Force-clean any Shepherd artefacts and wait for fade-out
       cleanupActiveTour();
       await new Promise(resolve => setTimeout(resolve, transitionDuration));
+    }
+    
+    // Handle video tour
+    if (_activeVideoPopup) {
+      log(Subsystems.MANAGER, Status.DEBUG, '[Tour] Closing active video tour before launching new one');
+      closeVideoTour();
+      const transitionDuration = getTransitionDuration();
+      await new Promise(resolve => setTimeout(resolve, transitionDuration + 50));
     }
 
     const tours = await getTours(api);
@@ -1282,9 +1291,7 @@ export async function launchTour(tourId, api, options = {}) {
     if (!tour) {
       log(Subsystems.MANAGER, Status.WARN, `[Tour] Tour not found: ${tourId}, showing list`);
       // Fall back to showing the tour list
-      showTourList(tours, options.anchor, {
-        onSelect: (selectedId) => launchTour(selectedId, api, options),
-      });
+      showTourList(tours, options.anchor);
       return null;
     }
 
@@ -1328,9 +1335,7 @@ export async function launchTour(tourId, api, options = {}) {
 
     if (!tourOptions.onShowList) {
       tourOptions.onShowList = () => {
-        showTourList(tours, tourOptions.anchor, {
-          onSelect: (selectedId) => launchTour(selectedId, api, tourOptions),
-        });
+        showTourList(tours, tourOptions.anchor);
       };
     }
 
@@ -1387,6 +1392,7 @@ export function showTourList(tours, anchor = null, options = {}) {
     const iconHtml = isVideo
       ? (t.definition.icon || '<fa fa-play></fa>')
       : (t.definition.icon || '<fa fa-signs-post></fa>');
+    const videoIndicator = isVideo ? '<fa class="lithium-tour-list-item-video-indicator" fa-play></fa>' : '';
     return `
     <div class="lithium-tour-list-item${isVideo ? ' video-tour' : ''}" data-tour-id="${t.id}">
       <div class="lithium-tour-list-item-icon">
@@ -1395,6 +1401,7 @@ export function showTourList(tours, anchor = null, options = {}) {
       <div class="lithium-tour-list-item-info">
         <div class="lithium-tour-list-item-name">${t.name}</div>
       </div>
+      <div class="lithium-tour-list-item-video-icon">${videoIndicator}</div>
     </div>
   `;
   }).join('');
@@ -1452,12 +1459,9 @@ export function showTourList(tours, anchor = null, options = {}) {
     item.addEventListener('click', () => {
       const tourId = parseInt(item.dataset.tourId, 10);
       // Fade out popup before starting tour
-      hideTourList({ fade: true }).then(() => {
-        if (options.onSelect) {
-          options.onSelect(tourId);
-        }
-        eventBus.emit('tour:select', { tourId });
-      });
+      hideTourList({ fade: true });
+      // Use eventBus to launch - prevents double-launch when onSelect is also provided
+      eventBus.emit('tour:select', { tourId });
     });
   });
 
@@ -1530,6 +1534,7 @@ export function hideTourList(options = {}) {
 
 let _activeVideoPopup = null;
 let _activeVideoElement = null;
+let _videoTourHandleKeyDown = null;
 
 const VIDEO_PLAYBACK_SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
@@ -1549,9 +1554,26 @@ export async function launchVideoTour(tour, options = {}) {
 
   log(Subsystems.MANAGER, Status.INFO, `[VideoTour] Launching: ${tour.name}`);
 
-  // Close any existing video popup
+  // Close any existing tours gracefully with animation before starting new one
+  
+  // Handle Shepherd tour
+  if (_activeShepherdTour) {
+    log(Subsystems.MANAGER, Status.DEBUG, '[VideoTour] Closing active Shepherd tour');
+    const transitionDuration = getTransitionDuration();
+    try {
+      _activeShepherdTour.cancel();
+    } catch (err) {
+      log(Subsystems.MANAGER, Status.WARN, `[VideoTour] Error cancelling Shepherd tour: ${err.message}`);
+    }
+    cleanupActiveTour();
+    await new Promise(resolve => setTimeout(resolve, transitionDuration));
+  }
+  
+  // Handle existing video tour
   if (_activeVideoPopup) {
     closeVideoTour();
+    const duration = getTransitionDuration();
+    await new Promise(resolve => setTimeout(resolve, duration + 50));
   }
 
   // Get icon from definition
@@ -1569,6 +1591,9 @@ export async function launchVideoTour(tour, options = {}) {
           <span class="lithium-video-tour-header-title">${tourName}</span>
         </div>
         <div class="lithium-video-tour-header-placeholder"></div>
+        <button type="button" class="lithium-video-tour-header-btn lithium-video-tour-list-btn" data-video-action="list" title="Available Tours">
+          <fa fa-signs-post></fa>
+        </button>
         <button type="button" class="lithium-video-tour-header-close" data-video-action="close" title="Close">
           <fa fa-xmark></fa>
         </button>
@@ -1592,7 +1617,7 @@ export async function launchVideoTour(tour, options = {}) {
       <div class="lithium-video-tour-captions-container"></div>
     </div>
     <div class="lithium-video-tour-scrubber-row">
-      <input type="range" class="lithium-video-tour-scrubber" min="0" max="100" value="0">
+      <input type="range" class="lithium-video-tour-scrubber" min="0" max="1000" value="0">
     </div>
     <div class="lithium-video-tour-controls">
       <div class="lithium-video-tour-buttons">
@@ -1927,26 +1952,62 @@ export async function launchVideoTour(tour, options = {}) {
   popup.querySelectorAll('.lithium-video-tour-resize-handle-tr').forEach(h => setupResizeHandle(h, 'tr'));
   popup.querySelectorAll('.lithium-video-tour-resize-handle-tl').forEach(h => setupResizeHandle(h, 'tl'));
 
-  // Format time helper
+  // Format time helper - includes tenths for precise scrubbing
   const formatTime = (seconds) => {
-    if (isNaN(seconds)) return '0:00';
+    if (isNaN(seconds)) return '00:00.0';
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    const tenths = Math.floor((seconds % 1) * 10);
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${tenths}`;
   };
 
-  // Update time display and scrubber
+  // Scrubber sync state
+  let scrubberAnimationId = null;
+
+  // Force time display update - called on any seek
   const updateTimeDisplay = () => {
     const current = formatTime(video.currentTime);
     const duration = formatTime(video.duration || 0);
     timeDisplay.textContent = `${current} / ${duration}`;
     if (video.duration) {
-      scrubber.value = (video.currentTime / video.duration) * 100;
+      scrubber.value = (video.currentTime / video.duration) * 1000;
+    }
+  };
+
+  const startScrubberSync = () => {
+    if (scrubberAnimationId) return;
+    const syncLoop = () => {
+      if (!video.paused && video.duration) {
+        // Update both scrubber and time display every frame
+        scrubber.value = (video.currentTime / video.duration) * 1000;
+        const current = formatTime(video.currentTime);
+        const duration = formatTime(video.duration);
+        timeDisplay.textContent = `${current} / ${duration}`;
+      }
+      scrubberAnimationId = requestAnimationFrame(syncLoop);
+    };
+    scrubberAnimationId = requestAnimationFrame(syncLoop);
+  };
+
+  const stopScrubberSync = () => {
+    if (scrubberAnimationId) {
+      cancelAnimationFrame(scrubberAnimationId);
+      scrubberAnimationId = null;
     }
   };
 
   // Video event handlers
-  video.addEventListener('timeupdate', updateTimeDisplay);
+  video.addEventListener('play', () => {
+    startScrubberSync();
+  });
+  video.addEventListener('pause', () => {
+    stopScrubberSync();
+    updateTimeDisplay();
+  });
+  video.addEventListener('ended', () => {
+    stopScrubberSync();
+    updateTimeDisplay();
+  });
   video.addEventListener('loadedmetadata', updateTimeDisplay);
 
   // Play/pause toggle
@@ -1995,8 +2056,9 @@ export async function launchVideoTour(tour, options = {}) {
   // Scrubber seeking
   scrubber.addEventListener('input', () => {
     if (video.duration) {
-      video.currentTime = (scrubber.value / 100) * video.duration;
-      // Update captions immediately on scrub without fade animation
+      video.currentTime = (scrubber.value / 1000) * video.duration;
+      // Update time display and captions immediately on scrub without fade animation
+      updateTimeDisplay();
       if (captionsEnabled && captionsData.length > 0) {
         updateCaptionsForTime(video.currentTime * 1000, false);
       }
@@ -2035,7 +2097,8 @@ export async function launchVideoTour(tour, options = {}) {
     newTime = Math.max(0, Math.min(video.duration || 0, newTime));
     video.currentTime = newTime;
     
-    // Update captions without animation
+    // Update time display and captions without animation
+    updateTimeDisplay();
     if (captionsEnabled && captionsData.length > 0) {
       updateCaptionsForTime(newTime * 1000, false);
     }
@@ -2052,13 +2115,12 @@ export async function launchVideoTour(tour, options = {}) {
   const captionsContainer = popup.querySelector('.lithium-video-tour-captions-container');
   const captionsBtn = popup.querySelector('.lithium-video-tour-captions-btn');
   let captionsEnabled = true;
-  let currentCaptionEl = null;
-  let captionTimeout = null;
 
   // Parse captions from definition
   const captionsData = [];
   if (Array.isArray(definition.captions)) {
-    for (const cap of definition.captions) {
+    for (let i = 0; i < definition.captions.length; i++) {
+      const cap = definition.captions[i];
       if (cap.length >= 3) {
         // Format: [startSeconds, endSeconds, "text"]
         // Start/end can be like "000.500" or "2.500" - parse as float
@@ -2066,7 +2128,7 @@ export async function launchVideoTour(tour, options = {}) {
         const endTime = parseFloat(cap[1]) * 1000;
         const text = cap[2];
         if (!isNaN(startTime) && !isNaN(endTime) && text) {
-          captionsData.push({ startTime, endTime, text });
+          captionsData.push({ index: i, startTime, endTime, text });
         }
       }
     }
@@ -2078,73 +2140,52 @@ export async function launchVideoTour(tour, options = {}) {
   const updateCaptionsForTime = (timeMs, animate = true) => {
     if (!captionsEnabled || captionsData.length === 0) return;
 
-    // Find caption for current time
-    const activeCaption = captionsData.find(c => 
-      timeMs >= c.startTime && timeMs < c.endTime
-    );
-
-    // Clear any pending timers
-    if (captionTimeout) {
-      clearTimeout(captionTimeout);
-      captionTimeout = null;
-    }
-
-    if (activeCaption) {
-      // Different caption or no caption
-      if (!currentCaptionEl || currentCaptionEl.dataset.text !== activeCaption.text) {
-        // Remove existing with fade out - but only if it's a different text
-        if (currentCaptionEl) {
-          currentCaptionEl.classList.remove('visible');
-          // Schedule removal after fade out - don't null out immediately
-          const oldEl = currentCaptionEl;
+    // Each caption is completely independent - fade in/out based only on its own timing
+    captionsData.forEach(caption => {
+      const isActive = timeMs >= caption.startTime && timeMs <= caption.endTime;
+      
+      // Find existing element for this caption index
+      let captionEl = captionsContainer.querySelector(`.lithium-video-tour-caption[data-index="${caption.index}"]`);
+      
+      if (isActive) {
+        if (!captionEl) {
+          // Create new caption element
+          captionEl = document.createElement('div');
+          captionEl.className = 'lithium-video-tour-caption';
+          captionEl.dataset.index = caption.index;
+          captionEl.textContent = caption.text;
+          captionsContainer.appendChild(captionEl);
+          
+          // Fade in
+          if (animate) {
+            void captionEl.offsetWidth;
+            captionEl.classList.add('visible');
+          } else {
+            captionEl.classList.add('visible');
+          }
+        } else if (!captionEl.classList.contains('visible')) {
+          // Already exists but hidden - fade it back in
+          if (animate) {
+            void captionEl.offsetWidth;
+            captionEl.classList.add('visible');
+          } else {
+            captionEl.classList.add('visible');
+          }
+        }
+      } else {
+        // Caption is not active right now
+        if (captionEl && captionEl.classList.contains('visible')) {
+          // Fade it out
+          captionEl.classList.remove('visible');
+          // Remove after fade completes
           setTimeout(() => {
-            if (oldEl && oldEl.parentNode) {
-              oldEl.remove();
+            if (captionEl.parentNode) {
+              captionEl.remove();
             }
           }, CAPTION_FADE_MS);
         }
-
-        // Create new caption - CSS sets initial opacity:0
-        const newCaption = document.createElement('div');
-        newCaption.className = 'lithium-video-tour-caption';
-        newCaption.dataset.text = activeCaption.text;
-        newCaption.textContent = activeCaption.text;
-        
-        // Remove any old captions from container first
-        while (captionsContainer.firstChild) {
-          captionsContainer.removeChild(captionsContainer.firstChild);
-        }
-        
-        captionsContainer.appendChild(newCaption);
-
-        if (animate) {
-          // Force reflow so browser applies the initial opacity:0
-          void newCaption.offsetWidth;
-          
-          // Add visible class to trigger CSS transition from 0 to 1 over 0.5s
-          newCaption.classList.add('visible');
-        } else {
-          // No animation (scrubbing) - show immediately
-          newCaption.classList.add('visible');
-        }
-
-        currentCaptionEl = newCaption;
       }
-      // If same text, do nothing - caption is already showing
-    } else {
-      // No caption for current time - fade out and remove existing
-      if (currentCaptionEl) {
-        currentCaptionEl.classList.remove('visible');
-        const oldEl = currentCaptionEl;
-        currentCaptionEl = null;
-        // Wait for fade out before removing
-        setTimeout(() => {
-          if (oldEl && oldEl.parentNode) {
-            oldEl.remove();
-          }
-        }, CAPTION_FADE_MS);
-      }
-    }
+    });
   };
 
   // Update captions on time update
@@ -2168,13 +2209,8 @@ export async function launchVideoTour(tour, options = {}) {
       handleCaptionTimeUpdate();
     } else {
       // Hide all captions
-      if (currentCaptionEl) {
-        currentCaptionEl.remove();
-        currentCaptionEl = null;
-      }
-      if (captionTimeout) {
-        clearTimeout(captionTimeout);
-        captionTimeout = null;
+      while (captionsContainer.firstChild) {
+        captionsContainer.removeChild(captionsContainer.firstChild);
       }
     }
 
@@ -2254,27 +2290,36 @@ export async function launchVideoTour(tour, options = {}) {
   };
 
   // Keyboard handler - Space for play/pause, Left/Right for back/forward, ESC to close
-  const handleKeyDown = (e) => {
-    if (e.key === 'Escape') {
-      closeVideoTour();
-      document.removeEventListener('keydown', handleKeyDown);
-    } else if (e.key === ' ' || e.key === 'Spacebar') {
-      e.preventDefault();
-      togglePlay();
-    } else if (e.key === 'ArrowLeft') {
-      e.preventDefault();
-      video.currentTime = Math.max(0, video.currentTime - 10);
-    } else if (e.key === 'ArrowRight') {
-      e.preventDefault();
-      video.currentTime = Math.min(video.duration || 0, video.currentTime + 10);
-    }
+  const setupKeyboardHandler = () => {
+    _videoTourHandleKeyDown = (e) => {
+      if (!_activeVideoPopup) {
+        document.removeEventListener('keydown', _videoTourHandleKeyDown);
+        _videoTourHandleKeyDown = null;
+        return;
+      }
+      if (e.key === 'Escape') {
+        closeVideoTour();
+      } else if (e.key === ' ' || e.key === 'Spacebar') {
+        e.preventDefault();
+        togglePlay();
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        video.currentTime = Math.max(0, video.currentTime - 10);
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        video.currentTime = Math.min(video.duration || 0, video.currentTime + 10);
+      }
+    };
+    document.addEventListener('keydown', _videoTourHandleKeyDown);
   };
-  document.addEventListener('keydown', handleKeyDown);
+
+  setupKeyboardHandler();
 
   // Save state on resize end - inline in each stopResize function
   _videoStateCleanup = () => {
     saveState();
     video.removeEventListener('timeupdate', handleCaptionTimeUpdate);
+    stopScrubberSync();
   };
 
   const closeBtn = popup.querySelector('.lithium-video-tour-header-close');
@@ -2284,7 +2329,7 @@ export async function launchVideoTour(tour, options = {}) {
   });
 
   // Button click handler
-  const handleButtonClick = (e) => {
+  const handleButtonClick = async (e) => {
     const button = e.target.closest('[data-video-action]');
     if (!button) return;
 
@@ -2292,6 +2337,17 @@ export async function launchVideoTour(tour, options = {}) {
     switch (action) {
       case 'close':
         closeVideoTour();
+        break;
+      case 'list':
+        closeVideoTour();
+        // Delay to allow fade-out before showing list
+        setTimeout(async () => {
+          const api = window.lithiumApp?.api;
+          if (api) {
+            const tours = await getTours(api);
+            showTourList(tours, null);
+          }
+        }, getTransitionDuration() + 50);
         break;
       case 'play':
         togglePlay();
@@ -2336,6 +2392,12 @@ export async function launchVideoTour(tour, options = {}) {
  * Close video tour popup with fade out
  */
 export function closeVideoTour() {
+  // Remove keyboard handler
+  if (_videoTourHandleKeyDown) {
+    document.removeEventListener('keydown', _videoTourHandleKeyDown);
+    _videoTourHandleKeyDown = null;
+  }
+
   if (_activeVideoElement) {
     _activeVideoElement.pause();
     _activeVideoElement = null;
@@ -2404,6 +2466,31 @@ export function initTours() {
       await launchVideoTour(tour);
     } else {
       await launchTour(tourId, api);
+    }
+  });
+
+  // Listen for tour:select events from showTourList popup
+  eventBus.on('tour:select', async (event) => {
+    const { tourId } = event.detail || event;
+    log(Subsystems.MANAGER, Status.INFO, `[Tour] Event received: select tour ${tourId}`);
+    const api = window.lithiumApp?.api;
+    if (!api) {
+      log(Subsystems.MANAGER, Status.ERROR, '[Tour] API not available');
+      return;
+    }
+
+    // Get tours and find the selected tour
+    const tours = await getTours(api);
+    const tour = tours.find(t => t.id === tourId);
+
+    if (tour) {
+      if (isVideoTour(tour)) {
+        await launchVideoTour(tour);
+      } else {
+        await launchTour(tourId, api);
+      }
+    } else {
+      log(Subsystems.MANAGER, Status.WARN, `[Tour] Tour not found for id: ${tourId}`);
     }
   });
 
