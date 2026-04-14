@@ -220,6 +220,9 @@ export function updateDuplicateButtonState(table) {
 
 /**
  * Update move button states based on current position
+ *
+ * Simplified logic: Prior buttons (first/prevPage/prev) enabled when not on first record;
+ * Next buttons (next/nextPage/last) enabled when not on last record.
  * @param {Object} table - LithiumTable instance
  */
 export function updateMoveButtonState(table) {
@@ -235,10 +238,6 @@ export function updateMoveButtonState(table) {
   const atFirst = selectedIndex <= 0;
   const atLast = selectedIndex < 0 || selectedIndex >= rowCount - 1;
 
-  const pageSize = getPageSize(table);
-  const canGoPrevPage = selectedIndex > 0 && selectedIndex >= pageSize;
-  const canGoNextPage = selectedIndex >= 0 && selectedIndex < rowCount - 1 - pageSize;
-
   const firstBtn = nav.querySelector(`#${table.cssPrefix}-nav-first`);
   const prevPageBtn = nav.querySelector(`#${table.cssPrefix}-nav-pgup`);
   const prevRecBtn = nav.querySelector(`#${table.cssPrefix}-nav-prev`);
@@ -247,10 +246,10 @@ export function updateMoveButtonState(table) {
   const lastBtn = nav.querySelector(`#${table.cssPrefix}-nav-last`);
 
   if (firstBtn) firstBtn.disabled = atFirst;
-  if (prevPageBtn) prevPageBtn.disabled = !canGoPrevPage;
+  if (prevPageBtn) prevPageBtn.disabled = atFirst;
   if (prevRecBtn) prevRecBtn.disabled = atFirst;
   if (nextRecBtn) nextRecBtn.disabled = atLast;
-  if (nextPageBtn) nextPageBtn.disabled = !canGoNextPage;
+  if (nextPageBtn) nextPageBtn.disabled = atLast;
   if (lastBtn) lastBtn.disabled = atLast;
 }
 
@@ -261,24 +260,15 @@ export function updateMoveButtonState(table) {
  */
 function getRowsAndIndex(table) {
   try {
-    const rows = table.table.getRows();
+    // Get only the active (visible/filtered) rows, not all data rows
+    const rows = table.table.getRows('active');
 
     const selectedRows = table.table.getSelectedRows();
     const selectedRow = selectedRows.length > 0 ? selectedRows[0] : null;
-    const selectedIndex = selectedRow ? rows.findIndex((r) => r.getData() === selectedRow.getData()) : -1;
+    const selectedIndex = selectedRow ? rows.findIndex((r) => r === selectedRow) : -1;
 
     return { rows, selectedIndex };
   } catch {
     return { rows: [], selectedIndex: -1 };
   }
-}
-
-/**
- * Get page size for pagination calculations
- * @param {Object} table - LithiumTable instance
- * @returns {number} Page size
- */
-function getPageSize(table) {
-  const options = table.table?.options || {};
-  return options.paginationSize || options.paginationSize || 25;
 }

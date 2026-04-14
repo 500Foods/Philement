@@ -27,7 +27,10 @@ export const LithiumTableOpsMixin = {
     const newRow = await this.table.addRow({}, true);
 
     if (newRow) {
-      this.table.deselectRow();
+      const selectedRows = this.table.getSelectedRows();
+      if (selectedRows.length > 0) {
+        this.table.deselectRow(selectedRows);
+      }
       newRow.select();
       newRow.scrollTo();
       await this.enterEditMode(newRow);
@@ -95,7 +98,10 @@ export const LithiumTableOpsMixin = {
     const newRow = await this.table.addRow(duplicateData, true);
 
     if (newRow) {
-      this.table.deselectRow();
+      const selectedRows = this.table.getSelectedRows();
+      if (selectedRows.length > 0) {
+        this.table.deselectRow(selectedRows);
+      }
       newRow.select();
       newRow.scrollTo();
       await this.enterEditMode(newRow);
