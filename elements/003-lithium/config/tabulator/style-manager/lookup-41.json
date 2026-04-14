@@ -20,7 +20,7 @@
   "columns": {
 
     "key_idx": {
-      "display": "Code",
+      "title": "Code",
       "field": "key_idx",
       "coltype": "string",
       "visible": true,
@@ -34,7 +34,7 @@
     },
 
     "value_txt": {
-      "display": "Theme Name",
+      "title": "Theme Name",
       "field": "value_txt",
       "coltype": "string",
       "visible": true,

@@ -81,30 +81,52 @@ function getRuntimeColumnWidth(column, def = {}) {
 }
 
 export function extractTemplateColumnFromColumn(column, primaryKeyField = null) {
-  // Copy ALL properties from the column definition
-  // This captures everything about the column - widths, formatting, editors, etc.
+  // Copy ALL properties from the column definition, but filter out internal lithium properties
   const def = column.getDefinition();
   const field = column.getField();
-  const display = def.title || field;
 
   // Handle both single field and array of fields for compound keys
   const isPrimaryKey = def.primaryKey === true ||
     (Array.isArray(primaryKeyField) ? primaryKeyField.includes(field) : field === primaryKeyField);
 
-  // Start with all definition properties
-  const colDef = { ...def };
+  // Start with definition properties, excluding lithium-prefixed internal properties
+  const colDef = {};
+  for (const [key, value] of Object.entries(def)) {
+    // Skip lithium-prefixed properties and other internal properties
+    if (!key.startsWith('lithium') && !key.startsWith('_') && key !== 'headerFilterParams') {
+      colDef[key] = value;
+    }
+  }
 
   // Override with specific values to ensure correctness
-  colDef.display = display;
   colDef.field = field;
   colDef.coltype = def.lithiumColtype || def.coltype || 'string';
   colDef.visible = column.isVisible();
   colDef.primaryKey = isPrimaryKey;
 
+  // Preserve title from the definition
+  if (!colDef.title) {
+    colDef.title = def.title || def.display || field;
+  }
+
+  // Preserve Tabulator hozAlign
+  // (tableDef schema now supports hozAlign directly)
+
+  // Preserve other Tabulator-specific properties that should be in tableDef
+  // Convert formatter function back to string if possible
+  if (typeof def.formatter === 'function' && def.lithiumFormatter) {
+    colDef.formatter = def.lithiumFormatter;
+  }
+
   // Capture runtime width (may differ from definition width)
   const runtimeWidth = getRuntimeColumnWidth(column, def);
   if (runtimeWidth != null) {
     colDef.width = runtimeWidth;
+  }
+
+  // Ensure we capture columnPri from the original tableDef if available
+  if (def.columnPri != null) {
+    colDef.columnPri = def.columnPri;
   }
 
   return colDef;

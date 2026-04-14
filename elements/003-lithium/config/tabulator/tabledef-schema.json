@@ -114,9 +114,9 @@
   "definitions": {
     "column": {
       "type": "object",
-      "required": ["display", "field", "coltype", "visible", "editable"],
+      "required": ["title", "field", "coltype", "visible", "editable"],
       "properties": {
-        "display": {
+        "title": {
           "type": "string",
           "description": "Column header title displayed to the user"
         },
@@ -167,6 +167,11 @@
         "lookupRef": {
           "type": "string",
           "description": "For lookup coltypes: the lookup table reference (e.g., 'a27', 'a28')"
+        },
+        "hozAlign": {
+          "type": "string",
+          "enum": ["left", "center", "right"],
+          "description": "Horizontal alignment of cell content"
         },
         "overrides": {
           "type": "object",

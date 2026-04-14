@@ -1,12 +1,16 @@
 {
   "$schema": "../tabledef-schema.json",
   "$version": "1.0.0",
-  "$description": "Column definitions for the Sections List table (child table in Style Manager). Shows sections for a selected theme.",
+  "$description": "Column definitions for the Sections List table (parent table). Shows all lookup tables.",
 
   "table": "sections-list",
-  "title": "Theme Sections",
-  "queryRef": 52,
+  "title": "Sections List",
+  "queryRef": 30,
+  "searchQueryRef": 31,
   "readonly": false,
+  "updateQueryRef": 43,
+  "insertQueryRef": 42,
+  "deleteQueryRef": 44,
   "selectableRows": 1,
   "layout": "fitColumns",
   "responsiveLayout": "collapse",
@@ -14,14 +18,14 @@
   "persistSort": true,
   "persistFilter": true,
   "initialSort": [
-    { "column": "sort_seq", "dir": "asc" }
+    { "column": "lookup_ref", "dir": "asc" }
   ],
 
   "columns": {
 
-    "section_id": {
-      "display": "ID#",
-      "field": "section_id",
+    "lookup_id": {
+      "title": "ID#",
+      "field": "lookup_id",
       "coltype": "index",
       "visible": false,
       "sort": true,
@@ -30,28 +34,32 @@
       "editable": false,
       "calculated": false,
       "primaryKey": true,
-      "description": "Database primary key for the section",
-      "overrides": {
-        "bottomCalc": null
-      }
+      "description": "Database primary key — hidden from display",
+      "bottomCalc": null
     },
 
-    "theme_id": {
-      "display": "Theme ID",
-      "field": "theme_id",
+    "lookup_ref": {
+      "title": "Ref",
+      "field": "lookup_ref",
       "coltype": "index",
-      "visible": false,
+      "visible": true,
       "sort": true,
       "filter": true,
       "group": false,
       "editable": false,
       "calculated": false,
       "primaryKey": false,
-      "description": "Foreign key to the parent theme"
+      "description": "Human-readable lookup reference number",
+      "width": 80,
+      "bottomCalc": "count",
+      "bottomCalcFormatter": "number",
+      "bottomCalcFormatterParams": {
+        "thousand": ""
+      }
     },
 
     "name": {
-      "display": "Section Name",
+      "title": "Name",
       "field": "name",
       "coltype": "string",
       "visible": true,
@@ -61,47 +69,25 @@
       "editable": true,
       "calculated": false,
       "primaryKey": false,
-      "description": "Section display name (e.g., 'Header', 'Sidebar', 'Cards')"
+      "description": "Lookup table display name"
     },
 
-    "selector": {
-      "display": "CSS Selector",
-      "field": "selector",
+    "description": {
+      "title": "Description",
+      "field": "description",
       "coltype": "string",
-      "visible": true,
+      "visible": false,
       "sort": true,
       "filter": true,
       "group": false,
       "editable": true,
       "calculated": false,
       "primaryKey": false,
-      "description": "CSS selector for this section"
-    },
-
-    "sort_seq": {
-      "display": "Seq",
-      "field": "sort_seq",
-      "coltype": "integer",
-      "visible": true,
-      "sort": true,
-      "filter": true,
-      "group": false,
-      "editable": true,
-      "calculated": false,
-      "primaryKey": false,
-      "description": "Sort order within the theme",
-      "overrides": {
-        "width": 60,
-        "bottomCalc": "count",
-        "bottomCalcFormatter": "number",
-        "bottomCalcFormatterParams": {
-          "thousand": ""
-        }
-      }
+      "description": "Lookup table description"
     },
 
     "created_at": {
-      "display": "Created",
+      "title": "Created",
       "field": "created_at",
       "coltype": "datetime",
       "visible": false,
@@ -115,7 +101,21 @@
     },
 
     "updated_at": {
-      "display": "Updated",
+      "title": "Updated",
+      "field": "updated_at",
+      "coltype": "datetime",
+      "visible": false,
+      "sort": true,
+      "filter": true,
+      "group": false,
+      "editable": false,
+      "calculated": true,
+      "primaryKey": false,
+      "description": "Last modification timestamp"
+    },
+
+    "updated_at": {
+      "title": "Updated",
       "field": "updated_at",
       "coltype": "datetime",
       "visible": false,
