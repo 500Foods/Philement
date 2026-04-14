@@ -80,14 +80,21 @@ export const LithiumTableUIMixin = {
   },
 
   updateEditButtonState() {
+    if (this._inSelectionTransition) return;
     updateEditButtonState(this);
   },
 
   updateDuplicateButtonState() {
+    if (this._inSelectionTransition) {
+      return;
+    }
     updateDuplicateButtonState(this);
   },
 
   updateMoveButtonState() {
+    if (this._inSelectionTransition) {
+      return;
+    }
     updateMoveButtonState(this);
   },
 
@@ -645,6 +652,9 @@ export const LithiumTableUIMixin = {
 
     this.table.setColumns(updatedColumns);
 
+    // Re-enforce selectableRows: 1 after setColumns() - Tabulator may lose this setting
+    this.table.modules.select?.setSelectionMode?.(1);
+
     requestAnimationFrame(() => {
       this.clearColumnInlineHeights();
     });
@@ -953,12 +963,12 @@ export const LithiumTableUIMixin = {
 
       await this.initTable?.();
       this.table.setData(currentData);
+      this.table.modules.select?.setSelectionMode?.(1);
 
       await new Promise((resolve) => {
         requestAnimationFrame(() => {
           this.autoSelectRow?.(selectedId);
-          this.updateMoveButtonState?.();
-          this.updateDuplicateButtonState?.();
+          // Button state updates are handled internally by autoSelectRow
           resolve();
         });
       });
@@ -1090,6 +1100,9 @@ export const LithiumTableUIMixin = {
 
     this.table.setColumns(columns);
     this.table.setData(currentData);
+
+    // Re-enforce selectableRows: 1 after setColumns() - Tabulator may lose this setting
+    this.table.modules.select?.setSelectionMode?.(1);
 
     requestAnimationFrame(() => {
       if (currentSorters.length > 0) {

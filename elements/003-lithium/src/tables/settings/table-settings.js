@@ -113,11 +113,12 @@ export async function setTableLayout(table, mode) {
 
   await table.initTable?.();
   table.table.setData(currentData);
+  table.table.modules.select?.setSelectionMode?.(1);
 
   await new Promise((resolve) => {
     requestAnimationFrame(() => {
       table.autoSelectRow?.(selectedId);
-      table.updateMoveButtonState?.();
+      // Button state updates are handled internally by autoSelectRow
       resolve();
     });
   });

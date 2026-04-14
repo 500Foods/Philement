@@ -510,6 +510,47 @@ this.childTable.saveSelectedRowId('5::42');  // key_idx::lookup_id
 await this.childTable.loadData('', { INTEGER: { LOOKUPID: 42 } });
 ```
 
+### Single Row Selection Enforcement
+
+LithiumTable enforces **single row selection** at all times, preventing multiple rows from being selected simultaneously. This is implemented through:
+
+- **Programmatic enforcement** in `handleRowSelected()` that deselects all other rows when a new row is selected
+- **Defensive checks** in `rowSelectionChanged` event handler that ensure only one row remains selected
+- **Tabulator configuration** with `selectableRows: 1` as the default
+
+### Transition-Aware Button Updates
+
+Navigation buttons (First/Last/Prev/Next/Page Up/Page Down) are updated using a **transition flag** (`_inSelectionTransition`) to prevent visual flashing during row selection operations:
+
+- **Flag activation** during `autoSelectRow()`, `selectDataRow()`, and data loading operations
+- **Button update suppression** when flag is active, preventing intermediate state displays
+- **Deferred updates** after selection operations complete
+
+This ensures smooth UI transitions when:
+- Switching between rows programmatically
+- Loading data with selection restoration
+- Parent-child table navigation in managers
+
+### View-Based Navigation States
+
+Navigation buttons reflect the **current filtered/sorted view** rather than the entire dataset:
+
+- **Active rows only** — uses `table.table.getRows('active')` instead of `getRows()`
+- **Dynamic state updates** — buttons enable/disable based on visible row position
+- **Filter/sort awareness** — navigation respects current table state
+
+This provides intuitive navigation behavior when users have applied filters, sorts, or searches.
+
+### Enhanced Persistence with Fallback Logic
+
+Row selection persistence includes robust fallback logic for tables without explicit primary key definitions:
+
+- **Smart field detection** — automatically identifies likely ID fields (`id`, `*_id`, `key_idx`)
+- **Compound key support** — handles multi-column primary keys with `::` separator
+- **Table definition flexibility** — works with or without `primaryKey: true` flags in schema
+
+This ensures reliable selection restoration across different table configurations and database schemas.
+
 ---
 
 ## Edit Mode

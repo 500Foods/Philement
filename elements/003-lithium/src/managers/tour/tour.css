@@ -488,7 +488,7 @@
   width: 40px;
   height: 35px;
   background: transparent;
-  color: var(--accent-primary, #4a90d9);
+  color: black;
   font-size: 24px;
   flex-shrink: 0;
 }

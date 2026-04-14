@@ -91,6 +91,7 @@ export class LithiumTableBase {
     this.filtersVisible = false;
     this.isDirty = false;
     this.editTransitionPending = false;
+    this._inSelectionTransition = false;
 
     // Editing state
     this.editingRowId = null;
@@ -492,6 +493,19 @@ export class LithiumTableBase {
     });
 
     this.table.on('rowSelectionChanged', () => {
+      // Skip button state updates during selection transitions
+      // Button updates are handled ONLY by our selection functions (selectDataRow, autoSelectRow, etc)
+      if (this._inSelectionTransition) return;
+
+      // Defensive: ensure only one row selected (in case selectableRows was reset)
+      const selectedRows = this.table.getSelectedRows();
+      if (selectedRows.length > 1) {
+        this._inSelectionTransition = true;
+        const rowsToDeselect = selectedRows.slice(1);
+        this.table.deselectRow(rowsToDeselect);
+        // Note: Do NOT clear the transition flag here - it was set by a higher-level
+      }
+
       this.updateMoveButtonState();
       this.updateDuplicateButtonState();
     });
@@ -533,6 +547,13 @@ export class LithiumTableBase {
   // ── Row Selection & Navigation ────────────────────────────────────────────
 
   async handleRowSelected(row) {
+    // Enforce single row selection by deselecting all other rows
+    const selectedRows = this.table.getSelectedRows();
+    const otherRows = selectedRows.filter(selectedRow => selectedRow !== row);
+    if (otherRows.length > 0) {
+      this.table.deselectRow(otherRows);
+    }
+
     const pkFields = this.primaryKeyField;
     const newRowId = this._getCompositeRowId(row.getData(), pkFields);
 
@@ -726,6 +747,9 @@ export class LithiumTableBase {
   async loadData(searchTerm = '', extraParams = {}) {
     if (!this.app?.api) return;
 
+    // Set transition flag to prevent button flashing during data reload
+    this._inSelectionTransition = true;
+
     // Get currently selected row, or restore from localStorage
     const previouslySelectedId = this.getSelectedRowId() ?? this.restoreSelectedRowId();
     this.showLoading();
@@ -783,6 +807,8 @@ export class LithiumTableBase {
         this.autoSelectRow(previouslySelectedId);
         this.updateMoveButtonState();
         this.updateDuplicateButtonState();
+        // Clear transition flag after selection is restored
+        this._inSelectionTransition = false;
       });
 
       this.onDataLoaded(rows);
@@ -804,6 +830,8 @@ export class LithiumTableBase {
       this.currentData = [];
     } finally {
       this.hideLoading();
+      // Ensure transition flag is cleared even on error
+      this._inSelectionTransition = false;
     }
   }
 
@@ -829,23 +857,50 @@ export class LithiumTableBase {
   autoSelectRow(targetId) {
     if (!this.table) return;
     const rows = this.table.getRows('active');
-    if (rows.length === 0) return;
+    // If no rows yet and we have a target to find, wait for rows to render
+    if (rows.length === 0 && targetId == null) return;
 
     const pkFields = this.primaryKeyField;
 
-    if (targetId != null && pkFields !== null && pkFields.length > 0) {
-      for (const row of rows) {
-        const rowId = this._getCompositeRowId(row.getData(), pkFields);
-        if (String(rowId) === String(targetId)) {
-          row.select();
-          row.scrollTo();
-          return;
+    // Set transition flag to suppress button updates during deselect/select
+    this._inSelectionTransition = true;
+
+    // Use blockRedraw to prevent Tabulator from processing events between deselect/select
+    this.table.blockRedraw?.();
+    try {
+      // Deselect any existing selections first
+      const selectedRows = this.table.getSelectedRows();
+      if (selectedRows.length > 0) {
+        this.table.deselectRow(selectedRows);
+      }
+
+      if (targetId != null && pkFields !== null && pkFields.length > 0) {
+        for (const row of rows) {
+          const rowId = this._getCompositeRowId(row.getData(), pkFields);
+          if (String(rowId) === String(targetId)) {
+            row.select();
+            row.scrollTo();
+            // Save selected row ID for persistence across sessions
+            this.saveSelectedRowId(this._getCompositeRowId(row.getData(), pkFields));
+            break;
+          }
+        }
+      } else {
+        if (rows.length > 0) {
+          rows[0].select();
+          rows[0].scrollTo();
+          // Save selected row ID for persistence across sessions
+          this.saveSelectedRowId(this._getCompositeRowId(rows[0].getData(), pkFields));
         }
       }
+    } finally {
+      this.table.restoreRedraw?.();
     }
 
-    rows[0].select();
-    rows[0].scrollTo();
+    // Clear transition flag and update buttons directly
+    this._inSelectionTransition = false;
+    this.updateMoveButtonState();
+    this.updateDuplicateButtonState();
   }
 
   /**
@@ -856,7 +911,19 @@ export class LithiumTableBase {
    */
   _getCompositeRowId(rowData, pkFields) {
     if (!pkFields || pkFields.length === 0) {
-      return rowData.id ?? String(rowData.lookup_id ?? rowData.key_idx ?? '');
+      // Fallback: try common primary key field names
+      const fallbackFields = ['id', 'query_id', 'lookup_id', 'key_idx', 'style_id', 'version_id'];
+      for (const field of fallbackFields) {
+        if (rowData[field] != null) {
+          return String(rowData[field]);
+        }
+      }
+      // Last resort: use the first field that looks like an ID
+      const idFields = Object.keys(rowData).filter(key => key.toLowerCase().includes('id') || key === 'key_idx');
+      if (idFields.length > 0) {
+        return String(rowData[idFields[0]]);
+      }
+      return '';
     }
     if (pkFields.length === 1) {
       return String(rowData[pkFields[0]] ?? '');
@@ -877,7 +944,13 @@ export class LithiumTableBase {
     if (!this.table) return;
     const { autoSelect = true } = options;
 
+    // Set transition flag to prevent button flashing during data reload
+    this._inSelectionTransition = true;
+
     this.currentData = rows || [];
+
+    // Get currently selected row, or restore from localStorage
+    const previouslySelectedId = autoSelect ? (this.getSelectedRowId() ?? this.restoreSelectedRowId()) : null;
 
     this.table.blockRedraw?.();
     try {
@@ -889,13 +962,24 @@ export class LithiumTableBase {
 
     if (autoSelect) {
       requestAnimationFrame(() => {
-        const activeRows = this.table.getRows('active');
-        if (activeRows.length > 0) {
-          activeRows[0].select();
-          activeRows[0].scrollTo();
+        if (previouslySelectedId != null) {
+          this.autoSelectRow(previouslySelectedId);
+        } else {
+          const activeRows = this.table.getRows('active');
+          if (activeRows.length > 0) {
+            activeRows[0].select();
+            activeRows[0].scrollTo();
+            // Save selected row ID for persistence across sessions
+            const pkFields = this.primaryKeyField;
+            if (pkFields) {
+              this.saveSelectedRowId(this._getCompositeRowId(activeRows[0].getData(), pkFields));
+            }
+          }
         }
         this.updateMoveButtonState();
         this.updateDuplicateButtonState();
+        // Clear transition flag after selection is restored
+        this._inSelectionTransition = false;
       });
     }
 
@@ -1694,3 +1778,4 @@ export class LithiumTableBase {
 }
 
 export default LithiumTableBase;
+
