@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS class selectors/names used across the Lithium codebase",
-    "generated": "2026-04-14T01:16:48.238Z",
+    "generated": "2026-04-14T01:41:21.546Z",
     "sources": {
       "css": "50 files in src/**/*.css",
       "js": "102 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
-    "total_selectors": 1755,
-    "total_occurrences": 26451
+    "total_selectors": 1756,
+    "total_occurrences": 26477
   },
   "selectors": [
     {
@@ -19383,6 +19383,22 @@
     },
     {
       "selector": ".manager-ui-popup-title .manager-ui-tours-all-btn",
+      "css": 1,
+      "js": 25,
+      "html": 0,
+      "total": 26,
+      "files": {
+        "css": [
+          "src/core/manager-ui.css"
+        ],
+        "js": [
+          "src/core/manager-ui.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".manager-ui-popup-title .manager-ui-tours-all-btn svg",
       "css": 1,
       "js": 25,
       "html": 0,

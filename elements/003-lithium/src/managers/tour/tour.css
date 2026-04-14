@@ -526,8 +526,8 @@
   visibility: hidden;
   transition: opacity var(--transition-duration, 0.2s) ease,
               visibility var(--transition-duration, 0.2s) ease;
-  min-width: 250px;
-  min-height: 425px;
+  min-width: 265px;
+  min-height: 450px;
 }
 
 .lithium-video-tour-popup.visible {
