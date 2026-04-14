@@ -477,6 +477,7 @@ export default class LookupsManager {
       navigatorContainer: this.elements.childNavigator,
       tablePath: 'lookups-manager-values',
       lookupKeyIdx: 7, // key_idx 7 in Lookup 059
+      primaryKeyField: ['lookup_id', 'key_idx'], // Compound primary key for child table
       queryRef: 34, // QueryRef 34 - Get Lookup List (requires LOOKUPID param)
       updateQueryRef: 43, // QueryRef 43 - Update Lookup Value
       insertQueryRef: 42, // QueryRef 42 - Insert Lookup Value
@@ -608,6 +609,9 @@ export default class LookupsManager {
 
     const loadPromise = (async () => {
       try {
+        // Set transition flag to prevent button flashing during child data reload
+        this.childTable._inSelectionTransition = true;
+
         // Clear any current selection BEFORE getting the saved selection
         // This prevents loadData() from capturing the old lookup's selected row
         this.childTable.table?.deselectRow?.();
@@ -630,6 +634,13 @@ export default class LookupsManager {
         if (savedChildId == null) {
           requestAnimationFrame(() => {
             this.childTable.autoSelectRow(null); // null triggers first-row selection
+            // Clear transition flag after selection is complete
+            this.childTable._inSelectionTransition = false;
+          });
+        } else {
+          // Clear transition flag after loadData completes with saved selection
+          requestAnimationFrame(() => {
+            this.childTable._inSelectionTransition = false;
           });
         }
 
@@ -637,6 +648,8 @@ export default class LookupsManager {
 
         log(Subsystems.TABLE, Status.INFO, `[Lookups] Loaded lookup values for lookup ${lookupId}`);
       } catch (error) {
+        // Ensure transition flag is cleared even on error
+        this.childTable._inSelectionTransition = false;
         toast.error('Failed to load lookup values', {
           serverError: error.serverError,
           subsystem: 'Conduit',
@@ -1671,8 +1684,8 @@ _saveChildSelection(rowData) {
       const selections = JSON.parse(stored);
       const saved = selections[String(lookupId)];
       if (saved && saved.key_idx !== undefined) {
-        // Return composite key format matching compound primary key
-        return `${saved.key_idx}::${saved.lookup_id}`;
+        // Return composite key format matching compound primary key: lookup_id::key_idx
+        return `${saved.lookup_id}::${saved.key_idx}`;
       }
       return null;
     } catch {
