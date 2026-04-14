@@ -2153,8 +2153,13 @@ export async function launchVideoTour(tour, options = {}) {
           captionEl = document.createElement('div');
           captionEl.className = 'lithium-video-tour-caption';
           captionEl.dataset.index = caption.index;
-          captionEl.textContent = caption.text;
+          captionEl.innerHTML = caption.text;
           captionsContainer.appendChild(captionEl);
+          
+          // Process icons in caption (e.g., <fa fa-party-horn></fa>)
+          if (typeof processIcons === 'function') {
+            processIcons(captionEl);
+          }
           
           // Fade in
           if (animate) {
