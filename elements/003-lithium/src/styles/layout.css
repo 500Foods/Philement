@@ -136,6 +136,7 @@ body.hide-password-manager-ui [class*="password-icon"] {
   z-index: 1;
   min-width: 40px;
   font-size: var(--icon-size-reg);
+  transition: background-color var(--transition-duration) ease, color var(--transition-duration) ease; 
 }
 
 /* Base button class for subpanel header buttons */
@@ -143,7 +144,7 @@ body.hide-password-manager-ui [class*="password-icon"] {
   margin: 0;
   border: none;
   cursor: pointer;
-  transition: background-color var(--transition-fast);
+  transition: background-color var(--transition-duration) ease, color var(--transition-duration) ease; 
 }
 
 /* Left button (primary with icon and title) - rounded left corners */
