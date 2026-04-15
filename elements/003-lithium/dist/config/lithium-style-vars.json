@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS custom properties (variables) used across the Lithium codebase",
-    "generated": "2026-04-15T15:17:26.012Z",
+    "generated": "2026-04-15T18:19:28.233Z",
     "sources": {
       "css": "51 files in src/**/*.css",
-      "js": "103 files in src/**/*.js",
+      "js": "104 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
     "total_variables": 218,
-    "total_occurrences": 3418
+    "total_occurrences": 3368
   },
   "variables": [
     {
@@ -69,10 +69,10 @@
     },
     {
       "name": "--accent-focus",
-      "css": 17,
+      "css": 12,
       "js": 0,
       "html": 0,
-      "total": 17
+      "total": 12
     },
     {
       "name": "--accent-hover",
@@ -97,10 +97,10 @@
     },
     {
       "name": "--accent-primary",
-      "css": 172,
+      "css": 168,
       "js": 3,
       "html": 1,
-      "total": 176
+      "total": 172
     },
     {
       "name": "--accent-primary-hover",
@@ -230,10 +230,10 @@
     },
     {
       "name": "--bg-secondary",
-      "css": 87,
+      "css": 82,
       "js": 1,
       "html": 1,
-      "total": 89
+      "total": 84
     },
     {
       "name": "--bg-tertiary",
@@ -244,10 +244,10 @@
     },
     {
       "name": "--border-color",
-      "css": 67,
+      "css": 60,
       "js": 1,
       "html": 0,
-      "total": 68
+      "total": 61
     },
     {
       "name": "--border-color-focus",
@@ -286,17 +286,17 @@
     },
     {
       "name": "--border-radius-lg",
-      "css": 27,
+      "css": 26,
       "js": 0,
       "html": 0,
-      "total": 27
+      "total": 26
     },
     {
       "name": "--border-radius-md",
-      "css": 138,
+      "css": 131,
       "js": 0,
       "html": 0,
-      "total": 138
+      "total": 131
     },
     {
       "name": "--border-radius-sm",
@@ -314,10 +314,10 @@
     },
     {
       "name": "--border-standard",
-      "css": 70,
+      "css": 69,
       "js": 1,
       "html": 0,
-      "total": 71
+      "total": 70
     },
     {
       "name": "--border-width",
@@ -545,10 +545,10 @@
     },
     {
       "name": "--font-size-sm",
-      "css": 79,
+      "css": 74,
       "js": 0,
       "html": 0,
-      "total": 79
+      "total": 74
     },
     {
       "name": "--font-size-us",
@@ -636,10 +636,10 @@
     },
     {
       "name": "--icon-size-reg",
-      "css": 12,
+      "css": 13,
       "js": 0,
       "html": 0,
-      "total": 12
+      "total": 13
     },
     {
       "name": "--icon-w",
@@ -797,10 +797,10 @@
     },
     {
       "name": "--shadow-lg",
-      "css": 13,
+      "css": 12,
       "js": 0,
       "html": 0,
-      "total": 13
+      "total": 12
     },
     {
       "name": "--shadow-md",
@@ -818,10 +818,10 @@
     },
     {
       "name": "--space-1",
-      "css": 38,
+      "css": 37,
       "js": 1,
       "html": 0,
-      "total": 39
+      "total": 38
     },
     {
       "name": "--space-2",
@@ -1042,10 +1042,10 @@
     },
     {
       "name": "--text-primary",
-      "css": 136,
+      "css": 130,
       "js": 5,
       "html": 1,
-      "total": 142
+      "total": 136
     },
     {
       "name": "--text-secondary",
@@ -1455,17 +1455,17 @@
     },
     {
       "name": "--transition-duration",
-      "css": 77,
+      "css": 74,
       "js": 11,
       "html": 0,
-      "total": 88
+      "total": 85
     },
     {
       "name": "--transition-fast",
-      "css": 148,
+      "css": 143,
       "js": 3,
       "html": 0,
-      "total": 151
+      "total": 146
     },
     {
       "name": "--transition-normal",
