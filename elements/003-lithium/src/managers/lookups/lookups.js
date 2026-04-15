@@ -1363,6 +1363,10 @@ export default class LookupsManager {
     closeAllPopups();
 
     const btn = e.currentTarget;
+    // Store button reference and add active state
+    this._footerExportButton = btn;
+    btn.classList.add('popup-active');
+
     const mode = this._getFooterDatasource();
     const formats = [
       { label: 'PDF', action: () => this.handleFooterExport('pdf', mode) },
@@ -1414,11 +1418,24 @@ export default class LookupsManager {
 
   /**
    * Close the footer export popup.
+   * Button returns to normal immediately, popup animates out.
    */
   _closeFooterExportPopup() {
+    // Remove button active state immediately so it looks normal
+    if (this._footerExportButton) {
+      this._footerExportButton.classList.remove('popup-active');
+      this._footerExportButton = null;
+    }
+    // Animate popup close
     if (this._footerExportPopup) {
-      this._footerExportPopup.remove();
-      this._footerExportPopup = null;
+      this._footerExportPopup.classList.remove('visible');
+      const duration = parseFloat(getComputedStyle(this._footerExportPopup).transitionDuration) * 1000 || 350;
+      setTimeout(() => {
+        if (this._footerExportPopup) {
+          this._footerExportPopup.remove();
+          this._footerExportPopup = null;
+        }
+      }, duration);
     }
     if (this._footerExportCloseHandler) {
       document.removeEventListener('click', this._footerExportCloseHandler);

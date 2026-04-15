@@ -751,7 +751,7 @@
   color: white;
   font-size: 32px;
   cursor: pointer;
-  transition: background-color var(--transition-fast, 0.15s) ease, transform var(--transition-fast, 0.15s) ease;
+  transition: background-color var(--transition-duration, 0.15s) ease, transform var(--transition-duration, 0.15s) ease;
 }
 
 .lithium-video-tour-big-play-btn:hover {
@@ -762,7 +762,10 @@
 
 /* Back/forward buttons in overlay */
 .lithium-video-tour-play-overlay .lithium-video-tour-back-btn,
-.lithium-video-tour-play-overlay .lithium-video-tour-forward-btn {
+.lithium-video-tour-play-overlay .lithium-video-tour-back-30-btn,
+.lithium-video-tour-play-overlay .lithium-video-tour-forward-btn,
+.lithium-video-tour-play-overlay .lithium-video-tour-forward-30-btn,
+.lithium-video-tour-play-overlay .lithium-video-tour-repeat-btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -774,15 +777,55 @@
   color: white;
   font-size: 20px;
   cursor: pointer;
-  transition: background-color var(--transition-fast, 0.15s) ease, transform var(--transition-fast, 0.15s) ease;
+  transition: background-color var(--transition-duration) ease, border--color var(--transition-duration) ease, transform var(--transition-duration, 0.15s) ease;
   margin: 0 20px;
+  position: absolute;
+  top: 50%;
 }
 
 .lithium-video-tour-play-overlay .lithium-video-tour-back-btn:hover,
-.lithium-video-tour-play-overlay .lithium-video-tour-forward-btn:hover {
+.lithium-video-tour-play-overlay .lithium-video-tour-back-30-btn:hover,
+.lithium-video-tour-play-overlay .lithium-video-tour-forward-btn:hover,
+.lithium-video-tour-play-overlay .lithium-video-tour-forward-30-btn:hover,
+.lithium-video-tour-play-overlay .lithium-video-tour-repeat-btn:hover {
   background: var(--accent-primary);
   border-color: var(--accent-primary);
-  transform: scale(1.1);
+}
+
+/* Repeat button active state */
+.lithium-video-tour-play-overlay.repeat-on .lithium-video-tour-repeat-btn {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: white;
+  box-shadow: 0 0 8px var(--accent-primary);
+}
+
+/* Semicircle positioning - angles from center pointing right */
+.lithium-video-tour-play-overlay .lithium-video-tour-back-btn {
+  transform: translateY(-50%) ;
+  left: calc(50% - 145px);
+}
+
+.lithium-video-tour-play-overlay .lithium-video-tour-back-30-btn {
+  transform: translateY(-50%);
+  left: calc(50% - 119px);
+  top: calc(50% + 68px);
+}
+
+.lithium-video-tour-play-overlay .lithium-video-tour-forward-btn {
+  transform: translateY(-50%);
+  right: calc(50% - 145px);
+}
+
+.lithium-video-tour-play-overlay .lithium-video-tour-forward-30-btn {
+  transform: translateY(-50%);
+  right: calc(50% - 119px);
+  top: calc(50% + 68px);
+}
+
+.lithium-video-tour-play-overlay .lithium-video-tour-repeat-btn {
+  transform: translateY(-50%);
+  top: calc(50% + 100px);
 }
 
 /* Captions overlay */

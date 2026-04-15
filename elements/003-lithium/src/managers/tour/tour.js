@@ -1607,11 +1607,20 @@ export async function launchVideoTour(tour, options = {}) {
         <button type="button" class="lithium-video-tour-back-btn" data-video-action="back" title="Back 10 seconds">
           <fa fa-arrow-rotate-left-10></fa>
         </button>
+        <button type="button" class="lithium-video-tour-back-30-btn" data-video-action="back-30" title="Back 30 seconds">
+          <fa fa-arrow-rotate-left-30></fa>
+        </button>
         <button type="button" class="lithium-video-tour-big-play-btn" data-video-action="play">
           <fa fa-pause></fa>
         </button>
+        <button type="button" class="lithium-video-tour-forward-30-btn" data-video-action="forward-30" title="Forward 30 seconds">
+          <fa fa-arrow-rotate-right-30></fa>
+        </button>
         <button type="button" class="lithium-video-tour-forward-btn" data-video-action="forward" title="Forward 10 seconds">
           <fa fa-arrow-rotate-right-10></fa>
+        </button>
+        <button type="button" class="lithium-video-tour-repeat-btn" data-video-action="repeat" title="Repeat">
+          <fa fa-repeat></fa>
         </button>
       </div>
       <div class="lithium-video-tour-captions-container"></div>
@@ -2004,10 +2013,33 @@ export async function launchVideoTour(tour, options = {}) {
     stopScrubberSync();
     updateTimeDisplay();
   });
-  video.addEventListener('ended', () => {
+  // Track repeat state
+  let isRepeating = false;
+
+  // Toggle repeat
+  const toggleRepeat = () => {
+    isRepeating = !isRepeating;
+    playOverlay.classList.toggle('repeat-on', isRepeating);
+    log(Subsystems.MANAGER, Status.DEBUG, `[VideoTour] Repeat: ${isRepeating}`);
+  };
+
+  // Handle video ended - restart if repeating
+  const handleVideoEnded = () => {
     stopScrubberSync();
     updateTimeDisplay();
-  });
+    if (isRepeating) {
+      log(Subsystems.MANAGER, Status.DEBUG, '[VideoTour] Video ended, restarting (repeat on)');
+      video.currentTime = 0;
+      video.play();
+    } else {
+      log(Subsystems.MANAGER, Status.DEBUG, '[VideoTour] Video ended');
+      bigPlayBtn.innerHTML = '<fa fa-rotate-left></fa>';
+      playOverlay.classList.add('always-visible');
+      popup.classList.add('paused');
+    }
+  };
+
+  video.addEventListener('ended', handleVideoEnded);
   video.addEventListener('loadedmetadata', updateTimeDisplay);
 
   // Play/pause toggle
@@ -2309,10 +2341,21 @@ export async function launchVideoTour(tour, options = {}) {
         togglePlay();
       } else if (e.key === 'ArrowLeft') {
         e.preventDefault();
-        video.currentTime = Math.max(0, video.currentTime - 10);
+        if (e.shiftKey) {
+          video.currentTime = Math.max(0, video.currentTime - 30);
+        } else {
+          video.currentTime = Math.max(0, video.currentTime - 10);
+        }
       } else if (e.key === 'ArrowRight') {
         e.preventDefault();
-        video.currentTime = Math.min(video.duration || 0, video.currentTime + 10);
+        if (e.shiftKey) {
+          video.currentTime = Math.min(video.duration || 0, video.currentTime + 30);
+        } else {
+          video.currentTime = Math.min(video.duration || 0, video.currentTime + 10);
+        }
+      } else if (e.key === 'r' || e.key === 'R') {
+        e.preventDefault();
+        toggleRepeat();
       }
     };
     document.addEventListener('keydown', _videoTourHandleKeyDown);
@@ -2360,8 +2403,17 @@ export async function launchVideoTour(tour, options = {}) {
       case 'back':
         video.currentTime = Math.max(0, video.currentTime - 10);
         break;
+      case 'back-30':
+        video.currentTime = Math.max(0, video.currentTime - 30);
+        break;
       case 'forward':
         video.currentTime = Math.min(video.duration || 0, video.currentTime + 10);
+        break;
+      case 'forward-30':
+        video.currentTime = Math.min(video.duration || 0, video.currentTime + 30);
+        break;
+      case 'repeat':
+        toggleRepeat();
         break;
       case 'mute':
         video.muted = !video.muted;

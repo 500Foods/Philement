@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS custom properties (variables) used across the Lithium codebase",
-    "generated": "2026-04-15T18:19:28.233Z",
+    "generated": "2026-04-15T20:48:16.968Z",
     "sources": {
       "css": "51 files in src/**/*.css",
       "js": "104 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
-    "total_variables": 218,
-    "total_occurrences": 3368
+    "total_variables": 220,
+    "total_occurrences": 3387
   },
   "variables": [
     {
@@ -24,6 +24,13 @@
       "js": 0,
       "html": 0,
       "total": 16
+    },
+    {
+      "name": "--accent-alt-primary-muted",
+      "css": 2,
+      "js": 0,
+      "html": 0,
+      "total": 2
     },
     {
       "name": "--accent-crimson",
@@ -97,13 +104,20 @@
     },
     {
       "name": "--accent-primary",
-      "css": 168,
+      "css": 171,
       "js": 3,
       "html": 1,
-      "total": 172
+      "total": 175
     },
     {
       "name": "--accent-primary-hover",
+      "css": 2,
+      "js": 0,
+      "html": 0,
+      "total": 2
+    },
+    {
+      "name": "--accent-primary-muted",
       "css": 2,
       "js": 0,
       "html": 0,
@@ -293,10 +307,10 @@
     },
     {
       "name": "--border-radius-md",
-      "css": 131,
+      "css": 133,
       "js": 0,
       "html": 0,
-      "total": 131
+      "total": 133
     },
     {
       "name": "--border-radius-sm",
@@ -363,10 +377,10 @@
     },
     {
       "name": "--color-muted",
-      "css": 7,
+      "css": 5,
       "js": 0,
       "html": 0,
-      "total": 7
+      "total": 5
     },
     {
       "name": "--color-success",
@@ -1455,17 +1469,17 @@
     },
     {
       "name": "--transition-duration",
-      "css": 74,
-      "js": 11,
+      "css": 88,
+      "js": 14,
       "html": 0,
-      "total": 85
+      "total": 102
     },
     {
       "name": "--transition-fast",
-      "css": 143,
+      "css": 138,
       "js": 3,
       "html": 0,
-      "total": 146
+      "total": 141
     },
     {
       "name": "--transition-normal",

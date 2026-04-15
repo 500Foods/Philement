@@ -274,7 +274,7 @@
 }
 
 .lithium-nav-search-input:placeholder-shown {
-  border: 0.5px solid var(--color-muted);
+  border: 0.5px solid var(--accent-alt-primary-muted);
   background-color: var(--accent-alt-primary);
 }
 
