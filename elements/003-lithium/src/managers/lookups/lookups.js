@@ -1371,7 +1371,7 @@ export default class LookupsManager {
 
     // Build popup
     const popup = document.createElement('div');
-    popup.className = 'lookups-footer-export-popup';
+    popup.className = 'lookups-footer-export-popup manager-footer-popup';
     formats.forEach(item => {
       const row = document.createElement('button');
       row.type = 'button';
@@ -1384,15 +1384,14 @@ export default class LookupsManager {
       popup.appendChild(row);
     });
 
-    // Position popup above the button (appended to body to avoid overflow issues)
+    // Position popup below the button (appended to body to avoid overflow issues)
     const btnRect = btn.getBoundingClientRect();
     document.body.appendChild(popup);
 
-    // Position popup above the button (bottom-left of popup aligns with top-left of button)
+    // Position popup below the button (top-left of popup aligns with bottom-left of button)
     requestAnimationFrame(() => {
-      const popupRect = popup.getBoundingClientRect();
       popup.style.position = 'fixed';
-      popup.style.top = `${btnRect.top - popupRect.height - 8}px`;
+      popup.style.top = `${btnRect.bottom}px`;
       popup.style.left = `${btnRect.left}px`;
     });
 

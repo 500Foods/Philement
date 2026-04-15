@@ -25,11 +25,11 @@
 
 /* Row styling */
 .tabulator-simple .tabulator-row {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid rgb(0 0 0 / 10%);
 }
 
 .tabulator-simple .tabulator-row.tabulator-row-even {
-  background-color: rgba(63, 81, 181, 0.05);
+  background-color: rgb(63 81 181 / 5%);
 }
 
 .tabulator-simple .tabulator-row.tabulator-row-odd {
@@ -37,13 +37,13 @@
 }
 
 .tabulator-simple .tabulator-row:hover {
-  background-color: rgba(63, 81, 181, 0.1);
+  background-color: rgb(63 81 181 / 10%);
 }
 
 /* Pagination styling */
 .tabulator-simple .tabulator-footer {
   background-color: var(--card-bg);
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  border-top: 1px solid rgb(0 0 0 / 10%);
 }
 
 .tabulator-simple .tabulator-page {
@@ -55,7 +55,7 @@
 }
 
 .tabulator-simple .tabulator-page:hover {
-  background-color: rgba(63, 81, 181, 0.1);
+  background-color: rgb(63 81 181 / 10%);
 }
 
 .tabulator-simple .tabulator-page.active {
@@ -64,7 +64,7 @@
 }
 
 /* Responsive adjustments */
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .tabulator-simple .tabulator-cell {
     font-size: 0.8rem;
     padding: 0.4rem;

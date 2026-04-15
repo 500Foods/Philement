@@ -13,7 +13,7 @@
   background: linear-gradient(180deg, #0a1628 0%, #0d1e36 100%);
   border: 1px solid #1e3a5f;
   border-radius: 8px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(30, 58, 95, 0.3);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 50%), 0 0 0 1px rgb(30 58 95 / 30%);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -48,7 +48,7 @@
 .col-manager-popup.depth-2 {
   background: linear-gradient(180deg, #280a0a 0%, #360d0d 100%);
   border: 1px solid #5f1e1e;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(95, 30, 30, 0.3);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 50%), 0 0 0 1px rgb(95 30 30 / 30%);
 }
 
 .col-manager-popup.depth-2 .col-manager-header {
@@ -65,13 +65,13 @@
 }
 
 .col-manager-popup.depth-2 .col-manager-close-btn:hover {
-  background: rgba(232, 160, 160, 0.1);
+  background: rgb(232 160 160 / 10%);
   color: #e8a0a0;
 }
 
 .col-manager-popup.depth-2 .col-manager-save-btn:disabled,
 .col-manager-popup.depth-2 .col-manager-cancel-btn:disabled {
-  background: rgba(160, 100, 100, 0.15);
+  background: rgb(160 100 100 / 15%);
   color: #5a3030;
 }
 
@@ -171,7 +171,7 @@
   display: flex;
   align-items: center;
   gap: 1px;
-  background: rgba(30, 58, 95, 0.3);
+  background: rgb(30 58 95 / 30%);
   border-radius: 4px;
   overflow: hidden;
   margin: 0 8px;
@@ -193,12 +193,12 @@
 }
 
 .col-manager-mode-btn:hover {
-  background: rgba(74, 144, 217, 0.15);
+  background: rgb(74 144 217 / 15%);
   color: #a0c4e8;
 }
 
 .col-manager-mode-btn.active {
-  background: rgba(74, 144, 217, 0.3);
+  background: rgb(74 144 217 / 30%);
   color: #a0c4e8;
   font-weight: 600;
 }
@@ -210,7 +210,7 @@
 
 /* Depth-2 mode toggle colors */
 .col-manager-popup.depth-2 .col-manager-mode-toggle {
-  background: rgba(95, 30, 30, 0.3);
+  background: rgb(95 30 30 / 30%);
 }
 
 .col-manager-popup.depth-2 .col-manager-mode-btn {
@@ -218,12 +218,12 @@
 }
 
 .col-manager-popup.depth-2 .col-manager-mode-btn:hover {
-  background: rgba(232, 160, 160, 0.1);
+  background: rgb(232 160 160 / 10%);
   color: #e8a0a0;
 }
 
 .col-manager-popup.depth-2 .col-manager-mode-btn.active {
-  background: rgba(232, 160, 160, 0.2);
+  background: rgb(232 160 160 / 20%);
   color: #e8a0a0;
 }
 
@@ -250,7 +250,7 @@
 }
 
 .col-manager-close-btn:hover {
-  background: rgba(160, 196, 232, 0.1);
+  background: rgb(160 196 232 / 10%);
   color: #a0c4e8;
 }
 
@@ -275,7 +275,7 @@
 /* Disabled state (default — no dirty record) */
 .col-manager-save-btn:disabled,
 .col-manager-cancel-btn:disabled {
-  background: rgba(100, 130, 160, 0.15);
+  background: rgb(100 130 160 / 15%);
   color: #3d5a78;
   cursor: not-allowed;
 }
@@ -354,12 +354,12 @@
 
 .col-manager-popup:hover .col-manager-resize-handle {
   opacity: 0.7;
-  background: rgba(74, 122, 168, 0.15);
+  background: rgb(74 122 168 / 15%);
 }
 
 .col-manager-popup.resizing .col-manager-resize-handle {
   opacity: 1;
-  background: rgba(74, 122, 168, 0.3);
+  background: rgb(74 122 168 / 30%);
 }
 
 /* Bottom-right */
@@ -488,7 +488,7 @@
 
 .col-manager-table-container .lithium-table-container .tabulator .tabulator-row.tabulator-selected {
   background: #1a3a5c !important;
-  color: #ffffff;
+  color: #fff;
 }
 
 .col-manager-table-container .lithium-table-container .tabulator .tabulator-row.tabulator-group {
@@ -517,19 +517,19 @@
   font-size: 13px;
   text-align: center;
   user-select: none;
-  -webkit-user-select: none;
+  user-select: none;
   padding: 0 4px;
 }
 
 .col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="drag_handle"]:hover {
   color: #a0c4e8;
-  background: rgba(74, 144, 217, 0.15);
+  background: rgb(74 144 217 / 15%);
 }
 
 .col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="drag_handle"]:active,
 .col-manager-table-container .lithium-table-container .tabulator-row.tabulator-row-moving .tabulator-cell[data-tabulator-field="drag_handle"] {
   cursor: grabbing;
-  color: #ffffff;
+  color: #fff;
 }
 
 /* Drag handle header - minimal */
@@ -551,7 +551,7 @@
 /* Order column */
 .col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="order"] {
   color: #6b8cb8;
-  font-family: 'Monaco', 'Menlo', monospace;
+  font-family: Monaco, Menlo, monospace;
   font-size: 11px;
 }
 
@@ -578,7 +578,7 @@
 
 /* Field name column */
 .col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="field_name"] {
-  font-family: 'Monaco', 'Menlo', monospace;
+  font-family: Monaco, Menlo, monospace;
   font-size: 11px;
   color: #7ba3c9;
 }
@@ -645,24 +645,24 @@
 /* Prevent text selection on all rows — drag handle initiates row move, not text select */
 .col-manager-table-container .lithium-table-container .tabulator-row {
   user-select: none;
-  -webkit-user-select: none;
+  user-select: none;
 }
 
 .col-manager-table-container .lithium-table-container .tabulator-row.tabulator-row-moving {
   background: #1a3a5c !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 40%);
 }
 
 .col-manager-table-container .lithium-table-container .tabulator-row.tabulator-row-dragging {
   background: #2a5a8c !important;
-  color: #ffffff !important;
+  color: #fff !important;
   opacity: 0.95;
 }
 
 /* ── Navigator Button Styles (matching dark blue theme) ────────────────────── */
 
 .col-manager-navigator .lithium-nav-block {
-  background: rgba(30, 58, 95, 0.3);
+  background: rgb(30 58 95 / 30%);
   border-color: #1e3a5f;
   outline-color: #1e3a5f;
 }
@@ -675,7 +675,7 @@
 }
 
 .col-manager-navigator .lithium-nav-btn:hover {
-  background: rgba(74, 144, 217, 0.2);
+  background: rgb(74 144 217 / 20%);
   color: #a0c4e8;
 }
 
@@ -685,7 +685,7 @@
 }
 
 .col-manager-navigator .lithium-nav-btn-active {
-  background: rgba(74, 144, 217, 0.3);
+  background: rgb(74 144 217 / 30%);
   color: #4a90d9;
 }
 
@@ -711,7 +711,7 @@
 
 /* ── Responsive Adjustments ────────────────────────────────────────────────── */
 
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .col-manager-popup {
     left: 10px !important;
     right: 10px !important;
@@ -725,7 +725,7 @@
   .col-manager-popup {
     background: linear-gradient(180deg, #f5f8fc 0%, #e8f0f8 100%);
     border-color: #c0d4e8;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(192, 212, 232, 0.5);
+    box-shadow: 0 8px 32px rgb(0 0 0 / 15%), 0 0 0 1px rgb(192 212 232 / 50%);
   }
   
   .col-manager-header {
@@ -742,13 +742,13 @@
   }
   
   .col-manager-close-btn:hover {
-    background: rgba(42, 74, 106, 0.1);
+    background: rgb(42 74 106 / 10%);
     color: #2a4a6a;
   }
   
   .col-manager-save-btn:disabled,
   .col-manager-cancel-btn:disabled {
-    background: rgba(100, 130, 160, 0.1);
+    background: rgb(100 130 160 / 10%);
     color: #a0b0c0;
   }
   
@@ -796,7 +796,7 @@
   }
   
   .col-manager-table-container .lithium-table-container .tabulator .tabulator-row {
-    background: #ffffff;
+    background: #fff;
     border-bottom-color: #e0eaf4;
     color: #2a4a6a;
   }
@@ -825,7 +825,7 @@
   }
   
   .col-manager-mode-toggle {
-    background: rgba(100, 130, 160, 0.15);
+    background: rgb(100 130 160 / 15%);
   }
   
   .col-manager-mode-btn {
@@ -833,12 +833,12 @@
   }
   
   .col-manager-mode-btn:hover {
-    background: rgba(58, 122, 184, 0.1);
+    background: rgb(58 122 184 / 10%);
     color: #2a5a8a;
   }
   
   .col-manager-mode-btn.active {
-    background: rgba(58, 122, 184, 0.2);
+    background: rgb(58 122 184 / 20%);
     color: #2a5a8a;
   }
   
@@ -861,14 +861,14 @@
   }
   
   .col-manager-table-container .lithium-table-container .tabulator-cell .tabulator-editor {
-    background: #ffffff;
+    background: #fff;
     border-color: #3a7ab8;
     color: #2a4a6a;
   }
   
   .col-manager-table-container .lithium-table-container .tabulator-cell .tabulator-editor input,
   .col-manager-table-container .lithium-table-container .tabulator-cell .tabulator-editor select {
-    background: #ffffff;
+    background: #fff;
     border-color: #3a7ab8;
     color: #2a4a6a;
   }
@@ -878,7 +878,7 @@
   }
   
   .col-manager-navigator .lithium-nav-btn:hover {
-    background: rgba(58, 122, 184, 0.15);
+    background: rgb(58 122 184 / 15%);
     color: #2a5a8a;
   }
 }

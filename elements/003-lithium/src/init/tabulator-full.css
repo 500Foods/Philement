@@ -1,14 +1,14 @@
 /* Tabulator Full Table - Advanced styling with navigation controls */
 
 /* Import simple table styles as base */
-@import '/src/init/tabulator-simple.css';
+@import url('/src/init/tabulator-simple.css');
 
 /* Navigation container */
 .tabulator-nav {
   background-color: var(--card-bg);
   padding: 0.75rem 1rem;
   border-radius: var(--border-radius) var(--border-radius) 0 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid rgb(0 0 0 / 10%);
   margin-bottom: 0;
 }
 
@@ -67,7 +67,7 @@
   left: 0;
   min-width: 150px;
   background-color: white;
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  border: 1px solid rgb(0 0 0 / 10%);
   border-radius: var(--border-radius);
   box-shadow: var(--box-shadow);
   z-index: 1000;
@@ -85,18 +85,18 @@
 }
 
 .tabulator-nav .dropdown-menu .dropdown-item:hover {
-  background-color: rgba(63, 81, 181, 0.1);
+  background-color: rgb(63 81 181 / 10%);
 }
 
 /* Pagination controls */
 .tabulator-full .tabulator-paginator {
   padding: 0.75rem 1rem;
   background-color: var(--card-bg);
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  border-top: 1px solid rgb(0 0 0 / 10%);
 }
 
 /* Responsive adjustments */
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .tabulator-nav {
     flex-direction: column;
     gap: 1rem;

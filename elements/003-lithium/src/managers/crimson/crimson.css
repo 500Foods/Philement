@@ -6,7 +6,7 @@
  */
 
 /* Import LithiumTable styles for the citation popup */
-@import '../../tables/lithium-table.css';
+@import url('../../tables/lithium-table.css');
 
 @layer managers {
 
@@ -17,7 +17,7 @@
 .crimson-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgb(0 0 0 / 40%);
   z-index: 20000;
   opacity: 0;
   visibility: hidden;
@@ -107,6 +107,7 @@
   flex-shrink: 0;
   padding-right: 10px;
 }
+
 .crimson-header-primary span:first-child {
   font-size: var(--icon-size-reg);
 }
@@ -114,6 +115,7 @@
 .crimson-header-primary:active {
   cursor: grabbing;
 }
+
 .manager-ui-crimson-btn {
   color: var(--accent-crimson);
 }
@@ -377,8 +379,8 @@
   height: 2px;
   background: repeating-linear-gradient(
     90deg,
-    #00ff88 0px,
-    #00ff88 2px,
+    #0f8 0px,
+    #0f8 2px,
     transparent 2px,
     transparent 6px
   );
@@ -396,7 +398,7 @@
   margin: 0;
   padding: var(--space-2);
   background: #1a1a2e;
-  color: #00ff88;
+  color: #0f8;
   font-family: var(--font-mono);
   font-size: var(--font-size-us);
   line-height: 1.4;
@@ -470,6 +472,7 @@
     opacity: 0;
     transform: translateY(8px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -526,22 +529,28 @@
 .crimson-message-content p {
   margin-bottom: var(--space-4);
 } 
+
 .crimson-message-content p:last-child {
   margin-bottom: 0px;
 }
+
 .crimson-message-content p br {
   margin-bottom: var(--space-4);
 }
+
 .crimson-message-content p br:last-child {
   margin-bottom: 0px;
 }                             
+
 .crimson-message-content ol,
 .crimson-message-content ul {
   margin: var(--space-5);
 }
+
 .crimson-message-content li {
   margin-bottom: var(--space-4);
 }
+
 .crimson-message-content li:last-child {
   margin-bottom: inherit;
 }
@@ -665,7 +674,7 @@
 
 .crimson-input:focus {
   border-color: var(--accent-primary);
-  box-shadow: 0 0 0 2px rgba(92, 107, 192, 0.2);
+  box-shadow: 0 0 0 2px rgb(92 107 192 / 20%);
 }
 
 .crimson-input::placeholder {
@@ -900,6 +909,7 @@
   0%, 80%, 100% {
     transform: scale(0.6);
   }
+
   40% {
     transform: scale(1);
   }
@@ -930,6 +940,7 @@
   --spinner-fancy-color-1: var(--accent-primary);
   --spinner-fancy-color-2: var(--accent-secondary);
   --spinner-fancy-color-3: var(--accent-warning);
+
   width: var(--spinner-fancy-size);
   height: var(--spinner-fancy-size);
   border-radius: 50%;
@@ -941,27 +952,35 @@
   0%    {box-shadow:
           0 -10px var(--spinner-fancy-color-3), calc(10px*0.707) calc(-10px*0.707) var(--spinner-fancy-color-2),10px 0 var(--spinner-fancy-color-3), 0 0 var(--spinner-fancy-color-2),
           0 0 var(--spinner-fancy-color-3), 0 0 var(--spinner-fancy-color-2),0 0 var(--spinner-fancy-color-3), 0 0 var(--spinner-fancy-color-2)}
+
   12.5% {box-shadow:
           0 0 var(--spinner-fancy-color-3), calc(10px*0.707) calc(-10px*0.707) var(--spinner-fancy-color-2),10px 0 var(--spinner-fancy-color-3), calc(10px*0.707) calc(10px*0.707) var(--spinner-fancy-color-2),
           0 0 var(--spinner-fancy-color-3), 0 0 var(--spinner-fancy-color-2),0 0 var(--spinner-fancy-color-3), 0 0 var(--spinner-fancy-color-2)}
+
   25%   {box-shadow:
           0 0 var(--spinner-fancy-color-3), 0 0 var(--spinner-fancy-color-2),10px 0 var(--spinner-fancy-color-3), calc(10px*0.707) calc(10px*0.707) var(--spinner-fancy-color-2),
           0 10px var(--spinner-fancy-color-3), 0 0 var(--spinner-fancy-color-2),0 0 var(--spinner-fancy-color-3), 0 0 var(--spinner-fancy-color-2)}
+
   37.5% {box-shadow:
           0 0 var(--spinner-fancy-color-3), 0 0 var(--spinner-fancy-color-2),0 0 var(--spinner-fancy-color-3), calc(10px*0.707) calc(10px*0.707) var(--spinner-fancy-color-2),
           0 10px var(--spinner-fancy-color-3), calc(-10px*0.707) calc(10px*0.707) var(--spinner-fancy-color-2),0 0 var(--spinner-fancy-color-3), 0 0 var(--spinner-fancy-color-2)}
+
   50%   {box-shadow:
           0 0 var(--spinner-fancy-color-3), 0 0 var(--spinner-fancy-color-2),0 0 var(--spinner-fancy-color-3), 0 0 var(--spinner-fancy-color-2),
           0 10px var(--spinner-fancy-color-3), calc(-10px*0.707) calc(10px*0.707) var(--spinner-fancy-color-2),-10px 0 var(--spinner-fancy-color-3), 0 0 var(--spinner-fancy-color-2)}
+
   62.5% {box-shadow:
           0 0 var(--spinner-fancy-color-3), 0 0 var(--spinner-fancy-color-2),0 0 var(--spinner-fancy-color-3), 0 0 var(--spinner-fancy-color-2),
           0 0 var(--spinner-fancy-color-3), calc(-10px*0.707) calc(10px*0.707) var(--spinner-fancy-color-2),-10px 0 var(--spinner-fancy-color-3), calc(-10px*0.707) calc(-10px*0.707) var(--spinner-fancy-color-2)}
+
   75%   {box-shadow:
           0 0 var(--spinner-fancy-color-3), 0 0 var(--spinner-fancy-color-2),0 0 var(--spinner-fancy-color-3), 0 0 var(--spinner-fancy-color-2),
           0 0 var(--spinner-fancy-color-3), 0 0 var(--spinner-fancy-color-2),-10px 0 var(--spinner-fancy-color-3), calc(-10px*0.707) calc(-10px*0.707) var(--spinner-fancy-color-2)}
+
   87.5% {box-shadow:
           0 -10px var(--spinner-fancy-color-3), 0 0 var(--spinner-fancy-color-2),0 0 var(--spinner-fancy-color-3), 0 0 var(--spinner-fancy-color-2),
           0 0 var(--spinner-fancy-color-3), 0 0 var(--spinner-fancy-color-2),-10px 0 var(--spinner-fancy-color-3), calc(-10px*0.707) calc(-10px*0.707) var(--spinner-fancy-color-2)}
+
   100%  {box-shadow:
           0 -10px var(--spinner-fancy-color-3), calc(10px*0.707) calc(-10px*0.707) var(--spinner-fancy-color-2),10px 0 var(--spinner-fancy-color-3), 0 0 var(--spinner-fancy-color-2),
           0 0 var(--spinner-fancy-color-3), 0 0 var(--spinner-fancy-color-2),0 0 var(--spinner-fancy-color-3), 0 0 var(--spinner-fancy-color-2)}
@@ -990,7 +1009,7 @@
 
 .crimson-thinking {
   padding: var(--space-2) var(--space-3);
-  background: rgba(139, 92, 246, 0.1);
+  background: rgb(139 92 246 / 10%);
   border-left: 3px solid #8b5cf6;
   border-radius: var(--border-radius-sm);
   font-size: var(--font-size-sm);
@@ -1032,8 +1051,8 @@
 }
 
     .crimson-inline-code {
-      background: rgba(255, 255, 255, 0.15);
-      border-color: rgba(255, 255, 255, 0.3);
+      background: rgb(255 255 255 / 15%);
+      border-color: rgb(255 255 255 / 30%);
       color: white;
     }
 
@@ -1087,12 +1106,12 @@
 }
 
 .crimson-message-user .crimson-followups {
-  border-top-color: rgba(255, 255, 255, 0.2);
+  border-top-color: rgb(255 255 255 / 20%);
 }
 
 .crimson-message-user .crimson-followup-btn {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.3);
+  background: rgb(255 255 255 / 10%);
+  border-color: rgb(255 255 255 / 30%);
   color: white;
 }
 
@@ -1101,7 +1120,7 @@
 }
 
  .crimson-message-user .crimson-followup-btn:hover {
-   background: rgba(255, 255, 255, 0.2);
+   background: rgb(255 255 255 / 20%);
  }
 
 /* ========================================
@@ -1255,7 +1274,7 @@
 /* Arrow pointing up — popup is below the button */
 .crimson-citation-popup-arrow.arrow-top {
   top: -8px;
-  border-width: 0 8px 8px 8px;
+  border-width: 0 8px 8px;
   border-color: transparent transparent var(--border-color) transparent;
 }
 
@@ -1267,7 +1286,7 @@
   width: 0;
   height: 0;
   border-style: solid;
-  border-width: 0 7px 7px 7px;
+  border-width: 0 7px 7px;
   border-color: transparent transparent var(--bg-primary) transparent;
 }
 
@@ -1275,7 +1294,7 @@
 .crimson-citation-popup-arrow.arrow-bottom {
   bottom: -8px;
   top: auto;
-  border-width: 8px 8px 0 8px;
+  border-width: 8px 8px 0;
   border-color: var(--border-color) transparent transparent transparent;
 }
 
@@ -1287,7 +1306,7 @@
   width: 0;
   height: 0;
   border-style: solid;
-  border-width: 7px 7px 0 7px;
+  border-width: 7px 7px 0;
   border-color: var(--bg-primary) transparent transparent transparent;
 }
 

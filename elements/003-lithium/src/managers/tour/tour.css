@@ -25,36 +25,36 @@
 
 :root {
   /* Panel */
-  --tour-bg: #ffffff;
+  --tour-bg: #fff;
   --tour-bg-secondary: #f5f5f5;
-  --tour-text: #000000;
-  --tour-text-muted: #666666;
+  --tour-text: #000;
+  --tour-text-muted: #666;
 
   /* Borders */
-  --tour-border: #000000;
-  --tour-border-light: #cccccc;
+  --tour-border: #000;
+  --tour-border-light: #ccc;
   --tour-border-width: 2px;
   --tour-border-radius: 8px;
   --tour-border-radius-sm: 4px;
 
   /* Header bar (black) */
   --tour-header-bg: linear-gradient(to right, black, #666, black);
-  --tour-header-text: #ffffff;
+  --tour-header-text: #fff;
 
   /* Footer bar (black) */
   --tour-footer-bg: linear-gradient(to right, black, #666, black);
 
   /* Buttons */
-  --tour-btn-bg: #000000;
-  --tour-btn-text: #ffffff;
-  --tour-btn-hover-bg: #333333;
-  --tour-btn-disabled-bg: #cccccc;
-  --tour-btn-disabled-text: #666666;
-  --tour-btn-secondary-bg: #ffffff;
-  --tour-btn-secondary-border: #000000;
+  --tour-btn-bg: #000;
+  --tour-btn-text: #fff;
+  --tour-btn-hover-bg: #333;
+  --tour-btn-disabled-bg: #ccc;
+  --tour-btn-disabled-text: #666;
+  --tour-btn-secondary-bg: #fff;
+  --tour-btn-secondary-border: #000;
 
   /* Overlay */
-  --tour-overlay: rgba(0, 0, 0, 0.45);
+  --tour-overlay: rgb(0 0 0 / 45%);
 
   /* Z-index (above all UI) */
   --tour-z-overlay: 39998;
@@ -108,7 +108,7 @@
   width: 500px;
   min-width: 300px;
   max-width: 500px;
-  z-index: var(--tour-z-step);
+  z-index: var(--tour-z-step) !important;
   overflow: hidden;
   /* !important required to override Shepherd's un-layered
      .shepherd-enabled.shepherd-element { opacity: 1 } rule. 
@@ -126,6 +126,8 @@
 /* Ensure inner content doesn't shrink */
 .shepherd-element.lithium-tour-step .shepherd-text {
   width: 100% !important;
+  padding: 0;
+  margin: 0;
 }
 
 .shepherd-element.lithium-tour-step.lithium-tour-visible {
@@ -136,11 +138,6 @@
 
 .shepherd-element.lithium-tour-step:focus {
   outline: none;
-}
-
-/* Ensure all tour steps are above the overlay */
-.shepherd-element.lithium-tour-step {
-  z-index: var(--tour-z-step) !important;
 }
 
 /* Ensure centered tour steps are properly positioned and visible above overlay */
@@ -223,11 +220,11 @@
 	margin-left: 8px;
 }
 
-.lithium-tour-header-btn:hover:not(:disabled) {
+.lithium-tour-header-btn:hover {
   color: white;
 }
 
-.lithium-tour-header-btn:hover {
+.lithium-tour-header-btn:hover:not(:disabled) {
   color: white;
 }
 
@@ -259,7 +256,7 @@
 }
 
 .lithium-tour-content p {
-  margin: 0 0 10px 0;
+  margin: 0 0 10px;
 }
 
 .lithium-tour-content p:last-child {
@@ -271,12 +268,6 @@
 .lithium-tour-content .fa-solid,
 .lithium-tour-content fa {
   vertical-align: middle;
-}
-
-/* Hide Shepherd's default text container */
-.shepherd-element.lithium-tour-step .shepherd-text {
-  padding: 0;
-  margin: 0;
 }
 
 /* ========================================
@@ -302,16 +293,17 @@
 	border: none;
 	font-size: 24px;
 	font-weight: 500;
-	font-family: Vanadium Sans,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;
+	font-family: "Vanadium Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
 	cursor: pointer;
 	transition: color 300ms ease, border-color 300ms ease;
-}
-.lithium-tour-footer-btn:hover:not(:disabled) {
-  color: white;
 }
 
 .lithium-tour-footer-btn:disabled {
   visibility: hidden;
+}
+
+.lithium-tour-footer-btn:hover:not(:disabled) {
+  color: white;
 }
 
 .lithium-tour-footer-btn i,
@@ -391,9 +383,6 @@
 
 .lithium-tour-list-title svg {
   filter: drop-shadow(0px 0px 1px black);
-}                                        
-
-.lithium-tour-list-title svg {
   font-size: 24px;
   max-height: 35px;
 }
@@ -433,7 +422,7 @@
 }
 
 .lithium-tour-list-body::-webkit-scrollbar-thumb {
-  background: #999999;
+  background: #999;
   border-radius: 3px;
 }
 
@@ -518,7 +507,7 @@
   flex-direction: column;
   background: var(--bg-primary, #1a1a1a);
   border-radius: var(--border-radius-lg, 8px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 50%);
   z-index: 40002;
   overflow: hidden;
   /* Min dimensions enforced via JavaScript resize logic to maintain aspect ratio */
@@ -579,6 +568,7 @@
   min-width: 10px;
   z-index: 1;
 }
+
 .lithium-video-tour-header-primary svg {
   font-size: var(--icon-size-reg);
 }
@@ -612,7 +602,6 @@
 
 .lithium-video-tour-header-placeholder {
   flex: 1;
-  display: flex;
   align-items: center;
   padding: var(--space-2) var(--space-3);
   background: var(--accent-primary);
@@ -703,23 +692,21 @@
 
 .lithium-video-tour-scrubber {
   width: 100%;
-  -webkit-appearance: none;
   appearance: none;
   height: 4px;
-  background: rgba(255,255,255,0.3);
+  background: rgb(255 255 255 / 30%);
   border-radius: 2px;
   cursor: pointer;
 }
 
 .lithium-video-tour-scrubber::-webkit-slider-thumb {
-  -webkit-appearance: none;
   appearance: none;
   width: 12px;
   height: 12px;
   background: var(--accent-primary);
   border-radius: 50%;
   cursor: pointer;
-  box-shadow: 0 0 4px rgba(0,0,0,0.5);
+  box-shadow: 0 0 4px rgb(0 0 0 / 50%);
 }
 
 .lithium-video-tour-scrubber::-moz-range-thumb {
@@ -729,7 +716,7 @@
   border-radius: 50%;
   border: none;
   cursor: pointer;
-  box-shadow: 0 0 4px rgba(0,0,0,0.5);
+  box-shadow: 0 0 4px rgb(0 0 0 / 50%);
 }
 
 /* Big play button overlay */
@@ -739,7 +726,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0,0,0,0.3);
+  background: rgb(0 0 0 / 30%);
   opacity: 0;
   transition: opacity var(--transition-duration, 0.2s) ease;
   cursor: pointer;
@@ -758,7 +745,7 @@
   justify-content: center;
   width: 80px;
   height: 80px;
-  background: rgba(0,0,0,0.6);
+  background: rgb(0 0 0 / 60%);
   border: 2px solid white;
   border-radius: 50%;
   color: white;
@@ -781,8 +768,8 @@
   justify-content: center;
   width: 50px;
   height: 50px;
-  background: rgba(0,0,0,0.5);
-  border: 2px solid rgba(255,255,255,0.3);
+  background: rgb(0 0 0 / 50%);
+  border: 2px solid rgb(255 255 255 / 30%);
   border-radius: 50%;
   color: white;
   font-size: 20px;
@@ -853,16 +840,15 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  width: 100%;
 }
 
 .lithium-video-tour-play-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  background: var(--accent-primary);
+  width: 40px;
+  height: 40px;
+  background: var(--accent-primary, #4a90d9);
   border: none;
   border-radius: 50%;
   color: white;
@@ -872,7 +858,7 @@
 }
 
 .lithium-video-tour-play-btn:hover {
-  background: var(--accent-hover);
+  background: var(--accent-hover, #6ba3e0);
 }
 
 .lithium-video-tour-time {
@@ -883,12 +869,6 @@
 	position: absolute;
 	left: 50%;
 	transform: translateX(-50%);
-}
-
-.lithium-video-tour-buttons {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
 }
 
 .lithium-video-tour-captions-btn {
@@ -917,25 +897,6 @@
   color: var(--accent-hover);
 }
 
-.lithium-video-tour-play-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  background: var(--accent-primary, #4a90d9);
-  border: none;
-  border-radius: 50%;
-  color: white;
-  font-size: var(--font-size-lg);
-  cursor: pointer;
-  transition: background-color var(--transition-fast, 0.15s) ease;
-}
-
-.lithium-video-tour-play-btn:hover {
-  background: var(--accent-hover, #6ba3e0);
-}
-
 .lithium-video-tour-volume {
   display: flex;
   align-items: center;
@@ -962,7 +923,6 @@
 
 .lithium-video-tour-volume-slider {
   width: 40px;
-  -webkit-appearance: none;
   appearance: none;
   height: 4px;
   background: #444;
@@ -971,7 +931,6 @@
 }
 
 .lithium-video-tour-volume-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
   appearance: none;
   width: 10px;
   height: 10px;
@@ -1079,7 +1038,7 @@
     Responsive Adjustments
     ======================================== */
 
-@media (max-width: 600px) {
+@media (width <= 600px) {
   .lithium-tour-step .shepherd-element {
     max-width: calc(100vw - 32px);
   }

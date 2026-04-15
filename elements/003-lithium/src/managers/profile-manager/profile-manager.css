@@ -66,11 +66,6 @@
   border-radius: var(--border-radius-sm);
 }
 
-#profile-table-container .tabulator {
-  border: none;
-  height: 100% !important;
-}
-
 /* Navigator */
 #profile-navigator {
   flex-shrink: 0;
@@ -234,7 +229,7 @@
 .form-select:focus {
   outline: none;
   border-color: var(--accent-primary);
-  box-shadow: 0 0 0 3px var(--accent-primary-transparent, rgba(88, 166, 255, 0.2));
+  box-shadow: 0 0 0 3px var(--accent-primary-transparent, rgb(88 166 255 / 20%));
 }
 
 .form-select:disabled {
@@ -278,14 +273,14 @@
   border-color: var(--accent-primary);
 }
 
-.btn-primary:hover:not(:disabled) {
-  background: var(--accent-primary-hover);
-  border-color: var(--accent-primary-hover);
-}
-
 .btn-primary:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-primary-hover);
+  border-color: var(--accent-primary-hover);
 }
 
 .btn-secondary {
@@ -405,7 +400,7 @@
 }
 
 /* Responsive Adjustments */
-@media (max-width: 768px) {
+@media (width <= 768px) {
   #profile-left-panel {
     position: absolute;
     z-index: 100;
@@ -448,7 +443,7 @@
   }
 }
 
-@media (max-width: 480px) {
+@media (width <= 480px) {
   .preview-panel {
     grid-template-columns: 1fr;
   }
