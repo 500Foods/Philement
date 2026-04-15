@@ -437,7 +437,6 @@ body.hide-password-manager-ui [class*="password-icon"] {
   transition: border-color var(--transition-fast);
   /* Prevent browser autofill background color change */
   background-clip: text;
-  background-clip: text;
 }
 
 /* Override browser autofill styles */

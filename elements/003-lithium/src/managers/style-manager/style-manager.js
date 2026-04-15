@@ -22,7 +22,7 @@ import { PanelStateManager } from '../../core/panel-state-manager.js';
 import { togglePanelCollapse, restorePanelState } from '../../core/panel-collapse.js';
 
 import { processIcons } from '../../core/icons.js';
-import { setupManagerFooterIcons, createFontPopup, closeExportPopup, initToolbars } from '../../core/manager-ui.js';
+import { setupManagerFooterIcons, createFontPopup, closeExportPopup, initToolbars, positionPopup, closeAllPopups } from '../../core/manager-ui.js';
 import { ManagerEditHelper } from '../../core/manager-edit-helper.js';
 import { authQuery } from '../../shared/conduit.js';
 import { toast } from '../../shared/toast.js';
@@ -354,7 +354,7 @@ export default class StyleManager {
       container: this.elements.lookupTableContainer,
       navigatorContainer: this.elements.lookupNavigator,
       tablePath: 'style-manager/lookup-41',
-      lookupKeyIdx: 6,
+      lookupKeyIdx: 8,
       queryRef: 26, // QueryRef 26 - Get Lookup with LOOKUPID=41
       cssPrefix: 'style-lookup',
       storageKey: 'style_lookup_table',
@@ -1313,6 +1313,8 @@ ${selector}:disabled {
       return;
     }
 
+    closeAllPopups();
+
     const btn = e.currentTarget;
     const mode = this._getFooterDatasource();
     const formats = [
@@ -1336,14 +1338,8 @@ ${selector}:disabled {
       popup.appendChild(row);
     });
 
-    const btnRect = btn.getBoundingClientRect();
     document.body.appendChild(popup);
-
-    requestAnimationFrame(() => {
-      popup.style.position = 'fixed';
-      popup.style.top = `${btnRect.bottom}px`;
-      popup.style.left = `${btnRect.left}px`;
-    });
+    positionPopup(popup, btn, 'footer-riseup');
 
     setTimeout(() => {
       popup.classList.add('visible');
@@ -1357,6 +1353,12 @@ ${selector}:disabled {
       }
     };
     document.addEventListener('click', this._footerExportCloseHandler);
+
+    // Listen for close-all-popups event
+    this._footerExportGlobalCloseHandler = () => {
+      this._closeFooterExportPopup();
+    };
+    document.addEventListener('close-all-popups', this._footerExportGlobalCloseHandler);
   }
 
   _closeFooterExportPopup() {
@@ -1367,6 +1369,10 @@ ${selector}:disabled {
     if (this._footerExportCloseHandler) {
       document.removeEventListener('click', this._footerExportCloseHandler);
       this._footerExportCloseHandler = null;
+    }
+    if (this._footerExportGlobalCloseHandler) {
+      document.removeEventListener('close-all-popups', this._footerExportGlobalCloseHandler);
+      this._footerExportGlobalCloseHandler = null;
     }
   }
 

@@ -422,6 +422,7 @@
 
 #language-table .tabulator-tableholder {
   background: var(--bg-secondary);
+  overscroll-behavior: contain;
 }
 
 #language-table .tabulator-row {
@@ -468,11 +469,6 @@ div#language-table.tabulator div.tabulator-header div.tabulator-header-contents 
 
 #language-table .tabulator-row.tabulator-selected:hover {
   background: var(--accent-hover) !important;
-}
-
-/* Tabulator scroll isolation — prevent table scroll from propagating to popup */
-#language-table .tabulator-tableholder {
-  overscroll-behavior: contain;
 }
 
 /* Tabulator scrollbar styling */

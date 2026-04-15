@@ -21,7 +21,7 @@ import { authQuery } from '../../shared/conduit.js';
 import { toast } from '../../shared/toast.js';
 import { log, Subsystems, Status } from '../../core/log.js';
 import { processIcons } from '../../core/icons.js';
-import { setupManagerFooterIcons, createFontPopup, closeExportPopup, initToolbars } from '../../core/manager-ui.js';
+import { setupManagerFooterIcons, createFontPopup, closeExportPopup, initToolbars, positionPopup, closeAllPopups } from '../../core/manager-ui.js';
 import { ManagerEditHelper } from '../../core/manager-edit-helper.js';
 import SunEditor from 'suneditor';
 import 'suneditor/css/editor';
@@ -1360,6 +1360,8 @@ export default class LookupsManager {
       return;
     }
 
+    closeAllPopups();
+
     const btn = e.currentTarget;
     const mode = this._getFooterDatasource();
     const formats = [
@@ -1385,15 +1387,8 @@ export default class LookupsManager {
     });
 
     // Position popup below the button (appended to body to avoid overflow issues)
-    const btnRect = btn.getBoundingClientRect();
     document.body.appendChild(popup);
-
-    // Position popup below the button (top-left of popup aligns with bottom-left of button)
-    requestAnimationFrame(() => {
-      popup.style.position = 'fixed';
-      popup.style.top = `${btnRect.bottom}px`;
-      popup.style.left = `${btnRect.left}px`;
-    });
+    positionPopup(popup, btn, 'footer-riseup');
 
     // Animate in after a small delay
     setTimeout(() => {
@@ -1409,6 +1404,12 @@ export default class LookupsManager {
       }
     };
     document.addEventListener('click', this._footerExportCloseHandler);
+
+    // Listen for close-all-popups event
+    this._footerExportGlobalCloseHandler = () => {
+      this._closeFooterExportPopup();
+    };
+    document.addEventListener('close-all-popups', this._footerExportGlobalCloseHandler);
   }
 
   /**
@@ -1422,6 +1423,10 @@ export default class LookupsManager {
     if (this._footerExportCloseHandler) {
       document.removeEventListener('click', this._footerExportCloseHandler);
       this._footerExportCloseHandler = null;
+    }
+    if (this._footerExportGlobalCloseHandler) {
+      document.removeEventListener('close-all-popups', this._footerExportGlobalCloseHandler);
+      this._footerExportGlobalCloseHandler = null;
     }
   }
 
