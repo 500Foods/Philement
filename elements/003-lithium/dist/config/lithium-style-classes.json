@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS class selectors/names used across the Lithium codebase",
-    "generated": "2026-04-14T21:00:30.793Z",
+    "generated": "2026-04-14T23:36:52.406Z",
     "sources": {
       "css": "50 files in src/**/*.css",
       "js": "102 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
-    "total_selectors": 1756,
-    "total_occurrences": 26477
+    "total_selectors": 1754,
+    "total_occurrences": 26208
   },
   "selectors": [
     {
@@ -16682,42 +16682,6 @@
       }
     },
     {
-      "selector": ".lookups-footer-export-popup.visible",
-      "css": 1,
-      "js": 91,
-      "html": 0,
-      "total": 92,
-      "files": {
-        "css": [
-          "src/managers/lookups/lookups.css"
-        ],
-        "js": [
-          "src/core/manager-ui.js",
-          "src/managers/crimson/crimson-citations.js",
-          "src/managers/crimson/crimson-core.js",
-          "src/managers/login/login.js",
-          "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
-          "src/managers/profile-manager/profile-manager.js",
-          "src/managers/queries/queries-ui.js",
-          "src/managers/queries/queries.js",
-          "src/managers/session-log/session-log.js",
-          "src/managers/style-manager/style-manager.js",
-          "src/managers/terminal/terminal.js",
-          "src/managers/tour/tour.js",
-          "src/managers/version-history/version-history.js",
-          "src/shared/crimson-ws.js",
-          "src/tables/column-manager/cm-drag-resize.js",
-          "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-column-manager.js",
-          "src/tables/lithium-table-ui.js",
-          "src/tables/popups/popup-manager.js",
-          "src/tables/popups/template-popup.js"
-        ],
-        "html": []
-      }
-    },
-    {
       "selector": ".lookups-footer-filler",
       "css": 1,
       "js": 0,
@@ -18517,6 +18481,61 @@
     },
     {
       "selector": ".manager-footer-export-popup.visible",
+      "css": 1,
+      "js": 93,
+      "html": 0,
+      "total": 94,
+      "files": {
+        "css": [
+          "src/core/manager-ui.css"
+        ],
+        "js": [
+          "src/core/manager-ui.js",
+          "src/managers/crimson/crimson-citations.js",
+          "src/managers/crimson/crimson-core.js",
+          "src/managers/login/login.js",
+          "src/managers/lookups/lookups.js",
+          "src/managers/main/main.js",
+          "src/managers/profile-manager/profile-manager.js",
+          "src/managers/queries/queries-ui.js",
+          "src/managers/queries/queries.js",
+          "src/managers/session-log/session-log.js",
+          "src/managers/style-manager/style-manager.js",
+          "src/managers/terminal/terminal.js",
+          "src/managers/tour/tour.js",
+          "src/managers/version-history/version-history.js",
+          "src/shared/crimson-ws.js",
+          "src/tables/column-manager/cm-drag-resize.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-column-manager.js",
+          "src/tables/lithium-table-ui.js",
+          "src/tables/popups/popup-manager.js",
+          "src/tables/popups/template-popup.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".manager-footer-popup",
+      "css": 1,
+      "js": 4,
+      "html": 0,
+      "total": 5,
+      "files": {
+        "css": [
+          "src/core/manager-ui.css"
+        ],
+        "js": [
+          "src/managers/lookups/lookups.js",
+          "src/managers/queries/queries.js",
+          "src/managers/style-manager/style-manager.js",
+          "src/managers/version-history/version-history.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".manager-footer-popup.visible",
       "css": 1,
       "js": 93,
       "html": 0,
@@ -22020,42 +22039,6 @@
         ],
         "js": [
           "src/managers/queries/queries.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".queries-footer-export-popup.visible",
-      "css": 1,
-      "js": 91,
-      "html": 0,
-      "total": 92,
-      "files": {
-        "css": [
-          "src/managers/queries/queries.css"
-        ],
-        "js": [
-          "src/core/manager-ui.js",
-          "src/managers/crimson/crimson-citations.js",
-          "src/managers/crimson/crimson-core.js",
-          "src/managers/login/login.js",
-          "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
-          "src/managers/profile-manager/profile-manager.js",
-          "src/managers/queries/queries-ui.js",
-          "src/managers/queries/queries.js",
-          "src/managers/session-log/session-log.js",
-          "src/managers/style-manager/style-manager.js",
-          "src/managers/terminal/terminal.js",
-          "src/managers/tour/tour.js",
-          "src/managers/version-history/version-history.js",
-          "src/shared/crimson-ws.js",
-          "src/tables/column-manager/cm-drag-resize.js",
-          "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-column-manager.js",
-          "src/tables/lithium-table-ui.js",
-          "src/tables/popups/popup-manager.js",
-          "src/tables/popups/template-popup.js"
         ],
         "html": []
       }
@@ -25830,42 +25813,6 @@
         ],
         "js": [
           "src/managers/style-manager/style-manager.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".style-footer-export-popup.visible",
-      "css": 1,
-      "js": 91,
-      "html": 0,
-      "total": 92,
-      "files": {
-        "css": [
-          "src/managers/style-manager/style-manager.css"
-        ],
-        "js": [
-          "src/core/manager-ui.js",
-          "src/managers/crimson/crimson-citations.js",
-          "src/managers/crimson/crimson-core.js",
-          "src/managers/login/login.js",
-          "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
-          "src/managers/profile-manager/profile-manager.js",
-          "src/managers/queries/queries-ui.js",
-          "src/managers/queries/queries.js",
-          "src/managers/session-log/session-log.js",
-          "src/managers/style-manager/style-manager.js",
-          "src/managers/terminal/terminal.js",
-          "src/managers/tour/tour.js",
-          "src/managers/version-history/version-history.js",
-          "src/shared/crimson-ws.js",
-          "src/tables/column-manager/cm-drag-resize.js",
-          "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-column-manager.js",
-          "src/tables/lithium-table-ui.js",
-          "src/tables/popups/popup-manager.js",
-          "src/tables/popups/template-popup.js"
         ],
         "html": []
       }
@@ -29948,42 +29895,6 @@
         ],
         "js": [
           "src/managers/version-history/version-history.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".version-footer-export-popup.visible",
-      "css": 1,
-      "js": 91,
-      "html": 0,
-      "total": 92,
-      "files": {
-        "css": [
-          "src/managers/version-history/version-history.css"
-        ],
-        "js": [
-          "src/core/manager-ui.js",
-          "src/managers/crimson/crimson-citations.js",
-          "src/managers/crimson/crimson-core.js",
-          "src/managers/login/login.js",
-          "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
-          "src/managers/profile-manager/profile-manager.js",
-          "src/managers/queries/queries-ui.js",
-          "src/managers/queries/queries.js",
-          "src/managers/session-log/session-log.js",
-          "src/managers/style-manager/style-manager.js",
-          "src/managers/terminal/terminal.js",
-          "src/managers/tour/tour.js",
-          "src/managers/version-history/version-history.js",
-          "src/shared/crimson-ws.js",
-          "src/tables/column-manager/cm-drag-resize.js",
-          "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-column-manager.js",
-          "src/tables/lithium-table-ui.js",
-          "src/tables/popups/popup-manager.js",
-          "src/tables/popups/template-popup.js"
         ],
         "html": []
       }

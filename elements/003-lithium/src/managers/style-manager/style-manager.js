@@ -1323,7 +1323,7 @@ ${selector}:disabled {
     ];
 
     const popup = document.createElement('div');
-    popup.className = 'style-footer-export-popup';
+    popup.className = 'style-footer-export-popup manager-footer-popup';
     formats.forEach(item => {
       const row = document.createElement('button');
       row.type = 'button';
@@ -1340,9 +1340,8 @@ ${selector}:disabled {
     document.body.appendChild(popup);
 
     requestAnimationFrame(() => {
-      const popupRect = popup.getBoundingClientRect();
       popup.style.position = 'fixed';
-      popup.style.top = `${btnRect.top - popupRect.height - 8}px`;
+      popup.style.top = `${btnRect.bottom}px`;
       popup.style.left = `${btnRect.left}px`;
     });
 

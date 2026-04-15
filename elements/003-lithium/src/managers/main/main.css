@@ -19,7 +19,7 @@
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgb(0 0 0 / 60%);
   z-index: 1000;
   opacity: 0;
   visibility: hidden;
@@ -145,7 +145,7 @@
 .logout-option:focus {
   outline: none;
   border-color: var(--accent-primary);
-  box-shadow: 0 0 0 2px rgba(92, 107, 192, 0.3);
+  box-shadow: 0 0 0 2px rgb(92 107 192 / 30%);
 }
 
 .logout-option.selected {
@@ -165,6 +165,7 @@
   border-radius: var(--border-radius-sm);
   flex-shrink: 0;
 }
+
 .logout-option-type svg {
   font-size: 15px;
   margin-right: 5px;
@@ -257,9 +258,11 @@
 .sidebar-header-gradient .radar-icon.radar-connected {
   color: #86efac;
 }
+
 .sidebar-header-gradient .radar-icon.radar-flaky {
   color: #fde68a;
 }
+
 .sidebar-header-gradient .radar-icon.radar-disconnected {
   color: #fca5a5;
 }
@@ -414,7 +417,7 @@
   color: white;
 }
 
-.menu-item.manager-open:not(.active):not(:hover) {
+.menu-item.manager-open:not(.active, :hover) {
   background: var(--accent-active);
 }
 
@@ -452,7 +455,7 @@
 }
 
 .menu-item.active .menu-item-count {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgb(255 255 255 / 20%);
 }
 
 /* ========================================
@@ -580,6 +583,17 @@
 
 /* ---- Expanded state (default) ---- */
 
+/* ---- Hover / disabled ---- */
+
+.sidebar-icon-btn:hover {
+  background-color: var(--accent-hover);
+}
+
+.sidebar-icon-btn:disabled {
+  background-color: var(--text-disabled);
+  cursor: not-allowed;
+}
+
 .sidebar-icon-group:not(.collapsed) .sidebar-icon-btn {
   border-radius: 0;
 }
@@ -594,6 +608,14 @@
   border-bottom-right-radius: var(--border-radius-md);
 }
 
+.sidebar-icon-group.collapsed .sidebar-icon-btn {
+  border-radius: var(--border-radius-md);
+}
+
+.sidebar-icon-group.stacking .sidebar-icon-btn {
+  border-radius: var(--border-radius-md) !important;
+}
+
 /* ---- Stage 1: Collapsed / stacked ---- */
 
 .sidebar-icon-group.collapsed {
@@ -603,11 +625,6 @@
 
 .sidebar-icon-group.collapsed .sidebar-icon-wrapper {
   flex: 0 0 var(--icon-w);
-}
-
-/* All buttons get full rounding when stacked */
-.sidebar-icon-group.collapsed .sidebar-icon-btn {
-  border-radius: var(--border-radius-md);
 }
 
 /* ---- Stage 2: Collapsed + vertical (fanned out) ---- */
@@ -636,23 +653,6 @@
 .sidebar-icon-group.collapsed.vertical .sidebar-icon-wrapper:last-child .sidebar-icon-btn {
   border-bottom-left-radius: var(--border-radius-md);
   border-bottom-right-radius: var(--border-radius-md);
-}
-
-/* ---- Stacking override (full rounding while icons collapse to stack) ---- */
-
-.sidebar-icon-group.stacking .sidebar-icon-btn {
-  border-radius: var(--border-radius-md) !important;
-}
-
-/* ---- Hover / disabled ---- */
-
-.sidebar-icon-btn:hover {
-  background-color: var(--accent-hover);
-}
-
-.sidebar-icon-btn:disabled {
-  background-color: var(--text-disabled);
-  cursor: not-allowed;
 }
 
 .sidebar-icon-btn.sidebar-logout:hover {
@@ -723,11 +723,6 @@
   background-color: white;
 }
 
-/* Hide splitter when sidebar is collapsed */
-.main-sidebar.collapsed + .sidebar-splitter {
-  display: none;
-}
-
 /* Disable text selection during resize */
 body.resizing {
   user-select: none;
@@ -736,6 +731,11 @@ body.resizing {
 
 body.resizing * {
   cursor: col-resize !important;
+}
+
+/* Hide splitter when sidebar is collapsed */
+.main-sidebar.collapsed + .sidebar-splitter {
+  display: none;
 }
 
 /* ========================================
@@ -898,9 +898,16 @@ body.resizing * {
   text-overflow: ellipsis;
 }
 
+@media (width <= 768px) {
+  /* On mobile, footer reports text abbreviated */
+  .manager-slot-footer .slot-reports-btn span {
+    display: none;
+  }
+}
+
 /* ========================================
    Footer Button Counters
-   Fixed 3-digit counter display with leading zeros
+   Fixed 3-digit counter display with leading zeros */
    ======================================== */
 
 .btn-counter {
@@ -964,7 +971,7 @@ body.resizing * {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgb(0 0 0 / 50%);
   z-index: 99;
 }
 
@@ -976,7 +983,7 @@ body.resizing * {
    Responsive: Stack sidebar on mobile
    ======================================== */
 
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .main-sidebar {
     position: fixed;
     left: 0;
@@ -1026,10 +1033,6 @@ body.resizing * {
     display: none;
   }
 
-  .mobile-menu-btn {
-    display: flex;
-  }
-
   /* Arrow rotation is JS-driven; force-reset on mobile */
   #sidebar-collapse-btn > *,
   #collapse-icon {
@@ -1043,9 +1046,6 @@ body.resizing * {
   }
 
   /* On mobile, footer reports text abbreviated */
-  .manager-slot-footer .slot-reports-btn span {
-    display: none;
-  }
 
   /* On mobile, manager-area slot headers need room for the menu btn */
   .manager-slot-header {
@@ -1128,11 +1128,14 @@ body.resizing * {
 @keyframes zoom-popup-in {
   from {
     opacity: 0;
-    transform: translateY(-8px);
+    transform: translateY(-8px) scale(0.5);
+    transform-origin: top right;
   }
+
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
+    transform-origin: top right;
   }
 }
 
@@ -1166,7 +1169,6 @@ body.resizing * {
 .zoom-popup-slider {
   width: 100%;
   height: 6px;
-  -webkit-appearance: none;
   appearance: none;
   background: var(--bg-tertiary);
   border-radius: var(--border-radius-full);
@@ -1175,7 +1177,6 @@ body.resizing * {
 }
 
 .zoom-popup-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
   appearance: none;
   width: 16px;
   height: 16px;

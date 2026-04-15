@@ -15,10 +15,9 @@
   overflow: hidden;
   background-color: var(--bg-primary);
   color: var(--text-primary);
-}
 
 /* Override default panel widths for this manager */
-.version-manager-container {
+
   --panel-left-w: 350px;
   --panel-left-min: 157px;
   --panel-right-min: 300px;
@@ -189,7 +188,6 @@
 /* ── Subpanel Header Title ──────────────────────────────────────────────── */
 
 .subpanel-header-title {
-  color: var(--text-primary);
  	color: var(--text-primary);
 	z-index: 1;
 	background: var(--accent-primary);
@@ -214,20 +212,10 @@
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-md);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 30%);
   z-index: 10001;
   min-width: 80px;
   overflow: hidden;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-4px);
-  transition: opacity var(--transition-fast), visibility var(--transition-fast), transform var(--transition-fast);
-}
-
-.version-footer-export-popup.visible {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
 }
 
 .version-footer-export-popup-item {

@@ -129,7 +129,7 @@
   font-size: var(--font-size-xs);
   font-weight: 500;
   line-height: 1;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgb(255 255 255 / 90%);
   text-align: center;
 }
 
@@ -164,7 +164,7 @@
 .form-group input:focus {
   outline: none;
   border-color: var(--accent-primary);
-  box-shadow: 0 0 0 2px rgba(92, 107, 192, 0.3);
+  box-shadow: 0 0 0 2px rgb(92 107 192 / 30%);
 }
 
 /* Error message */
@@ -174,7 +174,7 @@
   gap: var(--space-2);
   padding: var(--space-3);
   margin-bottom: var(--space-4);
-  background: rgba(239, 83, 80, 0.1);
+  background: rgb(239 83 80 / 10%);
   border: 1px solid var(--accent-danger);
   border-radius: var(--border-radius-md);
   color: var(--accent-danger);
@@ -321,7 +321,7 @@
 .language-filter-input input:focus {
   outline: none;
   border-color: var(--accent-primary);
-  box-shadow: 0 0 0 2px rgba(92, 107, 192, 0.3);
+  box-shadow: 0 0 0 2px rgb(92 107 192 / 30%);
 }
 
 .language-filter-input .input-icon-btn {
@@ -374,6 +374,7 @@
   justify-content: center;
 
 }
+
 .login-alt-btn img {
   filter: drop-shadow(0px 0px 1px black) drop-shadow(0px 0px 10px silver);
 }
@@ -454,6 +455,7 @@
   align-items: center;
   justify-content: center;
 }
+
 div#language-table.tabulator div.tabulator-header div.tabulator-header-contents div.tabulator-headers div.tabulator-col.language-flag-cell {
   display: inline-block;
 }                

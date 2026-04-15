@@ -44,7 +44,7 @@ export default defineConfig(({ mode }) => {
             'vendor-tabulator': ['tabulator-tables'],              // Data grids (queries, style-manager, login)
             'vendor-codemirror': [                                  // Code/text editors (queries, login, style-manager, session-log)
               '@codemirror/lang-markdown', '@codemirror/lang-css', '@codemirror/lang-html',
-              '@codemirror/lang-javascript', '@codemirror/lang-json', '@codemirror/lang-sql',
+              '@codemirror/lang-javascript', '@codemirror/lang-sql',
               '@codemirror/state', '@codemirror/theme-one-dark', '@codemirror/view', '@codemirror/commands'
             ],
             'vendor-editor': ['suneditor'],                        // Rich text editor (lookups only)
@@ -52,6 +52,19 @@ export default defineConfig(({ mode }) => {
             // Lighter utilities grouped together (change less frequently)
             'vendor-utils': ['marked', 'dompurify', 'sql-formatter', 'country-flag-icons']
           }
+        },
+        // Suppress warnings from node_modules (external dependencies we cannot control)
+        onwarn(warning, warn) {
+          if (warning.id && warning.id.includes('node_modules')) {
+            return; // Skip warnings from node_modules
+          }
+          // Treat CSS syntax errors as fatal build failures
+          if (warning.code === 'CSS_SYNTAX_ERROR') {
+            throw new Error(`CSS Syntax Error: ${warning.message}`);
+          }
+          warn(warning);
+        }
+      }
         },
         // Suppress warnings from node_modules (external dependencies we cannot control)
         onwarn(warning, warn) {
