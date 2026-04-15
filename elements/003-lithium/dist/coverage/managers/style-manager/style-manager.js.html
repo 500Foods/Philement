@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><title>Code coverage report for managers/style-manager/style-manager.js</title><meta charset="utf-8"><link rel="stylesheet" href="../../prettify.css"><link rel="stylesheet" href="../../base.css"><link rel="shortcut icon" type="image/x-icon" href="../../favicon.png"><meta name="viewport" content="width=device-width,initial-scale=1"><style type="text/css">.coverage-summary .sorter{background-image:url(../../sort-arrow-sprite.png)}</style></head><body><div class="wrapper"><div class="pad1"><h1><a href="../../index.html">All files</a> / <a href="index.html">managers/style-manager</a> style-manager.js</h1><div class="clearfix"><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Statements</span> <span class="fraction">0/614</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Branches</span> <span class="fraction">0/273</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Functions</span> <span class="fraction">0/141</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Lines</span> <span class="fraction">0/572</span></div></div><p class="quiet">Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.</p><template id="filterTemplate"><div class="quiet">Filter: <input type="search" id="fileSearch"></div></template></div><div class="status-line low"></div><pre><table class="coverage">
+<!doctype html><html lang="en"><head><title>Code coverage report for managers/style-manager/style-manager.js</title><meta charset="utf-8"><link rel="stylesheet" href="../../prettify.css"><link rel="stylesheet" href="../../base.css"><link rel="shortcut icon" type="image/x-icon" href="../../favicon.png"><meta name="viewport" content="width=device-width,initial-scale=1"><style type="text/css">.coverage-summary .sorter{background-image:url(../../sort-arrow-sprite.png)}</style></head><body><div class="wrapper"><div class="pad1"><h1><a href="../../index.html">All files</a> / <a href="index.html">managers/style-manager</a> style-manager.js</h1><div class="clearfix"><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Statements</span> <span class="fraction">0/620</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Branches</span> <span class="fraction">0/275</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Functions</span> <span class="fraction">0/142</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Lines</span> <span class="fraction">0/578</span></div></div><p class="quiet">Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.</p><template id="filterTemplate"><div class="quiet">Filter: <input type="search" id="fileSearch"></div></template></div><div class="status-line low"></div><pre><table class="coverage">
 <tr><td class="line-count quiet"><a name="L1"></a><a href="#L1">1</a>
 <a name="L2"></a><a href="#L2">2</a>
 <a name="L3"></a><a href="#L3">3</a>
@@ -1568,7 +1568,17 @@
 <a name="L1567"></a><a href="#L1567">1567</a>
 <a name="L1568"></a><a href="#L1568">1568</a>
 <a name="L1569"></a><a href="#L1569">1569</a>
-<a name="L1570"></a><a href="#L1570">1570</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name="L1570"></a><a href="#L1570">1570</a>
+<a name="L1571"></a><a href="#L1571">1571</a>
+<a name="L1572"></a><a href="#L1572">1572</a>
+<a name="L1573"></a><a href="#L1573">1573</a>
+<a name="L1574"></a><a href="#L1574">1574</a>
+<a name="L1575"></a><a href="#L1575">1575</a>
+<a name="L1576"></a><a href="#L1576">1576</a>
+<a name="L1577"></a><a href="#L1577">1577</a>
+<a name="L1578"></a><a href="#L1578">1578</a>
+<a name="L1579"></a><a href="#L1579">1579</a>
+<a name="L1580"></a><a href="#L1580">1580</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -2925,6 +2935,16 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -4492,6 +4512,12 @@ ${selector}:disabled {
       }
     };
 <span class="cstat-no" title="statement not covered">    document.addEventListener('click', this._footerExportCloseHandler);</span>
+&nbsp;
+    // Listen for close-all-popups event
+<span class="cstat-no" title="statement not covered">    this._footerExportGlobalCloseHandler = <span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
+<span class="cstat-no" title="statement not covered">      this._closeFooterExportPopup();</span>
+    };
+<span class="cstat-no" title="statement not covered">    document.addEventListener('close-all-popups', this._footerExportGlobalCloseHandler);</span>
   }
 &nbsp;
 <span class="fstat-no" title="function not covered">  _closeFooterExportPopup(</span>) {
@@ -4502,6 +4528,10 @@ ${selector}:disabled {
 <span class="cstat-no" title="statement not covered">    if (this._footerExportCloseHandler) {</span>
 <span class="cstat-no" title="statement not covered">      document.removeEventListener('click', this._footerExportCloseHandler);</span>
 <span class="cstat-no" title="statement not covered">      this._footerExportCloseHandler = null;</span>
+    }
+<span class="cstat-no" title="statement not covered">    if (this._footerExportGlobalCloseHandler) {</span>
+<span class="cstat-no" title="statement not covered">      document.removeEventListener('close-all-popups', this._footerExportGlobalCloseHandler);</span>
+<span class="cstat-no" title="statement not covered">      this._footerExportGlobalCloseHandler = null;</span>
     }
   }
 &nbsp;
@@ -4706,4 +4736,4 @@ ${selector}:disabled {
     }
   }
 }
-&nbsp;</pre></td></tr></table></pre><div class="push"></div></div><div class="footer quiet pad2 space-top1 center small">Code coverage generated by <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a> at 2026-04-15T05:28:23.898Z</div><script src="../../prettify.js"></script><script>window.onload=function(){prettyPrint()}</script><script src="../../sorter.js"></script><script src="../../block-navigation.js"></script></body></html>
+&nbsp;</pre></td></tr></table></pre><div class="push"></div></div><div class="footer quiet pad2 space-top1 center small">Code coverage generated by <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a> at 2026-04-15T15:16:29.467Z</div><script src="../../prettify.js"></script><script>window.onload=function(){prettyPrint()}</script><script src="../../sorter.js"></script><script src="../../block-navigation.js"></script></body></html>
