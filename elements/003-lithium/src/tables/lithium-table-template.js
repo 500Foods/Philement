@@ -1,17 +1,5 @@
 import { resolveColumns } from './lithium-table.js';
 
-function hasOwn(obj, key) {
-  return Object.prototype.hasOwnProperty.call(obj, key);
-}
-
-function mergeOverrides(baseOverrides = {}, patchOverrides = {}) {
-  const merged = { ...baseOverrides };
-  Object.entries(patchOverrides).forEach(([key, value]) => {
-    merged[key] = value;
-  });
-  return merged;
-}
-
 function removeHiddenHeaderFilters(columns) {
   columns.forEach((column) => {
     delete column.headerFilter;

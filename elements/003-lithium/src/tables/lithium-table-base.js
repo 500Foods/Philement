@@ -28,11 +28,6 @@ import {
   _tableDefCache,
 } from './lithium-table.js';
 
-import {
-  getSavedTemplates,
-  getTemplateName,
-} from './popups/template-popup.js';
-
 // ── Column Utility Functions ────────────────────────────────────────────────
 
 /**
@@ -1843,7 +1838,8 @@ export class LithiumTableBase {
         }
 
         // Apply other template properties, excluding columns which are already merged
-        const { columns, ...templateProps } = defaultTemplate;
+        const { columns: _col, ...templateProps } = defaultTemplate;
+        void _col; // unused but explicitly excluded
         this.tableDef = { ...this.tableDef, ...templateProps, columns: mergedColumns };
       }
     } catch (e) {

@@ -729,16 +729,6 @@ async function fetchMacrosFromServer(api) {
 }
 
 /**
- * Fetch macros in background (don't await)
- * @private
- */
-function fetchMacrosInBackground(api) {
-  fetchMacrosFromServer(api).catch(err => {
-    logger.warn(`[Lookups] Background macros refresh failed: ${err.message}`);
-  });
-}
-
-/**
  * Get all macros as a key-value object
  * @returns {Object|null} Macros object or null if not loaded
  */
