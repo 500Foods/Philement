@@ -41,6 +41,7 @@ import {
 import { getAppWS, ConnectionState } from '../../shared/app-ws.js';
 import { initRadar, setActiveRadar, wsConnected, wsFlaky, wsDisconnected, onHeartbeat, destroyRadar, setRadarTooltip, getRadarTooltip } from '../../shared/radar-controller.js';
 import '../../core/manager-ui.css';
+import '../../core/popup.css';
 import './main.css';
 
 // localStorage keys for sidebar state
