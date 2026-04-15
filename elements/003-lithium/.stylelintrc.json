@@ -1,0 +1,48 @@
+{
+  "extends": ["stylelint-config-standard"],
+  "rules": {
+    "at-rule-no-unknown": [
+      true,
+      {
+        "ignoreAtRules": [
+          "layer",
+          "container",
+          "tailwind"
+        ]
+      }
+    ],
+    "declaration-block-no-redundant-longhand-properties": null,
+    "declaration-no-important": null,
+    "length-zero-no-unit": null,
+    "property-no-unknown": [
+      true,
+      {
+        "ignoreProperties": [
+          "/^--/"
+        ]
+      }
+    ],
+    "selector-class-pattern": null,
+    "selector-id-pattern": null,
+    "selector-pseudo-class-no-unknown": [
+      true,
+      {
+        "ignorePseudoClasses": [
+          "global",
+          "local"
+        ]
+      }
+    ],
+    "selector-type-no-unknown": [
+      true,
+      {
+        "ignoreTypes": [
+          "fa",
+          "fa-icon"
+        ]
+      }
+    ],
+    "value-keyword-case": null,
+    "comment-empty-line-before": null
+  }
+}

@@ -752,7 +752,7 @@ export default class QueriesManager {
     ];
 
     const popup = document.createElement('div');
-    popup.className = 'queries-footer-export-popup';
+    popup.className = 'queries-footer-export-popup manager-footer-popup';
     formats.forEach(item => {
       const row = document.createElement('button');
       row.type = 'button';
@@ -769,9 +769,8 @@ export default class QueriesManager {
     document.body.appendChild(popup);
 
     requestAnimationFrame(() => {
-      const popupRect = popup.getBoundingClientRect();
       popup.style.position = 'fixed';
-      popup.style.top = `${btnRect.top - popupRect.height - 8}px`;
+      popup.style.top = `${btnRect.bottom}px`;
       popup.style.left = `${btnRect.left}px`;
     });
 

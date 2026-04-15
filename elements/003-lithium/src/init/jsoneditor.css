@@ -5,7 +5,7 @@
 
 /* Main editor container */
 .jsoneditor-container {
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  border: 1px solid rgb(0 0 0 / 10%);
   border-radius: var(--border-radius);
   overflow: hidden;
   margin: 1rem 0;
@@ -15,7 +15,7 @@
 .jsoneditor-nav {
   background-color: var(--card-bg);
   padding: 0.75rem 1rem;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid rgb(0 0 0 / 10%);
 }
 
 /* Editor content area */
@@ -49,7 +49,7 @@
 .jsoneditor-status {
   background-color: var(--card-bg);
   padding: 0.5rem 1rem;
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  border-top: 1px solid rgb(0 0 0 / 10%);
   font-size: 0.8rem;
   color: var(--light-text);
 }
@@ -57,7 +57,7 @@
 /* Error messages */
 .jsoneditor-error {
   color: #F44336;
-  background-color: rgba(244, 67, 54, 0.1);
+  background-color: rgb(244 67 54 / 10%);
   padding: 0.5rem;
   border-radius: 4px;
   margin: 0.5rem 0;
@@ -78,7 +78,7 @@
 }
 
 /* Responsive adjustments */
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .jsoneditor-nav {
     flex-direction: column;
     gap: 1rem;

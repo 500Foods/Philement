@@ -318,10 +318,9 @@
   color: white;
   font-size: var(--font-size-sm);
   cursor: pointer;
-  outline: none;
-  appearance: none;
-  -webkit-appearance: none;
-  transition: background-color var(--transition-fast);
+   outline: none;
+   appearance: none;
+   transition: background-color var(--transition-fast);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='white'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 8px center;
@@ -357,20 +356,10 @@
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-md);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 30%);
   z-index: 100;
   min-width: 80px;
   overflow: hidden;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(4px);
-  transition: opacity var(--transition-fast), visibility var(--transition-fast), transform var(--transition-fast);
-}
-
-.queries-footer-export-popup.visible {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
 }
 
 .queries-footer-export-popup-item {
@@ -399,40 +388,5 @@
 /* ── Toolbar Styles ──────────────────────────────────────────────────────── */
 
 /* Uses lithium-toolbar.css as base - these are manager-specific overrides */
-
-.queries-tabs-header {
-  display: flex;
-  background-color: var(--bg-secondary);
-  padding: var(--space-2) var(--space-3);
-  container-type: inline-size;
-  flex-shrink: 0;
-}
-
-/* Legacy tab button styles - deprecated, use lithium-toolbar-tab */
-.queries-tab-btn {
-  flex: 0 0 auto;
-  white-space: nowrap;
-}
-
-.queries-tab-btn.active {
-  background-color: var(--accent-focus);
-}
-
-.queries-tab-btn:hover {
-  background-color: var(--accent-hover);
-}
-
-/* Legacy placeholder - deprecated, use lithium-toolbar-placeholder */
-.queries-toolbar-placeholder {
-  flex: 1;
-  min-width: 16px;
-}
-
-/* Legacy toolbar buttons - deprecated, use lithium-toolbar-btn */
-.queries-toolbar-btn:disabled {
-  cursor: not-allowed;
-  background-color: var(--accent-disabled);
-  color: var(--text-disabled);
-}
 
 } /* end @layer managers */

@@ -6,4 +6,4 @@
  *   import '../../styles/vendor-tabulator.css';
  */
 
-@import "tabulator-tables/dist/css/tabulator_midnight.min.css" layer(vendors.tabulator);
+@import url("tabulator-tables/dist/css/tabulator_midnight.min.css") layer(vendors.tabulator);

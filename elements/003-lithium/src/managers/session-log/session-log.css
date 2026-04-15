@@ -6,7 +6,7 @@
  * plus a full-height CodeMirror log viewer.
  */
 
-@import '../../core/lithium-toolbar.css';
+@import url('../../core/lithium-toolbar.css');
 
 @layer managers {
 
@@ -19,6 +19,9 @@
   overflow: hidden;
   margin: var(--space-1) var(--space-3);
   border-radius: var(--border-radius-md);
+  /* Fade-in on show */
+  opacity: 0;
+  transition: opacity var(--transition-normal) ease;  
 }
 
 /* Toolbar styling (lithium-toolbar classes are in lithium-toolbar.css) */
@@ -66,12 +69,6 @@
 @keyframes session-log-refresh-spin {
   0%   { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
-}
-
-/* Fade-in on show */
-#session-log-page {
-  opacity: 0;
-  transition: opacity var(--transition-normal) ease;
 }
 
 #session-log-page.visible {
