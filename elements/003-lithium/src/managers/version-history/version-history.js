@@ -25,7 +25,7 @@ import { expandMacros } from '../../core/macro-expansion.js';
 import { getMacros } from '../../shared/lookups.js';
 import '../../core/manager-panels.css';
 import './version-history.css';
-import { setupManagerFooterIcons, closeExportPopup, initToolbars } from '../../core/manager-ui.js';
+import { setupManagerFooterIcons, closeExportPopup, initToolbars, positionPopup, closeAllPopups } from '../../core/manager-ui.js';
 import { ManagerEditHelper } from '../../core/manager-edit-helper.js';
 
 // Dynamic imports
@@ -825,6 +825,8 @@ export default class VersionHistoryManager {
       return;
     }
 
+    closeAllPopups();
+
     const btn = e.currentTarget;
     const mode = this._getFooterDatasource();
     const formats = [
@@ -848,14 +850,8 @@ export default class VersionHistoryManager {
       popup.appendChild(row);
     });
 
-    const btnRect = btn.getBoundingClientRect();
     document.body.appendChild(popup);
-
-    requestAnimationFrame(() => {
-      popup.style.position = 'fixed';
-      popup.style.top = `${btnRect.bottom}px`;
-      popup.style.left = `${btnRect.left}px`;
-    });
+    positionPopup(popup, btn, 'footer-riseup');
 
     setTimeout(() => {
       popup.classList.add('visible');
@@ -869,6 +865,12 @@ export default class VersionHistoryManager {
       }
     };
     document.addEventListener('click', this._footerExportCloseHandler);
+
+    // Listen for close-all-popups event
+    this._footerExportGlobalCloseHandler = () => {
+      this._closeFooterExportPopup();
+    };
+    document.addEventListener('close-all-popups', this._footerExportGlobalCloseHandler);
   }
 
   _closeFooterExportPopup() {
@@ -879,6 +881,10 @@ export default class VersionHistoryManager {
     if (this._footerExportCloseHandler) {
       document.removeEventListener('click', this._footerExportCloseHandler);
       this._footerExportCloseHandler = null;
+    }
+    if (this._footerExportGlobalCloseHandler) {
+      document.removeEventListener('close-all-popups', this._footerExportGlobalCloseHandler);
+      this._footerExportGlobalCloseHandler = null;
     }
   }
 

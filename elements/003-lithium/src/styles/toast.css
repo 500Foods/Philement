@@ -313,12 +313,6 @@
   line-height: 1.5;
 }
 
-.toast-details-content {
-  white-space: pre-wrap;
-  word-break: break-word;
-  line-height: 1.5;
-}
-
 /* Details border per type */
 .toast-error .toast-details {
   border-left: 2px solid var(--color-error, #f28b82);

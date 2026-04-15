@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><title>Code coverage report for managers/queries/queries.js</title><meta charset="utf-8"><link rel="stylesheet" href="../../prettify.css"><link rel="stylesheet" href="../../base.css"><link rel="shortcut icon" type="image/x-icon" href="../../favicon.png"><meta name="viewport" content="width=device-width,initial-scale=1"><style type="text/css">.coverage-summary .sorter{background-image:url(../../sort-arrow-sprite.png)}</style></head><body><div class="wrapper"><div class="pad1"><h1><a href="../../index.html">All files</a> / <a href="index.html">managers/queries</a> queries.js</h1><div class="clearfix"><div class="fl pad1y space-right2"><span class="strong">8.62% </span><span class="quiet">Statements</span> <span class="fraction">45/522</span></div><div class="fl pad1y space-right2"><span class="strong">10.43% </span><span class="quiet">Branches</span> <span class="fraction">31/297</span></div><div class="fl pad1y space-right2"><span class="strong">2.56% </span><span class="quiet">Functions</span> <span class="fraction">3/117</span></div><div class="fl pad1y space-right2"><span class="strong">9.1% </span><span class="quiet">Lines</span> <span class="fraction">44/483</span></div></div><p class="quiet">Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.</p><template id="filterTemplate"><div class="quiet">Filter: <input type="search" id="fileSearch"></div></template></div><div class="status-line low"></div><pre><table class="coverage">
+<!doctype html><html lang="en"><head><title>Code coverage report for managers/queries/queries.js</title><meta charset="utf-8"><link rel="stylesheet" href="../../prettify.css"><link rel="stylesheet" href="../../base.css"><link rel="shortcut icon" type="image/x-icon" href="../../favicon.png"><meta name="viewport" content="width=device-width,initial-scale=1"><style type="text/css">.coverage-summary .sorter{background-image:url(../../sort-arrow-sprite.png)}</style></head><body><div class="wrapper"><div class="pad1"><h1><a href="../../index.html">All files</a> / <a href="index.html">managers/queries</a> queries.js</h1><div class="clearfix"><div class="fl pad1y space-right2"><span class="strong">8.67% </span><span class="quiet">Statements</span> <span class="fraction">45/519</span></div><div class="fl pad1y space-right2"><span class="strong">10.43% </span><span class="quiet">Branches</span> <span class="fraction">31/297</span></div><div class="fl pad1y space-right2"><span class="strong">2.58% </span><span class="quiet">Functions</span> <span class="fraction">3/116</span></div><div class="fl pad1y space-right2"><span class="strong">9.16% </span><span class="quiet">Lines</span> <span class="fraction">44/480</span></div></div><p class="quiet">Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.</p><template id="filterTemplate"><div class="quiet">Filter: <input type="search" id="fileSearch"></div></template></div><div class="status-line low"></div><pre><table class="coverage">
 <tr><td class="line-count quiet"><a name="L1"></a><a href="#L1">1</a>
 <a name="L2"></a><a href="#L2">2</a>
 <a name="L3"></a><a href="#L3">3</a>
@@ -1135,11 +1135,7 @@
 <a name="L1134"></a><a href="#L1134">1134</a>
 <a name="L1135"></a><a href="#L1135">1135</a>
 <a name="L1136"></a><a href="#L1136">1136</a>
-<a name="L1137"></a><a href="#L1137">1137</a>
-<a name="L1138"></a><a href="#L1138">1138</a>
-<a name="L1139"></a><a href="#L1139">1139</a>
-<a name="L1140"></a><a href="#L1140">1140</a>
-<a name="L1141"></a><a href="#L1141">1141</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name="L1137"></a><a href="#L1137">1137</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1884,6 +1880,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1908,12 +1906,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -2307,7 +2299,7 @@ import { authQuery } from '../../shared/conduit.js';
 import { toast } from '../../shared/toast.js';
 import { log, Subsystems, Status } from '../../core/log.js';
 import { processIcons } from '../../core/icons.js';
-import { setupManagerFooterIcons, createFontPopup, initToolbars } from '../../core/manager-ui.js';
+import { setupManagerFooterIcons, createFontPopup, initToolbars, positionPopup, closeAllPopups } from '../../core/manager-ui.js';
 import { ManagerEditHelper } from '../../core/manager-edit-helper.js';
 import { formatSortedJson, parseAndSortJson } from '../../core/codemirror-setup.js';
 &nbsp;
@@ -2435,7 +2427,7 @@ export default class QueriesManager {
       container: this.elements.tableContainer,
       navigatorContainer: this.elements.navigatorContainer,
       tablePath: 'queries/query-manager',
-      lookupKeyIdx: 1,
+      lookupKeyIdx: 5,
       queryRef: 25,           // QueryRef 25 - Query List
       searchQueryRef: 32,     // QueryRef 32 - Query Search
       cssPrefix: 'queries',
@@ -3023,6 +3015,8 @@ export default class QueriesManager {
 <span class="cstat-no" title="statement not covered">      return;</span>
     }
 &nbsp;
+<span class="cstat-no" title="statement not covered">    closeAllPopups();</span>
+&nbsp;
     const btn = <span class="cstat-no" title="statement not covered">e.currentTarget;</span>
     const mode = <span class="cstat-no" title="statement not covered">this._getFooterDatasource();</span>
     const formats = <span class="cstat-no" title="statement not covered">[</span>
@@ -3046,14 +3040,8 @@ export default class QueriesManager {
 <span class="cstat-no" title="statement not covered">      popup.appendChild(row);</span>
     });
 &nbsp;
-    const btnRect = <span class="cstat-no" title="statement not covered">btn.getBoundingClientRect();</span>
 <span class="cstat-no" title="statement not covered">    document.body.appendChild(popup);</span>
-&nbsp;
-<span class="cstat-no" title="statement not covered">    requestAnimationFrame(<span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
-<span class="cstat-no" title="statement not covered">      popup.style.position = 'fixed';</span>
-<span class="cstat-no" title="statement not covered">      popup.style.top = `${btnRect.bottom}px`;</span>
-<span class="cstat-no" title="statement not covered">      popup.style.left = `${btnRect.left}px`;</span>
-    });
+<span class="cstat-no" title="statement not covered">    positionPopup(popup, btn, 'footer-riseup');</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered">    setTimeout(<span class="fstat-no" title="function not covered">()</span> =&gt; {</span>
 <span class="cstat-no" title="statement not covered">      popup.classList.add('visible');</span>
@@ -3419,4 +3407,4 @@ export default class QueriesManager {
 <span class="cstat-no" title="statement not covered">    this.queryTable = null;</span>
   }
 }
-&nbsp;</pre></td></tr></table></pre><div class="push"></div></div><div class="footer quiet pad2 space-top1 center small">Code coverage generated by <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a> at 2026-04-14T23:33:07.599Z</div><script src="../../prettify.js"></script><script>window.onload=function(){prettyPrint()}</script><script src="../../sorter.js"></script><script src="../../block-navigation.js"></script></body></html>
+&nbsp;</pre></td></tr></table></pre><div class="push"></div></div><div class="footer quiet pad2 space-top1 center small">Code coverage generated by <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a> at 2026-04-15T05:28:23.898Z</div><script src="../../prettify.js"></script><script>window.onload=function(){prettyPrint()}</script><script src="../../sorter.js"></script><script src="../../block-navigation.js"></script></body></html>

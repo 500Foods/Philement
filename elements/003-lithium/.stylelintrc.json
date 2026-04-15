@@ -38,11 +38,16 @@
       {
         "ignoreTypes": [
           "fa",
-          "fa-icon"
+          "fa-icon",
+          "com-1password-button"
         ]
       }
     ],
     "value-keyword-case": null,
-    "comment-empty-line-before": null
+    "comment-empty-line-before": null,
+    "keyframes-name-pattern": null,
+    "no-descending-specificity": null,
+    "declaration-property-value-keyword-no-deprecated": null,
+    "font-family-no-missing-generic-family-keyword": null
   }
 }

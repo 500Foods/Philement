@@ -331,6 +331,50 @@ Creates Print, Email, Export, and Reports select buttons in the manager footer.
 
 Creates the standard footer action icons (Crimson, Notifications, Concierge, Annotations, Tours, Training).
 
+### Popup Positioning and Behavior
+
+All manager UI popups follow standardized positioning, styling, and animation rules:
+
+#### **Header Popups** (Keyboard Shortcuts, Zoom)
+- **Positioning**: Drop down from header buttons
+- **Anchor**: Top-right corner of popup positioned 1px below bottom-right corner of button
+- **Corners**: Top corners squared off (`border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg)`)
+- **Animation**: Scales from top-right origin (expands down and left)
+- **Examples**: Keyboard shortcuts popup, Zoom popup
+
+#### **Footer Popups** (Tours, Training, Export Formats)
+- **Positioning**: Rise up from footer buttons
+- **Anchor**: Bottom-right corner of popup positioned 1px above top-right corner of button
+- **Corners**: Bottom corners squared off (`border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0`)
+- **Animation**: Scales from bottom-left origin (expands up and left)
+- **Examples**: Tours popup, Training popup, Export format popups
+- **Export Popups**: Manager-specific export menus (Queries, Lookups, Style Manager, Version History) use the same positioning system but are implemented separately in each manager
+
+#### **Common Behavior**
+- **Exclusive Opening**: Opening any popup closes all other popups via `closeAllPopups()` event
+- **Animation**: Scale from 50% to 100% with fade-in, reverse on close
+- **Timing**: Uses `--transition-duration` (350ms) for consistency
+- **Z-Index**: 10001 for visibility above most UI elements
+
+#### **CSS Classes**
+- `.manager-ui-popup` - Base popup styling (background, border, shadow, transitions)
+- `.manager-header-popup` - Header popup styling (top squared corners, top-right transform origin)
+- `.manager-footer-popup` - Footer popup styling (bottom squared corners, bottom-left transform origin)
+- `.manager-ui-popup.visible` - Visible state (opacity: 1, scale: 1)
+
+#### **Implementation Functions**
+- `positionPopup(popup, button, alignment)` - Positions popup relative to button
+  - `alignment: 'header-dropdown'` - Header popup positioning
+  - `alignment: 'footer-riseup'` - Footer popup positioning
+- `closeAllPopups()` - Closes all manager UI popups and dispatches global close event
+- Event: `'close-all-popups'` - Custom event all popups listen for to close when others open
+
+#### **Troubleshooting**
+- **Popups not closing**: Ensure all popup functions call `closeAllPopups()` and listen for `'close-all-popups'` event
+- **Positioning issues**: Use `positionPopup()` after popup is added to DOM, and call `requestAnimationFrame()` twice for proper dimension calculation
+- **Animation problems**: Check `transform-origin` matches expected expansion direction
+- **Corner styling**: Verify CSS classes are applied correctly and border-radius overrides are working
+
 ---
 
 ## Coding Patterns

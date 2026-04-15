@@ -1197,33 +1197,6 @@
   height: 14px;
 }
 
-/* Citation Popup */
-.crimson-citation-popup {
-  position: fixed;
-  z-index: 20002;
-  display: flex;
-  flex-direction: column;
-  width: 500px;
-  max-width: 90vw;
-  max-height: 400px;
-  background: var(--bg-primary);
-  border: var(--border-standard);
-  border-radius: var(--border-radius-lg);
-  box-shadow: var(--shadow-lg);
-  opacity: 0;
-  visibility: hidden;
-  transform: scale(0.95);
-  transition: opacity var(--transition-duration) ease,
-              visibility var(--transition-duration) ease,
-              transform var(--transition-duration) ease;
-}
-
-.crimson-citation-popup.visible {
-  opacity: 1;
-  visibility: visible;
-  transform: scale(1);
-}
-
 /* ── Crimson Themed Popup (for Citation Manager) ─────────────────────────────
    Similar to column manager popups — uses --accent-crimson for distinction */
 
@@ -1308,86 +1281,6 @@
   border-style: solid;
   border-width: 7px 7px 0;
   border-color: var(--bg-primary) transparent transparent transparent;
-}
-
-/* Popup header */
-.crimson-citation-popup-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--space-3) var(--space-4);
-  background: var(--bg-secondary);
-  border-bottom: var(--border-standard);
-  border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
-  flex-shrink: 0;
-}
-
-.crimson-citation-popup-title {
-  font-size: var(--font-size-md);
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.crimson-citation-popup-close {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  background: transparent;
-  border: none;
-  border-radius: var(--border-radius-md);
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: all var(--transition-fast) ease;
-}
-
-.crimson-citation-popup-close:hover {
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
-}
-
-/* Popup content — hosts the LithiumTable */
-.crimson-citation-popup-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  padding: 0;
-  min-height: 0;
-}
-
-/* LithiumTable container overrides for citation popup */
-.crimson-citation-table-wrap.lithium-table-container {
-  flex: 1;
-  margin: 0;
-  border: none;
-  border-radius: 0;
-  min-height: 0;
-}
-
-.crimson-citation-table-wrap .tabulator {
-  border: none;
-  height: 100% !important;
-  font-size: var(--font-size-sm);
-}
-
-/* Navigator sits below the table */
-.crimson-citation-nav-wrap.lithium-navigator-container {
-  padding: var(--space-1) var(--space-2);
-  border-top: var(--border-standard);
-  flex-shrink: 0;
-}
-
-/* URL column styling inside Tabulator cells */
-.crimson-citation-url {
-  font-family: var(--font-mono);
-  font-size: var(--font-size-xs);
-  color: var(--text-muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 /* ========================================

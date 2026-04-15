@@ -26,7 +26,7 @@ import { authQuery } from '../../shared/conduit.js';
 import { toast } from '../../shared/toast.js';
 import { log, Subsystems, Status } from '../../core/log.js';
 import { processIcons } from '../../core/icons.js';
-import { setupManagerFooterIcons, createFontPopup, initToolbars } from '../../core/manager-ui.js';
+import { setupManagerFooterIcons, createFontPopup, initToolbars, positionPopup, closeAllPopups } from '../../core/manager-ui.js';
 import { ManagerEditHelper } from '../../core/manager-edit-helper.js';
 import { formatSortedJson, parseAndSortJson } from '../../core/codemirror-setup.js';
 
@@ -154,7 +154,7 @@ export default class QueriesManager {
       container: this.elements.tableContainer,
       navigatorContainer: this.elements.navigatorContainer,
       tablePath: 'queries/query-manager',
-      lookupKeyIdx: 1,
+      lookupKeyIdx: 5,
       queryRef: 25,           // QueryRef 25 - Query List
       searchQueryRef: 32,     // QueryRef 32 - Query Search
       cssPrefix: 'queries',
@@ -742,6 +742,8 @@ export default class QueriesManager {
       return;
     }
 
+    closeAllPopups();
+
     const btn = e.currentTarget;
     const mode = this._getFooterDatasource();
     const formats = [
@@ -765,14 +767,8 @@ export default class QueriesManager {
       popup.appendChild(row);
     });
 
-    const btnRect = btn.getBoundingClientRect();
     document.body.appendChild(popup);
-
-    requestAnimationFrame(() => {
-      popup.style.position = 'fixed';
-      popup.style.top = `${btnRect.bottom}px`;
-      popup.style.left = `${btnRect.left}px`;
-    });
+    positionPopup(popup, btn, 'footer-riseup');
 
     setTimeout(() => {
       popup.classList.add('visible');
@@ -786,6 +782,12 @@ export default class QueriesManager {
       }
     };
     document.addEventListener('click', this._footerExportCloseHandler);
+
+    // Listen for close-all-popups event
+    this._footerExportGlobalCloseHandler = () => {
+      this._closeFooterExportPopup();
+    };
+    document.addEventListener('close-all-popups', this._footerExportGlobalCloseHandler);
   }
 
   _closeFooterExportPopup() {
@@ -796,6 +798,10 @@ export default class QueriesManager {
     if (this._footerExportCloseHandler) {
       document.removeEventListener('click', this._footerExportCloseHandler);
       this._footerExportCloseHandler = null;
+    }
+    if (this._footerExportGlobalCloseHandler) {
+      document.removeEventListener('close-all-popups', this._footerExportGlobalCloseHandler);
+      this._footerExportGlobalCloseHandler = null;
     }
   }
 
