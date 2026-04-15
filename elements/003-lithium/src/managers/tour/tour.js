@@ -1630,7 +1630,7 @@ export async function launchVideoTour(tour, options = {}) {
         <div class="lithium-video-tour-time">0:00 / 0:00</div>
         <div class="lithium-video-tour-spacer"></div>
         <button type="button" class="lithium-video-tour-captions-btn active" data-video-action="captions" title="Toggle Captions">
-          <fa fa-closed-captioning></fa>
+          <fa fa-subtitles></fa>
         </button>
         <button type="button" class="lithium-video-tour-speed-btn" data-video-action="speed">
           <span>1x</span>

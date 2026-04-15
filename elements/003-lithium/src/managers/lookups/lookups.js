@@ -1373,11 +1373,11 @@ export default class LookupsManager {
 
     // Build popup
     const popup = document.createElement('div');
-    popup.className = 'lookups-footer-export-popup manager-footer-popup';
+    popup.className = 'manager-footer-export-popup manager-footer-popup';
     formats.forEach(item => {
       const row = document.createElement('button');
       row.type = 'button';
-      row.className = 'lookups-footer-export-popup-item';
+      row.className = 'manager-footer-export-popup-item';
       row.textContent = item.label;
       row.addEventListener('click', () => {
         this._closeFooterExportPopup();
