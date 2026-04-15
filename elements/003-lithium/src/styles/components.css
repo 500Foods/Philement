@@ -687,46 +687,10 @@
            0 0 var(--spinner-fancy-color-3), 0 0 var(--spinner-fancy-color-2),0 0 var(--spinner-fancy-color-3), 0 0 var(--spinner-fancy-color-2)}
 }
 
-/* ========================================
-   Manager UI Popups
-   ======================================== */
-
-.manager-ui-popup {
-  background: var(--bg-secondary, #1a1a2e);
-  border: 1px solid var(--border-color, #2d2d44);
-  border-radius: var(--border-radius-lg, 8px);
-  box-shadow: 0 8px 32px #0006;
-  min-width: 200px;
-  max-width: 320px;
-  max-height: 400px;
-  overflow: hidden;
-  /* Start state: invisible, scaled down, positioned with offset */
-  opacity: 0;
-  transform: translateY(-8px) scale(0.5);
-  transform-origin: top right;
-  transition: opacity var(--transition-duration, 350ms) ease,
-              transform var(--transition-duration, 350ms) ease;
-  pointer-events: none;
-  z-index: 10001;
-}
-
-.manager-ui-popup.visible {
-  /* End state: visible, full scale, positioned correctly */
-  opacity: 1;
-  transform: translateY(0) scale(1);
-  pointer-events: auto;
-}
-
-.manager-ui-popup.manager-header-popup {
-  /* Header popups: squared off top edge */
-  transform-origin: top right;
-  border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg);
-}
-
-.manager-ui-popup.manager-footer-popup {
-  /* Footer popups: squared off bottom edge */
-  transform-origin: bottom left;
-  border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+/* Active popup button toggle state - kept here for components layer specificity */
+.manager-ui-btn.popup-active {
+  background-color: var(--accent-toggle, #FFFF8F) !important;
+  color: var(--text-toggle, black) !important;
 }
 
 /* Spinner overlay for blocking UI */

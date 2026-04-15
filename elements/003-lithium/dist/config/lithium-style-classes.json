@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS class selectors/names used across the Lithium codebase",
-    "generated": "2026-04-15T05:47:36.687Z",
+    "generated": "2026-04-15T15:17:27.280Z",
     "sources": {
-      "css": "50 files in src/**/*.css",
-      "js": "102 files in src/**/*.js",
+      "css": "51 files in src/**/*.css",
+      "js": "103 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
-    "total_selectors": 1745,
-    "total_occurrences": 26216
+    "total_selectors": 1749,
+    "total_occurrences": 27917
   },
   "selectors": [
     {
@@ -1221,9 +1221,9 @@
     {
       "selector": ".col-manager-mode-btn.active",
       "css": 1,
-      "js": 54,
+      "js": 68,
       "html": 9,
-      "total": 64,
+      "total": 78,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
@@ -1519,9 +1519,9 @@
     {
       "selector": ".col-manager-popup.depth-2 .col-manager-mode-btn.active",
       "css": 1,
-      "js": 58,
+      "js": 72,
       "html": 9,
-      "total": 68,
+      "total": 82,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
@@ -1855,15 +1855,17 @@
     {
       "selector": ".col-manager-popup.visible",
       "css": 1,
-      "js": 92,
+      "js": 110,
       "html": 0,
-      "total": 93,
+      "total": 111,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
           "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
@@ -3105,9 +3107,9 @@
     {
       "selector": ".crimson-citation-header-btn.active",
       "css": 1,
-      "js": 56,
+      "js": 70,
       "html": 9,
-      "total": 66,
+      "total": 80,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -3141,9 +3143,9 @@
     {
       "selector": ".crimson-citation-header-btn.active .crimson-citation-counter",
       "css": 1,
-      "js": 58,
+      "js": 72,
       "html": 9,
-      "total": 68,
+      "total": 82,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -3550,15 +3552,17 @@
     {
       "selector": ".crimson-citation-popup.visible",
       "css": 1,
-      "js": 98,
+      "js": 116,
       "html": 0,
-      "total": 99,
+      "total": 117,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
         ],
         "js": [
           "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
@@ -3870,9 +3874,9 @@
     {
       "selector": ".crimson-debug-btn.active",
       "css": 1,
-      "js": 56,
+      "js": 70,
       "html": 9,
-      "total": 66,
+      "total": 80,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -5042,15 +5046,17 @@
     {
       "selector": ".crimson-overlay.visible",
       "css": 1,
-      "js": 90,
+      "js": 108,
       "html": 0,
-      "total": 91,
+      "total": 109,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
         ],
         "js": [
           "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
@@ -5243,15 +5249,17 @@
     {
       "selector": ".crimson-popup.visible",
       "css": 1,
-      "js": 90,
+      "js": 108,
       "html": 0,
-      "total": 91,
+      "total": 109,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
         ],
         "js": [
           "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
@@ -6524,9 +6532,9 @@
     {
       "selector": ".font-popup-style-btn.active",
       "css": 1,
-      "js": 54,
+      "js": 68,
       "html": 9,
-      "total": 64,
+      "total": 78,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -6573,15 +6581,17 @@
     {
       "selector": ".font-popup.visible",
       "css": 1,
-      "js": 89,
+      "js": 107,
       "html": 0,
-      "total": 90,
+      "total": 108,
       "files": {
         "css": [
           "src/core/manager-panels.css"
         ],
         "js": [
           "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
@@ -6693,15 +6703,17 @@
     {
       "selector": ".footer-export-popup.visible",
       "css": 1,
-      "js": 89,
+      "js": 107,
       "html": 0,
-      "total": 90,
+      "total": 108,
       "files": {
         "css": [
           "src/core/manager-panels.css"
         ],
         "js": [
           "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
@@ -8782,15 +8794,17 @@
     {
       "selector": ".lithium-col-chooser-popup.visible",
       "css": 1,
-      "js": 89,
+      "js": 107,
       "html": 0,
-      "total": 90,
+      "total": 108,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
         ],
         "js": [
           "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
@@ -9453,15 +9467,17 @@
     {
       "selector": ".lithium-nav-popup.visible",
       "css": 1,
-      "js": 101,
+      "js": 119,
       "html": 0,
-      "total": 102,
+      "total": 120,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
         ],
         "js": [
           "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
@@ -11755,9 +11771,9 @@
     {
       "selector": ".lithium-toolbar-btn.active",
       "css": 1,
-      "js": 79,
+      "js": 93,
       "html": 97,
-      "total": 177,
+      "total": 191,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -11793,9 +11809,9 @@
     {
       "selector": ".lithium-toolbar-btn.active:hover",
       "css": 1,
-      "js": 79,
+      "js": 93,
       "html": 97,
-      "total": 177,
+      "total": 191,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -12055,15 +12071,17 @@
     {
       "selector": ".lithium-toolbar-popup.visible",
       "css": 1,
-      "js": 110,
+      "js": 128,
       "html": 61,
-      "total": 172,
+      "total": 190,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
         ],
         "js": [
           "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
@@ -12218,9 +12236,9 @@
     {
       "selector": ".lithium-toolbar-state-btn.active",
       "css": 1,
-      "js": 76,
+      "js": 90,
       "html": 75,
-      "total": 152,
+      "total": 166,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -12380,9 +12398,9 @@
     {
       "selector": ".lithium-toolbar-tab.active",
       "css": 1,
-      "js": 77,
+      "js": 91,
       "html": 82,
-      "total": 160,
+      "total": 174,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -13138,15 +13156,17 @@
     {
       "selector": ".lithium-tour-list-popup.visible",
       "css": 1,
-      "js": 90,
+      "js": 108,
       "html": 0,
-      "total": 91,
+      "total": 109,
       "files": {
         "css": [
           "src/managers/tour/tour.css"
         ],
         "js": [
           "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
@@ -13346,15 +13366,17 @@
     {
       "selector": ".lithium-video-tour-caption.visible",
       "css": 1,
-      "js": 91,
+      "js": 109,
       "html": 0,
-      "total": 92,
+      "total": 110,
       "files": {
         "css": [
           "src/managers/tour/tour.css"
         ],
         "js": [
           "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
@@ -13414,9 +13436,9 @@
     {
       "selector": ".lithium-video-tour-captions-btn.active",
       "css": 1,
-      "js": 58,
+      "js": 72,
       "html": 9,
-      "total": 68,
+      "total": 82,
       "files": {
         "css": [
           "src/managers/tour/tour.css"
@@ -13449,9 +13471,9 @@
     {
       "selector": ".lithium-video-tour-captions-btn.active:hover",
       "css": 1,
-      "js": 58,
+      "js": 72,
       "html": 9,
-      "total": 68,
+      "total": 82,
       "files": {
         "css": [
           "src/managers/tour/tour.css"
@@ -14063,15 +14085,17 @@
     {
       "selector": ".lithium-video-tour-popup.visible",
       "css": 1,
-      "js": 90,
+      "js": 108,
       "html": 0,
-      "total": 91,
+      "total": 109,
       "files": {
         "css": [
           "src/managers/tour/tour.css"
         ],
         "js": [
           "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
@@ -14881,9 +14905,9 @@
     {
       "selector": ".login-container.visible",
       "css": 2,
-      "js": 90,
+      "js": 108,
       "html": 1,
-      "total": 93,
+      "total": 111,
       "files": {
         "css": [
           "src/managers/login/login.css",
@@ -14891,6 +14915,8 @@
         ],
         "js": [
           "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
@@ -14959,9 +14985,9 @@
     {
       "selector": ".login-error.visible",
       "css": 2,
-      "js": 91,
+      "js": 109,
       "html": 1,
-      "total": 94,
+      "total": 112,
       "files": {
         "css": [
           "src/managers/login/login.css",
@@ -14969,6 +14995,8 @@
         ],
         "js": [
           "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
@@ -15572,15 +15600,17 @@
     {
       "selector": ".login-mockup .login-error.visible",
       "css": 1,
-      "js": 92,
+      "js": 110,
       "html": 1,
-      "total": 94,
+      "total": 112,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
         ],
         "js": [
           "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
@@ -15881,15 +15911,17 @@
     {
       "selector": ".login-subpanel.visible",
       "css": 1,
-      "js": 89,
+      "js": 107,
       "html": 4,
-      "total": 94,
+      "total": 112,
       "files": {
         "css": [
           "src/styles/layout.css"
         ],
         "js": [
           "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
@@ -16107,15 +16139,17 @@
     {
       "selector": ".logout-overlay.visible",
       "css": 1,
-      "js": 89,
+      "js": 107,
       "html": 1,
-      "total": 91,
+      "total": 109,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
           "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
@@ -16302,15 +16336,17 @@
     {
       "selector": ".logout-panel.visible",
       "css": 1,
-      "js": 89,
+      "js": 107,
       "html": 4,
-      "total": 94,
+      "total": 112,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
           "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
@@ -17044,9 +17080,9 @@
     {
       "selector": ".lookups-tab-btn.active",
       "css": 1,
-      "js": 55,
+      "js": 69,
       "html": 9,
-      "total": 65,
+      "total": 79,
       "files": {
         "css": [
           "src/managers/lookups/lookups.css"
@@ -17133,9 +17169,9 @@
     {
       "selector": ".lookups-tab-pane.active",
       "css": 1,
-      "js": 55,
+      "js": 69,
       "html": 12,
-      "total": 68,
+      "total": 82,
       "files": {
         "css": [
           "src/managers/lookups/lookups.css"
@@ -18007,9 +18043,9 @@
     {
       "selector": ".manager-font-popup-style-btn.active",
       "css": 1,
-      "js": 75,
+      "js": 89,
       "html": 9,
-      "total": 85,
+      "total": 99,
       "files": {
         "css": [
           "src/core/manager-ui.css"
@@ -18058,15 +18094,17 @@
     {
       "selector": ".manager-font-popup.visible",
       "css": 1,
-      "js": 108,
+      "js": 126,
       "html": 0,
-      "total": 109,
+      "total": 127,
       "files": {
         "css": [
           "src/core/manager-ui.css"
         ],
         "js": [
           "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
@@ -18173,13 +18211,14 @@
     },
     {
       "selector": ".manager-footer-export-icon",
-      "css": 1,
+      "css": 2,
       "js": 2,
       "html": 0,
-      "total": 3,
+      "total": 4,
       "files": {
         "css": [
-          "src/core/manager-ui.css"
+          "src/core/manager-ui.css",
+          "src/core/popup.css"
         ],
         "js": [
           "src/core/manager-ui.js"
@@ -18189,128 +18228,162 @@
     },
     {
       "selector": ".manager-footer-export-popup",
-      "css": 1,
-      "js": 4,
+      "css": 2,
+      "js": 5,
       "html": 0,
-      "total": 5,
+      "total": 7,
       "files": {
         "css": [
-          "src/core/manager-ui.css"
+          "src/core/manager-ui.css",
+          "src/core/popup.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/core/popup.js"
         ],
         "html": []
       }
     },
     {
       "selector": ".manager-footer-export-popup-item",
-      "css": 1,
-      "js": 6,
+      "css": 2,
+      "js": 7,
       "html": 0,
-      "total": 7,
+      "total": 9,
       "files": {
         "css": [
-          "src/core/manager-ui.css"
+          "src/core/manager-ui.css",
+          "src/core/popup.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/core/popup.js"
         ],
         "html": []
       }
     },
     {
       "selector": ".manager-footer-export-popup-item:active",
-      "css": 1,
-      "js": 6,
+      "css": 2,
+      "js": 7,
       "html": 0,
-      "total": 7,
+      "total": 9,
       "files": {
         "css": [
-          "src/core/manager-ui.css"
+          "src/core/manager-ui.css",
+          "src/core/popup.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/core/popup.js"
         ],
         "html": []
       }
     },
     {
       "selector": ".manager-footer-export-popup-item:disabled",
-      "css": 1,
-      "js": 6,
+      "css": 2,
+      "js": 7,
       "html": 0,
-      "total": 7,
+      "total": 9,
       "files": {
         "css": [
-          "src/core/manager-ui.css"
+          "src/core/manager-ui.css",
+          "src/core/popup.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/core/popup.js"
         ],
         "html": []
       }
     },
     {
       "selector": ".manager-footer-export-popup-item:disabled:hover",
-      "css": 1,
-      "js": 6,
+      "css": 2,
+      "js": 7,
       "html": 0,
-      "total": 7,
+      "total": 9,
       "files": {
         "css": [
-          "src/core/manager-ui.css"
+          "src/core/manager-ui.css",
+          "src/core/popup.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/core/popup.js"
         ],
         "html": []
       }
     },
     {
       "selector": ".manager-footer-export-popup-item:hover",
-      "css": 1,
-      "js": 6,
+      "css": 2,
+      "js": 7,
       "html": 0,
-      "total": 7,
+      "total": 9,
       "files": {
         "css": [
-          "src/core/manager-ui.css"
+          "src/core/manager-ui.css",
+          "src/core/popup.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/core/popup.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".manager-footer-export-popup-item:hover .manager-footer-export-icon",
+      "css": 1,
+      "js": 9,
+      "html": 0,
+      "total": 10,
+      "files": {
+        "css": [
+          "src/core/popup.css"
+        ],
+        "js": [
+          "src/core/manager-ui.js",
+          "src/core/popup.js"
         ],
         "html": []
       }
     },
     {
       "selector": ".manager-footer-export-popup-separator",
-      "css": 1,
-      "js": 5,
+      "css": 2,
+      "js": 6,
       "html": 0,
-      "total": 6,
+      "total": 8,
       "files": {
         "css": [
-          "src/core/manager-ui.css"
+          "src/core/manager-ui.css",
+          "src/core/popup.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/core/popup.js"
         ],
         "html": []
       }
     },
     {
       "selector": ".manager-footer-export-popup.visible",
-      "css": 1,
-      "js": 93,
+      "css": 2,
+      "js": 112,
       "html": 0,
-      "total": 94,
+      "total": 114,
       "files": {
         "css": [
-          "src/core/manager-ui.css"
+          "src/core/manager-ui.css",
+          "src/core/popup.css"
         ],
         "js": [
           "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
@@ -18338,15 +18411,16 @@
     {
       "selector": ".manager-footer-popup",
       "css": 1,
-      "js": 6,
+      "js": 8,
       "html": 0,
-      "total": 7,
+      "total": 9,
       "files": {
         "css": [
           "src/core/manager-ui.css"
         ],
         "js": [
           "src/core/manager-ui.js",
+          "src/core/popup.js",
           "src/managers/lookups/lookups.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js",
@@ -18358,15 +18432,17 @@
     {
       "selector": ".manager-footer-popup.visible",
       "css": 1,
-      "js": 95,
+      "js": 115,
       "html": 0,
-      "total": 96,
+      "total": 116,
       "files": {
         "css": [
           "src/core/manager-ui.css"
         ],
         "js": [
           "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
@@ -18832,9 +18908,9 @@
     {
       "selector": ".manager-transition-overlay.active",
       "css": 1,
-      "js": 55,
+      "js": 69,
       "html": 9,
-      "total": 65,
+      "total": 79,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -18881,15 +18957,36 @@
     {
       "selector": ".manager-ui-btn",
       "css": 1,
-      "js": 14,
+      "js": 15,
       "html": 0,
-      "total": 15,
+      "total": 16,
       "files": {
         "css": [
           "src/core/manager-ui.css"
         ],
         "js": [
           "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/managers/terminal/terminal.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".manager-ui-btn.popup-active",
+      "css": 2,
+      "js": 42,
+      "html": 0,
+      "total": 44,
+      "files": {
+        "css": [
+          "src/core/popup.css",
+          "src/styles/components.css"
+        ],
+        "js": [
+          "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js",
           "src/managers/terminal/terminal.js"
         ],
         "html": []
@@ -18943,15 +19040,16 @@
     {
       "selector": ".manager-ui-empty",
       "css": 1,
-      "js": 1,
+      "js": 2,
       "html": 0,
-      "total": 2,
+      "total": 3,
       "files": {
         "css": [
-          "src/core/manager-ui.css"
+          "src/core/popup.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/core/popup.js"
         ],
         "html": []
       }
@@ -19001,13 +19099,14 @@
     },
     {
       "selector": ".manager-ui-menu-item",
-      "css": 1,
+      "css": 2,
       "js": 3,
       "html": 0,
-      "total": 4,
+      "total": 5,
       "files": {
         "css": [
-          "src/core/manager-ui.css"
+          "src/core/manager-ui.css",
+          "src/core/popup.css"
         ],
         "js": [
           "src/core/manager-ui.js"
@@ -19017,13 +19116,14 @@
     },
     {
       "selector": ".manager-ui-menu-item i",
-      "css": 1,
+      "css": 2,
       "js": 3,
       "html": 0,
-      "total": 4,
+      "total": 5,
       "files": {
         "css": [
-          "src/core/manager-ui.css"
+          "src/core/manager-ui.css",
+          "src/core/popup.css"
         ],
         "js": [
           "src/core/manager-ui.js"
@@ -19033,13 +19133,14 @@
     },
     {
       "selector": ".manager-ui-menu-item svg",
-      "css": 1,
+      "css": 2,
       "js": 3,
       "html": 0,
-      "total": 4,
+      "total": 5,
       "files": {
         "css": [
-          "src/core/manager-ui.css"
+          "src/core/manager-ui.css",
+          "src/core/popup.css"
         ],
         "js": [
           "src/core/manager-ui.js"
@@ -19049,13 +19150,14 @@
     },
     {
       "selector": ".manager-ui-menu-item:active",
-      "css": 1,
+      "css": 2,
       "js": 3,
       "html": 0,
-      "total": 4,
+      "total": 5,
       "files": {
         "css": [
-          "src/core/manager-ui.css"
+          "src/core/manager-ui.css",
+          "src/core/popup.css"
         ],
         "js": [
           "src/core/manager-ui.js"
@@ -19065,13 +19167,14 @@
     },
     {
       "selector": ".manager-ui-menu-item:hover",
-      "css": 1,
+      "css": 2,
       "js": 3,
       "html": 0,
-      "total": 4,
+      "total": 5,
       "files": {
         "css": [
-          "src/core/manager-ui.css"
+          "src/core/manager-ui.css",
+          "src/core/popup.css"
         ],
         "js": [
           "src/core/manager-ui.js"
@@ -19095,17 +19198,18 @@
     },
     {
       "selector": ".manager-ui-popup",
-      "css": 2,
-      "js": 19,
+      "css": 1,
+      "js": 29,
       "html": 0,
-      "total": 21,
+      "total": 30,
       "files": {
         "css": [
-          "src/core/manager-ui.css",
-          "src/styles/components.css"
+          "src/core/popup.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js"
         ],
         "html": []
       }
@@ -19113,15 +19217,17 @@
     {
       "selector": ".manager-ui-popup-content",
       "css": 1,
-      "js": 24,
+      "js": 37,
       "html": 0,
-      "total": 25,
+      "total": 38,
       "files": {
         "css": [
-          "src/core/manager-ui.css"
+          "src/core/popup.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js"
         ],
         "html": []
       }
@@ -19129,15 +19235,17 @@
     {
       "selector": ".manager-ui-popup-content::-webkit-scrollbar",
       "css": 1,
-      "js": 24,
+      "js": 37,
       "html": 0,
-      "total": 25,
+      "total": 38,
       "files": {
         "css": [
-          "src/core/manager-ui.css"
+          "src/core/popup.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js"
         ],
         "html": []
       }
@@ -19145,15 +19253,17 @@
     {
       "selector": ".manager-ui-popup-content::-webkit-scrollbar-thumb",
       "css": 1,
-      "js": 24,
+      "js": 37,
       "html": 0,
-      "total": 25,
+      "total": 38,
       "files": {
         "css": [
-          "src/core/manager-ui.css"
+          "src/core/popup.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js"
         ],
         "html": []
       }
@@ -19161,15 +19271,17 @@
     {
       "selector": ".manager-ui-popup-content::-webkit-scrollbar-thumb:hover",
       "css": 1,
-      "js": 24,
+      "js": 37,
       "html": 0,
-      "total": 25,
+      "total": 38,
       "files": {
         "css": [
-          "src/core/manager-ui.css"
+          "src/core/popup.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js"
         ],
         "html": []
       }
@@ -19177,15 +19289,17 @@
     {
       "selector": ".manager-ui-popup-content::-webkit-scrollbar-track",
       "css": 1,
-      "js": 24,
+      "js": 37,
       "html": 0,
-      "total": 25,
+      "total": 38,
       "files": {
         "css": [
-          "src/core/manager-ui.css"
+          "src/core/popup.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js"
         ],
         "html": []
       }
@@ -19193,15 +19307,17 @@
     {
       "selector": ".manager-ui-popup-header",
       "css": 1,
-      "js": 24,
+      "js": 37,
       "html": 0,
-      "total": 25,
+      "total": 38,
       "files": {
         "css": [
-          "src/core/manager-ui.css"
+          "src/core/popup.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js"
         ],
         "html": []
       }
@@ -19209,15 +19325,17 @@
     {
       "selector": ".manager-ui-popup-title",
       "css": 1,
-      "js": 24,
+      "js": 36,
       "html": 0,
-      "total": 25,
+      "total": 37,
       "files": {
         "css": [
-          "src/core/manager-ui.css"
+          "src/core/popup.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js"
         ],
         "html": []
       }
@@ -19225,15 +19343,17 @@
     {
       "selector": ".manager-ui-popup-title .manager-ui-tours-all-btn",
       "css": 1,
-      "js": 25,
+      "js": 37,
       "html": 0,
-      "total": 26,
+      "total": 38,
       "files": {
         "css": [
-          "src/core/manager-ui.css"
+          "src/core/popup.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js"
         ],
         "html": []
       }
@@ -19241,15 +19361,17 @@
     {
       "selector": ".manager-ui-popup-title .manager-ui-tours-all-btn svg",
       "css": 1,
-      "js": 25,
+      "js": 37,
       "html": 0,
-      "total": 26,
+      "total": 38,
       "files": {
         "css": [
-          "src/core/manager-ui.css"
+          "src/core/popup.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js"
         ],
         "html": []
       }
@@ -19257,15 +19379,17 @@
     {
       "selector": ".manager-ui-popup-title .manager-ui-tours-all-btn:hover",
       "css": 1,
-      "js": 25,
+      "js": 37,
       "html": 0,
-      "total": 26,
+      "total": 38,
       "files": {
         "css": [
-          "src/core/manager-ui.css"
+          "src/core/popup.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js"
         ],
         "html": []
       }
@@ -19273,15 +19397,17 @@
     {
       "selector": ".manager-ui-popup.manager-footer-popup",
       "css": 1,
-      "js": 25,
+      "js": 37,
       "html": 0,
-      "total": 26,
+      "total": 38,
       "files": {
         "css": [
-          "src/styles/components.css"
+          "src/core/popup.css"
         ],
         "js": [
           "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js",
           "src/managers/lookups/lookups.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js",
@@ -19291,34 +19417,113 @@
       }
     },
     {
-      "selector": ".manager-ui-popup.manager-header-popup",
+      "selector": ".manager-ui-popup.manager-footer-popup:not(.visible)",
       "css": 1,
-      "js": 20,
+      "js": 144,
       "html": 0,
-      "total": 21,
+      "total": 145,
       "files": {
         "css": [
-          "src/styles/components.css"
+          "src/core/popup.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js",
+          "src/managers/crimson/crimson-citations.js",
+          "src/managers/crimson/crimson-core.js",
+          "src/managers/login/login.js",
+          "src/managers/lookups/lookups.js",
+          "src/managers/main/main.js",
+          "src/managers/profile-manager/profile-manager.js",
+          "src/managers/queries/queries-ui.js",
+          "src/managers/queries/queries.js",
+          "src/managers/session-log/session-log.js",
+          "src/managers/style-manager/style-manager.js",
+          "src/managers/terminal/terminal.js",
+          "src/managers/tour/tour.js",
+          "src/managers/version-history/version-history.js",
+          "src/shared/crimson-ws.js",
+          "src/tables/column-manager/cm-drag-resize.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-column-manager.js",
+          "src/tables/lithium-table-ui.js",
+          "src/tables/popups/popup-manager.js",
+          "src/tables/popups/template-popup.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".manager-ui-popup.manager-header-popup",
+      "css": 1,
+      "js": 32,
+      "html": 0,
+      "total": 33,
+      "files": {
+        "css": [
+          "src/core/popup.css"
+        ],
+        "js": [
+          "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".manager-ui-popup.manager-header-popup:not(.visible)",
+      "css": 1,
+      "js": 139,
+      "html": 0,
+      "total": 140,
+      "files": {
+        "css": [
+          "src/core/popup.css"
+        ],
+        "js": [
+          "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js",
+          "src/managers/crimson/crimson-citations.js",
+          "src/managers/crimson/crimson-core.js",
+          "src/managers/login/login.js",
+          "src/managers/lookups/lookups.js",
+          "src/managers/main/main.js",
+          "src/managers/profile-manager/profile-manager.js",
+          "src/managers/queries/queries-ui.js",
+          "src/managers/queries/queries.js",
+          "src/managers/session-log/session-log.js",
+          "src/managers/style-manager/style-manager.js",
+          "src/managers/terminal/terminal.js",
+          "src/managers/tour/tour.js",
+          "src/managers/version-history/version-history.js",
+          "src/shared/crimson-ws.js",
+          "src/tables/column-manager/cm-drag-resize.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-column-manager.js",
+          "src/tables/lithium-table-ui.js",
+          "src/tables/popups/popup-manager.js",
+          "src/tables/popups/template-popup.js"
         ],
         "html": []
       }
     },
     {
       "selector": ".manager-ui-popup.visible",
-      "css": 2,
-      "js": 108,
+      "css": 1,
+      "js": 136,
       "html": 0,
-      "total": 110,
+      "total": 137,
       "files": {
         "css": [
-          "src/core/manager-ui.css",
-          "src/styles/components.css"
+          "src/core/popup.css"
         ],
         "js": [
           "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
@@ -19361,15 +19566,16 @@
     {
       "selector": ".manager-ui-shortcuts-desc",
       "css": 1,
-      "js": 1,
+      "js": 2,
       "html": 0,
-      "total": 2,
+      "total": 3,
       "files": {
         "css": [
-          "src/core/manager-ui.css"
+          "src/core/popup.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/core/popup.js"
         ],
         "html": []
       }
@@ -19377,15 +19583,16 @@
     {
       "selector": ".manager-ui-shortcuts-group",
       "css": 1,
-      "js": 2,
+      "js": 4,
       "html": 0,
-      "total": 3,
+      "total": 5,
       "files": {
         "css": [
-          "src/core/manager-ui.css"
+          "src/core/popup.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/core/popup.js"
         ],
         "html": []
       }
@@ -19393,15 +19600,16 @@
     {
       "selector": ".manager-ui-shortcuts-group-title",
       "css": 1,
-      "js": 3,
+      "js": 6,
       "html": 0,
-      "total": 4,
+      "total": 7,
       "files": {
         "css": [
-          "src/core/manager-ui.css"
+          "src/core/popup.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/core/popup.js"
         ],
         "html": []
       }
@@ -19409,15 +19617,16 @@
     {
       "selector": ".manager-ui-shortcuts-item",
       "css": 1,
-      "js": 1,
+      "js": 2,
       "html": 0,
-      "total": 2,
+      "total": 3,
       "files": {
         "css": [
-          "src/core/manager-ui.css"
+          "src/core/popup.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/core/popup.js"
         ],
         "html": []
       }
@@ -19425,15 +19634,16 @@
     {
       "selector": ".manager-ui-shortcuts-key",
       "css": 1,
-      "js": 1,
+      "js": 2,
       "html": 0,
-      "total": 2,
+      "total": 3,
       "files": {
         "css": [
-          "src/core/manager-ui.css"
+          "src/core/popup.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/core/popup.js"
         ],
         "html": []
       }
@@ -19441,13 +19651,14 @@
     {
       "selector": ".manager-ui-shortcuts-popup",
       "css": 0,
-      "js": 1,
+      "js": 2,
       "html": 0,
-      "total": 1,
+      "total": 2,
       "files": {
         "css": [],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-ui.js",
+          "src/core/popup.js"
         ],
         "html": []
       }
@@ -19740,9 +19951,9 @@
     {
       "selector": ".menu-item.active",
       "css": 1,
-      "js": 64,
+      "js": 78,
       "html": 9,
-      "total": 74,
+      "total": 88,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -19775,9 +19986,9 @@
     {
       "selector": ".menu-item.active .menu-item-count",
       "css": 1,
-      "js": 65,
+      "js": 79,
       "html": 9,
-      "total": 75,
+      "total": 89,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -19810,9 +20021,9 @@
     {
       "selector": ".menu-item.manager-open:not(.active",
       "css": 1,
-      "js": 65,
+      "js": 79,
       "html": 9,
-      "total": 75,
+      "total": 89,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -20656,15 +20867,17 @@
     {
       "selector": ".nav-popup.visible",
       "css": 1,
-      "js": 89,
+      "js": 107,
       "html": 0,
-      "total": 90,
+      "total": 108,
       "files": {
         "css": [
           "src/core/manager-panels.css"
         ],
         "js": [
           "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
@@ -20797,15 +21010,17 @@
     {
       "selector": ".offline-indicator.visible",
       "css": 1,
-      "js": 90,
+      "js": 108,
       "html": 0,
-      "total": 91,
+      "total": 109,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
           "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
@@ -22563,9 +22778,9 @@
     {
       "selector": ".queries-tab-btn.active",
       "css": 1,
-      "js": 55,
+      "js": 69,
       "html": 9,
-      "total": 65,
+      "total": 79,
       "files": {
         "css": [
           "src/managers/queries/queries.css"
@@ -22652,9 +22867,9 @@
     {
       "selector": ".queries-tab-pane.active",
       "css": 1,
-      "js": 55,
+      "js": 69,
       "html": 14,
-      "total": 70,
+      "total": 84,
       "files": {
         "css": [
           "src/managers/queries/queries.css"
@@ -23739,9 +23954,9 @@
     {
       "selector": ".sidebar-icon-btn.active",
       "css": 1,
-      "js": 55,
+      "js": 69,
       "html": 14,
-      "total": 70,
+      "total": 84,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -23775,9 +23990,9 @@
     {
       "selector": ".sidebar-icon-btn.active:hover",
       "css": 1,
-      "js": 55,
+      "js": 69,
       "html": 14,
-      "total": 70,
+      "total": 84,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -24367,9 +24582,9 @@
     {
       "selector": ".sidebar-menu-btn.active",
       "css": 1,
-      "js": 55,
+      "js": 69,
       "html": 10,
-      "total": 66,
+      "total": 80,
       "files": {
         "css": [
           "src/styles/layout.css"
@@ -24470,15 +24685,17 @@
     {
       "selector": ".sidebar-overlay.visible",
       "css": 1,
-      "js": 89,
+      "js": 107,
       "html": 1,
-      "total": 91,
+      "total": 109,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
           "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
@@ -25355,9 +25572,9 @@
     {
       "selector": ".style-editor-toolbar .style-state-btn.active",
       "css": 1,
-      "js": 55,
+      "js": 69,
       "html": 9,
-      "total": 65,
+      "total": 79,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -25530,9 +25747,9 @@
     {
       "selector": ".style-font-popup-style-btn.active",
       "css": 1,
-      "js": 54,
+      "js": 68,
       "html": 9,
-      "total": 64,
+      "total": 78,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -25579,15 +25796,17 @@
     {
       "selector": ".style-font-popup.visible",
       "css": 1,
-      "js": 89,
+      "js": 107,
       "html": 0,
-      "total": 90,
+      "total": 108,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
         ],
         "js": [
           "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
@@ -25711,9 +25930,9 @@
     {
       "selector": ".style-json-view.active",
       "css": 1,
-      "js": 54,
+      "js": 68,
       "html": 10,
-      "total": 65,
+      "total": 79,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -25924,9 +26143,9 @@
     {
       "selector": ".style-mode-btn.active",
       "css": 1,
-      "js": 54,
+      "js": 68,
       "html": 9,
-      "total": 64,
+      "total": 78,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -26239,9 +26458,9 @@
     {
       "selector": ".style-section-view.active",
       "css": 1,
-      "js": 54,
+      "js": 68,
       "html": 10,
-      "total": 65,
+      "total": 79,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -26382,9 +26601,9 @@
     {
       "selector": ".style-target-circle.active",
       "css": 1,
-      "js": 56,
+      "js": 70,
       "html": 9,
-      "total": 66,
+      "total": 80,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -26865,9 +27084,9 @@
     {
       "selector": ".tab-btn.active",
       "css": 1,
-      "js": 54,
+      "js": 68,
       "html": 9,
-      "total": 64,
+      "total": 78,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -26942,9 +27161,9 @@
     {
       "selector": ".tab-pane.active",
       "css": 1,
-      "js": 54,
+      "js": 68,
       "html": 9,
-      "total": 64,
+      "total": 78,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -26993,9 +27212,9 @@
     {
       "selector": ".tab-panel.active",
       "css": 1,
-      "js": 54,
+      "js": 68,
       "html": 11,
-      "total": 66,
+      "total": 80,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -27514,9 +27733,9 @@
     {
       "selector": ".tabulator-simple .tabulator-page.active",
       "css": 1,
-      "js": 54,
+      "js": 68,
       "html": 9,
-      "total": 64,
+      "total": 78,
       "files": {
         "css": [
           "src/init/tabulator-simple.css"
@@ -27867,15 +28086,17 @@
     {
       "selector": ".terminal-overlay.visible",
       "css": 1,
-      "js": 90,
+      "js": 108,
       "html": 0,
-      "total": 91,
+      "total": 109,
       "files": {
         "css": [
           "src/managers/terminal/terminal.css"
         ],
         "js": [
           "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
@@ -28012,15 +28233,17 @@
     {
       "selector": ".terminal-popup.visible",
       "css": 1,
-      "js": 90,
+      "js": 108,
       "html": 0,
-      "total": 91,
+      "total": 109,
       "files": {
         "css": [
           "src/managers/terminal/terminal.css"
         ],
         "js": [
           "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
@@ -29488,15 +29711,17 @@
     {
       "selector": ".toast.visible",
       "css": 1,
-      "js": 117,
+      "js": 135,
       "html": 2,
-      "total": 120,
+      "total": 138,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
           "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
@@ -29617,9 +29842,9 @@
     {
       "selector": ".transition-overlay.active",
       "css": 1,
-      "js": 54,
+      "js": 68,
       "html": 10,
-      "total": 65,
+      "total": 79,
       "files": {
         "css": [
           "src/styles/layout.css"
@@ -30321,14 +30546,15 @@
     {
       "selector": ".zoom-btn",
       "css": 1,
-      "js": 2,
+      "js": 3,
       "html": 0,
-      "total": 3,
+      "total": 4,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
+          "src/core/popup.js",
           "src/core/zoom-control.js"
         ],
         "html": []
@@ -30337,14 +30563,15 @@
     {
       "selector": ".zoom-popup",
       "css": 1,
-      "js": 29,
+      "js": 33,
       "html": 0,
-      "total": 30,
+      "total": 34,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
+          "src/core/popup.js",
           "src/core/zoom-control.js"
         ],
         "html": []
@@ -30353,14 +30580,15 @@
     {
       "selector": ".zoom-popup-detent",
       "css": 1,
-      "js": 34,
+      "js": 38,
       "html": 0,
-      "total": 35,
+      "total": 39,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
+          "src/core/popup.js",
           "src/core/zoom-control.js"
         ],
         "html": []
@@ -30369,14 +30597,15 @@
     {
       "selector": ".zoom-popup-detent-mark",
       "css": 1,
-      "js": 35,
+      "js": 39,
       "html": 0,
-      "total": 36,
+      "total": 40,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
+          "src/core/popup.js",
           "src/core/zoom-control.js"
         ],
         "html": []
@@ -30385,14 +30614,15 @@
     {
       "selector": ".zoom-popup-detent:hover",
       "css": 1,
-      "js": 34,
+      "js": 38,
       "html": 0,
-      "total": 35,
+      "total": 39,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
+          "src/core/popup.js",
           "src/core/zoom-control.js"
         ],
         "html": []
@@ -30401,9 +30631,9 @@
     {
       "selector": ".zoom-popup-detent.active .zoom-popup-detent-mark",
       "css": 1,
-      "js": 89,
+      "js": 107,
       "html": 9,
-      "total": 99,
+      "total": 117,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -30411,6 +30641,7 @@
         "js": [
           "src/app.js",
           "src/core/manager-ui.js",
+          "src/core/popup.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-ui.js",
@@ -30436,14 +30667,15 @@
     {
       "selector": ".zoom-popup-detents",
       "css": 1,
-      "js": 35,
+      "js": 39,
       "html": 0,
-      "total": 36,
+      "total": 40,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
+          "src/core/popup.js",
           "src/core/zoom-control.js"
         ],
         "html": []
@@ -30452,14 +30684,15 @@
     {
       "selector": ".zoom-popup-header",
       "css": 1,
-      "js": 30,
+      "js": 34,
       "html": 0,
-      "total": 31,
+      "total": 35,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
+          "src/core/popup.js",
           "src/core/zoom-control.js"
         ],
         "html": []
@@ -30468,14 +30701,15 @@
     {
       "selector": ".zoom-popup-preset",
       "css": 1,
-      "js": 39,
+      "js": 43,
       "html": 0,
-      "total": 40,
+      "total": 44,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
+          "src/core/popup.js",
           "src/core/zoom-control.js"
         ],
         "html": []
@@ -30484,14 +30718,15 @@
     {
       "selector": ".zoom-popup-preset:active",
       "css": 1,
-      "js": 39,
+      "js": 43,
       "html": 0,
-      "total": 40,
+      "total": 44,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
+          "src/core/popup.js",
           "src/core/zoom-control.js"
         ],
         "html": []
@@ -30500,14 +30735,15 @@
     {
       "selector": ".zoom-popup-preset:hover",
       "css": 1,
-      "js": 39,
+      "js": 43,
       "html": 0,
-      "total": 40,
+      "total": 44,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
+          "src/core/popup.js",
           "src/core/zoom-control.js"
         ],
         "html": []
@@ -30516,14 +30752,15 @@
     {
       "selector": ".zoom-popup-presets",
       "css": 1,
-      "js": 40,
+      "js": 44,
       "html": 0,
-      "total": 41,
+      "total": 45,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
+          "src/core/popup.js",
           "src/core/zoom-control.js"
         ],
         "html": []
@@ -30532,14 +30769,15 @@
     {
       "selector": ".zoom-popup-slider",
       "css": 1,
-      "js": 34,
+      "js": 38,
       "html": 0,
-      "total": 35,
+      "total": 39,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
+          "src/core/popup.js",
           "src/core/zoom-control.js"
         ],
         "html": []
@@ -30548,14 +30786,15 @@
     {
       "selector": ".zoom-popup-slider-container",
       "css": 1,
-      "js": 35,
+      "js": 39,
       "html": 0,
-      "total": 36,
+      "total": 40,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
+          "src/core/popup.js",
           "src/core/zoom-control.js"
         ],
         "html": []
@@ -30564,14 +30803,15 @@
     {
       "selector": ".zoom-popup-slider::-moz-range-thumb",
       "css": 1,
-      "js": 34,
+      "js": 38,
       "html": 0,
-      "total": 35,
+      "total": 39,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
+          "src/core/popup.js",
           "src/core/zoom-control.js"
         ],
         "html": []
@@ -30580,14 +30820,15 @@
     {
       "selector": ".zoom-popup-slider::-moz-range-thumb:hover",
       "css": 1,
-      "js": 34,
+      "js": 38,
       "html": 0,
-      "total": 35,
+      "total": 39,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
+          "src/core/popup.js",
           "src/core/zoom-control.js"
         ],
         "html": []
@@ -30596,14 +30837,15 @@
     {
       "selector": ".zoom-popup-slider::-webkit-slider-thumb",
       "css": 1,
-      "js": 34,
+      "js": 38,
       "html": 0,
-      "total": 35,
+      "total": 39,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
+          "src/core/popup.js",
           "src/core/zoom-control.js"
         ],
         "html": []
@@ -30612,14 +30854,15 @@
     {
       "selector": ".zoom-popup-slider::-webkit-slider-thumb:hover",
       "css": 1,
-      "js": 34,
+      "js": 38,
       "html": 0,
-      "total": 35,
+      "total": 39,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
+          "src/core/popup.js",
           "src/core/zoom-control.js"
         ],
         "html": []
@@ -30628,14 +30871,15 @@
     {
       "selector": ".zoom-popup-title",
       "css": 1,
-      "js": 30,
+      "js": 34,
       "html": 0,
-      "total": 31,
+      "total": 35,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
+          "src/core/popup.js",
           "src/core/zoom-control.js"
         ],
         "html": []
@@ -30644,14 +30888,15 @@
     {
       "selector": ".zoom-popup-value",
       "css": 1,
-      "js": 33,
+      "js": 37,
       "html": 0,
-      "total": 34,
+      "total": 38,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
+          "src/core/popup.js",
           "src/core/zoom-control.js"
         ],
         "html": []
@@ -31209,15 +31454,17 @@
     {
       "selector": "#main-layout.visible",
       "css": 1,
-      "js": 89,
+      "js": 107,
       "html": 0,
-      "total": 90,
+      "total": 108,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
           "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
@@ -31308,15 +31555,17 @@
     {
       "selector": "#profile-manager-page.visible",
       "css": 1,
-      "js": 89,
+      "js": 107,
       "html": 0,
-      "total": 90,
+      "total": 108,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
           "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
@@ -31402,15 +31651,17 @@
     {
       "selector": "#session-log-page.visible",
       "css": 1,
-      "js": 89,
+      "js": 107,
       "html": 0,
-      "total": 90,
+      "total": 108,
       "files": {
         "css": [
           "src/managers/session-log/session-log.css"
         ],
         "js": [
           "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
