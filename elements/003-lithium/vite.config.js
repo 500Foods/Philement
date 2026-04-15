@@ -36,7 +36,7 @@ export default defineConfig(({ mode }) => {
         // Chunk size warning threshold (largest vendor chunk is ~581 kB)
         chunkSizeWarningLimit: 708,
 
-      // Code splitting - chunk by library purpose (each manager loads only what it needs)
+// Code splitting - chunk by library purpose (each manager loads only what it needs)
       rollupOptions: {
         output: {
           manualChunks: {
@@ -65,16 +65,7 @@ export default defineConfig(({ mode }) => {
           warn(warning);
         }
       }
-        },
-        // Suppress warnings from node_modules (external dependencies we cannot control)
-        onwarn(warning, warn) {
-          if (warning.id && warning.id.includes('node_modules')) {
-            return; // Skip warnings from node_modules
-          }
-          warn(warning);
-        }
-      }
-      },
+    },
 
     // Development server options
     server: {

@@ -44,6 +44,10 @@
   * {
     margin: 0;
     padding: 0;
+
+    /* Firefox — global scrollbar colour scheme */
+    scrollbar-width: auto;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   }
 
   html, body {
@@ -70,12 +74,6 @@
 
   #root, #app {
     isolation: isolate;
-  }
-
-  /* Firefox — global scrollbar colour scheme */
-  * {
-    scrollbar-width: auto;
-    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   }
 
 }

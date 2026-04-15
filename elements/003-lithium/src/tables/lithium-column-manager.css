@@ -323,116 +323,14 @@
 }
 
 /* Override lithium-table-container flex to prevent double flex */
+/* Target the LithiumTable container inside the column manager */
 .col-manager-table-container .lithium-table-container {
   flex: none;
   height: 100%;
   margin: 0;
   border: none;
   border-radius: 0;
-}
-
-/* ── Navigator ─────────────────────────────────────────────────────────────── */
-
-.col-manager-navigator {
-  flex-shrink: 0;
-  border-top: 1px solid #1e3a5f;
-  background: linear-gradient(0deg, #0f1f35 0%, #0d1e36 100%);
-  padding: 6px 8px;
-}
-
-/* ── Resize Handles (Four Corners) ─────────────────────────────────────────── */
-
-.col-manager-resize-handle {
-  position: absolute;
-  width: 20px;
-  height: 20px;
-  z-index: 100;
-  opacity: 0.3;
-  transition: opacity 0.15s ease, background 0.15s ease;
-  background: transparent;
-}
-
-.col-manager-popup:hover .col-manager-resize-handle {
-  opacity: 0.7;
-  background: rgb(74 122 168 / 15%);
-}
-
-.col-manager-popup.resizing .col-manager-resize-handle {
-  opacity: 1;
-  background: rgb(74 122 168 / 30%);
-}
-
-/* Bottom-right */
-.col-manager-resize-handle-br {
-  bottom: 0;
-  right: 0;
-  cursor: nwse-resize;
-  border-bottom-right-radius: 6px;
-}
-
-/* Bottom-left */
-.col-manager-resize-handle-bl {
-  bottom: 0;
-  left: 0;
-  cursor: nesw-resize;
-  border-bottom-left-radius: 6px;
-}
-
-/* Top-right */
-.col-manager-resize-handle-tr {
-  top: 0;
-  right: 0;
-  cursor: nesw-resize;
-  border-top-right-radius: 6px;
-}
-
-/* Top-left */
-.col-manager-resize-handle-tl {
-  top: 0;
-  left: 0;
-  cursor: nwse-resize;
-  border-top-left-radius: 6px;
-}
-
-/* Resize handle visual indicator (small dots at corners) */
-.col-manager-resize-handle::before {
-  content: '';
-  position: absolute;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #4a7aa8;
-}
-
-/* Position the dots */
-.col-manager-resize-handle-br::before {
-  bottom: 3px;
-  right: 3px;
-}
-
-.col-manager-resize-handle-bl::before {
-  bottom: 3px;
-  left: 3px;
-}
-
-.col-manager-resize-handle-tr::before {
-  top: 3px;
-  right: 3px;
-}
-
-.col-manager-resize-handle-tl::before {
-  top: 3px;
-  left: 3px;
-}
-
-/* ── LithiumTable Inside Column Manager ────────────────────────────────────── */
-
-/* Target the LithiumTable container inside the column manager */
-.col-manager-table-container .lithium-table-container {
   background: #0a1628 !important;
-  border: none !important;
-  margin: 0 !important;
-  border-radius: 0 !important;
 }
 
 /* Tabulator wrapper inside LithiumTable */
@@ -517,8 +415,8 @@
   font-size: 13px;
   text-align: center;
   user-select: none;
-  user-select: none;
   padding: 0 4px;
+  border-right: 2px solid #1e3a5f !important;
 }
 
 .col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="drag_handle"]:hover {
@@ -544,24 +442,17 @@
   border-right: 2px solid #2a5a8c !important;
 }
 
-.col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="drag_handle"] {
-  border-right: 2px solid #1e3a5f !important;
-}
-
 /* Order column */
 .col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="order"] {
   color: #6b8cb8;
   font-family: Monaco, Menlo, monospace;
   font-size: 11px;
+  border-right: 2px solid #1e3a5f !important;
 }
 
 /* Order column header frozen style */
 .col-manager-table-container .lithium-table-container .tabulator-header .tabulator-col[data-tabulator-field="order"] {
   border-right: 2px solid #2a5a8c !important;
-}
-
-.col-manager-table-container .lithium-table-container .tabulator-cell[data-tabulator-field="order"] {
-  border-right: 2px solid #1e3a5f !important;
 }
 
 /* Visible column (checkbox) */
@@ -644,7 +535,6 @@
 
 /* Prevent text selection on all rows — drag handle initiates row move, not text select */
 .col-manager-table-container .lithium-table-container .tabulator-row {
-  user-select: none;
   user-select: none;
 }
 
