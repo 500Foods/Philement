@@ -78,7 +78,7 @@
   right: -6px;
   border-top-color: transparent;
   border-left-color: transparent;
-  transform: rotate(135deg);
+  transform: rotate(315deg);
 }
 
 .li-tooltip[data-placement="right"] .li-tooltip__arrow {
