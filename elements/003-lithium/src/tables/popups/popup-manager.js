@@ -90,11 +90,21 @@ function showNavPopup(table, btn, popup, popupId) {
 
   popup.classList.add('visible');
 
+  // Check for Column Manager popup
   const hostPopup = btn?.closest?.('.col-manager-popup');
   if (hostPopup) {
     const hostZIndex = parseInt(window.getComputedStyle(hostPopup).zIndex, 10);
     if (Number.isFinite(hostZIndex)) {
       popup.style.zIndex = String(hostZIndex + 10);
+    }
+  } else {
+    // Check for Crimson popup
+    const crimsonPopup = btn?.closest?.('.crimson-citation-popup');
+    if (crimsonPopup) {
+      const crimsonZIndex = parseInt(window.getComputedStyle(crimsonPopup).zIndex, 10);
+      if (Number.isFinite(crimsonZIndex)) {
+        popup.style.zIndex = String(crimsonZIndex + 10);
+      }
     }
   }
 
