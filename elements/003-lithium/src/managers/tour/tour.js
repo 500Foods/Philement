@@ -1604,22 +1604,22 @@ export async function launchVideoTour(tour, options = {}) {
         <source src="${videoSrc}" type="video/mp4">
       </video>
       <div class="lithium-video-tour-play-overlay">
-        <button type="button" class="lithium-video-tour-back-10-btn" data-video-action="back-10" title="Back 10 seconds">
+        <button type="button" class="lithium-video-tour-back-10-btn" data-video-action="back-10" title="Back 10 seconds" data-tip-placement="left">
           <fa fa-arrow-rotate-left-10></fa>
         </button>
-        <button type="button" class="lithium-video-tour-back-30-btn" data-video-action="back-30" title="Back 30 seconds">
+        <button type="button" class="lithium-video-tour-back-30-btn" data-video-action="back-30" title="Back 30 seconds" data-tip-placement="left">
           <fa fa-arrow-rotate-left-30></fa>
         </button>
-        <button type="button" class="lithium-video-tour-back-to-start-btn" data-video-action="back-to-start" title="Back to start">
+        <button type="button" class="lithium-video-tour-back-to-start-btn" data-video-action="back-to-start" title="Back to start" data-tip-placement="left">
           <fa fa-arrow-rotate-left></fa>
         </button>
-        <button type="button" class="lithium-video-tour-forward-10-btn" data-video-action="forward-10" title="Forward 10 seconds">
+        <button type="button" class="lithium-video-tour-forward-10-btn" data-video-action="forward-10" title="Forward 10 seconds" data-tip-placement="right">
           <fa fa-arrow-rotate-right-10></fa>
         </button>
-        <button type="button" class="lithium-video-tour-forward-30-btn" data-video-action="forward-30" title="Forward 30 seconds">
+        <button type="button" class="lithium-video-tour-forward-30-btn" data-video-action="forward-30" title="Forward 30 seconds" data-tip-placement="right">
           <fa fa-arrow-rotate-right-30></fa>
         </button>
-        <button type="button" class="lithium-video-tour-forward-to-end-btn" data-video-action="forward-to-end" title="Forward to end">
+        <button type="button" class="lithium-video-tour-forward-to-end-btn" data-video-action="forward-to-end" title="Forward to end" data-tip-placement="right">
           <fa fa-arrow-rotate-right></fa>
         </button>
         <div class="lithium-video-tour-play-btn-wrapper">
@@ -1627,10 +1627,10 @@ export async function launchVideoTour(tour, options = {}) {
             <fa fa-pause></fa>
           </button>
         </div>
-        <button type="button" class="lithium-video-tour-repeat-btn" data-video-action="repeat" title="Repeat">
+        <button type="button" class="lithium-video-tour-repeat-btn" data-video-action="repeat" title="Repeat" data-tip-placement="bottom">
           <fa fa-repeat></fa>
         </button>
-        <button type="button" class="lithium-video-tour-subtitles-btn" data-video-action="subtitles" title="Subtitles">
+        <button type="button" class="lithium-video-tour-subtitles-btn" data-video-action="subtitles" title="Subtitles" data-tip-placement="top">
           <fa fa-subtitles></fa>
         </button>
       </div>
@@ -1642,14 +1642,17 @@ export async function launchVideoTour(tour, options = {}) {
     <div class="lithium-video-tour-controls">
       <div class="lithium-video-tour-buttons">
         <div class="lithium-video-tour-volume">
-          <button type="button" class="lithium-video-tour-mute-btn" data-video-action="mute">
+          <button type="button" class="lithium-video-tour-mute-btn" data-video-action="mute" title="Mute/Unmute">
             <fa fa-volume-high></fa>
           </button>
-          <input type="range" class="lithium-video-tour-volume-slider" min="0" max="100" value="100">
+          <input type="range" class="lithium-video-tour-volume-slider" min="0" max="100" value="100" title="Volume">
         </div>
         <div class="lithium-video-tour-time">0:00 / 0:00</div>
         <div class="lithium-video-tour-spacer"></div>
-        <button type="button" class="lithium-video-tour-speed-btn" data-video-action="speed">
+        <button type="button" class="lithium-video-tour-skip-btn" data-video-action="skip" title="Playback Speed">
+          <fa fa-rabbit-running></fa>
+        </button>
+        <button type="button" class="lithium-video-tour-speed-btn" data-video-action="speed" title="Playback Speed">
           <span>1x</span>
         </button>
       </div>
@@ -2475,6 +2478,7 @@ export async function launchVideoTour(tour, options = {}) {
         video.muted = !video.muted;
         updateVolumeIcon();
         break;
+      case 'skip':
       case 'speed':
         currentSpeedIndex = (currentSpeedIndex + 1) % VIDEO_PLAYBACK_SPEEDS.length;
         const newSpeed = VIDEO_PLAYBACK_SPEEDS[currentSpeedIndex];
