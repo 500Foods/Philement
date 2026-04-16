@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS class selectors/names used across the Lithium codebase",
-    "generated": "2026-04-16T17:58:32.947Z",
+    "generated": "2026-04-16T19:22:42.771Z",
     "sources": {
       "css": "51 files in src/**/*.css",
       "js": "104 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
-    "total_selectors": 1750,
-    "total_occurrences": 27722
+    "total_selectors": 1751,
+    "total_occurrences": 27720
   },
   "selectors": [
     {
@@ -13410,22 +13410,6 @@
       }
     },
     {
-      "selector": ".lithium-video-tour-content:hover .lithium-video-tour-play-overlay",
-      "css": 1,
-      "js": 5,
-      "html": 0,
-      "total": 6,
-      "files": {
-        "css": [
-          "src/managers/tour/tour.css"
-        ],
-        "js": [
-          "src/managers/tour/tour.js"
-        ],
-        "html": []
-      }
-    },
-    {
       "selector": ".lithium-video-tour-content:hover .lithium-video-tour-play-overlay .lithium-video-tour-back-10-btn",
       "css": 1,
       "js": 7,
@@ -14462,6 +14446,38 @@
       "js": 3,
       "html": 0,
       "total": 4,
+      "files": {
+        "css": [
+          "src/managers/tour/tour.css"
+        ],
+        "js": [
+          "src/managers/tour/tour.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".lithium-video-tour-skip-btn",
+      "css": 1,
+      "js": 1,
+      "html": 0,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/managers/tour/tour.css"
+        ],
+        "js": [
+          "src/managers/tour/tour.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".lithium-video-tour-skip-btn:hover",
+      "css": 1,
+      "js": 1,
+      "html": 0,
+      "total": 2,
       "files": {
         "css": [
           "src/managers/tour/tour.css"

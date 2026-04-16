@@ -734,13 +734,8 @@
   z-index: 5;
 }
 
-/* Show overlay on hover when video is playing */
-.lithium-video-tour-content:hover .lithium-video-tour-play-overlay {
-  opacity: 1;
-}
-
-/* Show overlay when video is paused or ended */
-.lithium-video-tour-popup.paused .lithium-video-tour-play-overlay,
+/* Show overlay on hover or when video has ended */
+.lithium-video-tour-content:hover .lithium-video-tour-play-overlay,
 .lithium-video-tour-popup.ended .lithium-video-tour-play-overlay {
   opacity: 1;
 }
@@ -878,56 +873,48 @@
 
 /* Staggered fade-in animation for compass buttons when overlay becomes visible */
 /* Clockwise order: Top (subtitles), Top-right (forward-10), Right (forward-to-end), Bottom-right (forward-30), Bottom (repeat), Bottom-left (back-30), Left (back-to-start), Top-left (back-10) */
-.lithium-video-tour-popup.paused .lithium-video-tour-play-overlay .lithium-video-tour-subtitles-btn,
 .lithium-video-tour-popup.ended .lithium-video-tour-play-overlay .lithium-video-tour-subtitles-btn,
 .lithium-video-tour-content:hover .lithium-video-tour-play-overlay .lithium-video-tour-subtitles-btn {
   opacity: 1;
   transition: opacity 0.3s ease 0ms, background-color var(--transition-duration) ease, border-color var(--transition-duration) ease, transform var(--transition-duration, 0.15s) ease;
 }
 
-.lithium-video-tour-popup.paused .lithium-video-tour-play-overlay .lithium-video-tour-forward-10-btn,
 .lithium-video-tour-popup.ended .lithium-video-tour-play-overlay .lithium-video-tour-forward-10-btn,
 .lithium-video-tour-content:hover .lithium-video-tour-play-overlay .lithium-video-tour-forward-10-btn {
   opacity: 1;
   transition: opacity 0.3s ease 100ms, background-color var(--transition-duration) ease, border-color var(--transition-duration) ease, transform var(--transition-duration, 0.15s) ease;
 }
 
-.lithium-video-tour-popup.paused .lithium-video-tour-play-overlay .lithium-video-tour-forward-to-end-btn,
 .lithium-video-tour-popup.ended .lithium-video-tour-play-overlay .lithium-video-tour-forward-to-end-btn,
 .lithium-video-tour-content:hover .lithium-video-tour-play-overlay .lithium-video-tour-forward-to-end-btn {
   opacity: 1;
   transition: opacity 0.3s ease 200ms, background-color var(--transition-duration) ease, border-color var(--transition-duration) ease, transform var(--transition-duration, 0.15s) ease;
 }
 
-.lithium-video-tour-popup.paused .lithium-video-tour-play-overlay .lithium-video-tour-forward-30-btn,
 .lithium-video-tour-popup.ended .lithium-video-tour-play-overlay .lithium-video-tour-forward-30-btn,
 .lithium-video-tour-content:hover .lithium-video-tour-play-overlay .lithium-video-tour-forward-30-btn {
   opacity: 1;
   transition: opacity 0.3s ease 300ms, background-color var(--transition-duration) ease, border-color var(--transition-duration) ease, transform var(--transition-duration, 0.15s) ease;
 }
 
-.lithium-video-tour-popup.paused .lithium-video-tour-play-overlay .lithium-video-tour-repeat-btn,
 .lithium-video-tour-popup.ended .lithium-video-tour-play-overlay .lithium-video-tour-repeat-btn,
 .lithium-video-tour-content:hover .lithium-video-tour-play-overlay .lithium-video-tour-repeat-btn {
   opacity: 1;
   transition: opacity 0.3s ease 400ms, background-color var(--transition-duration) ease, border-color var(--transition-duration) ease, transform var(--transition-duration, 0.15s) ease;
 }
 
-.lithium-video-tour-popup.paused .lithium-video-tour-play-overlay .lithium-video-tour-back-30-btn,
 .lithium-video-tour-popup.ended .lithium-video-tour-play-overlay .lithium-video-tour-back-30-btn,
 .lithium-video-tour-content:hover .lithium-video-tour-play-overlay .lithium-video-tour-back-30-btn {
   opacity: 1;
   transition: opacity 0.3s ease 500ms, background-color var(--transition-duration) ease, border-color var(--transition-duration) ease, transform var(--transition-duration, 0.15s) ease;
 }
 
-.lithium-video-tour-popup.paused .lithium-video-tour-play-overlay .lithium-video-tour-back-to-start-btn,
 .lithium-video-tour-popup.ended .lithium-video-tour-play-overlay .lithium-video-tour-back-to-start-btn,
 .lithium-video-tour-content:hover .lithium-video-tour-play-overlay .lithium-video-tour-back-to-start-btn {
   opacity: 1;
   transition: opacity 0.3s ease 600ms, background-color var(--transition-duration) ease, border-color var(--transition-duration) ease, transform var(--transition-duration, 0.15s) ease;
 }
 
-.lithium-video-tour-popup.paused .lithium-video-tour-play-overlay .lithium-video-tour-back-10-btn,
 .lithium-video-tour-popup.ended .lithium-video-tour-play-overlay .lithium-video-tour-back-10-btn,
 .lithium-video-tour-content:hover .lithium-video-tour-play-overlay .lithium-video-tour-back-10-btn {
   opacity: 1;
@@ -935,14 +922,12 @@
 }
 
 /* Also ensure the play button wrapper and big play button fade in */
-.lithium-video-tour-popup.paused .lithium-video-tour-play-overlay .lithium-video-tour-play-btn-wrapper,
 .lithium-video-tour-popup.ended .lithium-video-tour-play-overlay .lithium-video-tour-play-btn-wrapper,
 .lithium-video-tour-content:hover .lithium-video-tour-play-overlay .lithium-video-tour-play-btn-wrapper {
   opacity: 1;
   transition: opacity 0.8s ease 200ms;
 }
 
-.lithium-video-tour-popup.paused .lithium-video-tour-play-overlay .lithium-video-tour-big-play-btn,
 .lithium-video-tour-popup.ended .lithium-video-tour-play-overlay .lithium-video-tour-big-play-btn,
 .lithium-video-tour-content:hover .lithium-video-tour-play-overlay .lithium-video-tour-big-play-btn {
   opacity: 1;
@@ -1066,7 +1051,7 @@
   background: transparent;
   border: none;
   color: #aaa;
-  font-size: var(--font-size-lg);
+  font-size: 20px;
   cursor: pointer;
   transition: color var(--transition-fast, 0.15s) ease;
 }
@@ -1131,6 +1116,31 @@
 .lithium-video-tour-speed-btn:hover {
   background: #333;
   color: white;
+}
+
+.lithium-video-tour-skip-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  color: #aaa;
+  font-size: 24px;
+  cursor: pointer;
+  transition: color var(--transition-fast, 0.15s) ease;
+}
+
+.lithium-video-tour-skip-btn:hover {
+  color: white;
+}
+
+/* Hide skip button when popup width is below 300px */
+@container (max-width: 299px) {
+  .lithium-video-tour-skip-btn {
+    display: none;
+  }
 }
 
 /* Resize handles - always visible on hover */
