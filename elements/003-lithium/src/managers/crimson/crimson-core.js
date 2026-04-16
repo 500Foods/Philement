@@ -206,7 +206,30 @@ export class CrimsonManager {
     this.showThinkingMessages = true;
 
     // Citations state
-    this.allCitations = [];
+    this.allCitations = [
+      {
+        number: 1,
+        name: 'Intro to Lithium Course',
+        url: 'https://canvas.500courses.com/courses/801',
+        link: '<fa fa-graduation-cap></fa>',
+        type: 'canvas',
+        source: 'canvas',
+        score: 1000,
+        pageContent: null,
+        dataSourceId: null,
+      },
+      {
+        number: 2,
+        name: 'Philement/Lithium Repository',
+        url: 'https://github.com/500Foods/Philement/blob/main/elements/003-lithium/README.md',
+        link: '<i class="fa-brands fa-github"></i>',
+        type: 'web',
+        source: 'github',
+        score: 1000,
+        pageContent: null,
+        dataSourceId: null,
+      }
+    ];
     this.citationIndex = new Map();
     this.activeCitationPopup = null;
     this.citationTable = null;
@@ -426,6 +449,11 @@ export class CrimsonManager {
 
     // Process icons
     processIcons(this.popup);
+
+    // Update citation counter (shows 000 if only initial citations)
+    if (typeof this.updateCitationHeaderButton === 'function') {
+      this.updateCitationHeaderButton();
+    }
 
     // Position popup initially (centered)
     this.centerPopup();
