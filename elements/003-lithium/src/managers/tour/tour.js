@@ -1604,23 +1604,34 @@ export async function launchVideoTour(tour, options = {}) {
         <source src="${videoSrc}" type="video/mp4">
       </video>
       <div class="lithium-video-tour-play-overlay">
-        <button type="button" class="lithium-video-tour-back-btn" data-video-action="back" title="Back 10 seconds">
+        <button type="button" class="lithium-video-tour-back-10-btn" data-video-action="back-10" title="Back 10 seconds">
           <fa fa-arrow-rotate-left-10></fa>
         </button>
         <button type="button" class="lithium-video-tour-back-30-btn" data-video-action="back-30" title="Back 30 seconds">
           <fa fa-arrow-rotate-left-30></fa>
         </button>
-        <button type="button" class="lithium-video-tour-big-play-btn" data-video-action="play">
-          <fa fa-pause></fa>
+        <button type="button" class="lithium-video-tour-back-to-start-btn" data-video-action="back-to-start" title="Back to start">
+          <fa fa-arrow-rotate-left></fa>
+        </button>
+        <button type="button" class="lithium-video-tour-forward-10-btn" data-video-action="forward-10" title="Forward 10 seconds">
+          <fa fa-arrow-rotate-right-10></fa>
         </button>
         <button type="button" class="lithium-video-tour-forward-30-btn" data-video-action="forward-30" title="Forward 30 seconds">
           <fa fa-arrow-rotate-right-30></fa>
         </button>
-        <button type="button" class="lithium-video-tour-forward-btn" data-video-action="forward" title="Forward 10 seconds">
-          <fa fa-arrow-rotate-right-10></fa>
+        <button type="button" class="lithium-video-tour-forward-to-end-btn" data-video-action="forward-to-end" title="Forward to end">
+          <fa fa-arrow-rotate-right></fa>
         </button>
+        <div class="lithium-video-tour-play-btn-wrapper">
+          <button type="button" class="lithium-video-tour-big-play-btn" data-video-action="play">
+            <fa fa-pause></fa>
+          </button>
+        </div>
         <button type="button" class="lithium-video-tour-repeat-btn" data-video-action="repeat" title="Repeat">
           <fa fa-repeat></fa>
+        </button>
+        <button type="button" class="lithium-video-tour-subtitles-btn" data-video-action="subtitles" title="Subtitles">
+          <fa fa-subtitles></fa>
         </button>
       </div>
       <div class="lithium-video-tour-captions-container"></div>
@@ -1638,9 +1649,6 @@ export async function launchVideoTour(tour, options = {}) {
         </div>
         <div class="lithium-video-tour-time">0:00 / 0:00</div>
         <div class="lithium-video-tour-spacer"></div>
-        <button type="button" class="lithium-video-tour-captions-btn active" data-video-action="captions" title="Toggle Captions">
-          <fa fa-subtitles></fa>
-        </button>
         <button type="button" class="lithium-video-tour-speed-btn" data-video-action="speed">
           <span>1x</span>
         </button>
@@ -2016,11 +2024,29 @@ export async function launchVideoTour(tour, options = {}) {
   // Track repeat state
   let isRepeating = false;
 
-  // Toggle repeat
+  // Toggle repeat - when on, loops video indefinitely until paused or turned off
   const toggleRepeat = () => {
     isRepeating = !isRepeating;
     playOverlay.classList.toggle('repeat-on', isRepeating);
     log(Subsystems.MANAGER, Status.DEBUG, `[VideoTour] Repeat: ${isRepeating}`);
+  };
+
+  // Toggle captions/subtitles - when button is lit (subtitles-on), captions are OFF
+  const toggleCaptionsFromOverlay = () => {
+    captionsEnabled = !captionsEnabled;
+    // Button is lit when captions are OFF
+    playOverlay.classList.toggle('subtitles-on', !captionsEnabled);
+    popup.classList.toggle('captions-off', !captionsEnabled);
+
+    if (captionsEnabled) {
+      handleCaptionTimeUpdate();
+    } else {
+      while (captionsContainer.firstChild) {
+        captionsContainer.removeChild(captionsContainer.firstChild);
+      }
+    }
+    saveState();
+    log(Subsystems.MANAGER, Status.DEBUG, `[VideoTour] Subtitles toggle: ${captionsEnabled ? 'ON' : 'OFF'}`);
   };
 
   // Handle video ended - restart if repeating
@@ -2028,14 +2054,12 @@ export async function launchVideoTour(tour, options = {}) {
     stopScrubberSync();
     updateTimeDisplay();
     if (isRepeating) {
-      log(Subsystems.MANAGER, Status.DEBUG, '[VideoTour] Video ended, restarting (repeat on)');
+      log(Subsystems.MANAGER, Status.DEBUG, '[VideoTour] Video ended, looping (repeat on)');
       video.currentTime = 0;
       video.play();
     } else {
-      log(Subsystems.MANAGER, Status.DEBUG, '[VideoTour] Video ended');
-      bigPlayBtn.innerHTML = '<fa fa-rotate-left></fa>';
-      playOverlay.classList.add('always-visible');
-      popup.classList.add('paused');
+      log(Subsystems.MANAGER, Status.DEBUG, '[VideoTour] Video ended - show overlay');
+      popup.classList.add('ended');
     }
   };
 
@@ -2044,45 +2068,72 @@ export async function launchVideoTour(tour, options = {}) {
 
   // Play/pause toggle
   const togglePlay = () => {
-    if (video.paused) {
+    if (video.ended) {
+      video.currentTime = 0;
       video.play();
-      bigPlayBtn.innerHTML = '<fa fa-pause></fa>';
-      popup.classList.remove('paused');
+    } else if (video.paused) {
+      video.play();
     } else {
       video.pause();
-      bigPlayBtn.innerHTML = '<fa fa-play></fa>';
-      popup.classList.add('paused');
     }
   };
 
-  // Also handle click on the big play overlay
-  playOverlay.addEventListener('click', () => {
+  // Handle click on the big play button itself
+  bigPlayBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
     if (video.ended) {
-      // Restart from beginning
       video.currentTime = 0;
       video.play();
     } else {
       togglePlay();
+    }
+    updateTimeDisplay();
+  });
+
+  // Also handle click on the overlay background (not on the buttons) to toggle play/pause
+  playOverlay.addEventListener('click', (e) => {
+    // Check if the click was on any of the 8 compass buttons - if so, ignore (they have their own handlers)
+    const compassButtons = playOverlay.querySelectorAll('.lithium-video-tour-back-10-btn, .lithium-video-tour-back-30-btn, .lithium-video-tour-back-to-start-btn, .lithium-video-tour-forward-10-btn, .lithium-video-tour-forward-30-btn, .lithium-video-tour-forward-to-end-btn, .lithium-video-tour-repeat-btn, .lithium-video-tour-subtitles-btn');
+    let isCompassButton = false;
+    compassButtons.forEach(btn => {
+      if (btn.contains(e.target)) {
+        isCompassButton = true;
+      }
+    });
+    if (isCompassButton) return;
+
+    // Check if click was on the play button wrapper or big play button
+    const wrapper = e.target.closest('.lithium-video-tour-play-btn-wrapper');
+    const playBtn = e.target.closest('.lithium-video-tour-big-play-btn');
+    
+    // If clicked on the center wrapper or button, or on the overlay background (not on buttons)
+    if (wrapper || playBtn || (e.target === playOverlay)) {
+      if (video.ended) {
+        video.currentTime = 0;
+        video.play();
+      } else {
+        togglePlay();
+      }
+      updateTimeDisplay();
     }
   });
 
   video.addEventListener('play', () => {
     log(Subsystems.MANAGER, Status.DEBUG, '[VideoTour] Play event');
     bigPlayBtn.innerHTML = '<fa fa-pause></fa>';
-    playOverlay.classList.remove('always-visible');
-    popup.classList.remove('paused');
+    popup.classList.remove('paused', 'ended');
   });
   video.addEventListener('pause', () => {
     log(Subsystems.MANAGER, Status.DEBUG, '[VideoTour] Pause event');
     bigPlayBtn.innerHTML = '<fa fa-play></fa>';
-    playOverlay.classList.add('always-visible');
     popup.classList.add('paused');
+    popup.classList.remove('ended');
   });
   video.addEventListener('ended', () => {
     log(Subsystems.MANAGER, Status.DEBUG, '[VideoTour] Video ended event fired');
     bigPlayBtn.innerHTML = '<fa fa-rotate-left></fa>';
-    playOverlay.classList.add('always-visible');
-    popup.classList.add('paused');
+    popup.classList.add('ended');
+    popup.classList.remove('paused');
   });
 
   // Scrubber seeking
@@ -2145,7 +2196,6 @@ export async function launchVideoTour(tour, options = {}) {
 
   // Captions - parse and display
   const captionsContainer = popup.querySelector('.lithium-video-tour-captions-container');
-  const captionsBtn = popup.querySelector('.lithium-video-tour-captions-btn');
   let captionsEnabled = true;
 
   // Parse captions from definition
@@ -2234,27 +2284,6 @@ export async function launchVideoTour(tour, options = {}) {
 
   video.addEventListener('timeupdate', handleCaptionTimeUpdate);
 
-  // Toggle captions
-  captionsBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    captionsEnabled = !captionsEnabled;
-    captionsBtn.classList.toggle('active', captionsEnabled);
-    popup.classList.toggle('captions-off', !captionsEnabled);
-
-    if (captionsEnabled) {
-      // Show caption for current time
-      handleCaptionTimeUpdate();
-    } else {
-      // Hide all captions
-      while (captionsContainer.firstChild) {
-        captionsContainer.removeChild(captionsContainer.firstChild);
-      }
-    }
-
-    // Save state when captions toggle changes
-    saveState();
-  });
-
   // Volume control
   const updateVolumeIcon = () => {
     if (video.muted || video.volume === 0) {
@@ -2307,10 +2336,11 @@ export async function launchVideoTour(tour, options = {}) {
     saveState();
   });
 
-  // Captions - load saved state
+  // Captions - load saved state (default enabled)
   captionsEnabled = savedState?.captionsEnabled !== false;
-  captionsBtn.classList.toggle('active', captionsEnabled);
   popup.classList.toggle('captions-off', !captionsEnabled);
+  // Button is lit when captions are OFF
+  playOverlay.classList.toggle('subtitles-on', !captionsEnabled);
 
   // Set up state saving on drag/resize end and close
   const saveState = () => {
@@ -2346,6 +2376,7 @@ export async function launchVideoTour(tour, options = {}) {
         } else {
           video.currentTime = Math.max(0, video.currentTime - 10);
         }
+        updateTimeDisplay();
       } else if (e.key === 'ArrowRight') {
         e.preventDefault();
         if (e.shiftKey) {
@@ -2353,9 +2384,13 @@ export async function launchVideoTour(tour, options = {}) {
         } else {
           video.currentTime = Math.min(video.duration || 0, video.currentTime + 10);
         }
+        updateTimeDisplay();
       } else if (e.key === 'r' || e.key === 'R') {
         e.preventDefault();
         toggleRepeat();
+      } else if (e.key === 's' || e.key === 'S') {
+        e.preventDefault();
+        toggleCaptionsFromOverlay();
       }
     };
     document.addEventListener('keydown', _videoTourHandleKeyDown);
@@ -2381,6 +2416,9 @@ export async function launchVideoTour(tour, options = {}) {
     const button = e.target.closest('[data-video-action]');
     if (!button) return;
 
+    // Stop propagation to prevent click from reaching playOverlay handler
+    e.stopPropagation();
+
     const action = button.dataset.videoAction;
     switch (action) {
       case 'close':
@@ -2399,21 +2437,39 @@ export async function launchVideoTour(tour, options = {}) {
         break;
       case 'play':
         togglePlay();
+        updateTimeDisplay();
         break;
-      case 'back':
+      case 'back-10':
         video.currentTime = Math.max(0, video.currentTime - 10);
+        updateTimeDisplay();
         break;
       case 'back-30':
         video.currentTime = Math.max(0, video.currentTime - 30);
+        updateTimeDisplay();
         break;
-      case 'forward':
+      case 'back-to-start':
+        video.currentTime = 0;
+        if (!video.paused) video.play();
+        updateTimeDisplay();
+        break;
+      case 'forward-10':
         video.currentTime = Math.min(video.duration || 0, video.currentTime + 10);
+        updateTimeDisplay();
         break;
       case 'forward-30':
         video.currentTime = Math.min(video.duration || 0, video.currentTime + 30);
+        updateTimeDisplay();
+        break;
+      case 'forward-to-end':
+        video.currentTime = video.duration || 0;
+        if (!video.paused) video.play();
+        updateTimeDisplay();
         break;
       case 'repeat':
         toggleRepeat();
+        break;
+      case 'subtitles':
+        toggleCaptionsFromOverlay();
         break;
       case 'mute':
         video.muted = !video.muted;

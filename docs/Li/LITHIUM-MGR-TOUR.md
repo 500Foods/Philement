@@ -108,19 +108,34 @@ Video tours can include captions stored in the `captions` field. This is an arra
   - Bottom-right: top-left stays fixed
 - **State persistence** — Popup position, size, volume, mute, playback speed, and captions toggle are saved to localStorage and restored on next tour launch
 - **Custom controls:**
-  - Back 10s / Play/Pause / Forward 10s buttons in overlay
+  - Overlay buttons in 8-position compass layout:
+    - Top: Subtitles toggle
+    - Top-right: Forward 10s
+    - Right: Forward to end
+    - Bottom-right: Forward 30s
+    - Bottom: Repeat toggle
+    - Bottom-left: Back 30s
+    - Left: Back to start
+    - Top-left: Back 10s
+  - Center: Play/Pause button
   - Scrubber for seeking
   - Time display (current / duration)
   - Volume slider + mute toggle
   - Playback speed selector (0.5x, 0.75x, 1x, 1.25x, 1.5x, 2x)
-  - Captions toggle
 - **Keyboard shortcuts:**
   - `Space` — Play/Pause
-  - `←` — Back 10 seconds
-  - `→` — Forward 10 seconds
+  - `←` — Back 10 seconds (`Shift+←` for 30s)
+  - `→` — Forward 10 seconds (`Shift+→` for 30s)
+  - `R` — Toggle repeat
+  - `S` — Toggle subtitles
   - `Esc` — Close popup
 - **Caption transitions** — 0.5s fade in/out with crossfade support for overlapping timestamps
 - **Initial positioning** — Centered in viewport, or restored from saved position
+- **Overlay visibility:**
+  - Hidden when video is playing and mouse is not hovering
+  - Shown when video is paused (and not at end)
+  - Shown when video has ended
+  - Shown on hover
 
 ### Manager Field Convention
 
@@ -581,6 +596,17 @@ lithium_video_y
 lithium_video_width
 lithium_video_height
 ```
+
+### Repeat Behavior
+
+When the repeat toggle is enabled:
+- Video loops indefinitely until:
+  - The toggle is turned off
+  - The video is paused
+  - The popup is closed
+
+When the repeat toggle is off:
+- Video plays once and stops at the end
 
 **Important:** When saving, validate all numeric values to prevent NaN/Infinity. When loading, use explicit type checks (`typeof === 'number' && > 0`) rather than truthy checks.
 
