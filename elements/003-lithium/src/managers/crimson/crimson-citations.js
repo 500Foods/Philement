@@ -48,19 +48,48 @@ CrimsonManager.prototype.parseCitations = function(messageId, citations) {
   citations.forEach((citation, index) => {
     log(Subsystems.CRIMSON, Status.DEBUG, `Raw citation[${index}]: ${JSON.stringify(citation)}`);
 
-    const filename = citation.filename || citation.name || citation.title || '';
-    const url = citation.url || citation.uri || citation.source || citation.filename || '';
+    let filename = citation.filename || citation.name || citation.title || '';
+    let url = citation.url || citation.uri || citation.source || citation.filename || '';
     const isCanvas = url.startsWith('canvas') || filename.startsWith('canvas');
     const turnIndex = index + 1;
     const globalNumber = startIndex + turnIndex;
+
+    // Handle canvas- prefixed URLs - convert to actual course page URL
+    if (url.startsWith('canvas-')) {
+      const canvasUrl = this.buildCanvasUrl(url);
+      if (canvasUrl) {
+        url = canvasUrl;
+      }
+    }
+
+    // Clean up filename: if it starts with canvas-PH-*, remove prefix and clean up
+    if (filename.startsWith('canvas-PH-')) {
+      // Remove the prefix up to the module number (e.g., "canvas-PH-003-I2L-mod-2-")
+      const match = filename.match(/^canvas-PH-\d+-I2L-mod-\d+-(.+)$/);
+      if (match) {
+        let cleaned = match[1];
+        // Remove .md extension
+        if (cleaned.endsWith('.md')) {
+          cleaned = cleaned.slice(0, -3);
+        }
+        // Replace dashes with spaces and title case
+        filename = cleaned.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      }
+    }
+
+    // Generate link icon based on processed URL
+    const link = this.generateLinkIcon(url);
 
     const normalized = {
       number: globalNumber,
       name: filename || 'Untitled',
       url: url,
+      link: link,
       type: isCanvas ? 'canvas' : (citation.type || 'web'),
       source: citation.source || citation.filename || '',
-      score: citation.score || null,
+      score: citation.score != null 
+        ? Math.max(-1000, Math.min(1000, citation.score)) 
+        : null,
       pageContent: citation.page_content || null,
       dataSourceId: citation.data_source_id || null,
     };
@@ -118,6 +147,38 @@ CrimsonManager.prototype.buildCanvasUrl = function(filename) {
 };
 
 /**
+ * Generate link icon based on URL.
+ * @param {string} url - The URL to analyze
+ * @returns {string} The FA icon HTML
+ */
+CrimsonManager.prototype.generateLinkIcon = function(url) {
+  if (!url) return '<fa fa-link></fa>';
+  
+  // GitHub
+  if (url.includes('github.com')) {
+    return '<i class="fa-brands fa-github"></i>';
+  }
+  
+  // Markdown (.md file)
+  if (!url.startsWith('http') && url.endsWith('.md')) {
+    return '<i class="fa-brands fa-markdown"></i>';
+  }
+  
+  // JSON (.json file)
+  if (url.endsWith('.json')) {
+    return '<fa fa-brackets-curly></fa>';
+  }
+  
+  // Canvas (check both canvas- prefix and canvas.500courses.com domain)
+  if (url.startsWith('canvas') || url.includes('canvas/') || url.includes('canvas.500courses.com')) {
+    return '<fa fa-graduation-cap></fa>';
+  }
+  
+  // Generic web
+  return '<fa fa-arrow-up-right-from-square></fa>';
+};
+
+/**
  * Open a citation URL in a new tab, translating canvas URLs if needed
  * @param {string} url - The URL to open
  */
@@ -154,11 +215,9 @@ CrimsonManager.prototype.updateCitationHeaderButton = function() {
   const count = this.allCitations.length;
 
   if (this.citationCounterEl) {
-    this.citationCounterEl.textContent = count > 0 ? String(count).padStart(3, '0') : '';
+    this.citationCounterEl.textContent = count > 0 ? String(count).padStart(3, '0') : '000';
   }
 };
-
-// ==================== CITATION POPUP ====================
 
 /**
  * Toggle citation popup from the header button
@@ -168,8 +227,6 @@ CrimsonManager.prototype.toggleCitationPopup = function() {
     this.closeCitationPopup();
     return;
   }
-
-  if (this.allCitations.length === 0) return;
 
   this.showCitationPopup(this.citationHeaderBtn, this.allCitations);
 };
@@ -293,109 +350,67 @@ CrimsonManager.prototype.showCitationPopup = async function(button, citations) {
     readonly: true,
     cssPrefix: 'lithium',
     storageKey: 'crimson_citations',
-    tableDef: {
-      title: 'Citations',
-      readonly: true,
-      columnManager: false,
-      layout: 'fitColumns',
-      columns: {
-        number: {
-          field: 'number',
-          display: '#',
-          coltype: 'integer',
-          visible: true,
-          sort: true,
-          filter: false,
-          editable: false,
-          overrides: { width: 45, hozAlign: 'center' },
-        },
-        name: {
-          field: 'name',
-          display: 'Name',
-          coltype: 'string',
-          visible: true,
-          sort: true,
-          filter: true,
-          editable: false,
-          overrides: { minWidth: 100 },
-        },
-        reference: {
-          field: 'url',
-          display: 'Reference',
-          coltype: 'string',
-          visible: true,
-          sort: true,
-          filter: true,
-          editable: false,
-          overrides: {
-            minWidth: 120,
-            tooltip: true,
-            formatter: (cell) => {
-              const url = cell.getValue();
-              return this.formatReference(url);
-            },
-          },
-        },
-        score: {
-          field: 'score',
-          display: 'Score',
-          coltype: 'number',
-          visible: true,
-          sort: true,
-          filter: true,
-          editable: false,
-          overrides: {
-            width: 100,
-            hozAlign: 'right',
-            formatter: (cell) => {
-              const score = cell.getValue();
-              if (score === null || score === undefined) return '';
-              return score.toLocaleString();
-            },
-          },
-        },
-        actions: {
-          field: 'url',
-          display: '<fa fa-arrow-up-right-from-square>',
-          coltype: 'string',
-          visible: true,
-          sort: false,
-          filter: false,
-          editable: false,
-          overrides: {
-            width: 40,
-            hozAlign: 'center',
-            headerSort: false,
-            formatter: (cell) => {
-              const url = cell.getValue();
-              if (!url) return '';
-              if (url.startsWith('canvas') || url.includes('canvas/')) {
-                return '<fa fa-graduation-cap fa-flip-horizontal></fa>';
-              }
-              return '<fa fa-arrow-up-right-from-square></fa>';
-            },
-            cellClick: (_e, cell) => {
-              const url = cell.getValue();
-              this.openCitationUrl(url);
-            },
-          },
-        },
-      },
-    },
+    tablePath: 'crimson/citations',
+    lookupKeyIdx: 13,
     onRowSelected: (rowData) => {
       log(Subsystems.CRIMSON, Status.DEBUG, `Citation selected: #${rowData.number} ${rowData.name}`);
+    },
+    onDataLoaded: (rows) => {
+      log(Subsystems.CRIMSON, Status.DEBUG, `Citations loaded: ${rows.length} rows`);
     },
   });
 
   await this.citationTable.init();
+
   this.citationTable.loadStaticData(citations, { autoSelect: false });
 
   this.citationTable.table.on('rowDblClick', (_e, row) => {
     const rowData = row.getData();
-    if (rowData?.url) {
+    // Only open URLs that start with http
+    if (rowData?.url && rowData.url.startsWith('http')) {
       this.openCitationUrl(rowData.url);
     }
   });
+
+  const urlCol = this.citationTable.table.getColumn('url');
+  if (urlCol) {
+    urlCol.update({
+      formatter: (cell) => this.formatReference(cell.getValue()),
+    });
+  }
+
+  const scoreCol = this.citationTable.table.getColumn('score');
+  if (scoreCol) {
+    scoreCol.update({
+      formatter: (cell) => {
+        const score = cell.getValue();
+        if (score === null || score === undefined) return '';
+        return score.toLocaleString();
+      },
+    });
+  }
+
+  const linkCol = this.citationTable.table.getColumn('link');
+  if (linkCol) {
+    linkCol.update({
+      headerSort: false,
+      formatter: (cell) => {
+        const url = cell.getValue();
+        if (!url) return '';
+        if (url.startsWith('canvas') || url.includes('canvas/')) {
+          return '<fa fa-graduation-cap fa-flip-horizontal></fa>';
+        }
+        return '<fa fa-arrow-up-right-from-square></fa>';
+      },
+      cellClick: (_e, cell) => {
+        const url = cell.getValue();
+        // Only open URLs that start with http
+        if (url && url.startsWith('http')) {
+          this.openCitationUrl(url);
+        }
+      },
+    });
+  }
 
   this._citationOutsideHandler = (e) => {
     if (!popup.contains(e.target) && !(button && button.contains(e.target))) {
