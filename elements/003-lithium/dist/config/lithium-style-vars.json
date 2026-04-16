@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS custom properties (variables) used across the Lithium codebase",
-    "generated": "2026-04-16T00:48:31.175Z",
+    "generated": "2026-04-16T17:58:31.463Z",
     "sources": {
       "css": "51 files in src/**/*.css",
       "js": "104 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
     "total_variables": 220,
-    "total_occurrences": 3387
+    "total_occurrences": 3409
   },
   "variables": [
     {
@@ -83,10 +83,10 @@
     },
     {
       "name": "--accent-hover",
-      "css": 45,
+      "css": 44,
       "js": 0,
       "html": 0,
-      "total": 45
+      "total": 44
     },
     {
       "name": "--accent-info",
@@ -104,10 +104,10 @@
     },
     {
       "name": "--accent-primary",
-      "css": 171,
+      "css": 172,
       "js": 3,
       "html": 1,
-      "total": 175
+      "total": 176
     },
     {
       "name": "--accent-primary-hover",
@@ -636,10 +636,10 @@
     },
     {
       "name": "--icon-size-lg",
-      "css": 2,
+      "css": 1,
       "js": 0,
       "html": 0,
-      "total": 2
+      "total": 1
     },
     {
       "name": "--icon-size-nav",
@@ -1469,17 +1469,17 @@
     },
     {
       "name": "--transition-duration",
-      "css": 88,
+      "css": 112,
       "js": 14,
       "html": 0,
-      "total": 102
+      "total": 126
     },
     {
       "name": "--transition-fast",
-      "css": 138,
+      "css": 137,
       "js": 3,
       "html": 0,
-      "total": 141
+      "total": 140
     },
     {
       "name": "--transition-normal",
