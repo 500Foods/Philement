@@ -53,7 +53,7 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2026-04-17 19:32:22 UTC
+Last updated at 2026-04-17 21:45:01 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
@@ -61,7 +61,7 @@ JSON                           298            303              0         916600
 C                             1095          47614          44662         170518
 SVG                            155            303           4089         162093
 Text                           199            197              0          75127
-Markdown                       701          25256            229          69253
+Markdown                       704          25670            231          70431
 HTML                            87            478            203          60969
 JavaScript                     190           8138          10203          38390
 Lua                            200           4632           3611          32149
@@ -78,12 +78,12 @@ Delphi Form                      1              1              0             43
 YAML                             2              8             13             37
 Pascal                           2             11              2             31
 -------------------------------------------------------------------------------
-SUM:                          3418          98017         152605        1574127
+SUM:                          3421          98431         152607        1575305
 -------------------------------------------------------------------------------
-810 Files were skipped (duplicate, binary, or without source code):
+808 Files were skipped (duplicate, binary, or without source code):
   svg: 618
-  md: 41
   png: 40
+  md: 39
   br: 16
   lua: 13
   html: 9
