@@ -12,6 +12,8 @@ import { processIcons } from '../../core/icons.js';
 import { expandMacros, hasMacros } from '../../core/macro-expansion.js';
 import { getMacros } from '../../shared/lookups.js';
 import { offset, flip, shift } from '@floating-ui/dom';
+import { getLocaleDisplayName, getCountryCode } from '../../shared/languages.js';
+import { getFlagSvg } from '../../shared/log-formatter.js';
 import './tour.css';
 
 // ========================================
@@ -1594,6 +1596,9 @@ export async function launchVideoTour(tour, options = {}) {
         <button type="button" class="lithium-video-tour-header-btn lithium-video-tour-list-btn" data-video-action="list" title="Available Tours">
           <fa fa-signs-post></fa>
         </button>
+        <button type="button" class="lithium-video-tour-header-btn lithium-video-tour-language-btn" data-video-action="language" title="Select Language" style="display: none;">
+          <fa fa-earth-americas></fa>
+        </button>
         <button type="button" class="lithium-video-tour-header-close" data-video-action="close" title="Close">
           <fa fa-xmark></fa>
         </button>
@@ -2438,6 +2443,9 @@ export async function launchVideoTour(tour, options = {}) {
           }
         }, getTransitionDuration() + 50);
         break;
+      case 'language':
+        showVideoTourLanguageMenu(tour, button);
+        break;
       case 'play':
         togglePlay();
         updateTimeDisplay();
@@ -2493,6 +2501,15 @@ export async function launchVideoTour(tour, options = {}) {
 
   popup.addEventListener('click', handleButtonClick);
 
+  // Show language button if this tour has alternate-language variants available
+  const languageBtn = popup.querySelector('.lithium-video-tour-language-btn');
+  if (languageBtn) {
+    const altLanguages = getAlternateLanguagesForTour(tour);
+    if (altLanguages.length > 0) {
+      languageBtn.style.display = '';
+    }
+  }
+
   // Store references for cleanup
   _activeVideoPopup = popup;
   _activeVideoElement = video;
@@ -2505,10 +2522,167 @@ export async function launchVideoTour(tour, options = {}) {
   log(Subsystems.MANAGER, Status.INFO, `[VideoTour] Popup created for: ${tour.name}`);
 }
 
+// ========================================
+// Video Tour Language Switcher
+// ========================================
+
+let _activeLanguagePopup = null;
+
+/**
+ * Get alternate-language variants for a tour, excluding 'default' and the tour's own key_idx.
+ * @param {Object} tour - Tour object with { id, definition }
+ * @returns {Array<{locale: string, keyIdx: number, countryCode: string, displayName: string}>}
+ */
+function getAlternateLanguagesForTour(tour) {
+  const languages = tour?.definition?.languages;
+  if (!languages || typeof languages !== 'object') return [];
+
+  const currentId = Number(tour.id);
+  const result = [];
+
+  for (const [locale, keyIdx] of Object.entries(languages)) {
+    // Exclude the 'default' pointer
+    if (locale === 'default') continue;
+    const idNum = Number(keyIdx);
+    if (!Number.isFinite(idNum)) continue;
+    // Exclude the currently-playing tour
+    if (idNum === currentId) continue;
+
+    result.push({
+      locale,
+      keyIdx: idNum,
+      countryCode: getCountryCode(locale),
+      displayName: getLocaleDisplayName(locale),
+    });
+  }
+
+  // Sort alphabetically by display name for consistent ordering
+  result.sort((a, b) => a.displayName.localeCompare(b.displayName));
+  return result;
+}
+
+/**
+ * Hide the video tour language popup if open.
+ * @private
+ */
+function hideVideoTourLanguageMenu() {
+  if (!_activeLanguagePopup) return;
+  const popup = _activeLanguagePopup;
+  _activeLanguagePopup = null;
+  if (popup._cleanup) popup._cleanup();
+  popup.classList.remove('visible');
+  const duration = getTransitionDuration();
+  setTimeout(() => {
+    if (popup && popup.parentNode) popup.remove();
+  }, duration);
+}
+
+/**
+ * Show the language-selection popup for a video tour, anchored to a button.
+ * Selecting a language closes the current tour and launches the selected one.
+ * @param {Object} tour - Current tour object
+ * @param {HTMLElement} anchor - Anchor element (earth-americas button)
+ * @private
+ */
+function showVideoTourLanguageMenu(tour, anchor) {
+  // Toggle off if already open
+  if (_activeLanguagePopup) {
+    hideVideoTourLanguageMenu();
+    return;
+  }
+
+  const languages = getAlternateLanguagesForTour(tour);
+  if (languages.length === 0) {
+    log(Subsystems.MANAGER, Status.DEBUG, '[VideoTour] No alternate languages available');
+    return;
+  }
+
+  const items = languages.map(l => `
+    <div class="lithium-video-tour-language-item" data-tour-id="${l.keyIdx}" data-locale="${l.locale}">
+      <span class="lithium-video-tour-language-flag">${getFlagSvg(l.countryCode, { width: 22, height: 16 })}</span>
+      <span class="lithium-video-tour-language-name">${l.displayName}</span>
+    </div>
+  `).join('');
+
+  const popup = document.createElement('div');
+  popup.className = 'lithium-video-tour-language-popup';
+  popup.innerHTML = `
+    <div class="lithium-video-tour-language-header">
+      <fa fa-earth-americas></fa>
+      <span>Select Language</span>
+    </div>
+    <div class="lithium-video-tour-language-body">
+      ${items}
+    </div>
+  `;
+
+  document.body.appendChild(popup);
+
+  // Position as dropdown from the anchor button (top-right of popup at bottom-right of button)
+  const rect = anchor.getBoundingClientRect();
+  popup.style.top = `${rect.bottom + 4}px`;
+  popup.style.right = `${window.innerWidth - rect.right}px`;
+
+  // Process icons
+  if (typeof processIcons === 'function') {
+    processIcons(popup);
+  }
+
+  // Animate in next frame
+  requestAnimationFrame(() => {
+    popup.classList.add('visible');
+  });
+
+  // Item click: close current tour, launch selected
+  popup.querySelectorAll('.lithium-video-tour-language-item').forEach(item => {
+    item.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const newTourId = parseInt(item.dataset.tourId, 10);
+      if (!Number.isFinite(newTourId)) return;
+      log(Subsystems.MANAGER, Status.INFO, `[VideoTour] Switching language to tour ${newTourId}`);
+
+      hideVideoTourLanguageMenu();
+      // closeVideoTour is called inside launchTour; fire via eventBus for consistency
+      const api = window.lithiumApp?.api;
+      if (!api) {
+        log(Subsystems.MANAGER, Status.ERROR, '[VideoTour] API unavailable for language switch');
+        return;
+      }
+      await launchTour(newTourId, api);
+    });
+  });
+
+  // Dismiss on outside click / Escape
+  const handleOutside = (e) => {
+    if (!popup.contains(e.target) && !anchor.contains(e.target)) {
+      hideVideoTourLanguageMenu();
+    }
+  };
+  const handleEsc = (e) => {
+    if (e.key === 'Escape') hideVideoTourLanguageMenu();
+  };
+  popup._cleanup = () => {
+    document.removeEventListener('click', handleOutside, true);
+    document.removeEventListener('keydown', handleEsc);
+  };
+  // Delay a tick to avoid catching the opening click
+  setTimeout(() => {
+    document.addEventListener('click', handleOutside, true);
+    document.addEventListener('keydown', handleEsc);
+  }, 10);
+
+  _activeLanguagePopup = popup;
+}
+
 /**
  * Close video tour popup with fade out
  */
 export function closeVideoTour() {
+  // Close language popup if open
+  if (_activeLanguagePopup) {
+    hideVideoTourLanguageMenu();
+  }
+
   // Remove keyboard handler
   if (_videoTourHandleKeyDown) {
     document.removeEventListener('keydown', _videoTourHandleKeyDown);

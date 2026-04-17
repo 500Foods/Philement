@@ -59,6 +59,7 @@ Each tour is a row in Lookup #43 with the tour definition stored in the `collect
 | `sidebar` | `boolean` | No | If `true`, expands the sidebar if it's collapsed. Use for tours that reference sidebar elements. Default: `false` (no action). |
 | `steps` | `array` | No* | Array of step objects. Required for step-based tours, mutually exclusive with `video`. |
 | `video` | `string` | No* | Path to MP4 video file (e.g., `"/assets/videos/scarlett-en-US-welcome-to-lithium.mp4"`). Required for video tours, mutually exclusive with `steps`. |
+| `languages` | `object` | No | Map of locale codes to tour `key_idx` values for alternate-language variants. See [Multi-Language Variants](#multi-language-variants) below. |
 
 **Note:** Tours must have either `steps` (step-based tour) OR `video` (video tour), but not both.
 
@@ -100,6 +101,7 @@ Video tours can include captions stored in the `captions` field. This is an arra
 #### Video Tour Features
 
 - **Custom player** — Themed to match the Lithium design system (similar to Terminal popup styling)
+- **Language switcher** — When the tour defines a `languages` block, an `fa-earth-americas` button in the header (left of close) opens a dropdown with flag + language-name entries for switching to an alternate-language variant. See [Multi-Language Variants](#multi-language-variants) for the JSON schema.
 - **Draggable** — Click and drag the header to reposition
 - **Resizable** — Corner handles for resizing with aspect ratio preservation
   - Top-left: bottom-right stays fixed
@@ -136,6 +138,53 @@ Video tours can include captions stored in the `captions` field. This is an arra
   - Shown when video is paused (and not at end)
   - Shown when video has ended
   - Shown on hover
+
+### Multi-Language Variants
+
+A tour may declare a set of alternate-language variants via the `languages` object. Each entry maps a locale code (or the string `"default"`) to the `key_idx` of another tour in Lookup #43.
+
+**Example `languages` block:**
+
+```json
+{
+  "icon": "<fa fa-play></fa>",
+  "managers": ["029.Query Manager"],
+  "video": "/assets/videos/scarlett-en-US-welcome.mp4",
+  "languages": {
+    "default": 101,
+    "en-US": 101,
+    "fr-FR": 102,
+    "es-ES": 103,
+    "ja-JP": 104
+  }
+}
+```
+
+**Semantics:**
+
+- Keys are locale codes (e.g. `en-US`, `fr-FR`) or the special key `"default"`.
+- Values are the `key_idx` of the tour that provides that language variant.
+- The `"default"` entry is a pointer to the tour that should be used when no user-preferred locale matches; it is **excluded** from the language-switcher menu.
+- The tour whose `key_idx` matches the currently-running tour is also **excluded** from the menu (you don't switch to the one you're already watching).
+
+**Video Tour Language Switcher:**
+
+When a video tour is launched and its `languages` object contains at least one entry other than `"default"` and the current tour's own `key_idx`, an `fa-earth-americas` button appears in the video tour header to the left of the close button.
+
+Clicking the button opens a dropdown menu that shows each alternate language as a row containing:
+
+- The country flag (rendered as SVG via `country-flag-icons`, same as the login panel)
+- The language + country display name (e.g. `French (France)`, via `Intl.DisplayNames`)
+
+Selecting an entry closes the current video tour and launches the selected variant by its `key_idx`. The menu is also dismissed by clicking outside or pressing `Escape`.
+
+**Notes:**
+
+- The feature is currently implemented for video tours only.
+- If the `languages` object is missing, empty, or contains only `"default"` and the current tour, the button is not shown.
+- Language popup state is purely transient — no localStorage persistence (user preference is tracked separately in the profile manager / login panel).
+
+---
 
 ### Manager Field Convention
 

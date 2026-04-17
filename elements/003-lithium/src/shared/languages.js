@@ -195,8 +195,11 @@ export function getCountryName(locale) {
  */
 export function getLocaleDisplayName(locale) {
   try {
-    const langPart = new Intl.DisplayNames(['en'], { type: 'language' }).of(locale);
-    const region = locale.split('-')[1];
+    const [langCode, region] = locale.split('-');
+    // Pass only the language code to Intl.DisplayNames — some engines resolve
+    // the full locale (e.g. 'fr-FR') to 'French (France)' already, which would
+    // duplicate the region when we append it below.
+    const langPart = new Intl.DisplayNames(['en'], { type: 'language' }).of(langCode);
     if (!region) return langPart;
     const regionPart = new Intl.DisplayNames(['en'], { type: 'region' }).of(region);
     return `${langPart} (${regionPart})`;
@@ -214,8 +217,9 @@ export function getLocaleDisplayName(locale) {
  */
 export function getLocaleNativeName(locale) {
   try {
-    const langPart = new Intl.DisplayNames([locale], { type: 'language' }).of(locale);
-    const region = locale.split('-')[1];
+    const [langCode, region] = locale.split('-');
+    // Pass only the language code — see note in getLocaleDisplayName.
+    const langPart = new Intl.DisplayNames([locale], { type: 'language' }).of(langCode);
     if (!region) return langPart;
     const regionPart = new Intl.DisplayNames([locale], { type: 'region' }).of(region);
     return `${langPart} (${regionPart})`;

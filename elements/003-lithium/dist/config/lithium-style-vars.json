@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS custom properties (variables) used across the Lithium codebase",
-    "generated": "2026-04-17T17:06:59.382Z",
+    "generated": "2026-04-17T18:23:52.189Z",
     "sources": {
       "css": "51 files in src/**/*.css",
       "js": "104 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
     "total_variables": 220,
-    "total_occurrences": 3414
+    "total_occurrences": 3429
   },
   "variables": [
     {
@@ -1266,24 +1266,24 @@
     },
     {
       "name": "--tour-bg",
-      "css": 4,
-      "js": 0,
-      "html": 0,
-      "total": 4
-    },
-    {
-      "name": "--tour-bg-secondary",
-      "css": 2,
-      "js": 0,
-      "html": 0,
-      "total": 2
-    },
-    {
-      "name": "--tour-border",
       "css": 5,
       "js": 0,
       "html": 0,
       "total": 5
+    },
+    {
+      "name": "--tour-bg-secondary",
+      "css": 3,
+      "js": 0,
+      "html": 0,
+      "total": 3
+    },
+    {
+      "name": "--tour-border",
+      "css": 7,
+      "js": 0,
+      "html": 0,
+      "total": 7
     },
     {
       "name": "--tour-border-light",
@@ -1294,24 +1294,24 @@
     },
     {
       "name": "--tour-border-radius",
+      "css": 4,
+      "js": 0,
+      "html": 0,
+      "total": 4
+    },
+    {
+      "name": "--tour-border-radius-sm",
       "css": 3,
       "js": 0,
       "html": 0,
       "total": 3
     },
     {
-      "name": "--tour-border-radius-sm",
-      "css": 2,
-      "js": 0,
-      "html": 0,
-      "total": 2
-    },
-    {
       "name": "--tour-border-width",
-      "css": 5,
+      "css": 7,
       "js": 0,
       "html": 0,
-      "total": 5
+      "total": 7
     },
     {
       "name": "--tour-btn-bg",
@@ -1371,17 +1371,17 @@
     },
     {
       "name": "--tour-header-bg",
-      "css": 3,
+      "css": 4,
       "js": 0,
       "html": 0,
-      "total": 3
+      "total": 4
     },
     {
       "name": "--tour-header-text",
-      "css": 3,
+      "css": 4,
       "js": 0,
       "html": 0,
-      "total": 3
+      "total": 4
     },
     {
       "name": "--tour-list-max-width",
@@ -1420,10 +1420,10 @@
     },
     {
       "name": "--tour-text",
-      "css": 3,
+      "css": 4,
       "js": 0,
       "html": 0,
-      "total": 3
+      "total": 4
     },
     {
       "name": "--tour-text-muted",
@@ -1441,10 +1441,10 @@
     },
     {
       "name": "--tour-z-popup",
-      "css": 2,
+      "css": 3,
       "js": 0,
       "html": 0,
-      "total": 2
+      "total": 3
     },
     {
       "name": "--tour-z-step",
@@ -1469,10 +1469,10 @@
     },
     {
       "name": "--transition-duration",
-      "css": 112,
+      "css": 115,
       "js": 14,
       "html": 0,
-      "total": 126
+      "total": 129
     },
     {
       "name": "--transition-fast",

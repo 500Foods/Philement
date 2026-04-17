@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS class selectors/names used across the Lithium codebase",
-    "generated": "2026-04-17T17:07:00.725Z",
+    "generated": "2026-04-17T18:23:53.645Z",
     "sources": {
       "css": "51 files in src/**/*.css",
       "js": "104 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
-    "total_selectors": 1762,
-    "total_occurrences": 27862
+    "total_selectors": 1777,
+    "total_occurrences": 28089
   },
   "selectors": [
     {
@@ -1853,9 +1853,9 @@
     {
       "selector": ".col-manager-popup.visible",
       "css": 1,
-      "js": 110,
+      "js": 112,
       "html": 0,
-      "total": 111,
+      "total": 113,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
@@ -3548,9 +3548,9 @@
     {
       "selector": ".crimson-citation-popup.visible",
       "css": 1,
-      "js": 116,
+      "js": 118,
       "html": 0,
-      "total": 117,
+      "total": 119,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -5041,9 +5041,9 @@
     {
       "selector": ".crimson-overlay.visible",
       "css": 1,
-      "js": 108,
+      "js": 110,
       "html": 0,
-      "total": 109,
+      "total": 111,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -5244,9 +5244,9 @@
     {
       "selector": ".crimson-popup.visible",
       "css": 1,
-      "js": 108,
+      "js": 110,
       "html": 0,
-      "total": 109,
+      "total": 111,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -6575,9 +6575,9 @@
     {
       "selector": ".font-popup.visible",
       "css": 1,
-      "js": 107,
+      "js": 109,
       "html": 0,
-      "total": 108,
+      "total": 110,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -6697,9 +6697,9 @@
     {
       "selector": ".footer-export-popup.visible",
       "css": 1,
-      "js": 107,
+      "js": 109,
       "html": 0,
-      "total": 108,
+      "total": 110,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -8788,9 +8788,9 @@
     {
       "selector": ".lithium-col-chooser-popup.visible",
       "css": 1,
-      "js": 107,
+      "js": 109,
       "html": 0,
-      "total": 108,
+      "total": 110,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -9475,9 +9475,9 @@
     {
       "selector": ".lithium-nav-popup.visible",
       "css": 1,
-      "js": 119,
+      "js": 121,
       "html": 0,
-      "total": 120,
+      "total": 122,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -12310,9 +12310,9 @@
     {
       "selector": ".lithium-toolbar-popup.visible",
       "css": 1,
-      "js": 128,
+      "js": 130,
       "html": 61,
-      "total": 190,
+      "total": 192,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -13393,9 +13393,9 @@
     {
       "selector": ".lithium-tour-list-popup.visible",
       "css": 1,
-      "js": 108,
+      "js": 110,
       "html": 0,
-      "total": 109,
+      "total": 111,
       "files": {
         "css": [
           "src/managers/tour/tour.css"
@@ -13589,9 +13589,9 @@
     {
       "selector": ".lithium-video-tour-caption.visible",
       "css": 1,
-      "js": 109,
+      "js": 111,
       "html": 0,
-      "total": 110,
+      "total": 112,
       "files": {
         "css": [
           "src/managers/tour/tour.css"
@@ -13835,9 +13835,9 @@
     {
       "selector": ".lithium-video-tour-header",
       "css": 1,
-      "js": 9,
+      "js": 10,
       "html": 0,
-      "total": 10,
+      "total": 11,
       "files": {
         "css": [
           "src/managers/tour/tour.css"
@@ -13851,9 +13851,9 @@
     {
       "selector": ".lithium-video-tour-header .subpanel-header-group",
       "css": 1,
-      "js": 25,
+      "js": 26,
       "html": 23,
-      "total": 49,
+      "total": 50,
       "files": {
         "css": [
           "src/managers/tour/tour.css"
@@ -13879,9 +13879,9 @@
     {
       "selector": ".lithium-video-tour-header-actions",
       "css": 1,
-      "js": 9,
+      "js": 10,
       "html": 0,
-      "total": 10,
+      "total": 11,
       "files": {
         "css": [
           "src/managers/tour/tour.css"
@@ -13895,9 +13895,9 @@
     {
       "selector": ".lithium-video-tour-header-btn",
       "css": 1,
-      "js": 11,
+      "js": 13,
       "html": 0,
-      "total": 12,
+      "total": 14,
       "files": {
         "css": [
           "src/managers/tour/tour.css"
@@ -13911,9 +13911,9 @@
     {
       "selector": ".lithium-video-tour-header-btn:hover",
       "css": 1,
-      "js": 11,
+      "js": 13,
       "html": 0,
-      "total": 12,
+      "total": 14,
       "files": {
         "css": [
           "src/managers/tour/tour.css"
@@ -13927,9 +13927,9 @@
     {
       "selector": ".lithium-video-tour-header-close",
       "css": 1,
-      "js": 11,
+      "js": 12,
       "html": 0,
-      "total": 12,
+      "total": 13,
       "files": {
         "css": [
           "src/managers/tour/tour.css"
@@ -13943,6 +13943,54 @@
     {
       "selector": ".lithium-video-tour-header-close:hover",
       "css": 1,
+      "js": 12,
+      "html": 0,
+      "total": 13,
+      "files": {
+        "css": [
+          "src/managers/tour/tour.css"
+        ],
+        "js": [
+          "src/managers/tour/tour.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".lithium-video-tour-header-icon-title",
+      "css": 1,
+      "js": 10,
+      "html": 0,
+      "total": 11,
+      "files": {
+        "css": [
+          "src/managers/tour/tour.css"
+        ],
+        "js": [
+          "src/managers/tour/tour.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".lithium-video-tour-header-icon-title .fa",
+      "css": 1,
+      "js": 10,
+      "html": 0,
+      "total": 11,
+      "files": {
+        "css": [
+          "src/managers/tour/tour.css"
+        ],
+        "js": [
+          "src/managers/tour/tour.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".lithium-video-tour-header-placeholder",
+      "css": 1,
       "js": 11,
       "html": 0,
       "total": 12,
@@ -13957,59 +14005,11 @@
       }
     },
     {
-      "selector": ".lithium-video-tour-header-icon-title",
-      "css": 1,
-      "js": 9,
-      "html": 0,
-      "total": 10,
-      "files": {
-        "css": [
-          "src/managers/tour/tour.css"
-        ],
-        "js": [
-          "src/managers/tour/tour.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".lithium-video-tour-header-icon-title .fa",
-      "css": 1,
-      "js": 9,
-      "html": 0,
-      "total": 10,
-      "files": {
-        "css": [
-          "src/managers/tour/tour.css"
-        ],
-        "js": [
-          "src/managers/tour/tour.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".lithium-video-tour-header-placeholder",
-      "css": 1,
-      "js": 10,
-      "html": 0,
-      "total": 11,
-      "files": {
-        "css": [
-          "src/managers/tour/tour.css"
-        ],
-        "js": [
-          "src/managers/tour/tour.js"
-        ],
-        "html": []
-      }
-    },
-    {
       "selector": ".lithium-video-tour-header-primary",
       "css": 1,
-      "js": 10,
+      "js": 11,
       "html": 0,
-      "total": 11,
+      "total": 12,
       "files": {
         "css": [
           "src/managers/tour/tour.css"
@@ -14023,9 +14023,9 @@
     {
       "selector": ".lithium-video-tour-header-primary svg",
       "css": 1,
-      "js": 10,
+      "js": 11,
       "html": 0,
-      "total": 11,
+      "total": 12,
       "files": {
         "css": [
           "src/managers/tour/tour.css"
@@ -14039,9 +14039,9 @@
     {
       "selector": ".lithium-video-tour-header-primary:active",
       "css": 1,
-      "js": 10,
+      "js": 11,
       "html": 0,
-      "total": 11,
+      "total": 12,
       "files": {
         "css": [
           "src/managers/tour/tour.css"
@@ -14055,6 +14055,22 @@
     {
       "selector": ".lithium-video-tour-header-title",
       "css": 1,
+      "js": 11,
+      "html": 0,
+      "total": 12,
+      "files": {
+        "css": [
+          "src/managers/tour/tour.css"
+        ],
+        "js": [
+          "src/managers/tour/tour.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".lithium-video-tour-header:active",
+      "css": 1,
       "js": 10,
       "html": 0,
       "total": 11,
@@ -14069,17 +14085,261 @@
       }
     },
     {
-      "selector": ".lithium-video-tour-header:active",
+      "selector": ".lithium-video-tour-language-body",
       "css": 1,
-      "js": 9,
+      "js": 1,
       "html": 0,
-      "total": 10,
+      "total": 2,
       "files": {
         "css": [
           "src/managers/tour/tour.css"
         ],
         "js": [
           "src/managers/tour/tour.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".lithium-video-tour-language-body::-webkit-scrollbar",
+      "css": 1,
+      "js": 1,
+      "html": 0,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/managers/tour/tour.css"
+        ],
+        "js": [
+          "src/managers/tour/tour.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".lithium-video-tour-language-body::-webkit-scrollbar-thumb",
+      "css": 1,
+      "js": 1,
+      "html": 0,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/managers/tour/tour.css"
+        ],
+        "js": [
+          "src/managers/tour/tour.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".lithium-video-tour-language-body::-webkit-scrollbar-track",
+      "css": 1,
+      "js": 1,
+      "html": 0,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/managers/tour/tour.css"
+        ],
+        "js": [
+          "src/managers/tour/tour.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".lithium-video-tour-language-btn",
+      "css": 0,
+      "js": 2,
+      "html": 0,
+      "total": 2,
+      "files": {
+        "css": [],
+        "js": [
+          "src/managers/tour/tour.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".lithium-video-tour-language-flag",
+      "css": 1,
+      "js": 1,
+      "html": 0,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/managers/tour/tour.css"
+        ],
+        "js": [
+          "src/managers/tour/tour.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".lithium-video-tour-language-flag svg",
+      "css": 1,
+      "js": 1,
+      "html": 0,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/managers/tour/tour.css"
+        ],
+        "js": [
+          "src/managers/tour/tour.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".lithium-video-tour-language-header",
+      "css": 1,
+      "js": 1,
+      "html": 0,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/managers/tour/tour.css"
+        ],
+        "js": [
+          "src/managers/tour/tour.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".lithium-video-tour-language-header svg",
+      "css": 1,
+      "js": 1,
+      "html": 0,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/managers/tour/tour.css"
+        ],
+        "js": [
+          "src/managers/tour/tour.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".lithium-video-tour-language-item",
+      "css": 1,
+      "js": 2,
+      "html": 0,
+      "total": 3,
+      "files": {
+        "css": [
+          "src/managers/tour/tour.css"
+        ],
+        "js": [
+          "src/managers/tour/tour.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".lithium-video-tour-language-item:hover",
+      "css": 1,
+      "js": 2,
+      "html": 0,
+      "total": 3,
+      "files": {
+        "css": [
+          "src/managers/tour/tour.css"
+        ],
+        "js": [
+          "src/managers/tour/tour.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".lithium-video-tour-language-item:last-child",
+      "css": 1,
+      "js": 2,
+      "html": 0,
+      "total": 3,
+      "files": {
+        "css": [
+          "src/managers/tour/tour.css"
+        ],
+        "js": [
+          "src/managers/tour/tour.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".lithium-video-tour-language-name",
+      "css": 1,
+      "js": 1,
+      "html": 0,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/managers/tour/tour.css"
+        ],
+        "js": [
+          "src/managers/tour/tour.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".lithium-video-tour-language-popup",
+      "css": 1,
+      "js": 1,
+      "html": 0,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/managers/tour/tour.css"
+        ],
+        "js": [
+          "src/managers/tour/tour.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".lithium-video-tour-language-popup.visible",
+      "css": 1,
+      "js": 110,
+      "html": 0,
+      "total": 111,
+      "files": {
+        "css": [
+          "src/managers/tour/tour.css"
+        ],
+        "js": [
+          "src/core/manager-ui.js",
+          "src/core/popup.js",
+          "src/core/zoom-control.js",
+          "src/managers/crimson/crimson-citations.js",
+          "src/managers/crimson/crimson-core.js",
+          "src/managers/login/login.js",
+          "src/managers/lookups/lookups.js",
+          "src/managers/main/main.js",
+          "src/managers/profile-manager/profile-manager.js",
+          "src/managers/queries/queries-ui.js",
+          "src/managers/queries/queries.js",
+          "src/managers/session-log/session-log.js",
+          "src/managers/style-manager/style-manager.js",
+          "src/managers/terminal/terminal.js",
+          "src/managers/tour/tour.js",
+          "src/managers/version-history/version-history.js",
+          "src/shared/crimson-ws.js",
+          "src/tables/column-manager/cm-drag-resize.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-column-manager.js",
+          "src/tables/lithium-table-ui.js",
+          "src/tables/popups/popup-manager.js",
+          "src/tables/popups/template-popup.js"
         ],
         "html": []
       }
@@ -14526,9 +14786,9 @@
     {
       "selector": ".lithium-video-tour-popup.visible",
       "css": 1,
-      "js": 108,
+      "js": 110,
       "html": 0,
-      "total": 109,
+      "total": 111,
       "files": {
         "css": [
           "src/managers/tour/tour.css"
@@ -15378,9 +15638,9 @@
     {
       "selector": ".login-container.visible",
       "css": 2,
-      "js": 108,
+      "js": 110,
       "html": 1,
-      "total": 111,
+      "total": 113,
       "files": {
         "css": [
           "src/managers/login/login.css",
@@ -15458,9 +15718,9 @@
     {
       "selector": ".login-error.visible",
       "css": 2,
-      "js": 109,
+      "js": 111,
       "html": 1,
-      "total": 112,
+      "total": 114,
       "files": {
         "css": [
           "src/managers/login/login.css",
@@ -16073,9 +16333,9 @@
     {
       "selector": ".login-mockup .login-error.visible",
       "css": 1,
-      "js": 110,
+      "js": 112,
       "html": 1,
-      "total": 112,
+      "total": 114,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -16384,9 +16644,9 @@
     {
       "selector": ".login-subpanel.visible",
       "css": 1,
-      "js": 107,
+      "js": 109,
       "html": 4,
-      "total": 112,
+      "total": 114,
       "files": {
         "css": [
           "src/styles/layout.css"
@@ -16612,9 +16872,9 @@
     {
       "selector": ".logout-overlay.visible",
       "css": 1,
-      "js": 107,
+      "js": 109,
       "html": 1,
-      "total": 109,
+      "total": 111,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -16809,9 +17069,9 @@
     {
       "selector": ".logout-panel.visible",
       "css": 1,
-      "js": 107,
+      "js": 109,
       "html": 4,
-      "total": 112,
+      "total": 114,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -18500,9 +18760,9 @@
     {
       "selector": ".manager-font-popup.visible",
       "css": 1,
-      "js": 126,
+      "js": 128,
       "html": 0,
-      "total": 127,
+      "total": 129,
       "files": {
         "css": [
           "src/core/manager-ui.css"
@@ -18823,9 +19083,9 @@
     {
       "selector": ".manager-footer-export-popup.visible",
       "css": 1,
-      "js": 120,
+      "js": 122,
       "html": 0,
-      "total": 121,
+      "total": 123,
       "files": {
         "css": [
           "src/core/popup.css"
@@ -18882,9 +19142,9 @@
     {
       "selector": ".manager-footer-popup.visible",
       "css": 1,
-      "js": 115,
+      "js": 117,
       "html": 0,
-      "total": 116,
+      "total": 118,
       "files": {
         "css": [
           "src/core/manager-ui.css"
@@ -19876,9 +20136,9 @@
     {
       "selector": ".manager-ui-popup.manager-footer-popup:not(.visible)",
       "css": 1,
-      "js": 134,
+      "js": 136,
       "html": 0,
-      "total": 135,
+      "total": 137,
       "files": {
         "css": [
           "src/core/popup.css"
@@ -19932,9 +20192,9 @@
     {
       "selector": ".manager-ui-popup.manager-header-popup:not(.visible)",
       "css": 1,
-      "js": 128,
+      "js": 130,
       "html": 0,
-      "total": 129,
+      "total": 131,
       "files": {
         "css": [
           "src/core/popup.css"
@@ -19970,9 +20230,9 @@
     {
       "selector": ".manager-ui-popup.visible",
       "css": 1,
-      "js": 126,
+      "js": 128,
       "html": 0,
-      "total": 127,
+      "total": 129,
       "files": {
         "css": [
           "src/core/popup.css"
@@ -21315,9 +21575,9 @@
     {
       "selector": ".nav-popup.visible",
       "css": 1,
-      "js": 107,
+      "js": 109,
       "html": 0,
-      "total": 108,
+      "total": 110,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -21458,9 +21718,9 @@
     {
       "selector": ".offline-indicator.visible",
       "css": 1,
-      "js": 108,
+      "js": 110,
       "html": 0,
-      "total": 109,
+      "total": 111,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -25064,9 +25324,9 @@
     {
       "selector": ".sidebar-overlay.visible",
       "css": 1,
-      "js": 107,
+      "js": 109,
       "html": 1,
-      "total": 109,
+      "total": 111,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -26173,9 +26433,9 @@
     {
       "selector": ".style-font-popup.visible",
       "css": 1,
-      "js": 107,
+      "js": 109,
       "html": 0,
-      "total": 108,
+      "total": 110,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -28408,9 +28668,9 @@
     {
       "selector": ".terminal-overlay.visible",
       "css": 1,
-      "js": 108,
+      "js": 110,
       "html": 0,
-      "total": 109,
+      "total": 111,
       "files": {
         "css": [
           "src/managers/terminal/terminal.css"
@@ -28555,9 +28815,9 @@
     {
       "selector": ".terminal-popup.visible",
       "css": 1,
-      "js": 108,
+      "js": 110,
       "html": 0,
-      "total": 109,
+      "total": 111,
       "files": {
         "css": [
           "src/managers/terminal/terminal.css"
@@ -30033,9 +30293,9 @@
     {
       "selector": ".toast.visible",
       "css": 1,
-      "js": 135,
+      "js": 137,
       "html": 2,
-      "total": 138,
+      "total": 140,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -31710,9 +31970,9 @@
     {
       "selector": "#main-layout.visible",
       "css": 1,
-      "js": 107,
+      "js": 109,
       "html": 0,
-      "total": 108,
+      "total": 110,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -31811,9 +32071,9 @@
     {
       "selector": "#profile-manager-page.visible",
       "css": 1,
-      "js": 107,
+      "js": 109,
       "html": 0,
-      "total": 108,
+      "total": 110,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -31907,9 +32167,9 @@
     {
       "selector": "#session-log-page.visible",
       "css": 1,
-      "js": 107,
+      "js": 109,
       "html": 0,
-      "total": 108,
+      "total": 110,
       "files": {
         "css": [
           "src/managers/session-log/session-log.css"
