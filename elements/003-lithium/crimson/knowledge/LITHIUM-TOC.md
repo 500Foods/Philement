@@ -44,7 +44,7 @@ This directory contains the canonical documentation for the Lithium web applicat
 | [LITHIUM-TAB-TYPES.md](LITHIUM-TAB-TYPES.md) | Column Types — type definitions & property reference |
 | [LITHIUM-BAR.md](LITHIUM-BAR.md) | **Toolbar System** — Standardized toolbars for managers |
 | [LITHIUM-COL.md](LITHIUM-COL.md) | **Column Manager** — Runtime column customization UI |
-| [LITHIUM-TAB-PLAN.md](LITHIUM-TAB-PLAN.md) | Tabulator implementation plan — gap analysis and phased roadmap |
+| [LITHIUM-TAB-PLAN.md](LITHIUM-TAB-PLAN.md) | **LithiumTable Plan (Round 2)** — phased roadmap with gates |
 | [LITHIUM-LUT.md](LITHIUM-LUT.md) | Lookup Tables — schema, caching, accessor functions, **debugging tips** |
 | [LITHIUM-API.md](LITHIUM-API.md) | Hydrogen API endpoints and Conduit client library (`conduit.js`) |
 | [LITHIUM-WSS.md](LITHIUM-WSS.md) | WebSocket connection — app-wide persistent connection, keepalive, status indicator |
