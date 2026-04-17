@@ -148,11 +148,23 @@ export const localeToCountryCode = {
 
 /**
  * Get the country code for a locale
- * @param {string} locale - Locale code (e.g., 'en-US')
- * @returns {string} Country code (e.g., 'US') or 'US' as fallback
+ * @param {string} locale - Locale code (e.g., 'en-US', 'pa-IN')
+ * @returns {string} Country code (e.g., 'US')
+ *
+ * Resolution order:
+ *   1. Explicit entry in `localeToCountryCode` (handles overrides like es-US → US)
+ *   2. The region portion of the locale itself ('pa-IN' → 'IN')
+ *   3. Fallback to 'US'
  */
 export function getCountryCode(locale) {
-  return localeToCountryCode[locale] || 'US';
+  if (localeToCountryCode[locale]) return localeToCountryCode[locale];
+  if (typeof locale === 'string') {
+    const region = locale.split('-')[1];
+    if (region && /^[A-Za-z]{2}$/.test(region)) {
+      return region.toUpperCase();
+    }
+  }
+  return 'US';
 }
 
 /**
