@@ -27,6 +27,7 @@ import {
   preloadLookups,
   _tableDefCache,
 } from './lithium-table.js';
+import { processIcons } from '../core/icons.js';
 
 // ── Column Utility Functions ────────────────────────────────────────────────
 
@@ -295,6 +296,16 @@ export class LithiumTableBase {
     // Add base LithiumTable class for shared styling
     this.container.classList.add('lithium-table-container');
 
+    // Group expand/collapse animation state.
+    // Map<string, boolean> — group path key → last-known visible state.
+    // Used by _syncGroupIcons() to animate only groups whose state changed.
+    this._groupVisibilityState = new Map();
+    // Set<HTMLElement> — group rows currently running a staged pin/release
+    // animation. While a row is in here, overlapping sync calls must NOT
+    // strip its anim-from-* class or they'll cancel the transition before
+    // the browser ever paints the starting frame.
+    this._groupAnimating = new Set();
+
     let dataColumns = [];
     const data = preloadedData || this.currentData;
 
@@ -455,6 +466,168 @@ export class LithiumTableBase {
     setTimeout(() => this.initColumnHeaderTooltips(), 100);
   }
 
+  // ── Group Icon Animation ──────────────────────────────────────────────────
+  //
+  // Tabulator regenerates the group header's DOM contents every time a group
+  // is expanded/collapsed (see Group.generateElement() in the Tabulator src).
+  // That means our freshly-inserted toggle icon has no "prior" CSS state for
+  // the transition to animate from — it just snaps into its final rotation.
+  //
+  // Animation strategy (class-only — no inline styles, no reliance on
+  // per-icon element references across the FA replacement pipeline):
+  //
+  //   1. Remember each group's visibility state in a Map keyed by a stable
+  //      group-path key (parent chain of `group.getKey()` values).
+  //   2. After every group-relevant event, diff prior vs current state per
+  //      group.
+  //   3. For groups whose state *changed*, tag the group row element with
+  //      `li-group-anim-from-collapsed` (rotating was 0deg → now 90deg) or
+  //      `li-group-anim-from-expanded` (rotating was 90deg → now 0deg). The
+  //      CSS for these classes sets `transition: none` on the toggle icon
+  //      and pins it to the PRIOR rotation, overriding the normal
+  //      `.tabulator-group-visible` rule.
+  //   4. Force a reflow so the "starting" rotation is actually painted.
+  //   5. On the next animation frame, remove the anim-from-* class. The
+  //      normal CSS rule now wins; `transition` is restored; the icon
+  //      animates from the prior rotation to the new one.
+  //   6. Groups that were not seen before (first render / data load) are
+  //      captured into the state Map without being animated.
+  //
+  // All work is scoped to `this.container`, so only this LithiumTable
+  // instance's groups are touched.
+
+  /**
+   * Build a stable key for a Tabulator group component based on its parent
+   * chain. Nested groups are separated with "||" so sibling keys can't
+   * collide with compound parent keys.
+   */
+  _groupPathKey(groupComponent) {
+    const parts = [];
+    let g = groupComponent;
+    while (g && typeof g.getKey === 'function') {
+      parts.unshift(String(g.getKey()));
+      g = typeof g.getParentGroup === 'function' ? g.getParentGroup() : null;
+    }
+    return parts.join('||');
+  }
+
+  /**
+   * Recursively collect all group components (including nested sub-groups).
+   */
+  _collectAllGroups(groupComponents, out = []) {
+    for (const gc of groupComponents || []) {
+      out.push(gc);
+      if (typeof gc.getSubGroups === 'function') {
+        const subs = gc.getSubGroups();
+        if (subs && subs.length) this._collectAllGroups(subs, out);
+      }
+    }
+    return out;
+  }
+
+  /**
+   * Synchronise group toggle icons with their current visibility state and
+   * animate any groups whose state changed since the last sync.
+   *
+   * Safe to call repeatedly — unchanged groups are no-ops.
+   */
+  updateGroupIcons() {
+    if (!this.table || !this.container) return;
+    if (!this._groupVisibilityState) this._groupVisibilityState = new Map();
+
+    // Defer one frame so Tabulator has finished regenerating the group DOM.
+    requestAnimationFrame(() => this._syncGroupIconsNow());
+  }
+
+  _syncGroupIconsNow() {
+    if (!this.table || !this.container) return;
+
+    let groupComponents;
+    try {
+      groupComponents = this.table.getGroups?.();
+    } catch {
+      groupComponents = null;
+    }
+    if (!groupComponents) return;
+
+    const allGroups = this._collectAllGroups(groupComponents);
+    const priorState = this._groupVisibilityState;
+    const nextState = new Map();
+    const toAnimate = []; // { rowEl, fromVisible }
+
+    for (const gc of allGroups) {
+      const key = this._groupPathKey(gc);
+      if (!key) continue;
+
+      const rowEl = typeof gc.getElement === 'function' ? gc.getElement() : null;
+      if (!rowEl || !this.container.contains(rowEl)) continue;
+
+      // Ensure any freshly-inserted <fa> tags in this group header have
+      // been converted to <i>. Safe to call repeatedly — processIcons()
+      // is a no-op once the pipeline has already converted them.
+      processIcons(rowEl);
+
+      const isVisible = rowEl.classList.contains('tabulator-group-visible');
+      nextState.set(key, isVisible);
+
+      // CRITICAL: if this row is mid-animation, leave it completely alone.
+      // Tabulator fires several events for one toggle (groupVisibilityChanged,
+      // renderComplete, tableRedrawn…), and each triggers a sync. Stripping
+      // the anim-from-* class from a row that just had it added would cancel
+      // the transition before the browser paints the starting frame.
+      if (this._groupAnimating.has(rowEl)) continue;
+
+      const hadPrior = priorState.has(key);
+      const wasVisible = priorState.get(key);
+
+      // Clean up any leftover anim classes on non-animating rows (defensive
+      // against stale classes from interrupted animations).
+      rowEl.classList.remove(
+        'li-group-anim-from-collapsed',
+        'li-group-anim-from-expanded',
+      );
+
+      if (!hadPrior || wasVisible === isVisible) continue;
+
+      toAnimate.push({ rowEl, fromVisible: wasVisible });
+    }
+
+    // Commit new state immediately.
+    this._groupVisibilityState = nextState;
+
+    if (toAnimate.length === 0) return;
+
+    // Step 1: apply "starting position" class and mark each row as animating
+    // so overlapping sync calls (from renderComplete/tableRedrawn/etc that
+    // fire for a single toggle) can't rip the class back off before the
+    // browser paints the pinned frame.
+    for (const { rowEl, fromVisible } of toAnimate) {
+      this._groupAnimating.add(rowEl);
+      rowEl.classList.add(
+        fromVisible
+          ? 'li-group-anim-from-expanded'
+          : 'li-group-anim-from-collapsed',
+      );
+    }
+
+    // Force a paint of the starting position. Reading offsetHeight forces
+    // layout; the browser then commits the computed style at this point
+    // as the "from" state for the transition that fires in step 2.
+    void this.container.offsetHeight;
+
+    // Step 2: on the next frame, remove the class. Normal CSS takes over
+    // and the transition animates from prior → new rotation.
+    requestAnimationFrame(() => {
+      for (const { rowEl } of toAnimate) {
+        rowEl.classList.remove(
+          'li-group-anim-from-collapsed',
+          'li-group-anim-from-expanded',
+        );
+        this._groupAnimating.delete(rowEl);
+      }
+    });
+  }
+
   wireTableEvents() {
     if (!this.table) return;
 
@@ -565,6 +738,14 @@ export class LithiumTableBase {
 
     this.table.on('rowRendered', (row) => {
       this.applyVisibleColumnClassesToRow(row);
+      // Proactively process any <fa> icons in cells. Tabulator re-creates
+      // row DOM on re-render (including during expand/collapse all where
+      // setGroupBy(false)+setGroupBy(current) tears down and rebuilds every
+      // row), which can race with the global MutationObserver in icons.js
+      // and leave some <fa> tags unprocessed. Running processIcons() scoped
+      // to this row guarantees the icons in our own cells are converted.
+      const rowEl = row?.getElement?.();
+      if (rowEl) processIcons(rowEl);
     });
 
     this.table.on('dataLoaded', () => {
@@ -574,11 +755,16 @@ export class LithiumTableBase {
       }, 100);
     });
 
-    this.table.on('dataProcessed', () => {
-      this.updateMoveButtonState();
-      this.updateDuplicateButtonState();
-    });
+    // Group toggle icon sync — `updateGroupIcons()` diffs the prior vs
+    // current visibility state and animates only the groups that changed.
+    // It is idempotent, so wiring to several overlapping events is safe.
+    this.table.on("groupVisibilityChanged", () => this.updateGroupIcons());
+    this.table.on("dataLoaded", () => this.updateGroupIcons());
+    this.table.on("renderComplete", () => this.updateGroupIcons());
+    this.table.on("tableRedrawn", () => this.updateGroupIcons());
   }
+
+
 
   // ── Row Selection & Navigation ────────────────────────────────────────────
 
