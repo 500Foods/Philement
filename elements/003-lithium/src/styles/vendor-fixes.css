@@ -37,8 +37,116 @@
  
 /* Group rows */
 .lithium-table-container .tabulator-row.tabulator-group {
-  min-height: 28px !important;
+  min-height: 24px !important;
   background: var(--bg-tertiary) !important;
-}               
+  border-right: none;
+  border-top: none;
+  padding: 2px 4px;
+}
+
+/* Hide Tabulator's built-in arrow (we use our own icon in the header) */
+.lithium-table-container .tabulator-row.tabulator-group .tabulator-arrow {
+  display: none !important;
+}
+
+/* Lithium group header layout */
+.lithium-table-container .tabulator-row.tabulator-group .lithium-group-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  user-select: none;
+  cursor: pointer;
+}
+
+/* Prevent text selection on all group header elements */
+.lithium-table-container .tabulator-row.tabulator-group,
+.lithium-table-container .tabulator-row.tabulator-group .lithium-group-title,
+.lithium-table-container .tabulator-row.tabulator-group .lithium-group-count {
+  user-select: none;
+}
+
+/* Group toggle icon styling - base state (CSS handles rotation via tabulator-group-visible)
+   Target all stages of Font Awesome icon processing: <fa>, <i>, and <svg>
+*/
+.lithium-table-container .tabulator-row.tabulator-group .lithium-group-toggle-icon,
+.lithium-table-container .tabulator-row.tabulator-group i.lithium-group-toggle-icon,
+.lithium-table-container .tabulator-row.tabulator-group svg.lithium-group-toggle-icon,
+.lithium-table-container .tabulator-row.tabulator-group .lithium-group-header > i,
+.lithium-table-container .tabulator-row.tabulator-group .lithium-group-header > svg {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  font-size: 14px;
+  margin-right: 4px;
+  transform-origin: center center;
+  pointer-events: none;
+  user-select: none;
+  color: var(--text-secondary);
+  /* Default collapsed state - angle-right points right */
+  transform: rotate(0deg);
+  transition: transform 350ms ease;
+}
+
+/* Expanded state - Tabulator adds tabulator-group-visible when group is open */
+.lithium-table-container .tabulator-row.tabulator-group.tabulator-group-visible .lithium-group-toggle-icon,
+.lithium-table-container .tabulator-row.tabulator-group.tabulator-group-visible i.lithium-group-toggle-icon,
+.lithium-table-container .tabulator-row.tabulator-group.tabulator-group-visible svg.lithium-group-toggle-icon,
+.lithium-table-container .tabulator-row.tabulator-group.tabulator-group-visible .lithium-group-header > i,
+.lithium-table-container .tabulator-row.tabulator-group.tabulator-group-visible .lithium-group-header > svg {
+  /* Expanded: rotate 90deg so angle-right points down */
+  transform: rotate(90deg);
+}
+
+/* ─── Group expand/collapse animation starting-point classes ─────────────
+   These classes are added to the group row briefly (one frame) by
+   lithium-table-base.js before being removed, so the icon starts the
+   animation from its PRIOR rotation instead of snapping to the new one.
+   See `_syncGroupIconsNow()` for the flow. */
+
+.lithium-table-container .tabulator-row.tabulator-group.li-group-anim-from-collapsed .lithium-group-toggle-icon,
+.lithium-table-container .tabulator-row.tabulator-group.li-group-anim-from-collapsed i.lithium-group-toggle-icon,
+.lithium-table-container .tabulator-row.tabulator-group.li-group-anim-from-collapsed svg.lithium-group-toggle-icon,
+.lithium-table-container .tabulator-row.tabulator-group.li-group-anim-from-collapsed .lithium-group-header > i,
+.lithium-table-container .tabulator-row.tabulator-group.li-group-anim-from-collapsed .lithium-group-header > svg {
+  /* Pin to COLLAPSED start position (was closed, now opening). */
+  transform: rotate(0deg);
+  transition: none;
+}
+
+.lithium-table-container .tabulator-row.tabulator-group.li-group-anim-from-expanded .lithium-group-toggle-icon,
+.lithium-table-container .tabulator-row.tabulator-group.li-group-anim-from-expanded i.lithium-group-toggle-icon,
+.lithium-table-container .tabulator-row.tabulator-group.li-group-anim-from-expanded svg.lithium-group-toggle-icon,
+.lithium-table-container .tabulator-row.tabulator-group.li-group-anim-from-expanded .lithium-group-header > i,
+.lithium-table-container .tabulator-row.tabulator-group.li-group-anim-from-expanded .lithium-group-header > svg {
+  /* Pin to EXPANDED start position (was open, now closing). */
+  transform: rotate(90deg);
+  transition: none;
+}
+
+/* Group header SVG - basic styling only, transitions handled by JS for better control
+   These lose the lithium-group-toggle-icon class during FA processing
+*/
+.lithium-table-container .tabulator-row.tabulator-group span.lithium-group-header svg {
+  font-size: 14px;
+  margin: 0px -6px 0px -10px;
+}
+
+/* Title styling */
+.lithium-table-container .tabulator-row.tabulator-group .lithium-group-title {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Count styling */
+.lithium-table-container .tabulator-row.tabulator-group .lithium-group-count {
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.tabulator-row.tabulator-group span {
+	margin-left: 4px;
+}
 
 } /* end @layer vendor-fixes */

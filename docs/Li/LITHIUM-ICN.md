@@ -405,13 +405,122 @@ For smooth rotation with custom JS logic, add a CSS transition targeting the ico
 }
 ```
 
+### Approach 3: Prior-State Pinning (For Host-Regenerated Icons)
+
+Use this approach when the **host widget tears down and rebuilds the icon's DOM** on every state change. The canonical case is Tabulator's group header — every time a group is expanded or collapsed, Tabulator clears the header's child nodes and rebuilds them from the `groupHeader()` callback's HTML string, inserting a brand-new `<fa>` element.
+
+Approach 1 (CSS-only) **fails** here because the new element has no prior computed style to transition from — it appears already in its final rotation and snaps with no animation.
+
+Approach 2 (store-and-apply-transform) **fails** here for the same reason: even if JS caches the previous rotation, the element that rotation was applied to no longer exists.
+
+The working pattern: **remember state in JS, pin the reborn icon to its PRIOR rotation for exactly one frame, then release it so CSS transitions to the new rotation.**
+
+```javascript
+// 1. Stable state storage (keyed by something that survives DOM rebuilds —
+//    a path of the group's keys, a row id, etc.)
+this._iconState = new Map();            // key -> boolean (prior visibility)
+this._iconAnimating = new Set();        // HTMLElement -> in-flight guard
+
+// 2. Run after the host widget has finished regenerating. Defer one rAF
+//    so the new DOM is attached.
+syncIcons() {
+  requestAnimationFrame(() => this._syncNow());
+}
+
+_syncNow() {
+  const toAnimate = [];
+  for (const item of this._getHostItems()) {
+    const key = this._keyOf(item);
+    const rowEl = item.getElement();
+    const isVisible = rowEl.classList.contains('host-visible-class');
+
+    // CRITICAL: never touch a row that's already mid-animation.
+    // Overlapping host events (renderComplete, tableRedrawn…) fire for a
+    // single state change; stripping the anim class off a pinned row
+    // cancels the transition before the browser paints the pinned frame.
+    if (this._iconAnimating.has(rowEl)) {
+      this._iconState.set(key, isVisible);   // still advance bookkeeping
+      continue;
+    }
+
+    // Clean up any stale anim classes on non-animating rows.
+    rowEl.classList.remove('anim-from-collapsed', 'anim-from-expanded');
+
+    const hadPrior = this._iconState.has(key);
+    const wasVisible = this._iconState.get(key);
+    this._iconState.set(key, isVisible);
+
+    // First time seeing this item OR no state change → no animation.
+    if (!hadPrior || wasVisible === isVisible) continue;
+
+    toAnimate.push({ rowEl, fromVisible: wasVisible });
+  }
+
+  if (toAnimate.length === 0) return;
+
+  // 3. Pin each row to its PRIOR rotation and mark it animating.
+  for (const { rowEl, fromVisible } of toAnimate) {
+    this._iconAnimating.add(rowEl);
+    rowEl.classList.add(
+      fromVisible ? 'anim-from-expanded' : 'anim-from-collapsed'
+    );
+  }
+
+  // 4. Force a layout+paint of the pinned state. Without this the browser
+  //    can coalesce the class-add and the class-remove into a single
+  //    paint, so the "from" state never gets committed.
+  void this._container.offsetHeight;
+
+  // 5. Next frame: release the pin. Normal CSS rule re-takes over,
+  //    transition property is restored, icon animates to the new state.
+  requestAnimationFrame(() => {
+    for (const { rowEl } of toAnimate) {
+      rowEl.classList.remove('anim-from-collapsed', 'anim-from-expanded');
+      this._iconAnimating.delete(rowEl);
+    }
+  });
+}
+```
+
+**CSS — two starting-position classes overlaid on the normal state rules:**
+
+```css
+/* Normal state rules (Approach 1 style). These define the FINAL rotation
+   for each state and the transition. */
+.host-row .icon             { transform: rotate(0deg);  transition: transform 350ms ease; }
+.host-row.host-visible-class .icon { transform: rotate(90deg); }
+
+/* Starting-position classes — added briefly by JS. Same specificity as
+   above; source order must place them AFTER the normal rules so they
+   win when present. */
+.host-row.anim-from-collapsed .icon {
+  transform: rotate(0deg);   /* was-closed starting point */
+  transition: none;
+}
+.host-row.anim-from-expanded .icon {
+  transform: rotate(90deg);  /* was-open starting point */
+  transition: none;
+}
+```
+
+> **The five traps that make this pattern look broken:**
+>
+> 1. **Not deferring with `requestAnimationFrame`** — the DOM hasn't been regenerated yet.
+> 2. **Skipping the forced reflow** (`void container.offsetHeight`) — the browser coalesces add+remove into one paint and no transition fires.
+> 3. **No `_iconAnimating` guard** — overlapping syncs from the host's other events (`renderComplete`, `tableRedrawn`, `dataLoaded` etc.) strip the anim class off a pinned row between the pin frame and the release frame.
+> 4. **Inline `style.transform`** — works but is fragile when the FA pipeline replaces the icon element between the pin and release; class-based pinning on the **stable parent** cascades to whichever child (`<fa>`, `<i>`, or `<svg>`) currently exists.
+> 5. **Lower specificity on the anim-from-* rules** — if the host's "visible" state rule wins, the pinning has no effect. Match the specificity and rely on source order.
+
+**Canonical implementation:** [`src/tables/lithium-table-base.js`](../../elements/003-lithium/src/tables/lithium-table-base.js) — `_syncGroupIconsNow()` and the `_groupVisibilityState` / `_groupAnimating` fields. **CSS:** [`src/styles/vendor-fixes.css`](../../elements/003-lithium/src/styles/vendor-fixes.css) — the `.li-group-anim-from-collapsed` and `.li-group-anim-from-expanded` rules alongside the `.tabulator-group-visible` rule. **Do not remove or simplify these without first re-reading this section** — they are the product of several failed attempts and the guards exist for concrete reasons.
+
 ### Existing Examples
 
 | Location | Element | Pattern |
 |----------|---------|---------|
-| `panel-collapse.js` | Panel collapse buttons | CSS class `.collapsed` toggles rotation (all managers) |
-| `main.js` | Sidebar collapse arrow | `_getArrowEl()` — queries `#collapse-icon` or button's `firstElementChild` |
-| `toast.css` | Expand chevron rotation | CSS targets both `i` and `svg` for smooth 180° rotation |
+| `panel-collapse.js` | Panel collapse buttons | **Approach 1** — CSS class `.collapsed` toggles rotation (all managers) |
+| `main.js` | Sidebar collapse arrow | **Approach 2** — `_getArrowEl()` queries `#collapse-icon` or button's `firstElementChild` |
+| `toast.css` | Expand chevron rotation | **Approach 1** — CSS targets both `i` and `svg` for smooth 180° rotation |
+| `lithium-table-base.js` | Tabulator group expand/collapse arrow | **Approach 3** — prior-state pinning; Tabulator regenerates the header on every toggle |
 
 ### Panel Collapse Buttons
 
