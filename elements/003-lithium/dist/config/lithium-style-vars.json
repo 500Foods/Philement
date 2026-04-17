@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS custom properties (variables) used across the Lithium codebase",
-    "generated": "2026-04-16T19:22:41.452Z",
+    "generated": "2026-04-17T17:06:59.382Z",
     "sources": {
       "css": "51 files in src/**/*.css",
       "js": "104 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
     "total_variables": 220,
-    "total_occurrences": 3409
+    "total_occurrences": 3414
   },
   "variables": [
     {
@@ -104,10 +104,10 @@
     },
     {
       "name": "--accent-primary",
-      "css": 172,
+      "css": 168,
       "js": 3,
       "html": 1,
-      "total": 176
+      "total": 172
     },
     {
       "name": "--accent-primary-hover",
@@ -244,10 +244,10 @@
     },
     {
       "name": "--bg-secondary",
-      "css": 82,
+      "css": 84,
       "js": 1,
       "html": 1,
-      "total": 84
+      "total": 86
     },
     {
       "name": "--bg-tertiary",
@@ -258,10 +258,10 @@
     },
     {
       "name": "--border-color",
-      "css": 60,
+      "css": 63,
       "js": 1,
       "html": 0,
-      "total": 61
+      "total": 64
     },
     {
       "name": "--border-color-focus",
@@ -580,10 +580,10 @@
     },
     {
       "name": "--font-size-xs",
-      "css": 24,
+      "css": 25,
       "js": 0,
       "html": 0,
-      "total": 24
+      "total": 25
     },
     {
       "name": "--font-weight-bold",
@@ -832,17 +832,17 @@
     },
     {
       "name": "--space-1",
-      "css": 37,
+      "css": 38,
       "js": 1,
       "html": 0,
-      "total": 38
+      "total": 39
     },
     {
       "name": "--space-2",
-      "css": 169,
+      "css": 168,
       "js": 0,
       "html": 0,
-      "total": 169
+      "total": 168
     },
     {
       "name": "--space-3",
@@ -1042,10 +1042,10 @@
     },
     {
       "name": "--text-muted",
-      "css": 60,
+      "css": 61,
       "js": 6,
       "html": 0,
-      "total": 66
+      "total": 67
     },
     {
       "name": "--text-on-accent",
@@ -1056,17 +1056,17 @@
     },
     {
       "name": "--text-primary",
-      "css": 130,
+      "css": 131,
       "js": 5,
       "html": 1,
-      "total": 136
+      "total": 137
     },
     {
       "name": "--text-secondary",
-      "css": 72,
+      "css": 73,
       "js": 1,
       "html": 0,
-      "total": 73
+      "total": 74
     },
     {
       "name": "--text-toggle",

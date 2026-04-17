@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS class selectors/names used across the Lithium codebase",
-    "generated": "2026-04-16T19:22:42.771Z",
+    "generated": "2026-04-17T17:07:00.725Z",
     "sources": {
       "css": "51 files in src/**/*.css",
       "js": "104 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
-    "total_selectors": 1751,
-    "total_occurrences": 27720
+    "total_selectors": 1762,
+    "total_occurrences": 27862
   },
   "selectors": [
     {
@@ -8926,6 +8926,20 @@
       }
     },
     {
+      "selector": ".lithium-group-toggle-icon",
+      "css": 0,
+      "js": 1,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [],
+        "js": [
+          "src/tables/lithium-table.js"
+        ],
+        "html": []
+      }
+    },
+    {
       "selector": ".lithium-header-filter-clear",
       "css": 1,
       "js": 0,
@@ -10787,6 +10801,239 @@
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container .tabulator-row.tabulator-group .lithium-group-count",
+      "css": 1,
+      "js": 7,
+      "html": 7,
+      "total": 15,
+      "files": {
+        "css": [
+          "src/styles/vendor-fixes.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js",
+          "src/tables/lithium-table.js",
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container .tabulator-row.tabulator-group .lithium-group-header",
+      "css": 1,
+      "js": 7,
+      "html": 7,
+      "total": 15,
+      "files": {
+        "css": [
+          "src/styles/vendor-fixes.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js",
+          "src/tables/lithium-table.js",
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container .tabulator-row.tabulator-group .lithium-group-header > svg",
+      "css": 1,
+      "js": 7,
+      "html": 7,
+      "total": 15,
+      "files": {
+        "css": [
+          "src/styles/vendor-fixes.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js",
+          "src/tables/lithium-table.js",
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container .tabulator-row.tabulator-group .lithium-group-title",
+      "css": 1,
+      "js": 7,
+      "html": 7,
+      "total": 15,
+      "files": {
+        "css": [
+          "src/styles/vendor-fixes.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js",
+          "src/tables/lithium-table.js",
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container .tabulator-row.tabulator-group .tabulator-arrow",
+      "css": 1,
+      "js": 6,
+      "html": 7,
+      "total": 14,
+      "files": {
+        "css": [
+          "src/styles/vendor-fixes.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js",
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container .tabulator-row.tabulator-group span.lithium-group-header svg",
+      "css": 1,
+      "js": 7,
+      "html": 7,
+      "total": 15,
+      "files": {
+        "css": [
+          "src/styles/vendor-fixes.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js",
+          "src/tables/lithium-table.js",
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container .tabulator-row.tabulator-group.li-group-anim-from-collapsed .lithium-group-header > svg",
+      "css": 1,
+      "js": 9,
+      "html": 7,
+      "total": 17,
+      "files": {
+        "css": [
+          "src/styles/vendor-fixes.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js",
+          "src/tables/lithium-table.js",
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container .tabulator-row.tabulator-group.li-group-anim-from-expanded .lithium-group-header > svg",
+      "css": 1,
+      "js": 7,
+      "html": 7,
+      "total": 15,
+      "files": {
+        "css": [
+          "src/styles/vendor-fixes.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js",
+          "src/tables/lithium-table.js",
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container .tabulator-row.tabulator-group.tabulator-group-visible .lithium-group-header > svg",
+      "css": 1,
+      "js": 8,
+      "html": 7,
+      "total": 16,
+      "files": {
+        "css": [
+          "src/styles/vendor-fixes.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js",
+          "src/tables/lithium-table.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -27699,6 +27946,23 @@
     },
     {
       "selector": ".tabulator-row .tabulator-cell.tabulator-editing",
+      "css": 1,
+      "js": 3,
+      "html": 0,
+      "total": 4,
+      "files": {
+        "css": [
+          "src/styles/vendor-fixes.css"
+        ],
+        "js": [
+          "src/tables/lithium-table-base.js",
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".tabulator-row.tabulator-group span",
       "css": 1,
       "js": 3,
       "html": 0,

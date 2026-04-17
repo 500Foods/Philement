@@ -187,7 +187,7 @@ export default class ProfileManager {
       container: this.elements.tableContainer,
       navigatorContainer: this.elements.navigatorContainer,
       tablePath: 'profile-manager/user-options',
-      lookupKeyIdx: 8,
+      lookupKeyIdx: 4,
       cssPrefix: 'profile-options',
       storageKey: 'profile_options_table',
       app: this.app,

@@ -1168,7 +1168,7 @@
   width: 14px;
   height: 14px;
   cursor: nwse-resize;
-  background: linear-gradient(135deg, transparent 50%, var(--accent-primary) 50%);
+  background: linear-gradient(135deg, transparent 50%, var(--border-color) 50%);
   border-bottom-right-radius: var(--border-radius-lg);
 }
 
@@ -1179,7 +1179,7 @@
   width: 14px;
   height: 14px;
   cursor: nesw-resize;
-  background: linear-gradient(225deg, transparent 50%, var(--accent-primary) 50%);
+  background: linear-gradient(225deg, transparent 50%, var(--border-color) 50%);
   border-bottom-left-radius: var(--border-radius-lg);
 }
 
@@ -1190,7 +1190,7 @@
   width: 14px;
   height: 14px;
   cursor: nesw-resize;
-  background: linear-gradient(45deg, transparent 50%, var(--accent-primary) 50%);
+  background: linear-gradient(45deg, transparent 50%, var(--border-color) 50%);
   border-top-right-radius: var(--border-radius-lg);
 }
 
@@ -1201,11 +1201,11 @@
   width: 14px;
   height: 14px;
   cursor: nwse-resize;
-  background: linear-gradient(315deg, transparent 50%, var(--accent-primary) 50%);
+  background: linear-gradient(315deg, transparent 50%, var(--border-color) 50%);
   border-top-left-radius: var(--border-radius-lg);
 }
 
-/* ========================================
+/* ========================================                              
     Responsive Adjustments
     ======================================== */
 

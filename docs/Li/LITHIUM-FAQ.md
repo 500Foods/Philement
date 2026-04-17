@@ -196,6 +196,25 @@ mainMgr.addFooterButtons(slotId, 'right', [
 
 ---
 
+### Animating Icons Inside Host-Regenerated DOM (Tabulator Group Arrows)
+
+**Problem:** The expand/collapse arrow in a Tabulator group header doesn't animate — it snaps instantly between its two rotations.
+
+**Cause:** Tabulator's `Group.generateElement()` wipes the group header's child nodes and rebuilds them from the `groupHeader()` HTML string on every toggle. The resulting `<fa>` element is brand new, with no previous computed style for a CSS transition to animate from. The FA three-stage pipeline (`<fa>` → `<i>` → `<svg>`) replaces the element further, making inline-style caching fragile.
+
+**Fix:** Use **prior-state pinning** — the pattern documented as Approach 3 in [LITHIUM-ICN.md](LITHIUM-ICN.md#approach-3-prior-state-pinning-for-host-regenerated-icons). Canonical implementation in `_syncGroupIconsNow()` in [`lithium-table-base.js`](../../elements/003-lithium/src/tables/lithium-table-base.js).
+
+Key points that previous attempts got wrong:
+
+1. **CSS-only won't work** — the new icon has no prior state to transition from.
+2. **Inline `style.transform` is fragile** — FA replaces the element between the pin and the release, dropping the inline style.
+3. **An in-flight guard is mandatory** — Tabulator fires multiple events (`groupVisibilityChanged`, `renderComplete`, `tableRedrawn`) for one toggle. Without guarding, the second sync's "defensive cleanup" strips the anim-from-* class off the row *before the browser paints the pinned frame*, so the transition never fires. Track animating rows in a `Set<HTMLElement>` and skip them during cleanup until the release rAF runs.
+4. **Forced reflow between pin and release is mandatory** — read `container.offsetHeight` after adding the anim class. Without it the browser coalesces the class-add and class-remove into one paint and no transition fires.
+
+Symptoms that lead here: "the icon's final rotation is correct, but there's no animation." Every failed attempt over several iterations produced exactly that symptom because one of the four points above was missing.
+
+---
+
 ## Authentication Issues
 
 ### JWT Not Stored

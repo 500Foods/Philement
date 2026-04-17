@@ -681,18 +681,30 @@ export const LithiumTableUIMixin = {
 
   expandAll() {
     if (!this.table) return;
-    const groups = this.table.getGroups();
-    if (groups.length > 0) {
-      groups.forEach((group) => group.show());
-    }
+    // NOTE: keep the prior _groupVisibilityState intact so updateGroupIcons()
+    // can diff old→new and animate only the groups whose state actually
+    // changed. Clearing it would make all groups "first sight" and skip
+    // animation entirely.
+    const currentGroupBy = this.table.options.groupBy;
+    this.table.setGroupStartOpen(true);
+    // Clear and re-apply grouping to trigger the change
+    this.table.setGroupBy(false);
+    this.table.setGroupBy(currentGroupBy);
+    // Update icons - state comparison will animate changed groups
+    setTimeout(() => this.updateGroupIcons(), 16);
   },
 
   collapseAll() {
     if (!this.table) return;
-    const groups = this.table.getGroups();
-    if (groups.length > 0) {
-      groups.forEach((group) => group.hide());
-    }
+    // See note on expandAll() — we intentionally DO NOT clear
+    // _groupVisibilityState here.
+    const currentGroupBy = this.table.options.groupBy;
+    this.table.setGroupStartOpen(false);
+    // Clear and re-apply grouping to trigger the change
+    this.table.setGroupBy(false);
+    this.table.setGroupBy(currentGroupBy);
+    // Update icons - state comparison will animate changed groups
+    setTimeout(() => this.updateGroupIcons(), 16);
   },
 
   // ── Persistence (delegated to persistence/persistence.js) ─────────────────

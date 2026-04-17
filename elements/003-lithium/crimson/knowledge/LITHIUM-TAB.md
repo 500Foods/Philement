@@ -190,6 +190,10 @@ The Navigator provides standard table controls in four groups:
 | ⊞ Layout | Layout mode (fitColumns/fitData/fitDataFill/etc) |
 | 🛠 Template | Save/load column configurations |
 
+**⚠️ Expand/Collapse All Implementation Note:** The expand/collapse all menu items use Tabulator's `setGroupStartOpen()` method combined with clearing and re-applying the grouping configuration. This ensures all groups are affected simultaneously rather than iterating through individual group objects, which can be unreliable. The pattern is: `setGroupStartOpen(true/false)`, `setGroupBy(false)`, `setGroupBy(currentGroupBy)`.
+
+**⚠️ Group Toggle Arrow Animation:** The group header's expand/collapse arrow icon animates via the **prior-state pinning** pattern (Approach 3 in [LITHIUM-ICN.md](LITHIUM-ICN.md#approach-3-prior-state-pinning-for-host-regenerated-icons)). Tabulator rebuilds the group header's DOM on every toggle, so CSS alone cannot animate the rotation — the new icon has no prior computed style to transition from. The implementation in `_syncGroupIconsNow()` ([`lithium-table-base.js`](../../elements/003-lithium/src/tables/lithium-table-base.js)) tracks per-group visibility state in `_groupVisibilityState`, guards in-flight animations with `_groupAnimating`, and briefly applies `.li-group-anim-from-collapsed` / `.li-group-anim-from-expanded` classes (defined in [`vendor-fixes.css`](../../elements/003-lithium/src/styles/vendor-fixes.css)) to pin the icon to its prior rotation for one frame. **Do not "simplify" this to pure CSS or inline-transform approaches** — both have been tried and both fail for the DOM-regeneration reason. See the ICN doc for the full trap list.
+
 **Refresh Button Enhanced Behavior:**
 
 When clicked, the Refresh button performs a complete refresh including:
@@ -1023,7 +1027,7 @@ await this.parentTable.loadData();
 - [LITHIUM-COL.md](LITHIUM-COL.md) — **Column Manager** — Runtime column customization UI
 - [LITHIUM-LUT.md](LITHIUM-LUT.md) — Lookup Tables integration
 - [LITHIUM-CSS.md](LITHIUM-CSS.md) — CSS architecture, layers, and theming
-- [LITHIUM-ICN.md](LITHIUM-ICN.md) — Icon system, three-stage pipeline, rotation pattern
+- [LITHIUM-ICN.md](LITHIUM-ICN.md) — Icon system, three-stage pipeline, rotation patterns (including Approach 3 — group arrow animation)
 
 ---
 

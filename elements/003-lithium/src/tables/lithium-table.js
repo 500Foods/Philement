@@ -887,6 +887,16 @@ export function resolveTableOptions(tableDef) {
 
   if (tableDef.groupStartOpen != null) opts.groupStartOpen = tableDef.groupStartOpen;
   if (tableDef.groupToggleElement) opts.groupToggleElement = tableDef.groupToggleElement;
+  if (tableDef.columnCalcs) opts.columnCalcs = tableDef.columnCalcs;
+
+  // Include the toggle icon directly in the group header
+  opts.groupHeader = (value, count, _data, _group) => {
+    return `<span class="lithium-group-header">
+      <fa fa-angle-right class="lithium-group-toggle-icon"></fa>
+      <span class="lithium-group-title">${value}</span> <span class="lithium-group-count">(${count})</span>
+    </span>`;
+  };
+  opts.groupToggleElement = 'header';
   if (tableDef.movableRows === true) opts.movableRows = true;
   if (tableDef.persistSort != null) opts.persistSort = tableDef.persistSort;
   if (tableDef.persistFilter != null) opts.persistFilter = tableDef.persistFilter;
@@ -1146,7 +1156,9 @@ export function clearLookup59Cache() {
 
 const TABLEDEF_VALID_PROPS = new Set([
   'title', 'table', 'columns', 'queryRef', 'layout', 'responsiveLayout',
-  'groupBy', 'pagination', 'paginationSize', 'persistSort', 'persistFilter',
+  'groupBy', 'groupStartOpen', 'groupToggleElement', 'columnCalcs',
+  'pagination', 'paginationSize', 'persistSort', 'persistFilter',
+  'movableRows', 'movableColumns', 'resizableColumns',
   'readonly', '_autoDiscover', '_templateMeta',
 ]);
 
