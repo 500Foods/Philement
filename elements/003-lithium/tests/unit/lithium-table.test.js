@@ -23,6 +23,7 @@ import {
   preloadLookups,
   resolveColumn,
   resolveColumns,
+  resolveColumnsWithMeta,
   resolveTableOptions,
   getPrimaryKeyField,
   getQueryRefs,
@@ -159,7 +160,7 @@ const MOCK_TABLEDEF = {
   initialSort: [{ column: 'query_ref', dir: 'asc' }],
   columns: {
     query_id: {
-      display: 'ID#',
+      title: 'ID#',
       field: 'query_id',
       coltype: 'integer',
       visible: false,
@@ -171,7 +172,7 @@ const MOCK_TABLEDEF = {
       bottomCalc: null,
     },
     query_ref: {
-      display: 'Ref',
+      title: 'Ref',
       field: 'query_ref',
       coltype: 'integer',
       visible: true,
@@ -186,7 +187,7 @@ const MOCK_TABLEDEF = {
       bottomCalcFormatterParams: { thousand: ',' },
     },
     name: {
-      display: 'Name',
+      title: 'Name',
       field: 'name',
       coltype: 'string',
       visible: true,
@@ -197,7 +198,7 @@ const MOCK_TABLEDEF = {
       primaryKey: false,
     },
     created_at: {
-      display: 'Created',
+      title: 'Created',
       field: 'created_at',
       coltype: 'datetime',
       visible: false,
@@ -511,7 +512,7 @@ describe('LithiumTable', () => {
       // 2. Overlay coltype (integer has align: 'right') — overrides default's align
       // 3. Overlay column definition colDef (width: 80) — overrides coltype's width
       const colDef = {
-        display: 'Ref',
+        title: 'Ref',
         field: 'query_ref',
         coltype: 'integer',
         visible: true,
@@ -534,7 +535,7 @@ describe('LithiumTable', () => {
     it('should merge from default stanza - no type in colDef', () => {
       // When colDef doesn't specify a coltype, should still work (use default)
       const colDef = {
-        display: 'Name',
+        title: 'Name',
         field: 'name',
         visible: true,
         sort: true,
@@ -578,7 +579,7 @@ describe('LithiumTable', () => {
 
     it('should not set headerFilter when filter is not true', () => {
       const colDef = {
-        display: 'SQL',
+        title: 'SQL',
         field: 'code',
         coltype: 'string',
         visible: false,
@@ -643,7 +644,7 @@ describe('LithiumTable', () => {
 
     it('should handle missing coltype gracefully', () => {
       const colDef = {
-        display: 'Unknown',
+        title: 'Unknown',
         field: 'unknown_field',
         coltype: 'nonexistent',
         visible: true,
@@ -683,7 +684,7 @@ describe('LithiumTable', () => {
 
     it('should set headerSort to false when sort is false', () => {
       const colDef = {
-        display: 'Code',
+        title: 'Code',
         field: 'code',
         coltype: 'string',
         visible: false,
@@ -706,7 +707,7 @@ describe('LithiumTable', () => {
       await loadLookup('a27', mockAuthQuery, mockApi);
 
       const colDef = {
-        display: 'Status',
+        title: 'Status',
         field: 'query_status_a27',
         coltype: 'lookup',
         visible: false,
@@ -734,7 +735,7 @@ describe('LithiumTable', () => {
       await loadLookup('a27', mockAuthQuery, mockApi);
 
       const colDef = {
-        display: 'Status',
+        title: 'Status',
         field: 'query_status_a27',
         coltype: 'lookup',
         visible: false,
@@ -746,16 +747,16 @@ describe('LithiumTable', () => {
       };
       const result = resolveColumn('query_status_a27', colDef, coltypes);
 
-      // Editor should be 'list' from lookup
+      // Editor should be 'list' from lookup with ID -> label map
       expect(result.editor).toBe('list');
-      expect(result.editorParams.values).toEqual(['Active', 'Inactive']);
+      expect(result.editorParams.values).toEqual({ 1: 'Active', 2: 'Inactive' });
       expect(result.editorParams.autocomplete).toBe(true);
     });
 
     it('should fall back to coltype formatter when lookupRef is not cached', () => {
       // Don't pre-load lookup — cache is empty after beforeEach clearCache()
       const colDef = {
-        display: 'Status',
+        title: 'Status',
         field: 'query_status_a27',
         coltype: 'lookup',
         visible: false,
@@ -774,7 +775,7 @@ describe('LithiumTable', () => {
 
     it('should fall back to coltype editor when lookupRef is not cached', () => {
       const colDef = {
-        display: 'Status',
+        title: 'Status',
         field: 'query_status_a27',
         coltype: 'lookup',
         visible: false,
@@ -906,8 +907,8 @@ describe('LithiumTable', () => {
     it('should return array of fields for compound primary key', () => {
       const compoundPK = {
         columns: {
-          lookup_id: { display: 'Lookup ID', field: 'lookup_id', primaryKey: true },
-          key_idx: { display: 'Key', field: 'key_idx', primaryKey: true },
+         lookup_id: { title: 'Lookup ID', field: 'lookup_id', primaryKey: true },
+         key_idx: { title: 'Key', field: 'key_idx', primaryKey: true },
         },
       };
       expect(getPrimaryKeyField(compoundPK)).toEqual(['lookup_id', 'key_idx']);
@@ -916,7 +917,7 @@ describe('LithiumTable', () => {
     it('should return null if no primary key is defined', () => {
       const noPK = {
         columns: {
-          name: { display: 'Name', field: 'name', primaryKey: false },
+          name: { title: 'Name', field: 'name', primaryKey: false },
         },
       };
       expect(getPrimaryKeyField(noPK)).toBeNull();
@@ -1247,8 +1248,8 @@ describe('LithiumTable', () => {
       const result = await loadLookup('a27', mockAuthQuery, mockApi);
 
       expect(result).toHaveLength(2);
-      expect(result[0]).toEqual({ id: 1, label: 'Active' });
-      expect(result[1]).toEqual({ id: 2, label: 'Inactive' });
+      expect(result[0]).toEqual({ id: 1, label: 'Active', icon: null, collection: null, sortSeq: 0 });
+      expect(result[1]).toEqual({ id: 2, label: 'Inactive', icon: null, collection: null, sortSeq: 0 });
       // Verify correct QueryRef and parameter format
       expect(mockAuthQuery).toHaveBeenCalledWith(mockApi, 34, {
         INTEGER: { LOOKUPID: 27 },
@@ -1318,7 +1319,7 @@ describe('LithiumTable', () => {
 
       const result = await loadLookup('b55', mockAuthQuery, mockApi);
 
-      expect(result[0]).toEqual({ id: 10, label: 'Test Label' });
+      expect(result[0]).toEqual({ id: 10, label: 'Test Label', icon: null, collection: null, sortSeq: 0 });
     });
   });
 
@@ -1399,10 +1400,11 @@ describe('LithiumTable', () => {
   });
 
   describe('createLookupEditor', () => {
-    it('should return input fallback for empty lookup data', () => {
+    it('should return number editor fallback for empty lookup data', () => {
       const result = createLookupEditor('a99', []);
 
-      expect(result).toBe('input');
+      expect(result.editor).toBe('number');
+      expect(result.editorParams.min).toBe(0);
     });
 
     it('should return editor config with list values', () => {
@@ -1413,14 +1415,16 @@ describe('LithiumTable', () => {
       const result = createLookupEditor('a27', lookupData);
 
       expect(result.editor).toBe('list');
-      expect(result.editorParams.values).toEqual(['Active', 'Inactive']);
+      // Values should be ID -> label map, not array of labels
+      expect(result.editorParams.values).toEqual({ 1: 'Active', 2: 'Inactive' });
       expect(result.editorParams.autocomplete).toBe(true);
     });
 
-    it('should return input fallback for null lookup data', () => {
+    it('should return number editor fallback for null lookup data', () => {
       const result = createLookupEditor('a99', null);
 
-      expect(result).toBe('input');
+      expect(result.editor).toBe('number');
+      expect(result.editorParams.min).toBe(0);
     });
   });
 
@@ -1565,8 +1569,7 @@ it('should report unknown table properties as warnings', () => {
       'string', 'text', 'integer', 'index', 'decimal',
       'boolean', 'date', 'datetime', 'time', 'currency',
       'percent', 'progress', 'email', 'url', 'lookup',
-      'lookupIcon', 'lookupIconText', 'lookupIconList', 'enum',
-      'html', 'image', 'color', 'star', 'rownum', 'json',
+      'enum', 'html', 'image', 'color', 'star', 'rownum', 'json',
     ];
 
     for (const coltype of validColtypes) {
@@ -1588,7 +1591,7 @@ describe('resolveColumn derived values', () => {
   const coltypes = MOCK_COLTYPES.coltypes;
 
   it('should derive title from field name (query_id -> "Query Id")', () => {
-    const colDef = { field: 'query_id', display: 'query_id', coltype: 'integer' };
+    const colDef = { field: 'query_id', title: 'query_id', coltype: 'integer' };
     const result = resolveColumn('query_id', colDef, coltypes);
     expect(result.title).toBe('query_id');
   });
@@ -1596,7 +1599,7 @@ describe('resolveColumn derived values', () => {
   it('should apply columnPri from colDef', () => {
     const colDef = {
       field: 'id',
-      display: 'ID',
+      title: 'ID',
       coltype: 'integer',
       columnPri: 1,
     };
@@ -1607,43 +1610,58 @@ describe('resolveColumn derived values', () => {
   it('should apply primaryKey from colDef', () => {
     const colDef = {
       field: 'id',
-      display: 'ID',
+      title: 'ID',
       coltype: 'integer',
       primaryKey: true,
     };
     const result = resolveColumn('id', colDef, coltypes);
-    expect(result.lithiumPrimaryKey).toBe(true);
+    // primaryKey is a Tabulator-compatible property, should be in the result
+    expect(result.primaryKey).toBe(true);
   });
 
-  it('should apply calculated from colDef', () => {
-    const colDef = {
-      field: 'full_name',
-      display: 'Full Name',
-      coltype: 'string',
-      calculated: true,
+  it('should extract calculated metadata via resolveColumnsWithMeta', () => {
+    const tableDef = {
+      title: 'Test',
+      columns: {
+        full_name: {
+          field: 'full_name',
+          title: 'Full Name',
+          coltype: 'string',
+          calculated: true,
+        },
+      },
     };
-    const result = resolveColumn('full_name', colDef, coltypes);
-    expect(result.lithiumCalculated).toBe(true);
+    // Lithium metadata is stored separately via resolveColumnsWithMeta
+    const { columnMeta } = resolveColumnsWithMeta(tableDef, coltypes);
+    const meta = columnMeta.get('full_name');
+    expect(meta.calculated).toBe(true);
   });
 
-  it('should apply description from colDef', () => {
-    const colDef = {
-      field: 'id',
-      display: 'ID',
-      coltype: 'integer',
-      description: 'Primary key field',
+  it('should extract description metadata via resolveColumnsWithMeta', () => {
+    const tableDef = {
+      title: 'Test',
+      columns: {
+        id: {
+          field: 'id',
+          title: 'ID',
+          coltype: 'integer',
+          description: 'Primary key field',
+        },
+      },
     };
-    const result = resolveColumn('id', colDef, coltypes);
-    expect(result.lithiumDescription).toBe('Primary key field');
+    // Lithium metadata is stored separately via resolveColumnsWithMeta
+    const { columnMeta } = resolveColumnsWithMeta(tableDef, coltypes);
+    const meta = columnMeta.get('id');
+    expect(meta.description).toBe('Primary key field');
   });
 
   it('should pass through columnPri to resolved column', () => {
     const tableDef = {
       title: 'Test',
       columns: {
-        third: { field: 'third', display: 'Third', coltype: 'string', columnPri: 3 },
-        first: { field: 'first', display: 'First', coltype: 'string', columnPri: 1 },
-        second: { field: 'second', display: 'Second', coltype: 'string', columnPri: 2 },
+        third: { field: 'third', title: 'Third', coltype: 'string', columnPri: 3 },
+        first: { field: 'first', title: 'First', coltype: 'string', columnPri: 1 },
+        second: { field: 'second', title: 'Second', coltype: 'string', columnPri: 2 },
       },
     };
     const columns = resolveColumns(tableDef, coltypes);
@@ -1658,10 +1676,257 @@ describe('resolveColumn derived values', () => {
     const tableDef = {
       title: 'Test',
       columns: {
-        no_pri: { field: 'no_pri', display: 'No Priority', coltype: 'string' },
+        no_pri: { field: 'no_pri', title: 'No Priority', coltype: 'string' },
       },
     };
     const columns = resolveColumns(tableDef, coltypes);
     expect(columns[0].columnPri).toBeUndefined();
+  });
+});
+
+// ── validateTableDef ──────────────────────────────────────────────────────
+
+describe('validateTableDef', () => {
+  it('should validate a correct tableDef', () => {
+    const tableDef = {
+      title: 'Test',
+      columns: {
+        id: { field: 'id', title: 'ID', coltype: 'integer' },
+      },
+    };
+    const result = validateTableDef(tableDef, 'test');
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it('should warn about unknown column properties', () => {
+    const tableDef = {
+      title: 'Test',
+      columns: {
+        id: { field: 'id', title: 'ID', coltype: 'integer', unknownProp: true },
+      },
+    };
+    const result = validateTableDef(tableDef, 'test');
+    expect(result.valid).toBe(false);
+    expect(result.errors.length).toBeGreaterThan(0);
+    expect(result.errors[0]).toContain('unknown property');
+  });
+
+  it('should warn about deprecated display property', () => {
+    const tableDef = {
+      title: 'Test',
+      columns: {
+        id: { field: 'id', display: 'ID', coltype: 'integer' },
+      },
+    };
+    const result = validateTableDef(tableDef, 'test');
+    expect(result.valid).toBe(false);
+    expect(result.errors.some(e => e.includes('display'))).toBe(true);
+  });
+
+  it('should reject invalid coltype', () => {
+    const tableDef = {
+      title: 'Test',
+      columns: {
+        id: { field: 'id', title: 'ID', coltype: 'invalidtype' },
+      },
+    };
+    const result = validateTableDef(tableDef, 'test');
+    expect(result.valid).toBe(false);
+    expect(result.errors.some(e => e.includes('invalid coltype'))).toBe(true);
+  });
+});
+
+// ── deepMergeParams ─────────────────────────────────────────────────────────
+
+import {
+  deepMergeParams,
+  DEEP_MERGE_PARAM_KEYS,
+  mergeColumnsWithTableDef,
+} from '../../src/tables/columns/column-management.js';
+
+describe('deepMergeParams', () => {
+  it('should merge formatterParams from base and overlay', () => {
+    const base = {
+      field: 'amount',
+      title: 'Amount',
+      formatter: 'number',
+      formatterParams: { thousand: ',', precision: 2 },
+    };
+    const overlay = {
+      formatterParams: { precision: 0 },
+    };
+
+    const result = deepMergeParams(base, overlay);
+
+    expect(result.formatterParams).toEqual({ thousand: ',', precision: 0 });
+  });
+
+  it('should merge multiple param objects', () => {
+    const base = {
+      field: 'total',
+      formatter: 'number',
+      formatterParams: { thousand: ',', precision: 2, symbol: '$' },
+      editorParams: { min: 0, max: 100 },
+    };
+    const overlay = {
+      formatterParams: { precision: 0 },
+      editorParams: { step: 1 },
+    };
+
+    const result = deepMergeParams(base, overlay);
+
+    expect(result.formatterParams).toEqual({ thousand: ',', precision: 0, symbol: '$' });
+    expect(result.editorParams).toEqual({ min: 0, max: 100, step: 1 });
+  });
+
+  it('should replace arrays, not merge them', () => {
+    const base = {
+      field: 'tags',
+      editorParams: { values: ['a', 'b', 'c'] },
+    };
+    const overlay = {
+      editorParams: { values: ['x', 'y'] },
+    };
+
+    const result = deepMergeParams(base, overlay);
+
+    expect(result.editorParams.values).toEqual(['x', 'y']);
+  });
+
+  it('should replace scalars', () => {
+    const base = {
+      field: 'name',
+      title: 'Name',
+      formatter: 'plaintext',
+    };
+    const overlay = {
+      title: 'Full Name',
+      formatter: 'textarea',
+    };
+
+    const result = deepMergeParams(base, overlay);
+
+    expect(result.title).toBe('Full Name');
+    expect(result.formatter).toBe('textarea');
+  });
+
+  it('should handle undefined overlay', () => {
+    const base = {
+      field: 'id',
+      formatterParams: { thousand: ',' },
+    };
+
+    const result = deepMergeParams(base, undefined);
+
+    expect(result).toEqual(base);
+  });
+
+  it('should create new object for overlay params when base has none', () => {
+    const base = {
+      field: 'amount',
+      formatter: 'number',
+    };
+    const overlay = {
+      formatterParams: { precision: 3 },
+    };
+
+    const result = deepMergeParams(base, overlay);
+
+    expect(result.formatterParams).toEqual({ precision: 3 });
+  });
+
+  it('should include all specified DEEP_MERGE_PARAM_KEYS', () => {
+    expect(DEEP_MERGE_PARAM_KEYS).toContain('formatterParams');
+    expect(DEEP_MERGE_PARAM_KEYS).toContain('editorParams');
+    expect(DEEP_MERGE_PARAM_KEYS).toContain('headerFilterParams');
+    expect(DEEP_MERGE_PARAM_KEYS).toContain('sorterParams');
+    expect(DEEP_MERGE_PARAM_KEYS).toContain('accessorParams');
+    expect(DEEP_MERGE_PARAM_KEYS).toContain('mutatorParams');
+    expect(DEEP_MERGE_PARAM_KEYS).toContain('bottomCalcFormatterParams');
+    expect(DEEP_MERGE_PARAM_KEYS).toContain('downloadFormatterParams');
+    expect(DEEP_MERGE_PARAM_KEYS).toContain('downloadCalcParams');
+    expect(DEEP_MERGE_PARAM_KEYS).toContain('clipboardParams');
+  });
+});
+
+// ── mergeColumnsWithTableDef ────────────────────────────────────────────────
+
+describe('mergeColumnsWithTableDef', () => {
+  const mockTable = {};
+
+  it('should deep merge formatterParams from auto-discovered and tableDef columns', () => {
+    const autoColumns = [
+      {
+        field: 'amount',
+        title: 'Amount',
+        formatter: 'number',
+        formatterParams: { thousand: ',', precision: 2 },
+      },
+    ];
+    const tableDefColumns = [
+      {
+        field: 'amount',
+        formatterParams: { precision: 0 },
+      },
+    ];
+
+    const result = mergeColumnsWithTableDef(mockTable, autoColumns, tableDefColumns);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].formatterParams).toEqual({ thousand: ',', precision: 0 });
+  });
+
+  it('should preserve coltype defaults while applying tableDef overrides', () => {
+    const autoColumns = [
+      {
+        field: 'total',
+        title: 'Total',
+        formatter: 'number',
+        formatterParams: { thousand: ',', precision: 2, symbol: '$' },
+        editorParams: { min: 0, step: 0.01 },
+      },
+    ];
+    const tableDefColumns = [
+      {
+        field: 'total',
+        width: 120,
+        formatterParams: { precision: 0 },
+        editorParams: { max: 10000 },
+      },
+    ];
+
+    const result = mergeColumnsWithTableDef(mockTable, autoColumns, tableDefColumns);
+
+    expect(result[0].width).toBe(120);
+    expect(result[0].formatterParams).toEqual({ thousand: ',', precision: 0, symbol: '$' });
+    expect(result[0].editorParams).toEqual({ min: 0, step: 0.01, max: 10000 });
+  });
+
+  it('should add tableDef columns not in auto-discovered set', () => {
+    const autoColumns = [
+      { field: 'id', title: 'ID' },
+    ];
+    const tableDefColumns = [
+      { field: 'id', title: 'ID' },
+      { field: 'name', title: 'Name' },
+    ];
+
+    const result = mergeColumnsWithTableDef(mockTable, autoColumns, tableDefColumns);
+
+    expect(result).toHaveLength(2);
+    expect(result.some(c => c.field === 'name')).toBe(true);
+  });
+
+  it('should handle empty autoColumns', () => {
+    const autoColumns = [];
+    const tableDefColumns = [
+      { field: 'id', title: 'ID' },
+    ];
+
+    const result = mergeColumnsWithTableDef(mockTable, autoColumns, tableDefColumns);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].field).toBe('id');
   });
 });

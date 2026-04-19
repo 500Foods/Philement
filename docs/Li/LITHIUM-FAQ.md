@@ -310,6 +310,307 @@ Or use `once()` for one-time listeners.
 2. Block UI during reload to prevent flash
 3. Service worker must be registered early (not on window.load)
 
+### Column Property Names (Canonical)
+
+The canonical property for column header text is **`title`**. The legacy property `display` has been retired.
+
+**Migration:**
+- Change `display: "Name"` → `title: "Name"` in all tableDef JSON files
+- The validator (`validateTableDef()`) will warn if unknown properties like `display` are found
+- Code no longer falls back to `display` when `title` is missing
+
+**Files affected:**
+- All table definitions in Lookup 059 (Keys 1+)
+- Column Manager column definitions
+- Template extraction/capture code
+
+**Note:** The `title` property aligns with Tabulator's native naming convention.
+
+---
+
+## Table Definition Merge Issues
+
+### Param Objects Not Merging (Fixed in Phase 6)
+
+**Problem:** Changing `formatterParams.precision` in Lookup 059 Key 0 didn't apply to tables with saved templates. The `formatterParams` object from templates completely replaced the coltype defaults.
+
+**Root Cause:** Shallow merge using spread operator (`{ ...base, ...overlay }`) replaced entire `formatterParams` objects instead of merging their properties.
+
+**Fix:** Deep merge for param objects. The following properties are now deep-merged across all three stages:
+- `formatterParams`, `editorParams`, `headerFilterParams`
+- `sorterParams`, `accessorParams`, `mutatorParams`
+- `bottomCalcFormatterParams`, `downloadFormatterParams`, `downloadCalcParams`, `clipboardParams`
+
+**Example:**
+```javascript
+// Stage 1 (coltype.integer): { formatterParams: { thousand: ",", precision: 0 } }
+// Stage 3 (template):       { formatterParams: { precision: 2 } }
+// Result (before fix):      { formatterParams: { precision: 2 } }  // thousand lost!
+// Result (after fix):       { formatterParams: { thousand: ",", precision: 2 } }
+```
+
+**Implementation:**
+- `deepMergeParams()` helper in `column-management.js`
+- Used in `mergeColumnsWithTableDef()` (Stage 2) and `_applyDefaultTemplate()` (Stage 3)
+
+---
+
+### Double Column Discovery (Fixed in Phase 6)
+
+**Problem:** `discoverColumns()` was being called twice per data load for auto-discover tables.
+
+**Root Cause:** Both `loadData()` (explicit call) and `dataLoaded` callback (Tabulator event) triggered discovery.
+
+**Fix:** Removed the `dataLoaded` callback in `initTable()`. `loadData()` already calls `discoverColumns()` after `setData()`.
+
+---
+
+### TableDef Cache Not Clearing on Logout (Fixed in Phase 6)
+
+**Problem:** Table definitions from Lookup 059 persisted across user sessions.
+
+**Fix:** Added `AUTH_LOGOUT` event listener in `tabledef-loader.js` to clear `_tableDefCache` on logout. Cache is now truly session-only.
+
+---
+
+### Row Selection Lost After Refresh (Fixed in Phase 6)
+
+**Problem:** After clicking the Refresh button, the currently selected record was not reselected (first row was selected instead).
+
+**Root Cause:** The `loadData()` function determines which row to select using `table.getSelectedRowId() ?? table.restoreSelectedRowId()`. After a full table rebuild during refresh, there's no current selection, so it falls back to `restoreSelectedRowId()`. However, `loadData()` calls `autoSelectRow()` internally which was selecting the first row when it couldn't match the restored ID properly. The explicit restoration step after `loadData()` was missing.
+
+**Fix:** 
+- Disable `autoSelectRow` during the refresh data load (replace with no-op)
+- Await data load completion
+- Explicitly call `autoSelectRow(capturedRowId)` with the ID captured at refresh start
+- Fire `onRowSelected` event to update manager UI
+
+**Code flow:**
+```javascript
+// Before (broken):
+await table.loadData();  // Selects first row because getSelectedRowId() returns null
+// No explicit restoration
+
+// After (fixed):
+const savedAutoSelectRow = table.autoSelectRow;
+table.autoSelectRow = () => {};  // Disable during load
+await table.loadData();          // Load without selection
+table.autoSelectRow = savedAutoSelectRow;
+await new Promise(r => requestAnimationFrame(r));
+table.autoSelectRow(capturedRowId);  // Explicitly restore correct row
+```
+
+---
+
+### Parent/Child Table Refresh Coordination (Fixed in Phase 6)
+
+**Problem:** In Lookups Manager (which has a parent table and child table), after refreshing the parent table, the child table wouldn't reload its data. The parent correctly restored its selected row, but the child remained empty or stale.
+
+**Root Cause:** The `handleParentRowSelected()` function has a guard (`_loadedChildLookupKey === lookupKey`) to prevent duplicate loads when the same lookup is selected. After a parent refresh, this guard was still set from before the refresh, so the child load was skipped.
+
+**Fix:** 
+- Added `onRefreshComplete()` callback support to `reloadConfiguration()`
+- Managers can implement this callback to clear child table state
+- Lookups Manager clears `_loadedChildLookupKey` in `onRefreshComplete`, forcing child reload on next parent selection
+
+**Code in Lookups Manager:**
+```javascript
+// In parent table options
+onRefreshComplete: () => {
+  // Clear child load state so child reloads when parent row is reselected
+  this._loadedChildLookupKey = null;
+},
+```
+
+**Flow after fix:**
+1. Parent refresh captures state and destroys table
+2. Parent recreates table and restores row selection
+3. `onRowSelected` fires for restored row
+4. `handleParentRowSelected` checks `_loadedChildLookupKey` (now null after `onRefreshComplete`)
+5. Child data loads fresh via `loadChildData()`
+
+---
+
+### Refresh Clears All TableDefs (Fixed in Phase 6)
+
+**Problem:** After clicking Refresh in one manager (e.g., Lookups Manager), other managers (e.g., Query Manager) would render with auto-discovered columns instead of their proper table definitions from Lookup 59.
+
+**Root Cause:** The `refreshTabulatorSchemas()` function in `lookups.js` used `fetchBatchQueries()` which doesn't include JWT authentication. The server returned empty results, so the schemas cache was cleared but not repopulated. When other managers loaded, they couldn't find their table definitions and fell back to auto-discovery.
+
+**Fix:** Changed `refreshTabulatorSchemas()` to use `authQuery()` instead of `fetchBatchQueries()` to ensure proper JWT authentication:
+
+```javascript
+// Before (broken):
+const batchResults = await fetchBatchQueries([60], '060');
+// Returns empty array due to missing authentication
+
+// After (fixed):
+const { authQuery } = await import('./conduit.js');
+const freshSchemas = await authQuery(null, 60);
+// Properly authenticated, returns full schema data
+```
+
+---
+
+## Phase 7 — String Editing Fixes
+
+### String Editor Not Opening (Fixed in Phase 7)
+
+**Problem:** String columns would not open an editor when clicked in edit mode. Instead, clicking any cell would cancel edit mode entirely.
+
+**Root Cause:** Two issues:
+1. **TableDefs used `editor: "string"` instead of `editor: "input"`** — Tabulator doesn't recognize `"string"` as a valid editor type. The correct value is `"input"` for single-line text editing.
+2. **Edit mode toggle behavior** — The Edit button would toggle edit mode on/off. If you clicked Edit to enter edit mode, then clicked Edit again, it would exit. But the desired behavior is: Edit button always exits edit mode (saving if dirty).
+
+**Fix:**
+1. Changed table definitions to use `editor: "input"` for string columns (and `editor: "textarea"` for text columns).
+2. Modified `handleEdit()` in `lithium-table-ops.js` to always exit edit mode when clicked while editing:
+
+```javascript
+// Before: Toggle behavior - would re-enter edit mode if not editing
+if (this.isEditing && this.editingRowId === selectedId) {
+  // save and exit
+}
+
+// After: Always exit when in edit mode
+if (this.isEditing) {
+  // save (if dirty) and exit
+}
+```
+
+### Edit Mode Exiting on Non-Editable Cell Clicks (Fixed in Phase 7)
+
+**Problem:** Clicking on a non-editable cell (like a primary key or calculated column) while in edit mode would sometimes exit edit mode unexpectedly.
+
+**Root Cause:** The `cellMouseDown` event was triggering row selection even when in edit mode, which could cause race conditions with `handleRowSelected`'s auto-save logic.
+
+**Fix:** Modified `cellMouseDown` handler to skip row selection when already in edit mode:
+
+```javascript
+table.table.on('cellMouseDown', (e, cell) => {
+  // ...
+  // Only select row on mouse down if not already editing
+  if (!table.isEditing) {
+    table.selectDataRow(cell.getRow());
+  }
+});
+```
+
+This ensures that while editing, row changes are only handled through the explicit `cellClick` → `handleRowSelected` flow, which properly manages auto-save and edit mode exit.
+
+### Same-Row Clicks Exiting Edit Mode (Fixed in Phase 7)
+
+**Problem:** Clicking on different cells within the same row (while in edit mode) would unexpectedly exit edit mode.
+
+**Root Cause:** The `handleRowSelected` function was comparing row IDs and triggering auto-save logic even when the same row was re-selected. This could happen when `cellClick` events triggered row selection.
+
+**Fix:** Added defensive check in `handleRowSelected` to early-return when the same row is clicked:
+
+```javascript
+// If editing and clicked the same row, just update UI and return
+if (table.isEditing && table.editingRowId === newRowId) {
+  table.updateSelectorCell?.(row, true);
+  return;
+}
+```
+
+This ensures that clicking different cells within the same editing row stays in edit mode.
+
+### CodeMirror ESC and Ctrl+Enter Shortcuts (Fixed in Phase 7)
+
+**Problem:** When focus is inside a CodeMirror editor, pressing ESC doesn't cancel edit mode, and there's no keyboard shortcut to save changes.
+
+**Root Cause:** CodeMirror captures keyboard events and doesn't propagate them to the table's keyboard handler.
+
+**Fix:** Added CodeMirror keymap bindings for Escape and Ctrl+Enter:
+
+1. In `codemirror-setup.js`, added support for `onEscape` and `onSave` callbacks in `buildEditorExtensions()`
+2. In `ManagerEditHelper`, added `getCodeMirrorKeymapOptions()` method that returns callbacks bound to `handleCancel()` and `handleSave()`
+3. Managers can now pass these options when creating CodeMirror instances:
+
+```javascript
+const extensions = buildEditorExtensions({
+  language: 'sql',
+  ...this.editHelper.getCodeMirrorKeymapOptions(),
+});
+```
+
+**Shortcuts:**
+- **Escape**: Cancel edit mode (same as clicking Cancel button)
+- **Ctrl+Enter**: Save changes (same as clicking Save button)
+
+### Composite Primary Key Handling (Fixed in Phase 7)
+
+**Problem:** Tables with composite primary keys (like Lookups with `lookup_id` + `key_idx`) had broken edit mode. Entering edit mode would set `editingRowId` to `undefined`, causing all row comparisons to fail. This caused:
+- Same-row clicks to exit edit mode
+- Cell editors not opening
+- Changes not being saved on row change
+
+**Root Cause:** Multiple places in the code assumed `primaryKeyField` was a single string, but it's an array for composite keys:
+
+```javascript
+// BROKEN - assumes single field:
+const pkField = this.primaryKeyField || 'id';
+const rowId = row.getData()?.[pkField]; // Returns undefined when pkField is an array
+```
+
+**Fix:** Updated all locations to use `_getCompositeRowId()` which properly handles both single and composite keys:
+
+**Files fixed:**
+1. `src/tables/lithium-table-ops.js` - `enterEditMode()` and `queueCellEdit()`
+2. `src/tables/columns/column-management.js` - `applyEditModeGate()` (already correct)
+
+```javascript
+// FIXED - handles composite keys:
+const pkFields = this.primaryKeyField;
+const rowId = this._getCompositeRowId(row.getData(), pkFields); // Returns "43::11"
+```
+
+---
+
+## Lookup Column Editing
+
+### Tabulator list editor stores label instead of ID
+
+**Problem:** When using Tabulator's built-in `list` editor with an array of labels `["Active", "Inactive"]`, selecting a value stores the label text (string) instead of the underlying ID (integer). This causes server errors like "QUERYSTATUS(string) is not QUERYSTATUS(INTEGER)".
+
+**Root Cause:** Tabulator's `list` editor with `values: ["label1", "label2"]` returns the selected string value. We need `values: {id1: "label1", id2: "label2"}` to return the ID while displaying the label.
+
+**Fix in `createLookupEditor()`:**
+
+```javascript
+// BEFORE: Stored label text
+const values = lookupData.map(entry => entry.label);
+
+// AFTER: Stores integer ID, displays label
+const values = {};
+lookupData.forEach(entry => {
+  values[entry.id] = entry.label;
+});
+```
+
+**Additional safeguard:** Added a `mutator` to ensure values are always integers:
+
+```javascript
+tabulatorCol.mutator = function(value) {
+  if (value === null || value === undefined || value === '') {
+    return 0;
+  }
+  // If Tabulator returns the label string, look up the ID
+  if (typeof value === 'string') {
+    const entry = lookupData.find(e => e.label === value);
+    if (entry) return entry.id;
+  }
+  return parseInt(value, 10) || 0;
+};
+```
+
+**Phase:** Fixed in Phase 8 (April 18, 2026)
+
+**Files changed:**
+- `src/tables/resolution/lookup-loader.js` — `createLookupEditor()` function
+- `src/tables/lithium-table.js` — mutator assignment in `resolveColumn()`
+
 ---
 
 ## Related Documentation

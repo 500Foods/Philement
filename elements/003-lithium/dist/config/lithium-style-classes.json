@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS class selectors/names used across the Lithium codebase",
-    "generated": "2026-04-17T19:18:03.845Z",
+    "generated": "2026-04-19T04:03:44.509Z",
     "sources": {
       "css": "51 files in src/**/*.css",
-      "js": "104 files in src/**/*.js",
+      "js": "120 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
-    "total_selectors": 1777,
-    "total_occurrences": 28089
+    "total_selectors": 1794,
+    "total_occurrences": 28040
   },
   "selectors": [
     {
@@ -1324,6 +1324,7 @@
         ],
         "js": [
           "src/managers/version-history/version-history.js",
+          "src/tables/events/event-handlers.js",
           "src/tables/lithium-table-ui.js",
           "src/tables/navigator/navigator-builder.js"
         ],
@@ -1373,8 +1374,8 @@
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-table-ui.js"
+          "src/tables/column-manager/cm-integration.js",
+          "src/tables/column-manager/cm-ui.js"
         ],
         "html": []
       }
@@ -1390,8 +1391,8 @@
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-table-ui.js"
+          "src/tables/column-manager/cm-integration.js",
+          "src/tables/column-manager/cm-ui.js"
         ],
         "html": []
       }
@@ -1407,8 +1408,8 @@
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-table-ui.js"
+          "src/tables/column-manager/cm-integration.js",
+          "src/tables/column-manager/cm-ui.js"
         ],
         "html": []
       }
@@ -1424,8 +1425,8 @@
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-table-ui.js"
+          "src/tables/column-manager/cm-integration.js",
+          "src/tables/column-manager/cm-ui.js"
         ],
         "html": []
       }
@@ -1441,8 +1442,8 @@
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-table-ui.js"
+          "src/tables/column-manager/cm-integration.js",
+          "src/tables/column-manager/cm-ui.js"
         ],
         "html": []
       }
@@ -1458,8 +1459,8 @@
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-table-ui.js"
+          "src/tables/column-manager/cm-integration.js",
+          "src/tables/column-manager/cm-ui.js"
         ],
         "html": []
       }
@@ -1475,8 +1476,8 @@
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-table-ui.js"
+          "src/tables/column-manager/cm-integration.js",
+          "src/tables/column-manager/cm-ui.js"
         ],
         "html": []
       }
@@ -1492,8 +1493,8 @@
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-table-ui.js"
+          "src/tables/column-manager/cm-integration.js",
+          "src/tables/column-manager/cm-ui.js"
         ],
         "html": []
       }
@@ -1509,8 +1510,8 @@
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-table-ui.js"
+          "src/tables/column-manager/cm-integration.js",
+          "src/tables/column-manager/cm-ui.js"
         ],
         "html": []
       }
@@ -1539,9 +1540,9 @@
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js",
           "src/shared/crimson-ws.js",
+          "src/tables/column-manager/cm-integration.js",
           "src/tables/column-manager/cm-table.js",
-          "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-table-ui.js"
+          "src/tables/column-manager/cm-ui.js"
         ],
         "html": [
           "src/managers/lookups/lookups.html",
@@ -1562,8 +1563,8 @@
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-table-ui.js"
+          "src/tables/column-manager/cm-integration.js",
+          "src/tables/column-manager/cm-ui.js"
         ],
         "html": []
       }
@@ -1579,8 +1580,8 @@
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-table-ui.js"
+          "src/tables/column-manager/cm-integration.js",
+          "src/tables/column-manager/cm-ui.js"
         ],
         "html": []
       }
@@ -1596,8 +1597,8 @@
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-table-ui.js"
+          "src/tables/column-manager/cm-integration.js",
+          "src/tables/column-manager/cm-ui.js"
         ],
         "html": []
       }
@@ -1614,9 +1615,9 @@
         ],
         "js": [
           "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-integration.js",
           "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js"
+          "src/tables/lithium-table-base.js"
         ],
         "html": [
           "src/managers/lookups/lookups.html",
@@ -1638,8 +1639,8 @@
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-table-ui.js"
+          "src/tables/column-manager/cm-integration.js",
+          "src/tables/column-manager/cm-ui.js"
         ],
         "html": []
       }
@@ -1655,9 +1656,10 @@
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
+          "src/tables/column-manager/cm-integration.js",
           "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
+          "src/tables/events/event-handlers.js",
+          "src/tables/visual/column-tooltips.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": []
@@ -1674,9 +1676,10 @@
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
+          "src/tables/column-manager/cm-integration.js",
           "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
+          "src/tables/events/event-handlers.js",
+          "src/tables/visual/column-tooltips.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": []
@@ -1693,8 +1696,9 @@
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
+          "src/tables/column-manager/cm-integration.js",
           "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-table-ui.js",
+          "src/tables/events/event-handlers.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": []
@@ -1711,9 +1715,9 @@
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
+          "src/tables/column-manager/cm-integration.js",
           "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": []
@@ -1730,9 +1734,9 @@
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
+          "src/tables/column-manager/cm-integration.js",
           "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": []
@@ -1749,9 +1753,9 @@
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
+          "src/tables/column-manager/cm-integration.js",
           "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": []
@@ -1768,9 +1772,9 @@
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
+          "src/tables/column-manager/cm-integration.js",
           "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": []
@@ -1787,8 +1791,8 @@
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-table-ui.js"
+          "src/tables/column-manager/cm-integration.js",
+          "src/tables/column-manager/cm-ui.js"
         ],
         "html": []
       }
@@ -1804,9 +1808,9 @@
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
+          "src/tables/column-manager/cm-integration.js",
           "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": []
@@ -1823,8 +1827,8 @@
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
-          "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-table-ui.js"
+          "src/tables/column-manager/cm-integration.js",
+          "src/tables/column-manager/cm-ui.js"
         ],
         "html": []
       }
@@ -1844,8 +1848,8 @@
           "src/managers/terminal/terminal.js",
           "src/managers/tour/tour.js",
           "src/tables/column-manager/cm-drag-resize.js",
-          "src/tables/column-manager/cm-ui.js",
-          "src/tables/lithium-table-ui.js"
+          "src/tables/column-manager/cm-integration.js",
+          "src/tables/column-manager/cm-ui.js"
         ],
         "html": []
       }
@@ -1853,9 +1857,9 @@
     {
       "selector": ".col-manager-popup.visible",
       "css": 1,
-      "js": 112,
+      "js": 109,
       "html": 0,
-      "total": 113,
+      "total": 110,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
@@ -1879,6 +1883,7 @@
           "src/managers/version-history/version-history.js",
           "src/shared/crimson-ws.js",
           "src/tables/column-manager/cm-drag-resize.js",
+          "src/tables/column-manager/cm-integration.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
           "src/tables/lithium-table-ui.js",
@@ -2072,8 +2077,8 @@
         "js": [
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
+          "src/tables/events/event-handlers.js",
           "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -2098,8 +2103,9 @@
         "js": [
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
+          "src/tables/events/event-handlers.js",
           "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
+          "src/tables/visual/column-tooltips.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -2124,8 +2130,9 @@
         "js": [
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
+          "src/tables/events/event-handlers.js",
           "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
+          "src/tables/visual/column-tooltips.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -2150,8 +2157,9 @@
         "js": [
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
+          "src/tables/events/event-handlers.js",
           "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
+          "src/tables/visual/column-tooltips.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -2177,6 +2185,7 @@
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -2202,6 +2211,7 @@
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -2227,6 +2237,7 @@
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -2252,6 +2263,7 @@
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -2277,6 +2289,7 @@
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -2302,6 +2315,7 @@
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -2327,6 +2341,7 @@
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -2701,8 +2716,9 @@
         "js": [
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
+          "src/tables/events/event-handlers.js",
           "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
+          "src/tables/visual/column-tooltips.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -2727,8 +2743,9 @@
         "js": [
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
+          "src/tables/events/event-handlers.js",
           "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
+          "src/tables/visual/column-tooltips.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -2753,8 +2770,9 @@
         "js": [
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
+          "src/tables/events/event-handlers.js",
           "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
+          "src/tables/visual/column-tooltips.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -2780,6 +2798,7 @@
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -2805,6 +2824,7 @@
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -2830,6 +2850,7 @@
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -2855,6 +2876,7 @@
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -2880,6 +2902,7 @@
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -2905,6 +2928,7 @@
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -2930,6 +2954,7 @@
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -2955,6 +2980,7 @@
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -3548,9 +3574,9 @@
     {
       "selector": ".crimson-citation-popup.visible",
       "css": 1,
-      "js": 118,
+      "js": 115,
       "html": 0,
-      "total": 119,
+      "total": 116,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -5041,9 +5067,9 @@
     {
       "selector": ".crimson-overlay.visible",
       "css": 1,
-      "js": 110,
+      "js": 107,
       "html": 0,
-      "total": 111,
+      "total": 108,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -5244,9 +5270,9 @@
     {
       "selector": ".crimson-popup.visible",
       "css": 1,
-      "js": 110,
+      "js": 107,
       "html": 0,
-      "total": 111,
+      "total": 108,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -6575,9 +6601,9 @@
     {
       "selector": ".font-popup.visible",
       "css": 1,
-      "js": 109,
+      "js": 106,
       "html": 0,
-      "total": 110,
+      "total": 107,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -6697,9 +6723,9 @@
     {
       "selector": ".footer-export-popup.visible",
       "css": 1,
-      "js": 109,
+      "js": 106,
       "html": 0,
-      "total": 110,
+      "total": 107,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -8145,6 +8171,196 @@
       }
     },
     {
+      "selector": ".li-lookup-edit-icon",
+      "css": 1,
+      "js": 2,
+      "html": 0,
+      "total": 3,
+      "files": {
+        "css": [
+          "src/styles/vendor-fixes.css"
+        ],
+        "js": [
+          "src/tables/lithium-table.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".li-lookup-edit-icon:empty",
+      "css": 1,
+      "js": 2,
+      "html": 0,
+      "total": 3,
+      "files": {
+        "css": [
+          "src/styles/vendor-fixes.css"
+        ],
+        "js": [
+          "src/tables/lithium-table.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".li-lookup-edit-label",
+      "css": 1,
+      "js": 2,
+      "html": 0,
+      "total": 3,
+      "files": {
+        "css": [
+          "src/styles/vendor-fixes.css"
+        ],
+        "js": [
+          "src/tables/lithium-table.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".li-lookup-item",
+      "css": 1,
+      "js": 2,
+      "html": 0,
+      "total": 3,
+      "files": {
+        "css": [
+          "src/styles/vendor-fixes.css"
+        ],
+        "js": [
+          "src/tables/lithium-table.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".li-lookup-item img",
+      "css": 1,
+      "js": 2,
+      "html": 0,
+      "total": 3,
+      "files": {
+        "css": [
+          "src/styles/vendor-fixes.css"
+        ],
+        "js": [
+          "src/tables/lithium-table.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".li-lookup-item[data-align=\"center\"]",
+      "css": 1,
+      "js": 2,
+      "html": 0,
+      "total": 3,
+      "files": {
+        "css": [
+          "src/styles/vendor-fixes.css"
+        ],
+        "js": [
+          "src/tables/lithium-table.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".li-lookup-item[data-align=\"left\"]",
+      "css": 1,
+      "js": 2,
+      "html": 0,
+      "total": 3,
+      "files": {
+        "css": [
+          "src/styles/vendor-fixes.css"
+        ],
+        "js": [
+          "src/tables/lithium-table.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".li-lookup-item[data-align=\"right\"]",
+      "css": 1,
+      "js": 2,
+      "html": 0,
+      "total": 3,
+      "files": {
+        "css": [
+          "src/styles/vendor-fixes.css"
+        ],
+        "js": [
+          "src/tables/lithium-table.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".li-lookup-list-item[data-align=\"center\"]",
+      "css": 1,
+      "js": 2,
+      "html": 0,
+      "total": 3,
+      "files": {
+        "css": [
+          "src/styles/vendor-fixes.css"
+        ],
+        "js": [
+          "src/tables/lithium-table.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".li-lookup-list-item[data-align=\"left\"]",
+      "css": 1,
+      "js": 2,
+      "html": 0,
+      "total": 3,
+      "files": {
+        "css": [
+          "src/styles/vendor-fixes.css"
+        ],
+        "js": [
+          "src/tables/lithium-table.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".li-lookup-list-item[data-align=\"right\"]",
+      "css": 1,
+      "js": 2,
+      "html": 0,
+      "total": 3,
+      "files": {
+        "css": [
+          "src/styles/vendor-fixes.css"
+        ],
+        "js": [
+          "src/tables/lithium-table.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".li-lookup-no-icon",
+      "css": 0,
+      "js": 1,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [],
+        "js": [
+          "src/tables/lithium-table.js"
+        ],
+        "html": []
+      }
+    },
+    {
       "selector": ".li-tip-field",
       "css": 1,
       "js": 4,
@@ -8155,7 +8371,7 @@
           "src/styles/tooltip.css"
         ],
         "js": [
-          "src/tables/lithium-table-base.js"
+          "src/tables/visual/column-tooltips.js"
         ],
         "html": []
       }
@@ -8788,9 +9004,9 @@
     {
       "selector": ".lithium-col-chooser-popup.visible",
       "css": 1,
-      "js": 109,
+      "js": 106,
       "html": 0,
-      "total": 110,
+      "total": 107,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -9133,6 +9349,7 @@
         ],
         "js": [
           "src/managers/version-history/version-history.js",
+          "src/tables/events/event-handlers.js",
           "src/tables/lithium-table-ui.js",
           "src/tables/navigator/navigator-builder.js"
         ],
@@ -9151,6 +9368,7 @@
         ],
         "js": [
           "src/managers/version-history/version-history.js",
+          "src/tables/events/event-handlers.js",
           "src/tables/lithium-table-ui.js",
           "src/tables/navigator/navigator-builder.js"
         ],
@@ -9169,6 +9387,7 @@
         ],
         "js": [
           "src/managers/version-history/version-history.js",
+          "src/tables/events/event-handlers.js",
           "src/tables/lithium-table-ui.js",
           "src/tables/navigator/navigator-builder.js"
         ],
@@ -9475,9 +9694,9 @@
     {
       "selector": ".lithium-nav-popup.visible",
       "css": 1,
-      "js": 121,
+      "js": 118,
       "html": 0,
-      "total": 122,
+      "total": 119,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -9521,7 +9740,7 @@
           "src/tables/lithium-table.css"
         ],
         "js": [
-          "src/tables/lithium-table-ui.js"
+          "src/tables/events/event-handlers.js"
         ],
         "html": []
       }
@@ -10030,8 +10249,9 @@
         "js": [
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
+          "src/tables/events/event-handlers.js",
           "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
+          "src/tables/visual/column-tooltips.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -10131,8 +10351,9 @@
         "js": [
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
+          "src/tables/events/event-handlers.js",
           "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
+          "src/tables/visual/column-tooltips.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -10157,8 +10378,9 @@
         "js": [
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
+          "src/tables/events/event-handlers.js",
           "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
+          "src/tables/visual/column-tooltips.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -10183,8 +10405,9 @@
         "js": [
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
+          "src/tables/events/event-handlers.js",
           "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
+          "src/tables/visual/column-tooltips.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -10209,8 +10432,9 @@
         "js": [
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
+          "src/tables/events/event-handlers.js",
           "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
+          "src/tables/visual/column-tooltips.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -10235,8 +10459,9 @@
         "js": [
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
+          "src/tables/events/event-handlers.js",
           "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
+          "src/tables/visual/column-tooltips.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -10285,8 +10510,8 @@
         "js": [
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
+          "src/tables/events/event-handlers.js",
           "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -10311,8 +10536,9 @@
         "js": [
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
+          "src/tables/events/event-handlers.js",
           "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
+          "src/tables/visual/column-tooltips.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -10337,8 +10563,9 @@
         "js": [
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
+          "src/tables/events/event-handlers.js",
           "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
+          "src/tables/visual/column-tooltips.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -10363,8 +10590,9 @@
         "js": [
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
+          "src/tables/events/event-handlers.js",
           "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
+          "src/tables/visual/column-tooltips.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -10389,8 +10617,9 @@
         "js": [
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
+          "src/tables/events/event-handlers.js",
           "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
+          "src/tables/visual/column-tooltips.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -10415,8 +10644,9 @@
         "js": [
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
+          "src/tables/events/event-handlers.js",
           "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
+          "src/tables/visual/column-tooltips.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -10441,8 +10671,9 @@
         "js": [
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
+          "src/tables/events/event-handlers.js",
           "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
+          "src/tables/visual/column-tooltips.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -10467,8 +10698,9 @@
         "js": [
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
+          "src/tables/events/event-handlers.js",
           "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
+          "src/tables/visual/column-tooltips.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -10493,8 +10725,9 @@
         "js": [
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
+          "src/tables/events/event-handlers.js",
           "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
+          "src/tables/visual/column-tooltips.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -10519,8 +10752,9 @@
         "js": [
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
+          "src/tables/events/event-handlers.js",
           "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
+          "src/tables/visual/column-tooltips.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -10545,8 +10779,9 @@
         "js": [
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
+          "src/tables/events/event-handlers.js",
           "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
+          "src/tables/visual/column-tooltips.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -10571,8 +10806,8 @@
         "js": [
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
+          "src/tables/events/event-handlers.js",
           "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -10597,8 +10832,8 @@
         "js": [
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
+          "src/tables/events/event-handlers.js",
           "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -10623,8 +10858,8 @@
         "js": [
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
+          "src/tables/events/event-handlers.js",
           "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -10649,8 +10884,8 @@
         "js": [
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
+          "src/tables/events/event-handlers.js",
           "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -10676,6 +10911,33 @@
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container .tabulator-row .tabulator-cell img",
+      "css": 1,
+      "js": 6,
+      "html": 7,
+      "total": 14,
+      "files": {
+        "css": [
+          "src/styles/vendor-fixes.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -10701,6 +10963,7 @@
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -10726,6 +10989,7 @@
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -10751,6 +11015,7 @@
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -10776,6 +11041,7 @@
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -10801,6 +11067,7 @@
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -10827,6 +11094,7 @@
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
           "src/tables/lithium-table.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -10853,6 +11121,7 @@
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
           "src/tables/lithium-table.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -10879,6 +11148,7 @@
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
           "src/tables/lithium-table.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -10905,6 +11175,7 @@
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
           "src/tables/lithium-table.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -10930,6 +11201,7 @@
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -10956,6 +11228,7 @@
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
           "src/tables/lithium-table.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -10982,6 +11255,8 @@
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
           "src/tables/lithium-table.js",
+          "src/tables/navigation/navigation.js",
+          "src/tables/visual/group-icon-animator.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -11008,6 +11283,7 @@
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
           "src/tables/lithium-table.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -11034,6 +11310,8 @@
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
           "src/tables/lithium-table.js",
+          "src/tables/navigation/navigation.js",
+          "src/tables/visual/group-icon-animator.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -11059,6 +11337,7 @@
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -11084,6 +11363,7 @@
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -11109,6 +11389,7 @@
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -11134,6 +11415,7 @@
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -11159,6 +11441,7 @@
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -11184,6 +11467,7 @@
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -11209,6 +11493,7 @@
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -11234,6 +11519,7 @@
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -11259,6 +11545,7 @@
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -11284,6 +11571,7 @@
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -11309,6 +11597,7 @@
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -11360,6 +11649,7 @@
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
           "src/tables/lithium-table-ops.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -11386,6 +11676,7 @@
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
           "src/tables/lithium-table-ops.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -11412,6 +11703,7 @@
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
           "src/tables/lithium-table-ops.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -11438,6 +11730,7 @@
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
           "src/tables/lithium-table-ops.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -11464,6 +11757,7 @@
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
           "src/tables/lithium-table-ops.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -11489,6 +11783,7 @@
           "src/managers/crimson/crimson-citations.js",
           "src/managers/version-history/version-history.js",
           "src/tables/column-manager/cm-ui.js",
+          "src/tables/events/event-handlers.js",
           "src/tables/lithium-table-base.js",
           "src/tables/lithium-table-ui.js",
           "src/tables/visual/visual-updates.js"
@@ -11516,8 +11811,10 @@
           "src/managers/crimson/crimson-citations.js",
           "src/managers/version-history/version-history.js",
           "src/tables/column-manager/cm-ui.js",
+          "src/tables/events/event-handlers.js",
           "src/tables/lithium-table-base.js",
           "src/tables/lithium-table-ui.js",
+          "src/tables/visual/column-tooltips.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -11543,8 +11840,10 @@
           "src/managers/crimson/crimson-citations.js",
           "src/managers/version-history/version-history.js",
           "src/tables/column-manager/cm-ui.js",
+          "src/tables/events/event-handlers.js",
           "src/tables/lithium-table-base.js",
           "src/tables/lithium-table-ui.js",
+          "src/tables/visual/column-tooltips.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
@@ -11570,6 +11869,7 @@
           "src/managers/crimson/crimson-citations.js",
           "src/managers/version-history/version-history.js",
           "src/tables/column-manager/cm-ui.js",
+          "src/tables/events/event-handlers.js",
           "src/tables/lithium-table-base.js",
           "src/tables/lithium-table-ui.js",
           "src/tables/visual/visual-updates.js"
@@ -12310,9 +12610,9 @@
     {
       "selector": ".lithium-toolbar-popup.visible",
       "css": 1,
-      "js": 130,
+      "js": 127,
       "html": 61,
-      "total": 192,
+      "total": 189,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -13393,9 +13693,9 @@
     {
       "selector": ".lithium-tour-list-popup.visible",
       "css": 1,
-      "js": 110,
+      "js": 107,
       "html": 0,
-      "total": 111,
+      "total": 108,
       "files": {
         "css": [
           "src/managers/tour/tour.css"
@@ -13589,9 +13889,9 @@
     {
       "selector": ".lithium-video-tour-caption.visible",
       "css": 1,
-      "js": 111,
+      "js": 108,
       "html": 0,
-      "total": 112,
+      "total": 109,
       "files": {
         "css": [
           "src/managers/tour/tour.css"
@@ -14309,9 +14609,9 @@
     {
       "selector": ".lithium-video-tour-language-popup.visible",
       "css": 1,
-      "js": 110,
+      "js": 107,
       "html": 0,
-      "total": 111,
+      "total": 108,
       "files": {
         "css": [
           "src/managers/tour/tour.css"
@@ -14786,9 +15086,9 @@
     {
       "selector": ".lithium-video-tour-popup.visible",
       "css": 1,
-      "js": 110,
+      "js": 107,
       "html": 0,
-      "total": 111,
+      "total": 108,
       "files": {
         "css": [
           "src/managers/tour/tour.css"
@@ -15638,9 +15938,9 @@
     {
       "selector": ".login-container.visible",
       "css": 2,
-      "js": 110,
+      "js": 107,
       "html": 1,
-      "total": 113,
+      "total": 110,
       "files": {
         "css": [
           "src/managers/login/login.css",
@@ -15718,9 +16018,9 @@
     {
       "selector": ".login-error.visible",
       "css": 2,
-      "js": 111,
+      "js": 108,
       "html": 1,
-      "total": 114,
+      "total": 111,
       "files": {
         "css": [
           "src/managers/login/login.css",
@@ -16333,9 +16633,9 @@
     {
       "selector": ".login-mockup .login-error.visible",
       "css": 1,
-      "js": 112,
+      "js": 109,
       "html": 1,
-      "total": 114,
+      "total": 111,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -16644,9 +16944,9 @@
     {
       "selector": ".login-subpanel.visible",
       "css": 1,
-      "js": 109,
+      "js": 106,
       "html": 4,
-      "total": 114,
+      "total": 111,
       "files": {
         "css": [
           "src/styles/layout.css"
@@ -16872,9 +17172,9 @@
     {
       "selector": ".logout-overlay.visible",
       "css": 1,
-      "js": 109,
+      "js": 106,
       "html": 1,
-      "total": 111,
+      "total": 108,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -17069,9 +17369,9 @@
     {
       "selector": ".logout-panel.visible",
       "css": 1,
-      "js": 109,
+      "js": 106,
       "html": 4,
-      "total": 114,
+      "total": 111,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -18760,9 +19060,9 @@
     {
       "selector": ".manager-font-popup.visible",
       "css": 1,
-      "js": 128,
+      "js": 125,
       "html": 0,
-      "total": 129,
+      "total": 126,
       "files": {
         "css": [
           "src/core/manager-ui.css"
@@ -19083,9 +19383,9 @@
     {
       "selector": ".manager-footer-export-popup.visible",
       "css": 1,
-      "js": 122,
+      "js": 119,
       "html": 0,
-      "total": 123,
+      "total": 120,
       "files": {
         "css": [
           "src/core/popup.css"
@@ -19142,9 +19442,9 @@
     {
       "selector": ".manager-footer-popup.visible",
       "css": 1,
-      "js": 117,
+      "js": 114,
       "html": 0,
-      "total": 118,
+      "total": 115,
       "files": {
         "css": [
           "src/core/manager-ui.css"
@@ -20136,9 +20436,9 @@
     {
       "selector": ".manager-ui-popup.manager-footer-popup:not(.visible)",
       "css": 1,
-      "js": 136,
+      "js": 133,
       "html": 0,
-      "total": 137,
+      "total": 134,
       "files": {
         "css": [
           "src/core/popup.css"
@@ -20192,9 +20492,9 @@
     {
       "selector": ".manager-ui-popup.manager-header-popup:not(.visible)",
       "css": 1,
-      "js": 130,
+      "js": 127,
       "html": 0,
-      "total": 131,
+      "total": 128,
       "files": {
         "css": [
           "src/core/popup.css"
@@ -20230,9 +20530,9 @@
     {
       "selector": ".manager-ui-popup.visible",
       "css": 1,
-      "js": 128,
+      "js": 125,
       "html": 0,
-      "total": 129,
+      "total": 126,
       "files": {
         "css": [
           "src/core/popup.css"
@@ -21575,9 +21875,9 @@
     {
       "selector": ".nav-popup.visible",
       "css": 1,
-      "js": 109,
+      "js": 106,
       "html": 0,
-      "total": 110,
+      "total": 107,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -21718,9 +22018,9 @@
     {
       "selector": ".offline-indicator.visible",
       "css": 1,
-      "js": 110,
+      "js": 107,
       "html": 0,
-      "total": 111,
+      "total": 108,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -25324,9 +25624,9 @@
     {
       "selector": ".sidebar-overlay.visible",
       "css": 1,
-      "js": 109,
+      "js": 106,
       "html": 1,
-      "total": 111,
+      "total": 108,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -26433,9 +26733,9 @@
     {
       "selector": ".style-font-popup.visible",
       "css": 1,
-      "js": 109,
+      "js": 106,
       "html": 0,
-      "total": 110,
+      "total": 107,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -27943,6 +28243,66 @@
       }
     },
     {
+      "selector": ".tabulator-edit-list",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/vendor-fixes.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": ".tabulator-edit-list-item",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/vendor-fixes.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": ".tabulator-edit-list-item:has(.li-lookup-item[data-align=\"center\"])",
+      "css": 1,
+      "js": 2,
+      "html": 0,
+      "total": 3,
+      "files": {
+        "css": [
+          "src/styles/vendor-fixes.css"
+        ],
+        "js": [
+          "src/tables/lithium-table.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".tabulator-edit-list-item:has(.li-lookup-item[data-align=\"right\"])",
+      "css": 1,
+      "js": 2,
+      "html": 0,
+      "total": 3,
+      "files": {
+        "css": [
+          "src/styles/vendor-fixes.css"
+        ],
+        "js": [
+          "src/tables/lithium-table.js"
+        ],
+        "html": []
+      }
+    },
+    {
       "selector": ".tabulator-full .tabulator-paginator",
       "css": 1,
       "js": 0,
@@ -28198,7 +28558,7 @@
           "src/styles/vendor-fixes.css"
         ],
         "js": [
-          "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": []
@@ -28215,7 +28575,7 @@
           "src/styles/vendor-fixes.css"
         ],
         "js": [
-          "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": []
@@ -28232,7 +28592,7 @@
           "src/styles/vendor-fixes.css"
         ],
         "js": [
-          "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": []
@@ -28279,7 +28639,7 @@
           "src/init/tabulator-simple.css"
         ],
         "js": [
-          "src/tables/lithium-table-ui.js",
+          "src/tables/events/event-handlers.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": []
@@ -28358,7 +28718,7 @@
           "src/init/tabulator-simple.css"
         ],
         "js": [
-          "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": []
@@ -28375,7 +28735,7 @@
           "src/init/tabulator-simple.css"
         ],
         "js": [
-          "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": []
@@ -28392,7 +28752,7 @@
           "src/init/tabulator-simple.css"
         ],
         "js": [
-          "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": []
@@ -28409,7 +28769,7 @@
           "src/init/tabulator-simple.css"
         ],
         "js": [
-          "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": []
@@ -28668,9 +29028,9 @@
     {
       "selector": ".terminal-overlay.visible",
       "css": 1,
-      "js": 110,
+      "js": 107,
       "html": 0,
-      "total": 111,
+      "total": 108,
       "files": {
         "css": [
           "src/managers/terminal/terminal.css"
@@ -28815,9 +29175,9 @@
     {
       "selector": ".terminal-popup.visible",
       "css": 1,
-      "js": 110,
+      "js": 107,
       "html": 0,
-      "total": 111,
+      "total": 108,
       "files": {
         "css": [
           "src/managers/terminal/terminal.css"
@@ -30293,9 +30653,9 @@
     {
       "selector": ".toast.visible",
       "css": 1,
-      "js": 137,
+      "js": 134,
       "html": 2,
-      "total": 140,
+      "total": 137,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -31666,8 +32026,8 @@
           "src/managers/login/login.css"
         ],
         "js": [
-          "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
+          "src/tables/events/event-handlers.js",
+          "src/tables/visual/column-tooltips.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": []
@@ -31684,8 +32044,8 @@
           "src/managers/login/login.css"
         ],
         "js": [
-          "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
+          "src/tables/events/event-handlers.js",
+          "src/tables/visual/column-tooltips.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": []
@@ -31703,8 +32063,8 @@
         ],
         "js": [
           "src/managers/login/login.js",
-          "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
+          "src/tables/events/event-handlers.js",
+          "src/tables/visual/column-tooltips.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": []
@@ -31722,8 +32082,8 @@
         ],
         "js": [
           "src/managers/login/login.js",
-          "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
+          "src/tables/events/event-handlers.js",
+          "src/tables/visual/column-tooltips.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": []
@@ -31740,7 +32100,7 @@
           "src/managers/login/login.css"
         ],
         "js": [
-          "src/tables/lithium-table-ui.js",
+          "src/tables/events/event-handlers.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": []
@@ -31757,8 +32117,8 @@
           "src/managers/login/login.css"
         ],
         "js": [
-          "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
+          "src/tables/events/event-handlers.js",
+          "src/tables/visual/column-tooltips.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": []
@@ -31775,8 +32135,8 @@
           "src/managers/login/login.css"
         ],
         "js": [
-          "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
+          "src/tables/events/event-handlers.js",
+          "src/tables/visual/column-tooltips.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": []
@@ -31793,8 +32153,8 @@
           "src/managers/login/login.css"
         ],
         "js": [
-          "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
+          "src/tables/events/event-handlers.js",
+          "src/tables/visual/column-tooltips.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": []
@@ -31811,7 +32171,7 @@
           "src/managers/login/login.css"
         ],
         "js": [
-          "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": []
@@ -31828,7 +32188,7 @@
           "src/managers/login/login.css"
         ],
         "js": [
-          "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": []
@@ -31845,7 +32205,7 @@
           "src/managers/login/login.css"
         ],
         "js": [
-          "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": []
@@ -31862,7 +32222,7 @@
           "src/managers/login/login.css"
         ],
         "js": [
-          "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": []
@@ -31879,7 +32239,7 @@
           "src/managers/login/login.css"
         ],
         "js": [
-          "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": []
@@ -31896,7 +32256,7 @@
           "src/managers/login/login.css"
         ],
         "js": [
-          "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": []
@@ -31913,7 +32273,7 @@
           "src/managers/login/login.css"
         ],
         "js": [
-          "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": []
@@ -31930,7 +32290,7 @@
           "src/managers/login/login.css"
         ],
         "js": [
-          "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": []
@@ -31947,7 +32307,7 @@
           "src/managers/login/login.css"
         ],
         "js": [
-          "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": []
@@ -31970,9 +32330,9 @@
     {
       "selector": "#main-layout.visible",
       "css": 1,
-      "js": 109,
+      "js": 106,
       "html": 0,
-      "total": 110,
+      "total": 107,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -32071,9 +32431,9 @@
     {
       "selector": "#profile-manager-page.visible",
       "css": 1,
-      "js": 109,
+      "js": 106,
       "html": 0,
-      "total": 110,
+      "total": 107,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -32167,9 +32527,9 @@
     {
       "selector": "#session-log-page.visible",
       "css": 1,
-      "js": 109,
+      "js": 106,
       "html": 0,
-      "total": 110,
+      "total": 107,
       "files": {
         "css": [
           "src/managers/session-log/session-log.css"
@@ -32369,8 +32729,8 @@
           "src/managers/login/login.css"
         ],
         "js": [
-          "src/tables/lithium-table-base.js",
-          "src/tables/lithium-table-ui.js",
+          "src/tables/events/event-handlers.js",
+          "src/tables/visual/column-tooltips.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": []

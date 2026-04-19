@@ -72,10 +72,10 @@ export function createPopup(cm) {
       </div>
       <div class="${cm.cssPrefix}-header-actions">
         <button type="button" class="${cm.cssPrefix}-save-btn" title="Save" disabled data-tooltip='Save row edit<br><span class="li-tip-kbd">Ctrl+Enter</span>' data-shortcut-id="editsave" data-tooltip-original='Save row edit<br><span class="li-tip-kbd">Ctrl+Enter</span>'>
-          <fa fa-floppy-disk></fa>
+          <fa fa-square-full></fa>
         </button>
         <button type="button" class="${cm.cssPrefix}-cancel-btn" title="Cancel" disabled data-tooltip='Cancel row edit<br><span class="li-tip-kbd">Esc</span>' data-shortcut-id="editcancel" data-tooltip-original='Cancel row edit<br><span class="li-tip-kbd">Esc</span>'>
-          <fa fa-ban></fa>
+          <fa fa-octagon></fa>
         </button>
         <button type="button" class="${cm.cssPrefix}-close-btn" title="Close" data-tooltip='Close and apply changes to table'>
           <fa fa-xmark></fa>

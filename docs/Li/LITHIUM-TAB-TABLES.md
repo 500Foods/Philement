@@ -248,6 +248,39 @@ At ANY stage, virtually **any property** can be customized. Examples:
 { field: "amount", coltype: "progress", width: 200, visible: false }
 ```
 
+### Deep Merge for Param Objects
+
+Most properties are **replaced** (scalar/array values), but **param objects are deep-merged** across stages. This preserves coltype defaults while allowing partial overrides at each stage:
+
+```javascript
+// Stage 1 (coltype.integer defaults):
+{ field: "amount", formatter: "number", formatterParams: { thousand: ",", precision: 0 } }
+
+// Stage 2 (tableDef override - only precision changes):
+{ field: "amount", formatterParams: { precision: 2 } }
+
+// Stage 2 Result (deep merge - both properties present):
+{ field: "amount", formatter: "number", formatterParams: { thousand: ",", precision: 2 } }
+```
+
+**Properties that deep-merge:**
+- `formatterParams`
+- `editorParams`
+- `headerFilterParams`
+- `sorterParams`
+- `accessorParams`
+- `mutatorParams`
+- `bottomCalcFormatterParams`
+- `downloadFormatterParams`
+- `downloadCalcParams`
+- `clipboardParams`
+
+**Properties that replace (not merge):**
+- Scalar values: `title`, `width`, `visible`, `coltype`, `formatter`, `editor`, etc.
+- Arrays: `values`, `cssClass` (as array), etc.
+
+This behavior ensures that changing `formatterParams.precision` in Lookup 059 Key 0 will propagate through all stages, even when templates or tableDefs specify other formatterParams properties.
+
 ---
 
 ## Table Definition Structure

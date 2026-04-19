@@ -10,15 +10,52 @@
  *   2. Apply column-level overrides from the tabledef
  *   3. Apply runtime overrides (Navigator size buttons, user prefs) [future]
  *
- * @module core/lithium-table
+ * @module tables/lithium-table
  */
 
-import { log, Subsystems, Status } from '../core/log.js';
-import { getTabulatorSchemas, fetchLookups } from '../shared/lookups.js';
-import { eventBus, Events } from '../core/event-bus.js';
 import { TabulatorFull as Tabulator } from 'tabulator-tables';
 
-// ── Custom Formatters ───────────────────────────────────────────────────────
+// Import from new resolution modules
+import {
+  loadColtypes,
+  getColtypes,
+  clearColtypesCache,
+} from './resolution/coltype-loader.js';
+
+import {
+  loadTableDef,
+  createAutoDiscoverTableDef,
+  clearTableDefCache,
+  clearLookup59Cache,
+  _tableDefCache,
+} from './resolution/tabledef-loader.js';
+
+import {
+  loadLookup,
+  getLookup,
+  resolveLookupLabel,
+  createLookupFormatter,
+  createIconFormatter,
+  createLookupEditor,
+  preloadLookups,
+  clearLookupCache,
+} from './resolution/lookup-loader.js';
+
+import {
+  wrapFormatter,
+  needsBlankZeroWrapper,
+  formatBuiltinValue,
+  LITHIUM_CALCULATIONS,
+} from './resolution/formatters.js';
+
+import {
+  validateTableDef,
+  TABLEDEF_VALID_PROPS,
+  COLUMN_VALID_PROPS,
+  VALID_COLTYPES,
+} from './resolution/validator.js';
+
+// ── Custom Formatter Registration ───────────────────────────────────────────
 
 /**
  * Custom lookup formatter for lookupFixed coltype.
@@ -48,548 +85,48 @@ if (typeof Tabulator !== 'undefined' && Tabulator.registerFormatter) {
   Tabulator.registerFormatter('lookup', lookupFormatter);
 }
 
-// ── Module-level cache ──────────────────────────────────────────────────────
+// ── Re-exports ──────────────────────────────────────────────────────────────
 
-/** @type {Object|null} Cached coltypes.json data (loaded once) */
-let _coltypesCache = null;
+export {
+  // Coltype loader
+  loadColtypes,
+  getColtypes,
+  clearColtypesCache,
 
-/** @type {Map<string, Object>} Cached table definitions keyed by path */
-export const _tableDefCache = new Map();
+  // Tabledef loader
+  loadTableDef,
+  createAutoDiscoverTableDef,
+  clearTableDefCache,
+  clearLookup59Cache,
+  _tableDefCache,
 
-/** @type {Map<string, Array<{id: number, label: string}>>} Cached lookup tables */
-const _lookupCache = new Map();
+  // Lookup loader
+  loadLookup,
+  getLookup,
+  resolveLookupLabel,
+  createLookupFormatter,
+  createLookupEditor,
+  preloadLookups,
+  clearLookupCache,
 
-function parseSchemaCollection(collection) {
-  if (!collection) return null;
+  // Formatters
+  wrapFormatter,
+  needsBlankZeroWrapper,
+  formatBuiltinValue,
+  LITHIUM_CALCULATIONS,
 
-  try {
-    return typeof collection === 'string' ? JSON.parse(collection) : collection;
-  } catch {
-    return null;
-  }
-}
+  // Validator
+  validateTableDef,
+  TABLEDEF_VALID_PROPS,
+  COLUMN_VALID_PROPS,
+  VALID_COLTYPES,
 
-function buildTablePathCandidates(tablePath) {
-  const normalised = tablePath.replace(/\.json$/, '');
-  const parts = normalised.split('/');
-  const baseName = parts[parts.length - 1] || normalised;
-  const parentPath = parts.slice(0, -1).join('/');
-  const candidates = new Set([normalised, baseName]);
-
-  if (baseName.endsWith('-list')) {
-    const stripped = baseName.replace(/-list$/, '');
-    candidates.add(stripped);
-    if (parentPath) candidates.add(`${parentPath}/${stripped}`);
-  } else {
-    candidates.add(`${baseName}-list`);
-    if (parentPath) candidates.add(`${parentPath}/${baseName}-list`);
-  }
-
-  return candidates;
-}
-
-function findSchemaEntryByCandidates(schemas, tablePath) {
-  const candidates = buildTablePathCandidates(tablePath);
-  const scoredMatches = [];
-
-  for (const entry of schemas || []) {
-    const data = parseSchemaCollection(entry?.collection);
-    if (!data) continue;
-
-    const schemaTable = data.table || null;
-    const schemaPath = data._templateMeta?.tablePath || null;
-    const entryName = entry?.value_txt || null;
-
-    if (schemaPath && candidates.has(schemaPath)) {
-      return { entry, data };
-    }
-
-    if (entryName && candidates.has(entryName)) {
-      scoredMatches.push({ score: entryName === tablePath ? 3 : 2, entry, data });
-    }
-
-    if (schemaTable && candidates.has(schemaTable)) {
-      const baseName = tablePath.split('/').pop() || tablePath;
-      scoredMatches.push({ score: schemaTable === baseName ? 2 : 1, entry, data });
-    }
-  }
-
-  scoredMatches.sort((a, b) => b.score - a.score);
-  if (scoredMatches.length > 0) {
-    const { entry, data } = scoredMatches[0];
-    return { entry, data };
-  }
-
-  return { entry: null, data: null };
-}
-
-// ── Custom Calculation Functions ────────────────────────────────────────────
-
-/**
- * Custom count function that counts all non-null/non-undefined values.
- * Unlike Tabulator's built-in count, this treats 0 as a valid value to count.
- * Only excludes null and undefined (not 0 or empty string).
- */
-function lithiumCount(values, _data, _calcParams) {
-  let count = 0;
-  values.forEach((value) => {
-    // Count everything except null and undefined
-    // 0, empty string, false, etc. are all counted
-    if (value !== null && value !== undefined) {
-      count++;
-    }
-  });
-  return count;
-}
-
-/**
- * Custom unique function that counts unique non-null/non-undefined values.
- * Unlike Tabulator's built-in unique, this treats 0 as a valid value.
- * Only excludes null and undefined (not 0 or empty string).
- */
-function lithiumUnique(values, _data, _calcParams) {
-  const uniqueSet = new Set();
-  values.forEach((value) => {
-    // Include everything except null and undefined
-    if (value !== null && value !== undefined) {
-      uniqueSet.add(value);
-    }
-  });
-  return uniqueSet.size;
-}
-
-/**
- * Custom sum function that sums all numeric values.
- * Treats null/undefined as 0, includes 0 in calculations.
- */
-function lithiumSum(values, _data, _calcParams) {
-  let sum = 0;
-  values.forEach((value) => {
-    const num = parseFloat(value);
-    if (!isNaN(num)) {
-      sum += num;
-    }
-  });
-  return sum;
-}
-
-/**
- * Custom average function that averages all numeric values.
- * Treats null/undefined as 0 for sum, but excludes them from count.
- * Includes 0 in both sum and count.
- */
-function lithiumAvg(values, _data, _calcParams) {
-  let sum = 0;
-  let count = 0;
-  values.forEach((value) => {
-    const num = parseFloat(value);
-    if (!isNaN(num)) {
-      sum += num;
-      count++;
-    }
-  });
-  return count > 0 ? sum / count : 0;
-}
-
-/**
- * Custom min function that finds the minimum numeric value.
- * Excludes null/undefined/NaN, includes 0.
- */
-function lithiumMin(values, _data, _calcParams) {
-  let min = Infinity;
-  let hasValue = false;
-  values.forEach((value) => {
-    const num = parseFloat(value);
-    if (!isNaN(num)) {
-      if (!hasValue || num < min) {
-        min = num;
-        hasValue = true;
-      }
-    }
-  });
-  return hasValue ? min : null;
-}
-
-/**
- * Custom max function that finds the maximum numeric value.
- * Excludes null/undefined/NaN, includes 0.
- */
-function lithiumMax(values, _data, _calcParams) {
-  let max = -Infinity;
-  let hasValue = false;
-  values.forEach((value) => {
-    const num = parseFloat(value);
-    if (!isNaN(num)) {
-      if (!hasValue || num > max) {
-        max = num;
-        hasValue = true;
-      }
-    }
-  });
-  return hasValue ? max : null;
-}
-
-/**
- * Map of calculation names to custom functions.
- * These replace Tabulator's built-in calculations to properly handle 0 values.
- */
-const LITHIUM_CALCULATIONS = {
-  count: lithiumCount,
-  unique: lithiumUnique,
-  sum: lithiumSum,
-  avg: lithiumAvg,
-  min: lithiumMin,
-  max: lithiumMax,
+  // Column metadata
+  extractColumnMeta,
+  resolveColumnsWithMeta,
 };
 
-// ── Public API ──────────────────────────────────────────────────────────────
-
-/**
- * Load and cache coltypes.json (singleton — fetched once per session).
- *
- * Accepts an optional pre-loaded data object (e.g., from an ES module
- * import of the JSON file). When provided, the fetch is skipped entirely,
- * guaranteeing the coltypes are available regardless of whether the
- * config file is served by the production web server.
- *
- * @param {Object} [providedData] - Pre-loaded coltypes JSON (with .coltypes key)
- * @returns {Promise<Object>} The coltypes object (keyed by type name)
- */
-export async function loadColtypes(providedData) {
-  if (_coltypesCache) return _coltypesCache;
-
-  // ── Priority 1: Caller-provided data (e.g., Vite ES module import) ──
-  if (providedData) {
-    _coltypesCache = providedData.coltypes || providedData;
-    log(Subsystems.MANAGER, Status.INFO,
-      `[LithiumTable] Loaded ${Object.keys(_coltypesCache).length} coltypes (from import)`);
-    return _coltypesCache;
-  }
-
-  // ── Priority 2: Lookup cache (from database via QueryRef 060) ──────
-  // If lookups aren't loaded yet, trigger the fetch and wait for it
-  let schemas = getTabulatorSchemas();
-  if (!schemas) {
-    log(Subsystems.MANAGER, Status.INFO,
-      '[LithiumTable] Tabulator schemas not in cache, triggering lookup fetch...');
-    await fetchLookups();
-    schemas = getTabulatorSchemas();
-  }
-
-  if (schemas) {
-    const coltypesEntry = schemas.find(s => s.key_idx === 0);
-    if (coltypesEntry?.collection) {
-      try {
-        const data = typeof coltypesEntry.collection === 'string'
-          ? JSON.parse(coltypesEntry.collection)
-          : coltypesEntry.collection;
-        _coltypesCache = data.coltypes || data;
-        log(Subsystems.MANAGER, Status.INFO,
-          `[LithiumTable] Loaded ${Object.keys(_coltypesCache).length} coltypes (from lookup)`);
-        return _coltypesCache;
-      } catch (err) {
-        log(Subsystems.MANAGER, Status.ERROR,
-          `[LithiumTable] Failed to parse coltypes from lookup: ${err.message}`);
-      }
-    }
-  }
-
-  log(Subsystems.MANAGER, Status.ERROR,
-    '[LithiumTable] Failed to load coltypes from lookups');
-  return {};
-}
-
-/**
- * Load and cache a table definition JSON file.
- *
- * Accepts an optional pre-loaded data object (e.g., from an ES module
- * import). When provided, the fetch is skipped entirely.
- *
- * For Lookup 59 (Tabulator Schemas from QueryRef 060), the data always comes
- * from the lookup cache which is refreshed on app startup. We skip the
- * _tableDefCache for these dynamic schemas to ensure changes in Lookup 59
- * are reflected without requiring a page reload.
- *
- * @param {string} tablePath - Relative path under config/tabulator/
- *   e.g. 'queries/query-manager' (no .json extension needed)
- * @param {Object} [providedData] - Pre-loaded tabledef JSON object
- * @param {number} [lookupKeyIdx] - Optional direct Lookup 59 key_idx.
- *   When provided, this takes precedence over the tablePath mapping.
- *   Use this for unambiguous schema loading from Lookup 59.
- * @returns {Promise<Object>} The parsed table definition
- */
-export async function loadTableDef(tablePath, providedData, lookupKeyIdx) {
-  // Normalise path: strip trailing .json if present
-  const normalised = tablePath.replace(/\.json$/, '');
-
-  // ── Priority 1: Caller-provided data (e.g., Vite ES module import) ──
-  if (providedData) {
-    _tableDefCache.set(normalised, providedData);
-    log(Subsystems.MANAGER, Status.INFO,
-      `[LithiumTable] Loaded tabledef "${providedData.title || normalised}" ` +
-      `(${Object.keys(providedData.columns || {}).length} columns, from import)`);
-    return providedData;
-  }
-
-  // ── Priority 2: Direct lookupKeyIdx (overrides path mapping) ───────────
-  // When lookupKeyIdx is provided directly, use it without ambiguity
-  const keyIdx = lookupKeyIdx ?? null;
-  const isLookup59Schema = lookupKeyIdx != null;
-
-  // ── Priority 3: Lookup cache (from database via QueryRef 060) ────────
-  // Map table paths to lookup key_idx values (Lookup 059 - Tabulator Schemas)
-  // Only used when lookupKeyIdx is not provided
-  if (!isLookup59Schema) {
-    const tableToKeyIdx = {
-      'column-manager': 2,             // acuranzo_1179
-      'column-manager-manager': 3,      // acuranzo_1180
-      'user-profile-sections': 4,          // acuranzo_1181
-      'queries/query-manager': 5,        // acuranzo_1182
-      'lookups/lookups-list': 6,      // acuranzo_1183 (legacy path)
-      'lookups-manager-list': 6,       // acuranzo_1183
-      'lookups/lookup-values': 7,     // acuranzo_1184 (legacy path)
-      'lookups-manager-values': 7,    // acuranzo_1184
-      'style-manager-list': 8,        // acuranzo_1185
-      'style-manager-sections': 9,     // acuranzo_1186
-      'version-manager': 10,          // acuranzo_1187
-    };
-    const mappedKeyIdx = tableToKeyIdx[normalised];
-    if (mappedKeyIdx != null) {
-      return loadTableDef(tablePath, null, mappedKeyIdx);
-    }
-  }
-
-  // For static schemas (non-Lookup 59), check the cache first
-  if (!isLookup59Schema && _tableDefCache.has(normalised)) {
-    return _tableDefCache.get(normalised);
-  }
-
-  // If lookups aren't loaded yet, trigger the fetch and wait for it
-  let schemas = getTabulatorSchemas();
-  if (!schemas) {
-    log(Subsystems.MANAGER, Status.INFO,
-      '[LithiumTable] Tabulator schemas not in cache, triggering lookup fetch...');
-    await fetchLookups();
-    schemas = getTabulatorSchemas();
-  }
-
-  // If a direct key_idx was requested but schemas still not available,
-  // this may be the first time we're trying to load them. Try force-refresh.
-  if (!schemas && keyIdx != null) {
-    log(Subsystems.MANAGER, Status.INFO,
-      `[LithiumTable] Schemas not loaded yet, force-fetching for key_idx ${keyIdx}...`);
-    await fetchLookups({ force: true, silent: false });
-    schemas = getTabulatorSchemas();
-  }
-
-  if (schemas) {
-    let matchedEntry = null;
-    let matchedData = null;
-
-    if (keyIdx != null) {
-      const keyedEntry = schemas.find(s => String(s.key_idx) === String(keyIdx));
-      if (!keyedEntry) {
-        log(Subsystems.MANAGER, Status.WARN,
-          `[LithiumTable] Lookup 59 key_idx ${keyIdx} not found, using auto-discovery`);
-        return createAutoDiscoverTableDef(normalised);
-      }
-      const keyedData = parseSchemaCollection(keyedEntry?.collection);
-      if (!keyedData) {
-        log(Subsystems.MANAGER, Status.WARN,
-          `[LithiumTable] Lookup 59 key_idx ${keyIdx} has invalid/empty JSON, using auto-discovery`);
-        return createAutoDiscoverTableDef(normalised);
-      }
-      if (keyedEntry && keyedData) {
-        matchedEntry = keyedEntry;
-        matchedData = keyedData;
-      }
-    }
-
-    if (!matchedData) {
-      const fallbackMatch = findSchemaEntryByCandidates(schemas, normalised);
-      matchedEntry = fallbackMatch.entry;
-      matchedData = fallbackMatch.data;
-    }
-
-    if (matchedEntry && matchedData) {
-      // Only cache static schemas. Lookup 59 schemas are dynamic and should
-      // be fetched fresh each time to reflect any changes made in the database.
-      if (!isLookup59Schema) {
-        _tableDefCache.set(normalised, matchedData);
-      }
-      log(Subsystems.MANAGER, Status.INFO,
-        `[LithiumTable] Loaded tabledef "${matchedData.title || normalised}" ` +
-        `(${Object.keys(matchedData.columns || {}).length} columns, from lookup key ${matchedEntry.key_idx})`);
-      return matchedData;
-    }
-  }
-
-  log(Subsystems.MANAGER, Status.WARN,
-    `[LithiumTable] No tabledef found for "${normalised}", using auto-discovery`);
-  return createAutoDiscoverTableDef(normalised);
-}
-
-/**
- * Create an auto-discover table definition from data.
- * This is used when Lookup 59 doesn't have a schema or has invalid JSON.
- * The table will discover columns at runtime from the loaded data.
- *
- * @param {string} tablePath - The table path (used for title)
- * @returns {Object} A table definition with discoverable columns
- */
-function createAutoDiscoverTableDef(tablePath) {
-  const title = tablePath.split('/').pop() || 'Table';
-  return {
-    title: title,
-    readonly: false,
-    layout: 'fitColumns',
-    responsiveLayout: false,
-    _autoDiscover: true,  // Flag to indicate columns should be discovered
-    columns: {},  // Empty columns - will be discovered from data
-  };
-}
-
-/**
- * Load a lookup table by reference (e.g., "a27").
- * The lookup data is fetched from the Hydrogen API using QueryRef 34.
- *
- * @param {string} lookupRef - Lookup table reference (e.g., "a27")
- * @param {Function} authQueryFn - The authQuery function from conduit.js (must be provided)
- * @param {Object} api - The Conduit API instance (must be provided)
- * @returns {Promise<Array<{id: number, label: string}>>} Array of {id, label} objects
- */
-export async function loadLookup(lookupRef, authQueryFn, api) {
-  if (!authQueryFn || !api) {
-    log(Subsystems.MANAGER, Status.WARN,
-      `[LithiumTable] Cannot load lookup "${lookupRef}": authQuery function and API instance required`);
-    return [];
-  }
-
-  if (_lookupCache.has(lookupRef)) {
-    return _lookupCache.get(lookupRef);
-  }
-
-  try {
-    // Parse numeric lookup ID from reference (e.g., "a27" -> 27, "g42" -> 42)
-    // Supports optional alphabetic prefix (a=Acuranzo, g=Gaius, etc.)
-    const match = lookupRef.match(/^[a-z]?(\d+)$/i);
-    if (!match) {
-      log(Subsystems.MANAGER, Status.ERROR,
-        `[LithiumTable] Invalid lookup reference format: "${lookupRef}"`);
-      return [];
-    }
-    const lookupId = parseInt(match[1], 10);
-
-    // QueryRef 34: Get Lookup List - takes LOOKUPID as INTEGER parameter
-    const rows = await authQueryFn(api, 34, {
-      INTEGER: { LOOKUPID: lookupId },
-    });
-
-    // Transform API response to {id, label} format
-    // QueryRef 34 returns: lookup_id, key_idx, value_txt, value_int, sort_seq, etc.
-    // We map key_idx → id (the lookup entry ID) and value_txt → label (display text)
-    const lookupData = rows.map(row => ({
-      id: row.key_idx ?? row.lookup_id ?? row.id ?? row.value,
-      label: row.value_txt ?? row.lookup_label ?? row.label ?? row.name ?? String(row.key_idx ?? row.lookup_id ?? row.id ?? row.value),
-    }));
-
-    _lookupCache.set(lookupRef, lookupData);
-    log(Subsystems.MANAGER, Status.INFO,
-      `[LithiumTable] Loaded lookup "${lookupRef}" (${lookupData.length} entries)`);
-    return lookupData;
-  } catch (err) {
-    log(Subsystems.MANAGER, Status.ERROR,
-      `[LithiumTable] Failed to load lookup "${lookupRef}": ${err.message}`);
-    return [];
-  }
-}
-
-/**
- * Get cached lookup data by reference.
- *
- * @param {string} lookupRef - Lookup table reference
- * @returns {Array<{id: number, label: string}>|undefined}
- */
-export function getLookup(lookupRef) {
-  return _lookupCache.get(lookupRef);
-}
-
-/**
- * Resolve a lookup ID to its label.
- *
- * @param {number} id - The lookup ID to resolve
- * @param {string} lookupRef - Lookup table reference
- * @returns {string} The label, or the original ID if not found
- */
-export function resolveLookupLabel(id, lookupRef) {
-  if (id == null) return '';
-  const lookupData = _lookupCache.get(lookupRef);
-  if (!lookupData) return String(id);
-  const entry = lookupData.find(item => item.id == id);
-  return entry ? entry.label : String(id);
-}
-
-/**
- * Create a lookup formatter function for a specific lookup table.
- *
- * @param {string} lookupRef - Lookup table reference (e.g., "a27")
- * @returns {Function} A Tabulator formatter function
- */
-export function createLookupFormatter(lookupRef) {
-  return function(cell, _onRendered) {
-    const value = cell.getValue();
-    if (value == null || value === '') return '';
-    return resolveLookupLabel(value, lookupRef);
-  };
-}
-
-/**
- * Create a lookup editor (list) for a specific lookup table.
- *
- * @param {string} lookupRef - Lookup table reference (e.g., "a27")
- * @param {Array<{id: number, label: string}>} lookupData - Pre-loaded lookup data
- * @returns {Object} Tabulator editor configuration
- */
-export function createLookupEditor(lookupRef, lookupData) {
-  if (!lookupData || lookupData.length === 0) {
-    return 'input'; // Fallback to plain input if no lookup data
-  }
-
-  // Convert to Tabulator list format: "label" for display, true/false for preselect
-  const values = lookupData.map(entry => entry.label);
-
-  return {
-    editor: 'list',
-    editorParams: {
-      values: values,
-      autocomplete: true,
-      listOnEmpty: true,
-      freetext: false,
-      allowEmpty: true,
-    },
-    // Custom formatter to show label instead of raw value
-    formatter: createLookupFormatter(lookupRef),
-  };
-}
-
-/**
- * Pre-load multiple lookups at once.
- *
- * @param {Array<string>} lookupRefs - Array of lookup references
- * @param {Function} authQueryFn - The authQuery function from conduit.js
- * @param {Object} api - The Conduit API instance
- * @returns {Promise<Map<string, Array>>} Map of lookupRef -> data
- */
-export async function preloadLookups(lookupRefs, authQueryFn, api) {
-  const results = new Map();
-  await Promise.all(
-    lookupRefs.map(async (ref) => {
-      const data = await loadLookup(ref, authQueryFn, api);
-      results.set(ref, data);
-    })
-  );
-  return results;
-}
+// ── Column Resolution ───────────────────────────────────────────────────────
 
 /**
  * Resolve a single column definition by merging coltype defaults with
@@ -616,7 +153,7 @@ export function resolveColumn(fieldName, colDef, coltypes, options = {}) {
 
   // Extract Lithium-specific metadata (not passed to Tabulator)
   const lithiumMeta = {
-    title: colDef.title || colDef.display,
+    title: colDef.title,
     field: colDef.field,
     coltype: colDef.coltype,
     visible: colDef.visible,
@@ -653,20 +190,12 @@ export function resolveColumn(fieldName, colDef, coltypes, options = {}) {
 
   // Build Tabulator column definition
   const tabulatorCol = {
-    title: colDef.title || colDef.display,
+    title: colDef.title,
     field: colDef.field,
     visible: colDef.visible !== false,
 
-    // Store Lithium metadata for template export and runtime re-application
-    coltype: colDef.coltype || 'string',
-    lithiumColtype: colDef.coltype || 'string',
-    editable: colDef.editable === true,
-    lithiumEditable: colDef.editable === true,
-    lithiumSort: colDef.sort !== false,
-    lithiumFilter: colDef.filter !== false,
-    lithiumCalculated: colDef.calculated === true,
-    lithiumPrimaryKey: colDef.primaryKey === true,
-    lithiumDescription: colDef.description || `${colDef.title || colDef.display || colDef.field} column`,
+    // Store only Tabulator-compatible properties
+    // Lithium metadata is stored separately in LithiumTable._columnMeta
     columnPri: colDef.columnPri,
 
     // Alignment
@@ -679,6 +208,11 @@ export function resolveColumn(fieldName, colDef, coltypes, options = {}) {
     sorter: merged.sorter || undefined,
   };
 
+  // Include primaryKey marker when set (used by row ID functions)
+  if (colDef.primaryKey === true) {
+    tabulatorCol.primaryKey = true;
+  }
+
   // Sorter params (e.g. date format)
   if (merged.sorterParams) {
     tabulatorCol.sorterParams = merged.sorterParams;
@@ -686,9 +220,15 @@ export function resolveColumn(fieldName, colDef, coltypes, options = {}) {
 
   // Formatter — lookup columns use the cached lookup formatter;
   // all other columns wrap with blank/zero handler.
-  if (colDef.lookupRef && _lookupCache.has(colDef.lookupRef)) {
-    // Lookup formatter resolves integer IDs → human-readable labels
-    tabulatorCol.formatter = createLookupFormatter(colDef.lookupRef);
+  if (colDef.lookupRef && getLookup(colDef.lookupRef)) {
+    const lookupData = getLookup(colDef.lookupRef);
+    // lookupStyle: 'icon' shows icon only; default 'label' shows text
+    if (colDef.lookupStyle === 'icon') {
+      tabulatorCol.formatter = createIconFormatter(lookupData);
+    } else {
+      // Default: lookup formatter resolves integer IDs → human-readable labels
+      tabulatorCol.formatter = createLookupFormatter(colDef.lookupRef);
+    }
   } else if (merged.formatter) {
     tabulatorCol.formatter = wrapFormatter(
       merged.formatter,
@@ -703,15 +243,60 @@ export function resolveColumn(fieldName, colDef, coltypes, options = {}) {
 
   // Editor — lookup columns get a list editor from cached data;
   // other editable columns get the coltype editor.
-  if (isEditable && colDef.lookupRef && _lookupCache.has(colDef.lookupRef)) {
-    const lookupData = _lookupCache.get(colDef.lookupRef);
+  if (isEditable && colDef.lookupRef && getLookup(colDef.lookupRef)) {
+    const lookupData = getLookup(colDef.lookupRef);
     const lookupEditorConfig = createLookupEditor(colDef.lookupRef, lookupData);
     if (typeof lookupEditorConfig === 'object') {
       tabulatorCol.editor = lookupEditorConfig.editor;
       tabulatorCol.editorParams = lookupEditorConfig.editorParams;
+
+      // lookupEdit controls dropdown display: 'icon', 'iconLabel', or 'label' (default)
+      const lookupEdit = colDef.lookupEdit || (colDef.lookupStyle === 'icon' ? 'icon' : 'label');
+      if (lookupEdit !== 'label') {
+        // Get hozAlign for dropdown item alignment
+        // Only copy column's hozAlign when lookupEdit is 'icon'; otherwise default to 'left'
+        const hozAlign = lookupEdit === 'icon'
+          ? (colDef.hozAlign || tabulatorCol.hozAlign || 'left')
+          : 'left';
+
+        tabulatorCol.editorParams.itemFormatter = function(label, value, _item, _element) {
+          const entry = lookupData.find(e => e.id == value);
+          if (!entry) return label;
+
+          switch (lookupEdit) {
+            case 'icon':
+              return `<div class="li-lookup-list-item" data-align="${hozAlign}">${entry.icon || '<span class="li-lookup-no-icon"></span>'}</div>`;
+            case 'iconLabel': {
+              const iconHtml = entry.icon ? entry.icon : '';
+              // Wrap icon and label in separate spans to isolate FontAwesome mutations
+              return `<div class="li-lookup-item" data-align="${hozAlign}"><span class="li-lookup-edit-icon">${iconHtml}</span><span class="li-lookup-edit-label">${entry.label}</span></div>`;
+            }
+            case 'iconText': {
+              const iconHtml = entry.icon ? entry.icon : '';
+              return `<div class="li-lookup-item" data-align="${hozAlign}"><span class="li-lookup-edit-icon">${iconHtml}</span><span class="li-lookup-edit-label">${entry.label}</span></div>`;
+            }
+            default:
+              return `<div class="li-lookup-list-item" data-align="${hozAlign}">${entry.label}</div>`;
+          }
+        };
+      }
     } else {
-      tabulatorCol.editor = lookupEditorConfig; // 'input' fallback
+      tabulatorCol.editor = lookupEditorConfig; // 'number' fallback
     }
+    // Ensure lookup values are always stored as integers
+    tabulatorCol.mutator = function(value) {
+      if (value === null || value === undefined || value === '') {
+        return 0;
+      }
+      // If it's the label string, look up the ID
+      if (typeof value === 'string') {
+        const entry = lookupData.find(e => e.label === value);
+        if (entry) {
+          return entry.id;
+        }
+      }
+      return parseInt(value, 10) || 0;
+    };
   } else if (isEditable && normalizedEditor && normalizedEditor !== false) {
     tabulatorCol.editor = normalizedEditor;
     if (normalizedEditorParams && Object.keys(normalizedEditorParams).length > 0) {
@@ -835,6 +420,59 @@ export function resolveColumns(tableDef, coltypes, options = {}) {
 }
 
 /**
+ * Extract Lithium-only metadata from a column definition.
+ * This metadata is stored separately from Tabulator columns to avoid console warnings.
+ *
+ * @param {Object} colDef - Column definition from tableDef
+ * @returns {Object} Lithium metadata object
+ */
+function extractColumnMeta(colDef) {
+  return {
+    coltype: colDef.coltype || 'string',
+    editable: colDef.editable === true,
+    sort: colDef.sort !== false,
+    filter: colDef.filter !== false,
+    calculated: colDef.calculated === true,
+    primaryKey: colDef.primaryKey === true,
+    description: colDef.description || `${colDef.title || colDef.field} column`,
+    lookupRef: colDef.lookupRef || null,
+    lookupStyle: colDef.lookupStyle || null,
+    lookupEdit: colDef.lookupEdit || null,
+    columnPri: colDef.columnPri ?? null,
+  };
+}
+
+/**
+ * Resolve columns and extract Lithium metadata in one pass.
+ * Returns both Tabulator-compatible columns and a Map of field -> metadata.
+ *
+ * @param {Object}  tableDef   - Parsed table definition
+ * @param {Object}  coltypes   - Parsed coltypes map
+ * @param {Object}  [options]  - Runtime options passed to resolveColumn
+ * @returns {{ columns: Array<Object>, columnMeta: Map<string, Object> }}
+ */
+function resolveColumnsWithMeta(tableDef, coltypes, options = {}) {
+  if (!tableDef?.columns) {
+    return { columns: [], columnMeta: new Map() };
+  }
+
+  const resolvedOptions = {
+    ...options,
+    tableReadonly: tableDef.readonly === true,
+  };
+
+  const columns = [];
+  const columnMeta = new Map();
+
+  for (const [fieldName, colDef] of Object.entries(tableDef.columns)) {
+    columns.push(resolveColumn(fieldName, colDef, coltypes, resolvedOptions));
+    columnMeta.set(colDef.field, extractColumnMeta(colDef));
+  }
+
+  return { columns, columnMeta };
+}
+
+/**
  * Map table-level properties from a tabledef to Tabulator constructor options.
  *
  * @param {Object} tableDef - Parsed table definition
@@ -939,307 +577,12 @@ export function getQueryRefs(tableDef) {
   };
 }
 
-// ── Formatter Wrapper ───────────────────────────────────────────────────────
-
-/**
- * Format a value using the logic of a built-in Tabulator formatter.
- *
- * When wrapFormatter() wraps a built-in formatter (string name like "number"),
- * it can't delegate to Tabulator's internal formatter for non-blank/non-zero
- * values — Tabulator sees a function and uses its return value directly.
- * This utility replicates the formatting for common built-in formatters so
- * the wrapper produces identical output.
- *
- * Supported: "number", "money", "plaintext", "lookup".
- * Unsupported formatters fall through and return the raw value.
- *
- * @param {*}      value         - The cell value to format
- * @param {string} formatterName - Built-in Tabulator formatter name
- * @param {Object} params        - formatterParams for the formatter
- * @returns {string|*} Formatted display value
- */
-export function formatBuiltinValue(value, formatterName, params) {
-  switch (formatterName) {
-    case 'number': {
-      if (value == null || value === '') return '';
-      const num = Number(value);
-      if (isNaN(num)) return String(value);
-
-      const precision = params?.precision ?? 0;
-      let formatted = num.toFixed(precision);
-
-      // Thousands separator - check for !== undefined (empty string "" disables separator)
-      if (params?.thousand !== undefined) {
-        const parts = formatted.split('.');
-        if (params.thousand) {
-          parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, params.thousand);
-        }
-        formatted = parts.join('.');
-      }
-
-      // Decimal character override
-      if (params?.decimal && formatted.includes('.')) {
-        formatted = formatted.replace('.', params.decimal);
-      }
-
-      // Prefix / suffix
-      if (params?.prefix) formatted = params.prefix + formatted;
-      if (params?.suffix) formatted = formatted + params.suffix;
-
-      return formatted;
-    }
-
-    case 'money': {
-      if (value == null || value === '') return '';
-      const num = Number(value);
-      if (isNaN(num)) return String(value);
-
-      const precision = params?.precision ?? 2;
-      let formatted = num.toFixed(precision);
-
-      // Thousands separator - check for !== undefined (empty string "" disables separator)
-      if (params?.thousand !== undefined) {
-        const parts = formatted.split('.');
-        if (params.thousand) {
-          parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, params.thousand);
-        }
-        formatted = parts.join(params?.decimal || '.');
-      } else if (params?.decimal && formatted.includes('.')) {
-        formatted = formatted.replace('.', params.decimal);
-      }
-
-      // Currency symbol
-      if (params?.symbol) {
-        formatted = params.symbolAfter
-          ? formatted + params.symbol
-          : params.symbol + formatted;
-      }
-
-      return formatted;
-    }
-
-    case 'plaintext':
-      return value != null ? String(value) : '';
-
-    case 'html':
-    case 'lookup': {
-      if (value == null || value === '') return '';
-      const lookup = params?.lookup || {};
-      return lookup[value] !== undefined ? lookup[value] : String(value);
-    }
-
-    default:
-      // For formatters we don't replicate (datetime, tickCross, link, etc.),
-      // return the raw value. The built-in formatting won't apply when wrapped,
-      // but this is an acceptable fallback — the value is still displayed.
-      return value;
-  }
-}
-
-/**
- * Wrap a Tabulator formatter to intercept blank and zero values.
- *
- * - If the cell value is null, undefined, or "" → return blankValue
- * - If the cell value is 0 and zeroValue differs from null → return zeroValue
- * - Otherwise → delegate to the original formatter
- *
- * For built-in formatters (string names like "number"), the wrapper
- * replicates the formatting via formatBuiltinValue() so that thousand
- * separators, precision, currency symbols, etc. are preserved.
- *
- * @param {string|Function} formatter     - Tabulator formatter name or function
- * @param {Object}          formatterParams - Params for the formatter
- * @param {*}               blankValue    - What to show for blank values
- * @param {*}               zeroValue     - What to show for zero (null = show '0')
- * @returns {string|Function} The original formatter (when no wrapping needed)
- *                            or a Tabulator formatter function
- */
-export function wrapFormatter(formatter, formatterParams, blankValue, zeroValue) {
-  // If no special handling needed, return the original formatter as-is
-  if (!needsBlankZeroWrapper(blankValue, zeroValue)) {
-    return formatter;
-  }
-
-  // Don't wrap 'html' formatter - let Tabulator render it as HTML
-  if (formatter === 'html') {
-    return 'html';
-  }
-
-  // Return a wrapper function that handles blank/zero before delegating
-  return function(cell, onRendered) {
-    const value = cell.getValue();
-
-    // Handle blank (null, undefined, empty string)
-    if (value === null || value === undefined || value === '') {
-      if (blankValue != null) return blankValue;
-      if (blankValue === '') return '';
-    }
-
-    // Handle zero
-    if (value === 0 && zeroValue !== null && zeroValue !== undefined) {
-      return zeroValue;
-    }
-
-    // For built-in formatters (string name), replicate their formatting
-    // so the wrapper produces the same output (thousand seps, precision, etc.)
-    if (typeof formatter === 'string') {
-      return formatBuiltinValue(value, formatter, formatterParams);
-    }
-
-    // For custom formatter functions, call them directly
-    if (typeof formatter === 'function') {
-      return formatter(cell, formatterParams, onRendered);
-    }
-
-    // Fallback: return raw value
-    return value;
-  };
-}
-
-/**
- * Check if a column needs the blank/zero wrapper at all.
- * If blank is null and zero is null, no wrapper needed.
- *
- * @param {*} blankValue - coltype/override blank value
- * @param {*} zeroValue  - coltype/override zero value
- * @returns {boolean}
- */
-export function needsBlankZeroWrapper(blankValue, zeroValue) {
-  // blank="" means "show nothing for blanks" — that's active
-  // blank=null means "no special handling" — inactive
-  // zero="" means "show nothing for zeros" — active
-  // zero=null means "no special handling (show 0)" — inactive
-  return blankValue !== null || zeroValue !== null;
-}
-
-// ── Cache Management ────────────────────────────────────────────────────────
-
 /**
  * Clear all cached configuration data.
  * Useful for testing or when configs change at runtime.
  */
 export function clearCache() {
-  _coltypesCache = null;
-  _tableDefCache.clear();
-  _lookupCache.clear();
+  clearColtypesCache();
+  clearTableDefCache();
+  clearLookupCache();
 }
-
-/**
- * Clear cached table definitions that come from Lookup 59 (Tabulator Schemas).
- * This should be called when Lookup 59 data is refreshed to ensure
- * table definitions are re-fetched from the updated lookup data.
- */
-export function clearLookup59Cache() {
-  const lookup59Paths = [
-    'queries/query-manager',
-    'lookups/lookups-list',
-    'lookups/lookup-values',
-    'lookups-manager-list',
-    'lookups-manager-values',
-    'style-manager/lookup-41',
-    'version-manager/version-history',
-    'profile-manager/user-options',
-    'column-manager',
-  ];
-
-  let clearedCount = 0;
-  lookup59Paths.forEach((path) => {
-    if (_tableDefCache.has(path)) {
-      _tableDefCache.delete(path);
-      clearedCount++;
-    }
-  });
-
-  log(Subsystems.MANAGER, Status.DEBUG,
-    `[LithiumTable] Cleared ${clearedCount} Lookup 59 table definition(s) from cache`);
-}
-
-const TABLEDEF_VALID_PROPS = new Set([
-  'title', 'table', 'columns', 'queryRef', 'layout', 'responsiveLayout',
-  'groupBy', 'groupStartOpen', 'groupToggleElement', 'columnCalcs',
-  'pagination', 'paginationSize', 'persistSort', 'persistFilter',
-  'movableRows', 'movableColumns', 'resizableColumns',
-  'readonly', '_autoDiscover', '_templateMeta',
-]);
-
-const COLUMN_VALID_PROPS = new Set([
-  'field', 'display', 'title', 'coltype', 'description', 'visible',
-  'width', 'minWidth', 'maxWidth', 'hozAlign', 'vertAlign',
-  'formatter', 'formatterParams', 'editor', 'editorParams',
-  'sorter', 'sorterParams', 'headerSort', 'headerFilter', 'headerFilterFunc',
-  'headerFilterPlaceholder', 'headerFilterParams', 'headerVisible',
-  'headerHozAlign', 'headerVertical', 'headerSortTristate',
-  'resizable', 'frozen', 'clipboard', 'cssClass', 'rowCssClass',
-  'vertHandle', 'hozHandle', 'contextMenu', 'tapComprehensive',
-  'tooltip', 'tooltipHeader', 'bottomCalc', 'bottomCalcParams',
-  'bottomCalcFormatter', 'bottomCalcFormatterParams',
-  'columnPri', 'primaryKey', 'calculated', 'sort', 'filter', 'group', 'editable',
-  'display', 'lookupRef', 'lookupFixed', 'blank', 'zero',
-]);
-
-const VALID_COLTYPES = new Set([
-  'default', 'string', 'text', 'integer', 'index', 'decimal',
-  'boolean', 'date', 'datetime', 'time', 'currency', 'percent',
-  'progress', 'email', 'url', 'lookup', 'lookupIcon',
-  'lookupIconText', 'lookupIconList', 'enum', 'html',
-  'image', 'color', 'star', 'rownum', 'json',
-]);
-
-export function validateTableDef(tableDef, stageName = 'unknown') {
-  if (!tableDef) {
-    return { valid: true, errors: [] };
-  }
-
-  const errors = [];
-
-  if (typeof tableDef !== 'object') {
-    errors.push(`Stage ${stageName}: tableDef must be an object`);
-    return { valid: false, errors };
-  }
-
-  const tableProps = Object.keys(tableDef);
-  for (const prop of tableProps) {
-    if (!TABLEDEF_VALID_PROPS.has(prop) && !prop.startsWith('_')) {
-      errors.push(`Stage ${stageName}: Unknown table property "${prop}"`);
-    }
-  }
-
-  const columns = tableDef.columns;
-  if (columns && typeof columns === 'object') {
-    for (const [field, colDef] of Object.entries(columns)) {
-      if (!colDef || typeof colDef !== 'object') {
-        errors.push(`Stage ${stageName}: Column "${field}" must be an object`);
-        continue;
-      }
-
-      const colProps = Object.keys(colDef);
-      for (const prop of colProps) {
-        if (!COLUMN_VALID_PROPS.has(prop) && !prop.startsWith('_')) {
-          errors.push(`Stage ${stageName}: Column "${field}" has unknown property "${prop}"`);
-        }
-      }
-
-      if (colDef.coltype && !VALID_COLTYPES.has(colDef.coltype)) {
-        errors.push(`Stage ${stageName}: Column "${field}" has invalid coltype "${colDef.coltype}"`);
-      }
-    }
-  }
-
-  return { valid: errors.length === 0, errors };
-}
-
-// ── Event Listeners ─────────────────────────────────────────────────────────
-
-// Clear Lookup 59 table definition cache when lookups are refreshed from server.
-// This ensures table schemas from Lookup 059 (Tabulator Schemas) are re-fetched
-// and reflect any changes made to the lookup data.
-eventBus.on(Events.LOOKUPS_LOADED, (e) => {
-  if (e?.detail?.source === 'server' || e?.detail?.source === 'cache_fallback') {
-    clearLookup59Cache();
-  }
-});
-
-// Also clear cache when a specific lookup category is refreshed (e.g., tabulator_schemas)
-eventBus.on(Events.LOOKUPS_REFRESHED, () => {
-  clearLookup59Cache();
-});

@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS custom properties (variables) used across the Lithium codebase",
-    "generated": "2026-04-17T19:18:02.491Z",
+    "generated": "2026-04-19T04:03:43.030Z",
     "sources": {
       "css": "51 files in src/**/*.css",
-      "js": "104 files in src/**/*.js",
+      "js": "120 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
     "total_variables": 220,
-    "total_occurrences": 3429
+    "total_occurrences": 3430
   },
   "variables": [
     {
@@ -307,10 +307,10 @@
     },
     {
       "name": "--border-radius-md",
-      "css": 133,
+      "css": 134,
       "js": 0,
       "html": 0,
-      "total": 133
+      "total": 134
     },
     {
       "name": "--border-radius-sm",
@@ -846,10 +846,10 @@
     },
     {
       "name": "--space-3",
-      "css": 195,
+      "css": 196,
       "js": 2,
       "html": 0,
-      "total": 197
+      "total": 198
     },
     {
       "name": "--space-4",
@@ -994,9 +994,9 @@
     {
       "name": "--table-width-",
       "css": 0,
-      "js": 2,
+      "js": 1,
       "html": 0,
-      "total": 2
+      "total": 1
     },
     {
       "name": "--table-width-compact",

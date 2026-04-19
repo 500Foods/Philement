@@ -278,6 +278,48 @@ async applyAllChangesToParent() {
 }
 ```
 
+### Property Structure (Phase 5)
+
+**Flattened Properties (No Overrides Wrapper)**
+
+Column properties are stored directly on the column definition without an `overrides` wrapper:
+
+```javascript
+// Before (deprecated)
+{
+  "name": {
+    "title": "Name",
+    "coltype": "string",
+    "overrides": {
+      "hozAlign": "center",
+      "bottomCalc": "count"
+    }
+  }
+}
+
+// After (Phase 5)
+{
+  "name": {
+    "title": "Name",
+    "coltype": "string",
+    "hozAlign": "center",
+    "bottomCalc": "count"
+  }
+}
+```
+
+The `overrides` pattern has been completely removed. All properties are now flattened for easier reading, editing, and round-tripping.
+
+**Lithium Metadata Storage**
+
+Lithium-specific metadata (`coltype`, `editable`, `primaryKey`, `calculated`, `description`, `lookupRef`) is now stored separately from Tabulator column definitions to avoid Tabulator console warnings about unknown properties:
+
+- **Location**: `LithiumTable._columnMeta` — a Map of `field -> metadata`
+- **Access**: The Column Manager reads from `parentTable._columnMeta.get(field)` to get Lithium-specific properties
+- **Benefits**: Clean separation of concerns; no console warnings; easier to extend with additional metadata
+
+When extracting column data, the Column Manager uses the canonical extractor from `template/capture.js`, which consults `_columnMeta` for Lithium-specific values.
+
 ### Parent Table Update Process
 
 The Column Manager no longer mutates parent columns through ad hoc remove/add logic. It routes changes through the shared LithiumTable template application path, which keeps behavior consistent with saved templates and runtime width/order persistence.

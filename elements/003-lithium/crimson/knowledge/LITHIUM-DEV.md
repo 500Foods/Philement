@@ -386,6 +386,30 @@ All manager UI popups follow standardized positioning, styling, and animation ru
 
 ---
 
+## Code Hygiene
+
+See [LITHIUM-INS.md](LITHIUM-INS.md) for the full canonical coding standards. The following are the most critical reminders when working on Lithium:
+
+### CSS-First Styling
+Prefer CSS classes over inline JavaScript styles. Never use `element.style.property = value` except for dynamic positioning (e.g., drag handles, popup anchors). Define classes in CSS files; toggle with `classList`.
+
+### File Size Discipline
+- **Target:** 750 lines per source file
+- **Hard limit:** 1,000 lines (per [LITHIUM-INS.md](LITHIUM-INS.md) §2)
+
+When a file approaches the limit, split into logical modules along responsibility lines.
+
+### No Fallback Code
+Do not create fallback implementations that duplicate primary feature functionality. Make the primary implementation robust instead (per [LITHIUM-INS.md](LITHIUM-INS.md) §1).
+
+### Clean Build Required
+Every phase of active work requires:
+- `npm run lint` — zero errors, zero warnings attributable to changes
+- `npm run build` — clean production build
+- `npm test` — all tests pass (or tests that break are fixed)
+
+---
+
 ## Working with Column Types (AI Guide)
 
 When working with LithiumTable column definitions, use the column type documentation:

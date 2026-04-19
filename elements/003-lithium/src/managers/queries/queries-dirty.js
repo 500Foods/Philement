@@ -86,24 +86,24 @@ export class DirtyStateTracker {
    */
   captureOriginalData(queryData, editors = {}) {
     if (!queryData) return;
-    
+
     this._originalRowData = { ...queryData };
-    
-    // Capture SQL: editor > pending content > row data
-    this._originalSqlContent = editors.sql?.state?.doc?.toString()
-      ?? editors.sqlContent
-      ?? queryData.code ?? queryData.query_text ?? queryData.sql ?? '';
-    
-    // Capture Summary: editor > pending content > row data
-    this._originalSummaryContent = editors.summary?.state?.doc?.toString()
-      ?? editors.summaryContent
-      ?? queryData.summary ?? queryData.markdown ?? '';
-    
-    // Capture Collection: editor > pending content > row data
-    const collectionFromEditor = editors.collection?.state?.doc?.toString();
-    const collection = collectionFromEditor
-      ?? editors.collectionContent
-      ?? queryData.collection ?? queryData.json ?? {};
+
+    // Capture SQL: pending content > row data > editor (as last resort)
+    // IMPORTANT: Use pending content (fresh from DB) over editor content (might be stale from previous row)
+    this._originalSqlContent = editors.sqlContent
+      ?? queryData.code ?? queryData.query_text ?? queryData.sql
+      ?? editors.sql?.state?.doc?.toString() ?? '';
+
+    // Capture Summary: pending content > row data > editor
+    this._originalSummaryContent = editors.summaryContent
+      ?? queryData.summary ?? queryData.markdown
+      ?? editors.summary?.state?.doc?.toString() ?? '';
+
+    // Capture Collection: pending content > row data > editor
+    const collection = editors.collectionContent
+      ?? queryData.collection ?? queryData.json
+      ?? editors.collection?.state?.doc?.toString() ?? {};
     this._originalCollectionContent = typeof collection === 'string' ? collection : JSON.stringify(collection);
     
     this.markAllClean();

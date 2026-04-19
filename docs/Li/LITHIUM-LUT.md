@@ -279,8 +279,20 @@ const entries = await authQuery(api, 34, {
 The lookup entries are transformed by `loadLookup()` into a simplified format:
 
 ```javascript
-// Transformed to: [{ id: 1, label: "Active" }, { id: 2, label: "Inactive" }, ...]
+// Transformed to: [{ id: 1, label: "Active", sortSeq: 10 }, { id: 2, label: "Inactive", sortSeq: 20 }, ...]
 ```
+
+### Lookup Sorting
+
+When creating lookup editors (dropdowns), entries are explicitly sorted by `loadLookup()` using the following priority:
+
+1. **`sort_seq`** ascending (from database — controls display order)
+2. **`label`** ascending (case-insensitive alphabetical — fallback when `sort_seq` ties)
+3. **`id`** ascending (numeric — final tiebreaker)
+
+This ensures consistent ordering even if the database returns rows in an unexpected order. The `sortSeq` field is captured from the database's `sort_seq` column and included in the transformed lookup data.
+
+**Note:** Prior to this implementation, dropdown ordering relied on database query ordering which could vary. Now the order is deterministic and explicitly controlled by the `sort_seq` column.
 
 ### Retrieving a Single Entry
 
