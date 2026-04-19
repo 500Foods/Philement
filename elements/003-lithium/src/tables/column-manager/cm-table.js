@@ -53,7 +53,6 @@ export async function initColumnTable(cm) {
     storageKey: getManagerTableStorageKey(cm),
     readonly: false,
     alwaysEditable: false,
-    useColumnManager: !isDepth2,
     onRowSelected: (rowData) => onRowSelected(cm, rowData),
     onRowDeselected: () => onRowDeselected(cm),
     onExecuteSave: () => cm.handleColumnTableExecuteSave(),

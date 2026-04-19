@@ -149,4 +149,107 @@
 	margin-left: 4px;
 }
 
+/* adjustments for lookups */
+.tabulator-edit-list {
+  border-radius: var(--border-radius-md);
+  box-shadow: 3px 3px 3px black;
+  min-width: 100px;
+}
+
+/* Ensure list items take full width and allow centering */
+.tabulator-edit-list-item {
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: inherit;
+}
+
+.tabulator-edit-list-item svg,
+.tabulator-edit-list-item img,
+.lithium-table-container .tabulator-row .tabulator-cell svg,
+.lithium-table-container .tabulator-row .tabulator-cell img {
+  font-size: 12px;
+  max-height: 18px;
+  max-width: 18px; 
+  filter: drop-shadow(0px 0px 1px white) drop-shadow(0px 0px 1px black);
+}
+
+/* Lookup dropdown items - both icon-only and icon+label variants */
+.li-lookup-list-item,
+.li-lookup-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+/* Icon+label variant needs gap between icon and text */
+.li-lookup-item {
+  gap: var(--space-3, 4px);
+}
+
+/* Editor dropdown icon/label wrappers - isolate FontAwesome mutations */
+.li-lookup-edit-icon {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.li-lookup-edit-icon:empty {
+  display: none;
+}
+
+.li-lookup-edit-label {
+  display: inline-block;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-right: 10px;
+}
+
+/* Alignment for icon-only mode (li-lookup-list-item) */
+.li-lookup-list-item[data-align="left"] {
+  justify-content: flex-start;
+}
+
+.li-lookup-list-item[data-align="center"] {
+  justify-content: center;
+}
+
+.li-lookup-list-item[data-align="right"] {
+  justify-content: flex-end;
+}
+
+/* Alignment for icon+label mode (li-lookup-item uses text-align on the inner content) */
+.li-lookup-item[data-align="left"] {
+  justify-content: flex-start;
+}
+
+.li-lookup-item[data-align="center"] {
+  justify-content: center;
+}
+
+.li-lookup-item[data-align="right"] {
+  justify-content: flex-end;
+}
+
+/* Force alignment on parent tabulator list items */
+.tabulator-edit-list-item:has(.li-lookup-list-item[data-align="center"]),
+.tabulator-edit-list-item:has(.li-lookup-item[data-align="center"]) {
+  justify-content: center !important;
+}
+
+.tabulator-edit-list-item:has(.li-lookup-list-item[data-align="right"]),
+.tabulator-edit-list-item:has(.li-lookup-item[data-align="right"]) {
+  justify-content: flex-end !important;
+}
+
+/* Ensure images in lookup list items behave properly */
+.li-lookup-list-item img,
+.li-lookup-item img {
+  display: inline-block;
+  vertical-align: middle;
+}
+
 } /* end @layer vendor-fixes */

@@ -235,18 +235,18 @@ The **LithiumTable** is a reusable, modular component that combines Tabulator wi
 
 ### Architecture
 
-**Files:**
+**Files:** See [LITHIUM-TAB.md](LITHIUM-TAB.md) for the canonical file structure. All table-related files are in `src/tables/`:
 
-- `src/core/lithium-table-base.js` — Core functionality (initialization, events, navigation)
-- `src/core/lithium-table-ops.js` — CRUD operations mixin (add, edit, save, delete)
-- `src/core/lithium-table-ui.js` — Navigator UI mixin (popups, column chooser, filters)
-- `src/core/lithium-table-main.js` — Combined LithiumTable class export
-- `src/core/lithium-table.css` — Component styles
+- `src/tables/lithium-table-base.js` — Core functionality (initialization, events, navigation)
+- `src/tables/lithium-table-ops.js` — CRUD operations mixin (add, edit, save, delete)
+- `src/tables/lithium-table-ui.js` — Navigator UI mixin (popups, column chooser, filters)
+- `src/tables/lithium-table-main.js` — Combined LithiumTable class export
+- `src/tables/lithium-table.css` — Component styles
 
 ### Usage
 
 ```javascript
-import { LithiumTable } from '../../core/lithium-table-main.js';
+import { LithiumTable } from '../../tables/lithium-table-main.js';
 
 const table = new LithiumTable({
   container: document.getElementById('table-container'),

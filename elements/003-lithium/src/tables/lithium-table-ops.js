@@ -117,11 +117,8 @@ export const LithiumTableOpsMixin = {
       return;
     }
 
-    const pkFields = this.primaryKeyField;
-    const selectedId = this._getCompositeRowId(selected[0].getData(), pkFields);
-
-    // Toggle edit mode if already editing this row
-    if (this.isEditing && this.editingRowId === selectedId) {
+    // If already in edit mode, save (if dirty) and exit — don't toggle back on
+    if (this.isEditing) {
       // Synchronous dirty check — the rAF-deferred isDirty may be stale
       const actuallyDirty = this.isActuallyDirty();
       if (actuallyDirty) {
@@ -132,6 +129,7 @@ export const LithiumTableOpsMixin = {
       return;
     }
 
+    // Enter edit mode for the selected row
     await this.enterEditMode(selected[0]);
   },
 
@@ -311,8 +309,9 @@ export const LithiumTableOpsMixin = {
         row = selected[0];
       }
 
-      const pkField = this.primaryKeyField || 'id';
-      const rowId = row.getData()?.[pkField];
+      // Use _getCompositeRowId for consistent row ID handling
+      const pkFields = this.primaryKeyField;
+      const rowId = this._getCompositeRowId(row.getData(), pkFields);
 
       if (this.isEditing && this.editingRowId === rowId) return;
 
@@ -337,7 +336,7 @@ export const LithiumTableOpsMixin = {
       }
 
       log(Subsystems.TABLE, Status.INFO,
-        `[LithiumTable] Entered edit mode (row ${rowId})`);
+        `[LithiumTable] Entered edit mode (row ${rowId || 'unknown'})`);
     } finally {
       requestAnimationFrame(() => this.setEditTransitionState(false));
     }
@@ -389,6 +388,13 @@ export const LithiumTableOpsMixin = {
   },
 
   async autoSaveBeforeRowChange() {
+    // GUARD: Prevent concurrent save operations that could cause duplicate toasts
+    if (this._saveInProgress) {
+      log(Subsystems.TABLE, Status.DEBUG,
+        `[LithiumTable] autoSaveBeforeRowChange: save already in progress, skipping`);
+      return true;
+    }
+
     try {
       // IMPORTANT: Save the EDITING row, not the newly-selected row.
       // By the time this method is called, Tabulator has already selected
@@ -396,6 +402,17 @@ export const LithiumTableOpsMixin = {
       const row = this.getEditingRow();
 
       if (!row) return true;
+
+      // GUARD: Only save if actually dirty. The caller should have checked,
+      // but this prevents spurious saves and duplicate toasts.
+      const actuallyDirty = this.isActuallyDirty?.() || this.isDirty;
+      if (!actuallyDirty) {
+        log(Subsystems.TABLE, Status.DEBUG,
+          `[LithiumTable] autoSaveBeforeRowChange: row not dirty, skipping save`);
+        return true;
+      }
+
+      this._saveInProgress = true;
 
       await this.executeSave(row);
       this.isDirty = false;
@@ -412,6 +429,8 @@ export const LithiumTableOpsMixin = {
         duration: 6000,
       });
       return false;
+    } finally {
+      this._saveInProgress = false;
     }
   },
 
@@ -440,8 +459,8 @@ export const LithiumTableOpsMixin = {
         const row = cell.getRow?.();
         if (!row || this.isCalcRow(row)) return;
 
-        const pkField = this.primaryKeyField || 'id';
-        const rowId = row.getData?.()?.[pkField];
+        const pkFields = this.primaryKeyField;
+        const rowId = this._getCompositeRowId(row.getData?.(), pkFields);
         const isEditingRow = this.editingRowId != null
           ? rowId === this.editingRowId
           : row.isSelected?.();

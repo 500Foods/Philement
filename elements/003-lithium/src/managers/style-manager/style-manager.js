@@ -792,6 +792,7 @@ export default class StyleManager {
             this.handleCssEditorDirty();
           }
         },
+        ...this.editHelper.getCodeMirrorKeymapOptions(),
       });
 
       const state = EditorState.create({ doc: '', extensions });

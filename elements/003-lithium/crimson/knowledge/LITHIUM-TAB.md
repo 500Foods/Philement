@@ -32,12 +32,19 @@ As of the latest refactoring, all table-related files are organized under `src/t
 ```structure
 src/tables/
 ├── lithium-table-main.js       # Combined LithiumTable class export
-├── lithium-table.js            # JSON-driven column resolution engine
+├── lithium-table.js            # Column resolution API (re-exports from resolution/)
 ├── lithium-table-base.js       # Core functionality (init, events, navigation)
 ├── lithium-table-ops.js        # CRUD operations mixin
 ├── lithium-table-ui.js         # Navigator UI mixin (delegated to modules)
-├── lithium-table-template.js   # Template system
+├── lithium-table-template.js   # Template column builder
 ├── lithium-column-manager.js   # Column manager (now modular)
+├── refresh-orchestrator.js     # Table configuration reload
+├── resolution/                 # Column resolution engine (Phase 4)
+│   ├── coltype-loader.js       # Coltype definition loading from Lookup 59
+│   ├── tabledef-loader.js      # Table definition loading from Lookup 59
+│   ├── lookup-loader.js        # Lookup data loading and caching
+│   ├── formatters.js           # Formatter wrappers and calculations
+│   └── validator.js            # TableDef schema validation
 ├── navigator/
 │   └── navigator-builder.js    # Navigator HTML & button wiring
 ├── popups/
@@ -49,10 +56,27 @@ src/tables/
 │   └── table-settings.js       # Width/layout mode management
 ├── visual/
 │   ├── visual-updates.js       # Column boundary classes
-│   └── loading-indicator.js    # Loading spinner
+│   ├── loading-indicator.js    # Loading spinner
+│   ├── group-icon-animator.js  # Group expand/collapse icon animation
+│   └── column-tooltips.js      # Column header FloatingUI tooltips
 ├── persistence/
-│   └── persistence.js          # localStorage helpers
-└── column-manager/             # Modular column manager components
+│   ├── persistence.js          # localStorage helpers (row selection, filters)
+│   └── panel-width.js          # Panel width & collapsed state
+├── template/
+│   └── capture.js              # Template state capture/extraction
+├── data/
+│   └── data-loading.js         # Data loading, row ID management
+├── navigation/
+│   └── navigation.js           # Navigation methods
+├── selection/
+│   └── row-selection.js        # Row selection helpers
+├── columns/
+│   └── column-management.js    # Column discovery, building
+├── events/
+│   ├── table-events.js         # Tabulator event wiring
+│   └── event-handlers.js       # Navigator button handlers
+├── column-manager/             # Modular column manager components
+│   ├── cm-integration.js       # Column Manager lifecycle & integration
     ├── cm-state.js             # Dirty tracking, persistence
     ├── cm-drag-resize.js       # Resize handle, keyboard events
     ├── cm-data.js              # Column data loading
@@ -60,17 +84,6 @@ src/tables/
     ├── cm-actions.js           # Apply/discard changes
     ├── cm-ui.js                # Popup DOM, positioning
     └── cm-table.js             # Inner LithiumTable setup
-
-src/core/                       # Core utilities (unchanged)
-├── lithium-splitter.js         # Panel splitter component
-├── manager-edit-helper.js      # Consolidated edit/dirty helper
-├── panel-collapse.js           # Panel collapse utility
-├── panel-state-manager.js      # Panel state persistence
-└── ...
-
-src/styles/
-├── lithium-table.css           # Component styles
-└── ...
 ```
 
 ### Class Hierarchy
@@ -97,6 +110,11 @@ The `LithiumTableUIMixin` now delegates to focused modules rather than containin
 
 | Module | Responsibility | Key Exports |
 |--------|----------------|-------------|
+| `resolution/coltype-loader.js` | Coltype loading from Lookup 59 | `loadColtypes()`, `getColtypes()` |
+| `resolution/tabledef-loader.js` | TableDef loading from Lookup 59 | `loadTableDef()`, `clearLookup59Cache()` |
+| `resolution/lookup-loader.js` | Lookup data loading & caching | `loadLookup()`, `createLookupFormatter()` |
+| `resolution/formatters.js` | Formatter wrappers & calculations | `wrapFormatter()`, `LITHIUM_CALCULATIONS` |
+| `resolution/validator.js` | TableDef schema validation | `validateTableDef()`, `COLUMN_VALID_PROPS` |
 | `navigator-builder.js` | Build navigator HTML, wire buttons | `buildNavigator()`, `updateMoveButtonState()` |
 | `popup-manager.js` | Standard nav popups | `toggleNavPopup()`, `closeNavPopup()` |
 | `template-popup.js` | Template menu with save/load/delete | `buildTemplatePopup()`, `getSavedTemplates()` |
@@ -105,6 +123,18 @@ The `LithiumTableUIMixin` now delegates to focused modules rather than containin
 | `visual-updates.js` | Column boundary CSS classes | `updateVisibleColumnClasses()` |
 | `loading-indicator.js` | Loading spinner show/hide | `showLoading()`, `hideLoading()` |
 | `persistence.js` | Row selection, filters state | `saveSelectedRowId()`, `restoreFiltersVisible()` |
+| `persistence/panel-width.js` | Panel width & collapsed state | `applyPanelWidth()`, `savePanelPixelWidth()` |
+| `visual/group-icon-animator.js` | Group expand/collapse animation | `GroupIconAnimator` class |
+| `visual/column-tooltips.js` | Column header FloatingUI tooltips | `initColumnHeaderTooltips()` |
+| `refresh-orchestrator.js` | Table configuration reload | `reloadConfiguration()` |
+| `template/capture.js` | Template state extraction | `captureCurrentState()`, `generateTemplateJSON()` |
+| `data/data-loading.js` | Data loading & row ID management | `loadData()`, `autoSelectRow()` |
+| `navigation/navigation.js` | Navigation methods | `navigateFirst()`, `navigateNextRec()` |
+| `selection/row-selection.js` | Row selection helpers | `handleRowSelected()`, `selectDataRow()` |
+| `columns/column-management.js` | Column discovery & building | `discoverColumns()`, `buildSelectorColumn()` |
+| `events/table-events.js` | Tabulator event wiring | `wireTableEvents()` |
+| `events/event-handlers.js` | Navigator button handlers | `handleRefresh()`, `handleFilter()`, `expandAll()` |
+| `column-manager/cm-integration.js` | Column Manager lifecycle | `toggleColumnManager()`, `closeColumnManager()` |
 
 ---
 
@@ -326,7 +356,7 @@ Columns are defined in `config/tabulator/<table-path>.json`:
   "columns": {
     "query_ref": {
       "field": "query_ref",
-      "display": "Ref",
+      "title": "Ref",
       "coltype": "integer",
       "visible": true,
       "sort": true,
@@ -337,7 +367,7 @@ Columns are defined in `config/tabulator/<table-path>.json`:
     },
     "name": {
       "field": "name",
-      "display": "Name",
+      "title": "Name",
       "coltype": "string",
       "visible": true,
       "sort": true,
@@ -364,6 +394,13 @@ Columns are defined in `config/tabulator/<table-path>.json`:
    - Full runtime column customization
 
 **Merge priority:** Later stages override earlier ones. Any property in Stage 2 replaces Stage 1; Stage 3 replaces both.
+
+**Deep Merge for Param Objects:** While most properties are replaced (scalars, arrays), the following nested param objects are **deep-merged** across stages to preserve coltype defaults:
+- `formatterParams`, `editorParams`, `headerFilterParams`
+- `sorterParams`, `accessorParams`, `mutatorParams`
+- `bottomCalcFormatterParams`, `downloadFormatterParams`, `downloadCalcParams`, `clipboardParams`
+
+Example: If Stage 1 sets `formatterParams: { thousand: ",", precision: 0 }` and Stage 2 sets `formatterParams: { precision: 2 }`, the result is `{ thousand: ",", precision: 2 }` — both properties are preserved.
 
 At runtime, LithiumTable forces `responsiveLayout: false` for all tables. When a panel is too narrow for the visible columns, the table scrolls horizontally instead of letting Tabulator collapse or hide columns.
 
@@ -438,7 +475,7 @@ const queryRef = isInsert
 | Property | Type | Description |
 |----------|------|-------------|
 | `field` | string | JSON field name from API |
-| `display` | string | Column header title |
+| `title` | string | Column header title |
 | `coltype` | string | Reference to coltypes.json |
 | `visible` | boolean | Show by default |
 | `sort` | boolean | Allow sorting |
@@ -463,7 +500,7 @@ For tables with a single primary key column, add `"primaryKey": true` to that co
   "columns": {
     "id": {
       "field": "id",
-      "display": "ID",
+      "title": "ID",
       "coltype": "integer",
       "primaryKey": true
     }
@@ -480,13 +517,13 @@ Lithium supports tables with compound primary keys (multiple columns forming a u
   "columns": {
     "lookup_id": {
       "field": "lookup_id",
-      "display": "Lookup ID",
+      "title": "Lookup ID",
       "coltype": "integer",
       "primaryKey": true
     },
     "key_idx": {
       "field": "key_idx",
-      "display": "Key Index",
+      "title": "Key Index",
       "coltype": "integer",
       "primaryKey": true
     }
@@ -580,10 +617,22 @@ These entry points apply to standard LithiumTables. Tables configured with `alwa
 - **Save** — Commit changes to API
 - **Cancel** — Revert to original values
 - **Click another row** — Auto-saves if dirty, then switches to new row
-- **Click Edit button** — Auto-saves if dirty, otherwise exits edit mode
+- **Click Edit button** — Saves if dirty, then exits edit mode (button acts as "save and done")
 - **Navigate (First/Last/Prev/Next/Page)** — Auto-saves if dirty, then navigates
 
 All exit paths except **Cancel** will auto-save when dirty. Cancel reverts all changes (table row data via `originalRowData` + external editors via `editHelper.restoreEditorSnapshots()`).
+
+### Edit Mode Interaction Flow
+
+When in edit mode, cell clicks behave as follows:
+
+| Action | Behavior |
+|--------|----------|
+| Click editable cell (same row) | Opens cell editor, stays in edit mode |
+| Click non-editable cell (same row) | No editor opens, stays in edit mode |
+| Click any cell (different row) | Auto-saves if dirty, exits edit mode, selects new row |
+
+This design allows users to edit multiple cells in the same row without interruption, while ensuring changes are saved when switching to a different record.
 
 ### Auto-Save on Row Change
 
@@ -1042,16 +1091,25 @@ The LithiumTable component was extracted from the Query Manager implementation t
 - `lithium-column-manager.js` split into `column-manager/` submodules
 - All modules now under 750 lines for maintainability
 
-**April 2026: All Implementation Phases Complete** — Per [LITHIUM-TAB-PLAN.md](LITHIUM-TAB-PLAN.md), all 7 phases of the implementation plan have been completed:
+**April 2026: Round 2 Implementation** — Per [LITHIUM-TAB-PLAN.md](LITHIUM-TAB-PLAN.md), Phase 5 of Round 2 has been completed:
 
-- Phase 0: Lookup 059 Key Mapping (correct key_idx values)
-- Phase 1: Default Merge Engine (default → coltype → colDef)
-- Phase 2: Auto-Discovery with Coltype Detection
-- Phase 3: Schema Validation
-- Phase 4: Data-First Initialization
-- Phase 5: Lookup 059 Integration
-- Phase 6: Column Manager (Stage 3)
-- Phase 7: Migrate Internal Coltypes
+- **Phase 5: Single Canonical Template Extractor** — Consolidated multiple extractor functions into a single canonical source:
+  - Created `extractTableDefColumn()` and `extractTableDef()` in `template/capture.js`
+  - Added `generateMigrationSeed()` for migration-ready JSON output
+  - Moved Lithium metadata (`coltype`, `editable`, `primaryKey`, etc.) out of Tabulator columns into `LithiumTable._columnMeta` Map
+  - Eliminated `lithium*` prefixed properties from Tabulator column definitions (fixes console warnings)
+  - Deprecated and removed `lithium-table-template.js`
+  - Eradicated the `overrides` pattern; properties are now flattened directly onto column definitions
+
+- Previous phases from Round 1:
+  - Phase 0: Lookup 059 Key Mapping (correct key_idx values)
+  - Phase 1: Default Merge Engine (default → coltype → colDef)
+  - Phase 2: Auto-Discovery with Coltype Detection
+  - Phase 3: Schema Validation
+  - Phase 4: Data-First Initialization
+  - Phase 5 (Round 1): Lookup 059 Integration
+  - Phase 6: Column Manager (Stage 3)
+  - Phase 7: Migrate Internal Coltypes
 
 **Key Design Decisions:**
 

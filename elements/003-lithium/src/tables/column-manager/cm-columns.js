@@ -27,7 +27,7 @@ export function buildColumnManagerDefinition(cm) {
   if (isManual) {
     columns.drag_handle = {
       field: 'drag_handle',
-      display: '',
+      title: '',
       coltype: 'string',
       visible: true,
       sort: false,
@@ -49,7 +49,7 @@ export function buildColumnManagerDefinition(cm) {
   // Visible column
   columns.visible = {
     field: 'visible',
-    display: 'Vis',
+    title: 'Vis',
     coltype: 'boolean',
     visible: true,
     sort: false,
@@ -69,7 +69,7 @@ export function buildColumnManagerDefinition(cm) {
   // Order column (both modes, editable only in Auto mode)
   columns.order = {
     field: 'order',
-    display: '#',
+    title: '#',
     coltype: 'integer',
     visible: true,
     sort: false,
@@ -93,7 +93,7 @@ export function buildColumnManagerDefinition(cm) {
 
   columns.field_name = {
     field: 'field_name',
-    display: 'Field Name',
+    title: 'Field Name',
     coltype: 'string',
     visible: true,
     sort: !isManual,
@@ -106,7 +106,7 @@ export function buildColumnManagerDefinition(cm) {
 
   columns.column_name = {
     field: 'column_name',
-    display: 'Column Name',
+    title: 'Column Name',
     coltype: 'string',
     visible: true,
     sort: !isManual,
@@ -119,7 +119,7 @@ export function buildColumnManagerDefinition(cm) {
 
   columns.editable = {
     field: 'editable',
-    display: 'Edit',
+    title: 'Edit',
     coltype: 'boolean',
     visible: true,
     sort: !isManual,
@@ -138,7 +138,7 @@ export function buildColumnManagerDefinition(cm) {
 
   columns.format = {
     field: 'format',
-    display: 'Format',
+    title: 'Format',
     coltype: 'lookupFixed',
     visible: true,
     sort: !isManual,
@@ -159,7 +159,7 @@ export function buildColumnManagerDefinition(cm) {
 
   columns.summary = {
     field: 'summary',
-    display: 'Summary',
+    title: 'Summary',
     coltype: 'lookupFixed',
     visible: true,
     sort: !isManual,
@@ -180,7 +180,7 @@ export function buildColumnManagerDefinition(cm) {
 
   columns.alignment = {
     field: 'alignment',
-    display: 'Alignment',
+    title: 'Alignment',
     coltype: 'lookupFixed',
     visible: true,
     sort: !isManual,
@@ -201,7 +201,7 @@ export function buildColumnManagerDefinition(cm) {
 
   columns.category = {
     field: 'category',
-    display: 'Category',
+    title: 'Category',
     coltype: 'stringList',
     visible: true,
     sort: !isManual,
@@ -214,7 +214,7 @@ export function buildColumnManagerDefinition(cm) {
 
   columns.width = {
     field: 'width',
-    display: 'Width',
+    title: 'Width',
     coltype: 'integer',
     visible: true,
     sort: !isManual,
@@ -266,9 +266,6 @@ function buildFormatLookup() {
     duration: 'Duration',
     lookup: 'Lookup',
     lookupFixed: 'Fixed Lookup',
-    lookupIcon: 'Icon Lookup',
-    lookupIconList: 'Icon List',
-    lookupIconText: 'Icon Text',
     stringList: 'String List',
     tags: 'Tags',
     color: 'Color',

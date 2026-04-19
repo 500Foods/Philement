@@ -74,6 +74,7 @@ export class EditorManager {
             this._updateUndoRedoButtons();
           }
         },
+        ...this.manager.editHelper.getCodeMirrorKeymapOptions(),
       });
 
       const startState = EditorState.create({ doc: initialContent, extensions });
@@ -122,6 +123,7 @@ export class EditorManager {
             this._updateUndoRedoButtons();
           }
         },
+        ...this.manager.editHelper.getCodeMirrorKeymapOptions(),
       });
 
       const startState = EditorState.create({ doc: initialContent, extensions });
@@ -177,6 +179,7 @@ export class EditorManager {
             this._updateUndoRedoButtons();
           }
         },
+        ...this.manager.editHelper.getCodeMirrorKeymapOptions(),
       });
 
       const startState = EditorState.create({ doc: jsonStr, extensions });

@@ -377,6 +377,7 @@ export default class LookupsManager {
             this.editHelper.checkDirtyState();
           }
         },
+        ...this.editHelper.getCodeMirrorKeymapOptions(),
       });
 
       const state = EditorState.create({ doc: jsonStr, extensions });

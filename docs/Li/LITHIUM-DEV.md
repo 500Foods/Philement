@@ -386,6 +386,30 @@ All manager UI popups follow standardized positioning, styling, and animation ru
 
 ---
 
+## Code Hygiene
+
+See [LITHIUM-INS.md](LITHIUM-INS.md) for the full canonical coding standards. The following are the most critical reminders when working on Lithium:
+
+### CSS-First Styling
+Prefer CSS classes over inline JavaScript styles. Never use `element.style.property = value` except for dynamic positioning (e.g., drag handles, popup anchors). Define classes in CSS files; toggle with `classList`.
+
+### File Size Discipline
+- **Target:** 750 lines per source file
+- **Hard limit:** 1,000 lines (per [LITHIUM-INS.md](LITHIUM-INS.md) §2)
+
+When a file approaches the limit, split into logical modules along responsibility lines.
+
+### No Fallback Code
+Do not create fallback implementations that duplicate primary feature functionality. Make the primary implementation robust instead (per [LITHIUM-INS.md](LITHIUM-INS.md) §1).
+
+### Clean Build Required
+Every phase of active work requires:
+- `npm run lint` — zero errors, zero warnings attributable to changes
+- `npm run build` — clean production build
+- `npm test` — all tests pass (or tests that break are fixed)
+
+---
+
 ## Working with Column Types (AI Guide)
 
 When working with LithiumTable column definitions, use the column type documentation:
@@ -593,6 +617,52 @@ const savedChildId = selections[parentId];
 if (savedChildId) {
   this.childTable.saveSelectedRowId(savedChildId);
 }
+```
+
+### Dirty State Tracking and Save Guards
+
+**Critical Pattern:** When implementing dirty detection during row changes, use `getEditingRow()` not `getSelectedDataRow()`:
+
+```javascript
+// WRONG: When switching rows, Tabulator has already selected the new row
+const currentRow = this.getSelectedDataRow(); // Returns the NEW row!
+
+// CORRECT: Always use the editing row for snapshot/comparison
+const editingRow = this.getEditingRow(); // Returns the row being edited
+```
+
+**Save Operation Guards:** Always protect against concurrent saves and spurious save attempts:
+
+```javascript
+async autoSaveBeforeRowChange() {
+  // Guard 1: Prevent concurrent saves
+  if (this._saveInProgress) return true;
+
+  // Guard 2: Verify actually dirty
+  const actuallyDirty = this.isActuallyDirty?.() || this.isDirty;
+  if (!actuallyDirty) return true;
+
+  this._saveInProgress = true;
+  try {
+    await this.executeSave(row);
+    // ... success handling
+  } finally {
+    this._saveInProgress = false;
+  }
+}
+```
+
+**Type-Safe Comparisons:** Use loose equality for primitive comparisons to handle API type mismatches:
+
+```javascript
+// Handles "431" (string from API) vs 431 (number in JS)
+const isChanged = snapshotVal != currentVal; // NOT !==
+```
+
+**Null/Empty Equivalence:** Treat null/undefined/empty string as equivalent to avoid false positives:
+
+```javascript
+const isEmpty = val == null || val === ''; // Treats null, undefined, '' as same
 ```
 
 ---

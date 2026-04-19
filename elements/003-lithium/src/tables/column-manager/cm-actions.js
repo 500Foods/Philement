@@ -8,9 +8,8 @@
 
 import { log, Subsystems, Status } from '../../core/log.js';
 import {
-  extractTemplateColumnFromColumn,
-  mergeTemplateColumn,
-} from '../lithium-table-template.js';
+  extractTableDefColumn,
+} from '../template/capture.js';
 import { captureParentStateAsOriginal } from './cm-data.js';
 import { clearDirty, getCurrentColumnTableData } from './cm-state.js';
 
@@ -67,41 +66,57 @@ export function buildPendingTemplateColumns(cm) {
   const parentColumns = cm.parentTable.table.getColumns();
   const templateColumns = {};
 
+  // Get Lithium metadata from parent table
+  const columnMeta = cm.parentTable._columnMeta || new Map();
+
   parentColumns.forEach((column) => {
     const field = column.getField();
     if (!field || field === '_selector') return;
 
-    const baseColumn = extractTemplateColumnFromColumn(column, cm.parentTable.primaryKeyField);
+    // Get original column definition from parent table's tableDef
+    const originalColDef = cm.parentTable.tableDef?.columns?.[field] || {};
+
+    // Get lithium metadata for this column
+    const lithiumMeta = columnMeta.get(field) || {};
+
+    // Use the canonical extractor to get the base column
+    const baseColumn = extractTableDefColumn(column, originalColDef, lithiumMeta, {
+      includeRuntimeOnly: true,
+    });
+
     const managerRow = rowMap.get(field);
     if (!managerRow) {
       templateColumns[field] = baseColumn;
       return;
     }
 
+    // Build patch column with flattened properties (no overrides wrapper)
     const patchColumn = {
-      display: managerRow.column_name,
+      title: managerRow.column_name,
       field,
       coltype: managerRow.format,
       visible: managerRow.visible,
       editable: managerRow.editable,
     };
 
-    const overrides = {
-      align: managerRow.alignment,
-      bottomCalc: managerRow.summary === 'none' ? null : managerRow.summary,
-    };
+    // Flatten alignment and bottomCalc directly onto patchColumn
+    if (managerRow.alignment && managerRow.alignment !== 'left') {
+      patchColumn.hozAlign = managerRow.alignment;
+    }
+    if (managerRow.summary && managerRow.summary !== 'none') {
+      patchColumn.bottomCalc = managerRow.summary;
+    }
 
+    // Add width if specified
     const parsedWidth = managerRow.width == null || managerRow.width === ''
       ? null
       : parseInt(managerRow.width, 10);
     if (Number.isFinite(parsedWidth) && parsedWidth > 0) {
-      overrides.width = parsedWidth;
+      patchColumn.width = parsedWidth;
     }
 
-    if (Object.keys(overrides).length > 0) {
-      patchColumn.overrides = overrides;
-    }
-    templateColumns[field] = mergeTemplateColumn(baseColumn, patchColumn);
+    // Merge: start with base, apply patch (patch wins for overlapping properties)
+    templateColumns[field] = { ...baseColumn, ...patchColumn };
   });
 
   // Order columns according to row data
