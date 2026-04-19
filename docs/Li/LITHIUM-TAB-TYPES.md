@@ -185,7 +185,7 @@ These properties are available on all column types:
 |----------|------|---------|-------------|
 | `groupable` | boolean | `false` | Enable grouping by this column |
 | `groupPri` | number \| null | `null` | Group priority (lower = outer group) |
-| `groupOrd` | string | `"asc"` | Group sort order (`"asc"` or `"desc"`) |
+| `groupDir` | string | `"asc"` | Group sort order (`"asc"` or `"desc"`) |
 
 ### Column Ordering Properties
 
@@ -632,12 +632,12 @@ Used with `groupable: true` to enable grouping.
 
 ---
 
-### groupOrd
+### groupDir
 
-Group sort order within each group.
+Group sort direction within each group.
 
 ```json
-"groupOrd": "asc"
+"groupDir": "asc"
 ```
 
 | Value | Description |
@@ -1313,7 +1313,7 @@ Lithium extends this with **column-level** properties:
 |-----------------|----------|
 | `groupable` | Enable this column as grouping option |
 | `groupPri` | Priority for sorting multiple groups |
-| `groupOrd` | Sort order within group |
+| `groupDir` | Sort direction within group |
 
 **How it works:**
 

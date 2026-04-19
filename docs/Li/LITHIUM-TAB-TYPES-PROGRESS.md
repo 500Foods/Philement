@@ -63,7 +63,7 @@ Progress bar (0-100 numeric value displayed as bar).
   // -- Grouping --
   "groupable": false,
   "groupPri": null,
-  "groupOrd": "asc",
+  "groupDir": "asc",
   "columnPri": null,
 
   // -- Data --

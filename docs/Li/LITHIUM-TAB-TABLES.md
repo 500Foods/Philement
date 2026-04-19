@@ -344,7 +344,7 @@ Optional properties (any from coltype system):
 - `editor`, `editorParams`
 - `sorter`, `sorterParams`
 - `headerFilter`, `headerFilterFunc`, `headerFilterPlaceholder`
-- `groupable`, `groupPri`, `groupOrd`
+- `groupable`, `groupPri`, `groupDir`
 - `bottomCalc`, `bottomCalcFormatter`, `bottomCalcFormatterParams`
 - `lookupRef`, `lookupStyle`, `lookupEdit`
 - `primaryKey`, `calculated`, `description`

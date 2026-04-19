@@ -61,7 +61,7 @@ Floating-point numbers (prices, measurements, rates).
   // -- Grouping --
   "groupable": false,
   "groupPri": null,
-  "groupOrd": "asc",
+  "groupDir": "asc",
   "columnPri": null,
 
   // -- Data --

@@ -53,7 +53,7 @@ Auto-incrementing row number (display only, not from data).
   // -- Grouping --
   "groupable": false,
   "groupPri": null,
-  "groupOrd": "asc",
+  "groupDir": "asc",
   "columnPri": null,
 
   // -- Data --

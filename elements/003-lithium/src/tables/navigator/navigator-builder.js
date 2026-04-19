@@ -27,7 +27,7 @@ export function getNavigatorHTML({ cssPrefix, filtersVisible, readonly, alwaysEd
         <button type="button" class="lithium-nav-btn ${filtersVisible ? 'lithium-nav-btn-active' : ''}" id="${cssPrefix}-nav-filter" title="Toggle Filters">
           <fa fa-filter></fa>
         </button>
-        <button type="button" class="lithium-nav-btn lithium-nav-btn-has-popup" id="${cssPrefix}-nav-menu" title="Table Options">
+        <button type="button" class="lithium-nav-btn lithium-nav-btn-has-popup" id="${cssPrefix}-nav-grouping" title="Grouping">
           <fa fa-layer-group></fa>
         </button>
         <button type="button" class="lithium-nav-btn lithium-nav-btn-has-popup" id="${cssPrefix}-nav-width" title="Table Width">
@@ -126,7 +126,7 @@ function wireControlButtons(table) {
 
   nav.querySelector(`#${table.cssPrefix}-nav-refresh`)?.addEventListener('click', () => table.handleRefresh?.());
   nav.querySelector(`#${table.cssPrefix}-nav-filter`)?.addEventListener('click', () => table.handleFilter?.());
-  nav.querySelector(`#${table.cssPrefix}-nav-menu`)?.addEventListener('click', (e) => table.toggleNavPopup?.(e, 'menu'));
+  nav.querySelector(`#${table.cssPrefix}-nav-grouping`)?.addEventListener('click', (e) => table.toggleGroupingPopup?.(e));
   nav.querySelector(`#${table.cssPrefix}-nav-width`)?.addEventListener('click', (e) => table.toggleNavPopup?.(e, 'width'));
   nav.querySelector(`#${table.cssPrefix}-nav-layout`)?.addEventListener('click', (e) => table.toggleNavPopup?.(e, 'layout'));
   nav.querySelector(`#${table.cssPrefix}-nav-template`)?.addEventListener('click', (e) => table.toggleNavPopup?.(e, 'template'));

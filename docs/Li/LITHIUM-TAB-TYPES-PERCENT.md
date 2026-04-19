@@ -60,7 +60,7 @@ Percentage values (0-100 or 0.0-1.0).
   // -- Grouping --
   "groupable": false,
   "groupPri": null,
-  "groupOrd": "asc",
+  "groupDir": "asc",
   "columnPri": null,
 
   // -- Data --

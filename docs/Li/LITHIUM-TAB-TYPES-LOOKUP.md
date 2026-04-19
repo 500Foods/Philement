@@ -62,7 +62,7 @@ Foreign key reference to a lookup table (displays label, stores ID).
   // -- Grouping --
   "groupable": false,
   "groupPri": null,
-  "groupOrd": "asc",
+  "groupDir": "asc",
   "columnPri": null,
 
   // -- Data --
@@ -99,14 +99,16 @@ Foreign key reference to a lookup table (displays label, stores ID).
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
 | `lookupRef` | integer | `null` | **Required.** Lookup table ID (e.g., `27` for Lookup 027). The column stores integer IDs from this lookup; displays are resolved to labels via the Lookup cache. |
-| `lookupStyle` | string | `"label"` | How the **cell** displays: `"label"` (text only) or `"icon"` (icon only from `collection.icon`). |
+| `lookupStyle` | string | `"label"` | How the **cell** displays: `"label"` (text only), `"icon"` (icon only), or `"iconLabel"` (both icon and label). |
 | `lookupEdit` | string | (from `lookupStyle`) | How the **dropdown** displays: `"label"`, `"icon"`, or `"iconLabel"`. Defaults to match `lookupStyle`. |
+| `groupStyle` | string | (from `lookupStyle`) | How the **group header** displays: `"label"`, `"icon"`, or `"iconLabel"`. Defaults to match `lookupStyle`. |
+| `groupTitle` | string | `field` value | Text label shown in the **grouping popup** when `groupStyle` is `"iconLabel"`. Defaults to the column's `field` name. |
 
 ---
 
 ## Display Combinations
 
-The six valid combinations of `lookupStyle` and `lookupEdit`:
+The nine valid combinations of `lookupStyle` and `lookupEdit`:
 
 | Code | Cell Display | Dropdown Display | Column Properties |
 |------|--------------|------------------|-------------------|
@@ -116,6 +118,9 @@ The six valid combinations of `lookupStyle` and `lookupEdit`:
 | D | Label | Icon | `lookupStyle: "label"`, `lookupEdit: "icon"` |
 | E | Label | Icon + Label | `lookupStyle: "label"`, `lookupEdit: "iconLabel"` |
 | F | Label | Label | `lookupStyle: "label"` (or omitted) |
+| G | Icon + Label | Icon | `lookupStyle: "iconLabel"`, `lookupEdit: "icon"` |
+| H | Icon + Label | Icon + Label | `lookupStyle: "iconLabel"`, `lookupEdit: "iconLabel"` |
+| I | Icon + Label | Label | `lookupStyle: "iconLabel"`, `lookupEdit: "label"` |
 
 ## How It Works
 
@@ -172,6 +177,63 @@ For `lookupEdit: "iconLabel"` and `lookupEdit: "iconText"`, the dropdown uses a 
 ```
 
 The icon and label are wrapped in separate spans to isolate FontAwesome's SVG replacement from the label text. This prevents issues where the label would appear briefly then disappear due to DOM mutations.
+
+## Group Header Display
+
+When a lookup column is used for grouping (via `groupable: true` + `groupPri`), the group header displays the resolved lookup value instead of the raw ID. Use `groupStyle` to control how it displays:
+
+| `groupStyle` | Group Header Display | Use Case |
+|--------------|---------------------|----------|
+| `"label"` (default) | Lookup label text | When icons aren't available or clarity is needed |
+| `"icon"` | Lookup icon only | Compact display when icons are meaningful |
+| `"iconLabel"` | Icon + label (left-aligned) | Best of both worlds |
+
+**Note:** `groupStyle` defaults to `lookupStyle` if not specified. Group headers are always left-aligned regardless of the column's `hozAlign` setting.
+
+Example: Show icon only in cells, but icon+label in group headers:
+```json
+{
+  "lookupStyle": "icon",
+  "groupStyle": "iconLabel"
+}
+```
+
+Example group header with `groupStyle: "iconLabel"`:
+```html
+<span class="lithium-group-header">
+  <fa fa-angle-right class="lithium-group-toggle-icon"></fa>
+  <span class="lithium-group-title">
+    <span class="li-lookup-icon-label">
+      <span class="li-lookup-icon"><fa fa-check></fa></span>
+      <span class="li-lookup-label">Active</span>
+    </span>
+  </span>
+  <span class="lithium-group-count">(42)</span>
+</span>
+```
+
+## Grouping Popup Preview
+
+When viewing the grouping popup menu, the display depends on `groupStyle`:
+
+| `groupStyle` | Popup Display | Notes |
+|--------------|---------------|-------|
+| `"label"` | Title only | Regular text display |
+| `"icon"` | Title only | Assumes title contains an icon |
+| `"iconLabel"` | Title + `groupTitle` | Title shows icon, `groupTitle` shows text label |
+
+For `iconLabel`, set `groupTitle` to provide the text label (defaults to `field` name):
+
+```json
+{
+  "title": "<fa fa-filter></fa>",
+  "field": "query_type_a27",
+  "groupStyle": "iconLabel",
+  "groupTitle": "Query Type"
+}
+```
+
+This shows in the grouping popup as: `<icon> — Query Type`
 
 ---
 

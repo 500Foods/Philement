@@ -242,35 +242,30 @@ export class LithiumTableBase {
   /* ── Sort Icons for prefix: ${this.cssPrefix} ── */
   .${this.cssPrefix}-sort-icons {
     display: inline-flex;
-    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
     line-height: 1;
-    font-size: 7px;
-    margin-left: var(--space-1);
+    position: absolute;
+    right: -4px;
     vertical-align: middle;
-    gap: 0;
   }
 
-  .${this.cssPrefix}-sort-asc,
-  .${this.cssPrefix}-sort-desc {
+  .${this.cssPrefix}-sort-icon {
+    font-size: 12px;
+    transition: color var(--transition-fast), opacity var(--transition-fast);
+  }
+
+  .${this.cssPrefix}-sort-icons[data-sort-dir="none"] .${this.cssPrefix}-sort-icon {
     color: var(--text-muted);
-    opacity: 0.35;
-    transition: opacity var(--transition-fast), color var(--transition-fast);
+    opacity: 0.5;
   }
 
-  .lithium-table-container .tabulator-col[aria-sort="ascending"] .${this.cssPrefix}-sort-asc {
+  .${this.cssPrefix}-sort-icons[data-sort-dir="asc"] .${this.cssPrefix}-sort-icon,
+  .${this.cssPrefix}-sort-icons[data-sort-dir="desc"] .${this.cssPrefix}-sort-icon {
     color: white;
     opacity: 1;
-  }
-
-  .lithium-table-container .tabulator-col[aria-sort="descending"] .${this.cssPrefix}-sort-desc {
-    color: white;
-    opacity: 1;
-  }
-
-  .lithium-table-container .tabulator-col[aria-sort="none"] .${this.cssPrefix}-sort-asc,
-  .lithium-table-container .tabulator-col[aria-sort="none"] .${this.cssPrefix}-sort-desc {
-    color: var(--text-muted);
-    opacity: 0.35;
   }
 }
 `;
@@ -452,7 +447,15 @@ export class LithiumTableBase {
       headerSortTristate: true,
       headerSortElement: (column, dir) => {
         const prefix = this.cssPrefix;
-        return `<span class="${prefix}-sort-icons" data-sort-dir="${dir || 'none'}"><span class="${prefix}-sort-asc">&#9650;</span><span class="${prefix}-sort-desc">&#9660;</span></span>`;
+        // Use Font Awesome icons matching the grouping popup style
+        // Tri-state: unsorted (fa-angles-up-down) -> asc (fa-angle-up) -> desc (fa-angle-down) -> unsorted
+        if (dir === 'asc') {
+          return `<span class="${prefix}-sort-icons" data-sort-dir="asc"><fa class="${prefix}-sort-icon" fa-angle-up></fa></span>`;
+        } else if (dir === 'desc') {
+          return `<span class="${prefix}-sort-icons" data-sort-dir="desc"><fa class="${prefix}-sort-icon" fa-angle-down></fa></span>`;
+        } else {
+          return `<span class="${prefix}-sort-icons" data-sort-dir="none"><fa class="${prefix}-sort-icon" fa-angles-up-down></fa></span>`;
+        }
       },
       columns: columns,
     });

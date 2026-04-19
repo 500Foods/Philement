@@ -146,6 +146,30 @@ export function createIconFormatter(lookupData) {
 }
 
 /**
+ * Create an icon + label formatter for a specific lookup table.
+ * Displays both the icon and the label text side by side.
+ *
+ * @param {Array<{id: number, label: string, icon: string}>} lookupData - Pre-loaded lookup data
+ * @returns {Function} A Tabulator formatter function
+ */
+export function createIconLabelFormatter(lookupData) {
+  return function(cell, _onRendered) {
+    const value = cell.getValue();
+    if (value == null || value === '') {
+      return '';
+    }
+    const entry = lookupData.find(item => item.id == value);
+    if (!entry) return String(value);
+
+    const iconHtml = entry.icon || '';
+    const label = entry.label || String(value);
+
+    // Wrap in spans to isolate FontAwesome mutations and provide styling hooks
+    return `<span class="li-lookup-icon-label"><span class="li-lookup-icon">${iconHtml}</span><span class="li-lookup-label">${label}</span></span>`;
+  };
+}
+
+/**
  * Create a lookup editor (list) for a specific lookup table.
  *
  * @param {string|number} lookupRef - Lookup table reference (e.g., 27 or "a27")
@@ -213,6 +237,73 @@ export async function preloadLookups(lookupRefs, authQueryFn, api) {
     })
   );
   return results;
+}
+
+/**
+ * Get a sortable value for a lookup ID.
+ * Returns a tuple [sortSeq, label, id] for proper sorting.
+ *
+ * @param {number} id - The lookup ID
+ * @param {string|number} lookupRef - Lookup table reference
+ * @returns {Array} [sortSeq, label, id] tuple for sorting
+ */
+export function getLookupSortValue(id, lookupRef) {
+  if (id == null) return [0, '', 0];
+  const lookupData = _lookupCache.get(String(lookupRef));
+  if (!lookupData) return [0, String(id), Number(id) || 0];
+  const entry = lookupData.find(item => item.id == id);
+  if (!entry) return [0, String(id), Number(id) || 0];
+  return [
+    entry.sortSeq ?? 0,
+    entry.label ?? '',
+    entry.id ?? 0,
+  ];
+}
+
+/**
+ * Compare two lookup IDs for sorting.
+ * Sorts by: sortSeq ascending, then label ascending (case-insensitive), then id ascending.
+ *
+ * @param {number} aId - First lookup ID
+ * @param {number} bId - Second lookup ID
+ * @param {string|number} lookupRef - Lookup table reference
+ * @param {string} dir - Sort direction ('asc' or 'desc')
+ * @returns {number} Comparison result (-1, 0, 1)
+ */
+export function compareLookupValues(aId, bId, lookupRef, dir = 'asc') {
+  const aVal = getLookupSortValue(aId, lookupRef);
+  const bVal = getLookupSortValue(bId, lookupRef);
+
+  // Compare sortSeq first
+  if (aVal[0] !== bVal[0]) {
+    return dir === 'asc' ? aVal[0] - bVal[0] : bVal[0] - aVal[0];
+  }
+
+  // Then compare label (case-insensitive)
+  const labelA = String(aVal[1]).toLowerCase();
+  const labelB = String(bVal[1]).toLowerCase();
+  if (labelA !== labelB) {
+    const cmp = labelA.localeCompare(labelB);
+    return dir === 'asc' ? cmp : -cmp;
+  }
+
+  // Finally compare id
+  const idDiff = aVal[2] - bVal[2];
+  return dir === 'asc' ? idDiff : -idDiff;
+}
+
+/**
+ * Create a custom sorter function for lookup columns.
+ * This sorter compares lookup values by their display label rather than raw ID.
+ *
+ * @param {string|number} lookupRef - Lookup table reference
+ * @returns {Function} Tabulator sorter function
+ */
+export function createLookupSorter(lookupRef) {
+  return function(a, b, aRow, bRow, column, dir) {
+    // a and b are the raw cell values (lookup IDs)
+    return compareLookupValues(a, b, lookupRef, dir);
+  };
 }
 
 /**

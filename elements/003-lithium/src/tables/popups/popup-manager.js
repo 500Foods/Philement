@@ -7,6 +7,7 @@
  */
 
 import { log, Subsystems, Status } from '../../core/log.js';
+import { closeGroupingPopupImmediate } from './grouping-popup.js';
 
 /**
  * Toggle navigation popup
@@ -22,7 +23,11 @@ export function toggleNavPopup(table, e, popupId) {
     return;
   }
 
-  closeNavPopup(table);
+  // Close any existing popup immediately (no animation) before opening new one
+  closeNavPopupImmediate(table);
+
+  // Dispatch event to close all manager popups
+  document.dispatchEvent(new CustomEvent('close-all-popups'));
 
   const btn = e.currentTarget;
   const popup = buildStandardNavPopup(table, getPopupItems(table, popupId));
@@ -84,11 +89,14 @@ function buildStandardNavPopup(table, items) {
  */
 function showNavPopup(table, btn, popup, popupId) {
   popup.style.position = 'fixed';
-  popup.style.top = '0px';
-  popup.style.left = '0px';
+  // Footer-riseup positioning: bottom-right of popup 1px above top-right of button
   popup.style.bottom = 'auto';
+  popup.style.top = 'auto';
+  popup.style.left = 'auto';
+  popup.style.right = 'auto';
 
-  popup.classList.add('visible');
+  // Add popup-active class to button for toggle styling
+  btn.classList.add('popup-active');
 
   // Check for Column Manager popup
   const hostPopup = btn?.closest?.('.col-manager-popup');
@@ -117,6 +125,11 @@ function showNavPopup(table, btn, popup, popupId) {
   repositionPopup();
   requestAnimationFrame(repositionPopup);
 
+  // Trigger animation after positioning
+  requestAnimationFrame(() => {
+    popup.classList.add('visible');
+  });
+
   table.activeNavPopup = popup;
   table.activeNavPopupId = popupId;
   table.activeNavPopupButton = btn;
@@ -128,53 +141,59 @@ function showNavPopup(table, btn, popup, popupId) {
     }
   };
   document.addEventListener('click', table.navPopupCloseHandler);
+
+  // ESC key handler
+  table.navPopupKeyHandler = (evt) => {
+    if (evt.key === 'Escape') {
+      closeNavPopup(table);
+    }
+  };
+  document.addEventListener('keydown', table.navPopupKeyHandler);
+
+  // Listen for close-all-popups from manager menus
+  table.navPopupGlobalCloseHandler = () => {
+    closeNavPopup(table);
+  };
+  document.addEventListener('close-all-popups', table.navPopupGlobalCloseHandler);
+
   window.addEventListener('resize', repositionPopup);
   document.addEventListener('scroll', repositionPopup, true);
 }
 
 /**
- * Position popup relative to button
+ * Position popup relative to button using footer-riseup style
+ * Bottom-right corner of popup is 1px above top-right corner of button
  * @param {HTMLElement} btn - Button element
  * @param {HTMLElement} popup - Popup element
  */
 function positionNavPopup(btn, popup) {
   if (!btn || !popup) return;
 
-  const viewportPadding = 8;
-  const gap = 4;
   const btnRect = btn.getBoundingClientRect();
-  const popupRect = popup.getBoundingClientRect();
-  const popupWidth = popupRect.width || popup.offsetWidth || 0;
-  const popupHeight = popupRect.height || popup.offsetHeight || 0;
-  const availableAbove = btnRect.top - viewportPadding;
-  const availableBelow = window.innerHeight - btnRect.bottom - viewportPadding;
 
-  let top;
-  if (popupHeight <= availableAbove || availableAbove >= availableBelow) {
-    top = btnRect.top - popupHeight - gap;
-  } else {
-    top = btnRect.bottom + gap;
-  }
-
-  let left = btnRect.left;
-  if (left + popupWidth > window.innerWidth - viewportPadding) {
-    left = window.innerWidth - popupWidth - viewportPadding;
-  }
-  if (left < viewportPadding) {
-    left = viewportPadding;
-  }
-
-  const maxTop = Math.max(viewportPadding, window.innerHeight - popupHeight - viewportPadding);
-  popup.style.top = `${Math.min(Math.max(top, viewportPadding), maxTop)}px`;
-  popup.style.left = `${left}px`;
-  popup.style.right = 'auto';
+  // Footer-riseup positioning: bottom-right of popup 1px above top-right of button
+  popup.style.bottom = `${window.innerHeight - btnRect.top + 1}px`;
+  popup.style.right = `${window.innerWidth - btnRect.right}px`;
+  popup.style.top = 'auto';
+  popup.style.left = 'auto';
 }
 
 /**
- * Close active navigation popup
+ * Close active navigation popup immediately (no animation)
+ * Used when opening a new popup to avoid animation conflicts
  * @param {Object} table - LithiumTable instance
  */
-export function closeNavPopup(table) {
+export function closeNavPopupImmediate(table) {
+  // Handle grouping popup specifically if that's what's open
+  if (table.activeNavPopupId === 'grouping') {
+    closeGroupingPopupImmediate(table);
+    return;
+  }
+
+  // Remove popup-active class from button
+  if (table.activeNavPopupButton) {
+    table.activeNavPopupButton.classList.remove('popup-active');
+  }
   if (table.activeNavPopup) {
     table.activeNavPopup.remove();
     table.activeNavPopup = null;
@@ -184,6 +203,51 @@ export function closeNavPopup(table) {
   if (table.navPopupCloseHandler) {
     document.removeEventListener('click', table.navPopupCloseHandler);
     table.navPopupCloseHandler = null;
+  }
+  if (table.navPopupKeyHandler) {
+    document.removeEventListener('keydown', table.navPopupKeyHandler);
+    table.navPopupKeyHandler = null;
+  }
+  if (table.navPopupGlobalCloseHandler) {
+    document.removeEventListener('close-all-popups', table.navPopupGlobalCloseHandler);
+    table.navPopupGlobalCloseHandler = null;
+  }
+  if (table.navPopupRepositionHandler) {
+    window.removeEventListener('resize', table.navPopupRepositionHandler);
+    document.removeEventListener('scroll', table.navPopupRepositionHandler, true);
+    table.navPopupRepositionHandler = null;
+  }
+}
+
+/**
+ * Close active navigation popup with animation
+ * @param {Object} table - LithiumTable instance
+ */
+export function closeNavPopup(table) {
+  // Remove popup-active class from button
+  if (table.activeNavPopupButton) {
+    table.activeNavPopupButton.classList.remove('popup-active');
+  }
+  if (table.activeNavPopup) {
+    table.activeNavPopup.classList.remove('visible');
+    // Remove after animation completes
+    const duration = 200; // Match transition duration
+    setTimeout(() => {
+      if (table.activeNavPopup && table.activeNavPopup.parentNode) {
+        table.activeNavPopup.remove();
+      }
+    }, duration);
+    table.activeNavPopup = null;
+    table.activeNavPopupId = null;
+    table.activeNavPopupButton = null;
+  }
+  if (table.navPopupCloseHandler) {
+    document.removeEventListener('click', table.navPopupCloseHandler);
+    table.navPopupCloseHandler = null;
+  }
+  if (table.navPopupKeyHandler) {
+    document.removeEventListener('keydown', table.navPopupKeyHandler);
+    table.navPopupKeyHandler = null;
   }
   if (table.navPopupRepositionHandler) {
     window.removeEventListener('resize', table.navPopupRepositionHandler);
@@ -211,12 +275,6 @@ export function closeTransientPopups(table) {
  */
 function getPopupItems(table, popupId) {
   switch (popupId) {
-    case 'menu':
-      return [
-        { label: 'Expand All', action: () => table.expandAll?.() },
-        { label: 'Collapse All', action: () => table.collapseAll?.() },
-        { label: 'Toggle Row Height', action: () => table.toggleRowHeight?.() },
-      ];
     case 'width':
       return [
         { label: 'Narrow', checked: table.tableWidthMode === 'narrow', action: () => table.setTableWidth?.('narrow') },

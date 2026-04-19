@@ -59,7 +59,7 @@ Time-only values (HH:mm or HH:mm:ss).
   // -- Grouping --
   "groupable": false,
   "groupPri": null,
-  "groupOrd": "asc",
+  "groupDir": "asc",
   "columnPri": null,
 
   // -- Data --

@@ -1374,13 +1374,12 @@ ${selector}:disabled {
     }
     // Animate popup close
     if (this._footerExportPopup) {
-      this._footerExportPopup.classList.remove('visible');
-      const duration = parseFloat(getComputedStyle(this._footerExportPopup).transitionDuration) * 1000 || 350;
+      const popup = this._footerExportPopup;
+      this._footerExportPopup = null; // Clear reference immediately
+      popup.classList.remove('visible');
+      const duration = parseFloat(getComputedStyle(popup).transitionDuration) * 1000 || 350;
       setTimeout(() => {
-        if (this._footerExportPopup) {
-          this._footerExportPopup.remove();
-          this._footerExportPopup = null;
-        }
+        popup.remove();
       }, duration);
     }
     if (this._footerExportCloseHandler) {

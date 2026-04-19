@@ -619,6 +619,52 @@ if (savedChildId) {
 }
 ```
 
+### Dirty State Tracking and Save Guards
+
+**Critical Pattern:** When implementing dirty detection during row changes, use `getEditingRow()` not `getSelectedDataRow()`:
+
+```javascript
+// WRONG: When switching rows, Tabulator has already selected the new row
+const currentRow = this.getSelectedDataRow(); // Returns the NEW row!
+
+// CORRECT: Always use the editing row for snapshot/comparison
+const editingRow = this.getEditingRow(); // Returns the row being edited
+```
+
+**Save Operation Guards:** Always protect against concurrent saves and spurious save attempts:
+
+```javascript
+async autoSaveBeforeRowChange() {
+  // Guard 1: Prevent concurrent saves
+  if (this._saveInProgress) return true;
+
+  // Guard 2: Verify actually dirty
+  const actuallyDirty = this.isActuallyDirty?.() || this.isDirty;
+  if (!actuallyDirty) return true;
+
+  this._saveInProgress = true;
+  try {
+    await this.executeSave(row);
+    // ... success handling
+  } finally {
+    this._saveInProgress = false;
+  }
+}
+```
+
+**Type-Safe Comparisons:** Use loose equality for primitive comparisons to handle API type mismatches:
+
+```javascript
+// Handles "431" (string from API) vs 431 (number in JS)
+const isChanged = snapshotVal != currentVal; // NOT !==
+```
+
+**Null/Empty Equivalence:** Treat null/undefined/empty string as equivalent to avoid false positives:
+
+```javascript
+const isEmpty = val == null || val === ''; // Treats null, undefined, '' as same
+```
+
 ---
 
 ## Next Steps
