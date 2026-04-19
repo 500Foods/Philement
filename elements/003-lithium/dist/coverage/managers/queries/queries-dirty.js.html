@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><title>Code coverage report for managers/queries/queries-dirty.js</title><meta charset="utf-8"><link rel="stylesheet" href="../../prettify.css"><link rel="stylesheet" href="../../base.css"><link rel="shortcut icon" type="image/x-icon" href="../../favicon.png"><meta name="viewport" content="width=device-width,initial-scale=1"><style type="text/css">.coverage-summary .sorter{background-image:url(../../sort-arrow-sprite.png)}</style></head><body><div class="wrapper"><div class="pad1"><h1><a href="../../index.html">All files</a> / <a href="index.html">managers/queries</a> queries-dirty.js</h1><div class="clearfix"><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Statements</span> <span class="fraction">0/72</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Branches</span> <span class="fraction">0/67</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Functions</span> <span class="fraction">0/17</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Lines</span> <span class="fraction">0/68</span></div></div><p class="quiet">Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.</p><template id="filterTemplate"><div class="quiet">Filter: <input type="search" id="fileSearch"></div></template></div><div class="status-line low"></div><pre><table class="coverage">
+<!doctype html><html lang="en"><head><title>Code coverage report for managers/queries/queries-dirty.js</title><meta charset="utf-8"><link rel="stylesheet" href="../../prettify.css"><link rel="stylesheet" href="../../base.css"><link rel="shortcut icon" type="image/x-icon" href="../../favicon.png"><meta name="viewport" content="width=device-width,initial-scale=1"><style type="text/css">.coverage-summary .sorter{background-image:url(../../sort-arrow-sprite.png)}</style></head><body><div class="wrapper"><div class="pad1"><h1><a href="../../index.html">All files</a> / <a href="index.html">managers/queries</a> queries-dirty.js</h1><div class="clearfix"><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Statements</span> <span class="fraction">0/71</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Branches</span> <span class="fraction">0/67</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Functions</span> <span class="fraction">0/17</span></div><div class="fl pad1y space-right2"><span class="strong">0% </span><span class="quiet">Lines</span> <span class="fraction">0/67</span></div></div><p class="quiet">Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.</p><template id="filterTemplate"><div class="quiet">Filter: <input type="search" id="fileSearch"></div></template></div><div class="status-line low"></div><pre><table class="coverage">
 <tr><td class="line-count quiet"><a name="L1"></a><a href="#L1">1</a>
 <a name="L2"></a><a href="#L2">2</a>
 <a name="L3"></a><a href="#L3">3</a>
@@ -350,10 +350,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -361,6 +357,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -605,24 +605,24 @@ export class DirtyStateTracker {
    */
 <span class="fstat-no" title="function not covered">  captureOriginalData(</span>queryData, editors = <span class="branch-0 cbranch-no" title="branch not covered">{})</span> {
 <span class="cstat-no" title="statement not covered">    if (!queryData) <span class="cstat-no" title="statement not covered">return;</span></span>
-    
+&nbsp;
 <span class="cstat-no" title="statement not covered">    this._originalRowData = { ...queryData };</span>
-    
-    // Capture SQL: editor &gt; pending content &gt; row data
-<span class="cstat-no" title="statement not covered">    this._originalSqlContent = editors.sql?.state?.doc?.toString()</span>
-      ?? editors.sqlContent
-      ?? queryData.code ?? queryData.query_text ?? queryData.sql ?? '';
-    
-    // Capture Summary: editor &gt; pending content &gt; row data
-<span class="cstat-no" title="statement not covered">    this._originalSummaryContent = editors.summary?.state?.doc?.toString()</span>
-      ?? editors.summaryContent
-      ?? queryData.summary ?? queryData.markdown ?? '';
-    
-    // Capture Collection: editor &gt; pending content &gt; row data
-    const collectionFromEditor = <span class="cstat-no" title="statement not covered">editors.collection?.state?.doc?.toString();</span>
-    const collection = <span class="cstat-no" title="statement not covered">collectionFromEditor</span>
-      ?? editors.collectionContent
-      ?? queryData.collection ?? queryData.json ?? {};
+&nbsp;
+    // Capture SQL: pending content &gt; row data &gt; editor (as last resort)
+    // IMPORTANT: Use pending content (fresh from DB) over editor content (might be stale from previous row)
+<span class="cstat-no" title="statement not covered">    this._originalSqlContent = editors.sqlContent</span>
+      ?? queryData.code ?? queryData.query_text ?? queryData.sql
+      ?? editors.sql?.state?.doc?.toString() ?? '';
+&nbsp;
+    // Capture Summary: pending content &gt; row data &gt; editor
+<span class="cstat-no" title="statement not covered">    this._originalSummaryContent = editors.summaryContent</span>
+      ?? queryData.summary ?? queryData.markdown
+      ?? editors.summary?.state?.doc?.toString() ?? '';
+&nbsp;
+    // Capture Collection: pending content &gt; row data &gt; editor
+    const collection = <span class="cstat-no" title="statement not covered">editors.collectionContent</span>
+      ?? queryData.collection ?? queryData.json
+      ?? editors.collection?.state?.doc?.toString() ?? {};
 <span class="cstat-no" title="statement not covered">    this._originalCollectionContent = typeof collection === 'string' ? collection : JSON.stringify(collection);</span>
     
 <span class="cstat-no" title="statement not covered">    this.markAllClean();</span>
@@ -776,4 +776,4 @@ export class DirtyStateTracker {
 export function <span class="fstat-no" title="function not covered">createDirtyStateTracker(</span>manager) {
 <span class="cstat-no" title="statement not covered">  return new DirtyStateTracker(manager);</span>
 }
-&nbsp;</pre></td></tr></table></pre><div class="push"></div></div><div class="footer quiet pad2 space-top1 center small">Code coverage generated by <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a> at 2026-04-17T17:06:03.309Z</div><script src="../../prettify.js"></script><script>window.onload=function(){prettyPrint()}</script><script src="../../sorter.js"></script><script src="../../block-navigation.js"></script></body></html>
+&nbsp;</pre></td></tr></table></pre><div class="push"></div></div><div class="footer quiet pad2 space-top1 center small">Code coverage generated by <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a> at 2026-04-19T03:55:27.847Z</div><script src="../../prettify.js"></script><script>window.onload=function(){prettyPrint()}</script><script src="../../sorter.js"></script><script src="../../block-navigation.js"></script></body></html>

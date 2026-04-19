@@ -495,21 +495,27 @@ export async function refreshTabulatorSchemas() {
   logger.info('Force-refreshing tabulator schemas from server...');
 
   try {
-    const batchResults = await fetchBatchQueries([60], '060');
+    // Use authQuery to ensure JWT authentication is included
+    const { authQuery } = await import('./conduit.js');
+    const freshSchemas = await authQuery(null, 60);
 
-    const freshSchemas = batchResults[0] || [];
-    cache.tabulator_schemas = freshSchemas;
-    tabulatorSchemasTimestamp = Date.now();
+    if (freshSchemas && Array.isArray(freshSchemas)) {
+      cache.tabulator_schemas = freshSchemas;
+      tabulatorSchemasTimestamp = Date.now();
 
-    // Update localStorage without overwriting other lookups
-    saveToLocalStorage(cache);
+      // Update localStorage without overwriting other lookups
+      saveToLocalStorage(cache);
 
-    logger.info(`Tabulator schemas refreshed: ${freshSchemas.length} entries`);
+      logger.info(`Tabulator schemas refreshed: ${freshSchemas.length} entries`);
 
-    // Emit event so LithiumTable can clear its internal cache
-    eventBus.emitSilent(Events.LOOKUPS_REFRESHED, { category: 'tabulator_schemas' });
+      // Emit event so LithiumTable can clear its internal cache
+      eventBus.emitSilent(Events.LOOKUPS_REFRESHED, { category: 'tabulator_schemas' });
 
-    return freshSchemas;
+      return freshSchemas;
+    } else {
+      logger.warn('Tabulator schemas refresh returned invalid data');
+      return cache?.tabulator_schemas || null;
+    }
   } catch (error) {
     logger.warn(`Failed to refresh tabulator schemas: ${error.message}`);
     return cache?.tabulator_schemas || null;

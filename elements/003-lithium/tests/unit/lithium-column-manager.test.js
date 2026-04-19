@@ -216,7 +216,6 @@ describe('LithiumColumnManager', () => {
         alwaysEditable: false,
         tablePath: 'column-manager/column-manager',
         storageKey: 'lithium_column_manager',
-        useColumnManager: true,
       }));
     });
 
@@ -249,7 +248,6 @@ describe('LithiumColumnManager', () => {
       expect(LithiumTable).toHaveBeenCalledWith(expect.objectContaining({
         tablePath: 'column-manager/column-manager-manager',
         storageKey: 'lithium_column_manager_manager',
-        useColumnManager: false,
       }));
 
       popupHost.remove();

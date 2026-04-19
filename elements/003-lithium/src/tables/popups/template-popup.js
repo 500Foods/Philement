@@ -31,7 +31,7 @@ export function buildTemplatePopup(table) {
     if (!savedTemplate) return;
     table.templateMenuSelectedName = getTemplateName(table, savedTemplate);
     refreshTemplatePopup(table);
-  }, { icon: 'floppy-disk' }));
+  }, { icon: 'square' }));
 
   popup.appendChild(createTemplateMenuAction(table, 'Clear Template', () => {
     logTemplateMenuSelection(table, 'clear');

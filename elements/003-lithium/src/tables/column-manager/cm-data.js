@@ -51,14 +51,18 @@ export async function loadColumnData(cm) {
         }
       }
 
+      // Get Lithium metadata from parent table's _columnMeta Map
+      const field = col.getField();
+      const lithiumMeta = cm.parentTable._columnMeta?.get(field) || {};
+
       return {
-        field: col.getField(),
-        title: def.title || col.getField(),
+        field: field,
+        title: def.title || field,
         visible: col.isVisible(),
-        coltype: def.lithiumColtype || def.coltype || 'string',
+        coltype: lithiumMeta.coltype || 'string',
         bottomCalc: summaryValue,
         hozAlign: def.hozAlign || 'left',
-        editable: def.lithiumEditable ?? (def.editable === true),
+        editable: lithiumMeta.editable ?? (def.editable === true),
         editor: def.editor || null,
         sorter: def.sorter || null,
         formatter: def.formatter || null,
@@ -167,6 +171,11 @@ export function captureParentStateAsOriginal(cm) {
   cm.originalColumns = cm.parentTable.table.getColumns().map((col) => {
     const def = col.getDefinition();
     const element = col.getElement();
+    const field = col.getField();
+
+    // Get Lithium metadata from parent table's _columnMeta Map
+    const lithiumMeta = cm.parentTable._columnMeta?.get(field) || {};
+
     let actualWidth = def.width || null;
     if (element && element.offsetWidth !== undefined) {
       const computedWidth = element.offsetWidth;
@@ -185,15 +194,15 @@ export function captureParentStateAsOriginal(cm) {
     }
 
     return {
-      field: col.getField(),
-      title: def.title || col.getField(),
+      field: field,
+      title: def.title || field,
       visible: col.isVisible(),
-      coltype: def.lithiumColtype || def.coltype || 'string',
+      coltype: lithiumMeta.coltype || 'string',
       bottomCalc: summaryValue,
       hozAlign: def.hozAlign || 'left',
       width: actualWidth,
       category: def.category || 'Default',
-      editable: def.lithiumEditable ?? (def.editable === true),
+      editable: lithiumMeta.editable ?? (def.editable === true),
     };
   });
 }
