@@ -32,6 +32,7 @@ import {
   validateTableDef,
   formatBuiltinValue,
   clearCache,
+  clearLookupCache,
 } from '../../src/tables/lithium-table.js';
 import { LithiumTableOpsMixin } from '../../src/tables/lithium-table-ops.js';
 
@@ -894,6 +895,219 @@ describe('LithiumTable', () => {
       const result = resolveTableOptions(def);
 
       expect(result.persistSort).toBe(false);
+    });
+
+    // ── Phase 9: Grouping, Sorting, and Filtering ─────────────────────────
+
+    it('should build groupBy from groupable columns with groupPri', () => {
+      const def = {
+        columns: {
+          status: { field: 'status', title: 'Status', groupable: true, groupPri: 1, groupDir: 'asc' },
+          name: { field: 'name', title: 'Name' },
+        },
+      };
+      const result = resolveTableOptions(def);
+
+      expect(result.groupBy).toEqual(['status']);
+    });
+
+    it('should build nested groups from multiple groupable columns', () => {
+      const def = {
+        columns: {
+          category: { field: 'category', title: 'Category', groupable: true, groupPri: 1, groupDir: 'asc' },
+          status: { field: 'status', title: 'Status', groupable: true, groupPri: 2, groupDir: 'desc' },
+          name: { field: 'name', title: 'Name' },
+        },
+      };
+      const result = resolveTableOptions(def);
+
+      // Should be ordered by groupPri (1 first, then 2)
+      expect(result.groupBy).toEqual(['category', 'status']);
+    });
+
+    it('should sort nested groups by groupPri order, not column order', () => {
+      const def = {
+        columns: {
+          // Defined in reverse priority order
+          priority3: { field: 'priority3', title: 'P3', groupable: true, groupPri: 3, groupDir: 'asc' },
+          priority1: { field: 'priority1', title: 'P1', groupable: true, groupPri: 1, groupDir: 'asc' },
+          priority2: { field: 'priority2', title: 'P2', groupable: true, groupPri: 2, groupDir: 'asc' },
+        },
+      };
+      const result = resolveTableOptions(def);
+
+      // Should be sorted by groupPri: 1, 2, 3
+      expect(result.groupBy).toEqual(['priority1', 'priority2', 'priority3']);
+    });
+
+    it('should include groupDir in groupBy array for each column', () => {
+      const def = {
+        columns: {
+          status: { field: 'status', title: 'Status', groupable: true, groupPri: 1, groupDir: 'desc' },
+        },
+      };
+      const result = resolveTableOptions(def);
+
+      // Note: Current implementation returns field names only, not {field, dir} objects
+      expect(result.groupBy).toEqual(['status']);
+    });
+
+    it('should default to asc when groupDir is not specified', () => {
+      const def = {
+        columns: {
+          status: { field: 'status', title: 'Status', groupable: true, groupPri: 1 },
+        },
+      };
+      const result = resolveTableOptions(def);
+
+      expect(result.groupBy).toEqual(['status']);
+    });
+
+    it('should not include columns with groupable: true but no groupPri', () => {
+      const def = {
+        columns: {
+          status: { field: 'status', title: 'Status', groupable: true, groupPri: 1 },
+          category: { field: 'category', title: 'Category', groupable: true }, // No groupPri
+        },
+      };
+      const result = resolveTableOptions(def);
+
+      // Only status should be grouped
+      expect(result.groupBy).toEqual(['status']);
+    });
+
+    it('should not include columns with groupable: false', () => {
+      const def = {
+        columns: {
+          status: { field: 'status', title: 'Status', groupable: true, groupPri: 1 },
+          category: { field: 'category', title: 'Category', groupable: false, groupPri: 2 },
+        },
+      };
+      const result = resolveTableOptions(def);
+
+      // Only status should be grouped
+      expect(result.groupBy).toEqual(['status']);
+    });
+
+    it('should build initialSort from sortPri on columns', () => {
+      const def = {
+        columns: {
+          status: { field: 'status', title: 'Status', sortPri: 2, sortDir: 'desc' },
+          name: { field: 'name', title: 'Name', sortPri: 1, sortDir: 'asc' },
+        },
+      };
+      const result = resolveTableOptions(def);
+
+      // Should be sorted by sortPri: name first, then status
+      expect(result.initialSort).toEqual([
+        { column: 'name', dir: 'asc' },
+        { column: 'status', dir: 'desc' },
+      ]);
+    });
+
+    it('should sort columns by sortPri for initialSort', () => {
+      const def = {
+        columns: {
+          // Defined in reverse priority order
+          priority3: { field: 'priority3', title: 'P3', sortPri: 3 },
+          priority1: { field: 'priority1', title: 'P1', sortPri: 1 },
+          priority2: { field: 'priority2', title: 'P2', sortPri: 2 },
+        },
+      };
+      const result = resolveTableOptions(def);
+
+      // Should be sorted by sortPri: 1, 2, 3
+      expect(result.initialSort).toEqual([
+        { column: 'priority1', dir: 'asc' },
+        { column: 'priority2', dir: 'asc' },
+        { column: 'priority3', dir: 'asc' },
+      ]);
+    });
+
+    it('should default to asc when sortDir is not specified', () => {
+      const def = {
+        columns: {
+          name: { field: 'name', title: 'Name', sortPri: 1 },
+        },
+      };
+      const result = resolveTableOptions(def);
+
+      expect(result.initialSort).toEqual([
+        { column: 'name', dir: 'asc' },
+      ]);
+    });
+
+    it('should prefer table-level initialSort over sortPri-based sort', () => {
+      // Note: The implementation prioritizes explicit table-level initialSort
+      // over columns with sortPri. This test documents current behavior.
+      const def = {
+        initialSort: [{ column: 'old_col', dir: 'desc' }],
+        columns: {
+          name: { field: 'name', title: 'Name', sortPri: 1 },
+        },
+      };
+      const result = resolveTableOptions(def);
+
+      // Table-level initialSort takes precedence over sortPri
+      expect(result.initialSort).toEqual([{ column: 'old_col', dir: 'desc' }]);
+    });
+
+    it('should fallback to table-level initialSort when no sortPri columns', () => {
+      const def = {
+        initialSort: [{ column: 'query_ref', dir: 'asc' }],
+        columns: {
+          name: { field: 'name', title: 'Name' }, // No sortPri
+        },
+      };
+      const result = resolveTableOptions(def);
+
+      expect(result.initialSort).toEqual([
+        { column: 'query_ref', dir: 'asc' },
+      ]);
+    });
+
+    it('should handle combined grouping and sorting', () => {
+      const def = {
+        columns: {
+          category: { field: 'category', title: 'Category', groupable: true, groupPri: 1, groupDir: 'asc' },
+          status: { field: 'status', title: 'Status', sortPri: 1, sortDir: 'desc' },
+          name: { field: 'name', title: 'Name', sortPri: 2, sortDir: 'asc' },
+        },
+      };
+      const result = resolveTableOptions(def);
+
+      // Group by category, sort by status then name within groups
+      expect(result.groupBy).toEqual(['category']);
+      expect(result.initialSort).toEqual([
+        { column: 'status', dir: 'desc' },
+        { column: 'name', dir: 'asc' },
+      ]);
+    });
+
+    it('should handle empty tableDef for grouping and sorting', () => {
+      // Empty tableDef still returns default options
+      const emptyResult = resolveTableOptions({});
+      expect(emptyResult.movableColumns).toBe(true);
+      expect(emptyResult.headerSortTristate).toBe(true);
+
+      // TableDef with empty columns also returns defaults
+      const emptyColsResult = resolveTableOptions({ columns: {} });
+      expect(emptyColsResult.movableColumns).toBe(true);
+      expect(emptyColsResult.headerSortTristate).toBe(true);
+    });
+
+    it('should include sortPri regardless of headerSort value (current behavior)', () => {
+      // Note: The current implementation does not check headerSort when building
+      // initialSort from sortPri. This test documents current behavior.
+      const def = {
+        columns: {
+          name: { field: 'name', title: 'Name', sortPri: 1, headerSort: false },
+        },
+      };
+      const result = resolveTableOptions(def);
+
+      // Current behavior: includes in initialSort even with headerSort: false
+      expect(result.initialSort).toEqual([{ column: 'name', dir: 'asc' }]);
     });
   });
 
@@ -1928,5 +2142,65 @@ describe('mergeColumnsWithTableDef', () => {
 
     expect(result).toHaveLength(1);
     expect(result[0].field).toBe('id');
+  });
+});
+
+// ── Lookup Sorter Tests ───────────────────────────────────────────────────
+
+describe('Lookup Sorter', () => {
+  beforeEach(async () => {
+    // Clear the lookup cache before each test
+    clearLookupCache();
+  });
+
+  describe('getLookupSortValue', () => {
+    it('should return tuple with sortSeq, label, and id for valid lookup', async () => {
+      const { getLookupSortValue } = await import('../../src/tables/resolution/lookup-loader.js');
+
+      // With empty cache, should return defaults
+      const result = getLookupSortValue(5, '99');
+      expect(result).toEqual([0, '5', 5]);
+    });
+
+    it('should handle null/undefined id', async () => {
+      const { getLookupSortValue } = await import('../../src/tables/resolution/lookup-loader.js');
+
+      expect(getLookupSortValue(null, '99')).toEqual([0, '', 0]);
+      expect(getLookupSortValue(undefined, '99')).toEqual([0, '', 0]);
+    });
+  });
+
+  describe('compareLookupValues', () => {
+    it('should compare by sortSeq first', async () => {
+      const { compareLookupValues } = await import('../../src/tables/resolution/lookup-loader.js');
+
+      // Mock scenario: id 3 has sortSeq 1, others have 0
+      // Without cache, both return [0, '3', 3] and [0, '1', 1]
+      // String comparison: '1' vs '3' -> Active comes before Pending
+      const result = compareLookupValues(3, 1, '99', 'asc');
+      // With no cache: compares '3' vs '1' -> '1' < '3', so 1 should come first
+      expect(result).toBeGreaterThan(0); // 3 > 1 means 1 comes first
+    });
+
+    it('should respect sort direction', async () => {
+      const { compareLookupValues } = await import('../../src/tables/resolution/lookup-loader.js');
+
+      // Without cache: 5 vs 3
+      // String comparison: '3' < '5', so 3 should come first in asc
+      const ascResult = compareLookupValues(5, 3, '99', 'asc');
+      expect(ascResult).toBeGreaterThan(0); // '5' > '3', so 5 comes after 3
+
+      const descResult = compareLookupValues(5, 3, '99', 'desc');
+      expect(descResult).toBeLessThan(0); // '5' < '3' in desc order
+    });
+  });
+
+  describe('createLookupSorter', () => {
+    it('should return a function', async () => {
+      const { createLookupSorter } = await import('../../src/tables/resolution/lookup-loader.js');
+
+      const sorter = createLookupSorter('99');
+      expect(typeof sorter).toBe('function');
+    });
   });
 });

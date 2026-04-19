@@ -26,6 +26,10 @@ export const CANONICAL_COLUMN_PROPS = new Set([
   'visible', 'width', 'minWidth', 'maxWidth', 'hozAlign', 'vertAlign',
   // Sorting and filtering
   'sort', 'filter', 'editable',
+  // Grouping configuration
+  'groupable', 'groupPri', 'groupDir', 'groupStyle', 'groupTitle',
+  // Multi-column sort configuration
+  'sortPri', 'sortDir',
   // Formatting
   'formatter', 'formatterParams',
   // Editing
@@ -98,6 +102,12 @@ export function extractTableDefColumn(column, originalColDef = {}, lithiumMeta =
   }
   if (lithiumMeta.lookupEdit) {
     colDef.lookupEdit = lithiumMeta.lookupEdit;
+  }
+  if (lithiumMeta.groupStyle) {
+    colDef.groupStyle = lithiumMeta.groupStyle;
+  }
+  if (lithiumMeta.groupTitle) {
+    colDef.groupTitle = lithiumMeta.groupTitle;
   }
 
   // Column priority (display order)

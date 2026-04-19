@@ -59,7 +59,7 @@ The default column type serves as the foundation for all other types. Every colu
     // -- Grouping --
     "groupable": false,
     "groupPri": null,
-    "groupOrd": "asc",
+    "groupDir": "asc",
     "columnPri": null,
 
     // -- Data --

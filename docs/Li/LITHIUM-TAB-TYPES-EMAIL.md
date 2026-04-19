@@ -58,7 +58,7 @@ Email address (clickable mailto link).
   // -- Grouping --
   "groupable": false,
   "groupPri": null,
-  "groupOrd": "asc",
+  "groupDir": "asc",
   "columnPri": null,
 
   // -- Data --

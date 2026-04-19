@@ -53,7 +53,7 @@
 .lithium-table-container .tabulator-row.tabulator-group .lithium-group-header {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   user-select: none;
   cursor: pointer;
 }
@@ -130,7 +130,7 @@
 */
 .lithium-table-container .tabulator-row.tabulator-group span.lithium-group-header svg {
   font-size: 14px;
-  margin: 0px -6px 0px -10px;
+  margin: -2px -6px 0px -10px;
 }
 
 /* Title styling */
@@ -143,10 +143,12 @@
 .lithium-table-container .tabulator-row.tabulator-group .lithium-group-count {
   color: var(--text-muted);
   font-size: var(--font-size-xs);
+  margin-top: -3px;
 }
 
 .tabulator-row.tabulator-group span {
 	margin-left: 4px;
+  color: var(--text-primary);
 }
 
 /* adjustments for lookups */

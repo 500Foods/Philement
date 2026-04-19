@@ -36,7 +36,10 @@ import {
   resolveLookupLabel,
   createLookupFormatter,
   createIconFormatter,
+  createIconLabelFormatter,
   createLookupEditor,
+  createLookupSorter,
+  compareLookupValues,
   preloadLookups,
   clearLookupCache,
 } from './resolution/lookup-loader.js';
@@ -105,7 +108,11 @@ export {
   getLookup,
   resolveLookupLabel,
   createLookupFormatter,
+  createIconFormatter,
+  createIconLabelFormatter,
   createLookupEditor,
+  createLookupSorter,
+  compareLookupValues,
   preloadLookups,
   clearLookupCache,
 
@@ -159,12 +166,20 @@ export function resolveColumn(fieldName, colDef, coltypes, options = {}) {
     visible: colDef.visible,
     sort: colDef.sort,
     filter: colDef.filter,
-    group: colDef.group,
+    groupable: colDef.groupable,
+    groupPri: colDef.groupPri,
+    groupDir: colDef.groupDir,
+    sortPri: colDef.sortPri,
+    sortDir: colDef.sortDir,
     editable: colDef.editable,
     calculated: colDef.calculated,
     primaryKey: colDef.primaryKey,
     description: colDef.description,
     lookupRef: colDef.lookupRef,
+    lookupStyle: colDef.lookupStyle,
+    lookupEdit: colDef.lookupEdit,
+    groupStyle: colDef.groupStyle,
+    groupTitle: colDef.groupTitle,
   };
 
   // Filter out Lithium-specific keys from merged (rest goes to Tabulator)
@@ -222,13 +237,17 @@ export function resolveColumn(fieldName, colDef, coltypes, options = {}) {
   // all other columns wrap with blank/zero handler.
   if (colDef.lookupRef && getLookup(colDef.lookupRef)) {
     const lookupData = getLookup(colDef.lookupRef);
-    // lookupStyle: 'icon' shows icon only; default 'label' shows text
+    // lookupStyle: 'icon' shows icon only; 'iconLabel' shows both; default 'label' shows text only
     if (colDef.lookupStyle === 'icon') {
       tabulatorCol.formatter = createIconFormatter(lookupData);
+    } else if (colDef.lookupStyle === 'iconLabel') {
+      tabulatorCol.formatter = createIconLabelFormatter(lookupData);
     } else {
       // Default: lookup formatter resolves integer IDs → human-readable labels
       tabulatorCol.formatter = createLookupFormatter(colDef.lookupRef);
     }
+    // Use custom sorter that sorts by lookup label, not raw ID
+    tabulatorCol.sorter = createLookupSorter(colDef.lookupRef);
   } else if (merged.formatter) {
     tabulatorCol.formatter = wrapFormatter(
       merged.formatter,
@@ -432,12 +451,19 @@ function extractColumnMeta(colDef) {
     editable: colDef.editable === true,
     sort: colDef.sort !== false,
     filter: colDef.filter !== false,
+    groupable: colDef.groupable === true,
+    groupPri: colDef.groupPri ?? null,
+    groupDir: colDef.groupDir || 'asc',
+    sortPri: colDef.sortPri ?? null,
+    sortDir: colDef.sortDir || 'asc',
     calculated: colDef.calculated === true,
     primaryKey: colDef.primaryKey === true,
     description: colDef.description || `${colDef.title || colDef.field} column`,
     lookupRef: colDef.lookupRef || null,
     lookupStyle: colDef.lookupStyle || null,
     lookupEdit: colDef.lookupEdit || null,
+    groupStyle: colDef.groupStyle || null,
+    groupTitle: colDef.groupTitle || null,
     columnPri: colDef.columnPri ?? null,
   };
 }
@@ -494,32 +520,49 @@ export function resolveTableOptions(tableDef) {
   if (tableDef.resizableColumns != null) opts.resizableColumns = tableDef.resizableColumns;
   if (tableDef.initialSort) opts.initialSort = tableDef.initialSort;
 
-  // Resolve groupBy: if explicitly set in tableDef, use it; otherwise compute from column group values
+  // Resolve groupBy: if explicitly set in tableDef, use it; otherwise compute from column grouping props
   if (tableDef.groupBy) {
     // Explicit groupBy string takes precedence
     opts.groupBy = tableDef.groupBy;
   } else if (tableDef.columns) {
-    // Auto-compute groupBy from column group properties
-    // group: null/undefined/false/0/negative = not grouped
-    // group: true = grouped with order 1
-    // group: positive number = grouped with that order
+    // Auto-compute groupBy from column groupable/groupPri properties
+    // groupable: false/null/undefined = not grouped
+    // groupable: true + groupPri: null = not grouped (explicit opt-out)
+    // groupable: true + groupPri: number = grouped with that priority (1 = outermost)
     const groupedCols = [];
     for (const [fieldName, colDef] of Object.entries(tableDef.columns)) {
-      const groupOrder = colDef.group;
-      // Skip if null, undefined, false, 0, or negative
-      if (groupOrder == null || groupOrder === false || groupOrder === 0 || groupOrder < 0) {
+      // Skip if not groupable
+      if (colDef.groupable !== true) {
         continue;
       }
-      // true becomes 1, numbers are used as-is
-      const order = groupOrder === true ? 1 : Number(groupOrder);
+      // Skip if groupPri is null/undefined (not in a group)
+      if (colDef.groupPri == null) {
+        continue;
+      }
+      const order = Number(colDef.groupPri);
       if (order > 0) {
-        groupedCols.push({ field: fieldName, order });
+        groupedCols.push({
+          field: fieldName,
+          order,
+          dir: colDef.groupDir || 'asc'
+        });
       }
     }
-    // Sort by group order (ascending), then build array of field names
+    // Sort by group priority (ascending), then build array of field names
     if (groupedCols.length > 0) {
       groupedCols.sort((a, b) => a.order - b.order);
       opts.groupBy = groupedCols.map(c => c.field);
+
+      // For lookup columns, add custom groupOrder that sorts by lookup label
+      const firstGroupedCol = groupedCols[0];
+      const firstColDef = tableDef.columns[firstGroupedCol.field];
+      if (firstColDef.lookupRef && getLookup(firstColDef.lookupRef)) {
+        const lookupRef = firstColDef.lookupRef;
+        const dir = firstGroupedCol.dir;
+        opts.groupOrder = function(a, b) {
+          return compareLookupValues(a.key, b.key, lookupRef, dir);
+        };
+      }
     }
   }
 
@@ -527,11 +570,65 @@ export function resolveTableOptions(tableDef) {
   if (tableDef.groupToggleElement) opts.groupToggleElement = tableDef.groupToggleElement;
   if (tableDef.columnCalcs) opts.columnCalcs = tableDef.columnCalcs;
 
+  // Build initialSort from column sortPri if not explicitly set in tableDef
+  if (!tableDef.initialSort && tableDef.columns) {
+    const sortCols = [];
+    for (const [fieldName, colDef] of Object.entries(tableDef.columns)) {
+      // Skip if sortPri is null/undefined (not in sort)
+      if (colDef.sortPri == null) {
+        continue;
+      }
+      const order = Number(colDef.sortPri);
+      if (order > 0) {
+        sortCols.push({
+          field: fieldName,
+          order,
+          dir: colDef.sortDir || 'asc'
+        });
+      }
+    }
+    // Sort by sort priority (ascending), then build initialSort array
+    if (sortCols.length > 0) {
+      sortCols.sort((a, b) => a.order - b.order);
+      opts.initialSort = sortCols.map(c => ({ column: c.field, dir: c.dir }));
+    }
+  }
+
   // Include the toggle icon directly in the group header
-  opts.groupHeader = (value, count, _data, _group) => {
+  // Build a map of field -> column definition for lookup resolution
+  const colDefMap = tableDef.columns || {};
+
+  opts.groupHeader = (value, count, _data, group) => {
+    // Check if this is a lookup column grouped field
+    const field = group?.getField?.();
+    const colDef = field ? colDefMap[field] : null;
+    let displayValue = value;
+
+    if (colDef?.lookupRef && getLookup(colDef.lookupRef)) {
+      const lookupData = getLookup(colDef.lookupRef);
+      const lookupEntry = lookupData.find(e => String(e.id) === String(value));
+
+      if (lookupEntry) {
+        // groupStyle controls display in group headers, fallback to lookupStyle
+        const groupStyle = colDef.groupStyle || colDef.lookupStyle || 'label';
+        switch (groupStyle) {
+          case 'icon':
+            displayValue = lookupEntry.icon || lookupEntry.label || value;
+            break;
+          case 'iconLabel':
+            displayValue = `<span class="li-lookup-icon-label"><span class="li-lookup-icon">${lookupEntry.icon || ''}</span><span class="li-lookup-label">${lookupEntry.label || value}</span></span>`;
+            break;
+          case 'label':
+          default:
+            displayValue = lookupEntry.label || value;
+            break;
+        }
+      }
+    }
+
     return `<span class="lithium-group-header">
       <fa fa-angle-right class="lithium-group-toggle-icon"></fa>
-      <span class="lithium-group-title">${value}</span> <span class="lithium-group-count">(${count})</span>
+      <span class="lithium-group-title">${displayValue}</span> <span class="lithium-group-count">(${count})</span>
     </span>`;
   };
   opts.groupToggleElement = 'header';

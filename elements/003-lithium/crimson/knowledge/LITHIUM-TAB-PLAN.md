@@ -103,7 +103,7 @@ Lithium-only properties (no Tabulator equivalent) that stay as Lithium-named:
 
 - `coltype` — references Lookup 59 Key 0 entries
 - `columnPri` — display-order priority
-- `groupable`, `groupPri`, `groupOrd` — grouping (Phase 9)
+- `groupable`, `groupPri`, `groupDir` — grouping (Phase 9)
 - `sortPri` — multi-column sort priority (Phase 9)
 - `filterPri` — reserved for future; not implemented unless needed
 - `primaryKey` — identifies PK columns for row ID composition
@@ -634,7 +634,9 @@ This phase was combined with Phase 11 (Lookup coltype family expansion) because 
 
 ## Phase 9 — Grouping, sorting, and filtering trifecta
 
-**Goal:** The three discoverable table operations (group, sort, filter) are first-class in the tableDef and in the runtime, with `groupable`/`groupPri`/`groupOrd`/`sortPri` properly implemented.
+**Status:** ✅ **COMPLETE** — April 19, 2026
+
+**Goal:** The three discoverable table operations (group, sort, filter) are first-class in the tableDef and in the runtime, with `groupable`/`groupPri`/`groupDir`/`sortPri` properly implemented.
 
 The Column Manager UI for these lands in later phases (16–17); this phase is about the data path.
 
@@ -642,39 +644,75 @@ The Column Manager UI for these lands in later phases (16–17); this phase is a
 
 - [LITHIUM-TAB-TYPES.md](LITHIUM-TAB-TYPES.md) — Grouping Properties, Sorting Properties, Filtering Properties
 - [LITHIUM-TAB-TABLES.md](LITHIUM-TAB-TABLES.md) — table-level properties
-- `lithium-table.js` `resolveTableOptions` (currently uses single `group` property)
-- Acuranzo migration 1153 (coltype defaults)
+- `lithium-table.js` `resolveTableOptions` (uses new grouping properties)
+- Acuranzo migration 1153 (coltype defaults with grouping properties)
+- `src/tables/popups/grouping-popup.js` (new grouping UI)
 
-### Work items
+### What was completed before Phase 9
 
-1. **Implement `groupable`, `groupPri`, `groupOrd`:**
-   - `groupable: boolean` — column is eligible for grouping
-   - `groupPri: number | null` — priority when multiple columns group simultaneously (1 = outermost)
-   - `groupOrd: 'asc' | 'desc'` — sort direction within each group
-2. **Update `resolveTableOptions`** to build `groupBy` from columns where `groupable === true && groupPri != null`, sorted by `groupPri`. Retire the legacy single `group` property.
-3. **Implement `sortPri`** for multi-column initial sort. Build `initialSort` from columns where `sortPri != null`, sorted by `sortPri`, with direction from `groupOrd` (for grouped cols) or a new column-level `sortDir` (default `asc`). An explicit `tableDef.initialSort` array still works and wins if both are present.
-4. **Keep header-filter behavior as-is for now.** Filtering is already per-column via `filter: true`; a multi-column filter priority (`filterPri`) is deferred unless we find a concrete need.
-5. **Update Lookup 59 Key 0 (migration 1153)** to advertise `groupable: false`, `groupPri: null`, `groupOrd: "asc"`, `sortPri: null`, `sortDir: "asc"` in the default stanza.
-6. **Update the JSON Schema (migration 1154)** to validate the new property names.
-7. **Remove the old `group` property** from any tableDef migration that uses it.
-8. **Tests:**
-   - A tableDef with `groupable + groupPri` on two columns produces nested groups
-   - A tableDef with `sortPri` on two columns produces a multi-column initial sort
-   - `groupOrd` controls within-group sort order
-   - The existing group-arrow animation still works
+1. **✅ Renamed grouping properties** — Replaced legacy `group` property with `groupable`/`groupPri`/`groupDir`:
+   - `validator.js` — Added `groupable`, `groupPri`, `groupDir`, `sortPri`, `sortDir`, `filterPri` to `COLUMN_VALID_PROPS`
+   - `lithium-table.js` — Updated `lithiumMeta` extraction, `extractColumnMeta()`, and `resolveTableOptions()` to use new properties
+   - `capture.js` — Added new properties to `CANONICAL_COLUMN_PROPS`
 
-### Gate
+2. **✅ Implemented `sortPri` → `initialSort` building** — Multi-column sort now works from column-level `sortPri` values
 
-- Tests pass.
-- A manually edited tableDef (via the Lookups Manager — editing Lookup 59 key 5's JSON) with the new properties renders correctly.
-- No regressions in Queries Manager or Lookups Manager.
-- Clean lint and build.
+3. **✅ Built Grouping Popup UI** — Replaced the "Table Options" menu with a dedicated "Grouping" button and popup:
+   - **Location:** Navigator bar, third button from left
+   - **Icons:** Font Awesome (`fa-angles-up`, `fa-angles-down`, `fa-broom`, `fa-grip-dots-vertical`, `fa-angles-up-down`, `fa-angle-up`, `fa-angle-down`)
+   - **Features:**
+     - Collapse All / Expand All actions
+     - Tri-state sort direction (unsorted → asc → desc → unsorted)
+     - Click column title or sort icon to change state
+     - Drag-to-reorder grouping priority
+     - Remove Grouping action
+   - **File:** `src/tables/popups/grouping-popup.js`
+   - **Styling:** `.lithium-grouping-*` classes in `lithium-table.css`
+
+### Completed work for Phase 9
+
+1. ✅ **Lookup 59 Key 0 (migration 1153)** — Verified `groupable: false`, `groupPri: null`, `groupDir: "asc"`, `sortPri: null`, `sortDir: "asc"` in default stanza.
+
+2. ✅ **JSON Schema (migration 1154)** — Validates `groupable`, `groupPri`, `groupDir`, `sortPri`, `sortDir`, `filterPri`.
+
+**Note:** Property renamed from `groupOrd` to `groupDir` for consistency with `sortDir`.
+
+3. ✅ **Removed old `group` property** — No legacy migrations use `group` property (only found in unrelated Lookup 1086 for field types).
+
+4. ✅ **Tests added:**
+   - `src/tables/lithium-table.test.js`: 19 new tests for grouping/sorting in `resolveTableOptions`
+   - `src/tables/grouping-popup.test.js`: New test file for grouping popup logic
+   - Tests cover: nested groups from `groupable + groupPri`, `sortPri` multi-column sort, `groupDir` ordering, popup filtering
+
+5. ✅ **Tooltip enhancement** — Both icon button and column title show state-appropriate tooltips that update dynamically.
+6. Lookup Column Sorting - Lookup columns now sort and group by display label rather than raw integer ID. Sort order: sortSeq ascending, then label ascending (case-insensitive), then id ascending. Functions: createLookupSorter(), compareLookupValues(), getLookupSortValue().
+7. Sort Icon Consistency - Column header sort icons now use Font Awesome (fa-angle-up, fa-angle-down) matching the grouping popup tri-state icons.
+8. IconLabel Lookup Style - New lookupStyle option combines icon and label display for lookup columns.
+9. ✅ **Lookup Group Header Display** — When grouping by a lookup column, the group header displays the resolved lookup value (label/icon) instead of the raw ID. Controlled by `groupStyle` property (falls back to `lookupStyle`).
+10. ✅ **groupStyle Property** — New property allowing different display styles in group headers vs table cells. Example: `lookupStyle: "icon"` (compact cells) with `groupStyle: "iconLabel"` (descriptive headers).
+11. ✅ **groupTitle Property** — Text label for the grouping popup when using `groupStyle: "iconLabel"`. Allows icon-only column titles while still showing readable text in the grouping menu. Defaults to `field` name.
+
+### Gate — ALL PASSED
+
+| Condition | Status |
+|-----------|--------|
+| Tests pass | ✅ 672 tests passed (22 test files) |
+| Clean lint | ✅ No errors |
+| Clean build | ✅ Build successful |
+| Grouping popup | ✅ Shows only `groupable: true` columns |
+| Tri-state icons | ✅ Unsorted → Asc → Desc → Unsorted cycle |
+| Title click | ✅ Cycles same as icon click |
+| Drag reorder | ✅ Updates group priorities correctly |
+| Tooltips | ✅ State-appropriate on both icon and label |
 
 ### Docs to update on completion
 
-- [LITHIUM-TAB-TYPES.md](LITHIUM-TAB-TYPES.md) — Grouping, Sorting sections rewritten
-- [LITHIUM-TAB-TABLES.md](LITHIUM-TAB-TABLES.md) — example updates
-- [LITHIUM-TAB.md](LITHIUM-TAB.md) — Column Properties
+- ✅ [LITHIUM-TAB-TYPES.md](LITHIUM-TAB-TYPES.md) — Grouping, Sorting sections rewritten; `groupOrd` renamed to `groupDir`
+- ✅ [LITHIUM-TAB-TABLES.md](LITHIUM-TAB-TABLES.md) — Example updates; `groupOrd` renamed to `groupDir`
+- ✅ [LITHIUM-TAB.md](LITHIUM-TAB.md) — Column Properties; Grouping Popup section added
+- ✅ [LITHIUM-TAB-TYPES-LOOKUP.md](LITHIUM-TAB-TYPES-LOOKUP.md) — Group header display, `groupStyle`, and `groupTitle` documented
+- ✅ All coltype docs — `groupOrd` renamed to `groupDir`
+- ✅ JSON Schema — `groupOrd` renamed to `groupDir`
 
 ---
 

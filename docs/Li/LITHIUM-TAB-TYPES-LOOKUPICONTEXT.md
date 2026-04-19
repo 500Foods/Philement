@@ -61,7 +61,7 @@ Like `lookup` but displays icon + name in cell and dropdown.
   // -- Grouping --
   "groupable": false,
   "groupPri": null,
-  "groupOrd": "asc",
+  "groupDir": "asc",
   "columnPri": null,
 
   // -- Data --

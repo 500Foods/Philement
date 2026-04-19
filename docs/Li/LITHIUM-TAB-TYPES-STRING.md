@@ -55,7 +55,7 @@ General text/string values.
   // -- Grouping --
   "groupable": true,
   "groupPri": null,
-  "groupOrd": "asc",
+  "groupDir": "asc",
   "columnPri": null,
 
   // -- Data --

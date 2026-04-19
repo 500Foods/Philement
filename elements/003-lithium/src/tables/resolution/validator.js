@@ -38,8 +38,9 @@ export const COLUMN_VALID_PROPS = new Set([
   'vertHandle', 'hozHandle', 'contextMenu', 'tapComprehensive',
   'tooltip', 'tooltipHeader', 'bottomCalc', 'bottomCalcParams',
   'bottomCalcFormatter', 'bottomCalcFormatterParams',
-  'columnPri', 'primaryKey', 'calculated', 'sort', 'filter', 'group', 'editable',
-  'lookupRef', 'lookupFixed', 'blank', 'zero',
+  'columnPri', 'primaryKey', 'calculated', 'sort', 'filter', 'editable',
+  'groupable', 'groupPri', 'groupDir', 'sortPri', 'sortDir', 'filterPri',
+  'lookupRef', 'lookupFixed', 'lookupStyle', 'lookupEdit', 'groupStyle', 'groupTitle', 'blank', 'zero',
 ]);
 
 /** @type {Set<string>} Valid coltype names */
