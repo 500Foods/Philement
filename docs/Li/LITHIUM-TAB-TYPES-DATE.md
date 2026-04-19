@@ -59,7 +59,7 @@ Date values (no time component).
   // -- Grouping --
   "groupable": false,
   "groupPri": null,
-  "groupOrd": "asc",
+  "groupDir": "asc",
   "columnPri": null,
 
   // -- Data --

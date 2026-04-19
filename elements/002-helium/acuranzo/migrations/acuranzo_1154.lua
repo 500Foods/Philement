@@ -5,6 +5,7 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 1.4.0 - 2026-04-19 - Renamed groupOrd to groupDir for consistency with sortDir
 -- 1.3.0 - 2026-04-12 - Rearranged migrations to better match evolving documentation
 -- 1.2.0 - 2026-04-11 - Removed redundant properties matching coltype defaults; moved overrides to top-level
 -- 1.1.0 - 2026-04-11 - Renamed properties: display→title, sort→headerSort, filter→headerFilter, group→groupable
@@ -298,11 +299,11 @@ table.insert(queries,{sql=[[
             "default": null,
             "description": "Group priority"
           },
-          "groupOrd": {
+          "groupDir": {
             "type": "string",
             "enum": ["asc", "desc"],
             "default": "asc",
-            "description": "Group sort order"
+            "description": "Group direction"
           },
           "columnPri": {
             "type": ["number", "null"],

@@ -1082,6 +1082,99 @@ await this.parentTable.loadData();
 
 ---
 
+## Grouping Popup
+
+The **Grouping** button in the Navigator opens a popup for managing row grouping. Only columns with `groupable: true` in their table definition appear in the list.
+
+### Grouping Button Location
+
+```
+[Refresh] [Filter] [Grouping] [Width] [Layout] [Templates]
+                    ^^^^^^^^^
+```
+
+### Popup Structure
+
+```
+<angles-up>   Collapse All
+<angles-down> Expand All
+-------------------------
+[sort-icon] Column Title (A)    [grip]
+[sort-icon] Column Title (B)    [grip]
+[sort-icon] Column Title (C)    [grip]
+-------------------------
+<broom>       Remove Grouping
+```
+
+### Tri-State Sort Icons
+
+Each column has a sort direction button with three states:
+
+| State | Icon | Click Action |
+|-------|------|--------------|
+| **Unsorted** | `<fa fa-angles-up-down></fa>` | Enable grouping (ascending) |
+| **Ascending** | `<fa fa-angle-up></fa>` | Switch to descending |
+| **Descending** | `<fa fa-angle-down></fa>` | Disable grouping |
+
+**Clicking the column title** also cycles through the states (same as clicking the icon).
+
+### Group Priority
+
+When multiple columns are grouped, they form a **nested hierarchy**. The order matters:
+
+```
+Priority 1: status      (outermost group)
+  Priority 2: category  (nested within status)
+    Priority 3: type    (innermost group)
+```
+
+Use the **drag handle** (grip icon) on the right to reorder grouping priority.
+
+### Table Definition Configuration
+
+Enable grouping for a column by setting `groupable: true` and optionally `groupPri` and `groupDir`:
+
+```json
+{
+  "columns": {
+    "status": {
+      "field": "status",
+      "title": "Status",
+      "groupable": true,
+      "groupPri": 1,
+      "groupDir": "asc"
+    },
+    "category": {
+      "field": "category",
+      "title": "Category",
+      "groupable": true,
+      "groupPri": 2,
+      "groupDir": "asc"
+    }
+  }
+}
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `groupable` | boolean | Enable grouping for this column |
+| `groupPri` | number | Group priority (1 = outermost, 2 = nested, etc.) |
+| `groupDir` | string | Sort order within groups: `"asc"` or `"desc"` |
+
+### Implementation
+
+- **Module:** `src/tables/popups/grouping-popup.js`
+- **CSS:** `src/tables/lithium-table.css` (`.lithium-grouping-*` classes)
+- **Icons:** Font Awesome via `<fa fa-*>` tags
+
+### Expand/Collapse Behavior
+
+- **Collapse All:** Closes all grouped sections (groups remain, just collapsed)
+- **Expand All:** Opens all grouped sections
+- **Remove Grouping:** Clears all `groupPri` values; table returns to flat list
+
+---
+
 ## Related Documentation
 
 - [LITHIUM-MGR.md](LITHIUM-MGR.md) — Manager system overview
@@ -1116,14 +1209,24 @@ The LithiumTable component was extracted from the Query Manager implementation t
   - Eradicated the `overrides` pattern; properties are now flattened directly onto column definitions
 
 - Previous phases from Round 1:
-  - Phase 0: Lookup 059 Key Mapping (correct key_idx values)
-  - Phase 1: Default Merge Engine (default → coltype → colDef)
-  - Phase 2: Auto-Discovery with Coltype Detection
-  - Phase 3: Schema Validation
-  - Phase 4: Data-First Initialization
-  - Phase 5 (Round 1): Lookup 059 Integration
-  - Phase 6: Column Manager (Stage 3)
-  - Phase 7: Migrate Internal Coltypes
+ - Phase 0: Lookup 059 Key Mapping (correct key_idx values)
+   - Phase 1: Default Merge Engine (default → coltype → colDef)
+   - Phase 2: Auto-Discovery with Coltype Detection
+   - Phase 3: Schema Validation
+   - Phase 4: Data-First Initialization
+   - Phase 5 (Round 1): Lookup 059 Integration
+   - Phase 6: Column Manager (Stage 3)
+   - Phase 7: Migrate Internal Coltypes
+   - **Phase 9: Grouping, Sorting, and Filtering** — Completed April 2026:
+     - Renamed `group` → `groupable`/`groupPri`/`groupDir` properties (validator, resolver, capture) — `groupDir` matches `sortDir` naming
+     - Implemented `sortPri`/`sortDir` for multi-column initial sort from table definition
+     - Built Grouping Popup UI with tri-state sort icons (`src/tables/popups/grouping-popup.js`)
+     - Drag-to-reorder for grouping priority
+     - Tooltips on both icons and labels showing current state action
+     - Comprehensive test coverage for grouping/sorting logic
+      - Lookup columns sort and group by display label (sortSeq, then label, then id)
+      - Column header sort icons use Font Awesome (fa-angle-up, fa-angle-down) matching grouping popup
+      - New lookupStyle: "iconLabel" combines icon and label for lookup columns
 
 **Key Design Decisions:**
 

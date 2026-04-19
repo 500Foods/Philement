@@ -245,7 +245,7 @@
           "default": null,
           "description": "Group priority"
         },
-        "groupOrd": {
+        "groupDir": {
           "type": "string",
           "enum": ["asc", "desc"],
           "default": "asc",

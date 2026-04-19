@@ -207,6 +207,23 @@
   color: #1a1a1a !important;
 }
 
+/* Popup-active state for buttons with open popups (like manager-ui) */
+.lithium-nav-btn.popup-active {
+  background-color: var(--accent-toggle, #FFFF8F) !important;
+  color: var(--text-toggle, #1a1a1a) !important;
+}
+
+.lithium-nav-btn.popup-active:hover {
+  background-color: var(--accent-toggle, #FFFF8F) !important;
+  color: var(--text-toggle, #1a1a1a) !important;
+  filter: brightness(1.1);
+}
+
+.lithium-nav-btn.popup-active svg,
+.lithium-nav-btn.popup-active i {
+  color: var(--text-toggle, #1a1a1a) !important;
+}
+
 /* Danger variant (Delete) */
 .lithium-nav-btn-danger:hover {
   background-color: var(--accent-danger);
@@ -291,26 +308,27 @@
 
 .lithium-nav-popup {
   position: fixed;
-  top: 0;
-  left: 0;
   margin-bottom: 0;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-md);
+  /* Footer-riseup style: rounded top corners, squared bottom corners */
+  border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
   box-shadow: 0 4px 12px rgb(0 0 0 / 30%);
   z-index: 4000;
   min-width: 120px;
   overflow: hidden;
   opacity: 0;
   visibility: hidden;
-  transform: translateY(4px);
+  /* Footer-riseup style animation: expand from bottom-right (rises up and left) */
+  transform: scale(0.5);
+  transform-origin: bottom right;
   transition: opacity var(--transition-fast), visibility var(--transition-fast), transform var(--transition-fast);
 }
 
 .lithium-nav-popup.visible {
   opacity: 1;
   visibility: visible;
-  transform: translateY(0);
+  transform: scale(1);
 }
 
 .lithium-nav-popup-item {
@@ -541,39 +559,46 @@ div.lithium-table-container > div:nth-child(1) > div:nth-child(1) > div:nth-chil
 }
 
 /* ── Custom Sort Icons ────────────────────────────────────────────────────── */
+/* Tri-state sort icons using Font Awesome, matching grouping popup style */
 
 .lithium-sort-icons {
   display: inline-flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
   line-height: 1;
-  font-size: 7px;
-  margin-left: var(--space-1);
   vertical-align: middle;
-  gap: 0;
+  position: absolute;
+  right: -4px;
 }
 
-.lithium-sort-asc,
-.lithium-sort-desc {
+.lithium-sort-icon {
+  font-size: 12px;
+  transition: color var(--transition-fast), opacity var(--transition-fast);
+}
+
+.tabulator .tabulator-header .tabulator-col.tabulator-sortable[aria-sort="descending"] .tabulator-col-content .tabulator-col-sorter,
+.tabulator .tabulator-header .tabulator-col.tabulator-sortable[aria-sort="ascending"] .tabulator-col-content .tabulator-col-sorter {
+	color: white;
+}
+
+/* Unsorted state: muted color */
+.lithium-sort-icons[data-sort-dir="none"] .lithium-sort-icon {
   color: var(--text-muted);
-  opacity: 0.35;
-  transition: opacity var(--transition-fast), color var(--transition-fast);
+  opacity: 0.5;
 }
 
-.lithium-table-container .tabulator-col[aria-sort="ascending"] .lithium-sort-asc {
+/* Ascending state: white/active */
+.lithium-sort-icons[data-sort-dir="asc"] .lithium-sort-icon {
   color: white;
   opacity: 1;
 }
 
-.lithium-table-container .tabulator-col[aria-sort="descending"] .lithium-sort-desc {
+/* Descending state: white/active */
+.lithium-sort-icons[data-sort-dir="desc"] .lithium-sort-icon {
   color: white;
   opacity: 1;
-}
-
-/* Tri-state: unsorted columns show both arrows dimmed */
-.lithium-table-container .tabulator-col[aria-sort="none"] .lithium-sort-asc,
-.lithium-table-container .tabulator-col[aria-sort="none"] .lithium-sort-desc {
-  color: var(--text-muted);
-  opacity: 0.35;
 }
 
 /* Hide default Tabulator sort arrows */
@@ -1054,6 +1079,263 @@ div.lithium-table-container > div:nth-child(1) > div:nth-child(1) > div:nth-chil
 .lithium-template-delete:hover {
   color: var(--accent-danger);
   background: var(--bg-secondary);
+}
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   Grouping Popup Styles
+   ═════════════════════════════════════════════════════════════════════════════ */
+
+.lithium-grouping-popup {
+  min-width: 280px;
+  max-width: 360px;
+}
+
+.lithium-grouping-empty {
+  padding: 12px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-style: italic;
+  text-align: center;
+}
+
+.lithium-grouping-list {
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.lithium-grouping-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0px 3px;
+  cursor: grab;
+  transition: background-color 0.15s ease;
+  user-select: none;
+}
+
+.lithium-grouping-item:hover {
+  background: var(--bg-hover);
+}
+
+.lithium-grouping-item.lithium-grouping-dragging {
+  opacity: 0.6;
+  cursor: grabbing;
+  background: var(--bg-tertiary);
+}
+
+/* Action buttons (Collapse All, Expand All, Remove Grouping) */
+.lithium-grouping-action {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s ease;
+}
+
+.lithium-grouping-action:hover {
+  background: var(--bg-hover);
+}
+
+.lithium-grouping-action-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.lithium-grouping-action-label {
+  flex: 1;
+  line-height: 20px;
+}
+
+/* Sort direction arrow button */
+.lithium-grouping-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  border-radius: 3px;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.lithium-grouping-arrow:hover {
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+}
+
+/* Column title - clickable to toggle grouping */
+.lithium-grouping-title {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text-primary);
+  overflow: hidden;
+  white-space: nowrap;
+  line-height: 24px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.lithium-grouping-title.lithium-grouping-active {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+/* Lookup preview in grouping popup title */
+.lithium-grouping-title-text {
+  flex-shrink: 0;
+}
+
+.lithium-grouping-title-separator {
+  color: var(--text-muted);
+  opacity: 0.5;
+  margin: 0 2px;
+  flex-shrink: 0;
+  display: none;
+}
+
+.lithium-grouping-lookup-preview {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-primary);
+  font-size: 12px;
+  opacity: 0.8;
+  white-space: nowrap;
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.lithium-grouping-lookup-preview .li-lookup-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.lithium-grouping-lookup-preview .li-lookup-icon svg,
+.lithium-grouping-lookup-preview .li-lookup-icon i {
+  font-size: 10px;
+  width: 10px;
+  height: 10px;
+  margin-top:2px;
+}
+
+.lithium-grouping-lookup-preview .li-lookup-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 1;
+  min-width: 20px;
+}
+
+.lithium-grouping-grouptitle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 1;
+  min-width: 20px;
+}
+
+/* Drag handle */
+.lithium-grouping-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  color: var(--text-primary);
+  cursor: grab;
+  font-size: 12px;
+}
+
+.lithium-grouping-handle:hover {
+  color: var(--text-secondary);
+}
+
+/* ── Lookup Icon + Label Formatter ────────────────────────────────────────── */
+/* Used when lookupStyle is 'iconLabel' */
+
+.li-lookup-icon-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  white-space: nowrap;
+}
+
+.li-lookup-icon-label .li-lookup-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: 18px;
+  margin-top: 2px;
+}
+
+.li-lookup-icon-label .li-lookup-label {
+  display: inline;
+}
+
+/* Tri-state sort icons for grouping popup using Font Awesome */
+.lithium-grouping-sort-icons {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  line-height: 1;
+}
+
+.lithium-grouping-sort-icons .lithium-grouping-sort-asc,
+.lithium-grouping-sort-icons .lithium-grouping-sort-desc,
+.lithium-grouping-sort-icons .lithium-grouping-sort-none {
+  color: var(--text-primary);
+  opacity: 0.35;
+  transition: opacity var(--transition-fast), color var(--transition-fast);
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lithium-grouping-sort-icons .lithium-grouping-sort-asc,
+.lithium-grouping-sort-icons .lithium-grouping-sort-desc {
+  height: 8px;
+}
+
+.lithium-grouping-sort-icons .lithium-grouping-sort-none {
+  height: 16px;
+  font-size: 12px;
+}
+
+.lithium-grouping-sort-icons[data-sort-dir="asc"] .lithium-grouping-sort-asc {
+  color: var(--accent-primary);
+  opacity: 1;
+}
+
+.lithium-grouping-sort-icons[data-sort-dir="desc"] .lithium-grouping-sort-desc {
+  color: var(--accent-primary);
+  opacity: 1;
 }
 
 } /* end @layer vendor-fixes */

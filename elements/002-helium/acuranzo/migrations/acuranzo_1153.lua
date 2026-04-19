@@ -5,6 +5,7 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 1.0.2 - 2026-04-19 - Renamed groupOrd to groupDir for consistency with sortDir
 -- 1.0.1 - 2026-04-11 - Updated some of the text/terminology, overhauled with new plan
 -- 1.0.0 - 2026-03-15 - Initial creation
 
@@ -121,7 +122,7 @@ table.insert(queries,{sql=[[
       "headerFilterPlaceholder": "filter...",
       "groupable": false,
       "groupPri": null,
-      "groupOrd": "asc",
+      "groupDir": "asc",
       "columnPri": null,
       "blank": "",
       "zero": null,

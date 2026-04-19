@@ -42,9 +42,15 @@ import {
 import {
   toggleNavPopup,
   closeNavPopup,
+  closeNavPopupImmediate,
   closeTransientPopups,
   createPopupSeparator,
 } from './popups/popup-manager.js';
+
+import {
+  toggleGroupingPopup,
+  closeGroupingPopup,
+} from './popups/grouping-popup.js';
 
 import {
   buildTemplatePopup,
@@ -122,19 +128,27 @@ export const LithiumTableUIMixin = {
         return;
       }
 
-      closeNavPopup(this);
+      // Close any existing popup immediately (no animation) before opening new one
+      closeNavPopupImmediate(this);
+
+      // Dispatch event to close all manager popups
+      document.dispatchEvent(new CustomEvent('close-all-popups'));
 
       const btn = e.currentTarget;
       const popup = buildTemplatePopup(this);
 
       if (!popup) return;
 
+      // Add popup-active class to button for toggle styling
+      btn.classList.add('popup-active');
+
       // Use popup-manager's show logic inline for template popup
+      // Footer-riseup positioning: bottom-right of popup 1px above top-right of button
       popup.style.position = 'fixed';
-      popup.style.top = '0px';
-      popup.style.left = '0px';
       popup.style.bottom = 'auto';
-      popup.classList.add('visible');
+      popup.style.top = 'auto';
+      popup.style.left = 'auto';
+      popup.style.right = 'auto';
 
       // Check for Column Manager popup
       const hostPopup = btn?.closest?.('.col-manager-popup');
@@ -156,39 +170,14 @@ export const LithiumTableUIMixin = {
 
       document.body.appendChild(popup);
 
-      const viewportPadding = 8;
-      const gap = 4;
+      // Footer-riseup positioning: bottom-right of popup 1px above top-right of button
       const btnRect = btn.getBoundingClientRect();
-      const popupRect = popup.getBoundingClientRect();
-      const popupWidth = popupRect.width || popup.offsetWidth || 0;
-      const popupHeight = popupRect.height || popup.offsetHeight || 0;
-      const availableAbove = btnRect.top - viewportPadding;
-      const availableBelow = window.innerHeight - btnRect.bottom - viewportPadding;
+      popup.style.bottom = `${window.innerHeight - btnRect.top + 1}px`;
+      popup.style.right = `${window.innerWidth - btnRect.right}px`;
 
-      let top;
-      if (popupHeight <= availableAbove || availableAbove >= availableBelow) {
-        top = btnRect.top - popupHeight - gap;
-      } else {
-        top = btnRect.bottom + gap;
-      }
-
-      let left = btnRect.left;
-      if (left + popupWidth > window.innerWidth - viewportPadding) {
-        left = window.innerWidth - popupWidth - viewportPadding;
-      }
-      if (left < viewportPadding) {
-        left = viewportPadding;
-      }
-
-      const maxTop = Math.max(viewportPadding, window.innerHeight - popupHeight - viewportPadding);
-      popup.style.top = `${Math.min(Math.max(top, viewportPadding), maxTop)}px`;
-      popup.style.left = `${left}px`;
-      popup.style.right = 'auto';
-
+      // Trigger animation after positioning
       requestAnimationFrame(() => {
-        popup.getBoundingClientRect();
-        const newTop = Math.min(Math.max(parseFloat(popup.style.top), viewportPadding), maxTop);
-        popup.style.top = `${newTop}px`;
+        popup.classList.add('visible');
       });
 
       this.activeNavPopup = popup;
@@ -201,6 +190,20 @@ export const LithiumTableUIMixin = {
         }
       };
       document.addEventListener('click', this.navPopupCloseHandler);
+
+      // ESC key handler
+      this.navPopupKeyHandler = (evt) => {
+        if (evt.key === 'Escape') {
+          closeNavPopup(this);
+        }
+      };
+      document.addEventListener('keydown', this.navPopupKeyHandler);
+
+      // Listen for close-all-popups from manager menus
+      this.navPopupGlobalCloseHandler = () => {
+        closeNavPopup(this);
+      };
+      document.addEventListener('close-all-popups', this.navPopupGlobalCloseHandler);
 
       return;
     }
@@ -259,6 +262,14 @@ export const LithiumTableUIMixin = {
 
   closeTransientPopups() {
     closeTransientPopups(this);
+  },
+
+  toggleGroupingPopup(e) {
+    return toggleGroupingPopup(this, e);
+  },
+
+  closeGroupingPopup() {
+    return closeGroupingPopup(this);
   },
 
   // ── Table Settings (delegated to settings/table-settings.js) ──────────────
