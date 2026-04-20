@@ -491,6 +491,10 @@ const queryRef = isInsert
 
 ## Primary Key Configuration
 
+Primary keys enable row selection persistence, edit mode tracking, and duplicate operations. Tables without declared primary keys still function but lack these features.
+
+**Phase 10 Note:** Not all tables require primary keys (e.g., read-only query results, log tables). Tables log their primary key configuration at initialization — warnings appear for editable tables without primary keys.
+
 ### Single Primary Key
 
 For tables with a single primary key column, add `"primaryKey": true` to that column definition:

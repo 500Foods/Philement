@@ -516,7 +516,7 @@ div.lithium-table-container > div:nth-child(1) > div:nth-child(1) > div:nth-chil
 }
 
 .lithium-table-container .tabulator-cell {
-  padding: 0px 6px;
+  padding: 0px 6px 2px;
   border-left: none;
   line-height: 20px !important;
   height: 20px !important;
@@ -886,7 +886,7 @@ div.lithium-table-container > div:nth-child(1) > div:nth-child(1) > div:nth-chil
 
 .lithium-table-container .tabulator-cell.tabulator-editing > input,
 .lithium-table-container .tabulator-cell.tabulator-editing > select {
-  padding: 4px 0px !important;
+  padding: 4px 6px !important;
 }
 
 .lithium-table-container .tabulator-calcs-bottom {

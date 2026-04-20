@@ -19,6 +19,7 @@ const TABLE_TO_KEY_IDX = {
   'column-manager': 2,             // acuranzo_1179
   'column-manager-manager': 3,      // acuranzo_1180
   'user-profile-sections': 4,          // acuranzo_1181
+  'profile-manager/user-options': 4,   // acuranzo_1181 - Profile Manager user options
   'queries/query-manager': 5,        // acuranzo_1182
   'lookups/lookups-list': 6,      // acuranzo_1183 (legacy path)
   'lookups-manager-list': 6,       // acuranzo_1183
@@ -276,6 +277,7 @@ export function clearLookup59Cache() {
     'style-manager/lookup-41',
     'version-manager/version-history',
     'profile-manager/user-options',
+    'user-profile-sections',
     'column-manager',
   ];
 

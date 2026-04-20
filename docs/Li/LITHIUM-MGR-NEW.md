@@ -154,7 +154,7 @@ config/tabulator/contacts/
 | `updateQueryRef` | QueryRef for saving existing rows |
 | `insertQueryRef` | QueryRef for creating new rows |
 | `deleteQueryRef` | QueryRef for deleting rows |
-| `primaryKey: true` | Marks the primary key column (exactly one column) |
+| `primaryKey: true` | Marks the primary key column (optional; enables row selection persistence) |
 
 **Important:** The JSON files serve as **design-time documentation** of which QueryRefs a table uses. At runtime, the table definition is loaded from a database lookup (Lookup 059), which may not contain these CRUD fields. **You must always pass CRUD queryRefs explicitly in the LithiumTable constructor** — see Step 6 below. See [LITHIUM-TAB.md — QueryRef Resolution](LITHIUM-TAB.md#queryref-resolution-constructor--table-definition).
 

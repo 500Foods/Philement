@@ -103,7 +103,7 @@ This fills and submits the login form automatically.
 
 | Command | Description |
 |---------|-------------|
-| `npm test` | Run all tests (588 tests) |
+| `npm test` | Run all tests (672 tests) |
 | `npm run test:watch` | Run tests in watch mode |
 | `npm run test:coverage` | Run tests with coverage report |
 

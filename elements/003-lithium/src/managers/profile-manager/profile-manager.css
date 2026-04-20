@@ -100,6 +100,16 @@
   background: var(--bg-primary);
 }
 
+/* Active tab styling (toggle) - uses toggle colors for selected state */
+.lithium-toolbar-tab.active {
+  background: var(--accent-toggle) !important;
+  color: var(--text-toggle) !important;
+}
+
+.lithium-toolbar-tab.active fa {
+  color: var(--text-toggle) !important;
+}
+
 /* Tab Toolbar */
 #profile-tab-toolbar {
   flex-shrink: 0;
@@ -114,10 +124,12 @@
 /* Tab Content */
 #profile-tab-content {
   flex: 1;
+  display: flex;
+  flex-direction: column;
   min-height: 0;
-  overflow: auto;
-  padding: var(--space-lg);
+  overflow: hidden;
   background: var(--bg-secondary);
+  position: relative;
 }
 
 /* Tab Panels */
@@ -129,13 +141,88 @@
   display: block;
 }
 
+/* Settings Pages with Crossfade */
+.settings-page {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: var(--space-lg);
+  overflow: auto;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-std, 350ms ease-in-out);
+  background: var(--bg-secondary);
+}
+
+.settings-page.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Reduced Motion - disable transitions */
+@media (prefers-reduced-motion: reduce) {
+  .settings-page {
+    transition: none;
+    opacity: 1;
+    position: relative;
+    pointer-events: auto;
+  }
+
+  .settings-page:not(.active) {
+    display: none;
+  }
+}
+
+/* Profile Content Container for Settings Pages */
+#panel-settings .profile-content {
+  position: relative;
+  min-height: 300px;
+}
+
+/* Form Actions Section */
+.form-actions-section {
+  margin-top: auto;
+  padding-top: var(--space-lg);
+}
+
+/* Editor Container for Collection Tab */
+.profile-editor-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg-tertiary);
+}
+
+.profile-editor-container .cm-editor {
+  flex: 1;
+  height: 100%;
+}
+
+.profile-editor-container .cm-scroller {
+  overflow: auto;
+}
+
+/* Fix CodeMirror fold gutter icons */
+.profile-editor-container .cm-foldGutter .cm-gutterElement {
+  font-size: 10px;
+}
+
+/* Rotate fold icons to point correctly */
+.profile-editor-container .cm-foldPlaceholder {
+  border: none;
+  background: none;
+}
+
+/* Manager slot footer Save/Cancel styling - inherited from manager-ui.css */
+
 /* Profile Content Sections */
 .profile-content {
   display: flex;
   flex-direction: column;
-  gap: var(--space-xl);
-  max-width: 800px;
-  margin: 0 auto;
+  gap: var(--space-lg);
 }
 
 .profile-section {
@@ -330,50 +417,6 @@
   font-weight: 500;
 }
 
-/* Toast Notifications */
-.toast {
-  position: fixed;
-  bottom: var(--space-xl);
-  right: var(--space-xl);
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-left: 4px solid var(--accent-success);
-  border-radius: var(--radius-md);
-  padding: var(--space-md) var(--space-lg);
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  box-shadow: var(--shadow-lg);
-  transform: translateY(100px);
-  opacity: 0;
-  transition: transform var(--transition-normal), opacity var(--transition-normal);
-  z-index: 1000;
-}
-
-.toast.visible {
-  transform: translateY(0);
-  opacity: 1;
-}
-
-.toast i {
-  color: var(--accent-success);
-  font-size: var(--font-size-lg);
-}
-
-.toast-message {
-  font-size: var(--font-size-md);
-  color: var(--text-primary);
-}
-
-/* Error Toast Variant */
-.toast.error {
-  border-left-color: var(--accent-danger);
-}
-
-.toast.error i {
-  color: var(--accent-danger);
-}
-
 /* Loading State */
 .form-select.loading {
   background-image: none;
@@ -436,12 +479,6 @@
   .preview-panel {
     grid-template-columns: 1fr 1fr;
   }
-
-  .toast {
-    left: var(--space-md);
-    right: var(--space-md);
-    bottom: var(--space-md);
-  }
 }
 
 @media (width <= 480px) {
@@ -454,7 +491,6 @@
 @media (prefers-reduced-motion: reduce) {
   #profile-manager-page,
   #profile-left-panel,
-  .toast,
   .btn,
   .form-select {
     transition: none;

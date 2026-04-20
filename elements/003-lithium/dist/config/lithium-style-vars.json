@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS custom properties (variables) used across the Lithium codebase",
-    "generated": "2026-04-20T01:20:01.330Z",
+    "generated": "2026-04-20T17:09:15.918Z",
     "sources": {
       "css": "52 files in src/**/*.css",
-      "js": "122 files in src/**/*.js",
+      "js": "145 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
     "total_variables": 236,
-    "total_occurrences": 3543
+    "total_occurrences": 3530
   },
   "variables": [
     {
@@ -41,10 +41,10 @@
     },
     {
       "name": "--accent-danger",
-      "css": 28,
+      "css": 26,
       "js": 0,
       "html": 0,
-      "total": 28
+      "total": 26
     },
     {
       "name": "--accent-danger-hover",
@@ -146,10 +146,10 @@
     },
     {
       "name": "--accent-success",
-      "css": 18,
+      "css": 16,
       "js": 0,
       "html": 0,
-      "total": 18
+      "total": 16
     },
     {
       "name": "--accent-success-hover",
@@ -160,10 +160,10 @@
     },
     {
       "name": "--accent-toggle",
-      "css": 10,
+      "css": 11,
       "js": 0,
       "html": 0,
-      "total": 10
+      "total": 11
     },
     {
       "name": "--accent-warning",
@@ -251,17 +251,17 @@
     },
     {
       "name": "--bg-tertiary",
-      "css": 97,
+      "css": 98,
       "js": 2,
       "html": 0,
-      "total": 99
+      "total": 100
     },
     {
       "name": "--border-color",
-      "css": 63,
+      "css": 62,
       "js": 1,
       "html": 0,
-      "total": 64
+      "total": 63
     },
     {
       "name": "--border-color-focus",
@@ -545,17 +545,17 @@
     },
     {
       "name": "--font-size-lg",
-      "css": 32,
+      "css": 31,
       "js": 0,
       "html": 0,
-      "total": 32
+      "total": 31
     },
     {
       "name": "--font-size-md",
-      "css": 7,
+      "css": 6,
       "js": 0,
       "html": 0,
-      "total": 7
+      "total": 6
     },
     {
       "name": "--font-size-sm",
@@ -881,10 +881,10 @@
     },
     {
       "name": "--radius-md",
-      "css": 4,
+      "css": 3,
       "js": 0,
       "html": 0,
-      "total": 4
+      "total": 3
     },
     {
       "name": "--scrollbar-size",
@@ -923,10 +923,10 @@
     },
     {
       "name": "--shadow-lg",
-      "css": 12,
+      "css": 11,
       "js": 0,
       "html": 0,
-      "total": 12
+      "total": 11
     },
     {
       "name": "--shadow-md",
@@ -1000,31 +1000,31 @@
     },
     {
       "name": "--space-lg",
-      "css": 7,
+      "css": 8,
       "js": 0,
       "html": 0,
-      "total": 7
+      "total": 8
     },
     {
       "name": "--space-md",
-      "css": 13,
+      "css": 9,
       "js": 0,
       "html": 0,
-      "total": 13
+      "total": 9
     },
     {
       "name": "--space-sm",
-      "css": 6,
+      "css": 5,
       "js": 0,
       "html": 0,
-      "total": 6
+      "total": 5
     },
     {
       "name": "--space-xl",
-      "css": 4,
+      "css": 1,
       "js": 0,
       "html": 0,
-      "total": 4
+      "total": 1
     },
     {
       "name": "--space-xs",
@@ -1168,10 +1168,10 @@
     },
     {
       "name": "--text-primary",
-      "css": 141,
+      "css": 140,
       "js": 5,
       "html": 1,
-      "total": 147
+      "total": 146
     },
     {
       "name": "--text-secondary",
@@ -1182,10 +1182,10 @@
     },
     {
       "name": "--text-toggle",
-      "css": 6,
+      "css": 8,
       "js": 0,
       "html": 0,
-      "total": 6
+      "total": 8
     },
     {
       "name": "--tip-arrow",
@@ -1574,17 +1574,17 @@
     },
     {
       "name": "--transition-delay",
-      "css": 21,
-      "js": 0,
+      "css": 19,
+      "js": 1,
       "html": 0,
-      "total": 21
+      "total": 20
     },
     {
       "name": "--transition-duration",
       "css": 115,
-      "js": 14,
+      "js": 16,
       "html": 0,
-      "total": 129
+      "total": 131
     },
     {
       "name": "--transition-fast",
@@ -1595,10 +1595,10 @@
     },
     {
       "name": "--transition-normal",
-      "css": 4,
+      "css": 2,
       "js": 0,
       "html": 0,
-      "total": 4
+      "total": 2
     },
     {
       "name": "--transition-slow",
@@ -1609,10 +1609,10 @@
     },
     {
       "name": "--transition-std",
-      "css": 23,
+      "css": 24,
       "js": 0,
       "html": 0,
-      "total": 23
+      "total": 24
     },
     {
       "name": "--z-dropdown",

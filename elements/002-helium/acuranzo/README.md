@@ -187,8 +187,8 @@ in the migrations themselves so that they get populated in the database directly
 | [1150](/elements/002-helium/acuranzo/migrations/acuranzo_1150.lua) | queries | 1.0.0 | 2026-01-20 | 4 | ✗ | QueryRef #056 - Query Error Handling |
 | [1151](/elements/002-helium/acuranzo/migrations/acuranzo_1151.lua) | queries | 1.3.0 | 2026-01-22 | 6 | ✗ | QueryRef #057 - Query Params Test |
 | [1152](/elements/002-helium/acuranzo/migrations/acuranzo_1152.lua) | lookups | 1.0.1 | 2026-04-11 | 4 | ✗ | Lookup 059 - Table Definitions |
-| [1153](/elements/002-helium/acuranzo/migrations/acuranzo_1153.lua) | lookups | 1.0.1 | 2026-04-11 | 4 | ✗ | LithiumTable Column Types (lookup_id 059, key_idx 0) |
-| [1154](/elements/002-helium/acuranzo/migrations/acuranzo_1154.lua) | lookups | 1.3.0 | 2026-04-12 | 4 | ✗ | LithiumTable JSON Schema (lookup_id 059, key_idx 1) |
+| [1153](/elements/002-helium/acuranzo/migrations/acuranzo_1153.lua) | lookups | 1.0.2 | 2026-04-19 | 4 | ✗ | LithiumTable Column Types (lookup_id 059, key_idx 0) |
+| [1154](/elements/002-helium/acuranzo/migrations/acuranzo_1154.lua) | lookups | 1.4.0 | 2026-04-19 | 4 | ✗ | LithiumTable JSON Schema (lookup_id 059, key_idx 1) |
 | [1155](/elements/002-helium/acuranzo/migrations/acuranzo_1155.lua) | queries | 1.0.0 | 2026-03-15 | 4 | ✗ | QueryRef #060 - Get Tabulator Schemas |
 | [1156](/elements/002-helium/acuranzo/migrations/acuranzo_1156.lua) | lookups | 1.3.0 | 2026-04-12 | 4 | ✗ | LithiumTable style-manager-base-vars (lookup_id 59 key_idx 11) |
 | [1157](/elements/002-helium/acuranzo/migrations/acuranzo_1157.lua) | lookups | 1.0.0 | 2026-03-17 | 4 | ✗ | LithiumTable style-manager-semantic-vars (lookup_id 59 key_idx 12) |
