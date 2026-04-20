@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS class selectors/names used across the Lithium codebase",
-    "generated": "2026-04-19T23:44:33.825Z",
+    "generated": "2026-04-20T01:20:02.799Z",
     "sources": {
-      "css": "51 files in src/**/*.css",
-      "js": "121 files in src/**/*.js",
+      "css": "52 files in src/**/*.css",
+      "js": "122 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
-    "total_selectors": 1830,
-    "total_occurrences": 28493
+    "total_selectors": 1860,
+    "total_occurrences": 28573
   },
   "selectors": [
     {
@@ -1004,6 +1004,40 @@
         "js": [
           "src/core/codemirror-setup.js",
           "src/managers/session-log/session-log.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".cm-editor .cm-scroller.os-host",
+      "css": 1,
+      "js": 3,
+      "html": 0,
+      "total": 4,
+      "files": {
+        "css": [
+          "src/styles/vendor-fixes.css"
+        ],
+        "js": [
+          "src/core/codemirror-setup.js",
+          "src/core/scrollbar-manager.js",
+          "src/managers/session-log/session-log.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".cm-editor .os-theme-lithium",
+      "css": 1,
+      "js": 1,
+      "html": 0,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [
+          "src/core/scrollbar-manager.js"
         ],
         "html": []
       }
@@ -8891,6 +8925,20 @@
       }
     },
     {
+      "selector": ".lithium-cm-scrollbars",
+      "css": 0,
+      "js": 1,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [],
+        "js": [
+          "src/core/scrollbar-manager.js"
+        ],
+        "html": []
+      }
+    },
+    {
       "selector": ".lithium-col-chooser-btn",
       "css": 1,
       "js": 0,
@@ -9710,6 +9758,62 @@
       }
     },
     {
+      "selector": ".lithium-native-scrollbars ::-webkit-scrollbar",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": ".lithium-native-scrollbars ::-webkit-scrollbar-thumb",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": ".lithium-native-scrollbars ::-webkit-scrollbar-thumb:hover",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": ".lithium-native-scrollbars ::-webkit-scrollbar-track",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
       "selector": ".lithium-nav-block",
       "css": 1,
       "js": 4,
@@ -10503,6 +10607,22 @@
       }
     },
     {
+      "selector": ".lithium-popup-scrollable",
+      "css": 1,
+      "js": 1,
+      "html": 0,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/styles/vendor-fixes.css"
+        ],
+        "js": [
+          "src/core/scrollbar-manager.js"
+        ],
+        "html": []
+      }
+    },
+    {
       "selector": ".lithium-selector-active",
       "css": 1,
       "js": 0,
@@ -10747,6 +10867,20 @@
       }
     },
     {
+      "selector": ".lithium-suneditor-scrollable",
+      "css": 0,
+      "js": 1,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [],
+        "js": [
+          "src/core/scrollbar-manager.js"
+        ],
+        "html": []
+      }
+    },
+    {
       "selector": ".lithium-table-container",
       "css": 1,
       "js": 3,
@@ -10755,6 +10889,30 @@
       "files": {
         "css": [
           "src/tables/lithium-table.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container .os-theme-lithium",
+      "css": 1,
+      "js": 3,
+      "html": 7,
+      "total": 11,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
         ],
         "js": [
           "src/managers/crimson/crimson-citations.js",
@@ -12058,12 +12216,13 @@
     },
     {
       "selector": ".lithium-table-container .tabulator-tableholder",
-      "css": 1,
+      "css": 2,
       "js": 5,
       "html": 7,
-      "total": 13,
+      "total": 14,
       "files": {
         "css": [
+          "src/styles/vendor-fixes.css",
           "src/tables/lithium-table.css"
         ],
         "js": [
@@ -12084,12 +12243,13 @@
     },
     {
       "selector": ".lithium-table-container .tabulator-tableholder::-webkit-scrollbar",
-      "css": 1,
+      "css": 2,
       "js": 5,
       "html": 7,
-      "total": 13,
+      "total": 14,
       "files": {
         "css": [
+          "src/styles/vendor-fixes.css",
           "src/tables/lithium-table.css"
         ],
         "js": [
@@ -12110,12 +12270,13 @@
     },
     {
       "selector": ".lithium-table-container .tabulator-tableholder::-webkit-scrollbar-thumb",
-      "css": 1,
+      "css": 2,
       "js": 5,
       "html": 7,
-      "total": 13,
+      "total": 14,
       "files": {
         "css": [
+          "src/styles/vendor-fixes.css",
           "src/tables/lithium-table.css"
         ],
         "js": [
@@ -12136,12 +12297,13 @@
     },
     {
       "selector": ".lithium-table-container .tabulator-tableholder::-webkit-scrollbar-thumb:hover",
-      "css": 1,
+      "css": 2,
       "js": 5,
       "html": 7,
-      "total": 13,
+      "total": 14,
       "files": {
         "css": [
+          "src/styles/vendor-fixes.css",
           "src/tables/lithium-table.css"
         ],
         "js": [
@@ -12162,12 +12324,13 @@
     },
     {
       "selector": ".lithium-table-container .tabulator-tableholder::-webkit-scrollbar-track",
-      "css": 1,
+      "css": 2,
       "js": 5,
       "html": 7,
-      "total": 13,
+      "total": 14,
       "files": {
         "css": [
+          "src/styles/vendor-fixes.css",
           "src/tables/lithium-table.css"
         ],
         "js": [
@@ -18156,22 +18319,6 @@
     {
       "selector": ".lookups-json-editor .cm-editor",
       "css": 1,
-      "js": 0,
-      "html": 1,
-      "total": 2,
-      "files": {
-        "css": [
-          "src/managers/lookups/lookups.css"
-        ],
-        "js": [],
-        "html": [
-          "src/managers/lookups/lookups.html"
-        ]
-      }
-    },
-    {
-      "selector": ".lookups-json-editor .cm-scroller",
-      "css": 1,
       "js": 1,
       "html": 1,
       "total": 3,
@@ -18180,6 +18327,25 @@
           "src/managers/lookups/lookups.css"
         ],
         "js": [
+          "src/core/scrollbar-manager.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lookups-json-editor .cm-scroller",
+      "css": 1,
+      "js": 2,
+      "html": 1,
+      "total": 4,
+      "files": {
+        "css": [
+          "src/managers/lookups/lookups.css"
+        ],
+        "js": [
+          "src/core/codemirror-setup.js",
           "src/managers/session-log/session-log.js"
         ],
         "html": [
@@ -18526,14 +18692,16 @@
     {
       "selector": ".lookups-summary-editor .sun-editor",
       "css": 1,
-      "js": 0,
+      "js": 1,
       "html": 1,
-      "total": 2,
+      "total": 3,
       "files": {
         "css": [
           "src/managers/lookups/lookups.css"
         ],
-        "js": [],
+        "js": [
+          "src/managers/lookups/lookups.js"
+        ],
         "html": [
           "src/managers/lookups/lookups.html"
         ]
@@ -18542,14 +18710,16 @@
     {
       "selector": ".lookups-summary-editor .sun-editor .se-resizing-bar",
       "css": 1,
-      "js": 0,
+      "js": 1,
       "html": 1,
-      "total": 2,
+      "total": 3,
       "files": {
         "css": [
           "src/managers/lookups/lookups.css"
         ],
-        "js": [],
+        "js": [
+          "src/managers/lookups/lookups.js"
+        ],
         "html": [
           "src/managers/lookups/lookups.html"
         ]
@@ -18558,14 +18728,16 @@
     {
       "selector": ".lookups-summary-editor .sun-editor .se-toolbar",
       "css": 1,
-      "js": 0,
+      "js": 1,
       "html": 1,
-      "total": 2,
+      "total": 3,
       "files": {
         "css": [
           "src/managers/lookups/lookups.css"
         ],
-        "js": [],
+        "js": [
+          "src/managers/lookups/lookups.js"
+        ],
         "html": [
           "src/managers/lookups/lookups.html"
         ]
@@ -18574,14 +18746,17 @@
     {
       "selector": ".lookups-summary-editor .sun-editor .se-wrapper",
       "css": 1,
-      "js": 0,
+      "js": 3,
       "html": 1,
-      "total": 2,
+      "total": 5,
       "files": {
         "css": [
           "src/managers/lookups/lookups.css"
         ],
-        "js": [],
+        "js": [
+          "src/core/scrollbar-manager.js",
+          "src/managers/lookups/lookups.js"
+        ],
         "html": [
           "src/managers/lookups/lookups.html"
         ]
@@ -18590,14 +18765,17 @@
     {
       "selector": ".lookups-summary-editor .sun-editor .se-wrapper .se-wrapper-wysiwyg",
       "css": 1,
-      "js": 0,
+      "js": 3,
       "html": 1,
-      "total": 2,
+      "total": 5,
       "files": {
         "css": [
           "src/managers/lookups/lookups.css"
         ],
-        "js": [],
+        "js": [
+          "src/core/scrollbar-manager.js",
+          "src/managers/lookups/lookups.js"
+        ],
         "html": [
           "src/managers/lookups/lookups.html"
         ]
@@ -18708,14 +18886,15 @@
     {
       "selector": ".lookups-tab-pane #lookups-tab-json .cm-editor",
       "css": 1,
-      "js": 1,
+      "js": 2,
       "html": 3,
-      "total": 5,
+      "total": 6,
       "files": {
         "css": [
           "src/managers/lookups/lookups.css"
         ],
         "js": [
+          "src/core/scrollbar-manager.js",
           "src/managers/lookups/lookups.js"
         ],
         "html": [
@@ -22654,6 +22833,118 @@
       }
     },
     {
+      "selector": ".os-host.os-theme-lithium",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": ".os-scrollbar",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": ".os-theme-lithium-minimal",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": ".os-theme-lithium-minimal .os-scrollbar-button",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": ".os-theme-lithium.os-scrollbar",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": ".os-theme-lithium.os-scrollbar-auto-hide",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": ".os-theme-lithium.os-scrollbar-hidden",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": ".os-theme-lithium.os-scrollbar-unusable",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
       "selector": ".panel-header",
       "css": 1,
       "js": 0,
@@ -24164,14 +24455,16 @@
     {
       "selector": ".queries-sql-editor .cm-editor",
       "css": 1,
-      "js": 0,
+      "js": 1,
       "html": 1,
-      "total": 2,
+      "total": 3,
       "files": {
         "css": [
           "src/managers/queries/queries.css"
         ],
-        "js": [],
+        "js": [
+          "src/core/scrollbar-manager.js"
+        ],
         "html": [
           "src/managers/queries/queries.html"
         ]
@@ -24244,14 +24537,15 @@
     {
       "selector": ".queries-sql-editor .cm-scroller",
       "css": 1,
-      "js": 1,
+      "js": 2,
       "html": 1,
-      "total": 3,
+      "total": 4,
       "files": {
         "css": [
           "src/managers/queries/queries.css"
         ],
         "js": [
+          "src/core/codemirror-setup.js",
           "src/managers/session-log/session-log.js"
         ],
         "html": [
@@ -24276,14 +24570,16 @@
     {
       "selector": ".queries-summary-editor .cm-editor",
       "css": 1,
-      "js": 0,
+      "js": 1,
       "html": 0,
-      "total": 1,
+      "total": 2,
       "files": {
         "css": [
           "src/managers/queries/queries.css"
         ],
-        "js": [],
+        "js": [
+          "src/core/scrollbar-manager.js"
+        ],
         "html": []
       }
     },
@@ -24392,14 +24688,15 @@
     {
       "selector": ".queries-tab-pane #queries-tab-collection .cm-editor",
       "css": 1,
-      "js": 1,
+      "js": 2,
       "html": 5,
-      "total": 7,
+      "total": 8,
       "files": {
         "css": [
           "src/managers/queries/queries.css"
         ],
         "js": [
+          "src/core/scrollbar-manager.js",
           "src/managers/queries/queries.js"
         ],
         "html": [
@@ -24957,14 +25254,15 @@
     {
       "selector": ".session-log-viewer .cm-editor",
       "css": 1,
-      "js": 1,
+      "js": 2,
       "html": 1,
-      "total": 3,
+      "total": 4,
       "files": {
         "css": [
           "src/managers/session-log/session-log.css"
         ],
         "js": [
+          "src/core/scrollbar-manager.js",
           "src/managers/session-log/session-log.js"
         ],
         "html": [
@@ -27018,14 +27316,16 @@
     {
       "selector": ".style-css-editor .cm-editor",
       "css": 1,
-      "js": 0,
+      "js": 1,
       "html": 1,
-      "total": 2,
+      "total": 3,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
         ],
-        "js": [],
+        "js": [
+          "src/core/scrollbar-manager.js"
+        ],
         "html": [
           "src/managers/style-manager/style-manager.html"
         ]
@@ -28481,6 +28781,39 @@
       }
     },
     {
+      "selector": ".sun-editor .os-theme-lithium",
+      "css": 1,
+      "js": 1,
+      "html": 0,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [
+          "src/managers/lookups/lookups.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".sun-editor .se-wrapper-inner.os-host",
+      "css": 1,
+      "js": 4,
+      "html": 0,
+      "total": 5,
+      "files": {
+        "css": [
+          "src/styles/vendor-fixes.css"
+        ],
+        "js": [
+          "src/core/scrollbar-manager.js",
+          "src/managers/lookups/lookups.js"
+        ],
+        "html": []
+      }
+    },
+    {
       "selector": ".suneditor-nav",
       "css": 0,
       "js": 1,
@@ -28865,42 +29198,47 @@
     {
       "selector": ".tabulator-edit-list",
       "css": 1,
-      "js": 0,
+      "js": 1,
       "html": 0,
-      "total": 1,
+      "total": 2,
       "files": {
         "css": [
           "src/styles/vendor-fixes.css"
         ],
-        "js": [],
+        "js": [
+          "src/core/scrollbar-manager.js"
+        ],
         "html": []
       }
     },
     {
       "selector": ".tabulator-edit-list-item",
       "css": 1,
-      "js": 0,
+      "js": 1,
       "html": 0,
-      "total": 1,
+      "total": 2,
       "files": {
         "css": [
           "src/styles/vendor-fixes.css"
         ],
-        "js": [],
+        "js": [
+          "src/core/scrollbar-manager.js"
+        ],
         "html": []
       }
     },
     {
       "selector": ".tabulator-edit-list-item:has(.li-lookup-item[data-align=\"center\"])",
       "css": 1,
-      "js": 2,
+      "js": 3,
       "html": 0,
-      "total": 3,
+      "total": 4,
       "files": {
         "css": [
           "src/styles/vendor-fixes.css"
         ],
         "js": [
+          "src/core/scrollbar-manager.js",
           "src/tables/lithium-table.js"
         ],
         "html": []
@@ -28909,15 +29247,32 @@
     {
       "selector": ".tabulator-edit-list-item:has(.li-lookup-item[data-align=\"right\"])",
       "css": 1,
-      "js": 2,
+      "js": 3,
       "html": 0,
-      "total": 3,
+      "total": 4,
       "files": {
         "css": [
           "src/styles/vendor-fixes.css"
         ],
         "js": [
+          "src/core/scrollbar-manager.js",
           "src/tables/lithium-table.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".tabulator-edit-list.os-host",
+      "css": 1,
+      "js": 1,
+      "html": 0,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/styles/vendor-fixes.css"
+        ],
+        "js": [
+          "src/core/scrollbar-manager.js"
         ],
         "html": []
       }
@@ -32402,6 +32757,132 @@
       }
     },
     {
+      "selector": "[data-overlayscrollbars-viewport] ~ .os-scrollbar .os-scrollbar-button",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": "[data-overlayscrollbars-viewport] ~ .os-scrollbar .os-scrollbar-handle",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": "[data-overlayscrollbars-viewport] ~ .os-scrollbar .os-scrollbar-handle:active",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": "[data-overlayscrollbars-viewport] ~ .os-scrollbar .os-scrollbar-handle:hover",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": "[data-overlayscrollbars-viewport] ~ .os-scrollbar .os-scrollbar-track",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": "[data-overlayscrollbars-viewport] ~ .os-scrollbar .os-scrollbar-track:active",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": "[data-overlayscrollbars-viewport] ~ .os-scrollbar .os-scrollbar-track:hover",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": "[data-overlayscrollbars-viewport] ~ .os-scrollbar-corner",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": "[data-overlayscrollbars~=\"popup\"] .os-viewport",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
       "selector": "[data-panel].collapsed",
       "css": 1,
       "js": 43,
@@ -32939,14 +33420,16 @@
     {
       "selector": "#log-viewer .cm-editor .cm-lineNumbers",
       "css": 1,
-      "js": 0,
+      "js": 1,
       "html": 0,
-      "total": 1,
+      "total": 2,
       "files": {
         "css": [
           "src/managers/login/login.css"
         ],
-        "js": [],
+        "js": [
+          "src/core/scrollbar-manager.js"
+        ],
         "html": []
       }
     },
@@ -33191,14 +33674,16 @@
     {
       "selector": "#session-log-viewer .cm-editor .cm-lineNumbers",
       "css": 1,
-      "js": 0,
+      "js": 1,
       "html": 0,
-      "total": 1,
+      "total": 2,
       "files": {
         "css": [
           "src/managers/session-log/session-log.css"
         ],
-        "js": [],
+        "js": [
+          "src/core/scrollbar-manager.js"
+        ],
         "html": []
       }
     },

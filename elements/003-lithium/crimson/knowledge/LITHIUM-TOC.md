@@ -49,6 +49,7 @@ This directory contains the canonical documentation for the Lithium web applicat
 | [LITHIUM-API.md](LITHIUM-API.md) | Hydrogen API endpoints and Conduit client library (`conduit.js`) |
 | [LITHIUM-WSS.md](LITHIUM-WSS.md) | WebSocket connection — app-wide persistent connection, keepalive, status indicator |
 | [LITHIUM-CSS.md](LITHIUM-CSS.md) | CSS architecture, variables, theming |
+| [LITHIUM-OSB.md](LITHIUM-OSB.md) | OverlayScrollbars — cross-browser scrollbar styling for tables, editors |
 | [LITHIUM-TIP.md](LITHIUM-TIP.md) | Tooltip system — FloatingUI, themes, arrows |
 | [LITHIUM-KEY.md](LITHIUM-KEY.md) | Keyboard shortcuts — global and manager-specific |
 | [LITHIUM-ICN.md](LITHIUM-ICN.md) | Icon system, Font Awesome, config |

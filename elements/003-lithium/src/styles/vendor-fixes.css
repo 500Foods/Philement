@@ -156,6 +156,10 @@
   border-radius: var(--border-radius-md);
   box-shadow: 3px 3px 3px black;
   min-width: 100px;
+  /* Prevent scroll from propagating to parent table */
+  overscroll-behavior: contain;
+  /* Ensure dropdown has its own scroll context */
+  isolation: isolate;
 }
 
 /* Ensure list items take full width and allow centering */
@@ -252,6 +256,74 @@
 .li-lookup-item img {
   display: inline-block;
   vertical-align: middle;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   TABULATOR NATIVE SCROLLBAR STYLING
+   ═════════════════════════════════════════════════════════════════════════════
+
+   Tabulator uses native CSS scrollbars (not OverlayScrollbars)
+   OverlayScrollbars conflicts with Tabulator's virtual scrolling
+
+*/
+
+/* Ensure Tabulator tableholder has proper overflow */
+.lithium-table-container .tabulator-tableholder {
+  overflow: auto !important;
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent-alt-primary) var(--bg-secondary);
+}
+
+/* WebKit scrollbar styling for Tabulator */
+.lithium-table-container .tabulator-tableholder::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.lithium-table-container .tabulator-tableholder::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border-radius: 16px;
+}
+
+.lithium-table-container .tabulator-tableholder::-webkit-scrollbar-thumb {
+  background: var(--accent-alt-primary);
+  border-radius: 16px;
+  border: 1px solid transparent;
+  background-clip: content-box;
+}
+
+.lithium-table-container .tabulator-tableholder::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-primary);
+}
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   OVERLAYSCROLLBARS COMPATIBILITY (CodeMirror, SunEditor only)
+   ═════════════════════════════════════════════════════════════════════════════ */
+
+/* Ensure CodeMirror works with OverlayScrollbars */
+.cm-editor .cm-scroller.os-host {
+  overflow: auto !important;
+}
+
+/* SunEditor compatibility with OverlayScrollbars */
+.sun-editor .se-wrapper.os-host,
+.sun-editor .se-wrapper-inner.os-host {
+  overflow: auto !important;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   POPUP/DROPDOWN SCROLL CONTAINMENT
+   ═════════════════════════════════════════════════════════════════════════════ */
+
+/* When OverlayScrollbars is active on dropdowns */
+.tabulator-edit-list.os-host {
+  overscroll-behavior: contain;
+}
+
+/* Generic popup scrollable class */
+.lithium-popup-scrollable {
+  overscroll-behavior: contain;
+  isolation: isolate;
 }
 
 } /* end @layer vendor-fixes */
