@@ -305,6 +305,17 @@ export class LithiumTableBase {
         this.primaryKeyField = getPrimaryKeyField(this.tableDef);
       }
 
+      // Log table initialization details including primary key
+      const tableName = this.tablePath || this.cssPrefix || 'auto';
+      const isEditable = !this.readonly;
+      const pkInfo = this.primaryKeyField ?
+        (Array.isArray(this.primaryKeyField) ? this.primaryKeyField.join(', ') : this.primaryKeyField) :
+        'none';
+      const status = (isEditable && !this.primaryKeyField) ? Status.WARN : Status.INFO;
+      const editMode = isEditable ? 'editable' : 'read-only';
+      log(Subsystems.TABLE, status,
+        `[${tableName}] ${editMode}, primary key: ${pkInfo}`);
+
       // Apply default template if available (last step before building table)
       this._applyDefaultTemplate();
 

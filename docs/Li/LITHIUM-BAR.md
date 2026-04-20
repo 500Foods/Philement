@@ -403,11 +403,18 @@ All toolbar buttons use:
 
 ### Active State
 
-Active buttons use success color:
+**Action buttons** (undo, redo, etc.) use success color when active:
 ```css
-.lithium-toolbar-btn.active,
-.lithium-toolbar-tab.active {
+.lithium-toolbar-btn.active {
   background-color: var(--accent-success) !important;
+}
+```
+
+**Tab buttons** use toggle color (canary yellow) when selected:
+```css
+.lithium-toolbar-tab.active {
+  background-color: var(--accent-toggle) !important;
+  color: var(--text-toggle) !important;
 }
 ```
 
@@ -462,6 +469,87 @@ Remove custom toolbar styles from manager CSS files. The toolbar styles are now 
 
 ---
 
+## Standard Editor Toolbar Pattern
+
+Managers with code editors (CodeMirror) use a standardized toolbar button arrangement on the right side:
+
+### Standard Button Set
+
+| Button | Icon | Label | Purpose |
+|--------|------|-------|---------|
+| Undo | `fa-rotate-left` | Undo | Undo last editor change |
+| Redo | `fa-rotate-right` | Redo | Redo last undone change |
+| Fold | `fa-compress` | Fold | Collapse all code folds |
+| Unfold | `fa-expand` | Unfold | Expand all code folds |
+| Font | `fa-font-case` | (none) | Open font settings popup |
+| Prettify | `fa-flower-tulip` | (none) | Format/prettify code |
+
+### HTML Template
+
+```html
+<div class="lithium-toolbar" id="my-toolbar">
+  <!-- Left: Collapse + Tabs -->
+  <button type="button" class="lithium-toolbar-btn lithium-collapse-btn" 
+          data-collapse-target="left" title="Toggle Panel">
+    <fa fa-angles-left class="lithium-collapse-icon"></fa>
+  </button>
+  <button type="button" class="lithium-toolbar-tab active" data-tab="editor" data-collapsible-text>
+    <fa fa-code></fa>
+    <span>Editor</span>
+  </button>
+
+  <!-- Placeholder -->
+  <div class="lithium-toolbar-placeholder"></div>
+
+  <!-- Right: Standard Editor Buttons -->
+  <button type="button" class="lithium-toolbar-btn" id="btn-undo" 
+          data-collapsible-text data-editor-btn title="Undo (Ctrl+Z)">
+    <fa fa-rotate-left></fa>
+    <span>Undo</span>
+  </button>
+  <button type="button" class="lithium-toolbar-btn" id="btn-redo" 
+          data-collapsible-text data-editor-btn title="Redo (Ctrl+Shift+Z)">
+    <fa fa-rotate-right></fa>
+    <span>Redo</span>
+  </button>
+  <button type="button" class="lithium-toolbar-btn" id="btn-fold" 
+          data-collapsible-text data-editor-btn title="Fold All">
+    <fa fa-compress></fa>
+    <span>Fold</span>
+  </button>
+  <button type="button" class="lithium-toolbar-btn" id="btn-unfold" 
+          data-collapsible-text data-editor-btn title="Unfold All">
+    <fa fa-expand></fa>
+    <span>Unfold</span>
+  </button>
+  <button type="button" class="lithium-toolbar-btn" id="btn-font" 
+          data-editor-btn title="Font Settings">
+    <fa fa-font-case></fa>
+  </button>
+  <button type="button" class="lithium-toolbar-btn" id="btn-prettify" 
+          data-editor-btn title="Prettify">
+    <fa fa-flower-tulip></fa>
+  </button>
+</div>
+```
+
+### Key Conventions
+
+1. **Flat structure**: All buttons are direct children of `.lithium-toolbar` (no wrapper divs)
+2. **Collapsible text**: Undo/Redo/Fold/Unfold have labels that collapse; Font/Prettify are icon-only
+3. **data-editor-btn**: Mark editor buttons for easy selection/disabling when not in editor tab
+4. **Standard icons**: Use `fa-font-case` (not `fa-font`) and `fa-flower-tulip` (not `fa-wand-magic-sparkles`)
+5. **No manager-specific CSS**: Let `lithium-toolbar.css` handle all styling
+
+### Managers Using This Pattern
+
+- **Query Manager** — SQL editor with all 6 buttons
+- **Lookups Manager** — JSON editor (no Prettify button)
+- **Profile Manager** — Collection JSON editor
+- **Style Manager** — CSS/JSON editor
+
+---
+
 ## Examples by Manager
 
 ### Query Manager
@@ -473,6 +561,11 @@ Remove custom toolbar styles from manager CSS files. The toolbar styles are now 
 
 - **Left:** 2 collapse buttons + 3 tabs (Collection, Summary, Preview)
 - **Right:** Undo, Redo, Fold, Unfold, Font (with collapsible text)
+
+### Profile Manager
+
+- **Left:** Collapse button + 2 tabs (Settings, Collection)
+- **Right:** Undo, Redo, Fold, Unfold, Font, Prettify (with collapsible text)
 
 ### Style Manager
 

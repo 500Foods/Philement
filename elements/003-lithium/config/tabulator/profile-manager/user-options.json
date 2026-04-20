@@ -30,11 +30,24 @@
       "bottomCalc": null
     },
 
+    "index": {
+      "title": "Index",
+      "field": "index",
+      "coltype": "integer",
+      "visible": false,
+      "sort": true,
+      "filter": true,
+      "editable": false,
+      "calculated": false,
+      "primaryKey": false,
+      "description": "Section index for page selection — hidden from display"
+    },
+
     "section": {
       "title": "Section",
       "field": "section",
       "coltype": "string",
-      "visible": true,
+      "visible": false,
       "sort": true,
       "filter": true,
       "editable": false,
@@ -46,7 +59,7 @@
     },
 
     "icon": {
-      "title": "Icon",
+      "title": "<fa fa-wrench></fa>",
       "field": "icon",
       "coltype": "string",
       "visible": true,
@@ -55,14 +68,15 @@
       "editable": false,
       "calculated": true,
       "primaryKey": false,
-      "description": "Icon HTML for the option",
-      "width": 50,
+      "description": "Icon for the option",
+      "width": 28,
       "formatter": "html",
-      "hozAlign": "center"
+      "hozAlign": "center",
+      "bottomCalc": "count"
     },
 
     "label": {
-      "title": "Option",
+      "title": "Section",
       "field": "label",
       "coltype": "string",
       "visible": true,
@@ -71,7 +85,7 @@
       "editable": false,
       "calculated": true,
       "primaryKey": false,
-      "description": "User option label/name"
+      "description": "Section name"
     },
 
     "status": {

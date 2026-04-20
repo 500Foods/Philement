@@ -116,7 +116,7 @@ class ExampleManager {
 
 ### Test Coverage
 
-#### 171 tests, 0 failures
+#### 672 tests, 0 failures
 
 | Module | Coverage |
 |--------|----------|

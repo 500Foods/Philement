@@ -32,7 +32,7 @@
 /* Editing cell inputs */
 .tabulator-cell.tabulator-editing > input,
 .tabulator-cell.tabulator-editing > select {
-  padding: 4px 0px !important;
+  padding: 4px 6px !important;
 }
  
 /* Group rows */
@@ -143,7 +143,6 @@
 .lithium-table-container .tabulator-row.tabulator-group .lithium-group-count {
   color: var(--text-muted);
   font-size: var(--font-size-xs);
-  margin-top: -3px;
 }
 
 .tabulator-row.tabulator-group span {
