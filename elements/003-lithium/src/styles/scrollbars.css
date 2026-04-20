@@ -1,0 +1,310 @@
+/**
+ * Lithium Scrollbar Styles - OverlayScrollbars Theme
+ *
+ * This file provides a consistent, cross-browser scrollbar implementation
+ * using OverlayScrollbars (https://kingsora.github.io/OverlayScrollbars/).
+ *
+ * Features:
+ * - Rounded scrollbar track and thumb
+ * - Inset thumb effect with padding
+ * - Visible arrow buttons at top/bottom (vertical) and left/right (horizontal)
+ * - Consistent styling across Tabulator, CodeMirror, and SunEditor
+ * - Dark theme optimized for Lithium's UI
+ *
+ * @layer vendor-fixes
+ */
+
+@layer vendor-fixes {
+
+  /* ═════════════════════════════════════════════════════════════════════════════
+     OVERLAYSCROLLLARS BASE THEME - Lithium Dark
+     ═════════════════════════════════════════════════════════════════════════════
+
+     OverlayScrollbars creates the following DOM structure:
+     .os-host (on target element)
+       .os-resize-observer-host
+       .os-padding
+         .os-viewport
+           .os-content (original content moved here)
+       .os-scrollbar.os-scrollbar-horizontal
+         .os-scrollbar-track
+           .os-scrollbar-handle
+       .os-scrollbar.os-scrollbar-vertical
+         .os-scrollbar-track
+           .os-scrollbar-handle
+
+  */
+
+  /* Custom theme class applied to all OverlayScrollbars instances */
+  .os-theme-lithium,
+  [data-overlayscrollbars-viewport] {
+    /* Size - track is 8px, thumb is 6px (1px padding creates border effect) */
+    --os-size: 8px;
+    --os-thumb-size: 6px;
+
+    /* Padding - creates 1px "border" between track and thumb */
+    --os-padding: 1px;
+
+    /* Track styling */
+    --os-track-bg: var(--scrollbar-track, var(--bg-secondary));
+    --os-track-bg-hover: var(--scrollbar-track, var(--bg-secondary));
+    --os-track-bg-active: var(--scrollbar-track, var(--bg-secondary));
+    --os-track-border-radius: 16px;
+
+    /* Thumb styling - using accent colors */
+    --os-thumb-bg: var(--accent-alt-primary, #3C4BA0);
+    --os-thumb-bg-hover: var(--accent-primary, #5C6BC0);
+    --os-thumb-bg-active: var(--accent-primary, #5C6BC0);
+    --os-thumb-border-radius: 16px;
+
+    /* Button (arrow) styling - disabled for minimal look */
+    --os-button-bg: transparent;
+    --os-button-bg-hover: transparent;
+    --os-button-bg-active: transparent;
+
+    /* Visibility */
+    --os-auto-hide: never;
+    --os-auto-hide-delay: 800ms;
+  }
+
+  /* ═════════════════════════════════════════════════════════════════════════════
+     TRACK STYLES
+     ═════════════════════════════════════════════════════════════════════════════ */
+
+  .os-theme-lithium .os-scrollbar-track,
+  [data-overlayscrollbars-viewport] ~ .os-scrollbar .os-scrollbar-track {
+    background: var(--os-track-bg) !important;
+    border-radius: var(--os-track-border-radius) !important;
+    transition: background-color 150ms ease;
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: block !important;
+    /* Track is 8px wide */
+    width: var(--os-size) !important;
+    height: var(--os-size) !important;
+  }
+
+  .os-theme-lithium .os-scrollbar-track:hover,
+  [data-overlayscrollbars-viewport] ~ .os-scrollbar .os-scrollbar-track:hover {
+    background: var(--os-track-bg-hover) !important;
+  }
+
+  .os-theme-lithium .os-scrollbar-track:active,
+  [data-overlayscrollbars-viewport] ~ .os-scrollbar .os-scrollbar-track:active {
+    background: var(--os-track-bg-active) !important;
+  }
+
+  /* ═════════════════════════════════════════════════════════════════════════════
+     THUMB STYLES - 6px thumb with 1px padding creating border effect
+     ═════════════════════════════════════════════════════════════════════════════ */
+
+  .os-theme-lithium .os-scrollbar-handle,
+  [data-overlayscrollbars-viewport] ~ .os-scrollbar .os-scrollbar-handle {
+    background: var(--os-thumb-bg) !important;
+    border-radius: var(--os-thumb-border-radius) !important;
+    transition: background-color 150ms ease, transform 150ms ease;
+    /* 1px padding creates the "border" between track and thumb */
+    border: var(--os-padding) solid transparent !important;
+    background-clip: content-box !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: block !important;
+    /* Thumb is centered in the 8px track (6px visible) */
+    min-height: var(--os-thumb-size) !important;
+    min-width: var(--os-thumb-size) !important;
+  }
+
+  .os-theme-lithium .os-scrollbar-handle:hover,
+  [data-overlayscrollbars-viewport] ~ .os-scrollbar .os-scrollbar-handle:hover {
+    background: var(--os-thumb-bg-hover) !important;
+  }
+
+  .os-theme-lithium .os-scrollbar-handle:active,
+  [data-overlayscrollbars-viewport] ~ .os-scrollbar .os-scrollbar-handle:active {
+    background: var(--os-thumb-bg-active) !important;
+  }
+
+  /* ═════════════════════════════════════════════════════════════════════════════
+     SCROLLBAR CONTAINER - Classic mode (reserves space)
+     ═════════════════════════════════════════════════════════════════════════════ */
+
+  /* Classic scrollbars take up space in the layout */
+  .os-theme-lithium.os-scrollbar,
+  .os-scrollbar {
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: block !important;
+    z-index: auto !important;
+    position: relative !important;
+  }
+
+  /* When paddingAbsolute is true, the host reserves space */
+  .os-host.os-theme-lithium {
+    /* Let OverlayScrollbars manage the padding for scrollbar space */
+  }
+
+  /* ═════════════════════════════════════════════════════════════════════════════
+     BUTTON STYLES - Disabled for minimal look
+     ═════════════════════════════════════════════════════════════════════════════ */
+
+  .os-theme-lithium .os-scrollbar-button,
+  [data-overlayscrollbars-viewport] ~ .os-scrollbar .os-scrollbar-button {
+    display: none !important;
+  }
+
+  /* ═════════════════════════════════════════════════════════════════════════════
+     SCROLLBAR CONTAINER - Classic mode (reserves space)
+     ═════════════════════════════════════════════════════════════════════════════ */
+
+  /* ═════════════════════════════════════════════════════════════════════════════
+     CORNER STYLE - Where horizontal and vertical scrollbars meet
+     ═════════════════════════════════════════════════════════════════════════════ */
+
+  .os-theme-lithium .os-scrollbar-corner,
+  [data-overlayscrollbars-viewport] ~ .os-scrollbar-corner {
+    background: var(--os-track-bg) !important;
+    border-radius: var(--border-radius-sm, 4px) !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+
+  /* ═════════════════════════════════════════════════════════════════════════════
+     VISIBILITY STATES
+     ═════════════════════════════════════════════════════════════════════════════ */
+
+  /* Visible state (default) - shown when content overflows */
+  .os-theme-lithium.os-scrollbar-visible,
+  .os-theme-lithium.os-scrollbar {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  /* Hidden state - when content fits (no overflow) */
+  .os-theme-lithium.os-scrollbar-hidden {
+    opacity: 0;
+    visibility: hidden;
+    display: none !important;
+  }
+
+  /* Auto-hide behavior - not used, we want always visible when overflow exists */
+  .os-theme-lithium.os-scrollbar-auto-hide {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  /* ═════════════════════════════════════════════════════════════════════════════
+     COMPONENT-SPECIFIC SCROLLBAR OVERRIDES
+     ═════════════════════════════════════════════════════════════════════════════ */
+
+  /* Tabulator tables - use consistent 8px/6px sizing */
+  .lithium-table-container .os-theme-lithium {
+    --os-size: 8px;
+    --os-thumb-size: 6px;
+    --os-padding: 1px;
+  }
+
+  /* CodeMirror editors - match editor aesthetic */
+  .cm-editor .os-theme-lithium {
+    --os-size: 8px;
+    --os-thumb-size: 6px;
+    --os-padding: 1px;
+    --os-track-bg: var(--edit-gutter-bg, var(--bg-tertiary));
+  }
+
+  /* SunEditor - match editor aesthetic */
+  .sun-editor .os-theme-lithium {
+    --os-size: 8px;
+    --os-thumb-size: 6px;
+    --os-padding: 1px;
+  }
+
+  /* ═════════════════════════════════════════════════════════════════════════════
+     POPUP/DROPDOWN SCROLLBARS
+     ═════════════════════════════════════════════════════════════════════════════ */
+
+  /* Lookup dropdowns and popups - independent scroll containers */
+  .tabulator-edit-list.os-host,
+  .lithium-popup-scrollable.os-host,
+  [data-overlayscrollbars~="popup"] {
+    --os-size: 8px;
+    --os-thumb-size: 6px;
+    --os-padding: 1px;
+    /* Ensure popups scroll independently */
+    overscroll-behavior: contain;
+  }
+
+  /* Prevent scroll propagation from popups to parent */
+  .tabulator-edit-list.os-host .os-viewport,
+  .lithium-popup-scrollable.os-host .os-viewport,
+  [data-overlayscrollbars~="popup"] .os-viewport {
+    overscroll-behavior: contain;
+  }
+
+  /* ═════════════════════════════════════════════════════════════════════════════
+     UNOBTRUSIVE MODE - Minimal scrollbars for clean UIs
+     ═════════════════════════════════════════════════════════════════════════════ */
+
+  .os-theme-lithium-minimal {
+    --os-size: 8px;
+    --os-padding: 1px;
+    --os-track-bg: transparent;
+    --os-track-bg-hover: var(--bg-tertiary);
+  }
+
+  .os-theme-lithium-minimal .os-scrollbar-button {
+    display: none !important;
+  }
+
+  /* ═════════════════════════════════════════════════════════════════════════════
+     DISABLED STATE - When scrolling is not possible
+     ═════════════════════════════════════════════════════════════════════════════ */
+
+  .os-theme-lithium.os-scrollbar-unusable {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* ═════════════════════════════════════════════════════════════════════════════
+     ANIMATIONS
+     ═════════════════════════════════════════════════════════════════════════════ */
+
+  @keyframes os-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .os-theme-lithium.os-scrollbar {
+    animation: os-fade-in 200ms ease;
+  }
+
+  /* ═════════════════════════════════════════════════════════════════════════════
+     FALLBACK - Native scrollbar styling when OverlayScrollbars fails
+     ═════════════════════════════════════════════════════════════════════════════ */
+
+  /* WebKit browsers */
+  @supports selector(::-webkit-scrollbar) {
+    .lithium-native-scrollbars ::-webkit-scrollbar {
+      width: var(--scrollbar-size, 10px);
+      height: var(--scrollbar-size, 10px);
+    }
+
+    .lithium-native-scrollbars ::-webkit-scrollbar-track {
+      background: var(--scrollbar-track, var(--bg-secondary));
+      border-radius: var(--border-radius-full, 9999px);
+    }
+
+    .lithium-native-scrollbars ::-webkit-scrollbar-thumb {
+      background: var(--scrollbar-thumb, var(--bg-tertiary));
+      border-radius: var(--border-radius-full, 9999px);
+      border: 2px solid transparent;
+      background-clip: content-box;
+    }
+
+    .lithium-native-scrollbars ::-webkit-scrollbar-thumb:hover {
+      background: var(--scrollbar-thumb-hover, var(--border-color-hover));
+      border: 2px solid transparent;
+      background-clip: content-box;
+    }
+  }
+
+} /* end @layer vendor-fixes */
