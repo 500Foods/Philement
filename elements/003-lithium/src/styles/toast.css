@@ -42,7 +42,7 @@
   font-size: 0.875rem;
   line-height: 1.4;
   color: var(--text-primary, #e8eaed);
-  pointer-events: auto;
+  pointer-events: none; /* Only capture events when visible */
   opacity: 0;
   transform: translateX(100%);
   transition: opacity var(--transition-delay) ease, transform var(--transition-delay) ease;
@@ -53,6 +53,7 @@
 .toast-visible {
   opacity: 1;
   transform: translateX(0);
+  pointer-events: auto; /* Enable interaction when visible */
 }
 
 /* Exit animation */

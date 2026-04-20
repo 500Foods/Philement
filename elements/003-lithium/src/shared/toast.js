@@ -198,15 +198,16 @@ class ToastManager {
         }
       });
 
-      // Listen for transition end to reset overflow
-      content.addEventListener('transitionend', () => {
+      // Listen for transition end to reset overflow (use { once: true } to auto-remove)
+      const handleTransitionEnd = () => {
         if (content.style.height === '0px') {
           content.style.overflow = 'hidden';
         } else {
           content.style.height = 'auto';
           content.style.overflow = 'visible';
         }
-      });
+      };
+      content.addEventListener('transitionend', handleTransitionEnd, { once: true });
     }
 
     return toast;
@@ -444,11 +445,23 @@ class ToastManager {
     element.classList.remove('toast-visible');
     element.classList.add('toast-exit');
 
-    // Remove from DOM after animation
+    // Remove from DOM after animation (use CSS variable with fallback for test environment)
+    let transitionDelay = 375; // Default fallback (--transition-duration / 2 = 750ms / 2)
+    try {
+      const computedDelay = getComputedStyle(document.documentElement).getPropertyValue('--transition-delay');
+      if (computedDelay) {
+        const parsed = parseFloat(computedDelay);
+        if (!isNaN(parsed) && parsed > 0) {
+          transitionDelay = parsed;
+        }
+      }
+    } catch (_e) {
+      // Use fallback in test environments where getComputedStyle may not work
+    }
     setTimeout(() => {
       element.remove();
       this.toasts.delete(id);
-    }, 300);
+    }, transitionDelay);
   }
 
   /**

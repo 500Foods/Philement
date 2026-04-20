@@ -16,7 +16,7 @@ Lithium uses **Vitest** as the test runner with **happy-dom** for DOM testing. T
 
 | Command | Description |
 |---------|-------------|
-| `npm test` | Run all tests (171 tests) |
+| `npm test` | Run all tests (672 tests) |
 | `npm run test:watch` | Run tests in watch mode |
 | `npm run test:coverage` | Run tests with coverage report |
 | `npm run coverage:copy` | Copy coverage to `public/` for deployment |
@@ -39,7 +39,7 @@ tests/
 │   ├── log.test.js              # 47 tests
 │   ├── lookups.test.js          # 26 tests
 │   ├── permissions.test.js      # 23 tests
-│   ├── toast.test.js            # 47 tests
+│   ├── toast.test.js            # 49 tests
 │   ├── transitions.test.js      # 32 tests
 │   └── utils.test.js            # 38 tests
 └── integration/                 # Integration tests
@@ -51,7 +51,7 @@ tests/
 
 ## Current Coverage
 
-### Test Results: 171 tests, 0 failures
+### Test Results: 672 tests, 0 failures
 
 | Module | Statements | Branch | Functions | Lines |
 |--------|-----------|--------|-----------|-------|
