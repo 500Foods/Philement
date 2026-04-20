@@ -45,6 +45,7 @@
     "country-flag-icons": "^1.6.15",
     "dompurify": "^3.3.2",
     "marked": "^17.0.4",
+    "overlayscrollbars": "^2.15.1",
     "purgecss": "^8.0.0",
     "shepherd.js": "^15.2.2",
     "sql-formatter": "^15.3.0",

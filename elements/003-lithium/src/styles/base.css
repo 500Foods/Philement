@@ -206,6 +206,18 @@
     --scrollbar-thumb: var(--bg-tertiary);
     --scrollbar-thumb-hover: var(--border-color-hover);
 
+    /* OverlayScrollbars specific variables */
+    --os-size: 14px;
+    --os-padding: 3px;
+    --os-track-bg: var(--bg-secondary);
+    --os-track-bg-hover: var(--bg-secondary);
+    --os-thumb-bg: var(--bg-tertiary);
+    --os-thumb-bg-hover: var(--border-color-hover);
+    --os-thumb-bg-active: var(--accent-primary);
+    --os-button-bg: var(--bg-tertiary);
+    --os-button-bg-hover: var(--border-color-hover);
+    --os-button-bg-active: var(--accent-primary);
+
     /* Z-index scale */
     --z-dropdown: 100;
     --z-sticky: 200;

@@ -79,6 +79,7 @@ import {
   detectColtype,
   deepMergeParams,
 } from './columns/column-management.js';
+import { scrollbarManager } from '../core/scrollbar-manager.js';
 
 // ── Column Utility Functions ────────────────────────────────────────────────
 
@@ -501,6 +502,10 @@ export class LithiumTableBase {
     // Initialize FloatingUI tooltips on column headers
     // Use setTimeout to ensure Tabulator has rendered the header elements
     setTimeout(() => this.initColumnHeaderTooltips(), 100);
+
+    // Note: OverlayScrollbars is NOT used for Tabulator tables
+    // Tabulator's virtual scrolling is incompatible with OSB's DOM modifications
+    // Native CSS scrollbars are styled in lithium-table.css instead
   }
 
   // ── Group Icon Animation (delegated to GroupIconAnimator) ─────────────────
@@ -645,6 +650,12 @@ export class LithiumTableBase {
 
   destroy() {
     this.cleanup();
+
+    // Destroy OverlayScrollbars instance
+    if (this._scrollbarInstance) {
+      scrollbarManager.destroy(this._scrollbarInstance);
+      this._scrollbarInstance = null;
+    }
 
     if (this.table) {
       this.table.destroy();

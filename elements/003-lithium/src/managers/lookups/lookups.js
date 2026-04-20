@@ -35,6 +35,7 @@ import {
   formatSortedJson,
   parseAndSortJson,
 } from '../../core/codemirror-setup.js';
+import { scrollbarManager } from '../../core/scrollbar-manager.js';
 import './lookups.css';
 
 // ── Footer Select Options ───────────────────────────────────────────────────
@@ -317,6 +318,14 @@ export default class LookupsManager {
       // Set initial content if we have detail data
       if (this.currentDetailData?.summary) {
         this.sunEditor.setContents(this.currentDetailData.summary);
+      }
+
+      // Initialize OverlayScrollbars for SunEditor's scrollable area
+      // This provides consistent cross-browser scrollbar styling
+      const sunEditorElement = this.elements.summaryEditor?.closest('.sun-editor') ||
+                               this.elements.summaryEditor;
+      if (sunEditorElement) {
+        this._sunEditorScrollbar = scrollbarManager.initSunEditor(sunEditorElement);
       }
 
       // Track dirty state when editor content changes (via onChange callback)
@@ -1746,6 +1755,12 @@ _saveChildSelection(rowData) {
 
     // Clean up edit helper
     this.editHelper?.destroy();
+
+    // Destroy SunEditor OverlayScrollbars instance
+    if (this._sunEditorScrollbar) {
+      scrollbarManager.destroy(this._sunEditorScrollbar);
+      this._sunEditorScrollbar = null;
+    }
 
     // Destroy SunEditor
     if (this.sunEditor) {
