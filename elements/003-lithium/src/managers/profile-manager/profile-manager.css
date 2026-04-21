@@ -153,7 +153,7 @@
   right: 0;
   bottom: 0;
   padding: var(--space-lg);
-  overflow: auto;
+  overflow: hidden;
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--transition-std, 350ms ease-in-out);
@@ -183,6 +183,16 @@
 #panel-settings .profile-content {
   position: relative;
   min-height: 300px;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Scrollable content within a settings page */
+.settings-page .df-content,
+.settings-page .preferences-form,
+.settings-page .profile-info-grid {
+  max-height: 100%;
+  overflow-y: auto;
 }
 
 /* Form Actions Section */
@@ -526,16 +536,6 @@
   gap: var(--space-md);
 }
 
-.df-sample-header {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-}
-
-.df-sample-header .section-title {
-  margin: 0;
-}
-
 .df-sample-row {
   display: flex;
   gap: var(--space-xl);
@@ -562,12 +562,38 @@
   font-weight: 500;
 }
 
-.df-section {
-  padding: var(--space-md);
+.df-sample-input-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
 }
 
-.df-section .section-title {
-  margin: 0 0 var(--space-md) 0;
+.df-sample-input-group .lithium-toolbar-btn {
+  flex-shrink: 0;
+}
+
+.df-sample-input-group .form-input {
+  min-width: 200px;
+}
+
+.df-tz-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.df-tz-group .form-input {
+  min-width: 200px;
+  font-size: var(--font-size-sm);
+}
+
+.df-tz-group .form-select {
+  min-width: 260px;
+  max-width: 360px;
+}
+
+.df-section {
+  padding: var(--space-md);
 }
 
 .df-table-wrapper {
@@ -575,7 +601,7 @@
 }
 
 .df-table {
-  width: 100%;
+  width: auto;
   border-collapse: collapse;
   font-size: var(--font-size-sm);
 }
@@ -585,6 +611,7 @@
   padding: var(--space-sm) var(--space-md);
   text-align: left;
   border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
 }
 
 .df-table th {
@@ -610,10 +637,12 @@
 .df-table .df-current {
   font-family: var(--font-mono);
   color: var(--accent-primary);
+  min-width: 80px;
 }
 
 .df-table .df-name {
   font-weight: 500;
+  min-width: 100px;
 }
 
 .df-table .df-locked {
@@ -636,37 +665,42 @@
 }
 
 /* Token Reference */
-.df-token-table-wrapper {
-  overflow-x: auto;
+.df-token-section {
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 
-.df-token-ref-table {
+.df-token-table-container {
+  min-height: 300px;
+  max-height: 300px;
+  max-width: 900px;
   width: 100%;
-  border-collapse: collapse;
-  font-size: var(--font-size-sm);
+  overflow: hidden;
 }
 
-.df-token-ref-table th,
-.df-token-ref-table td {
-  padding: var(--space-xs) var(--space-sm);
-  text-align: left;
-  border-bottom: 1px solid var(--border-color);
+.df-token-navigator {
+  flex-shrink: 0;
+  max-width: 900px;
 }
 
-.df-token-ref-table th {
-  background: var(--bg-tertiary);
-  font-weight: 600;
-  color: var(--text-secondary);
-  font-size: var(--font-size-xs);
-  text-transform: uppercase;
+/* Flatpickr positioning fix within settings pages */
+.settings-page .flatpickr-calendar {
+  z-index: 1000;
 }
 
-.df-token-ref-table code {
-  font-family: var(--font-mono);
-  background: var(--bg-secondary);
-  padding: 2px 4px;
-  border-radius: 2px;
-  color: var(--accent-primary);
+/* Flatpickr popup wrapper — uses manager-header-popup animation */
+.flatpickr-popup-wrapper {
+  padding: var(--space-2);
+  background-color: var(--bg-secondary);
+}
+
+.flatpickr-popup-wrapper .flatpickr-calendar {
+  box-shadow: none;
+  background: transparent;
+  border: none;
 }
 
 /* Responsive */

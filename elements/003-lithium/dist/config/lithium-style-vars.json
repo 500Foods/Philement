@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS custom properties (variables) used across the Lithium codebase",
-    "generated": "2026-04-21T05:24:16.284Z",
+    "generated": "2026-04-21T20:15:44.308Z",
     "sources": {
       "css": "52 files in src/**/*.css",
       "js": "146 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
     "total_variables": 236,
-    "total_occurrences": 3600
+    "total_occurrences": 3594
   },
   "variables": [
     {
@@ -104,10 +104,10 @@
     },
     {
       "name": "--accent-primary",
-      "css": 178,
+      "css": 177,
       "js": 3,
       "html": 1,
-      "total": 182
+      "total": 181
     },
     {
       "name": "--accent-primary-hover",
@@ -251,17 +251,17 @@
     },
     {
       "name": "--bg-tertiary",
-      "css": 100,
+      "css": 99,
       "js": 2,
       "html": 0,
-      "total": 102
+      "total": 101
     },
     {
       "name": "--border-color",
-      "css": 66,
+      "css": 65,
       "js": 1,
       "html": 0,
-      "total": 67
+      "total": 66
     },
     {
       "name": "--border-color-focus",
@@ -503,10 +503,10 @@
     },
     {
       "name": "--font-mono",
-      "css": 41,
+      "css": 40,
       "js": 10,
       "html": 0,
-      "total": 51
+      "total": 50
     },
     {
       "name": "--font-sans",
@@ -580,10 +580,10 @@
     },
     {
       "name": "--font-size-xs",
-      "css": 29,
+      "css": 28,
       "js": 0,
       "html": 0,
-      "total": 29
+      "total": 28
     },
     {
       "name": "--font-weight-bold",
@@ -951,10 +951,10 @@
     },
     {
       "name": "--space-2",
-      "css": 172,
+      "css": 173,
       "js": 0,
       "html": 0,
-      "total": 172
+      "total": 173
     },
     {
       "name": "--space-3",
@@ -1014,10 +1014,10 @@
     },
     {
       "name": "--space-sm",
-      "css": 9,
+      "css": 7,
       "js": 0,
       "html": 0,
-      "total": 9
+      "total": 7
     },
     {
       "name": "--space-xl",
@@ -1028,10 +1028,10 @@
     },
     {
       "name": "--space-xs",
-      "css": 5,
+      "css": 6,
       "js": 0,
       "html": 0,
-      "total": 5
+      "total": 6
     },
     {
       "name": "--spinner-fancy-color-1",
@@ -1175,10 +1175,10 @@
     },
     {
       "name": "--text-secondary",
-      "css": 76,
+      "css": 75,
       "js": 1,
       "html": 0,
-      "total": 77
+      "total": 76
     },
     {
       "name": "--text-toggle",

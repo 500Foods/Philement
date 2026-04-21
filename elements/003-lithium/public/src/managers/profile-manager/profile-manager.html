@@ -253,13 +253,24 @@
               <div class="df-content">
                 <!-- Sample Section -->
                 <section class="profile-section df-sample-section">
-                  <div class="df-sample-header">
-                    <h3 class="section-title"><fa fa-clock></fa> Sample Date & Time</h3>
-                  </div>
                   <div class="df-sample-row">
                     <div class="df-sample-col">
+                      <span class="df-sample-label">Timezone</span>
+                      <div class="df-tz-group">
+                        <input type="text" class="form-input" id="df-tz-filter" placeholder="Search timezones...">
+                        <select class="form-select" id="df-timezone-select" size="1">
+                          <option value="local">Browser Local</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="df-sample-col">
                       <span class="df-sample-label">Example</span>
-                      <input type="text" class="form-input" id="df-sample-input" value="2020-01-01T14:03:02" placeholder="2020-01-01T14:03:02">
+                      <div class="df-sample-input-group">
+                        <input type="text" class="form-input" id="df-sample-input" value="2020-01-01T14:03:02" placeholder="2020-01-01T14:03:02">
+                        <button type="button" class="lithium-toolbar-btn" id="df-picker-btn" title="Pick date & time">
+                          <fa fa-calendar-days></fa>
+                        </button>
+                      </div>
                     </div>
                     <div class="df-sample-col">
                       <span class="df-sample-label">Current</span>
@@ -270,7 +281,6 @@
 
                 <!-- Dates Section -->
                 <section class="profile-section df-section">
-                  <h3 class="section-title"><fa fa-calendar></fa> Dates</h3>
                   <div class="df-table-wrapper">
                     <table class="df-table">
                       <thead>
@@ -285,14 +295,14 @@
                       <tbody id="df-dates-builtin">
                         <tr class="df-format-item" data-format-id="dates-short">
                           <td><span class="df-name">Short Date</span></td>
-                          <td><input type="text" class="form-input df-format-input" name="dates_short" value="yyyy-MM-dd"></td>
+                          <td><input type="text" class="form-input df-format-input" name="dates_short" value="yyyy-MM-dd" data-setting="dates.short"></td>
                           <td><span class="df-example">-</span></td>
                           <td><span class="df-current" data-format="yyyy-MM-dd">-</span></td>
                           <td><span class="df-locked"><fa fa-lock></fa></span></td>
                         </tr>
                         <tr class="df-format-item" data-format-id="dates-long">
                           <td><span class="df-name">Long Date</span></td>
-                          <td><input type="text" class="form-input df-format-input" name="dates_long" value="MMMM d, y"></td>
+                          <td><input type="text" class="form-input df-format-input" name="dates_long" value="MMMM d, y" data-setting="dates.long"></td>
                           <td><span class="df-example">-</span></td>
                           <td><span class="df-current" data-format="MMMM d, y">-</span></td>
                           <td><span class="df-locked"><fa fa-lock></fa></span></td>
@@ -315,7 +325,6 @@
 
                 <!-- Times Section -->
                 <section class="profile-section df-section">
-                  <h3 class="section-title"><fa fa-clock></fa> Times</h3>
                   <div class="df-table-wrapper">
                     <table class="df-table">
                       <thead>
@@ -330,21 +339,21 @@
                       <tbody id="df-times-builtin">
                         <tr class="df-format-item" data-format-id="times-short">
                           <td><span class="df-name">Short Time</span></td>
-                          <td><input type="text" class="form-input df-format-input" name="times_short" value="h:mm a"></td>
+                          <td><input type="text" class="form-input df-format-input" name="times_short" value="h:mm a" data-setting="times.short"></td>
                           <td><span class="df-example">-</span></td>
                           <td><span class="df-current" data-format="h:mm a">-</span></td>
                           <td><span class="df-locked"><fa fa-lock></fa></span></td>
                         </tr>
                         <tr class="df-format-item" data-format-id="times-medium">
                           <td><span class="df-name">Medium Time</span></td>
-                          <td><input type="text" class="form-input df-format-input" name="times_medium" value="h:mm:ss a"></td>
+                          <td><input type="text" class="form-input df-format-input" name="times_medium" value="h:mm:ss a" data-setting="times.medium"></td>
                           <td><span class="df-example">-</span></td>
                           <td><span class="df-current" data-format="h:mm:ss a">-</span></td>
                           <td><span class="df-locked"><fa fa-lock></fa></span></td>
                         </tr>
                         <tr class="df-format-item" data-format-id="times-long">
                           <td><span class="df-name">Long Time</span></td>
-                          <td><input type="text" class="form-input df-format-input" name="times_long" value="h:mm:ss a zzz"></td>
+                          <td><input type="text" class="form-input df-format-input" name="times_long" value="h:mm:ss a zzz" data-setting="times.long"></td>
                           <td><span class="df-example">-</span></td>
                           <td><span class="df-current" data-format="h:mm:ss a zzz">-</span></td>
                           <td><span class="df-locked"><fa fa-lock></fa></span></td>
@@ -365,9 +374,8 @@
                   </div>
                 </section>
 
-                <!-- DateTime Section -->
+                <!-- DateTimes Section -->
                 <section class="profile-section df-section">
-                  <h3 class="section-title"><fa fa-calendar-check></fa> DateTime</h3>
                   <div class="df-table-wrapper">
                     <table class="df-table">
                       <thead>
@@ -382,14 +390,14 @@
                       <tbody id="df-datetime-builtin">
                         <tr class="df-format-item" data-format-id="datetime-short">
                           <td><span class="df-name">Short DateTime</span></td>
-                          <td><input type="text" class="form-input df-format-input" name="datetime_short" value="yyyy-MM-dd h:mm a"></td>
+                          <td><input type="text" class="form-input df-format-input" name="datetime_short" value="yyyy-MM-dd h:mm a" data-setting="datetimes.short"></td>
                           <td><span class="df-example">-</span></td>
                           <td><span class="df-current" data-format="yyyy-MM-dd h:mm a">-</span></td>
                           <td><span class="df-locked"><fa fa-lock></fa></span></td>
                         </tr>
                         <tr class="df-format-item" data-format-id="datetime-long">
                           <td><span class="df-name">Long DateTime</span></td>
-                          <td><input type="text" class="form-input df-format-input" name="datetime_long" value="MMMM d, y 'at' h:mm:ss a"></td>
+                          <td><input type="text" class="form-input df-format-input" name="datetime_long" value="MMMM d, y 'at' h:mm:ss a" data-setting="datetimes.long"></td>
                           <td><span class="df-example">-</span></td>
                           <td><span class="df-current" data-format="MMMM d, y 'at' h:mm:ss a">-</span></td>
                           <td><span class="df-locked"><fa fa-lock></fa></span></td>
@@ -411,76 +419,9 @@
                 </section>
 
                 <!-- Token Reference -->
-                <section class="profile-section df-section">
-                  <h3 class="section-title"><fa fa-brackets-curly></fa> Luxon Format Tokens</h3>
-                  <div class="df-token-table-wrapper">
-                    <table class="df-token-ref-table">
-                      <thead>
-                        <tr>
-                          <th>Token</th>
-                          <th>Output</th>
-                          <th>Description</th>
-                          <th>Token</th>
-                          <th>Output</th>
-                          <th>Description</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td><code>y</code></td><td>2020</td><td>Year</td>
-                          <td><code>M</code></td><td>1</td><td>Month number</td>
-                        </tr>
-                        <tr>
-                          <td><code>yy</code></td><td>20</td><td>2-digit year</td>
-                          <td><code>MM</code></td><td>01</td><td>Padded month</td>
-                        </tr>
-                        <tr>
-                          <td><code>yyyy</code></td><td>2020</td><td>4-digit year</td>
-                          <td><code>MMM</code></td><td>Jan</td><td>Abbreviated month</td>
-                        </tr>
-                        <tr>
-                          <td><code>yyyyy</code></td><td>02020</td><td>5-digit year</td>
-                          <td><code>MMMM</code></td><td>January</td><td>Full month</td>
-                        </tr>
-                        <tr>
-                          <td><code>d</code></td><td>1</td><td>Day of month</td>
-                          <td><code>EEE</code></td><td>Wed</td><td>Abbreviated weekday</td>
-                        </tr>
-                        <tr>
-                          <td><code>dd</code></td><td>01</td><td>Padded day</td>
-                          <td><code>EEEE</code></td><td>Wednesday</td><td>Full weekday</td>
-                        </tr>
-                        <tr>
-                          <td><code>H</code></td><td>14</td><td>24-hour (0-23)</td>
-                          <td><code>m</code></td><td>3</td><td>Minutes</td>
-                        </tr>
-                        <tr>
-                          <td><code>HH</code></td><td>14</td><td>Padded 24-hour</td>
-                          <td><code>mm</code></td><td>03</td><td>Padded minutes</td>
-                        </tr>
-                        <tr>
-                          <td><code>h</code></td><td>2</td><td>12-hour (1-12)</td>
-                          <td><code>s</code></td><td>2</td><td>Seconds</td>
-                        </tr>
-                        <tr>
-                          <td><code>hh</code></td><td>02</td><td>Padded 12-hour</td>
-                          <td><code>ss</code></td><td>02</td><td>Padded seconds</td>
-                        </tr>
-                        <tr>
-                          <td><code>a</code></td><td>PM</td><td>AM/PM</td>
-                          <td><code>Z</code></td><td>+0000</td><td>Numeric offset</td>
-                        </tr>
-                        <tr>
-                          <td><code>ZZ</code></td><td>+00:00</td><td>Offset with colon</td>
-                          <td><code>z</code></td><td>UTC</td><td>Timezone name</td>
-                        </tr>
-                        <tr>
-                          <td><code>'text'</code></td><td>text</td><td>Literal text</td>
-                          <td><code>[text]</code></td><td>text</td><td>Escaped literal</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
+                <section class="profile-section df-section df-token-section">
+                  <div class="df-token-table-container lithium-table-container" id="df-token-table-container"></div>
+                  <div class="df-token-navigator lithium-navigator-container" id="df-token-navigator"></div>
                 </section>
               </div>
             </div>
