@@ -192,6 +192,12 @@ export class LithiumTableBase {
     // Used by the Column Manager which manages its own save/cancel workflow.
     this.alwaysEditable = options.alwaysEditable === true;
 
+    // Local search mode: filter rows client-side instead of server request.
+    // Use localSearchFields to specify which fields to search (defaults to all visible fields).
+    this.localSearch = options.localSearch === true;
+    this.localSearchFields = options.localSearchFields || null;
+    this._localSearchTerm = '';
+
     // Popup state
     this.activeNavPopup = null;
     this.activeNavPopupId = null;

@@ -32,6 +32,7 @@ import '../../styles/vendor-tabulator.css';
 import '../../core/manager-panels.css';
 import '../../core/manager-ui.css';
 import '../../core/popup.css';
+import 'flatpickr/dist/flatpickr.css';
 import './profile-manager.css';
 
 /**
@@ -241,6 +242,8 @@ export default class ProfileManager {
       readonly: true,
       panel: this.elements.leftPanel,
       panelStateManager: this.leftPanelState,
+      localSearch: true,
+      localSearchFields: ['section', 'label'],
       onRowSelected: (rowData) => this.handleOptionSelected(rowData),
       onRowDeselected: () => this.handleOptionDeselected(),
       onRefresh: () => this.loadUserOptions(),
