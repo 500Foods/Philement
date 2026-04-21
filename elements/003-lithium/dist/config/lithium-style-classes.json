@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS class selectors/names used across the Lithium codebase",
-    "generated": "2026-04-21T00:41:44.972Z",
+    "generated": "2026-04-21T05:24:17.827Z",
     "sources": {
       "css": "52 files in src/**/*.css",
-      "js": "145 files in src/**/*.js",
+      "js": "146 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
-    "total_selectors": 1880,
-    "total_occurrences": 29193
+    "total_selectors": 1911,
+    "total_occurrences": 29809
   },
   "selectors": [
     {
@@ -289,8 +289,8 @@
       "selector": ".btn",
       "css": 2,
       "js": 25,
-      "html": 0,
-      "total": 27,
+      "html": 10,
+      "total": 37,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css",
@@ -304,15 +304,17 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
       }
     },
     {
       "selector": ".btn i",
       "css": 1,
       "js": 25,
-      "html": 0,
-      "total": 26,
+      "html": 10,
+      "total": 36,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -325,15 +327,17 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
       }
     },
     {
       "selector": ".btn-counter",
       "css": 2,
       "js": 31,
-      "html": 0,
-      "total": 33,
+      "html": 10,
+      "total": 43,
       "files": {
         "css": [
           "src/core/manager-ui.css",
@@ -348,15 +352,17 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
       }
     },
     {
       "selector": ".btn-counter[style*=\"display: none\"]",
       "css": 1,
       "js": 31,
-      "html": 0,
-      "total": 32,
+      "html": 10,
+      "total": 42,
       "files": {
         "css": [
           "src/core/manager-ui.css"
@@ -370,15 +376,17 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
       }
     },
     {
       "selector": ".btn-danger",
       "css": 1,
       "js": 25,
-      "html": 0,
-      "total": 26,
+      "html": 10,
+      "total": 36,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -391,15 +399,17 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
       }
     },
     {
       "selector": ".btn-danger:hover",
       "css": 1,
       "js": 25,
-      "html": 0,
-      "total": 26,
+      "html": 10,
+      "total": 36,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -412,15 +422,17 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
       }
     },
     {
       "selector": ".btn-ghost",
       "css": 1,
       "js": 25,
-      "html": 0,
-      "total": 26,
+      "html": 10,
+      "total": 36,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -433,15 +445,17 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
       }
     },
     {
       "selector": ".btn-ghost:hover",
       "css": 1,
       "js": 25,
-      "html": 0,
-      "total": 26,
+      "html": 10,
+      "total": 36,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -454,30 +468,34 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
       }
     },
     {
       "selector": ".btn-group-sm",
       "css": 0,
       "js": 2,
-      "html": 0,
-      "total": 2,
+      "html": 10,
+      "total": 12,
       "files": {
         "css": [],
         "js": [
           "src/init/codemirror-init.js",
           "src/init/jsoneditor-init.js"
         ],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
       }
     },
     {
       "selector": ".btn-lg",
       "css": 1,
       "js": 25,
-      "html": 0,
-      "total": 26,
+      "html": 10,
+      "total": 36,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -490,15 +508,17 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
       }
     },
     {
       "selector": ".btn-loading",
       "css": 1,
       "js": 25,
-      "html": 0,
-      "total": 26,
+      "html": 10,
+      "total": 36,
       "files": {
         "css": [
           "src/styles/transitions.css"
@@ -511,15 +531,17 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
       }
     },
     {
       "selector": ".btn-loading::after",
       "css": 1,
       "js": 25,
-      "html": 0,
-      "total": 26,
+      "html": 10,
+      "total": 36,
       "files": {
         "css": [
           "src/styles/transitions.css"
@@ -532,15 +554,17 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
       }
     },
     {
       "selector": ".btn-outline-primary",
       "css": 0,
       "js": 3,
-      "html": 0,
-      "total": 3,
+      "html": 10,
+      "total": 13,
       "files": {
         "css": [],
         "js": [
@@ -548,15 +572,17 @@
           "src/init/jsoneditor-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
       }
     },
     {
       "selector": ".btn-outline-secondary",
       "css": 0,
       "js": 19,
-      "html": 0,
-      "total": 19,
+      "html": 10,
+      "total": 29,
       "files": {
         "css": [],
         "js": [
@@ -566,15 +592,17 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
       }
     },
     {
       "selector": ".btn-primary",
       "css": 2,
       "js": 26,
-      "html": 0,
-      "total": 28,
+      "html": 10,
+      "total": 38,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css",
@@ -588,15 +616,17 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
       }
     },
     {
       "selector": ".btn-primary:disabled",
       "css": 1,
       "js": 26,
-      "html": 0,
-      "total": 27,
+      "html": 10,
+      "total": 37,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -609,15 +639,17 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
       }
     },
     {
       "selector": ".btn-primary:hover",
       "css": 1,
       "js": 26,
-      "html": 0,
-      "total": 27,
+      "html": 10,
+      "total": 37,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -630,15 +662,17 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
       }
     },
     {
       "selector": ".btn-primary:hover:not(:disabled)",
       "css": 1,
       "js": 26,
-      "html": 0,
-      "total": 27,
+      "html": 10,
+      "total": 37,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -651,15 +685,17 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
       }
     },
     {
       "selector": ".btn-secondary",
       "css": 2,
       "js": 25,
-      "html": 0,
-      "total": 27,
+      "html": 13,
+      "total": 40,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css",
@@ -673,15 +709,17 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
       }
     },
     {
       "selector": ".btn-secondary:hover:not(:disabled)",
       "css": 1,
       "js": 25,
-      "html": 0,
-      "total": 26,
+      "html": 13,
+      "total": 39,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -694,15 +732,17 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
       }
     },
     {
       "selector": ".btn-sm",
       "css": 1,
       "js": 40,
-      "html": 0,
-      "total": 41,
+      "html": 10,
+      "total": 51,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -715,15 +755,17 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
       }
     },
     {
       "selector": ".btn-success",
       "css": 1,
       "js": 25,
-      "html": 0,
-      "total": 26,
+      "html": 10,
+      "total": 36,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -736,15 +778,17 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
       }
     },
     {
       "selector": ".btn-success:hover",
       "css": 1,
       "js": 25,
-      "html": 0,
-      "total": 26,
+      "html": 10,
+      "total": 36,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -757,15 +801,17 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
       }
     },
     {
       "selector": ".btn:disabled",
       "css": 1,
       "js": 25,
-      "html": 0,
-      "total": 26,
+      "html": 10,
+      "total": 36,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -778,15 +824,17 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
       }
     },
     {
       "selector": ".btn:focus",
       "css": 1,
       "js": 25,
-      "html": 0,
-      "total": 26,
+      "html": 10,
+      "total": 36,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -799,15 +847,17 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
       }
     },
     {
       "selector": ".btn:hover",
       "css": 1,
       "js": 25,
-      "html": 0,
-      "total": 26,
+      "html": 10,
+      "total": 36,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -820,7 +870,9 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
       }
     },
     {
@@ -6153,6 +6205,510 @@
       }
     },
     {
+      "selector": ".df-add-btn",
+      "css": 1,
+      "js": 1,
+      "html": 3,
+      "total": 5,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [
+          "src/managers/profile-manager/pages/page-date-formats.js"
+        ],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
+      }
+    },
+    {
+      "selector": ".df-content",
+      "css": 1,
+      "js": 0,
+      "html": 1,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
+      }
+    },
+    {
+      "selector": ".df-custom-item input.df-format-name-input",
+      "css": 1,
+      "js": 8,
+      "html": 0,
+      "total": 9,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [
+          "src/managers/profile-manager/pages/page-date-formats.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".df-delete-btn",
+      "css": 0,
+      "js": 5,
+      "html": 0,
+      "total": 5,
+      "files": {
+        "css": [],
+        "js": [
+          "src/managers/profile-manager/pages/page-date-formats.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".df-example",
+      "css": 0,
+      "js": 3,
+      "html": 7,
+      "total": 10,
+      "files": {
+        "css": [],
+        "js": [
+          "src/managers/profile-manager/pages/page-date-formats.js"
+        ],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
+      }
+    },
+    {
+      "selector": ".df-format-item",
+      "css": 0,
+      "js": 4,
+      "html": 7,
+      "total": 11,
+      "files": {
+        "css": [],
+        "js": [
+          "src/managers/profile-manager/pages/page-date-formats.js"
+        ],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
+      }
+    },
+    {
+      "selector": ".df-sample-col",
+      "css": 1,
+      "js": 0,
+      "html": 2,
+      "total": 3,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
+      }
+    },
+    {
+      "selector": ".df-sample-current",
+      "css": 1,
+      "js": 0,
+      "html": 1,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
+      }
+    },
+    {
+      "selector": ".df-sample-header",
+      "css": 1,
+      "js": 0,
+      "html": 1,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
+      }
+    },
+    {
+      "selector": ".df-sample-header .section-title",
+      "css": 1,
+      "js": 1,
+      "html": 23,
+      "total": 25,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [
+          "src/managers/profile-manager/pages/page-placeholder.js"
+        ],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
+      }
+    },
+    {
+      "selector": ".df-sample-label",
+      "css": 1,
+      "js": 0,
+      "html": 2,
+      "total": 3,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
+      }
+    },
+    {
+      "selector": ".df-sample-row",
+      "css": 1,
+      "js": 0,
+      "html": 1,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
+      }
+    },
+    {
+      "selector": ".df-sample-section",
+      "css": 1,
+      "js": 0,
+      "html": 1,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
+      }
+    },
+    {
+      "selector": ".df-section",
+      "css": 1,
+      "js": 0,
+      "html": 4,
+      "total": 5,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
+      }
+    },
+    {
+      "selector": ".df-section .section-title",
+      "css": 1,
+      "js": 1,
+      "html": 26,
+      "total": 28,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [
+          "src/managers/profile-manager/pages/page-placeholder.js"
+        ],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
+      }
+    },
+    {
+      "selector": ".df-table",
+      "css": 1,
+      "js": 0,
+      "html": 6,
+      "total": 7,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
+      }
+    },
+    {
+      "selector": ".df-table .df-current",
+      "css": 1,
+      "js": 4,
+      "html": 13,
+      "total": 18,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [
+          "src/managers/profile-manager/pages/page-date-formats.js"
+        ],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
+      }
+    },
+    {
+      "selector": ".df-table .df-format-input",
+      "css": 1,
+      "js": 9,
+      "html": 13,
+      "total": 23,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [
+          "src/managers/profile-manager/pages/page-date-formats.js"
+        ],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
+      }
+    },
+    {
+      "selector": ".df-table .df-locked",
+      "css": 1,
+      "js": 0,
+      "html": 13,
+      "total": 14,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
+      }
+    },
+    {
+      "selector": ".df-table .df-name",
+      "css": 1,
+      "js": 0,
+      "html": 13,
+      "total": 14,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
+      }
+    },
+    {
+      "selector": ".df-table td",
+      "css": 1,
+      "js": 0,
+      "html": 6,
+      "total": 7,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
+      }
+    },
+    {
+      "selector": ".df-table td:nth-child(4)",
+      "css": 1,
+      "js": 0,
+      "html": 6,
+      "total": 7,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
+      }
+    },
+    {
+      "selector": ".df-table tfoot td",
+      "css": 1,
+      "js": 0,
+      "html": 6,
+      "total": 7,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
+      }
+    },
+    {
+      "selector": ".df-table th",
+      "css": 1,
+      "js": 0,
+      "html": 6,
+      "total": 7,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
+      }
+    },
+    {
+      "selector": ".df-table tr:last-child td",
+      "css": 1,
+      "js": 0,
+      "html": 6,
+      "total": 7,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
+      }
+    },
+    {
+      "selector": ".df-table-wrapper",
+      "css": 1,
+      "js": 0,
+      "html": 9,
+      "total": 10,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
+      }
+    },
+    {
+      "selector": ".df-token-ref-table",
+      "css": 1,
+      "js": 0,
+      "html": 1,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
+      }
+    },
+    {
+      "selector": ".df-token-ref-table code",
+      "css": 1,
+      "js": 0,
+      "html": 1,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
+      }
+    },
+    {
+      "selector": ".df-token-ref-table td",
+      "css": 1,
+      "js": 0,
+      "html": 1,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
+      }
+    },
+    {
+      "selector": ".df-token-ref-table th",
+      "css": 1,
+      "js": 0,
+      "html": 1,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
+      }
+    },
+    {
+      "selector": ".df-token-table-wrapper",
+      "css": 1,
+      "js": 0,
+      "html": 1,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
+      }
+    },
+    {
       "selector": ".diagram-library-container",
       "css": 1,
       "js": 1,
@@ -6813,8 +7369,8 @@
       "selector": ".form-group",
       "css": 3,
       "js": 4,
-      "html": 35,
-      "total": 42,
+      "html": 33,
+      "total": 40,
       "files": {
         "css": [
           "src/managers/login/login.css",
@@ -6835,8 +7391,8 @@
       "selector": ".form-group input",
       "css": 2,
       "js": 4,
-      "html": 35,
-      "total": 41,
+      "html": 33,
+      "total": 39,
       "files": {
         "css": [
           "src/managers/login/login.css",
@@ -6856,8 +7412,8 @@
       "selector": ".form-group input:-webkit-autofill:active",
       "css": 1,
       "js": 4,
-      "html": 35,
-      "total": 40,
+      "html": 33,
+      "total": 38,
       "files": {
         "css": [
           "src/styles/layout.css"
@@ -6876,8 +7432,8 @@
       "selector": ".form-group input::placeholder",
       "css": 2,
       "js": 4,
-      "html": 35,
-      "total": 41,
+      "html": 33,
+      "total": 39,
       "files": {
         "css": [
           "src/managers/login/login.css",
@@ -6897,8 +7453,8 @@
       "selector": ".form-group input:focus",
       "css": 2,
       "js": 4,
-      "html": 35,
-      "total": 41,
+      "html": 33,
+      "total": 39,
       "files": {
         "css": [
           "src/managers/login/login.css",
@@ -6918,8 +7474,8 @@
       "selector": ".form-group input#login-password.caps-lock-active",
       "css": 1,
       "js": 6,
-      "html": 35,
-      "total": 42,
+      "html": 33,
+      "total": 40,
       "files": {
         "css": [
           "src/styles/layout.css"
@@ -6938,8 +7494,8 @@
       "selector": ".form-group input#login-password.caps-lock-active::placeholder",
       "css": 1,
       "js": 6,
-      "html": 35,
-      "total": 42,
+      "html": 33,
+      "total": 40,
       "files": {
         "css": [
           "src/styles/layout.css"
@@ -6958,8 +7514,8 @@
       "selector": ".form-group:last-of-type",
       "css": 1,
       "js": 4,
-      "html": 35,
-      "total": 40,
+      "html": 33,
+      "total": 38,
       "files": {
         "css": [
           "src/managers/login/login.css"
@@ -6978,8 +7534,8 @@
       "selector": ".form-hint",
       "css": 2,
       "js": 0,
-      "html": 13,
-      "total": 15,
+      "html": 11,
+      "total": 13,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css",
@@ -6994,12 +7550,14 @@
     {
       "selector": ".form-input",
       "css": 0,
-      "js": 0,
-      "html": 14,
-      "total": 14,
+      "js": 2,
+      "html": 22,
+      "total": 24,
       "files": {
         "css": [],
-        "js": [],
+        "js": [
+          "src/managers/profile-manager/pages/page-date-formats.js"
+        ],
         "html": [
           "src/managers/profile-manager/profile-manager.html"
         ]
@@ -7009,8 +7567,8 @@
       "selector": ".form-label",
       "css": 2,
       "js": 0,
-      "html": 33,
-      "total": 35,
+      "html": 31,
+      "total": 33,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css",
@@ -7026,8 +7584,8 @@
       "selector": ".form-select",
       "css": 1,
       "js": 0,
-      "html": 9,
-      "total": 10,
+      "html": 7,
+      "total": 8,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -7042,8 +7600,8 @@
       "selector": ".form-select:disabled",
       "css": 1,
       "js": 0,
-      "html": 9,
-      "total": 10,
+      "html": 7,
+      "total": 8,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -7058,8 +7616,8 @@
       "selector": ".form-select:focus",
       "css": 1,
       "js": 0,
-      "html": 9,
-      "total": 10,
+      "html": 7,
+      "total": 8,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -7074,8 +7632,8 @@
       "selector": ".form-select:hover",
       "css": 1,
       "js": 0,
-      "html": 9,
-      "total": 10,
+      "html": 7,
+      "total": 8,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -7090,8 +7648,8 @@
       "selector": ".form-select.loading",
       "css": 1,
       "js": 0,
-      "html": 9,
-      "total": 10,
+      "html": 7,
+      "total": 8,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -7106,8 +7664,8 @@
       "selector": ".form-select.loading::after",
       "css": 1,
       "js": 0,
-      "html": 9,
-      "total": 10,
+      "html": 7,
+      "total": 8,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -7773,8 +8331,8 @@
       "selector": ".jsoneditor-nav .btn",
       "css": 1,
       "js": 26,
-      "html": 0,
-      "total": 27,
+      "html": 10,
+      "total": 37,
       "files": {
         "css": [
           "src/init/jsoneditor.css"
@@ -7787,15 +8345,17 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
       }
     },
     {
       "selector": ".jsoneditor-nav .btn-group",
       "css": 1,
       "js": 28,
-      "html": 0,
-      "total": 29,
+      "html": 10,
+      "total": 39,
       "files": {
         "css": [
           "src/init/jsoneditor.css"
@@ -7808,15 +8368,17 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
       }
     },
     {
       "selector": ".jsoneditor-nav .btn-group .btn",
       "css": 1,
       "js": 28,
-      "html": 0,
-      "total": 29,
+      "html": 10,
+      "total": 39,
       "files": {
         "css": [
           "src/init/jsoneditor.css"
@@ -7829,15 +8391,17 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
       }
     },
     {
       "selector": ".jsoneditor-nav .btn:last-child",
       "css": 1,
       "js": 26,
-      "html": 0,
-      "total": 27,
+      "html": 10,
+      "total": 37,
       "files": {
         "css": [
           "src/init/jsoneditor.css"
@@ -7850,7 +8414,9 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
       }
     },
     {
@@ -17087,8 +17653,8 @@
       "selector": ".login-mockup .form-group",
       "css": 1,
       "js": 5,
-      "html": 35,
-      "total": 41,
+      "html": 33,
+      "total": 39,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -17107,8 +17673,8 @@
       "selector": ".login-mockup .form-group:last-of-type",
       "css": 1,
       "js": 5,
-      "html": 35,
-      "total": 41,
+      "html": 33,
+      "total": 39,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -23392,8 +23958,8 @@
       "selector": ".preferences-form",
       "css": 1,
       "js": 0,
-      "html": 15,
-      "total": 16,
+      "html": 14,
+      "total": 15,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -23881,8 +24447,8 @@
       "selector": ".profile-section",
       "css": 1,
       "js": 1,
-      "html": 18,
-      "total": 20,
+      "html": 22,
+      "total": 24,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -25397,8 +25963,8 @@
       "selector": ".section-title",
       "css": 1,
       "js": 1,
-      "html": 18,
-      "total": 20,
+      "html": 22,
+      "total": 24,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -25415,8 +25981,8 @@
       "selector": ".section-title i",
       "css": 1,
       "js": 1,
-      "html": 18,
-      "total": 20,
+      "html": 22,
+      "total": 24,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -27136,8 +27702,8 @@
       "selector": ".slot-annotations-btn .btn-counter",
       "css": 1,
       "js": 31,
-      "html": 0,
-      "total": 32,
+      "html": 10,
+      "total": 42,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -27151,7 +27717,9 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
       }
     },
     {
@@ -27349,8 +27917,8 @@
       "selector": ".slot-notifications-btn .btn-counter",
       "css": 1,
       "js": 32,
-      "html": 0,
-      "total": 33,
+      "html": 10,
+      "total": 43,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -27365,15 +27933,17 @@
           "src/init/suneditor-init.js",
           "src/managers/main/main.js"
         ],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
       }
     },
     {
       "selector": ".slot-tickets-btn .btn-counter",
       "css": 1,
       "js": 31,
-      "html": 0,
-      "total": 32,
+      "html": 10,
+      "total": 42,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -27387,7 +27957,9 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
       }
     },
     {
@@ -29722,8 +30294,8 @@
       "selector": ".tabulator-nav .btn",
       "css": 1,
       "js": 25,
-      "html": 0,
-      "total": 26,
+      "html": 10,
+      "total": 36,
       "files": {
         "css": [
           "src/init/tabulator-full.css"
@@ -29736,15 +30308,17 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
       }
     },
     {
       "selector": ".tabulator-nav .btn-export",
       "css": 1,
       "js": 25,
-      "html": 0,
-      "total": 26,
+      "html": 10,
+      "total": 36,
       "files": {
         "css": [
           "src/init/tabulator-full.css"
@@ -29757,15 +30331,17 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
       }
     },
     {
       "selector": ".tabulator-nav .btn-export .dropdown-menu",
       "css": 1,
       "js": 25,
-      "html": 0,
-      "total": 26,
+      "html": 10,
+      "total": 36,
       "files": {
         "css": [
           "src/init/tabulator-full.css"
@@ -29778,15 +30354,17 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
       }
     },
     {
       "selector": ".tabulator-nav .btn-export:hover .dropdown-menu",
       "css": 1,
       "js": 25,
-      "html": 0,
-      "total": 26,
+      "html": 10,
+      "total": 36,
       "files": {
         "css": [
           "src/init/tabulator-full.css"
@@ -29799,15 +30377,17 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
       }
     },
     {
       "selector": ".tabulator-nav .btn:last-child",
       "css": 1,
       "js": 25,
-      "html": 0,
-      "total": 26,
+      "html": 10,
+      "total": 36,
       "files": {
         "css": [
           "src/init/tabulator-full.css"
@@ -29820,7 +30400,9 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
       }
     },
     {

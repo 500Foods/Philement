@@ -3,6 +3,11 @@
  *
  * Base class for manager-specific settings pages. These pages are loaded
  * dynamically when a manager entry is selected in the user options table.
+ *
+ * Each page controls a unique "section" of the profile JSON, identified by
+ * its sectionKey (negative index for internal pages, manager ID for managers).
+ * Pages should use this.settings (a ProfileSettingsService instance) to read
+ * and write their configuration rather than touching localStorage directly.
  */
 
 import { log, Subsystems, Status } from '../../../core/log.js';
@@ -15,10 +20,12 @@ export class BaseSettingsPage {
   constructor(options = {}) {
     this.index = options.index || 0;
     this.managerId = options.managerId || 0;
+    this.sectionKey = String(options.sectionKey ?? this.index);
     this.container = null;
     this._isDirty = false;
     this._originalData = null;
     this._onDirtyChange = options.onDirtyChange || (() => {});
+    this.settings = options.settings || null;
   }
 
   /**
@@ -104,6 +111,67 @@ export class BaseSettingsPage {
   refresh() {
     // Override in subclass
   }
+
+  // ── Settings Service Helpers ─────────────────────────────────────────────
+
+  /**
+   * Read a setting value from the profile JSON via the Settings Service.
+   * Returns defaultValue if the path does not exist or the service is unavailable.
+   *
+   * @param {string} path - Dotted path within this page's section (e.g. "dates.short")
+   * @param {*} defaultValue - Fallback value
+   * @returns {*}
+   */
+  getSetting(path, defaultValue = undefined) {
+    if (!this.settings) return defaultValue;
+    return this.settings.get(this.sectionKey, path, defaultValue);
+  }
+
+  /**
+   * Write a setting value into the profile JSON via the Settings Service.
+   * The value is written under this page's sectionKey.
+   *
+   * @param {string} path - Dotted path within this page's section (e.g. "dates.short")
+   * @param {*} value - Value to store
+   */
+  setSetting(path, value) {
+    if (!this.settings) return;
+    this.settings.set(this.sectionKey, path, value);
+  }
+
+  /**
+   * Batch-write multiple settings at once. Only one persist is triggered.
+   *
+   * @param {Object} changes - Map of dotted paths to values
+   */
+  setSettingsBatch(changes) {
+    if (!this.settings) return;
+    this.settings.batchSet(this.sectionKey, changes);
+  }
+
+  /**
+   * Get this page's entire section object from the profile JSON.
+   * Returns an empty object if unavailable.
+   * @returns {Object}
+   */
+  getSectionData() {
+    if (!this.settings) return {};
+    return this.settings.getSection(this.sectionKey);
+  }
+
+  /**
+   * Replace this page's entire section in the profile JSON.
+   * This is the preferred way to bulk-write page data.
+   *
+   * @param {Object} data - Section data
+   * @param {string} [sectionName] - Human-readable name (stored as _name)
+   */
+  setSectionData(data, sectionName = null) {
+    if (!this.settings) return;
+    this.settings.setSection(this.sectionKey, data, sectionName);
+  }
+
+  // ── Form Helpers ─────────────────────────────────────────────────────────
 
   /**
    * Get form data from the page
@@ -204,10 +272,10 @@ export class SimpleSettingsPage extends BaseSettingsPage {
 
   /**
    * Load data into the form
-   * Override in subclasses to fetch data from API
+   * Override in subclasses to fetch data from API or settings service
    */
   async loadData() {
-    // Override in subclass to load from API
+    // Override in subclass to load from settings service
     // Then call setFormData with the loaded data
   }
 
@@ -216,7 +284,7 @@ export class SimpleSettingsPage extends BaseSettingsPage {
    */
   async save() {
     const data = this.getFormData(this.formSelector);
-    // Override in subclass to save to API
+    // Override in subclass to save to settings service
     this.setDirty(false);
     return { success: true, data };
   }

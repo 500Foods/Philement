@@ -26,6 +26,7 @@ import { ManagerEditHelper } from '../../core/manager-edit-helper.js';
 import { getMenu, buildManagerIconsRegistry } from '../../shared/menu.js';
 import { CollectionTabHandler } from './profile-manager-collection.js';
 import { SettingsTabHandler } from './profile-manager-settings.js';
+import { ProfileSettingsService } from './profile-settings-service.js';
 import { toast } from '../../shared/toast.js';
 import '../../styles/vendor-tabulator.css';
 import '../../core/manager-panels.css';
@@ -57,6 +58,16 @@ export default class ProfileManager {
     this.isLeftPanelCollapsed = this.leftPanelState.loadCollapsed(false);
 
     this.editHelper = new ManagerEditHelper({ name: 'Profile' });
+
+    // Centralized settings service for all profile pages
+    this.settingsService = new ProfileSettingsService({
+      onAfterSave: (data) => {
+        // Sync collection editor if it's visible and not currently editing
+        if (this.currentTab === 'collection' && this.collectionHandler?.editor) {
+          this.collectionHandler.setData(data);
+        }
+      },
+    });
 
     // Storage key for selected section persistence
     this._selectedSectionStorageKey = 'lithium_profile_selected_section';
@@ -583,11 +594,12 @@ export default class ProfileManager {
     this.settingsHandler = new SettingsTabHandler({
       container: this.elements.panelSettings,
       app: this.app,
+      settingsService: this.settingsService,
       onPageChange: (index, data) => {
         log(Subsystems.MANAGER, Status.DEBUG, `[ProfileManager] Page changed to ${index}`);
       },
       onDirtyChange: (dirty) => {
-        this.editHelper.setDirty(dirty);
+        this.updateFooterButtons(dirty);
       },
     });
     this.settingsHandler.init();
@@ -944,36 +956,24 @@ export default class ProfileManager {
 
   /**
    * Get preferences as collection data.
-   * This is the single source of truth for all user preferences.
-   * Settings pages read from and write to this JSON structure.
-   *
-   * Returns empty object initially — sections add their defaults on first use.
+   * Delegates to the Settings Service for the canonical JSON object.
    */
   getCollectionData() {
-    // Start with empty object; as sections are configured, their values
-    // get written here. This matches the intended behavior where the
-    // collection JSON is built up as the user interacts with settings.
-    const stored = localStorage.getItem('lithium_preferences');
-    if (stored) {
-      try {
-        return JSON.parse(stored);
-      } catch (_e) {
-        // fall through to defaults
-      }
-    }
-
-    // Return current preferences (may be empty or have defaults)
-    return { ...this.preferences };
+    return this.settingsService?.getAll() || { ...this.preferences };
   }
 
   /**
    * Update a specific preference value and sync to collection JSON.
    * Called by settings pages when a preference changes.
+   * Delegates to the Settings Service for structured storage.
    * @param {string} key - Preference key
    * @param {*} value - New value
    */
   setPreference(key, value) {
     this.preferences[key] = value;
+
+    // Also write to settings service under a legacy section for compatibility
+    this.settingsService?.set('_legacy', key, value);
 
     // Sync to collection editor if initialized
     if (this.collectionHandler?.editor) {
@@ -995,16 +995,18 @@ export default class ProfileManager {
       const data = this.collectionHandler.getData();
       if (!data) throw new Error('Invalid JSON data');
 
-      // Merge collection data into preferences
+      // Replace the entire profile JSON via the Settings Service
+      this.settingsService.setAll(data);
+
+      // Also keep legacy flat preferences in sync
       this.preferences = { ...this.preferences, ...data };
-      localStorage.setItem('lithium_preferences', JSON.stringify(this.preferences));
 
       // Apply updated preferences to form fields
       this.applyPreferencesToForm();
 
       // Attempt API save (may fail if endpoint not ready — data is still in localStorage)
       try {
-        await this.savePreferencesToApi(this.preferences);
+        await this.savePreferencesToApi(this.settingsService.getAll());
       } catch (apiError) {
         log(Subsystems.MANAGER, Status.WARN,
           '[ProfileManager] API save failed (expected if endpoint not ready):', apiError.message);
@@ -1029,6 +1031,8 @@ export default class ProfileManager {
    * Handle cancel from Collection footer button
    */
   async handleCancelCollection() {
+    // Flush any pending debounced writes before reverting
+    this.settingsService?.flush();
     await this.collectionHandler?.setData(this.getCollectionData());
     this.updateFooterButtons(false);
     log(Subsystems.MANAGER, Status.INFO, '[ProfileManager] Collection cancelled');
@@ -1144,6 +1148,9 @@ export default class ProfileManager {
 
     this.settingsHandler?.destroy();
     this.settingsHandler = null;
+
+    this.settingsService?.destroy();
+    this.settingsService = null;
 
     this.editHelper?.destroy();
     this.splitter?.destroy();

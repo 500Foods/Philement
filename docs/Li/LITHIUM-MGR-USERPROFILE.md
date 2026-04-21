@@ -85,6 +85,7 @@ src/managers/profile-manager/
 ├── profile-manager.css             # Styles
 ├── profile-manager-collection.js   # Collection tab handler
 ├── profile-manager-settings.js     # Settings tab orchestrator
+├── profile-settings-service.js     # Centralized JSON storage service
 └── pages/                          # Settings page handlers
     ├── page-registry.js            # Registry for loading handlers
     ├── settings-page-base.js       # Base classes for pages
@@ -116,9 +117,10 @@ src/managers/profile-manager/
 | `profile-manager.js` | Main manager, table initialization, data loading | ~720 |
 | `profile-manager-collection.js` | CodeMirror JSON editor for Collection tab | ~200 |
 | `profile-manager-settings.js` | Page navigation, crossfade transitions | ~180 |
+| `profile-settings-service.js` | Centralized JSON read/write with debounced persist | ~505 |
 | `pages/page-registry.js` | Handler loading, caching, placeholder fallback | ~270 |
-| `pages/settings-page-base.js` | Base classes: `BaseSettingsPage`, `SimpleSettingsPage` | ~185 |
-| `pages/page-*.js` | Individual settings page handlers | 50-200 each |
+| `pages/settings-page-base.js` | Base classes: `BaseSettingsPage`, `SimpleSettingsPage` | ~300 |
+| `pages/page-*.js` | Individual settings page handlers | 50–220 each |
 
 ---
 
@@ -158,6 +160,124 @@ export class LanguagePage extends SimpleSettingsPage {
   async save() { /* Save and mark clean */ }
 }
 ```
+
+### ProfileSettingsService — Centralized JSON Storage
+
+All settings pages read from and write to a single JSON object via the `ProfileSettingsService`. This service lives in `profile-settings-service.js` and is instantiated once by the Profile Manager, then passed to every page handler.
+
+#### Why a Centralized Service?
+
+- **One JSON blob** is persisted to localStorage (and eventually the server API)
+- **Each section controls its own subtree** — no page touches another page's data
+- **Optional sections are dynamic** — a section only exists in JSON if its page has saved data
+- **Readability names** are stored as `_name` inside each section but are never used for routing
+
+#### JSON Structure
+
+The profile JSON is a flat object where each top-level key is a section key:
+
+```json
+{
+  "-9": {
+    "_name": "Date Formats",
+    "dates": {
+      "short": "YYYY-MM-DD",
+      "long": "MMMM D, YYYY"
+    },
+    "times": {
+      "short": "HH:mm",
+      "long": "h:mm A"
+    }
+  },
+  "23": {
+    "_name": "Lookups Manager",
+    "defaultView": "list",
+    "pageSize": 50,
+    "autoRefresh": true
+  },
+  "_legacy": {
+    "language": "en-US",
+    "dateFormat": "MM/DD/YYYY"
+  }
+}
+```
+
+- **Section keys** are the stringified `index` value: negative for internal pages, manager ID for managers.
+- **`_name`** is stored for human readability only. The service never uses it for lookups.
+- **`_legacy`** holds flat preferences during migration from the old storage scheme.
+
+#### Settings Service API
+
+| Method | Purpose |
+|--------|---------|
+| `get(sectionKey, path, defaultValue)` | Read a dotted-path value |
+| `set(sectionKey, path, value)` | Write a dotted-path value |
+| `delete(sectionKey, path)` | Remove a dotted-path value |
+| `getSection(sectionKey)` | Get an entire section object (shallow clone) |
+| `setSection(sectionKey, data, sectionName)` | Replace an entire section |
+| `removeSection(sectionKey)` | Delete a whole section |
+| `hasSection(sectionKey)` | Check if a section exists |
+| `getSectionKeys()` | List all section keys |
+| `batchSet(sectionKey, changes)` | Apply multiple writes in one persist |
+| `getAll()` / `setAll(data)` | Get/replace the entire JSON blob |
+| `onChange(pathPattern, callback)` | Listen for changes to a path (supports `*` wildcard) |
+| `onAnyChange(callback)` | Listen for any change anywhere |
+| `exportJSON()` | Export formatted JSON string |
+| `importJSON(jsonString)` | Import and replace entire profile |
+| `flush()` | Force immediate save (call before logout) |
+| `destroy()` | Clear timers and listeners |
+
+#### Page-Level Convenience Helpers
+
+`BaseSettingsPage` provides thin wrappers so pages don't need to know their own section key:
+
+```javascript
+// Inside any page handler extending BaseSettingsPage:
+this.getSetting('dates.short', 'YYYY-MM-DD');   // reads from this.sectionKey
+this.setSetting('dates.short', 'YYYY-MM-DD');   // writes to this.sectionKey
+this.setSettingsBatch({                         // batch write
+  'dates.short': 'YYYY-MM-DD',
+  'dates.long': 'MMMM D, YYYY',
+});
+this.getSectionData();                          // get entire section
+this.setSectionData({ dates: { short: '...' } }, 'Date Formats');
+```
+
+#### Wiring: How the Service Reaches the Pages
+
+1. **Profile Manager** creates the service in its constructor:
+   ```javascript
+   this.settingsService = new ProfileSettingsService({
+     onAfterSave: (data) => { /* sync Collection tab */ },
+   });
+   ```
+
+2. **Profile Manager** passes it to `SettingsTabHandler`:
+   ```javascript
+   this.settingsHandler = new SettingsTabHandler({
+     settingsService: this.settingsService,
+     // ...
+   });
+   ```
+
+3. **SettingsTabHandler** passes it to `SettingsPageRegistry`:
+   ```javascript
+   this._pageRegistry = new SettingsPageRegistry({
+     settingsService: this.settingsService,
+     // ...
+   });
+   ```
+
+4. **Page Registry** injects it into every page constructor as `options.settings`:
+   ```javascript
+   const handler = new HandlerClass({
+     index: index,
+     settings: this.settingsService,
+     onDirtyChange: this.onDirtyChange,
+   });
+   ```
+
+5. **BaseSettingsPage** stores it as `this.settings` and exposes the convenience helpers.
 
 ### Page Registry
 
@@ -382,7 +502,7 @@ this.userOptions = sections.map((section, index) => ({
 ```javascript
 getDefaultUserOptions() {
   const baseOptions = [
-    { key_idx: 1, section: 'General', icon: '<fa fa-id-card></fa>', 
+    { key_idx: 1, section: 'General', icon: '<fa fa-id-card></fa>',
       label: 'Account', index: -1, status_a1: 1 },
     // ... more internal options
   ];
@@ -459,7 +579,7 @@ The `SettingsTabHandler` manages:
     "key_idx": { "title": "ID#", "field": "key_idx", "visible": false },
     "index": { "title": "Index", "field": "index", "visible": false },
     "section": { "title": "Section", "field": "section", "group": 1 },
-    "icon": { "title": "<fa fa-wrench></fa>", "field": "icon", 
+    "icon": { "title": "<fa fa-wrench></fa>", "field": "icon",
               "formatter": "html", "width": 28 },
     "label": { "title": "Section", "field": "label" }
   }
@@ -495,10 +615,10 @@ The `SettingsTabHandler` manages:
 
 | Key | Content |
 |-----|---------|
-| `lithium_preferences` | User preferences JSON |
+| `lithium_preferences` | User preferences JSON (managed by ProfileSettingsService) |
 | `lithium_themes` | Cached theme list |
 | `activeThemeId` | Current theme ID |
-| `lithium_lookups_settings` | Lookups Manager settings (example) |
+| `lithium_lookups_settings` | Lookups Manager settings (legacy — migrate to service) |
 
 ---
 
@@ -523,7 +643,7 @@ The `SettingsTabHandler` manages:
 
 ## Example: Lookups Manager Settings
 
-The Lookups Manager (ID 23) demonstrates the complete pattern:
+The Lookups Manager (ID 23) demonstrates the complete pattern using the ProfileSettingsService:
 
 **HTML** (`profile-manager.html`):
 ```html
@@ -552,13 +672,20 @@ export class LookupsManagerPage extends SimpleSettingsPage {
   }
 
   async loadData() {
-    const stored = localStorage.getItem('lithium_lookups_settings');
-    // ... parse and set form data
+    // Read from the Settings Service under section "23"
+    const section = this.getSectionData();
+    const data = section && Object.keys(section).length > 0
+      ? { defaultView: this.getSetting('defaultView', 'list'), /* ... */ }
+      : this._defaultValues;
+    this.setFormData(data);
+    this._originalData = JSON.parse(JSON.stringify(data));
   }
 
   async save() {
     const data = this.getFormData(this.formSelector);
-    localStorage.setItem('lithium_lookups_settings', JSON.stringify(data));
+    // Write the entire section via the Settings Service
+    this.setSectionData(data, 'Lookups Manager');
+    this._originalData = JSON.parse(JSON.stringify(data));
     this.setDirty(false);
     return { success: true, data };
   }
@@ -578,6 +705,91 @@ _getManagerHandlerClass(index) {
   }
 }
 ```
+
+---
+
+## Example: Date Formats Settings (Structured Data)
+
+The Date Formats page (index -9) shows how to store nested data:
+
+**Handler** (`pages/page-date-formats.js`):
+```javascript
+export class DateFormatsPage extends SimpleSettingsPage {
+  constructor(options) {
+    super({ ...options, index: -9, formSelector: 'form' });
+  }
+
+  async loadData() {
+    // Read nested values using dotted paths
+    this.setFormData({
+      dateFormat: this.getSetting('dates.short', 'MM/DD/YYYY'),
+      timeFormat: this.getSetting('times.short', '12h'),
+    });
+  }
+
+  async save() {
+    const data = this.getFormData(this.formSelector);
+    // Write structured data as a complete section
+    this.setSectionData({
+      dates: {
+        short: data.dateFormat,
+        long: this._inferLongDateFormat(data.dateFormat),
+      },
+      times: {
+        short: data.timeFormat === '12h' ? 'h:mm A' : 'HH:mm',
+        long: data.timeFormat === '12h' ? 'h:mm:ss A' : 'HH:mm:ss',
+      },
+    }, 'Date Formats');
+    this.setDirty(false);
+    return { success: true, data };
+  }
+}
+```
+
+The resulting JSON under section `"-9"`:
+```json
+{
+  "_name": "Date Formats",
+  "dates": {
+    "short": "YYYY-MM-DD",
+    "long": "MMMM D, YYYY"
+  },
+  "times": {
+    "short": "HH:mm",
+    "long": "HH:mm:ss"
+  }
+}
+```
+
+---
+
+## Migration from Legacy Storage
+
+Old pages used separate `localStorage` keys per page (e.g. `lithium_lookups_settings`). New pages should use the ProfileSettingsService. During transition, pages can read from the service first and fall back to legacy keys:
+
+```javascript
+async loadData() {
+  const section = this.getSectionData();
+  const hasData = Object.keys(section).length > 1;
+
+  if (hasData) {
+    // Load from new structured storage
+    this.setFormData({
+      defaultView: this.getSetting('defaultView', 'list'),
+    });
+  } else {
+    // Fallback: migrate from legacy flat storage
+    const stored = localStorage.getItem('lithium_lookups_settings');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      this.setFormData(parsed);
+      // Optionally migrate to new storage on save
+    }
+  }
+}
+```
+
+When saving, write to the Settings Service **and** optionally update the legacy key for backward compatibility until all consumers are migrated.
 
 ---
 

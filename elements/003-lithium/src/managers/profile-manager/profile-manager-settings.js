@@ -18,6 +18,7 @@ import { SettingsPageRegistry } from './pages/page-registry.js';
       this.onPageChange = options.onPageChange || (() => {});
       this.onDirtyChange = options.onDirtyChange || (() => {});
       this.app = options.app || null;
+      this.settingsService = options.settingsService || null;
 
       this.currentPageIndex = null;
       this._inPageTransition = false;
@@ -43,6 +44,7 @@ import { SettingsPageRegistry } from './pages/page-registry.js';
     // Initialize the page registry
     this._pageRegistry = new SettingsPageRegistry({
       app: this.app,
+      settingsService: this.settingsService,
       onDirtyChange: this.onDirtyChange,
     });
 
