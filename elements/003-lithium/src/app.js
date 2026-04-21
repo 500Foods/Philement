@@ -275,7 +275,7 @@ class LithiumApp {
 
     // Utility manager definitions — key -> definition (matches lithium.json 001-006 range)
     this.utilityManagerRegistry = {
-      'user-profile': { id: 3, key: 'user-profile', name: 'User Profile' },
+      'user-profile': { id: 3, key: 'user-profile', name: 'Profile' },
       'session-log': { id: 4, key: 'session-log', name: 'Session Log' },
       'terminal': { id: 5, key: 'terminal', name: 'Terminal' },
     };
@@ -1168,7 +1168,8 @@ class LithiumApp {
 
       const iconInfo = mainMgr.utilityManagerIcons?.[managerKey] || { iconHtml: '<fa fa-puzzle-piece></fa>', name: managerDef.name };
       const slotId = mainMgr._utilitySlotId(managerKey);
-      const slotResult = mainMgr.createSlot(slotId, iconInfo.iconHtml, iconInfo.name, managerKey);
+      // Pass numeric ID (managerDef.id) instead of string key for tour/training context
+      const slotResult = mainMgr.createSlot(slotId, iconInfo.iconHtml, iconInfo.name, managerDef.id);
       if (!slotResult) {
         throw new Error('Failed to create utility manager slot');
       }
@@ -1584,28 +1585,21 @@ class LithiumApp {
   }
 
   /**
-   * Clear local data for public/global logout
+   * Clear local data for public/global logout.
+   * Clears ALL localStorage content for this website.
    */
   clearLocalData() {
     try {
-      // Clear remembered username
-      localStorage.removeItem('lithium_last_username');
-
-      // Clear any cached lookups or preferences
-      localStorage.removeItem('lithium_lookups');
-      localStorage.removeItem('lithium_preferences');
-
-      // Clear any session-specific data (but keep config)
       const keysToRemove = [];
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && key.startsWith('lithium_') && !key.includes('config')) {
+        if (key) {
           keysToRemove.push(key);
         }
       }
       keysToRemove.forEach(key => localStorage.removeItem(key));
 
-      logAuth(Status.INFO, 'Local data cleared');
+      logAuth(Status.INFO, `Local data cleared: ${keysToRemove.length} items removed`);
     } catch (error) {
       logAuth(Status.WARN, `Could not clear local data: ${error.message}`);
     }

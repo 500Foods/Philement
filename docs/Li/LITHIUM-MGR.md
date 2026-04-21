@@ -570,6 +570,18 @@ Manager IDs correspond to the `lithium.json` `managers` section. Group 0 (IDs 1-
 
 ---
 
+## ⚠️ Tour Manager ID Matching
+
+**CRITICAL:** The Tour Manager **ONLY uses numeric IDs** for matching. The manager name is ignored.
+
+- Tour with `"manager": "003.Profile"` matches ANY manager with ID **3**
+- Tour with `"manager": "029.Query Manager"` matches ANY manager with ID **29**
+- The name after the dot does **NOT** matter for matching
+
+See [LITHIUM-MGR-TOUR.md](LITHIUM-MGR-TOUR.md) for full details and [LITHIUM-FAQ.md](LITHIUM-FAQ.md) for common pitfalls.
+
+---
+
 ## Planned Managers
 
 ### Popup Panels (Not Full Managers)

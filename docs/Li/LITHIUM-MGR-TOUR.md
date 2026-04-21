@@ -188,10 +188,10 @@ Selecting an entry closes the current video tour and launches the selected varia
 
 ### Manager Field Convention
 
-The `manager` field follows the lithium.json naming convention:
+**⚠️ CRITICAL:** Tour manager matching **ONLY uses the numeric ID**. The name part is ignored.
 
 ```
-"###.Manager Name"
+"###.Manager Name"  → Only "###" matters
 ```
 
 | Value | Manager Type | Notes |
@@ -201,14 +201,21 @@ The `manager` field follows the lithium.json naming convention:
 | `"023.Lookup Manager"` | **Main Menu Manager** | Standard slot-based manager |
 | `"029.Query Manager"` | **Main Menu Manager** | Standard slot-based manager |
 
+**Numeric ID Matching:**
+- `"003.Profile"` matches `"003.User Profile"` because both are ID **3**
+- `"023.Lookup Manager"` matches `"023.Lookups"` because both are ID **23**
+- The name after the dot is **ignored** for matching purposes
+
+**⚠️ WARNING:** Do NOT rely on exact string matching for tours. Always use the format `"###.Any Name"` where ### is the manager ID from lithium.json. The tour system extracts only the numeric portion for matching.
+
 **Utility Managers (001-006):** These are sidebar footer utilities, not main menu items. The tour manager:
-1. Extracts the numeric ID from the manager field
-2. Looks up in `utilityManagerRegistry` by ID
+1. Extracts the numeric ID from the manager field (e.g., "003" from "003.Profile")
+2. Looks up in `utilityManagerRegistry` by numeric ID
 3. Calls `app.loadUtilityManager(id)` to activate
 
 **Main Menu Managers (007+):** These are regular managers that appear in the sidebar menu. The tour manager:
-1. Extracts the numeric ID from the manager field  
-2. Looks up in `managerRegistry` by ID
+1. Extracts the numeric ID from the manager field
+2. Looks up in `managerRegistry` by numeric ID
 3. Calls `app.loadManager(id)` to activate
 
 If no `manager` field is specified, the tour launches without switching managers.

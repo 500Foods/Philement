@@ -548,6 +548,7 @@ Toast styles are in `src/styles/toast.css`. Key design decisions:
 - **Left border indicator:** 4px colored border per type (colorbar)
 - **Dark-mode-first:** All colors use CSS variables with dark fallbacks
 - **Progress bar animation:** CSS `@keyframes toast-countdown` with `scaleX` transform (GPU-accelerated)
+- **Pointer-events management:** `pointer-events: none` on hidden toasts, `pointer-events: auto` only when visible (prevents invisible toasts from blocking UI)
 - **Responsive:** Full-width on mobile (`< 480px`)
 
 ---
