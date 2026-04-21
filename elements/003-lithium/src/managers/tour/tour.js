@@ -223,25 +223,50 @@ export async function refreshTours(api) {
 }
 
 /**
+ * Extract numeric manager ID from a manager string (e.g., "003.Profile" -> 3)
+ * @param {string} managerStr - Manager identifier string
+ * @returns {number|null} Numeric ID or null if invalid
+ */
+function extractManagerId(managerStr) {
+  if (!managerStr || typeof managerStr !== 'string') return null;
+  const match = managerStr.match(/^(\d{3})\./);
+  return match ? parseInt(match[1], 10) : null;
+}
+
+/**
  * Get tours for a specific manager
+ * ONLY compares numeric IDs - "003.Profile" matches "003.User Profile" because both are ID 3
  * Supports both:
- * - Single manager: "023.Lookup Manager" (exact match)
- * - Multiple managers: ["029.Query Manager", "023.Lookup Manager"] (array match)
+ * - Single manager: "023.Lookup Manager"
+ * - Multiple managers: ["029.Query Manager", "023.Lookup Manager"]
  * @param {Object} api - The API/conduit instance
  * @param {string} managerName - Manager name (e.g., "023.Lookup Manager")
  * @returns {Promise<Array>} Filtered tour objects
  */
 export async function getToursForManager(api, managerName) {
   const tours = await getTours(api);
+  const targetId = extractManagerId(managerName);
+
+  if (targetId === null) {
+    log(Subsystems.MANAGER, Status.WARN, `[Tour] Invalid manager name format: ${managerName}`);
+    return [];
+  }
+
   return tours.filter(t => {
     const def = t.definition;
     if (!def) return false;
-    // Single manager (existing format)
-    if (def.manager === managerName) return true;
-    // Multiple managers (new array format)
-    if (Array.isArray(def.managers)) {
-      return def.managers.includes(managerName);
+
+    // Single manager - compare numeric IDs only
+    if (def.manager) {
+      const tourManagerId = extractManagerId(def.manager);
+      if (tourManagerId === targetId) return true;
     }
+
+    // Multiple managers - compare numeric IDs only
+    if (Array.isArray(def.managers)) {
+      return def.managers.some(m => extractManagerId(m) === targetId);
+    }
+
     return false;
   });
 }
@@ -267,21 +292,34 @@ export async function getVideoTours(api) {
 
 /**
  * Get video tours for a specific manager
+ * ONLY compares numeric IDs - "003.Profile" matches "003.User Profile" because both are ID 3
  * @param {Object} api - The API/conduit instance
  * @param {string} managerName - Manager name (e.g., "023.Lookup Manager")
  * @returns {Promise<Array>} Filtered video tour objects
  */
 export async function getVideoToursForManager(api, managerName) {
   const allVideoTours = await getVideoTours(api);
+  const targetId = extractManagerId(managerName);
+
+  if (targetId === null) {
+    return [];
+  }
+
   return allVideoTours.filter(t => {
     const def = t.definition;
     if (!def) return false;
-    // Single manager (existing format)
-    if (def.manager === managerName) return true;
-    // Multiple managers (new array format)
-    if (Array.isArray(def.managers)) {
-      return def.managers.includes(managerName);
+
+    // Single manager - compare numeric IDs only
+    if (def.manager) {
+      const tourManagerId = extractManagerId(def.manager);
+      if (tourManagerId === targetId) return true;
     }
+
+    // Multiple managers - compare numeric IDs only
+    if (Array.isArray(def.managers)) {
+      return def.managers.some(m => extractManagerId(m) === targetId);
+    }
+
     return false;
   });
 }

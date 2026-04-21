@@ -62,6 +62,20 @@ This directory contains the canonical documentation for the Lithium web applicat
 
 ---
 
+## ⚠️ Critical Implementation Notes
+
+### Tour Manager: Numeric ID Matching Only
+
+**The Tour Manager ONLY uses numeric IDs for matching tours to managers.** The manager name is completely ignored.
+
+- `"003.Profile"` matches `"003.User Profile"` because both are ID **3**
+- `"029.Query Manager"` matches `"029.Queries"` because both are ID **29**
+- The name after the dot does **NOT** affect matching
+
+**See:** [LITHIUM-MGR-TOUR.md](LITHIUM-MGR-TOUR.md) for full documentation and [LITHIUM-FAQ.md](LITHIUM-FAQ.md) for common pitfalls.
+
+---
+
 ## Quick Start
 
 ```bash

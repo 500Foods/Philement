@@ -101,17 +101,17 @@
 }
 
 /* Active tab styling (toggle) - uses toggle colors for selected state */
-.lithium-toolbar-tab.active {
+.xxxlithium-toolbar-tab.active {
   background: var(--accent-toggle) !important;
   color: var(--text-toggle) !important;
 }
 
-.lithium-toolbar-tab.active fa {
+.xxxlithium-toolbar-tab.active fa {
   color: var(--text-toggle) !important;
 }
 
 /* Tab Toolbar */
-#profile-tab-toolbar {
+#xxxprofile-tab-toolbar {
   flex-shrink: 0;
   border-radius: 0;
   border: none;
@@ -135,10 +135,14 @@
 /* Tab Panels */
 .tab-panel {
   display: none;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .tab-panel.active {
-  display: block;
+  display: flex;
 }
 
 /* Settings Pages with Crossfade */
@@ -187,33 +191,44 @@
   padding-top: var(--space-lg);
 }
 
-/* Editor Container for Collection Tab */
-.profile-editor-container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
+/* ── Collection Tab JSON Editor ─────────────────────────────────────────── */
+
+.profile-collection-editor {
+  width: 100%;
+  height: 100%;
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius-md);
   overflow: hidden;
-  background: var(--bg-tertiary);
 }
 
-.profile-editor-container .cm-editor {
-  flex: 1;
+.profile-collection-editor .cm-editor {
   height: 100%;
 }
 
-.profile-editor-container .cm-scroller {
+.profile-collection-editor .cm-scroller {
   overflow: auto;
+  font-family: var(--font-mono);
 }
 
 /* Fix CodeMirror fold gutter icons */
-.profile-editor-container .cm-foldGutter .cm-gutterElement {
+.profile-collection-editor .cm-foldGutter .cm-gutterElement {
   font-size: 10px;
 }
 
-/* Rotate fold icons to point correctly */
-.profile-editor-container .cm-foldPlaceholder {
+/* Fold placeholder styling */
+.profile-collection-editor .cm-foldPlaceholder {
   border: none;
   background: none;
+}
+
+/* Read-only visual state */
+.profile-collection-editor.lithium-cm-readonly .cm-content {
+  cursor: default;
+}
+
+/* Editable visual state */
+.profile-collection-editor.lithium-cm-editable .cm-content {
+  cursor: text;
 }
 
 /* Manager slot footer Save/Cancel styling - inherited from manager-ui.css */

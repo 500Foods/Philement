@@ -17,10 +17,11 @@ import {
   togglePanelCollapse,
   restorePanelState as restoreCollapsedPanelState,
 } from '../../core/panel-collapse.js';
+import { setTableWidth } from '../../tables/settings/table-settings.js';
 import { authQuery } from '../../shared/conduit.js';
 import { log, Subsystems, Status } from '../../core/log.js';
 import { processIcons } from '../../core/icons.js';
-import { initToolbars, setupManagerFooterIcons } from '../../core/manager-ui.js';
+import { initToolbars, setupManagerFooterIcons, createFontPopup } from '../../core/manager-ui.js';
 import { ManagerEditHelper } from '../../core/manager-edit-helper.js';
 import { getMenu, buildManagerIconsRegistry } from '../../shared/menu.js';
 import { CollectionTabHandler } from './profile-manager-collection.js';
@@ -28,6 +29,8 @@ import { SettingsTabHandler } from './profile-manager-settings.js';
 import { toast } from '../../shared/toast.js';
 import '../../styles/vendor-tabulator.css';
 import '../../core/manager-panels.css';
+import '../../core/manager-ui.css';
+import '../../core/popup.css';
 import './profile-manager.css';
 
 /**
@@ -55,6 +58,9 @@ export default class ProfileManager {
 
     this.editHelper = new ManagerEditHelper({ name: 'Profile' });
 
+    // Storage key for selected section persistence
+    this._selectedSectionStorageKey = 'lithium_profile_selected_section';
+
     this.defaultPreferences = {
       language: 'en-US',
       dateFormat: 'MM/DD/YYYY',
@@ -67,6 +73,11 @@ export default class ProfileManager {
     this.currentTab = 'settings';
     this.collectionHandler = null;
     this.settingsHandler = null;
+
+    // Font popup
+    this.fontPopup = null;
+    this.editorFontSize = 13;
+    this.editorFontFamily = '"Vanadium Mono", var(--font-mono, monospace)';
 
     this._menuData = null;
     this._managerIcons = {};
@@ -85,6 +96,9 @@ export default class ProfileManager {
     // Load menu data first (needed for merging with Lookup 60)
     await this.loadMenuData();
 
+    // Initialize tab handlers BEFORE table so settingsHandler is ready for section restoration
+    this.initTabHandlers();
+
     await this.initOptionsTable();
     this.setupSplitter();
 
@@ -92,8 +106,9 @@ export default class ProfileManager {
     this.loadPreferences();
     this.setupEventListeners();
     this.restorePanelState();
-    this.initTabHandlers();
     this.setupFooter();
+    this.initFontPopup();
+    this.overrideCloseButton();
     this.show();
   }
 
@@ -256,17 +271,135 @@ export default class ProfileManager {
         this.userOptions = this.getDefaultUserOptions();
       }
 
-      this.optionsTable.loadStaticData(this.userOptions);
+      // Don't auto-select - we'll handle selection manually in _restoreSelectedSection
+      this.optionsTable.loadStaticData(this.userOptions, { autoSelect: false });
       log(Subsystems.TABLE, Status.INFO,
         `[ProfileManager] Loaded ${this.userOptions.length} user options`);
+
+      // Process icons after table data is loaded (ensures <fa> tags in HTML formatter cells are converted)
+      requestAnimationFrame(() => {
+        processIcons(this.elements.tableContainer);
+      });
+
+      // Restore previously selected section after data is loaded
+      this._restoreSelectedSection();
     } catch (error) {
       log(Subsystems.TABLE, Status.ERROR,
         `[ProfileManager] Failed to load user options: ${error.message}`);
       this.userOptions = this.getDefaultUserOptions();
-      this.optionsTable.loadStaticData(this.userOptions);
+      // Don't auto-select on error either
+      this.optionsTable.loadStaticData(this.userOptions, { autoSelect: false });
+
+      // Process icons after error recovery
+      requestAnimationFrame(() => {
+        processIcons(this.elements.tableContainer);
+      });
+
+      // Restore previously selected section even on error (using default options)
+      this._restoreSelectedSection();
     } finally {
       this.optionsTable.hideLoading();
     }
+  }
+
+  /**
+   * Restore the previously selected section from localStorage
+   * If no saved state (e.g., after localStorage purge), select the first record (Account)
+   * @private
+   */
+  _restoreSelectedSection() {
+    try {
+      const savedIndex = localStorage.getItem(this._selectedSectionStorageKey);
+
+      // If no saved state, select the first record (Account, index -1) after localStorage purge
+      if (savedIndex === null) {
+        log(Subsystems.MANAGER, Status.INFO,
+          '[ProfileManager] No saved section, auto-selecting first record (Account)');
+        this._selectSectionByIndex(-1);
+        this._setNarrowPanelWidth();
+        return;
+      }
+
+      const index = parseInt(savedIndex, 10);
+      if (isNaN(index)) {
+        log(Subsystems.MANAGER, Status.WARN,
+          `[ProfileManager] Invalid saved section index: ${savedIndex}`);
+        return;
+      }
+
+      // Find the row with the matching index
+      const row = this.userOptions.find(opt => opt.index === index);
+      if (!row) {
+        log(Subsystems.MANAGER, Status.DEBUG,
+          `[ProfileManager] Saved section index ${index} not found in current options`);
+        // Default to first record
+        this._selectSectionByIndex(-1);
+        return;
+      }
+
+      // Select the row in the table
+      const table = this.optionsTable?.table;
+      if (!table) return;
+
+      // Find the Tabulator row for this data
+      const tabulatorRow = table.getRows().find(r => {
+        const data = r.getData();
+        return data.index === index;
+      });
+
+      if (tabulatorRow) {
+        // Select row in table - this triggers onRowSelected which calls handleOptionSelected
+        table.selectRow(tabulatorRow);
+        tabulatorRow.scrollTo();
+        log(Subsystems.MANAGER, Status.INFO,
+          `[ProfileManager] Restored selected section: ${row.label} (index: ${index})`);
+      }
+    } catch (error) {
+      log(Subsystems.MANAGER, Status.WARN,
+        `[ProfileManager] Failed to restore selected section:`, error);
+    }
+  }
+
+  /**
+   * Select a section by its index
+   * @param {number} index - The section index to select
+   * @private
+   */
+  _selectSectionByIndex(index) {
+    const table = this.optionsTable?.table;
+    if (!table) return;
+
+    const tabulatorRow = table.getRows().find(r => {
+      const data = r.getData();
+      return data.index === index;
+    });
+
+    if (tabulatorRow) {
+      table.selectRow(tabulatorRow);
+      tabulatorRow.scrollTo();
+      const row = this.userOptions.find(opt => opt.index === index);
+      log(Subsystems.MANAGER, Status.INFO,
+        `[ProfileManager] Selected section: ${row?.label || index} (index: ${index})`);
+    }
+  }
+
+  /**
+   * Set panel to narrow width after localStorage purge (first use)
+   * Uses the same setTableWidth function as the width popup
+   * @private
+   */
+  _setNarrowPanelWidth() {
+    // Use this.optionsTable (LithiumTable), not this.optionsTable.table (Tabulator)
+    const table = this.optionsTable;
+    if (table && typeof table.setTableWidth === 'function') {
+      table.setTableWidth('narrow');
+    } else if (table) {
+      // Fallback to exported function
+      setTableWidth(table, 'narrow');
+    }
+    
+    log(Subsystems.MANAGER, Status.INFO,
+      '[ProfileManager] Set narrow panel width via setTableWidth');
   }
 
   /**
@@ -354,9 +487,15 @@ export default class ProfileManager {
     log(Subsystems.MANAGER, Status.INFO,
       `[ProfileManager] Option selected: ${rowData.label}, index: ${rowData.index}`);
 
+    // Save selected section index to localStorage
+    if (rowData.index !== undefined) {
+      localStorage.setItem(this._selectedSectionStorageKey, String(rowData.index));
+    }
+
     // Update section label button - find fa element and span inside the button
     if (this.elements.sectionLabelBtn && rowData.label) {
       this.elements.sectionLabelBtn.classList.add('active');
+      this.elements.sectionLabelBtn.title = rowData.label;
       const iconEl = this.elements.sectionLabelBtn.querySelector('fa');
       const labelEl = this.elements.sectionLabelBtn.querySelector('span');
       if (iconEl && rowData.icon) {
@@ -457,9 +596,25 @@ export default class ProfileManager {
     this.collectionHandler = new CollectionTabHandler({
       container: this.elements.collectionEditorContainer,
       onDirtyChange: (dirty) => {
-        this.editHelper.setDirty(dirty);
         this.updateFooterButtons(dirty);
       },
+      onSave: () => this.handleSaveCollection(),
+      onCancel: () => this.handleCancelCollection(),
+    });
+
+    // Register collection editor with editHelper for dirty tracking
+    this.editHelper.registerEditor('collection', {
+      getContent: () => this.collectionHandler?.getContent() || '{}',
+      setContent: (content) => {
+        try {
+          const data = JSON.parse(content);
+          this.collectionHandler?.setData(data);
+        } catch (e) {
+          log(Subsystems.MANAGER, Status.WARN, '[ProfileManager] Failed to set collection content:', e);
+        }
+      },
+      setEditable: (editable) => this.collectionHandler?.setEditable(editable),
+      boundTable: null,
     });
   }
 
@@ -472,7 +627,9 @@ export default class ProfileManager {
     this.currentTab = tabId;
 
     this.elements.tabCollection?.classList.toggle('active', tabId === 'collection');
-    this.elements.sectionLabelBtn?.classList.toggle('active', tabId === 'settings');
+    // Only show section label as active if we're on settings tab AND a page is selected
+    const hasPageSelected = this.settingsHandler?.getCurrentPage() !== null;
+    this.elements.sectionLabelBtn?.classList.toggle('active', tabId === 'settings' && hasPageSelected);
     this.elements.panelSettings?.classList.toggle('active', tabId === 'settings');
     this.elements.panelCollection?.classList.toggle('active', tabId === 'collection');
 
@@ -480,13 +637,17 @@ export default class ProfileManager {
     const isCollection = tabId === 'collection';
     this.setEditorButtonsDisabled(!isCollection);
 
-    // Update footer buttons
-    const canSave = isCollection && this.collectionHandler?.isDirty();
-    this.updateFooterButtons(canSave);
-
     // Initialize Collection editor when switching to Collection tab
     if (tabId === 'collection') {
       this.collectionHandler?.init(this.getCollectionData());
+    }
+
+    // Update footer buttons — on collection tab, dirty state drives save/cancel
+    if (isCollection) {
+      const canSave = this.collectionHandler?.isDirty() || false;
+      this.updateFooterButtons(canSave);
+    } else {
+      this.updateFooterButtons(false);
     }
 
     log(Subsystems.MANAGER, Status.DEBUG, `[ProfileManager] Switched to tab: ${tabId}`);
@@ -659,6 +820,9 @@ export default class ProfileManager {
     this.elements.btnFold?.addEventListener('click', () => this.collectionHandler?.foldAll());
     this.elements.btnUnfold?.addEventListener('click', () => this.collectionHandler?.unfoldAll());
     this.elements.btnPrettify?.addEventListener('click', () => this.collectionHandler?.prettify());
+
+    // Font button — toggle font popup
+    this.elements.btnFont?.addEventListener('click', (e) => this.toggleFontPopup(e));
   }
 
   /**
@@ -681,6 +845,16 @@ export default class ProfileManager {
       showSaveCancel: true,
       onSave: () => this.handleSaveCollection(),
       onCancel: () => this.handleCancelCollection(),
+      onPrint: () => this._handleFooterPrint(),
+      onEmail: () => this._handleFooterEmail(),
+      onDownload: () => this._handleFooterDownload(),
+      onExport: (value, label) => this._handleFooterExport(value, label),
+      exportOptions: [
+        { value: 'pdf', label: 'PDF', icon: 'fa-file-pdf', enabled: true },
+        { value: 'csv', label: 'CSV', icon: 'fa-file-csv', enabled: true },
+        { value: 'json', label: 'JSON', icon: 'fa-brackets-curly', enabled: true },
+        { value: 'html', label: 'HTML', icon: 'fa-file-html', enabled: true },
+      ],
     });
 
     this._footerSaveBtn = footerElements.saveBtn;
@@ -692,6 +866,9 @@ export default class ProfileManager {
       footerElements.dummyBtn,
     );
 
+    // Override editHelper's activeEditingTable to handle save/cancel for the collection tab.
+    // The Profile Manager doesn't use LithiumTable edit mode — save/cancel drive the
+    // collection JSON editor's dirty state directly.
     this.editHelper.activeEditingTable = {
       handleSave: () => this.handleSaveCollection(),
       handleCancel: () => this.handleCancelCollection(),
@@ -706,18 +883,106 @@ export default class ProfileManager {
     if (this._footerCancelBtn) this._footerCancelBtn.disabled = !enabled;
   }
 
+  // ============ FOOTER HANDLERS ============
+
   /**
-   * Get preferences as collection data
+   * Handle Print button from footer
+   */
+  _handleFooterPrint() {
+    // Print the current settings page or collection
+    if (this.currentTab === 'collection') {
+      // Print collection JSON
+      const data = this.getCollectionData();
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write('<pre>' + JSON.stringify(data, null, 2) + '</pre>');
+      printWindow.document.close();
+      printWindow.print();
+    } else {
+      // Print the settings page
+      window.print();
+    }
+  }
+
+  /**
+   * Handle Email button from footer
+   */
+  _handleFooterEmail() {
+    const data = this.getCollectionData();
+    const subject = encodeURIComponent('User Profile Preferences');
+    const body = encodeURIComponent(
+      'User Profile Preferences:\n\n' +
+      Object.entries(data).map(([key, value]) => `${key}: ${value}`).join('\n')
+    );
+    window.open(`mailto:?subject=${subject}&body=${body}`, '_self');
+  }
+
+  /**
+   * Handle Download button from footer
+   */
+  _handleFooterDownload() {
+    const data = this.getCollectionData();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'user-profile-preferences.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  /**
+   * Handle Export button from footer
+   */
+  _handleFooterExport(value, label) {
+    log(Subsystems.MANAGER, Status.INFO, `[ProfileManager] Export to ${label} (${value})`);
+    // The export format is already saved by the footer system
+    // Actual export would be implemented based on format
+    this.showToast(`Export format set to ${label}`);
+  }
+
+  /**
+   * Get preferences as collection data.
+   * This is the single source of truth for all user preferences.
+   * Settings pages read from and write to this JSON structure.
+   *
+   * Returns empty object initially — sections add their defaults on first use.
    */
   getCollectionData() {
-    return {
-      language: this.preferences.language || 'en-US',
-      dateFormat: this.preferences.dateFormat || 'MM/DD/YYYY',
-      timeFormat: this.preferences.timeFormat || '12h',
-      numberFormat: this.preferences.numberFormat || 'en-US',
-      defaultDatabase: this.preferences.defaultDatabase || '',
-      activeTheme: this.preferences.activeTheme || '',
-    };
+    // Start with empty object; as sections are configured, their values
+    // get written here. This matches the intended behavior where the
+    // collection JSON is built up as the user interacts with settings.
+    const stored = localStorage.getItem('lithium_preferences');
+    if (stored) {
+      try {
+        return JSON.parse(stored);
+      } catch (_e) {
+        // fall through to defaults
+      }
+    }
+
+    // Return current preferences (may be empty or have defaults)
+    return { ...this.preferences };
+  }
+
+  /**
+   * Update a specific preference value and sync to collection JSON.
+   * Called by settings pages when a preference changes.
+   * @param {string} key - Preference key
+   * @param {*} value - New value
+   */
+  setPreference(key, value) {
+    this.preferences[key] = value;
+
+    // Sync to collection editor if initialized
+    if (this.collectionHandler?.editor) {
+      this.collectionHandler.setData(this.getCollectionData());
+    }
+
+    // Enable save/cancel buttons since preferences changed
+    this.updateFooterButtons(true);
+    log(Subsystems.MANAGER, Status.DEBUG, `[ProfileManager] Preference updated: ${key} = ${value}`);
   }
 
   /**
@@ -730,11 +995,26 @@ export default class ProfileManager {
       const data = this.collectionHandler.getData();
       if (!data) throw new Error('Invalid JSON data');
 
+      // Merge collection data into preferences
       this.preferences = { ...this.preferences, ...data };
       localStorage.setItem('lithium_preferences', JSON.stringify(this.preferences));
 
-      await this.savePreferencesToApi(this.preferences);
-      this.collectionHandler._initialData = JSON.parse(JSON.stringify(data));
+      // Apply updated preferences to form fields
+      this.applyPreferencesToForm();
+
+      // Attempt API save (may fail if endpoint not ready — data is still in localStorage)
+      try {
+        await this.savePreferencesToApi(this.preferences);
+      } catch (apiError) {
+        log(Subsystems.MANAGER, Status.WARN,
+          '[ProfileManager] API save failed (expected if endpoint not ready):', apiError.message);
+      }
+
+      // Reset dirty state — setInitialData updates the baseline without changing content
+      this.collectionHandler.setInitialData(data);
+
+      // Return editor to read-only after save
+      this.collectionHandler.setEditable(false);
 
       this.showToast('Preferences saved successfully');
       this.updateFooterButtons(false);
@@ -750,7 +1030,7 @@ export default class ProfileManager {
    */
   async handleCancelCollection() {
     await this.collectionHandler?.setData(this.getCollectionData());
-    this.showToast('Changes cancelled');
+    this.updateFooterButtons(false);
     log(Subsystems.MANAGER, Status.INFO, '[ProfileManager] Collection cancelled');
   }
 
@@ -783,12 +1063,67 @@ export default class ProfileManager {
     return data;
   }
 
+  // ── Font Popup ───────────────────────────────────────────────────────────
+
+  /**
+   * Initialize and show the font popup for the collection editor
+   */
+  initFontPopup() {
+    if (this.fontPopup) return;
+
+    const { popup, getState } = createFontPopup({
+      anchor: this.elements.btnFont,
+      fontSize: this.editorFontSize,
+      fontFamily: this.editorFontFamily,
+      fontWeight: 'normal',
+      onChange: ({ fontSize, fontFamily }) => {
+        this.editorFontSize = fontSize;
+        this.editorFontFamily = fontFamily;
+        this.collectionHandler?.setFontSize(fontSize);
+        this.collectionHandler?.setFontFamily(fontFamily);
+      },
+    });
+
+    this.fontPopup = popup;
+    this._fontPopupGetState = getState;
+  }
+
+  toggleFontPopup(e) {
+    e.stopPropagation();
+    if (!this.fontPopup) {
+      this.initFontPopup();
+    }
+    this.fontPopup?.classList.toggle('visible');
+  }
+
   /**
    * Show toast notification using global toast system
    */
   showToast(message, type = 'success') {
     const toastType = type === 'error' ? 'error' : 'success';
     toast[toastType](message, { duration: 3000 });
+  }
+
+  /**
+   * Override the slot close button to perform global logout instead.
+   * Replaces the X icon with a reload icon and changes the click behavior.
+   */
+  overrideCloseButton() {
+    const managerSlot = this.container.closest('.manager-slot');
+    if (!managerSlot) return;
+
+    const closeBtn = managerSlot.querySelector('.manager-ui-close-btn');
+    if (!closeBtn) return;
+
+    closeBtn.innerHTML = '<fa fa-rotate-right></fa>';
+    closeBtn.dataset.tooltip = 'Global Logout (reload)';
+    processIcons(closeBtn);
+
+    closeBtn.onclick = async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      eventBus.emit('logout:initiate', { logoutType: 'global' });
+    };
   }
 
   /**

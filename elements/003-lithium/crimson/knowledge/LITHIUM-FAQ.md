@@ -613,6 +613,57 @@ tabulatorCol.mutator = function(value) {
 
 ---
 
+## Tour Manager Numeric ID Matching
+
+**⚠️ CRITICAL:** The Tour Manager **ONLY uses numeric IDs** for matching tours to managers. The manager name is ignored.
+
+### How It Works
+
+```javascript
+// Tour definition in Lookup #43
+{
+  "manager": "003.Profile",  // Will match ANY manager with ID 3
+  "steps": [...]
+}
+
+// This tour will match:
+// - "003.Profile" (utility manager)
+// - "003.User Profile" (if renamed)
+// - "003.Anything" (name doesn't matter)
+// Because all have numeric ID: 3
+```
+
+### Common Mistake
+
+```javascript
+// ❌ WRONG: Trying to match by exact string
+const tours = await getToursForManager(api, "003.User Profile");
+// Won't match tour with "manager": "003.Profile"
+
+// ✅ CORRECT: Any string with ID 3 works
+const tours = await getToursForManager(api, "003.Anything");
+// WILL match tour with "manager": "003.Profile" because both are ID 3
+```
+
+### Implementation Details
+
+The matching uses `extractManagerId()` which parses the numeric portion:
+
+```javascript
+function extractManagerId(managerStr) {
+  const match = managerStr.match(/^(\d{3})\./);
+  return match ? parseInt(match[1], 10) : null;
+}
+
+// "003.Profile" → 3
+// "003.User Profile" → 3
+// "029.Query Manager" → 29
+```
+
+**See:** [LITHIUM-MGR-TOUR.md](LITHIUM-MGR-TOUR.md) for full documentation.
+
+---
+
 ## Related Documentation
 
 - Development: [LITHIUM-DEV.md](LITHIUM-DEV.md)

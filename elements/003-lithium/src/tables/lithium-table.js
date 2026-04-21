@@ -46,6 +46,7 @@ import {
 
 import {
   wrapFormatter,
+  createHtmlFormatter,
   needsBlankZeroWrapper,
   formatBuiltinValue,
   LITHIUM_CALCULATIONS,
@@ -249,15 +250,20 @@ export function resolveColumn(fieldName, colDef, coltypes, options = {}) {
     // Use custom sorter that sorts by lookup label, not raw ID
     tabulatorCol.sorter = createLookupSorter(colDef.lookupRef);
   } else if (merged.formatter) {
-    tabulatorCol.formatter = wrapFormatter(
-      merged.formatter,
-      merged.formatterParams || {},
-      merged.blank,
-      merged.zero,
-    );
-    // Preserve original formatterParams for Tabulator's built-in formatters
-    // (the wrapper passes them through when calling the original)
-    tabulatorCol.formatterParams = merged.formatterParams || {};
+    // Use custom HTML formatter for 'html' type to process Lithium icons
+    if (merged.formatter === 'html') {
+      tabulatorCol.formatter = createHtmlFormatter();
+    } else {
+      tabulatorCol.formatter = wrapFormatter(
+        merged.formatter,
+        merged.formatterParams || {},
+        merged.blank,
+        merged.zero,
+      );
+      // Preserve original formatterParams for Tabulator's built-in formatters
+      // (the wrapper passes them through when calling the original)
+      tabulatorCol.formatterParams = merged.formatterParams || {};
+    }
   }
 
   // Editor — lookup columns get a list editor from cached data;
