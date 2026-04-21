@@ -8,24 +8,27 @@
 import { log, Subsystems, Status } from '../../core/log.js';
 import { SettingsPageRegistry } from './pages/page-registry.js';
 
-/**
- * SettingsTabHandler class
- * Manages the settings pages and crossfade transitions
- */
-export class SettingsTabHandler {
-  constructor(options) {
-    this.container = options.container;
-    this.onPageChange = options.onPageChange || (() => {});
-    this.onDirtyChange = options.onDirtyChange || (() => {});
-    this.app = options.app || null;
+  /**
+   * SettingsTabHandler class
+   * Manages the settings pages and crossfade transitions
+   */
+  export class SettingsTabHandler {
+    constructor(options) {
+      this.container = options.container;
+      this.onPageChange = options.onPageChange || (() => {});
+      this.onDirtyChange = options.onDirtyChange || (() => {});
+      this.app = options.app || null;
 
-    this.currentPageIndex = null;
-    this._inPageTransition = false;
-    this._transitionDuration = 350;
+      this.currentPageIndex = null;
+      this._inPageTransition = false;
+      this._transitionDuration = 350;
 
-    // Page registry for loading handlers
-    this._pageRegistry = null;
-  }
+      // Page registry for loading handlers
+      this._pageRegistry = null;
+
+      // Queue for pending page requests during transitions
+      this._pendingPageRequest = null;
+    }
 
   /**
    * Initialize the settings tab handler
@@ -52,9 +55,14 @@ export class SettingsTabHandler {
    * @param {Object} pageData - Data about the page (label, icon, etc.)
    */
   async showPage(index, pageData = {}) {
-    // Guard: prevent re-entry during transition
-    if (this._inPageTransition) return;
+    // Guard: same page requested
     if (index === this.currentPageIndex) return;
+
+    // If a transition is in progress, queue this request and return
+    if (this._inPageTransition) {
+      this._pendingPageRequest = { index, pageData };
+      return;
+    }
 
     this._inPageTransition = true;
 
@@ -114,6 +122,14 @@ export class SettingsTabHandler {
 
       this.onPageChange(index, pageData);
       log(Subsystems.MANAGER, Status.DEBUG, `[SettingsTab] Showing page: ${index}`);
+
+      // Process any pending page request that came in during this transition
+      const pending = this._pendingPageRequest;
+      this._pendingPageRequest = null;
+      if (pending) {
+        log(Subsystems.MANAGER, Status.DEBUG, `[SettingsTab] Processing pending page request: ${pending.index}`);
+        this.showPage(pending.index, pending.pageData);
+      }
     }, this._transitionDuration);
   }
 

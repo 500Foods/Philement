@@ -103,7 +103,7 @@ This fills and submits the login form automatically.
 
 | Command | Description |
 |---------|-------------|
-| `npm test` | Run all tests (588 tests) |
+| `npm test` | Run all tests (672 tests) |
 | `npm run test:watch` | Run tests in watch mode |
 | `npm run test:coverage` | Run tests with coverage report |
 
@@ -335,31 +335,46 @@ Creates the standard footer action icons (Crimson, Notifications, Concierge, Ann
 
 All manager UI popups follow standardized positioning, styling, and animation rules:
 
-#### **Header Popups** (Keyboard Shortcuts, Zoom)
+#### **Header Popups** (Keyboard Shortcuts Zoom, Manager Menu)
 - **Positioning**: Drop down from header buttons
 - **Anchor**: Top-right corner of popup positioned 1px below bottom-right corner of button
-- **Corners**: Top corners squared off (`border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg)`)
-- **Animation**: Scales from top-right origin (expands down and left)
-- **Examples**: Keyboard shortcuts popup, Zoom popup
+- **Corners**: Bottom corners rounded (`border-radius: 0 0 var(--border-radius-md) var(--border-radius-md)`)
+- **Transform Origin**: top right
+- **Animation**: scale(0.5) → scale(1) from top-right (expands down and left)
+- **Examples**: Keyboard shortcuts popup, Zoom popup, Manager Menu
 
-#### **Footer Popups** (Tours, Training, Export Formats)
+#### **Footer Popups** (Tours, Training, Export Formats, Table Nav)
 - **Positioning**: Rise up from footer buttons
 - **Anchor**: Bottom-right corner of popup positioned 1px above top-right corner of button
-- **Corners**: Bottom corners squared off (`border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0`)
-- **Animation**: Scales from bottom-left origin (expands up and left)
-- **Examples**: Tours popup, Training popup, Export format popups
-- **Export Popups**: Manager-specific export menus (Queries, Lookups, Style Manager, Version History) use the same positioning system but are implemented separately in each manager
+- **Corners**: Top corners rounded (`border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0`)
+- **Transform Origin**: bottom right
+- **Animation**: scale(0.5) → scale(1) from bottom-right (expands up and left)
+- **Repositioning**: Automatically repositions on scroll/resize
+- **Examples**: Tours popup, Training popup, Export format popups, Table nav popups
+
+> **⚠️ Tour Manager ID Matching:** The Tours popup filters tours by manager ID using **ONLY the numeric portion** of the manager identifier. A tour with `"manager": "003.Profile"` will match ANY manager with ID 3, regardless of the name. See [LITHIUM-MGR-TOUR.md](LITHIUM-MGR-TOUR.md) for details.
 
 #### **Common Behavior**
 - **Exclusive Opening**: Opening any popup closes all other popups via `closeAllPopups()` event
-- **Animation**: Scale from 50% to 100% with fade-in, reverse on close
+- **Toggle**: Clicking the same button again closes the popup (toggle behavior)
+- **Animation**: scale(0.5) → scale(1) with fade-in, reverse on close
 - **Timing**: Uses `--transition-duration` (350ms) for consistency
 - **Z-Index**: 10001 for visibility above most UI elements
 
+#### **Consolidated Popup API**
+Use the consolidated functions in `popup.js` for new popups:
+- `showPopup(btn, className, content, options)` - Show/toggle popup
+  - `options.position`: `'header-dropdown'` (default) or `'footer-riseup'`
+  - `options.title`: Optional title text
+  - `options.onSelect(item, label)`: Callback when item selected
+  - `options.selector`: CSS selector for clickable items (default: `[data-value]`)
+- `hideActivePopup(skipAnimation)` - Hide with animation
+- `positionPopup(popup, button, position)` - Position popup relative to button
+
 #### **CSS Classes**
 - `.manager-ui-popup` - Base popup styling (background, border, shadow, transitions)
-- `.manager-header-popup` - Header popup styling (top squared corners, top-right transform origin)
-- `.manager-footer-popup` - Footer popup styling (bottom squared corners, bottom-left transform origin)
+- `.manager-header-popup` - Header popup (rounded bottom, top-right origin)
+- `.manager-footer-popup` - Footer popup (rounded top, bottom-right origin)
 - `.manager-ui-popup.visible` - Visible state (opacity: 1, scale: 1)
 
 #### **Implementation Functions**

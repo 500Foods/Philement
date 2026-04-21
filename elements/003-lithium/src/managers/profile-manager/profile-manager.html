@@ -26,9 +26,9 @@
         </button>
 
         <!-- Current section button (icon + label from LithiumTable selection) -->
-        <button type="button" class="lithium-toolbar-tab active" id="btn-section-label" data-collapsible-text title="Current Section">
+        <button type="button" class="lithium-toolbar-tab" id="btn-section-label" data-collapsible-text title="Select a Section">
           <fa fa-cog></fa>
-          <span>Settings</span>
+          <span>Select a Section</span>
         </button>
 
         <!-- Collection toggle button -->
@@ -69,8 +69,8 @@
         <!-- Settings Tab: Multiple pages based on index -->
         <div class="tab-panel active" data-panel-tab="settings" id="panel-settings">
           <div class="profile-content">
-            <!-- Settings Page -1: General > Account (default active) -->
-            <div class="settings-page active" data-page-index="-1" id="settings-page--1">
+            <!-- Settings Page -1: General > Account (no default active, restored from localStorage) -->
+            <div class="settings-page" data-page-index="-1" id="settings-page--1">
               <section class="profile-section">
                 <h3 class="section-title"><fa fa-id-card></fa> Account</h3>
                 <div class="profile-info-grid">
@@ -523,17 +523,14 @@
                 </form>
               </section>
             </div>
+          </div>
         </div>
 
         <!-- Collection Tab: JSON CodeMirror -->
         <div class="tab-panel" data-panel-tab="collection" id="panel-collection">
-          <!-- JSON Editor Container (fills space) -->
-          <div class="editor-container profile-editor-container" id="collection-editor-container">
-            <!-- CodeMirror will be injected here -->
-          </div>
-</div>
+          <div class="profile-collection-editor" id="collection-editor-container"></div>
         </div>
+      </div>
     </div>
   </div>
-
 </div>

@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><title>Code coverage report for shared/toast.js</title><meta charset="utf-8"><link rel="stylesheet" href="../prettify.css"><link rel="stylesheet" href="../base.css"><link rel="shortcut icon" type="image/x-icon" href="../favicon.png"><meta name="viewport" content="width=device-width,initial-scale=1"><style type="text/css">.coverage-summary .sorter{background-image:url(../sort-arrow-sprite.png)}</style></head><body><div class="wrapper"><div class="pad1"><h1><a href="../index.html">All files</a> / <a href="index.html">shared</a> toast.js</h1><div class="clearfix"><div class="fl pad1y space-right2"><span class="strong">84.79% </span><span class="quiet">Statements</span> <span class="fraction">145/171</span></div><div class="fl pad1y space-right2"><span class="strong">66.36% </span><span class="quiet">Branches</span> <span class="fraction">73/110</span></div><div class="fl pad1y space-right2"><span class="strong">82.6% </span><span class="quiet">Functions</span> <span class="fraction">19/23</span></div><div class="fl pad1y space-right2"><span class="strong">87.03% </span><span class="quiet">Lines</span> <span class="fraction">141/162</span></div></div><p class="quiet">Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.</p><template id="filterTemplate"><div class="quiet">Filter: <input type="search" id="fileSearch"></div></template></div><div class="status-line high"></div><pre><table class="coverage">
+<!doctype html><html lang="en"><head><title>Code coverage report for shared/toast.js</title><meta charset="utf-8"><link rel="stylesheet" href="../prettify.css"><link rel="stylesheet" href="../base.css"><link rel="shortcut icon" type="image/x-icon" href="../favicon.png"><meta name="viewport" content="width=device-width,initial-scale=1"><style type="text/css">.coverage-summary .sorter{background-image:url(../sort-arrow-sprite.png)}</style></head><body><div class="wrapper"><div class="pad1"><h1><a href="../index.html">All files</a> / <a href="index.html">shared</a> toast.js</h1><div class="clearfix"><div class="fl pad1y space-right2"><span class="strong">85.46% </span><span class="quiet">Statements</span> <span class="fraction">147/172</span></div><div class="fl pad1y space-right2"><span class="strong">66.36% </span><span class="quiet">Branches</span> <span class="fraction">73/110</span></div><div class="fl pad1y space-right2"><span class="strong">86.95% </span><span class="quiet">Functions</span> <span class="fraction">20/23</span></div><div class="fl pad1y space-right2"><span class="strong">87.73% </span><span class="quiet">Lines</span> <span class="fraction">143/163</span></div></div><p class="quiet">Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.</p><template id="filterTemplate"><div class="quiet">Filter: <input type="search" id="fileSearch"></div></template></div><div class="status-line high"></div><pre><table class="coverage">
 <tr><td class="line-count quiet"><a name="L1"></a><a href="#L1">1</a>
 <a name="L2"></a><a href="#L2">2</a>
 <a name="L3"></a><a href="#L3">3</a>
@@ -478,7 +478,8 @@
 <a name="L477"></a><a href="#L477">477</a>
 <a name="L478"></a><a href="#L478">478</a>
 <a name="L479"></a><a href="#L479">479</a>
-<a name="L480"></a><a href="#L480">480</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name="L480"></a><a href="#L480">480</a>
+<a name="L481"></a><a href="#L481">481</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -661,7 +662,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
@@ -687,6 +688,7 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">49x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">52x</span>
@@ -770,7 +772,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">52x</span>
-<span class="cline-any cline-yes">23x</span>
+<span class="cline-any cline-yes">52x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1139,8 +1141,8 @@ class ToastManager {
           content.style.height = targetHeight + 'px';
           // Force reflow to ensure the browser registers the height change
           content.offsetHeight;
-          requestAnimationFrame(<span class="fstat-no" title="function not covered">()</span> =&gt; {
-<span class="cstat-no" title="statement not covered">            content.style.height = '0px';</span>
+          requestAnimationFrame(() =&gt; {
+            content.style.height = '0px';
           });
           expandBtn.classList.remove('toast-header-expand-active');
           expandBtn.setAttribute('aria-expanded', 'false');
@@ -1157,15 +1159,16 @@ class ToastManager {
         }
       });
 &nbsp;
-      // Listen for transition end to reset overflow
-      content.addEventListener('transitionend', <span class="fstat-no" title="function not covered">()</span> =&gt; {
+      // Listen for transition end to reset overflow (use { once: true } to auto-remove)
+      const handleTransitionEnd = <span class="fstat-no" title="function not covered">()</span> =&gt; {
 <span class="cstat-no" title="statement not covered">        if (content.style.height === '0px') {</span>
 <span class="cstat-no" title="statement not covered">          content.style.overflow = 'hidden';</span>
         } else {
 <span class="cstat-no" title="statement not covered">          content.style.height = 'auto';</span>
 <span class="cstat-no" title="statement not covered">          content.style.overflow = 'visible';</span>
         }
-      });
+      };
+      content.addEventListener('transitionend', handleTransitionEnd, { once: true });
     }
 &nbsp;
     return toast;
@@ -1436,4 +1439,4 @@ const toast = new ToastManager();
 &nbsp;
 export { toast, TOAST_TYPES };
 export default toast;
-&nbsp;</pre></td></tr></table></pre><div class="push"></div></div><div class="footer quiet pad2 space-top1 center small">Code coverage generated by <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a> at 2026-04-20T16:58:41.007Z</div><script src="../prettify.js"></script><script>window.onload=function(){prettyPrint()}</script><script src="../sorter.js"></script><script src="../block-navigation.js"></script></body></html>
+&nbsp;</pre></td></tr></table></pre><div class="push"></div></div><div class="footer quiet pad2 space-top1 center small">Code coverage generated by <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a> at 2026-04-21T00:07:40.242Z</div><script src="../prettify.js"></script><script>window.onload=function(){prettyPrint()}</script><script src="../sorter.js"></script><script src="../block-navigation.js"></script></body></html>

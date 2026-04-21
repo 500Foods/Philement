@@ -224,6 +224,48 @@ export function formatBuiltinValue(value, formatterName, params) {
 }
 
 /**
+ * Create a custom HTML formatter that processes Lithium icons.
+ * This formatter renders HTML content and calls processIcons on the cell
+ * to convert <fa> tags to Font Awesome SVG icons.
+ *
+ * NOTE: This formatter relies on the global MutationObserver in icons.js
+ * to process <fa> tags. The onRendered callback ensures icons are processed
+ * after the cell is added to the DOM.
+ *
+ * @returns {Function} Tabulator formatter function
+ */
+export function createHtmlFormatter() {
+  return function(cell, onRendered) {
+    const value = cell.getValue();
+    if (value == null || value === '') return '';
+
+    // Process icons after the cell is rendered and added to DOM
+    // This ensures the MutationObserver in icons.js catches the new <fa> elements
+    if (onRendered) {
+      onRendered(function() {
+        // Double requestAnimationFrame ensures DOM is fully updated
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            const cellEl = cell.getElement();
+            if (cellEl) {
+              // Import and call processIcons directly for immediate processing
+              import('../../core/icons.js').then(({ processIcons }) => {
+                processIcons(cellEl);
+              }).catch(() => {
+                // Fallback: rely on the global MutationObserver
+                // The icons.js MutationObserver should catch these elements
+              });
+            }
+          });
+        });
+      });
+    }
+
+    return String(value);
+  };
+}
+
+/**
  * Wrap a Tabulator formatter to intercept blank and zero values.
  *
  * - If the cell value is null, undefined, or "" → return blankValue
@@ -247,9 +289,9 @@ export function wrapFormatter(formatter, formatterParams, blankValue, zeroValue)
     return formatter;
   }
 
-  // Don't wrap 'html' formatter - let Tabulator render it as HTML
+  // For 'html' formatter, use our custom formatter that processes icons
   if (formatter === 'html') {
-    return 'html';
+    return createHtmlFormatter();
   }
 
   // Return a wrapper function that handles blank/zero before delegating

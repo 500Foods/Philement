@@ -704,6 +704,93 @@
   z-index: var(--z-modal, 300);
 }
 
+/* ========================================
+   Manager UI Popup (unified - all use scale(0.5))
+   ======================================== */
+
+.manager-ui-popup,
+.manager-header-popup,
+.manager-footer-popup {
+  position: fixed;
+  z-index: 10001;
+  min-width: 180px;
+  max-width: 320px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-lg);
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(0.5);
+  transition: opacity var(--transition-duration, 350ms) ease,
+              transform var(--transition-duration, 350ms) ease,
+              visibility var(--transition-duration, 350ms);
+}
+
+/* Header dropdown: anchor to top-right, rounded bottom */
+.manager-ui-popup,
+.manager-header-popup {
+  border-radius: 0 0 var(--border-radius-md) var(--border-radius-md);
+  transform-origin: top right;
+}
+
+/* Footer riseup: anchor to bottom-right, rounded top */
+.manager-footer-popup {
+  border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+  transform-origin: bottom right;
+}
+
+.manager-ui-popup.visible,
+.manager-header-popup.visible,
+.manager-footer-popup.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: scale(1);
+}
+
+.manager-ui-popup-header {
+  display: flex;
+  align-items: center;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.manager-ui-popup-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+}
+
+.manager-ui-popup-content {
+  padding: var(--space-1);
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.manager-ui-menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  background: none;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.manager-ui-menu-item:hover,
+.manager-ui-menu-item:focus {
+  background-color: var(--bg-tertiary);
+  outline: none;
+}
+
 } /* end @layer components */
 
 /* ========================================

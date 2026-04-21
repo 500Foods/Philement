@@ -3,23 +3,48 @@
  *
  * Handles the JSON editor for viewing and editing all profile preferences
  * in a single CodeMirror instance.
+ *
+ * Pattern: Matches Lookups Manager JSON tab
+ * - Editor starts read-only
+ * - Double-click to enter edit mode
+ * - Escape / Ctrl+Enter keyboard shortcuts
+ * - Undo/Redo/Fold/Unfold/Prettify toolbar buttons
+ * - Dirty state drives footer Save/Cancel buttons
  */
 
 import { log, Subsystems, Status } from '../../core/log.js';
+import {
+  buildEditorExtensions,
+  createReadOnlyCompartment,
+  setEditorContentNoHistory,
+  setEditorEditable,
+  updateUndoRedoButtons,
+  foldAllInEditor,
+  unfoldAllInEditor,
+  formatSortedJson,
+  compareJsonIgnoringKeyOrder,
+} from '../../core/codemirror-setup.js';
+import { EditorState, EditorView, undo, redo } from '../../core/codemirror.js';
 
 /**
  * CollectionTabHandler class
  * Manages the CodeMirror JSON editor for the Collection tab
  */
 export class CollectionTabHandler {
-  constructor(options) {
+  constructor(options = {}) {
     this.container = options.container;
     this.onDirtyChange = options.onDirtyChange || (() => {});
     this.onSave = options.onSave || (() => {});
+    this.onCancel = options.onCancel || (() => {});
 
     this.editor = null;
     this.readOnlyCompartment = null;
     this._initialData = null;
+    this._isEditing = false;
+
+    // Font settings
+    this.fontSize = 13;
+    this.fontFamily = '"Vanadium Mono", var(--font-mono, monospace)';
   }
 
   /**
@@ -27,18 +52,17 @@ export class CollectionTabHandler {
    * @param {Object} initialData - Initial preferences data
    */
   async init(initialData = {}) {
-    if (!this.container || this.editor) return;
+    if (!this.container) return;
+
+    // If editor already exists, just update content
+    if (this.editor) {
+      await this.setData(initialData);
+      return;
+    }
 
     this._initialData = JSON.parse(JSON.stringify(initialData));
 
     try {
-      const { EditorState, EditorView } = await import('../../core/codemirror.js');
-      const {
-        buildEditorExtensions,
-        createReadOnlyCompartment,
-        formatSortedJson,
-      } = await import('../../core/codemirror-setup.js');
-
       this.readOnlyCompartment = createReadOnlyCompartment();
 
       const jsonStr = formatSortedJson(initialData, 2);
@@ -46,13 +70,19 @@ export class CollectionTabHandler {
       const extensions = buildEditorExtensions({
         language: 'json',
         readOnlyCompartment: this.readOnlyCompartment,
-        readOnly: false,
-        fontSize: 13,
+        readOnly: true, // Start read-only, double-click to edit
+        fontSize: this.fontSize,
+        fontFamily: this.fontFamily,
         onUpdate: (update) => {
           if (update.docChanged) {
             this.onDirtyChange(this.isDirty());
           }
+          if (update.transactions.length > 0) {
+            this._updateUndoRedoButtons();
+          }
         },
+        onEscape: () => this.onCancel(),
+        onSave: () => this.onSave(),
       });
 
       const startState = EditorState.create({ doc: jsonStr, extensions });
@@ -65,11 +95,34 @@ export class CollectionTabHandler {
 
       // Store reference for external access
       this.container._cmView = this.editor;
+      this.container._cmReadOnlyCompartment = this.readOnlyCompartment;
+
+      // Set initial visual state (read-only)
+      setEditorEditable(this.editor, this.readOnlyCompartment, false, this.container);
+
+      // Double-click to enter edit mode
+      this.container.addEventListener('dblclick', () => {
+        if (!this._isEditing) {
+          this.setEditable(true);
+        }
+      });
 
       log(Subsystems.MANAGER, Status.INFO, '[CollectionTab] Editor initialized');
     } catch (error) {
       log(Subsystems.MANAGER, Status.ERROR, '[CollectionTab] Failed to initialize editor:', error);
     }
+  }
+
+  /**
+   * Toggle editor between read-only and editable
+   * @param {boolean} editable - true = editable, false = read-only
+   */
+  setEditable(editable) {
+    if (!this.editor || !this.readOnlyCompartment) return;
+    this._isEditing = editable;
+    setEditorEditable(this.editor, this.readOnlyCompartment, editable, this.container);
+    this._updateUndoRedoButtons();
+    log(Subsystems.MANAGER, Status.DEBUG, `[CollectionTab] Edit mode: ${editable}`);
   }
 
   /**
@@ -80,8 +133,8 @@ export class CollectionTabHandler {
     if (!this.editor || !this._initialData) return false;
     try {
       const currentContent = this.editor.state.doc.toString();
-      const currentData = JSON.parse(currentContent);
-      return JSON.stringify(currentData) !== JSON.stringify(this._initialData);
+      const initialContent = formatSortedJson(this._initialData, 2);
+      return !compareJsonIgnoringKeyOrder(currentContent, initialContent);
     } catch {
       return true; // Invalid JSON is considered dirty
     }
@@ -103,7 +156,16 @@ export class CollectionTabHandler {
   }
 
   /**
-   * Update editor content without marking as dirty
+   * Get current editor content as a string (for editHelper integration)
+   * @returns {string}
+   */
+  getContent() {
+    return this.editor?.state.doc.toString() || '{}';
+  }
+
+  /**
+   * Update editor content without marking as dirty and without adding to undo history.
+   * Also resets edit mode to read-only.
    * @param {Object} data - New data to display
    */
   async setData(data) {
@@ -114,26 +176,31 @@ export class CollectionTabHandler {
 
     this._initialData = JSON.parse(JSON.stringify(data));
 
-    const { formatSortedJson } = await import('../../core/codemirror-setup.js');
     const jsonStr = formatSortedJson(data, 2);
 
-    this.editor.dispatch({
-      changes: {
-        from: 0,
-        to: this.editor.state.doc.length,
-        insert: jsonStr,
-      },
-    });
+    setEditorContentNoHistory(this.editor, jsonStr);
 
+    // Reset to read-only on data load
+    this.setEditable(false);
+
+    this.onDirtyChange(false);
+  }
+
+  /**
+   * Update the editor's data reference without changing content.
+   * Used after a successful save to reset the dirty baseline.
+   * @param {Object} data - The newly saved data
+   */
+  setInitialData(data) {
+    this._initialData = JSON.parse(JSON.stringify(data));
     this.onDirtyChange(false);
   }
 
   /**
    * Handle undo action
    */
-  async undo() {
+  undo() {
     if (!this.editor) return;
-    const { undo } = await import('../../core/codemirror.js');
     undo(this.editor);
     log(Subsystems.MANAGER, Status.DEBUG, '[CollectionTab] Undo');
   }
@@ -141,9 +208,8 @@ export class CollectionTabHandler {
   /**
    * Handle redo action
    */
-  async redo() {
+  redo() {
     if (!this.editor) return;
-    const { redo } = await import('../../core/codemirror.js');
     redo(this.editor);
     log(Subsystems.MANAGER, Status.DEBUG, '[CollectionTab] Redo');
   }
@@ -151,9 +217,8 @@ export class CollectionTabHandler {
   /**
    * Fold all JSON blocks
    */
-  async foldAll() {
+  foldAll() {
     if (!this.editor) return;
-    const { foldAllInEditor } = await import('../../core/codemirror-setup.js');
     foldAllInEditor(this.editor);
     log(Subsystems.MANAGER, Status.DEBUG, '[CollectionTab] Fold all');
   }
@@ -161,9 +226,8 @@ export class CollectionTabHandler {
   /**
    * Unfold all JSON blocks
    */
-  async unfoldAll() {
+  unfoldAll() {
     if (!this.editor) return;
-    const { unfoldAllInEditor } = await import('../../core/codemirror-setup.js');
     unfoldAllInEditor(this.editor);
     log(Subsystems.MANAGER, Status.DEBUG, '[CollectionTab] Unfold all');
   }
@@ -171,10 +235,9 @@ export class CollectionTabHandler {
   /**
    * Prettify/format the JSON content
    */
-  async prettify() {
+  prettify() {
     if (!this.editor) return;
     try {
-      const { formatSortedJson } = await import('../../core/codemirror-setup.js');
       const currentContent = this.editor.state.doc.toString();
       const parsed = JSON.parse(currentContent);
       const formatted = formatSortedJson(parsed, 2);
@@ -196,10 +259,48 @@ export class CollectionTabHandler {
    * Set font size for the editor
    * @param {number} size - Font size in pixels
    */
-  async setFontSize(size) {
-    if (!this.editor) return;
-    const { setEditorFontSize } = await import('../../core/codemirror-setup.js');
-    setEditorFontSize(this.editor, size);
+  setFontSize(size) {
+    if (!this.editor?.dom) return;
+    this.fontSize = size;
+    this.editor.dom.style.fontSize = `${size}px`;
+    this.editor.requestMeasure();
+  }
+
+  /**
+   * Set font family for the editor
+   * @param {string} family - CSS font-family string
+   */
+  setFontFamily(family) {
+    if (!this.editor?.dom) return;
+    this.fontFamily = family;
+    this.editor.dom.style.fontFamily = family;
+    this.editor.requestMeasure();
+  }
+
+  /**
+   * Update undo/redo button state.
+   * Delegates to the shared updateUndoRedoButtons from codemirror-setup.
+   * @param {HTMLElement} undoBtn
+   * @param {HTMLElement} redoBtn
+   */
+  updateUndoRedoButtons(undoBtn, redoBtn) {
+    updateUndoRedoButtons({
+      undoBtn,
+      redoBtn,
+      view: this.editor,
+      isEditing: this._isEditing,
+    });
+  }
+
+  /**
+   * Internal: update undo/redo buttons if they are cached on the container
+   */
+  _updateUndoRedoButtons() {
+    const undoBtn = this.container?.closest('.manager-page')?.querySelector('#btn-undo');
+    const redoBtn = this.container?.closest('.manager-page')?.querySelector('#btn-redo');
+    if (undoBtn && redoBtn) {
+      this.updateUndoRedoButtons(undoBtn, redoBtn);
+    }
   }
 
   /**
@@ -210,6 +311,7 @@ export class CollectionTabHandler {
     this.editor = null;
     this.readOnlyCompartment = null;
     this._initialData = null;
+    this._isEditing = false;
   }
 }
 
