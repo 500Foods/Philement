@@ -63,6 +63,7 @@ const INTERNAL_PAGE_MAP = {
 export class SettingsPageRegistry {
   constructor(options = {}) {
     this.app = options.app || null;
+    this.settingsService = options.settingsService || null;
     this.onDirtyChange = options.onDirtyChange || (() => {});
 
     // Cache of loaded handlers: index -> handler instance
@@ -139,6 +140,7 @@ export class SettingsPageRegistry {
         index: index,
         managerId: null,
         app: this.app,
+        settings: this.settingsService,
         onDirtyChange: this.onDirtyChange,
       });
 
@@ -172,6 +174,7 @@ export class SettingsPageRegistry {
           managerId: index,
           managerName: managerName,
           app: this.app,
+          settings: this.settingsService,
           onDirtyChange: this.onDirtyChange,
         });
         await placeholder.init(container, pageData);
@@ -182,6 +185,7 @@ export class SettingsPageRegistry {
         index: index,
         managerId: index,
         app: this.app,
+        settings: this.settingsService,
         onDirtyChange: this.onDirtyChange,
       });
 
@@ -197,6 +201,7 @@ export class SettingsPageRegistry {
         managerId: index,
         managerName: managerName,
         app: this.app,
+        settings: this.settingsService,
         onDirtyChange: this.onDirtyChange,
       });
       await placeholder.init(container, pageData);
@@ -338,6 +343,7 @@ export function createStaticPageHandler(index, container, pageData) {
     index: index,
     managerId: index < 0 ? null : index,
     formSelector: 'form',
+    settings: this.settingsService,
     onDirtyChange: () => {},
   });
 }
