@@ -248,32 +248,241 @@
               </section>
             </div>
 
-            <!-- Settings Page -9: Formatting > Date Formats -->
+<!-- Settings Page -9: Formatting > Date Formats -->
             <div class="settings-page" data-page-index="-9" id="settings-page--9">
-              <section class="profile-section">
-                <h3 class="section-title"><fa fa-calendar></fa> Date Formats</h3>
-                <form class="preferences-form">
-                  <div class="form-group">
-                    <label class="form-label">Date Format</label>
-                    <select id="pref-date-format" class="form-select" name="dateFormat">
-                      <option value="MM/DD/YYYY">MM/DD/YYYY (US)</option>
-                      <option value="DD/MM/YYYY">DD/MM/YYYY (European)</option>
-                      <option value="YYYY-MM-DD">YYYY-MM-DD (ISO)</option>
-                      <option value="MMM D, YYYY">MMM D, YYYY (Abbreviated)</option>
-                      <option value="D MMM YYYY">D MMM YYYY (European Abbreviated)</option>
-                    </select>
-                    <span class="form-hint">How dates are displayed throughout the application</span>
+              <div class="df-content">
+                <!-- Sample Section -->
+                <section class="profile-section df-sample-section">
+                  <div class="df-sample-header">
+                    <h3 class="section-title"><fa fa-clock></fa> Sample Date & Time</h3>
                   </div>
-                  <div class="form-group">
-                    <label class="form-label">Time Format</label>
-                    <select id="pref-time-format" class="form-select" name="timeFormat">
-                      <option value="12h">12-hour (AM/PM)</option>
-                      <option value="24h">24-hour</option>
-                    </select>
-                    <span class="form-hint">Display time in 12-hour or 24-hour format</span>
+                  <div class="df-sample-row">
+                    <div class="df-sample-col">
+                      <span class="df-sample-label">Example</span>
+                      <input type="text" class="form-input" id="df-sample-input" value="2020-01-01T14:03:02" placeholder="2020-01-01T14:03:02">
+                    </div>
+                    <div class="df-sample-col">
+                      <span class="df-sample-label">Current</span>
+                      <span class="df-sample-current" id="df-current-datetime">-</span>
+                    </div>
                   </div>
-                </form>
-              </section>
+                </section>
+
+                <!-- Dates Section -->
+                <section class="profile-section df-section">
+                  <h3 class="section-title"><fa fa-calendar></fa> Dates</h3>
+                  <div class="df-table-wrapper">
+                    <table class="df-table">
+                      <thead>
+                        <tr>
+                          <th>Name</th>
+                          <th>Format</th>
+                          <th>Example</th>
+                          <th>Current</th>
+                          <th></th>
+                        </tr>
+                      </thead>
+                      <tbody id="df-dates-builtin">
+                        <tr class="df-format-item" data-format-id="dates-short">
+                          <td><span class="df-name">Short Date</span></td>
+                          <td><input type="text" class="form-input df-format-input" name="dates_short" value="yyyy-MM-dd"></td>
+                          <td><span class="df-example">-</span></td>
+                          <td><span class="df-current" data-format="yyyy-MM-dd">-</span></td>
+                          <td><span class="df-locked"><fa fa-lock></fa></span></td>
+                        </tr>
+                        <tr class="df-format-item" data-format-id="dates-long">
+                          <td><span class="df-name">Long Date</span></td>
+                          <td><input type="text" class="form-input df-format-input" name="dates_long" value="MMMM d, y"></td>
+                          <td><span class="df-example">-</span></td>
+                          <td><span class="df-current" data-format="MMMM d, y">-</span></td>
+                          <td><span class="df-locked"><fa fa-lock></fa></span></td>
+                        </tr>
+                      </tbody>
+                      <tbody id="df-dates-custom">
+                      </tbody>
+                      <tfoot>
+                        <tr>
+                          <td colspan="5">
+                            <button type="button" class="btn btn-secondary df-add-btn" data-type="dates">
+                              <fa fa-plus></fa> Add Custom Date Format
+                            </button>
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </section>
+
+                <!-- Times Section -->
+                <section class="profile-section df-section">
+                  <h3 class="section-title"><fa fa-clock></fa> Times</h3>
+                  <div class="df-table-wrapper">
+                    <table class="df-table">
+                      <thead>
+                        <tr>
+                          <th>Name</th>
+                          <th>Format</th>
+                          <th>Example</th>
+                          <th>Current</th>
+                          <th></th>
+                        </tr>
+                      </thead>
+                      <tbody id="df-times-builtin">
+                        <tr class="df-format-item" data-format-id="times-short">
+                          <td><span class="df-name">Short Time</span></td>
+                          <td><input type="text" class="form-input df-format-input" name="times_short" value="h:mm a"></td>
+                          <td><span class="df-example">-</span></td>
+                          <td><span class="df-current" data-format="h:mm a">-</span></td>
+                          <td><span class="df-locked"><fa fa-lock></fa></span></td>
+                        </tr>
+                        <tr class="df-format-item" data-format-id="times-medium">
+                          <td><span class="df-name">Medium Time</span></td>
+                          <td><input type="text" class="form-input df-format-input" name="times_medium" value="h:mm:ss a"></td>
+                          <td><span class="df-example">-</span></td>
+                          <td><span class="df-current" data-format="h:mm:ss a">-</span></td>
+                          <td><span class="df-locked"><fa fa-lock></fa></span></td>
+                        </tr>
+                        <tr class="df-format-item" data-format-id="times-long">
+                          <td><span class="df-name">Long Time</span></td>
+                          <td><input type="text" class="form-input df-format-input" name="times_long" value="h:mm:ss a zzz"></td>
+                          <td><span class="df-example">-</span></td>
+                          <td><span class="df-current" data-format="h:mm:ss a zzz">-</span></td>
+                          <td><span class="df-locked"><fa fa-lock></fa></span></td>
+                        </tr>
+                      </tbody>
+                      <tbody id="df-times-custom">
+                      </tbody>
+                      <tfoot>
+                        <tr>
+                          <td colspan="5">
+                            <button type="button" class="btn btn-secondary df-add-btn" data-type="times">
+                              <fa fa-plus></fa> Add Custom Time Format
+                            </button>
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </section>
+
+                <!-- DateTime Section -->
+                <section class="profile-section df-section">
+                  <h3 class="section-title"><fa fa-calendar-check></fa> DateTime</h3>
+                  <div class="df-table-wrapper">
+                    <table class="df-table">
+                      <thead>
+                        <tr>
+                          <th>Name</th>
+                          <th>Format</th>
+                          <th>Example</th>
+                          <th>Current</th>
+                          <th></th>
+                        </tr>
+                      </thead>
+                      <tbody id="df-datetime-builtin">
+                        <tr class="df-format-item" data-format-id="datetime-short">
+                          <td><span class="df-name">Short DateTime</span></td>
+                          <td><input type="text" class="form-input df-format-input" name="datetime_short" value="yyyy-MM-dd h:mm a"></td>
+                          <td><span class="df-example">-</span></td>
+                          <td><span class="df-current" data-format="yyyy-MM-dd h:mm a">-</span></td>
+                          <td><span class="df-locked"><fa fa-lock></fa></span></td>
+                        </tr>
+                        <tr class="df-format-item" data-format-id="datetime-long">
+                          <td><span class="df-name">Long DateTime</span></td>
+                          <td><input type="text" class="form-input df-format-input" name="datetime_long" value="MMMM d, y 'at' h:mm:ss a"></td>
+                          <td><span class="df-example">-</span></td>
+                          <td><span class="df-current" data-format="MMMM d, y 'at' h:mm:ss a">-</span></td>
+                          <td><span class="df-locked"><fa fa-lock></fa></span></td>
+                        </tr>
+                      </tbody>
+                      <tbody id="df-datetime-custom">
+                      </tbody>
+                      <tfoot>
+                        <tr>
+                          <td colspan="5">
+                            <button type="button" class="btn btn-secondary df-add-btn" data-type="datetime">
+                              <fa fa-plus></fa> Add Custom DateTime Format
+                            </button>
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </section>
+
+                <!-- Token Reference -->
+                <section class="profile-section df-section">
+                  <h3 class="section-title"><fa fa-brackets-curly></fa> Luxon Format Tokens</h3>
+                  <div class="df-token-table-wrapper">
+                    <table class="df-token-ref-table">
+                      <thead>
+                        <tr>
+                          <th>Token</th>
+                          <th>Output</th>
+                          <th>Description</th>
+                          <th>Token</th>
+                          <th>Output</th>
+                          <th>Description</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td><code>y</code></td><td>2020</td><td>Year</td>
+                          <td><code>M</code></td><td>1</td><td>Month number</td>
+                        </tr>
+                        <tr>
+                          <td><code>yy</code></td><td>20</td><td>2-digit year</td>
+                          <td><code>MM</code></td><td>01</td><td>Padded month</td>
+                        </tr>
+                        <tr>
+                          <td><code>yyyy</code></td><td>2020</td><td>4-digit year</td>
+                          <td><code>MMM</code></td><td>Jan</td><td>Abbreviated month</td>
+                        </tr>
+                        <tr>
+                          <td><code>yyyyy</code></td><td>02020</td><td>5-digit year</td>
+                          <td><code>MMMM</code></td><td>January</td><td>Full month</td>
+                        </tr>
+                        <tr>
+                          <td><code>d</code></td><td>1</td><td>Day of month</td>
+                          <td><code>EEE</code></td><td>Wed</td><td>Abbreviated weekday</td>
+                        </tr>
+                        <tr>
+                          <td><code>dd</code></td><td>01</td><td>Padded day</td>
+                          <td><code>EEEE</code></td><td>Wednesday</td><td>Full weekday</td>
+                        </tr>
+                        <tr>
+                          <td><code>H</code></td><td>14</td><td>24-hour (0-23)</td>
+                          <td><code>m</code></td><td>3</td><td>Minutes</td>
+                        </tr>
+                        <tr>
+                          <td><code>HH</code></td><td>14</td><td>Padded 24-hour</td>
+                          <td><code>mm</code></td><td>03</td><td>Padded minutes</td>
+                        </tr>
+                        <tr>
+                          <td><code>h</code></td><td>2</td><td>12-hour (1-12)</td>
+                          <td><code>s</code></td><td>2</td><td>Seconds</td>
+                        </tr>
+                        <tr>
+                          <td><code>hh</code></td><td>02</td><td>Padded 12-hour</td>
+                          <td><code>ss</code></td><td>02</td><td>Padded seconds</td>
+                        </tr>
+                        <tr>
+                          <td><code>a</code></td><td>PM</td><td>AM/PM</td>
+                          <td><code>Z</code></td><td>+0000</td><td>Numeric offset</td>
+                        </tr>
+                        <tr>
+                          <td><code>ZZ</code></td><td>+00:00</td><td>Offset with colon</td>
+                          <td><code>z</code></td><td>UTC</td><td>Timezone name</td>
+                        </tr>
+                        <tr>
+                          <td><code>'text'</code></td><td>text</td><td>Literal text</td>
+                          <td><code>[text]</code></td><td>text</td><td>Escaped literal</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+              </div>
             </div>
 
             <!-- Settings Page -10: Formatting > Number Formats -->
