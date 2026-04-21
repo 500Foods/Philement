@@ -17,7 +17,8 @@ import { processIcons } from '../../core/icons.js';
  * @param {boolean} options.alwaysEditable - Whether table is always editable
  * @returns {string} HTML string
  */
-export function getNavigatorHTML({ cssPrefix, filtersVisible, readonly, alwaysEditable }) {
+export function getNavigatorHTML({ cssPrefix, filtersVisible, readonly, alwaysEditable, localSearch }) {
+  const searchPlaceholder = localSearch ? 'Search Local...' : 'Search Server...';
   return `
     <div class="lithium-nav-wrapper">
       <div class="lithium-nav-block lithium-nav-block-control">
@@ -86,7 +87,7 @@ export function getNavigatorHTML({ cssPrefix, filtersVisible, readonly, alwaysEd
         <button type="button" class="lithium-nav-btn" id="${cssPrefix}-search-btn" title="Search">
           <fa fa-magnifying-glass></fa>
         </button>
-        <input type="text" class="lithium-nav-search-input" id="${cssPrefix}-search-input" placeholder="Search...">
+        <input type="text" class="lithium-nav-search-input" id="${cssPrefix}-search-input" placeholder="${searchPlaceholder}">
         <button type="button" class="lithium-nav-btn" id="${cssPrefix}-search-clear-btn" title="Clear Search">
           <fa fa-xmark></fa>
         </button>
@@ -107,6 +108,7 @@ export function buildNavigator(table) {
     filtersVisible: table.filtersVisible,
     readonly: table.readonly,
     alwaysEditable: table.alwaysEditable,
+    localSearch: table.localSearch,
   });
   processIcons(table.navigatorContainer);
 
@@ -179,7 +181,11 @@ function wireSearchButtons(table) {
   const clearBtn = nav.querySelector(`#${table.cssPrefix}-search-clear-btn`);
 
   const performSearch = () => {
-    table.loadData?.(searchInput.value);
+    if (table.localSearch) {
+      performLocalSearch(table, searchInput.value);
+    } else {
+      table.loadData?.(searchInput.value);
+    }
   };
 
   searchBtn?.addEventListener('click', performSearch);
@@ -189,8 +195,55 @@ function wireSearchButtons(table) {
 
   clearBtn?.addEventListener('click', () => {
     searchInput.value = '';
-    table.loadData?.();
+    if (table.localSearch) {
+      performLocalSearch(table, '');
+    } else {
+      table.loadData?.();
+    }
   });
+}
+
+/**
+ * Perform a client-side local search on the table's current data.
+ * Filters rows by searching across specified fields (or all visible fields if none specified).
+ * @param {Object} table - LithiumTable instance
+ * @param {string} searchTerm - The search term
+ */
+function performLocalSearch(table, searchTerm) {
+  if (!table.table) return;
+
+  table._localSearchTerm = searchTerm;
+
+  const term = searchTerm.trim().toLowerCase();
+
+  if (!term) {
+    // Clear filter — show all rows
+    table.table.clearFilter(true);
+    table.updateMoveButtonState?.();
+    return;
+  }
+
+  // Determine which fields to search
+  let fieldsToSearch = table.localSearchFields;
+  if (!fieldsToSearch || !Array.isArray(fieldsToSearch) || fieldsToSearch.length === 0) {
+    // Default: search all visible columns that have a field defined
+    fieldsToSearch = table.table.getColumns()
+      .map(col => col.getDefinition().field)
+      .filter(field => field && field !== '_selector');
+  }
+
+  // Apply a custom filter function
+  table.table.setFilter((rowData) => {
+    for (const field of fieldsToSearch) {
+      const value = rowData[field];
+      if (value != null && String(value).toLowerCase().includes(term)) {
+        return true;
+      }
+    }
+    return false;
+  });
+
+  table.updateMoveButtonState?.();
 }
 
 /**
