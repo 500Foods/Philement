@@ -15,7 +15,6 @@
  */
 
 @layer vendor-fixes {
-
   /* ═════════════════════════════════════════════════════════════════════════════
      OVERLAYSCROLLLARS BASE THEME - Lithium Dark
      ═════════════════════════════════════════════════════════════════════════════
@@ -36,26 +35,28 @@
   */
 
   /* Custom theme class applied to all OverlayScrollbars instances */
-  .os-theme-lithium,
-  [data-overlayscrollbars-viewport] {
-    /* Size - track is 8px, thumb is 6px (1px padding creates border effect) */
-    --os-size: 8px;
-    --os-thumb-size: 6px;
+  .os-theme-lithium {
+    /* Size - wider probe bars for Tabulator integration tuning */
+    --os-size: 9px;
+    --os-handle-perpendicular-size: 8px;
+    --os-handle-perpendicular-size-hover: 8px;
+    --os-handle-perpendicular-size-active: 8px;
 
     /* Padding - creates 1px "border" between track and thumb */
-    --os-padding: 1px;
+    --os-padding-axis: 1px;
+    --os-padding-perpendicular: 1px;
 
     /* Track styling */
-    --os-track-bg: var(--scrollbar-track, var(--bg-secondary));
-    --os-track-bg-hover: var(--scrollbar-track, var(--bg-secondary));
-    --os-track-bg-active: var(--scrollbar-track, var(--bg-secondary));
-    --os-track-border-radius: 16px;
+    --os-track-bg: #121212;
+    --os-track-bg-hover: #121212;
+    --os-track-bg-active: #121212;
+    --os-track-border-radius: 0;
 
     /* Thumb styling - using accent colors */
-    --os-thumb-bg: var(--accent-alt-primary, #3C4BA0);
-    --os-thumb-bg-hover: var(--accent-primary, #5C6BC0);
-    --os-thumb-bg-active: var(--accent-primary, #5C6BC0);
-    --os-thumb-border-radius: 16px;
+    --os-handle-bg: var(--accent-alt-primary, #3C4BA0);
+    --os-handle-bg-hover: var(--accent-primary, #5C6BC0);
+    --os-handle-bg-active: var(--accent-primary, #5C6BC0);
+    --os-handle-border-radius: 12px;
 
     /* Button (arrow) styling - disabled for minimal look */
     --os-button-bg: transparent;
@@ -71,85 +72,186 @@
      TRACK STYLES
      ═════════════════════════════════════════════════════════════════════════════ */
 
+  .os-theme-lithium.os-scrollbar,
   .os-theme-lithium .os-scrollbar-track,
-  [data-overlayscrollbars-viewport] ~ .os-scrollbar .os-scrollbar-track {
+  [data-overlayscrollbars-viewport] ~ .os-theme-lithium.os-scrollbar .os-scrollbar-track {
     background: var(--os-track-bg) !important;
     border-radius: var(--os-track-border-radius) !important;
     transition: background-color 150ms ease;
-    opacity: 1 !important;
-    visibility: visible !important;
-    display: block !important;
-    /* Track is 8px wide */
-    width: var(--os-size) !important;
-    height: var(--os-size) !important;
+    cursor: default;
+    position: relative;
   }
 
   .os-theme-lithium .os-scrollbar-track:hover,
-  [data-overlayscrollbars-viewport] ~ .os-scrollbar .os-scrollbar-track:hover {
+  [data-overlayscrollbars-viewport] ~ .os-theme-lithium.os-scrollbar .os-scrollbar-track:hover {
     background: var(--os-track-bg-hover) !important;
   }
 
   .os-theme-lithium .os-scrollbar-track:active,
-  [data-overlayscrollbars-viewport] ~ .os-scrollbar .os-scrollbar-track:active {
+  [data-overlayscrollbars-viewport] ~ .os-theme-lithium.os-scrollbar .os-scrollbar-track:active {
     background: var(--os-track-bg-active) !important;
   }
-
+   
+  .os-scrollbar-horizontal .os-scrollbar-track::before {
+	/* top: calc(var(--os-padding-perpendicular) * -1); */
+	/* bottom: calc(var(--os-padding-perpendicular) * -1); */
+	background: #121212;
+	height: 10px;
+	right: -10px;
+	border: 1px solid var(--bg-row-border);
+	width: 10px;
+	left: unset;
+	margin-top: 1px;
+}
   /* ═════════════════════════════════════════════════════════════════════════════
      THUMB STYLES - 6px thumb with 1px padding creating border effect
      ═════════════════════════════════════════════════════════════════════════════ */
 
   .os-theme-lithium .os-scrollbar-handle,
-  [data-overlayscrollbars-viewport] ~ .os-scrollbar .os-scrollbar-handle {
-    background: var(--os-thumb-bg) !important;
-    border-radius: var(--os-thumb-border-radius) !important;
+  [data-overlayscrollbars-viewport] ~ .os-theme-lithium.os-scrollbar .os-scrollbar-handle {
+    background: var(--os-handle-bg) !important;
+    border-radius: var(--os-handle-border-radius) !important;
     transition: background-color 150ms ease, transform 150ms ease;
-    /* 1px padding creates the "border" between track and thumb */
-    border: var(--os-padding) solid transparent !important;
+    /* 1px transparent border creates the inset thumb effect */
+    border: 1px solid transparent !important;
     background-clip: content-box !important;
-    opacity: 1 !important;
-    visibility: visible !important;
-    display: block !important;
-    /* Thumb is centered in the 8px track (6px visible) */
-    min-height: var(--os-thumb-size) !important;
-    min-width: var(--os-thumb-size) !important;
+    min-height: 6px !important;
+    min-width: 6px !important;
+    box-sizing: border-box !important;
+    position: absolute;
+  }
+
+  .os-scrollbar-vertical .os-theme-lithium .os-scrollbar-handle {
+    right: 1px;
+    min-width: 10px;
+  }
+
+  .os-scrollbar-horizontal .os-theme-lithium .os-scrollbar-handle {
+    bottom: 1px;
+    min-height: 10px;
   }
 
   .os-theme-lithium .os-scrollbar-handle:hover,
-  [data-overlayscrollbars-viewport] ~ .os-scrollbar .os-scrollbar-handle:hover {
-    background: var(--os-thumb-bg-hover) !important;
+  [data-overlayscrollbars-viewport] ~ .os-theme-lithium.os-scrollbar .os-scrollbar-handle:hover {
+    background: var(--os-handle-bg-hover) !important;
   }
 
   .os-theme-lithium .os-scrollbar-handle:active,
-  [data-overlayscrollbars-viewport] ~ .os-scrollbar .os-scrollbar-handle:active {
-    background: var(--os-thumb-bg-active) !important;
+  [data-overlayscrollbars-viewport] ~ .os-theme-lithium.os-scrollbar .os-scrollbar-handle:active {
+    background: var(--os-handle-bg-active) !important;
+    cursor: grabbing;
   }
 
   /* ═════════════════════════════════════════════════════════════════════════════
      SCROLLBAR CONTAINER - Classic mode (reserves space)
      ═════════════════════════════════════════════════════════════════════════════ */
 
-  /* Classic scrollbars take up space in the layout */
-  .os-theme-lithium.os-scrollbar,
-  .os-scrollbar {
-    opacity: 1 !important;
-    visibility: visible !important;
-    display: block !important;
-    z-index: auto !important;
-    position: relative !important;
-  }
-
-  /* When paddingAbsolute is true, the host reserves space */
-  .os-host.os-theme-lithium {
-    /* Let OverlayScrollbars manage the padding for scrollbar space */
-  }
-
   /* ═════════════════════════════════════════════════════════════════════════════
      BUTTON STYLES - Disabled for minimal look
      ═════════════════════════════════════════════════════════════════════════════ */
 
   .os-theme-lithium .os-scrollbar-button,
-  [data-overlayscrollbars-viewport] ~ .os-scrollbar .os-scrollbar-button {
-    display: none !important;
+  [data-overlayscrollbars-viewport] ~ .os-theme-lithium.os-scrollbar .os-scrollbar-button {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    background: var(--os-track-bg) !important;
+    color: var(--accent-alt-primary, #3C4BA0) !important;
+    border: none !important;
+    z-index: 3 !important;
+  }
+
+  .os-theme-lithium .os-scrollbar-button:hover,
+  [data-overlayscrollbars-viewport] ~ .os-theme-lithium.os-scrollbar .os-scrollbar-button:hover {
+    background: var(--os-track-bg-hover) !important;
+    color: var(--accent-primary, #5C6BC0) !important;
+  }
+
+  .os-theme-lithium .os-scrollbar-button:active,
+  [data-overlayscrollbars-viewport] ~ .os-theme-lithium.os-scrollbar .os-scrollbar-button:active {
+    background: var(--os-track-bg-active) !important;
+    color: var(--accent-primary, #5C6BC0) !important;
+  }
+
+  /* Arrow button styling */
+  .os-theme-lithium .os-scrollbar-button::before {
+    content: '';
+    display: block;
+    width: 0;
+    height: 0;
+    border-style: solid;
+  }
+
+  .os-scrollbar-button-up::before {
+    border-width: 0 4px 4px;
+    border-color: transparent transparent var(--accent-alt-primary, #3C4BA0) transparent;
+  }
+
+  .os-scrollbar-button-down::before {
+    border-width: 4px 4px 0;
+    border-color: var(--accent-alt-primary, #3C4BA0) transparent transparent transparent;
+  }
+
+  .os-scrollbar-button-left::before {
+    border-width: 4px 0 4px 4px;
+    border-color: transparent transparent transparent var(--accent-alt-primary, #3C4BA0);
+  }
+
+  .os-scrollbar-button-right::before {
+    border-width: 4px 4px 4px 0;
+    border-color: transparent var(--accent-alt-primary, #3C4BA0) transparent transparent;
+  }
+
+  .lithium-osb-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    padding: 0;
+    border: 0;
+    background: #121212;
+    color: var(--accent-alt-primary, #3C4BA0);
+    cursor: pointer;
+    z-index: 3;
+    pointer-events: auto;
+  }
+
+  .lithium-osb-arrow > span {
+    display: block;
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+  }
+
+  .lithium-osb-arrow-up > span {
+    border-bottom: 6px solid currentColor;
+  }
+
+  .lithium-osb-arrow-down > span {
+    border-top: 6px solid currentColor;
+  }
+
+  .lithium-osb-arrow-left > span {
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+    border-right: 6px solid currentColor;
+    border-left: 0;
+  }
+
+  .lithium-osb-arrow-right > span {
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+    border-left: 6px solid currentColor;
+    border-right: 0;
+  }
+
+  .lithium-osb-arrow:hover {
+    color: var(--accent-primary, #5C6BC0);
+  }
+
+  .lithium-osb-arrow:active {
+    filter: brightness(1.1);
   }
 
   /* ═════════════════════════════════════════════════════════════════════════════
@@ -163,33 +265,23 @@
   .os-theme-lithium .os-scrollbar-corner,
   [data-overlayscrollbars-viewport] ~ .os-scrollbar-corner {
     background: var(--os-track-bg) !important;
-    border-radius: var(--border-radius-sm, 4px) !important;
-    opacity: 1 !important;
-    visibility: visible !important;
+    border-radius: 0 !important;
   }
 
   /* ═════════════════════════════════════════════════════════════════════════════
      VISIBILITY STATES
      ═════════════════════════════════════════════════════════════════════════════ */
 
-  /* Visible state (default) - shown when content overflows */
-  .os-theme-lithium.os-scrollbar-visible,
-  .os-theme-lithium.os-scrollbar {
+  .os-theme-lithium.os-scrollbar-visible {
     opacity: 1;
     visibility: visible;
   }
 
-  /* Hidden state - when content fits (no overflow) */
-  .os-theme-lithium.os-scrollbar-hidden {
+  .os-theme-lithium.os-scrollbar-auto-hide.os-scrollbar-auto-hide-hidden,
+  .os-theme-lithium.os-scrollbar-unusable {
     opacity: 0;
     visibility: hidden;
-    display: none !important;
-  }
-
-  /* Auto-hide behavior - not used, we want always visible when overflow exists */
-  .os-theme-lithium.os-scrollbar-auto-hide {
-    opacity: 1;
-    visibility: visible;
+    pointer-events: none;
   }
 
   /* ═════════════════════════════════════════════════════════════════════════════
@@ -197,25 +289,183 @@
      ═════════════════════════════════════════════════════════════════════════════ */
 
   /* Tabulator tables - use consistent 8px/6px sizing */
-  .lithium-table-container .os-theme-lithium {
-    --os-size: 8px;
-    --os-thumb-size: 6px;
-    --os-padding: 1px;
+  .lithium-table-container .os-theme-lithium.os-scrollbar {
+    --os-size: 9px;
+    --os-handle-perpendicular-size: 8px;
+    --os-handle-perpendicular-size-hover: 8px;
+    --os-handle-perpendicular-size-active: 8px;
+    --os-padding-axis: 2px;
+    --os-padding-perpendicular: 2px;
+    --os-track-bg: #121212;
+    --os-track-bg-hover: #121212;
+    --os-track-bg-active: #121212;
+    --os-track-border-radius: 0;
+  }
+
+  .lithium-table-container.lithium-table-osb-enabled .tabulator-tableholder[data-overlayscrollbars-viewport] {
+    overflow-x: var(--os-viewport-overflow-x) !important;
+    overflow-y: var(--os-viewport-overflow-y) !important;
+    box-sizing: border-box;
+  }
+
+  .lithium-table-container.lithium-table-osb-enabled .tabulator {
+    overflow: hidden;
+    position: relative;
+  }
+
+  .lithium-table-container.lithium-table-osb-enabled .tabulator-tableholder {
+    position: relative;
+  }
+
+  .lithium-table-container.lithium-table-osb-enabled .tabulator-tableholder[data-overlayscrollbars] {
+    padding-right: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  .lithium-table-container.lithium-table-osb-enabled .tabulator:has(> .lithium-table-osb-slot > .os-scrollbar-vertical:not(.os-scrollbar-unusable, .os-scrollbar-auto-hide-hidden)) .tabulator-tableholder[data-overlayscrollbars] {
+    padding-right: var(--os-size) !important;
+  }
+
+  .lithium-table-container.lithium7-table-osb-enabled .tabulator:has(> .lithium-table-osb-slot > .os-scrollbar-horizontal:not(.os-scrollbar-unusable, .os-scrollbar-auto-hide-hidden)) .tabulator-tableholder[data-overlayscrollbars] {
+    padding-bottom: var(--os-size) !important;
+  }
+
+  .lithium-table-container.lithium-table-osb-enabled .lithium-table-osb-slot {
+    position: absolute;
+    z-index: 30;
+    pointer-events: none;
+  }
+
+  .lithium-table-container.lithium-table-osb-enabled .lithium-table-osb-slot > .os-scrollbar {
+    position: absolute !important;
+    z-index: 30 !important;
+  }
+
+  .lithium-table-container.lithium-table-osb-enabled .lithium-table-osb-slot > .os-scrollbar-horizontal {
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    height: var(--os-size) !important;
+    cursor: ew-resize;
+    border-top: 1px solid var(--bg-row-border);
+  }
+
+  .lithium-table-container.lithium-table-osb-enabled .lithium-table-osb-slot > .os-scrollbar-vertical {
+    top: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    cursor: ns-resize;
+  	width: 9px !important;
+  	border-left: 1px solid var(--bg-row-border);
+  }
+
+  .lithium-table-container.lithium-table-osb-enabled .lithium-table-osb-slot > .os-scrollbar-corner {
+    position: absolute !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: var(--os-size) !important;
+    height: var(--os-size) !important;
+    background: #121212 !important;
+    border-radius: 0 !important;
+    z-index: 30 !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: none;
+  }
+
+  .lithium-table-container.lithium-table-osb-enabled .lithium-table-osb-slot > .os-scrollbar-corner.os-scrollbar-cornerless {
+    opacity: 0 !important;
+    visibility: hidden !important;
+  }
+
+  .lithium-table-container.lithium-table-osb-enabled .lithium-table-osb-slot > .os-scrollbar-horizontal.os-scrollbar-unusable,
+  .lithium-table-container.lithium-table-osb-enabled .lithium-table-osb-slot > .os-scrollbar-vertical.os-scrollbar-unusable,
+  .lithium-table-container.lithium-table-osb-enabled .lithium-table-osb-slot > .os-scrollbar-horizontal.os-scrollbar-auto-hide-hidden,
+  .lithium-table-container.lithium-table-osb-enabled .lithium-table-osb-slot > .os-scrollbar-vertical.os-scrollbar-auto-hide-hidden {
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+  }
+
+  .lithium-table-container.lithium-table-osb-enabled .lithium-table-osb-slot > .os-scrollbar-horizontal.os-scrollbar-cornerless:not(.os-scrollbar-unusable, .os-scrollbar-auto-hide-hidden) {
+    right: 0 !important;
+  }
+
+  .lithium-table-container.lithium-table-osb-enabled .lithium-table-osb-slot > .os-scrollbar-horizontal:not(.os-scrollbar-cornerless, .os-scrollbar-unusable, .os-scrollbar-auto-hide-hidden) {
+    right: var(--os-size) !important;
+  }
+
+  .lithium-table-container.lithium-table-osb-enabled .lithium-table-osb-slot > .os-scrollbar-vertical.os-scrollbar-cornerless:not(.os-scrollbar-unusable, .os-scrollbar-auto-hide-hidden) {
+    bottom: 0 !important;
+  }
+
+  .lithium-table-container.lithium-table-osb-enabled .lithium-table-osb-slot > .os-scrollbar-vertical:not(.os-scrollbar-cornerless, .os-scrollbar-unusable, .os-scrollbar-auto-hide-hidden) {
+    bottom: var(--os-size) !important;
+  }
+
+  .lithium-table-container.lithium-table-osb-enabled .lithium-table-osb-slot > .os-scrollbar-horizontal > .os-scrollbar-track {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 100% !important;
+    cursor: ew-resize;
+  }
+
+  .lithium-table-container.lithium-table-osb-enabled .lithium-table-osb-slot > .os-scrollbar-vertical > .os-scrollbar-track {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 100% !important;
+    cursor: ns-resize;
+  }
+
+  .lithium-table-container.lithium-table-osb-enabled .lithium-table-osb-slot > .os-scrollbar-horizontal .os-scrollbar-handle:active {
+    cursor: ew-resize;
+  }
+
+  .lithium-table-container.lithium-table-osb-enabled .lithium-table-osb-slot > .os-scrollbar-vertical .os-scrollbar-handle:active {
+    cursor: ns-resize;
+  }
+
+  .lithium-table-container.lithium-table-osb-enabled .lithium-table-osb-slot > .os-scrollbar-horizontal.os-scrollbar-unusable,
+  .lithium-table-container.lithium-table-osb-enabled .lithium-table-osb-slot > .os-scrollbar-vertical.os-scrollbar-unusable {
+    cursor: default;
+  }
+
+  .lithium-table-container.lithium-table-osb-enabled .tabulator-tableholder[data-overlayscrollbars-viewport~="scrollbarHidden"] {
+    scrollbar-width: none !important;
+  }
+
+  .lithium-table-container.lithium-table-osb-enabled .tabulator-tableholder[data-overlayscrollbars-viewport~="scrollbarHidden"]::-webkit-scrollbar,
+  .lithium-table-container.lithium-table-osb-enabled .tabulator-tableholder[data-overlayscrollbars-viewport~="scrollbarHidden"]::-webkit-scrollbar-corner {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
   }
 
   /* CodeMirror editors - match editor aesthetic */
-  .cm-editor .os-theme-lithium {
+  .cm-editor .os-theme-lithium.os-scrollbar {
     --os-size: 8px;
-    --os-thumb-size: 6px;
-    --os-padding: 1px;
+    --os-handle-perpendicular-size: 6px;
+    --os-handle-perpendicular-size-hover: 6px;
+    --os-handle-perpendicular-size-active: 6px;
+    --os-padding-axis: 1px;
+    --os-padding-perpendicular: 1px;
     --os-track-bg: var(--edit-gutter-bg, var(--bg-tertiary));
   }
 
   /* SunEditor - match editor aesthetic */
-  .sun-editor .os-theme-lithium {
+  .sun-editor .os-theme-lithium.os-scrollbar {
     --os-size: 8px;
-    --os-thumb-size: 6px;
-    --os-padding: 1px;
+    --os-handle-perpendicular-size: 6px;
+    --os-handle-perpendicular-size-hover: 6px;
+    --os-handle-perpendicular-size-active: 6px;
+    --os-padding-axis: 1px;
+    --os-padding-perpendicular: 1px;
   }
 
   /* ═════════════════════════════════════════════════════════════════════════════
@@ -227,8 +477,11 @@
   .lithium-popup-scrollable.os-host,
   [data-overlayscrollbars~="popup"] {
     --os-size: 8px;
-    --os-thumb-size: 6px;
-    --os-padding: 1px;
+    --os-handle-perpendicular-size: 6px;
+    --os-handle-perpendicular-size-hover: 6px;
+    --os-handle-perpendicular-size-active: 6px;
+    --os-padding-axis: 1px;
+    --os-padding-perpendicular: 1px;
     /* Ensure popups scroll independently */
     overscroll-behavior: contain;
   }
@@ -246,7 +499,8 @@
 
   .os-theme-lithium-minimal {
     --os-size: 8px;
-    --os-padding: 1px;
+    --os-padding-axis: 1px;
+    --os-padding-perpendicular: 1px;
     --os-track-bg: transparent;
     --os-track-bg-hover: var(--bg-tertiary);
   }

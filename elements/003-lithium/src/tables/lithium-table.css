@@ -490,6 +490,7 @@ div.lithium-table-container > div:nth-child(1) > div:nth-child(1) > div:nth-chil
   min-height: 0;
   overflow-y: auto;
   overflow-x: auto;
+  scrollbar-gutter: stable;
   outline: none;
   height: calc(100% - 40px) !important;
   max-height: calc(100% - 40px) !important;  

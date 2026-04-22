@@ -188,6 +188,7 @@
 
 // Core styles - imported first to establish CSS cascade layers
 import './styles/base.css';
+import './styles/vendor-overlayscrollbars.css';
 import './styles/vendor-fixes.css';
 import './styles/scrollbars.css';
 import './styles/layout.css';

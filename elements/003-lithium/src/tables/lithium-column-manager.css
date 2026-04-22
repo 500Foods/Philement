@@ -366,6 +366,7 @@
 /* Tabulator Table Holder */
 .col-manager-table-container .lithium-table-container .tabulator .tabulator-tableholder {
   background: #0a1628;
+  scrollbar-gutter: stable;
 }
 
 .col-manager-table-container .lithium-table-container .tabulator .tabulator-tableholder .tabulator-table {
