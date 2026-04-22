@@ -15,6 +15,8 @@ import { processIcons } from '../../core/icons.js';
 export function wireTableEvents(table) {
   if (!table.table) return;
 
+  const refreshScrollbars = () => table._updateTableScrollbars?.();
+
   table.table.on('rowClick', (e, row) => {
     if (table.isCalcRow(row)) return;
 
@@ -148,17 +150,21 @@ export function wireTableEvents(table) {
   table.table.on('columnVisibilityChanged', () => {
     table.updateVisibleColumnClasses();
     table.initColumnHeaderTooltips();
+    refreshScrollbars();
   });
 
   table.table.on('columnMoved', () => {
     table.updateVisibleColumnClasses();
     table.initColumnHeaderTooltips();
+    refreshScrollbars();
   });
 
   table.table.on('tableBuilt', () => {
+    refreshScrollbars();
     setTimeout(() => {
       table.updateVisibleColumnClasses();
       table.initColumnHeaderTooltips();
+      refreshScrollbars();
     }, 100);
   });
 
@@ -169,19 +175,27 @@ export function wireTableEvents(table) {
   });
 
   table.table.on('dataLoaded', () => {
+    refreshScrollbars();
     setTimeout(() => {
       table.updateVisibleColumnClasses();
       table.initColumnHeaderTooltips();
       processIcons(table.container);
+      refreshScrollbars();
     }, 100);
   });
 
   // Group toggle icon sync
   table.table.on('groupVisibilityChanged', () => table.updateGroupIcons());
   table.table.on('dataLoaded', () => table.updateGroupIcons());
-  table.table.on('renderComplete', () => table.updateGroupIcons());
-  table.table.on('tableRedrawn', () => table.updateGroupIcons());
-  table.table.on('renderComplete', () => processIcons(table.container));
+  table.table.on('renderComplete', () => {
+    table.updateGroupIcons();
+    processIcons(table.container);
+    refreshScrollbars();
+  });
+  table.table.on('tableRedrawn', () => {
+    table.updateGroupIcons();
+    refreshScrollbars();
+  });
 }
 
 export default { wireTableEvents };

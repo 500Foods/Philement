@@ -1,88 +1,151 @@
 # OverlayScrollbars Integration (Lithium OSB)
 
-This document describes the scrollbar implementation in Lithium:
+This document records the current OverlayScrollbars state in Lithium, what is working, what was attempted for Tabulator, what failed, and what must be true before the next attempt.
 
-- **Tabulator tables**: Native CSS scrollbars with consistent cross-browser styling
-- **CodeMirror/SunEditor**: OverlayScrollbars for enhanced control
-- **Popups/Dropdowns**: OverlayScrollbars with scroll containment
+Current status:
 
-**Important:** OverlayScrollbars is intentionally NOT used for Tabulator tables because it conflicts with Tabulator's virtual scrolling mechanism.
+- **Tabulator / LithiumTable**: OverlayScrollbars enabled by default for all tables
+- **CodeMirror**: OverlayScrollbars active
+- **SunEditor**: OverlayScrollbars active
+- **Popups / dropdowns**: OverlayScrollbars active
+- **Tabulator + OverlayScrollbars**: rolled out to all LithiumTable instances
 
----
+Important:
 
-## Overview
-
-Lithium uses [OverlayScrollbars](https://kingsora.github.io/OverlayScrollbars/) to provide consistent scrollbar styling across all major browsers. Unlike native CSS scrollbars that have limited Firefox support, OverlayScrollbars provides:
-
-- **Rounded scrollbar track and thumb** with consistent appearance
-- **Inset thumb effect** via padding/border trick
-- **Visible arrow buttons** at track ends (top/bottom for vertical, left/right for horizontal)
-- **Cross-browser consistency** including Firefox
-- **Preserved native scroll behavior** for performance
-- **Theme-aware styling** via CSS variables
+- Tabulator + OverlayScrollbars is **not considered impossible**.
+- It is **not yet production-ready** in Lithium.
+- The current probe now produces generated OSB chrome, themed custom properties, and preserved scrolling on the test table.
+- The current work should be treated as a validated narrow probe, not as proof that all Tabulator tables are safe to convert.
 
 ---
 
-## Why OverlayScrollbars?
+## Current Baseline
 
-### The Problem with Pure CSS
+As of April 21, 2026:
 
-Pure CSS scrollbars using `::-webkit-scrollbar` work well in Chrome/Safari/Edge but Firefox only supports `scrollbar-width` and `scrollbar-color` with minimal styling control:
+- All LithiumTable instances use OverlayScrollbars by default
+- Individual tables can opt out with `useOverlayScrollbars: false`
+- The Date Formats token table was the original probe that validated the implementation
+- OverlayScrollbars base CSS is loaded through a dedicated vendor layer
+- OverlayScrollbars theme CSS remains in Lithium's `vendor-fixes` layer
+- `LithiumTable` has `useOverlayScrollbars` option (defaults to true)
 
-- No rounded corners on the track in Firefox
-- No inset/padding effect on the thumb
-- No visible arrow buttons
-- Different behavior between browsers
-
-### Why Not SimpleBar?
-
-SimpleBar was considered but OverlayScrollbars was chosen because:
-
-- **Better styling control** via CSS custom properties and class-based overrides
-- **Active maintenance** and modern API
-- **Better virtualization compatibility** with Tabulator-style virtual scrolling
-- **Smaller footprint** for the features we need
-- **Explicit Firefox support** for all visual features
+This is the current default behavior after probe validation.
 
 ---
 
-## Architecture
-
-### Files
+## Files
 
 | File | Purpose |
 |------|---------|
-| `src/core/scrollbar-manager.js` | Centralized OverlayScrollbars initialization and management |
-| `src/styles/scrollbars.css` | Lithium theme styles for OverlayScrollbars |
-| `src/styles/vendor-fixes.css` | Compatibility overrides for Tabulator, CodeMirror, SunEditor |
-| `src/styles/base.css` | CSS variables for scrollbar theming |
-
-### Integration Points
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Scrollbar Manager                         │
-│              (src/core/scrollbar-manager.js)                 │
-├─────────────────────────────────────────────────────────────┤
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
-│  │  Tabulator   │  │  CodeMirror  │  │  SunEditor   │      │
-│  │   Tables     │  │   Editors    │  │   Editor     │      │
-│  └──────────────┘  └──────────────┘  └──────────────┘      │
-└─────────────────────────────────────────────────────────────┘
-```
+| `src/core/scrollbar-manager.js` | Centralized OverlayScrollbars initialization and presets |
+| `src/styles/vendor-overlayscrollbars.css` | Imports OSB base CSS into a lower vendor layer |
+| `src/styles/scrollbars.css` | Lithium OSB theme rules and OSB-related styling |
+| `src/styles/vendor-fixes.css` | Native Tabulator scrollbar styling and compatibility overrides |
+| `src/styles/base.css` | Cascade layer order, design tokens, scrollbar vars |
 
 ---
 
-## Usage
+## Cascade And Loading
 
-### For Tabulator Tables (LithiumTable)
+This was one of the main things learned during the failed probe.
 
-Tabulator tables use **native CSS scrollbars** (not OverlayScrollbars) due to virtual scrolling incompatibility:
+### Correct OSB loading pattern
+
+OverlayScrollbars base CSS should be loaded as vendor CSS in a lower cascade layer.
+
+Current implementation:
+
+- `src/styles/base.css` declares `vendors.overlayscrollbars`
+- `src/styles/vendor-overlayscrollbars.css` imports:
 
 ```css
-/* Native scrollbar styling in vendor-fixes.css */
+@import url("overlayscrollbars/styles/overlayscrollbars.css") layer(vendors.overlayscrollbars);
+```
+
+- `src/app.js` loads styles in this order:
+
+```javascript
+import './styles/base.css';
+import './styles/vendor-overlayscrollbars.css';
+import './styles/vendor-fixes.css';
+import './styles/scrollbars.css';
+```
+
+### Why this matters
+
+- OSB base CSS must be below Lithium overrides
+- Unlayered vendor CSS is the wrong fit for Lithium's cascade architecture
+- Vendor CSS belongs in a vendor layer, not as a random side-effect import from a JS module
+
+This part is now corrected.
+
+---
+
+## OverlayScrollbars v2 Notes
+
+The current online docs are for OverlayScrollbars v2. Lithium must follow those docs, not old v1 patterns.
+
+### Correct theme mechanism
+
+Use `scrollbars.theme`.
+
+Example:
+
+```javascript
+scrollbars: {
+  theme: 'os-theme-lithium'
+}
+```
+
+### Do not rely on undocumented v1-style assumptions
+
+The following were part of the confusion during debugging and should not be treated as the primary theming path:
+
+- `className` as the main theme mechanism
+- `resize` as if it were required for normal element theming
+- old v1 CSS variable names like `--os-thumb-bg` and `--os-padding`
+
+### Correct v2 CSS custom properties
+
+Lithium's theme should use v2 names such as:
+
+- `--os-size`
+- `--os-padding-axis`
+- `--os-padding-perpendicular`
+- `--os-track-bg`
+- `--os-track-border-radius`
+- `--os-handle-bg`
+- `--os-handle-bg-hover`
+- `--os-handle-bg-active`
+- `--os-handle-border-radius`
+- `--os-handle-perpendicular-size`
+
+The current `src/styles/scrollbars.css` has already been updated to use these names.
+
+---
+
+## What Is Working Today
+
+### Tabulator / LithiumTable
+
+Tabulator now uses OverlayScrollbars by default for all LithiumTable instances.
+
+All LithiumTable tables use OSB:
+
+- User Profile Manager (all tables)
+- Query Manager
+- Lookups Manager
+- All other managers with LithiumTable
+
+Tables can opt out by setting `useOverlayScrollbars: false` in the constructor.
+
+Current styling in `src/styles/vendor-fixes.css`:
+
+```css
 .lithium-table-container .tabulator-tableholder {
-  scrollbar-width: thin;
+  overflow: auto !important;
+  scrollbar-width: auto;
   scrollbar-color: var(--accent-alt-primary) var(--bg-secondary);
 }
 
@@ -90,336 +153,381 @@ Tabulator tables use **native CSS scrollbars** (not OverlayScrollbars) due to vi
   width: 8px;
   height: 8px;
 }
-
-.lithium-table-container .tabulator-tableholder::-webkit-scrollbar-thumb {
-  background: var(--accent-alt-primary);
-  border-radius: 16px;
-}
 ```
 
-**Why native CSS?** OverlayScrollbars modifies the DOM structure (wrapping content, hiding native scrollbars) which breaks Tabulator's virtual scrolling that relies on specific scroll events and DOM structure.
+Current practical behavior:
 
-### For CodeMirror Editors
+- Firefox shows native scrollbars, still visually weak compared to what we want
+- WebKit browsers get more control via pseudo-elements
+- This remains the stable fallback state for LithiumTable generally
+- The Date Formats token table is now the only exception
 
-Use the helper function after creating the editor:
+### CodeMirror
 
-```javascript
-import { initCodeMirrorScrollbars } from '../../core/codemirror-setup.js';
+OverlayScrollbars is still managed through `scrollbarManager.initCodeMirror()`.
 
-const view = new EditorView({
-  state: EditorState.create({ doc: '', extensions }),
-  parent: container,
-});
+### SunEditor
 
-// Initialize OverlayScrollbars
-const osInstance = initCodeMirrorScrollbars(view);
+OverlayScrollbars is still managed through `scrollbarManager.initSunEditor()`.
 
-// Cleanup when destroying
-scrollbarManager.destroy(osInstance);
-```
+### Popups / dropdowns
 
-### For SunEditor
-
-OverlayScrollbars is automatically initialized in the Lookups Manager when SunEditor is created:
-
-```javascript
-// In lookups.js, automatically applied:
-const sunEditorElement = this.elements.summaryEditor?.closest('.sun-editor');
-if (sunEditorElement) {
-  this._sunEditorScrollbar = scrollbarManager.initSunEditor(sunEditorElement);
-}
-```
-
-### For Generic Elements
-
-Use the generic initialization method:
-
-```javascript
-import { scrollbarManager } from '../../core/scrollbar-manager.js';
-
-// Initialize on any scrollable element
-const osInstance = scrollbarManager.initGeneric(element, {
-  minimal: false, // Use minimal style
-});
-
-// Cleanup
-scrollbarManager.destroy(osInstance);
-```
+OverlayScrollbars is still managed through `scrollbarManager.initPopup()`.
 
 ---
 
-## CSS Theme Customization
+## Tabulator Probe Summary
 
-### CSS Variables
+The current probe uses the Date Formats token table in User Profile Manager as the test surface.
 
-The scrollbar appearance is controlled via CSS variables in `base.css`:
+Target table:
+
+- User Profile Manager
+- Date Formats section
+- token reference table
+
+### Goal
+
+Replace Tabulator's native scrollbars with fixed OverlayScrollbars that:
+
+- are always visible when overflow exists
+- do not overlay table content
+- preserve Tabulator virtual scrolling
+- preserve header/body sync
+- preserve frozen-region alignment
+
+### Probe states we tried
+
+#### 1. CSS-only gutter reservation
+
+Added `scrollbar-gutter: stable` to Tabulator scroll holders.
+
+Result:
+
+- safe
+- did not break anything
+- not sufficient for Firefox goals
+- useful only as a minimal native baseline
+
+#### 2. Firefox native scrollbar tuning
+
+Changed Tabulator Firefox styling from `scrollbar-width: thin` to `scrollbar-width: auto`.
+
+Result:
+
+- safe
+- made Firefox native bars slightly more visible
+- still not the desired look
+
+#### 3. Direct OSB on Tabulator holder (initial failed variants)
+
+Attempted to initialize OSB directly against `.tabulator-tableholder`.
+
+Result:
+
+- custom scrollbar not visibly rendered
+- virtual scrolling became unstable in some variants
+- not viable as attempted
+
+#### 4. Wrapper / viewport experiments
+
+Attempted wrapper host strategies where OSB owned a wrapper while Tabulator holder was reused as viewport or proxied.
+
+Observed failure modes:
+
+- no visible OSB scrollbar chrome
+- scroll snapping / reset behavior
+- blank regions while scrolling through virtual rows
+- complete loss of scrolling in some variants
+
+#### 5. Page-specific token-table hookup (successful current probe)
+
+OverlayScrollbars is now wired into the Date Formats token table page again, but with a narrower and more stable structure than the previous failed attempts.
+
+Current implementation details:
+
+- `LithiumTable` has a `useOverlayScrollbars` option
+- the Date Formats token table enables that option
+- `lithium-table-base.js` initializes OSB only after Tabulator has built the table
+- OSB is initialized against the existing `.tabulator-tableholder`
+- the existing `.tabulator-table` is reused as the content element
+- the probe does **not** reparent the table holder into a custom wrapper
+- OSB updates are triggered after table data loads / refreshes
+
+Current result:
+
+- scrolling works again
+- generated `.os-scrollbar` elements are present in the DOM
+- `os-theme-lithium` variables are populated on real generated scrollbar elements
+- horizontal and vertical tracks are visible when needed
+- the probe reserves space so scrollbars do not overlap table content
+- inactive / unusable scrollbars are hidden again
+- the bottom-right corner is explicitly filled when both bars are visible
+
+Remaining status:
+
+- this is good enough to continue testing
+- this is not yet broad-rollout ready
+- frozen columns, wider table variants, and more managers still need verification before expansion
+
+---
+
+## Critical Lessons Learned
+
+These points should be assumed true for the next attempt unless disproven with a tight isolated repro.
+
+### 1. Start from a live generated scrollbar element, not from the base CSS rule
+
+Seeing this in DevTools:
 
 ```css
-:root {
-  /* Base scrollbar colors */
-  --scrollbar-track: var(--bg-secondary);
-  --scrollbar-thumb: var(--bg-tertiary);
-  --scrollbar-thumb-hover: var(--border-color-hover);
-
-  /* OverlayScrollbars-specific - Lithium Style */
-  --os-size: 8px;           /* Track width */
-  --os-thumb-size: 6px;     /* Thumb width (creates 1px "border") */
-  --os-padding: 1px;        /* Creates 1px space = border effect */
-  --os-track-bg: var(--bg-secondary);
-  --os-track-bg-hover: var(--bg-secondary);
-  --os-thumb-bg: var(--accent-alt-primary);     /* Default: accent-alt-primary */
-  --os-thumb-bg-hover: var(--accent-primary);   /* Hover: accent-primary */
-  --os-thumb-bg-active: var(--accent-primary);  /* Active: accent-primary */
-  --os-thumb-border-radius: 16px;
-  --os-track-border-radius: 16px;
+.os-scrollbar {
+  --os-size: 0;
+  --os-track-bg: none;
 }
 ```
 
-### Visual Design
+is not enough to prove anything by itself.
 
-- **Track**: 8px wide, rounded 16px, background matches `--bg-secondary`
-- **Thumb**: 6px wide, centered in track (1px padding creates border effect)
-- **Colors**: 
-  - Default: `--accent-alt-primary` (muted accent)
-  - Hover/Active: `--accent-primary` (bright accent)
-- **Rounding**: 16px border radius on both track and thumb
-- **Buttons**: Disabled for minimal, modern look
+That is the library baseline.
 
-### Theme Classes
+The meaningful inspection target is an actual generated OSB scrollbar element that also has the theme class, for example something like:
 
-| Class | Description |
-|-------|-------------|
-| `.os-theme-lithium` | Default Lithium dark theme |
-| `.os-theme-lithium-minimal` | Minimal/auto-hide style |
-| `.os-theme-lithium-tabulator` | Optimized for Tabulator tables |
-| `.os-theme-lithium-codemirror` | Optimized for CodeMirror editors |
-| `.os-theme-lithium-suneditor` | Optimized for SunEditor |
-
-### Customizing the Theme
-
-To override styles, use the `@layer vendor-fixes` layer:
-
-```css
-@layer vendor-fixes {
-  .os-theme-lithium {
-    --os-size: 16px;
-    --os-thumb-bg: #555;
-    --os-thumb-bg-hover: #777;
-  }
-}
+```html
+<div class="os-scrollbar os-scrollbar-vertical os-theme-lithium ...">
 ```
+
+Only then should Lithium's theme overrides win.
+
+### 2. If there are no generated `.os-scrollbar` elements, theming is irrelevant
+
+During the failed probe, we repeatedly reached a state where:
+
+- scrolling was broken or absent
+- no usable visible OSB elements were found
+
+In that state, CSS variable debugging was secondary. First confirm DOM generation.
+
+### 3. Tabulator scroll ownership is the hard part
+
+The core risk is not styling. It is scroll ownership.
+
+Tabulator virtual rendering depends on the effective scroll viewport and its live geometry. If OSB changes that ownership, Tabulator may:
+
+- stop rendering deeper rows
+- reset scroll position
+- desync row rendering from scroll offset
+- lose horizontal sync behavior
+
+The current probe confirms an important constraint:
+
+- preserving `.tabulator-tableholder` as the actual scroll viewport is much safer than wrapper-based host ownership
+- DOM reparenting was a major cause of the earlier failures
+
+### 4. Do not mix multiple unknowns in one probe
+
+The failed probe mixed several moving parts at once:
+
+- CSS variable naming
+- CSS load order / cascade layering
+- OSB host / viewport structure
+- Tabulator scroll forwarding / geometry assumptions
+
+The next attempt should isolate these concerns.
+
+### 5. The page-specific hookup was a bad place to keep iterating
+
+Using the User Profile token table as the visual test point was useful.
+
+Leaving broken OSB integration active there was not useful.
+
+The next attempt should prove structure first, then wire it into a real page.
+
+### 6. Preserve the restored native baseline until the new probe is proven
+
+The current restored state is valuable. Do not replace it broadly until a new OSB pattern is verified.
+
+### 7. Placement and sizing are separate from initialization
+
+Once OSB DOM generation was working, the remaining problems were mostly CSS / layout problems rather than initialization failures.
+
+Key follow-up fixes that mattered:
+
+- anchoring OSB chrome to `.tabulator-tableholder` instead of the outer `.tabulator` shell
+- not forcing generic width / height on OSB tracks in both axes
+- letting OSB control handle length and axis travel
+- letting OSB state classes control visibility instead of forcing tracks visible
+- reserving viewport edge space only when a scrollbar is actually active
+- explicitly styling the bottom-right corner when both axes are visible
 
 ---
 
-## Configuration
+## Current Working Probe
 
-### Default Configuration
+This section records the current narrow implementation that is working well enough for continued manual validation.
 
-```javascript
-const BASE_CONFIG = {
-  className: 'os-theme-lithium',
-  resize: 'both',
-  paddingAbsolute: true,  // Classic mode - reserves space
-  scrollbars: {
-    theme: 'lithium',
-    visibility: 'auto',   // Hide when content fits
-    autoHide: 'never',    // Always visible when overflow exists
-    autoHideDelay: 800,
-    dragScroll: true,
-    clickScroll: true,
-    pointers: ['mouse', 'touch', 'pen'],
-  },
-};
-```
+### Files involved
 
-### Component-Specific Configurations
+- `src/core/scrollbar-manager.js`
+- `src/tables/lithium-table-base.js`
+- `src/tables/data/data-loading.js`
+- `src/managers/profile-manager/pages/page-date-formats.js`
+- `src/styles/scrollbars.css`
 
-**Tabulator:**
-- Classic mode (`paddingAbsolute: true`) - reserves 8px space
-- Thumb: 6px, centered with 1px padding
-- Virtual scrolling compatibility
+### Current implementation shape
 
-**CodeMirror:**
-- Click scroll disabled (CodeMirror handles its own)
-- Matches editor gutter styling
+- `scrollbarManager.initTabulator()` initializes OSB directly on `.tabulator-tableholder`
+- `.tabulator-tableholder` remains the effective Tabulator scroll viewport
+- `.tabulator-table` is reused as the OSB content element
+- `paddingAbsolute: true` is still used for gutter-style reserved space behavior
+- `scrollbars.visibility` remains `auto`
+- `clickScroll` is disabled for the Tabulator probe
+- the Tabulator probe theme currently uses:
+  - darker track color `#121212`
+  - square track corners
+  - `12px` bar size
+  - `8px` thumb perpendicular size
 
-**SunEditor:**
-- Targets `.se-wrapper-inner` or `.se-wrapper`
-- Minimal button styling
+### Current observed behavior
 
-**Popups:**
-- `overscroll-behavior: contain` prevents scroll propagation
-- Isolated scroll context from parent table
+- the test table scrolls
+- themed OSB bars appear only when overflow exists
+- bars are anchored to the correct holder area
+- bars do not overlap visible table content
+- when both axes are present, the corner area is filled
 
-**Popups:**
-- Prevents scroll propagation to parent containers
-- Uses `overscroll-behavior: contain`
-- Isolated scroll context
+### Open validation items before rollout
+
+- behavior across more Tabulator tables
+- behavior with frozen columns
+- behavior with grouped rows or calc/footer heavy tables
+- redraw / resize edge cases
+- drag interactions across browsers
 
 ---
 
-## Popup/Dropdown Scrollbars
+## Recommended Next Attempt
 
-For lookup dropdowns and popups that need independent scrolling:
+This is now the recommended sequence for rollout from the current successful probe.
 
-### Usage
+### Step 1. Finish validating the Date Formats token-table probe
 
-```javascript
-import { scrollbarManager } from '../../core/scrollbar-manager.js';
+Before any rollout, test:
 
-// Initialize on a popup/dropdown element
-const dropdown = document.querySelector('.tabulator-edit-list');
-const osInstance = scrollbarManager.initPopup(dropdown);
+- vertical virtual scrolling
+- horizontal scrolling
+- header/body sync
+- frozen columns
+- redraw after filtering or reload
+- resize behavior
 
-// Cleanup when popup closes
-scrollbarManager.destroy(osInstance);
-```
+### Step 2. Expand to one or two additional real LithiumTable surfaces
 
-### Features
+Prefer tables that differ structurally from the token table, such as:
 
-- **Scroll containment**: Scrolling in the popup doesn't scroll the parent table
-- **Independent context**: Popup has its own scrollbar state
-- **Auto-hide**: Only shows when content overflows
+- a wider horizontally scrollable table
+- a table with frozen columns or different footer/calc behavior
 
-### CSS Classes
+### Step 3. Roll out behind the per-table opt-in
 
-| Class | Purpose |
-|-------|---------|
-| `.lithium-popup-scrollable` | Applied to popup elements |
-| `[data-overlayscrollbars~="popup"]` | Attribute for CSS targeting |
+Keep `useOverlayScrollbars` as the rollout gate until enough table classes have been verified.
 
----
+### Step 4. Convert the default only after the opt-in is proven broadly
 
-## API Reference
-
-### ScrollbarManager Methods
-
-| Method | Description |
-|--------|-------------|
-| `init(element, config, callbacks)` | Initialize on any element |
-| `initCodeMirror(scroller, callbacks)` | Initialize for CodeMirror |
-| `initSunEditor(editorElement, callbacks)` | Initialize for SunEditor |
-| `initPopup(element, callbacks)` | Initialize for popup/dropdown (scroll containment) |
-| `initGeneric(element, options, callbacks)` | Initialize with options |
-| `update(instance)` | Update after content changes |
-| `destroy(instance)` | Destroy an instance |
-| `destroyAll()` | Destroy all instances |
-| `getInstance(element)` | Get instance for element |
-| `hasInstance(element)` | Check if element has instance |
-| `scrollTo(instance, position, options)` | Programmatic scroll |
-| `getScrollPosition(instance)` | Get current scroll position |
-| `isScrollable(element)` | Check if element is scrollable |
-
-### Callbacks
-
-All `init*` methods accept a callbacks object:
-
-```javascript
-{
-  initialized: (instance) => { },
-  destroyed: (instance, destroyedBy) => { },
-  scroll: (instance, event) => { },
-}
-```
+Only after the above passes should Lithium consider moving from per-table opt-in to wider default behavior.
 
 ---
 
-## Troubleshooting
+## Current Scrollbar Manager State
 
-### Scrollbars Not Appearing
+`src/core/scrollbar-manager.js` currently contains:
 
-1. Check that the element has `overflow: auto` or `overflow: scroll`
-2. Verify content is larger than container (scrollable content required)
-3. Check browser console for OverlayScrollbars errors
-4. Ensure CSS file is imported: `import '../../styles/scrollbars.css'`
+- working generic `init()` path
+- working CodeMirror / SunEditor / popup initialization paths
+- a partially validated `initTabulator()` probe that should still be treated as controlled rollout code, not final production-wide behavior
 
-### Visual Glitches
+Important:
 
-1. Verify `vendor-fixes.css` is loaded (provides compatibility)
-2. Check for conflicting CSS with `!important` rules
-3. Ensure proper z-index stacking context
-
-### Performance Issues
-
-1. Use `update()` sparingly — don't call on every scroll
-2. For Tabulator, let virtual scrolling handle most updates
-3. Consider `minimal` mode for scroll-heavy UIs
-
-### Firefox-Specific Issues
-
-If scrollbars appear different in Firefox:
-1. This is expected for native CSS scrollbars
-2. OverlayScrollbars should normalize the appearance
-3. Check that `scrollbar-width: auto` is set on the element
+- `initTabulator()` existing in the file does **not** mean Tabulator OSB is enabled everywhere
+- the live page-specific hookup is active only for the Date Formats token table
+- the general user-visible behavior remains native Tabulator scrolling outside that probe
 
 ---
 
-## Migration from Native CSS
+## Known Native Tabulator Baseline
 
-### Before (Native CSS)
+Current baseline for Tabulator in `vendor-fixes.css`:
 
-```css
-/* WebKit only */
-::-webkit-scrollbar {
-  width: 10px;
-}
-::-webkit-scrollbar-thumb {
-  background: #555;
-  border-radius: 5px;
-}
+- `overflow: auto !important`
+- Firefox: `scrollbar-width: auto`
+- Firefox: `scrollbar-color: var(--accent-alt-primary) var(--bg-secondary)`
+- WebKit: `8px` track with rounded thumb
 
-/* Firefox - limited styling */
-* {
-  scrollbar-width: auto;
-  scrollbar-color: #555 #222;
-}
-```
+This is the stable fallback and should be treated as the rollback point if a new probe fails.
 
-### After (OverlayScrollbars)
+---
 
-```javascript
-// Initialize via JavaScript
-import { scrollbarManager } from '../../core/scrollbar-manager.js';
+## Troubleshooting Checklist For Next Time
 
-const osInstance = scrollbarManager.initGeneric(element);
-```
+When OSB appears to fail, inspect in this order:
 
-```css
-/* CSS variables control appearance */
-.os-theme-lithium {
-  --os-size: 14px;
-  --os-thumb-bg: #555;
-  --os-track-bg: #222;
-}
-```
+1. Is OSB initialized on the target at all?
+2. Are `.os-scrollbar` elements actually generated?
+3. Do those generated elements have `os-theme-lithium`?
+4. Do computed CSS custom properties on the generated themed scrollbar element show Lithium values instead of the library defaults?
+5. Is the actual scroll viewport still the element Tabulator expects?
+6. Can the end of the dataset be reached without reset or blank rows?
+
+If step 2 fails, stop debugging theme CSS and debug initialization structure first.
 
 ---
 
 ## Related Documentation
 
-- [LITHIUM-TAB.md](LITHIUM-TAB.md) — LithiumTable component
-- [LITHIUM-CSS.md](LITHIUM-CSS.md) — CSS architecture and theming
-- [LITHIUM-LIB.md](LITHIUM-LIB.md) — Third-party libraries
+- [LITHIUM-TAB.md](LITHIUM-TAB.md)
+- [LITHIUM-TAB-TABLES.md](LITHIUM-TAB-TABLES.md)
+- [LITHIUM-CSS.md](LITHIUM-CSS.md)
 - [OverlayScrollbars Documentation](https://kingsora.github.io/OverlayScrollbars/)
 
 ---
 
 ## Implementation History
 
-**April 2026:** Initial OverlayScrollbars integration
-- Added `overlayscrollbars` npm package
-- Created `scrollbar-manager.js` for centralized management
-- Created `scrollbars.css` with Lithium theme
-- Attempted integration with Tabulator, CodeMirror, and SunEditor
+**April 2026:** Initial OSB integration
 
-**April 2026 (Update):** Hybrid approach adopted
-- **Tabulator tables**: Reverted to native CSS scrollbars due to virtual scrolling incompatibility
-  - 8px track, 6px thumb (1px padding creates border effect)
-  - 16px border radius
-  - Thumb colors: `--accent-alt-primary` (default), `--accent-primary` (hover)
-- **CodeMirror/SunEditor**: Retained OverlayScrollbars
-- **Popups**: Added `initPopup()` with scroll containment via `overscroll-behavior: contain`
+- Added `overlayscrollbars` package
+- Added `scrollbar-manager.js`
+- Added `scrollbars.css`
+- Enabled OSB for non-Tabulator scrollable contexts
+
+**April 2026:** Tabulator investigation phase
+
+- Tested native gutter reservation and Firefox native tuning
+- Tested direct-holder OSB initialization for Tabulator
+- Tested wrapper / viewport variants for Tabulator
+- Observed broken scrolling, invisible OSB chrome, and virtual-render failures
+- Removed failed live token-table hookup and restored native scrolling
+
+**April 21, 2026:** Baseline reset for next attempt
+
+- Added `vendor-overlayscrollbars.css`
+- Moved OSB base CSS into `vendors.overlayscrollbars`
+- Kept Lithium OSB theme CSS above vendor layers
+- Restored live Tabulator tables to native scrolling
+- Recorded lessons learned in this document for the next clean attempt
+
+**April 21, 2026:** Narrow live Tabulator probe restored
+
+- Added `useOverlayScrollbars` opt-in to `LithiumTable`
+- Re-enabled OSB only for the User Profile Manager Date Formats token table
+- Initialized OSB directly on `.tabulator-tableholder` while preserving Tabulator scroll ownership
+- Added OSB update hooks after table data refreshes
+- Confirmed generated OSB chrome and populated `--os-*` variables on real scrollbar elements
+- Fixed placement so scrollbars anchor to the holder rather than the outer Tabulator shell
+- Reserved holder edge space so bars do not overlap table content
+- Hid inactive tracks again using OSB state classes
+- Tuned current probe visuals: square corners, darker track, wider bars, filled bottom-right corner
 
 ---
 
-**Last Updated:** April 19, 2026
+**Last Updated:** April 21, 2026

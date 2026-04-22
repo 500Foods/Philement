@@ -657,11 +657,13 @@ export class DateFormatsPage extends BaseSettingsPage {
       readonly: true,
       localSearch: true,
       localSearchFields: ['token', 'description', 'group'],
+      useOverlayScrollbars: true,
       onRefresh: () => this._refreshTokenTable(),
     });
 
     await this._tokenTable.init();
     this._tokenTable.loadStaticData(buildTokenData(sample, now), { autoSelect: false });
+
   }
 
   /**

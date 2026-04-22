@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS class selectors/names used across the Lithium codebase",
-    "generated": "2026-04-22T00:31:05.728Z",
+    "generated": "2026-04-22T15:21:56.302Z",
     "sources": {
-      "css": "52 files in src/**/*.css",
+      "css": "53 files in src/**/*.css",
       "js": "146 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
-    "total_selectors": 1915,
-    "total_occurrences": 30366
+    "total_selectors": 1960,
+    "total_occurrences": 30821
   },
   "selectors": [
     {
@@ -1040,7 +1040,7 @@
       }
     },
     {
-      "selector": ".cm-editor .os-theme-lithium",
+      "selector": ".cm-editor .os-theme-lithium.os-scrollbar",
       "css": 1,
       "js": 1,
       "html": 0,
@@ -1832,14 +1832,15 @@
     {
       "selector": ".col-manager-popup.depth-2 .col-manager-table-container .tabulator-table",
       "css": 1,
-      "js": 4,
+      "js": 5,
       "html": 0,
-      "total": 5,
+      "total": 6,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
+          "src/core/scrollbar-manager.js",
           "src/tables/column-manager/cm-integration.js",
           "src/tables/column-manager/cm-ui.js"
         ],
@@ -1849,16 +1850,18 @@
     {
       "selector": ".col-manager-popup.depth-2 .col-manager-table-container .tabulator-tableholder",
       "css": 1,
-      "js": 6,
+      "js": 8,
       "html": 0,
-      "total": 7,
+      "total": 9,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
+          "src/core/scrollbar-manager.js",
           "src/tables/column-manager/cm-integration.js",
           "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js",
           "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
@@ -2355,14 +2358,15 @@
     {
       "selector": ".col-manager-table-container .lithium-table-container .tabulator .tabulator-tableholder",
       "css": 1,
-      "js": 5,
+      "js": 7,
       "html": 8,
-      "total": 14,
+      "total": 16,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
+          "src/core/scrollbar-manager.js",
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
@@ -2381,14 +2385,15 @@
     {
       "selector": ".col-manager-table-container .lithium-table-container .tabulator .tabulator-tableholder .tabulator-table",
       "css": 1,
-      "js": 5,
+      "js": 7,
       "html": 8,
-      "total": 14,
+      "total": 16,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
+          "src/core/scrollbar-manager.js",
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
@@ -2942,14 +2947,15 @@
     {
       "selector": ".col-manager-table-container .lithium-table-container .tabulator-tableholder::-webkit-scrollbar",
       "css": 1,
-      "js": 5,
+      "js": 7,
       "html": 8,
-      "total": 14,
+      "total": 16,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
+          "src/core/scrollbar-manager.js",
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
@@ -2968,14 +2974,15 @@
     {
       "selector": ".col-manager-table-container .lithium-table-container .tabulator-tableholder::-webkit-scrollbar-thumb",
       "css": 1,
-      "js": 5,
+      "js": 7,
       "html": 8,
-      "total": 14,
+      "total": 16,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
+          "src/core/scrollbar-manager.js",
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
@@ -2994,14 +3001,15 @@
     {
       "selector": ".col-manager-table-container .lithium-table-container .tabulator-tableholder::-webkit-scrollbar-thumb:hover",
       "css": 1,
-      "js": 5,
+      "js": 7,
       "html": 8,
-      "total": 14,
+      "total": 16,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
+          "src/core/scrollbar-manager.js",
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
@@ -3020,14 +3028,15 @@
     {
       "selector": ".col-manager-table-container .lithium-table-container .tabulator-tableholder::-webkit-scrollbar-track",
       "css": 1,
-      "js": 5,
+      "js": 7,
       "html": 8,
-      "total": 14,
+      "total": 16,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
+          "src/core/scrollbar-manager.js",
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
@@ -6672,6 +6681,22 @@
     },
     {
       "selector": ".df-token-table-container",
+      "css": 1,
+      "js": 0,
+      "html": 1,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
+      }
+    },
+    {
+      "selector": ".df-token-table-container .tabulator",
       "css": 1,
       "js": 0,
       "html": 1,
@@ -11208,6 +11233,118 @@
       }
     },
     {
+      "selector": ".lithium-osb-arrow",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": ".lithium-osb-arrow > span",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": ".lithium-osb-arrow-down > span",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": ".lithium-osb-arrow-left > span",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": ".lithium-osb-arrow-right > span",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": ".lithium-osb-arrow-up > span",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": ".lithium-osb-arrow:active",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": ".lithium-osb-arrow:hover",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
       "selector": ".lithium-panel-collapsed",
       "css": 1,
       "js": 0,
@@ -11520,7 +11657,7 @@
       }
     },
     {
-      "selector": ".lithium-table-container .os-theme-lithium",
+      "selector": ".lithium-table-container .os-theme-lithium.os-scrollbar",
       "css": 1,
       "js": 3,
       "html": 8,
@@ -12832,15 +12969,16 @@
     {
       "selector": ".lithium-table-container .tabulator-tableholder",
       "css": 2,
-      "js": 5,
+      "js": 7,
       "html": 8,
-      "total": 15,
+      "total": 17,
       "files": {
         "css": [
           "src/styles/vendor-fixes.css",
           "src/tables/lithium-table.css"
         ],
         "js": [
+          "src/core/scrollbar-manager.js",
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
@@ -12859,15 +12997,16 @@
     {
       "selector": ".lithium-table-container .tabulator-tableholder::-webkit-scrollbar",
       "css": 2,
-      "js": 5,
+      "js": 7,
       "html": 8,
-      "total": 15,
+      "total": 17,
       "files": {
         "css": [
           "src/styles/vendor-fixes.css",
           "src/tables/lithium-table.css"
         ],
         "js": [
+          "src/core/scrollbar-manager.js",
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
@@ -12886,15 +13025,16 @@
     {
       "selector": ".lithium-table-container .tabulator-tableholder::-webkit-scrollbar-thumb",
       "css": 2,
-      "js": 5,
+      "js": 7,
       "html": 8,
-      "total": 15,
+      "total": 17,
       "files": {
         "css": [
           "src/styles/vendor-fixes.css",
           "src/tables/lithium-table.css"
         ],
         "js": [
+          "src/core/scrollbar-manager.js",
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
@@ -12913,15 +13053,16 @@
     {
       "selector": ".lithium-table-container .tabulator-tableholder::-webkit-scrollbar-thumb:hover",
       "css": 2,
-      "js": 5,
+      "js": 7,
       "html": 8,
-      "total": 15,
+      "total": 17,
       "files": {
         "css": [
           "src/styles/vendor-fixes.css",
           "src/tables/lithium-table.css"
         ],
         "js": [
+          "src/core/scrollbar-manager.js",
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
@@ -12940,15 +13081,16 @@
     {
       "selector": ".lithium-table-container .tabulator-tableholder::-webkit-scrollbar-track",
       "css": 2,
-      "js": 5,
+      "js": 7,
       "html": 8,
-      "total": 15,
+      "total": 17,
       "files": {
         "css": [
           "src/styles/vendor-fixes.css",
           "src/tables/lithium-table.css"
         ],
         "js": [
+          "src/core/scrollbar-manager.js",
           "src/managers/crimson/crimson-citations.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
@@ -13228,6 +13370,615 @@
           "src/tables/lithium-table-base.js",
           "src/tables/lithium-table-ui.js",
           "src/tables/visual/visual-updates.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container.lithium-table-osb-enabled .lithium-table-osb-slot",
+      "css": 1,
+      "js": 7,
+      "html": 8,
+      "total": 16,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [
+          "src/core/scrollbar-manager.js",
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container.lithium-table-osb-enabled .lithium-table-osb-slot > .os-scrollbar",
+      "css": 1,
+      "js": 7,
+      "html": 8,
+      "total": 16,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [
+          "src/core/scrollbar-manager.js",
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container.lithium-table-osb-enabled .lithium-table-osb-slot > .os-scrollbar-corner",
+      "css": 1,
+      "js": 7,
+      "html": 8,
+      "total": 16,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [
+          "src/core/scrollbar-manager.js",
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container.lithium-table-osb-enabled .lithium-table-osb-slot > .os-scrollbar-corner.os-scrollbar-cornerless",
+      "css": 1,
+      "js": 7,
+      "html": 8,
+      "total": 16,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [
+          "src/core/scrollbar-manager.js",
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container.lithium-table-osb-enabled .lithium-table-osb-slot > .os-scrollbar-horizontal",
+      "css": 1,
+      "js": 7,
+      "html": 8,
+      "total": 16,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [
+          "src/core/scrollbar-manager.js",
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container.lithium-table-osb-enabled .lithium-table-osb-slot > .os-scrollbar-horizontal .os-scrollbar-handle:active",
+      "css": 1,
+      "js": 7,
+      "html": 8,
+      "total": 16,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [
+          "src/core/scrollbar-manager.js",
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container.lithium-table-osb-enabled .lithium-table-osb-slot > .os-scrollbar-horizontal > .os-scrollbar-track",
+      "css": 1,
+      "js": 7,
+      "html": 8,
+      "total": 16,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [
+          "src/core/scrollbar-manager.js",
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container.lithium-table-osb-enabled .lithium-table-osb-slot > .os-scrollbar-horizontal:not(.os-scrollbar-cornerless",
+      "css": 1,
+      "js": 7,
+      "html": 8,
+      "total": 16,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [
+          "src/core/scrollbar-manager.js",
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container.lithium-table-osb-enabled .lithium-table-osb-slot > .os-scrollbar-horizontal.os-scrollbar-cornerless:not(.os-scrollbar-unusable",
+      "css": 1,
+      "js": 7,
+      "html": 8,
+      "total": 16,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [
+          "src/core/scrollbar-manager.js",
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container.lithium-table-osb-enabled .lithium-table-osb-slot > .os-scrollbar-vertical",
+      "css": 1,
+      "js": 7,
+      "html": 8,
+      "total": 16,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [
+          "src/core/scrollbar-manager.js",
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container.lithium-table-osb-enabled .lithium-table-osb-slot > .os-scrollbar-vertical .os-scrollbar-handle:active",
+      "css": 1,
+      "js": 7,
+      "html": 8,
+      "total": 16,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [
+          "src/core/scrollbar-manager.js",
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container.lithium-table-osb-enabled .lithium-table-osb-slot > .os-scrollbar-vertical > .os-scrollbar-track",
+      "css": 1,
+      "js": 7,
+      "html": 8,
+      "total": 16,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [
+          "src/core/scrollbar-manager.js",
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container.lithium-table-osb-enabled .lithium-table-osb-slot > .os-scrollbar-vertical:not(.os-scrollbar-cornerless",
+      "css": 1,
+      "js": 7,
+      "html": 8,
+      "total": 16,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [
+          "src/core/scrollbar-manager.js",
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container.lithium-table-osb-enabled .lithium-table-osb-slot > .os-scrollbar-vertical.os-scrollbar-auto-hide-hidden",
+      "css": 1,
+      "js": 7,
+      "html": 8,
+      "total": 16,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [
+          "src/core/scrollbar-manager.js",
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container.lithium-table-osb-enabled .lithium-table-osb-slot > .os-scrollbar-vertical.os-scrollbar-cornerless:not(.os-scrollbar-unusable",
+      "css": 1,
+      "js": 7,
+      "html": 8,
+      "total": 16,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [
+          "src/core/scrollbar-manager.js",
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container.lithium-table-osb-enabled .lithium-table-osb-slot > .os-scrollbar-vertical.os-scrollbar-unusable",
+      "css": 1,
+      "js": 7,
+      "html": 8,
+      "total": 16,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [
+          "src/core/scrollbar-manager.js",
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container.lithium-table-osb-enabled .tabulator",
+      "css": 1,
+      "js": 5,
+      "html": 8,
+      "total": 14,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container.lithium-table-osb-enabled .tabulator-tableholder",
+      "css": 1,
+      "js": 9,
+      "html": 8,
+      "total": 18,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [
+          "src/core/scrollbar-manager.js",
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container.lithium-table-osb-enabled .tabulator-tableholder[data-overlayscrollbars-viewport]",
+      "css": 1,
+      "js": 9,
+      "html": 8,
+      "total": 18,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [
+          "src/core/scrollbar-manager.js",
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container.lithium-table-osb-enabled .tabulator-tableholder[data-overlayscrollbars-viewport~=\"scrollbarHidden\"]",
+      "css": 1,
+      "js": 9,
+      "html": 8,
+      "total": 18,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [
+          "src/core/scrollbar-manager.js",
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container.lithium-table-osb-enabled .tabulator-tableholder[data-overlayscrollbars-viewport~=\"scrollbarHidden\"]::-webkit-scrollbar-corner",
+      "css": 1,
+      "js": 9,
+      "html": 8,
+      "total": 18,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [
+          "src/core/scrollbar-manager.js",
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container.lithium-table-osb-enabled .tabulator-tableholder[data-overlayscrollbars]",
+      "css": 1,
+      "js": 9,
+      "html": 8,
+      "total": 18,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [
+          "src/core/scrollbar-manager.js",
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container.lithium-table-osb-enabled .tabulator:has(> .lithium-table-osb-slot > .os-scrollbar-vertical:not(.os-scrollbar-unusable",
+      "css": 1,
+      "js": 7,
+      "html": 8,
+      "total": 16,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [
+          "src/core/scrollbar-manager.js",
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container.lithium7-table-osb-enabled .tabulator:has(> .lithium-table-osb-slot > .os-scrollbar-horizontal:not(.os-scrollbar-unusable",
+      "css": 1,
+      "js": 5,
+      "html": 8,
+      "total": 14,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [
+          "src/core/scrollbar-manager.js",
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js"
         ],
         "html": [
           "src/managers/lookups/lookups.html",
@@ -23522,7 +24273,7 @@
       }
     },
     {
-      "selector": ".os-host.os-theme-lithium",
+      "selector": ".os-scrollbar-auto-hide-hidden)",
       "css": 1,
       "js": 0,
       "html": 0,
@@ -23536,7 +24287,152 @@
       }
     },
     {
-      "selector": ".os-scrollbar",
+      "selector": ".os-scrollbar-auto-hide-hidden)) .tabulator-tableholder[data-overlayscrollbars]",
+      "css": 1,
+      "js": 4,
+      "html": 0,
+      "total": 5,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [
+          "src/core/scrollbar-manager.js",
+          "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".os-scrollbar-button-down::before",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": ".os-scrollbar-button-left::before",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": ".os-scrollbar-button-right::before",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": ".os-scrollbar-button-up::before",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": ".os-scrollbar-horizontal .os-scrollbar-track::before",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": ".os-scrollbar-horizontal .os-theme-lithium .os-scrollbar-handle",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": ".os-scrollbar-unusable",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": ".os-scrollbar-vertical .os-theme-lithium .os-scrollbar-handle",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": ".os-theme-lithium",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": ".os-theme-lithium .os-scrollbar-button::before",
       "css": 1,
       "js": 0,
       "html": 0,
@@ -23592,35 +24488,21 @@
       }
     },
     {
-      "selector": ".os-theme-lithium.os-scrollbar-auto-hide",
-      "css": 1,
-      "js": 0,
-      "html": 0,
-      "total": 1,
-      "files": {
-        "css": [
-          "src/styles/scrollbars.css"
-        ],
-        "js": [],
-        "html": []
-      }
-    },
-    {
-      "selector": ".os-theme-lithium.os-scrollbar-hidden",
-      "css": 1,
-      "js": 0,
-      "html": 0,
-      "total": 1,
-      "files": {
-        "css": [
-          "src/styles/scrollbars.css"
-        ],
-        "js": [],
-        "html": []
-      }
-    },
-    {
       "selector": ".os-theme-lithium.os-scrollbar-unusable",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": ".os-theme-lithium.os-scrollbar-visible",
       "css": 1,
       "js": 0,
       "html": 0,
@@ -29854,7 +30736,7 @@
       }
     },
     {
-      "selector": ".sun-editor .os-theme-lithium",
+      "selector": ".sun-editor .os-theme-lithium.os-scrollbar",
       "css": 1,
       "js": 1,
       "html": 0,
@@ -30250,6 +31132,25 @@
         "js": [
           "src/tables/events/event-handlers.js",
           "src/tables/visual/column-tooltips.js",
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".tabulator .tabulator-tableholder .tabulator-table",
+      "css": 1,
+      "js": 4,
+      "html": 0,
+      "total": 5,
+      "files": {
+        "css": [
+          "src/styles/vendor-fixes.css"
+        ],
+        "js": [
+          "src/core/scrollbar-manager.js",
+          "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": []
@@ -33648,105 +34549,133 @@
       }
     },
     {
-      "selector": "[data-overlayscrollbars-viewport] ~ .os-scrollbar .os-scrollbar-button",
-      "css": 1,
-      "js": 0,
-      "html": 0,
-      "total": 1,
-      "files": {
-        "css": [
-          "src/styles/scrollbars.css"
-        ],
-        "js": [],
-        "html": []
-      }
-    },
-    {
-      "selector": "[data-overlayscrollbars-viewport] ~ .os-scrollbar .os-scrollbar-handle",
-      "css": 1,
-      "js": 0,
-      "html": 0,
-      "total": 1,
-      "files": {
-        "css": [
-          "src/styles/scrollbars.css"
-        ],
-        "js": [],
-        "html": []
-      }
-    },
-    {
-      "selector": "[data-overlayscrollbars-viewport] ~ .os-scrollbar .os-scrollbar-handle:active",
-      "css": 1,
-      "js": 0,
-      "html": 0,
-      "total": 1,
-      "files": {
-        "css": [
-          "src/styles/scrollbars.css"
-        ],
-        "js": [],
-        "html": []
-      }
-    },
-    {
-      "selector": "[data-overlayscrollbars-viewport] ~ .os-scrollbar .os-scrollbar-handle:hover",
-      "css": 1,
-      "js": 0,
-      "html": 0,
-      "total": 1,
-      "files": {
-        "css": [
-          "src/styles/scrollbars.css"
-        ],
-        "js": [],
-        "html": []
-      }
-    },
-    {
-      "selector": "[data-overlayscrollbars-viewport] ~ .os-scrollbar .os-scrollbar-track",
-      "css": 1,
-      "js": 0,
-      "html": 0,
-      "total": 1,
-      "files": {
-        "css": [
-          "src/styles/scrollbars.css"
-        ],
-        "js": [],
-        "html": []
-      }
-    },
-    {
-      "selector": "[data-overlayscrollbars-viewport] ~ .os-scrollbar .os-scrollbar-track:active",
-      "css": 1,
-      "js": 0,
-      "html": 0,
-      "total": 1,
-      "files": {
-        "css": [
-          "src/styles/scrollbars.css"
-        ],
-        "js": [],
-        "html": []
-      }
-    },
-    {
-      "selector": "[data-overlayscrollbars-viewport] ~ .os-scrollbar .os-scrollbar-track:hover",
-      "css": 1,
-      "js": 0,
-      "html": 0,
-      "total": 1,
-      "files": {
-        "css": [
-          "src/styles/scrollbars.css"
-        ],
-        "js": [],
-        "html": []
-      }
-    },
-    {
       "selector": "[data-overlayscrollbars-viewport] ~ .os-scrollbar-corner",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": "[data-overlayscrollbars-viewport] ~ .os-theme-lithium.os-scrollbar .os-scrollbar-button",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": "[data-overlayscrollbars-viewport] ~ .os-theme-lithium.os-scrollbar .os-scrollbar-button:active",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": "[data-overlayscrollbars-viewport] ~ .os-theme-lithium.os-scrollbar .os-scrollbar-button:hover",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": "[data-overlayscrollbars-viewport] ~ .os-theme-lithium.os-scrollbar .os-scrollbar-handle",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": "[data-overlayscrollbars-viewport] ~ .os-theme-lithium.os-scrollbar .os-scrollbar-handle:active",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": "[data-overlayscrollbars-viewport] ~ .os-theme-lithium.os-scrollbar .os-scrollbar-handle:hover",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": "[data-overlayscrollbars-viewport] ~ .os-theme-lithium.os-scrollbar .os-scrollbar-track",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": "[data-overlayscrollbars-viewport] ~ .os-theme-lithium.os-scrollbar .os-scrollbar-track:active",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/scrollbars.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": "[data-overlayscrollbars-viewport] ~ .os-theme-lithium.os-scrollbar .os-scrollbar-track:hover",
       "css": 1,
       "js": 0,
       "html": 0,
@@ -34226,14 +35155,16 @@
     {
       "selector": "#language-table .tabulator-tableholder",
       "css": 1,
-      "js": 2,
+      "js": 4,
       "html": 0,
-      "total": 3,
+      "total": 5,
       "files": {
         "css": [
           "src/managers/login/login.css"
         ],
         "js": [
+          "src/core/scrollbar-manager.js",
+          "src/tables/lithium-table-base.js",
           "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
@@ -34243,14 +35174,16 @@
     {
       "selector": "#language-table .tabulator-tableholder::-webkit-scrollbar",
       "css": 1,
-      "js": 2,
+      "js": 4,
       "html": 0,
-      "total": 3,
+      "total": 5,
       "files": {
         "css": [
           "src/managers/login/login.css"
         ],
         "js": [
+          "src/core/scrollbar-manager.js",
+          "src/tables/lithium-table-base.js",
           "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
@@ -34260,14 +35193,16 @@
     {
       "selector": "#language-table .tabulator-tableholder::-webkit-scrollbar-thumb",
       "css": 1,
-      "js": 2,
+      "js": 4,
       "html": 0,
-      "total": 3,
+      "total": 5,
       "files": {
         "css": [
           "src/managers/login/login.css"
         ],
         "js": [
+          "src/core/scrollbar-manager.js",
+          "src/tables/lithium-table-base.js",
           "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
@@ -34277,14 +35212,16 @@
     {
       "selector": "#language-table .tabulator-tableholder::-webkit-scrollbar-thumb:hover",
       "css": 1,
-      "js": 2,
+      "js": 4,
       "html": 0,
-      "total": 3,
+      "total": 5,
       "files": {
         "css": [
           "src/managers/login/login.css"
         ],
         "js": [
+          "src/core/scrollbar-manager.js",
+          "src/tables/lithium-table-base.js",
           "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],
@@ -34294,14 +35231,16 @@
     {
       "selector": "#language-table .tabulator-tableholder::-webkit-scrollbar-track",
       "css": 1,
-      "js": 2,
+      "js": 4,
       "html": 0,
-      "total": 3,
+      "total": 5,
       "files": {
         "css": [
           "src/managers/login/login.css"
         ],
         "js": [
+          "src/core/scrollbar-manager.js",
+          "src/tables/lithium-table-base.js",
           "src/tables/navigation/navigation.js",
           "src/tables/visual/visual-updates.js"
         ],

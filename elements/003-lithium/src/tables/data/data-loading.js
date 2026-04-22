@@ -81,6 +81,7 @@ export async function loadData(table, searchTerm = '', extraParams = {}) {
     }
 
     requestAnimationFrame(() => {
+      table._updateTableScrollbars?.();
       table.autoSelectRow?.(previouslySelectedId);
       table.updateMoveButtonState?.();
       table.updateDuplicateButtonState?.();
@@ -258,6 +259,7 @@ export function loadStaticData(table, rows, options = {}) {
 
   if (autoSelect) {
     requestAnimationFrame(() => {
+      table._updateTableScrollbars?.();
       if (previouslySelectedId != null) {
         table.autoSelectRow?.(previouslySelectedId);
       } else {
@@ -281,6 +283,7 @@ export function loadStaticData(table, rows, options = {}) {
       table._inSelectionTransition = false;
     });
   } else {
+    table._updateTableScrollbars?.();
     table._inSelectionTransition = false;
     table.updateMoveButtonState?.();
     table.updateDuplicateButtonState?.();

@@ -18,6 +18,10 @@
   font-size: var(--font-size-sm);
 }
 
+.tabulator .tabulator-tableholder .tabulator-table {
+	margin-bottom: 8px;
+}
+
 /* Cell right border - consistent across all tables */
 .tabulator-row .tabulator-cell {
   border-right: 1px solid var(--bg-row-border);
@@ -37,11 +41,11 @@
  
 /* Group rows */
 .lithium-table-container .tabulator-row.tabulator-group {
-  min-height: 24px !important;
+  min-height: 20px !important;
   background: var(--bg-tertiary) !important;
   border-right: none;
   border-top: none;
-  padding: 2px 4px;
+  padding: 0px 4px;
 }
 
 /* Hide Tabulator's built-in arrow (we use our own icon in the header) */
@@ -130,7 +134,7 @@
 */
 .lithium-table-container .tabulator-row.tabulator-group span.lithium-group-header svg {
   font-size: 14px;
-  margin: -2px -6px 0px -8px;
+  margin: -1px -6px 0px -8px;
 }
 
 /* Title styling */
@@ -270,7 +274,7 @@
 /* Ensure Tabulator tableholder has proper overflow */
 .lithium-table-container .tabulator-tableholder {
   overflow: auto !important;
-  scrollbar-width: thin;
+  scrollbar-width: auto;
   scrollbar-color: var(--accent-alt-primary) var(--bg-secondary);
 }
 

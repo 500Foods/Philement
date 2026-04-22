@@ -18,6 +18,7 @@
 @layer
   reset,
   tokens,
+  vendors.overlayscrollbars,
   vendors.tabulator,
   vendors.codemirror,
   vendors.jsoneditor,
