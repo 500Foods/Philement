@@ -375,9 +375,9 @@ export function buildSelectorColumn(table) {
       const rowId = getCompositeRowId(rowData, pkFields);
       if (row.isSelected()) {
         if (table.isEditing && table.editingRowId === rowId) {
-          return `<span class="${table.cssPrefix}-selector-indicator ${table.cssPrefix}-selector-edit">&#10073;</span>`;
+          return `<div class="${table.cssPrefix}-selector-indicator ${table.cssPrefix}-selector-edit"><fa fa-pencil></fa></div>`;
         }
-        return `<span class="${table.cssPrefix}-selector-indicator ${table.cssPrefix}-selector-active">&#9658;</span>`;
+        return `<div class="${table.cssPrefix}-selector-indicator ${table.cssPrefix}-selector-active"><fa fa-caret-large-right></fa></div>`;
       }
       return '';
     },
