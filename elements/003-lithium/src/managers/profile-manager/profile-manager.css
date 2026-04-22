@@ -679,6 +679,10 @@
   overflow: hidden;
 }
 
+.df-token-table-container .tabulator {
+  height: 100% !important;
+}
+
 .df-token-navigator {
   flex-shrink: 0;
   max-width: 910px;

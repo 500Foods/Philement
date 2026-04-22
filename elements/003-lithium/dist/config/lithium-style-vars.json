@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS custom properties (variables) used across the Lithium codebase",
-    "generated": "2026-04-22T00:31:04.063Z",
+    "generated": "2026-04-22T15:21:54.581Z",
     "sources": {
-      "css": "52 files in src/**/*.css",
+      "css": "53 files in src/**/*.css",
       "js": "146 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
-    "total_variables": 235,
-    "total_occurrences": 3589
+    "total_variables": 244,
+    "total_occurrences": 3623
   },
   "variables": [
     {
@@ -20,10 +20,10 @@
     },
     {
       "name": "--accent-alt-primary",
-      "css": 22,
+      "css": 28,
       "js": 0,
       "html": 0,
-      "total": 22
+      "total": 28
     },
     {
       "name": "--accent-alt-primary-muted",
@@ -104,10 +104,10 @@
     },
     {
       "name": "--accent-primary",
-      "css": 177,
+      "css": 180,
       "js": 3,
       "html": 1,
-      "total": 181
+      "total": 184
     },
     {
       "name": "--accent-primary-hover",
@@ -223,10 +223,10 @@
     },
     {
       "name": "--bg-row-border",
-      "css": 4,
+      "css": 7,
       "js": 0,
       "html": 0,
-      "total": 4
+      "total": 7
     },
     {
       "name": "--bg-row-even",
@@ -244,10 +244,10 @@
     },
     {
       "name": "--bg-secondary",
-      "css": 96,
+      "css": 93,
       "js": 1,
       "html": 1,
-      "total": 98
+      "total": 95
     },
     {
       "name": "--bg-tertiary",
@@ -314,10 +314,10 @@
     },
     {
       "name": "--border-radius-sm",
-      "css": 78,
+      "css": 77,
       "js": 0,
       "html": 0,
-      "total": 78
+      "total": 77
     },
     {
       "name": "--border-radius-xl",
@@ -726,7 +726,70 @@
       "total": 2
     },
     {
+      "name": "--os-handle-bg",
+      "css": 2,
+      "js": 0,
+      "html": 0,
+      "total": 2
+    },
+    {
+      "name": "--os-handle-bg-active",
+      "css": 2,
+      "js": 0,
+      "html": 0,
+      "total": 2
+    },
+    {
+      "name": "--os-handle-bg-hover",
+      "css": 2,
+      "js": 0,
+      "html": 0,
+      "total": 2
+    },
+    {
+      "name": "--os-handle-border-radius",
+      "css": 2,
+      "js": 0,
+      "html": 0,
+      "total": 2
+    },
+    {
+      "name": "--os-handle-perpendicular-size",
+      "css": 5,
+      "js": 0,
+      "html": 0,
+      "total": 5
+    },
+    {
+      "name": "--os-handle-perpendicular-size-active",
+      "css": 5,
+      "js": 0,
+      "html": 0,
+      "total": 5
+    },
+    {
+      "name": "--os-handle-perpendicular-size-hover",
+      "css": 5,
+      "js": 0,
+      "html": 0,
+      "total": 5
+    },
+    {
       "name": "--os-padding",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--os-padding-axis",
+      "css": 6,
+      "js": 0,
+      "html": 0,
+      "total": 6
+    },
+    {
+      "name": "--os-padding-perpendicular",
       "css": 8,
       "js": 0,
       "html": 0,
@@ -734,73 +797,73 @@
     },
     {
       "name": "--os-size",
-      "css": 9,
+      "css": 14,
       "js": 0,
       "html": 0,
-      "total": 9
+      "total": 14
     },
     {
       "name": "--os-thumb-bg",
-      "css": 3,
+      "css": 1,
       "js": 0,
       "html": 0,
-      "total": 3
+      "total": 1
     },
     {
       "name": "--os-thumb-bg-active",
-      "css": 3,
+      "css": 1,
       "js": 0,
       "html": 0,
-      "total": 3
+      "total": 1
     },
     {
       "name": "--os-thumb-bg-hover",
-      "css": 3,
+      "css": 1,
       "js": 0,
       "html": 0,
-      "total": 3
-    },
-    {
-      "name": "--os-thumb-border-radius",
-      "css": 2,
-      "js": 0,
-      "html": 0,
-      "total": 2
-    },
-    {
-      "name": "--os-thumb-size",
-      "css": 7,
-      "js": 0,
-      "html": 0,
-      "total": 7
+      "total": 1
     },
     {
       "name": "--os-track-bg",
-      "css": 6,
+      "css": 8,
       "js": 0,
       "html": 0,
-      "total": 6
+      "total": 8
     },
     {
       "name": "--os-track-bg-active",
-      "css": 2,
-      "js": 0,
-      "html": 0,
-      "total": 2
-    },
-    {
-      "name": "--os-track-bg-hover",
       "css": 4,
       "js": 0,
       "html": 0,
       "total": 4
     },
     {
-      "name": "--os-track-border-radius",
-      "css": 2,
+      "name": "--os-track-bg-hover",
+      "css": 6,
       "js": 0,
       "html": 0,
-      "total": 2
+      "total": 6
+    },
+    {
+      "name": "--os-track-border-radius",
+      "css": 3,
+      "js": 0,
+      "html": 0,
+      "total": 3
+    },
+    {
+      "name": "--os-viewport-overflow-x",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--os-viewport-overflow-y",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
     },
     {
       "name": "--panel-left-max",
@@ -902,10 +965,10 @@
     },
     {
       "name": "--scrollbar-track",
-      "css": 10,
+      "css": 7,
       "js": 0,
       "html": 0,
-      "total": 10
+      "total": 7
     },
     {
       "name": "--shadow-inset",

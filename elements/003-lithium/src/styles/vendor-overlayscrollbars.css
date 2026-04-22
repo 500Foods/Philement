@@ -1,0 +1,8 @@
+/**
+ * Vendor OverlayScrollbars CSS — imports the OverlayScrollbars base stylesheet
+ * into the vendors.overlayscrollbars layer so Lithium overrides cascade above it.
+ *
+ * Import this file instead of the bare vendor CSS.
+ */
+
+@import url("overlayscrollbars/styles/overlayscrollbars.css") layer(vendors.overlayscrollbars);
