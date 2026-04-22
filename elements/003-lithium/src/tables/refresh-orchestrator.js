@@ -9,6 +9,7 @@
 import { log, Subsystems, Status } from '../core/log.js';
 import { scrollbarManager } from '../core/scrollbar-manager.js';
 import { _tableDefCache } from './lithium-table.js';
+import { performLocalSearch } from './search/search-utils.js';
 
 /**
  * Reload the table configuration (schema) from Lookup 59.
@@ -126,7 +127,12 @@ export async function reloadConfiguration(table) {
     } else if (table.lastLoadParams) {
       await table.loadData?.(table.lastLoadParams.searchTerm, table.lastLoadParams.extraParams);
     } else {
-      await table.loadData?.();
+      if (table.currentData && table.currentData.length > 0) {
+        // For static tables without onRefresh that have currentData, reload the static data
+        await table.loadStaticData?.(table.currentData, { autoSelect: false });
+      } else {
+        await table.loadData?.();
+      }
     }
   } finally {
     // Restore original autoSelectRow
@@ -134,7 +140,8 @@ export async function reloadConfiguration(table) {
   }
 
   // 9. Explicitly restore the captured row selection AFTER data is loaded
-  if (capturedRowId && table.table) {
+  // Skip if table has custom onRefresh that handles selection itself
+  if (!table.onRefresh && capturedRowId && table.table) {
     log(Subsystems.TABLE, Status.DEBUG, `[${table.cssPrefix}] Restoring row selection: ${capturedRowId}`);
 
     // Wait a tick for Tabulator to finish rendering
@@ -156,8 +163,6 @@ export async function reloadConfiguration(table) {
   // 10. Restore local search filter if it was active
   if (capturedLocalSearch && table.table) {
     log(Subsystems.TABLE, Status.DEBUG, `[${table.cssPrefix}] Restoring local search: "${capturedLocalSearch}"`);
-    // Import performLocalSearch dynamically to avoid circular deps
-    const { performLocalSearch } = await import('./navigator/navigator-builder.js');
     performLocalSearch(table, capturedLocalSearch);
   }
 

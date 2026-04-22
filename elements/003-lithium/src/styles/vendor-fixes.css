@@ -13,6 +13,17 @@
    TABULATOR GLOBAL OVERRIDES
    ═════════════════════════════════════════════════════════════════════════════ */
 
+.lithium-table-selector-icon {
+  display: inline-flex;
+  padding-top: 1px;
+}
+
+.lithium-table-container .tabulator-footer, .lithium-table-container .tabulator-calcs, .lithium-table-container .tabulator-calcs-bottom, .lithium-table-container .tabulator-calcs-holder {
+	border-top: none;
+	border-bottom: none;
+	z-index: 31;
+}
+
 /* Base font size for all Tabulator tables */
 .tabulator {
   font-size: var(--font-size-sm);
@@ -177,7 +188,7 @@
 .tabulator-edit-list-item img,
 .lithium-table-container .tabulator-row .tabulator-cell svg,
 .lithium-table-container .tabulator-row .tabulator-cell img {
-  font-size: 12px;
+  font-size: 14px;
   max-height: 18px;
   max-width: 18px; 
   filter: drop-shadow(0px 0px 1px white) drop-shadow(0px 0px 1px black);

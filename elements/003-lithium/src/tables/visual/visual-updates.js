@@ -21,10 +21,11 @@ export function updateSelectorCell(table, row, isSelected) {
 
     if (isSelected) {
       const pkField = table.primaryKeyField || 'id';
-      const isEditing = table.isEditing && table.editingRowId === row.getData()[pkField];
+      // const isEditing = table.isEditing && table.editingRowId === row.getData()[pkField];
+      const isEditing = table.isEditing;
       el.innerHTML = isEditing
-        ? `<span class="${table.cssPrefix}-selector-indicator ${table.cssPrefix}-selector-edit">&#10073;</span>`
-        : `<span class="${table.cssPrefix}-selector-indicator ${table.cssPrefix}-selector-active">&#9658;</span>`;
+        ? `<div class="lithium-table-selector-icon ${table.cssPrefix}-selector-indicator ${table.cssPrefix}-selector-edit"><fa fa-pencil></fa></div>`
+        : `<div class="lithium-table-selector-icon ${table.cssPrefix}-selector-indicator ${table.cssPrefix}-selector-active"><fa fa-caret-large-right></fa></div>`;
     } else {
       el.innerHTML = '';
     }

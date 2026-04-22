@@ -275,6 +275,7 @@ function buildTokenData(sample, now) {
     try { example = sample.toFormat(t.token); } catch (_e) { example = '-'; }
     try { current = now.toFormat(t.token); } catch (_e) { current = '-'; }
     return {
+      id: t.token,  // Add id field for primary key
       token: t.token,
       description: t.desc,
       group: t.group,
@@ -655,6 +656,7 @@ export class DateFormatsPage extends BaseSettingsPage {
       storageKey: 'profile_luxon_tokens',
       app: null,
       readonly: true,
+      primaryKeyField: ['token'],
       localSearch: true,
       localSearchFields: ['token', 'description', 'group'],
       useOverlayScrollbars: true,
@@ -662,7 +664,7 @@ export class DateFormatsPage extends BaseSettingsPage {
     });
 
     await this._tokenTable.init();
-    this._tokenTable.loadStaticData(buildTokenData(sample, now), { autoSelect: false });
+    this._tokenTable.loadStaticData(buildTokenData(sample, now), { autoSelect: true });
 
   }
 
@@ -673,7 +675,7 @@ export class DateFormatsPage extends BaseSettingsPage {
     if (!this._tokenTable?.table) return;
     const sample = this._getSampleDateTime();
     const now = this._getDateTimeNow();
-    this._tokenTable.loadStaticData(buildTokenData(sample, now), { autoSelect: false });
+    this._tokenTable.loadStaticData(buildTokenData(sample, now), { autoSelect: true });
   }
 
   /**

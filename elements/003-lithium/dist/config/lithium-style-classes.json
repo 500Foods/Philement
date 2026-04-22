@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS class selectors/names used across the Lithium codebase",
-    "generated": "2026-04-22T20:52:06.773Z",
+    "generated": "2026-04-22T23:19:40.236Z",
     "sources": {
       "css": "53 files in src/**/*.css",
-      "js": "146 files in src/**/*.js",
+      "js": "147 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
-    "total_selectors": 1961,
-    "total_occurrences": 30822
+    "total_selectors": 1964,
+    "total_occurrences": 30814
   },
   "selectors": [
     {
@@ -7054,6 +7054,20 @@
       }
     },
     {
+      "selector": ".first-visible-col",
+      "css": 0,
+      "js": 3,
+      "html": 0,
+      "total": 3,
+      "files": {
+        "css": [],
+        "js": [
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": []
+      }
+    },
+    {
       "selector": ".flatpickr-popup-wrapper",
       "css": 1,
       "js": 2,
@@ -8860,6 +8874,20 @@
         "html": [
           "src/managers/login/login.html"
         ]
+      }
+    },
+    {
+      "selector": ".last-visible-col",
+      "css": 0,
+      "js": 3,
+      "html": 0,
+      "total": 3,
+      "files": {
+        "css": [],
+        "js": [
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": []
       }
     },
     {
@@ -11719,13 +11747,39 @@
       }
     },
     {
-      "selector": ".lithium-table-container .tabulator-calcs-bottom",
+      "selector": ".lithium-table-container .tabulator-calcs",
       "css": 1,
       "js": 4,
       "html": 8,
       "total": 13,
       "files": {
         "css": [
+          "src/styles/vendor-fixes.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js",
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container .tabulator-calcs-bottom",
+      "css": 2,
+      "js": 4,
+      "html": 8,
+      "total": 14,
+      "files": {
+        "css": [
+          "src/styles/vendor-fixes.css",
           "src/tables/lithium-table.css"
         ],
         "js": [
@@ -11847,12 +11901,13 @@
     },
     {
       "selector": ".lithium-table-container .tabulator-calcs-holder",
-      "css": 1,
+      "css": 2,
       "js": 4,
       "html": 8,
-      "total": 13,
+      "total": 14,
       "files": {
         "css": [
+          "src/styles/vendor-fixes.css",
           "src/tables/lithium-table.css"
         ],
         "js": [
@@ -11964,6 +12019,30 @@
           "src/tables/lithium-table-base.js",
           "src/tables/visual/column-tooltips.js",
           "src/tables/visual/visual-updates.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container .tabulator-footer",
+      "css": 1,
+      "js": 3,
+      "html": 8,
+      "total": 12,
+      "files": {
+        "css": [
+          "src/styles/vendor-fixes.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js"
         ],
         "html": [
           "src/managers/lookups/lookups.html",
@@ -12165,60 +12244,6 @@
       "js": 10,
       "html": 8,
       "total": 19,
-      "files": {
-        "css": [
-          "src/tables/lithium-table.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson-citations.js",
-          "src/tables/column-manager/cm-ui.js",
-          "src/tables/events/event-handlers.js",
-          "src/tables/lithium-table-base.js",
-          "src/tables/visual/column-tooltips.js",
-          "src/tables/visual/visual-updates.js"
-        ],
-        "html": [
-          "src/managers/lookups/lookups.html",
-          "src/managers/profile-manager/profile-manager.html",
-          "src/managers/queries/queries.html",
-          "src/managers/style-manager/style-manager.html",
-          "src/managers/version-history/version-history.html"
-        ]
-      }
-    },
-    {
-      "selector": ".lithium-table-container .tabulator-header .tabulator-col.first-visible-col",
-      "css": 1,
-      "js": 13,
-      "html": 8,
-      "total": 22,
-      "files": {
-        "css": [
-          "src/tables/lithium-table.css"
-        ],
-        "js": [
-          "src/managers/crimson/crimson-citations.js",
-          "src/tables/column-manager/cm-ui.js",
-          "src/tables/events/event-handlers.js",
-          "src/tables/lithium-table-base.js",
-          "src/tables/visual/column-tooltips.js",
-          "src/tables/visual/visual-updates.js"
-        ],
-        "html": [
-          "src/managers/lookups/lookups.html",
-          "src/managers/profile-manager/profile-manager.html",
-          "src/managers/queries/queries.html",
-          "src/managers/style-manager/style-manager.html",
-          "src/managers/version-history/version-history.html"
-        ]
-      }
-    },
-    {
-      "selector": ".lithium-table-container .tabulator-header .tabulator-col.last-visible-col",
-      "css": 1,
-      "js": 13,
-      "html": 8,
-      "total": 22,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -14038,6 +14063,22 @@
         "html": [
           "index.html"
         ]
+      }
+    },
+    {
+      "selector": ".lithium-table-selector-icon",
+      "css": 1,
+      "js": 2,
+      "html": 0,
+      "total": 3,
+      "files": {
+        "css": [
+          "src/styles/vendor-fixes.css"
+        ],
+        "js": [
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": []
       }
     },
     {
