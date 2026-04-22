@@ -253,6 +253,19 @@ When clicked, the Refresh button performs a complete refresh including:
 | ⏩ Next Page | Page down | `Page Down` |
 | ⏭ Last | Go to last record | `End` |
 
+**Shared navigation guarantees:**
+
+- LithiumTable navigation state is now managed at the shared component level, not in individual managers.
+- `first`, `last`, `prev`, `next`, and page navigation all route through `src/tables/navigation/navigation.js`.
+- For grouped tables, LithiumTable now expands parent groups when needed and uses Tabulator-aware scrolling plus a direct `.tabulator-tableholder` fallback so the selected row is brought into view even in fixed-height virtualized tables.
+- Navigator button enabled/disabled state is also shared. It is derived from Tabulator row position (`row.getPosition(true)`) rather than only relying on row component identity, which is more reliable in grouped tables.
+- When loading static data with `autoSelect: false`, LithiumTable must clear `_inSelectionTransition` and update button state immediately. This is now handled in `src/tables/data/data-loading.js`. Do not reintroduce manager-local workarounds for this flag unless there is a new documented edge case.
+
+**Implementation rule:**
+
+- If a manager needs record navigation behavior, use the shared LithiumTable navigation helpers.
+- Do not add manager-specific `row.scrollTo()` or bespoke nav-button state logic unless the issue cannot be solved in `src/tables/navigation/navigation.js`, `src/tables/navigator/navigator-builder.js`, or `src/tables/data/data-loading.js`.
+
 ### 3. Manage Block
 
 | Button | Action |

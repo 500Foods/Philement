@@ -32,7 +32,10 @@ export const LithiumTableOpsMixin = {
         this.table.deselectRow(selectedRows);
       }
       newRow.select();
-      newRow.scrollTo();
+      // Defer scroll to ensure Tabulator has rendered the row
+      requestAnimationFrame(() => {
+        newRow?.scrollTo?.('center', false);
+      });
       await this.enterEditMode(newRow);
 
       // Focus first editable cell
@@ -103,7 +106,10 @@ export const LithiumTableOpsMixin = {
         this.table.deselectRow(selectedRows);
       }
       newRow.select();
-      newRow.scrollTo();
+      // Defer scroll to ensure Tabulator has rendered the row
+      requestAnimationFrame(() => {
+        newRow?.scrollTo?.('center', false);
+      });
       await this.enterEditMode(newRow);
     }
   },
@@ -287,7 +293,10 @@ export const LithiumTableOpsMixin = {
     // Select next row if available
     if (nextRow) {
       nextRow.select();
-      nextRow.scrollTo();
+      // Defer scroll to ensure Tabulator has rendered the row
+      requestAnimationFrame(() => {
+        nextRow?.scrollTo?.('center', false);
+      });
     }
 
     await this.exitEditMode('cancel');

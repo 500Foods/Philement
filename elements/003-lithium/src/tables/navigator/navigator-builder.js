@@ -318,7 +318,17 @@ function getRowsAndIndex(table) {
 
     const selectedRows = table.table.getSelectedRows();
     const selectedRow = selectedRows.length > 0 ? selectedRows[0] : null;
-    const selectedIndex = selectedRow ? rows.findIndex((r) => r === selectedRow) : -1;
+    let selectedIndex = -1;
+
+    if (selectedRow) {
+      const selectedPosition = selectedRow.getPosition?.(true);
+
+      if (Number.isFinite(selectedPosition) && selectedPosition > 0) {
+        selectedIndex = selectedPosition - 1;
+      } else {
+        selectedIndex = rows.findIndex((r) => r === selectedRow);
+      }
+    }
 
     return { rows, selectedIndex };
   } catch {

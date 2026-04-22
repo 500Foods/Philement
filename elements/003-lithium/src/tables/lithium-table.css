@@ -112,7 +112,7 @@
   overflow: hidden;
   margin: var(--space-2) var(--space-3);
   border-radius: var(--border-radius-md);
-  border: var(--border-standard);
+  border: 1px solid var(--accent-alt-primary);
   background: var(--bg-secondary);
   position: relative;
   min-width: 150px; /* Match nav block width */
@@ -424,7 +424,7 @@
 
 /* Header */
 .lithium-table-container .tabulator-header {
-  background: var(--bg-tertiary);
+  background: var(--accent-alt-primary);
   border-bottom: var(--border-standard);
   color: var(--text-primary);
   font-weight: 500;
@@ -439,9 +439,9 @@
 }
 
 .lithium-table-container .tabulator-header .tabulator-col {
-  background: var(--bg-tertiary);
+  background: var(--accent-alt-primary);
   border-right: var(--border-standard);
-  min-height: 22px;
+  min-height: 23px;
   padding: 0px 0px 0px 6px;
   transition: min-height var(--transition-std);
 }                              
@@ -460,9 +460,9 @@ div.lithium-table-container > div:nth-child(1) > div:nth-child(1) > div:nth-chil
 }
 
 .lithium-table-container .tabulator-header .tabulator-col-content {
-  padding: 0;
+  padding: 1px 0px 0px;
   height: auto;
-  min-height: 22px;
+  min-height: 23px;
   transition: min-height var(--transition-std);
 }
 

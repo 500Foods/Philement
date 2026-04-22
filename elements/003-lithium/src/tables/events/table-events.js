@@ -172,6 +172,7 @@ export function wireTableEvents(table) {
     setTimeout(() => {
       table.updateVisibleColumnClasses();
       table.initColumnHeaderTooltips();
+      processIcons(table.container);
     }, 100);
   });
 
@@ -180,6 +181,7 @@ export function wireTableEvents(table) {
   table.table.on('dataLoaded', () => table.updateGroupIcons());
   table.table.on('renderComplete', () => table.updateGroupIcons());
   table.table.on('tableRedrawn', () => table.updateGroupIcons());
+  table.table.on('renderComplete', () => processIcons(table.container));
 }
 
 export default { wireTableEvents };

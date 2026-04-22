@@ -20,6 +20,47 @@ let iconConfig = null;
 let iconLookups = null;
 let isInitialized = false;
 
+/**
+ * Decode any HTML entities in a string.
+ * @param {string} value
+ * @returns {string}
+ */
+function decodeHtmlEntities(value) {
+  if (typeof value !== 'string' || !value) return value;
+
+  const textarea = document.createElement('textarea');
+  textarea.innerHTML = value;
+  return textarea.value;
+}
+
+/**
+ * Normalize icon markup so downstream code always receives real HTML.
+ * This handles server/cache values that arrive entity-escaped and ensures
+ * custom <fa> tags have a closing tag.
+ * @param {string} value
+ * @param {string} fallback
+ * @returns {string}
+ */
+export function normalizeIconHtml(value, fallback = '') {
+  if (typeof value !== 'string') return fallback;
+
+  let html = value.trim();
+  if (!html) return fallback;
+
+  if (html.includes('&lt;') || html.includes('&gt;') || html.includes('&#')) {
+    html = decodeHtmlEntities(html).trim();
+  }
+
+  if (/^<fa\s+.+?>$/i.test(html) && !html.includes('</fa>')) {
+    const match = html.match(/^<fa\s+(.+?)\s*\/?>$/i);
+    if (match) {
+      html = `<fa ${match[1]}></fa>`;
+    }
+  }
+
+  return html || fallback;
+}
+
 // Font Awesome class mappings
 const FA_PREFIX_MAP = {
   'solid': 'fas',
@@ -156,7 +197,7 @@ function getLookupIcon(name) {
   }
 
   // Parse the icon HTML from value_txt or icon field
-  const iconHtml = lookup.value_txt || lookup.icon || lookup.html;
+  const iconHtml = normalizeIconHtml(lookup.value_txt || lookup.icon || lookup.html);
 
   if (!iconHtml) {
     return null;

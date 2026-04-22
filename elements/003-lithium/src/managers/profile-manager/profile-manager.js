@@ -21,6 +21,7 @@ import { setTableWidth } from '../../tables/settings/table-settings.js';
 import { authQuery } from '../../shared/conduit.js';
 import { log, Subsystems, Status } from '../../core/log.js';
 import { processIcons } from '../../core/icons.js';
+import { normalizeIconHtml } from '../../core/icons.js';
 import { initToolbars, setupManagerFooterIcons, createFontPopup } from '../../core/manager-ui.js';
 import { ManagerEditHelper } from '../../core/manager-edit-helper.js';
 import { getMenu, buildManagerIconsRegistry } from '../../shared/menu.js';
@@ -290,9 +291,11 @@ export default class ProfileManager {
       log(Subsystems.TABLE, Status.INFO,
         `[ProfileManager] Loaded ${this.userOptions.length} user options`);
 
-      // Process icons after table data is loaded (ensures <fa> tags in HTML formatter cells are converted)
+      // Process icons after the table has rendered HTML formatter cells.
       requestAnimationFrame(() => {
-        processIcons(this.elements.tableContainer);
+        requestAnimationFrame(() => {
+          processIcons(this.elements.tableContainer);
+        });
       });
 
       // Restore previously selected section after data is loaded
@@ -304,9 +307,11 @@ export default class ProfileManager {
       // Don't auto-select on error either
       this.optionsTable.loadStaticData(this.userOptions, { autoSelect: false });
 
-      // Process icons after error recovery
+      // Process icons after error recovery once the table DOM is present.
       requestAnimationFrame(() => {
-        processIcons(this.elements.tableContainer);
+        requestAnimationFrame(() => {
+          processIcons(this.elements.tableContainer);
+        });
       });
 
       // Restore previously selected section even on error (using default options)
@@ -364,6 +369,7 @@ export default class ProfileManager {
       if (tabulatorRow) {
         // Select row in table - this triggers onRowSelected which calls handleOptionSelected
         table.selectRow(tabulatorRow);
+        this.optionsTable?.updateMoveButtonState?.();
         tabulatorRow.scrollTo();
         log(Subsystems.MANAGER, Status.INFO,
           `[ProfileManager] Restored selected section: ${row.label} (index: ${index})`);
@@ -390,6 +396,7 @@ export default class ProfileManager {
 
     if (tabulatorRow) {
       table.selectRow(tabulatorRow);
+      this.optionsTable?.updateMoveButtonState?.();
       tabulatorRow.scrollTo();
       const row = this.userOptions.find(opt => opt.index === index);
       log(Subsystems.MANAGER, Status.INFO,
@@ -424,6 +431,7 @@ export default class ProfileManager {
     return sections.map((section, position) => {
       const index = section[3] ?? (position + 1);
       const isInternal = index < 0;
+      const sectionIcon = normalizeIconHtml(section[1], '<fa fa-cube></fa>');
 
       // For manager entries (index >= 0), merge with menu data
       if (!isInternal && this._managerIcons[index]) {
@@ -432,7 +440,7 @@ export default class ProfileManager {
         return {
           key_idx: position + 1,
           section: groupName,
-          icon: menuInfo.iconHtml || section[1] || '<fa fa-cube></fa>',
+          icon: normalizeIconHtml(menuInfo.iconHtml, sectionIcon || '<fa fa-cube></fa>') || sectionIcon || '<fa fa-cube></fa>',
           label: menuInfo.name || section[2] || 'Unknown',
           index: index,
           status_a1: 1,
@@ -443,7 +451,7 @@ export default class ProfileManager {
       return {
         key_idx: position + 1,
         section: section[0] || '',
-        icon: section[1] || '',
+        icon: sectionIcon || '',
         label: section[2] || '',
         index: index,
         status_a1: 1,

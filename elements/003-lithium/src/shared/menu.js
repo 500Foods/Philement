@@ -12,6 +12,7 @@
 import { authQuery } from './conduit.js';
 import { log, Subsystems, Status } from '../core/log.js';
 import { getConfigValue, isConfigLoaded, loadConfig } from '../core/config.js';
+import { normalizeIconHtml } from '../core/icons.js';
 
 // QueryRef for main menu
 const MENU_QUERY_REF = 46;
@@ -147,21 +148,7 @@ export function parseCollection(collection) {
   try {
     const parsed = typeof collection === 'string' ? JSON.parse(collection) : collection;
     
-    // Get icon HTML from server, ensuring it has a proper closing tag
-    // Server may return: <fa fa-fw fa-xl fa-receipt> (no closing tag)
-    // We need: <fa fa-fw fa-xl fa-receipt></fa>
-    let iconHtml = parsed.icon || fallback.iconHtml;
-    
-    // Ensure the icon tag is properly closed
-    if (iconHtml && !iconHtml.includes('</fa>')) {
-      // Extract the tag content and wrap with proper opening/closing tags
-      const match = iconHtml.match(/<fa\s+(.+?)\/?>/);
-      if (match) {
-        iconHtml = `<fa ${match[1]}></fa>`;
-      } else {
-        iconHtml = fallback.iconHtml;
-      }
-    }
+    const iconHtml = normalizeIconHtml(parsed.icon, fallback.iconHtml) || fallback.iconHtml;
     
     // Items with negative index should be hidden (Main Menu = -2, Login = -1)
     const index = parsed.index !== undefined ? parsed.index : 0;
