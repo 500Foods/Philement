@@ -257,11 +257,26 @@ export default class VersionHistoryManager {
         this.versionsTable.table.restoreRedraw?.();
       }
 
-      // Auto-select first row and update button state
+      // Restore previously selected version or select first row
       requestAnimationFrame(() => {
         const activeRows = this.versionsTable.table.getRows('active');
         if (activeRows.length > 0) {
-          activeRows[0].select();
+          // Try to restore previously selected version
+          const savedVersionId = localStorage.getItem(SELECTED_VERSION_KEY);
+          let selectedRow = null;
+
+          if (savedVersionId) {
+            const savedId = parseInt(savedVersionId, 10);
+            selectedRow = activeRows.find(row => row.getData().key_idx === savedId);
+          }
+
+          // If no saved or saved not found, select first row
+          if (!selectedRow) {
+            selectedRow = activeRows[0];
+          }
+
+          selectedRow.select();
+          selectedRow.scrollTo();
         }
         this.versionsTable.updateMoveButtonState();
       });
