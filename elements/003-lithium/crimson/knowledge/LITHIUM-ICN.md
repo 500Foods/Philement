@@ -333,6 +333,28 @@ const config = getIconConfiguration();
 console.log('Icon set:', config.set);
 ```
 
+## Dynamic Table HTML
+
+Lithium tables have one critical icon rule:
+
+- `processIcons()` and the MutationObserver only work when the DOM contains real `<fa>` tags.
+- If a data source provides escaped markup such as `&lt;fa fa-user&gt;&lt;/fa&gt;`, the table cell will render literal text and no later icon-processing pass can recover it.
+
+Use the shared normalizer before storing or rendering icon HTML from server data, lookups, or cached menu payloads:
+
+```javascript
+import { normalizeIconHtml } from '../../core/icons.js';
+
+const safeIconHtml = normalizeIconHtml(rawIconHtml, '<fa fa-cube></fa>');
+```
+
+`normalizeIconHtml()` does two things:
+
+- decodes HTML entities like `&lt;fa ...&gt;`
+- closes bare `<fa ...>` tags so they become `<fa ...></fa>`
+
+This is the correct fix for cold-load cases where icon markup sometimes arrives escaped from cache or server JSON.
+
 ---
 
 ## Icon Rotation Pattern

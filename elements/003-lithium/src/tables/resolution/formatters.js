@@ -7,6 +7,8 @@
  * @module tables/resolution/formatters
  */
 
+import { processIcons } from '../../core/icons.js';
+
 // ── Custom Calculation Functions ────────────────────────────────────────────
 
 /**
@@ -235,26 +237,20 @@ export function formatBuiltinValue(value, formatterName, params) {
  * @returns {Function} Tabulator formatter function
  */
 export function createHtmlFormatter() {
-  return function(cell, onRendered) {
+  return function(cell, _formatterParams, onRendered) {
     const value = cell.getValue();
     if (value == null || value === '') return '';
 
     // Process icons after the cell is rendered and added to DOM
     // This ensures the MutationObserver in icons.js catches the new <fa> elements
-    if (onRendered) {
+    if (typeof onRendered === 'function') {
       onRendered(function() {
         // Double requestAnimationFrame ensures DOM is fully updated
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
             const cellEl = cell.getElement();
             if (cellEl) {
-              // Import and call processIcons directly for immediate processing
-              import('../../core/icons.js').then(({ processIcons }) => {
-                processIcons(cellEl);
-              }).catch(() => {
-                // Fallback: rely on the global MutationObserver
-                // The icons.js MutationObserver should catch these elements
-              });
+              processIcons(cellEl);
             }
           });
         });

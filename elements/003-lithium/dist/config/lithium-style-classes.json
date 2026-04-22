@@ -1,7 +1,7 @@
 {
   "_meta": {
     "description": "CSS class selectors/names used across the Lithium codebase",
-    "generated": "2026-04-21T20:15:46.017Z",
+    "generated": "2026-04-22T00:31:05.728Z",
     "sources": {
       "css": "52 files in src/**/*.css",
       "js": "146 files in src/**/*.js",

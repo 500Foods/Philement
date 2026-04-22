@@ -257,8 +257,6 @@
 
 .table-container {
   overflow-x: auto;
-  border: var(--border-standard);
-  border-radius: var(--border-radius-lg);
 }
 
 .table {
