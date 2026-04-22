@@ -171,7 +171,10 @@ export function autoSelectRow(table, targetId) {
         const rowId = getCompositeRowId(row.getData(), pkFields);
         if (String(rowId) === String(targetId)) {
           row.select();
-          row.scrollTo();
+          // Defer scroll to ensure Tabulator has rendered the row
+          requestAnimationFrame(() => {
+            row?.scrollTo?.('center', false);
+          });
           // Save selected row ID for persistence across sessions
           table.saveSelectedRowId?.(getCompositeRowId(row.getData(), pkFields));
           break;
@@ -180,7 +183,10 @@ export function autoSelectRow(table, targetId) {
     } else {
       if (rows.length > 0) {
         rows[0].select();
-        rows[0].scrollTo();
+        // Defer scroll to ensure Tabulator has rendered the row
+        requestAnimationFrame(() => {
+          rows[0]?.scrollTo?.('center', false);
+        });
         // Save selected row ID for persistence across sessions
         table.saveSelectedRowId?.(getCompositeRowId(rows[0].getData(), pkFields));
       }
@@ -258,7 +264,10 @@ export function loadStaticData(table, rows, options = {}) {
         const activeRows = table.table.getRows('active');
         if (activeRows.length > 0) {
           activeRows[0].select();
-          activeRows[0].scrollTo();
+          // Defer scroll to ensure Tabulator has rendered the row
+          requestAnimationFrame(() => {
+            activeRows[0]?.scrollTo?.('center', false);
+          });
           // Save selected row ID for persistence across sessions
           const pkFields = table.primaryKeyField;
           if (pkFields) {
@@ -271,6 +280,10 @@ export function loadStaticData(table, rows, options = {}) {
       // Clear transition flag after selection is restored
       table._inSelectionTransition = false;
     });
+  } else {
+    table._inSelectionTransition = false;
+    table.updateMoveButtonState?.();
+    table.updateDuplicateButtonState?.();
   }
 
   table.onDataLoaded(table.currentData);

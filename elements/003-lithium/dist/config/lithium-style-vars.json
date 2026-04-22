@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS custom properties (variables) used across the Lithium codebase",
-    "generated": "2026-04-21T20:15:44.308Z",
+    "generated": "2026-04-22T00:31:04.063Z",
     "sources": {
       "css": "52 files in src/**/*.css",
       "js": "146 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
-    "total_variables": 236,
-    "total_occurrences": 3594
+    "total_variables": 235,
+    "total_occurrences": 3589
   },
   "variables": [
     {
@@ -20,10 +20,10 @@
     },
     {
       "name": "--accent-alt-primary",
-      "css": 19,
+      "css": 22,
       "js": 0,
       "html": 0,
-      "total": 19
+      "total": 22
     },
     {
       "name": "--accent-alt-primary-muted",
@@ -251,17 +251,17 @@
     },
     {
       "name": "--bg-tertiary",
-      "css": 99,
+      "css": 97,
       "js": 2,
       "html": 0,
-      "total": 101
+      "total": 99
     },
     {
       "name": "--border-color",
-      "css": 65,
+      "css": 64,
       "js": 1,
       "html": 0,
-      "total": 66
+      "total": 65
     },
     {
       "name": "--border-color-focus",
@@ -300,10 +300,10 @@
     },
     {
       "name": "--border-radius-lg",
-      "css": 30,
+      "css": 29,
       "js": 0,
       "html": 0,
-      "total": 30
+      "total": 29
     },
     {
       "name": "--border-radius-md",
@@ -328,10 +328,10 @@
     },
     {
       "name": "--border-standard",
-      "css": 69,
+      "css": 66,
       "js": 1,
       "html": 0,
-      "total": 70
+      "total": 67
     },
     {
       "name": "--border-width",
@@ -871,13 +871,6 @@
       "js": 2,
       "html": 0,
       "total": 2
-    },
-    {
-      "name": "--radius-lg",
-      "css": 1,
-      "js": 0,
-      "html": 0,
-      "total": 1
     },
     {
       "name": "--radius-md",

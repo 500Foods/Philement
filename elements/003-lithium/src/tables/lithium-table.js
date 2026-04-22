@@ -250,8 +250,10 @@ export function resolveColumn(fieldName, colDef, coltypes, options = {}) {
     // Use custom sorter that sorts by lookup label, not raw ID
     tabulatorCol.sorter = createLookupSorter(colDef.lookupRef);
   } else if (merged.formatter) {
-    // Use custom HTML formatter for 'html' type to process Lithium icons
-    if (merged.formatter === 'html') {
+    // Use custom HTML formatter for 'html' type to process Lithium icons.
+    // Also treat the dedicated html coltype as HTML output even if the
+    // formatter inherited from coltypes.default is still plaintext.
+    if (merged.formatter === 'html' || colDef.coltype === 'html') {
       tabulatorCol.formatter = createHtmlFormatter();
     } else {
       tabulatorCol.formatter = wrapFormatter(

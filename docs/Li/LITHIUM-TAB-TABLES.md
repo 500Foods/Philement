@@ -248,6 +248,23 @@ At ANY stage, virtually **any property** can be customized. Examples:
 { field: "amount", coltype: "progress", width: 200, visible: false }
 ```
 
+### HTML Formatter Rule
+
+For columns that intentionally render HTML markup such as Lithium `<fa>` tags, use `formatter: "html"` in the table definition.
+
+Lithium also treats `coltype: "html"` as HTML-rendering intent at the shared resolution layer, even if the inherited default formatter would otherwise be plaintext.
+
+Important behavior:
+
+- LithiumTable resolves `formatter: "html"` through the shared `createHtmlFormatter()` path in `src/tables/resolution/formatters.js`.
+- The formatter must return actual HTML, not entity-escaped text like `&lt;fa ...&gt;`.
+- If data comes from server collections, lookup data, or cached menu data, normalize icon markup before it reaches the table layer. The shared helper is `normalizeIconHtml()` in `src/core/icons.js`.
+- If HTML is entity-escaped before it reaches Tabulator, the cell will display literal text and the icon MutationObserver cannot fix it later because there is no real `<fa>` element in the DOM.
+
+Practical rule:
+
+- Fix escaped-icon issues at the data normalization layer, not by adding more delayed `processIcons()` calls.
+
 ### Deep Merge for Param Objects
 
 Most properties are **replaced** (scalar/array values), but **param objects are deep-merged** across stages. This preserves coltype defaults while allowing partial overrides at each stage:

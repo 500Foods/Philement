@@ -252,8 +252,6 @@
 
 .profile-section {
   background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
   padding: var(--space-lg);
 }
 
@@ -683,7 +681,7 @@
 
 .df-token-navigator {
   flex-shrink: 0;
-  max-width: 900px;
+  max-width: 910px;
 }
 
 /* Flatpickr positioning fix within settings pages */

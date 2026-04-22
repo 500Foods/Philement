@@ -130,7 +130,7 @@
 */
 .lithium-table-container .tabulator-row.tabulator-group span.lithium-group-header svg {
   font-size: 14px;
-  margin: -2px -6px 0px -10px;
+  margin: -2px -6px 0px -8px;
 }
 
 /* Title styling */
@@ -177,6 +177,7 @@
   max-height: 18px;
   max-width: 18px; 
   filter: drop-shadow(0px 0px 1px white) drop-shadow(0px 0px 1px black);
+  align-self: center;
 }
 
 /* Lookup dropdown items - both icon-only and icon+label variants */
