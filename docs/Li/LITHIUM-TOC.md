@@ -1,156 +1,166 @@
 # Lithium Documentation Suite
 
-> **⚠️ MANDATORY:** Before working on any Lithium code, you **MUST** read and follow the guidelines in **[LITHIUM-INS.md](LITHIUM-INS.md)**. This document contains critical coding standards that are enforced during code review. Failure to follow these instructions will result in rejected pull requests.
+> **Before working on Lithium code, read [LITHIUM-INS.md](LITHIUM-INS.md)** — mandatory coding standards enforced during code review.
 
-This directory contains the canonical documentation for the Lithium web application. The docs are split into focused, bite-sized documents for easy reference when working on specific parts of the project.
-
----
-
-## Key Project Notes
-
-> **Important:** When working on Lithium, do NOT attempt to run the development server (`npm run dev`) to test changes. The project requires a running Hydrogen backend and specific environment configuration. Instead, ensure code correctness through:
->
-> - Static analysis and code review
-> - ESLint validation when available
-> - Build verification (`npm run build`)
->
-> Testing is performed in the CI/CD pipeline or manually in a properly configured environment.
+This document is the master index for all Lithium documentation. Use it to find the specific file you need based on your task.
 
 ---
 
-## Documentation Index
+## Critical Implementation Notes
 
-> **Building a new manager?** Start with **[LITHIUM-MGR-NEW.md](LITHIUM-MGR-NEW.md)** — the step-by-step guide.
+### Tour Manager Uses Numeric ID Matching Only
 
-| Document | Purpose |
-|----------|---------|
-| [LITHIUM-INS.md](LITHIUM-INS.md) | **⚠️ CODING STANDARDS** — Mandatory reading before any development work |
-| [LITHIUM-MGR-NEW.md](LITHIUM-MGR-NEW.md) | **⚠️ NEW MANAGER GUIDE** — Step-by-step checklist for adding a LithiumTable-based manager |
-| [LITHIUM-TOC.md](LITHIUM-TOC.md) | **This file** — Table of contents and overview |
-| [LITHIUM-DEV.md](LITHIUM-DEV.md) | Development environment setup, build tools, npm scripts |
-| [LITHIUM-TST.md](LITHIUM-TST.md) | Testing framework, Vitest, coverage |
-| [LITHIUM-LIB.md](LITHIUM-LIB.md) | JavaScript libraries used in the project |
-| [LITHIUM-MGR.md](LITHIUM-MGR.md) | Manager system — overview and patterns |
+The Tour Manager matches tours to managers using **only the numeric portion** of the manager identifier:
+
+- `"003.Profile"` matches `"003.User Profile"` because both have ID **3**
+- `"029.Query Manager"` matches `"029.Queries"` because both have ID **29**
+- The manager name after the dot is ignored
+
+**See:** [LITHIUM-MGR-TOUR.md](LITHIUM-MGR-TOUR.md)
+
+### Cannot Run Development Server Directly
+
+Lithium requires a running Hydrogen backend. Do **not** run `npm run dev` to test changes. Instead:
+- Use static analysis and code review
+- Run ESLint: `npm run lint`
+- Build verification: `npm run build`
+- Testing is performed in CI/CD pipeline
+
+---
+
+## Documentation Index by Category
+
+### Getting Started
+
+| File | Purpose |
+|------|--------|
+| [LITHIUM-TOC.md](LITHIUM-TOC.md) | **This file** — Master index for all docs |
+| [LITHIUM-DEV.md](LITHIUM-DEV.md) | Development environment, prerequisites, npm scripts, build tools |
+| [LITHIUM-INS.md](LITHIUM-INS.md) | **⚠️ Mandatory** — Coding standards and rules for Models |
+| [LITHIUM-TST.md](LITHIUM-TST.md) | Test framework (Vitest), coverage, how to add tests |
+| [LITHIUM-FAQ.md](LITHIUM-FAQ.md) | Common issues, troubleshooting, lessons learned |
+
+### Core Architecture
+
+| File | Purpose |
+|------|--------|
+| [LITHIUM-MGR.md](LITHIUM-MGR.md) | Manager system overview — lifecycle, patterns |
+| [LITHIUM-MGR-NEW.md](LITHIUM-MGR-NEW.md) | **⚠️ New Manager Guide** — Step-by-step checklist |
+| [LITHIUM-API.md](LITHIUM-API.md) | Hydrogen API endpoints, Conduit client library |
+| [LITHIUM-WSS.md](LITHIUM-WSS.md) | WebSocket connection, keepalive, status indicator |
+| [LITHIUM-LUT.md](LITHIUM-LUT.md) | Lookup tables — schema, caching, debugging tips |
+
+### Manager Implementations
+
+| File | Purpose |
+|------|--------|
 | [LITHIUM-MGR-LOGIN.md](LITHIUM-MGR-LOGIN.md) | Login Manager — auth, panels, keyboard shortcuts |
 | [LITHIUM-MGR-MAIN.md](LITHIUM-MGR-MAIN.md) | Main Manager — sidebar, slots, logout |
 | [LITHIUM-MGR-QUERY.md](LITHIUM-MGR-QUERY.md) | Query Manager — fully implemented with LithiumTable |
 | [LITHIUM-MGR-LOOKUPS.md](LITHIUM-MGR-LOOKUPS.md) | Lookups Manager — dual-table parent/child design |
-| [LITHIUM-MGR-STYLE.md](LITHIUM-MGR-STYLE.md) | Style Manager — visual CSS editing with interactive mockups |
+| [LITHIUM-MGR-STYLE.md](LITHIUM-MGR-STYLE.md) | Style Manager — visual CSS editing with CodeMirror |
 | [LITHIUM-MGR-CRIMSON.md](LITHIUM-MGR-CRIMSON.md) | Crimson AI Agent — popup chat interface |
 | [LITHIUM-MGR-TOUR.md](LITHIUM-MGR-TOUR.md) | Tour Manager — Shepherd.js guided tours (Lookup #43) |
-| [LITHIUM-MGR-VERSION.md](LITHIUM-MGR-VERSION.md) | Version Manager — Version history browser (Lookups 44/45) |
-| [LITHIUM-TAB.md](LITHIUM-TAB.md) | LithiumTable Component — reusable Tabulator+Navigator |
-| [LITHIUM-TAB-TABLES.md](LITHIUM-TAB-TABLES.md) | Table Configuration — column types to database, tableDef flow |
-| [LITHIUM-TAB-TYPES.md](LITHIUM-TAB-TYPES.md) | Column Types — type definitions & property reference |
-| [LITHIUM-BAR.md](LITHIUM-BAR.md) | **Toolbar System** — Standardized toolbars for managers |
-| [LITHIUM-COL.md](LITHIUM-COL.md) | **Column Manager** — Runtime column customization UI |
-| [LITHIUM-TAB-PLAN.md](LITHIUM-TAB-PLAN.md) | **LithiumTable Plan (Round 2)** — phased roadmap with gates |
-| [LITHIUM-LUT.md](LITHIUM-LUT.md) | Lookup Tables — schema, caching, accessor functions, **debugging tips** |
-| [LITHIUM-API.md](LITHIUM-API.md) | Hydrogen API endpoints and Conduit client library (`conduit.js`) |
-| [LITHIUM-WSS.md](LITHIUM-WSS.md) | WebSocket connection — app-wide persistent connection, keepalive, status indicator |
-| [LITHIUM-CSS.md](LITHIUM-CSS.md) | CSS architecture, variables, theming |
-| [LITHIUM-OSB.md](LITHIUM-OSB.md) | OverlayScrollbars — cross-browser scrollbar styling for tables, editors |
-| [LITHIUM-TIP.md](LITHIUM-TIP.md) | Tooltip system — FloatingUI, themes, arrows |
+| [LITHIUM-MGR-VERSION.md](LITHIUM-MGR-VERSION.md) | Version Manager — history browser (Lookups 44/45) |
+| [LITHIUM-MGR-SESSION.md](LITHIUM-MGR-SESSION.md) | Session Log Manager — debug output viewer |
+| [LITHIUM-MGR-USERPROFILE.md](LITHIUM-MGR-USERPROFILE.md) | User Profile Manager — preferences |
+
+### LithiumTable (Tabulator-Based Tables)
+
+| File | Purpose |
+|------|--------|
+| [LITHIUM-TAB.md](LITHIUM-TAB.md) | LithiumTable Component — Tabulator + Navigator wrapper |
+| [LITHIUM-TAB-TABLES.md](LITHIUM-TAB-TABLES.md) | Table configuration — columns to database, tableDef flow |
+| [LITHIUM-TAB-TYPES.md](LITHIUM-TAB-TYPES.md) | Column types quick reference |
+| [LITHIUM-TAB-TYPES-*.md](LITHIUM-TAB-TYPES-STAR.md) | Per-type documentation (STRING, INTEGER, DATE, etc.) |
+| [LITHIUM-TAB-PLAN.md](LITHIUM-TAB-PLAN.md) | LithiumTable Phase 2 roadmap with gates |
+
+### UI Components
+
+| File | Purpose |
+|------|--------|
+| [LITHIUM-BAR.md](LITHIUM-BAR.md) | Toolbar system — standardized toolbars |
+| [LITHIUM-COL.md](LITHIUM-COL.md) | Column Manager — runtime column customization |
 | [LITHIUM-KEY.md](LITHIUM-KEY.md) | Keyboard shortcuts — global and manager-specific |
-| [LITHIUM-ICN.md](LITHIUM-ICN.md) | Icon system, Font Awesome, config |
-| [LITHIUM-OTH.md](LITHIUM-OTH.md) | Utilities — transitions, utils, JSON, log, permissions |
+| [LITHIUM-ICN.md](LITHIUM-ICN.md) | Icon system — Font Awesome, config |
+| [LITHIUM-TIP.md](LITHIUM-TIP.md) | Tooltip system — FloatingUI, themes, arrows |
+| [LITHIUM-OSB.md](LITHIUM-OSB.md) | OverlayScrollbars — cross-browser scrollbar styling |
+
+### Styling & CSS
+
+| File | Purpose |
+|------|--------|
+| [LITHIUM-CSS.md](LITHIUM-CSS.md) | CSS architecture — variables, theming |
+| [LITHIUM-LIB.md](LITHIUM-LIB.md) | JavaScript libraries used in the project |
+| [LITHIUM-OTH.md](LITHIUM-OTH.md) | Utilities — transitions, JSON, log, permissions |
+
+### Authentication & Config
+
+| File | Purpose |
+|------|--------|
 | [LITHIUM-JWT.md](LITHIUM-JWT.md) | JWT authentication — lifecycle, claims, validation |
-| [LITHIUM-CFG.md](LITHIUM-CFG.md) | Configuration, lithium.json, settings |
-| [LITHIUM-PWA.md](LITHIUM-PWA.md) | PWA, service worker, fast updates |
-| [LITHIUM-FAQ.md](LITHIUM-FAQ.md) | Lessons learned, issues resolved, troubleshooting |
-| [LITHIUM-WEB.md](LITHIUM-WEB.md) | Deployment process, environment configuration |
+| [LITHIUM-CFG.md](LITHIUM-CFG.md) | Configuration — lithium.json, settings |
+| [LITHIUM-PWA.md](LITHIUM-PWA.md) | PWA — service worker, fast updates |
+
+### Deployment & DevOps
+
+| File | Purpose |
+|------|--------|
+| [LITHIUM-WEB.md](LITHIUM-WEB.md) | Deployment process — environment config |
 
 ---
 
-## ⚠️ Critical Implementation Notes
+## Documentation Map for AI Models
 
-### Tour Manager: Numeric ID Matching Only
+When working on Lithium, reference these files based on your task:
 
-**The Tour Manager ONLY uses numeric IDs for matching tours to managers.** The manager name is completely ignored.
-
-- `"003.Profile"` matches `"003.User Profile"` because both are ID **3**
-- `"029.Query Manager"` matches `"029.Queries"` because both are ID **29**
-- The name after the dot does **NOT** affect matching
-
-**See:** [LITHIUM-MGR-TOUR.md](LITHIUM-MGR-TOUR.md) for full documentation and [LITHIUM-FAQ.md](LITHIUM-FAQ.md) for common pitfalls.
-
----
-
-## Quick Start
-
-```bash
-# Navigate to the Lithium project
-cd elements/003-lithium
-
-# Install dependencies
-npm install
-
-# Start development server
-npm run dev
-
-# Run tests
-npm test
-
-# Build for production
-npm run build:prod
-
-# Deploy
-npm run deploy
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        LITHIUM-TOC.md                          │
+│                    (This file — find your doc)                 │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+        ┌──────────────────────┼──────────────────────┐
+        ▼                      ▼                      ▼
+┌───────────────┐    ┌───────────────┐    ┌───────────────┐
+│ LITHIUM-INS  │    │ LITHIUM-DEV   │    │  LITHIUM-TST   │
+│ (MANDATORY)  │    │  (Devops)     │    │  (Testing)     │
+│              │    │              │    │               │
+│ Coding rules │    │ npm scripts   │    │ Vitest setup  │
+│ File limits │    │ Build system │    │ Coverage    │
+│ CSS-first  │    │ Env vars   │    │ Add tests  │
+└───────────────┘    └───────────────┘    └───────────────┘
 ```
 
----
+### Common Tasks → Right Doc
 
-## What is Lithium?
-
-Lithium is a lightweight, performant, modular single-page application (SPA) built with vanilla JavaScript ES modules. It serves as the frontend for the Philement platform, connecting to the Hydrogen backend.
-
-### Key Characteristics
-
-- **No UI frameworks** — Pure vanilla JavaScript
-- **ES Modules** — Native browser module system
-- **Dark-mode-first** — Custom CSS with CSS variables
-- **PWA-ready** — Service worker for offline support
-- **JWT Authentication** — Secure auth via Hydrogen backend
+| Task | Start Here |
+|------|----------|
+| New to Lithium | [LITHIUM-TOC.md](LITHIUM-TOC.md) (you are here) |
+| Writing code | [LITHIUM-INS.md](LITHIUM-INS.md) first |
+| Setting up dev environment | [LITHIUM-DEV.md](LITHIUM-DEV.md) |
+| Adding a new manager | [LITHIUM-MGR-NEW.md](LITHIUM-MGR-NEW.md) |
+| Working on tables | [LITHIUM-TAB.md](LITHIUM-TAB.md) + [LITHIUM-TAB-TYPES.md](LITHIUM-TAB-TYPES.md) |
+| Writing tests | [LITHIUM-TST.md](LITHIUM-TST.md) |
+| Troubleshooting | [LITHIUM-FAQ.md](LITHIUM-FAQ.md) |
+| Deploying | [LITHIUM-WEB.md](LITHIUM-WEB.md) |
 
 ---
 
 ## Project Location
 
 | Path | Description |
-|------|-------------|
+|------|----------|
 | `elements/003-lithium/` | Main project source |
 | `docs/Li/` | Documentation (this directory) |
-
----
-
-## Key Documentation Links
-
-### For Development
-
-- Start here: [LITHIUM-DEV.md](LITHIUM-DEV.md)
-- Understand libraries: [LITHIUM-LIB.md](LITHIUM-LIB.md)
-- Learn the manager system: [LITHIUM-MGR.md](LITHIUM-MGR.md)
-- **Adding a new manager:** [LITHIUM-MGR-NEW.md](LITHIUM-MGR-NEW.md)
-
-### For Deployment
-
-- Deployment process: [LITHIUM-WEB.md](LITHIUM-WEB.md)
-- Troubleshooting: [LITHIUM-FAQ.md](LITHIUM-FAQ.md)
-
----
 
 ## External Links
 
 | Resource | URL |
 |----------|-----|
-| Live Application | <https://lithium.philement.com> |
-| Coverage Dashboard | <https://lithium.philement.com/coverage/> |
-| Project Source | `elements/003-lithium/` |
+| Live Application | https://lithium.philement.com |
+| Coverage Dashboard | https://lithium.philement.com/coverage/ |
 
 ---
 
-## Documentation Version
-
-This documentation suite was created to replace the older combined `INSTRUCTIONS.md` and `BLUEPRINT.md` files, which had grown confused and outdated. The new split format allows for easier maintenance and targeted updates.
-
-Last reviewed: April 2026
+**Last updated:** April 2026
