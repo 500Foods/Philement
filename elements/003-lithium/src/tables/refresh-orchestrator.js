@@ -7,6 +7,7 @@
  */
 
 import { log, Subsystems, Status } from '../core/log.js';
+import { scrollbarManager } from '../core/scrollbar-manager.js';
 import { _tableDefCache } from './lithium-table.js';
 
 /**
@@ -43,8 +44,11 @@ export async function reloadConfiguration(table) {
   const capturedState = table.captureCurrentState?.();
   const capturedRowId = table.getSelectedRowId?.() || getCurrentlySelectedRowId(table);
 
+  // Also capture local search term so it can be restored after reload
+  const capturedLocalSearch = table._localSearchTerm || '';
+
   log(Subsystems.TABLE, Status.DEBUG,
-    `[${table.cssPrefix}] Captured state: ${capturedRowId ? 'row selected' : 'no row'}, ${Object.keys(capturedState?.columns || {}).length} columns`);
+    `[${table.cssPrefix}] Captured state: ${capturedRowId ? 'row selected' : 'no row'}, ${Object.keys(capturedState?.columns || {}).length} columns, local search: "${capturedLocalSearch}"`);
 
   // 2. Clear the table definition cache for this path so it re-fetches from Lookup 59
   if (table.tablePath && _tableDefCache.has(table.tablePath)) {
@@ -56,14 +60,27 @@ export async function reloadConfiguration(table) {
   table.tableDef = null;
   await table.loadConfiguration();
 
-  // 4. Destroy existing Tabulator table
-  if (table.table) {
-    table.table.destroy();
-    table.table = null;
-  }
+   // 4. Destroy existing Tabulator table and its OverlayScrollbar instance
+   if (table._scrollbarInstance) {
+     log(Subsystems.TABLE, Status.DEBUG, `[${table.cssPrefix}] refresh: destroying OSB before Tabulator destroy`);
+     const oldHolder = table.container?.querySelector?.('.tabulator-tableholder');
+     if (oldHolder && oldHolder.__overlayscrollbars) {
+       delete oldHolder.__overlayscrollbars;
+     }
+     scrollbarManager.destroy(table._scrollbarInstance);
+     table._scrollbarInstance = null;
+     table.container?.classList?.remove('lithium-table-osb-enabled');
+     log(Subsystems.TABLE, Status.DEBUG, `[${table.cssPrefix}] refresh: OSB destroyed`);
+   }
+
+   if (table.table) {
+     table.table.destroy();
+     table.table = null;
+   }
 
   // 5. Recreate the Tabulator table with new configuration
   await table.initTable();
+  log(Subsystems.TABLE, Status.DEBUG, `[${table.cssPrefix}] refresh: initTable completed, OSB instance after initTable: ${!!table._scrollbarInstance}`);
 
   // 6. Restore filters visible state (if previously enabled)
   if (table.filtersVisible && table.table) {
@@ -75,16 +92,27 @@ export async function reloadConfiguration(table) {
     const sampleWidth = Object.values(capturedState.columns || {})[0]?.width;
     log(Subsystems.TABLE, Status.DEBUG, `[${table.cssPrefix}] Applying captured state: ${Object.keys(capturedState.columns || {}).length} columns, first width: ${sampleWidth}`);
 
-    await table.loadTemplate?.(capturedState);
-    log(Subsystems.TABLE, Status.DEBUG, `[${table.cssPrefix}] Applied captured state template`);
-
-    // Debug: verify widths were applied after setColumns
-    if (table.table) {
-      const cols = table.table.getColumns();
-      const firstCol = cols.find(c => c.getField() !== '_selector');
-      const afterWidth = firstCol?.getWidth?.();
-      log(Subsystems.TABLE, Status.DEBUG, `[${table.cssPrefix}] After template, first column width: ${afterWidth}`);
+    // Clear OSB instance before template loads - setColumns() destroys table holder content
+    if (table._scrollbarInstance) {
+      log(Subsystems.TABLE, Status.DEBUG, `[${table.cssPrefix}] refresh: destroying OSB before loadTemplate`);
+      scrollbarManager.destroy(table._scrollbarInstance);
+      table._scrollbarInstance = null;
+      table.container?.classList?.remove('lithium-table-osb-enabled');
+      log(Subsystems.TABLE, Status.DEBUG, `[${table.cssPrefix}] refresh: OSB destroyed`);
     }
+
+    await table.loadTemplate?.(capturedState);
+    log(Subsystems.TABLE, Status.DEBUG, `[${table.cssPrefix}] refresh: loadTemplate completed, scheduling OSB reinit`);
+
+    // Re-initialize OSB after setColumns() destroys and rebuilds everything
+    setTimeout(() => {
+      log(Subsystems.TABLE, Status.DEBUG, `[${table.cssPrefix}] refresh: _initTableScrollbars timeout fired`);
+      table._initTableScrollbars();
+    }, 0);
+    setTimeout(() => {
+      log(Subsystems.TABLE, Status.DEBUG, `[${table.cssPrefix}] refresh: _updateTableScrollbars timeout fired`);
+      table._updateTableScrollbars();
+    }, 100);
   }
 
   // 8. Load data WITHOUT automatic selection (we'll handle it explicitly)
@@ -123,6 +151,14 @@ export async function reloadConfiguration(table) {
     } else {
       log(Subsystems.TABLE, Status.WARN, `[${table.cssPrefix}] Could not restore row ${capturedRowId}`);
     }
+  }
+
+  // 10. Restore local search filter if it was active
+  if (capturedLocalSearch && table.table) {
+    log(Subsystems.TABLE, Status.DEBUG, `[${table.cssPrefix}] Restoring local search: "${capturedLocalSearch}"`);
+    // Import performLocalSearch dynamically to avoid circular deps
+    const { performLocalSearch } = await import('./navigator/navigator-builder.js');
+    performLocalSearch(table, capturedLocalSearch);
   }
 
   log(Subsystems.TABLE, Status.INFO, `[${table.cssPrefix}] Table configuration reloaded`);

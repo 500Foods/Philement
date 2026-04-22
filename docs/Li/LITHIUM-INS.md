@@ -178,6 +178,31 @@ Try to reuse existing CSS where feasible - not everything needs a new CSS file.
 
 ---
 
+### 7. Session Logging
+
+Use the session logging system instead of `console.log` for debugging:
+
+```javascript
+import { log, Subsystems, Status } from '../core/log.js';
+
+// Basic usage
+log(Subsystems.MANAGER, Status.INFO, 'Export button clicked');
+log(Subsystems.MANAGER, Status.DEBUG, 'Export options:', { width: 140, height: 283 });
+
+// Status levels
+log(Subsystem, Status.DEBUG, 'info');    // Development debugging
+log(Subsystem, Status.INFO, 'info');      // General information
+log(Subsystem, Status.WARN, 'info');  // Warnings (non-critical)
+log(Subsystem, Status.ERROR, 'info'); // Errors needing attention
+log(Subsystem, Status.SUCCESS, 'info'); // Successful operations
+```
+
+**Subsystems:** `MANAGER`, `TABLE`, `UI`, `API`, `AUTH`, etc.
+
+**Rationale:** Session log persists across hot reloads and is visible in the browser's Lithium session log panel.
+
+---
+
 ## Code Review Checklist
 
 Before submitting code for review, verify:

@@ -160,13 +160,13 @@ class CodeMirrorInit {
           <div class="nav-right">
             <div class="btn-group btn-group-sm" role="group">
               <button class="btn btn-outline-secondary" id="${elementId}-mode-js" title="JavaScript">
-                <fa fa-js></fa> JS
+                <i class="fa-brands fa-js"></i> JS
               </button>
               <button class="btn btn-outline-secondary" id="${elementId}-mode-html" title="HTML">
-                <fa fa-html5></fa> HTML
+                <i class="fa-brands fa-html5"></i> HTML
               </button>
               <button class="btn btn-outline-secondary" id="${elementId}-mode-css" title="CSS">
-                <fa fa-css3></fa> CSS
+                <i class="fa-brands fa-css3"></i> CSS
               </button>
               <button class="btn btn-outline-secondary" id="${elementId}-mode-sql" title="SQL">
                 <fa fa-database></fa> SQL

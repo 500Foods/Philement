@@ -13,6 +13,7 @@
 import { getConfigValue } from './config.js';
 import { eventBus, Events } from './event-bus.js';
 import { getLookupCategory } from '../shared/lookups.js';
+import { log, Subsystems, Status } from './log.js';
 
 // Module state
 let observer = null;
@@ -590,6 +591,82 @@ export function isReady() {
   return isInitialized;
 }
 
+/**
+ * Load icon names from a text file (one icon name per line).
+ * @param {string} path - Path to the icons file
+ * @returns {Promise<string[]>} Array of icon names
+ */
+async function loadIconFile(path) {
+  try {
+    const response = await fetch(path);
+    if (!response.ok) return [];
+    const text = await response.text();
+    return text
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line && !line.startsWith('#'));
+  } catch (_e) {
+    return [];
+  }
+}
+
+/**
+ * Preload icons by inserting hidden icon elements into the DOM.
+ * This forces Font Awesome to download and cache the icon SVGs
+ * before they are needed visually.
+ * Supports: <fa fa-square></fa>, <i class="fa-solid fa-square"></i>, <img src="...">
+ * @param {string[]} markupArr - Array of icon markup strings
+ * @param {number} delayMs - Delay before removing the elements (default 10000ms)
+ */
+function preloadIcons(markupArr, delayMs = 10000) {
+  if (!markupArr || markupArr.length === 0) return;
+  if (!document.body) return;
+
+  const container = document.createElement('div');
+  container.id = 'li-icon-preload';
+  container.style.display = 'none';
+  container.setAttribute('aria-hidden', 'true');
+
+  for (const markup of markupArr) {
+    container.insertAdjacentHTML('beforeend', markup);
+  }
+
+  document.body.appendChild(container);
+
+  setTimeout(() => {
+    if (container.parentNode) {
+      container.parentNode.removeChild(container);
+    }
+  }, delayMs);
+}
+
+/**
+ * Preload icons from config files (icons-dev.txt and icons-usr.txt).
+ * Called during app initialization to cache icons early.
+ * File format: one icon element per line, e.g.:
+ *   <fa fa-user></fa>
+ *   <fa-brands fa-css3></fa>
+ *   <i class="fa-solid fa-square-full"></i>
+ *   <img src="assets/icons/custom.png">
+ */
+export async function preloadIconsFromConfig() {
+  log(Subsystems.STARTUP, Status.INFO, 'Submitting icon cache requests');
+
+  const devIcons = await loadIconFile('/config/icons-dev.txt');
+  const usrIcons = await loadIconFile('/config/icons-usr.txt');
+
+  const devCount = devIcons.length;
+  const usrCount = usrIcons.length;
+  const allIcons = [...new Set([...devIcons, ...usrIcons])].filter(Boolean);
+
+  if (allIcons.length > 0) {
+    preloadIcons(allIcons);
+    log(Subsystems.STARTUP, Status.INFO, `Cached ${allIcons.length} icons (${devCount} from icons-dev.txt, ${usrCount} from icons-usr.txt)`);
+  } else {
+    log(Subsystems.STARTUP, Status.INFO, 'No icons to cache');
+  }
+}
+
 // Default export
 export default {
   init,
@@ -599,5 +676,6 @@ export default {
   getIconConfiguration,
   setIcon,
   createIcon,
-  isReady
+  isReady,
+  preloadIconsFromConfig
 };
