@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS class selectors/names used across the Lithium codebase",
-    "generated": "2026-04-22T15:21:56.302Z",
+    "generated": "2026-04-22T20:52:06.773Z",
     "sources": {
       "css": "53 files in src/**/*.css",
       "js": "146 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
-    "total_selectors": 1960,
-    "total_occurrences": 30821
+    "total_selectors": 1961,
+    "total_occurrences": 30822
   },
   "selectors": [
     {
@@ -6949,6 +6949,20 @@
           "src/managers/crimson/crimson-chat.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/crimson/crimson-ui.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".fa-square-full",
+      "css": 0,
+      "js": 1,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [],
+        "js": [
+          "src/core/icons.js"
         ],
         "html": []
       }

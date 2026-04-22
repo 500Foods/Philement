@@ -519,6 +519,12 @@ export class LithiumTableBase {
 
     this._initTableScrollbars();
 
+    // If tableHolder not found yet, retry after a short delay
+    // This can happen when initTable() is called before Tabulator finishes building
+    if (!this._scrollbarInstance) {
+      setTimeout(() => this._initTableScrollbars(), 100);
+    }
+
     // Initialize FloatingUI tooltips on column headers
     // Use setTimeout to ensure Tabulator has rendered the header elements
     setTimeout(() => this.initColumnHeaderTooltips(), 100);
@@ -528,25 +534,44 @@ export class LithiumTableBase {
   }
 
   _initTableScrollbars() {
-    if (!this.useOverlayScrollbars || this._scrollbarInstance || !this.container) {
+    if (!this.useOverlayScrollbars) {
+      log(Subsystems.TABLE, Status.DEBUG, `[${this.cssPrefix}] _initTableScrollbars: disabled by option`);
+      return;
+    }
+    if (this._scrollbarInstance) {
+      log(Subsystems.TABLE, Status.DEBUG, `[${this.cssPrefix}] _initTableScrollbars: already present, skipping`);
+      return;
+    }
+    if (!this.container) {
+      log(Subsystems.TABLE, Status.DEBUG, `[${this.cssPrefix}] _initTableScrollbars: container missing, skipping`);
       return;
     }
 
     const tableHolder = this.container.querySelector('.tabulator-tableholder');
     if (!tableHolder) {
+      log(Subsystems.TABLE, Status.WARN, `[${this.cssPrefix}] _initTableScrollbars: tableHolder not found`);
       return;
     }
 
     tableHolder.setAttribute('data-overlayscrollbars-initialize', '');
     this.container.classList.add('lithium-table-osb-enabled');
+
+    log(Subsystems.TABLE, Status.DEBUG, `[${this.cssPrefix}] _initTableScrollbars: calling scrollbarManager.initTabulator`);
+
     this._scrollbarInstance = scrollbarManager.initTabulator(tableHolder, {
-      initialized: () => this._updateTableScrollbars(),
+      initialized: () => {
+        log(Subsystems.TABLE, Status.DEBUG, `[${this.cssPrefix}] _initTableScrollbars: OSB initialized callback received`);
+        this._updateTableScrollbars();
+      },
     });
 
     if (!this._scrollbarInstance) {
+      log(Subsystems.TABLE, Status.WARN, `[${this.cssPrefix}] _initTableScrollbars: initTabulator returned null`);
       this.container.classList.remove('lithium-table-osb-enabled');
+    } else {
+      log(Subsystems.TABLE, Status.DEBUG, `[${this.cssPrefix}] _initTableScrollbars: OSB instance created`);
     }
-  }
+   }
 
   _updateTableScrollbars() {
     if (!this._scrollbarInstance) {
@@ -559,12 +584,12 @@ export class LithiumTableBase {
     }
 
     if (this._scrollbarUpdateRaf1) {
-      cancelAnimationFrame(this._scrollbarUpdateRaf1);
+      window.cancelAnimationFrame(this._scrollbarUpdateRaf1);
       this._scrollbarUpdateRaf1 = 0;
     }
 
     if (this._scrollbarUpdateRaf2) {
-      cancelAnimationFrame(this._scrollbarUpdateRaf2);
+      window.cancelAnimationFrame(this._scrollbarUpdateRaf2);
       this._scrollbarUpdateRaf2 = 0;
     }
 
@@ -739,13 +764,18 @@ export class LithiumTableBase {
     }
 
     if (this._scrollbarUpdateRaf1) {
-      cancelAnimationFrame(this._scrollbarUpdateRaf1);
+      window.cancelAnimationFrame(this._scrollbarUpdateRaf1);
       this._scrollbarUpdateRaf1 = 0;
     }
 
     if (this._scrollbarUpdateRaf2) {
-      cancelAnimationFrame(this._scrollbarUpdateRaf2);
+      window.cancelAnimationFrame(this._scrollbarUpdateRaf2);
       this._scrollbarUpdateRaf2 = 0;
+    }
+
+    if (this._scrollbarInstance) {
+      scrollbarManager.destroy(this._scrollbarInstance);
+      this._scrollbarInstance = null;
     }
 
     if (this.table) {

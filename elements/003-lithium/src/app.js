@@ -203,10 +203,10 @@ import { validateJWT, retrieveJWT, getClaims, getRenewalTime, getTimeUntilExpiry
 import { getPermittedManagers } from './core/permissions.js';
 import { createRequest } from './core/json-request.js';
 import { fetchLookups, init as initLookups, loadMacrosPostLogin } from './shared/lookups.js';
-import { init as initIcons } from './core/icons.js';
+import { init as initIcons, preloadIconsFromConfig } from './core/icons.js';
 import { getTransitionDuration } from './core/transitions.js';
 import { initTooltips, tip, untip } from './core/tooltip-api.js';
-import { toast } from './shared/toast.js';
+import { scrollRowIntoView } from './tables/navigation/navigation.js';
 import { log, logGroup, logStartup, logAuth, logManager, Subsystems, Status, flush, getSessionId, getRecentLogs, getRawLog, getDisplayLog, getCounter, setConsoleLogging, getArchivedSessions, removeArchivedSession } from './core/log.js';
 
 // Manager crossfade duration will be read from CSS --transition-duration
@@ -483,7 +483,13 @@ class LithiumApp {
       this.fetchLookups();
       logStartup('Lookups initialized', Date.now() - lookupsStart);
 
-      // Step 11: Set up network status monitoring
+      // Step 11: Preload icons for caching (after UI is loaded)
+      // This runs after the main UI is visible and interactive
+      preloadIconsFromConfig().catch(() => {
+        // Non-fatal: icon preloading is optional
+      });
+
+      // Step 12: Set up network status monitoring
       this.setupNetworkMonitoring();
       logStartup('Network monitoring active');
 
@@ -1237,6 +1243,11 @@ class LithiumApp {
     await this._crossfadeSlots(managerId);
     this.currentManager = { id: managerId, name: incoming.name || null, instance: incoming.instance };
 
+    // Redraw any LithiumTables in this manager after it becomes visible.
+    // When a slot was hidden (display:none), Tabulator could not calculate its layout.
+    // Now that it's visible again, we need to trigger a redraw to restore proper rendering.
+    this._redrawManagerTables(incoming.instance);
+
     // Save as last-used manager and record activity
     this._saveLastManager('manager', managerId);
     this.recordUserActivity();
@@ -1246,6 +1257,47 @@ class LithiumApp {
     const mainMgr = this._getMainManager();
     if (mainMgr) {
       mainMgr.clearActiveUtilityButtons();
+    }
+  }
+
+  /**
+   * Redraw any LithiumTable instances in a manager after its slot becomes visible.
+   * This fixes the issue where switching away and back causes the table to scroll
+   * to the top and not render properly - Tabulator needs to recalculate its layout
+   * when its container becomes visible again.
+   * @param {Object} managerInstance - The manager instance
+   */
+  _redrawManagerTables(managerInstance) {
+    if (!managerInstance) return;
+
+    // Get all own property keys from the manager
+    const keys = Object.keys(managerInstance);
+
+    for (const key of keys) {
+      const value = managerInstance[key];
+
+      // Look for LithiumTable instances - they have a .table property (Tabulator)
+      if (value && typeof value === 'object' && value.table) {
+        // Check if this is a LithiumTable (has queryRef, tablePath, etc.)
+        if (typeof value.queryRef === 'number' || value.tablePath || value.table?.modules?.table) {
+          // Call redraw on the underlying Tabulator instance
+          if (typeof value.table.redraw === 'function') {
+            value.table.redraw(true);
+          }
+
+          // Update overlay scrollbars after redraw
+          value._updateTableScrollbars?.();
+
+          // Scroll the selected row into view using the proper navigation
+          // function that handles grouped rows correctly.
+          const selectedRows = value.table.getSelectedRows?.();
+          if (selectedRows?.length > 0) {
+            requestAnimationFrame(() => {
+              scrollRowIntoView(value, selectedRows[0]);
+            });
+          }
+        }
+      }
     }
   }
 

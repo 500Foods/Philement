@@ -1,0 +1,44 @@
+# User-provided icons (one element per line)
+# Add icons here that are provided from the database or other external sources
+# These will be loaded and pre-cached at application startup
+#
+# Supported formats:
+#   <fa fa-icon></fa>
+#   <fa-brands fa-css3></fa>
+#   <i class="fa-solid fa-square-full"></i>
+#   <img src="assets/icons/custom.png">
+#
+# Example:
+# <fa fa-user></fa>
+# <fa-brands fa-github></fa>
+# <i class="fa-solid fa-star"></i>
+# <img src="assets/icons/my-custom-icon.png">
+<fa fa-hourglass></fa>
+<fa fa-angles-up-down></fa>
+<fa fa-square-full></fa>
+<fa fa-circle-nodes></fa>
+<fa fa-print></fa>
+<fa fa-q></fa>
+<fa fa-square-down><fa>
+<fa fa-clipboard></fa>
+<img src="assets/images/sql_dialect_db2.png">
+<img src="assets/images/sql_dialect_mysql.png">
+<img src="assets/images/sql_dialect_mssql.png">
+<img src="assets/images/sql_dialect_oracle.png">
+<img src="assets/images/sql_dialect_postgres.png">
+<img src="assets/images/sql_dialect_sqlite.png">
+<fa fa-square-ring></fa>
+<fa fa-ellipsis-stroke-vertical></fa>
+<fa fa-hexagon></fa>
+<fa fa-ruler-triangle></fa>
+<fa fa-shapes></fa>
+<fa fa-square-full></fa>
+<fa fa-triangle></fa>
+<fa fa-circle></fa>
+<fa fa-star-sharp></fa>
+<fa fa-ball-pile></fa>
+<fa fa-tag></fa>
+<fa fa-bars-sort></fa>
+<fa fa-book-bookmark></fa>
+<fa fa-bullseye-arrow></fa>
+
