@@ -116,38 +116,38 @@ export class BaseSettingsPage {
 
   /**
    * Read a setting value from the profile JSON via the Settings Service.
-   * Returns defaultValue if the path does not exist or the service is unavailable.
-   *
-   * @param {string} path - Dotted path within this page's section (e.g. "dates.short")
-   * @param {*} defaultValue - Fallback value
-   * @returns {*}
-   */
-  getSetting(path, defaultValue = undefined) {
-    if (!this.settings) return defaultValue;
-    return this.settings.get(this.sectionKey, path, defaultValue);
-  }
+    * Returns defaultValue if the path does not exist or the service is unavailable.
+    *
+    * @param {string} path - Dotted path within this page's section (e.g. "dates.short")
+    * @param {*} defaultValue - Fallback value
+    * @returns {*}
+    */
+   getSetting(path, defaultValue = undefined) {
+     if (!this.settings) return defaultValue;
+     return this.settings.getSection(this.sectionKey, path, defaultValue);
+   }
 
-  /**
-   * Write a setting value into the profile JSON via the Settings Service.
-   * The value is written under this page's sectionKey.
-   *
-   * @param {string} path - Dotted path within this page's section (e.g. "dates.short")
-   * @param {*} value - Value to store
-   */
-  setSetting(path, value) {
-    if (!this.settings) return;
-    this.settings.set(this.sectionKey, path, value);
-  }
+   /**
+    * Write a setting value into the profile JSON via the Settings Service.
+    * The value is written under this page's sectionKey.
+    *
+    * @param {string} path - Dotted path within this page's section (e.g. "dates.short")
+    * @param {*} value - Value to store
+    */
+   setSetting(path, value) {
+     if (!this.settings) return;
+     this.settings.setSection(this.sectionKey, path, value);
+   }
 
   /**
    * Batch-write multiple settings at once. Only one persist is triggered.
-   *
-   * @param {Object} changes - Map of dotted paths to values
-   */
-  setSettingsBatch(changes) {
-    if (!this.settings) return;
-    this.settings.batchSet(this.sectionKey, changes);
-  }
+    *
+    * @param {Object} changes - Map of dotted paths to values
+    */
+   setSettingsBatch(changes) {
+     if (!this.settings) return;
+     this.settings.batchSetSection(this.sectionKey, changes);
+   }
 
   /**
    * Get this page's entire section object from the profile JSON.

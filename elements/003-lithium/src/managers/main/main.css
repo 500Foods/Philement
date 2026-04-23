@@ -826,7 +826,7 @@ body.resizing * {
 
 .manager-slot-header {
   flex-shrink: 0;
-  padding: var(--space-2) var(--space-3) 0px var(--space-2);
+  padding: var(--space-2) var(--space-3) 0px var(--space-3);
   background: var(--bg-secondary);
   display: flex;
   align-items: center;

@@ -36,19 +36,43 @@ import { log, Subsystems, Status } from '../../../core/log.js';
 
 const DEFAULT_SAMPLE = '2020-01-01T14:03:02';
 
+// Default built-in formats
 const BUILTIN_FORMATS = {
   dates: {
-    short: { name: 'Short Date', format: 'yyyy-MM-dd', setting: 'dates.short' },
-    long: { name: 'Long Date', format: 'MMMM d, y', setting: 'dates.long' },
+    short: 'yyyy-MM-dd',
+    medium: 'yyyy-MMM-dd',
+    long: 'MMMM d, y',
+    week: 'yyyy-\'W\'nn',
   },
   times: {
-    short: { name: 'Short Time', format: 'h:mm a', setting: 'times.short' },
-    medium: { name: 'Medium Time', format: 'h:mm:ss a', setting: 'times.medium' },
-    long: { name: 'Long Time', format: 'h:mm:ss a zzz', setting: 'times.long' },
+    short: 'HH:mm',
+    medium: 'H:mm:ss',
+    long: 'HH:mm:ss.SSS',
   },
   datetimes: {
-    short: { name: 'Short DateTime', format: 'yyyy-MM-dd h:mm a', setting: 'datetimes.short' },
-    long: { name: 'Long DateTime', format: "MMMM d, y 'at' h:mm:ss a", setting: 'datetimes.long' },
+    short: 'yyyy-MM-dd HH:mm:ss',
+    medium: 'yyyy-MMM-dd (EEE) HH:mm:ss',
+    long: 'MMMM d, y \'at\' HH:mm:ss',
+  },
+};
+
+// Format metadata for UI labels - maps setting keys to display names
+const FORMAT_LABELS = {
+  dates: {
+    short: 'Short Date',
+    medium: 'Medium Date',
+    long: 'Long Date',
+    week: 'Week Number',
+  },
+  times: {
+    short: 'Short Time',
+    medium: 'Medium Time',
+    long: 'Long Time',
+  },
+  datetimes: {
+    short: 'Short DateTime',
+    medium: 'Medium DateTime',
+    long: 'Long DateTime',
   },
 };
 
@@ -384,7 +408,7 @@ export class DateFormatsPage extends BaseSettingsPage {
     }
 
     // Add custom format buttons
-    container.querySelectorAll('.df-add-btn').forEach(btn => {
+    container.querySelectorAll('.df-add-header-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const type = e.currentTarget.dataset.type;
         this._addCustomFormat(type);
@@ -395,7 +419,7 @@ export class DateFormatsPage extends BaseSettingsPage {
     container.querySelectorAll('.df-delete-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const item = e.currentTarget.closest('.df-format-item');
-        if (item && item.classList.contains('df-custom-item') && confirm('Delete this custom format?')) {
+        if (item && item.classList.contains('df-custom-item')) {
           item.remove();
           this._persistCustomFormats();
         }
@@ -783,27 +807,46 @@ export class DateFormatsPage extends BaseSettingsPage {
     const container = this.container;
     if (!container) return;
 
-    const name = prompt('Enter format name:');
-    if (!name) return;
-
-    const format = prompt('Enter Luxon format string:');
-    if (!format) return;
+    // Copy from the last custom row, or use defaults
+    let name = 'Custom Format';
+    let format = 'yyyy-MM-dd';
 
     const listId = type === 'datetime' ? 'df-datetime-custom' : `df-${type}-custom`;
     const list = container.querySelector(`#${listId}`);
+    if (list) {
+      const lastCustom = list.querySelector('.df-custom-item:last-child');
+      if (lastCustom) {
+        const nameInput = lastCustom.querySelector('.df-format-name-input');
+        const formatInput = lastCustom.querySelector('.df-format-input');
+        if (nameInput) name = nameInput.value;
+        if (formatInput) format = formatInput.value;
+      }
+    }
+
     if (!list) return;
 
     const sample = this._getSampleDateTime();
     const now = this._getDateTimeNow();
 
+    // Generate unique name
+    const settingKey = type === 'datetime' ? 'datetimes' : type;
+    const existing = this.getSetting(settingKey, {});
+    let uniqueName = name;
+    let counter = 1;
+    while (existing[uniqueName]) {
+      uniqueName = `${name} ${counter}`;
+      counter++;
+    }
+
     const item = document.createElement('tr');
     item.className = 'df-format-item df-custom-item';
+    item.dataset.id = uniqueName;
     item.innerHTML = `
-      <td><input type="text" class="df-format-name-input" value="${this._escapeHtml(name)}" placeholder="Name"></td>
-      <td><input type="text" class="form-input df-format-input" value="${this._escapeHtml(format)}" placeholder="Luxon format"></td>
-      <td><span class="df-example">${this._safeFormat(sample, format)}</span></td>
-      <td><span class="df-current" data-format="${this._escapeHtml(format)}">${this._safeFormat(now, format)}</span></td>
-      <td><button type="button" class="df-delete-btn" title="Delete"><fa fa-trash></fa></button></td>
+      <td class="df-col-icon"><button type="button" class="df-delete-btn" title="Delete"><fa fa-trash></fa></button></td>
+      <td class="df-col-name"><input type="text" class="df-format-name-input" value="${this._escapeHtml(uniqueName)}" placeholder="Name"></td>
+      <td class="df-col-format"><input type="text" class="form-input df-format-input" value="${this._escapeHtml(format)}" placeholder="Luxon format"></td>
+      <td class="df-col-example"><span class="df-example">${this._safeFormat(sample, format)}</span></td>
+      <td class="df-col-current"><span class="df-current" data-format="${this._escapeHtml(format)}">${this._safeFormat(now, format)}</span></td>
     `;
 
     const nameInput = item.querySelector('.df-format-name-input');
@@ -816,10 +859,8 @@ export class DateFormatsPage extends BaseSettingsPage {
       this._persistCustomFormats();
     });
     deleteBtn?.addEventListener('click', () => {
-      if (confirm('Delete this custom format?')) {
-        item.remove();
-        this._persistCustomFormats();
-      }
+      item.remove();
+      this._persistCustomFormats();
     });
 
     list.appendChild(item);
@@ -835,12 +876,24 @@ export class DateFormatsPage extends BaseSettingsPage {
 
     ['dates', 'times', 'datetime'].forEach(type => {
       const custom = this._gatherCustomFormats(type);
-      const settingKey = type === 'datetime' ? 'datetimes.custom' : `${type}.custom`;
-      if (Object.keys(custom).length > 0) {
-        this.setSetting(settingKey, custom);
-      } else {
-        this.setSetting(settingKey, undefined);
-      }
+      const settingKey = type === 'datetime' ? 'datetimes' : type;
+
+      // Get current stored formats for this type
+      const currentStored = this.getSetting(settingKey, {});
+      const merged = { ...currentStored };
+
+      // Remove old custom formats (anything not in builtin defaults)
+      Object.keys(merged).forEach(key => {
+        if (!BUILTIN_FORMATS[type] || !(key in BUILTIN_FORMATS[type])) {
+          delete merged[key];
+        }
+      });
+
+      // Add current custom formats
+      Object.assign(merged, custom);
+
+      // Update the setting
+      this.setSetting(settingKey, merged);
     });
   }
 
@@ -904,13 +957,21 @@ export class DateFormatsPage extends BaseSettingsPage {
     const container = this.container;
     if (!container) return;
 
-    const builtins = BUILTIN_FORMATS[type];
-    if (!builtins) return;
+    let allFormats = this.getSetting(type, {});
+    const labels = FORMAT_LABELS[type] || {};
 
-    Object.entries(builtins).forEach(([key, config]) => {
-      const input = container.querySelector(`[data-setting="${config.setting}"]`);
-      if (input) {
-        input.value = this.getSetting(config.setting, config.format);
+    // If no formats exist for this type, populate with defaults
+    if (Object.keys(allFormats).length === 0 && BUILTIN_FORMATS[type]) {
+      allFormats = { ...BUILTIN_FORMATS[type] };
+      // Note: Defaults are now initialized by Profile Manager, but keep as fallback
+      this.setSetting(type, allFormats);
+    }
+
+    // Load all formats for this type (both builtin and custom)
+    Object.entries(allFormats).forEach(([key, format]) => {
+      const input = container.querySelector(`[data-setting="${type}.${key}"]`);
+      if (input && typeof format === 'string') {
+        input.value = format;
       }
     });
   }
@@ -928,25 +989,30 @@ export class DateFormatsPage extends BaseSettingsPage {
 
     list.innerHTML = '';
 
-    const settingKey = type === 'datetime' ? 'datetimes.custom' : `${type}.custom`;
-    const customData = this.getSetting(settingKey, null);
-    if (!customData || typeof customData !== 'object') return;
+    const settingKey = type === 'datetime' ? 'datetimes' : type;
+    const allFormats = this.getSetting(settingKey, {});
 
     const sample = this._getSampleDateTime();
     const now = this._getDateTimeNow();
 
-    Object.entries(customData).forEach(([id, data]) => {
-      if (typeof data !== 'object' || !data.format) return;
+    // Only load formats that are not builtins
+    Object.entries(allFormats).forEach(([name, format]) => {
+      if (typeof format !== 'string') return;
+
+      // Skip if this is a builtin format
+      if (BUILTIN_FORMATS[type] && name in BUILTIN_FORMATS[type]) {
+        return;
+      }
 
       const item = document.createElement('tr');
       item.className = 'df-format-item df-custom-item';
-      item.dataset.id = id;
+      item.dataset.id = name; // Use name as ID for simplicity
       item.innerHTML = `
-        <td><input type="text" class="df-format-name-input" value="${this._escapeHtml(data.name || id)}" placeholder="Name"></td>
-        <td><input type="text" class="form-input df-format-input" value="${this._escapeHtml(data.format)}" placeholder="Luxon format"></td>
-        <td><span class="df-example">${this._safeFormat(sample, data.format)}</span></td>
-        <td><span class="df-current" data-format="${this._escapeHtml(data.format)}">${this._safeFormat(now, data.format)}</span></td>
-        <td><button type="button" class="df-delete-btn" title="Delete"><fa fa-trash></fa></button></td>
+        <td class="df-col-icon"><button type="button" class="df-delete-btn" title="Delete"><fa fa-trash></fa></button></td>
+        <td class="df-col-name"><input type="text" class="df-format-name-input" value="${this._escapeHtml(name)}" placeholder="Name"></td>
+        <td class="df-col-format"><input type="text" class="form-input df-format-input" value="${this._escapeHtml(format)}" placeholder="Luxon format"></td>
+        <td class="df-col-example"><span class="df-example">${this._safeFormat(sample, format)}</span></td>
+        <td class="df-col-current"><span class="df-current" data-format="${this._escapeHtml(format)}">${this._safeFormat(now, format)}</span></td>
       `;
 
       const nameInput = item.querySelector('.df-format-name-input');
@@ -959,10 +1025,8 @@ export class DateFormatsPage extends BaseSettingsPage {
         this._persistCustomFormats();
       });
       deleteBtn?.addEventListener('click', () => {
-        if (confirm('Delete this custom format?')) {
-          item.remove();
-          this._persistCustomFormats();
-        }
+        item.remove();
+        this._persistCustomFormats();
       });
 
       list.appendChild(item);
@@ -983,12 +1047,9 @@ export class DateFormatsPage extends BaseSettingsPage {
     list.querySelectorAll('.df-custom-item').forEach(item => {
       const nameInput = item.querySelector('.df-format-name-input');
       const input = item.querySelector('.df-format-input');
-      if (nameInput && input) {
-        const id = item.dataset.id || `custom-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-        custom[id] = {
-          name: nameInput.value,
-          format: input.value,
-        };
+      if (nameInput && input && nameInput.value.trim()) {
+        // Use the name as the key, format as the value
+        custom[nameInput.value.trim()] = input.value;
       }
     });
 

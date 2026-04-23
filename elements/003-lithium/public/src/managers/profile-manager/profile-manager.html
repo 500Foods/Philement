@@ -285,40 +285,45 @@
                     <table class="df-table">
                       <thead>
                         <tr>
-                          <th>Name</th>
-                          <th>Format</th>
-                          <th>Example</th>
-                          <th>Current</th>
-                          <th></th>
+                          <th class="df-col-icon"><button type="button" class="df-add-header-btn" data-type="dates" title="Add Custom Date Format"><fa fa-plus></fa></button></th>
+                          <th class="df-col-name">Date Formats</th>
+                          <th class="df-col-format">Format</th>
+                          <th class="df-col-example">Example</th>
+                          <th class="df-col-current">Current</th>
                         </tr>
                       </thead>
                       <tbody id="df-dates-builtin">
                         <tr class="df-format-item" data-format-id="dates-short">
-                          <td><span class="df-name">Short Date</span></td>
-                          <td><input type="text" class="form-input df-format-input" name="dates_short" value="yyyy-MM-dd" data-setting="dates.short"></td>
-                          <td><span class="df-example">-</span></td>
-                          <td><span class="df-current" data-format="yyyy-MM-dd">-</span></td>
-                          <td><span class="df-locked"><fa fa-lock></fa></span></td>
+                          <td class="df-col-icon"><span class="df-locked"><fa fa-lock></fa></span></td>
+                          <td class="df-col-name"><span class="df-name">Short Date</span></td>
+                          <td class="df-col-format"><input type="text" class="form-input df-format-input" name="dates_short" value="" data-setting="dates.short"></td>
+                          <td class="df-col-example"><span class="df-example">-</span></td>
+                          <td class="df-col-current"><span class="df-current" data-format="">-</span></td>
+                        </tr>
+                        <tr class="df-format-item" data-format-id="dates-medium">
+                          <td class="df-col-icon"><span class="df-locked"><fa fa-lock></fa></span></td>
+                          <td class="df-col-name"><span class="df-name">Medium Date</span></td>
+                          <td class="df-col-format"><input type="text" class="form-input df-format-input" name="dates_medium" value="" data-setting="dates.medium"></td>
+                          <td class="df-col-example"><span class="df-example">-</span></td>
+                          <td class="df-col-current"><span class="df-current" data-format="">-</span></td>
                         </tr>
                         <tr class="df-format-item" data-format-id="dates-long">
-                          <td><span class="df-name">Long Date</span></td>
-                          <td><input type="text" class="form-input df-format-input" name="dates_long" value="MMMM d, y" data-setting="dates.long"></td>
-                          <td><span class="df-example">-</span></td>
-                          <td><span class="df-current" data-format="MMMM d, y">-</span></td>
-                          <td><span class="df-locked"><fa fa-lock></fa></span></td>
+                          <td class="df-col-icon"><span class="df-locked"><fa fa-lock></fa></span></td>
+                          <td class="df-col-name"><span class="df-name">Long Date</span></td>
+                          <td class="df-col-format"><input type="text" class="form-input df-format-input" name="dates_long" value="" data-setting="dates.long"></td>
+                          <td class="df-col-example"><span class="df-example">-</span></td>
+                          <td class="df-col-current"><span class="df-current" data-format="">-</span></td>
+                        </tr>
+                        <tr class="df-format-item" data-format-id="dates-week">
+                          <td class="df-col-icon"><span class="df-locked"><fa fa-lock></fa></span></td>
+                          <td class="df-col-name"><span class="df-name">Week Number</span></td>
+                          <td class="df-col-format"><input type="text" class="form-input df-format-input" name="dates_week" value="" data-setting="dates.week"></td>
+                          <td class="df-col-example"><span class="df-example">-</span></td>
+                          <td class="df-col-current"><span class="df-current" data-format="">-</span></td>
                         </tr>
                       </tbody>
                       <tbody id="df-dates-custom">
                       </tbody>
-                      <tfoot>
-                        <tr>
-                          <td colspan="5">
-                            <button type="button" class="btn btn-secondary df-add-btn" data-type="dates">
-                              <fa fa-plus></fa> Add Custom Date Format
-                            </button>
-                          </td>
-                        </tr>
-                      </tfoot>
                     </table>
                   </div>
                 </section>
@@ -329,47 +334,38 @@
                     <table class="df-table">
                       <thead>
                         <tr>
-                          <th>Name</th>
-                          <th>Format</th>
-                          <th>Example</th>
-                          <th>Current</th>
-                          <th></th>
+                          <th class="df-col-icon"><button type="button" class="df-add-header-btn" data-type="times" title="Add Custom Time Format"><fa fa-plus></fa></button></th>
+                          <th class="df-col-name">Time Formats</th>
+                          <th class="df-col-format">Format</th>
+                          <th class="df-col-example">Example</th>
+                          <th class="df-col-current">Current</th>
                         </tr>
                       </thead>
                       <tbody id="df-times-builtin">
                         <tr class="df-format-item" data-format-id="times-short">
-                          <td><span class="df-name">Short Time</span></td>
-                          <td><input type="text" class="form-input df-format-input" name="times_short" value="h:mm a" data-setting="times.short"></td>
-                          <td><span class="df-example">-</span></td>
-                          <td><span class="df-current" data-format="h:mm a">-</span></td>
-                          <td><span class="df-locked"><fa fa-lock></fa></span></td>
+                          <td class="df-col-icon"><span class="df-locked"><fa fa-lock></fa></span></td>
+                          <td class="df-col-name"><span class="df-name">Short Time</span></td>
+                          <td class="df-col-format"><input type="text" class="form-input df-format-input" name="times_short" value="" data-setting="times.short"></td>
+                          <td class="df-col-example"><span class="df-example">-</span></td>
+                          <td class="df-col-current"><span class="df-current" data-format="">-</span></td>
                         </tr>
                         <tr class="df-format-item" data-format-id="times-medium">
-                          <td><span class="df-name">Medium Time</span></td>
-                          <td><input type="text" class="form-input df-format-input" name="times_medium" value="h:mm:ss a" data-setting="times.medium"></td>
-                          <td><span class="df-example">-</span></td>
-                          <td><span class="df-current" data-format="h:mm:ss a">-</span></td>
-                          <td><span class="df-locked"><fa fa-lock></fa></span></td>
+                          <td class="df-col-icon"><span class="df-locked"><fa fa-lock></fa></span></td>
+                          <td class="df-col-name"><span class="df-name">Medium Time</span></td>
+                          <td class="df-col-format"><input type="text" class="form-input df-format-input" name="times_medium" value="" data-setting="times.medium"></td>
+                          <td class="df-col-example"><span class="df-example">-</span></td>
+                          <td class="df-col-current"><span class="df-current" data-format="">-</span></td>
                         </tr>
                         <tr class="df-format-item" data-format-id="times-long">
-                          <td><span class="df-name">Long Time</span></td>
-                          <td><input type="text" class="form-input df-format-input" name="times_long" value="h:mm:ss a zzz" data-setting="times.long"></td>
-                          <td><span class="df-example">-</span></td>
-                          <td><span class="df-current" data-format="h:mm:ss a zzz">-</span></td>
-                          <td><span class="df-locked"><fa fa-lock></fa></span></td>
+                          <td class="df-col-icon"><span class="df-locked"><fa fa-lock></fa></span></td>
+                          <td class="df-col-name"><span class="df-name">Long Time</span></td>
+                          <td class="df-col-format"><input type="text" class="form-input df-format-input" name="times_long" value="" data-setting="times.long"></td>
+                          <td class="df-col-example"><span class="df-example">-</span></td>
+                          <td class="df-col-current"><span class="df-current" data-format="">-</span></td>
                         </tr>
                       </tbody>
                       <tbody id="df-times-custom">
                       </tbody>
-                      <tfoot>
-                        <tr>
-                          <td colspan="5">
-                            <button type="button" class="btn btn-secondary df-add-btn" data-type="times">
-                              <fa fa-plus></fa> Add Custom Time Format
-                            </button>
-                          </td>
-                        </tr>
-                      </tfoot>
                     </table>
                   </div>
                 </section>
@@ -380,40 +376,38 @@
                     <table class="df-table">
                       <thead>
                         <tr>
-                          <th>Name</th>
-                          <th>Format</th>
-                          <th>Example</th>
-                          <th>Current</th>
-                          <th></th>
+                          <th class="df-col-icon"><button type="button" class="df-add-header-btn" data-type="datetime" title="Add Custom DateTime Format"><fa fa-plus></fa></button></th>
+                          <th class="df-col-name">DateTime Formats</th>
+                          <th class="df-col-format">Format</th>
+                          <th class="df-col-example">Example</th>
+                          <th class="df-col-current">Current</th>
                         </tr>
                       </thead>
                       <tbody id="df-datetime-builtin">
                         <tr class="df-format-item" data-format-id="datetime-short">
-                          <td><span class="df-name">Short DateTime</span></td>
-                          <td><input type="text" class="form-input df-format-input" name="datetime_short" value="yyyy-MM-dd h:mm a" data-setting="datetimes.short"></td>
-                          <td><span class="df-example">-</span></td>
-                          <td><span class="df-current" data-format="yyyy-MM-dd h:mm a">-</span></td>
-                          <td><span class="df-locked"><fa fa-lock></fa></span></td>
+                          <td class="df-col-icon"><span class="df-locked"><fa fa-lock></fa></span></td>
+                          <td class="df-col-name"><span class="df-name">Short DateTime</span></td>
+                          <td class="df-col-format"><input type="text" class="form-input df-format-input" name="datetime_short" value="" data-setting="datetimes.short"></td>
+                          <td class="df-col-example"><span class="df-example">-</span></td>
+                          <td class="df-col-current"><span class="df-current" data-format="">-</span></td>
+                        </tr>
+                        <tr class="df-format-item" data-format-id="datetime-medium">
+                          <td class="df-col-icon"><span class="df-locked"><fa fa-lock></fa></span></td>
+                          <td class="df-col-name"><span class="df-name">Medium DateTime</span></td>
+                          <td class="df-col-format"><input type="text" class="form-input df-format-input" name="datetime_medium" value="" data-setting="datetimes.medium"></td>
+                          <td class="df-col-example"><span class="df-example">-</span></td>
+                          <td class="df-col-current"><span class="df-current" data-format="">-</span></td>
                         </tr>
                         <tr class="df-format-item" data-format-id="datetime-long">
-                          <td><span class="df-name">Long DateTime</span></td>
-                          <td><input type="text" class="form-input df-format-input" name="datetime_long" value="MMMM d, y 'at' h:mm:ss a" data-setting="datetimes.long"></td>
-                          <td><span class="df-example">-</span></td>
-                          <td><span class="df-current" data-format="MMMM d, y 'at' h:mm:ss a">-</span></td>
-                          <td><span class="df-locked"><fa fa-lock></fa></span></td>
+                          <td class="df-col-icon"><span class="df-locked"><fa fa-lock></fa></span></td>
+                          <td class="df-col-name"><span class="df-name">Long DateTime</span></td>
+                          <td class="df-col-format"><input type="text" class="form-input df-format-input" name="datetime_long" value="" data-setting="datetimes.long"></td>
+                          <td class="df-col-example"><span class="df-example">-</span></td>
+                          <td class="df-col-current"><span class="df-current" data-format="">-</span></td>
                         </tr>
                       </tbody>
                       <tbody id="df-datetime-custom">
                       </tbody>
-                      <tfoot>
-                        <tr>
-                          <td colspan="5">
-                            <button type="button" class="btn btn-secondary df-add-btn" data-type="datetime">
-                              <fa fa-plus></fa> Add Custom DateTime Format
-                            </button>
-                          </td>
-                        </tr>
-                      </tfoot>
                     </table>
                   </div>
                 </section>

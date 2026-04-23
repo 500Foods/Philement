@@ -52,8 +52,7 @@ table.insert(queries,{sql=[[
                     SELECT
                         account_id,
                         client_id,
-                        collection,
-                        module.collection collection
+                        collection
                     FROM
                         ${SCHEMA}account_settings
                     WHERE

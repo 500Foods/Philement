@@ -117,6 +117,8 @@ element.classList.add('panel-container');
 
 **There should be no CSS in JS.** Dynamic values should use CSS custom properties (variables) that can be updated via classes.
 
+**Strong aversion to browser-native dialogs** (alert, confirm, prompt). These create poor UX and should be avoided. Use custom modal dialogs or inline confirmations instead.
+
 **Rationale:** We have (or will have) a Style Manager for theming. This relies largely on having CSS be accessible to us, which doesn't work very well when inline styles are used.
 This is because inline styles typically take precedence over CSS classes, making them harder to override and maintain. And there's no reason to use inline styles in the first place.
 
@@ -200,6 +202,33 @@ log(Subsystem, Status.SUCCESS, 'info'); // Successful operations
 **Subsystems:** `MANAGER`, `TABLE`, `UI`, `API`, `AUTH`, etc.
 
 **Rationale:** Session log persists across hot reloads and is visible in the browser's Lithium session log panel.
+
+---
+
+### 8. Global Settings Service
+
+**Use the global settings service for all user preferences and application state.**
+
+```javascript
+// ✅ Correct - Use global settings
+const theme = window.lithiumSettings.get('theme', 'dark');
+window.lithiumSettings.set('dates.short', 'yyyy-MM-dd');
+
+// ❌ Wrong - Direct localStorage access for user prefs
+const theme = localStorage.getItem('lithium_theme');
+localStorage.setItem('lithium_user_pref', 'value');
+```
+
+**Available globally via `window.lithiumSettings`:**
+
+| Method | Purpose |
+|--------|---------|
+| `get(path, defaultValue)` | Read dotted-path values |
+| `set(path, value)` | Write dotted-path values |
+| `getAll()` | Get entire settings object |
+| `onChange(callback)` | Subscribe to changes |
+
+**Rationale:** Centralized settings management ensures consistency, enables real-time updates across components, and provides a single source of truth for user preferences.
 
 ---
 

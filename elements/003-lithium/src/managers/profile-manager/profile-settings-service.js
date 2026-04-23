@@ -60,6 +60,54 @@ export class ProfileSettingsService {
     this._load();
   }
 
+  // ── Public API ────────────────────────────────────────────────────────────
+
+  /**
+   * Get a value from the settings using dotted path.
+   * @param {string} path - Dotted path (e.g. 'collection.font')
+   * @param {*} defaultValue - Default if not found
+   * @returns {*}
+   */
+  get(path, defaultValue = undefined) {
+    const keys = path.split('.');
+    let current = this._data;
+    for (const key of keys) {
+      if (current && typeof current === 'object' && key in current) {
+        current = current[key];
+      } else {
+        return defaultValue;
+      }
+    }
+    return current;
+  }
+
+  /**
+   * Set a value in the settings using dotted path.
+   * @param {string} path - Dotted path (e.g. 'collection.font')
+   * @param {*} value - Value to set
+   */
+  set(path, value) {
+    const keys = path.split('.');
+    let current = this._data;
+    for (let i = 0; i < keys.length - 1; i++) {
+      const key = keys[i];
+      if (!current[key] || typeof current[key] !== 'object') {
+        current[key] = {};
+      }
+      current = current[key];
+    }
+    current[keys[keys.length - 1]] = value;
+    this._schedulePersist();
+    this._notifyListeners(path, value);
+  }
+
+  /**
+   * Alias for get, for compatibility.
+   */
+  getSetting(path, defaultValue = undefined) {
+    return this.get(path, defaultValue);
+  }
+
   // ── Internal: Load / Persist ─────────────────────────────────────────────
 
   /**
@@ -117,6 +165,47 @@ export class ProfileSettingsService {
         }
       }
     }, SAVE_DEBOUNCE_MS);
+  }
+
+  /**
+   * Notify listeners for a specific path.
+   * @private
+   */
+  _notifyListeners(path, value) {
+    // Notify path-specific listeners
+    for (const [listenerPath, callbacks] of this._listeners) {
+      if (path.startsWith(listenerPath) || listenerPath === '*') {
+        for (const callback of callbacks) {
+          try {
+            callback(path, value);
+          } catch (_e) {
+            // ignore listener errors
+          }
+        }
+      }
+    }
+    // Notify global listeners
+    for (const callback of this._globalListeners) {
+      try {
+        callback(path, value);
+      } catch (_e) {
+        // ignore listener errors
+      }
+    }
+  }
+
+  /**
+   * Notify all global listeners of any change.
+   * @private
+   */
+  _notifyGlobal() {
+    for (const callback of this._globalListeners) {
+      try {
+        callback(this._data);
+      } catch (_e) {
+        // ignore listener errors
+      }
+    }
   }
 
   // ── Public: Get / Set / Delete ───────────────────────────────────────────
