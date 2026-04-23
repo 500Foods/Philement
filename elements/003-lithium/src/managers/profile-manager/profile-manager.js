@@ -27,6 +27,7 @@ import { ManagerEditHelper } from '../../core/manager-edit-helper.js';
 import { getMenu, buildManagerIconsRegistry } from '../../shared/menu.js';
 import { CollectionTabHandler } from './profile-manager-collection.js';
 import { SettingsTabHandler } from './profile-manager-settings.js';
+
 import { ProfileSettingsService } from './profile-settings-service.js';
 import { toast } from '../../shared/toast.js';
 import '../../styles/vendor-tabulator.css';
@@ -61,15 +62,21 @@ export default class ProfileManager {
 
     this.editHelper = new ManagerEditHelper({ name: 'Profile' });
 
-    // Centralized settings service for all profile pages
+    // Use the profile settings service for all profile pages
     this.settingsService = new ProfileSettingsService({
       onAfterSave: (data) => {
-        // Sync collection editor if it's visible and not currently editing
-        if (this.currentTab === 'collection' && this.collectionHandler?.editor) {
-          this.collectionHandler.setData(data);
-        }
-      },
+        // Sync to collection tab if initialized
+        this.collectionHandler?.setData(data);
+      }
     });
+
+    // Initialize default formats in settings if not present
+    this._initializeDefaultFormats();
+
+    // Load saved font settings
+    const savedFontSettings = this.settingsService.getSetting('collection.font', {});
+    if (savedFontSettings.fontSize) this.editorFontSize = savedFontSettings.fontSize;
+    if (savedFontSettings.fontFamily) this.editorFontFamily = savedFontSettings.fontFamily;
 
     // Storage key for selected section persistence
     this._selectedSectionStorageKey = 'lithium_profile_selected_section';
@@ -514,19 +521,13 @@ export default class ProfileManager {
       localStorage.setItem(this._selectedSectionStorageKey, String(rowData.index));
     }
 
-    // Update section label button - find fa element and span inside the button
+    // Update section label button using the data directly
     if (this.elements.sectionLabelBtn && rowData.label) {
       this.elements.sectionLabelBtn.classList.add('active');
       this.elements.sectionLabelBtn.title = rowData.label;
-      const iconEl = this.elements.sectionLabelBtn.querySelector('fa');
-      const labelEl = this.elements.sectionLabelBtn.querySelector('span');
-      if (iconEl && rowData.icon) {
-        iconEl.outerHTML = rowData.icon;
-        processIcons(this.elements.sectionLabelBtn);
-      }
-      if (labelEl) {
-        labelEl.textContent = rowData.label;
-      }
+      const iconHtml = rowData.icon || '<fa fa-cube></fa>';
+      this.elements.sectionLabelBtn.innerHTML = `${iconHtml} <span>${rowData.label}</span>`;
+      processIcons(this.elements.sectionLabelBtn);
     }
 
     // Switch to settings tab if needed
@@ -1086,21 +1087,21 @@ export default class ProfileManager {
   initFontPopup() {
     if (this.fontPopup) return;
 
-    const { popup, getState } = createFontPopup({
+    const { popup, toggle, getState, setState } = createFontPopup({
       anchor: this.elements.btnFont,
       fontSize: this.editorFontSize,
       fontFamily: this.editorFontFamily,
       fontWeight: 'normal',
-      onChange: ({ fontSize, fontFamily }) => {
-        this.editorFontSize = fontSize;
-        this.editorFontFamily = fontFamily;
-        this.collectionHandler?.setFontSize(fontSize);
-        this.collectionHandler?.setFontFamily(fontFamily);
-      },
+      onPreview: (state) => this._updateFontPreview(state),
+      onSave: (state) => this._saveFontSettings(state),
+      onCancel: () => this._cancelFontChanges(),
+      onReset: () => this._resetFontToDefault(),
     });
 
     this.fontPopup = popup;
+    this._fontPopupToggle = toggle;
     this._fontPopupGetState = getState;
+    this._fontPopupSetState = setState;
   }
 
   toggleFontPopup(e) {
@@ -1108,7 +1109,87 @@ export default class ProfileManager {
     if (!this.fontPopup) {
       this.initFontPopup();
     }
-    this.fontPopup?.classList.toggle('visible');
+    this._fontPopupToggle?.(e);
+  }
+
+  _updateFontPreview(state) {
+    // Apply font settings to the collection editor for preview
+    this.collectionHandler?.setFontSize(state.fontSize);
+    this.collectionHandler?.setFontFamily(state.fontFamily);
+  }
+
+  _saveFontSettings(state) {
+    // Save font settings to profile
+    this.editorFontSize = state.fontSize;
+    this.editorFontFamily = state.fontFamily;
+    // Store in profile settings under "collection.font"
+    this.settingsService?.setSetting('collection.font', {
+      fontSize: state.fontSize,
+      fontFamily: state.fontFamily,
+      fontWeight: state.fontWeight,
+    });
+  }
+
+  _cancelFontChanges() {
+    // Revert to saved settings
+    const saved = this.settingsService?.getSetting('collection.font', {
+      fontSize: 13,
+      fontFamily: '"Vanadium Mono", var(--font-mono, monospace)',
+      fontWeight: 'normal',
+    });
+    this.editorFontSize = saved.fontSize;
+    this.editorFontFamily = saved.fontFamily;
+    this.collectionHandler?.setFontSize(saved.fontSize);
+    this.collectionHandler?.setFontFamily(saved.fontFamily);
+  }
+
+  _resetFontToDefault() {
+    const defaults = {
+      fontSize: '13px',
+      fontFamily: '"Vanadium Mono", var(--font-mono, monospace)',
+      fontWeight: 'normal',
+    };
+    return defaults;
+  }
+
+  /**
+   * Initialize default date/time formats in the settings if not already present
+   */
+  _initializeDefaultFormats() {
+    const defaultFormats = {
+      dates: {
+        short: 'yyyy-MM-dd',
+        medium: 'yyyy-MMM-dd',
+        long: 'MMMM d, y',
+        week: 'yyyy-\'W\'nn',
+      },
+      times: {
+        short: 'HH:mm',
+        medium: 'H:mm:ss',
+        long: 'HH:mm:ss.SSS',
+      },
+      datetimes: {
+        short: 'yyyy-MM-dd HH:mm:ss',
+        medium: 'yyyy-MMM-dd (EEE) HH:mm:ss',
+        long: 'MMMM d, y \'at\' HH:mm:ss',
+      },
+    };
+
+    // Check if we already have formats initialized under section "-9"
+    const currentDates = this.settingsService.getSection('-9', 'dates', {});
+    const currentTimes = this.settingsService.getSection('-9', 'times', {});
+    const currentDateTimes = this.settingsService.getSection('-9', 'datetimes', {});
+
+    // Only initialize if we don't have any formats yet
+    if (Object.keys(currentDates).length === 0) {
+      this.settingsService.setSection('-9', 'dates', defaultFormats.dates);
+    }
+    if (Object.keys(currentTimes).length === 0) {
+      this.settingsService.setSection('-9', 'times', defaultFormats.times);
+    }
+    if (Object.keys(currentDateTimes).length === 0) {
+      this.settingsService.setSection('-9', 'datetimes', defaultFormats.datetimes);
+    }
   }
 
   /**

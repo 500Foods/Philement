@@ -222,4 +222,5 @@ in the migrations themselves so that they get populated in the database directly
 | [1185](/elements/002-helium/acuranzo/migrations/acuranzo_1185.lua) | lookups | 1.0.0 | 2026-04-12 | 4 | ✗ | LithiumTable style-manager-list (lookup_id 059, key_idx 8) |
 | [1186](/elements/002-helium/acuranzo/migrations/acuranzo_1186.lua) | lookups | 1.0.0 | 2026-04-12 | 4 | ✗ | LithiumTable style-manager-sections (lookup_id 059, key_idx 9) |
 | [1187](/elements/002-helium/acuranzo/migrations/acuranzo_1187.lua) | lookups | 1.0.0 | 2026-03-15 | 4 | ✗ | LithiumTable version-manager (lookup_id 059, key_idx 10) |
-| **188** | | | | **954** | **188** | |
+| [1188](/elements/002-helium/acuranzo/migrations/acuranzo_1188.lua) | queries | 1.0.0 | 2026-04-23 | 4 | ✗ | QueryRef #075 - Create Account Settings |
+| **189** | | | | **958** | **189** | |

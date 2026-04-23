@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS class selectors/names used across the Lithium codebase",
-    "generated": "2026-04-22T23:19:40.236Z",
+    "generated": "2026-04-23T19:42:01.988Z",
     "sources": {
       "css": "53 files in src/**/*.css",
       "js": "147 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
-    "total_selectors": 1964,
-    "total_occurrences": 30814
+    "total_selectors": 1974,
+    "total_occurrences": 30513
   },
   "selectors": [
     {
@@ -289,8 +289,8 @@
       "selector": ".btn",
       "css": 2,
       "js": 25,
-      "html": 11,
-      "total": 38,
+      "html": 0,
+      "total": 27,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css",
@@ -304,17 +304,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn i",
       "css": 1,
       "js": 25,
-      "html": 11,
-      "total": 37,
+      "html": 0,
+      "total": 26,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -327,17 +325,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn-counter",
       "css": 2,
       "js": 31,
-      "html": 11,
-      "total": 44,
+      "html": 0,
+      "total": 33,
       "files": {
         "css": [
           "src/core/manager-ui.css",
@@ -352,17 +348,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn-counter[style*=\"display: none\"]",
       "css": 1,
       "js": 31,
-      "html": 11,
-      "total": 43,
+      "html": 0,
+      "total": 32,
       "files": {
         "css": [
           "src/core/manager-ui.css"
@@ -376,17 +370,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn-danger",
       "css": 1,
       "js": 25,
-      "html": 11,
-      "total": 37,
+      "html": 0,
+      "total": 26,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -399,17 +391,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn-danger:hover",
       "css": 1,
       "js": 25,
-      "html": 11,
-      "total": 37,
+      "html": 0,
+      "total": 26,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -422,17 +412,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn-ghost",
       "css": 1,
       "js": 25,
-      "html": 11,
-      "total": 37,
+      "html": 0,
+      "total": 26,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -445,17 +433,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn-ghost:hover",
       "css": 1,
       "js": 25,
-      "html": 11,
-      "total": 37,
+      "html": 0,
+      "total": 26,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -468,34 +454,30 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn-group-sm",
       "css": 0,
       "js": 2,
-      "html": 11,
-      "total": 13,
+      "html": 0,
+      "total": 2,
       "files": {
         "css": [],
         "js": [
           "src/init/codemirror-init.js",
           "src/init/jsoneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn-lg",
       "css": 1,
       "js": 25,
-      "html": 11,
-      "total": 37,
+      "html": 0,
+      "total": 26,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -508,17 +490,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn-loading",
       "css": 1,
       "js": 25,
-      "html": 11,
-      "total": 37,
+      "html": 0,
+      "total": 26,
       "files": {
         "css": [
           "src/styles/transitions.css"
@@ -531,17 +511,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn-loading::after",
       "css": 1,
       "js": 25,
-      "html": 11,
-      "total": 37,
+      "html": 0,
+      "total": 26,
       "files": {
         "css": [
           "src/styles/transitions.css"
@@ -554,17 +532,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn-outline-primary",
       "css": 0,
       "js": 3,
-      "html": 11,
-      "total": 14,
+      "html": 0,
+      "total": 3,
       "files": {
         "css": [],
         "js": [
@@ -572,17 +548,15 @@
           "src/init/jsoneditor-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn-outline-secondary",
       "css": 0,
       "js": 19,
-      "html": 11,
-      "total": 30,
+      "html": 0,
+      "total": 19,
       "files": {
         "css": [],
         "js": [
@@ -592,17 +566,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn-primary",
       "css": 2,
       "js": 26,
-      "html": 11,
-      "total": 39,
+      "html": 0,
+      "total": 28,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css",
@@ -616,17 +588,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn-primary:disabled",
       "css": 1,
       "js": 26,
-      "html": 11,
-      "total": 38,
+      "html": 0,
+      "total": 27,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -639,17 +609,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn-primary:hover",
       "css": 1,
       "js": 26,
-      "html": 11,
-      "total": 38,
+      "html": 0,
+      "total": 27,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -662,17 +630,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn-primary:hover:not(:disabled)",
       "css": 1,
       "js": 26,
-      "html": 11,
-      "total": 38,
+      "html": 0,
+      "total": 27,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -685,17 +651,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn-secondary",
       "css": 2,
       "js": 25,
-      "html": 14,
-      "total": 41,
+      "html": 0,
+      "total": 27,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css",
@@ -709,17 +673,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn-secondary:hover:not(:disabled)",
       "css": 1,
       "js": 25,
-      "html": 14,
-      "total": 40,
+      "html": 0,
+      "total": 26,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -732,17 +694,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn-sm",
       "css": 1,
       "js": 40,
-      "html": 11,
-      "total": 52,
+      "html": 0,
+      "total": 41,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -755,17 +715,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn-success",
       "css": 1,
       "js": 25,
-      "html": 11,
-      "total": 37,
+      "html": 0,
+      "total": 26,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -778,17 +736,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn-success:hover",
       "css": 1,
       "js": 25,
-      "html": 11,
-      "total": 37,
+      "html": 0,
+      "total": 26,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -801,17 +757,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn:disabled",
       "css": 1,
       "js": 25,
-      "html": 11,
-      "total": 37,
+      "html": 0,
+      "total": 26,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -824,17 +778,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn:focus",
       "css": 1,
       "js": 25,
-      "html": 11,
-      "total": 37,
+      "html": 0,
+      "total": 26,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -847,17 +799,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn:hover",
       "css": 1,
       "js": 25,
-      "html": 11,
-      "total": 37,
+      "html": 0,
+      "total": 26,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -870,9 +820,7 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
+        "html": []
       }
     },
     {
@@ -1909,9 +1857,9 @@
     {
       "selector": ".col-manager-popup.visible",
       "css": 1,
-      "js": 116,
+      "js": 115,
       "html": 0,
-      "total": 117,
+      "total": 116,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
@@ -3636,9 +3584,9 @@
     {
       "selector": ".crimson-citation-popup.visible",
       "css": 1,
-      "js": 122,
+      "js": 121,
       "html": 0,
-      "total": 123,
+      "total": 122,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -5133,9 +5081,9 @@
     {
       "selector": ".crimson-overlay.visible",
       "css": 1,
-      "js": 114,
+      "js": 113,
       "html": 0,
-      "total": 115,
+      "total": 114,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -5338,9 +5286,9 @@
     {
       "selector": ".crimson-popup.visible",
       "css": 1,
-      "js": 114,
+      "js": 113,
       "html": 0,
-      "total": 115,
+      "total": 114,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -6220,6 +6168,20 @@
     {
       "selector": ".df-add-btn",
       "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [],
+        "html": []
+      }
+    },
+    {
+      "selector": ".df-add-header-btn",
+      "css": 1,
       "js": 1,
       "html": 3,
       "total": 5,
@@ -6227,6 +6189,40 @@
         "css": [
           "src/managers/profile-manager/profile-manager.css"
         ],
+        "js": [
+          "src/managers/profile-manager/pages/page-date-formats.js"
+        ],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
+      }
+    },
+    {
+      "selector": ".df-add-header-btn:hover",
+      "css": 1,
+      "js": 1,
+      "html": 3,
+      "total": 5,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [
+          "src/managers/profile-manager/pages/page-date-formats.js"
+        ],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
+      }
+    },
+    {
+      "selector": ".df-col-example",
+      "css": 0,
+      "js": 2,
+      "html": 13,
+      "total": 15,
+      "files": {
+        "css": [],
         "js": [
           "src/managers/profile-manager/pages/page-date-formats.js"
         ],
@@ -6254,9 +6250,9 @@
     {
       "selector": ".df-custom-item input.df-format-name-input",
       "css": 1,
-      "js": 9,
+      "js": 11,
       "html": 0,
-      "total": 10,
+      "total": 12,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -6269,12 +6265,30 @@
     },
     {
       "selector": ".df-delete-btn",
-      "css": 0,
+      "css": 1,
       "js": 5,
       "html": 0,
-      "total": 5,
+      "total": 6,
       "files": {
-        "css": [],
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [
+          "src/managers/profile-manager/pages/page-date-formats.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".df-delete-btn:hover",
+      "css": 1,
+      "js": 5,
+      "html": 0,
+      "total": 6,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
         "js": [
           "src/managers/profile-manager/pages/page-date-formats.js"
         ],
@@ -6285,8 +6299,8 @@
       "selector": ".df-example",
       "css": 0,
       "js": 4,
-      "html": 7,
-      "total": 11,
+      "html": 10,
+      "total": 14,
       "files": {
         "css": [],
         "js": [
@@ -6301,8 +6315,8 @@
       "selector": ".df-format-item",
       "css": 0,
       "js": 5,
-      "html": 7,
-      "total": 12,
+      "html": 10,
+      "total": 15,
       "files": {
         "css": [],
         "js": [
@@ -6365,8 +6379,8 @@
       "selector": ".df-sample-input-group .form-input",
       "css": 1,
       "js": 2,
-      "html": 24,
-      "total": 27,
+      "html": 27,
+      "total": 30,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -6484,11 +6498,83 @@
       }
     },
     {
+      "selector": ".df-table .df-col-current",
+      "css": 1,
+      "js": 2,
+      "html": 19,
+      "total": 22,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [
+          "src/managers/profile-manager/pages/page-date-formats.js"
+        ],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
+      }
+    },
+    {
+      "selector": ".df-table .df-col-format",
+      "css": 1,
+      "js": 2,
+      "html": 19,
+      "total": 22,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [
+          "src/managers/profile-manager/pages/page-date-formats.js"
+        ],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
+      }
+    },
+    {
+      "selector": ".df-table .df-col-icon",
+      "css": 1,
+      "js": 2,
+      "html": 19,
+      "total": 22,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [
+          "src/managers/profile-manager/pages/page-date-formats.js"
+        ],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
+      }
+    },
+    {
+      "selector": ".df-table .df-col-name",
+      "css": 1,
+      "js": 2,
+      "html": 19,
+      "total": 22,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [
+          "src/managers/profile-manager/pages/page-date-formats.js"
+        ],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
+      }
+    },
+    {
       "selector": ".df-table .df-current",
       "css": 1,
       "js": 4,
-      "html": 13,
-      "total": 18,
+      "html": 16,
+      "total": 21,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -6504,9 +6590,9 @@
     {
       "selector": ".df-table .df-format-input",
       "css": 1,
-      "js": 7,
-      "html": 13,
-      "total": 21,
+      "js": 8,
+      "html": 16,
+      "total": 25,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -6523,8 +6609,8 @@
       "selector": ".df-table .df-locked",
       "css": 1,
       "js": 0,
-      "html": 13,
-      "total": 14,
+      "html": 16,
+      "total": 17,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -6539,8 +6625,56 @@
       "selector": ".df-table .df-name",
       "css": 1,
       "js": 0,
-      "html": 13,
-      "total": 14,
+      "html": 16,
+      "total": 17,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
+      }
+    },
+    {
+      "selector": ".df-table input",
+      "css": 1,
+      "js": 0,
+      "html": 6,
+      "total": 7,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
+      }
+    },
+    {
+      "selector": ".df-table tbody tr:nth-child(even)",
+      "css": 1,
+      "js": 0,
+      "html": 6,
+      "total": 7,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
+      }
+    },
+    {
+      "selector": ".df-table tbody tr:nth-child(odd)",
+      "css": 1,
+      "js": 0,
+      "html": 6,
+      "total": 7,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -6568,7 +6702,7 @@
       }
     },
     {
-      "selector": ".df-table td:nth-child(4)",
+      "selector": ".df-table td:nth-child(5)",
       "css": 1,
       "js": 0,
       "html": 6,
@@ -6601,22 +6735,6 @@
     },
     {
       "selector": ".df-table th",
-      "css": 1,
-      "js": 0,
-      "html": 6,
-      "total": 7,
-      "files": {
-        "css": [
-          "src/managers/profile-manager/profile-manager.css"
-        ],
-        "js": [],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
-      }
-    },
-    {
-      "selector": ".df-table tr:last-child td",
       "css": 1,
       "js": 0,
       "html": 6,
@@ -6731,8 +6849,8 @@
       "selector": ".df-tz-group .form-input",
       "css": 1,
       "js": 2,
-      "html": 24,
-      "total": 27,
+      "html": 27,
+      "total": 30,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -7277,9 +7395,9 @@
     {
       "selector": ".font-popup.visible",
       "css": 1,
-      "js": 113,
+      "js": 112,
       "html": 0,
-      "total": 114,
+      "total": 113,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -7401,9 +7519,9 @@
     {
       "selector": ".footer-export-popup.visible",
       "css": 1,
-      "js": 113,
+      "js": 112,
       "html": 0,
-      "total": 114,
+      "total": 113,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -8430,8 +8548,8 @@
       "selector": ".jsoneditor-nav .btn",
       "css": 1,
       "js": 26,
-      "html": 11,
-      "total": 38,
+      "html": 0,
+      "total": 27,
       "files": {
         "css": [
           "src/init/jsoneditor.css"
@@ -8444,17 +8562,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".jsoneditor-nav .btn-group",
       "css": 1,
       "js": 28,
-      "html": 11,
-      "total": 40,
+      "html": 0,
+      "total": 29,
       "files": {
         "css": [
           "src/init/jsoneditor.css"
@@ -8467,17 +8583,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".jsoneditor-nav .btn-group .btn",
       "css": 1,
       "js": 28,
-      "html": 11,
-      "total": 40,
+      "html": 0,
+      "total": 29,
       "files": {
         "css": [
           "src/init/jsoneditor.css"
@@ -8490,17 +8604,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".jsoneditor-nav .btn:last-child",
       "css": 1,
       "js": 26,
-      "html": 11,
-      "total": 38,
+      "html": 0,
+      "total": 27,
       "files": {
         "css": [
           "src/init/jsoneditor.css"
@@ -8513,9 +8625,7 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
+        "html": []
       }
     },
     {
@@ -9789,9 +9899,9 @@
     {
       "selector": ".lithium-col-chooser-popup.visible",
       "css": 1,
-      "js": 113,
+      "js": 112,
       "html": 0,
-      "total": 114,
+      "total": 113,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -11094,9 +11204,9 @@
     {
       "selector": ".lithium-nav-popup.visible",
       "css": 1,
-      "js": 128,
+      "js": 127,
       "html": 0,
-      "total": 129,
+      "total": 128,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -14774,9 +14884,9 @@
     {
       "selector": ".lithium-toolbar-popup.visible",
       "css": 1,
-      "js": 134,
+      "js": 133,
       "html": 67,
-      "total": 202,
+      "total": 201,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -15861,9 +15971,9 @@
     {
       "selector": ".lithium-tour-list-popup.visible",
       "css": 1,
-      "js": 114,
+      "js": 113,
       "html": 0,
-      "total": 115,
+      "total": 114,
       "files": {
         "css": [
           "src/managers/tour/tour.css"
@@ -16059,9 +16169,9 @@
     {
       "selector": ".lithium-video-tour-caption.visible",
       "css": 1,
-      "js": 115,
+      "js": 114,
       "html": 0,
-      "total": 116,
+      "total": 115,
       "files": {
         "css": [
           "src/managers/tour/tour.css"
@@ -16782,9 +16892,9 @@
     {
       "selector": ".lithium-video-tour-language-popup.visible",
       "css": 1,
-      "js": 114,
+      "js": 113,
       "html": 0,
-      "total": 115,
+      "total": 114,
       "files": {
         "css": [
           "src/managers/tour/tour.css"
@@ -17261,9 +17371,9 @@
     {
       "selector": ".lithium-video-tour-popup.visible",
       "css": 1,
-      "js": 114,
+      "js": 113,
       "html": 0,
-      "total": 115,
+      "total": 114,
       "files": {
         "css": [
           "src/managers/tour/tour.css"
@@ -18115,9 +18225,9 @@
     {
       "selector": ".login-container.visible",
       "css": 2,
-      "js": 114,
+      "js": 113,
       "html": 1,
-      "total": 117,
+      "total": 116,
       "files": {
         "css": [
           "src/managers/login/login.css",
@@ -18197,9 +18307,9 @@
     {
       "selector": ".login-error.visible",
       "css": 2,
-      "js": 115,
+      "js": 114,
       "html": 1,
-      "total": 118,
+      "total": 117,
       "files": {
         "css": [
           "src/managers/login/login.css",
@@ -18814,9 +18924,9 @@
     {
       "selector": ".login-mockup .login-error.visible",
       "css": 1,
-      "js": 116,
+      "js": 115,
       "html": 1,
-      "total": 118,
+      "total": 117,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -19127,9 +19237,9 @@
     {
       "selector": ".login-subpanel.visible",
       "css": 1,
-      "js": 113,
+      "js": 112,
       "html": 4,
-      "total": 118,
+      "total": 117,
       "files": {
         "css": [
           "src/styles/layout.css"
@@ -19357,9 +19467,9 @@
     {
       "selector": ".logout-overlay.visible",
       "css": 1,
-      "js": 113,
+      "js": 112,
       "html": 1,
-      "total": 115,
+      "total": 114,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -19557,9 +19667,9 @@
     {
       "selector": ".logout-panel.visible",
       "css": 1,
-      "js": 113,
+      "js": 112,
       "html": 4,
-      "total": 118,
+      "total": 117,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -21269,9 +21379,9 @@
     {
       "selector": ".manager-font-popup.visible",
       "css": 1,
-      "js": 132,
+      "js": 131,
       "html": 0,
-      "total": 133,
+      "total": 132,
       "files": {
         "css": [
           "src/core/manager-ui.css"
@@ -21594,9 +21704,9 @@
     {
       "selector": ".manager-footer-export-popup.visible",
       "css": 1,
-      "js": 126,
+      "js": 125,
       "html": 0,
-      "total": 127,
+      "total": 126,
       "files": {
         "css": [
           "src/core/popup.css"
@@ -21656,9 +21766,9 @@
     {
       "selector": ".manager-footer-popup.visible",
       "css": 2,
-      "js": 121,
+      "js": 120,
       "html": 0,
-      "total": 123,
+      "total": 122,
       "files": {
         "css": [
           "src/core/manager-ui.css",
@@ -22698,9 +22808,9 @@
     {
       "selector": ".manager-ui-popup.manager-footer-popup:not(.visible)",
       "css": 1,
-      "js": 140,
+      "js": 139,
       "html": 0,
-      "total": 141,
+      "total": 140,
       "files": {
         "css": [
           "src/core/popup.css"
@@ -22756,9 +22866,9 @@
     {
       "selector": ".manager-ui-popup.manager-header-popup:not(.visible)",
       "css": 1,
-      "js": 135,
+      "js": 134,
       "html": 0,
-      "total": 136,
+      "total": 135,
       "files": {
         "css": [
           "src/core/popup.css"
@@ -22796,9 +22906,9 @@
     {
       "selector": ".manager-ui-popup.visible",
       "css": 1,
-      "js": 132,
+      "js": 131,
       "html": 0,
-      "total": 133,
+      "total": 132,
       "files": {
         "css": [
           "src/core/popup.css"
@@ -24145,9 +24255,9 @@
     {
       "selector": ".nav-popup.visible",
       "css": 1,
-      "js": 113,
+      "js": 112,
       "html": 0,
-      "total": 114,
+      "total": 113,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -24290,9 +24400,9 @@
     {
       "selector": ".offline-indicator.visible",
       "css": 1,
-      "js": 114,
+      "js": 113,
       "html": 0,
-      "total": 115,
+      "total": 114,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -28518,9 +28628,9 @@
     {
       "selector": ".sidebar-overlay.visible",
       "css": 1,
-      "js": 113,
+      "js": 112,
       "html": 1,
-      "total": 115,
+      "total": 114,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -28757,8 +28867,8 @@
       "selector": ".slot-annotations-btn .btn-counter",
       "css": 1,
       "js": 31,
-      "html": 11,
-      "total": 43,
+      "html": 0,
+      "total": 32,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -28772,9 +28882,7 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
+        "html": []
       }
     },
     {
@@ -28972,8 +29080,8 @@
       "selector": ".slot-notifications-btn .btn-counter",
       "css": 1,
       "js": 32,
-      "html": 11,
-      "total": 44,
+      "html": 0,
+      "total": 33,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -28988,17 +29096,15 @@
           "src/init/suneditor-init.js",
           "src/managers/main/main.js"
         ],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".slot-tickets-btn .btn-counter",
       "css": 1,
       "js": 31,
-      "html": 11,
-      "total": 43,
+      "html": 0,
+      "total": 32,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -29012,9 +29118,7 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
+        "html": []
       }
     },
     {
@@ -29635,9 +29739,9 @@
     {
       "selector": ".style-font-popup.visible",
       "css": 1,
-      "js": 113,
+      "js": 112,
       "html": 0,
-      "total": 114,
+      "total": 113,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -31369,8 +31473,8 @@
       "selector": ".tabulator-nav .btn",
       "css": 1,
       "js": 25,
-      "html": 11,
-      "total": 37,
+      "html": 0,
+      "total": 26,
       "files": {
         "css": [
           "src/init/tabulator-full.css"
@@ -31383,17 +31487,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".tabulator-nav .btn-export",
       "css": 1,
       "js": 25,
-      "html": 11,
-      "total": 37,
+      "html": 0,
+      "total": 26,
       "files": {
         "css": [
           "src/init/tabulator-full.css"
@@ -31406,17 +31508,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".tabulator-nav .btn-export .dropdown-menu",
       "css": 1,
       "js": 25,
-      "html": 11,
-      "total": 37,
+      "html": 0,
+      "total": 26,
       "files": {
         "css": [
           "src/init/tabulator-full.css"
@@ -31429,17 +31529,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".tabulator-nav .btn-export:hover .dropdown-menu",
       "css": 1,
       "js": 25,
-      "html": 11,
-      "total": 37,
+      "html": 0,
+      "total": 26,
       "files": {
         "css": [
           "src/init/tabulator-full.css"
@@ -31452,17 +31550,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".tabulator-nav .btn:last-child",
       "css": 1,
       "js": 25,
-      "html": 11,
-      "total": 37,
+      "html": 0,
+      "total": 26,
       "files": {
         "css": [
           "src/init/tabulator-full.css"
@@ -31475,9 +31571,7 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
+        "html": []
       }
     },
     {
@@ -32037,9 +32131,9 @@
     {
       "selector": ".terminal-overlay.visible",
       "css": 1,
-      "js": 114,
+      "js": 113,
       "html": 0,
-      "total": 115,
+      "total": 114,
       "files": {
         "css": [
           "src/managers/terminal/terminal.css"
@@ -32186,9 +32280,9 @@
     {
       "selector": ".terminal-popup.visible",
       "css": 1,
-      "js": 114,
+      "js": 113,
       "html": 0,
-      "total": 115,
+      "total": 114,
       "files": {
         "css": [
           "src/managers/terminal/terminal.css"
@@ -35321,9 +35415,9 @@
     {
       "selector": "#main-layout.visible",
       "css": 1,
-      "js": 113,
+      "js": 112,
       "html": 0,
-      "total": 114,
+      "total": 113,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -35440,9 +35534,9 @@
     {
       "selector": "#profile-manager-page.visible",
       "css": 1,
-      "js": 113,
+      "js": 112,
       "html": 0,
-      "total": 114,
+      "total": 113,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -35538,9 +35632,9 @@
     {
       "selector": "#session-log-page.visible",
       "css": 1,
-      "js": 113,
+      "js": 112,
       "html": 0,
-      "total": 114,
+      "total": 113,
       "files": {
         "css": [
           "src/managers/session-log/session-log.css"

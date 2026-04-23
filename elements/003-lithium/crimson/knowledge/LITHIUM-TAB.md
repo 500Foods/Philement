@@ -140,6 +140,14 @@ The `LithiumTableUIMixin` now delegates to focused modules rather than containin
 
 ## Usage
 
+> **⚠️ Primary Key Configuration Required for Selection Persistence**
+>
+> Tables that need row selection persistence (re-selecting rows after refresh/reload) **must** have primary keys configured. Without primary keys, row selection cannot be saved or restored.
+>
+> - Add `"primaryKey": true` to single primary key columns in your table definition
+> - For compound keys, add `"primaryKey": true` to each column in the compound key
+> - See [Primary Key Configuration](#primary-key-configuration) below for details
+
 ### Basic Usage
 
 ```javascript
@@ -202,6 +210,7 @@ await table.loadData();
 | `onExecuteSave` | Function | ❌ | Custom save logic — `async (row, editHelper) => {}` |
 | `onDuplicate` | Function | ❌ | Custom duplicate logic — `async (rowData) => newRowData` |
 | `onRefresh` | Function | ❌ | Custom refresh (e.g. re-query with params) |
+| `primaryKeyField` | string[] | ❌ | Override primary key fields — `['id']` or `['lookup_id', 'key_idx']` |
 
 ---
 
@@ -234,6 +243,10 @@ When clicked, the Refresh button performs a complete refresh including:
 4. **Apply captured template** — Instead of Default template, apply the captured state with all column configurations
 5. **Re-submit original data request** — Use the same search term and parameters as the original load
 6. **Re-select row and fire events** — Restore the originally selected row and fire `onRowSelected` to trigger downstream effects (e.g., loading child table data in parent/child managers)
+
+**Note:** For tables with custom `onRefresh` handlers, automatic row selection restoration is skipped. The `onRefresh` function is responsible for restoring selection if needed (e.g., via `loadStaticData` with `autoSelect: true`).
+
+**Note:** Row selection restoration requires primary keys to be configured. Tables without primary keys cannot persist or restore row selections.
 
 **Width Presets:** The width button uses CSS custom properties defined in `base.css`:
 
