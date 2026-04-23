@@ -181,12 +181,20 @@ The profile JSON is a flat object where each top-level key is a section key:
   "-9": {
     "_name": "Date Formats",
     "dates": {
-      "short": "YYYY-MM-DD",
-      "long": "MMMM D, YYYY"
+      "Short Date": "yyyy-MM-dd",
+      "Medium Date": "yyyy-MMM-dd",
+      "Long Date": "MMMM d, y",
+      "Week Number": "yyyy-'W'nn"
     },
     "times": {
-      "short": "HH:mm",
-      "long": "h:mm A"
+      "Short Time": "HH:mm",
+      "Medium Time": "H:mm:ss",
+      "Long Time": "HH:mm:ss.SSS"
+    },
+    "datetimes": {
+      "Short DateTime": "yyyy-MM-dd HH:mm:ss",
+      "Medium DateTime": "yyyy-MMM-dd (EEE) HH:mm:ss",
+      "Long DateTime": "MMMM d, y 'at' HH:mm:ss"
     }
   },
   "23": {
@@ -912,12 +920,20 @@ The resulting JSON under section `"-9"`:
 {
   "_name": "Date Formats",
   "dates": {
-    "short": "YYYY-MM-DD",
-    "long": "MMMM D, YYYY"
+    "Short Date": "yyyy-MM-dd",
+    "Medium Date": "yyyy-MMM-dd",
+    "Long Date": "MMMM d, y",
+    "Week Number": "yyyy-'W'nn"
   },
   "times": {
-    "short": "HH:mm",
-    "long": "HH:mm:ss"
+    "Short Time": "HH:mm",
+    "Medium Time": "H:mm:ss",
+    "Long Time": "HH:mm:ss.SSS"
+  },
+  "datetimes": {
+    "Short DateTime": "yyyy-MM-dd HH:mm:ss",
+    "Medium DateTime": "yyyy-MMM-dd (EEE) HH:mm:ss",
+    "Long DateTime": "MMMM d, y 'at' HH:mm:ss"
   }
 }
 ```

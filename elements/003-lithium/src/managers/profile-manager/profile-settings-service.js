@@ -78,7 +78,7 @@ export class ProfileSettingsService {
         return defaultValue;
       }
     }
-    return current;
+    return current !== undefined && current !== null ? current : defaultValue;
   }
 
   /**

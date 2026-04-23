@@ -39,20 +39,20 @@ const DEFAULT_SAMPLE = '2020-01-01T14:03:02';
 // Default built-in formats
 const BUILTIN_FORMATS = {
   dates: {
-    short: 'yyyy-MM-dd',
-    medium: 'yyyy-MMM-dd',
-    long: 'MMMM d, y',
-    week: 'yyyy-\'W\'nn',
+    'Short Date': 'yyyy-MM-dd',
+    'Medium Date': 'yyyy-MMM-dd',
+    'Long Date': 'MMMM d, y',
+    'Week Number': 'yyyy-\'W\'nn',
   },
   times: {
-    short: 'HH:mm',
-    medium: 'H:mm:ss',
-    long: 'HH:mm:ss.SSS',
+    'Short Time': 'HH:mm',
+    'Medium Time': 'H:mm:ss',
+    'Long Time': 'HH:mm:ss.SSS',
   },
   datetimes: {
-    short: 'yyyy-MM-dd HH:mm:ss',
-    medium: 'yyyy-MMM-dd (EEE) HH:mm:ss',
-    long: 'MMMM d, y \'at\' HH:mm:ss',
+    'Short DateTime': 'yyyy-MM-dd HH:mm:ss',
+    'Medium DateTime': 'yyyy-MMM-dd (EEE) HH:mm:ss',
+    'Long DateTime': 'MMMM d, y \'at\' HH:mm:ss',
   },
 };
 
@@ -331,6 +331,7 @@ export class DateFormatsPage extends BaseSettingsPage {
     this._initFlatpickr();
     await this._initTokenTable();
     await this.loadData();
+    this._startCurrentTimeUpdates();
 
     log(Subsystems.MANAGER, Status.DEBUG, '[DateFormatsPage] Initialized');
   }
@@ -703,6 +704,15 @@ export class DateFormatsPage extends BaseSettingsPage {
   }
 
   /**
+   * Start updating current time previews every second
+   */
+  _startCurrentTimeUpdates() {
+    this._currentUpdateInterval = setInterval(() => {
+      this._renderCurrentPreviews();
+    }, 1000);
+  }
+
+  /**
    * Render current time previews for format tables
    */
   _renderCurrentPreviews() {
@@ -809,9 +819,9 @@ export class DateFormatsPage extends BaseSettingsPage {
 
     // Copy from the last custom row, or use defaults
     let name = 'Custom Format';
-    let format = 'yyyy-MM-dd';
+    let format = type === 'dates' ? 'yyyy-MM-dd' : type === 'times' ? 'HH:mm' : 'yyyy-MM-dd HH:mm:ss';
 
-    const listId = type === 'datetime' ? 'df-datetime-custom' : `df-${type}-custom`;
+    const listId = `df-${type}-custom`;
     const list = container.querySelector(`#${listId}`);
     if (list) {
       const lastCustom = list.querySelector('.df-custom-item:last-child');
@@ -874,20 +884,22 @@ export class DateFormatsPage extends BaseSettingsPage {
     const container = this.container;
     if (!container) return;
 
-    ['dates', 'times', 'datetime'].forEach(type => {
+    ['dates', 'times', 'datetimes'].forEach(type => {
       const custom = this._gatherCustomFormats(type);
-      const settingKey = type === 'datetime' ? 'datetimes' : type;
+      const settingKey = type;
 
       // Get current stored formats for this type
       const currentStored = this.getSetting(settingKey, {});
       const merged = { ...currentStored };
 
       // Remove old custom formats (anything not in builtin defaults)
-      Object.keys(merged).forEach(key => {
-        if (!BUILTIN_FORMATS[type] || !(key in BUILTIN_FORMATS[type])) {
-          delete merged[key];
-        }
-      });
+      if (BUILTIN_FORMATS[type]) {
+        Object.keys(merged).forEach(key => {
+          if (!(key in BUILTIN_FORMATS[type])) {
+            delete merged[key];
+          }
+        });
+      }
 
       // Add current custom formats
       Object.assign(merged, custom);
@@ -945,7 +957,7 @@ export class DateFormatsPage extends BaseSettingsPage {
     // Custom formats
     this._loadCustomFormats('dates');
     this._loadCustomFormats('times');
-    this._loadCustomFormats('datetime');
+    this._loadCustomFormats('datetimes');
 
     this._renderAllPreviews();
   }
@@ -972,6 +984,7 @@ export class DateFormatsPage extends BaseSettingsPage {
       const input = container.querySelector(`[data-setting="${type}.${key}"]`);
       if (input && typeof format === 'string') {
         input.value = format;
+        this._updatePreview(input);
       }
     });
   }
@@ -983,13 +996,13 @@ export class DateFormatsPage extends BaseSettingsPage {
     const container = this.container;
     if (!container) return;
 
-    const listId = type === 'datetime' ? 'df-datetime-custom' : `df-${type}-custom`;
+    const listId = `df-${type}-custom`;
     const list = container.querySelector(`#${listId}`);
     if (!list) return;
 
     list.innerHTML = '';
 
-    const settingKey = type === 'datetime' ? 'datetimes' : type;
+    const settingKey = type;
     const allFormats = this.getSetting(settingKey, {});
 
     const sample = this._getSampleDateTime();
@@ -1040,7 +1053,7 @@ export class DateFormatsPage extends BaseSettingsPage {
     const container = this.container;
     const custom = {};
 
-    const listId = type === 'datetime' ? 'df-datetime-custom' : `df-${type}-custom`;
+    const listId = `df-${type}-custom`;
     const list = container?.querySelector(`#${listId}`);
     if (!list) return custom;
 
@@ -1089,6 +1102,10 @@ export class DateFormatsPage extends BaseSettingsPage {
    * Destroy
    */
   destroy() {
+    if (this._currentUpdateInterval) {
+      clearInterval(this._currentUpdateInterval);
+      this._currentUpdateInterval = null;
+    }
     if (this._flatpickrInstance) {
       this._flatpickrInstance.destroy();
       this._flatpickrInstance = null;

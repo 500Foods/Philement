@@ -28,7 +28,6 @@ import { getMenu, buildManagerIconsRegistry } from '../../shared/menu.js';
 import { CollectionTabHandler } from './profile-manager-collection.js';
 import { SettingsTabHandler } from './profile-manager-settings.js';
 
-import { ProfileSettingsService } from './profile-settings-service.js';
 import { toast } from '../../shared/toast.js';
 import '../../styles/vendor-tabulator.css';
 import '../../core/manager-panels.css';
@@ -62,13 +61,25 @@ export default class ProfileManager {
 
     this.editHelper = new ManagerEditHelper({ name: 'Profile' });
 
-    // Use the profile settings service for all profile pages
-    this.settingsService = new ProfileSettingsService({
-      onAfterSave: (data) => {
-        // Sync to collection tab if initialized
-        this.collectionHandler?.setData(data);
-      }
-    });
+    // Use the global settings service with sectioned access wrapper
+    const globalSettings = window.lithiumSettings;
+    this.settingsService = {
+      getSection: (sectionKey, path, defaultValue) => {
+        const fullPath = path ? `${sectionKey}.${path}` : sectionKey;
+        return globalSettings.get(fullPath, defaultValue);
+      },
+      setSection: (sectionKey, path, value) => {
+        const fullPath = path ? `${sectionKey}.${path}` : sectionKey;
+        globalSettings.set(fullPath, value);
+        // Sync to collection tab
+        this.collectionHandler?.setData(this.getCollectionData());
+      },
+      get: (path, defaultValue) => globalSettings.get(path, defaultValue),
+      set: (path, value) => globalSettings.set(path, value),
+      getSetting: (path, defaultValue) => globalSettings.get(path, defaultValue),
+      getAll: () => globalSettings.getAll(),
+      onChange: (callback) => globalSettings.onChange(callback),
+    };
 
     // Initialize default formats in settings if not present
     this._initializeDefaultFormats();
@@ -1158,20 +1169,20 @@ export default class ProfileManager {
   _initializeDefaultFormats() {
     const defaultFormats = {
       dates: {
-        short: 'yyyy-MM-dd',
-        medium: 'yyyy-MMM-dd',
-        long: 'MMMM d, y',
-        week: 'yyyy-\'W\'nn',
+        'Short Date': 'yyyy-MM-dd',
+        'Medium Date': 'yyyy-MMM-dd',
+        'Long Date': 'MMMM d, y',
+        'Week Number': 'yyyy-\'W\'nn',
       },
       times: {
-        short: 'HH:mm',
-        medium: 'H:mm:ss',
-        long: 'HH:mm:ss.SSS',
+        'Short Time': 'HH:mm',
+        'Medium Time': 'H:mm:ss',
+        'Long Time': 'HH:mm:ss.SSS',
       },
       datetimes: {
-        short: 'yyyy-MM-dd HH:mm:ss',
-        medium: 'yyyy-MMM-dd (EEE) HH:mm:ss',
-        long: 'MMMM d, y \'at\' HH:mm:ss',
+        'Short DateTime': 'yyyy-MM-dd HH:mm:ss',
+        'Medium DateTime': 'yyyy-MMM-dd (EEE) HH:mm:ss',
+        'Long DateTime': 'MMMM d, y \'at\' HH:mm:ss',
       },
     };
 
@@ -1211,8 +1222,8 @@ export default class ProfileManager {
     const closeBtn = managerSlot.querySelector('.manager-ui-close-btn');
     if (!closeBtn) return;
 
-    closeBtn.innerHTML = '<fa fa-rotate-right></fa>';
-    closeBtn.dataset.tooltip = 'Global Logout (reload)';
+    closeBtn.innerHTML = '<fa fa-radiation></fa>';
+    closeBtn.dataset.tooltip = 'Global Logout';
     processIcons(closeBtn);
 
     closeBtn.onclick = async (e) => {
