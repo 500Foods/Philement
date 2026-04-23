@@ -296,6 +296,29 @@ Then configure your server to serve the appropriate file based on environment.
 
 ---
 
+## Settings vs Configuration
+
+Lithium distinguishes between **configuration** (static, environment-specific) and **settings** (dynamic, user-specific):
+
+| Type | File | Access | Purpose |
+|------|------|--------|---------|
+| **Configuration** | `lithium.json` | `getConfig()`, `getConfigValue()` | App behavior, API endpoints, branding |
+| **Settings** | localStorage `lithium_preferences` | `window.lithiumSettings` | User preferences, themes, formats |
+
+**Configuration** is loaded once at startup and changes require deployment. **Settings** are user-managed and persist across sessions.
+
+```javascript
+// Configuration (static)
+import { getConfigValue } from '../../core/config.js';
+const apiUrl = getConfigValue('server.url');
+
+// Settings (dynamic)
+const theme = window.lithiumSettings.get('theme', 'dark');
+window.lithiumSettings.set('theme', 'light');
+```
+
+---
+
 ## Related Documentation
 
 - [LITHIUM-ICN.md](LITHIUM-ICN.md) - Icon system (uses icons config)

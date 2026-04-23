@@ -211,6 +211,113 @@ The profile JSON is a flat object where each top-level key is a section key:
 | Method | Purpose |
 |--------|---------|
 | `get(sectionKey, path, defaultValue)` | Read a dotted-path value |
+
+### GlobalSettingsService — Application-Wide Settings Access
+
+The `GlobalSettingsService` provides application-wide access to user preferences stored in localStorage under the key `lithium_preferences`. This service is available globally via `window.lithiumSettings` and allows any part of the application to read/write user settings consistently.
+
+#### Why Global Access?
+
+- **Centralized storage** — All user preferences in one place
+- **Cross-manager access** — Any manager can read/write shared settings
+- **Consistent API** — Same interface across the entire application
+- **Real-time updates** — Changes are persisted immediately and listeners notified
+
+#### Global Access Pattern
+
+```javascript
+// Read a setting
+const theme = window.lithiumSettings.get('theme', 'dark');
+const dateFormat = window.lithiumSettings.get('dates.short', 'yyyy-MM-dd');
+
+// Write a setting
+window.lithiumSettings.set('theme', 'light');
+window.lithiumSettings.set('custom.timezone', 'America/New_York');
+
+// Listen for changes
+const unsubscribe = window.lithiumSettings.onChange((newSettings) => {
+  console.log('Settings changed:', newSettings);
+  // Update UI accordingly
+});
+```
+
+#### API Reference
+
+| Method | Purpose |
+|--------|---------|
+| `get(path, defaultValue)` | Read a dotted-path value |
+| `set(path, value)` | Write a dotted-path value |
+| `getAll()` | Get entire settings object |
+| `onChange(callback)` | Subscribe to settings changes |
+| `static getInstance()` | Get singleton instance |
+
+#### Settings Structure
+
+The global settings follow the same structure as the Profile Manager's JSON:
+
+```json
+{
+  "theme": "dark",
+  "language": "en-US",
+  "dates": {
+    "short": "yyyy-MM-dd",
+    "medium": "yyyy-MMM-dd",
+    "long": "MMMM d, y",
+    "week": "yyyy-'W'nn"
+  },
+  "times": {
+    "short": "HH:mm",
+    "medium": "H:mm:ss",
+    "long": "HH:mm:ss.SSS"
+  },
+  "datetimes": {
+    "short": "yyyy-MM-dd HH:mm:ss",
+    "medium": "yyyy-MMM-dd (EEE) HH:mm:ss",
+    "long": "MMMM d, y 'at' HH:mm:ss"
+  },
+  "collection": {
+    "font": {
+      "fontSize": "13px",
+      "fontFamily": "\"Vanadium Mono\", var(--font-mono, monospace)",
+      "fontWeight": "normal"
+    }
+  }
+}
+```
+
+**Note:** The global settings service provides direct access to the same data managed by the Profile Manager. Changes made through either interface are synchronized.
+
+#### Usage Examples
+
+```javascript
+// In any manager or component
+export class MyManager {
+  init() {
+    // Read current theme
+    const theme = window.lithiumSettings.get('theme', 'dark');
+    this.applyTheme(theme);
+
+    // Listen for theme changes
+    this.themeUnsubscribe = window.lithiumSettings.onChange((settings) => {
+      if (settings.theme !== this.currentTheme) {
+        this.applyTheme(settings.theme);
+      }
+    });
+  }
+
+  applyTheme(theme) {
+    this.currentTheme = theme;
+    this.container.classList.toggle('light-theme', theme === 'light');
+  }
+
+  destroy() {
+    // Clean up listener
+    if (this.themeUnsubscribe) {
+      this.themeUnsubscribe();
+    }
+  }
+}
+```
 | `set(sectionKey, path, value)` | Write a dotted-path value |
 | `delete(sectionKey, path)` | Remove a dotted-path value |
 | `getSection(sectionKey)` | Get an entire section object (shallow clone) |
@@ -619,6 +726,60 @@ The `SettingsTabHandler` manages:
 | `lithium_themes` | Cached theme list |
 | `activeThemeId` | Current theme ID |
 | `lithium_lookups_settings` | Lookups Manager settings (legacy — migrate to service) |
+
+---
+
+## Style Preferences
+
+This section documents the established styling patterns and preferences for Profile Manager settings pages, based on the Date Formats implementation.
+
+### Table Layout and Styling
+
+#### Container and Wrapper
+- **Max width**: 900px for table wrappers (matches token table reference)
+- **Border**: `1px solid var(--accent-alt-primary)` with `var(--border-radius-md)` rounding
+- **Padding**: Use `var(--space-2)` for cell padding consistently
+
+#### Header Styling
+- **Background**: `var(--accent-alt-primary)` with white text
+- **Font**: Mixed case (not uppercase) - use `text-transform: none`
+- **Weight**: 600 (semibold)
+- **Size**: `var(--font-size-xs)` for headers, `var(--font-size-sm)` for body text
+
+#### Row and Cell Styling
+- **Zebra stripes**: Use `var(--bg-row-odd)` and `var(--bg-row-even)` for alternating rows
+- **Borders**: All cells have borders on all sides (`border: 1px solid var(--bg-row-border)`) - no perimeter exceptions
+- **Vertical alignment**: Use `vertical-align: middle` for consistent alignment
+
+#### Column Structure
+- **First column**: 40px wide, centered, for icons (lock for built-in, trash for custom)
+- **Icon buttons**: `df-delete-btn` styling with hover effects
+- **Descriptive headers**: Use clear, descriptive column names (e.g., "Date Formats", "Time Formats" instead of generic "Name")
+
+#### Form Elements
+- **Inputs**: Include `border-radius: var(--border-radius-sm)` for consistency
+- **Buttons**: Left-justified in table footers
+
+### Data Handling Patterns
+
+#### Adding New Items
+- When adding custom entries, copy values from the bottom-most existing custom row instead of prompting for input
+- Use structured JSON storage with nested objects for related settings
+
+#### Live Saving
+- Implement live saving for immediate user feedback
+- Use the ProfileSettingsService for all data persistence
+
+#### Icon Conventions
+- **Lock icons** (`<fa fa-lock></fa>`) for built-in, non-editable items
+- **Trash icons** (`<fa fa-trash></fa>`) for custom, deletable items
+- Icons centered horizontally in dedicated column
+
+### Implementation Notes
+
+- Avoid special color styling for cell contents unless functionally necessary
+- Maintain consistent spacing and alignment across all table-based settings pages
+- Use the established patterns from Date Formats as the reference for future table implementations
 
 ---
 

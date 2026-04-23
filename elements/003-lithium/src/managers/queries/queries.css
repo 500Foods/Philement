@@ -41,11 +41,11 @@
 .queries-left-panel {
   display: flex;
   flex-direction: column;
-  width: var(--panel-left-w, 280px);
   min-width: 157px;
   background-color: var(--bg-secondary);
   transition: width var(--transition-delay) ease, min-width var(--transition-delay) ease;
   flex-shrink: 0;
+  width: 622px; /* wide by default */
 }
 
 /* ── Table Containers (additional styling beyond lithium-table.css) ────── */
@@ -117,7 +117,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  padding: var(--space-2) var(--space-3);
+  padding: 0px var(--space-3) var(--space-2) var(--space-3);
   overflow: auto;
   opacity: 0;
   visibility: hidden;
@@ -139,6 +139,7 @@
   height: 100%;
   overflow: hidden;
   border-radius: var(--border-radius-md);
+  border: 1px solid var(--accent-alt-primary);
 }
 
 .queries-sql-editor .cm-editor {

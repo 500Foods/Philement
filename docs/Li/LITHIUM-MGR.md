@@ -27,6 +27,36 @@ Lithium has three types of managers:
 
 ---
 
+## Global Settings Service
+
+All managers have access to the global settings service for user preferences and application state:
+
+```javascript
+// Available globally via window.lithiumSettings
+const theme = window.lithiumSettings.get('theme', 'dark');
+const dateFormat = window.lithiumSettings.get('dates.short', 'yyyy-MM-dd');
+
+// Write settings
+window.lithiumSettings.set('theme', 'light');
+window.lithiumSettings.set('custom.timezone', 'America/New_York');
+
+// Listen for changes
+const unsubscribe = window.lithiumSettings.onChange((settings) => {
+  // Update UI when settings change
+  this.applyTheme(settings.theme);
+});
+```
+
+**API Reference:**
+- `get(path, defaultValue)` — Read dotted-path values
+- `set(path, value)` — Write dotted-path values
+- `getAll()` — Get entire settings object
+- `onChange(callback)` — Subscribe to changes
+
+**Settings are stored in localStorage under `lithium_preferences` and synchronized across all managers in real-time.**
+
+---
+
 ## Manager Documentation
 
 ### Overview

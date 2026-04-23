@@ -24,6 +24,312 @@
   };
 })();
 
+// Global settings accessor for application-wide user preferences
+class GlobalSettingsService {
+  // Static method to get the global instance
+  static getInstance() {
+    if (!window.lithiumSettings) {
+      window.lithiumSettings = new GlobalSettingsService();
+    }
+    return window.lithiumSettings;
+  }
+
+  // Compatibility methods for ProfileSettingsService API
+  getSetting(path, defaultValue = null) {
+    return this.get(path, defaultValue);
+  }
+
+  setSetting(path, value) {
+    return this.set(path, value);
+  }
+
+  // Section-based access methods (for Profile Manager compatibility)
+  get(sectionKey, path, defaultValue = undefined) {
+    const section = this._data[sectionKey];
+    if (!section || typeof section !== 'object') {
+      return defaultValue;
+    }
+    const keys = path.split('.');
+    let current = section;
+    for (const key of keys) {
+      if (current == null || !Object.prototype.hasOwnProperty.call(current, key)) {
+        return defaultValue;
+      }
+      current = current[key];
+    }
+    return current;
+  }
+
+  setSection(sectionKey, path, value) {
+    if (!this._data[sectionKey] || typeof this._data[sectionKey] !== 'object') {
+      this._data[sectionKey] = {};
+    }
+
+    const keys = path.split('.');
+    let current = this._data[sectionKey];
+
+    for (let i = 0; i < keys.length - 1; i++) {
+      const key = keys[i];
+      if (!current[key] || typeof current[key] !== 'object') {
+        current[key] = {};
+      }
+      current = current[key];
+    }
+
+    current[keys[keys.length - 1]] = value;
+    this._save();
+    return this;
+  }
+
+  getSection(sectionKey) {
+    const section = this._data[sectionKey];
+    return section && typeof section === 'object' ? { ...section } : {};
+  }
+
+  setSection(sectionKey, data, sectionName = null) {
+    const newSection = data && typeof data === 'object' ? { ...data } : {};
+    if (sectionName) {
+      newSection._name = sectionName;
+    }
+    this._data[sectionKey] = newSection;
+    this._save();
+    return this;
+  }
+  constructor() {
+    this._data = {};
+    this._listeners = [];
+    this._accountId = null;
+    this._clientId = 'lithium';
+    this._serverSyncTimer = null;
+    this._isLoaded = false;
+    this.storageKey = 'lithium_preferences';
+    this._load();
+  }
+
+  _save() {
+    this._notifyListeners();
+    // Persist to localStorage
+    try {
+      localStorage.setItem(this.storageKey, JSON.stringify(this._data));
+    } catch (error) {
+      log(Subsystems.CONFIG, Status.WARN, `Failed to persist settings to localStorage: ${error.message}`);
+    }
+  }
+
+  _load() {
+    try {
+      const stored = localStorage.getItem(this.storageKey);
+      this._data = stored ? JSON.parse(stored) : {};
+    } catch (e) {
+      log(Subsystems.CONFIG, Status.WARN, `Failed to load settings from localStorage: ${e.message}`);
+      this._data = {};
+    }
+  }
+
+  // Server sync methods
+  async syncFromServer(api) {
+    if (!this._accountId || !this._clientId || !api) {
+      return; // Not logged in or no API
+    }
+
+    try {
+      const { authQuery } = await import('./shared/conduit.js');
+      const rows = await authQuery(api, 73, {
+        INTEGER: { ACCOUNTID: this._accountId },
+        STRING: { CLIENTID: this._clientId }
+      });
+
+      if (rows && rows.length > 0) {
+        const collection = rows[0].collection || '{}';
+        this._data = JSON.parse(collection);
+        this._isLoaded = true;
+        const bytes = collection.length;
+        log(Subsystems.MANAGER, Status.SUCCESS, `User Profile Settings Retrieved - ${bytes} bytes`);
+        this._notifyListeners();
+      } else {
+        log(Subsystems.MANAGER, Status.INFO, 'User Profile Settings Not Retrieved');
+        // No settings on server, start with empty
+        this._data = {};
+        this._isLoaded = true;
+        // Create default settings on server
+        await this.createToServer(api);
+      }
+    } catch (error) {
+      log(Subsystems.MANAGER, Status.ERROR, `Failed to sync settings from server: ${error.message}`);
+      // Start with empty settings
+      this._data = {};
+      this._isLoaded = true;
+    }
+  }
+
+  async createToServer(api) {
+    if (!this._accountId || !this._clientId || !api) {
+      return; // Not logged in or no API
+    }
+
+    try {
+      const { authQuery } = await import('./shared/conduit.js');
+      const collection = JSON.stringify(this._data);
+
+      await authQuery(api, 75, {
+        INTEGER: { ACCOUNTID: this._accountId },
+        STRING: { CLIENTID: this._clientId, COLLECTION: collection }
+      });
+      log(Subsystems.MANAGER, Status.SUCCESS, 'User Profile Settings Created on Server');
+    } catch (error) {
+      log(Subsystems.MANAGER, Status.ERROR, `Failed to create server settings: ${error.message}`);
+      // Continue locally
+    }
+  }
+
+  async syncToServer(api) {
+    if (!this._accountId || !this._clientId || !api) {
+      return; // Not logged in or no API
+    }
+
+    try {
+      const { authQuery } = await import('./shared/conduit.js');
+      const collection = JSON.stringify(this._data);
+
+      // First try to update existing settings
+      try {
+        await authQuery(api, 74, {
+          INTEGER: { ACCOUNTID: this._accountId },
+          STRING: { CLIENTID: this._clientId, COLLECTION: collection }
+        });
+        log(Subsystems.MANAGER, Status.SUCCESS, 'User Profile Settings Updated on Server');
+      } catch (updateError) {
+        // If update fails, try to create new settings
+        try {
+          await authQuery(api, 75, {
+            INTEGER: { ACCOUNTID: this._accountId },
+            STRING: { CLIENTID: this._clientId, COLLECTION: collection }
+          });
+          log(Subsystems.MANAGER, Status.SUCCESS, 'User Profile Settings Created on Server');
+        } catch (createError) {
+          log(Subsystems.MANAGER, Status.ERROR, `Failed to create server settings: ${createError.message}`);
+          // Continue locally
+        }
+      }
+    } catch (error) {
+      log(Subsystems.MANAGER, Status.ERROR, `Failed to sync settings to server: ${error.message}`);
+      // Continue locally
+    }
+  }
+
+  setUserContext(accountId, clientId = 'lithium') {
+    this._accountId = accountId;
+    this._clientId = clientId;
+  }
+
+  _scheduleServerSync() {
+    if (this._serverSyncTimer) {
+      clearTimeout(this._serverSyncTimer);
+    }
+    this._serverSyncTimer = setTimeout(() => {
+      this._serverSyncTimer = null;
+      // Only sync if we have API context (will be set during login)
+      if (window.lithiumApp && window.lithiumApp.api) {
+        this.syncToServer(window.lithiumApp.api);
+      }
+    }, 2000); // 2 second debounce
+  }
+
+  _save() {
+    this._notifyListeners();
+    this._scheduleServerSync();
+  }
+
+  // Flat access (for global settings like theme)
+  get(path, defaultValue = null) {
+    const keys = path.split('.');
+    let current = this._data;
+    for (const key of keys) {
+      if (current && typeof current === 'object' && key in current) {
+        current = current[key];
+      } else {
+        return defaultValue;
+      }
+    }
+    return current;
+  }
+
+  // Section-based access methods (for Profile Manager compatibility)
+  getSection(sectionKey, path, defaultValue = undefined) {
+    const section = this._data[sectionKey];
+    if (!section || typeof section !== 'object') {
+      return defaultValue;
+    }
+    const keys = path.split('.');
+    let current = section;
+    for (const key of keys) {
+      if (current == null || !Object.prototype.hasOwnProperty.call(current, key)) {
+        return defaultValue;
+      }
+      current = current[key];
+    }
+    return current;
+  }
+
+  set(path, value) {
+    const keys = path.split('.');
+    let current = this._data;
+    for (let i = 0; i < keys.length - 1; i++) {
+      const key = keys[i];
+      if (!current[key] || typeof current[key] !== 'object') {
+        current[key] = {};
+      }
+      current = current[key];
+    }
+    current[keys[keys.length - 1]] = value;
+    this._save();
+    return this;
+  }
+
+  setSection(sectionKey, path, value) {
+    if (!this._data[sectionKey] || typeof this._data[sectionKey] !== 'object') {
+      this._data[sectionKey] = {};
+    }
+
+    const keys = path.split('.');
+    let current = this._data[sectionKey];
+
+    for (let i = 0; i < keys.length - 1; i++) {
+      const key = keys[i];
+      if (!current[key] || typeof current[key] !== 'object') {
+        current[key] = {};
+      }
+      current = current[key];
+    }
+
+    current[keys[keys.length - 1]] = value;
+    this._save();
+    return this;
+  }
+
+  getAll() {
+    return { ...this._data };
+  }
+
+  onChange(callback) {
+    this._listeners.push(callback);
+    return () => {
+      const index = this._listeners.indexOf(callback);
+      if (index > -1) this._listeners.splice(index, 1);
+    };
+  }
+
+  _notifyListeners() {
+    this._listeners.forEach(callback => {
+      try {
+        callback(this._data);
+      } catch (e) {
+        console.error('Settings listener error:', e);
+      }
+    });
+  }
+}
+
 // Monkey-patch CSSStyleDeclaration to intercept invalid values at the source
 // This prevents the browser's CSS parser from ever seeing invalid values
 (function() {
@@ -227,6 +533,9 @@ class LithiumApp {
     this.mainManagerInstance = null;  // Reference to the MainManager for header updates
     this.user = null;
     this.deferredInstallPrompt = null;
+    this.settingsService = new GlobalSettingsService(); // Global settings service for user preferences
+    // Make settings available globally
+    window.lithiumSettings = this.settingsService;
 
     // Manager definitions — id -> name only (module loaded via _importManager)
     // Manager IDs correspond to lithium.json managers section (007-032)
@@ -651,6 +960,17 @@ class LithiumApp {
         email: validation.claims.email,
         roles: validation.claims.roles,
       };
+
+      // Set user context for settings sync
+      if (window.lithiumSettings) {
+        window.lithiumSettings.setUserContext(this.user.id);
+        // Sync settings from server
+        try {
+          await window.lithiumSettings.syncFromServer(this.api);
+        } catch (err) {
+          logAuth(Status.WARN, `Failed to sync settings from server: ${err.message}`);
+        }
+      }
 
       // Set up token renewal
       this.scheduleTokenRenewal(token);
@@ -1445,6 +1765,17 @@ class LithiumApp {
       username: detail.username,
       roles: detail.roles,
     };
+
+    // Set user context for settings sync
+    if (window.lithiumSettings) {
+      window.lithiumSettings.setUserContext(detail.userId);
+      // Sync settings from server
+      try {
+        await window.lithiumSettings.syncFromServer(this.api);
+      } catch (err) {
+        logAuth(Status.WARN, `Failed to sync settings from server: ${err.message}`);
+      }
+    }
 
     // Schedule token renewal
     const token = retrieveJWT();

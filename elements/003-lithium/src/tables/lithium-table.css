@@ -115,7 +115,7 @@
   border: 1px solid var(--accent-alt-primary);
   background: var(--bg-secondary);
   position: relative;
-  min-width: 150px; /* Match nav block width */
+  min-width: 148px; /* Match nav block width */
 }
 
 /* ── Navigator Control Bar ────────────────────────────────────────────────── */
