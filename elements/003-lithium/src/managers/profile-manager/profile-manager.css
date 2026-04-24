@@ -550,6 +550,7 @@
 .df-sample-input-group {
   display: flex;
   align-items: center;
+  gap: var(--space-2);
 }
 
 .df-sample-input-group .lithium-toolbar-btn {
@@ -558,6 +559,13 @@
 
 .df-sample-input-group .form-input {
   min-width: 200px;
+}
+
+.df-sample-input-group span {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  flex: 1;
+  min-width: 0;
 }
 
 .df-tz-group {
@@ -611,11 +619,11 @@
   letter-spacing: 0.5px;
 }
 
-.df-table tbody tr:nth-child(odd) {
+.df-table tr:nth-child(odd) {
   background: var(--bg-row-odd);
 }
 
-.df-table tbody tr:nth-child(even) {
+.df-table tr:nth-child(even) {
   background: var(--bg-row-even);
 }
 
@@ -704,6 +712,204 @@
   border-bottom: none;
   padding: var(--space-md) var(--space-sm);
 }
+
+/* Top tables for Date Formats */
+.df-top-tables {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin: var(--space-3);
+  align-items: stretch; /* Make tables equal height */
+}
+
+.df-top-tables .df-table-wrapper {
+  flex: 1;
+  min-width: 200px;
+  max-width: 300px;
+  margin: 0; /* Remove margin for top tables */
+}
+
+.df-top-tables .df-table {
+  height: fit-content; /* Allow natural height */
+}
+
+.df-table-caption {
+  caption-side: top;
+  text-align: left;
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  margin-bottom: var(--space-2);
+  padding: 0;
+}
+
+.df-timezone-table th {
+  width: 100px; /* Narrower for "Browser" / "Override" */
+}
+
+.df-timezone-table td {
+  padding: var(--space-2);
+}
+
+/* Custom Timezone Picker */
+.df-timezone-picker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2);
+  border: 1px solid var(--bg-row-border);
+  border-radius: var(--border-radius-sm);
+  background: var(--bg-primary);
+  cursor: pointer;
+  transition: border-color var(--transition-fast);
+}
+
+.df-timezone-picker:hover {
+  border-color: var(--accent-primary);
+}
+
+.df-timezone-picker.open {
+  border-color: var(--accent-primary);
+  background: var(--accent-alt-primary);
+}
+
+.df-selected-timezone {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  flex: 1;
+  color: var(--text-primary);
+}
+
+.df-timezone-dropdown-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: transform var(--transition-fast);
+}
+
+.df-timezone-picker.open .df-timezone-dropdown-btn {
+  transform: rotate(180deg);
+}
+
+/* Timezone dropdown */
+.df-timezone-dropdown {
+  position: absolute;
+  background: var(--bg-primary);
+  border: 1px solid var(--accent-alt-primary);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-lg);
+  z-index: 1000;
+  min-height: 200px;
+  max-height: 400px;
+  min-width: 250px;
+  width: 300px;
+  overflow: hidden;
+  opacity: 0;
+  transform: scale(0.5);
+  transform-origin: top left;
+  transition: opacity var(--transition-duration, 350ms) ease,
+              transform var(--transition-duration, 350ms) ease;
+  resize: both;
+  display: flex;
+  flex-direction: column;
+}
+
+.df-timezone-dropdown.visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.df-timezone-filter {
+  padding: var(--space-2);
+  border-bottom: 1px solid var(--bg-row-border);
+  background: var(--bg-secondary);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.df-timezone-filter input {
+  flex: 1;
+  font-size: var(--font-size-sm);
+}
+
+.df-timezone-filter-clear {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  opacity: 0.7;
+  transition: opacity var(--transition-fast);
+}
+
+.df-timezone-filter-clear:hover {
+  opacity: 1;
+}
+
+.df-timezone-resize-handle {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 16px;
+  height: 16px;
+  cursor: nw-resize;
+  background: linear-gradient(-45deg, transparent 0%, transparent 40%, var(--accent-alt-primary) 40%, var(--accent-alt-primary) 60%, transparent 60%, transparent 100%);
+}
+
+.df-timezone-list {
+  max-height: 250px;
+  /* overflow managed by OverlayScrollbars */
+}
+
+.df-timezone-item {
+  padding: var(--space-2);
+  cursor: pointer;
+  border-bottom: 1px solid var(--bg-row-border);
+  transition: background var(--transition-fast);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.df-timezone-name {
+  flex: 1;
+  font-size: var(--font-size-sm);
+}
+
+.df-timezone-time {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.df-timezone-item:hover,
+.df-timezone-item.selected {
+  background: var(--accent-alt-primary);
+}
+
+.df-timezone-item:last-child {
+  border-bottom: none;
+}
+
+.df-timezone-group {
+  margin-bottom: var(--space-2);
+}
+
+.df-timezone-group-header {
+  padding: var(--space-2);
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--bg-row-border);
+}
+
+
 
 .df-add-btn {
   font-size: var(--font-size-sm);

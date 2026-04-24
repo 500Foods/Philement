@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS custom properties (variables) used across the Lithium codebase",
-    "generated": "2026-04-23T21:30:43.150Z",
+    "generated": "2026-04-24T16:38:37.710Z",
     "sources": {
       "css": "53 files in src/**/*.css",
       "js": "147 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
-    "total_variables": 243,
-    "total_occurrences": 3626
+    "total_variables": 244,
+    "total_occurrences": 3676
   },
   "variables": [
     {
@@ -20,13 +20,20 @@
     },
     {
       "name": "--accent-alt-primary",
-      "css": 31,
+      "css": 36,
       "js": 0,
       "html": 0,
-      "total": 31
+      "total": 36
     },
     {
       "name": "--accent-alt-primary-muted",
+      "css": 2,
+      "js": 0,
+      "html": 0,
+      "total": 2
+    },
+    {
+      "name": "--accent-alt-secondary",
       "css": 2,
       "js": 0,
       "html": 0,
@@ -104,10 +111,10 @@
     },
     {
       "name": "--accent-primary",
-      "css": 179,
+      "css": 180,
       "js": 3,
       "html": 1,
-      "total": 183
+      "total": 184
     },
     {
       "name": "--accent-primary-hover",
@@ -139,10 +146,10 @@
     },
     {
       "name": "--accent-secondary",
-      "css": 9,
+      "css": 8,
       "js": 0,
       "html": 0,
-      "total": 9
+      "total": 8
     },
     {
       "name": "--accent-success",
@@ -160,10 +167,10 @@
     },
     {
       "name": "--accent-toggle",
-      "css": 12,
+      "css": 13,
       "js": 0,
       "html": 0,
-      "total": 12
+      "total": 13
     },
     {
       "name": "--accent-warning",
@@ -209,10 +216,10 @@
     },
     {
       "name": "--bg-primary",
-      "css": 59,
+      "css": 61,
       "js": 0,
       "html": 1,
-      "total": 60
+      "total": 62
     },
     {
       "name": "--bg-primary-rgb",
@@ -223,10 +230,10 @@
     },
     {
       "name": "--bg-row-border",
-      "css": 9,
+      "css": 13,
       "js": 0,
       "html": 0,
-      "total": 9
+      "total": 13
     },
     {
       "name": "--bg-row-even",
@@ -244,17 +251,17 @@
     },
     {
       "name": "--bg-secondary",
-      "css": 94,
+      "css": 96,
       "js": 1,
       "html": 1,
-      "total": 96
+      "total": 98
     },
     {
       "name": "--bg-tertiary",
-      "css": 98,
+      "css": 97,
       "js": 2,
       "html": 0,
-      "total": 100
+      "total": 99
     },
     {
       "name": "--border-color",
@@ -307,17 +314,17 @@
     },
     {
       "name": "--border-radius-md",
-      "css": 137,
+      "css": 138,
       "js": 0,
       "html": 0,
-      "total": 137
+      "total": 138
     },
     {
       "name": "--border-radius-sm",
-      "css": 80,
+      "css": 81,
       "js": 0,
       "html": 0,
-      "total": 80
+      "total": 81
     },
     {
       "name": "--border-radius-xl",
@@ -503,10 +510,10 @@
     },
     {
       "name": "--font-mono",
-      "css": 40,
+      "css": 42,
       "js": 12,
       "html": 0,
-      "total": 52
+      "total": 54
     },
     {
       "name": "--font-sans",
@@ -559,10 +566,10 @@
     },
     {
       "name": "--font-size-sm",
-      "css": 83,
+      "css": 90,
       "js": 0,
       "html": 0,
-      "total": 83
+      "total": 90
     },
     {
       "name": "--font-size-us",
@@ -580,10 +587,10 @@
     },
     {
       "name": "--font-size-xs",
-      "css": 28,
+      "css": 29,
       "js": 0,
       "html": 0,
-      "total": 28
+      "total": 29
     },
     {
       "name": "--font-weight-bold",
@@ -979,10 +986,10 @@
     },
     {
       "name": "--shadow-lg",
-      "css": 12,
+      "css": 13,
       "js": 0,
       "html": 0,
-      "total": 12
+      "total": 13
     },
     {
       "name": "--shadow-md",
@@ -1007,24 +1014,24 @@
     },
     {
       "name": "--space-2",
-      "css": 171,
+      "css": 180,
       "js": 0,
       "html": 0,
-      "total": 171
+      "total": 180
     },
     {
       "name": "--space-3",
-      "css": 204,
+      "css": 205,
       "js": 2,
       "html": 0,
-      "total": 206
+      "total": 207
     },
     {
       "name": "--space-4",
-      "css": 110,
+      "css": 111,
       "js": 0,
       "html": 0,
-      "total": 110
+      "total": 111
     },
     {
       "name": "--space-5",
@@ -1217,24 +1224,24 @@
     },
     {
       "name": "--text-primary",
-      "css": 142,
+      "css": 144,
       "js": 5,
       "html": 1,
-      "total": 148
+      "total": 150
     },
     {
       "name": "--text-secondary",
-      "css": 74,
+      "css": 78,
       "js": 1,
       "html": 0,
-      "total": 75
+      "total": 79
     },
     {
       "name": "--text-toggle",
-      "css": 9,
+      "css": 10,
       "js": 0,
       "html": 0,
-      "total": 9
+      "total": 10
     },
     {
       "name": "--tip-arrow",
@@ -1637,10 +1644,10 @@
     },
     {
       "name": "--transition-fast",
-      "css": 140,
+      "css": 144,
       "js": 2,
       "html": 0,
-      "total": 142
+      "total": 146
     },
     {
       "name": "--transition-normal",

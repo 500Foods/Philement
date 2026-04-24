@@ -10,6 +10,17 @@
 @layer vendor-fixes {
 
 /* ═════════════════════════════════════════════════════════════════════════════
+   FLATPICKR GLOBAL OVERRIDES
+   ═════════════════════════════════════════════════════════════════════════════ */
+
+/* Ensure Flatpickr calendars in our popups are always visible */
+.flatpickr-popup-wrapper .flatpickr-calendar {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════════
    TABULATOR GLOBAL OVERRIDES
    ═════════════════════════════════════════════════════════════════════════════ */
 
@@ -53,7 +64,7 @@
 /* Group rows */
 .lithium-table-container .tabulator-row.tabulator-group {
   min-height: 20px !important;
-  background: var(--bg-tertiary) !important;
+  background: var(--accent-alt-secondary) !important;
   border-right: none;
   border-top: none;
   padding: 0px 4px;

@@ -263,6 +263,7 @@ export default class LookupsManager {
   }
 
   switchTab(tabId) {
+    closeAllPopups();
     this.activeTab = tabId;
 
     // Update buttons

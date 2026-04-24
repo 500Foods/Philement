@@ -661,8 +661,8 @@
 
 /* Active state for utility manager buttons (profile, session-log) */
 .sidebar-icon-btn.active {
-  background-color: var(--accent-secondary);
-  box-shadow: inset 0 0 0 2px var(--accent-primary);
+	background-color: var(--accent-toggle);
+	color: var(--text-toggle);
 }
 
 .sidebar-icon-btn.active:hover {

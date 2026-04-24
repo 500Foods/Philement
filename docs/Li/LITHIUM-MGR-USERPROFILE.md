@@ -174,7 +174,7 @@ All settings pages read from and write to a single JSON object via the `ProfileS
 
 #### JSON Structure
 
-The profile JSON is a flat object where each top-level key is a section key:
+The profile JSON is a flat object where each top-level key is a section key. For the Date Formats section (-9), the sub-keys use user-friendly display names (e.g., "Short Date") instead of programmatic identifiers:
 
 ```json
 {
@@ -360,11 +360,26 @@ this.setSectionData({ dates: { short: '...' } }, 'Date Formats');
 
 #### Wiring: How the Service Reaches the Pages
 
-1. **Profile Manager** creates the service in its constructor:
+1. **Profile Manager** creates a settings service wrapper in its constructor:
    ```javascript
-   this.settingsService = new ProfileSettingsService({
-     onAfterSave: (data) => { /* sync Collection tab */ },
-   });
+   const globalSettings = window.lithiumSettings;
+   this.settingsService = {
+     getSection: (sectionKey, path, defaultValue) => {
+       const fullPath = path ? `${sectionKey}.${path}` : sectionKey;
+       return globalSettings.get(fullPath, defaultValue);
+     },
+     setSection: (sectionKey, path, value) => {
+       const fullPath = path ? `${sectionKey}.${path}` : sectionKey;
+       globalSettings.set(fullPath, value);
+       // Sync to collection tab
+       this.collectionHandler?.setData(globalSettings.getAll());
+     },
+     get: (path, defaultValue) => globalSettings.get(path, defaultValue),
+     set: (path, value) => globalSettings.set(path, value),
+     getSetting: (path, defaultValue) => globalSettings.get(path, defaultValue),
+     getAll: () => globalSettings.getAll(),
+     onChange: (callback) => globalSettings.onChange(callback),
+   };
    ```
 
 2. **Profile Manager** passes it to `SettingsTabHandler`:
@@ -877,48 +892,132 @@ _getManagerHandlerClass(index) {
 
 ---
 
-## Example: Date Formats Settings (Structured Data)
+## Date Formats Settings (Index -9)
 
-The Date Formats page (index -9) shows how to store nested data:
+The Date Formats page is a comprehensive date/time formatting configuration interface that provides live previews, timezone management, and custom format editing. It features three main sections: real-time datetime display, timezone controls, and format token reference tables.
 
-**Handler** (`pages/page-date-formats.js`):
-```javascript
-export class DateFormatsPage extends SimpleSettingsPage {
-  constructor(options) {
-    super({ ...options, index: -9, formSelector: 'form' });
-  }
+### UI Layout
 
-  async loadData() {
-    // Read nested values using dotted paths
-    this.setFormData({
-      dateFormat: this.getSetting('dates.short', 'MM/DD/YYYY'),
-      timeFormat: this.getSetting('times.short', '12h'),
-    });
-  }
+The page consists of four main sections arranged vertically:
 
-  async save() {
-    const data = this.getFormData(this.formSelector);
-    // Write structured data as a complete section
-    this.setSectionData({
-      dates: {
-        short: data.dateFormat,
-        long: this._inferLongDateFormat(data.dateFormat),
-      },
-      times: {
-        short: data.timeFormat === '12h' ? 'h:mm A' : 'HH:mm',
-        long: data.timeFormat === '12h' ? 'h:mm:ss A' : 'HH:mm:ss',
-      },
-    }, 'Date Formats');
-    this.setDirty(false);
-    return { success: true, data };
-  }
-}
-```
+1. **Top Preview Section** - Three side-by-side tables showing current datetime, timezone controls, and sample datetime
+2. **Date Formats Table** - Built-in and custom date format patterns
+3. **Time Formats Table** - Built-in and custom time format patterns
+4. **DateTime Formats Table** - Built-in and custom datetime format patterns
+5. **Token Reference** - LithiumTable showing available Luxon format tokens
 
-The resulting JSON under section `"-9"`:
+### Top Preview Section
+
+The top section provides real-time datetime display and timezone management:
+
+#### Current DateTime Table
+- **Caption**: "Current DateTime"
+- **Purpose**: Shows current date/time in the selected timezone
+- **Format**: `yyyy-MM-dd'T'HH:mm:ss.SSSZZ '('ZZZZ')'` (Luxon format with abbreviated timezone)
+- **Updates**: Every second automatically
+- **Features**: Two rows showing different timezone perspectives
+
+#### Timezones Table
+- **Caption**: "Timezones"
+- **Purpose**: Controls timezone selection and display
+- **Browser Timezone**: Shows detected browser timezone with abbreviation (e.g., "America/Vancouver (PDT)")
+- **Override Timezone**: Custom dropdown picker with advanced features
+
+#### Sample DateTime Table
+- **Caption**: "Sample DateTime"
+- **Purpose**: Shows a sample datetime for format testing
+- **Default Sample**: `2020-01-01T14:03:02`
+- **Picker**: Flatpickr date/time picker with seconds support
+- **Features**: Two rows showing different timezone perspectives
+
+### Timezone Picker Features
+
+The custom timezone picker includes advanced functionality:
+
+#### Dropdown Interface
+- **Searchable**: Filter input with clear button (X)
+- **Grouped Display**: Timezones organized by region (Africa, America, Asia, etc.) plus Abbreviations group
+- **Scrollable**: OverlayScrollbars for smooth scrolling with improved speed
+- **Resizable**: Drag bottom-right corner to resize (min 250x200px)
+- **Abbreviations**: Common timezone abbreviations (PST, EST, GMT, etc.) shown as separate entries with full names
+
+#### Selection Behavior
+- **Default**: Shows "Browser Local" initially
+- **Pre-fill**: When opened, shows current timezone in filter
+- **Scroll**: Automatically scrolls to selected timezone
+- **Format**: Displays as "TimezoneName (Abbrev)" (e.g., "America/New_York (EDT)")
+- **Abbreviations**: Can select by abbreviation (e.g., "PST (Pacific Standard Time)") which maps to the correct timezone
+
+#### Animation & UX
+- **Popup Animation**: Scales from 50% with top-right transform origin
+- **Smooth Transitions**: 350ms ease timing matching other Lithium popups
+- **Filter Feedback**: Real-time filtering with region grouping
+- **Keyboard Support**: Escape key closes, focus management
+
+### Real-Time Display Features
+
+#### Timezone Comparison
+The top tables show two perspectives:
+- **Primary Row**: Current/sample time in browser timezone
+- **Secondary Row**: Current/sample time in override timezone (if different) or UTC
+
+#### Update Timing
+- **Current Time**: Updates every second
+- **Sample Time**: Updates when changed via picker or timezone selection
+- **Timezone Changes**: Immediately updates all displays
+
+### Flatpickr Integration
+
+#### Date/Time Picker
+- **Trigger**: Calendar icon button next to sample datetime
+- **Features**: Full date/time selection with seconds
+- **Positioning**: Popup positioned below button with custom wrapper
+- **Animation**: Matches popup animation timing
+- **Format**: Accepts and outputs ISO datetime strings
+
+#### Technical Implementation
+- **Positioning**: Flatpickr with custom positioning and wrapper management
+- **Wrapper Management**: Calendar moved to custom wrapper for styling and animation
+- **Close Handling**: Coordinated close timing to match popup animation
+- **State Sync**: Updates sample datetime setting and refreshes all previews
+- **Reliability**: Enhanced reopening logic with retry mechanisms
+
+### Format Tables Structure
+
+#### Built-in Formats
+Each table contains 3-4 built-in formats:
+- **Dates**: Short, Medium, Long, Week Number
+- **Times**: Short, Medium, Long
+- **DateTimes**: Short, Medium, Long
+
+#### Custom Formats
+- **Add Button**: Plus icon in header to add custom formats
+- **Editable**: Direct input editing with live preview
+- **Delete Button**: Trash icon for custom formats
+- **Storage**: Saved under descriptive names in settings JSON
+
+#### Live Preview
+- **Example Column**: Shows format applied to sample datetime
+- **Current Column**: Shows format applied to current datetime
+- **Real-time Updates**: Previews update instantly when formats change
+
+### Token Reference
+
+#### LithiumTable Integration
+- **Data Source**: Format token definitions from Lookup tables
+- **Navigation**: Full LithiumTable navigator for browsing tokens
+- **Search/Filter**: Built-in table search and filtering
+- **Grouping**: Tokens organized by category (dates, times, timezones)
+
+### Settings Storage Structure
+
+The Date Formats section stores data in a structured JSON format:
+
 ```json
 {
   "_name": "Date Formats",
+  "timezone": "America/New_York",
+  "sample": "2020-01-01T14:03:02.000Z",
   "dates": {
     "Short Date": "yyyy-MM-dd",
     "Medium Date": "yyyy-MMM-dd",
@@ -937,6 +1036,56 @@ The resulting JSON under section `"-9"`:
   }
 }
 ```
+
+### Implementation Architecture
+
+#### Page Handler (`pages/page-date-formats.js`)
+- Extends `BaseSettingsPage` (not `SimpleSettingsPage` due to complex UI)
+- Manages multiple table interactions and real-time updates
+- Handles Flatpickr integration and timezone picker
+- Coordinates between timezone selection and display updates
+
+#### Key Components
+- **TimezonePicker Class**: Custom dropdown with search, grouping, and resize
+- **Flatpickr Integration**: Custom wrapper and positioning
+- **Real-time Updates**: Interval-based current time updates
+- **Table Management**: Dynamic format tables with live editing
+
+#### Event Handling
+- **Timezone Changes**: Updates all displays and previews
+- **Format Editing**: Live updates to example and current columns
+- **Sample Changes**: Updates all format previews
+- **Popup Management**: Proper cleanup and animation timing
+
+### Advanced Features
+
+#### Timezone Intelligence
+- **Browser Detection**: Automatically detects IANA timezone from browser
+- **Fallback Handling**: Falls back to UTC if timezone detection fails
+- **Override Logic**: Provides override with smart defaults
+
+#### Performance Optimizations
+- **Debounced Updates**: Format changes update previews efficiently
+- **Selective Rendering**: Only updates changed elements
+- **DOM Reuse**: Keeps dropdown in DOM for reuse
+
+#### Accessibility
+- **Keyboard Navigation**: Full keyboard support in all controls
+- **Screen Reader**: Proper labels and ARIA attributes
+- **Focus Management**: Logical tab order and focus restoration
+
+### Recent Enhancements
+
+#### Version History
+- **Initial Implementation**: Basic format tables with static previews
+- **Real-time Updates**: Added live current time display
+- **Timezone Management**: Introduced timezone picker and override
+- **Custom Picker**: Advanced dropdown with search, grouping, and resize
+- **Sample Picker**: Flatpickr integration with seconds support
+- **Animation Polish**: Smooth popup animations matching Lithium patterns
+- **Dual Display**: Timezone comparison in primary/secondary rows
+
+This implementation serves as a reference for complex settings pages requiring real-time displays, custom controls, and sophisticated user interactions.
 
 ---
 
@@ -981,4 +1130,4 @@ When saving, write to the Settings Service **and** optionally update the legacy 
 
 ---
 
-Last updated: April 2026
+Last updated: April 23, 2026

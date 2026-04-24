@@ -27,6 +27,10 @@
 <img src="assets/images/sql_dialect_oracle.png">
 <img src="assets/images/sql_dialect_postgres.png">
 <img src="assets/images/sql_dialect_sqlite.png">
+<img src="assets/images/login_didit.png">
+<img src="assets/images/login_apple.png">
+<img src="assets/images/login_apple.png">
+<img src="assets/images/login_apple.png">
 <fa fa-square-ring></fa>
 <fa fa-ellipsis-stroke-vertical></fa>
 <fa fa-hexagon></fa>
