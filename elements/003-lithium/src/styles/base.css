@@ -118,6 +118,7 @@
     --accent-active: #333;
     --accent-alt-primary: #3C4BA0;
     --accent-alt-primary-muted: #5866AE;
+    --accent-alt-secondary: #4e2e4e;
     --accent-primary-muted: #7481C9;
     --accent-crimson: #DC143C; 
     --crimson-bg: #400000;
@@ -195,11 +196,11 @@
     --shadow-inset: inset 0 2px 4px rgb(0 0 0 / 30%);
 
     /* Transitions - configurable duration for theming */
-    --transition-duration: 750ms; /* 2500ms for testing. DO NOT TOUCH THIS VALUE */
-    --transition-fast: calc(var(--transition-duration) * 0.3) ease;
+    --transition-duration: 500ms; /* 2500ms for testing. DO NOT TOUCH THIS VALUE */
+    --transition-fast: 300ms ease;
     --transition-std: var(--transition-duration) ease;
     --transition-slow: calc(var(--transition-duration) * 2) ease;
-    --transition-delay: calc(var(--transition-duration) / 2); /* For icon rotations, expand/collapse */
+    --transition-delay: 400ms; /* For icon rotations, expand/collapse */
 
     /* Scrollbar - explicit size for WebKit, Firefox uses scrollbar-width property */
     --scrollbar-size: 10px;

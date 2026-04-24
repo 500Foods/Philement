@@ -56,25 +56,7 @@ const BUILTIN_FORMATS = {
   },
 };
 
-// Format metadata for UI labels - maps setting keys to display names
-const FORMAT_LABELS = {
-  dates: {
-    short: 'Short Date',
-    medium: 'Medium Date',
-    long: 'Long Date',
-    week: 'Week Number',
-  },
-  times: {
-    short: 'Short Time',
-    medium: 'Medium Time',
-    long: 'Long Time',
-  },
-  datetimes: {
-    short: 'Short DateTime',
-    medium: 'Medium DateTime',
-    long: 'Long DateTime',
-  },
-};
+
 
 /**
  * Exhaustive list of IANA timezones, organized by region.
@@ -294,8 +276,7 @@ function buildTokenData(sample, now) {
   ];
 
   return tokens.map(t => {
-    let example = '-';
-    let current = '-';
+    let example, current;
     try { example = sample.toFormat(t.token); } catch (_e) { example = '-'; }
     try { current = now.toFormat(t.token); } catch (_e) { current = '-'; }
     return {
@@ -309,6 +290,394 @@ function buildTokenData(sample, now) {
   });
 }
 
+class TimezonePicker {
+  constructor(container, timezones, onSelect, onPositionChange = null) {
+    this.container = container;
+    this.timezones = timezones;
+    this.onSelect = onSelect;
+    this.onPositionChange = onPositionChange;
+    this.selectedTimezone = 'local';
+    this.isOpen = false;
+    this.popupWidth = null;
+    this.popupHeight = null;
+    this.isResizing = false;
+
+    // Create dropdown element
+    this.dropdown = document.createElement('div');
+    this.dropdown.className = 'df-timezone-dropdown manager-ui-popup';
+    this.dropdown.innerHTML = `
+      <div class="df-timezone-filter">
+        <input type="text" class="df-timezone-filter-input" placeholder="Search timezones...">
+        <button type="button" class="df-timezone-filter-clear" title="Clear">&times;</button>
+      </div>
+      <div class="df-timezone-list"></div>
+      <div class="df-timezone-resize-handle"></div>
+    `;
+
+    // Cache DOM references
+    this.filterInput = this.dropdown.querySelector('.df-timezone-filter-input');
+    this.clearButton = this.dropdown.querySelector('.df-timezone-filter-clear');
+    this.listContainer = this.dropdown.querySelector('.df-timezone-list');
+
+    // Setup event listeners
+    this.container.addEventListener('click', () => this.toggle());
+    this.filterInput.addEventListener('input', () => this.filterTimezones());
+    this.clearButton.addEventListener('click', () => {
+      this.filterInput.value = '';
+      this.filterTimezones();
+      this.filterInput.focus();
+    });
+
+    // Setup resize functionality
+    this.setupResize();
+
+    // OverlayScrollbars will be initialized in open() when element is visible
+
+    // Hide dropdown initially
+    this.dropdown.style.display = 'none';
+    document.body.appendChild(this.dropdown);
+
+    // Set initial display
+    this._updateDisplay();
+
+    // Listen for close-all-popups
+    document.addEventListener('close-all-popups', () => this.close());
+  }
+
+  /**
+   * Get the browser timezone IANA name
+   */
+  _getBrowserTimezone() {
+    try {
+      return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+    } catch (_e) {
+      return 'UTC';
+    }
+  }
+
+
+
+  /**
+   * Setup resize functionality
+   */
+  setupResize() {
+    const resizeHandle = this.dropdown.querySelector('.df-timezone-resize-handle');
+    if (!resizeHandle) return;
+
+    let startX, startY, startWidth, startHeight;
+
+    const startResize = (e) => {
+      this.isResizing = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      startWidth = this.dropdown.offsetWidth;
+      startHeight = this.dropdown.offsetHeight;
+
+      document.body.style.cursor = 'nw-resize';
+      document.body.style.userSelect = 'none';
+
+      document.addEventListener('mousemove', resize);
+      document.addEventListener('mouseup', stopResize);
+      e.preventDefault();
+    };
+
+    const resize = (e) => {
+      if (!this.isResizing) return;
+
+      const newWidth = Math.max(250, startWidth + (e.clientX - startX));
+      const newHeight = Math.max(200, startHeight + (e.clientY - startY));
+
+      this.dropdown.style.width = `${newWidth}px`;
+      this.dropdown.style.height = `${newHeight}px`;
+
+      // Store the new size
+      this.popupWidth = newWidth;
+      this.popupHeight = newHeight;
+
+      // Notify position change
+      if (this.onPositionChange) {
+        this.onPositionChange({ width: newWidth, height: newHeight });
+      }
+    };
+
+    const stopResize = () => {
+      this.isResizing = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+
+      document.removeEventListener('mousemove', resize);
+      document.removeEventListener('mouseup', stopResize);
+    };
+
+    resizeHandle.addEventListener('mousedown', startResize);
+  }
+
+  toggle() {
+    if (this.isOpen) {
+      this.close();
+    } else {
+      this.open();
+    }
+  }
+
+  open() {
+    if (this.isOpen) return;
+
+    // Close other popups first
+    document.dispatchEvent(new CustomEvent('close-all-popups'));
+
+    this.isOpen = true;
+    this.container.classList.add('open');
+
+    // Prevent page scrolling while popup is open
+    document.body.style.overflow = 'hidden';
+
+    // Force show dropdown
+    this.dropdown.style.display = 'block';
+
+    // Position dropdown
+    const rect = this.container.getBoundingClientRect();
+    this.dropdown.style.top = `${rect.bottom + 2}px`;
+    this.dropdown.style.left = `${rect.left}px`;
+    this.dropdown.style.width = this.popupWidth ? `${this.popupWidth}px` : `${rect.width}px`;
+    this.dropdown.style.height = this.popupHeight ? `${this.popupHeight}px` : '';
+    this.dropdown.style.transformOrigin = 'top left';
+
+    // Setup OverlayScrollbars now that element is visible
+    if (window.OverlayScrollbars && !this.overlayScrollbar) {
+      try {
+        this.overlayScrollbar = window.OverlayScrollbars(this.listContainer, {
+          scrollbars: {
+            theme: 'os-theme-light',
+            autoHide: 'scroll',
+            autoHideDelay: 800,
+          },
+        });
+      } catch (e) {
+        // Fallback to native scrolling
+        this.listContainer.style.overflowY = 'auto';
+        this.overlayScrollbar = null;
+      }
+    } else if (!this.overlayScrollbar) {
+      // Fallback to native scrolling if OverlayScrollbars not available
+      this.listContainer.style.overflowY = 'auto';
+    }
+
+    // Preserve filter value, just refresh the display
+    this.filterTimezones();
+
+    const tzName = typeof this.selectedTimezone === 'object' ? this.selectedTimezone.name : this.selectedTimezone;
+    if (tzName !== 'local') {
+      // Scroll to the selected timezone
+      const selectedItem = this.listContainer.querySelector(`[data-value="${tzName}"]`);
+      if (selectedItem) {
+        selectedItem.scrollIntoView({ block: 'nearest' });
+      }
+    }
+
+
+
+    // Show with animation (like popup system)
+    setTimeout(() => this.dropdown.classList.add('visible'), 10);
+
+    // Focus filter
+    setTimeout(() => this.filterInput.focus(), 100);
+
+    // Check for other popups and close if they appear
+    this._checkInterval = setInterval(() => {
+      const allPopups = document.querySelectorAll('.manager-ui-popup.visible, .flatpickr-calendar');
+      const hasOtherPopups = Array.from(allPopups).some(popup => popup !== this.dropdown);
+      if (hasOtherPopups) {
+        this.close();
+      }
+    }, 100);
+  }
+
+  close() {
+    if (!this.isOpen) return;
+
+    this.isOpen = false;
+    this.container.classList.remove('open');
+    this.dropdown.classList.remove('visible');
+    // Wait for animation to complete before hiding
+    setTimeout(() => {
+      this.dropdown.style.display = 'none';
+      // Restore page scrolling
+      document.body.style.overflow = '';
+      // Clear the check interval
+      if (this._checkInterval) {
+        clearInterval(this._checkInterval);
+        this._checkInterval = null;
+      }
+    }, 350); // Match transition duration
+    // Keep dropdown in DOM but hidden for reuse
+  }
+
+  setTimezone(timezone) {
+    this.selectedTimezone = timezone;
+    this._updateDisplay();
+  }
+
+  /**
+   * Update the display text based on selected timezone
+   */
+  _updateDisplay() {
+    const displayEl = this.container.querySelector('#df-selected-timezone');
+    if (!displayEl) return;
+
+    if (this.selectedTimezone === 'local') {
+      const browserTz = this._getBrowserTimezone();
+      displayEl.textContent = `Browser Timezone (${browserTz})`;
+    } else {
+      try {
+        const now = DateTime.now().setZone(this.selectedTimezone);
+        const abbr = now.toFormat('ZZZZ');
+        displayEl.textContent = `${this.selectedTimezone} (${abbr})`;
+      } catch (e) {
+        displayEl.textContent = this.selectedTimezone;
+      }
+    }
+  }
+
+  /**
+   * Filter and display timezones based on current filter input
+   */
+  filterTimezones() {
+    const filter = this.filterInput.value.toLowerCase();
+    const listContainer = this.listContainer;
+
+    // Clear existing items
+    listContainer.innerHTML = '';
+
+    // Group timezones by region
+    const grouped = {};
+    const abbreviations = {};
+
+    this.timezones.forEach(tz => {
+      const parts = tz.split('/');
+      const region = parts[0];
+
+      // Handle abbreviations (like UTC, GMT)
+      if (parts.length === 1) {
+        abbreviations[tz] = tz;
+        return;
+      }
+
+      if (!grouped[region]) {
+        grouped[region] = [];
+      }
+      grouped[region].push(tz);
+    });
+
+    // Sort regions
+    const sortedRegions = Object.keys(grouped).sort();
+
+    // Create browser timezone section first
+    const browserSection = document.createElement('div');
+    browserSection.className = 'df-timezone-group';
+    browserSection.innerHTML = '<div class="df-timezone-group-header">Current</div>';
+
+    if ('Browser Timezone'.toLowerCase().includes(filter)) {
+      const browserTz = this._getBrowserTimezone();
+      const item = this._createTimezoneItem('Browser Timezone', 'local');
+      browserSection.appendChild(item);
+    }
+
+    if (browserSection.children.length > 1) { // Has title + at least one item
+      listContainer.appendChild(browserSection);
+    }
+
+    // Create abbreviation section
+    if (Object.keys(abbreviations).length > 0) {
+      const abbrSection = document.createElement('div');
+      abbrSection.className = 'df-timezone-group';
+      abbrSection.innerHTML = '<div class="df-timezone-group-header">Abbreviations</div>';
+
+      Object.keys(abbreviations).sort().forEach(tz => {
+        if (tz.toLowerCase().includes(filter)) {
+          const item = this._createTimezoneItem(tz, tz);
+          abbrSection.appendChild(item);
+        }
+      });
+
+      if (abbrSection.children.length > 1) { // Has title + at least one item
+        listContainer.appendChild(abbrSection);
+      }
+    }
+
+    // Create region sections
+    sortedRegions.forEach(region => {
+      const timezones = grouped[region];
+      const section = document.createElement('div');
+      section.className = 'df-timezone-group';
+      section.innerHTML = `<div class="df-timezone-group-header">${region}</div>`;
+
+      timezones.forEach(tz => {
+        if (tz.toLowerCase().includes(filter)) {
+          const item = this._createTimezoneItem(tz, tz);
+          section.appendChild(item);
+        }
+      });
+
+      if (section.children.length > 1) { // Has title + at least one item
+        listContainer.appendChild(section);
+      }
+    });
+  }
+
+  /**
+   * Create a timezone list item
+   */
+  _createTimezoneItem(displayName, value) {
+    const item = document.createElement('div');
+    item.className = 'df-timezone-item';
+    item.dataset.value = value;
+
+    const tzName = typeof this.selectedTimezone === 'object' ? this.selectedTimezone.name : this.selectedTimezone;
+    if (value === tzName) {
+      item.classList.add('selected');
+    }
+
+    // Get current time in this timezone
+    let timeString = '';
+    try {
+      const now = DateTime.now().setZone(value);
+      timeString = now.toFormat('HH:mm');
+    } catch (e) {
+      timeString = '--:--';
+    }
+
+    item.innerHTML = `
+      <span class="df-timezone-name">${displayName}</span>
+      <span class="df-timezone-time">${timeString}</span>
+    `;
+
+    item.addEventListener('click', () => {
+      this.selectedTimezone = value;
+      this.onSelect(value);
+      this.close();
+    });
+
+    return item;
+  }
+
+  destroy() {
+    // Restore page scrolling in case popup was open during destroy
+    document.body.style.overflow = '';
+    // Clear any check interval
+    if (this._checkInterval) {
+      clearInterval(this._checkInterval);
+      this._checkInterval = null;
+    }
+    if (this.dropdown) {
+      this.dropdown.remove();
+    }
+    if (this.overlayScrollbar) {
+      this.overlayScrollbar.destroy();
+    }
+  }
+}
+
 export class DateFormatsPage extends BaseSettingsPage {
   constructor(options = {}) {
     super({
@@ -319,6 +688,7 @@ export class DateFormatsPage extends BaseSettingsPage {
     this._currentUpdateInterval = null;
     this._flatpickrInstance = null;
     this._tokenTable = null;
+    this._timezonePicker = null;
   }
 
   /**
@@ -327,7 +697,7 @@ export class DateFormatsPage extends BaseSettingsPage {
   async onInit() {
     this._ensureSectionNamed();
     this._setupEventListeners();
-    this._initTimezoneDropdown();
+    this._initTimezonePicker();
     this._initFlatpickr();
     await this._initTokenTable();
     await this.loadData();
@@ -350,7 +720,14 @@ export class DateFormatsPage extends BaseSettingsPage {
    * Get the effective timezone — either the saved preference or browser local
    */
   _getTimezone() {
-    return this.getSetting('timezone', 'local');
+    const tz = this.getSetting('timezone', 'local');
+    if (tz === 'local') return 'local';
+    if (typeof tz === 'object' && tz.name) {
+      if (tz.name === 'local') return 'local';
+      return tz.name;
+    }
+    if (typeof tz === 'string') return tz; // backward compatibility
+    return 'local';
   }
 
   /**
@@ -391,22 +768,7 @@ export class DateFormatsPage extends BaseSettingsPage {
       });
     }
 
-    // Timezone dropdown
-    const tzSelect = container.querySelector('#df-timezone-select');
-    if (tzSelect) {
-      tzSelect.addEventListener('change', () => {
-        this.setSetting('timezone', tzSelect.value);
-        this._renderAllPreviews();
-      });
-    }
 
-    // Timezone filter
-    const tzFilter = container.querySelector('#df-tz-filter');
-    if (tzFilter) {
-      tzFilter.addEventListener('input', () => {
-        this._filterTimezones(tzFilter.value);
-      });
-    }
 
     // Add custom format buttons
     container.querySelectorAll('.df-add-header-btn').forEach(btn => {
@@ -428,34 +790,60 @@ export class DateFormatsPage extends BaseSettingsPage {
     });
   }
 
+
+
   /**
-   * Filter timezone dropdown options based on search input
+   * Create a new FlatPickr instance for the sample input
    */
-  _filterTimezones(query) {
-    const container = this.container;
-    if (!container) return;
+  _createFlatpickrInstance(input, wrapper) {
+    // Parse current input value for defaultDate
+    let defaultDate = DEFAULT_SAMPLE;
+    try {
+      const parsed = DateTime.fromISO(input.value);
+      if (parsed.isValid) defaultDate = parsed.toJSDate();
+    } catch (_e) {
+      // ignore
+    }
 
-    const select = container.querySelector('#df-timezone-select');
-    if (!select) return;
-
-    const q = query.toLowerCase().trim();
-    const allOptions = select.querySelectorAll('option');
-    const allGroups = select.querySelectorAll('optgroup');
-
-    allOptions.forEach(opt => {
-      if (opt.value === 'local') {
-        opt.style.display = '';
-        return;
-      }
-      const searchText = opt.dataset.search || opt.textContent.toLowerCase();
-      const match = searchText.includes(q);
-      opt.style.display = match ? '' : 'none';
-    });
-
-    // Hide empty optgroups
-    allGroups.forEach(group => {
-      const visible = group.querySelectorAll('option:not([style*="none"])');
-      group.style.display = visible.length > 0 ? '' : 'none';
+    return flatpickr(input, {
+      enableTime: true,
+      enableSeconds: true,
+      dateFormat: 'Y-m-d\\TH:i:S',
+      time_24hr: true,
+      allowInput: true,
+      clickOpens: false,
+      defaultDate,
+      disableMobile: true,
+      onChange: (selectedDates) => {
+        if (selectedDates.length > 0) {
+          const dt = DateTime.fromJSDate(selectedDates[0]);
+          input.value = dt.toFormat("yyyy-MM-dd'T'HH:mm:ss");
+          this.setSetting('sample', input.value);
+          this._renderAllPreviews();
+        }
+      },
+      onOpen: () => {
+        // Move the calendar to our wrapper when it opens and position it
+        const moveCalendar = () => {
+          const calendar = document.querySelector('.flatpickr-calendar');
+          if (calendar && !wrapper.contains(calendar)) {
+            calendar.style.position = 'absolute';
+            calendar.style.top = '0';
+            calendar.style.left = '0';
+            calendar.style.display = 'block';
+            calendar.style.visibility = 'visible';
+            calendar.style.opacity = '1';
+            // Add CSS override to prevent Flatpickr from hiding it
+            calendar.style.setProperty('display', 'block', 'important');
+            calendar.style.setProperty('visibility', 'visible', 'important');
+            wrapper.appendChild(calendar);
+          } else if (!calendar) {
+            // If calendar not found yet, try again
+            setTimeout(moveCalendar, 10);
+          }
+        };
+        moveCalendar();
+      },
     });
   }
 
@@ -475,49 +863,37 @@ export class DateFormatsPage extends BaseSettingsPage {
     const btn = container.querySelector('#df-picker-btn');
     if (!input || !btn) return;
 
-    // Parse current input value for defaultDate
-    let defaultDate = DEFAULT_SAMPLE;
-    try {
-      const parsed = DateTime.fromISO(input.value);
-      if (parsed.isValid) defaultDate = parsed.toJSDate();
-    } catch (_e) {
-      // ignore
-    }
-
-    // Create a wrapper that applies the manager popup styling + animation
-    const wrapper = document.createElement('div');
-    wrapper.className = 'manager-ui-popup manager-header-popup flatpickr-popup-wrapper';
-
-    this._flatpickrInstance = flatpickr(input, {
-      enableTime: true,
-      dateFormat: 'Y-m-d\\TH:i:S',
-      time_24hr: true,
-      allowInput: true,
-      clickOpens: false,
-      defaultDate,
-      appendTo: wrapper,
-      static: true,
-      disableMobile: true,
-      onChange: (selectedDates) => {
-        if (selectedDates.length > 0) {
-          const dt = DateTime.fromJSDate(selectedDates[0]);
-          input.value = dt.toFormat("yyyy-MM-dd'T'HH:mm:ss");
-          this.setSetting('sample', input.value);
-          this._renderAllPreviews();
-        }
-      },
-    });
-
     btn.addEventListener('click', () => {
-      if (!this._flatpickrInstance) return;
-
       // Toggle: if already open, close it
       const existing = document.querySelector('.flatpickr-popup-wrapper.visible');
       if (existing) {
         existing.classList.remove('visible');
-        setTimeout(() => existing.remove(), 350);
+        // Destroy instance and remove wrapper after animation completes
+        setTimeout(() => {
+          if (this._flatpickrInstance) {
+            this._flatpickrInstance.destroy();
+            this._flatpickrInstance = null;
+          }
+          const calendar = existing.querySelector('.flatpickr-calendar');
+          if (calendar) {
+            calendar.remove();
+          }
+          existing.remove();
+        }, 350);
         return;
       }
+
+      // Close other popups first
+      document.dispatchEvent(new CustomEvent('close-all-popups'));
+
+      // Create a wrapper that applies the manager popup styling + animation
+      const wrapper = document.createElement('div');
+      wrapper.className = 'manager-ui-popup manager-header-popup flatpickr-popup-wrapper';
+      wrapper.style.minWidth = '313px';
+      wrapper.style.minHeight = '341px';
+
+      // Create new FlatPickr instance
+      this._flatpickrInstance = this._createFlatpickrInstance(input, wrapper);
 
       // Update the date inside the picker without firing onChange
       this._flatpickrInstance.setDate(input.value, false);
@@ -532,10 +908,12 @@ export class DateFormatsPage extends BaseSettingsPage {
 
       document.body.appendChild(wrapper);
 
-      // Trigger scale animation
+      // Trigger scale animation and open Flatpickr
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           wrapper.classList.add('visible');
+          // Open Flatpickr after animation starts
+          this._flatpickrInstance.open();
         });
       });
 
@@ -543,22 +921,56 @@ export class DateFormatsPage extends BaseSettingsPage {
       const closePicker = (e) => {
         if (!wrapper.contains(e.target) && !btn.contains(e.target)) {
           wrapper.classList.remove('visible');
-          setTimeout(() => wrapper.remove(), 350);
+          // Destroy instance and remove wrapper after animation
+          setTimeout(() => {
+            if (this._flatpickrInstance) {
+              this._flatpickrInstance.destroy();
+              this._flatpickrInstance = null;
+            }
+            const calendar = wrapper.querySelector('.flatpickr-calendar');
+            if (calendar) {
+              calendar.remove();
+            }
+            wrapper.remove();
+          }, 350);
           document.removeEventListener('click', closePicker);
           document.removeEventListener('keydown', escPicker);
           document.removeEventListener('close-all-popups', closePicker);
+          if (checkInterval) {
+            clearInterval(checkInterval);
+            checkInterval = null;
+          }
         }
       };
 
       const escPicker = (e) => {
         if (e.key === 'Escape') {
           wrapper.classList.remove('visible');
-          setTimeout(() => wrapper.remove(), 350);
+          // Destroy instance and remove wrapper after animation
+          setTimeout(() => {
+            if (this._flatpickrInstance) {
+              this._flatpickrInstance.destroy();
+              this._flatpickrInstance = null;
+            }
+            const calendar = wrapper.querySelector('.flatpickr-calendar');
+            if (calendar) {
+              calendar.remove();
+            }
+            wrapper.remove();
+          }, 350);
           document.removeEventListener('click', closePicker);
           document.removeEventListener('keydown', escPicker);
           document.removeEventListener('close-all-popups', closePicker);
         }
       };
+
+      // Check for other popups
+      let checkInterval = setInterval(() => {
+        const otherPopups = document.querySelectorAll('.df-timezone-dropdown.visible, .manager-ui-popup.visible:not(.flatpickr-popup-wrapper)');
+        if (otherPopups.length > 0) {
+          closePicker();
+        }
+      }, 100);
 
       setTimeout(() => {
         document.addEventListener('click', closePicker);
@@ -569,93 +981,38 @@ export class DateFormatsPage extends BaseSettingsPage {
   }
 
   /**
-   * Populate the timezone dropdown with all IANA zones plus common abbreviations
+   * Initialize the custom timezone picker
    */
-  _initTimezoneDropdown() {
+  _initTimezonePicker() {
     const container = this.container;
     if (!container) return;
 
-    const select = container.querySelector('#df-timezone-select');
-    if (!select) return;
+    const pickerContainer = container.querySelector('#df-timezone-picker');
+    if (!pickerContainer) return;
 
-    const currentTz = this._getTimezone();
-    const fragment = document.createDocumentFragment();
-
-    // Common abbreviations mapped to IANA zones
-    const COMMON_ABBREVIATIONS = [
-      { abbr: 'PST', name: 'Pacific Standard Time', iana: 'America/Los_Angeles' },
-      { abbr: 'PDT', name: 'Pacific Daylight Time', iana: 'America/Los_Angeles' },
-      { abbr: 'MST', name: 'Mountain Standard Time', iana: 'America/Denver' },
-      { abbr: 'MDT', name: 'Mountain Daylight Time', iana: 'America/Denver' },
-      { abbr: 'CST', name: 'Central Standard Time', iana: 'America/Chicago' },
-      { abbr: 'CDT', name: 'Central Daylight Time', iana: 'America/Chicago' },
-      { abbr: 'EST', name: 'Eastern Standard Time', iana: 'America/New_York' },
-      { abbr: 'EDT', name: 'Eastern Daylight Time', iana: 'America/New_York' },
-      { abbr: 'AST', name: 'Atlantic Standard Time', iana: 'America/Halifax' },
-      { abbr: 'ADT', name: 'Atlantic Daylight Time', iana: 'America/Halifax' },
-      { abbr: 'GMT', name: 'Greenwich Mean Time', iana: 'GMT' },
-      { abbr: 'UTC', name: 'Coordinated Universal Time', iana: 'UTC' },
-      { abbr: 'BST', name: 'British Summer Time', iana: 'Europe/London' },
-      { abbr: 'CET', name: 'Central European Time', iana: 'Europe/Paris' },
-      { abbr: 'CEST', name: 'Central European Summer Time', iana: 'Europe/Paris' },
-      { abbr: 'EET', name: 'Eastern European Time', iana: 'Europe/Athens' },
-      { abbr: 'EEST', name: 'Eastern European Summer Time', iana: 'Europe/Athens' },
-      { abbr: 'JST', name: 'Japan Standard Time', iana: 'Asia/Tokyo' },
-      { abbr: 'KST', name: 'Korea Standard Time', iana: 'Asia/Seoul' },
-      { abbr: 'IST', name: 'India Standard Time', iana: 'Asia/Kolkata' },
-      { abbr: 'HKT', name: 'Hong Kong Time', iana: 'Asia/Hong_Kong' },
-      { abbr: 'SGT', name: 'Singapore Time', iana: 'Asia/Singapore' },
-      { abbr: 'AEST', name: 'Australian Eastern Standard Time', iana: 'Australia/Sydney' },
-      { abbr: 'AEDT', name: 'Australian Eastern Daylight Time', iana: 'Australia/Sydney' },
-      { abbr: 'NZST', name: 'New Zealand Standard Time', iana: 'Pacific/Auckland' },
-      { abbr: 'NZDT', name: 'New Zealand Daylight Time', iana: 'Pacific/Auckland' },
-    ];
-
-    // Add Common Abbreviations optgroup
-    const abbrGroup = document.createElement('optgroup');
-    abbrGroup.label = 'Common Abbreviations';
-    COMMON_ABBREVIATIONS.forEach(({ abbr, name, iana }) => {
-      const option = document.createElement('option');
-      option.value = iana;
-      option.textContent = `${abbr} — ${name}`;
-      option.dataset.search = `${abbr} ${name} ${iana}`.toLowerCase();
-      if (iana === currentTz) {
-        option.selected = true;
+    this._timezonePicker = new TimezonePicker(
+      pickerContainer,
+      IANA_TIMEZONES,
+      (timezone) => {
+        this.setSetting('timezone', timezone);
+        this._timezonePicker.setTimezone(timezone); // Update picker display
+        this._renderAllPreviews();
+      },
+      (position) => {
+        this.setSetting('timezonePopupPosition', position);
       }
-      abbrGroup.appendChild(option);
-    });
-    fragment.appendChild(abbrGroup);
+    );
 
-    // Group IANA zones by region
-    const regions = {};
-    IANA_TIMEZONES.forEach(tz => {
-      const region = tz.split('/')[0];
-      if (!regions[region]) regions[region] = [];
-      regions[region].push(tz);
-    });
-
-    Object.keys(regions).sort().forEach(region => {
-      const optgroup = document.createElement('optgroup');
-      optgroup.label = region;
-      regions[region].forEach(tz => {
-        const option = document.createElement('option');
-        option.value = tz;
-        option.textContent = tz;
-        option.dataset.search = tz.toLowerCase();
-        if (tz === currentTz) {
-          option.selected = true;
-        }
-        optgroup.appendChild(option);
-      });
-      fragment.appendChild(optgroup);
-    });
-
-    select.appendChild(fragment);
-
-    // If currentTz is a specific zone, select it
-    if (currentTz !== 'local') {
-      select.value = currentTz;
+    // Load saved popup position
+    const savedPosition = this.getSetting('timezonePopupPosition');
+    if (savedPosition && typeof savedPosition === 'object') {
+      this._timezonePicker.popupWidth = savedPosition.width;
+      this._timezonePicker.popupHeight = savedPosition.height;
     }
+
+    // Set initial timezone
+    const savedTz = this.getSetting('timezone', 'local');
+    this._timezonePicker.setTimezone(savedTz);
   }
 
   /**
@@ -713,31 +1070,114 @@ export class DateFormatsPage extends BaseSettingsPage {
   }
 
   /**
+   * Get the browser timezone IANA name
+   */
+  _getBrowserTimezone() {
+    try {
+      return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+    } catch (_e) {
+      return 'UTC';
+    }
+  }
+
+  /**
+   * Get the alternate timezone (override if different from browser, else UTC)
+   */
+  _getAlternateTimezone() {
+    const overrideTz = this._getTimezone();
+    const browserTz = this._getBrowserTimezone();
+
+    if (overrideTz !== 'local' && overrideTz !== browserTz) {
+      return overrideTz;
+    }
+    return 'UTC';
+  }
+
+  /**
    * Render current time previews for format tables
    */
   _renderCurrentPreviews() {
     const container = this.container;
     if (!container) return;
 
-    const now = this._getDateTimeNow();
+    const browserTz = this._getBrowserTimezone();
+    const overrideTz = this._getTimezone();
+    const altTz = this._getAlternateTimezone();
 
-    // Update the current datetime display at top
+    // Primary: always browser timezone
+    const nowPrimary = DateTime.now().setZone(browserTz);
+
+    // Alternate: override if different from browser, else UTC
+    const nowAlt = altTz === 'UTC' ? DateTime.now().toUTC() : DateTime.now().setZone(altTz);
+
+    // Update the current datetime display at top (primary = browser)
     const currentDisplay = container.querySelector('#df-current-datetime');
     if (currentDisplay) {
-      currentDisplay.textContent = now.toFormat("yyyy-MM-dd'T'HH:mm:ss");
+      currentDisplay.textContent = nowPrimary.toFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZZ '('ZZZZ')'");
     }
 
-    // Format tables
+    // Update alternate current datetime
+    const currentAltDisplay = container.querySelector('#df-current-datetime-alt');
+    if (currentAltDisplay) {
+      currentAltDisplay.textContent = nowAlt.toFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZZ '('ZZZZ')'");
+    }
+
+    // Update browser timezone display
+    const browserTzDisplay = container.querySelector('#df-browser-timezone');
+    if (browserTzDisplay) {
+      const abbr = nowPrimary.toFormat('ZZZZ');
+      browserTzDisplay.textContent = `${browserTz} (${abbr})`;
+    }
+
+    // Update sample datetime display
+    this._renderSampleDatetime();
+
+    // Format tables - use override timezone for compatibility
+    const nowForTables = overrideTz === 'local' ? DateTime.now() : DateTime.now().setZone(overrideTz);
     container.querySelectorAll('.df-current').forEach(el => {
       const format = el.dataset.format;
       if (format) {
         try {
-          el.textContent = now.toFormat(format);
+          el.textContent = nowForTables.toFormat(format);
         } catch (_e) {
           el.textContent = 'Invalid';
         }
       }
     });
+  }
+
+  /**
+   * Render sample datetime display
+   */
+  _renderSampleDatetime() {
+    const container = this.container;
+    if (!container) return;
+
+    const sample = this._getSampleDateTime();
+    const browserTz = this._getBrowserTimezone();
+    const altTz = this._getAlternateTimezone();
+
+    // Get current time in browser timezone for consistent abbreviation
+    const nowPrimary = DateTime.now().setZone(browserTz);
+    const nowAlt = altTz === 'UTC' ? DateTime.now().toUTC() : DateTime.now().setZone(altTz);
+
+    // Primary: sample in browser timezone
+    const dtPrimary = sample.setZone(browserTz);
+
+    // Alternate: sample in alternate timezone
+    const dtAlt = altTz === 'UTC' ? sample.toUTC() : sample.setZone(altTz);
+
+    // Primary sample display - use current time's abbreviation for consistency
+    const sampleDisplay = container.querySelector('#df-sample-datetime');
+    if (sampleDisplay) {
+      sampleDisplay.textContent = dtPrimary.toFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZZ") + ' (' + nowPrimary.toFormat('ZZZZ') + ')';
+    }
+
+    // Alternate sample display - use current time's abbreviation for consistency
+    const sampleAltDisplay = container.querySelector('#df-sample-datetime-alt');
+    if (sampleAltDisplay) {
+      sampleAltDisplay.textContent = dtAlt.toFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZZ") + ' (' + nowAlt.toFormat('ZZZZ') + ')';
+    }
   }
 
   /**
@@ -748,6 +1188,8 @@ export class DateFormatsPage extends BaseSettingsPage {
     if (!container) return;
 
     const sample = this._getSampleDateTime();
+    const tz = this._getTimezone();
+    const sampleInTz = tz === 'local' ? sample : sample.setZone(tz);
 
     // Format tables
     container.querySelectorAll('.df-example').forEach(el => {
@@ -756,7 +1198,7 @@ export class DateFormatsPage extends BaseSettingsPage {
       const input = row.querySelector('.df-format-input');
       if (!input) return;
       try {
-        el.textContent = sample.toFormat(input.value);
+        el.textContent = sampleInTz.toFormat(input.value);
       } catch (_e) {
         el.textContent = 'Invalid format';
       }
@@ -775,10 +1217,12 @@ export class DateFormatsPage extends BaseSettingsPage {
     const format = input.value;
 
     const sample = this._getSampleDateTime();
+    const tz = this._getTimezone();
+    const sampleInTz = tz === 'local' ? sample : sample.setZone(tz);
     const now = this._getDateTimeNow();
 
     try {
-      if (exampleEl) exampleEl.textContent = sample.toFormat(format);
+      if (exampleEl) exampleEl.textContent = sampleInTz.toFormat(format);
     } catch (_e) {
       if (exampleEl) exampleEl.textContent = 'Invalid format';
     }
@@ -821,18 +1265,8 @@ export class DateFormatsPage extends BaseSettingsPage {
     let name = 'Custom Format';
     let format = type === 'dates' ? 'yyyy-MM-dd' : type === 'times' ? 'HH:mm' : 'yyyy-MM-dd HH:mm:ss';
 
-    const listId = `df-${type}-custom`;
+    const listId = `df-${type}-all`;
     const list = container.querySelector(`#${listId}`);
-    if (list) {
-      const lastCustom = list.querySelector('.df-custom-item:last-child');
-      if (lastCustom) {
-        const nameInput = lastCustom.querySelector('.df-format-name-input');
-        const formatInput = lastCustom.querySelector('.df-format-input');
-        if (nameInput) name = nameInput.value;
-        if (formatInput) format = formatInput.value;
-      }
-    }
-
     if (!list) return;
 
     const sample = this._getSampleDateTime();
@@ -942,11 +1376,10 @@ export class DateFormatsPage extends BaseSettingsPage {
       sampleInput.value = this.getSetting('sample', DEFAULT_SAMPLE);
     }
 
-    // Timezone
-    const tzSelect = container.querySelector('#df-timezone-select');
-    if (tzSelect) {
+    // Timezone picker
+    if (this._timezonePicker) {
       const savedTz = this.getSetting('timezone', 'local');
-      tzSelect.value = savedTz;
+      this._timezonePicker.setTimezone(savedTz);
     }
 
     // Built-in formats
@@ -970,7 +1403,6 @@ export class DateFormatsPage extends BaseSettingsPage {
     if (!container) return;
 
     let allFormats = this.getSetting(type, {});
-    const labels = FORMAT_LABELS[type] || {};
 
     // If no formats exist for this type, populate with defaults
     if (Object.keys(allFormats).length === 0 && BUILTIN_FORMATS[type]) {
@@ -992,15 +1424,16 @@ export class DateFormatsPage extends BaseSettingsPage {
   /**
    * Load custom formats from settings service
    */
-  _loadCustomFormats(type) {
+   _loadCustomFormats(type) {
     const container = this.container;
     if (!container) return;
 
-    const listId = `df-${type}-custom`;
+    const listId = `df-${type}-all`;
     const list = container.querySelector(`#${listId}`);
     if (!list) return;
 
-    list.innerHTML = '';
+    // Remove existing custom items
+    list.querySelectorAll('.df-custom-item').forEach(item => item.remove());
 
     const settingKey = type;
     const allFormats = this.getSetting(settingKey, {});
@@ -1053,7 +1486,7 @@ export class DateFormatsPage extends BaseSettingsPage {
     const container = this.container;
     const custom = {};
 
-    const listId = `df-${type}-custom`;
+    const listId = `df-${type}-all`;
     const list = container?.querySelector(`#${listId}`);
     if (!list) return custom;
 
@@ -1110,9 +1543,23 @@ export class DateFormatsPage extends BaseSettingsPage {
       this._flatpickrInstance.destroy();
       this._flatpickrInstance = null;
     }
+    // Close any open flatpickr popup
+    const existing = document.querySelector('.flatpickr-popup-wrapper.visible');
+    if (existing) {
+      existing.classList.remove('visible');
+      setTimeout(() => {
+        const calendar = existing.querySelector('.flatpickr-calendar');
+        if (calendar) calendar.remove();
+        existing.remove();
+      }, 350);
+    }
     if (this._tokenTable) {
       this._tokenTable.destroy();
       this._tokenTable = null;
+    }
+    if (this._timezonePicker) {
+      this._timezonePicker.destroy();
+      this._timezonePicker = null;
     }
     super.destroy();
   }

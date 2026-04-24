@@ -390,6 +390,7 @@ export default class QueriesManager {
   // ============ TAB SWITCHING ============
 
   async switchTab(tabId) {
+    closeAllPopups();
     // Check if we're already on this tab - avoid unnecessary UI toggling
     const currentActiveTab = this._getActiveTabId();
     const isAlreadyActive = currentActiveTab === tabId;

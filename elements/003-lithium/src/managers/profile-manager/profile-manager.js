@@ -22,7 +22,7 @@ import { authQuery } from '../../shared/conduit.js';
 import { log, Subsystems, Status } from '../../core/log.js';
 import { processIcons } from '../../core/icons.js';
 import { normalizeIconHtml } from '../../core/icons.js';
-import { initToolbars, setupManagerFooterIcons, createFontPopup } from '../../core/manager-ui.js';
+import { initToolbars, setupManagerFooterIcons, createFontPopup, closeAllPopups } from '../../core/manager-ui.js';
 import { ManagerEditHelper } from '../../core/manager-edit-helper.js';
 import { getMenu, buildManagerIconsRegistry } from '../../shared/menu.js';
 import { CollectionTabHandler } from './profile-manager-collection.js';
@@ -659,6 +659,7 @@ export default class ProfileManager {
   switchTab(tabId) {
     if (!['settings', 'collection'].includes(tabId)) return;
 
+    closeAllPopups();
     this.currentTab = tabId;
 
     this.elements.tabCollection?.classList.toggle('active', tabId === 'collection');
