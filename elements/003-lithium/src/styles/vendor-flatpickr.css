@@ -1,0 +1,135 @@
+/**
+ * Vendor Flatpickr CSS — imports the Flatpickr base stylesheet into the
+ * vendors.flatpickr layer so our app styles always cascade above it.
+ *
+ * Import this file instead of the bare vendor CSS:
+ *   import '../../styles/vendor-flatpickr.css';
+ */
+
+@import url("flatpickr/dist/flatpickr.min.css") layer(vendors.flatpickr);
+
+@layer vendor-fixes {
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FLATPICKR GLOBAL OVERRIDES
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Ensure Flatpickr calendars in our popups are always visible */
+.flatpickr-popup-wrapper .flatpickr-calendar {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Flatpickr theme overrides: compact size, Vanadium Sans font, Lithium styling */
+.flatpickr-calendar {
+  font-family: var(--font-family) !important;
+  font-size: var(--font-size-xs) !important;
+  background: var(--bg-secondary) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--border-radius-md) !important;
+}
+
+/* Month header */
+.flatpickr-calendar .flatpickr-months {
+  padding: var(--space-2) !important;
+  background: var(--accent-alt-primary) !important;
+  border-bottom: 1px solid var(--border-color) !important;
+}
+
+.flatpickr-calendar .flatpickr-month {
+  font-size: var(--font-size-sm) !important;
+  color: var(--text-primary) !important;
+  font-weight: 600 !important;
+}
+
+.flatpickr-calendar .flatpickr-prev-month,
+.flatpickr-calendar .flatpickr-next-month {
+  fill: var(--text-primary) !important;
+  padding: var(--space-2) !important;
+}
+
+/* Weekdays header */
+.flatpickr-calendar .flatpickr-weekdays {
+  padding: 0 var(--space-2) !important;
+  background: var(--bg-tertiary) !important;
+  border-bottom: 1px solid var(--border-color) !important;
+}
+
+.flatpickr-calendar .flatpickr-weekday {
+  font-size: var(--font-size-xs) !important;
+  color: var(--text-secondary) !important;
+  padding: var(--space-1) 0 !important;
+  font-weight: 500 !important;
+}
+
+/* Days grid */
+.flatpickr-calendar .flatpickr-days {
+  padding: 0 var(--space-2) var(--space-2) !important;
+}
+
+.flatpickr-calendar .flatpickr-day {
+  font-size: var(--font-size-xs) !important;
+  padding: var(--space-1) !important;
+  line-height: 24px !important;
+  height: 24px !important;
+  width: 24px !important;
+  color: var(--text-primary) !important;
+  border-radius: var(--border-radius-sm) !important;
+}
+
+.flatpickr-calendar .flatpickr-day:hover {
+  background: var(--bg-hover) !important;
+}
+
+.flatpickr-calendar .flatpickr-day.selected {
+  background: var(--accent-primary) !important;
+  border-color: var(--accent-primary) !important;
+  color: white !important;
+}
+
+.flatpickr-calendar .flatpickr-day.today {
+  border-color: var(--accent-primary) !important;
+}
+
+/* Week numbers column */
+.flatpickr-calendar .flatpickr-weekwrapper {
+  font-size: var(--font-size-xs) !important;
+  color: var(--text-muted) !important;
+  border-right: 1px solid var(--border-color) !important;
+}
+
+.flatpickr-calendar .flatpickr-weekwrapper .flatpickr-weekday {
+  color: var(--text-muted) !important;
+}
+
+.flatpickr-calendar .flatpickr-weekwrapper .flatpickr-day {
+  color: var(--text-muted) !important;
+}
+
+/* Time picker */
+.flatpickr-calendar .flatpickr-time {
+  padding: var(--space-2) !important;
+  border-top: 1px solid var(--border-color) !important;
+  font-size: var(--font-size-xs) !important;
+}
+
+.flatpickr-calendar .flatpickr-time input {
+  font-size: var(--font-size-xs) !important;
+  padding: var(--space-1) !important;
+  background: var(--bg-input) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--border-radius-sm) !important;
+}
+
+.flatpickr-calendar .flatpickr-time .flatpickr-time-separator {
+  color: var(--text-secondary) !important;
+  font-size: var(--font-size-sm) !important;
+}
+
+.flatpickr-weekwrapper .flatpickr-weeks {
+	padding: 0 12px;
+  box-shadow: none;
+}
+} /* end @layer vendor-fixes */
