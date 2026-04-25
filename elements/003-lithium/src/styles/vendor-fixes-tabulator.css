@@ -1,0 +1,241 @@
+/**
+ * Tabulator Vendor Fixes
+ *
+ * Contains overrides for Tabulator styling and behavior.
+ * This file must load BEFORE any manager CSS.
+ *
+ * @layer vendor-fixes.tabulator
+ */
+
+@layer vendor-fixes.tabulator {
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   TABULATOR GLOBAL OVERRIDES
+   ═════════════════════════════════════════════════════════════════════════════ */
+
+.lithium-table-selector-icon {
+  display: inline-flex;
+  padding-top: 1px;
+}
+
+.lithium-table-container .tabulator-footer, .lithium-table-container .tabulator-calcs, .lithium-table-container .tabulator-calcs-bottom, .lithium-table-container .tabulator-calcs-holder {
+	border-top: none;
+	border-bottom: none;
+	z-index: 31;
+}
+
+/* Base font size for all Tabulator tables */
+.tabulator {
+  font-size: var(--font-size-sm);
+}
+
+.tabulator .tabulator-tableholder .tabulator-table {
+	margin-bottom: 8px;
+}
+
+/* Cell right border - consistent across all tables */
+.tabulator-row .tabulator-cell {
+  border-right: 1px solid var(--bg-row-border);
+}
+
+.tabulator-row .tabulator-cell.tabulator-editing {
+  border-right: 1px solid var(--accent-primary);
+}
+
+.tabulator-cell.tabulator-editing > input,
+.tabulator-cell.tabulator-editing > select {
+  font-size: var(--font-size-sm);
+  border: 1px solid var(--accent-primary);
+  border-radius: var(--border-radius-sm);
+  padding: 2px 4px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.lithium-table-container .tabulator-row.tabulator-group {
+  display: flex !important;
+  background: var(--accent-alt-secondary) !important; 
+  border: 1px solid var(--bg-row-border) !important;
+  border-left: none !important;
+  border-right: none !important;
+}
+
+/* Hide Tabulator's built-in arrow (we use our own icon in the header) */
+.lithium-table-container .tabulator-row.tabulator-group .tabulator-arrow {
+  display: none !important;
+}
+
+.lithium-table-container .tabulator-row.tabulator-group .lithium-group-header {
+  display: flex !important;
+  align-items: center !important;
+  gap: var(--space-2) !important;
+  padding: var(--space-2) !important;
+  font-weight: 600 !important;
+  color: var(--text-primary) !important;
+  cursor: pointer !important;
+}
+
+.lithium-table-container .tabulator-row.tabulator-group .lithium-group-title,
+.lithium-table-container .tabulator-row.tabulator-group .lithium-group-count {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Group toggle icon styling - base state (CSS handles rotation via tabulator-group-visible) */
+.lithium-table-container .tabulator-row.tabulator-group .lithium-group-toggle-icon,
+.lithium-table-container .tabulator-row.tabulator-group i.lithium-group-toggle-icon,
+.lithium-table-container .tabulator-row.tabulator-group svg.lithium-group-toggle-icon,
+.lithium-table-container .tabulator-row.tabulator-group .lithium-group-header > i,
+.lithium-table-container .tabulator-row.tabulator-group .lithium-group-header > svg {
+  color: var(--text-secondary) !important;
+  transition: transform var(--transition-fast), color var(--transition-fast) !important;
+  transform: rotate(0deg) !important;
+  font-size: var(--font-size-sm) !important;
+}
+
+/* Expanded state - Tabulator adds tabulator-group-visible when group is open */
+.lithium-table-container .tabulator-row.tabulator-group.tabulator-group-visible .lithium-group-toggle-icon,
+.lithium-table-container .tabulator-row.tabulator-group.tabulator-group-visible i.lithium-group-toggle-icon,
+.lithium-table-container .tabulator-row.tabulator-group.tabulator-group-visible svg.lithium-group-toggle-icon,
+.lithium-table-container .tabulator-row.tabulator-group.tabulator-group-visible .lithium-group-header > i,
+.lithium-table-container .tabulator-row.tabulator-group.tabulator-group-visible .lithium-group-header > svg {
+  transform: rotate(90deg) !important;
+  color: var(--accent-primary) !important;
+}
+
+/* Animation states for group expansion/collapse */
+.lithium-table-container .tabulator-row.tabulator-group.li-group-anim-from-collapsed .lithium-group-toggle-icon,
+.lithium-table-container .tabulator-row.tabulator-group.li-group-anim-from-collapsed i.lithium-group-toggle-icon,
+.lithium-table-container .tabulator-row.tabulator-group.li-group-anim-from-collapsed svg.lithium-group-toggle-icon,
+.lithium-table-container .tabulator-row.tabulator-group.li-group-anim-from-collapsed .lithium-group-header > i,
+.lithium-table-container .tabulator-row.tabulator-group.li-group-anim-from-collapsed .lithium-group-header > svg {
+  transform: rotate(0deg) !important;
+}
+
+.lithium-table-container .tabulator-row.tabulator-group.li-group-anim-from-expanded .lithium-group-toggle-icon,
+.lithium-table-container .tabulator-row.tabulator-group.li-group-anim-from-expanded i.lithium-group-toggle-icon,
+.lithium-table-container .tabulator-row.tabulator-group.li-group-anim-from-expanded svg.lithium-group-toggle-icon,
+.lithium-table-container .tabulator-row.tabulator-group.li-group-anim-from-expanded .lithium-group-header > i,
+.lithium-table-container .tabulator-row.tabulator-group.li-group-anim-from-expanded .lithium-group-header > svg {
+  transform: rotate(90deg) !important;
+}
+
+/* Group header text styling */
+.lithium-table-container .tabulator-row.tabulator-group span.lithium-group-header svg {
+  width: 1em !important;
+  height: 1em !important;
+}
+
+.lithium-table-container .tabulator-row.tabulator-group .lithium-group-title {
+  flex: 1 !important;
+  font-weight: 600 !important;
+}
+
+.lithium-table-container .tabulator-row.tabulator-group .lithium-group-count {
+  font-size: var(--font-size-xs) !important;
+  color: var(--text-secondary) !important;
+  background: var(--bg-tertiary) !important;
+  padding: 2px 6px !important;
+  border-radius: var(--border-radius-sm) !important;
+}
+
+.tabulator-row.tabulator-group span {
+  font-size: var(--font-size-sm) !important;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   TABULATOR EDIT LIST STYLING
+   ═════════════════════════════════════════════════════════════════════════════ */
+
+.tabulator-edit-list {
+  background: var(--bg-primary);
+  border: 1px solid var(--accent-alt-primary);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-lg);
+  max-height: 200px;
+  overflow: hidden;
+  z-index: 1000;
+}
+
+.tabulator-edit-list-item {
+  padding: var(--space-2);
+  cursor: pointer;
+  border-bottom: 1px solid var(--bg-row-border);
+  transition: background var(--transition-fast);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.tabulator-edit-list-item:last-child {
+  border-bottom: none;
+}
+
+.tabulator-edit-list-item:hover {
+  background: var(--accent-alt-primary);
+}
+
+.tabulator-edit-list-item svg,
+.tabulator-edit-list-item img,
+.lithium-table-container .tabulator-row .tabulator-cell svg,
+.lithium-table-container .tabulator-row .tabulator-cell img {
+  width: 1em;
+  height: 1em;
+  flex-shrink: 0;
+}
+
+/* Force alignment on parent tabulator list items */
+.tabulator-edit-list-item:has(.li-lookup-list-item[data-align="center"]),
+.tabulator-edit-list-item:has(.li-lookup-item[data-align="center"]) {
+  justify-content: center;
+}
+
+.tabulator-edit-list-item:has(.li-lookup-list-item[data-align="right"]),
+.tabulator-edit-list-item:has(.li-lookup-item[data-align="right"]) {
+  justify-content: flex-end;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   TABULATOR NATIVE SCROLLBAR STYLING
+   ═════════════════════════════════════════════════════════════════════════════
+
+   Tabulator uses native CSS scrollbars (not OverlayScrollbars)
+   OverlayScrollbars conflicts with Tabulator's virtual scrolling
+
+*/
+
+/* Ensure Tabulator tableholder has proper overflow */
+.lithium-table-container .tabulator-tableholder {
+  overflow: auto !important;
+  scrollbar-width: auto;
+  scrollbar-color: var(--accent-alt-primary) var(--bg-secondary);
+}
+
+/* WebKit scrollbar styling for Tabulator */
+.lithium-table-container .tabulator-tableholder::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.lithium-table-container .tabulator-tableholder::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border-radius: 16px;
+}
+
+.lithium-table-container .tabulator-tableholder::-webkit-scrollbar-thumb {
+  background: var(--accent-alt-primary);
+  border-radius: 16px;
+  border: 1px solid transparent;
+  background-clip: content-box;
+}
+
+.lithium-table-container .tabulator-tableholder::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-primary);
+  border-radius: 16px;
+  border: 1px solid transparent;
+  background-clip: content-box;
+}
+
+} /* end @layer vendor-fixes.tabulator */

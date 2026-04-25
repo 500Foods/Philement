@@ -528,6 +528,35 @@ If step 2 fails, stop debugging theme CSS and debug initialization structure fir
 - Hid inactive tracks again using OSB state classes
 - Tuned current probe visuals: square corners, darker track, wider bars, filled bottom-right corner
 
+ **April 25, 2026:** Timezone Picker Popup OSB Attempt (Failed)
+
+- **Target:** Timezone dropdown in Date Formats page (`page-date-formats.js`)
+- **Goal:** Fix overlay scrollbars in the timezone picker popup
+- **Changes made:**
+  - Added `scrollbarManager` import to `page-date-formats.js`
+  - Replaced manual `window.OverlayScrollbars()` initialization with `scrollbarManager.initPopup(this.listContainer)`
+  - Removed incorrect theme `'os-theme-light'` and invalid v1 options (`autoHide: 'scroll'`, `autoHideDelay: 800`)
+  - `scrollbarManager.initPopup()` applies correct theme `os-theme-lithium os-theme-lithium-popup` with proper v2 configuration
+  - Popup config sets `visibility: 'visible'`, `autoHide: 'never'`, `paddingAbsolute: false`
+- **Result:** Did not work — scrollbars still not functioning correctly in timezone picker popup
+- **Status:** Failed attempt — centralized init works for other popups but timezone picker has additional issues (possibly related to `position: absolute` dropdown, dynamic show/hide cycle, or `document.body` append strategy)
+
 ---
 
-**Last Updated:** April 21, 2026
+**April 25, 2026:** Timezone Picker Popup OSB Attempt #3 (In Progress)
+
+- **Target:** Timezone dropdown in Date Formats page (`page-date-formats.js`)
+- **Goal:** Fix overlay scrollbars in the timezone picker popup
+- **Previous attempts failed because:**
+  - Attempt #1: Used manual `window.OverlayScrollbars()` with incorrect theme/options
+  - Attempt #2: Fixed `initPopup()` to let OSB create its own structure, updated `filterTimezones()` to use `.os-content`, but still no scrollbars or scrolling
+- **New approach for Attempt #3:**
+  - Initialize OSB on the `.df-timezone-dropdown` element (the popup container) instead of `.df-timezone-list`
+  - This gives OSB a properly-sized host element with known dimensions
+  - The list container becomes the scrollable content inside OSB's viewport
+  - Added extensive session logging to debug OSB initialization
+- **Status:** In progress — testing new approach
+
+---
+
+**Last Updated:** April 25, 2026
