@@ -23,6 +23,8 @@
   vendors.codemirror,
   vendors.jsoneditor,
   vendor-fixes,
+  vendor-fixes.tabulator,
+  vendor-fixes.overlayscrollbars,
   layout,
   components,
   states,
@@ -182,6 +184,7 @@
     /* Borders */
     --border-width: 1px;
     --border-width-thick: 2px;
+    --border-radius-xs: 4px;
     --border-radius-sm: 6px;
     --border-radius-md: 6px;
     --border-radius-lg: 12px;
