@@ -294,16 +294,18 @@
                     <!-- Sample DateTime Table -->
                     <div class="df-table-wrapper">
                       <table class="df-table df-sample-datetime-table">
-                        <caption class="df-table-caption">Sample DateTime</caption>
+                        <caption class="df-table-caption">
+                          Sample DateTime
+                          <button type="button" class="lithium-toolbar-btn" id="df-picker-btn" title="Pick date & time">
+                            <fa fa-calendar-days></fa>
+                          </button>
+                        </caption>
                         <tbody>
                           <tr>
                             <td>
                               <div class="df-sample-input-group">
                                 <input type="text" class="form-input" id="df-sample-input" value="2020-01-01T14:03:02" style="display: none;">
                                 <span id="df-sample-datetime">-</span>
-                                <button type="button" class="lithium-toolbar-btn" id="df-picker-btn" title="Pick date & time">
-                                  <fa fa-calendar-days></fa>
-                                </button>
                               </div>
                             </td>
                           </tr>
@@ -311,9 +313,6 @@
                             <td>
                               <div class="df-sample-input-group">
                                 <span id="df-sample-datetime-alt">-</span>
-                                <button type="button" class="lithium-toolbar-btn" id="df-picker-btn-alt" title="Pick date & time" style="visibility: hidden;">
-                                  <fa fa-calendar-days></fa>
-                                </button>
                               </div>
                             </td>
                           </tr>

@@ -314,12 +314,15 @@ class TimezonePicker {
       <div class="df-timezone-resize-handle"></div>
     `;
 
-    // Cache DOM references
-    this.filterInput = this.dropdown.querySelector('.df-timezone-filter-input');
-    this.clearButton = this.dropdown.querySelector('.df-timezone-filter-clear');
-    this.listContainer = this.dropdown.querySelector('.df-timezone-list');
+  // Cache DOM references
+  this.filterInput = this.dropdown.querySelector('.df-timezone-filter-input');
+  this.clearButton = this.dropdown.querySelector('.df-timezone-filter-clear');
+  this.listContainer = this.dropdown.querySelector('.df-timezone-list');
 
-    // Setup event listeners
+  // Add popup-specific scrollbar styling
+  this.listContainer.classList.add('lithium-popup-scrollable');
+
+  // Setup event listeners
     this.container.addEventListener('click', () => this.toggle());
     this.filterInput.addEventListener('input', () => this.filterTimezones());
     this.clearButton.addEventListener('click', () => {
@@ -448,9 +451,8 @@ class TimezonePicker {
       try {
         this.overlayScrollbar = window.OverlayScrollbars(this.listContainer, {
           scrollbars: {
-            theme: 'os-theme-light',
-            autoHide: 'scroll',
-            autoHideDelay: 800,
+            theme: 'os-theme-lithium',
+            visibility: 'auto',
           },
         });
       } catch (e) {
@@ -687,6 +689,9 @@ export class DateFormatsPage extends BaseSettingsPage {
 
     this._currentUpdateInterval = null;
     this._flatpickrInstance = null;
+    this._flatpickrOpen = false;
+    this._flatpickrTransitioning = false;
+    this._flatpickrWrapper = null;
     this._tokenTable = null;
     this._timezonePicker = null;
   }
@@ -864,22 +869,11 @@ export class DateFormatsPage extends BaseSettingsPage {
     if (!input || !btn) return;
 
     btn.addEventListener('click', () => {
+      if (this._flatpickrTransitioning) return;
+
       // Toggle: if already open, close it
-      const existing = document.querySelector('.flatpickr-popup-wrapper.visible');
-      if (existing) {
-        existing.classList.remove('visible');
-        // Destroy instance and remove wrapper after animation completes
-        setTimeout(() => {
-          if (this._flatpickrInstance) {
-            this._flatpickrInstance.destroy();
-            this._flatpickrInstance = null;
-          }
-          const calendar = existing.querySelector('.flatpickr-calendar');
-          if (calendar) {
-            calendar.remove();
-          }
-          existing.remove();
-        }, 350);
+      if (this._flatpickrOpen && this._flatpickrWrapper) {
+        this._closeFlatpickr(this._flatpickrWrapper);
         return;
       }
 
@@ -891,6 +885,10 @@ export class DateFormatsPage extends BaseSettingsPage {
       wrapper.className = 'manager-ui-popup manager-header-popup flatpickr-popup-wrapper';
       wrapper.style.minWidth = '313px';
       wrapper.style.minHeight = '341px';
+
+      this._flatpickrTransitioning = true;
+      this._flatpickrOpen = true;
+      this._flatpickrWrapper = wrapper;
 
       // Create new FlatPickr instance
       this._flatpickrInstance = this._createFlatpickrInstance(input, wrapper);
@@ -908,76 +906,96 @@ export class DateFormatsPage extends BaseSettingsPage {
 
       document.body.appendChild(wrapper);
 
-      // Trigger scale animation and open Flatpickr
+      // Trigger scale animation and open FlatPickr
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           wrapper.classList.add('visible');
-          // Open Flatpickr after animation starts
+          // Open FlatPickr after animation starts
           this._flatpickrInstance.open();
         });
       });
 
-      // Close on outside click / escape
-      const closePicker = (e) => {
-        if (!wrapper.contains(e.target) && !btn.contains(e.target)) {
-          wrapper.classList.remove('visible');
-          // Destroy instance and remove wrapper after animation
-          setTimeout(() => {
-            if (this._flatpickrInstance) {
-              this._flatpickrInstance.destroy();
-              this._flatpickrInstance = null;
-            }
-            const calendar = wrapper.querySelector('.flatpickr-calendar');
-            if (calendar) {
-              calendar.remove();
-            }
-            wrapper.remove();
-          }, 350);
-          document.removeEventListener('click', closePicker);
-          document.removeEventListener('keydown', escPicker);
-          document.removeEventListener('close-all-popups', closePicker);
-          if (checkInterval) {
-            clearInterval(checkInterval);
-            checkInterval = null;
-          }
-        }
-      };
-
-      const escPicker = (e) => {
-        if (e.key === 'Escape') {
-          wrapper.classList.remove('visible');
-          // Destroy instance and remove wrapper after animation
-          setTimeout(() => {
-            if (this._flatpickrInstance) {
-              this._flatpickrInstance.destroy();
-              this._flatpickrInstance = null;
-            }
-            const calendar = wrapper.querySelector('.flatpickr-calendar');
-            if (calendar) {
-              calendar.remove();
-            }
-            wrapper.remove();
-          }, 350);
-          document.removeEventListener('click', closePicker);
-          document.removeEventListener('keydown', escPicker);
-          document.removeEventListener('close-all-popups', closePicker);
-        }
-      };
-
-      // Check for other popups
-      let checkInterval = setInterval(() => {
-        const otherPopups = document.querySelectorAll('.df-timezone-dropdown.visible, .manager-ui-popup.visible:not(.flatpickr-popup-wrapper)');
-        if (otherPopups.length > 0) {
-          closePicker();
-        }
-      }, 100);
-
+      // Clear transitioning after animation completes
       setTimeout(() => {
-        document.addEventListener('click', closePicker);
-        document.addEventListener('keydown', escPicker);
-        document.addEventListener('close-all-popups', closePicker);
+        this._flatpickrTransitioning = false;
+      }, 350);
+
+      // Close on outside click / escape
+      // Remove any existing handlers before attaching new ones
+      if (this._flatpickrCloseHandler) {
+        document.removeEventListener('click', this._flatpickrCloseHandler);
+        document.removeEventListener('close-all-popups', this._flatpickrCloseHandler);
+      }
+      if (this._flatpickrEscHandler) {
+        document.removeEventListener('keydown', this._flatpickrEscHandler);
+      }
+
+      this._flatpickrCloseHandler = (e) => {
+        if (!wrapper.contains(e.target) && !btn.contains(e.target)) {
+          if (this._flatpickrTransitioning) return;
+          this._closeFlatpickr(wrapper);
+        }
+      };
+
+      this._flatpickrEscHandler = (e) => {
+        if (e.key === 'Escape') {
+          if (this._flatpickrTransitioning) return;
+          this._closeFlatpickr(wrapper);
+        }
+      };
+
+      // Use setTimeout to attach listeners after current click event finishes bubbling
+      setTimeout(() => {
+        document.addEventListener('click', this._flatpickrCloseHandler);
+        document.addEventListener('keydown', this._flatpickrEscHandler);
+        // Don't listen for close-all-popups here to avoid self-closing issues
       }, 0);
     });
+  }
+
+  /**
+   * Close the FlatPickr popup with proper cleanup
+   */
+  _closeFlatpickr(wrapper) {
+    if (this._flatpickrCloseTimeout) {
+      clearTimeout(this._flatpickrCloseTimeout);
+    }
+    this._flatpickrTransitioning = true;
+    
+    // Check if wrapper is still in the DOM before trying to modify it
+    if (wrapper && wrapper.parentNode) {
+      wrapper.classList.remove('visible');
+    }
+    
+    // Remove event listeners to prevent interference with future instances
+    if (this._flatpickrCloseHandler) {
+      document.removeEventListener('click', this._flatpickrCloseHandler);
+      this._flatpickrCloseHandler = null;
+    }
+    if (this._flatpickrEscHandler) {
+      document.removeEventListener('keydown', this._flatpickrEscHandler);
+      this._flatpickrEscHandler = null;
+    }
+    
+    this._flatpickrCloseTimeout = setTimeout(() => {
+      if (this._flatpickrInstance) {
+        this._flatpickrInstance.destroy();
+        this._flatpickrInstance = null;
+      }
+      const calendar = wrapper.querySelector('.flatpickr-calendar');
+      if (calendar) {
+        calendar.remove();
+      }
+      // Check if wrapper is still in the DOM before trying to remove it
+      if (wrapper && wrapper.parentNode) {
+        wrapper.remove();
+      }
+      // Clear the state flags
+      this._flatpickrCloseTimeout = null;
+      this._flatpickrTransitioning = false;
+      this._flatpickrOpen = false;
+      this._flatpickrWrapper = null;
+    }, 350);
   }
 
   /**
