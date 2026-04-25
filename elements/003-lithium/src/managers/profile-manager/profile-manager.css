@@ -102,17 +102,17 @@
 }
 
 /* Active tab styling (toggle) - uses toggle colors for selected state */
-.xxxlithium-toolbar-tab.active {
+.lithium-toolbar-tab.active {
   background: var(--accent-toggle) !important;
   color: var(--text-toggle) !important;
 }
 
-.xxxlithium-toolbar-tab.active fa {
+.lithium-toolbar-tab.active fa {
   color: var(--text-toggle) !important;
 }
 
 /* Tab Toolbar */
-#xxxprofile-tab-toolbar {
+#profile-tab-toolbar {
   flex-shrink: 0;
   border-radius: 0;
   border: none;
@@ -257,7 +257,6 @@
 
 .section-title {
   font-size: var(--font-size-lg);
-  font-weight: 600;
   color: var(--text-primary);
   margin: 0 0 var(--space-lg) 0;
   padding-bottom: var(--space-sm);
@@ -292,7 +291,6 @@
 .info-value {
   font-size: var(--font-size-md);
   color: var(--text-primary);
-  font-weight: 500;
 }
 
 /* Preferences Form */
@@ -308,7 +306,6 @@
 
 .form-label {
   font-size: var(--font-size-sm);
-  font-weight: 500;
   color: var(--text-primary);
 }
 
@@ -364,7 +361,6 @@
   justify-content: center;
   padding: var(--space-sm) var(--space-lg);
   font-size: var(--font-size-md);
-  font-weight: 500;
   border-radius: var(--radius-md);
   border: 1px solid transparent;
   cursor: pointer;
@@ -427,8 +423,6 @@
 .preview-value {
   font-size: var(--font-size-md);
   color: var(--text-primary);
-  font-family: var(--font-mono);
-  font-weight: 500;
 }
 
 /* Loading State */
@@ -541,10 +535,8 @@
 }
 
 .df-sample-current {
-  font-family: var(--font-mono);
   font-size: var(--font-size-lg);
   color: var(--accent-primary);
-  font-weight: 500;
 }
 
 .df-sample-input-group {
@@ -589,7 +581,7 @@
 
 .df-table-wrapper {
   overflow-x: auto;
-  margin: 0px var(--space-3) var(--space-5) var(--space-3);
+  margin: var(--space-3);
   border: 1px solid var(--accent-alt-primary);
   border-radius: var(--border-radius-md);
   max-width: 900px;
@@ -612,11 +604,8 @@
 
 .df-table th {
   background: var(--accent-alt-primary);
-  font-weight: 600;
-  color: white;
-  font-size: var(--font-size-xs);
-  text-transform: none;
-  letter-spacing: 0.5px;
+	color: var(--text-primary);
+	font-weight: 500;
 }
 
 .df-table tr:nth-child(odd) {
@@ -626,17 +615,25 @@
 .df-table tr:nth-child(even) {
   background: var(--bg-row-even);
 }
-
-
+                           
+.df-table th.df-col-name,
+.df-table th.df-col-format,
+.df-table th.df-col-current,
+.df-table th.df-col-example {
+  padding: 0px 6px;  
+}
 
 .df-table input {
-  width: 180px;
-  font-family: var(--font-mono);
+  width: 100% !important;
   font-size: var(--font-size-sm);
-  border-radius: var(--border-radius-sm);
-  outline: none;
-  border: 1px solid var(--border-color);
   padding: 0px 5px;
+  border: none;
+  background: var(--text-primary);
+  border-radius: var(--border-radius-sm);
+}
+
+.df-table input:focus {
+  background: white;
 }
 
 .df-table .df-example,
@@ -646,32 +643,40 @@
 }
 
 .df-table .df-name {
-  font-weight: 500;
   min-width: 100px;
 }
 
 .df-table .df-locked {
-  color: var(--text-muted);
-  font-size: var(--font-size-xs);
+  color: white;
 }
 
 .df-table .df-col-icon {
-  width: 40px;
+  width: 24px;
   text-align: center;
   vertical-align: middle;
 }
 
 .df-table .df-col-name {
-  min-width: 120px;
+  width: 150px;
+  min-width: 150px;
+  max-width: 150px;
+  padding: 4px 6px;
 }
 
 .df-table .df-col-format {
-  min-width: 200px;
+  width: 225px;
+  min-width: 225px;
+  max-width: 225px;
 }
 
 .df-table .df-col-example,
 .df-table .df-col-current {
-  min-width: 100px;
+  min-width: 150px;
+  padding: 4px 6px;
+}
+
+.df-table .df-col-current {
+  border-right: none;
 }
 
 .df-delete-btn {
@@ -679,33 +684,28 @@
   border: none;
   color: var(--accent-danger);
   cursor: pointer;
-  padding: 4px;
-  border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-sm);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .df-delete-btn:hover {
-  background: var(--bg-tertiary);
+  filter: drop-shadow(0px 0px 1px black) drop-shadow(0px 0px 3px white);
 }
 
 .df-add-header-btn {
   background: none;
   border: none;
-  color: var(--accent-success);
+  color: white;
   cursor: pointer;
-  padding: 4px;
-  border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-sm);
+  font-size: var(--icon-size-nav);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .df-add-header-btn:hover {
-  background: var(--bg-tertiary);
+  filter: drop-shadow(0px 0px 1px black) drop-shadow(0px 0px 3px white);
 }
 
 .df-table tfoot td {
@@ -720,13 +720,13 @@
   gap: var(--space-4);
   margin: var(--space-3);
   align-items: stretch; /* Make tables equal height */
+  max-width: 900px;
 }
 
 .df-top-tables .df-table-wrapper {
   flex: 1;
-  min-width: 200px;
-  max-width: 300px;
   margin: 0; /* Remove margin for top tables */
+  height: 77px; /* enough for two rows and not a pixel more */
 }
 
 .df-top-tables .df-table {
@@ -735,12 +735,18 @@
 
 .df-table-caption {
   caption-side: top;
-  text-align: left;
-  font-weight: 600;
   font-size: var(--font-size-sm);
   color: var(--text-primary);
-  margin-bottom: var(--space-2);
-  padding: 0;
+  padding: 2px 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--accent-alt-primary);
+}                  
+
+.df-current-datetime-table-wrapper,
+.df-sample-datetime-table-wrapper {
+  max-width: 250px;
 }
 
 .df-timezone-table th {
@@ -751,26 +757,38 @@
   padding: var(--space-2);
 }
 
+.df-timezone-table .df-timezone-caption,
+.df-timezone-table .df-col-name {
+  max-width: 75px;             
+  min-width: 75px;
+  width: 75px;
+}     
+
+.df-timezone-table {
+  background: var(--accent-alt-primary);
+}
+
 /* Custom Timezone Picker */
 .df-timezone-picker {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--space-2);
-  border: 1px solid var(--bg-row-border);
-  border-radius: var(--border-radius-sm);
-  background: var(--bg-primary);
-  cursor: pointer;
-  transition: border-color var(--transition-fast);
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 0px var(--space-2);
+	border: 1px solid var(--bg-row-border);
+	border-radius: var(--border-radius-sm);
+	background: var(--text-primary);
+	cursor: pointer;
+	transition: border-color var(--transition-fast);
+	color: black;
 }
 
 .df-timezone-picker:hover {
-  border-color: var(--accent-primary);
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 1px;
 }
 
 .df-timezone-picker.open {
-  border-color: var(--accent-primary);
-  background: var(--accent-alt-primary);
+  background: var(--accent-toggle);
 }
 
 .df-selected-timezone {
@@ -785,9 +803,18 @@
   border: none;
   padding: 0;
   cursor: pointer;
-  color: var(--text-secondary);
+  color: black;
   transition: transform var(--transition-fast);
 }
+
+#df-browser-timezone,
+.df-timezone-table > tbody:nth-child(2) > tr:nth-child(1) > th:nth-child(1) {
+  border-top: 1px solid var(--bg-row-border);
+}
+
+.df-timezone-table > tbody:nth-child(2) > tr:nth-child(2) > td:nth-child(2) {
+  padding: 2px 4px 3px;
+}                          
 
 .df-timezone-picker.open .df-timezone-dropdown-btn {
   transform: rotate(180deg);
@@ -798,7 +825,10 @@
   position: absolute;
   background: var(--bg-primary);
   border: 1px solid var(--accent-alt-primary);
-  border-radius: var(--border-radius-md);
+  border-bottom-left-radius: var(--border-radius-md);
+  border-bottom-right-radius: var(--border-radius-md);
+  border-top-left-radius: 0px;
+  border-top-right-radius: 0px;
   box-shadow: var(--shadow-lg);
   z-index: 1000;
   min-height: 200px;
@@ -814,6 +844,13 @@
   resize: both;
   display: flex;
   flex-direction: column;
+}
+
+/* Force OverlayScrollbars viewport to allow vertical scrolling in timezone dropdown */
+.df-timezone-dropdown .df-timezone-list.os-host [data-overlayscrollbars-viewport] {
+  --os-viewport-overflow-y: scroll !important;
+  
+  overflow-y: scroll !important;
 }
 
 .df-timezone-dropdown.visible {
@@ -834,17 +871,21 @@
 .df-timezone-filter input {
   flex: 1;
   font-size: var(--font-size-sm);
+	border-radius: var(--border-radius-md);
+	padding: 0px 6px;
+	border: none;
+  margin: 2px;
 }
 
 .df-timezone-filter-clear {
   background: none;
   border: none;
+  position: absolute;
+  right: 10px;
   padding: 0;
   cursor: pointer;
-  color: var(--text-secondary);
-  font-size: var(--font-size-sm);
-  opacity: 0.7;
-  transition: opacity var(--transition-fast);
+  color: black;
+  font-size: 12px;
 }
 
 .df-timezone-filter-clear:hover {
@@ -862,9 +903,11 @@
 }
 
 .df-timezone-list {
-  max-height: 250px;
-  /* overflow managed by OverlayScrollbars */
-}
+  flex: 1 1 250px;
+  min-height: 0;
+  overflow: hidden; /* Let OSB manage the scrolling */
+  height:100%;
+}  
 
 .df-timezone-item {
   padding: var(--space-2);
@@ -885,6 +928,7 @@
   font-size: var(--font-size-xs);
   color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
+  padding-right: 15px; /* just in case scrollbars overlay */
 }
 
 .df-timezone-item:hover,
@@ -902,7 +946,6 @@
 
 .df-timezone-group-header {
   padding: var(--space-2);
-  font-weight: 600;
   font-size: var(--font-size-sm);
   background: var(--bg-secondary);
   color: var(--text-secondary);
@@ -919,6 +962,12 @@
   width: 120px;
   font-size: var(--font-size-sm);
 }
+
+#df-picker-btn {
+  padding: 0px;
+  height: 18px;
+  color: white;
+}              
 
 /* Token Reference */
 .df-token-section {

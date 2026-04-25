@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS class selectors/names used across the Lithium codebase",
-    "generated": "2026-04-24T16:38:39.517Z",
+    "generated": "2026-04-25T08:05:23.514Z",
     "sources": {
-      "css": "53 files in src/**/*.css",
+      "css": "54 files in src/**/*.css",
       "js": "147 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
-    "total_selectors": 2006,
-    "total_occurrences": 31291
+    "total_selectors": 2029,
+    "total_occurrences": 31503
   },
   "selectors": [
     {
@@ -6231,22 +6231,6 @@
       }
     },
     {
-      "selector": ".df-col-example",
-      "css": 0,
-      "js": 2,
-      "html": 13,
-      "total": 15,
-      "files": {
-        "css": [],
-        "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
-        ],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
-      }
-    },
-    {
       "selector": ".df-content",
       "css": 1,
       "js": 0,
@@ -6385,13 +6369,15 @@
       }
     },
     {
-      "selector": ".df-sample-datetime-table",
-      "css": 0,
+      "selector": ".df-sample-datetime-table-wrapper",
+      "css": 1,
       "js": 0,
       "html": 1,
-      "total": 1,
+      "total": 2,
       "files": {
-        "css": [],
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
         "js": [],
         "html": [
           "src/managers/profile-manager/profile-manager.html"
@@ -6717,6 +6703,22 @@
       }
     },
     {
+      "selector": ".df-table input:focus",
+      "css": 1,
+      "js": 0,
+      "html": 15,
+      "total": 16,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
+      }
+    },
+    {
       "selector": ".df-table td",
       "css": 1,
       "js": 0,
@@ -6775,6 +6777,24 @@
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
+      }
+    },
+    {
+      "selector": ".df-table th.df-col-example",
+      "css": 1,
+      "js": 2,
+      "html": 28,
+      "total": 31,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [
+          "src/managers/profile-manager/pages/page-date-formats.js"
+        ],
         "html": [
           "src/managers/profile-manager/profile-manager.html"
         ]
@@ -6850,6 +6870,22 @@
       "js": 2,
       "html": 0,
       "total": 3,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [
+          "src/managers/profile-manager/pages/page-date-formats.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".df-timezone-dropdown .df-timezone-list.os-host [data-overlayscrollbars-viewport]",
+      "css": 1,
+      "js": 4,
+      "html": 0,
+      "total": 5,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -7193,6 +7229,72 @@
           "src/managers/profile-manager/pages/page-date-formats.js"
         ],
         "html": []
+      }
+    },
+    {
+      "selector": ".df-timezone-table",
+      "css": 1,
+      "js": 0,
+      "html": 1,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
+      }
+    },
+    {
+      "selector": ".df-timezone-table .df-col-name",
+      "css": 1,
+      "js": 2,
+      "html": 16,
+      "total": 19,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [
+          "src/managers/profile-manager/pages/page-date-formats.js"
+        ],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
+      }
+    },
+    {
+      "selector": ".df-timezone-table > tbody:nth-child(2) > tr:nth-child(1) > th:nth-child(1)",
+      "css": 1,
+      "js": 0,
+      "html": 1,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
+      }
+    },
+    {
+      "selector": ".df-timezone-table > tbody:nth-child(2) > tr:nth-child(2) > td:nth-child(2)",
+      "css": 1,
+      "js": 0,
+      "html": 1,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
       }
     },
     {
@@ -7710,6 +7812,279 @@
       }
     },
     {
+      "selector": ".flatpickr-calendar",
+      "css": 1,
+      "js": 6,
+      "html": 0,
+      "total": 7,
+      "files": {
+        "css": [
+          "src/styles/vendor-flatpickr.css"
+        ],
+        "js": [
+          "src/managers/profile-manager/pages/page-date-formats.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".flatpickr-calendar .flatpickr-day",
+      "css": 1,
+      "js": 6,
+      "html": 0,
+      "total": 7,
+      "files": {
+        "css": [
+          "src/styles/vendor-flatpickr.css"
+        ],
+        "js": [
+          "src/managers/profile-manager/pages/page-date-formats.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".flatpickr-calendar .flatpickr-day:hover",
+      "css": 1,
+      "js": 6,
+      "html": 0,
+      "total": 7,
+      "files": {
+        "css": [
+          "src/styles/vendor-flatpickr.css"
+        ],
+        "js": [
+          "src/managers/profile-manager/pages/page-date-formats.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".flatpickr-calendar .flatpickr-day.selected",
+      "css": 1,
+      "js": 9,
+      "html": 0,
+      "total": 10,
+      "files": {
+        "css": [
+          "src/styles/vendor-flatpickr.css"
+        ],
+        "js": [
+          "src/managers/main/main.js",
+          "src/managers/profile-manager/pages/page-date-formats.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".flatpickr-calendar .flatpickr-day.today",
+      "css": 1,
+      "js": 6,
+      "html": 0,
+      "total": 7,
+      "files": {
+        "css": [
+          "src/styles/vendor-flatpickr.css"
+        ],
+        "js": [
+          "src/managers/profile-manager/pages/page-date-formats.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".flatpickr-calendar .flatpickr-days",
+      "css": 1,
+      "js": 6,
+      "html": 0,
+      "total": 7,
+      "files": {
+        "css": [
+          "src/styles/vendor-flatpickr.css"
+        ],
+        "js": [
+          "src/managers/profile-manager/pages/page-date-formats.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".flatpickr-calendar .flatpickr-month",
+      "css": 1,
+      "js": 6,
+      "html": 0,
+      "total": 7,
+      "files": {
+        "css": [
+          "src/styles/vendor-flatpickr.css"
+        ],
+        "js": [
+          "src/managers/profile-manager/pages/page-date-formats.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".flatpickr-calendar .flatpickr-months",
+      "css": 1,
+      "js": 6,
+      "html": 0,
+      "total": 7,
+      "files": {
+        "css": [
+          "src/styles/vendor-flatpickr.css"
+        ],
+        "js": [
+          "src/managers/profile-manager/pages/page-date-formats.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".flatpickr-calendar .flatpickr-next-month",
+      "css": 1,
+      "js": 6,
+      "html": 0,
+      "total": 7,
+      "files": {
+        "css": [
+          "src/styles/vendor-flatpickr.css"
+        ],
+        "js": [
+          "src/managers/profile-manager/pages/page-date-formats.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".flatpickr-calendar .flatpickr-time",
+      "css": 1,
+      "js": 6,
+      "html": 0,
+      "total": 7,
+      "files": {
+        "css": [
+          "src/styles/vendor-flatpickr.css"
+        ],
+        "js": [
+          "src/managers/profile-manager/pages/page-date-formats.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".flatpickr-calendar .flatpickr-time .flatpickr-time-separator",
+      "css": 1,
+      "js": 6,
+      "html": 0,
+      "total": 7,
+      "files": {
+        "css": [
+          "src/styles/vendor-flatpickr.css"
+        ],
+        "js": [
+          "src/managers/profile-manager/pages/page-date-formats.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".flatpickr-calendar .flatpickr-time input",
+      "css": 1,
+      "js": 6,
+      "html": 0,
+      "total": 7,
+      "files": {
+        "css": [
+          "src/styles/vendor-flatpickr.css"
+        ],
+        "js": [
+          "src/managers/profile-manager/pages/page-date-formats.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".flatpickr-calendar .flatpickr-weekday",
+      "css": 1,
+      "js": 6,
+      "html": 0,
+      "total": 7,
+      "files": {
+        "css": [
+          "src/styles/vendor-flatpickr.css"
+        ],
+        "js": [
+          "src/managers/profile-manager/pages/page-date-formats.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".flatpickr-calendar .flatpickr-weekdays",
+      "css": 1,
+      "js": 6,
+      "html": 0,
+      "total": 7,
+      "files": {
+        "css": [
+          "src/styles/vendor-flatpickr.css"
+        ],
+        "js": [
+          "src/managers/profile-manager/pages/page-date-formats.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".flatpickr-calendar .flatpickr-weekwrapper",
+      "css": 1,
+      "js": 6,
+      "html": 0,
+      "total": 7,
+      "files": {
+        "css": [
+          "src/styles/vendor-flatpickr.css"
+        ],
+        "js": [
+          "src/managers/profile-manager/pages/page-date-formats.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".flatpickr-calendar .flatpickr-weekwrapper .flatpickr-day",
+      "css": 1,
+      "js": 6,
+      "html": 0,
+      "total": 7,
+      "files": {
+        "css": [
+          "src/styles/vendor-flatpickr.css"
+        ],
+        "js": [
+          "src/managers/profile-manager/pages/page-date-formats.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".flatpickr-calendar .flatpickr-weekwrapper .flatpickr-weekday",
+      "css": 1,
+      "js": 6,
+      "html": 0,
+      "total": 7,
+      "files": {
+        "css": [
+          "src/styles/vendor-flatpickr.css"
+        ],
+        "js": [
+          "src/managers/profile-manager/pages/page-date-formats.js"
+        ],
+        "html": []
+      }
+    },
+    {
       "selector": ".flatpickr-popup-wrapper",
       "css": 1,
       "js": 4,
@@ -7727,14 +8102,15 @@
     },
     {
       "selector": ".flatpickr-popup-wrapper .flatpickr-calendar",
-      "css": 2,
+      "css": 3,
       "js": 10,
       "html": 0,
-      "total": 12,
+      "total": 13,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css",
-          "src/styles/vendor-fixes.css"
+          "src/styles/vendor-fixes.css",
+          "src/styles/vendor-flatpickr.css"
         ],
         "js": [
           "src/managers/profile-manager/pages/page-date-formats.js"
@@ -7753,6 +8129,20 @@
         "js": [
           "src/init/flatpickr-init.js"
         ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".flatpickr-weekwrapper .flatpickr-weeks",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [
+          "src/styles/vendor-flatpickr.css"
+        ],
+        "js": [],
         "html": []
       }
     },
@@ -15737,13 +16127,52 @@
     },
     {
       "selector": ".lithium-toolbar-tab.active",
+      "css": 2,
+      "js": 93,
+      "html": 88,
+      "total": 183,
+      "files": {
+        "css": [
+          "src/core/lithium-toolbar.css",
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [
+          "src/app.js",
+          "src/core/manager-ui.js",
+          "src/core/zoom-control.js",
+          "src/managers/crimson/crimson-citations.js",
+          "src/managers/crimson/crimson-ui.js",
+          "src/managers/login/login.js",
+          "src/managers/lookups/lookups.js",
+          "src/managers/main/main.js",
+          "src/managers/profile-manager/profile-manager-settings.js",
+          "src/managers/profile-manager/profile-manager.js",
+          "src/managers/queries/queries-ui.js",
+          "src/managers/queries/queries.js",
+          "src/managers/session-log/session-log.js",
+          "src/managers/style-manager/style-manager.js",
+          "src/shared/crimson-ws.js",
+          "src/tables/column-manager/cm-table.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/session-log/session-log.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-toolbar-tab.active fa",
       "css": 1,
       "js": 93,
       "html": 88,
       "total": 182,
       "files": {
         "css": [
-          "src/core/lithium-toolbar.css"
+          "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
           "src/app.js",
@@ -34795,76 +35224,6 @@
         ],
         "js": [],
         "html": []
-      }
-    },
-    {
-      "selector": ".xxxlithium-toolbar-tab.active",
-      "css": 1,
-      "js": 70,
-      "html": 8,
-      "total": 79,
-      "files": {
-        "css": [
-          "src/managers/profile-manager/profile-manager.css"
-        ],
-        "js": [
-          "src/app.js",
-          "src/core/manager-ui.js",
-          "src/core/zoom-control.js",
-          "src/managers/crimson/crimson-citations.js",
-          "src/managers/crimson/crimson-ui.js",
-          "src/managers/login/login.js",
-          "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
-          "src/managers/profile-manager/profile-manager-settings.js",
-          "src/managers/profile-manager/profile-manager.js",
-          "src/managers/queries/queries-ui.js",
-          "src/managers/queries/queries.js",
-          "src/managers/style-manager/style-manager.js",
-          "src/shared/crimson-ws.js",
-          "src/tables/column-manager/cm-table.js"
-        ],
-        "html": [
-          "src/managers/lookups/lookups.html",
-          "src/managers/profile-manager/profile-manager.html",
-          "src/managers/queries/queries.html",
-          "src/managers/style-manager/style-manager.html"
-        ]
-      }
-    },
-    {
-      "selector": ".xxxlithium-toolbar-tab.active fa",
-      "css": 1,
-      "js": 70,
-      "html": 8,
-      "total": 79,
-      "files": {
-        "css": [
-          "src/managers/profile-manager/profile-manager.css"
-        ],
-        "js": [
-          "src/app.js",
-          "src/core/manager-ui.js",
-          "src/core/zoom-control.js",
-          "src/managers/crimson/crimson-citations.js",
-          "src/managers/crimson/crimson-ui.js",
-          "src/managers/login/login.js",
-          "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
-          "src/managers/profile-manager/profile-manager-settings.js",
-          "src/managers/profile-manager/profile-manager.js",
-          "src/managers/queries/queries-ui.js",
-          "src/managers/queries/queries.js",
-          "src/managers/style-manager/style-manager.js",
-          "src/shared/crimson-ws.js",
-          "src/tables/column-manager/cm-table.js"
-        ],
-        "html": [
-          "src/managers/lookups/lookups.html",
-          "src/managers/profile-manager/profile-manager.html",
-          "src/managers/queries/queries.html",
-          "src/managers/style-manager/style-manager.html"
-        ]
       }
     },
     {
