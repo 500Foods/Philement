@@ -727,6 +727,7 @@
   flex: 1;
   margin: 0; /* Remove margin for top tables */
   height: 77px; /* enough for two rows and not a pixel more */
+  overflow: hidden;
 }
 
 .df-top-tables .df-table {
