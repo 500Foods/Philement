@@ -33,6 +33,7 @@ import { DateTime } from 'luxon';
 import flatpickr from 'flatpickr';
 import { LithiumTable } from '../../../tables/lithium-table-main.js';
 import { log, Subsystems, Status } from '../../../core/log.js';
+import { scrollbarManager } from '../../../core/scrollbar-manager.js';
 
 const DEFAULT_SAMPLE = '2020-01-01T14:03:02';
 
@@ -301,6 +302,7 @@ class TimezonePicker {
     this.popupWidth = null;
     this.popupHeight = null;
     this.isResizing = false;
+    this._closeTimeout = null;
 
     // Create dropdown element
     this.dropdown = document.createElement('div');
@@ -316,11 +318,9 @@ class TimezonePicker {
 
   // Cache DOM references
   this.filterInput = this.dropdown.querySelector('.df-timezone-filter-input');
+  this.listContainerWrapper = this.dropdown.querySelector('.df-timezone-list');
   this.clearButton = this.dropdown.querySelector('.df-timezone-filter-clear');
   this.listContainer = this.dropdown.querySelector('.df-timezone-list');
-
-  // Add popup-specific scrollbar styling
-  this.listContainer.classList.add('lithium-popup-scrollable');
 
   // Setup event listeners
     this.container.addEventListener('click', () => this.toggle());
@@ -373,8 +373,8 @@ class TimezonePicker {
       this.isResizing = true;
       startX = e.clientX;
       startY = e.clientY;
-      startWidth = this.dropdown.offsetWidth;
-      startHeight = this.dropdown.offsetHeight;
+      startWidth = this.listContainerWrapper.offsetWidth;
+      startHeight = this.listContainerWrapper.offsetHeight;
 
       document.body.style.cursor = 'nw-resize';
       document.body.style.userSelect = 'none';
@@ -426,6 +426,50 @@ class TimezonePicker {
   open() {
     if (this.isOpen) return;
 
+    log(Subsystems.UI, Status.DEBUG, '[TimezonePicker.open] Opening popup');
+
+    // Cancel any pending close timeout (popup is being reopened)
+    if (this._closeTimeout) {
+      clearTimeout(this._closeTimeout);
+      this._closeTimeout = null;
+      log(Subsystems.UI, Status.DEBUG, '[TimezonePicker.open] Cancelled pending close timeout');
+    }
+
+    // Recreate dropdown element if it was removed from DOM
+    if (!this.dropdown || !this.dropdown.parentNode) {
+      this.dropdown = document.createElement('div');
+      this.dropdown.className = 'df-timezone-dropdown manager-ui-popup';
+      this.dropdown.innerHTML = `
+        <div class="df-timezone-filter">
+          <input type="text" class="df-timezone-filter-input" placeholder="Search timezones...">
+          <button type="button" class="df-timezone-filter-clear" title="Clear">&times;</button>
+        </div>
+        <div class="df-timezone-list"></div>
+        <div class="df-timezone-resize-handle"></div>
+      `;
+
+      // Re-cache DOM references
+      this.filterInput = this.dropdown.querySelector('.df-timezone-filter-input');
+      this.listContainerWrapper = this.dropdown.querySelector('.df-timezone-list');
+      this.clearButton = this.dropdown.querySelector('.df-timezone-filter-clear');
+      this.listContainer = this.dropdown.querySelector('.df-timezone-list');
+
+      // Re-setup event listeners
+      this.container.addEventListener('click', () => this.toggle());
+      this.filterInput.addEventListener('input', () => this.filterTimezones());
+      this.clearButton.addEventListener('click', () => {
+        this.filterInput.value = '';
+        this.filterTimezones();
+        this.filterInput.focus();
+      });
+
+      // Re-setup resize functionality
+      this.setupResize();
+
+      document.body.appendChild(this.dropdown);
+      log(Subsystems.UI, Status.DEBUG, '[TimezonePicker.open] Recreated dropdown element');
+    }
+
     // Close other popups first
     document.dispatchEvent(new CustomEvent('close-all-popups'));
 
@@ -436,7 +480,7 @@ class TimezonePicker {
     document.body.style.overflow = 'hidden';
 
     // Force show dropdown
-    this.dropdown.style.display = 'block';
+    this.dropdown.style.display = 'flex';
 
     // Position dropdown
     const rect = this.container.getBoundingClientRect();
@@ -446,27 +490,49 @@ class TimezonePicker {
     this.dropdown.style.height = this.popupHeight ? `${this.popupHeight}px` : '';
     this.dropdown.style.transformOrigin = 'top left';
 
-    // Setup OverlayScrollbars now that element is visible
-    if (window.OverlayScrollbars && !this.overlayScrollbar) {
-      try {
-        this.overlayScrollbar = window.OverlayScrollbars(this.listContainer, {
-          scrollbars: {
-            theme: 'os-theme-lithium',
-            visibility: 'auto',
-          },
-        });
-      } catch (e) {
-        // Fallback to native scrolling
-        this.listContainer.style.overflowY = 'auto';
-        this.overlayScrollbar = null;
-      }
-    } else if (!this.overlayScrollbar) {
-      // Fallback to native scrolling if OverlayScrollbars not available
-      this.listContainer.style.overflowY = 'auto';
-    }
+    // First populate the list and set container dimensions
+    requestAnimationFrame(() => {
+      // Ensure the list has explicit dimensions
+      const dropdownHeight = this.dropdown.offsetHeight;
+      const filterHeight = this.dropdown.querySelector('.df-timezone-filter').offsetHeight;
+      const availableHeight = dropdownHeight - filterHeight;
+      this.listContainer.style.height = `${availableHeight}px`;
 
-    // Preserve filter value, just refresh the display
-    this.filterTimezones();
+      log(Subsystems.UI, Status.DEBUG, '[TimezonePicker.open] Set listContainer height to: ' + availableHeight);
+
+      // Populate the list first
+      this.filterTimezones();
+
+      // Initialize OSB now that content is populated
+      if (!this.overlayScrollbar) {
+        try {
+          log(Subsystems.UI, Status.DEBUG, '[TimezonePicker.open] Initializing OSB');
+          log(Subsystems.UI, Status.DEBUG, '[TimezonePicker.open] Container scrollHeight: ' + this.listContainer.scrollHeight);
+          log(Subsystems.UI, Status.DEBUG, '[TimezonePicker.open] Container clientHeight: ' + this.listContainer.clientHeight);
+
+          // Initialize OSB now that content is populated
+          this.overlayScrollbar = scrollbarManager.initPopup(this.listContainer);
+          log(Subsystems.UI, Status.INFO, '[TimezonePicker.open] OSB init result: ' + !!this.overlayScrollbar);
+          if (this.overlayScrollbar) {
+            const elements = this.overlayScrollbar.elements();
+            log(Subsystems.UI, Status.DEBUG, '[TimezonePicker.open] OSB elements - host: ' + !!elements.host + ', viewport: ' + !!elements.viewport + ', content: ' + !!elements.content);
+            log(Subsystems.UI, Status.DEBUG, '[TimezonePicker.open] Content height check - content scrollHeight: ' + (elements.content ? elements.content.scrollHeight : 'no content'));
+            if (this.overlayScrollbar.state && this.overlayScrollbar.state().viewport) {
+              log(Subsystems.UI, Status.DEBUG, '[TimezonePicker.open] After init - viewport percent: ' + this.overlayScrollbar.state().viewport.percent);
+            }
+          }
+        } catch (e) {
+          log(Subsystems.UI, Status.ERROR, '[TimezonePicker.open] OSB init failed: ' + e.message);
+          // Fallback to native scrolling
+          this.listContainer.style.overflowY = 'auto';
+          this.overlayScrollbar = null;
+        }
+      } else {
+        log(Subsystems.UI, Status.DEBUG, '[TimezonePicker.open] Reusing existing OSB instance');
+        // Re-populate content for existing OSB instance
+        this.filterTimezones();
+      }
+    });
 
     const tzName = typeof this.selectedTimezone === 'object' ? this.selectedTimezone.name : this.selectedTimezone;
     if (tzName !== 'local') {
@@ -501,9 +567,15 @@ class TimezonePicker {
     this.isOpen = false;
     this.container.classList.remove('open');
     this.dropdown.classList.remove('visible');
-    // Wait for animation to complete before hiding
-    setTimeout(() => {
-      this.dropdown.style.display = 'none';
+
+    // Cancel any pending close timeout
+    if (this._closeTimeout) {
+      clearTimeout(this._closeTimeout);
+      this._closeTimeout = null;
+    }
+
+    // Wait for animation to complete before removing from DOM
+    this._closeTimeout = setTimeout(() => {
       // Restore page scrolling
       document.body.style.overflow = '';
       // Clear the check interval
@@ -511,8 +583,19 @@ class TimezonePicker {
         clearInterval(this._checkInterval);
         this._checkInterval = null;
       }
+      // Clean up OSB instance
+      if (this.overlayScrollbar) {
+        log(Subsystems.UI, Status.DEBUG, '[TimezonePicker.close] Destroying OSB instance');
+        scrollbarManager.destroy(this.overlayScrollbar);
+        this.overlayScrollbar = null;
+      }
+      // Remove from DOM completely
+      if (this.dropdown && this.dropdown.parentNode) {
+        this.dropdown.parentNode.removeChild(this.dropdown);
+        log(Subsystems.UI, Status.DEBUG, '[TimezonePicker.close] Removed dropdown from DOM');
+      }
+      this._closeTimeout = null;
     }, 350); // Match transition duration
-    // Keep dropdown in DOM but hidden for reuse
   }
 
   setTimezone(timezone) {
@@ -541,15 +624,33 @@ class TimezonePicker {
     }
   }
 
-  /**
-   * Filter and display timezones based on current filter input
-   */
-  filterTimezones() {
-    const filter = this.filterInput.value.toLowerCase();
-    const listContainer = this.listContainer;
+   /**
+     * Filter and display timezones based on current filter input
+     */
+    filterTimezones() {
+      const filter = this.filterInput.value.toLowerCase();
 
-    // Clear existing items
-    listContainer.innerHTML = '';
+      log(Subsystems.UI, Status.DEBUG, `[filterTimezones] Called, filter: "${filter}"`);
+
+      // Get the correct target container
+      // After OSB initialization on dropdown, content is inside .os-content
+      let targetContainer = this.listContainer;
+      if (this.overlayScrollbar && !this.overlayScrollbar.destroyed) {
+        const elements = this.overlayScrollbar.elements();
+        if (elements && elements.content) {
+          targetContainer = elements.content;
+          log(Subsystems.UI, Status.DEBUG, `[filterTimezones] Using OSB content element`);
+        } else {
+          log(Subsystems.UI, Status.WARN, `[filterTimezones] OSB instance exists but no content element found`);
+        }
+      } else {
+        log(Subsystems.UI, Status.DEBUG, `[filterTimezones] Using listContainer directly, hasOSB: ${!!this.overlayScrollbar}`);
+      }
+
+      log(Subsystems.UI, Status.DEBUG, `[filterTimezones] targetContainer classes: ${targetContainer.className}`);
+
+      // Clear existing items
+      targetContainer.innerHTML = '';
 
     // Group timezones by region
     const grouped = {};
@@ -586,7 +687,7 @@ class TimezonePicker {
     }
 
     if (browserSection.children.length > 1) { // Has title + at least one item
-      listContainer.appendChild(browserSection);
+      targetContainer.appendChild(browserSection);
     }
 
     // Create abbreviation section
@@ -603,7 +704,7 @@ class TimezonePicker {
       });
 
       if (abbrSection.children.length > 1) { // Has title + at least one item
-        listContainer.appendChild(abbrSection);
+        targetContainer.appendChild(abbrSection);
       }
     }
 
@@ -622,7 +723,7 @@ class TimezonePicker {
       });
 
       if (section.children.length > 1) { // Has title + at least one item
-        listContainer.appendChild(section);
+        targetContainer.appendChild(section);
       }
     });
   }

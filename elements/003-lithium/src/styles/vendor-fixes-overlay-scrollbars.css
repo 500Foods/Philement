@@ -1,0 +1,45 @@
+/**
+ * OverlayScrollbars Vendor Fixes
+ *
+ * Contains overrides for OverlayScrollbars styling and behavior.
+ * This file must load AFTER the base OverlayScrollbars CSS.
+ *
+ * @layer vendor-fixes.overlayscrollbars
+ */
+
+@layer vendor-fixes.overlayscrollbars {
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   POPUP OVERLAYSCROLLBARS STYLING
+   ═════════════════════════════════════════════════════════════════════════════ */
+
+/* Popup scrollbar positioning and sizing */
+.lithium-popup-scrollable .os-scrollbar-vertical {
+  right: 0px;
+  top: 0px;
+  position: absolute;
+  border-left: 1px solid var(--bg-row-border);
+  width: 11px;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   POPUP/DROPDOWN SCROLL CONTAINMENT
+   ═════════════════════════════════════════════════════════════════════════════ */
+
+/* When OverlayScrollbars is active on dropdowns */
+.tabulator-edit-list.os-host {
+  overscroll-behavior: contain;
+}
+
+/* Generic popup scrollable class */
+.lithium-popup-scrollable {
+  overscroll-behavior: contain;
+  isolation: isolate;
+}
+
+/* vertical scrollbar in popup list */
+.os-scrollbar.os-scrollbar-vertical.os-theme-lithium.os-theme-lithium-popup.os-scrollbar-auto-hide.os-scrollbar-handle-interactive.os-scrollbar-track-interactive.os-scrollbar-visible.os-scrollbar-cornerless {
+  position: absolute !important;
+}
+
+} /* end @layer vendor-fixes.overlayscrollbars */
