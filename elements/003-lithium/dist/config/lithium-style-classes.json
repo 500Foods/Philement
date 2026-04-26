@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS class selectors/names used across the Lithium codebase",
-    "generated": "2026-04-26T17:20:05.441Z",
+    "generated": "2026-04-26T18:22:36.425Z",
     "sources": {
       "css": "56 files in src/**/*.css",
       "js": "147 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
-    "total_selectors": 2026,
-    "total_occurrences": 31346
+    "total_selectors": 2027,
+    "total_occurrences": 31350
   },
   "selectors": [
     {
@@ -6211,14 +6211,16 @@
     {
       "selector": ".df-content",
       "css": 1,
-      "js": 0,
+      "js": 1,
       "html": 1,
-      "total": 2,
+      "total": 3,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
         ],
-        "js": [],
+        "js": [
+          "src/managers/profile-manager/pages/page-date-formats.js"
+        ],
         "html": [
           "src/managers/profile-manager/profile-manager.html"
         ]
@@ -36480,6 +36482,24 @@
           "src/core/scrollbar-manager.js"
         ],
         "html": []
+      }
+    },
+    {
+      "selector": "#settings-page--9 > div.df-content:nth-child(3)",
+      "css": 1,
+      "js": 1,
+      "html": 1,
+      "total": 3,
+      "files": {
+        "css": [
+          "src/styles/vendor-fixes-overlay-scrollbars.css"
+        ],
+        "js": [
+          "src/managers/profile-manager/pages/page-date-formats.js"
+        ],
+        "html": [
+          "src/managers/profile-manager/profile-manager.html"
+        ]
       }
     },
     {

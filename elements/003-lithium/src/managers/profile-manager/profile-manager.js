@@ -130,6 +130,9 @@ export default class ProfileManager {
     // Initialize tab handlers BEFORE table so settingsHandler is ready for section restoration
     this.initTabHandlers();
 
+    // Initialize to settings tab to set button states properly
+    this.switchTab('settings');
+
     await this.initOptionsTable();
     this.setupSplitter();
 
@@ -262,7 +265,7 @@ export default class ProfileManager {
       panel: this.elements.leftPanel,
       panelStateManager: this.leftPanelState,
       localSearch: true,
-      localSearchFields: ['section', 'label'],
+      localSearchFields: ['section', 'label', 'search'],
       onRowSelected: (rowData) => this.handleOptionSelected(rowData),
       onRowDeselected: () => this.handleOptionDeselected(),
       onRefresh: () => this.loadUserOptions(),
@@ -450,6 +453,7 @@ export default class ProfileManager {
       const index = section[3] ?? (position + 1);
       const isInternal = index < 0;
       const sectionIcon = normalizeIconHtml(section[1], '<fa fa-cube></fa>');
+      const searchString = section[4] || '';
 
       // For manager entries (index >= 0), merge with menu data
       if (!isInternal && this._managerIcons[index]) {
@@ -461,6 +465,7 @@ export default class ProfileManager {
           icon: normalizeIconHtml(menuInfo.iconHtml, sectionIcon || '<fa fa-cube></fa>') || sectionIcon || '<fa fa-cube></fa>',
           label: menuInfo.name || section[2] || 'Unknown',
           index: index,
+          search: searchString,
           status_a1: 1,
         };
       }
@@ -472,6 +477,7 @@ export default class ProfileManager {
         icon: sectionIcon || '',
         label: section[2] || '',
         index: index,
+        search: searchString,
         status_a1: 1,
       };
     });
@@ -482,23 +488,23 @@ export default class ProfileManager {
    */
   getDefaultUserOptions() {
     const baseOptions = [
-      { key_idx: 1, section: 'General', icon: '<fa fa-id-card></fa>', label: 'Account', index: -1, status_a1: 1 },
-      { key_idx: 2, section: 'General', icon: '<fa fa-id-badge></fa>', label: 'Names', index: -2, status_a1: 1 },
-      { key_idx: 3, section: 'General', icon: '<fa fa-address-book></fa>', label: 'Addresses', index: -3, status_a1: 1 },
-      { key_idx: 4, section: 'General', icon: '<fa fa-at></fa>', label: 'E-Mail', index: -4, status_a1: 1 },
-      { key_idx: 5, section: 'General', icon: '<fa fa-phone></fa>', label: 'Phone', index: -5, status_a1: 1 },
-      { key_idx: 6, section: 'Security', icon: '<fa fa-key></fa>', label: 'Authentication', index: -6, status_a1: 1 },
-      { key_idx: 7, section: 'Security', icon: '<fa fa-user-key></fa>', label: 'Tokens', index: -7, status_a1: 1 },
-      { key_idx: 8, section: 'Formatting', icon: '<fa fa-globe></fa>', label: 'Language', index: -8, status_a1: 1 },
-      { key_idx: 9, section: 'Formatting', icon: '<fa fa-calendar></fa>', label: 'Date Formats', index: -9, status_a1: 1 },
-      { key_idx: 10, section: 'Formatting', icon: '<fa fa-00></fa>', label: 'Number Formats', index: -10, status_a1: 1 },
-      { key_idx: 11, section: 'Application', icon: '<fa fa-atom-simple></fa>', label: 'Startup', index: -11, status_a1: 1 },
-      { key_idx: 12, section: 'Application', icon: '<fa fa-bell></fa>', label: 'Notifications', index: -12, status_a1: 1 },
-      { key_idx: 13, section: 'Application', icon: '<fa fa-bell-concierge></fa>', label: 'Concierge', index: -13, status_a1: 1 },
-      { key_idx: 14, section: 'Application', icon: '<fa fa-note-sticky></fa>', label: 'Annotations', index: -14, status_a1: 1 },
-      { key_idx: 15, section: 'Application', icon: '<fa fa-signs-post></fa>', label: 'Tours', index: -15, status_a1: 1 },
-      { key_idx: 16, section: 'Application', icon: '<fa fa-graduation-cap></fa>', label: 'Training', index: -16, status_a1: 1 },
-      { key_idx: 17, section: 'Security', icon: '<fa fa-receipt></fa>', label: 'Login History', index: -17, status_a1: 1 },
+      { key_idx: 1, section: 'General', icon: '<fa fa-id-card></fa>', label: 'Account', index: -1, search: '', status_a1: 1 },
+      { key_idx: 2, section: 'General', icon: '<fa fa-id-badge></fa>', label: 'Names', index: -2, search: '', status_a1: 1 },
+      { key_idx: 3, section: 'General', icon: '<fa fa-address-book></fa>', label: 'Addresses', index: -3, search: '', status_a1: 1 },
+      { key_idx: 4, section: 'General', icon: '<fa fa-at></fa>', label: 'E-Mail', index: -4, search: '', status_a1: 1 },
+      { key_idx: 5, section: 'General', icon: '<fa fa-phone></fa>', label: 'Phone', index: -5, search: '', status_a1: 1 },
+      { key_idx: 6, section: 'Security', icon: '<fa fa-key></fa>', label: 'Authentication', index: -6, search: '', status_a1: 1 },
+      { key_idx: 7, section: 'Security', icon: '<fa fa-user-key></fa>', label: 'Tokens', index: -7, search: '', status_a1: 1 },
+      { key_idx: 8, section: 'Formatting', icon: '<fa fa-globe></fa>', label: 'Language', index: -8, search: '', status_a1: 1 },
+      { key_idx: 9, section: 'Formatting', icon: '<fa fa-calendar></fa>', label: 'Date Formats', index: -9, search: '', status_a1: 1 },
+      { key_idx: 10, section: 'Formatting', icon: '<fa fa-00></fa>', label: 'Number Formats', index: -10, search: '', status_a1: 1 },
+      { key_idx: 11, section: 'Application', icon: '<fa fa-atom-simple></fa>', label: 'Startup', index: -11, search: '', status_a1: 1 },
+      { key_idx: 12, section: 'Application', icon: '<fa fa-bell></fa>', label: 'Notifications', index: -12, search: '', status_a1: 1 },
+      { key_idx: 13, section: 'Application', icon: '<fa fa-bell-concierge></fa>', label: 'Concierge', index: -13, search: '', status_a1: 1 },
+      { key_idx: 14, section: 'Application', icon: '<fa fa-note-sticky></fa>', label: 'Annotations', index: -14, search: '', status_a1: 1 },
+      { key_idx: 15, section: 'Application', icon: '<fa fa-signs-post></fa>', label: 'Tours', index: -15, search: '', status_a1: 1 },
+      { key_idx: 16, section: 'Application', icon: '<fa fa-graduation-cap></fa>', label: 'Training', index: -16, search: '', status_a1: 1 },
+      { key_idx: 17, section: 'Security', icon: '<fa fa-receipt></fa>', label: 'Login History', index: -17, search: '', status_a1: 1 },
     ];
 
     // Add manager entries from menu data, using group names from Main Menu
@@ -511,6 +517,7 @@ export default class ProfileManager {
         icon: info.iconHtml || '<fa fa-cube></fa>',
         label: info.name || `Manager ${id}`,
         index: managerId,
+        search: '',
         status_a1: 1,
       };
     });

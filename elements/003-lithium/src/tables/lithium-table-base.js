@@ -151,7 +151,7 @@ export class LithiumTableBase {
     this._columnMeta = new Map();
 
     // UI state
-    this.tableWidthMode = 'compact';
+    this.tableWidthMode = options.tableWidthMode || 'compact';
     this.tableLayoutMode = 'fitColumns';
 
     // Storage key for persistence
