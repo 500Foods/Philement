@@ -42,16 +42,12 @@ import {
 import {
   toggleNavPopup,
   closeNavPopup,
-  closeNavPopupAnimated,
   showNavPopup,
   closeTransientPopups,
   createPopupSeparator,
 } from './popups/popup-manager.js';
 
-import {
-  toggleGroupingPopup,
-  closeGroupingPopup,
-} from './popups/grouping-popup.js';
+
 
 import {
   buildTemplatePopup,
@@ -121,26 +117,7 @@ export const LithiumTableUIMixin = {
   // ── Popup Menus (delegated to popups/) ────────────────────────────────────
 
   toggleNavPopup(e, popupId) {
-    if (popupId === 'template') {
-      e.stopPropagation();
-
-      if (this.activeNavPopup && this.activeNavPopupId === 'template') {
-        closeNavPopup(this);
-        return;
-      }
-
-      // Close any existing popup with animation, then open new one
-      if (this.activeNavPopup) {
-        closeNavPopupAnimated(this, () => {
-          this.openTemplatePopup(e);
-        });
-      } else {
-        this.openTemplatePopup(e);
-      }
-      return;
-    }
-
-    // Delegate to popup-manager for standard nav popups
+    // Unified popup handling for all nav popup types
     toggleNavPopup(this, e, popupId);
   },
 
@@ -210,13 +187,9 @@ export const LithiumTableUIMixin = {
     closeTransientPopups(this);
   },
 
-  toggleGroupingPopup(e) {
-    return toggleGroupingPopup(this, e);
-  },
 
-  closeGroupingPopup() {
-    return closeGroupingPopup(this);
-  },
+
+
 
   // ── Table Settings (delegated to settings/table-settings.js) ──────────────
 
