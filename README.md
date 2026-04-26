@@ -53,7 +53,7 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2026-04-26 02:32:56 UTC
+Last updated at 2026-04-26 03:08:59 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
@@ -62,7 +62,7 @@ C                             1095          47614          44662         170518
 SVG                            155            303           4089         162091
 Text                           209            206              0          78802
 Markdown                       715          26306            236          72703
-JavaScript                     236           9270          12447          44049
+JavaScript                     236           9274          12444          44024
 Lua                            201           4654           3622          32280
 Bourne Shell                   117           5692          80460          26524
 CSS                            104           2586           1440          13183
@@ -78,7 +78,7 @@ Delphi Form                      1              1              0             43
 YAML                             2              8             13             37
 Pascal                           2             11              2             31
 -------------------------------------------------------------------------------
-SUM:                          3446         100317         155073        1574196
+SUM:                          3446         100321         155070        1574171
 -------------------------------------------------------------------------------
 817 Files were skipped (duplicate, binary, or without source code):
   svg: 622
