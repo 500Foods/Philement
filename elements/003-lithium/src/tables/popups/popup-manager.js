@@ -7,7 +7,9 @@
  */
 
 import { log, Subsystems, Status } from '../../core/log.js';
-import { closeGroupingPopupImmediate } from './grouping-popup.js';
+import { processIcons } from '../../core/icons.js';
+import { closeGroupingPopupImmediate, buildGroupingPopup } from './grouping-popup.js';
+import { buildTemplatePopup } from './template-popup.js';
 
 /**
  * Toggle navigation popup
@@ -26,23 +28,11 @@ export function toggleNavPopup(table, e, popupId) {
     return;
   }
 
-  // Close any existing popup with animation, then open new one
+  // Close any existing popup immediately, then open new one
   if (table.activeNavPopup) {
-    // Cancel any pending popup open
-    if (table._pendingPopupTimeout) {
-      clearTimeout(table._pendingPopupTimeout);
-      table._pendingPopupTimeout = null;
-    }
-    // Close with animation, then open new popup after animation completes
-    closeNavPopupAnimated(table, () => {
-      openNewNavPopup(table, e, popupId);
-    });
+    closeNavPopupImmediate(table);
+    openNewNavPopup(table, e, popupId);
   } else {
-    // Cancel any pending popup open and open immediately
-    if (table._pendingPopupTimeout) {
-      clearTimeout(table._pendingPopupTimeout);
-      table._pendingPopupTimeout = null;
-    }
     openNewNavPopup(table, e, popupId);
   }
 }
@@ -58,7 +48,16 @@ function openNewNavPopup(table, e, popupId) {
   document.dispatchEvent(new CustomEvent('close-all-popups'));
 
   const btn = e.currentTarget;
-  const popup = buildStandardNavPopup(table, getPopupItems(table, popupId));
+  let popup;
+
+  if (popupId === 'template') {
+    popup = buildTemplatePopup(table);
+  } else if (popupId === 'grouping') {
+    popup = buildGroupingPopup(table);
+  } else {
+    // Standard nav popups (width, layout)
+    popup = buildStandardNavPopup(table, getPopupItems(table, popupId));
+  }
 
   if (!popup) return;
 
@@ -116,6 +115,11 @@ function buildStandardNavPopup(table, items) {
  * @param {string} popupId - Popup identifier
  */
 export function showNavPopup(table, btn, popup, popupId) {
+  if (!btn) {
+    log(Subsystems.TABLE, Status.ERROR, 'showNavPopup called with null button');
+    return;
+  }
+
   popup.style.position = 'fixed';
   // Footer-riseup positioning: bottom-right of popup 1px above top-right of button
   popup.style.bottom = 'auto';
@@ -145,6 +149,9 @@ export function showNavPopup(table, btn, popup, popupId) {
   }
 
   document.body.appendChild(popup);
+
+  // Process icons for popups that need them (e.g., grouping)
+  processIcons(popup);
 
   const repositionPopup = () => {
     positionNavPopup(btn, popup);
@@ -218,12 +225,6 @@ function positionNavPopup(btn, popup) {
  * @param {Object} table - LithiumTable instance
  */
 export function closeNavPopupImmediate(table) {
-  // Handle grouping popup specifically if that's what's open
-  if (table.activeNavPopupId === 'grouping') {
-    closeGroupingPopupImmediate(table);
-    return;
-  }
-
   // Remove popup-active class from button
   if (table.activeNavPopupButton) {
     table.activeNavPopupButton.classList.remove('popup-active');
@@ -294,6 +295,8 @@ export function closeNavPopup(table, callback) {
     document.removeEventListener('scroll', table.navPopupRepositionHandler, true);
     table.navPopupRepositionHandler = null;
   }
+
+
 
   // Start close animation
   table.activeNavPopup.classList.remove('visible');
