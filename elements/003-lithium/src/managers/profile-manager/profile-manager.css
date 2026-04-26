@@ -839,7 +839,7 @@
   overflow: hidden;
   opacity: 0;
   transform: scale(0.5);
-  transform-origin: top left;
+  transform-origin: top left !important;
   transition: opacity var(--transition-duration, 350ms) ease,
               transform var(--transition-duration, 350ms) ease;
   resize: both;
@@ -904,7 +904,7 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  overflow-y: auto !important;
 }
 
 .df-timezone-item {

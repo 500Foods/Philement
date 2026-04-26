@@ -37,6 +37,46 @@ import { scrollbarManager } from '../../../core/scrollbar-manager.js';
 
 const DEFAULT_SAMPLE = '2020-01-01T14:03:02';
 
+/**
+ * Common timezone abbreviations mapped to IANA identifiers and full names
+ */
+const TIMEZONE_ABBREVIATIONS = {
+  // North America
+  'PST': { iana: 'America/Los_Angeles', fullName: 'Pacific Standard Time' },
+  'PDT': { iana: 'America/Los_Angeles', fullName: 'Pacific Daylight Time' },
+  'MST': { iana: 'America/Denver', fullName: 'Mountain Standard Time' },
+  'MDT': { iana: 'America/Denver', fullName: 'Mountain Daylight Time' },
+  'CST': { iana: 'America/Chicago', fullName: 'Central Standard Time' },
+  'CDT': { iana: 'America/Chicago', fullName: 'Central Daylight Time' },
+  'EST': { iana: 'America/New_York', fullName: 'Eastern Standard Time' },
+  'EDT': { iana: 'America/New_York', fullName: 'Eastern Daylight Time' },
+  'AKST': { iana: 'America/Anchorage', fullName: 'Alaska Standard Time' },
+  'AKDT': { iana: 'America/Anchorage', fullName: 'Alaska Daylight Time' },
+  'HST': { iana: 'Pacific/Honolulu', fullName: 'Hawaii Standard Time' },
+
+  // Europe
+  'GMT': { iana: 'Europe/London', fullName: 'Greenwich Mean Time' },
+  'BST': { iana: 'Europe/London', fullName: 'British Summer Time' },
+  'CET': { iana: 'Europe/Paris', fullName: 'Central European Time' },
+  'CEST': { iana: 'Europe/Paris', fullName: 'Central European Summer Time' },
+
+  // Asia
+  'IST': { iana: 'Asia/Kolkata', fullName: 'India Standard Time' },
+  'JST': { iana: 'Asia/Tokyo', fullName: 'Japan Standard Time' },
+  'KST': { iana: 'Asia/Seoul', fullName: 'Korea Standard Time' },
+  'CST_ASIA': { iana: 'Asia/Shanghai', fullName: 'China Standard Time' }, // Note: CST conflicts with US Central
+
+  // Oceania
+  'AEST': { iana: 'Australia/Sydney', fullName: 'Australian Eastern Standard Time' },
+  'AEDT': { iana: 'Australia/Sydney', fullName: 'Australian Eastern Daylight Time' },
+  'ACST': { iana: 'Australia/Adelaide', fullName: 'Australian Central Standard Time' },
+  'ACDT': { iana: 'Australia/Adelaide', fullName: 'Australian Central Daylight Time' },
+  'AWST': { iana: 'Australia/Perth', fullName: 'Australian Western Standard Time' },
+
+  // UTC
+  'UTC': { iana: 'UTC', fullName: 'Coordinated Universal Time' },
+};
+
 // Default built-in formats
 const BUILTIN_FORMATS = {
   dates: {
@@ -170,8 +210,22 @@ const IANA_TIMEZONES = [
   'Pacific/Norfolk', 'Pacific/Noumea', 'Pacific/Pago_Pago', 'Pacific/Palau', 'Pacific/Pitcairn',
   'Pacific/Pohnpei', 'Pacific/Port_Moresby', 'Pacific/Rarotonga', 'Pacific/Saipan',
   'Pacific/Tahiti', 'Pacific/Tarawa', 'Pacific/Tongatapu', 'Pacific/Wake', 'Pacific/Wallis',
-  // UTC
-  'UTC', 'GMT', 'Etc/UTC', 'Etc/GMT', 'Etc/GMT+0', 'Etc/GMT+1', 'Etc/GMT+2', 'Etc/GMT+3',
+  // UTC and common abbreviations (mapped to IANA identifiers)
+  'UTC', 'GMT',
+  // US timezones (using IANA identifiers)
+  'America/Los_Angeles', 'America/Denver', 'America/Chicago', 'America/New_York',
+  'America/Anchorage', 'Pacific/Honolulu',
+  // European timezones (using IANA identifiers)
+  'Europe/Paris', 'Europe/London', 'Europe/Berlin', 'Europe/Rome', 'Europe/Madrid',
+  // Asian timezones (using IANA identifiers)
+  'Asia/Kolkata', 'Asia/Tokyo', 'Asia/Shanghai', 'Asia/Seoul',
+  'Asia/Bangkok', 'Asia/Manila', 'Asia/Singapore',
+  // Australian timezones (using IANA identifiers)
+  'Australia/Sydney', 'Australia/Adelaide', 'Australia/Perth',
+  // Other major cities
+  'Pacific/Auckland', 'Africa/Johannesburg', 'Europe/Moscow', 'Asia/Yekaterinburg',
+  // Etc zones for completeness
+  'Etc/UTC', 'Etc/GMT', 'Etc/GMT+0', 'Etc/GMT+1', 'Etc/GMT+2', 'Etc/GMT+3',
   'Etc/GMT+4', 'Etc/GMT+5', 'Etc/GMT+6', 'Etc/GMT+7', 'Etc/GMT+8', 'Etc/GMT+9', 'Etc/GMT+10',
   'Etc/GMT+11', 'Etc/GMT+12', 'Etc/GMT-0', 'Etc/GMT-1', 'Etc/GMT-2', 'Etc/GMT-3', 'Etc/GMT-4',
   'Etc/GMT-5', 'Etc/GMT-6', 'Etc/GMT-7', 'Etc/GMT-8', 'Etc/GMT-9', 'Etc/GMT-10', 'Etc/GMT-11',
@@ -303,6 +357,9 @@ class TimezonePicker {
     this.popupHeight = null;
     this.isResizing = false;
     this._closeTimeout = null;
+    this._outsideClickHandler = null;
+    this._escKeyHandler = null;
+    this._transitioning = false;
 
     // Create dropdown element
     this.dropdown = document.createElement('div');
@@ -318,9 +375,8 @@ class TimezonePicker {
 
   // Cache DOM references
   this.filterInput = this.dropdown.querySelector('.df-timezone-filter-input');
-  this.listContainerWrapper = this.dropdown.querySelector('.df-timezone-list');
-  this.clearButton = this.dropdown.querySelector('.df-timezone-filter-clear');
   this.listContainer = this.dropdown.querySelector('.df-timezone-list');
+  this.clearButton = this.dropdown.querySelector('.df-timezone-filter-clear');
 
   // Setup event listeners
     this.container.addEventListener('click', () => this.toggle());
@@ -416,6 +472,9 @@ class TimezonePicker {
   }
 
   toggle() {
+    // Prevent toggle if we're in a transition state
+    if (this._transitioning) return;
+
     if (this.isOpen) {
       this.close();
     } else {
@@ -424,8 +483,9 @@ class TimezonePicker {
   }
 
   open() {
-    if (this.isOpen) return;
+    if (this.isOpen || this._transitioning) return;
 
+    this._transitioning = true;
     log(Subsystems.UI, Status.DEBUG, '[TimezonePicker.open] Opening popup');
 
     // Cancel any pending close timeout (popup is being reopened)
@@ -434,22 +494,6 @@ class TimezonePicker {
       this._closeTimeout = null;
       log(Subsystems.UI, Status.DEBUG, '[TimezonePicker.open] Cancelled pending close timeout');
     }
-
-    // Create overlay for backdrop clicks and scroll blocking
-    this.overlay = document.createElement('div');
-    this.overlay.className = 'df-timezone-overlay';
-    this.overlay.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: transparent;
-      z-index: 10000;
-      cursor: default;
-    `;
-    this.overlay.addEventListener('click', () => this.close());
-    document.body.appendChild(this.overlay);
 
     // Recreate dropdown element if it was removed from DOM
     if (!this.dropdown || !this.dropdown.parentNode) {
@@ -464,13 +508,12 @@ class TimezonePicker {
         <div class="df-timezone-resize-handle"></div>
       `;
 
-      // Re-cache DOM references
+      // Cache DOM references
       this.filterInput = this.dropdown.querySelector('.df-timezone-filter-input');
-      this.listContainerWrapper = this.dropdown.querySelector('.df-timezone-list');
-      this.clearButton = this.dropdown.querySelector('.df-timezone-filter-clear');
       this.listContainer = this.dropdown.querySelector('.df-timezone-list');
+      this.clearButton = this.dropdown.querySelector('.df-timezone-filter-clear');
 
-      // Re-setup event listeners
+      // Setup event listeners
       this.container.addEventListener('click', () => this.toggle());
       this.filterInput.addEventListener('input', () => this.filterTimezones());
       this.clearButton.addEventListener('click', () => {
@@ -479,7 +522,7 @@ class TimezonePicker {
         this.filterInput.focus();
       });
 
-      // Re-setup resize functionality
+      // Setup resize functionality
       this.setupResize();
 
       document.body.appendChild(this.dropdown);
@@ -492,9 +535,6 @@ class TimezonePicker {
     this.isOpen = true;
     this.container.classList.add('open');
 
-    // Prevent page scrolling while popup is open (overlay handles this too)
-    document.body.style.overflow = 'hidden';
-
     // Position dropdown first
     const rect = this.container.getBoundingClientRect();
     this.dropdown.style.top = `${rect.bottom + 2}px`;
@@ -505,16 +545,52 @@ class TimezonePicker {
     // Force show dropdown
     this.dropdown.style.display = 'flex';
 
+    // Populate the timezone list initially
+    this.filterTimezones();
+
+    // Initialize OSB after content is populated
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (this.listContainer) {
+          this.overlayScrollbar = scrollbarManager.initPopup(this.listContainer);
+          log(Subsystems.UI, Status.DEBUG, '[TimezonePicker.open] OSB initialized on list container');
+        }
+      });
+    });
+
+    // Setup outside click handler and ESC key support (similar to Flatpickr pattern)
+    this._outsideClickHandler = (e) => {
+      // Prevent handling if we're transitioning or if click is inside dropdown/container
+      if (this._transitioning || !this.dropdown || !this.container) return;
+      if (this.dropdown.contains(e.target) || this.container.contains(e.target)) return;
+
+      log(Subsystems.UI, Status.DEBUG, '[TimezonePicker] Outside click detected, closing');
+      this.close();
+    };
+
+    this._escKeyHandler = (e) => {
+      if (e.key === 'Escape' && this.isOpen && !this._transitioning) {
+        log(Subsystems.UI, Status.DEBUG, '[TimezonePicker] ESC key detected, closing');
+        this.close();
+      }
+    };
+
+    // Use setTimeout to attach listeners after current click event finishes bubbling
+    setTimeout(() => {
+      if (!this._outsideClickHandler || !this._escKeyHandler) return;
+      document.addEventListener('click', this._outsideClickHandler);
+      document.addEventListener('keydown', this._escKeyHandler);
+      this._transitioning = false; // Clear transition flag after handlers are set up
+    }, 0);
+
     // Show with animation
     setTimeout(() => this.dropdown.classList.add('visible'), 50);
-
-    // Focus filter
-    setTimeout(() => this.filterInput.focus(), 100);
   }
 
   close() {
-    if (!this.isOpen) return;
+    if (!this.isOpen || this._transitioning) return;
 
+    this._transitioning = true;
     this.isOpen = false;
     this.container.classList.remove('open');
     this.dropdown.classList.remove('visible');
@@ -525,15 +601,18 @@ class TimezonePicker {
       this._closeTimeout = null;
     }
 
+    // Remove outside click handler and ESC key handler immediately
+    if (this._outsideClickHandler) {
+      document.removeEventListener('click', this._outsideClickHandler);
+      this._outsideClickHandler = null;
+    }
+    if (this._escKeyHandler) {
+      document.removeEventListener('keydown', this._escKeyHandler);
+      this._escKeyHandler = null;
+    }
+
     // Wait for animation to complete before removing from DOM
     this._closeTimeout = setTimeout(() => {
-      // Restore page scrolling
-      document.body.style.overflow = '';
-      // Remove overlay
-      if (this.overlay && this.overlay.parentNode) {
-        this.overlay.parentNode.removeChild(this.overlay);
-        this.overlay = null;
-      }
       // Clean up OSB instance
       if (this.overlayScrollbar) {
         log(Subsystems.UI, Status.DEBUG, '[TimezonePicker.close] Destroying OSB instance');
@@ -545,6 +624,7 @@ class TimezonePicker {
         this.dropdown.parentNode.removeChild(this.dropdown);
         log(Subsystems.UI, Status.DEBUG, '[TimezonePicker.close] Removed dropdown from DOM');
       }
+      this._transitioning = false; // Clear transition flag after cleanup
       this._closeTimeout = null;
     }, 350); // Match transition duration
   }
@@ -641,21 +721,84 @@ class TimezonePicker {
       targetContainer.appendChild(browserSection);
     }
 
-    // Create abbreviation section
+    // Create abbreviated timezones section
+    const abbreviatedSection = document.createElement('div');
+    abbreviatedSection.className = 'df-timezone-group';
+    abbreviatedSection.innerHTML = '<div class="df-timezone-group-header">Abbreviated Timezones</div>';
+
+    Object.keys(TIMEZONE_ABBREVIATIONS).sort().forEach(abbrev => {
+      if (abbrev.toLowerCase().includes(filter) ||
+          TIMEZONE_ABBREVIATIONS[abbrev].fullName.toLowerCase().includes(filter)) {
+        const mapping = TIMEZONE_ABBREVIATIONS[abbrev];
+        const displayName = `${abbrev} (${mapping.fullName})`;
+        const item = this._createTimezoneItem(displayName, mapping.iana);
+        abbreviatedSection.appendChild(item);
+      }
+    });
+
+    if (abbreviatedSection.children.length > 1) { // Has title + at least one item
+      targetContainer.appendChild(abbreviatedSection);
+    }
+
+    // Create major timezones section
     if (Object.keys(abbreviations).length > 0) {
-      const abbrSection = document.createElement('div');
-      abbrSection.className = 'df-timezone-group';
-      abbrSection.innerHTML = '<div class="df-timezone-group-header">Abbreviations</div>';
+      const majorSection = document.createElement('div');
+      majorSection.className = 'df-timezone-group';
+      majorSection.innerHTML = '<div class="df-timezone-group-header">Major Timezones</div>';
+
+      // Map IANA identifiers to user-friendly display names
+      const displayNameMap = {
+        // UTC and GMT
+        'UTC': 'Coordinated Universal Time',
+        'GMT': 'Greenwich Mean Time',
+
+        // US Timezones
+        'America/Los_Angeles': 'Pacific Time',
+        'America/Denver': 'Mountain Time',
+        'America/Chicago': 'Central Time',
+        'America/New_York': 'Eastern Time',
+        'America/Anchorage': 'Alaska Time',
+        'Pacific/Honolulu': 'Hawaii Time',
+
+        // European Timezones
+        'Europe/Paris': 'Central European Time',
+        'Europe/London': 'British Time',
+        'Europe/Berlin': 'Central European Time',
+        'Europe/Rome': 'Central European Time',
+        'Europe/Madrid': 'Central European Time',
+
+        // Asian Timezones
+        'Asia/Kolkata': 'India Time',
+        'Asia/Tokyo': 'Japan Time',
+        'Asia/Shanghai': 'China Time',
+        'Asia/Seoul': 'Korea Time',
+        'Asia/Bangkok': 'Indochina Time',
+        'Asia/Manila': 'Philippine Time',
+        'Asia/Singapore': 'Singapore Time',
+
+        // Australian Timezones
+        'Australia/Sydney': 'Australian Eastern Time',
+        'Australia/Adelaide': 'Australian Central Time',
+        'Australia/Perth': 'Australian Western Time',
+
+        // Other major cities
+        'Pacific/Auckland': 'New Zealand Time',
+        'Africa/Johannesburg': 'South Africa Time',
+        'Europe/Moscow': 'Moscow Time',
+        'Asia/Yekaterinburg': 'Yekaterinburg Time'
+      };
 
       Object.keys(abbreviations).sort().forEach(tz => {
         if (tz.toLowerCase().includes(filter)) {
-          const item = this._createTimezoneItem(tz, tz);
-          abbrSection.appendChild(item);
+          const friendlyName = displayNameMap[tz] || tz.split('/').pop().replace(/_/g, ' ');
+          const displayName = `${friendlyName}`;
+          const item = this._createTimezoneItem(displayName, tz);
+          majorSection.appendChild(item);
         }
       });
 
-      if (abbrSection.children.length > 1) { // Has title + at least one item
-        targetContainer.appendChild(abbrSection);
+      if (majorSection.children.length > 1) { // Has title + at least one item
+        targetContainer.appendChild(majorSection);
       }
     }
 

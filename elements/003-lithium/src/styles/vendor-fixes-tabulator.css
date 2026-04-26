@@ -15,7 +15,8 @@
 
 .lithium-table-selector-icon {
   display: inline-flex;
-  padding-top: 1px;
+  padding: 0px;
+  margin: 0px -4px;
 }
 
 .lithium-table-container .tabulator-footer, .lithium-table-container .tabulator-calcs, .lithium-table-container .tabulator-calcs-bottom, .lithium-table-container .tabulator-calcs-holder {
