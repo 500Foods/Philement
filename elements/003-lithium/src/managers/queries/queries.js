@@ -58,7 +58,7 @@ export default class QueriesManager {
 
     // Panel state persistence
     this.leftPanelState = new PanelStateManager('lithium_queries_left');
-    this.leftPanelWidth = this.leftPanelState.loadWidth(280);
+    this.leftPanelWidth = this.leftPanelState.loadWidth(622);
     this.isLeftPanelCollapsed = this.leftPanelState.loadCollapsed(false);
 
     // Edit helper — consolidates edit mode, dirty tracking, and save/cancel buttons

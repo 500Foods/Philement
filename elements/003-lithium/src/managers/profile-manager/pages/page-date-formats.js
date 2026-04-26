@@ -34,6 +34,7 @@ import flatpickr from 'flatpickr';
 import { LithiumTable } from '../../../tables/lithium-table-main.js';
 import { log, Subsystems, Status } from '../../../core/log.js';
 import { scrollbarManager } from '../../../core/scrollbar-manager.js';
+import { closeAllPopups } from '../../../core/manager-ui.js';
 
 const DEFAULT_SAMPLE = '2020-01-01T14:03:02';
 
@@ -885,6 +886,7 @@ export class DateFormatsPage extends BaseSettingsPage {
     this._flatpickrOpen = false;
     this._flatpickrTransitioning = false;
     this._flatpickrWrapper = null;
+    this._flatpickrCalendar = null;
     this._tokenTable = null;
     this._timezonePicker = null;
   }
@@ -1023,7 +1025,10 @@ export class DateFormatsPage extends BaseSettingsPage {
       onOpen: () => {
         // Move the calendar to our wrapper when it opens and position it
         const moveCalendar = () => {
-          const calendar = document.querySelector('.flatpickr-calendar');
+          // Find all calendars and take the last one (most recently created)
+          const calendars = document.querySelectorAll('.flatpickr-calendar');
+          const calendar = calendars[calendars.length - 1];
+
           if (calendar && !wrapper.contains(calendar)) {
             calendar.style.position = 'absolute';
             calendar.style.top = '0';
@@ -1035,6 +1040,8 @@ export class DateFormatsPage extends BaseSettingsPage {
             calendar.style.setProperty('display', 'block', 'important');
             calendar.style.setProperty('visibility', 'visible', 'important');
             wrapper.appendChild(calendar);
+            // Store reference to the calendar for cleanup
+            this._flatpickrCalendar = calendar;
           } else if (!calendar) {
             // If calendar not found yet, try again
             setTimeout(moveCalendar, 10);
@@ -1103,8 +1110,10 @@ export class DateFormatsPage extends BaseSettingsPage {
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           wrapper.classList.add('visible');
-          // Open FlatPickr after animation starts
-          this._flatpickrInstance.open();
+          // Open FlatPickr after animation starts, but give it a moment to create the calendar
+          setTimeout(() => {
+            this._flatpickrInstance.open();
+          }, 50);
         });
       });
 
@@ -1117,7 +1126,10 @@ export class DateFormatsPage extends BaseSettingsPage {
       // Remove any existing handlers before attaching new ones
       if (this._flatpickrCloseHandler) {
         document.removeEventListener('click', this._flatpickrCloseHandler);
-        document.removeEventListener('close-all-popups', this._flatpickrCloseHandler);
+      }
+      if (this._flatpickrAllPopupsHandler) {
+        document.removeEventListener('close-all-popups', this._flatpickrAllPopupsHandler);
+        this._flatpickrAllPopupsHandler = null;
       }
       if (this._flatpickrEscHandler) {
         document.removeEventListener('keydown', this._flatpickrEscHandler);
@@ -1141,7 +1153,9 @@ export class DateFormatsPage extends BaseSettingsPage {
       setTimeout(() => {
         document.addEventListener('click', this._flatpickrCloseHandler);
         document.addEventListener('keydown', this._flatpickrEscHandler);
-        // Don't listen for close-all-popups here to avoid self-closing issues
+        // Listen for close-all-popups to close when other popups open
+        this._flatpickrAllPopupsHandler = () => this._closeFlatpickr(wrapper);
+        document.addEventListener('close-all-popups', this._flatpickrAllPopupsHandler);
       }, 0);
     });
   }
@@ -1165,6 +1179,10 @@ export class DateFormatsPage extends BaseSettingsPage {
       document.removeEventListener('click', this._flatpickrCloseHandler);
       this._flatpickrCloseHandler = null;
     }
+    if (this._flatpickrAllPopupsHandler) {
+      document.removeEventListener('close-all-popups', this._flatpickrAllPopupsHandler);
+      this._flatpickrAllPopupsHandler = null;
+    }
     if (this._flatpickrEscHandler) {
       document.removeEventListener('keydown', this._flatpickrEscHandler);
       this._flatpickrEscHandler = null;
@@ -1175,14 +1193,18 @@ export class DateFormatsPage extends BaseSettingsPage {
         this._flatpickrInstance.destroy();
         this._flatpickrInstance = null;
       }
-      const calendar = wrapper.querySelector('.flatpickr-calendar');
-      if (calendar) {
-        calendar.remove();
+
+      // Remove the calendar if we have a reference to it
+      if (this._flatpickrCalendar && this._flatpickrCalendar.parentNode) {
+        this._flatpickrCalendar.remove();
+        this._flatpickrCalendar = null;
       }
+
       // Check if wrapper is still in the DOM before trying to remove it
       if (wrapper && wrapper.parentNode) {
         wrapper.remove();
       }
+
       // Clear the state flags
       this._flatpickrCloseTimeout = null;
       this._flatpickrTransitioning = false;
@@ -1254,6 +1276,7 @@ export class DateFormatsPage extends BaseSettingsPage {
       localSearchFields: ['token', 'description', 'group'],
       useOverlayScrollbars: true,
       onRefresh: () => this._refreshTokenTable(),
+      onRowSelected: () => closeAllPopups(),
     });
 
     await this._tokenTable.init();
@@ -1743,7 +1766,20 @@ export class DateFormatsPage extends BaseSettingsPage {
   }
 
   /**
-   * Destroy
+   * Called when the page is hidden
+   */
+  onHide() {
+    // Close any open popups when switching away from this page
+    if (this._timezonePicker && this._timezonePicker.isOpen) {
+      this._timezonePicker.close();
+    }
+    if (this._flatpickrInstance && this._flatpickrInstance.isOpen) {
+      this._closeFlatpickr(this._flatpickrWrapper);
+    }
+  }
+
+  /**
+   * Destroy the page
    */
   destroy() {
     if (this._currentUpdateInterval) {
@@ -1759,11 +1795,14 @@ export class DateFormatsPage extends BaseSettingsPage {
     if (existing) {
       existing.classList.remove('visible');
       setTimeout(() => {
-        const calendar = existing.querySelector('.flatpickr-calendar');
-        if (calendar) calendar.remove();
+        if (this._flatpickrCalendar && this._flatpickrCalendar.parentNode) {
+          this._flatpickrCalendar.remove();
+        }
         existing.remove();
       }, 350);
     }
+    // Clear calendar reference
+    this._flatpickrCalendar = null;
     if (this._tokenTable) {
       this._tokenTable.destroy();
       this._tokenTable = null;
