@@ -255,7 +255,7 @@
 /* SVG icons inside nav buttons */
 .lithium-nav-btn svg,
 .lithium-nav-btn i {
-  font-size: 14px;
+  font-size: var(--icon-size-nav);
   width: 11px;
   height: 11px;
 }
@@ -848,7 +848,7 @@ div.lithium-table-container > div:nth-child(1) > div:nth-child(1) > div:nth-chil
   justify-content: center;
   width: 16px;
   height: 16px;
-  font-size: 14px;
+  font-size: var(--icon-size-nav);
   line-height: 1;
   color: var(--text-muted);
   cursor: pointer;
@@ -1155,7 +1155,7 @@ div.lithium-table-container > div:nth-child(1) > div:nth-child(1) > div:nth-chil
   width: 20px;
   height: 20px;
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: var(--icon-size-nav);
 }
 
 .lithium-grouping-action-label {

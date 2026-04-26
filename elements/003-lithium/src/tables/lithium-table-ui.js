@@ -42,7 +42,8 @@ import {
 import {
   toggleNavPopup,
   closeNavPopup,
-  closeNavPopupImmediate,
+  closeNavPopupAnimated,
+  showNavPopup,
   closeTransientPopups,
   createPopupSeparator,
 } from './popups/popup-manager.js';
@@ -128,87 +129,32 @@ export const LithiumTableUIMixin = {
         return;
       }
 
-      // Close any existing popup immediately (no animation) before opening new one
-      closeNavPopupImmediate(this);
-
-      // Dispatch event to close all manager popups
-      document.dispatchEvent(new CustomEvent('close-all-popups'));
-
-      const btn = e.currentTarget;
-      const popup = buildTemplatePopup(this);
-
-      if (!popup) return;
-
-      // Add popup-active class to button for toggle styling
-      btn.classList.add('popup-active');
-
-      // Use popup-manager's show logic inline for template popup
-      // Footer-riseup positioning: bottom-right of popup 1px above top-right of button
-      popup.style.position = 'fixed';
-      popup.style.bottom = 'auto';
-      popup.style.top = 'auto';
-      popup.style.left = 'auto';
-      popup.style.right = 'auto';
-
-      // Check for Column Manager popup
-      const hostPopup = btn?.closest?.('.col-manager-popup');
-      if (hostPopup) {
-        const hostZIndex = parseInt(window.getComputedStyle(hostPopup).zIndex, 10);
-        if (Number.isFinite(hostZIndex)) {
-          popup.style.zIndex = String(hostZIndex + 10);
-        }
+      // Close any existing popup with animation, then open new one
+      if (this.activeNavPopup) {
+        closeNavPopupAnimated(this, () => {
+          this.openTemplatePopup(e);
+        });
       } else {
-        // Check for Crimson popup
-        const crimsonPopup = btn?.closest?.('.crimson-citation-popup');
-        if (crimsonPopup) {
-          const crimsonZIndex = parseInt(window.getComputedStyle(crimsonPopup).zIndex, 10);
-          if (Number.isFinite(crimsonZIndex)) {
-            popup.style.zIndex = String(crimsonZIndex + 10);
-          }
-        }
+        this.openTemplatePopup(e);
       }
-
-      document.body.appendChild(popup);
-
-      // Footer-riseup positioning: bottom-right of popup 1px above top-right of button
-      const btnRect = btn.getBoundingClientRect();
-      popup.style.bottom = `${window.innerHeight - btnRect.top + 1}px`;
-      popup.style.right = `${window.innerWidth - btnRect.right}px`;
-
-      // Trigger animation after positioning
-      requestAnimationFrame(() => {
-        popup.classList.add('visible');
-      });
-
-      this.activeNavPopup = popup;
-      this.activeNavPopupId = 'template';
-      this.activeNavPopupButton = btn;
-
-      this.navPopupCloseHandler = (evt) => {
-        if (!popup.contains(evt.target) && !btn.contains(evt.target)) {
-          closeNavPopup(this);
-        }
-      };
-      document.addEventListener('click', this.navPopupCloseHandler);
-
-      // ESC key handler
-      this.navPopupKeyHandler = (evt) => {
-        if (evt.key === 'Escape') {
-          closeNavPopup(this);
-        }
-      };
-      document.addEventListener('keydown', this.navPopupKeyHandler);
-
-      // Listen for close-all-popups from manager menus
-      this.navPopupGlobalCloseHandler = () => {
-        closeNavPopup(this);
-      };
-      document.addEventListener('close-all-popups', this.navPopupGlobalCloseHandler);
-
       return;
     }
 
+    // Delegate to popup-manager for standard nav popups
     toggleNavPopup(this, e, popupId);
+  },
+
+  // Helper function for opening template popup
+  openTemplatePopup(table, e) {
+    // Dispatch event to close all manager popups
+    document.dispatchEvent(new CustomEvent('close-all-popups'));
+
+    const btn = e.currentTarget;
+    const popup = buildTemplatePopup(table);
+
+    if (!popup) return;
+
+    showNavPopup(table, btn, popup, 'template');
   },
 
   buildTemplatePopup() {

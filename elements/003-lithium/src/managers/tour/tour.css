@@ -249,7 +249,7 @@
 
 .lithium-tour-content {
   color: var(--tour-text);
-  font-size: 14px;
+  font-size: var(--icon-size-nav);
   line-height: 1.2;
   padding: 16px;
   font-family: 'Vanadium Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;

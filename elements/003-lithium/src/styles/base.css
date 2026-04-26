@@ -161,7 +161,9 @@
     --font-size-2xl: 24px;
     --font-size-3xl: 32px;
     --icon-size-reg: 20px;
-    --icon-size-nav: 12px;
+    --icon-size-sm: 15px;
+    --icon-size-md: 18px;
+    --icon-size-nav: 14px;
     --icon-size-lg: 28px;
     --font-weight-normal: 400;
     --font-weight-medium: 500;

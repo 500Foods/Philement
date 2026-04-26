@@ -54,12 +54,22 @@
   box-sizing: border-box;
 }
 
+/* ═════════════════════════════════════════════════════════════════════════════
+   TABULATOR GROUP OVERRIDES
+   ═════════════════════════════════════════════════════════════════════════════ */
+
+/* Don't want your stinkin toggle UI thanks */                  
+.tabulator-group-toggle {
+  display: none !important;
+}
+
 .lithium-table-container .tabulator-row.tabulator-group {
   display: flex !important;
   background: var(--accent-alt-secondary) !important; 
   border: 1px solid var(--bg-row-border) !important;
   border-left: none !important;
   border-right: none !important;
+  padding: 0px 2px !important;
 }
 
 /* Hide Tabulator's built-in arrow (we use our own icon in the header) */
@@ -71,10 +81,11 @@
   display: flex !important;
   align-items: center !important;
   gap: var(--space-2) !important;
-  padding: var(--space-2) !important;
-  font-weight: 600 !important;
+  font-weight: 500 !important;
   color: var(--text-primary) !important;
   cursor: pointer !important;
+  margin: 0px;
+  padding: 0px;
 }
 
 .lithium-table-container .tabulator-row.tabulator-group .lithium-group-title,
@@ -89,10 +100,10 @@
 .lithium-table-container .tabulator-row.tabulator-group svg.lithium-group-toggle-icon,
 .lithium-table-container .tabulator-row.tabulator-group .lithium-group-header > i,
 .lithium-table-container .tabulator-row.tabulator-group .lithium-group-header > svg {
-  color: var(--text-secondary) !important;
+  color: white !important;
   transition: transform var(--transition-fast), color var(--transition-fast) !important;
   transform: rotate(0deg) !important;
-  font-size: var(--font-size-sm) !important;
+  font-size: var(--icon-size-sm) !important;
 }
 
 /* Expanded state - Tabulator adds tabulator-group-visible when group is open */
@@ -102,7 +113,7 @@
 .lithium-table-container .tabulator-row.tabulator-group.tabulator-group-visible .lithium-group-header > i,
 .lithium-table-container .tabulator-row.tabulator-group.tabulator-group-visible .lithium-group-header > svg {
   transform: rotate(90deg) !important;
-  color: var(--accent-primary) !important;
+  color: white !important;
 }
 
 /* Animation states for group expansion/collapse */
@@ -122,6 +133,11 @@
   transform: rotate(90deg) !important;
 }
 
+.lithium-table-container .tabulator-row .tabulator-cell svg {
+	font-size: 15px;
+	padding-top: 2px;
+}
+
 /* Group header text styling */
 .lithium-table-container .tabulator-row.tabulator-group span.lithium-group-header svg {
   width: 1em !important;
@@ -130,14 +146,17 @@
 
 .lithium-table-container .tabulator-row.tabulator-group .lithium-group-title {
   flex: 1 !important;
-  font-weight: 600 !important;
+	color: var(--text-primary) !important;
+	font-weight: 500 !important;
+	font-size: var(--font-size-sm) !important;
+	padding: 0px !important;
+	margin: 0px !important;
 }
 
 .lithium-table-container .tabulator-row.tabulator-group .lithium-group-count {
   font-size: var(--font-size-xs) !important;
   color: var(--text-secondary) !important;
-  background: var(--bg-tertiary) !important;
-  padding: 2px 6px !important;
+  padding: 2px 0px !important;
   border-radius: var(--border-radius-sm) !important;
 }
 

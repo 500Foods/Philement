@@ -299,7 +299,7 @@ export default class LookupsManager {
       this.sunEditor = SunEditor.create(this.elements.summaryEditor, {
         height: '100%',
         width: '100%',
-        defaultStyle: 'font-family: var(--font-sans); font-size: 14px;',
+        defaultStyle: 'font-family: var(--font-sans); font-size: var(--icon-size-nav);',
         buttonList: [
           ['undo', 'redo'],
           ['fontSize', 'formatBlock'],

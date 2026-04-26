@@ -26,12 +26,37 @@ export function toggleGroupingPopup(table, e) {
     return;
   }
 
-  // Close any other open nav popup first (immediately, no animation)
+  // Close any other open nav popup with animation before opening grouping popup
   if (table.activeNavPopup) {
-    // Use immediate close to avoid animation conflicts when switching popups
-    closeNavPopupImmediate(table);
+    closeNavPopup(table);
+    // Cancel any pending popup open
+    if (table._pendingPopupTimeout) {
+      clearTimeout(table._pendingPopupTimeout);
+      table._pendingPopupTimeout = null;
+    }
+    // Delay opening grouping popup to allow closing animation to complete
+    table._pendingPopupTimeout = setTimeout(() => {
+      table._pendingPopupTimeout = null;
+      openGroupingPopupAfterDelay(table, e);
+    }, 300); // Match transition-fast duration
+  } else {
+    // Cancel any pending popup open and open immediately
+    if (table._pendingPopupTimeout) {
+      clearTimeout(table._pendingPopupTimeout);
+      table._pendingPopupTimeout = null;
+      openGroupingPopupAfterDelay(table, e);
+    } else {
+      openGroupingPopupAfterDelay(table, e);
+    }
   }
+}
 
+/**
+ * Open grouping popup after closing animation delay (helper for toggleGroupingPopup)
+ * @param {Object} table - LithiumTable instance
+ * @param {Event} e - Click event
+ */
+function openGroupingPopupAfterDelay(table, e) {
   // Dispatch event to close all manager popups
   document.dispatchEvent(new CustomEvent('close-all-popups'));
 
@@ -698,7 +723,7 @@ export function closeGroupingPopup(table) {
   if (table.activeNavPopup) {
     table.activeNavPopup.classList.remove('visible');
     // Remove after animation completes
-    const duration = 200; // Match transition duration
+    const duration = 300; // Match transition-fast duration
     setTimeout(() => {
       if (table.activeNavPopup && table.activeNavPopup.parentNode) {
         table.activeNavPopup.remove();

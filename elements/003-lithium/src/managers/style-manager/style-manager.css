@@ -550,7 +550,7 @@
   right: -18px;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 14px;
+  font-size: var(--icon-size-nav);
   color: var(--accent-primary);
 }
 

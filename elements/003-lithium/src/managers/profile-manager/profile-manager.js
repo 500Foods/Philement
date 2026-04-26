@@ -1097,9 +1097,9 @@ export default class ProfileManager {
    * Initialize and show the font popup for the collection editor
    */
   initFontPopup() {
-    if (this.fontPopup) return;
+    if (this.fontPopup?.popup) return;
 
-    const { popup, toggle, getState, setState } = createFontPopup({
+    const { popup, toggle, getState, setState, destroy } = createFontPopup({
       anchor: this.elements.btnFont,
       fontSize: this.editorFontSize,
       fontFamily: this.editorFontFamily,
@@ -1110,7 +1110,7 @@ export default class ProfileManager {
       onReset: () => this._resetFontToDefault(),
     });
 
-    this.fontPopup = popup;
+    this.fontPopup = { popup, destroy };
     this._fontPopupToggle = toggle;
     this._fontPopupGetState = getState;
     this._fontPopupSetState = setState;
@@ -1118,7 +1118,7 @@ export default class ProfileManager {
 
   toggleFontPopup(e) {
     e.stopPropagation();
-    if (!this.fontPopup) {
+    if (!this.fontPopup?.popup) {
       this.initFontPopup();
     }
     this._fontPopupToggle?.(e);
@@ -1259,6 +1259,11 @@ export default class ProfileManager {
     this.editHelper?.destroy();
     this.splitter?.destroy();
     this.optionsTable?.destroy();
+
+    // Destroy font popup if it exists
+    if (this.fontPopup?.destroy && typeof this.fontPopup.destroy === 'function') {
+      this.fontPopup.destroy();
+    }
 
     this.elements = {};
   }

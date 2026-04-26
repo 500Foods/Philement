@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS class selectors/names used across the Lithium codebase",
-    "generated": "2026-04-25T21:00:08.835Z",
+    "generated": "2026-04-26T02:24:30.857Z",
     "sources": {
       "css": "56 files in src/**/*.css",
       "js": "147 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
-    "total_selectors": 2024,
-    "total_occurrences": 31294
+    "total_selectors": 2027,
+    "total_occurrences": 31382
   },
   "selectors": [
     {
@@ -1199,9 +1199,9 @@
     {
       "selector": ".col-manager-mode-btn.active",
       "css": 1,
-      "js": 70,
+      "js": 74,
       "html": 8,
-      "total": 79,
+      "total": 83,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
@@ -1498,9 +1498,9 @@
     {
       "selector": ".col-manager-popup.depth-2 .col-manager-mode-btn.active",
       "css": 1,
-      "js": 74,
+      "js": 78,
       "html": 8,
-      "total": 83,
+      "total": 87,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
@@ -1840,9 +1840,9 @@
     {
       "selector": ".col-manager-popup.visible",
       "css": 1,
-      "js": 117,
+      "js": 116,
       "html": 0,
-      "total": 118,
+      "total": 117,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
@@ -1870,7 +1870,6 @@
           "src/tables/column-manager/cm-integration.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
-          "src/tables/lithium-table-ui.js",
           "src/tables/popups/grouping-popup.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
@@ -3122,9 +3121,9 @@
     {
       "selector": ".crimson-citation-header-btn.active",
       "css": 1,
-      "js": 72,
+      "js": 76,
       "html": 8,
-      "total": 81,
+      "total": 85,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -3158,9 +3157,9 @@
     {
       "selector": ".crimson-citation-header-btn.active .crimson-citation-counter",
       "css": 1,
-      "js": 74,
+      "js": 78,
       "html": 8,
-      "total": 83,
+      "total": 87,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -3567,9 +3566,9 @@
     {
       "selector": ".crimson-citation-popup.visible",
       "css": 1,
-      "js": 123,
+      "js": 122,
       "html": 0,
-      "total": 124,
+      "total": 123,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -3596,7 +3595,6 @@
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
-          "src/tables/lithium-table-ui.js",
           "src/tables/popups/grouping-popup.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
@@ -3891,9 +3889,9 @@
     {
       "selector": ".crimson-debug-btn.active",
       "css": 1,
-      "js": 72,
+      "js": 76,
       "html": 8,
-      "total": 81,
+      "total": 85,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -5064,9 +5062,9 @@
     {
       "selector": ".crimson-overlay.visible",
       "css": 1,
-      "js": 115,
+      "js": 114,
       "html": 0,
-      "total": 116,
+      "total": 115,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -5093,7 +5091,6 @@
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
-          "src/tables/lithium-table-ui.js",
           "src/tables/popups/grouping-popup.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
@@ -5269,9 +5266,9 @@
     {
       "selector": ".crimson-popup.visible",
       "css": 1,
-      "js": 115,
+      "js": 114,
       "html": 0,
-      "total": 116,
+      "total": 115,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -5298,7 +5295,6 @@
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
-          "src/tables/lithium-table-ui.js",
           "src/tables/popups/grouping-popup.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
@@ -6883,9 +6879,9 @@
     {
       "selector": ".df-timezone-dropdown.visible",
       "css": 1,
-      "js": 116,
+      "js": 115,
       "html": 0,
-      "total": 117,
+      "total": 116,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -6912,7 +6908,6 @@
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
-          "src/tables/lithium-table-ui.js",
           "src/tables/popups/grouping-popup.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
@@ -6923,9 +6918,9 @@
     {
       "selector": ".df-timezone-filter",
       "css": 1,
-      "js": 11,
+      "js": 10,
       "html": 0,
-      "total": 12,
+      "total": 11,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -6939,9 +6934,9 @@
     {
       "selector": ".df-timezone-filter input",
       "css": 1,
-      "js": 11,
+      "js": 10,
       "html": 0,
-      "total": 12,
+      "total": 11,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -6955,9 +6950,9 @@
     {
       "selector": ".df-timezone-filter-clear",
       "css": 1,
-      "js": 15,
+      "js": 14,
       "html": 0,
-      "total": 16,
+      "total": 15,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -6971,9 +6966,9 @@
     {
       "selector": ".df-timezone-filter-clear:hover",
       "css": 1,
-      "js": 15,
+      "js": 14,
       "html": 0,
-      "total": 16,
+      "total": 15,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -6987,9 +6982,9 @@
     {
       "selector": ".df-timezone-filter-input",
       "css": 0,
-      "js": 15,
+      "js": 14,
       "html": 0,
-      "total": 15,
+      "total": 14,
       "files": {
         "css": [],
         "js": [
@@ -7105,6 +7100,20 @@
         "css": [
           "src/managers/profile-manager/profile-manager.css"
         ],
+        "js": [
+          "src/managers/profile-manager/pages/page-date-formats.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".df-timezone-overlay",
+      "css": 0,
+      "js": 1,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [],
         "js": [
           "src/managers/profile-manager/pages/page-date-formats.js"
         ],
@@ -7794,9 +7803,9 @@
     {
       "selector": ".flatpickr-calendar",
       "css": 1,
-      "js": 4,
+      "js": 3,
       "html": 0,
-      "total": 5,
+      "total": 4,
       "files": {
         "css": [
           "src/styles/vendor-flatpickr.css"
@@ -7810,9 +7819,9 @@
     {
       "selector": ".flatpickr-calendar .flatpickr-day",
       "css": 1,
-      "js": 4,
+      "js": 3,
       "html": 0,
-      "total": 5,
+      "total": 4,
       "files": {
         "css": [
           "src/styles/vendor-flatpickr.css"
@@ -7826,9 +7835,9 @@
     {
       "selector": ".flatpickr-calendar .flatpickr-day:hover",
       "css": 1,
-      "js": 4,
+      "js": 3,
       "html": 0,
-      "total": 5,
+      "total": 4,
       "files": {
         "css": [
           "src/styles/vendor-flatpickr.css"
@@ -7842,9 +7851,9 @@
     {
       "selector": ".flatpickr-calendar .flatpickr-day.selected",
       "css": 1,
-      "js": 7,
+      "js": 6,
       "html": 0,
-      "total": 8,
+      "total": 7,
       "files": {
         "css": [
           "src/styles/vendor-flatpickr.css"
@@ -7859,9 +7868,9 @@
     {
       "selector": ".flatpickr-calendar .flatpickr-day.today",
       "css": 1,
-      "js": 4,
+      "js": 3,
       "html": 0,
-      "total": 5,
+      "total": 4,
       "files": {
         "css": [
           "src/styles/vendor-flatpickr.css"
@@ -7875,9 +7884,9 @@
     {
       "selector": ".flatpickr-calendar .flatpickr-days",
       "css": 1,
-      "js": 4,
+      "js": 3,
       "html": 0,
-      "total": 5,
+      "total": 4,
       "files": {
         "css": [
           "src/styles/vendor-flatpickr.css"
@@ -7891,9 +7900,9 @@
     {
       "selector": ".flatpickr-calendar .flatpickr-month",
       "css": 1,
-      "js": 4,
+      "js": 3,
       "html": 0,
-      "total": 5,
+      "total": 4,
       "files": {
         "css": [
           "src/styles/vendor-flatpickr.css"
@@ -7907,9 +7916,9 @@
     {
       "selector": ".flatpickr-calendar .flatpickr-months",
       "css": 1,
-      "js": 4,
+      "js": 3,
       "html": 0,
-      "total": 5,
+      "total": 4,
       "files": {
         "css": [
           "src/styles/vendor-flatpickr.css"
@@ -7923,9 +7932,9 @@
     {
       "selector": ".flatpickr-calendar .flatpickr-next-month",
       "css": 1,
-      "js": 4,
+      "js": 3,
       "html": 0,
-      "total": 5,
+      "total": 4,
       "files": {
         "css": [
           "src/styles/vendor-flatpickr.css"
@@ -7939,9 +7948,9 @@
     {
       "selector": ".flatpickr-calendar .flatpickr-time",
       "css": 1,
-      "js": 4,
+      "js": 3,
       "html": 0,
-      "total": 5,
+      "total": 4,
       "files": {
         "css": [
           "src/styles/vendor-flatpickr.css"
@@ -7955,9 +7964,9 @@
     {
       "selector": ".flatpickr-calendar .flatpickr-time .flatpickr-time-separator",
       "css": 1,
-      "js": 4,
+      "js": 3,
       "html": 0,
-      "total": 5,
+      "total": 4,
       "files": {
         "css": [
           "src/styles/vendor-flatpickr.css"
@@ -7971,9 +7980,9 @@
     {
       "selector": ".flatpickr-calendar .flatpickr-time input",
       "css": 1,
-      "js": 4,
+      "js": 3,
       "html": 0,
-      "total": 5,
+      "total": 4,
       "files": {
         "css": [
           "src/styles/vendor-flatpickr.css"
@@ -7987,9 +7996,9 @@
     {
       "selector": ".flatpickr-calendar .flatpickr-weekday",
       "css": 1,
-      "js": 4,
+      "js": 3,
       "html": 0,
-      "total": 5,
+      "total": 4,
       "files": {
         "css": [
           "src/styles/vendor-flatpickr.css"
@@ -8003,9 +8012,9 @@
     {
       "selector": ".flatpickr-calendar .flatpickr-weekdays",
       "css": 1,
-      "js": 4,
+      "js": 3,
       "html": 0,
-      "total": 5,
+      "total": 4,
       "files": {
         "css": [
           "src/styles/vendor-flatpickr.css"
@@ -8019,9 +8028,9 @@
     {
       "selector": ".flatpickr-calendar .flatpickr-weekwrapper",
       "css": 1,
-      "js": 4,
+      "js": 3,
       "html": 0,
-      "total": 5,
+      "total": 4,
       "files": {
         "css": [
           "src/styles/vendor-flatpickr.css"
@@ -8035,9 +8044,9 @@
     {
       "selector": ".flatpickr-calendar .flatpickr-weekwrapper .flatpickr-day",
       "css": 1,
-      "js": 4,
+      "js": 3,
       "html": 0,
-      "total": 5,
+      "total": 4,
       "files": {
         "css": [
           "src/styles/vendor-flatpickr.css"
@@ -8051,9 +8060,9 @@
     {
       "selector": ".flatpickr-calendar .flatpickr-weekwrapper .flatpickr-weekday",
       "css": 1,
-      "js": 4,
+      "js": 3,
       "html": 0,
-      "total": 5,
+      "total": 4,
       "files": {
         "css": [
           "src/styles/vendor-flatpickr.css"
@@ -8083,9 +8092,9 @@
     {
       "selector": ".flatpickr-popup-wrapper .flatpickr-calendar",
       "css": 3,
-      "js": 6,
+      "js": 5,
       "html": 0,
-      "total": 9,
+      "total": 8,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css",
@@ -8241,9 +8250,9 @@
     {
       "selector": ".font-popup-style-btn.active",
       "css": 1,
-      "js": 70,
+      "js": 74,
       "html": 8,
-      "total": 79,
+      "total": 83,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -8290,9 +8299,9 @@
     {
       "selector": ".font-popup.visible",
       "css": 1,
-      "js": 114,
+      "js": 113,
       "html": 0,
-      "total": 115,
+      "total": 114,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -8319,7 +8328,6 @@
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
-          "src/tables/lithium-table-ui.js",
           "src/tables/popups/grouping-popup.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
@@ -8414,9 +8422,9 @@
     {
       "selector": ".footer-export-popup.visible",
       "css": 1,
-      "js": 114,
+      "js": 113,
       "html": 0,
-      "total": 115,
+      "total": 114,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -8443,7 +8451,6 @@
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
-          "src/tables/lithium-table-ui.js",
           "src/tables/popups/grouping-popup.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
@@ -10660,9 +10667,9 @@
     {
       "selector": ".lithium-col-chooser-popup.visible",
       "css": 1,
-      "js": 114,
+      "js": 113,
       "html": 0,
-      "total": 115,
+      "total": 114,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -10689,7 +10696,6 @@
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
-          "src/tables/lithium-table-ui.js",
           "src/tables/popups/grouping-popup.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
@@ -11611,13 +11617,14 @@
     {
       "selector": ".lithium-nav-btn-has-popup",
       "css": 0,
-      "js": 4,
+      "js": 5,
       "html": 0,
-      "total": 4,
+      "total": 5,
       "files": {
         "css": [],
         "js": [
-          "src/tables/navigator/navigator-builder.js"
+          "src/tables/navigator/navigator-builder.js",
+          "src/tables/popups/popup-manager.js"
         ],
         "html": []
       }
@@ -11689,9 +11696,9 @@
     {
       "selector": ".lithium-nav-btn.popup-active",
       "css": 1,
-      "js": 61,
+      "js": 60,
       "html": 0,
-      "total": 62,
+      "total": 61,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -11704,7 +11711,6 @@
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js",
           "src/managers/version-history/version-history.js",
-          "src/tables/lithium-table-ui.js",
           "src/tables/navigator/navigator-builder.js",
           "src/tables/popups/grouping-popup.js",
           "src/tables/popups/popup-manager.js"
@@ -11715,9 +11721,9 @@
     {
       "selector": ".lithium-nav-btn.popup-active i",
       "css": 1,
-      "js": 61,
+      "js": 60,
       "html": 0,
-      "total": 62,
+      "total": 61,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -11730,7 +11736,6 @@
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js",
           "src/managers/version-history/version-history.js",
-          "src/tables/lithium-table-ui.js",
           "src/tables/navigator/navigator-builder.js",
           "src/tables/popups/grouping-popup.js",
           "src/tables/popups/popup-manager.js"
@@ -11741,9 +11746,9 @@
     {
       "selector": ".lithium-nav-btn.popup-active:hover",
       "css": 1,
-      "js": 61,
+      "js": 60,
       "html": 0,
-      "total": 62,
+      "total": 61,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -11756,7 +11761,6 @@
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js",
           "src/managers/version-history/version-history.js",
-          "src/tables/lithium-table-ui.js",
           "src/tables/navigator/navigator-builder.js",
           "src/tables/popups/grouping-popup.js",
           "src/tables/popups/popup-manager.js"
@@ -11965,9 +11969,9 @@
     {
       "selector": ".lithium-nav-popup.visible",
       "css": 1,
-      "js": 129,
+      "js": 128,
       "html": 0,
-      "total": 130,
+      "total": 129,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -11994,7 +11998,6 @@
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
-          "src/tables/lithium-table-ui.js",
           "src/tables/popups/grouping-popup.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
@@ -13338,6 +13341,32 @@
     },
     {
       "selector": ".lithium-table-container .tabulator-row .tabulator-cell img",
+      "css": 1,
+      "js": 6,
+      "html": 8,
+      "total": 15,
+      "files": {
+        "css": [
+          "src/styles/vendor-fixes-tabulator.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container .tabulator-row .tabulator-cell svg",
       "css": 1,
       "js": 6,
       "html": 8,
@@ -15361,9 +15390,9 @@
     {
       "selector": ".lithium-toolbar-btn.active",
       "css": 1,
-      "js": 95,
+      "js": 99,
       "html": 109,
-      "total": 205,
+      "total": 209,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -15399,9 +15428,9 @@
     {
       "selector": ".lithium-toolbar-btn.active:hover",
       "css": 1,
-      "js": 95,
+      "js": 99,
       "html": 109,
-      "total": 205,
+      "total": 209,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -15661,9 +15690,9 @@
     {
       "selector": ".lithium-toolbar-popup.visible",
       "css": 1,
-      "js": 135,
+      "js": 134,
       "html": 67,
-      "total": 203,
+      "total": 202,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -15690,7 +15719,6 @@
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
-          "src/tables/lithium-table-ui.js",
           "src/tables/popups/grouping-popup.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
@@ -15828,9 +15856,9 @@
     {
       "selector": ".lithium-toolbar-state-btn.active",
       "css": 1,
-      "js": 92,
+      "js": 96,
       "html": 80,
-      "total": 173,
+      "total": 177,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -15990,9 +16018,9 @@
     {
       "selector": ".lithium-toolbar-tab.active",
       "css": 2,
-      "js": 93,
+      "js": 97,
       "html": 87,
-      "total": 182,
+      "total": 186,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css",
@@ -16029,9 +16057,9 @@
     {
       "selector": ".lithium-toolbar-tab.active fa",
       "css": 1,
-      "js": 93,
+      "js": 97,
       "html": 87,
-      "total": 181,
+      "total": 185,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -16787,9 +16815,9 @@
     {
       "selector": ".lithium-tour-list-popup.visible",
       "css": 1,
-      "js": 115,
+      "js": 114,
       "html": 0,
-      "total": 116,
+      "total": 115,
       "files": {
         "css": [
           "src/managers/tour/tour.css"
@@ -16816,7 +16844,6 @@
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
-          "src/tables/lithium-table-ui.js",
           "src/tables/popups/grouping-popup.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
@@ -16985,9 +17012,9 @@
     {
       "selector": ".lithium-video-tour-caption.visible",
       "css": 1,
-      "js": 116,
+      "js": 115,
       "html": 0,
-      "total": 117,
+      "total": 116,
       "files": {
         "css": [
           "src/managers/tour/tour.css"
@@ -17014,7 +17041,6 @@
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
-          "src/tables/lithium-table-ui.js",
           "src/tables/popups/grouping-popup.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
@@ -17708,9 +17734,9 @@
     {
       "selector": ".lithium-video-tour-language-popup.visible",
       "css": 1,
-      "js": 115,
+      "js": 114,
       "html": 0,
-      "total": 116,
+      "total": 115,
       "files": {
         "css": [
           "src/managers/tour/tour.css"
@@ -17737,7 +17763,6 @@
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
-          "src/tables/lithium-table-ui.js",
           "src/tables/popups/grouping-popup.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
@@ -18187,9 +18212,9 @@
     {
       "selector": ".lithium-video-tour-popup.visible",
       "css": 1,
-      "js": 115,
+      "js": 114,
       "html": 0,
-      "total": 116,
+      "total": 115,
       "files": {
         "css": [
           "src/managers/tour/tour.css"
@@ -18216,7 +18241,6 @@
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
-          "src/tables/lithium-table-ui.js",
           "src/tables/popups/grouping-popup.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
@@ -19041,9 +19065,9 @@
     {
       "selector": ".login-container.visible",
       "css": 2,
-      "js": 115,
+      "js": 114,
       "html": 1,
-      "total": 118,
+      "total": 117,
       "files": {
         "css": [
           "src/managers/login/login.css",
@@ -19071,7 +19095,6 @@
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
-          "src/tables/lithium-table-ui.js",
           "src/tables/popups/grouping-popup.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
@@ -19123,9 +19146,9 @@
     {
       "selector": ".login-error.visible",
       "css": 2,
-      "js": 116,
+      "js": 115,
       "html": 1,
-      "total": 119,
+      "total": 118,
       "files": {
         "css": [
           "src/managers/login/login.css",
@@ -19153,7 +19176,6 @@
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
-          "src/tables/lithium-table-ui.js",
           "src/tables/popups/grouping-popup.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
@@ -19740,9 +19762,9 @@
     {
       "selector": ".login-mockup .login-error.visible",
       "css": 1,
-      "js": 117,
+      "js": 116,
       "html": 1,
-      "total": 119,
+      "total": 118,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -19769,7 +19791,6 @@
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
-          "src/tables/lithium-table-ui.js",
           "src/tables/popups/grouping-popup.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
@@ -20053,9 +20074,9 @@
     {
       "selector": ".login-subpanel.visible",
       "css": 1,
-      "js": 114,
+      "js": 113,
       "html": 4,
-      "total": 119,
+      "total": 118,
       "files": {
         "css": [
           "src/styles/layout.css"
@@ -20082,7 +20103,6 @@
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
-          "src/tables/lithium-table-ui.js",
           "src/tables/popups/grouping-popup.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
@@ -20284,9 +20304,9 @@
     {
       "selector": ".logout-overlay.visible",
       "css": 1,
-      "js": 114,
+      "js": 113,
       "html": 1,
-      "total": 116,
+      "total": 115,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -20313,7 +20333,6 @@
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
-          "src/tables/lithium-table-ui.js",
           "src/tables/popups/grouping-popup.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
@@ -20484,9 +20503,9 @@
     {
       "selector": ".logout-panel.visible",
       "css": 1,
-      "js": 114,
+      "js": 113,
       "html": 4,
-      "total": 119,
+      "total": 118,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -20513,7 +20532,6 @@
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
-          "src/tables/lithium-table-ui.js",
           "src/tables/popups/grouping-popup.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
@@ -21181,9 +21199,9 @@
     {
       "selector": ".lookups-tab-btn.active",
       "css": 1,
-      "js": 71,
+      "js": 75,
       "html": 8,
-      "total": 80,
+      "total": 84,
       "files": {
         "css": [
           "src/managers/lookups/lookups.css"
@@ -21271,9 +21289,9 @@
     {
       "selector": ".lookups-tab-pane.active",
       "css": 1,
-      "js": 71,
+      "js": 75,
       "html": 11,
-      "total": 83,
+      "total": 87,
       "files": {
         "css": [
           "src/managers/lookups/lookups.css"
@@ -22146,9 +22164,9 @@
     {
       "selector": ".manager-font-popup-style-btn.active",
       "css": 1,
-      "js": 91,
+      "js": 95,
       "html": 8,
-      "total": 100,
+      "total": 104,
       "files": {
         "css": [
           "src/core/manager-ui.css"
@@ -22197,9 +22215,9 @@
     {
       "selector": ".manager-font-popup.visible",
       "css": 1,
-      "js": 133,
+      "js": 132,
       "html": 0,
-      "total": 134,
+      "total": 133,
       "files": {
         "css": [
           "src/core/manager-ui.css"
@@ -22226,7 +22244,6 @@
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
-          "src/tables/lithium-table-ui.js",
           "src/tables/popups/grouping-popup.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
@@ -22522,9 +22539,9 @@
     {
       "selector": ".manager-footer-export-popup.visible",
       "css": 1,
-      "js": 127,
+      "js": 126,
       "html": 0,
-      "total": 128,
+      "total": 127,
       "files": {
         "css": [
           "src/core/popup.css"
@@ -22551,7 +22568,6 @@
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
-          "src/tables/lithium-table-ui.js",
           "src/tables/popups/grouping-popup.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
@@ -22584,9 +22600,9 @@
     {
       "selector": ".manager-footer-popup.visible",
       "css": 2,
-      "js": 122,
+      "js": 121,
       "html": 0,
-      "total": 124,
+      "total": 123,
       "files": {
         "css": [
           "src/core/manager-ui.css",
@@ -22614,7 +22630,6 @@
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
-          "src/tables/lithium-table-ui.js",
           "src/tables/popups/grouping-popup.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
@@ -23095,9 +23110,9 @@
     {
       "selector": ".manager-transition-overlay.active",
       "css": 1,
-      "js": 71,
+      "js": 75,
       "html": 8,
-      "total": 80,
+      "total": 84,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -23162,9 +23177,9 @@
     {
       "selector": ".manager-ui-btn.popup-active",
       "css": 2,
-      "js": 55,
+      "js": 54,
       "html": 0,
-      "total": 57,
+      "total": 56,
       "files": {
         "css": [
           "src/core/popup.css",
@@ -23179,7 +23194,6 @@
           "src/managers/style-manager/style-manager.js",
           "src/managers/terminal/terminal.js",
           "src/managers/version-history/version-history.js",
-          "src/tables/lithium-table-ui.js",
           "src/tables/popups/grouping-popup.js",
           "src/tables/popups/popup-manager.js"
         ],
@@ -23402,9 +23416,9 @@
     {
       "selector": ".manager-ui-popup",
       "css": 1,
-      "js": 22,
+      "js": 21,
       "html": 0,
-      "total": 23,
+      "total": 22,
       "files": {
         "css": [
           "src/core/popup.css"
@@ -23419,116 +23433,6 @@
     },
     {
       "selector": ".manager-ui-popup-content",
-      "css": 2,
-      "js": 27,
-      "html": 0,
-      "total": 29,
-      "files": {
-        "css": [
-          "src/core/popup.css",
-          "src/styles/components.css"
-        ],
-        "js": [
-          "src/core/popup.js",
-          "src/core/zoom-control.js",
-          "src/managers/profile-manager/pages/page-date-formats.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".manager-ui-popup-content::-webkit-scrollbar",
-      "css": 1,
-      "js": 27,
-      "html": 0,
-      "total": 28,
-      "files": {
-        "css": [
-          "src/core/popup.css"
-        ],
-        "js": [
-          "src/core/popup.js",
-          "src/core/zoom-control.js",
-          "src/managers/profile-manager/pages/page-date-formats.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".manager-ui-popup-content::-webkit-scrollbar-thumb",
-      "css": 1,
-      "js": 27,
-      "html": 0,
-      "total": 28,
-      "files": {
-        "css": [
-          "src/core/popup.css"
-        ],
-        "js": [
-          "src/core/popup.js",
-          "src/core/zoom-control.js",
-          "src/managers/profile-manager/pages/page-date-formats.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".manager-ui-popup-content::-webkit-scrollbar-thumb:hover",
-      "css": 1,
-      "js": 27,
-      "html": 0,
-      "total": 28,
-      "files": {
-        "css": [
-          "src/core/popup.css"
-        ],
-        "js": [
-          "src/core/popup.js",
-          "src/core/zoom-control.js",
-          "src/managers/profile-manager/pages/page-date-formats.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".manager-ui-popup-content::-webkit-scrollbar-track",
-      "css": 1,
-      "js": 27,
-      "html": 0,
-      "total": 28,
-      "files": {
-        "css": [
-          "src/core/popup.css"
-        ],
-        "js": [
-          "src/core/popup.js",
-          "src/core/zoom-control.js",
-          "src/managers/profile-manager/pages/page-date-formats.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".manager-ui-popup-header",
-      "css": 2,
-      "js": 27,
-      "html": 0,
-      "total": 29,
-      "files": {
-        "css": [
-          "src/core/popup.css",
-          "src/styles/components.css"
-        ],
-        "js": [
-          "src/core/popup.js",
-          "src/core/zoom-control.js",
-          "src/managers/profile-manager/pages/page-date-formats.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".manager-ui-popup-title",
       "css": 2,
       "js": 26,
       "html": 0,
@@ -23547,11 +23451,121 @@
       }
     },
     {
-      "selector": ".manager-ui-popup-title .manager-ui-tours-all-btn",
+      "selector": ".manager-ui-popup-content::-webkit-scrollbar",
       "css": 1,
-      "js": 27,
+      "js": 26,
+      "html": 0,
+      "total": 27,
+      "files": {
+        "css": [
+          "src/core/popup.css"
+        ],
+        "js": [
+          "src/core/popup.js",
+          "src/core/zoom-control.js",
+          "src/managers/profile-manager/pages/page-date-formats.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".manager-ui-popup-content::-webkit-scrollbar-thumb",
+      "css": 1,
+      "js": 26,
+      "html": 0,
+      "total": 27,
+      "files": {
+        "css": [
+          "src/core/popup.css"
+        ],
+        "js": [
+          "src/core/popup.js",
+          "src/core/zoom-control.js",
+          "src/managers/profile-manager/pages/page-date-formats.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".manager-ui-popup-content::-webkit-scrollbar-thumb:hover",
+      "css": 1,
+      "js": 26,
+      "html": 0,
+      "total": 27,
+      "files": {
+        "css": [
+          "src/core/popup.css"
+        ],
+        "js": [
+          "src/core/popup.js",
+          "src/core/zoom-control.js",
+          "src/managers/profile-manager/pages/page-date-formats.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".manager-ui-popup-content::-webkit-scrollbar-track",
+      "css": 1,
+      "js": 26,
+      "html": 0,
+      "total": 27,
+      "files": {
+        "css": [
+          "src/core/popup.css"
+        ],
+        "js": [
+          "src/core/popup.js",
+          "src/core/zoom-control.js",
+          "src/managers/profile-manager/pages/page-date-formats.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".manager-ui-popup-header",
+      "css": 2,
+      "js": 26,
       "html": 0,
       "total": 28,
+      "files": {
+        "css": [
+          "src/core/popup.css",
+          "src/styles/components.css"
+        ],
+        "js": [
+          "src/core/popup.js",
+          "src/core/zoom-control.js",
+          "src/managers/profile-manager/pages/page-date-formats.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".manager-ui-popup-title",
+      "css": 2,
+      "js": 25,
+      "html": 0,
+      "total": 27,
+      "files": {
+        "css": [
+          "src/core/popup.css",
+          "src/styles/components.css"
+        ],
+        "js": [
+          "src/core/popup.js",
+          "src/core/zoom-control.js",
+          "src/managers/profile-manager/pages/page-date-formats.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".manager-ui-popup-title .manager-ui-tours-all-btn",
+      "css": 1,
+      "js": 26,
+      "html": 0,
+      "total": 27,
       "files": {
         "css": [
           "src/core/popup.css"
@@ -23567,9 +23581,9 @@
     {
       "selector": ".manager-ui-popup-title .manager-ui-tours-all-btn svg",
       "css": 1,
-      "js": 27,
+      "js": 26,
       "html": 0,
-      "total": 28,
+      "total": 27,
       "files": {
         "css": [
           "src/core/popup.css"
@@ -23585,9 +23599,9 @@
     {
       "selector": ".manager-ui-popup-title .manager-ui-tours-all-btn:hover",
       "css": 1,
-      "js": 27,
+      "js": 26,
       "html": 0,
-      "total": 28,
+      "total": 27,
       "files": {
         "css": [
           "src/core/popup.css"
@@ -23603,9 +23617,9 @@
     {
       "selector": ".manager-ui-popup.manager-footer-popup",
       "css": 1,
-      "js": 30,
+      "js": 29,
       "html": 0,
-      "total": 31,
+      "total": 30,
       "files": {
         "css": [
           "src/core/popup.css"
@@ -23626,9 +23640,9 @@
     {
       "selector": ".manager-ui-popup.manager-footer-popup:not(.visible)",
       "css": 1,
-      "js": 144,
+      "js": 142,
       "html": 0,
-      "total": 145,
+      "total": 143,
       "files": {
         "css": [
           "src/core/popup.css"
@@ -23655,7 +23669,6 @@
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
-          "src/tables/lithium-table-ui.js",
           "src/tables/popups/grouping-popup.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
@@ -23666,9 +23679,9 @@
     {
       "selector": ".manager-ui-popup.manager-header-popup",
       "css": 1,
-      "js": 25,
+      "js": 24,
       "html": 0,
-      "total": 26,
+      "total": 25,
       "files": {
         "css": [
           "src/core/popup.css"
@@ -23684,9 +23697,9 @@
     {
       "selector": ".manager-ui-popup.manager-header-popup:not(.visible)",
       "css": 1,
-      "js": 139,
+      "js": 137,
       "html": 0,
-      "total": 140,
+      "total": 138,
       "files": {
         "css": [
           "src/core/popup.css"
@@ -23713,7 +23726,6 @@
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
-          "src/tables/lithium-table-ui.js",
           "src/tables/popups/grouping-popup.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
@@ -23724,9 +23736,9 @@
     {
       "selector": ".manager-ui-popup.visible",
       "css": 1,
-      "js": 136,
+      "js": 134,
       "html": 0,
-      "total": 137,
+      "total": 135,
       "files": {
         "css": [
           "src/core/popup.css"
@@ -23753,7 +23765,6 @@
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
-          "src/tables/lithium-table-ui.js",
           "src/tables/popups/grouping-popup.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
@@ -24158,9 +24169,9 @@
     {
       "selector": ".menu-item.active",
       "css": 1,
-      "js": 80,
+      "js": 84,
       "html": 8,
-      "total": 89,
+      "total": 93,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -24193,9 +24204,9 @@
     {
       "selector": ".menu-item.active .menu-item-count",
       "css": 1,
-      "js": 81,
+      "js": 85,
       "html": 8,
-      "total": 90,
+      "total": 94,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -24228,9 +24239,9 @@
     {
       "selector": ".menu-item.manager-open:not(.active",
       "css": 1,
-      "js": 81,
+      "js": 85,
       "html": 8,
-      "total": 90,
+      "total": 94,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -25073,9 +25084,9 @@
     {
       "selector": ".nav-popup.visible",
       "css": 1,
-      "js": 114,
+      "js": 113,
       "html": 0,
-      "total": 115,
+      "total": 114,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -25102,7 +25113,6 @@
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
-          "src/tables/lithium-table-ui.js",
           "src/tables/popups/grouping-popup.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
@@ -25218,9 +25228,9 @@
     {
       "selector": ".offline-indicator.visible",
       "css": 1,
-      "js": 115,
+      "js": 114,
       "html": 0,
-      "total": 116,
+      "total": 115,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -25247,7 +25257,6 @@
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
-          "src/tables/lithium-table-ui.js",
           "src/tables/popups/grouping-popup.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
@@ -27409,9 +27418,9 @@
     {
       "selector": ".queries-tab-btn.active",
       "css": 1,
-      "js": 71,
+      "js": 75,
       "html": 8,
-      "total": 80,
+      "total": 84,
       "files": {
         "css": [
           "src/managers/queries/queries.css"
@@ -27499,9 +27508,9 @@
     {
       "selector": ".queries-tab-pane.active",
       "css": 1,
-      "js": 71,
+      "js": 75,
       "html": 13,
-      "total": 85,
+      "total": 89,
       "files": {
         "css": [
           "src/managers/queries/queries.css"
@@ -28153,9 +28162,9 @@
     {
       "selector": ".settings-page .flatpickr-calendar",
       "css": 1,
-      "js": 8,
+      "js": 7,
       "html": 18,
-      "total": 27,
+      "total": 26,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -28190,9 +28199,9 @@
     {
       "selector": ".settings-page:not(.active)",
       "css": 1,
-      "js": 74,
+      "js": 78,
       "html": 26,
-      "total": 101,
+      "total": 105,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -28225,9 +28234,9 @@
     {
       "selector": ".settings-page.active",
       "css": 1,
-      "js": 74,
+      "js": 78,
       "html": 26,
-      "total": 101,
+      "total": 105,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -28744,9 +28753,9 @@
     {
       "selector": ".sidebar-icon-btn.active",
       "css": 1,
-      "js": 71,
+      "js": 75,
       "html": 13,
-      "total": 85,
+      "total": 89,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -28780,9 +28789,9 @@
     {
       "selector": ".sidebar-icon-btn.active:hover",
       "css": 1,
-      "js": 71,
+      "js": 75,
       "html": 13,
-      "total": 85,
+      "total": 89,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -29372,9 +29381,9 @@
     {
       "selector": ".sidebar-menu-btn.active",
       "css": 1,
-      "js": 71,
+      "js": 75,
       "html": 9,
-      "total": 81,
+      "total": 85,
       "files": {
         "css": [
           "src/styles/layout.css"
@@ -29476,9 +29485,9 @@
     {
       "selector": ".sidebar-overlay.visible",
       "css": 1,
-      "js": 114,
+      "js": 113,
       "html": 1,
-      "total": 116,
+      "total": 115,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -29505,7 +29514,6 @@
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
-          "src/tables/lithium-table-ui.js",
           "src/tables/popups/grouping-popup.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
@@ -30362,9 +30370,9 @@
     {
       "selector": ".style-editor-toolbar .style-state-btn.active",
       "css": 1,
-      "js": 71,
+      "js": 75,
       "html": 8,
-      "total": 80,
+      "total": 84,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -30538,9 +30546,9 @@
     {
       "selector": ".style-font-popup-style-btn.active",
       "css": 1,
-      "js": 70,
+      "js": 74,
       "html": 8,
-      "total": 79,
+      "total": 83,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -30587,9 +30595,9 @@
     {
       "selector": ".style-font-popup.visible",
       "css": 1,
-      "js": 114,
+      "js": 113,
       "html": 0,
-      "total": 115,
+      "total": 114,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -30616,7 +30624,6 @@
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
-          "src/tables/lithium-table-ui.js",
           "src/tables/popups/grouping-popup.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
@@ -30659,9 +30666,9 @@
     {
       "selector": ".style-json-view.active",
       "css": 1,
-      "js": 70,
+      "js": 74,
       "html": 9,
-      "total": 80,
+      "total": 84,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -30872,9 +30879,9 @@
     {
       "selector": ".style-mode-btn.active",
       "css": 1,
-      "js": 70,
+      "js": 74,
       "html": 8,
-      "total": 79,
+      "total": 83,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -31187,9 +31194,9 @@
     {
       "selector": ".style-section-view.active",
       "css": 1,
-      "js": 70,
+      "js": 74,
       "html": 9,
-      "total": 80,
+      "total": 84,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -31330,9 +31337,9 @@
     {
       "selector": ".style-target-circle.active",
       "css": 1,
-      "js": 72,
+      "js": 76,
       "html": 8,
-      "total": 81,
+      "total": 85,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -31833,9 +31840,9 @@
     {
       "selector": ".tab-btn.active",
       "css": 1,
-      "js": 70,
+      "js": 74,
       "html": 8,
-      "total": 79,
+      "total": 83,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -31910,9 +31917,9 @@
     {
       "selector": ".tab-pane.active",
       "css": 1,
-      "js": 70,
+      "js": 74,
       "html": 8,
-      "total": 79,
+      "total": 83,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -31961,9 +31968,9 @@
     {
       "selector": ".tab-panel.active",
       "css": 1,
-      "js": 70,
+      "js": 74,
       "html": 10,
-      "total": 81,
+      "total": 85,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -32319,6 +32326,22 @@
       }
     },
     {
+      "selector": ".tabulator-group-toggle",
+      "css": 1,
+      "js": 1,
+      "html": 0,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/styles/vendor-fixes-tabulator.css"
+        ],
+        "js": [
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": []
+      }
+    },
+    {
       "selector": ".tabulator-nav",
       "css": 1,
       "js": 0,
@@ -32640,9 +32663,9 @@
     {
       "selector": ".tabulator-simple .tabulator-page.active",
       "css": 1,
-      "js": 70,
+      "js": 74,
       "html": 8,
-      "total": 79,
+      "total": 83,
       "files": {
         "css": [
           "src/init/tabulator-simple.css"
@@ -32994,9 +33017,9 @@
     {
       "selector": ".terminal-overlay.visible",
       "css": 1,
-      "js": 115,
+      "js": 114,
       "html": 0,
-      "total": 116,
+      "total": 115,
       "files": {
         "css": [
           "src/managers/terminal/terminal.css"
@@ -33023,7 +33046,6 @@
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
-          "src/tables/lithium-table-ui.js",
           "src/tables/popups/grouping-popup.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
@@ -33143,9 +33165,9 @@
     {
       "selector": ".terminal-popup.visible",
       "css": 1,
-      "js": 115,
+      "js": 114,
       "html": 0,
-      "total": 116,
+      "total": 115,
       "files": {
         "css": [
           "src/managers/terminal/terminal.css"
@@ -33172,7 +33194,6 @@
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
-          "src/tables/lithium-table-ui.js",
           "src/tables/popups/grouping-popup.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
@@ -34494,9 +34515,9 @@
     {
       "selector": ".transition-overlay.active",
       "css": 1,
-      "js": 70,
+      "js": 74,
       "html": 9,
-      "total": 80,
+      "total": 84,
       "files": {
         "css": [
           "src/styles/layout.css"
@@ -35219,9 +35240,9 @@
     {
       "selector": ".zoom-popup-detent.active .zoom-popup-detent-mark",
       "css": 1,
-      "js": 110,
+      "js": 114,
       "html": 8,
-      "total": 119,
+      "total": 123,
       "files": {
         "css": [
           "src/core/popup.css"
@@ -36208,9 +36229,9 @@
     {
       "selector": "#main-layout.visible",
       "css": 1,
-      "js": 114,
+      "js": 113,
       "html": 0,
-      "total": 115,
+      "total": 114,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -36237,7 +36258,6 @@
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
-          "src/tables/lithium-table-ui.js",
           "src/tables/popups/grouping-popup.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
@@ -36327,9 +36347,9 @@
     {
       "selector": "#profile-manager-page.visible",
       "css": 1,
-      "js": 114,
+      "js": 113,
       "html": 0,
-      "total": 115,
+      "total": 114,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -36356,7 +36376,6 @@
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
-          "src/tables/lithium-table-ui.js",
           "src/tables/popups/grouping-popup.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
@@ -36425,9 +36444,9 @@
     {
       "selector": "#session-log-page.visible",
       "css": 1,
-      "js": 114,
+      "js": 113,
       "html": 0,
-      "total": 115,
+      "total": 114,
       "files": {
         "css": [
           "src/managers/session-log/session-log.css"
@@ -36454,7 +36473,6 @@
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
-          "src/tables/lithium-table-ui.js",
           "src/tables/popups/grouping-popup.js",
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"

@@ -232,6 +232,40 @@ localStorage.setItem('lithium_user_pref', 'value');
 
 ---
 
+### 9. Popup Coordination System
+
+**Only one popup can be open at a time throughout the entire application.**
+
+All popups must participate in the global `close-all-popups` event system:
+
+```javascript
+// ✅ Correct - When opening a popup, dispatch close-all-popups first
+document.dispatchEvent(new CustomEvent('close-all-popups'));
+
+// ✅ Correct - Listen for close-all-popups to close when others open
+document.addEventListener('close-all-popups', () => {
+  if (this.isOpen) {
+    this.close();
+  }
+});
+
+// ✅ Correct - Use transition states to prevent rapid toggling
+if (this._transitioning) return; // Prevent double-click issues
+```
+
+**Requirements for all popups:**
+
+- **Dispatch `close-all-popups`** when opening (after closing others)
+- **Listen for `close-all-popups`** to close when others open
+- **Handle outside clicks and ESC key** for proper UX
+- **Use transition states** to prevent flashing/rapid toggling
+- **Clean up event listeners** on destruction
+- **Show visual feedback** (active class on trigger buttons)
+
+**Rationale:** Multiple simultaneous popups create confusion, z-index conflicts, and poor UX. The global coordination system ensures a clean, predictable popup experience across the entire application.
+
+---
+
 ## Code Review Checklist
 
 Before submitting code for review, verify:
@@ -243,6 +277,8 @@ Before submitting code for review, verify:
 - [ ] Functions are extractable and testable
 - [ ] Existing CSS is reused where possible
 - [ ] New CSS follows naming conventions
+- [ ] Popups use `close-all-popups` event coordination
+- [ ] Popup trigger buttons show `.active` class when popup is open
 
 ---
 
@@ -276,5 +312,5 @@ Duplicating code across files. Extract to shared utilities.
 
 ---
 
-**Last Updated:** March 2026  
+**Last Updated:** April 2026  
 **Applies To:** All Lithium development work

@@ -435,6 +435,22 @@ class TimezonePicker {
       log(Subsystems.UI, Status.DEBUG, '[TimezonePicker.open] Cancelled pending close timeout');
     }
 
+    // Create overlay for backdrop clicks and scroll blocking
+    this.overlay = document.createElement('div');
+    this.overlay.className = 'df-timezone-overlay';
+    this.overlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: transparent;
+      z-index: 10000;
+      cursor: default;
+    `;
+    this.overlay.addEventListener('click', () => this.close());
+    document.body.appendChild(this.overlay);
+
     // Recreate dropdown element if it was removed from DOM
     if (!this.dropdown || !this.dropdown.parentNode) {
       this.dropdown = document.createElement('div');
@@ -476,89 +492,24 @@ class TimezonePicker {
     this.isOpen = true;
     this.container.classList.add('open');
 
-    // Prevent page scrolling while popup is open
+    // Prevent page scrolling while popup is open (overlay handles this too)
     document.body.style.overflow = 'hidden';
 
-    // Force show dropdown
-    this.dropdown.style.display = 'flex';
-
-    // Position dropdown
+    // Position dropdown first
     const rect = this.container.getBoundingClientRect();
     this.dropdown.style.top = `${rect.bottom + 2}px`;
     this.dropdown.style.left = `${rect.left}px`;
     this.dropdown.style.width = this.popupWidth ? `${this.popupWidth}px` : `${rect.width}px`;
     this.dropdown.style.height = this.popupHeight ? `${this.popupHeight}px` : '';
-    this.dropdown.style.transformOrigin = 'top left';
 
-    // First populate the list and set container dimensions
-    requestAnimationFrame(() => {
-      // Ensure the list has explicit dimensions
-      const dropdownHeight = this.dropdown.offsetHeight;
-      const filterHeight = this.dropdown.querySelector('.df-timezone-filter').offsetHeight;
-      const availableHeight = dropdownHeight - filterHeight;
-      this.listContainer.style.height = `${availableHeight}px`;
+    // Force show dropdown
+    this.dropdown.style.display = 'flex';
 
-      log(Subsystems.UI, Status.DEBUG, '[TimezonePicker.open] Set listContainer height to: ' + availableHeight);
-
-      // Populate the list first
-      this.filterTimezones();
-
-      // Initialize OSB now that content is populated
-      if (!this.overlayScrollbar) {
-        try {
-          log(Subsystems.UI, Status.DEBUG, '[TimezonePicker.open] Initializing OSB');
-          log(Subsystems.UI, Status.DEBUG, '[TimezonePicker.open] Container scrollHeight: ' + this.listContainer.scrollHeight);
-          log(Subsystems.UI, Status.DEBUG, '[TimezonePicker.open] Container clientHeight: ' + this.listContainer.clientHeight);
-
-          // Initialize OSB now that content is populated
-          this.overlayScrollbar = scrollbarManager.initPopup(this.listContainer);
-          log(Subsystems.UI, Status.INFO, '[TimezonePicker.open] OSB init result: ' + !!this.overlayScrollbar);
-          if (this.overlayScrollbar) {
-            const elements = this.overlayScrollbar.elements();
-            log(Subsystems.UI, Status.DEBUG, '[TimezonePicker.open] OSB elements - host: ' + !!elements.host + ', viewport: ' + !!elements.viewport + ', content: ' + !!elements.content);
-            log(Subsystems.UI, Status.DEBUG, '[TimezonePicker.open] Content height check - content scrollHeight: ' + (elements.content ? elements.content.scrollHeight : 'no content'));
-            if (this.overlayScrollbar.state && this.overlayScrollbar.state().viewport) {
-              log(Subsystems.UI, Status.DEBUG, '[TimezonePicker.open] After init - viewport percent: ' + this.overlayScrollbar.state().viewport.percent);
-            }
-          }
-        } catch (e) {
-          log(Subsystems.UI, Status.ERROR, '[TimezonePicker.open] OSB init failed: ' + e.message);
-          // Fallback to native scrolling
-          this.listContainer.style.overflowY = 'auto';
-          this.overlayScrollbar = null;
-        }
-      } else {
-        log(Subsystems.UI, Status.DEBUG, '[TimezonePicker.open] Reusing existing OSB instance');
-        // Re-populate content for existing OSB instance
-        this.filterTimezones();
-      }
-    });
-
-    const tzName = typeof this.selectedTimezone === 'object' ? this.selectedTimezone.name : this.selectedTimezone;
-    if (tzName !== 'local') {
-      // Scroll to the selected timezone
-      const selectedItem = this.listContainer.querySelector(`[data-value="${tzName}"]`);
-      if (selectedItem) {
-        selectedItem.scrollIntoView({ block: 'nearest' });
-      }
-    }
-
-
-
-    // Show with animation (like popup system)
-    setTimeout(() => this.dropdown.classList.add('visible'), 10);
+    // Show with animation
+    setTimeout(() => this.dropdown.classList.add('visible'), 50);
 
     // Focus filter
     setTimeout(() => this.filterInput.focus(), 100);
-
-    // Check for other popups and close if they appear
-    this._checkInterval = setInterval(() => {
-      const allPopups = document.querySelectorAll('.manager-ui-popup.visible, .flatpickr-calendar');
-      const hasOtherPopups = Array.from(allPopups).some(popup => popup !== this.dropdown);
-      if (hasOtherPopups) {
-        this.close();
-      }
-    }, 100);
   }
 
   close() {
@@ -578,10 +529,10 @@ class TimezonePicker {
     this._closeTimeout = setTimeout(() => {
       // Restore page scrolling
       document.body.style.overflow = '';
-      // Clear the check interval
-      if (this._checkInterval) {
-        clearInterval(this._checkInterval);
-        this._checkInterval = null;
+      // Remove overlay
+      if (this.overlay && this.overlay.parentNode) {
+        this.overlay.parentNode.removeChild(this.overlay);
+        this.overlay = null;
       }
       // Clean up OSB instance
       if (this.overlayScrollbar) {
@@ -589,7 +540,7 @@ class TimezonePicker {
         scrollbarManager.destroy(this.overlayScrollbar);
         this.overlayScrollbar = null;
       }
-      // Remove from DOM completely
+      // Remove dropdown from DOM completely
       if (this.dropdown && this.dropdown.parentNode) {
         this.dropdown.parentNode.removeChild(this.dropdown);
         log(Subsystems.UI, Status.DEBUG, '[TimezonePicker.close] Removed dropdown from DOM');
@@ -767,10 +718,8 @@ class TimezonePicker {
   destroy() {
     // Restore page scrolling in case popup was open during destroy
     document.body.style.overflow = '';
-    // Clear any check interval
-    if (this._checkInterval) {
-      clearInterval(this._checkInterval);
-      this._checkInterval = null;
+    if (this.overlay) {
+      this.overlay.remove();
     }
     if (this.dropdown) {
       this.dropdown.remove();
