@@ -543,20 +543,28 @@ If step 2 fails, stop debugging theme CSS and debug initialization structure fir
 
 ---
 
-**April 25, 2026:** Timezone Picker Popup OSB Attempt #3 (In Progress)
+**April 25, 2026:** Timezone Picker Popup OSB Attempt #3 (COMPLETED - SUCCESSFUL)
 
 - **Target:** Timezone dropdown in Date Formats page (`page-date-formats.js`)
 - **Goal:** Fix overlay scrollbars in the timezone picker popup
 - **Previous attempts failed because:**
   - Attempt #1: Used manual `window.OverlayScrollbars()` with incorrect theme/options
   - Attempt #2: Fixed `initPopup()` to let OSB create its own structure, updated `filterTimezones()` to use `.os-content`, but still no scrollbars or scrolling
-- **New approach for Attempt #3:**
-  - Initialize OSB on the `.df-timezone-dropdown` element (the popup container) instead of `.df-timezone-list`
-  - This gives OSB a properly-sized host element with known dimensions
-  - The list container becomes the scrollable content inside OSB's viewport
-  - Added extensive session logging to debug OSB initialization
-- **Status:** In progress — testing new approach
+- **Final successful approach:**
+  - Initialize OSB on the `.df-timezone-list` element directly after content is populated
+  - Added `overflow-y: auto !important` to `.df-timezone-list` for fallback scrolling during initialization
+  - Added abbreviations support with full names (PDT → "PDT (Pacific Daylight Time)")
+  - Fixed `transform-origin: top left` for popup animation
+  - Implemented proper DOM cleanup on popup close
+  - Used `requestAnimationFrame` to ensure layout is complete before OSB initialization
+- **Key fixes implemented:**
+  - ✅ OverlayScrollbars working with proper initialization timing
+  - ✅ Abbreviations displayed with full names
+  - ✅ Correct popup animation transform-origin
+  - ✅ Proper DOM cleanup and state management
+  - ✅ Consistent popup display behavior
+- **Status:** COMPLETED - All timezone popup issues resolved
 
 ---
 
-**Last Updated:** April 25, 2026
+**Last Updated:** April 26, 2026
