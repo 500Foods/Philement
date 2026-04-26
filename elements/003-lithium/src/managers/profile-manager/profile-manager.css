@@ -118,7 +118,7 @@
   border: none;
   outline: none;
   outline-offset: 0;
-  padding: 0 var(--space-1);
+  padding: 0px;
   background: var(--bg-secondary);
 }                                 
 

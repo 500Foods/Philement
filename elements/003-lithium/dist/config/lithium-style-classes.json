@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS class selectors/names used across the Lithium codebase",
-    "generated": "2026-04-26T16:02:46.978Z",
+    "generated": "2026-04-26T17:20:05.441Z",
     "sources": {
       "css": "56 files in src/**/*.css",
       "js": "147 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
     "total_selectors": 2026,
-    "total_occurrences": 31384
+    "total_occurrences": 31346
   },
   "selectors": [
     {
@@ -7789,9 +7789,9 @@
     {
       "selector": ".flatpickr-calendar",
       "css": 1,
-      "js": 3,
+      "js": 1,
       "html": 0,
-      "total": 4,
+      "total": 2,
       "files": {
         "css": [
           "src/styles/vendor-flatpickr.css"
@@ -7805,9 +7805,9 @@
     {
       "selector": ".flatpickr-calendar .flatpickr-day",
       "css": 1,
-      "js": 3,
+      "js": 1,
       "html": 0,
-      "total": 4,
+      "total": 2,
       "files": {
         "css": [
           "src/styles/vendor-flatpickr.css"
@@ -7821,9 +7821,9 @@
     {
       "selector": ".flatpickr-calendar .flatpickr-day:hover",
       "css": 1,
-      "js": 3,
+      "js": 1,
       "html": 0,
-      "total": 4,
+      "total": 2,
       "files": {
         "css": [
           "src/styles/vendor-flatpickr.css"
@@ -7837,9 +7837,9 @@
     {
       "selector": ".flatpickr-calendar .flatpickr-day.selected",
       "css": 1,
-      "js": 6,
+      "js": 4,
       "html": 0,
-      "total": 7,
+      "total": 5,
       "files": {
         "css": [
           "src/styles/vendor-flatpickr.css"
@@ -7854,9 +7854,9 @@
     {
       "selector": ".flatpickr-calendar .flatpickr-day.today",
       "css": 1,
-      "js": 3,
+      "js": 1,
       "html": 0,
-      "total": 4,
+      "total": 2,
       "files": {
         "css": [
           "src/styles/vendor-flatpickr.css"
@@ -7870,9 +7870,9 @@
     {
       "selector": ".flatpickr-calendar .flatpickr-days",
       "css": 1,
-      "js": 3,
+      "js": 1,
       "html": 0,
-      "total": 4,
+      "total": 2,
       "files": {
         "css": [
           "src/styles/vendor-flatpickr.css"
@@ -7886,9 +7886,9 @@
     {
       "selector": ".flatpickr-calendar .flatpickr-month",
       "css": 1,
-      "js": 3,
+      "js": 1,
       "html": 0,
-      "total": 4,
+      "total": 2,
       "files": {
         "css": [
           "src/styles/vendor-flatpickr.css"
@@ -7902,9 +7902,9 @@
     {
       "selector": ".flatpickr-calendar .flatpickr-months",
       "css": 1,
-      "js": 3,
+      "js": 1,
       "html": 0,
-      "total": 4,
+      "total": 2,
       "files": {
         "css": [
           "src/styles/vendor-flatpickr.css"
@@ -7918,9 +7918,9 @@
     {
       "selector": ".flatpickr-calendar .flatpickr-next-month",
       "css": 1,
-      "js": 3,
+      "js": 1,
       "html": 0,
-      "total": 4,
+      "total": 2,
       "files": {
         "css": [
           "src/styles/vendor-flatpickr.css"
@@ -7934,9 +7934,9 @@
     {
       "selector": ".flatpickr-calendar .flatpickr-time",
       "css": 1,
-      "js": 3,
+      "js": 1,
       "html": 0,
-      "total": 4,
+      "total": 2,
       "files": {
         "css": [
           "src/styles/vendor-flatpickr.css"
@@ -7950,9 +7950,9 @@
     {
       "selector": ".flatpickr-calendar .flatpickr-time .flatpickr-time-separator",
       "css": 1,
-      "js": 3,
+      "js": 1,
       "html": 0,
-      "total": 4,
+      "total": 2,
       "files": {
         "css": [
           "src/styles/vendor-flatpickr.css"
@@ -7966,9 +7966,9 @@
     {
       "selector": ".flatpickr-calendar .flatpickr-time input",
       "css": 1,
-      "js": 3,
+      "js": 1,
       "html": 0,
-      "total": 4,
+      "total": 2,
       "files": {
         "css": [
           "src/styles/vendor-flatpickr.css"
@@ -7982,9 +7982,9 @@
     {
       "selector": ".flatpickr-calendar .flatpickr-weekday",
       "css": 1,
-      "js": 3,
+      "js": 1,
       "html": 0,
-      "total": 4,
+      "total": 2,
       "files": {
         "css": [
           "src/styles/vendor-flatpickr.css"
@@ -7998,9 +7998,9 @@
     {
       "selector": ".flatpickr-calendar .flatpickr-weekdays",
       "css": 1,
-      "js": 3,
+      "js": 1,
       "html": 0,
-      "total": 4,
+      "total": 2,
       "files": {
         "css": [
           "src/styles/vendor-flatpickr.css"
@@ -8014,9 +8014,9 @@
     {
       "selector": ".flatpickr-calendar .flatpickr-weekwrapper",
       "css": 1,
-      "js": 3,
+      "js": 1,
       "html": 0,
-      "total": 4,
+      "total": 2,
       "files": {
         "css": [
           "src/styles/vendor-flatpickr.css"
@@ -8030,9 +8030,9 @@
     {
       "selector": ".flatpickr-calendar .flatpickr-weekwrapper .flatpickr-day",
       "css": 1,
-      "js": 3,
+      "js": 1,
       "html": 0,
-      "total": 4,
+      "total": 2,
       "files": {
         "css": [
           "src/styles/vendor-flatpickr.css"
@@ -8046,9 +8046,9 @@
     {
       "selector": ".flatpickr-calendar .flatpickr-weekwrapper .flatpickr-weekday",
       "css": 1,
-      "js": 3,
+      "js": 1,
       "html": 0,
-      "total": 4,
+      "total": 2,
       "files": {
         "css": [
           "src/styles/vendor-flatpickr.css"
@@ -8078,9 +8078,9 @@
     {
       "selector": ".flatpickr-popup-wrapper .flatpickr-calendar",
       "css": 3,
-      "js": 5,
+      "js": 3,
       "html": 0,
-      "total": 8,
+      "total": 6,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css",
@@ -28148,9 +28148,9 @@
     {
       "selector": ".settings-page .flatpickr-calendar",
       "css": 1,
-      "js": 7,
+      "js": 5,
       "html": 18,
-      "total": 26,
+      "total": 24,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
