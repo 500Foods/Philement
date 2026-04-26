@@ -161,6 +161,7 @@ export default class QueriesManager {
       storageKey: 'queries_table',
       app: this.app,
       readonly: false,
+      tableWidthMode: 'wide',
       panel: this.elements.leftPanel,
       panelStateManager: this.leftPanelState,
       onRowSelected: (rowData) => this._handleRowSelected(rowData),
