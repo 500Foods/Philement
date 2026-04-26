@@ -19,6 +19,8 @@ export async function handleRowSelected(table, row) {
   const otherRows = selectedRows.filter(selectedRow => selectedRow !== row);
   if (otherRows.length > 0) {
     table.table.deselectRow(otherRows);
+    // Dispatch event to close all popups when selecting a new row
+    document.dispatchEvent(new CustomEvent('close-all-popups'));
   }
 
   const pkFields = table.primaryKeyField;

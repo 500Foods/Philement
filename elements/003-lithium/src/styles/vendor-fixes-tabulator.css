@@ -201,8 +201,8 @@
 .tabulator-edit-list-item img,
 .lithium-table-container .tabulator-row .tabulator-cell svg,
 .lithium-table-container .tabulator-row .tabulator-cell img {
-  width: 1em;
-  height: 1em;
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
 }
 

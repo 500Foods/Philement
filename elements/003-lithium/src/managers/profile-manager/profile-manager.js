@@ -527,6 +527,9 @@ export default class ProfileManager {
     log(Subsystems.MANAGER, Status.INFO,
       `[ProfileManager] Option selected: ${rowData.label}, index: ${rowData.index}`);
 
+    // Close any open popups (timezone picker, datepicker, etc.)
+    closeAllPopups();
+
     // Save selected section index to localStorage
     if (rowData.index !== undefined) {
       localStorage.setItem(this._selectedSectionStorageKey, String(rowData.index));
