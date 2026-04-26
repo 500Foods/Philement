@@ -889,6 +889,7 @@ export class DateFormatsPage extends BaseSettingsPage {
     this._flatpickrCalendar = null;
     this._tokenTable = null;
     this._timezonePicker = null;
+    this._contentScrollbarInstance = null;
   }
 
   /**
@@ -902,6 +903,7 @@ export class DateFormatsPage extends BaseSettingsPage {
     await this._initTokenTable();
     await this.loadData();
     this._startCurrentTimeUpdates();
+    this._initContentScrollbars();
 
     log(Subsystems.MANAGER, Status.DEBUG, '[DateFormatsPage] Initialized');
   }
@@ -1279,9 +1281,25 @@ export class DateFormatsPage extends BaseSettingsPage {
       onRowSelected: () => closeAllPopups(),
     });
 
+
+
     await this._tokenTable.init();
     this._tokenTable.loadStaticData(buildTokenData(sample, now), { autoSelect: true });
 
+  }
+
+  /**
+   * Initialize OverlayScrollbars on the main content area
+   */
+  _initContentScrollbars() {
+    const container = this.container;
+    if (!container) return;
+
+    const contentElement = container.querySelector('.df-content');
+    if (!contentElement) return;
+
+    // Initialize OSB on the content area using the same styling as other instances
+    this._contentScrollbarInstance = scrollbarManager.initGeneric(contentElement);
   }
 
   /**
@@ -1810,6 +1828,10 @@ export class DateFormatsPage extends BaseSettingsPage {
     if (this._timezonePicker) {
       this._timezonePicker.destroy();
       this._timezonePicker = null;
+    }
+    if (this._contentScrollbarInstance) {
+      scrollbarManager.destroy(this._contentScrollbarInstance);
+      this._contentScrollbarInstance = null;
     }
     super.destroy();
   }

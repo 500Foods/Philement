@@ -340,10 +340,11 @@ export const LithiumTableUIMixin = {
         this.onSetTableWidth(restoredWidth);
       }
     } else {
+      // No saved state, use current default mode
       if (this.panel) {
-        this.applyPanelWidth(null);
+        this.applyPanelWidth(this.tableWidthMode);
       } else if (typeof this.onSetTableWidth === 'function') {
-        this.onSetTableWidth(null);
+        this.onSetTableWidth(this.tableWidthMode);
       }
     }
 

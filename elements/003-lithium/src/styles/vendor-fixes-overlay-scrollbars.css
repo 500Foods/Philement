@@ -37,9 +37,16 @@
   isolation: isolate;
 }
 
-/* vertical scrollbar in popup list */
+/* vertical scrollbar in popup list - ideally generalized */
 .os-scrollbar.os-scrollbar-vertical.os-theme-lithium.os-theme-lithium-popup.os-scrollbar-auto-hide.os-scrollbar-handle-interactive.os-scrollbar-track-interactive.os-scrollbar-visible.os-scrollbar-cornerless {
   position: absolute !important;
+}
+                                                         
+/* vertical scrollbar in User Profile Manager's Date Formats section/page */
+#settings-page--9 > div.df-content:nth-child(3) {
+  margin: 0px 6px 3px 0px;
+  border-radius: 8px !important;
+  width: 10px;
 }
 
 } /* end @layer vendor-fixes.overlayscrollbars */
