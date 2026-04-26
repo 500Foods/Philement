@@ -73,7 +73,7 @@ function openGroupingPopupAfterDelay(table, e) {
  * @param {Object} table - LithiumTable instance
  * @returns {HTMLElement} Popup element
  */
-function buildGroupingPopup(table) {
+export function buildGroupingPopup(table) {
   const popup = document.createElement('div');
   popup.className = 'lithium-nav-popup lithium-grouping-popup';
 

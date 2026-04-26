@@ -129,7 +129,7 @@ function wireControlButtons(table) {
 
   nav.querySelector(`#${table.cssPrefix}-nav-refresh`)?.addEventListener('click', () => table.handleRefresh?.());
   nav.querySelector(`#${table.cssPrefix}-nav-filter`)?.addEventListener('click', () => table.handleFilter?.());
-  nav.querySelector(`#${table.cssPrefix}-nav-grouping`)?.addEventListener('click', (e) => table.toggleGroupingPopup?.(e));
+   nav.querySelector(`#${table.cssPrefix}-nav-grouping`)?.addEventListener('click', (e) => table.toggleNavPopup?.(e, 'grouping'));
   nav.querySelector(`#${table.cssPrefix}-nav-width`)?.addEventListener('click', (e) => table.toggleNavPopup?.(e, 'width'));
   nav.querySelector(`#${table.cssPrefix}-nav-layout`)?.addEventListener('click', (e) => table.toggleNavPopup?.(e, 'layout'));
   nav.querySelector(`#${table.cssPrefix}-nav-template`)?.addEventListener('click', (e) => table.toggleNavPopup?.(e, 'template'));
