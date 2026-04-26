@@ -18,14 +18,42 @@ import { closeGroupingPopupImmediate } from './grouping-popup.js';
 export function toggleNavPopup(table, e, popupId) {
   e.stopPropagation();
 
+  // Prevent rapid toggling on the SAME button during transitions
+  if (table._navPopupTransitioning && table.activeNavPopupId === popupId) return;
+
   if (table.activeNavPopup && table.activeNavPopupId === popupId) {
     closeNavPopup(table);
     return;
   }
 
-  // Close any existing popup immediately (no animation) before opening new one
-  closeNavPopupImmediate(table);
+  // Close any existing popup with animation, then open new one
+  if (table.activeNavPopup) {
+    // Cancel any pending popup open
+    if (table._pendingPopupTimeout) {
+      clearTimeout(table._pendingPopupTimeout);
+      table._pendingPopupTimeout = null;
+    }
+    // Close with animation, then open new popup after animation completes
+    closeNavPopupAnimated(table, () => {
+      openNewNavPopup(table, e, popupId);
+    });
+  } else {
+    // Cancel any pending popup open and open immediately
+    if (table._pendingPopupTimeout) {
+      clearTimeout(table._pendingPopupTimeout);
+      table._pendingPopupTimeout = null;
+    }
+    openNewNavPopup(table, e, popupId);
+  }
+}
 
+/**
+ * Open a new navigation popup (helper for toggleNavPopup)
+ * @param {Object} table - LithiumTable instance
+ * @param {Event} e - Click event
+ * @param {string} popupId - Popup identifier
+ */
+function openNewNavPopup(table, e, popupId) {
   // Dispatch event to close all manager popups
   document.dispatchEvent(new CustomEvent('close-all-popups'));
 
@@ -87,7 +115,7 @@ function buildStandardNavPopup(table, items) {
  * @param {HTMLElement} popup - Popup element
  * @param {string} popupId - Popup identifier
  */
-function showNavPopup(table, btn, popup, popupId) {
+export function showNavPopup(table, btn, popup, popupId) {
   popup.style.position = 'fixed';
   // Footer-riseup positioning: bottom-right of popup 1px above top-right of button
   popup.style.bottom = 'auto';
@@ -127,7 +155,9 @@ function showNavPopup(table, btn, popup, popupId) {
 
   // Trigger animation after positioning
   requestAnimationFrame(() => {
-    popup.classList.add('visible');
+    requestAnimationFrame(() => {
+      popup.classList.add('visible');
+    });
   });
 
   table.activeNavPopup = popup;
@@ -136,6 +166,10 @@ function showNavPopup(table, btn, popup, popupId) {
   table.navPopupRepositionHandler = repositionPopup;
 
   table.navPopupCloseHandler = (evt) => {
+    // Don't close if clicking on nav buttons that have popups (let toggle logic handle it)
+    if (evt.target.closest('.lithium-nav-btn-has-popup')) {
+      return;
+    }
     if (!popup.contains(evt.target) && !btn.contains(evt.target)) {
       closeNavPopup(table);
     }
@@ -217,30 +251,32 @@ export function closeNavPopupImmediate(table) {
     document.removeEventListener('scroll', table.navPopupRepositionHandler, true);
     table.navPopupRepositionHandler = null;
   }
+  table._navPopupTransitioning = false;
 }
 
 /**
  * Close active navigation popup with animation
  * @param {Object} table - LithiumTable instance
+ * @param {Function} [callback] - Optional callback when animation completes
  */
-export function closeNavPopup(table) {
+export function closeNavPopup(table, callback) {
+  // If no popup is active, just call callback and return
+  if (!table.activeNavPopup) {
+    if (callback) callback();
+    return;
+  }
+
+  // Prevent overlapping close animations, but allow if we're opening a new popup
+  if (table._navPopupTransitioning && !callback) return;
+
+  table._navPopupTransitioning = true;
+
   // Remove popup-active class from button
   if (table.activeNavPopupButton) {
     table.activeNavPopupButton.classList.remove('popup-active');
   }
-  if (table.activeNavPopup) {
-    table.activeNavPopup.classList.remove('visible');
-    // Remove after animation completes
-    const duration = 200; // Match transition duration
-    setTimeout(() => {
-      if (table.activeNavPopup && table.activeNavPopup.parentNode) {
-        table.activeNavPopup.remove();
-      }
-    }, duration);
-    table.activeNavPopup = null;
-    table.activeNavPopupId = null;
-    table.activeNavPopupButton = null;
-  }
+
+  // Remove event listeners immediately to prevent conflicts
   if (table.navPopupCloseHandler) {
     document.removeEventListener('click', table.navPopupCloseHandler);
     table.navPopupCloseHandler = null;
@@ -249,11 +285,41 @@ export function closeNavPopup(table) {
     document.removeEventListener('keydown', table.navPopupKeyHandler);
     table.navPopupKeyHandler = null;
   }
+  if (table.navPopupGlobalCloseHandler) {
+    document.removeEventListener('close-all-popups', table.navPopupGlobalCloseHandler);
+    table.navPopupGlobalCloseHandler = null;
+  }
   if (table.navPopupRepositionHandler) {
     window.removeEventListener('resize', table.navPopupRepositionHandler);
     document.removeEventListener('scroll', table.navPopupRepositionHandler, true);
     table.navPopupRepositionHandler = null;
   }
+
+  // Start close animation
+  table.activeNavPopup.classList.remove('visible');
+
+  // Remove after animation completes
+  const duration = 300; // Match transition duration
+  setTimeout(() => {
+    if (table.activeNavPopup && table.activeNavPopup.parentNode) {
+      table.activeNavPopup.remove();
+    }
+    table.activeNavPopup = null;
+    table.activeNavPopupId = null;
+    table.activeNavPopupButton = null;
+    table._navPopupTransitioning = false;
+
+    if (callback) callback();
+  }, duration);
+}
+
+/**
+ * Close active navigation popup with animation, then call callback
+ * @param {Object} table - LithiumTable instance
+ * @param {Function} callback - Called when animation completes
+ */
+export function closeNavPopupAnimated(table, callback) {
+  closeNavPopup(table, callback);
 }
 
 /**
