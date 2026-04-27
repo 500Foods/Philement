@@ -105,6 +105,9 @@ export default class ProfileManager {
     this.collectionHandler = null;
     this.settingsHandler = null;
 
+    // Tab transition state
+    this._inTabTransition = false;
+
     // Font popup
     this.fontPopup = null;
     this.editorFontSize = 13;
@@ -368,24 +371,39 @@ export default class ProfileManager {
   switchTab(tabId) {
     if (!['settings', 'collection'].includes(tabId)) return;
 
-    closeAllPopups();
-    this.currentTab = tabId;
+    // Guard: same tab requested or already transitioning
+    if (tabId === this.currentTab || this._inTabTransition) return;
 
+    this._inTabTransition = true;
+
+    closeAllPopups();
+
+    // Update button states immediately
     this.elements.tabCollection?.classList.toggle('active', tabId === 'collection');
-    // Only show section label as active if we're on settings tab AND a page is selected
     const hasPageSelected = this.settingsHandler?.getCurrentPage() !== null;
     this.elements.sectionLabelBtn?.classList.toggle('active', tabId === 'settings' && hasPageSelected);
-    this.elements.panelSettings?.classList.toggle('active', tabId === 'settings');
-    this.elements.panelCollection?.classList.toggle('active', tabId === 'collection');
+
+    // Update state
+    this.currentTab = tabId;
 
     // Enable/disable editor controls
     const isCollection = tabId === 'collection';
     this.setEditorButtonsDisabled(!isCollection);
 
-    // Initialize Collection editor when switching to Collection tab
+    // Show/hide panels immediately
+    this.elements.panelSettings?.classList.toggle('active', tabId === 'settings');
+    this.elements.panelCollection?.classList.toggle('active', tabId === 'collection');
+
+    // Init collection editor after panel is active to ensure proper sizing
     if (tabId === 'collection') {
       this.collectionHandler?.init(this.getCollectionData());
+      // Request measure after a frame to ensure layout is updated
+      requestAnimationFrame(() => {
+        this.collectionHandler?.editor?.requestMeasure();
+      });
     }
+
+    this._inTabTransition = false;
 
     // Update footer buttons — on collection tab, dirty state drives save/cancel
     if (isCollection) {

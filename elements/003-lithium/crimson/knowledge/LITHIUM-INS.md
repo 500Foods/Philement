@@ -306,6 +306,7 @@ Duplicating code across files. Extract to shared utilities.
 
 - [LITHIUM-TOC.md](LITHIUM-TOC.md) - Documentation index
 - [LITHIUM-DEV.md](LITHIUM-DEV.md) - Development setup
+- [LITHIUM-SHR.md](LITHIUM-SHR.md) - Shared components reference
 - [LITHIUM-TST.md](LITHIUM-TST.md) - Testing guidelines
 - [LITHIUM-CSS.md](LITHIUM-CSS.md) - CSS architecture
 - [REFACTORING_PLAN.md](../../elements/003-lithium/docs/REFACTORING_PLAN.md) - File splitting guide

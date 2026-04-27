@@ -1,0 +1,396 @@
+@layer managers {
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   Lookups Manager Styles
+   ═════════════════════════════════════════════════════════════════════════════
+   
+   Note: Tabulator theme overrides and Navigator styles are now provided by
+   lithium-table.css via the .lithium-table-container and .lithium-nav-* classes.
+   This file only contains manager-specific layout styles.
+   
+   ═════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Main Container ─────────────────────────────────────────────────────── */
+
+.lookups-manager-container {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 0px;
+  text-align: left;
+}
+
+/* ── Left Panel (Parent Table - Lookups List) ───────────────────────────── */
+
+.lookups-left-panel {
+  display: flex;
+  flex-direction: column;
+  width: var(--panel-left-w, 280px);
+  min-width: 157px;
+  background-color: var(--bg-secondary);
+  transition: width var(--transition-delay) ease, min-width var(--transition-delay) ease;
+  flex-shrink: 0;
+}
+
+/* ── Middle Panel (Child Table - Lookup Values) ─────────────────────────── */
+
+.lookups-middle-panel {
+  display: flex;
+  flex-direction: column;
+  width: var(--panel-middle-w, 350px);
+  min-width: 157px;
+  background-color: var(--bg-secondary);
+  transition: width var(--transition-delay) ease, min-width var(--transition-delay) ease;
+  flex-shrink: 0;
+}
+
+.lookups-child-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background-color: var(--bg-secondary);
+  border-bottom: var(--border-standard);
+  flex-shrink: 0;
+}
+
+.lookups-child-title {
+  flex: 1;
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Collapse buttons in toolbar */
+.lookups-collapse-left-btn,
+.lookups-collapse-middle-btn {
+  flex: 0 0 auto;
+  padding: var(--space-1);
+}
+
+/* ── Table Containers (additional styling beyond lithium-table.css) ────── */
+
+.lookups-table-container,
+.lookups-child-table-container {
+  flex: 1;
+  overflow: hidden;
+  margin: var(--space-2) var(--space-3);
+  min-height: 0;
+}
+
+/* ── Right Panel (Tabbed View - JSON, Summary, Preview) ─────────────────── */
+
+.lookups-right-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 300px;
+  overflow: hidden;
+  background-color: var(--bg-secondary);
+}
+
+/* Toolbar / Tab Header */
+.lookups-tabs-header {
+  display: flex;
+  background-color: var(--bg-secondary);
+  padding: var(--space-2) var(--space-3);
+  flex-shrink: 0;
+}
+
+.lookups-tab-btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-tertiary);
+  border: none;
+  border-radius: var(--border-radius-sm);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.lookups-tab-btn:hover {
+  background: var(--accent-hover);
+  color: var(--text-primary);
+}
+
+.lookups-tab-btn.active {
+  background: var(--accent-focus);
+  color: var(--text-primary);
+}
+
+/* Placeholder button stretches to fill space between tabs and toolbar */
+.lookups-toolbar-placeholder {
+  flex: 1;
+  min-width: 16px;
+}
+
+/* Toolbar buttons styling */
+.lookups-toolbar-btn {
+  min-width: 24px;
+}
+
+.lookups-toolbar-btn:last-child {
+  border-top-right-radius: var(--border-radius-sm);
+  border-bottom-right-radius: var(--border-radius-sm);
+}
+
+.lookups-toolbar-btn:disabled {
+  cursor: not-allowed;
+  background-color: var(--accent-disabled);
+  color: var(--text-disabled);
+}
+
+/* Tab Content */
+.lookups-tabs-content {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.lookups-tab-pane {
+  position: absolute;
+  inset: 0;
+  display: none;
+  overflow: auto;
+  padding: var(--space-3);
+}
+
+.lookups-tab-pane.active {
+  display: block;
+}
+
+/* ── JSON Editor ───────────────────────────────────────────────────────────── */
+
+.lookups-json-editor {
+  width: 100%;
+  height: 100%;
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+}
+
+.lookups-json-editor .cm-editor {
+  height: 100%;
+}
+
+.lookups-json-editor .cm-scroller {
+  overflow: auto;
+  font-family: var(--font-mono);
+}
+
+/* Summary Editor (SunEditor will mount here) */
+.lookups-summary-editor {
+  width: 100%;
+  height: 100%;
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+}
+
+/* Preview Content */
+.lookups-preview-content {
+  width: 100%;
+  height: 100%;
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius-md);
+  padding: var(--space-3);
+  overflow: auto;
+}
+
+.lookups-preview-placeholder {
+  color: var(--text-muted);
+  text-align: center;
+  padding: var(--space-8);
+}
+
+/* Preview content styling */
+.lookups-preview-content h1,
+.lookups-preview-content h2,
+.lookups-preview-content h3,
+.lookups-preview-content h4,
+.lookups-preview-content h5,
+.lookups-preview-content h6 {
+  margin-top: var(--space-4);
+  margin-bottom: var(--space-2);
+  color: var(--text-primary);
+}
+
+.lookups-preview-content p {
+  margin-bottom: var(--space-2);
+  line-height: 1.6;
+}
+
+/* ── Syntax Highlighting for Preview ─────────────────────────────────────── */
+
+.lookups-preview-content pre {
+  background: var(--bg-tertiary);
+  border-radius: var(--border-radius-md);
+  padding: var(--space-3);
+  overflow-x: auto;
+  margin-bottom: var(--space-3);
+}
+
+.lookups-preview-content code {
+  background: var(--bg-tertiary);
+  padding: 2px 6px;
+  border-radius: var(--border-radius-sm);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+}
+
+.lookups-preview-content pre code {
+  background: transparent;
+  padding: 0;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+}
+
+.lookups-preview-content ul,
+.lookups-preview-content ol {
+  margin-left: var(--space-4);
+  margin-bottom: var(--space-2);
+}
+
+/* ── Footer Controls ─────────────────────────────────────────────────────── */
+
+.lookups-footer-select {
+  background: var(--bg-secondary);
+  border: var(--border-standard);
+  border-radius: var(--border-radius-sm);
+  color: var(--text-primary);
+  padding: 2px 8px;
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+}
+
+.lookups-footer-select:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}
+
+.lookups-footer-filler {
+  flex: 1;
+  min-width: 16px;
+  z-index: 1;
+  background: var(--accent-primary);
+  color: white;
+  border: none;
+}
+
+.lookups-footer-datasource {
+  width: auto;
+  height: 100%;
+  padding: 0 var(--space-7) 0 var(--space-5);
+  border: none;
+  background: var(--accent-primary);
+  color: white;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  transition: background-color var(--transition-fast);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='white'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  z-index: 1;
+}
+
+.lookups-footer-datasource:hover,
+.lookups-footer-datasource:focus {
+  background-color: var(--accent-hover);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='white'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+}
+
+.lookups-footer-datasource option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  padding: var(--space-2);
+}
+
+/* ── JSON Editor Dark Theme Integration ──────────────────────────────────── */
+
+.lookups-tab-pane #lookups-tab-json {
+  padding: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.lookups-tab-pane #lookups-tab-json .cm-editor {
+  width: 100%;
+  height: 100%;
+}
+
+.lookups-preview-content .hljs,
+.lookups-preview-content code[class*="language-"],
+.lookups-preview-content pre[class*="language-"] {
+  background: transparent;
+  color: var(--text-primary);
+}
+
+.lookups-preview-content .hljs-keyword,
+.lookups-preview-content .token.keyword {
+  color: #ff79c6;
+}
+
+.lookups-preview-content .hljs-string,
+.lookups-preview-content .token.string {
+  color: #f1fa8c;
+}
+
+.lookups-preview-content .hljs-number,
+.lookups-preview-content .token.number {
+  color: #bd93f9;
+}
+
+.lookups-preview-content .hljs-comment,
+.lookups-preview-content .token.comment {
+  color: #6272a4;
+}
+
+.lookups-preview-content .hljs-function,
+.lookups-preview-content .token.function {
+  color: #50fa7b;
+}
+
+/* ── SunEditor Customization ─────────────────────────────────────────────── */
+
+.lookups-summary-editor .sun-editor {
+  background: var(--bg-secondary);
+  border: var(--border-standard);
+  border-radius: var(--border-radius-md);
+}
+
+.lookups-summary-editor .sun-editor .se-toolbar {
+  background: var(--bg-tertiary);
+  border-bottom: var(--border-standard);
+}
+
+.lookups-summary-editor .sun-editor .se-resizing-bar {
+  background: var(--bg-tertiary);
+  border-top: var(--border-standard);
+}
+
+.lookups-summary-editor .sun-editor .se-wrapper {
+  background: var(--bg-primary);
+}
+
+.lookups-summary-editor .sun-editor .se-wrapper .se-wrapper-wysiwyg {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+} /* end @layer managers */

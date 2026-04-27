@@ -1,0 +1,46 @@
+/**
+ * AI Auditor Manager Styles
+ */
+
+@layer managers {
+  .ai-auditor-container {
+    padding: var(--space-4);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .placeholder-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+    padding-bottom: var(--space-3);
+    border-bottom: var(--border-standard);
+  }
+
+  .placeholder-header h2 {
+    margin: 0;
+    font-size: var(--font-size-xl);
+    color: var(--text-primary);
+  }
+
+  .placeholder-content {
+    flex: 1;
+  }
+
+  .placeholder-content p {
+    color: var(--text-secondary);
+    margin-bottom: var(--space-4);
+  }
+
+  .placeholder-notice {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    background: var(--bg-tertiary);
+    border-radius: var(--border-radius-md);
+    color: var(--text-secondary);
+  }
+}
