@@ -64,6 +64,15 @@
   display: none !important;
 }
 
+.lithium-table-container .tabulator-row.tabulator-group span {
+  color: var(--text-primary) !important;
+  margin: 0px !important;
+}
+
+.lithium-table-container .tabulator-row.tabulator-group span .li-lookup-icon-label .li-lookup-label {
+  padding-top: 1px;
+}
+
 .lithium-table-container .tabulator-row.tabulator-group {
   display: flex !important;
   background: var(--accent-alt-secondary) !important; 

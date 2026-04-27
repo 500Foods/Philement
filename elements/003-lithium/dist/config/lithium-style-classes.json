@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS class selectors/names used across the Lithium codebase",
-    "generated": "2026-04-26T18:37:58.886Z",
+    "generated": "2026-04-27T01:44:40.716Z",
     "sources": {
       "css": "56 files in src/**/*.css",
       "js": "147 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
-    "total_selectors": 2027,
-    "total_occurrences": 31350
+    "total_selectors": 2029,
+    "total_occurrences": 31388
   },
   "selectors": [
     {
@@ -13632,6 +13632,60 @@
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-table-base.js",
           "src/tables/navigation/navigation.js",
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container .tabulator-row.tabulator-group span",
+      "css": 1,
+      "js": 6,
+      "html": 8,
+      "total": 15,
+      "files": {
+        "css": [
+          "src/styles/vendor-fixes-tabulator.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js",
+          "src/tables/navigation/navigation.js",
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container .tabulator-row.tabulator-group span .li-lookup-icon-label .li-lookup-label",
+      "css": 1,
+      "js": 14,
+      "html": 8,
+      "total": 23,
+      "files": {
+        "css": [
+          "src/styles/vendor-fixes-tabulator.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/lithium-table-base.js",
+          "src/tables/lithium-table.js",
+          "src/tables/navigation/navigation.js",
+          "src/tables/resolution/lookup-loader.js",
           "src/tables/visual/visual-updates.js"
         ],
         "html": [
