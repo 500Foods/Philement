@@ -1956,6 +1956,7 @@ class LithiumApp {
         // Logout Public + remove all server JWTs so no other sessions are active
         clearJWT();
         this.clearLocalData();
+        await this.clearCacheData();
         // TODO: Call endpoint to invalidate all server sessions
         // await this.api.post('auth/logout/all');
         logAuth(Status.INFO, 'Global logout - all sessions should be invalidated');
@@ -1988,6 +1989,24 @@ class LithiumApp {
       logAuth(Status.INFO, `Local data cleared: ${keysToRemove.length} items removed`);
     } catch (error) {
       logAuth(Status.WARN, `Could not clear local data: ${error.message}`);
+    }
+  }
+
+  /**
+   * Clear service worker caches for global logout.
+   * Ensures a clean cache state for first-user experience.
+   */
+  async clearCacheData() {
+    try {
+      if ('caches' in window) {
+        const cacheNames = await caches.keys();
+        await Promise.all(
+          cacheNames.map(cacheName => caches.delete(cacheName))
+        );
+        logAuth(Status.INFO, `Cache data cleared: ${cacheNames.length} caches removed`);
+      }
+    } catch (error) {
+      logAuth(Status.WARN, `Could not clear cache data: ${error.message}`);
     }
   }
 
