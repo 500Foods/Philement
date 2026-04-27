@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS class selectors/names used across the Lithium codebase",
-    "generated": "2026-04-27T04:18:37.771Z",
+    "generated": "2026-04-27T15:49:02.800Z",
     "sources": {
-      "css": "56 files in src/**/*.css",
+      "css": "74 files in src/**/*.css",
       "js": "151 files in src/**/*.js",
-      "html": "9 files in src/**/*.html + index.html"
+      "html": "27 files in src/**/*.html + index.html"
     },
-    "total_selectors": 2034,
-    "total_occurrences": 31430
+    "total_selectors": 2030,
+    "total_occurrences": 31775
   },
   "selectors": [
     {
@@ -659,8 +659,8 @@
       "selector": ".btn-secondary",
       "css": 2,
       "js": 25,
-      "html": 0,
-      "total": 27,
+      "html": 2,
+      "total": 29,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css",
@@ -674,15 +674,17 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/pages/tokens/page-tokens.html"
+        ]
       }
     },
     {
       "selector": ".btn-secondary:hover:not(:disabled)",
       "css": 1,
       "js": 25,
-      "html": 0,
-      "total": 26,
+      "html": 2,
+      "total": 28,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -695,7 +697,9 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/pages/tokens/page-tokens.html"
+        ]
       }
     },
     {
@@ -940,34 +944,6 @@
           "src/managers/chats/chats.js"
         ],
         "html": []
-      }
-    },
-    {
-      "selector": ".checkbox-group",
-      "css": 0,
-      "js": 0,
-      "html": 5,
-      "total": 5,
-      "files": {
-        "css": [],
-        "js": [],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
-      }
-    },
-    {
-      "selector": ".checkbox-label",
-      "css": 0,
-      "js": 0,
-      "html": 9,
-      "total": 9,
-      "files": {
-        "css": [],
-        "js": [],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
       }
     },
     {
@@ -1603,6 +1579,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -1995,6 +1972,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -2019,6 +1997,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -2044,6 +2023,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -2070,6 +2050,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -2097,6 +2078,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -2124,6 +2106,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -2151,6 +2134,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -2177,6 +2161,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -2203,6 +2188,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -2229,6 +2215,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -2255,6 +2242,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -2281,6 +2269,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -2308,6 +2297,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -2335,6 +2325,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -2360,6 +2351,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -2385,6 +2377,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -2410,6 +2403,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -2435,6 +2429,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -2460,6 +2455,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -2485,6 +2481,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -2510,6 +2507,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -2535,6 +2533,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -2560,6 +2559,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -2585,6 +2585,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -2610,6 +2611,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -2635,6 +2637,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -2660,6 +2663,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -2685,6 +2689,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -2712,6 +2717,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -2739,6 +2745,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -2766,6 +2773,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -2792,6 +2800,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -2818,6 +2827,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -2844,6 +2854,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -2870,6 +2881,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -2897,6 +2909,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -2924,6 +2937,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -2951,6 +2965,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -2978,6 +2993,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -3259,6 +3275,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -3721,6 +3738,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -6161,7 +6179,7 @@
       "total": 1,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [],
         "html": []
@@ -6175,13 +6193,13 @@
       "total": 5,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [
           "src/managers/profile-manager/pages/date-formats/page-date-formats.js"
         ],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -6193,13 +6211,13 @@
       "total": 5,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [
           "src/managers/profile-manager/pages/date-formats/page-date-formats.js"
         ],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -6213,7 +6231,7 @@
         "css": [],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -6225,13 +6243,13 @@
       "total": 3,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [
           "src/managers/profile-manager/pages/date-formats/page-date-formats.js"
         ],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -6245,7 +6263,7 @@
         "css": [],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -6257,7 +6275,7 @@
       "total": 11,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [
           "src/managers/profile-manager/pages/date-formats/page-date-formats.js"
@@ -6273,7 +6291,7 @@
       "total": 6,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [
           "src/managers/profile-manager/pages/date-formats/page-date-formats.js"
@@ -6289,7 +6307,7 @@
       "total": 6,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [
           "src/managers/profile-manager/pages/date-formats/page-date-formats.js"
@@ -6309,7 +6327,7 @@
           "src/managers/profile-manager/pages/date-formats/page-date-formats.js"
         ],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -6325,7 +6343,7 @@
           "src/managers/profile-manager/pages/date-formats/page-date-formats.js"
         ],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -6337,7 +6355,7 @@
       "total": 1,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [],
         "html": []
@@ -6351,7 +6369,7 @@
       "total": 1,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [],
         "html": []
@@ -6365,11 +6383,11 @@
       "total": 4,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -6381,11 +6399,11 @@
       "total": 3,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -6393,17 +6411,22 @@
       "selector": ".df-sample-input-group .form-input",
       "css": 1,
       "js": 2,
-      "html": 27,
-      "total": 30,
+      "html": 26,
+      "total": 29,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [
           "src/managers/profile-manager/pages/date-formats/page-date-formats.js"
         ],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/addresses/page-addresses.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
+          "src/managers/profile-manager/pages/email/page-email.html",
+          "src/managers/profile-manager/pages/names/page-names.html",
+          "src/managers/profile-manager/pages/phone/page-phone.html",
+          "src/managers/profile-manager/pages/tokens/page-tokens.html"
         ]
       }
     },
@@ -6411,11 +6434,11 @@
       "selector": ".df-sample-input-group .lithium-toolbar-btn",
       "css": 1,
       "js": 25,
-      "html": 103,
-      "total": 129,
+      "html": 102,
+      "total": 128,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [
           "src/core/manager-ui.js",
@@ -6423,6 +6446,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -6439,11 +6463,11 @@
       "total": 3,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -6455,7 +6479,7 @@
       "total": 1,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [],
         "html": []
@@ -6469,7 +6493,7 @@
       "total": 1,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [],
         "html": []
@@ -6483,7 +6507,7 @@
       "total": 1,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [],
         "html": []
@@ -6497,11 +6521,11 @@
       "total": 5,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -6513,7 +6537,7 @@
       "total": 1,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [],
         "html": []
@@ -6527,11 +6551,11 @@
       "total": 16,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -6543,13 +6567,13 @@
       "total": 31,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [
           "src/managers/profile-manager/pages/date-formats/page-date-formats.js"
         ],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -6561,13 +6585,13 @@
       "total": 31,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [
           "src/managers/profile-manager/pages/date-formats/page-date-formats.js"
         ],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -6579,13 +6603,13 @@
       "total": 31,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [
           "src/managers/profile-manager/pages/date-formats/page-date-formats.js"
         ],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -6597,13 +6621,13 @@
       "total": 33,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [
           "src/managers/profile-manager/pages/date-formats/page-date-formats.js"
         ],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -6615,13 +6639,13 @@
       "total": 32,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [
           "src/managers/profile-manager/pages/date-formats/page-date-formats.js"
         ],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -6633,13 +6657,13 @@
       "total": 33,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [
           "src/managers/profile-manager/pages/date-formats/page-date-formats.js"
         ],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -6651,11 +6675,11 @@
       "total": 26,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -6667,11 +6691,11 @@
       "total": 26,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -6683,11 +6707,11 @@
       "total": 16,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -6699,11 +6723,11 @@
       "total": 16,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -6715,11 +6739,11 @@
       "total": 16,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -6731,11 +6755,11 @@
       "total": 16,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -6747,11 +6771,11 @@
       "total": 16,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -6763,11 +6787,11 @@
       "total": 16,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -6779,13 +6803,13 @@
       "total": 31,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [
           "src/managers/profile-manager/pages/date-formats/page-date-formats.js"
         ],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -6797,11 +6821,11 @@
       "total": 16,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -6813,11 +6837,11 @@
       "total": 16,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -6829,11 +6853,11 @@
       "total": 19,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -6845,11 +6869,11 @@
       "total": 22,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -6861,7 +6885,7 @@
       "total": 3,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [
           "src/shared/timezone-picker.js"
@@ -6877,13 +6901,13 @@
       "total": 4,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [
           "src/shared/timezone-picker.js"
         ],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -6895,7 +6919,7 @@
       "total": 114,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [
           "src/core/manager-ui.js",
@@ -6935,7 +6959,7 @@
       "total": 11,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [
           "src/shared/timezone-picker.js"
@@ -6951,7 +6975,7 @@
       "total": 11,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [
           "src/shared/timezone-picker.js"
@@ -6967,7 +6991,7 @@
       "total": 15,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [
           "src/shared/timezone-picker.js"
@@ -6983,7 +7007,7 @@
       "total": 15,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [
           "src/shared/timezone-picker.js"
@@ -7013,7 +7037,7 @@
       "total": 9,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [
           "src/shared/timezone-picker.js"
@@ -7029,7 +7053,7 @@
       "total": 13,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [
           "src/shared/timezone-picker.js"
@@ -7045,7 +7069,7 @@
       "total": 2,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [
           "src/shared/timezone-picker.js"
@@ -7061,7 +7085,7 @@
       "total": 2,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [
           "src/shared/timezone-picker.js"
@@ -7077,7 +7101,7 @@
       "total": 5,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [
           "src/managers/main/main.js",
@@ -7094,7 +7118,7 @@
       "total": 5,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [
           "src/shared/timezone-picker.js"
@@ -7110,7 +7134,7 @@
       "total": 2,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [
           "src/shared/timezone-picker.js"
@@ -7126,11 +7150,11 @@
       "total": 2,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -7142,11 +7166,11 @@
       "total": 2,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -7158,14 +7182,14 @@
       "total": 7,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [
           "src/managers/main/main.js",
           "src/shared/timezone-picker.js"
         ],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -7177,14 +7201,14 @@
       "total": 10,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [
           "src/managers/main/main.js",
           "src/shared/timezone-picker.js"
         ],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -7196,7 +7220,7 @@
       "total": 4,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [
           "src/shared/timezone-picker.js"
@@ -7212,11 +7236,11 @@
       "total": 3,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -7228,13 +7252,13 @@
       "total": 20,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [
           "src/managers/profile-manager/pages/date-formats/page-date-formats.js"
         ],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -7246,11 +7270,11 @@
       "total": 3,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -7262,11 +7286,11 @@
       "total": 3,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -7278,11 +7302,11 @@
       "total": 3,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -7294,11 +7318,11 @@
       "total": 3,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -7312,7 +7336,7 @@
         "css": [],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -7324,7 +7348,7 @@
       "total": 2,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [
           "src/shared/timezone-picker.js"
@@ -7340,11 +7364,11 @@
       "total": 2,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -7356,11 +7380,11 @@
       "total": 2,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -7372,11 +7396,11 @@
       "total": 2,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -7388,11 +7412,11 @@
       "total": 2,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -7404,11 +7428,11 @@
       "total": 2,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -7420,11 +7444,11 @@
       "total": 17,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -7436,11 +7460,11 @@
       "total": 23,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -7452,7 +7476,7 @@
       "total": 1,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [],
         "html": []
@@ -7462,17 +7486,22 @@
       "selector": ".df-tz-group .form-input",
       "css": 1,
       "js": 2,
-      "html": 25,
-      "total": 28,
+      "html": 24,
+      "total": 27,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [
           "src/managers/profile-manager/pages/date-formats/page-date-formats.js"
         ],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/addresses/page-addresses.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
+          "src/managers/profile-manager/pages/email/page-email.html",
+          "src/managers/profile-manager/pages/names/page-names.html",
+          "src/managers/profile-manager/pages/phone/page-phone.html",
+          "src/managers/profile-manager/pages/tokens/page-tokens.html"
         ]
       }
     },
@@ -7480,15 +7509,26 @@
       "selector": ".df-tz-group .form-select",
       "css": 1,
       "js": 0,
-      "html": 7,
-      "total": 8,
+      "html": 30,
+      "total": 31,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/annotations/page-annotations.html",
+          "src/managers/profile-manager/pages/concierge/page-concierge.html",
+          "src/managers/profile-manager/pages/email/page-email.html",
+          "src/managers/profile-manager/pages/language/page-language.html",
+          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/notifications/page-notifications.html",
+          "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
+          "src/managers/profile-manager/pages/phone/page-phone.html",
+          "src/managers/profile-manager/pages/startup/page-startup.html",
+          "src/managers/profile-manager/pages/tokens/page-tokens.html",
+          "src/managers/profile-manager/pages/tours/page-tours.html",
+          "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
     },
@@ -8080,7 +8120,7 @@
       "total": 3,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [
           "src/shared/flatpickr-picker.js"
@@ -8096,7 +8136,7 @@
       "total": 6,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css",
           "src/styles/vendor-fixes.css",
           "src/styles/vendor-flatpickr.css"
         ],
@@ -8464,28 +8504,32 @@
       "selector": ".form-actions",
       "css": 1,
       "js": 0,
-      "html": 0,
-      "total": 1,
+      "html": 1,
+      "total": 2,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/pages/tokens/page-tokens.html"
+        ]
       }
     },
     {
       "selector": ".form-actions-section",
       "css": 1,
       "js": 0,
-      "html": 0,
-      "total": 1,
+      "html": 1,
+      "total": 2,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/pages/tokens/page-tokens.html"
+        ]
       }
     },
     {
@@ -8506,8 +8550,8 @@
       "selector": ".form-group",
       "css": 3,
       "js": 4,
-      "html": 33,
-      "total": 40,
+      "html": 45,
+      "total": 52,
       "files": {
         "css": [
           "src/managers/login/login.css",
@@ -8520,7 +8564,20 @@
         ],
         "html": [
           "src/managers/login/login.html",
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/addresses/page-addresses.html",
+          "src/managers/profile-manager/pages/annotations/page-annotations.html",
+          "src/managers/profile-manager/pages/concierge/page-concierge.html",
+          "src/managers/profile-manager/pages/email/page-email.html",
+          "src/managers/profile-manager/pages/language/page-language.html",
+          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/names/page-names.html",
+          "src/managers/profile-manager/pages/notifications/page-notifications.html",
+          "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
+          "src/managers/profile-manager/pages/phone/page-phone.html",
+          "src/managers/profile-manager/pages/startup/page-startup.html",
+          "src/managers/profile-manager/pages/tokens/page-tokens.html",
+          "src/managers/profile-manager/pages/tours/page-tours.html",
+          "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
     },
@@ -8528,8 +8585,8 @@
       "selector": ".form-group input",
       "css": 2,
       "js": 4,
-      "html": 33,
-      "total": 39,
+      "html": 45,
+      "total": 51,
       "files": {
         "css": [
           "src/managers/login/login.css",
@@ -8541,7 +8598,20 @@
         ],
         "html": [
           "src/managers/login/login.html",
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/addresses/page-addresses.html",
+          "src/managers/profile-manager/pages/annotations/page-annotations.html",
+          "src/managers/profile-manager/pages/concierge/page-concierge.html",
+          "src/managers/profile-manager/pages/email/page-email.html",
+          "src/managers/profile-manager/pages/language/page-language.html",
+          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/names/page-names.html",
+          "src/managers/profile-manager/pages/notifications/page-notifications.html",
+          "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
+          "src/managers/profile-manager/pages/phone/page-phone.html",
+          "src/managers/profile-manager/pages/startup/page-startup.html",
+          "src/managers/profile-manager/pages/tokens/page-tokens.html",
+          "src/managers/profile-manager/pages/tours/page-tours.html",
+          "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
     },
@@ -8549,8 +8619,8 @@
       "selector": ".form-group input:-webkit-autofill:active",
       "css": 1,
       "js": 4,
-      "html": 33,
-      "total": 38,
+      "html": 45,
+      "total": 50,
       "files": {
         "css": [
           "src/styles/layout.css"
@@ -8561,7 +8631,20 @@
         ],
         "html": [
           "src/managers/login/login.html",
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/addresses/page-addresses.html",
+          "src/managers/profile-manager/pages/annotations/page-annotations.html",
+          "src/managers/profile-manager/pages/concierge/page-concierge.html",
+          "src/managers/profile-manager/pages/email/page-email.html",
+          "src/managers/profile-manager/pages/language/page-language.html",
+          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/names/page-names.html",
+          "src/managers/profile-manager/pages/notifications/page-notifications.html",
+          "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
+          "src/managers/profile-manager/pages/phone/page-phone.html",
+          "src/managers/profile-manager/pages/startup/page-startup.html",
+          "src/managers/profile-manager/pages/tokens/page-tokens.html",
+          "src/managers/profile-manager/pages/tours/page-tours.html",
+          "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
     },
@@ -8569,8 +8652,8 @@
       "selector": ".form-group input::placeholder",
       "css": 2,
       "js": 4,
-      "html": 33,
-      "total": 39,
+      "html": 45,
+      "total": 51,
       "files": {
         "css": [
           "src/managers/login/login.css",
@@ -8582,7 +8665,20 @@
         ],
         "html": [
           "src/managers/login/login.html",
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/addresses/page-addresses.html",
+          "src/managers/profile-manager/pages/annotations/page-annotations.html",
+          "src/managers/profile-manager/pages/concierge/page-concierge.html",
+          "src/managers/profile-manager/pages/email/page-email.html",
+          "src/managers/profile-manager/pages/language/page-language.html",
+          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/names/page-names.html",
+          "src/managers/profile-manager/pages/notifications/page-notifications.html",
+          "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
+          "src/managers/profile-manager/pages/phone/page-phone.html",
+          "src/managers/profile-manager/pages/startup/page-startup.html",
+          "src/managers/profile-manager/pages/tokens/page-tokens.html",
+          "src/managers/profile-manager/pages/tours/page-tours.html",
+          "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
     },
@@ -8590,8 +8686,8 @@
       "selector": ".form-group input:focus",
       "css": 2,
       "js": 4,
-      "html": 33,
-      "total": 39,
+      "html": 45,
+      "total": 51,
       "files": {
         "css": [
           "src/managers/login/login.css",
@@ -8603,7 +8699,20 @@
         ],
         "html": [
           "src/managers/login/login.html",
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/addresses/page-addresses.html",
+          "src/managers/profile-manager/pages/annotations/page-annotations.html",
+          "src/managers/profile-manager/pages/concierge/page-concierge.html",
+          "src/managers/profile-manager/pages/email/page-email.html",
+          "src/managers/profile-manager/pages/language/page-language.html",
+          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/names/page-names.html",
+          "src/managers/profile-manager/pages/notifications/page-notifications.html",
+          "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
+          "src/managers/profile-manager/pages/phone/page-phone.html",
+          "src/managers/profile-manager/pages/startup/page-startup.html",
+          "src/managers/profile-manager/pages/tokens/page-tokens.html",
+          "src/managers/profile-manager/pages/tours/page-tours.html",
+          "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
     },
@@ -8611,8 +8720,8 @@
       "selector": ".form-group input#login-password.caps-lock-active",
       "css": 1,
       "js": 6,
-      "html": 33,
-      "total": 40,
+      "html": 45,
+      "total": 52,
       "files": {
         "css": [
           "src/styles/layout.css"
@@ -8623,7 +8732,20 @@
         ],
         "html": [
           "src/managers/login/login.html",
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/addresses/page-addresses.html",
+          "src/managers/profile-manager/pages/annotations/page-annotations.html",
+          "src/managers/profile-manager/pages/concierge/page-concierge.html",
+          "src/managers/profile-manager/pages/email/page-email.html",
+          "src/managers/profile-manager/pages/language/page-language.html",
+          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/names/page-names.html",
+          "src/managers/profile-manager/pages/notifications/page-notifications.html",
+          "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
+          "src/managers/profile-manager/pages/phone/page-phone.html",
+          "src/managers/profile-manager/pages/startup/page-startup.html",
+          "src/managers/profile-manager/pages/tokens/page-tokens.html",
+          "src/managers/profile-manager/pages/tours/page-tours.html",
+          "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
     },
@@ -8631,8 +8753,8 @@
       "selector": ".form-group input#login-password.caps-lock-active::placeholder",
       "css": 1,
       "js": 6,
-      "html": 33,
-      "total": 40,
+      "html": 45,
+      "total": 52,
       "files": {
         "css": [
           "src/styles/layout.css"
@@ -8643,7 +8765,20 @@
         ],
         "html": [
           "src/managers/login/login.html",
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/addresses/page-addresses.html",
+          "src/managers/profile-manager/pages/annotations/page-annotations.html",
+          "src/managers/profile-manager/pages/concierge/page-concierge.html",
+          "src/managers/profile-manager/pages/email/page-email.html",
+          "src/managers/profile-manager/pages/language/page-language.html",
+          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/names/page-names.html",
+          "src/managers/profile-manager/pages/notifications/page-notifications.html",
+          "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
+          "src/managers/profile-manager/pages/phone/page-phone.html",
+          "src/managers/profile-manager/pages/startup/page-startup.html",
+          "src/managers/profile-manager/pages/tokens/page-tokens.html",
+          "src/managers/profile-manager/pages/tours/page-tours.html",
+          "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
     },
@@ -8651,8 +8786,8 @@
       "selector": ".form-group:last-of-type",
       "css": 1,
       "js": 4,
-      "html": 33,
-      "total": 38,
+      "html": 45,
+      "total": 50,
       "files": {
         "css": [
           "src/managers/login/login.css"
@@ -8663,7 +8798,20 @@
         ],
         "html": [
           "src/managers/login/login.html",
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/addresses/page-addresses.html",
+          "src/managers/profile-manager/pages/annotations/page-annotations.html",
+          "src/managers/profile-manager/pages/concierge/page-concierge.html",
+          "src/managers/profile-manager/pages/email/page-email.html",
+          "src/managers/profile-manager/pages/language/page-language.html",
+          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/names/page-names.html",
+          "src/managers/profile-manager/pages/notifications/page-notifications.html",
+          "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
+          "src/managers/profile-manager/pages/phone/page-phone.html",
+          "src/managers/profile-manager/pages/startup/page-startup.html",
+          "src/managers/profile-manager/pages/tokens/page-tokens.html",
+          "src/managers/profile-manager/pages/tours/page-tours.html",
+          "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
     },
@@ -8671,25 +8819,23 @@
       "selector": ".form-hint",
       "css": 2,
       "js": 0,
-      "html": 11,
-      "total": 13,
+      "html": 0,
+      "total": 2,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css",
           "src/styles/components.css"
         ],
         "js": [],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".form-label",
       "css": 2,
       "js": 0,
-      "html": 31,
-      "total": 33,
+      "html": 43,
+      "total": 45,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css",
@@ -8697,7 +8843,20 @@
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/addresses/page-addresses.html",
+          "src/managers/profile-manager/pages/annotations/page-annotations.html",
+          "src/managers/profile-manager/pages/concierge/page-concierge.html",
+          "src/managers/profile-manager/pages/email/page-email.html",
+          "src/managers/profile-manager/pages/language/page-language.html",
+          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/names/page-names.html",
+          "src/managers/profile-manager/pages/notifications/page-notifications.html",
+          "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
+          "src/managers/profile-manager/pages/phone/page-phone.html",
+          "src/managers/profile-manager/pages/startup/page-startup.html",
+          "src/managers/profile-manager/pages/tokens/page-tokens.html",
+          "src/managers/profile-manager/pages/tours/page-tours.html",
+          "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
     },
@@ -8705,15 +8864,26 @@
       "selector": ".form-select",
       "css": 1,
       "js": 0,
-      "html": 7,
-      "total": 8,
+      "html": 30,
+      "total": 31,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/annotations/page-annotations.html",
+          "src/managers/profile-manager/pages/concierge/page-concierge.html",
+          "src/managers/profile-manager/pages/email/page-email.html",
+          "src/managers/profile-manager/pages/language/page-language.html",
+          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/notifications/page-notifications.html",
+          "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
+          "src/managers/profile-manager/pages/phone/page-phone.html",
+          "src/managers/profile-manager/pages/startup/page-startup.html",
+          "src/managers/profile-manager/pages/tokens/page-tokens.html",
+          "src/managers/profile-manager/pages/tours/page-tours.html",
+          "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
     },
@@ -8721,15 +8891,26 @@
       "selector": ".form-select:disabled",
       "css": 1,
       "js": 0,
-      "html": 7,
-      "total": 8,
+      "html": 30,
+      "total": 31,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/annotations/page-annotations.html",
+          "src/managers/profile-manager/pages/concierge/page-concierge.html",
+          "src/managers/profile-manager/pages/email/page-email.html",
+          "src/managers/profile-manager/pages/language/page-language.html",
+          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/notifications/page-notifications.html",
+          "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
+          "src/managers/profile-manager/pages/phone/page-phone.html",
+          "src/managers/profile-manager/pages/startup/page-startup.html",
+          "src/managers/profile-manager/pages/tokens/page-tokens.html",
+          "src/managers/profile-manager/pages/tours/page-tours.html",
+          "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
     },
@@ -8737,15 +8918,26 @@
       "selector": ".form-select:focus",
       "css": 1,
       "js": 0,
-      "html": 7,
-      "total": 8,
+      "html": 30,
+      "total": 31,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/annotations/page-annotations.html",
+          "src/managers/profile-manager/pages/concierge/page-concierge.html",
+          "src/managers/profile-manager/pages/email/page-email.html",
+          "src/managers/profile-manager/pages/language/page-language.html",
+          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/notifications/page-notifications.html",
+          "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
+          "src/managers/profile-manager/pages/phone/page-phone.html",
+          "src/managers/profile-manager/pages/startup/page-startup.html",
+          "src/managers/profile-manager/pages/tokens/page-tokens.html",
+          "src/managers/profile-manager/pages/tours/page-tours.html",
+          "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
     },
@@ -8753,15 +8945,26 @@
       "selector": ".form-select:hover",
       "css": 1,
       "js": 0,
-      "html": 7,
-      "total": 8,
+      "html": 30,
+      "total": 31,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/annotations/page-annotations.html",
+          "src/managers/profile-manager/pages/concierge/page-concierge.html",
+          "src/managers/profile-manager/pages/email/page-email.html",
+          "src/managers/profile-manager/pages/language/page-language.html",
+          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/notifications/page-notifications.html",
+          "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
+          "src/managers/profile-manager/pages/phone/page-phone.html",
+          "src/managers/profile-manager/pages/startup/page-startup.html",
+          "src/managers/profile-manager/pages/tokens/page-tokens.html",
+          "src/managers/profile-manager/pages/tours/page-tours.html",
+          "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
     },
@@ -8769,15 +8972,26 @@
       "selector": ".form-select.loading",
       "css": 1,
       "js": 0,
-      "html": 7,
-      "total": 8,
+      "html": 30,
+      "total": 31,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/annotations/page-annotations.html",
+          "src/managers/profile-manager/pages/concierge/page-concierge.html",
+          "src/managers/profile-manager/pages/email/page-email.html",
+          "src/managers/profile-manager/pages/language/page-language.html",
+          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/notifications/page-notifications.html",
+          "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
+          "src/managers/profile-manager/pages/phone/page-phone.html",
+          "src/managers/profile-manager/pages/startup/page-startup.html",
+          "src/managers/profile-manager/pages/tokens/page-tokens.html",
+          "src/managers/profile-manager/pages/tours/page-tours.html",
+          "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
     },
@@ -8785,29 +8999,26 @@
       "selector": ".form-select.loading::after",
       "css": 1,
       "js": 0,
-      "html": 7,
-      "total": 8,
+      "html": 30,
+      "total": 31,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
-      }
-    },
-    {
-      "selector": ".form-textarea",
-      "css": 0,
-      "js": 0,
-      "html": 1,
-      "total": 1,
-      "files": {
-        "css": [],
-        "js": [],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/annotations/page-annotations.html",
+          "src/managers/profile-manager/pages/concierge/page-concierge.html",
+          "src/managers/profile-manager/pages/email/page-email.html",
+          "src/managers/profile-manager/pages/language/page-language.html",
+          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/notifications/page-notifications.html",
+          "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
+          "src/managers/profile-manager/pages/phone/page-phone.html",
+          "src/managers/profile-manager/pages/startup/page-startup.html",
+          "src/managers/profile-manager/pages/tokens/page-tokens.html",
+          "src/managers/profile-manager/pages/tours/page-tours.html",
+          "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
     },
@@ -9149,15 +9360,17 @@
       "selector": ".info-item",
       "css": 1,
       "js": 0,
-      "html": 11,
-      "total": 12,
+      "html": 12,
+      "total": 13,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/account/page-account.html",
+          "src/managers/profile-manager/pages/authentication/page-authentication.html",
+          "src/managers/profile-manager/pages/login-history/page-login-history.html"
         ]
       }
     },
@@ -9165,15 +9378,17 @@
       "selector": ".info-label",
       "css": 1,
       "js": 0,
-      "html": 11,
-      "total": 12,
+      "html": 12,
+      "total": 13,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/account/page-account.html",
+          "src/managers/profile-manager/pages/authentication/page-authentication.html",
+          "src/managers/profile-manager/pages/login-history/page-login-history.html"
         ]
       }
     },
@@ -9181,15 +9396,17 @@
       "selector": ".info-value",
       "css": 1,
       "js": 0,
-      "html": 11,
-      "total": 12,
+      "html": 12,
+      "total": 13,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/account/page-account.html",
+          "src/managers/profile-manager/pages/authentication/page-authentication.html",
+          "src/managers/profile-manager/pages/login-history/page-login-history.html"
         ]
       }
     },
@@ -12121,6 +12338,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -12145,6 +12363,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -12585,6 +12804,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -12609,6 +12829,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -12633,6 +12854,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -12658,6 +12880,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -12684,6 +12907,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -12709,6 +12933,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -12734,6 +12959,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -12759,6 +12985,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -12786,6 +13013,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -12812,6 +13040,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -12837,6 +13066,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -12862,6 +13092,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -12889,6 +13120,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -12916,6 +13148,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -12940,6 +13173,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -12964,6 +13198,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -12990,6 +13225,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -13017,6 +13253,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -13044,6 +13281,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -13071,6 +13309,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -13098,6 +13337,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -13125,6 +13365,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -13152,6 +13393,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -13179,6 +13421,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -13206,6 +13449,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -13232,6 +13476,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -13258,6 +13503,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -13284,6 +13530,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -13310,6 +13557,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -13336,6 +13584,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -13362,6 +13611,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -13388,6 +13638,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -13414,6 +13665,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -13440,6 +13692,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -13466,6 +13719,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -13492,6 +13746,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -13518,6 +13773,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -13545,6 +13801,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -13572,6 +13829,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -13599,6 +13857,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -13626,6 +13885,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -13652,6 +13912,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -13678,6 +13939,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -13706,6 +13968,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -13733,6 +13996,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -13761,6 +14025,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -13788,6 +14053,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -13814,6 +14080,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -13840,6 +14107,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -13866,6 +14134,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -13892,6 +14161,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -13918,6 +14188,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -13946,6 +14217,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -13972,6 +14244,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -13998,6 +14271,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -14024,6 +14298,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -14050,6 +14325,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -14076,6 +14352,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -14102,6 +14379,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -14130,6 +14408,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -14158,6 +14437,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -14186,6 +14466,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -14214,6 +14495,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -14242,6 +14524,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -14267,6 +14550,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -14294,6 +14578,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -14321,6 +14606,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -14348,6 +14634,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -14375,6 +14662,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -14402,6 +14690,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -14430,6 +14719,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -14459,6 +14749,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -14488,6 +14779,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -14516,6 +14808,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -14541,6 +14834,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -14566,6 +14860,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -14591,6 +14886,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -14616,6 +14912,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -14641,6 +14938,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -14666,6 +14964,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -14691,6 +14990,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -14716,6 +15016,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -14741,6 +15042,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -14766,6 +15068,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -14791,6 +15094,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -14816,6 +15120,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -14841,6 +15146,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -14866,6 +15172,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -14891,6 +15198,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -14916,6 +15224,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -14940,6 +15249,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -14967,6 +15277,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -14994,6 +15305,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -15021,6 +15333,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -15048,6 +15361,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -15075,6 +15389,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -15100,6 +15415,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -15125,6 +15441,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",
@@ -15363,8 +15680,8 @@
       "selector": ".lithium-toolbar",
       "css": 1,
       "js": 21,
-      "html": 67,
-      "total": 89,
+      "html": 66,
+      "total": 88,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -15387,8 +15704,8 @@
       "selector": ".lithium-toolbar > *:first-child",
       "css": 1,
       "js": 21,
-      "html": 67,
-      "total": 89,
+      "html": 66,
+      "total": 88,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -15411,8 +15728,8 @@
       "selector": ".lithium-toolbar > *:last-child",
       "css": 1,
       "js": 21,
-      "html": 67,
-      "total": 89,
+      "html": 66,
+      "total": 88,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -15435,8 +15752,8 @@
       "selector": ".lithium-toolbar-btn",
       "css": 1,
       "js": 25,
-      "html": 101,
-      "total": 127,
+      "html": 100,
+      "total": 126,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -15447,6 +15764,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -15459,8 +15777,8 @@
       "selector": ".lithium-toolbar-btn .lithium-toolbar-icon",
       "css": 1,
       "js": 25,
-      "html": 101,
-      "total": 127,
+      "html": 100,
+      "total": 126,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -15471,6 +15789,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -15483,8 +15802,8 @@
       "selector": ".lithium-toolbar-btn .lithium-toolbar-label",
       "css": 1,
       "js": 25,
-      "html": 101,
-      "total": 127,
+      "html": 100,
+      "total": 126,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -15495,6 +15814,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -15507,8 +15827,8 @@
       "selector": ".lithium-toolbar-btn:active",
       "css": 1,
       "js": 25,
-      "html": 101,
-      "total": 127,
+      "html": 100,
+      "total": 126,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -15519,6 +15839,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -15531,8 +15852,8 @@
       "selector": ".lithium-toolbar-btn:disabled",
       "css": 1,
       "js": 25,
-      "html": 101,
-      "total": 127,
+      "html": 100,
+      "total": 126,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -15543,6 +15864,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -15555,8 +15877,8 @@
       "selector": ".lithium-toolbar-btn:hover",
       "css": 1,
       "js": 25,
-      "html": 101,
-      "total": 127,
+      "html": 100,
+      "total": 126,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -15567,6 +15889,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -15579,8 +15902,8 @@
       "selector": ".lithium-toolbar-btn.active",
       "css": 1,
       "js": 100,
-      "html": 109,
-      "total": 210,
+      "html": 108,
+      "total": 209,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -15606,6 +15929,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -15618,8 +15942,8 @@
       "selector": ".lithium-toolbar-btn.active:hover",
       "css": 1,
       "js": 100,
-      "html": 109,
-      "total": 210,
+      "html": 108,
+      "total": 209,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -15645,6 +15969,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -15657,8 +15982,8 @@
       "selector": ".lithium-toolbar-btn.icon-only",
       "css": 1,
       "js": 25,
-      "html": 101,
-      "total": 127,
+      "html": 100,
+      "total": 126,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -15669,6 +15994,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -15681,8 +16007,8 @@
       "selector": ".lithium-toolbar-btn.lithium-collapse-btn",
       "css": 1,
       "js": 26,
-      "html": 108,
-      "total": 135,
+      "html": 107,
+      "total": 134,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -15693,6 +16019,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -15705,8 +16032,8 @@
       "selector": ".lithium-toolbar-btn.lithium-collapse-btn i",
       "css": 1,
       "js": 26,
-      "html": 108,
-      "total": 135,
+      "html": 107,
+      "total": 134,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -15717,6 +16044,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -15729,8 +16057,8 @@
       "selector": ".lithium-toolbar-btn.lithium-collapse-btn.collapsed i",
       "css": 1,
       "js": 69,
-      "html": 108,
-      "total": 178,
+      "html": 107,
+      "total": 177,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -15749,6 +16077,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -15761,8 +16090,8 @@
       "selector": ".lithium-toolbar-placeholder",
       "css": 1,
       "js": 30,
-      "html": 74,
-      "total": 105,
+      "html": 73,
+      "total": 104,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -15785,8 +16114,8 @@
       "selector": ".lithium-toolbar-popup",
       "css": 1,
       "js": 21,
-      "html": 67,
-      "total": 89,
+      "html": 66,
+      "total": 88,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -15809,8 +16138,8 @@
       "selector": ".lithium-toolbar-popup-item",
       "css": 1,
       "js": 21,
-      "html": 67,
-      "total": 89,
+      "html": 66,
+      "total": 88,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -15833,8 +16162,8 @@
       "selector": ".lithium-toolbar-popup-item i",
       "css": 1,
       "js": 21,
-      "html": 67,
-      "total": 89,
+      "html": 66,
+      "total": 88,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -15857,8 +16186,8 @@
       "selector": ".lithium-toolbar-popup-item:hover",
       "css": 1,
       "js": 21,
-      "html": 67,
-      "total": 89,
+      "html": 66,
+      "total": 88,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -15881,8 +16210,8 @@
       "selector": ".lithium-toolbar-popup.visible",
       "css": 1,
       "js": 132,
-      "html": 67,
-      "total": 200,
+      "html": 66,
+      "total": 199,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -15928,8 +16257,8 @@
       "selector": ".lithium-toolbar-stack",
       "css": 1,
       "js": 21,
-      "html": 67,
-      "total": 89,
+      "html": 66,
+      "total": 88,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -15952,8 +16281,8 @@
       "selector": ".lithium-toolbar-stack .lithium-toolbar",
       "css": 1,
       "js": 21,
-      "html": 67,
-      "total": 89,
+      "html": 66,
+      "total": 88,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -15976,8 +16305,8 @@
       "selector": ".lithium-toolbar-state-btn",
       "css": 1,
       "js": 22,
-      "html": 72,
-      "total": 95,
+      "html": 71,
+      "total": 94,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -16000,8 +16329,8 @@
       "selector": ".lithium-toolbar-state-btn:disabled",
       "css": 1,
       "js": 22,
-      "html": 72,
-      "total": 95,
+      "html": 71,
+      "total": 94,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -16024,8 +16353,8 @@
       "selector": ".lithium-toolbar-state-btn:hover",
       "css": 1,
       "js": 22,
-      "html": 72,
-      "total": 95,
+      "html": 71,
+      "total": 94,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -16048,8 +16377,8 @@
       "selector": ".lithium-toolbar-state-btn.active",
       "css": 1,
       "js": 97,
-      "html": 80,
-      "total": 178,
+      "html": 79,
+      "total": 177,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -16087,8 +16416,8 @@
       "selector": ".lithium-toolbar-state-btn.css-state",
       "css": 1,
       "js": 23,
-      "html": 73,
-      "total": 97,
+      "html": 72,
+      "total": 96,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -16111,8 +16440,8 @@
       "selector": ".lithium-toolbar-tab",
       "css": 1,
       "js": 23,
-      "html": 79,
-      "total": 103,
+      "html": 78,
+      "total": 102,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -16136,8 +16465,8 @@
       "selector": ".lithium-toolbar-tab i",
       "css": 1,
       "js": 23,
-      "html": 79,
-      "total": 103,
+      "html": 78,
+      "total": 102,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -16161,8 +16490,8 @@
       "selector": ".lithium-toolbar-tab:disabled",
       "css": 1,
       "js": 23,
-      "html": 79,
-      "total": 103,
+      "html": 78,
+      "total": 102,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -16186,8 +16515,8 @@
       "selector": ".lithium-toolbar-tab:hover",
       "css": 1,
       "js": 23,
-      "html": 79,
-      "total": 103,
+      "html": 78,
+      "total": 102,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -16211,8 +16540,8 @@
       "selector": ".lithium-toolbar-tab.active",
       "css": 2,
       "js": 98,
-      "html": 87,
-      "total": 187,
+      "html": 86,
+      "total": 186,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css",
@@ -16251,8 +16580,8 @@
       "selector": ".lithium-toolbar-tab.active fa",
       "css": 1,
       "js": 98,
-      "html": 87,
-      "total": 186,
+      "html": 86,
+      "total": 185,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -16290,8 +16619,8 @@
       "selector": ".lithium-toolbar-title",
       "css": 1,
       "js": 23,
-      "html": 69,
-      "total": 93,
+      "html": 68,
+      "total": 92,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -16314,8 +16643,8 @@
       "selector": ".lithium-toolbar.collapsed-text .lithium-toolbar-state-btn[data-collapsible-text]",
       "css": 1,
       "js": 75,
-      "html": 72,
-      "total": 148,
+      "html": 71,
+      "total": 147,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -16346,8 +16675,8 @@
       "selector": ".lithium-toolbar.collapsed-text .lithium-toolbar-tab[data-collapsible-text]",
       "css": 1,
       "js": 76,
-      "html": 79,
-      "total": 156,
+      "html": 78,
+      "total": 155,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -16378,8 +16707,8 @@
       "selector": ".lithium-toolbar.collapsed-text .lithium-toolbar-title[data-collapsible-text]",
       "css": 1,
       "js": 76,
-      "html": 69,
-      "total": 146,
+      "html": 68,
+      "total": 145,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -19662,8 +19991,8 @@
       "selector": ".login-mockup .form-group",
       "css": 1,
       "js": 5,
-      "html": 33,
-      "total": 39,
+      "html": 45,
+      "total": 51,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -19674,7 +20003,20 @@
         ],
         "html": [
           "src/managers/login/login.html",
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/addresses/page-addresses.html",
+          "src/managers/profile-manager/pages/annotations/page-annotations.html",
+          "src/managers/profile-manager/pages/concierge/page-concierge.html",
+          "src/managers/profile-manager/pages/email/page-email.html",
+          "src/managers/profile-manager/pages/language/page-language.html",
+          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/names/page-names.html",
+          "src/managers/profile-manager/pages/notifications/page-notifications.html",
+          "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
+          "src/managers/profile-manager/pages/phone/page-phone.html",
+          "src/managers/profile-manager/pages/startup/page-startup.html",
+          "src/managers/profile-manager/pages/tokens/page-tokens.html",
+          "src/managers/profile-manager/pages/tours/page-tours.html",
+          "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
     },
@@ -19682,8 +20024,8 @@
       "selector": ".login-mockup .form-group:last-of-type",
       "css": 1,
       "js": 5,
-      "html": 33,
-      "total": 39,
+      "html": 45,
+      "total": 51,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -19694,7 +20036,20 @@
         ],
         "html": [
           "src/managers/login/login.html",
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/addresses/page-addresses.html",
+          "src/managers/profile-manager/pages/annotations/page-annotations.html",
+          "src/managers/profile-manager/pages/concierge/page-concierge.html",
+          "src/managers/profile-manager/pages/email/page-email.html",
+          "src/managers/profile-manager/pages/language/page-language.html",
+          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/names/page-names.html",
+          "src/managers/profile-manager/pages/notifications/page-notifications.html",
+          "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
+          "src/managers/profile-manager/pages/phone/page-phone.html",
+          "src/managers/profile-manager/pages/startup/page-startup.html",
+          "src/managers/profile-manager/pages/tokens/page-tokens.html",
+          "src/managers/profile-manager/pages/tours/page-tours.html",
+          "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
     },
@@ -25411,8 +25766,8 @@
       "selector": ".navigator-container",
       "css": 1,
       "js": 0,
-      "html": 3,
-      "total": 4,
+      "html": 2,
+      "total": 3,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -26167,7 +26522,20 @@
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/addresses/page-addresses.html",
+          "src/managers/profile-manager/pages/annotations/page-annotations.html",
+          "src/managers/profile-manager/pages/concierge/page-concierge.html",
+          "src/managers/profile-manager/pages/email/page-email.html",
+          "src/managers/profile-manager/pages/language/page-language.html",
+          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/names/page-names.html",
+          "src/managers/profile-manager/pages/notifications/page-notifications.html",
+          "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
+          "src/managers/profile-manager/pages/phone/page-phone.html",
+          "src/managers/profile-manager/pages/startup/page-startup.html",
+          "src/managers/profile-manager/pages/tokens/page-tokens.html",
+          "src/managers/profile-manager/pages/tours/page-tours.html",
+          "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
     },
@@ -26189,48 +26557,42 @@
       "selector": ".preview-item",
       "css": 1,
       "js": 0,
-      "html": 2,
-      "total": 3,
+      "html": 0,
+      "total": 1,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".preview-label",
       "css": 1,
       "js": 0,
-      "html": 2,
-      "total": 3,
+      "html": 0,
+      "total": 1,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".preview-panel",
       "css": 1,
       "js": 0,
-      "html": 1,
-      "total": 2,
+      "html": 0,
+      "total": 1,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
+        "html": []
       }
     },
     {
@@ -26402,33 +26764,17 @@
       }
     },
     {
-      "selector": ".preview-title",
-      "css": 0,
-      "js": 0,
-      "html": 1,
-      "total": 1,
-      "files": {
-        "css": [],
-        "js": [],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
-      }
-    },
-    {
       "selector": ".preview-value",
       "css": 1,
       "js": 0,
-      "html": 2,
-      "total": 3,
+      "html": 0,
+      "total": 1,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
+        "html": []
       }
     },
     {
@@ -26624,7 +26970,9 @@
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/account/page-account.html",
+          "src/managers/profile-manager/pages/authentication/page-authentication.html",
+          "src/managers/profile-manager/pages/login-history/page-login-history.html"
         ]
       }
     },
@@ -26658,40 +27006,29 @@
           "src/managers/profile-manager/pages/page-placeholder.js"
         ],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/account/page-account.html",
+          "src/managers/profile-manager/pages/addresses/page-addresses.html",
+          "src/managers/profile-manager/pages/annotations/page-annotations.html",
+          "src/managers/profile-manager/pages/authentication/page-authentication.html",
+          "src/managers/profile-manager/pages/concierge/page-concierge.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
+          "src/managers/profile-manager/pages/email/page-email.html",
+          "src/managers/profile-manager/pages/language/page-language.html",
+          "src/managers/profile-manager/pages/login-history/page-login-history.html",
+          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/names/page-names.html",
+          "src/managers/profile-manager/pages/notifications/page-notifications.html",
+          "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
+          "src/managers/profile-manager/pages/phone/page-phone.html",
+          "src/managers/profile-manager/pages/startup/page-startup.html",
+          "src/managers/profile-manager/pages/tokens/page-tokens.html",
+          "src/managers/profile-manager/pages/tours/page-tours.html",
+          "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
     },
     {
       "selector": ".profile-tab-content",
-      "css": 0,
-      "js": 0,
-      "html": 1,
-      "total": 1,
-      "files": {
-        "css": [],
-        "js": [],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
-      }
-    },
-    {
-      "selector": ".progress-bar",
-      "css": 0,
-      "js": 0,
-      "html": 1,
-      "total": 1,
-      "files": {
-        "css": [],
-        "js": [],
-        "html": [
-          "src/managers/profile-manager/profile-manager.html"
-        ]
-      }
-    },
-    {
-      "selector": ".progress-fill",
       "css": 0,
       "js": 0,
       "html": 1,
@@ -28190,7 +28527,23 @@
           "src/managers/profile-manager/pages/page-placeholder.js"
         ],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/account/page-account.html",
+          "src/managers/profile-manager/pages/addresses/page-addresses.html",
+          "src/managers/profile-manager/pages/annotations/page-annotations.html",
+          "src/managers/profile-manager/pages/authentication/page-authentication.html",
+          "src/managers/profile-manager/pages/concierge/page-concierge.html",
+          "src/managers/profile-manager/pages/email/page-email.html",
+          "src/managers/profile-manager/pages/language/page-language.html",
+          "src/managers/profile-manager/pages/login-history/page-login-history.html",
+          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/names/page-names.html",
+          "src/managers/profile-manager/pages/notifications/page-notifications.html",
+          "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
+          "src/managers/profile-manager/pages/phone/page-phone.html",
+          "src/managers/profile-manager/pages/startup/page-startup.html",
+          "src/managers/profile-manager/pages/tokens/page-tokens.html",
+          "src/managers/profile-manager/pages/tours/page-tours.html",
+          "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
     },
@@ -28208,7 +28561,23 @@
           "src/managers/profile-manager/pages/page-placeholder.js"
         ],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/account/page-account.html",
+          "src/managers/profile-manager/pages/addresses/page-addresses.html",
+          "src/managers/profile-manager/pages/annotations/page-annotations.html",
+          "src/managers/profile-manager/pages/authentication/page-authentication.html",
+          "src/managers/profile-manager/pages/concierge/page-concierge.html",
+          "src/managers/profile-manager/pages/email/page-email.html",
+          "src/managers/profile-manager/pages/language/page-language.html",
+          "src/managers/profile-manager/pages/login-history/page-login-history.html",
+          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/names/page-names.html",
+          "src/managers/profile-manager/pages/notifications/page-notifications.html",
+          "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
+          "src/managers/profile-manager/pages/phone/page-phone.html",
+          "src/managers/profile-manager/pages/startup/page-startup.html",
+          "src/managers/profile-manager/pages/tokens/page-tokens.html",
+          "src/managers/profile-manager/pages/tours/page-tours.html",
+          "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
     },
@@ -28378,9 +28747,9 @@
     {
       "selector": ".settings-page",
       "css": 1,
-      "js": 4,
+      "js": 6,
       "html": 18,
-      "total": 23,
+      "total": 25,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -28389,35 +28758,105 @@
           "src/managers/profile-manager/profile-manager-settings.js"
         ],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/account/page-account.html",
+          "src/managers/profile-manager/pages/addresses/page-addresses.html",
+          "src/managers/profile-manager/pages/annotations/page-annotations.html",
+          "src/managers/profile-manager/pages/authentication/page-authentication.html",
+          "src/managers/profile-manager/pages/concierge/page-concierge.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
+          "src/managers/profile-manager/pages/email/page-email.html",
+          "src/managers/profile-manager/pages/language/page-language.html",
+          "src/managers/profile-manager/pages/login-history/page-login-history.html",
+          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/names/page-names.html",
+          "src/managers/profile-manager/pages/notifications/page-notifications.html",
+          "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
+          "src/managers/profile-manager/pages/phone/page-phone.html",
+          "src/managers/profile-manager/pages/startup/page-startup.html",
+          "src/managers/profile-manager/pages/tokens/page-tokens.html",
+          "src/managers/profile-manager/pages/tours/page-tours.html",
+          "src/managers/profile-manager/pages/training/page-training.html"
+        ]
+      }
+    },
+    {
+      "selector": ".settings-page .df-content",
+      "css": 1,
+      "js": 7,
+      "html": 19,
+      "total": 27,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
+        ],
+        "js": [
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.js",
+          "src/managers/profile-manager/profile-manager-settings.js"
+        ],
+        "html": [
+          "src/managers/profile-manager/pages/account/page-account.html",
+          "src/managers/profile-manager/pages/addresses/page-addresses.html",
+          "src/managers/profile-manager/pages/annotations/page-annotations.html",
+          "src/managers/profile-manager/pages/authentication/page-authentication.html",
+          "src/managers/profile-manager/pages/concierge/page-concierge.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
+          "src/managers/profile-manager/pages/email/page-email.html",
+          "src/managers/profile-manager/pages/language/page-language.html",
+          "src/managers/profile-manager/pages/login-history/page-login-history.html",
+          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/names/page-names.html",
+          "src/managers/profile-manager/pages/notifications/page-notifications.html",
+          "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
+          "src/managers/profile-manager/pages/phone/page-phone.html",
+          "src/managers/profile-manager/pages/startup/page-startup.html",
+          "src/managers/profile-manager/pages/tokens/page-tokens.html",
+          "src/managers/profile-manager/pages/tours/page-tours.html",
+          "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
     },
     {
       "selector": ".settings-page .flatpickr-calendar",
       "css": 1,
-      "js": 5,
+      "js": 7,
       "html": 18,
-      "total": 24,
+      "total": 26,
       "files": {
         "css": [
-          "src/managers/profile-manager/profile-manager.css"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [
           "src/managers/profile-manager/profile-manager-settings.js",
           "src/shared/flatpickr-picker.js"
         ],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/account/page-account.html",
+          "src/managers/profile-manager/pages/addresses/page-addresses.html",
+          "src/managers/profile-manager/pages/annotations/page-annotations.html",
+          "src/managers/profile-manager/pages/authentication/page-authentication.html",
+          "src/managers/profile-manager/pages/concierge/page-concierge.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
+          "src/managers/profile-manager/pages/email/page-email.html",
+          "src/managers/profile-manager/pages/language/page-language.html",
+          "src/managers/profile-manager/pages/login-history/page-login-history.html",
+          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/names/page-names.html",
+          "src/managers/profile-manager/pages/notifications/page-notifications.html",
+          "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
+          "src/managers/profile-manager/pages/phone/page-phone.html",
+          "src/managers/profile-manager/pages/startup/page-startup.html",
+          "src/managers/profile-manager/pages/tokens/page-tokens.html",
+          "src/managers/profile-manager/pages/tours/page-tours.html",
+          "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
     },
     {
       "selector": ".settings-page .profile-info-grid",
       "css": 1,
-      "js": 4,
+      "js": 6,
       "html": 21,
-      "total": 26,
+      "total": 28,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -28426,16 +28865,33 @@
           "src/managers/profile-manager/profile-manager-settings.js"
         ],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/account/page-account.html",
+          "src/managers/profile-manager/pages/addresses/page-addresses.html",
+          "src/managers/profile-manager/pages/annotations/page-annotations.html",
+          "src/managers/profile-manager/pages/authentication/page-authentication.html",
+          "src/managers/profile-manager/pages/concierge/page-concierge.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
+          "src/managers/profile-manager/pages/email/page-email.html",
+          "src/managers/profile-manager/pages/language/page-language.html",
+          "src/managers/profile-manager/pages/login-history/page-login-history.html",
+          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/names/page-names.html",
+          "src/managers/profile-manager/pages/notifications/page-notifications.html",
+          "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
+          "src/managers/profile-manager/pages/phone/page-phone.html",
+          "src/managers/profile-manager/pages/startup/page-startup.html",
+          "src/managers/profile-manager/pages/tokens/page-tokens.html",
+          "src/managers/profile-manager/pages/tours/page-tours.html",
+          "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
     },
     {
       "selector": ".settings-page:not(.active)",
       "css": 1,
-      "js": 79,
+      "js": 81,
       "html": 26,
-      "total": 106,
+      "total": 108,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -28460,6 +28916,24 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/account/page-account.html",
+          "src/managers/profile-manager/pages/addresses/page-addresses.html",
+          "src/managers/profile-manager/pages/annotations/page-annotations.html",
+          "src/managers/profile-manager/pages/authentication/page-authentication.html",
+          "src/managers/profile-manager/pages/concierge/page-concierge.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
+          "src/managers/profile-manager/pages/email/page-email.html",
+          "src/managers/profile-manager/pages/language/page-language.html",
+          "src/managers/profile-manager/pages/login-history/page-login-history.html",
+          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/names/page-names.html",
+          "src/managers/profile-manager/pages/notifications/page-notifications.html",
+          "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
+          "src/managers/profile-manager/pages/phone/page-phone.html",
+          "src/managers/profile-manager/pages/startup/page-startup.html",
+          "src/managers/profile-manager/pages/tokens/page-tokens.html",
+          "src/managers/profile-manager/pages/tours/page-tours.html",
+          "src/managers/profile-manager/pages/training/page-training.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html"
@@ -28469,9 +28943,9 @@
     {
       "selector": ".settings-page.active",
       "css": 1,
-      "js": 79,
+      "js": 81,
       "html": 26,
-      "total": 106,
+      "total": 108,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -28496,6 +28970,24 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/account/page-account.html",
+          "src/managers/profile-manager/pages/addresses/page-addresses.html",
+          "src/managers/profile-manager/pages/annotations/page-annotations.html",
+          "src/managers/profile-manager/pages/authentication/page-authentication.html",
+          "src/managers/profile-manager/pages/concierge/page-concierge.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
+          "src/managers/profile-manager/pages/email/page-email.html",
+          "src/managers/profile-manager/pages/language/page-language.html",
+          "src/managers/profile-manager/pages/login-history/page-login-history.html",
+          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/names/page-names.html",
+          "src/managers/profile-manager/pages/notifications/page-notifications.html",
+          "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
+          "src/managers/profile-manager/pages/phone/page-phone.html",
+          "src/managers/profile-manager/pages/startup/page-startup.html",
+          "src/managers/profile-manager/pages/tokens/page-tokens.html",
+          "src/managers/profile-manager/pages/tours/page-tours.html",
+          "src/managers/profile-manager/pages/training/page-training.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html"
@@ -32215,6 +32707,42 @@
       }
     },
     {
+      "selector": ".tab-panel:not(.active)",
+      "css": 1,
+      "js": 75,
+      "html": 10,
+      "total": 86,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/profile-manager.css"
+        ],
+        "js": [
+          "src/app.js",
+          "src/core/manager-ui.js",
+          "src/core/zoom-control.js",
+          "src/managers/crimson/crimson-citations.js",
+          "src/managers/crimson/crimson-ui.js",
+          "src/managers/login/login.js",
+          "src/managers/lookups/lookups.js",
+          "src/managers/main/main.js",
+          "src/managers/profile-manager/profile-manager-settings.js",
+          "src/managers/profile-manager/profile-manager-table.js",
+          "src/managers/profile-manager/profile-manager.js",
+          "src/managers/queries/queries-ui.js",
+          "src/managers/queries/queries.js",
+          "src/managers/style-manager/style-manager.js",
+          "src/shared/crimson-ws.js",
+          "src/tables/column-manager/cm-table.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html"
+        ]
+      }
+    },
+    {
       "selector": ".tab-panel.active",
       "css": 1,
       "js": 75,
@@ -32338,8 +32866,8 @@
       "selector": ".table-container",
       "css": 2,
       "js": 0,
-      "html": 3,
-      "total": 5,
+      "html": 2,
+      "total": 4,
       "files": {
         "css": [
           "src/core/manager-panels.css",
@@ -36557,8 +37085,8 @@
       "selector": "#profile-left-panel .lithium-toolbar",
       "css": 1,
       "js": 21,
-      "html": 67,
-      "total": 89,
+      "html": 66,
+      "total": 88,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -36755,7 +37283,7 @@
       }
     },
     {
-      "selector": "#settings-page--9 .df-content .os-scrollbar-vertical",
+      "selector": "#settings-page--9 > div.df-content > div.os-scrollbar-vertical",
       "css": 1,
       "js": 1,
       "html": 1,
@@ -36768,7 +37296,7 @@
           "src/managers/profile-manager/pages/date-formats/page-date-formats.js"
         ],
         "html": [
-          "src/managers/profile-manager/profile-manager.html"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html"
         ]
       }
     },
@@ -36907,6 +37435,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/style-manager/style-manager.html",

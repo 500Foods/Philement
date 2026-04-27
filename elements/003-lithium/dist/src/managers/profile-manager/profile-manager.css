@@ -1,0 +1,528 @@
+/**
+ * Profile Manager Styles
+ *
+ * User preferences and profile settings with LithiumTable for options
+ */
+
+@layer managers {
+
+/* Page Container */
+#profile-manager-page {
+  opacity: 0;
+  transition: opacity var(--transition-normal);
+  height: 100%;
+  overflow: hidden;
+}
+
+#profile-manager-page.visible {
+  opacity: 1;
+}
+
+/* Manager Panels Layout */
+.profile-manager-container {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Left Panel: Options Table */
+#profile-left-panel {
+  display: flex;
+  flex-direction: column;
+  width: 160px;
+  background: var(--bg-secondary);
+  overflow: hidden;
+  padding-bottom: 0;
+  min-width: 160px;
+}
+
+#profile-left-panel.collapsed {
+  width: 0 !important;
+  min-width: 0 !important;
+  border-right: none;
+  overflow: hidden;
+}
+
+/* Toolbar in left panel */
+#profile-left-panel .lithium-toolbar {
+  flex-shrink: 0;
+  border-radius: 0;
+  border: none;
+  outline: none;
+  outline-offset: 0;
+}
+
+/* Table Container */
+#profile-table-container {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  margin: var(--space-2) var(--space-3);
+}
+
+#profile-table-container .tabulator {
+  border: none;
+  height: 100% !important;
+  border-radius: var(--border-radius-sm);
+}
+
+/* Navigator */
+#profile-navigator {
+  flex-shrink: 0;
+  background: var(--bg-secondary);
+  border-radius: 0 0 var(--border-radius-sm) var(--border-radius-sm);
+}
+
+/* Splitter */
+#profile-splitter {
+  flex-shrink: 0;
+  width: 6px;
+  cursor: col-resize;
+  transition: background var(--transition-fast);
+}
+
+#profile-splitter:hover,
+#profile-splitter.resizing {
+  background: var(--accent-primary);
+}
+
+#profile-splitter.collapsed {
+  display: none;
+}
+
+/* Right Panel: Settings */
+#profile-right-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--bg-secondary);
+}
+
+/* Active tab styling (toggle) - uses toggle colors for selected state */
+.lithium-toolbar-tab.active {
+  background: var(--accent-toggle) !important;
+  color: var(--text-toggle) !important;
+}
+
+.lithium-toolbar-tab.active fa {
+  color: var(--text-toggle) !important;
+}
+
+/* Tab Toolbar */
+#profile-tab-toolbar {
+  flex-shrink: 0;
+  border-radius: 0;
+  border: none;
+  outline: none;
+  outline-offset: 0;
+  padding: 0px;
+  background: var(--bg-secondary);
+}                                 
+
+/* Tab Content */
+#profile-tab-content {
+  flex: 1;
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--bg-secondary);
+}
+
+/* Tab Panels */
+.tab-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-std, 350ms ease-in-out);
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.tab-panel.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Settings Pages with Crossfade */
+.settings-page {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: var(--space-lg);
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-std, 350ms ease-in-out);
+  background: var(--bg-secondary);
+}
+
+.settings-page.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Reduced Motion - disable transitions */
+@media (prefers-reduced-motion: reduce) {
+  .tab-panel,
+  .settings-page {
+    transition: none;
+  }
+
+  .tab-panel {
+    position: relative;
+  }
+
+  .tab-panel:not(.active) {
+    display: none;
+  }
+
+  .settings-page {
+    opacity: 1;
+    position: relative;
+    pointer-events: auto;
+  }
+
+  .settings-page:not(.active) {
+    display: none;
+  }
+}
+
+/* Profile Content Container for Settings Pages */
+#panel-settings .profile-content {
+  position: relative;
+  min-height: 300px;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Scrollable content within a settings page */
+.settings-page .preferences-form,
+.settings-page .profile-info-grid {
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+/* Form Actions Section */
+.form-actions-section {
+  margin-top: auto;
+  padding-top: var(--space-lg);
+}
+
+/* ── Collection Tab JSON Editor ─────────────────────────────────────────── */
+
+.profile-collection-editor {
+  width: 100%;
+  height: 100%;
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+}
+
+.profile-collection-editor .cm-editor {
+  height: 100%;
+}
+
+.profile-collection-editor .cm-scroller {
+  overflow: auto;
+  font-family: var(--font-mono);
+}
+
+/* Fix CodeMirror fold gutter icons */
+.profile-collection-editor .cm-foldGutter .cm-gutterElement {
+  font-size: 10px;
+}
+
+/* Fold placeholder styling */
+.profile-collection-editor .cm-foldPlaceholder {
+  border: none;
+  background: none;
+}
+
+/* Read-only visual state */
+.profile-collection-editor.lithium-cm-readonly .cm-content {
+  cursor: default;
+}
+
+/* Editable visual state */
+.profile-collection-editor.lithium-cm-editable .cm-content {
+  cursor: text;
+}
+
+/* Manager slot footer Save/Cancel styling - inherited from manager-ui.css */
+
+/* Profile Content Sections */
+.profile-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.profile-section {
+  background: var(--bg-secondary);
+  padding: var(--space-lg);
+}
+
+.section-title {
+  font-size: var(--font-size-lg);
+  color: var(--text-primary);
+  margin: 0 0 var(--space-lg) 0;
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--border-color-light);
+  display: flex;
+  align-items: center;
+}
+
+.section-title i {
+  color: var(--accent-primary);
+  width: 20px;
+}
+
+/* Account Information Grid */
+.profile-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.info-label {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.info-value {
+  font-size: var(--font-size-md);
+  color: var(--text-primary);
+}
+
+/* Preferences Form */
+.preferences-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-label {
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+}
+
+.form-select {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-size-md);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239CA3AF' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--space-md) center;
+  padding-right: var(--space-xl);
+}
+
+.form-select:hover {
+  border-color: var(--border-color-hover);
+}
+
+.form-select:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px var(--accent-primary-transparent, rgb(88 166 255 / 20%));
+}
+
+.form-select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.form-hint {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Form Actions */
+.form-actions {
+  display: flex;
+  margin-top: var(--space-md);
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--border-color-light);
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-sm) var(--space-lg);
+  font-size: var(--font-size-md);
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-primary {
+  background: var(--accent-primary);
+  color: var(--text-on-accent, white);
+  border-color: var(--accent-primary);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-primary-hover);
+  border-color: var(--accent-primary-hover);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--text-secondary);
+  border-color: var(--border-color);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--bg-tertiary);
+  border-color: var(--border-color-hover);
+  color: var(--text-primary);
+}
+
+.btn i {
+  font-size: 0.9em;
+}
+
+/* Preview Panel */
+.preview-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+}
+
+.preview-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.preview-label {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.preview-value {
+  font-size: var(--font-size-md);
+  color: var(--text-primary);
+}
+
+/* Loading State */
+.form-select.loading {
+  background-image: none;
+  position: relative;
+}
+
+.form-select.loading::after {
+  content: '';
+  position: absolute;
+  right: var(--space-md);
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border-color);
+  border-top-color: var(--accent-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: translateY(-50%) rotate(360deg);
+  }
+}
+
+/* Responsive Adjustments */
+@media (width <= 768px) {
+  #profile-left-panel {
+    position: absolute;
+    z-index: 100;
+    height: 100%;
+    box-shadow: var(--shadow-lg);
+  }
+
+  #profile-left-panel.collapsed {
+    transform: translateX(-100%);
+  }
+
+  #profile-splitter {
+    display: none;
+  }
+
+  .profile-content {
+    padding: var(--space-md);
+  }
+
+  .profile-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .btn {
+    width: 100%;
+  }
+
+  .preview-panel {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (width <= 480px) {
+  .preview-panel {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  #profile-manager-page,
+  #profile-left-panel,
+  .btn,
+  .form-select {
+    transition: none;
+  }
+}
+
+/* ── Date Formats UI ─────────────────────────────────────────────────────────── */
+
+
+
+} /* end @layer managers */

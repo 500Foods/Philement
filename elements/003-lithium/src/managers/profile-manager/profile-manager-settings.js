@@ -68,12 +68,33 @@ import { SettingsPageRegistry } from './pages/page-registry.js';
 
     this._inPageTransition = true;
 
-    const targetPage = this.container.querySelector(`.settings-page[data-page-index="${index}"]`);
+    let targetPage = this.container.querySelector(`.settings-page[data-page-index="${index}"]`);
 
     if (!targetPage) {
-      log(Subsystems.MANAGER, Status.WARN, `[SettingsTab] Page not found: ${index}`);
-      this._inPageTransition = false;
-      return;
+      // Page not loaded yet, try to load it via the registry
+      log(Subsystems.MANAGER, Status.DEBUG, `[SettingsTab] Page ${index} not found, attempting to load...`);
+      log(Subsystems.MANAGER, Status.DEBUG, `[SettingsTab] Container is: ${this.container.id}, has ${this.container.children.length} children`);
+      log(Subsystems.MANAGER, Status.DEBUG, `[SettingsTab] Container children:`, Array.from(this.container.children).map(c => `${c.tagName}${c.id ? '#' + c.id : ''}${c.className ? '.' + c.className : ''}`));
+
+      // The registry will load the HTML/CSS if needed
+      const handler = await this._pageRegistry.getHandler(index, this.container, pageData);
+      if (!handler) {
+        log(Subsystems.MANAGER, Status.ERROR, `[SettingsTab] Failed to load page handler for ${index}`);
+        this._inPageTransition = false;
+        return;
+      }
+
+      // Now try to find the page element again
+      targetPage = this.container.querySelector(`.settings-page[data-page-index="${index}"]`);
+      log(Subsystems.MANAGER, Status.DEBUG, `[SettingsTab] After loading, found targetPage: ${targetPage ? targetPage.id : 'null'}`);
+      if (!targetPage) {
+        // Try searching the entire document
+        const docTarget = document.querySelector(`.settings-page[data-page-index="${index}"]`);
+        log(Subsystems.MANAGER, Status.DEBUG, `[SettingsTab] Document search found: ${docTarget ? docTarget.id : 'null'}`);
+        log(Subsystems.MANAGER, Status.ERROR, `[SettingsTab] Page element still not found after loading: ${index}`);
+        this._inPageTransition = false;
+        return;
+      }
     }
 
     // Find currently active page
@@ -97,8 +118,18 @@ import { SettingsPageRegistry } from './pages/page-registry.js';
     targetPage.style.transition = `opacity ${durationStr} ease-in-out`;
     targetPage.style.opacity = '1';
 
-    // Load page handler if available
-    const handler = await this._pageRegistry.getHandler(index, targetPage, pageData);
+    // Load page handler if not already loaded
+    let handler = this._pageRegistry.getLoadedHandler(index);
+    if (!handler) {
+      handler = await this._pageRegistry.getHandler(index, targetPage, pageData);
+    }
+
+    // Ensure we have a handler
+    if (!handler) {
+      log(Subsystems.MANAGER, Status.ERROR, `[SettingsTab] No handler available for page ${index}`);
+      this._inPageTransition = false;
+      return;
+    }
     if (handler?.onShow) {
       handler.onShow();
     }

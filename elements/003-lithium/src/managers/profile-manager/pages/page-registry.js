@@ -81,8 +81,11 @@ export class SettingsPageRegistry {
    * @returns {Promise<BaseSettingsPage|null>}
    */
   async getHandler(index, container, pageData) {
+    log(Subsystems.MANAGER, Status.DEBUG, `[PageRegistry] getHandler called for index ${index}`);
+
     // Check cache first
     if (this._handlers.has(index)) {
+      log(Subsystems.MANAGER, Status.DEBUG, `[PageRegistry] Handler found in cache for ${index}`);
       const handler = this._handlers.get(index);
       // Update container reference in case DOM was rebuilt
       handler.container = container;
@@ -96,12 +99,14 @@ export class SettingsPageRegistry {
       return this._handlers.get(index) || null;
     }
 
+    log(Subsystems.MANAGER, Status.DEBUG, `[PageRegistry] Starting load for ${index}`);
     this._loading.add(index);
 
     try {
       const handler = await this._loadHandler(index, container, pageData);
       if (handler) {
         this._handlers.set(index, handler);
+        log(Subsystems.MANAGER, Status.DEBUG, `[PageRegistry] Handler cached for ${index}`);
       }
       return handler;
     } finally {
@@ -110,46 +115,73 @@ export class SettingsPageRegistry {
   }
 
   /**
-   * Load a handler module
+   * Load a page handler based on index type
    * @private
    */
   async _loadHandler(index, container, pageData) {
-    const isInternal = index < 0;
-
-    if (isInternal) {
+    log(Subsystems.MANAGER, Status.DEBUG, `[PageRegistry] _loadHandler called for index ${index}`);
+    if (index < 0) {
+      log(Subsystems.MANAGER, Status.DEBUG, `[PageRegistry] Dispatching to _loadInternalHandler for ${index}`);
       return this._loadInternalHandler(index, container, pageData);
     } else {
+      log(Subsystems.MANAGER, Status.DEBUG, `[PageRegistry] Dispatching to _loadManagerHandler for ${index}`);
       return this._loadManagerHandler(index, container, pageData);
     }
   }
 
   /**
-   * Load an internal page handler (static import)
+   * Load an internal page handler (negative indices)
    * @private
    */
   async _loadInternalHandler(index, container, pageData) {
-    const HandlerClass = INTERNAL_PAGE_MAP[index];
-
-    if (!HandlerClass) {
-      log(Subsystems.MANAGER, Status.WARN, `[PageRegistry] Unknown internal page index: ${index}`);
-      return null;
-    }
+    log(Subsystems.MANAGER, Status.DEBUG, `[PageRegistry] _loadInternalHandler called for index ${index}`);
 
     try {
+      // Get the handler class from the map
+      const HandlerClass = INTERNAL_PAGE_MAP[index];
+      if (!HandlerClass) {
+        log(Subsystems.MANAGER, Status.ERROR, `[PageRegistry] No handler class found for internal page ${index}`);
+        return null;
+      }
+
+      // Check if page element already exists (might be embedded in main HTML)
+      let pageElement = container.querySelector(`.settings-page[data-page-index="${index}"]`);
+
+      if (!pageElement) {
+        // Map index to page name for file paths
+        const pageName = this._getPageNameFromIndex(index);
+        if (!pageName) {
+          log(Subsystems.MANAGER, Status.ERROR, `[PageRegistry] Could not map index ${index} to page name`);
+          return null;
+        }
+
+        // Load HTML and CSS dynamically
+        await this._loadPageAssets(pageName, container);
+
+        // Find the page element in the container
+        pageElement = container.querySelector(`.settings-page[data-page-index="${index}"]`);
+        if (!pageElement) {
+          log(Subsystems.MANAGER, Status.ERROR, `[PageRegistry] Page element not found after loading assets for ${index}`);
+          return null;
+        }
+      } else {
+        log(Subsystems.MANAGER, Status.DEBUG, `[PageRegistry] Page element already exists in DOM for ${index}`);
+      }
+
+      // Create and initialize the handler
       const handler = new HandlerClass({
         index: index,
-        managerId: null,
         app: this.app,
         settings: this.settingsService,
         onDirtyChange: this.onDirtyChange,
       });
 
-      await handler.init(container, pageData);
+      await handler.init(pageElement, pageData);
 
-      log(Subsystems.MANAGER, Status.DEBUG, `[PageRegistry] Loaded internal handler for page ${index}`);
+      log(Subsystems.MANAGER, Status.DEBUG, `[PageRegistry] Loaded internal handler for ${index}`);
       return handler;
     } catch (error) {
-      log(Subsystems.MANAGER, Status.ERROR, `[PageRegistry] Error loading internal handler ${index}:`, error);
+      log(Subsystems.MANAGER, Status.ERROR, `[PageRegistry] Error loading internal page ${index}:`, error.message);
       return null;
     }
   }
@@ -208,12 +240,6 @@ export class SettingsPageRegistry {
       return placeholder;
     }
   }
-
-  /**
-   * Get the handler class for a manager
-   * Returns null if no specific handler exists (placeholder will be used)
-   * @private
-   */
   _getManagerHandlerClass(index) {
     // Map of manager IDs to their handler classes
     // Add new managers here as they are implemented
@@ -223,6 +249,75 @@ export class SettingsPageRegistry {
       default:
         // Return null to use placeholder
         return null;
+    }
+  }
+
+  /**
+   * Map internal page index to page name for file paths
+   * @private
+   */
+  _getPageNameFromIndex(index) {
+    const indexToNameMap = {
+      '-1': 'account',
+      '-2': 'names',
+      '-3': 'addresses',
+      '-4': 'email',
+      '-5': 'phone',
+      '-6': 'authentication',
+      '-7': 'tokens',
+      '-8': 'language',
+      '-9': 'date-formats',
+      '-10': 'number-formats',
+      '-11': 'startup',
+      '-12': 'notifications',
+      '-13': 'concierge',
+      '-14': 'annotations',
+      '-15': 'tours',
+      '-16': 'training',
+      '-17': 'login-history',
+    };
+    return indexToNameMap[index] || null;
+  }
+
+  /**
+   * Load HTML and CSS assets for a page
+   * @private
+   */
+  async _loadPageAssets(pageName, container) {
+    try {
+      // Load HTML - use absolute path that works in both dev and prod
+      const htmlUrl = `/src/managers/profile-manager/pages/${pageName}/page-${pageName}.html`;
+      const htmlResponse = await fetch(htmlUrl);
+      if (!htmlResponse.ok) {
+        throw new Error(`Failed to load HTML for ${pageName}: ${htmlResponse.status}`);
+      }
+      const htmlContent = await htmlResponse.text();
+
+      // Parse and insert HTML
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = htmlContent;
+      const pageElement = tempDiv.firstElementChild;
+      if (pageElement) {
+        container.appendChild(pageElement);
+      }
+
+      // Load CSS - use absolute path that works in both dev and prod
+      const cssUrl = `/src/managers/profile-manager/pages/${pageName}/page-${pageName}.css`;
+      const cssResponse = await fetch(cssUrl);
+      if (cssResponse.ok) {
+        const cssContent = await cssResponse.text();
+        const styleElement = document.createElement('style');
+        styleElement.textContent = cssContent;
+        styleElement.setAttribute('data-page-css', pageName);
+        document.head.appendChild(styleElement);
+      } else {
+        log(Subsystems.MANAGER, Status.DEBUG, `[PageRegistry] No CSS file found for ${pageName}, skipping`);
+      }
+
+      log(Subsystems.MANAGER, Status.DEBUG, `[PageRegistry] Loaded assets for page ${pageName}`);
+    } catch (error) {
+      log(Subsystems.MANAGER, Status.ERROR, `[PageRegistry] Error loading assets for ${pageName}:`, error.message);
+      throw error;
     }
   }
 
@@ -338,7 +433,7 @@ export class SettingsPageRegistry {
  * Create a simple static page handler for pages that just need form binding
  * This is used as a fallback when no dynamic handler exists
  */
-export function createStaticPageHandler(index, container, pageData) {
+export function createStaticPageHandler(index, _container, _pageData) {
   return new SimpleSettingsPage({
     index: index,
     managerId: index < 0 ? null : index,

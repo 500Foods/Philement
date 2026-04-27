@@ -359,6 +359,10 @@ export class DateFormatsPage extends BaseSettingsPage {
         this.setSetting('timezone', timezone);
         this._timezonePicker.setTimezone(timezone); // Update picker display
         this._renderAllPreviews();
+        // Update token table to reflect timezone change
+        if (this._tokenTable) {
+          this._tokenTable.refresh();
+        }
       },
       (position) => {
         this.setSetting('timezonePopupPosition', position);
