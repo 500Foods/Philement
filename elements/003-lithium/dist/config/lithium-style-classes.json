@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS class selectors/names used across the Lithium codebase",
-    "generated": "2026-04-27T15:49:02.800Z",
+    "generated": "2026-04-27T21:32:51.431Z",
     "sources": {
-      "css": "74 files in src/**/*.css",
-      "js": "151 files in src/**/*.js",
-      "html": "27 files in src/**/*.html + index.html"
+      "css": "100 files in src/**/*.css",
+      "js": "177 files in src/**/*.js",
+      "html": "53 files in src/**/*.html + index.html"
     },
     "total_selectors": 2030,
-    "total_occurrences": 31775
+    "total_occurrences": 32052
   },
   "selectors": [
     {
@@ -7509,25 +7509,23 @@
       "selector": ".df-tz-group .form-select",
       "css": 1,
       "js": 0,
-      "html": 30,
-      "total": 31,
+      "html": 24,
+      "total": 25,
       "files": {
         "css": [
           "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/pages/annotations/page-annotations.html",
           "src/managers/profile-manager/pages/concierge/page-concierge.html",
           "src/managers/profile-manager/pages/email/page-email.html",
           "src/managers/profile-manager/pages/language/page-language.html",
-          "src/managers/profile-manager/pages/lookups/page-lookups.html",
-          "src/managers/profile-manager/pages/notifications/page-notifications.html",
+          "src/managers/profile-manager/pages/manager-23/page-manager-23.html",
+          "src/managers/profile-manager/pages/manager-6/page-manager-6.html",
           "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
           "src/managers/profile-manager/pages/phone/page-phone.html",
           "src/managers/profile-manager/pages/startup/page-startup.html",
           "src/managers/profile-manager/pages/tokens/page-tokens.html",
-          "src/managers/profile-manager/pages/tours/page-tours.html",
           "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
@@ -8550,8 +8548,8 @@
       "selector": ".form-group",
       "css": 3,
       "js": 4,
-      "html": 45,
-      "total": 52,
+      "html": 39,
+      "total": 46,
       "files": {
         "css": [
           "src/managers/login/login.css",
@@ -8565,18 +8563,16 @@
         "html": [
           "src/managers/login/login.html",
           "src/managers/profile-manager/pages/addresses/page-addresses.html",
-          "src/managers/profile-manager/pages/annotations/page-annotations.html",
           "src/managers/profile-manager/pages/concierge/page-concierge.html",
           "src/managers/profile-manager/pages/email/page-email.html",
           "src/managers/profile-manager/pages/language/page-language.html",
-          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/manager-23/page-manager-23.html",
+          "src/managers/profile-manager/pages/manager-6/page-manager-6.html",
           "src/managers/profile-manager/pages/names/page-names.html",
-          "src/managers/profile-manager/pages/notifications/page-notifications.html",
           "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
           "src/managers/profile-manager/pages/phone/page-phone.html",
           "src/managers/profile-manager/pages/startup/page-startup.html",
           "src/managers/profile-manager/pages/tokens/page-tokens.html",
-          "src/managers/profile-manager/pages/tours/page-tours.html",
           "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
@@ -8585,8 +8581,8 @@
       "selector": ".form-group input",
       "css": 2,
       "js": 4,
-      "html": 45,
-      "total": 51,
+      "html": 39,
+      "total": 45,
       "files": {
         "css": [
           "src/managers/login/login.css",
@@ -8599,18 +8595,16 @@
         "html": [
           "src/managers/login/login.html",
           "src/managers/profile-manager/pages/addresses/page-addresses.html",
-          "src/managers/profile-manager/pages/annotations/page-annotations.html",
           "src/managers/profile-manager/pages/concierge/page-concierge.html",
           "src/managers/profile-manager/pages/email/page-email.html",
           "src/managers/profile-manager/pages/language/page-language.html",
-          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/manager-23/page-manager-23.html",
+          "src/managers/profile-manager/pages/manager-6/page-manager-6.html",
           "src/managers/profile-manager/pages/names/page-names.html",
-          "src/managers/profile-manager/pages/notifications/page-notifications.html",
           "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
           "src/managers/profile-manager/pages/phone/page-phone.html",
           "src/managers/profile-manager/pages/startup/page-startup.html",
           "src/managers/profile-manager/pages/tokens/page-tokens.html",
-          "src/managers/profile-manager/pages/tours/page-tours.html",
           "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
@@ -8619,8 +8613,8 @@
       "selector": ".form-group input:-webkit-autofill:active",
       "css": 1,
       "js": 4,
-      "html": 45,
-      "total": 50,
+      "html": 39,
+      "total": 44,
       "files": {
         "css": [
           "src/styles/layout.css"
@@ -8632,18 +8626,16 @@
         "html": [
           "src/managers/login/login.html",
           "src/managers/profile-manager/pages/addresses/page-addresses.html",
-          "src/managers/profile-manager/pages/annotations/page-annotations.html",
           "src/managers/profile-manager/pages/concierge/page-concierge.html",
           "src/managers/profile-manager/pages/email/page-email.html",
           "src/managers/profile-manager/pages/language/page-language.html",
-          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/manager-23/page-manager-23.html",
+          "src/managers/profile-manager/pages/manager-6/page-manager-6.html",
           "src/managers/profile-manager/pages/names/page-names.html",
-          "src/managers/profile-manager/pages/notifications/page-notifications.html",
           "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
           "src/managers/profile-manager/pages/phone/page-phone.html",
           "src/managers/profile-manager/pages/startup/page-startup.html",
           "src/managers/profile-manager/pages/tokens/page-tokens.html",
-          "src/managers/profile-manager/pages/tours/page-tours.html",
           "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
@@ -8652,8 +8644,8 @@
       "selector": ".form-group input::placeholder",
       "css": 2,
       "js": 4,
-      "html": 45,
-      "total": 51,
+      "html": 39,
+      "total": 45,
       "files": {
         "css": [
           "src/managers/login/login.css",
@@ -8666,18 +8658,16 @@
         "html": [
           "src/managers/login/login.html",
           "src/managers/profile-manager/pages/addresses/page-addresses.html",
-          "src/managers/profile-manager/pages/annotations/page-annotations.html",
           "src/managers/profile-manager/pages/concierge/page-concierge.html",
           "src/managers/profile-manager/pages/email/page-email.html",
           "src/managers/profile-manager/pages/language/page-language.html",
-          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/manager-23/page-manager-23.html",
+          "src/managers/profile-manager/pages/manager-6/page-manager-6.html",
           "src/managers/profile-manager/pages/names/page-names.html",
-          "src/managers/profile-manager/pages/notifications/page-notifications.html",
           "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
           "src/managers/profile-manager/pages/phone/page-phone.html",
           "src/managers/profile-manager/pages/startup/page-startup.html",
           "src/managers/profile-manager/pages/tokens/page-tokens.html",
-          "src/managers/profile-manager/pages/tours/page-tours.html",
           "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
@@ -8686,8 +8676,8 @@
       "selector": ".form-group input:focus",
       "css": 2,
       "js": 4,
-      "html": 45,
-      "total": 51,
+      "html": 39,
+      "total": 45,
       "files": {
         "css": [
           "src/managers/login/login.css",
@@ -8700,18 +8690,16 @@
         "html": [
           "src/managers/login/login.html",
           "src/managers/profile-manager/pages/addresses/page-addresses.html",
-          "src/managers/profile-manager/pages/annotations/page-annotations.html",
           "src/managers/profile-manager/pages/concierge/page-concierge.html",
           "src/managers/profile-manager/pages/email/page-email.html",
           "src/managers/profile-manager/pages/language/page-language.html",
-          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/manager-23/page-manager-23.html",
+          "src/managers/profile-manager/pages/manager-6/page-manager-6.html",
           "src/managers/profile-manager/pages/names/page-names.html",
-          "src/managers/profile-manager/pages/notifications/page-notifications.html",
           "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
           "src/managers/profile-manager/pages/phone/page-phone.html",
           "src/managers/profile-manager/pages/startup/page-startup.html",
           "src/managers/profile-manager/pages/tokens/page-tokens.html",
-          "src/managers/profile-manager/pages/tours/page-tours.html",
           "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
@@ -8720,8 +8708,8 @@
       "selector": ".form-group input#login-password.caps-lock-active",
       "css": 1,
       "js": 6,
-      "html": 45,
-      "total": 52,
+      "html": 39,
+      "total": 46,
       "files": {
         "css": [
           "src/styles/layout.css"
@@ -8733,18 +8721,16 @@
         "html": [
           "src/managers/login/login.html",
           "src/managers/profile-manager/pages/addresses/page-addresses.html",
-          "src/managers/profile-manager/pages/annotations/page-annotations.html",
           "src/managers/profile-manager/pages/concierge/page-concierge.html",
           "src/managers/profile-manager/pages/email/page-email.html",
           "src/managers/profile-manager/pages/language/page-language.html",
-          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/manager-23/page-manager-23.html",
+          "src/managers/profile-manager/pages/manager-6/page-manager-6.html",
           "src/managers/profile-manager/pages/names/page-names.html",
-          "src/managers/profile-manager/pages/notifications/page-notifications.html",
           "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
           "src/managers/profile-manager/pages/phone/page-phone.html",
           "src/managers/profile-manager/pages/startup/page-startup.html",
           "src/managers/profile-manager/pages/tokens/page-tokens.html",
-          "src/managers/profile-manager/pages/tours/page-tours.html",
           "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
@@ -8753,8 +8739,8 @@
       "selector": ".form-group input#login-password.caps-lock-active::placeholder",
       "css": 1,
       "js": 6,
-      "html": 45,
-      "total": 52,
+      "html": 39,
+      "total": 46,
       "files": {
         "css": [
           "src/styles/layout.css"
@@ -8766,18 +8752,16 @@
         "html": [
           "src/managers/login/login.html",
           "src/managers/profile-manager/pages/addresses/page-addresses.html",
-          "src/managers/profile-manager/pages/annotations/page-annotations.html",
           "src/managers/profile-manager/pages/concierge/page-concierge.html",
           "src/managers/profile-manager/pages/email/page-email.html",
           "src/managers/profile-manager/pages/language/page-language.html",
-          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/manager-23/page-manager-23.html",
+          "src/managers/profile-manager/pages/manager-6/page-manager-6.html",
           "src/managers/profile-manager/pages/names/page-names.html",
-          "src/managers/profile-manager/pages/notifications/page-notifications.html",
           "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
           "src/managers/profile-manager/pages/phone/page-phone.html",
           "src/managers/profile-manager/pages/startup/page-startup.html",
           "src/managers/profile-manager/pages/tokens/page-tokens.html",
-          "src/managers/profile-manager/pages/tours/page-tours.html",
           "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
@@ -8786,8 +8770,8 @@
       "selector": ".form-group:last-of-type",
       "css": 1,
       "js": 4,
-      "html": 45,
-      "total": 50,
+      "html": 39,
+      "total": 44,
       "files": {
         "css": [
           "src/managers/login/login.css"
@@ -8799,18 +8783,16 @@
         "html": [
           "src/managers/login/login.html",
           "src/managers/profile-manager/pages/addresses/page-addresses.html",
-          "src/managers/profile-manager/pages/annotations/page-annotations.html",
           "src/managers/profile-manager/pages/concierge/page-concierge.html",
           "src/managers/profile-manager/pages/email/page-email.html",
           "src/managers/profile-manager/pages/language/page-language.html",
-          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/manager-23/page-manager-23.html",
+          "src/managers/profile-manager/pages/manager-6/page-manager-6.html",
           "src/managers/profile-manager/pages/names/page-names.html",
-          "src/managers/profile-manager/pages/notifications/page-notifications.html",
           "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
           "src/managers/profile-manager/pages/phone/page-phone.html",
           "src/managers/profile-manager/pages/startup/page-startup.html",
           "src/managers/profile-manager/pages/tokens/page-tokens.html",
-          "src/managers/profile-manager/pages/tours/page-tours.html",
           "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
@@ -8834,8 +8816,8 @@
       "selector": ".form-label",
       "css": 2,
       "js": 0,
-      "html": 43,
-      "total": 45,
+      "html": 37,
+      "total": 39,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css",
@@ -8844,18 +8826,16 @@
         "js": [],
         "html": [
           "src/managers/profile-manager/pages/addresses/page-addresses.html",
-          "src/managers/profile-manager/pages/annotations/page-annotations.html",
           "src/managers/profile-manager/pages/concierge/page-concierge.html",
           "src/managers/profile-manager/pages/email/page-email.html",
           "src/managers/profile-manager/pages/language/page-language.html",
-          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/manager-23/page-manager-23.html",
+          "src/managers/profile-manager/pages/manager-6/page-manager-6.html",
           "src/managers/profile-manager/pages/names/page-names.html",
-          "src/managers/profile-manager/pages/notifications/page-notifications.html",
           "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
           "src/managers/profile-manager/pages/phone/page-phone.html",
           "src/managers/profile-manager/pages/startup/page-startup.html",
           "src/managers/profile-manager/pages/tokens/page-tokens.html",
-          "src/managers/profile-manager/pages/tours/page-tours.html",
           "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
@@ -8864,25 +8844,23 @@
       "selector": ".form-select",
       "css": 1,
       "js": 0,
-      "html": 30,
-      "total": 31,
+      "html": 24,
+      "total": 25,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/pages/annotations/page-annotations.html",
           "src/managers/profile-manager/pages/concierge/page-concierge.html",
           "src/managers/profile-manager/pages/email/page-email.html",
           "src/managers/profile-manager/pages/language/page-language.html",
-          "src/managers/profile-manager/pages/lookups/page-lookups.html",
-          "src/managers/profile-manager/pages/notifications/page-notifications.html",
+          "src/managers/profile-manager/pages/manager-23/page-manager-23.html",
+          "src/managers/profile-manager/pages/manager-6/page-manager-6.html",
           "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
           "src/managers/profile-manager/pages/phone/page-phone.html",
           "src/managers/profile-manager/pages/startup/page-startup.html",
           "src/managers/profile-manager/pages/tokens/page-tokens.html",
-          "src/managers/profile-manager/pages/tours/page-tours.html",
           "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
@@ -8891,25 +8869,23 @@
       "selector": ".form-select:disabled",
       "css": 1,
       "js": 0,
-      "html": 30,
-      "total": 31,
+      "html": 24,
+      "total": 25,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/pages/annotations/page-annotations.html",
           "src/managers/profile-manager/pages/concierge/page-concierge.html",
           "src/managers/profile-manager/pages/email/page-email.html",
           "src/managers/profile-manager/pages/language/page-language.html",
-          "src/managers/profile-manager/pages/lookups/page-lookups.html",
-          "src/managers/profile-manager/pages/notifications/page-notifications.html",
+          "src/managers/profile-manager/pages/manager-23/page-manager-23.html",
+          "src/managers/profile-manager/pages/manager-6/page-manager-6.html",
           "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
           "src/managers/profile-manager/pages/phone/page-phone.html",
           "src/managers/profile-manager/pages/startup/page-startup.html",
           "src/managers/profile-manager/pages/tokens/page-tokens.html",
-          "src/managers/profile-manager/pages/tours/page-tours.html",
           "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
@@ -8918,25 +8894,23 @@
       "selector": ".form-select:focus",
       "css": 1,
       "js": 0,
-      "html": 30,
-      "total": 31,
+      "html": 24,
+      "total": 25,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/pages/annotations/page-annotations.html",
           "src/managers/profile-manager/pages/concierge/page-concierge.html",
           "src/managers/profile-manager/pages/email/page-email.html",
           "src/managers/profile-manager/pages/language/page-language.html",
-          "src/managers/profile-manager/pages/lookups/page-lookups.html",
-          "src/managers/profile-manager/pages/notifications/page-notifications.html",
+          "src/managers/profile-manager/pages/manager-23/page-manager-23.html",
+          "src/managers/profile-manager/pages/manager-6/page-manager-6.html",
           "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
           "src/managers/profile-manager/pages/phone/page-phone.html",
           "src/managers/profile-manager/pages/startup/page-startup.html",
           "src/managers/profile-manager/pages/tokens/page-tokens.html",
-          "src/managers/profile-manager/pages/tours/page-tours.html",
           "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
@@ -8945,25 +8919,23 @@
       "selector": ".form-select:hover",
       "css": 1,
       "js": 0,
-      "html": 30,
-      "total": 31,
+      "html": 24,
+      "total": 25,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/pages/annotations/page-annotations.html",
           "src/managers/profile-manager/pages/concierge/page-concierge.html",
           "src/managers/profile-manager/pages/email/page-email.html",
           "src/managers/profile-manager/pages/language/page-language.html",
-          "src/managers/profile-manager/pages/lookups/page-lookups.html",
-          "src/managers/profile-manager/pages/notifications/page-notifications.html",
+          "src/managers/profile-manager/pages/manager-23/page-manager-23.html",
+          "src/managers/profile-manager/pages/manager-6/page-manager-6.html",
           "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
           "src/managers/profile-manager/pages/phone/page-phone.html",
           "src/managers/profile-manager/pages/startup/page-startup.html",
           "src/managers/profile-manager/pages/tokens/page-tokens.html",
-          "src/managers/profile-manager/pages/tours/page-tours.html",
           "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
@@ -8972,25 +8944,23 @@
       "selector": ".form-select.loading",
       "css": 1,
       "js": 0,
-      "html": 30,
-      "total": 31,
+      "html": 24,
+      "total": 25,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/pages/annotations/page-annotations.html",
           "src/managers/profile-manager/pages/concierge/page-concierge.html",
           "src/managers/profile-manager/pages/email/page-email.html",
           "src/managers/profile-manager/pages/language/page-language.html",
-          "src/managers/profile-manager/pages/lookups/page-lookups.html",
-          "src/managers/profile-manager/pages/notifications/page-notifications.html",
+          "src/managers/profile-manager/pages/manager-23/page-manager-23.html",
+          "src/managers/profile-manager/pages/manager-6/page-manager-6.html",
           "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
           "src/managers/profile-manager/pages/phone/page-phone.html",
           "src/managers/profile-manager/pages/startup/page-startup.html",
           "src/managers/profile-manager/pages/tokens/page-tokens.html",
-          "src/managers/profile-manager/pages/tours/page-tours.html",
           "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
@@ -8999,25 +8969,23 @@
       "selector": ".form-select.loading::after",
       "css": 1,
       "js": 0,
-      "html": 30,
-      "total": 31,
+      "html": 24,
+      "total": 25,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [],
         "html": [
-          "src/managers/profile-manager/pages/annotations/page-annotations.html",
           "src/managers/profile-manager/pages/concierge/page-concierge.html",
           "src/managers/profile-manager/pages/email/page-email.html",
           "src/managers/profile-manager/pages/language/page-language.html",
-          "src/managers/profile-manager/pages/lookups/page-lookups.html",
-          "src/managers/profile-manager/pages/notifications/page-notifications.html",
+          "src/managers/profile-manager/pages/manager-23/page-manager-23.html",
+          "src/managers/profile-manager/pages/manager-6/page-manager-6.html",
           "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
           "src/managers/profile-manager/pages/phone/page-phone.html",
           "src/managers/profile-manager/pages/startup/page-startup.html",
           "src/managers/profile-manager/pages/tokens/page-tokens.html",
-          "src/managers/profile-manager/pages/tours/page-tours.html",
           "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
@@ -19991,8 +19959,8 @@
       "selector": ".login-mockup .form-group",
       "css": 1,
       "js": 5,
-      "html": 45,
-      "total": 51,
+      "html": 39,
+      "total": 45,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -20004,18 +19972,16 @@
         "html": [
           "src/managers/login/login.html",
           "src/managers/profile-manager/pages/addresses/page-addresses.html",
-          "src/managers/profile-manager/pages/annotations/page-annotations.html",
           "src/managers/profile-manager/pages/concierge/page-concierge.html",
           "src/managers/profile-manager/pages/email/page-email.html",
           "src/managers/profile-manager/pages/language/page-language.html",
-          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/manager-23/page-manager-23.html",
+          "src/managers/profile-manager/pages/manager-6/page-manager-6.html",
           "src/managers/profile-manager/pages/names/page-names.html",
-          "src/managers/profile-manager/pages/notifications/page-notifications.html",
           "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
           "src/managers/profile-manager/pages/phone/page-phone.html",
           "src/managers/profile-manager/pages/startup/page-startup.html",
           "src/managers/profile-manager/pages/tokens/page-tokens.html",
-          "src/managers/profile-manager/pages/tours/page-tours.html",
           "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
@@ -20024,8 +19990,8 @@
       "selector": ".login-mockup .form-group:last-of-type",
       "css": 1,
       "js": 5,
-      "html": 45,
-      "total": 51,
+      "html": 39,
+      "total": 45,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -20037,18 +20003,16 @@
         "html": [
           "src/managers/login/login.html",
           "src/managers/profile-manager/pages/addresses/page-addresses.html",
-          "src/managers/profile-manager/pages/annotations/page-annotations.html",
           "src/managers/profile-manager/pages/concierge/page-concierge.html",
           "src/managers/profile-manager/pages/email/page-email.html",
           "src/managers/profile-manager/pages/language/page-language.html",
-          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/manager-23/page-manager-23.html",
+          "src/managers/profile-manager/pages/manager-6/page-manager-6.html",
           "src/managers/profile-manager/pages/names/page-names.html",
-          "src/managers/profile-manager/pages/notifications/page-notifications.html",
           "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
           "src/managers/profile-manager/pages/phone/page-phone.html",
           "src/managers/profile-manager/pages/startup/page-startup.html",
           "src/managers/profile-manager/pages/tokens/page-tokens.html",
-          "src/managers/profile-manager/pages/tours/page-tours.html",
           "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
@@ -26189,11 +26153,11 @@
           "src/managers/reports/reports.css",
           "src/managers/role-manager/role-manager.css",
           "src/managers/security-manager/security-manager.css",
-          "src/managers/session-logs/session-logs.css",
+          "src/managers/server-profiles/server-profiles.css",
+          "src/managers/server-sessions/server-sessions.css",
           "src/managers/session-manager/session-manager.css",
           "src/managers/sync-manager/sync-manager.css",
-          "src/managers/ticketing-manager/ticketing-manager.css",
-          "src/managers/user-profiles/user-profiles.css"
+          "src/managers/ticketing-manager/ticketing-manager.css"
         ],
         "js": [
           "src/managers/ai-auditor/ai-auditor.js",
@@ -26213,11 +26177,11 @@
           "src/managers/reports/reports.js",
           "src/managers/role-manager/role-manager.js",
           "src/managers/security-manager/security-manager.js",
-          "src/managers/session-logs/session-logs.js",
+          "src/managers/server-profiles/server-profiles.js",
+          "src/managers/server-sessions/server-sessions.js",
           "src/managers/session-manager/session-manager.js",
           "src/managers/sync-manager/sync-manager.js",
-          "src/managers/ticketing-manager/ticketing-manager.js",
-          "src/managers/user-profiles/user-profiles.js"
+          "src/managers/ticketing-manager/ticketing-manager.js"
         ],
         "html": []
       }
@@ -26247,11 +26211,11 @@
           "src/managers/reports/reports.css",
           "src/managers/role-manager/role-manager.css",
           "src/managers/security-manager/security-manager.css",
-          "src/managers/session-logs/session-logs.css",
+          "src/managers/server-profiles/server-profiles.css",
+          "src/managers/server-sessions/server-sessions.css",
           "src/managers/session-manager/session-manager.css",
           "src/managers/sync-manager/sync-manager.css",
-          "src/managers/ticketing-manager/ticketing-manager.css",
-          "src/managers/user-profiles/user-profiles.css"
+          "src/managers/ticketing-manager/ticketing-manager.css"
         ],
         "js": [
           "src/managers/ai-auditor/ai-auditor.js",
@@ -26271,11 +26235,11 @@
           "src/managers/reports/reports.js",
           "src/managers/role-manager/role-manager.js",
           "src/managers/security-manager/security-manager.js",
-          "src/managers/session-logs/session-logs.js",
+          "src/managers/server-profiles/server-profiles.js",
+          "src/managers/server-sessions/server-sessions.js",
           "src/managers/session-manager/session-manager.js",
           "src/managers/sync-manager/sync-manager.js",
-          "src/managers/ticketing-manager/ticketing-manager.js",
-          "src/managers/user-profiles/user-profiles.js"
+          "src/managers/ticketing-manager/ticketing-manager.js"
         ],
         "html": []
       }
@@ -26305,11 +26269,11 @@
           "src/managers/reports/reports.css",
           "src/managers/role-manager/role-manager.css",
           "src/managers/security-manager/security-manager.css",
-          "src/managers/session-logs/session-logs.css",
+          "src/managers/server-profiles/server-profiles.css",
+          "src/managers/server-sessions/server-sessions.css",
           "src/managers/session-manager/session-manager.css",
           "src/managers/sync-manager/sync-manager.css",
-          "src/managers/ticketing-manager/ticketing-manager.css",
-          "src/managers/user-profiles/user-profiles.css"
+          "src/managers/ticketing-manager/ticketing-manager.css"
         ],
         "js": [
           "src/managers/ai-auditor/ai-auditor.js",
@@ -26329,11 +26293,11 @@
           "src/managers/reports/reports.js",
           "src/managers/role-manager/role-manager.js",
           "src/managers/security-manager/security-manager.js",
-          "src/managers/session-logs/session-logs.js",
+          "src/managers/server-profiles/server-profiles.js",
+          "src/managers/server-sessions/server-sessions.js",
           "src/managers/session-manager/session-manager.js",
           "src/managers/sync-manager/sync-manager.js",
-          "src/managers/ticketing-manager/ticketing-manager.js",
-          "src/managers/user-profiles/user-profiles.js"
+          "src/managers/ticketing-manager/ticketing-manager.js"
         ],
         "html": []
       }
@@ -26363,11 +26327,11 @@
           "src/managers/reports/reports.css",
           "src/managers/role-manager/role-manager.css",
           "src/managers/security-manager/security-manager.css",
-          "src/managers/session-logs/session-logs.css",
+          "src/managers/server-profiles/server-profiles.css",
+          "src/managers/server-sessions/server-sessions.css",
           "src/managers/session-manager/session-manager.css",
           "src/managers/sync-manager/sync-manager.css",
-          "src/managers/ticketing-manager/ticketing-manager.css",
-          "src/managers/user-profiles/user-profiles.css"
+          "src/managers/ticketing-manager/ticketing-manager.css"
         ],
         "js": [
           "src/managers/ai-auditor/ai-auditor.js",
@@ -26387,11 +26351,11 @@
           "src/managers/reports/reports.js",
           "src/managers/role-manager/role-manager.js",
           "src/managers/security-manager/security-manager.js",
-          "src/managers/session-logs/session-logs.js",
+          "src/managers/server-profiles/server-profiles.js",
+          "src/managers/server-sessions/server-sessions.js",
           "src/managers/session-manager/session-manager.js",
           "src/managers/sync-manager/sync-manager.js",
-          "src/managers/ticketing-manager/ticketing-manager.js",
-          "src/managers/user-profiles/user-profiles.js"
+          "src/managers/ticketing-manager/ticketing-manager.js"
         ],
         "html": []
       }
@@ -26400,42 +26364,129 @@
       "selector": ".placeholder-hint",
       "css": 0,
       "js": 1,
-      "html": 0,
-      "total": 1,
+      "html": 28,
+      "total": 29,
       "files": {
         "css": [],
         "js": [
           "src/managers/profile-manager/pages/page-placeholder.js"
         ],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/pages/annotations/page-annotations.html",
+          "src/managers/profile-manager/pages/manager-10/page-manager-10.html",
+          "src/managers/profile-manager/pages/manager-11/page-manager-11.html",
+          "src/managers/profile-manager/pages/manager-12/page-manager-12.html",
+          "src/managers/profile-manager/pages/manager-13/page-manager-13.html",
+          "src/managers/profile-manager/pages/manager-14/page-manager-14.html",
+          "src/managers/profile-manager/pages/manager-15/page-manager-15.html",
+          "src/managers/profile-manager/pages/manager-16/page-manager-16.html",
+          "src/managers/profile-manager/pages/manager-17/page-manager-17.html",
+          "src/managers/profile-manager/pages/manager-18/page-manager-18.html",
+          "src/managers/profile-manager/pages/manager-19/page-manager-19.html",
+          "src/managers/profile-manager/pages/manager-20/page-manager-20.html",
+          "src/managers/profile-manager/pages/manager-21/page-manager-21.html",
+          "src/managers/profile-manager/pages/manager-22/page-manager-22.html",
+          "src/managers/profile-manager/pages/manager-24/page-manager-24.html",
+          "src/managers/profile-manager/pages/manager-25/page-manager-25.html",
+          "src/managers/profile-manager/pages/manager-26/page-manager-26.html",
+          "src/managers/profile-manager/pages/manager-27/page-manager-27.html",
+          "src/managers/profile-manager/pages/manager-28/page-manager-28.html",
+          "src/managers/profile-manager/pages/manager-29/page-manager-29.html",
+          "src/managers/profile-manager/pages/manager-30/page-manager-30.html",
+          "src/managers/profile-manager/pages/manager-31/page-manager-31.html",
+          "src/managers/profile-manager/pages/manager-32/page-manager-32.html",
+          "src/managers/profile-manager/pages/manager-5/page-manager-5.html",
+          "src/managers/profile-manager/pages/manager-7/page-manager-7.html",
+          "src/managers/profile-manager/pages/manager-8/page-manager-8.html",
+          "src/managers/profile-manager/pages/manager-9/page-manager-9.html",
+          "src/managers/profile-manager/pages/notifications/page-notifications.html"
+        ]
       }
     },
     {
       "selector": ".placeholder-icon",
       "css": 0,
       "js": 1,
-      "html": 0,
-      "total": 1,
+      "html": 28,
+      "total": 29,
       "files": {
         "css": [],
         "js": [
           "src/managers/profile-manager/pages/page-placeholder.js"
         ],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/pages/annotations/page-annotations.html",
+          "src/managers/profile-manager/pages/manager-10/page-manager-10.html",
+          "src/managers/profile-manager/pages/manager-11/page-manager-11.html",
+          "src/managers/profile-manager/pages/manager-12/page-manager-12.html",
+          "src/managers/profile-manager/pages/manager-13/page-manager-13.html",
+          "src/managers/profile-manager/pages/manager-14/page-manager-14.html",
+          "src/managers/profile-manager/pages/manager-15/page-manager-15.html",
+          "src/managers/profile-manager/pages/manager-16/page-manager-16.html",
+          "src/managers/profile-manager/pages/manager-17/page-manager-17.html",
+          "src/managers/profile-manager/pages/manager-18/page-manager-18.html",
+          "src/managers/profile-manager/pages/manager-19/page-manager-19.html",
+          "src/managers/profile-manager/pages/manager-20/page-manager-20.html",
+          "src/managers/profile-manager/pages/manager-21/page-manager-21.html",
+          "src/managers/profile-manager/pages/manager-22/page-manager-22.html",
+          "src/managers/profile-manager/pages/manager-24/page-manager-24.html",
+          "src/managers/profile-manager/pages/manager-25/page-manager-25.html",
+          "src/managers/profile-manager/pages/manager-26/page-manager-26.html",
+          "src/managers/profile-manager/pages/manager-27/page-manager-27.html",
+          "src/managers/profile-manager/pages/manager-28/page-manager-28.html",
+          "src/managers/profile-manager/pages/manager-29/page-manager-29.html",
+          "src/managers/profile-manager/pages/manager-30/page-manager-30.html",
+          "src/managers/profile-manager/pages/manager-31/page-manager-31.html",
+          "src/managers/profile-manager/pages/manager-32/page-manager-32.html",
+          "src/managers/profile-manager/pages/manager-5/page-manager-5.html",
+          "src/managers/profile-manager/pages/manager-7/page-manager-7.html",
+          "src/managers/profile-manager/pages/manager-8/page-manager-8.html",
+          "src/managers/profile-manager/pages/manager-9/page-manager-9.html",
+          "src/managers/profile-manager/pages/notifications/page-notifications.html"
+        ]
       }
     },
     {
       "selector": ".placeholder-message",
       "css": 0,
       "js": 1,
-      "html": 0,
-      "total": 1,
+      "html": 28,
+      "total": 29,
       "files": {
         "css": [],
         "js": [
           "src/managers/profile-manager/pages/page-placeholder.js"
         ],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/pages/annotations/page-annotations.html",
+          "src/managers/profile-manager/pages/manager-10/page-manager-10.html",
+          "src/managers/profile-manager/pages/manager-11/page-manager-11.html",
+          "src/managers/profile-manager/pages/manager-12/page-manager-12.html",
+          "src/managers/profile-manager/pages/manager-13/page-manager-13.html",
+          "src/managers/profile-manager/pages/manager-14/page-manager-14.html",
+          "src/managers/profile-manager/pages/manager-15/page-manager-15.html",
+          "src/managers/profile-manager/pages/manager-16/page-manager-16.html",
+          "src/managers/profile-manager/pages/manager-17/page-manager-17.html",
+          "src/managers/profile-manager/pages/manager-18/page-manager-18.html",
+          "src/managers/profile-manager/pages/manager-19/page-manager-19.html",
+          "src/managers/profile-manager/pages/manager-20/page-manager-20.html",
+          "src/managers/profile-manager/pages/manager-21/page-manager-21.html",
+          "src/managers/profile-manager/pages/manager-22/page-manager-22.html",
+          "src/managers/profile-manager/pages/manager-24/page-manager-24.html",
+          "src/managers/profile-manager/pages/manager-25/page-manager-25.html",
+          "src/managers/profile-manager/pages/manager-26/page-manager-26.html",
+          "src/managers/profile-manager/pages/manager-27/page-manager-27.html",
+          "src/managers/profile-manager/pages/manager-28/page-manager-28.html",
+          "src/managers/profile-manager/pages/manager-29/page-manager-29.html",
+          "src/managers/profile-manager/pages/manager-30/page-manager-30.html",
+          "src/managers/profile-manager/pages/manager-31/page-manager-31.html",
+          "src/managers/profile-manager/pages/manager-32/page-manager-32.html",
+          "src/managers/profile-manager/pages/manager-5/page-manager-5.html",
+          "src/managers/profile-manager/pages/manager-7/page-manager-7.html",
+          "src/managers/profile-manager/pages/manager-8/page-manager-8.html",
+          "src/managers/profile-manager/pages/manager-9/page-manager-9.html",
+          "src/managers/profile-manager/pages/notifications/page-notifications.html"
+        ]
       }
     },
     {
@@ -26463,11 +26514,11 @@
           "src/managers/reports/reports.css",
           "src/managers/role-manager/role-manager.css",
           "src/managers/security-manager/security-manager.css",
-          "src/managers/session-logs/session-logs.css",
+          "src/managers/server-profiles/server-profiles.css",
+          "src/managers/server-sessions/server-sessions.css",
           "src/managers/session-manager/session-manager.css",
           "src/managers/sync-manager/sync-manager.css",
-          "src/managers/ticketing-manager/ticketing-manager.css",
-          "src/managers/user-profiles/user-profiles.css"
+          "src/managers/ticketing-manager/ticketing-manager.css"
         ],
         "js": [
           "src/managers/ai-auditor/ai-auditor.js",
@@ -26487,11 +26538,11 @@
           "src/managers/reports/reports.js",
           "src/managers/role-manager/role-manager.js",
           "src/managers/security-manager/security-manager.js",
-          "src/managers/session-logs/session-logs.js",
+          "src/managers/server-profiles/server-profiles.js",
+          "src/managers/server-sessions/server-sessions.js",
           "src/managers/session-manager/session-manager.js",
           "src/managers/sync-manager/sync-manager.js",
-          "src/managers/ticketing-manager/ticketing-manager.js",
-          "src/managers/user-profiles/user-profiles.js"
+          "src/managers/ticketing-manager/ticketing-manager.js"
         ],
         "html": []
       }
@@ -26500,22 +26551,51 @@
       "selector": ".placeholder-title",
       "css": 0,
       "js": 1,
-      "html": 0,
-      "total": 1,
+      "html": 28,
+      "total": 29,
       "files": {
         "css": [],
         "js": [
           "src/managers/profile-manager/pages/page-placeholder.js"
         ],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/pages/annotations/page-annotations.html",
+          "src/managers/profile-manager/pages/manager-10/page-manager-10.html",
+          "src/managers/profile-manager/pages/manager-11/page-manager-11.html",
+          "src/managers/profile-manager/pages/manager-12/page-manager-12.html",
+          "src/managers/profile-manager/pages/manager-13/page-manager-13.html",
+          "src/managers/profile-manager/pages/manager-14/page-manager-14.html",
+          "src/managers/profile-manager/pages/manager-15/page-manager-15.html",
+          "src/managers/profile-manager/pages/manager-16/page-manager-16.html",
+          "src/managers/profile-manager/pages/manager-17/page-manager-17.html",
+          "src/managers/profile-manager/pages/manager-18/page-manager-18.html",
+          "src/managers/profile-manager/pages/manager-19/page-manager-19.html",
+          "src/managers/profile-manager/pages/manager-20/page-manager-20.html",
+          "src/managers/profile-manager/pages/manager-21/page-manager-21.html",
+          "src/managers/profile-manager/pages/manager-22/page-manager-22.html",
+          "src/managers/profile-manager/pages/manager-24/page-manager-24.html",
+          "src/managers/profile-manager/pages/manager-25/page-manager-25.html",
+          "src/managers/profile-manager/pages/manager-26/page-manager-26.html",
+          "src/managers/profile-manager/pages/manager-27/page-manager-27.html",
+          "src/managers/profile-manager/pages/manager-28/page-manager-28.html",
+          "src/managers/profile-manager/pages/manager-29/page-manager-29.html",
+          "src/managers/profile-manager/pages/manager-30/page-manager-30.html",
+          "src/managers/profile-manager/pages/manager-31/page-manager-31.html",
+          "src/managers/profile-manager/pages/manager-32/page-manager-32.html",
+          "src/managers/profile-manager/pages/manager-5/page-manager-5.html",
+          "src/managers/profile-manager/pages/manager-7/page-manager-7.html",
+          "src/managers/profile-manager/pages/manager-8/page-manager-8.html",
+          "src/managers/profile-manager/pages/manager-9/page-manager-9.html",
+          "src/managers/profile-manager/pages/notifications/page-notifications.html"
+        ]
       }
     },
     {
       "selector": ".preferences-form",
       "css": 1,
       "js": 0,
-      "html": 14,
-      "total": 15,
+      "html": 12,
+      "total": 13,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -26523,18 +26603,16 @@
         "js": [],
         "html": [
           "src/managers/profile-manager/pages/addresses/page-addresses.html",
-          "src/managers/profile-manager/pages/annotations/page-annotations.html",
           "src/managers/profile-manager/pages/concierge/page-concierge.html",
           "src/managers/profile-manager/pages/email/page-email.html",
           "src/managers/profile-manager/pages/language/page-language.html",
-          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/manager-23/page-manager-23.html",
+          "src/managers/profile-manager/pages/manager-6/page-manager-6.html",
           "src/managers/profile-manager/pages/names/page-names.html",
-          "src/managers/profile-manager/pages/notifications/page-notifications.html",
           "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
           "src/managers/profile-manager/pages/phone/page-phone.html",
           "src/managers/profile-manager/pages/startup/page-startup.html",
           "src/managers/profile-manager/pages/tokens/page-tokens.html",
-          "src/managers/profile-manager/pages/tours/page-tours.html",
           "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
@@ -26995,9 +27073,9 @@
     {
       "selector": ".profile-section",
       "css": 1,
-      "js": 1,
-      "html": 21,
-      "total": 23,
+      "js": 2,
+      "html": 47,
+      "total": 50,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -27015,14 +27093,40 @@
           "src/managers/profile-manager/pages/email/page-email.html",
           "src/managers/profile-manager/pages/language/page-language.html",
           "src/managers/profile-manager/pages/login-history/page-login-history.html",
-          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/manager-10/page-manager-10.html",
+          "src/managers/profile-manager/pages/manager-11/page-manager-11.html",
+          "src/managers/profile-manager/pages/manager-12/page-manager-12.html",
+          "src/managers/profile-manager/pages/manager-13/page-manager-13.html",
+          "src/managers/profile-manager/pages/manager-14/page-manager-14.html",
+          "src/managers/profile-manager/pages/manager-15/page-manager-15.html",
+          "src/managers/profile-manager/pages/manager-16/page-manager-16.html",
+          "src/managers/profile-manager/pages/manager-17/page-manager-17.html",
+          "src/managers/profile-manager/pages/manager-18/page-manager-18.html",
+          "src/managers/profile-manager/pages/manager-19/page-manager-19.html",
+          "src/managers/profile-manager/pages/manager-20/page-manager-20.html",
+          "src/managers/profile-manager/pages/manager-21/page-manager-21.html",
+          "src/managers/profile-manager/pages/manager-22/page-manager-22.html",
+          "src/managers/profile-manager/pages/manager-23/page-manager-23.html",
+          "src/managers/profile-manager/pages/manager-24/page-manager-24.html",
+          "src/managers/profile-manager/pages/manager-25/page-manager-25.html",
+          "src/managers/profile-manager/pages/manager-26/page-manager-26.html",
+          "src/managers/profile-manager/pages/manager-27/page-manager-27.html",
+          "src/managers/profile-manager/pages/manager-28/page-manager-28.html",
+          "src/managers/profile-manager/pages/manager-29/page-manager-29.html",
+          "src/managers/profile-manager/pages/manager-30/page-manager-30.html",
+          "src/managers/profile-manager/pages/manager-31/page-manager-31.html",
+          "src/managers/profile-manager/pages/manager-32/page-manager-32.html",
+          "src/managers/profile-manager/pages/manager-5/page-manager-5.html",
+          "src/managers/profile-manager/pages/manager-6/page-manager-6.html",
+          "src/managers/profile-manager/pages/manager-7/page-manager-7.html",
+          "src/managers/profile-manager/pages/manager-8/page-manager-8.html",
+          "src/managers/profile-manager/pages/manager-9/page-manager-9.html",
           "src/managers/profile-manager/pages/names/page-names.html",
           "src/managers/profile-manager/pages/notifications/page-notifications.html",
           "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
           "src/managers/profile-manager/pages/phone/page-phone.html",
           "src/managers/profile-manager/pages/startup/page-startup.html",
           "src/managers/profile-manager/pages/tokens/page-tokens.html",
-          "src/managers/profile-manager/pages/tours/page-tours.html",
           "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
@@ -28517,8 +28621,8 @@
       "selector": ".section-title",
       "css": 1,
       "js": 1,
-      "html": 17,
-      "total": 19,
+      "html": 43,
+      "total": 45,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -28535,14 +28639,40 @@
           "src/managers/profile-manager/pages/email/page-email.html",
           "src/managers/profile-manager/pages/language/page-language.html",
           "src/managers/profile-manager/pages/login-history/page-login-history.html",
-          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/manager-10/page-manager-10.html",
+          "src/managers/profile-manager/pages/manager-11/page-manager-11.html",
+          "src/managers/profile-manager/pages/manager-12/page-manager-12.html",
+          "src/managers/profile-manager/pages/manager-13/page-manager-13.html",
+          "src/managers/profile-manager/pages/manager-14/page-manager-14.html",
+          "src/managers/profile-manager/pages/manager-15/page-manager-15.html",
+          "src/managers/profile-manager/pages/manager-16/page-manager-16.html",
+          "src/managers/profile-manager/pages/manager-17/page-manager-17.html",
+          "src/managers/profile-manager/pages/manager-18/page-manager-18.html",
+          "src/managers/profile-manager/pages/manager-19/page-manager-19.html",
+          "src/managers/profile-manager/pages/manager-20/page-manager-20.html",
+          "src/managers/profile-manager/pages/manager-21/page-manager-21.html",
+          "src/managers/profile-manager/pages/manager-22/page-manager-22.html",
+          "src/managers/profile-manager/pages/manager-23/page-manager-23.html",
+          "src/managers/profile-manager/pages/manager-24/page-manager-24.html",
+          "src/managers/profile-manager/pages/manager-25/page-manager-25.html",
+          "src/managers/profile-manager/pages/manager-26/page-manager-26.html",
+          "src/managers/profile-manager/pages/manager-27/page-manager-27.html",
+          "src/managers/profile-manager/pages/manager-28/page-manager-28.html",
+          "src/managers/profile-manager/pages/manager-29/page-manager-29.html",
+          "src/managers/profile-manager/pages/manager-30/page-manager-30.html",
+          "src/managers/profile-manager/pages/manager-31/page-manager-31.html",
+          "src/managers/profile-manager/pages/manager-32/page-manager-32.html",
+          "src/managers/profile-manager/pages/manager-5/page-manager-5.html",
+          "src/managers/profile-manager/pages/manager-6/page-manager-6.html",
+          "src/managers/profile-manager/pages/manager-7/page-manager-7.html",
+          "src/managers/profile-manager/pages/manager-8/page-manager-8.html",
+          "src/managers/profile-manager/pages/manager-9/page-manager-9.html",
           "src/managers/profile-manager/pages/names/page-names.html",
           "src/managers/profile-manager/pages/notifications/page-notifications.html",
           "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
           "src/managers/profile-manager/pages/phone/page-phone.html",
           "src/managers/profile-manager/pages/startup/page-startup.html",
           "src/managers/profile-manager/pages/tokens/page-tokens.html",
-          "src/managers/profile-manager/pages/tours/page-tours.html",
           "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
@@ -28551,8 +28681,8 @@
       "selector": ".section-title i",
       "css": 1,
       "js": 1,
-      "html": 17,
-      "total": 19,
+      "html": 43,
+      "total": 45,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -28569,14 +28699,40 @@
           "src/managers/profile-manager/pages/email/page-email.html",
           "src/managers/profile-manager/pages/language/page-language.html",
           "src/managers/profile-manager/pages/login-history/page-login-history.html",
-          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/manager-10/page-manager-10.html",
+          "src/managers/profile-manager/pages/manager-11/page-manager-11.html",
+          "src/managers/profile-manager/pages/manager-12/page-manager-12.html",
+          "src/managers/profile-manager/pages/manager-13/page-manager-13.html",
+          "src/managers/profile-manager/pages/manager-14/page-manager-14.html",
+          "src/managers/profile-manager/pages/manager-15/page-manager-15.html",
+          "src/managers/profile-manager/pages/manager-16/page-manager-16.html",
+          "src/managers/profile-manager/pages/manager-17/page-manager-17.html",
+          "src/managers/profile-manager/pages/manager-18/page-manager-18.html",
+          "src/managers/profile-manager/pages/manager-19/page-manager-19.html",
+          "src/managers/profile-manager/pages/manager-20/page-manager-20.html",
+          "src/managers/profile-manager/pages/manager-21/page-manager-21.html",
+          "src/managers/profile-manager/pages/manager-22/page-manager-22.html",
+          "src/managers/profile-manager/pages/manager-23/page-manager-23.html",
+          "src/managers/profile-manager/pages/manager-24/page-manager-24.html",
+          "src/managers/profile-manager/pages/manager-25/page-manager-25.html",
+          "src/managers/profile-manager/pages/manager-26/page-manager-26.html",
+          "src/managers/profile-manager/pages/manager-27/page-manager-27.html",
+          "src/managers/profile-manager/pages/manager-28/page-manager-28.html",
+          "src/managers/profile-manager/pages/manager-29/page-manager-29.html",
+          "src/managers/profile-manager/pages/manager-30/page-manager-30.html",
+          "src/managers/profile-manager/pages/manager-31/page-manager-31.html",
+          "src/managers/profile-manager/pages/manager-32/page-manager-32.html",
+          "src/managers/profile-manager/pages/manager-5/page-manager-5.html",
+          "src/managers/profile-manager/pages/manager-6/page-manager-6.html",
+          "src/managers/profile-manager/pages/manager-7/page-manager-7.html",
+          "src/managers/profile-manager/pages/manager-8/page-manager-8.html",
+          "src/managers/profile-manager/pages/manager-9/page-manager-9.html",
           "src/managers/profile-manager/pages/names/page-names.html",
           "src/managers/profile-manager/pages/notifications/page-notifications.html",
           "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
           "src/managers/profile-manager/pages/phone/page-phone.html",
           "src/managers/profile-manager/pages/startup/page-startup.html",
           "src/managers/profile-manager/pages/tokens/page-tokens.html",
-          "src/managers/profile-manager/pages/tours/page-tours.html",
           "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
@@ -28720,10 +28876,10 @@
       "total": 2,
       "files": {
         "css": [
-          "src/managers/session-logs/session-logs.css"
+          "src/managers/server-sessions/server-sessions.css"
         ],
         "js": [
-          "src/managers/session-logs/session-logs.js"
+          "src/managers/server-sessions/server-sessions.js"
         ],
         "html": []
       }
@@ -28747,14 +28903,15 @@
     {
       "selector": ".settings-page",
       "css": 1,
-      "js": 6,
-      "html": 18,
-      "total": 25,
+      "js": 8,
+      "html": 44,
+      "total": 53,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
+          "src/managers/profile-manager/pages/page-placeholder.js",
           "src/managers/profile-manager/profile-manager-settings.js"
         ],
         "html": [
@@ -28767,14 +28924,40 @@
           "src/managers/profile-manager/pages/email/page-email.html",
           "src/managers/profile-manager/pages/language/page-language.html",
           "src/managers/profile-manager/pages/login-history/page-login-history.html",
-          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/manager-10/page-manager-10.html",
+          "src/managers/profile-manager/pages/manager-11/page-manager-11.html",
+          "src/managers/profile-manager/pages/manager-12/page-manager-12.html",
+          "src/managers/profile-manager/pages/manager-13/page-manager-13.html",
+          "src/managers/profile-manager/pages/manager-14/page-manager-14.html",
+          "src/managers/profile-manager/pages/manager-15/page-manager-15.html",
+          "src/managers/profile-manager/pages/manager-16/page-manager-16.html",
+          "src/managers/profile-manager/pages/manager-17/page-manager-17.html",
+          "src/managers/profile-manager/pages/manager-18/page-manager-18.html",
+          "src/managers/profile-manager/pages/manager-19/page-manager-19.html",
+          "src/managers/profile-manager/pages/manager-20/page-manager-20.html",
+          "src/managers/profile-manager/pages/manager-21/page-manager-21.html",
+          "src/managers/profile-manager/pages/manager-22/page-manager-22.html",
+          "src/managers/profile-manager/pages/manager-23/page-manager-23.html",
+          "src/managers/profile-manager/pages/manager-24/page-manager-24.html",
+          "src/managers/profile-manager/pages/manager-25/page-manager-25.html",
+          "src/managers/profile-manager/pages/manager-26/page-manager-26.html",
+          "src/managers/profile-manager/pages/manager-27/page-manager-27.html",
+          "src/managers/profile-manager/pages/manager-28/page-manager-28.html",
+          "src/managers/profile-manager/pages/manager-29/page-manager-29.html",
+          "src/managers/profile-manager/pages/manager-30/page-manager-30.html",
+          "src/managers/profile-manager/pages/manager-31/page-manager-31.html",
+          "src/managers/profile-manager/pages/manager-32/page-manager-32.html",
+          "src/managers/profile-manager/pages/manager-5/page-manager-5.html",
+          "src/managers/profile-manager/pages/manager-6/page-manager-6.html",
+          "src/managers/profile-manager/pages/manager-7/page-manager-7.html",
+          "src/managers/profile-manager/pages/manager-8/page-manager-8.html",
+          "src/managers/profile-manager/pages/manager-9/page-manager-9.html",
           "src/managers/profile-manager/pages/names/page-names.html",
           "src/managers/profile-manager/pages/notifications/page-notifications.html",
           "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
           "src/managers/profile-manager/pages/phone/page-phone.html",
           "src/managers/profile-manager/pages/startup/page-startup.html",
           "src/managers/profile-manager/pages/tokens/page-tokens.html",
-          "src/managers/profile-manager/pages/tours/page-tours.html",
           "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
@@ -28782,15 +28965,16 @@
     {
       "selector": ".settings-page .df-content",
       "css": 1,
-      "js": 7,
-      "html": 19,
-      "total": 27,
+      "js": 9,
+      "html": 45,
+      "total": 55,
       "files": {
         "css": [
           "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [
           "src/managers/profile-manager/pages/date-formats/page-date-formats.js",
+          "src/managers/profile-manager/pages/page-placeholder.js",
           "src/managers/profile-manager/profile-manager-settings.js"
         ],
         "html": [
@@ -28803,14 +28987,40 @@
           "src/managers/profile-manager/pages/email/page-email.html",
           "src/managers/profile-manager/pages/language/page-language.html",
           "src/managers/profile-manager/pages/login-history/page-login-history.html",
-          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/manager-10/page-manager-10.html",
+          "src/managers/profile-manager/pages/manager-11/page-manager-11.html",
+          "src/managers/profile-manager/pages/manager-12/page-manager-12.html",
+          "src/managers/profile-manager/pages/manager-13/page-manager-13.html",
+          "src/managers/profile-manager/pages/manager-14/page-manager-14.html",
+          "src/managers/profile-manager/pages/manager-15/page-manager-15.html",
+          "src/managers/profile-manager/pages/manager-16/page-manager-16.html",
+          "src/managers/profile-manager/pages/manager-17/page-manager-17.html",
+          "src/managers/profile-manager/pages/manager-18/page-manager-18.html",
+          "src/managers/profile-manager/pages/manager-19/page-manager-19.html",
+          "src/managers/profile-manager/pages/manager-20/page-manager-20.html",
+          "src/managers/profile-manager/pages/manager-21/page-manager-21.html",
+          "src/managers/profile-manager/pages/manager-22/page-manager-22.html",
+          "src/managers/profile-manager/pages/manager-23/page-manager-23.html",
+          "src/managers/profile-manager/pages/manager-24/page-manager-24.html",
+          "src/managers/profile-manager/pages/manager-25/page-manager-25.html",
+          "src/managers/profile-manager/pages/manager-26/page-manager-26.html",
+          "src/managers/profile-manager/pages/manager-27/page-manager-27.html",
+          "src/managers/profile-manager/pages/manager-28/page-manager-28.html",
+          "src/managers/profile-manager/pages/manager-29/page-manager-29.html",
+          "src/managers/profile-manager/pages/manager-30/page-manager-30.html",
+          "src/managers/profile-manager/pages/manager-31/page-manager-31.html",
+          "src/managers/profile-manager/pages/manager-32/page-manager-32.html",
+          "src/managers/profile-manager/pages/manager-5/page-manager-5.html",
+          "src/managers/profile-manager/pages/manager-6/page-manager-6.html",
+          "src/managers/profile-manager/pages/manager-7/page-manager-7.html",
+          "src/managers/profile-manager/pages/manager-8/page-manager-8.html",
+          "src/managers/profile-manager/pages/manager-9/page-manager-9.html",
           "src/managers/profile-manager/pages/names/page-names.html",
           "src/managers/profile-manager/pages/notifications/page-notifications.html",
           "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
           "src/managers/profile-manager/pages/phone/page-phone.html",
           "src/managers/profile-manager/pages/startup/page-startup.html",
           "src/managers/profile-manager/pages/tokens/page-tokens.html",
-          "src/managers/profile-manager/pages/tours/page-tours.html",
           "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
@@ -28818,14 +29028,15 @@
     {
       "selector": ".settings-page .flatpickr-calendar",
       "css": 1,
-      "js": 7,
-      "html": 18,
-      "total": 26,
+      "js": 9,
+      "html": 44,
+      "total": 54,
       "files": {
         "css": [
           "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [
+          "src/managers/profile-manager/pages/page-placeholder.js",
           "src/managers/profile-manager/profile-manager-settings.js",
           "src/shared/flatpickr-picker.js"
         ],
@@ -28839,14 +29050,40 @@
           "src/managers/profile-manager/pages/email/page-email.html",
           "src/managers/profile-manager/pages/language/page-language.html",
           "src/managers/profile-manager/pages/login-history/page-login-history.html",
-          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/manager-10/page-manager-10.html",
+          "src/managers/profile-manager/pages/manager-11/page-manager-11.html",
+          "src/managers/profile-manager/pages/manager-12/page-manager-12.html",
+          "src/managers/profile-manager/pages/manager-13/page-manager-13.html",
+          "src/managers/profile-manager/pages/manager-14/page-manager-14.html",
+          "src/managers/profile-manager/pages/manager-15/page-manager-15.html",
+          "src/managers/profile-manager/pages/manager-16/page-manager-16.html",
+          "src/managers/profile-manager/pages/manager-17/page-manager-17.html",
+          "src/managers/profile-manager/pages/manager-18/page-manager-18.html",
+          "src/managers/profile-manager/pages/manager-19/page-manager-19.html",
+          "src/managers/profile-manager/pages/manager-20/page-manager-20.html",
+          "src/managers/profile-manager/pages/manager-21/page-manager-21.html",
+          "src/managers/profile-manager/pages/manager-22/page-manager-22.html",
+          "src/managers/profile-manager/pages/manager-23/page-manager-23.html",
+          "src/managers/profile-manager/pages/manager-24/page-manager-24.html",
+          "src/managers/profile-manager/pages/manager-25/page-manager-25.html",
+          "src/managers/profile-manager/pages/manager-26/page-manager-26.html",
+          "src/managers/profile-manager/pages/manager-27/page-manager-27.html",
+          "src/managers/profile-manager/pages/manager-28/page-manager-28.html",
+          "src/managers/profile-manager/pages/manager-29/page-manager-29.html",
+          "src/managers/profile-manager/pages/manager-30/page-manager-30.html",
+          "src/managers/profile-manager/pages/manager-31/page-manager-31.html",
+          "src/managers/profile-manager/pages/manager-32/page-manager-32.html",
+          "src/managers/profile-manager/pages/manager-5/page-manager-5.html",
+          "src/managers/profile-manager/pages/manager-6/page-manager-6.html",
+          "src/managers/profile-manager/pages/manager-7/page-manager-7.html",
+          "src/managers/profile-manager/pages/manager-8/page-manager-8.html",
+          "src/managers/profile-manager/pages/manager-9/page-manager-9.html",
           "src/managers/profile-manager/pages/names/page-names.html",
           "src/managers/profile-manager/pages/notifications/page-notifications.html",
           "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
           "src/managers/profile-manager/pages/phone/page-phone.html",
           "src/managers/profile-manager/pages/startup/page-startup.html",
           "src/managers/profile-manager/pages/tokens/page-tokens.html",
-          "src/managers/profile-manager/pages/tours/page-tours.html",
           "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
@@ -28854,14 +29091,15 @@
     {
       "selector": ".settings-page .profile-info-grid",
       "css": 1,
-      "js": 6,
-      "html": 21,
-      "total": 28,
+      "js": 8,
+      "html": 47,
+      "total": 56,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
+          "src/managers/profile-manager/pages/page-placeholder.js",
           "src/managers/profile-manager/profile-manager-settings.js"
         ],
         "html": [
@@ -28874,14 +29112,40 @@
           "src/managers/profile-manager/pages/email/page-email.html",
           "src/managers/profile-manager/pages/language/page-language.html",
           "src/managers/profile-manager/pages/login-history/page-login-history.html",
-          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/manager-10/page-manager-10.html",
+          "src/managers/profile-manager/pages/manager-11/page-manager-11.html",
+          "src/managers/profile-manager/pages/manager-12/page-manager-12.html",
+          "src/managers/profile-manager/pages/manager-13/page-manager-13.html",
+          "src/managers/profile-manager/pages/manager-14/page-manager-14.html",
+          "src/managers/profile-manager/pages/manager-15/page-manager-15.html",
+          "src/managers/profile-manager/pages/manager-16/page-manager-16.html",
+          "src/managers/profile-manager/pages/manager-17/page-manager-17.html",
+          "src/managers/profile-manager/pages/manager-18/page-manager-18.html",
+          "src/managers/profile-manager/pages/manager-19/page-manager-19.html",
+          "src/managers/profile-manager/pages/manager-20/page-manager-20.html",
+          "src/managers/profile-manager/pages/manager-21/page-manager-21.html",
+          "src/managers/profile-manager/pages/manager-22/page-manager-22.html",
+          "src/managers/profile-manager/pages/manager-23/page-manager-23.html",
+          "src/managers/profile-manager/pages/manager-24/page-manager-24.html",
+          "src/managers/profile-manager/pages/manager-25/page-manager-25.html",
+          "src/managers/profile-manager/pages/manager-26/page-manager-26.html",
+          "src/managers/profile-manager/pages/manager-27/page-manager-27.html",
+          "src/managers/profile-manager/pages/manager-28/page-manager-28.html",
+          "src/managers/profile-manager/pages/manager-29/page-manager-29.html",
+          "src/managers/profile-manager/pages/manager-30/page-manager-30.html",
+          "src/managers/profile-manager/pages/manager-31/page-manager-31.html",
+          "src/managers/profile-manager/pages/manager-32/page-manager-32.html",
+          "src/managers/profile-manager/pages/manager-5/page-manager-5.html",
+          "src/managers/profile-manager/pages/manager-6/page-manager-6.html",
+          "src/managers/profile-manager/pages/manager-7/page-manager-7.html",
+          "src/managers/profile-manager/pages/manager-8/page-manager-8.html",
+          "src/managers/profile-manager/pages/manager-9/page-manager-9.html",
           "src/managers/profile-manager/pages/names/page-names.html",
           "src/managers/profile-manager/pages/notifications/page-notifications.html",
           "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
           "src/managers/profile-manager/pages/phone/page-phone.html",
           "src/managers/profile-manager/pages/startup/page-startup.html",
           "src/managers/profile-manager/pages/tokens/page-tokens.html",
-          "src/managers/profile-manager/pages/tours/page-tours.html",
           "src/managers/profile-manager/pages/training/page-training.html"
         ]
       }
@@ -28889,9 +29153,9 @@
     {
       "selector": ".settings-page:not(.active)",
       "css": 1,
-      "js": 81,
-      "html": 26,
-      "total": 108,
+      "js": 83,
+      "html": 52,
+      "total": 136,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -28905,6 +29169,7 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
+          "src/managers/profile-manager/pages/page-placeholder.js",
           "src/managers/profile-manager/profile-manager-settings.js",
           "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
@@ -28925,14 +29190,40 @@
           "src/managers/profile-manager/pages/email/page-email.html",
           "src/managers/profile-manager/pages/language/page-language.html",
           "src/managers/profile-manager/pages/login-history/page-login-history.html",
-          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/manager-10/page-manager-10.html",
+          "src/managers/profile-manager/pages/manager-11/page-manager-11.html",
+          "src/managers/profile-manager/pages/manager-12/page-manager-12.html",
+          "src/managers/profile-manager/pages/manager-13/page-manager-13.html",
+          "src/managers/profile-manager/pages/manager-14/page-manager-14.html",
+          "src/managers/profile-manager/pages/manager-15/page-manager-15.html",
+          "src/managers/profile-manager/pages/manager-16/page-manager-16.html",
+          "src/managers/profile-manager/pages/manager-17/page-manager-17.html",
+          "src/managers/profile-manager/pages/manager-18/page-manager-18.html",
+          "src/managers/profile-manager/pages/manager-19/page-manager-19.html",
+          "src/managers/profile-manager/pages/manager-20/page-manager-20.html",
+          "src/managers/profile-manager/pages/manager-21/page-manager-21.html",
+          "src/managers/profile-manager/pages/manager-22/page-manager-22.html",
+          "src/managers/profile-manager/pages/manager-23/page-manager-23.html",
+          "src/managers/profile-manager/pages/manager-24/page-manager-24.html",
+          "src/managers/profile-manager/pages/manager-25/page-manager-25.html",
+          "src/managers/profile-manager/pages/manager-26/page-manager-26.html",
+          "src/managers/profile-manager/pages/manager-27/page-manager-27.html",
+          "src/managers/profile-manager/pages/manager-28/page-manager-28.html",
+          "src/managers/profile-manager/pages/manager-29/page-manager-29.html",
+          "src/managers/profile-manager/pages/manager-30/page-manager-30.html",
+          "src/managers/profile-manager/pages/manager-31/page-manager-31.html",
+          "src/managers/profile-manager/pages/manager-32/page-manager-32.html",
+          "src/managers/profile-manager/pages/manager-5/page-manager-5.html",
+          "src/managers/profile-manager/pages/manager-6/page-manager-6.html",
+          "src/managers/profile-manager/pages/manager-7/page-manager-7.html",
+          "src/managers/profile-manager/pages/manager-8/page-manager-8.html",
+          "src/managers/profile-manager/pages/manager-9/page-manager-9.html",
           "src/managers/profile-manager/pages/names/page-names.html",
           "src/managers/profile-manager/pages/notifications/page-notifications.html",
           "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
           "src/managers/profile-manager/pages/phone/page-phone.html",
           "src/managers/profile-manager/pages/startup/page-startup.html",
           "src/managers/profile-manager/pages/tokens/page-tokens.html",
-          "src/managers/profile-manager/pages/tours/page-tours.html",
           "src/managers/profile-manager/pages/training/page-training.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
@@ -28943,9 +29234,9 @@
     {
       "selector": ".settings-page.active",
       "css": 1,
-      "js": 81,
-      "html": 26,
-      "total": 108,
+      "js": 83,
+      "html": 52,
+      "total": 136,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -28959,6 +29250,7 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
+          "src/managers/profile-manager/pages/page-placeholder.js",
           "src/managers/profile-manager/profile-manager-settings.js",
           "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
@@ -28979,14 +29271,40 @@
           "src/managers/profile-manager/pages/email/page-email.html",
           "src/managers/profile-manager/pages/language/page-language.html",
           "src/managers/profile-manager/pages/login-history/page-login-history.html",
-          "src/managers/profile-manager/pages/lookups/page-lookups.html",
+          "src/managers/profile-manager/pages/manager-10/page-manager-10.html",
+          "src/managers/profile-manager/pages/manager-11/page-manager-11.html",
+          "src/managers/profile-manager/pages/manager-12/page-manager-12.html",
+          "src/managers/profile-manager/pages/manager-13/page-manager-13.html",
+          "src/managers/profile-manager/pages/manager-14/page-manager-14.html",
+          "src/managers/profile-manager/pages/manager-15/page-manager-15.html",
+          "src/managers/profile-manager/pages/manager-16/page-manager-16.html",
+          "src/managers/profile-manager/pages/manager-17/page-manager-17.html",
+          "src/managers/profile-manager/pages/manager-18/page-manager-18.html",
+          "src/managers/profile-manager/pages/manager-19/page-manager-19.html",
+          "src/managers/profile-manager/pages/manager-20/page-manager-20.html",
+          "src/managers/profile-manager/pages/manager-21/page-manager-21.html",
+          "src/managers/profile-manager/pages/manager-22/page-manager-22.html",
+          "src/managers/profile-manager/pages/manager-23/page-manager-23.html",
+          "src/managers/profile-manager/pages/manager-24/page-manager-24.html",
+          "src/managers/profile-manager/pages/manager-25/page-manager-25.html",
+          "src/managers/profile-manager/pages/manager-26/page-manager-26.html",
+          "src/managers/profile-manager/pages/manager-27/page-manager-27.html",
+          "src/managers/profile-manager/pages/manager-28/page-manager-28.html",
+          "src/managers/profile-manager/pages/manager-29/page-manager-29.html",
+          "src/managers/profile-manager/pages/manager-30/page-manager-30.html",
+          "src/managers/profile-manager/pages/manager-31/page-manager-31.html",
+          "src/managers/profile-manager/pages/manager-32/page-manager-32.html",
+          "src/managers/profile-manager/pages/manager-5/page-manager-5.html",
+          "src/managers/profile-manager/pages/manager-6/page-manager-6.html",
+          "src/managers/profile-manager/pages/manager-7/page-manager-7.html",
+          "src/managers/profile-manager/pages/manager-8/page-manager-8.html",
+          "src/managers/profile-manager/pages/manager-9/page-manager-9.html",
           "src/managers/profile-manager/pages/names/page-names.html",
           "src/managers/profile-manager/pages/notifications/page-notifications.html",
           "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
           "src/managers/profile-manager/pages/phone/page-phone.html",
           "src/managers/profile-manager/pages/startup/page-startup.html",
           "src/managers/profile-manager/pages/tokens/page-tokens.html",
-          "src/managers/profile-manager/pages/tours/page-tours.html",
           "src/managers/profile-manager/pages/training/page-training.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
@@ -28998,14 +29316,43 @@
       "selector": ".settings-placeholder",
       "css": 0,
       "js": 2,
-      "html": 0,
-      "total": 2,
+      "html": 28,
+      "total": 30,
       "files": {
         "css": [],
         "js": [
           "src/managers/profile-manager/pages/page-placeholder.js"
         ],
-        "html": []
+        "html": [
+          "src/managers/profile-manager/pages/annotations/page-annotations.html",
+          "src/managers/profile-manager/pages/manager-10/page-manager-10.html",
+          "src/managers/profile-manager/pages/manager-11/page-manager-11.html",
+          "src/managers/profile-manager/pages/manager-12/page-manager-12.html",
+          "src/managers/profile-manager/pages/manager-13/page-manager-13.html",
+          "src/managers/profile-manager/pages/manager-14/page-manager-14.html",
+          "src/managers/profile-manager/pages/manager-15/page-manager-15.html",
+          "src/managers/profile-manager/pages/manager-16/page-manager-16.html",
+          "src/managers/profile-manager/pages/manager-17/page-manager-17.html",
+          "src/managers/profile-manager/pages/manager-18/page-manager-18.html",
+          "src/managers/profile-manager/pages/manager-19/page-manager-19.html",
+          "src/managers/profile-manager/pages/manager-20/page-manager-20.html",
+          "src/managers/profile-manager/pages/manager-21/page-manager-21.html",
+          "src/managers/profile-manager/pages/manager-22/page-manager-22.html",
+          "src/managers/profile-manager/pages/manager-24/page-manager-24.html",
+          "src/managers/profile-manager/pages/manager-25/page-manager-25.html",
+          "src/managers/profile-manager/pages/manager-26/page-manager-26.html",
+          "src/managers/profile-manager/pages/manager-27/page-manager-27.html",
+          "src/managers/profile-manager/pages/manager-28/page-manager-28.html",
+          "src/managers/profile-manager/pages/manager-29/page-manager-29.html",
+          "src/managers/profile-manager/pages/manager-30/page-manager-30.html",
+          "src/managers/profile-manager/pages/manager-31/page-manager-31.html",
+          "src/managers/profile-manager/pages/manager-32/page-manager-32.html",
+          "src/managers/profile-manager/pages/manager-5/page-manager-5.html",
+          "src/managers/profile-manager/pages/manager-7/page-manager-7.html",
+          "src/managers/profile-manager/pages/manager-8/page-manager-8.html",
+          "src/managers/profile-manager/pages/manager-9/page-manager-9.html",
+          "src/managers/profile-manager/pages/notifications/page-notifications.html"
+        ]
       }
     },
     {
@@ -35352,10 +35699,10 @@
       "total": 2,
       "files": {
         "css": [
-          "src/managers/user-profiles/user-profiles.css"
+          "src/managers/server-profiles/server-profiles.css"
         ],
         "js": [
-          "src/managers/user-profiles/user-profiles.js"
+          "src/managers/server-profiles/server-profiles.js"
         ],
         "html": []
       }

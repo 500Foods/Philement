@@ -1830,7 +1830,7 @@ if (this._isRadarInSidebar) {
         <span class="group-toggle-icon" style="transform: ${isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)'}">
           <fa fa-chevron-down></fa>
         </span>
-        <span class="group-name">${group.name}</span>
+        <span class="group-name">${group.name} (${permittedItems.length})</span>
       `;
       headerEl.addEventListener('click', () => this._toggleGroup(group.id));
 
