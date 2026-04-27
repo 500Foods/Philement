@@ -10,27 +10,27 @@ import { log, Subsystems, Status } from '../../../core/log.js';
 import { BaseSettingsPage, SimpleSettingsPage } from './settings-page-base.js';
 
 // Import all internal page handlers statically for Vite compatibility
-import AccountPage from './page-account.js';
-import NamesPage from './page-names.js';
-import AddressesPage from './page-addresses.js';
-import EmailPage from './page-email.js';
-import PhonePage from './page-phone.js';
-import AuthenticationPage from './page-authentication.js';
-import TokensPage from './page-tokens.js';
-import LanguagePage from './page-language.js';
-import DateFormatsPage from './page-date-formats.js';
-import NumberFormatsPage from './page-number-formats.js';
-import StartupPage from './page-startup.js';
-import NotificationsPage from './page-notifications.js';
-import ConciergePage from './page-concierge.js';
-import AnnotationsPage from './page-annotations.js';
-import ToursPage from './page-tours.js';
-import TrainingPage from './page-training.js';
-import LoginHistoryPage from './page-login-history.js';
+import AccountPage from './account/page-account.js';
+import NamesPage from './names/page-names.js';
+import AddressesPage from './addresses/page-addresses.js';
+import EmailPage from './email/page-email.js';
+import PhonePage from './phone/page-phone.js';
+import AuthenticationPage from './authentication/page-authentication.js';
+import TokensPage from './tokens/page-tokens.js';
+import LanguagePage from './language/page-language.js';
+import DateFormatsPage from './date-formats/page-date-formats.js';
+import NumberFormatsPage from './number-formats/page-number-formats.js';
+import StartupPage from './startup/page-startup.js';
+import NotificationsPage from './notifications/page-notifications.js';
+import ConciergePage from './concierge/page-concierge.js';
+import AnnotationsPage from './annotations/page-annotations.js';
+import ToursPage from './tours/page-tours.js';
+import TrainingPage from './training/page-training.js';
+import LoginHistoryPage from './login-history/page-login-history.js';
 
 // Import placeholder and manager pages
 import PlaceholderPage from './page-placeholder.js';
-import LookupsManagerPage from './manager-23.js';
+import LookupsManagerPage from './lookups/manager-23.js';
 
 /**
  * Map of internal page indices to their handler classes

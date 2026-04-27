@@ -10,23 +10,20 @@ import { eventBus, Events } from '../../core/event-bus.js';
 import { getClaims, storeJWT } from '../../core/jwt.js';
 import { getConfigValue } from '../../core/config.js';
 import { createRequest } from '../../core/json-request.js';
-import { LithiumTable } from '../../tables/lithium-table-main.js';
 import { LithiumSplitter } from '../../core/lithium-splitter.js';
 import { PanelStateManager } from '../../core/panel-state-manager.js';
 import {
   togglePanelCollapse,
   restorePanelState as restoreCollapsedPanelState,
 } from '../../core/panel-collapse.js';
-import { setTableWidth } from '../../tables/settings/table-settings.js';
-import { authQuery } from '../../shared/conduit.js';
 import { log, Subsystems, Status } from '../../core/log.js';
 import { processIcons } from '../../core/icons.js';
-import { normalizeIconHtml } from '../../core/icons.js';
 import { initToolbars, setupManagerFooterIcons, createFontPopup, closeAllPopups } from '../../core/manager-ui.js';
 import { ManagerEditHelper } from '../../core/manager-edit-helper.js';
 import { getMenu, buildManagerIconsRegistry } from '../../shared/menu.js';
 import { CollectionTabHandler } from './profile-manager-collection.js';
 import { SettingsTabHandler } from './profile-manager-settings.js';
+import { ProfileManagerTable } from './profile-manager-table.js';
 
 import { toast } from '../../shared/toast.js';
 import '../../styles/vendor-tabulator.css';
@@ -60,6 +57,9 @@ export default class ProfileManager {
     this.isLeftPanelCollapsed = this.leftPanelState.loadCollapsed(false);
 
     this.editHelper = new ManagerEditHelper({ name: 'Profile' });
+
+    // Initialize sub-modules
+    this.tableManager = new ProfileManagerTable(this);
 
     // Use the global settings service with sectioned access wrapper
     const globalSettings = window.lithiumSettings;
@@ -133,7 +133,7 @@ export default class ProfileManager {
     // Initialize to settings tab to set button states properly
     this.switchTab('settings');
 
-    await this.initOptionsTable();
+    await this.tableManager.initOptionsTable();
     this.setupSplitter();
 
     await Promise.all([this.loadThemes(), this.loadDatabases()]);
@@ -250,322 +250,21 @@ export default class ProfileManager {
   /**
    * Initialize the User Options table
    */
-  async initOptionsTable() {
-    if (!this.elements.tableContainer || !this.elements.navigatorContainer) return;
 
-    this.optionsTable = new LithiumTable({
-      container: this.elements.tableContainer,
-      navigatorContainer: this.elements.navigatorContainer,
-      tablePath: 'profile-manager/user-options',
-      lookupKeyIdx: 4,
-      cssPrefix: 'profile-options',
-      storageKey: 'profile_options_table',
-      app: this.app,
-      readonly: true,
-      panel: this.elements.leftPanel,
-      panelStateManager: this.leftPanelState,
-      localSearch: true,
-      localSearchFields: ['section', 'label', 'search'],
-      onRowSelected: (rowData) => this.handleOptionSelected(rowData),
-      onRowDeselected: () => this.handleOptionDeselected(),
-      onRefresh: () => this.loadUserOptions(),
-    });
 
-    this.editHelper.registerTable(this.optionsTable);
-    await this.optionsTable.init();
-    await this.loadUserOptions();
-  }
 
-  /**
-   * Load user options from Lookup 60 and merge with Main Menu data
-   */
-  async loadUserOptions() {
-    if (!this.app?.api || !this.optionsTable?.table) return;
 
-    try {
-      this.optionsTable.showLoading();
 
-      const rows = await authQuery(this.app.api, 26, { INTEGER: { LOOKUPID: 60 } });
-      const profileSectionsRow = rows?.find(row => row.key_idx === 0);
 
-      if (profileSectionsRow && profileSectionsRow.collection) {
-        let collection = profileSectionsRow.collection;
-        if (typeof collection === 'string') {
-          try {
-            collection = JSON.parse(collection);
-          } catch (_e) {
-            collection = {};
-          }
-        }
 
-        const locale = navigator.language || 'en-US';
-        const sections = collection[locale] || collection.default || [];
 
-        // Transform sections, merging with menu data for manager entries
-        this.userOptions = this.transformSections(sections);
-      } else {
-        this.userOptions = this.getDefaultUserOptions();
-      }
 
-      // Don't auto-select - we'll handle selection manually in _restoreSelectedSection
-      this.optionsTable.loadStaticData(this.userOptions, { autoSelect: false });
-      log(Subsystems.TABLE, Status.INFO,
-        `[ProfileManager] Loaded ${this.userOptions.length} user options`);
 
-      // Process icons after the table has rendered HTML formatter cells.
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          processIcons(this.elements.tableContainer);
-        });
-      });
 
-      // Restore previously selected section after data is loaded
-      this._restoreSelectedSection();
-    } catch (error) {
-      log(Subsystems.TABLE, Status.ERROR,
-        `[ProfileManager] Failed to load user options: ${error.message}`);
-      this.userOptions = this.getDefaultUserOptions();
-      // Don't auto-select on error either
-      this.optionsTable.loadStaticData(this.userOptions, { autoSelect: false });
 
-      // Process icons after error recovery once the table DOM is present.
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          processIcons(this.elements.tableContainer);
-        });
-      });
 
-      // Restore previously selected section even on error (using default options)
-      this._restoreSelectedSection();
-    } finally {
-      this.optionsTable.hideLoading();
-    }
-  }
 
-  /**
-   * Restore the previously selected section from localStorage
-   * If no saved state (e.g., after localStorage purge), select the first record (Account)
-   * @private
-   */
-  _restoreSelectedSection() {
-    try {
-      const savedIndex = localStorage.getItem(this._selectedSectionStorageKey);
 
-      // If no saved state, select the first record (Account, index -1) after localStorage purge
-      if (savedIndex === null) {
-        log(Subsystems.MANAGER, Status.INFO,
-          '[ProfileManager] No saved section, auto-selecting first record (Account)');
-        this._selectSectionByIndex(-1);
-        this._setNarrowPanelWidth();
-        return;
-      }
-
-      const index = parseInt(savedIndex, 10);
-      if (isNaN(index)) {
-        log(Subsystems.MANAGER, Status.WARN,
-          `[ProfileManager] Invalid saved section index: ${savedIndex}`);
-        return;
-      }
-
-      // Find the row with the matching index
-      const row = this.userOptions.find(opt => opt.index === index);
-      if (!row) {
-        log(Subsystems.MANAGER, Status.DEBUG,
-          `[ProfileManager] Saved section index ${index} not found in current options`);
-        // Default to first record
-        this._selectSectionByIndex(-1);
-        return;
-      }
-
-      // Select the row in the table
-      const table = this.optionsTable?.table;
-      if (!table) return;
-
-      // Find the Tabulator row for this data
-      const tabulatorRow = table.getRows().find(r => {
-        const data = r.getData();
-        return data.index === index;
-      });
-
-      if (tabulatorRow) {
-        // Select row in table - this triggers onRowSelected which calls handleOptionSelected
-        table.selectRow(tabulatorRow);
-        this.optionsTable?.updateMoveButtonState?.();
-        tabulatorRow.scrollTo();
-        log(Subsystems.MANAGER, Status.INFO,
-          `[ProfileManager] Restored selected section: ${row.label} (index: ${index})`);
-      }
-    } catch (error) {
-      log(Subsystems.MANAGER, Status.WARN,
-        `[ProfileManager] Failed to restore selected section:`, error);
-    }
-  }
-
-  /**
-   * Select a section by its index
-   * @param {number} index - The section index to select
-   * @private
-   */
-  _selectSectionByIndex(index) {
-    const table = this.optionsTable?.table;
-    if (!table) return;
-
-    const tabulatorRow = table.getRows().find(r => {
-      const data = r.getData();
-      return data.index === index;
-    });
-
-    if (tabulatorRow) {
-      table.selectRow(tabulatorRow);
-      this.optionsTable?.updateMoveButtonState?.();
-      tabulatorRow.scrollTo();
-      const row = this.userOptions.find(opt => opt.index === index);
-      log(Subsystems.MANAGER, Status.INFO,
-        `[ProfileManager] Selected section: ${row?.label || index} (index: ${index})`);
-    }
-  }
-
-  /**
-   * Set panel to narrow width after localStorage purge (first use)
-   * Uses the same setTableWidth function as the width popup
-   * @private
-   */
-  _setNarrowPanelWidth() {
-    // Use this.optionsTable (LithiumTable), not this.optionsTable.table (Tabulator)
-    const table = this.optionsTable;
-    if (table && typeof table.setTableWidth === 'function') {
-      table.setTableWidth('narrow');
-    } else if (table) {
-      // Fallback to exported function
-      setTableWidth(table, 'narrow');
-    }
-    
-    log(Subsystems.MANAGER, Status.INFO,
-      '[ProfileManager] Set narrow panel width via setTableWidth');
-  }
-
-  /**
-   * Transform sections from Lookup 60, merging with menu data
-   * Internal sections have negative indices, managers use actual IDs
-   */
-  transformSections(sections) {
-    return sections.map((section, position) => {
-      const index = section[3] ?? (position + 1);
-      const isInternal = index < 0;
-      const sectionIcon = normalizeIconHtml(section[1], '<fa fa-cube></fa>');
-      const searchString = section[4] || '';
-
-      // For manager entries (index >= 0), merge with menu data
-      if (!isInternal && this._managerIcons[index]) {
-        const menuInfo = this._managerIcons[index];
-        const groupName = this._getManagerGroup(index);
-        return {
-          key_idx: position + 1,
-          section: groupName,
-          icon: normalizeIconHtml(menuInfo.iconHtml, sectionIcon || '<fa fa-cube></fa>') || sectionIcon || '<fa fa-cube></fa>',
-          label: menuInfo.name || section[2] || 'Unknown',
-          index: index,
-          search: searchString,
-          status_a1: 1,
-        };
-      }
-
-      // Internal sections or managers not in menu
-      return {
-        key_idx: position + 1,
-        section: section[0] || '',
-        icon: sectionIcon || '',
-        label: section[2] || '',
-        index: index,
-        search: searchString,
-        status_a1: 1,
-      };
-    });
-  }
-
-  /**
-   * Get default user options when lookup data is not available
-   */
-  getDefaultUserOptions() {
-    const baseOptions = [
-      { key_idx: 1, section: 'General', icon: '<fa fa-id-card></fa>', label: 'Account', index: -1, search: '', status_a1: 1 },
-      { key_idx: 2, section: 'General', icon: '<fa fa-id-badge></fa>', label: 'Names', index: -2, search: '', status_a1: 1 },
-      { key_idx: 3, section: 'General', icon: '<fa fa-address-book></fa>', label: 'Addresses', index: -3, search: '', status_a1: 1 },
-      { key_idx: 4, section: 'General', icon: '<fa fa-at></fa>', label: 'E-Mail', index: -4, search: '', status_a1: 1 },
-      { key_idx: 5, section: 'General', icon: '<fa fa-phone></fa>', label: 'Phone', index: -5, search: '', status_a1: 1 },
-      { key_idx: 6, section: 'Security', icon: '<fa fa-key></fa>', label: 'Authentication', index: -6, search: '', status_a1: 1 },
-      { key_idx: 7, section: 'Security', icon: '<fa fa-user-key></fa>', label: 'Tokens', index: -7, search: '', status_a1: 1 },
-      { key_idx: 8, section: 'Formatting', icon: '<fa fa-globe></fa>', label: 'Language', index: -8, search: '', status_a1: 1 },
-      { key_idx: 9, section: 'Formatting', icon: '<fa fa-calendar></fa>', label: 'Date Formats', index: -9, search: '', status_a1: 1 },
-      { key_idx: 10, section: 'Formatting', icon: '<fa fa-00></fa>', label: 'Number Formats', index: -10, search: '', status_a1: 1 },
-      { key_idx: 11, section: 'Application', icon: '<fa fa-atom-simple></fa>', label: 'Startup', index: -11, search: '', status_a1: 1 },
-      { key_idx: 12, section: 'Application', icon: '<fa fa-bell></fa>', label: 'Notifications', index: -12, search: '', status_a1: 1 },
-      { key_idx: 13, section: 'Application', icon: '<fa fa-bell-concierge></fa>', label: 'Concierge', index: -13, search: '', status_a1: 1 },
-      { key_idx: 14, section: 'Application', icon: '<fa fa-note-sticky></fa>', label: 'Annotations', index: -14, search: '', status_a1: 1 },
-      { key_idx: 15, section: 'Application', icon: '<fa fa-signs-post></fa>', label: 'Tours', index: -15, search: '', status_a1: 1 },
-      { key_idx: 16, section: 'Application', icon: '<fa fa-graduation-cap></fa>', label: 'Training', index: -16, search: '', status_a1: 1 },
-      { key_idx: 17, section: 'Security', icon: '<fa fa-receipt></fa>', label: 'Login History', index: -17, search: '', status_a1: 1 },
-    ];
-
-    // Add manager entries from menu data, using group names from Main Menu
-    const managerOptions = Object.entries(this._managerIcons).map(([id, info], position) => {
-      const managerId = parseInt(id, 10);
-      const groupName = this._getManagerGroup(managerId);
-      return {
-        key_idx: 100 + position,
-        section: groupName,
-        icon: info.iconHtml || '<fa fa-cube></fa>',
-        label: info.name || `Manager ${id}`,
-        index: managerId,
-        search: '',
-        status_a1: 1,
-      };
-    });
-
-    return [...baseOptions, ...managerOptions];
-  }
-
-  /**
-   * Handle when an option is selected from the table
-   */
-  async handleOptionSelected(rowData) {
-    if (!rowData) return;
-
-    log(Subsystems.MANAGER, Status.INFO,
-      `[ProfileManager] Option selected: ${rowData.label}, index: ${rowData.index}`);
-
-    // Close any open popups (timezone picker, datepicker, etc.)
-    closeAllPopups();
-
-    // Save selected section index to localStorage
-    if (rowData.index !== undefined) {
-      localStorage.setItem(this._selectedSectionStorageKey, String(rowData.index));
-    }
-
-    // Update section label button using the data directly
-    if (this.elements.sectionLabelBtn && rowData.label) {
-      this.elements.sectionLabelBtn.classList.add('active');
-      this.elements.sectionLabelBtn.title = rowData.label;
-      const iconHtml = rowData.icon || '<fa fa-cube></fa>';
-      this.elements.sectionLabelBtn.innerHTML = `${iconHtml} <span>${rowData.label}</span>`;
-      processIcons(this.elements.sectionLabelBtn);
-    }
-
-    // Switch to settings tab if needed
-    if (this.currentTab !== 'settings') {
-      this.switchTab('settings');
-    }
-
-    // Show the settings page
-    await this.settingsHandler?.showPage(rowData.index, rowData);
-  }
-
-  /**
-   * Handle when an option is deselected
-   */
-  handleOptionDeselected() {
-    log(Subsystems.MANAGER, Status.DEBUG, '[ProfileManager] Option deselected');
-  }
 
   /**
    * Setup the splitter between panels
@@ -628,7 +327,7 @@ export default class ProfileManager {
       container: this.elements.panelSettings,
       app: this.app,
       settingsService: this.settingsService,
-      onPageChange: (index, data) => {
+      onPageChange: (index, _data) => {
         log(Subsystems.MANAGER, Status.DEBUG, `[ProfileManager] Page changed to ${index}`);
       },
       onDirtyChange: (dirty) => {
@@ -967,6 +666,7 @@ export default class ProfileManager {
    */
   _handleFooterDownload() {
     const data = this.getCollectionData();
+    // eslint-disable-next-line no-undef
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
