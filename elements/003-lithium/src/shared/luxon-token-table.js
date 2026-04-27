@@ -161,7 +161,7 @@ export class LuxonTokenTable {
 
     await this.table.init();
     this.loadData();
-    this.startUpdates();
+    // Removed automatic updates - table only updates when explicitly requested
 
     log(Subsystems.UI, Status.DEBUG, '[LuxonTokenTable] Initialized');
     return true;

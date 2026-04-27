@@ -33,8 +33,19 @@ for (const manager of managers) {
   const srcDir = join(SRC_MANAGERS_DIR, manager);
   const destDir = join(PUBLIC_MANAGERS_DIR, manager);
   
-  // Find HTML files in the manager directory
-  const files = readdirSync(srcDir).filter(f => f.endsWith('.html'));
+  // Find HTML and CSS files in the manager directory (recursively)
+  const files = [];
+  function findTemplateFiles(dir) {
+    const items = readdirSync(dir, { withFileTypes: true });
+    for (const item of items) {
+      if (item.isDirectory()) {
+        findTemplateFiles(join(dir, item.name));
+      } else if (item.name.endsWith('.html') || item.name.endsWith('.css')) {
+        files.push(join(dir.substring(srcDir.length + 1), item.name));
+      }
+    }
+  }
+  findTemplateFiles(srcDir);
   
   if (files.length === 0) {
     console.log(`  ${manager}/: No HTML templates found (skipped)`);
@@ -51,7 +62,13 @@ for (const manager of managers) {
   for (const file of files) {
     const srcPath = join(srcDir, file);
     const destPath = join(destDir, file);
-    
+
+    // Create destination directory if it doesn't exist
+    const destDirPath = dirname(destPath);
+    if (!existsSync(destDirPath)) {
+      mkdirSync(destDirPath, { recursive: true });
+    }
+
     copyFileSync(srcPath, destPath);
     console.log(`  ${manager}/${file}`);
     copiedCount++;

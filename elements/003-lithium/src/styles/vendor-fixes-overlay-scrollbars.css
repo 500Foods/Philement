@@ -43,7 +43,7 @@
 }
                                                          
 /* vertical scrollbar in User Profile Manager's Date Formats section/page */
-#settings-page--9 .df-content .os-scrollbar-vertical {
+#settings-page--9 > div.df-content > div.os-scrollbar-vertical {
   margin: 0px 6px 3px 0px;
   border-radius: 8px !important;
   width: 10px;

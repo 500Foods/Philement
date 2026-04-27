@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS custom properties (variables) used across the Lithium codebase",
-    "generated": "2026-04-27T04:18:36.120Z",
+    "generated": "2026-04-27T15:49:00.981Z",
     "sources": {
-      "css": "56 files in src/**/*.css",
+      "css": "74 files in src/**/*.css",
       "js": "151 files in src/**/*.js",
-      "html": "9 files in src/**/*.html + index.html"
+      "html": "27 files in src/**/*.html + index.html"
     },
     "total_variables": 247,
-    "total_occurrences": 3739
+    "total_occurrences": 3740
   },
   "variables": [
     {
@@ -1686,10 +1686,10 @@
     },
     {
       "name": "--transition-std",
-      "css": 24,
+      "css": 25,
       "js": 0,
       "html": 0,
-      "total": 24
+      "total": 25
     },
     {
       "name": "--z-dropdown",
