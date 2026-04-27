@@ -24,13 +24,14 @@ import StartupPage from './startup/page-startup.js';
 import NotificationsPage from './notifications/page-notifications.js';
 import ConciergePage from './concierge/page-concierge.js';
 import AnnotationsPage from './annotations/page-annotations.js';
-import ToursPage from './tours/page-tours.js';
+
 import TrainingPage from './training/page-training.js';
 import LoginHistoryPage from './login-history/page-login-history.js';
 
 // Import placeholder and manager pages
 import PlaceholderPage from './page-placeholder.js';
-import LookupsManagerPage from './lookups/manager-23.js';
+import LookupsManagerPage from './manager-23/page-manager-23.js';
+import TourManagerPage from './manager-6/page-manager-6.js';
 
 /**
  * Map of internal page indices to their handler classes
@@ -51,7 +52,6 @@ const INTERNAL_PAGE_MAP = {
   '-12': NotificationsPage,
   '-13': ConciergePage,
   '-14': AnnotationsPage,
-  '-15': ToursPage,
   '-16': TrainingPage,
   '-17': LoginHistoryPage,
 };
@@ -213,6 +213,12 @@ export class SettingsPageRegistry {
         return placeholder;
       }
 
+      // Load HTML for manager pages
+      const pageName = this._getPageNameFromManagerIndex(index);
+      if (pageName) {
+        await this._loadPageAssets(pageName, container);
+      }
+
       const handler = new HandlerClass({
         index: index,
         managerId: index,
@@ -244,6 +250,8 @@ export class SettingsPageRegistry {
     // Map of manager IDs to their handler classes
     // Add new managers here as they are implemented
     switch (index) {
+      case 6: // Tour Manager
+        return TourManagerPage;
       case 23: // Lookups Manager
         return LookupsManagerPage;
       default:
@@ -272,11 +280,20 @@ export class SettingsPageRegistry {
       '-12': 'notifications',
       '-13': 'concierge',
       '-14': 'annotations',
-      '-15': 'tours',
       '-16': 'training',
       '-17': 'login-history',
     };
     return indexToNameMap[index] || null;
+  }
+
+  /**
+   * Derive page name from manager name for file paths
+   * @private
+   */
+  _getPageNameFromManagerIndex(index) {
+    // All manager pages use the pattern: manager-{id}
+    // This ensures consistent numeric referencing as per LITHIUM-INS.md
+    return 'manager-' + index;
   }
 
   /**
