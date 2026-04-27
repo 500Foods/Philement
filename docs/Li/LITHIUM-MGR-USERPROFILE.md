@@ -35,6 +35,17 @@ This document describes the User Profile Manager — a utility manager for manag
 └─────────────────┴──────────────────────────────────────────┘
 ```
 
+### Left Panel: User Options Table
+
+The left panel displays a grouped LithiumTable of user options. Groups represent logical categories (General, Security, Formatting, Application, and dynamic manager groups).
+
+**Group Expansion Behavior:**
+- On initial load, all groups start collapsed
+- Only the group containing the currently active section is expanded
+- For new users: the "General" group expands (containing the Account section)
+- For returning users: the group of their last selected section expands
+- Users can manually expand/collapse other groups as needed
+
 ### Right Panel: Tabbed Interface
 
 The right panel contains two top-level tabs:
@@ -80,47 +91,60 @@ Manager pages use their actual Manager ID from lithium.json (e.g., Lookups Manag
 
 ```
 src/managers/profile-manager/
-├── profile-manager.js              # Main manager class (~720 lines)
+├── profile-manager.js              # Main manager class (998 lines)
 ├── profile-manager.html            # HTML template
 ├── profile-manager.css             # Styles
-├── profile-manager-collection.js   # Collection tab handler
-├── profile-manager-settings.js     # Settings tab orchestrator
-├── profile-settings-service.js     # Centralized JSON storage service
+├── profile-manager-collection.js   # Collection tab handler (318 lines)
+├── profile-manager-settings.js     # Settings tab orchestrator (239 lines)
+├── profile-manager-table.js        # Table management module (315 lines)
+├── profile-settings-service.js     # Centralized JSON storage service (594 lines)
 └── pages/                          # Settings page handlers
-    ├── page-registry.js            # Registry for loading handlers
-    ├── settings-page-base.js       # Base classes for pages
-    ├── page-placeholder.js         # Placeholder for unimplemented managers
-    ├── page-account.js             # Account page (index -1)
-    ├── page-names.js               # Names page (index -2)
-    ├── page-addresses.js           # Addresses page (index -3)
-    ├── page-email.js               # E-Mail page (index -4)
-    ├── page-phone.js               # Phone page (index -5)
-    ├── page-authentication.js      # Authentication page (index -6)
-    ├── page-tokens.js              # Tokens page (index -7)
-    ├── page-language.js            # Language page (index -8)
-    ├── page-date-formats.js        # Date Formats page (index -9)
-    ├── page-number-formats.js      # Number Formats page (index -10)
-    ├── page-startup.js             # Startup page (index -11)
-    ├── page-notifications.js       # Notifications page (index -12)
-    ├── page-concierge.js           # Concierge page (index -13)
-    ├── page-annotations.js         # Annotations page (index -14)
-    ├── page-tours.js               # Tours page (index -15)
-    ├── page-training.js            # Training page (index -16)
-    ├── page-login-history.js       # Login History page (index -17)
-    └── manager-23.js               # Lookups Manager settings (example)
+    ├── page-registry.js            # Registry for loading handlers (446 lines)
+    ├── settings-page-base.js       # Base classes for pages (301 lines)
+    ├── page-placeholder.js         # Placeholder for unimplemented managers (76 lines)
+    ├── page-account.js             # Account page (index -1) (68 lines)
+    ├── page-names.js               # Names page (index -2) (49 lines)
+    ├── page-addresses.js           # Addresses page (index -3) (38 lines)
+    ├── page-email.js               # E-Mail page (index -4) (38 lines)
+    ├── page-phone.js               # Phone page (index -5) (19 lines)
+    ├── page-authentication.js      # Authentication page (index -6) (19 lines)
+    ├── page-tokens.js              # Tokens page (index -7) (17 lines)
+    ├── page-language.js            # Language page (index -8) (113 lines)
+    ├── page-date-formats.js        # Date Formats page (index -9) (945 lines)
+    ├── page-number-formats.js      # Number Formats page (index -10) (19 lines)
+    ├── page-startup.js             # Startup page (index -11) (17 lines)
+    ├── page-notifications.js       # Notifications page (index -12) (17 lines)
+    ├── page-concierge.js           # Concierge page (index -13) (17 lines)
+    ├── page-annotations.js         # Annotations page (index -14) (17 lines)
+    ├── page-training.js            # Training page (index -16) (17 lines)
+    ├── page-login-history.js       # Login History page (index -17) (19 lines)
+    ├── manager-5/                  # Manager folders use numeric naming
+    │   ├── page-manager-5.html     # Crimson Manager placeholder
+    │   ├── page-manager-5.css
+    │   └── page-manager-5.js
+    ├── manager-6/                  # Tour Manager (implemented)
+    │   ├── page-manager-6.html
+    │   ├── page-manager-6.css
+    │   └── page-manager-6.js
+    ├── manager-23/                 # Lookups Manager (implemented)
+    │   ├── page-manager-23.html
+    │   ├── page-manager-23.css
+    │   └── page-manager-23.js
+    └── ... (additional manager folders)
 ```
 
 ### Module Responsibilities
 
 | File | Purpose | Lines |
 |------|---------|-------|
-| `profile-manager.js` | Main manager, table initialization, data loading | ~720 |
-| `profile-manager-collection.js` | CodeMirror JSON editor for Collection tab | ~200 |
-| `profile-manager-settings.js` | Page navigation, crossfade transitions | ~180 |
-| `profile-settings-service.js` | Centralized JSON read/write with debounced persist | ~505 |
-| `pages/page-registry.js` | Handler loading, caching, placeholder fallback | ~270 |
-| `pages/settings-page-base.js` | Base classes: `BaseSettingsPage`, `SimpleSettingsPage` | ~300 |
-| `pages/page-*.js` | Individual settings page handlers | 50–220 each |
+| `profile-manager.js` | Main manager class, initialization, event handling | 998 |
+| `profile-manager-collection.js` | CodeMirror JSON editor for Collection tab | 318 |
+| `profile-manager-settings.js` | Page navigation, crossfade transitions | 239 |
+| `profile-manager-table.js` | LithiumTable setup and data loading | 315 |
+| `profile-settings-service.js` | Centralized JSON read/write with debounced persist | 594 |
+| `pages/page-registry.js` | Handler loading, caching, placeholder fallback | 446 |
+| `pages/settings-page-base.js` | Base classes: `BaseSettingsPage`, `SimpleSettingsPage` | 301 |
+| `pages/page-*.js` | Individual settings page handlers | 19–945 each |
 
 ---
 
@@ -411,17 +435,17 @@ this.setSectionData({ dates: { short: '...' } }, 'Date Formats');
 
 ### Page Registry
 
-The `SettingsPageRegistry` handles loading page handlers:
+The `SettingsPageRegistry` handles loading page handlers and assets dynamically:
 
 ```javascript
-// Internal pages (negative indices) - statically imported
+// Internal pages (negative indices) - statically imported JS handlers
 const INTERNAL_PAGE_MAP = {
   '-1': AccountPage,
   '-2': NamesPage,
   // ... etc
 };
 
-// Manager pages (positive indices) - registered in switch
+// Manager pages (positive indices) - conditionally imported
 _getManagerHandlerClass(index) {
   switch (index) {
     case 23: // Lookups Manager
@@ -430,7 +454,35 @@ _getManagerHandlerClass(index) {
       return null;  // Uses PlaceholderPage
   }
 }
+
+// Dynamic HTML/CSS loading for each section
+async _loadPageAssets(pageName, container) {
+  // Fetch HTML from /src/managers/profile-manager/pages/{pageName}/page-{pageName}.html
+  // For managers, pageName = 'manager-' + index (e.g., 'manager-23')
+  const htmlResponse = await fetch(`/src/managers/profile-manager/pages/${pageName}/page-${pageName}.html`);
+  const htmlContent = await htmlResponse.text();
+
+  // Parse and inject HTML into container
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = htmlContent;
+  container.appendChild(tempDiv.firstElementChild);
+
+  // Fetch and inject CSS if it exists
+  const cssResponse = await fetch(`/src/managers/profile-manager/pages/${pageName}/page-${pageName}.css`);
+  if (cssResponse.ok) {
+    const cssContent = await cssResponse.text();
+    const styleElement = document.createElement('style');
+    styleElement.textContent = cssContent;
+    document.head.appendChild(styleElement);
+  }
+}
 ```
+
+**Dynamic Loading Benefits:**
+- **On-demand loading**: HTML/CSS/JS for each section loads only when accessed
+- **Reduced initial bundle**: Unused sections don't impact load time
+- **User permissions**: Sections unavailable to certain users never load
+- **Modular development**: Each section is self-contained with its own assets
 
 ### Adding a New Settings Page
 
@@ -473,13 +525,17 @@ const INTERNAL_PAGE_MAP = {
 
 **For Manager Pages (positive index = Manager ID):**
 
-1. Add HTML to `profile-manager.html` with `data-page-index="{managerId}"`
+1. Create `pages/manager-{id}/` directory
 
-2. Create `pages/manager-{id}.js` with handler class
+2. Create `pages/manager-{id}/page-manager-{id}.html` with `data-page-index="{managerId}"`
 
-3. Add case to `_getManagerHandlerClass()` in `page-registry.js`
+3. Create `pages/manager-{id}/page-manager-{id}.js` with handler class
 
-4. If no handler exists, `PlaceholderPage` is shown automatically
+4. Create `pages/manager-{id}/page-manager-{id}.css` (optional)
+
+5. Add case to `_getManagerHandlerClass()` in `page-registry.js`
+
+6. If no handler exists, `PlaceholderPage` is shown automatically with generated HTML
 
 ---
 
@@ -506,7 +562,7 @@ Managers without specific settings pages display a placeholder:
 └─────────────────────────────┘
 ```
 
-The placeholder is automatically shown for any manager ID that doesn't have a handler registered in `_getManagerHandlerClass()`.
+The placeholder is automatically shown for any manager ID that doesn't have a handler registered in `_getManagerHandlerClass()`. The `PlaceholderPage` dynamically creates the appropriate DOM structure with the correct `data-page-index` and displays the placeholder message.
 
 ---
 
@@ -1130,4 +1186,4 @@ When saving, write to the Settings Service **and** optionally update the legacy 
 
 ---
 
-Last updated: April 23, 2026
+Last updated: April 27, 2026

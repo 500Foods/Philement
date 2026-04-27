@@ -32,29 +32,42 @@ export class PlaceholderPage extends BaseSettingsPage {
   _renderPlaceholder() {
     if (!this.container) return;
 
-    // Find or create the placeholder content
-    let placeholderEl = this.container.querySelector('.settings-placeholder');
+    // Find or create the settings page element
+    let pageElement = this.container.querySelector(`.settings-page[data-page-index="${this.index}"]`);
+    if (!pageElement) {
+      pageElement = document.createElement('div');
+      pageElement.className = 'settings-page';
+      pageElement.setAttribute('data-page-index', this.index);
+      pageElement.id = `settings-page-${this.index}`;
+      this.container.appendChild(pageElement);
+    }
 
+    // Find or create the section
+    let section = pageElement.querySelector('.profile-section');
+    if (!section) {
+      section = document.createElement('section');
+      section.className = 'profile-section';
+      pageElement.appendChild(section);
+    }
+
+    // Find or create the placeholder content
+    let placeholderEl = section.querySelector('.settings-placeholder');
     if (!placeholderEl) {
-      // Clear existing content and create placeholder
-      const section = this.container.querySelector('.profile-section');
-      if (section) {
-        section.innerHTML = `
-          <h3 class="section-title"><fa fa-cog></fa> ${this._managerName} Settings</h3>
-          <div class="settings-placeholder">
-            <div class="placeholder-icon">
-              <fa fa-wrench></fa>
-            </div>
-            <h4 class="placeholder-title">Settings Not Available</h4>
-            <p class="placeholder-message">
-              No settings are currently available for ${this._managerName}.
-            </p>
-            <p class="placeholder-hint">
-              This feature will be implemented in a future update.
-            </p>
+      section.innerHTML = `
+        <h3 class="section-title"><fa fa-wrench></fa> ${this._managerName} Settings</h3>
+        <div class="settings-placeholder">
+          <div class="placeholder-icon">
+            <fa fa-wrench></fa>
           </div>
-        `;
-      }
+          <h4 class="placeholder-title">Settings Not Available</h4>
+          <p class="placeholder-message">
+            No settings are currently available for ${this._managerName}.
+          </p>
+          <p class="placeholder-hint">
+            This feature will be implemented in a future update.
+          </p>
+        </div>
+      `;
     }
   }
 

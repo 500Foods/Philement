@@ -1,17 +1,9 @@
 /**
- * Profile Manager - Notifications Page Handler
+ * Profile Manager - Crimson Manager Page Placeholder
  *
- * Handles the Notifications settings page (index: -12)
+ * Placeholder for Crimson Manager settings
  */
 
-import { SimpleSettingsPage } from '../settings-page-base.js';
-import { log, Subsystems, Status } from '../../../../core/log.js';
+import { PlaceholderPage } from '../page-placeholder.js';
 
-export class NotificationsPage extends SimpleSettingsPage {
-  constructor(options = {}) {
-    super({ ...options, index: -12, formSelector: 'form' });
-  }
-  async onInit() { await super.onInit(); log(Subsystems.MANAGER, Status.DEBUG, '[NotificationsPage] Initialized (stub)'); }
-}
-
-export default NotificationsPage;
+export default PlaceholderPage;

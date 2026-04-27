@@ -81,6 +81,9 @@ export class ProfileManagerTable {
       log(Subsystems.TABLE, Status.INFO,
         `[ProfileManager] Loaded ${this.pm.userOptions.length} user options`);
 
+      // Collapse all groups initially
+      this.pm.optionsTable.collapseAll?.();
+
       // Process icons after the table has rendered HTML formatter cells.
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
@@ -146,6 +149,9 @@ export class ProfileManagerTable {
 
       if (tabulatorRow) {
         table.selectRow(tabulatorRow);
+        // Expand the group containing this row
+        const group = tabulatorRow.getGroup?.();
+        group?.show?.();
         log(Subsystems.MANAGER, Status.INFO,
           `[ProfileManager] Restored section: index ${index}`);
       } else {
@@ -176,6 +182,9 @@ export class ProfileManagerTable {
 
     if (tabulatorRow) {
       table.selectRow(tabulatorRow);
+      // Expand the group containing this row
+      const group = tabulatorRow.getGroup?.();
+      group?.show?.();
       log(Subsystems.MANAGER, Status.INFO,
         `[ProfileManager] Selected section by index: ${index}`);
     } else {

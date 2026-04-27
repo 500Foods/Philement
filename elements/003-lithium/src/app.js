@@ -1306,8 +1306,8 @@ class LithiumApp {
       case 8: return import('./managers/mail-manager/mail-manager.js');
       
       // User Management
-      case 9: return import('./managers/user-profiles/user-profiles.js');
-      case 10: return import('./managers/session-manager/session-manager.js');
+      case 9: return import('./managers/server-profiles/server-profiles.js');
+      case 10: return import('./managers/server-sessions/server-sessions.js');
       case 11: return import('./managers/version-history/version-history.js');
       
       // Shared
@@ -1343,7 +1343,7 @@ class LithiumApp {
       
       // Legacy/deprecated IDs (for backward compatibility)
       case 1: return import('./managers/login/login.js');
-      case 2: return import('./managers/session-logs/session-logs.js');
+      case 2: return import('./managers/server-sessions/server-sessions.js');
       case 3: return import('./managers/version-history/version-history.js');
       case 4: return import('./managers/queries/queries.js');
       case 5: return import('./managers/lookups/lookups.js');
