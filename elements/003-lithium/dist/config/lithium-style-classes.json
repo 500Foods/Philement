@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS class selectors/names used across the Lithium codebase",
-    "generated": "2026-04-27T03:02:06.854Z",
+    "generated": "2026-04-27T04:18:37.771Z",
     "sources": {
       "css": "56 files in src/**/*.css",
-      "js": "147 files in src/**/*.js",
+      "js": "151 files in src/**/*.js",
       "html": "9 files in src/**/*.html + index.html"
     },
     "total_selectors": 2034,
-    "total_occurrences": 31463
+    "total_occurrences": 31430
   },
   "selectors": [
     {
@@ -183,7 +183,7 @@
         ],
         "js": [
           "src/managers/main/main.js",
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/timezone-picker.js"
         ],
         "html": []
       }
@@ -1199,9 +1199,9 @@
     {
       "selector": ".col-manager-mode-btn.active",
       "css": 1,
-      "js": 74,
+      "js": 75,
       "html": 8,
-      "total": 83,
+      "total": 84,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
@@ -1216,6 +1216,7 @@
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager-settings.js",
+          "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -1498,9 +1499,9 @@
     {
       "selector": ".col-manager-popup.depth-2 .col-manager-mode-btn.active",
       "css": 1,
-      "js": 78,
+      "js": 79,
       "html": 8,
-      "total": 87,
+      "total": 88,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
@@ -1515,6 +1516,7 @@
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager-settings.js",
+          "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -1840,9 +1842,9 @@
     {
       "selector": ".col-manager-popup.visible",
       "css": 1,
-      "js": 116,
+      "js": 114,
       "html": 0,
-      "total": 117,
+      "total": 115,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
@@ -1856,7 +1858,6 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
-          "src/managers/profile-manager/pages/page-date-formats.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -1866,6 +1867,8 @@
           "src/managers/tour/tour.js",
           "src/managers/version-history/version-history.js",
           "src/shared/crimson-ws.js",
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js",
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-integration.js",
           "src/tables/column-manager/cm-ui.js",
@@ -3121,9 +3124,9 @@
     {
       "selector": ".crimson-citation-header-btn.active",
       "css": 1,
-      "js": 76,
+      "js": 77,
       "html": 8,
-      "total": 85,
+      "total": 86,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -3139,6 +3142,7 @@
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager-settings.js",
+          "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -3157,9 +3161,9 @@
     {
       "selector": ".crimson-citation-header-btn.active .crimson-citation-counter",
       "css": 1,
-      "js": 78,
+      "js": 79,
       "html": 8,
-      "total": 87,
+      "total": 88,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -3175,6 +3179,7 @@
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager-settings.js",
+          "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -3566,9 +3571,9 @@
     {
       "selector": ".crimson-citation-popup.visible",
       "css": 1,
-      "js": 122,
+      "js": 120,
       "html": 0,
-      "total": 123,
+      "total": 121,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -3582,7 +3587,6 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
-          "src/managers/profile-manager/pages/page-date-formats.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -3592,6 +3596,8 @@
           "src/managers/tour/tour.js",
           "src/managers/version-history/version-history.js",
           "src/shared/crimson-ws.js",
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js",
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
@@ -3889,9 +3895,9 @@
     {
       "selector": ".crimson-debug-btn.active",
       "css": 1,
-      "js": 76,
+      "js": 77,
       "html": 8,
-      "total": 85,
+      "total": 86,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -3907,6 +3913,7 @@
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager-settings.js",
+          "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -5062,9 +5069,9 @@
     {
       "selector": ".crimson-overlay.visible",
       "css": 1,
-      "js": 114,
+      "js": 112,
       "html": 0,
-      "total": 115,
+      "total": 113,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -5078,7 +5085,6 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
-          "src/managers/profile-manager/pages/page-date-formats.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -5088,6 +5094,8 @@
           "src/managers/tour/tour.js",
           "src/managers/version-history/version-history.js",
           "src/shared/crimson-ws.js",
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js",
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
@@ -5266,9 +5274,9 @@
     {
       "selector": ".crimson-popup.visible",
       "css": 1,
-      "js": 114,
+      "js": 112,
       "html": 0,
-      "total": 115,
+      "total": 113,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
@@ -5282,7 +5290,6 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
-          "src/managers/profile-manager/pages/page-date-formats.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -5292,6 +5299,8 @@
           "src/managers/tour/tour.js",
           "src/managers/version-history/version-history.js",
           "src/shared/crimson-ws.js",
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js",
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
@@ -6169,7 +6178,7 @@
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.js"
         ],
         "html": [
           "src/managers/profile-manager/profile-manager.html"
@@ -6187,7 +6196,7 @@
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.js"
         ],
         "html": [
           "src/managers/profile-manager/profile-manager.html"
@@ -6219,7 +6228,7 @@
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.js"
         ],
         "html": [
           "src/managers/profile-manager/profile-manager.html"
@@ -6251,7 +6260,7 @@
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.js"
         ],
         "html": []
       }
@@ -6267,7 +6276,7 @@
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.js"
         ],
         "html": []
       }
@@ -6283,7 +6292,7 @@
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.js"
         ],
         "html": []
       }
@@ -6297,7 +6306,7 @@
       "files": {
         "css": [],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.js"
         ],
         "html": [
           "src/managers/profile-manager/profile-manager.html"
@@ -6313,7 +6322,7 @@
       "files": {
         "css": [],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.js"
         ],
         "html": [
           "src/managers/profile-manager/profile-manager.html"
@@ -6391,7 +6400,7 @@
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.js"
         ],
         "html": [
           "src/managers/profile-manager/profile-manager.html"
@@ -6537,7 +6546,7 @@
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.js"
         ],
         "html": [
           "src/managers/profile-manager/profile-manager.html"
@@ -6555,7 +6564,7 @@
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.js"
         ],
         "html": [
           "src/managers/profile-manager/profile-manager.html"
@@ -6573,7 +6582,7 @@
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.js"
         ],
         "html": [
           "src/managers/profile-manager/profile-manager.html"
@@ -6591,7 +6600,7 @@
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.js"
         ],
         "html": [
           "src/managers/profile-manager/profile-manager.html"
@@ -6609,7 +6618,7 @@
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.js"
         ],
         "html": [
           "src/managers/profile-manager/profile-manager.html"
@@ -6627,7 +6636,7 @@
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.js"
         ],
         "html": [
           "src/managers/profile-manager/profile-manager.html"
@@ -6773,7 +6782,7 @@
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.js"
         ],
         "html": [
           "src/managers/profile-manager/profile-manager.html"
@@ -6855,7 +6864,7 @@
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/timezone-picker.js"
         ],
         "html": []
       }
@@ -6871,7 +6880,7 @@
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/timezone-picker.js"
         ],
         "html": [
           "src/managers/profile-manager/profile-manager.html"
@@ -6881,9 +6890,9 @@
     {
       "selector": ".df-timezone-dropdown.visible",
       "css": 1,
-      "js": 115,
+      "js": 113,
       "html": 0,
-      "total": 116,
+      "total": 114,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -6897,7 +6906,6 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
-          "src/managers/profile-manager/pages/page-date-formats.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -6907,6 +6915,8 @@
           "src/managers/tour/tour.js",
           "src/managers/version-history/version-history.js",
           "src/shared/crimson-ws.js",
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js",
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
@@ -6928,7 +6938,7 @@
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/timezone-picker.js"
         ],
         "html": []
       }
@@ -6944,7 +6954,7 @@
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/timezone-picker.js"
         ],
         "html": []
       }
@@ -6960,7 +6970,7 @@
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/timezone-picker.js"
         ],
         "html": []
       }
@@ -6976,7 +6986,7 @@
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/timezone-picker.js"
         ],
         "html": []
       }
@@ -6990,7 +7000,7 @@
       "files": {
         "css": [],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/timezone-picker.js"
         ],
         "html": []
       }
@@ -7006,7 +7016,7 @@
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/timezone-picker.js"
         ],
         "html": []
       }
@@ -7022,7 +7032,7 @@
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/timezone-picker.js"
         ],
         "html": []
       }
@@ -7038,7 +7048,7 @@
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/timezone-picker.js"
         ],
         "html": []
       }
@@ -7054,7 +7064,7 @@
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/timezone-picker.js"
         ],
         "html": []
       }
@@ -7071,7 +7081,7 @@
         ],
         "js": [
           "src/managers/main/main.js",
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/timezone-picker.js"
         ],
         "html": []
       }
@@ -7087,7 +7097,7 @@
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/timezone-picker.js"
         ],
         "html": []
       }
@@ -7103,7 +7113,7 @@
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/timezone-picker.js"
         ],
         "html": []
       }
@@ -7152,7 +7162,7 @@
         ],
         "js": [
           "src/managers/main/main.js",
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/timezone-picker.js"
         ],
         "html": [
           "src/managers/profile-manager/profile-manager.html"
@@ -7171,7 +7181,7 @@
         ],
         "js": [
           "src/managers/main/main.js",
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/timezone-picker.js"
         ],
         "html": [
           "src/managers/profile-manager/profile-manager.html"
@@ -7189,7 +7199,7 @@
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/timezone-picker.js"
         ],
         "html": []
       }
@@ -7221,7 +7231,7 @@
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.js"
         ],
         "html": [
           "src/managers/profile-manager/profile-manager.html"
@@ -7317,7 +7327,7 @@
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/timezone-picker.js"
         ],
         "html": []
       }
@@ -7459,7 +7469,7 @@
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.js"
         ],
         "html": [
           "src/managers/profile-manager/profile-manager.html"
@@ -7799,7 +7809,7 @@
           "src/styles/vendor-flatpickr.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/flatpickr-picker.js"
         ],
         "html": []
       }
@@ -7815,7 +7825,7 @@
           "src/styles/vendor-flatpickr.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/flatpickr-picker.js"
         ],
         "html": []
       }
@@ -7831,7 +7841,7 @@
           "src/styles/vendor-flatpickr.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/flatpickr-picker.js"
         ],
         "html": []
       }
@@ -7848,7 +7858,8 @@
         ],
         "js": [
           "src/managers/main/main.js",
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js"
         ],
         "html": []
       }
@@ -7864,7 +7875,7 @@
           "src/styles/vendor-flatpickr.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/flatpickr-picker.js"
         ],
         "html": []
       }
@@ -7880,7 +7891,7 @@
           "src/styles/vendor-flatpickr.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/flatpickr-picker.js"
         ],
         "html": []
       }
@@ -7896,7 +7907,7 @@
           "src/styles/vendor-flatpickr.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/flatpickr-picker.js"
         ],
         "html": []
       }
@@ -7912,7 +7923,7 @@
           "src/styles/vendor-flatpickr.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/flatpickr-picker.js"
         ],
         "html": []
       }
@@ -7928,7 +7939,7 @@
           "src/styles/vendor-flatpickr.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/flatpickr-picker.js"
         ],
         "html": []
       }
@@ -7944,7 +7955,7 @@
           "src/styles/vendor-flatpickr.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/flatpickr-picker.js"
         ],
         "html": []
       }
@@ -7960,7 +7971,7 @@
           "src/styles/vendor-flatpickr.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/flatpickr-picker.js"
         ],
         "html": []
       }
@@ -7976,7 +7987,7 @@
           "src/styles/vendor-flatpickr.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/flatpickr-picker.js"
         ],
         "html": []
       }
@@ -7992,7 +8003,7 @@
           "src/styles/vendor-flatpickr.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/flatpickr-picker.js"
         ],
         "html": []
       }
@@ -8008,7 +8019,7 @@
           "src/styles/vendor-flatpickr.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/flatpickr-picker.js"
         ],
         "html": []
       }
@@ -8024,7 +8035,7 @@
           "src/styles/vendor-flatpickr.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/flatpickr-picker.js"
         ],
         "html": []
       }
@@ -8040,7 +8051,7 @@
           "src/styles/vendor-flatpickr.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/flatpickr-picker.js"
         ],
         "html": []
       }
@@ -8056,7 +8067,7 @@
           "src/styles/vendor-flatpickr.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/flatpickr-picker.js"
         ],
         "html": []
       }
@@ -8072,7 +8083,7 @@
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/flatpickr-picker.js"
         ],
         "html": []
       }
@@ -8090,7 +8101,7 @@
           "src/styles/vendor-flatpickr.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/flatpickr-picker.js"
         ],
         "html": []
       }
@@ -8238,9 +8249,9 @@
     {
       "selector": ".font-popup-style-btn.active",
       "css": 1,
-      "js": 74,
+      "js": 75,
       "html": 8,
-      "total": 83,
+      "total": 84,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -8255,6 +8266,7 @@
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager-settings.js",
+          "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -8287,9 +8299,9 @@
     {
       "selector": ".font-popup.visible",
       "css": 1,
-      "js": 113,
+      "js": 111,
       "html": 0,
-      "total": 114,
+      "total": 112,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -8303,7 +8315,6 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
-          "src/managers/profile-manager/pages/page-date-formats.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -8313,6 +8324,8 @@
           "src/managers/tour/tour.js",
           "src/managers/version-history/version-history.js",
           "src/shared/crimson-ws.js",
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js",
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
@@ -8410,9 +8423,9 @@
     {
       "selector": ".footer-export-popup.visible",
       "css": 1,
-      "js": 113,
+      "js": 111,
       "html": 0,
-      "total": 114,
+      "total": 112,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -8426,7 +8439,6 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
-          "src/managers/profile-manager/pages/page-date-formats.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -8436,6 +8448,8 @@
           "src/managers/tour/tour.js",
           "src/managers/version-history/version-history.js",
           "src/shared/crimson-ws.js",
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js",
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
@@ -10655,9 +10669,9 @@
     {
       "selector": ".lithium-col-chooser-popup.visible",
       "css": 1,
-      "js": 113,
+      "js": 111,
       "html": 0,
-      "total": 114,
+      "total": 112,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -10671,7 +10685,6 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
-          "src/managers/profile-manager/pages/page-date-formats.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -10681,6 +10694,8 @@
           "src/managers/tour/tour.js",
           "src/managers/version-history/version-history.js",
           "src/shared/crimson-ws.js",
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js",
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
@@ -11957,9 +11972,9 @@
     {
       "selector": ".lithium-nav-popup.visible",
       "css": 1,
-      "js": 128,
+      "js": 126,
       "html": 0,
-      "total": 129,
+      "total": 127,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -11973,7 +11988,6 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
-          "src/managers/profile-manager/pages/page-date-formats.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -11983,6 +11997,8 @@
           "src/managers/tour/tour.js",
           "src/managers/version-history/version-history.js",
           "src/shared/crimson-ws.js",
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js",
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
@@ -15562,9 +15578,9 @@
     {
       "selector": ".lithium-toolbar-btn.active",
       "css": 1,
-      "js": 99,
+      "js": 100,
       "html": 109,
-      "total": 209,
+      "total": 210,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -15579,6 +15595,7 @@
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager-settings.js",
+          "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -15600,9 +15617,9 @@
     {
       "selector": ".lithium-toolbar-btn.active:hover",
       "css": 1,
-      "js": 99,
+      "js": 100,
       "html": 109,
-      "total": 209,
+      "total": 210,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -15617,6 +15634,7 @@
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager-settings.js",
+          "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -15862,9 +15880,9 @@
     {
       "selector": ".lithium-toolbar-popup.visible",
       "css": 1,
-      "js": 134,
+      "js": 132,
       "html": 67,
-      "total": 202,
+      "total": 200,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -15878,7 +15896,6 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
-          "src/managers/profile-manager/pages/page-date-formats.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -15888,6 +15905,8 @@
           "src/managers/tour/tour.js",
           "src/managers/version-history/version-history.js",
           "src/shared/crimson-ws.js",
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js",
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
@@ -16028,9 +16047,9 @@
     {
       "selector": ".lithium-toolbar-state-btn.active",
       "css": 1,
-      "js": 96,
+      "js": 97,
       "html": 80,
-      "total": 177,
+      "total": 178,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -16045,6 +16064,7 @@
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager-settings.js",
+          "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -16190,9 +16210,9 @@
     {
       "selector": ".lithium-toolbar-tab.active",
       "css": 2,
-      "js": 97,
+      "js": 98,
       "html": 87,
-      "total": 186,
+      "total": 187,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css",
@@ -16208,6 +16228,7 @@
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager-settings.js",
+          "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -16229,9 +16250,9 @@
     {
       "selector": ".lithium-toolbar-tab.active fa",
       "css": 1,
-      "js": 97,
+      "js": 98,
       "html": 87,
-      "total": 185,
+      "total": 186,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -16246,6 +16267,7 @@
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager-settings.js",
+          "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -16987,9 +17009,9 @@
     {
       "selector": ".lithium-tour-list-popup.visible",
       "css": 1,
-      "js": 114,
+      "js": 112,
       "html": 0,
-      "total": 115,
+      "total": 113,
       "files": {
         "css": [
           "src/managers/tour/tour.css"
@@ -17003,7 +17025,6 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
-          "src/managers/profile-manager/pages/page-date-formats.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -17013,6 +17034,8 @@
           "src/managers/tour/tour.js",
           "src/managers/version-history/version-history.js",
           "src/shared/crimson-ws.js",
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js",
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
@@ -17184,9 +17207,9 @@
     {
       "selector": ".lithium-video-tour-caption.visible",
       "css": 1,
-      "js": 115,
+      "js": 113,
       "html": 0,
-      "total": 116,
+      "total": 114,
       "files": {
         "css": [
           "src/managers/tour/tour.css"
@@ -17200,7 +17223,6 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
-          "src/managers/profile-manager/pages/page-date-formats.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -17210,6 +17232,8 @@
           "src/managers/tour/tour.js",
           "src/managers/version-history/version-history.js",
           "src/shared/crimson-ws.js",
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js",
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
@@ -17906,9 +17930,9 @@
     {
       "selector": ".lithium-video-tour-language-popup.visible",
       "css": 1,
-      "js": 114,
+      "js": 112,
       "html": 0,
-      "total": 115,
+      "total": 113,
       "files": {
         "css": [
           "src/managers/tour/tour.css"
@@ -17922,7 +17946,6 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
-          "src/managers/profile-manager/pages/page-date-formats.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -17932,6 +17955,8 @@
           "src/managers/tour/tour.js",
           "src/managers/version-history/version-history.js",
           "src/shared/crimson-ws.js",
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js",
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
@@ -18384,9 +18409,9 @@
     {
       "selector": ".lithium-video-tour-popup.visible",
       "css": 1,
-      "js": 114,
+      "js": 112,
       "html": 0,
-      "total": 115,
+      "total": 113,
       "files": {
         "css": [
           "src/managers/tour/tour.css"
@@ -18400,7 +18425,6 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
-          "src/managers/profile-manager/pages/page-date-formats.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -18410,6 +18434,8 @@
           "src/managers/tour/tour.js",
           "src/managers/version-history/version-history.js",
           "src/shared/crimson-ws.js",
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js",
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
@@ -19237,9 +19263,9 @@
     {
       "selector": ".login-container.visible",
       "css": 2,
-      "js": 114,
+      "js": 112,
       "html": 1,
-      "total": 117,
+      "total": 115,
       "files": {
         "css": [
           "src/managers/login/login.css",
@@ -19254,7 +19280,6 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
-          "src/managers/profile-manager/pages/page-date-formats.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -19264,6 +19289,8 @@
           "src/managers/tour/tour.js",
           "src/managers/version-history/version-history.js",
           "src/shared/crimson-ws.js",
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js",
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
@@ -19318,9 +19345,9 @@
     {
       "selector": ".login-error.visible",
       "css": 2,
-      "js": 115,
+      "js": 113,
       "html": 1,
-      "total": 118,
+      "total": 116,
       "files": {
         "css": [
           "src/managers/login/login.css",
@@ -19335,7 +19362,6 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
-          "src/managers/profile-manager/pages/page-date-formats.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -19345,6 +19371,8 @@
           "src/managers/tour/tour.js",
           "src/managers/version-history/version-history.js",
           "src/shared/crimson-ws.js",
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js",
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
@@ -19934,9 +19962,9 @@
     {
       "selector": ".login-mockup .login-error.visible",
       "css": 1,
-      "js": 116,
+      "js": 114,
       "html": 1,
-      "total": 118,
+      "total": 116,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -19950,7 +19978,6 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
-          "src/managers/profile-manager/pages/page-date-formats.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -19960,6 +19987,8 @@
           "src/managers/tour/tour.js",
           "src/managers/version-history/version-history.js",
           "src/shared/crimson-ws.js",
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js",
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
@@ -20246,9 +20275,9 @@
     {
       "selector": ".login-subpanel.visible",
       "css": 1,
-      "js": 113,
+      "js": 111,
       "html": 4,
-      "total": 118,
+      "total": 116,
       "files": {
         "css": [
           "src/styles/layout.css"
@@ -20262,7 +20291,6 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
-          "src/managers/profile-manager/pages/page-date-formats.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -20272,6 +20300,8 @@
           "src/managers/tour/tour.js",
           "src/managers/version-history/version-history.js",
           "src/shared/crimson-ws.js",
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js",
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
@@ -20432,7 +20462,7 @@
         ],
         "js": [
           "src/managers/main/main.js",
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/timezone-picker.js"
         ],
         "html": [
           "src/managers/main/main.html"
@@ -20476,9 +20506,9 @@
     {
       "selector": ".logout-overlay.visible",
       "css": 1,
-      "js": 113,
+      "js": 111,
       "html": 1,
-      "total": 115,
+      "total": 113,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -20492,7 +20522,6 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
-          "src/managers/profile-manager/pages/page-date-formats.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -20502,6 +20531,8 @@
           "src/managers/tour/tour.js",
           "src/managers/version-history/version-history.js",
           "src/shared/crimson-ws.js",
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js",
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
@@ -20675,9 +20706,9 @@
     {
       "selector": ".logout-panel.visible",
       "css": 1,
-      "js": 113,
+      "js": 111,
       "html": 4,
-      "total": 118,
+      "total": 116,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -20691,7 +20722,6 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
-          "src/managers/profile-manager/pages/page-date-formats.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -20701,6 +20731,8 @@
           "src/managers/tour/tour.js",
           "src/managers/version-history/version-history.js",
           "src/shared/crimson-ws.js",
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js",
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
@@ -21371,9 +21403,9 @@
     {
       "selector": ".lookups-tab-btn.active",
       "css": 1,
-      "js": 75,
+      "js": 76,
       "html": 8,
-      "total": 84,
+      "total": 85,
       "files": {
         "css": [
           "src/managers/lookups/lookups.css"
@@ -21388,6 +21420,7 @@
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager-settings.js",
+          "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -21461,9 +21494,9 @@
     {
       "selector": ".lookups-tab-pane.active",
       "css": 1,
-      "js": 75,
+      "js": 76,
       "html": 11,
-      "total": 87,
+      "total": 88,
       "files": {
         "css": [
           "src/managers/lookups/lookups.css"
@@ -21478,6 +21511,7 @@
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager-settings.js",
+          "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -21992,7 +22026,7 @@
         "js": [
           "src/core/tooltip-api.js",
           "src/managers/main/main.js",
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/timezone-picker.js"
         ],
         "html": [
           "src/managers/main/main.html"
@@ -22336,9 +22370,9 @@
     {
       "selector": ".manager-font-popup-style-btn.active",
       "css": 1,
-      "js": 95,
+      "js": 96,
       "html": 8,
-      "total": 104,
+      "total": 105,
       "files": {
         "css": [
           "src/core/manager-ui.css"
@@ -22353,6 +22387,7 @@
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager-settings.js",
+          "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -22387,9 +22422,9 @@
     {
       "selector": ".manager-font-popup.visible",
       "css": 1,
-      "js": 132,
+      "js": 130,
       "html": 0,
-      "total": 133,
+      "total": 131,
       "files": {
         "css": [
           "src/core/manager-ui.css"
@@ -22403,7 +22438,6 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
-          "src/managers/profile-manager/pages/page-date-formats.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -22413,6 +22447,8 @@
           "src/managers/tour/tour.js",
           "src/managers/version-history/version-history.js",
           "src/shared/crimson-ws.js",
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js",
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
@@ -22711,9 +22747,9 @@
     {
       "selector": ".manager-footer-export-popup.visible",
       "css": 1,
-      "js": 126,
+      "js": 124,
       "html": 0,
-      "total": 127,
+      "total": 125,
       "files": {
         "css": [
           "src/core/popup.css"
@@ -22727,7 +22763,6 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
-          "src/managers/profile-manager/pages/page-date-formats.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -22737,6 +22772,8 @@
           "src/managers/tour/tour.js",
           "src/managers/version-history/version-history.js",
           "src/shared/crimson-ws.js",
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js",
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
@@ -22772,9 +22809,9 @@
     {
       "selector": ".manager-footer-popup.visible",
       "css": 2,
-      "js": 121,
+      "js": 119,
       "html": 0,
-      "total": 123,
+      "total": 121,
       "files": {
         "css": [
           "src/core/manager-ui.css",
@@ -22789,7 +22826,6 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
-          "src/managers/profile-manager/pages/page-date-formats.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -22799,6 +22835,8 @@
           "src/managers/tour/tour.js",
           "src/managers/version-history/version-history.js",
           "src/shared/crimson-ws.js",
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js",
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
@@ -22918,7 +22956,7 @@
         "js": [
           "src/core/popup.js",
           "src/core/zoom-control.js",
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/flatpickr-picker.js"
         ],
         "html": []
       }
@@ -23282,9 +23320,9 @@
     {
       "selector": ".manager-transition-overlay.active",
       "css": 1,
-      "js": 75,
+      "js": 76,
       "html": 8,
-      "total": 84,
+      "total": 85,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -23299,6 +23337,7 @@
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager-settings.js",
+          "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -23598,7 +23637,8 @@
         "js": [
           "src/core/popup.js",
           "src/core/zoom-control.js",
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js"
         ],
         "html": []
       }
@@ -23617,7 +23657,8 @@
         "js": [
           "src/core/popup.js",
           "src/core/zoom-control.js",
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js"
         ],
         "html": []
       }
@@ -23635,7 +23676,8 @@
         "js": [
           "src/core/popup.js",
           "src/core/zoom-control.js",
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js"
         ],
         "html": []
       }
@@ -23653,7 +23695,8 @@
         "js": [
           "src/core/popup.js",
           "src/core/zoom-control.js",
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js"
         ],
         "html": []
       }
@@ -23671,7 +23714,8 @@
         "js": [
           "src/core/popup.js",
           "src/core/zoom-control.js",
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js"
         ],
         "html": []
       }
@@ -23689,7 +23733,8 @@
         "js": [
           "src/core/popup.js",
           "src/core/zoom-control.js",
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js"
         ],
         "html": []
       }
@@ -23708,7 +23753,8 @@
         "js": [
           "src/core/popup.js",
           "src/core/zoom-control.js",
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js"
         ],
         "html": []
       }
@@ -23727,7 +23773,8 @@
         "js": [
           "src/core/popup.js",
           "src/core/zoom-control.js",
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js"
         ],
         "html": []
       }
@@ -23745,7 +23792,8 @@
         "js": [
           "src/core/popup.js",
           "src/core/zoom-control.js",
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js"
         ],
         "html": []
       }
@@ -23763,7 +23811,8 @@
         "js": [
           "src/core/popup.js",
           "src/core/zoom-control.js",
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js"
         ],
         "html": []
       }
@@ -23781,7 +23830,8 @@
         "js": [
           "src/core/popup.js",
           "src/core/zoom-control.js",
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js"
         ],
         "html": []
       }
@@ -23801,10 +23851,11 @@
           "src/core/popup.js",
           "src/core/zoom-control.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/profile-manager/pages/page-date-formats.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js",
-          "src/managers/version-history/version-history.js"
+          "src/managers/version-history/version-history.js",
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js"
         ],
         "html": []
       }
@@ -23812,9 +23863,9 @@
     {
       "selector": ".manager-ui-popup.manager-footer-popup:not(.visible)",
       "css": 1,
-      "js": 142,
+      "js": 140,
       "html": 0,
-      "total": 143,
+      "total": 141,
       "files": {
         "css": [
           "src/core/popup.css"
@@ -23828,7 +23879,6 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
-          "src/managers/profile-manager/pages/page-date-formats.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -23838,6 +23888,8 @@
           "src/managers/tour/tour.js",
           "src/managers/version-history/version-history.js",
           "src/shared/crimson-ws.js",
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js",
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
@@ -23861,7 +23913,8 @@
         "js": [
           "src/core/popup.js",
           "src/core/zoom-control.js",
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js"
         ],
         "html": []
       }
@@ -23869,9 +23922,9 @@
     {
       "selector": ".manager-ui-popup.manager-header-popup:not(.visible)",
       "css": 1,
-      "js": 137,
+      "js": 135,
       "html": 0,
-      "total": 138,
+      "total": 136,
       "files": {
         "css": [
           "src/core/popup.css"
@@ -23885,7 +23938,6 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
-          "src/managers/profile-manager/pages/page-date-formats.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -23895,6 +23947,8 @@
           "src/managers/tour/tour.js",
           "src/managers/version-history/version-history.js",
           "src/shared/crimson-ws.js",
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js",
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
@@ -23908,9 +23962,9 @@
     {
       "selector": ".manager-ui-popup.visible",
       "css": 1,
-      "js": 134,
+      "js": 132,
       "html": 0,
-      "total": 135,
+      "total": 133,
       "files": {
         "css": [
           "src/core/popup.css"
@@ -23924,7 +23978,6 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
-          "src/managers/profile-manager/pages/page-date-formats.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -23934,6 +23987,8 @@
           "src/managers/tour/tour.js",
           "src/managers/version-history/version-history.js",
           "src/shared/crimson-ws.js",
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js",
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
@@ -24341,9 +24396,9 @@
     {
       "selector": ".menu-item.active",
       "css": 1,
-      "js": 84,
+      "js": 85,
       "html": 8,
-      "total": 93,
+      "total": 94,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -24358,6 +24413,7 @@
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager-settings.js",
+          "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -24376,9 +24432,9 @@
     {
       "selector": ".menu-item.active .menu-item-count",
       "css": 1,
-      "js": 85,
+      "js": 86,
       "html": 8,
-      "total": 94,
+      "total": 95,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -24393,6 +24449,7 @@
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager-settings.js",
+          "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -24411,9 +24468,9 @@
     {
       "selector": ".menu-item.manager-open:not(.active",
       "css": 1,
-      "js": 85,
+      "js": 86,
       "html": 8,
-      "total": 94,
+      "total": 95,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -24428,6 +24485,7 @@
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager-settings.js",
+          "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -25256,9 +25314,9 @@
     {
       "selector": ".nav-popup.visible",
       "css": 1,
-      "js": 113,
+      "js": 111,
       "html": 0,
-      "total": 114,
+      "total": 112,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -25272,7 +25330,6 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
-          "src/managers/profile-manager/pages/page-date-formats.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -25282,6 +25339,8 @@
           "src/managers/tour/tour.js",
           "src/managers/version-history/version-history.js",
           "src/shared/crimson-ws.js",
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js",
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
@@ -25400,9 +25459,9 @@
     {
       "selector": ".offline-indicator.visible",
       "css": 1,
-      "js": 114,
+      "js": 112,
       "html": 0,
-      "total": 115,
+      "total": 113,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -25416,7 +25475,6 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
-          "src/managers/profile-manager/pages/page-date-formats.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -25426,6 +25484,8 @@
           "src/managers/tour/tour.js",
           "src/managers/version-history/version-history.js",
           "src/shared/crimson-ws.js",
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js",
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
@@ -27590,9 +27650,9 @@
     {
       "selector": ".queries-tab-btn.active",
       "css": 1,
-      "js": 75,
+      "js": 76,
       "html": 8,
-      "total": 84,
+      "total": 85,
       "files": {
         "css": [
           "src/managers/queries/queries.css"
@@ -27607,6 +27667,7 @@
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager-settings.js",
+          "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -27680,9 +27741,9 @@
     {
       "selector": ".queries-tab-pane.active",
       "css": 1,
-      "js": 75,
+      "js": 76,
       "html": 13,
-      "total": 89,
+      "total": 90,
       "files": {
         "css": [
           "src/managers/queries/queries.css"
@@ -27697,6 +27758,7 @@
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager-settings.js",
+          "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -28342,8 +28404,8 @@
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js",
-          "src/managers/profile-manager/profile-manager-settings.js"
+          "src/managers/profile-manager/profile-manager-settings.js",
+          "src/shared/flatpickr-picker.js"
         ],
         "html": [
           "src/managers/profile-manager/profile-manager.html"
@@ -28371,9 +28433,9 @@
     {
       "selector": ".settings-page:not(.active)",
       "css": 1,
-      "js": 78,
+      "js": 79,
       "html": 26,
-      "total": 105,
+      "total": 106,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -28388,6 +28450,7 @@
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager-settings.js",
+          "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -28406,9 +28469,9 @@
     {
       "selector": ".settings-page.active",
       "css": 1,
-      "js": 78,
+      "js": 79,
       "html": 26,
-      "total": 105,
+      "total": 106,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -28423,6 +28486,7 @@
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager-settings.js",
+          "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -28925,9 +28989,9 @@
     {
       "selector": ".sidebar-icon-btn.active",
       "css": 1,
-      "js": 75,
+      "js": 76,
       "html": 13,
-      "total": 89,
+      "total": 90,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -28942,6 +29006,7 @@
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager-settings.js",
+          "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -28961,9 +29026,9 @@
     {
       "selector": ".sidebar-icon-btn.active:hover",
       "css": 1,
-      "js": 75,
+      "js": 76,
       "html": 13,
-      "total": 89,
+      "total": 90,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -28978,6 +29043,7 @@
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager-settings.js",
+          "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -29553,9 +29619,9 @@
     {
       "selector": ".sidebar-menu-btn.active",
       "css": 1,
-      "js": 75,
+      "js": 76,
       "html": 9,
-      "total": 85,
+      "total": 86,
       "files": {
         "css": [
           "src/styles/layout.css"
@@ -29570,6 +29636,7 @@
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager-settings.js",
+          "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -29647,7 +29714,7 @@
         ],
         "js": [
           "src/managers/main/main.js",
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/shared/timezone-picker.js"
         ],
         "html": [
           "src/managers/main/main.html"
@@ -29657,9 +29724,9 @@
     {
       "selector": ".sidebar-overlay.visible",
       "css": 1,
-      "js": 113,
+      "js": 111,
       "html": 1,
-      "total": 115,
+      "total": 113,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -29673,7 +29740,6 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
-          "src/managers/profile-manager/pages/page-date-formats.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -29683,6 +29749,8 @@
           "src/managers/tour/tour.js",
           "src/managers/version-history/version-history.js",
           "src/shared/crimson-ws.js",
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js",
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
@@ -30542,9 +30610,9 @@
     {
       "selector": ".style-editor-toolbar .style-state-btn.active",
       "css": 1,
-      "js": 75,
+      "js": 76,
       "html": 8,
-      "total": 84,
+      "total": 85,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -30559,6 +30627,7 @@
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager-settings.js",
+          "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -30718,9 +30787,9 @@
     {
       "selector": ".style-font-popup-style-btn.active",
       "css": 1,
-      "js": 74,
+      "js": 75,
       "html": 8,
-      "total": 83,
+      "total": 84,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -30735,6 +30804,7 @@
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager-settings.js",
+          "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -30767,9 +30837,9 @@
     {
       "selector": ".style-font-popup.visible",
       "css": 1,
-      "js": 113,
+      "js": 111,
       "html": 0,
-      "total": 114,
+      "total": 112,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -30783,7 +30853,6 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
-          "src/managers/profile-manager/pages/page-date-formats.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -30793,6 +30862,8 @@
           "src/managers/tour/tour.js",
           "src/managers/version-history/version-history.js",
           "src/shared/crimson-ws.js",
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js",
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
@@ -30838,9 +30909,9 @@
     {
       "selector": ".style-json-view.active",
       "css": 1,
-      "js": 74,
+      "js": 75,
       "html": 9,
-      "total": 84,
+      "total": 85,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -30855,6 +30926,7 @@
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager-settings.js",
+          "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -31051,9 +31123,9 @@
     {
       "selector": ".style-mode-btn.active",
       "css": 1,
-      "js": 74,
+      "js": 75,
       "html": 8,
-      "total": 83,
+      "total": 84,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -31068,6 +31140,7 @@
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager-settings.js",
+          "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -31366,9 +31439,9 @@
     {
       "selector": ".style-section-view.active",
       "css": 1,
-      "js": 74,
+      "js": 75,
       "html": 9,
-      "total": 84,
+      "total": 85,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -31383,6 +31456,7 @@
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager-settings.js",
+          "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -31509,9 +31583,9 @@
     {
       "selector": ".style-target-circle.active",
       "css": 1,
-      "js": 76,
+      "js": 77,
       "html": 8,
-      "total": 85,
+      "total": 86,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
@@ -31526,6 +31600,7 @@
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager-settings.js",
+          "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -32012,9 +32087,9 @@
     {
       "selector": ".tab-btn.active",
       "css": 1,
-      "js": 74,
+      "js": 75,
       "html": 8,
-      "total": 83,
+      "total": 84,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -32029,6 +32104,7 @@
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager-settings.js",
+          "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -32089,9 +32165,9 @@
     {
       "selector": ".tab-pane.active",
       "css": 1,
-      "js": 74,
+      "js": 75,
       "html": 8,
-      "total": 83,
+      "total": 84,
       "files": {
         "css": [
           "src/core/manager-panels.css"
@@ -32106,6 +32182,7 @@
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager-settings.js",
+          "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -32140,9 +32217,9 @@
     {
       "selector": ".tab-panel.active",
       "css": 1,
-      "js": 74,
+      "js": 75,
       "html": 10,
-      "total": 85,
+      "total": 86,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -32157,6 +32234,7 @@
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager-settings.js",
+          "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -32835,9 +32913,9 @@
     {
       "selector": ".tabulator-simple .tabulator-page.active",
       "css": 1,
-      "js": 74,
+      "js": 75,
       "html": 8,
-      "total": 83,
+      "total": 84,
       "files": {
         "css": [
           "src/init/tabulator-simple.css"
@@ -32852,6 +32930,7 @@
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager-settings.js",
+          "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -33189,9 +33268,9 @@
     {
       "selector": ".terminal-overlay.visible",
       "css": 1,
-      "js": 114,
+      "js": 112,
       "html": 0,
-      "total": 115,
+      "total": 113,
       "files": {
         "css": [
           "src/managers/terminal/terminal.css"
@@ -33205,7 +33284,6 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
-          "src/managers/profile-manager/pages/page-date-formats.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -33215,6 +33293,8 @@
           "src/managers/tour/tour.js",
           "src/managers/version-history/version-history.js",
           "src/shared/crimson-ws.js",
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js",
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
@@ -33337,9 +33417,9 @@
     {
       "selector": ".terminal-popup.visible",
       "css": 1,
-      "js": 114,
+      "js": 112,
       "html": 0,
-      "total": 115,
+      "total": 113,
       "files": {
         "css": [
           "src/managers/terminal/terminal.css"
@@ -33353,7 +33433,6 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
-          "src/managers/profile-manager/pages/page-date-formats.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -33363,6 +33442,8 @@
           "src/managers/tour/tour.js",
           "src/managers/version-history/version-history.js",
           "src/shared/crimson-ws.js",
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js",
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
@@ -34687,9 +34768,9 @@
     {
       "selector": ".transition-overlay.active",
       "css": 1,
-      "js": 74,
+      "js": 75,
       "html": 9,
-      "total": 84,
+      "total": 85,
       "files": {
         "css": [
           "src/styles/layout.css"
@@ -34704,6 +34785,7 @@
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager-settings.js",
+          "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -35412,9 +35494,9 @@
     {
       "selector": ".zoom-popup-detent.active .zoom-popup-detent-mark",
       "css": 1,
-      "js": 114,
+      "js": 115,
       "html": 8,
-      "total": 123,
+      "total": 124,
       "files": {
         "css": [
           "src/core/popup.css"
@@ -35430,6 +35512,7 @@
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager-settings.js",
+          "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -36401,9 +36484,9 @@
     {
       "selector": "#main-layout.visible",
       "css": 1,
-      "js": 113,
+      "js": 111,
       "html": 0,
-      "total": 114,
+      "total": 112,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -36417,7 +36500,6 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
-          "src/managers/profile-manager/pages/page-date-formats.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -36427,6 +36509,8 @@
           "src/managers/tour/tour.js",
           "src/managers/version-history/version-history.js",
           "src/shared/crimson-ws.js",
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js",
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
@@ -36519,9 +36603,9 @@
     {
       "selector": "#profile-manager-page.visible",
       "css": 1,
-      "js": 113,
+      "js": 111,
       "html": 0,
-      "total": 114,
+      "total": 112,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -36535,7 +36619,6 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
-          "src/managers/profile-manager/pages/page-date-formats.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -36545,6 +36628,8 @@
           "src/managers/tour/tour.js",
           "src/managers/version-history/version-history.js",
           "src/shared/crimson-ws.js",
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js",
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
@@ -36616,9 +36701,9 @@
     {
       "selector": "#session-log-page.visible",
       "css": 1,
-      "js": 113,
+      "js": 111,
       "html": 0,
-      "total": 114,
+      "total": 112,
       "files": {
         "css": [
           "src/managers/session-log/session-log.css"
@@ -36632,7 +36717,6 @@
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
           "src/managers/main/main.js",
-          "src/managers/profile-manager/pages/page-date-formats.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -36642,6 +36726,8 @@
           "src/managers/tour/tour.js",
           "src/managers/version-history/version-history.js",
           "src/shared/crimson-ws.js",
+          "src/shared/flatpickr-picker.js",
+          "src/shared/timezone-picker.js",
           "src/tables/column-manager/cm-drag-resize.js",
           "src/tables/column-manager/cm-ui.js",
           "src/tables/lithium-column-manager.js",
@@ -36669,7 +36755,7 @@
       }
     },
     {
-      "selector": "#settings-page--9 > div.df-content:nth-child(3)",
+      "selector": "#settings-page--9 .df-content .os-scrollbar-vertical",
       "css": 1,
       "js": 1,
       "html": 1,
@@ -36679,7 +36765,7 @@
           "src/styles/vendor-fixes-overlay-scrollbars.css"
         ],
         "js": [
-          "src/managers/profile-manager/pages/page-date-formats.js"
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.js"
         ],
         "html": [
           "src/managers/profile-manager/profile-manager.html"
