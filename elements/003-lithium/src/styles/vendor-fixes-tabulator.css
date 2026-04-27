@@ -82,6 +82,26 @@
   padding: 0px 2px !important;
 }
 
+.lithium-table-container .tabulator-row.tabulator-group.tabulator-group-level-1 {
+  padding-left: 12px !important;
+}
+
+.lithium-table-container .tabulator-row.tabulator-group.tabulator-group-level-2 {
+  padding-left: 24px !important;
+}
+
+.lithium-table-container .tabulator-row.tabulator-group.tabulator-group-level-3 {
+  padding-left: 36px !important;
+}
+
+.lithium-table-container .tabulator-row.tabulator-group.tabulator-group-level-4 {
+  padding-left: 48px !important;
+}
+
+.lithium-table-container .tabulator-row.tabulator-group.tabulator-group-level-5 {
+  padding-left: 60px !important;
+}
+
 /* Hide Tabulator's built-in arrow (we use our own icon in the header) */
 .lithium-table-container .tabulator-row.tabulator-group .tabulator-arrow {
   display: none !important;

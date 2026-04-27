@@ -816,7 +816,7 @@ This provides the same six display combinations with simpler configuration and l
 
 ## Phase 12 — Date/time coltypes: Luxon integration
 
-**Goal:** `date`, `datetime`, and `time` coltypes format and parse correctly via Luxon. (Editor improvements land in Phase 13.)
+**Goal:** `date`, `datetime`, and `time` coltypes format and parse correctly via Luxon using user-configured named formats. (Editor improvements land in Phase 13.)
 
 ### Prerequisites — docs to review
 
@@ -824,33 +824,45 @@ This provides the same six display combinations with simpler configuration and l
 - [LITHIUM-TAB-TYPES-DATETIME.md](LITHIUM-TAB-TYPES-DATETIME.md)
 - [LITHIUM-TAB-TYPES-TIME.md](LITHIUM-TAB-TYPES-TIME.md)
 - [LITHIUM-LIB.md](LITHIUM-LIB.md) — library list (add Luxon here)
-- [LITHIUM-MGR-USERPROFILE.md](LITHIUM-MGR-USERPROFILE.md) — locale/format preferences
+- [LITHIUM-MGR-USERPROFILE.md](LITHIUM-MGR-USERPROFILE.md) — Date Formats section (index -9), global settings access via `window.lithiumSettings`
+- [LITHIUM-INS.md](LITHIUM-INS.md) §8 — Global Settings Service
 
 ### Work items
 
 1. **Add `luxon`** to `package.json`. Add entry to `LITHIUM-LIB.md`.
 2. **Design property surface** for date/time coltypes:
-   - `format` — Luxon display format (defaults: date = `yyyy-MM-dd`, datetime = `yyyy-MM-dd HH:mm:ss`, time = `HH:mm:ss`)
-   - `inputFormat` — for parsing incoming data (defaults to ISO)
-   - `timezone` — optional IANA zone
-3. **Implement a custom formatter** in the formatters module that uses Luxon to parse `inputFormat` and format `format`. Handle null/empty.
-4. **Implement a matching sorter** that compares Luxon `DateTime` objects; accessor converts incoming data to ISO once so Tabulator's built-in `datetime` sorter works too.
-5. **Respect user locale.** When `format` is the sentinel string `"user"`, read the user's preferred date/time format from Profile Manager settings (account_settings — migrations 1175–1177). Plumb this through the app instance.
-6. **Update migration 1153** (coltype defaults) with the new properties.
-7. **Tests** — Luxon parsing and formatting across multiple sample values, including zone conversions and null handling.
+    - `dateFormat` — Named format from settings (e.g., `"Short Date"`, `"Medium Date"`, `"Long Date"` for dates; `"Short Time"`, `"Medium Time"`, `"Long Time"` for times; `"Short DateTime"`, `"Medium DateTime"`, `"Long DateTime"` for datetimes)
+    - **Fallback logic**: If `dateFormat` not provided or format name not found, use `"Short Date"` for `date`, `"Short Time"` for `time`, `"Short DateTime"` for `datetime` coltypes
+    - `timezone` — IANA timezone from settings (key: `timezone`); fallback to browser timezone if not set
+    - **No `format` or `inputFormat` properties** — always parse ISO8601 UTC, format using Luxon tokens from named formats
+3. **Access user settings** via `window.lithiumSettings`:
+    - Date formats: `window.lithiumSettings.get('-9.dates', {})` — object with format names → Luxon tokens
+    - Time formats: `window.lithiumSettings.get('-9.times', {})`
+    - DateTime formats: `window.lithiumSettings.get('-9.datetimes', {})`
+    - Timezone: `window.lithiumSettings.get('-9.timezone', null)` or fallback to `Intl.DateTimeFormat().resolvedOptions().timeZone`
+4. **Implement custom formatter** in the formatters module that:
+    - Parses incoming ISO8601 UTC strings using Luxon `DateTime.fromISO()`
+    - Converts to target timezone if specified
+    - Formats using the Luxon token string from the named format
+    - Handles null/empty values using `blank` property (default: empty string)
+5. **Implement matching sorter** that compares Luxon `DateTime` objects
+6. **Update migration 1153** (coltype defaults) to include default `dateFormat` values for date/time/datetime coltypes
+7. **Defer tests** until implementation is working (leave until Phase 12 completion)
 
 ### Gate
 
-- Tables with `date`/`datetime`/`time` coltypes render formatted values.
-- Sorting and filtering work (filtering uses the raw input input for now; Phase 13 adds picker-based filtering).
-- Tests pass.
+- Tables with `date`/`datetime`/`time` coltypes render formatted values using named formats from user settings.
+- Timezone conversion works correctly (UTC input → target timezone display).
+- Sorting works on Luxon DateTime objects.
+- Null values display using blank property.
 - Clean lint and build.
 
 ### Docs to update on completion
 
-- [LITHIUM-TAB-TYPES-DATE.md](LITHIUM-TAB-TYPES-DATE.md), `-DATETIME.md`, `-TIME.md` — reflect implementation
+- [LITHIUM-TAB-TYPES-DATE.md](LITHIUM-TAB-TYPES-DATE.md), `-DATETIME.md`, `-TIME.md` — reflect implementation with `dateFormat`, timezone, named formats
 - [LITHIUM-LIB.md](LITHIUM-LIB.md) — Luxon entry with rationale
-- [LITHIUM-TAB-TYPES.md](LITHIUM-TAB-TYPES.md) — date/time section
+- [LITHIUM-TAB-TYPES.md](LITHIUM-TAB-TYPES.md) — date/time section with new properties
+- [LITHIUM-TAB.md](LITHIUM-TAB.md) — Column Properties table updated for new date/time properties
 
 ---
 
