@@ -225,6 +225,16 @@
     --os-button-bg-hover: var(--border-color-hover);
     --os-button-bg-active: var(--accent-primary);
 
+    /* Logs */
+    --log-fg-trace: green;
+    --log-fg-debug: green;
+    --log-fg-state: green;
+    --log-fg-error: black;
+    --log-bg-trace: #111;
+    --log-bg-debug: #222;
+    --log-bg-state: transparent;
+    --log-bg-error: yellow;
+    
     /* Z-index scale */
     --z-dropdown: 100;
     --z-sticky: 200;

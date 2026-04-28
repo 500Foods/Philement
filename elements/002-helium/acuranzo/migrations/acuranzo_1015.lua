@@ -42,8 +42,10 @@ table.insert(queries,{sql=[[
                 report                  ${TEXT_BIG}                 ,
                 thumbnail               ${TEXT_BIG}                 ,
                 name                    ${TEXT}             NOT NULL,
+                design                  ${TEXT_BIG}                 ,
+                scripts                 ${TEXT_BIG}                 ,
+                parameters              ${TEXT_BIG}                 ,
                 summary                 ${TEXT_BIG}                 ,
-                collection              ${JSON}                     ,
                 ${COMMON_CREATE}
                 ${PRIMARY}(report_id, rev_id)
             );
@@ -184,6 +186,27 @@ table.insert(queries,{sql=[[
                                 "name": "name",
                                 "datatype": "${TEXT}",
                                 "nullable": false,
+                                "primary_key": false,
+                                "unique": false
+                            },
+                            {
+                                "name": "design",
+                                "datatype": "${TEXT_BIG}",
+                                "nullable": true,
+                                "primary_key": false,
+                                "unique": false
+                            },
+                            {
+                                "name": "scripts",
+                                "datatype": "${TEXT_BIG}",
+                                "nullable": true,
+                                "primary_key": false,
+                                "unique": false
+                            },
+                            {
+                                "name": "parameters",
+                                "datatype": "${TEXT_BIG}",
+                                "nullable": true,
                                 "primary_key": false,
                                 "unique": false
                             },

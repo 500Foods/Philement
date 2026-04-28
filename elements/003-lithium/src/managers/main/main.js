@@ -299,13 +299,14 @@ export default class MainManager {
 
     // Setup header buttons using manager-ui
     const headerGroup = slotEl.querySelector('.manager-slot-header .subpanel-header-group');
-    setupHeaderButtons(slotId, {
+    setupHeaderButtons(slotId, managerId, {
       showKeyboard: true,
       showZoom: true,
       showFullscreen: true,
       showClose: true,
       onClose: () => this.handleCloseSlot(slotId),
       group: headerGroup,
+      api: this.app.api,
     });
 
     // Setup footer buttons using manager-ui

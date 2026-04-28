@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS class selectors/names used across the Lithium codebase",
-    "generated": "2026-04-27T21:32:51.431Z",
+    "generated": "2026-04-28T03:02:59.065Z",
     "sources": {
       "css": "100 files in src/**/*.css",
       "js": "177 files in src/**/*.js",
       "html": "53 files in src/**/*.html + index.html"
     },
     "total_selectors": 2030,
-    "total_occurrences": 32052
+    "total_occurrences": 32058
   },
   "selectors": [
     {
@@ -23824,9 +23824,9 @@
     {
       "selector": ".manager-ui-menu-item",
       "css": 3,
-      "js": 2,
+      "js": 3,
       "html": 0,
-      "total": 5,
+      "total": 6,
       "files": {
         "css": [
           "src/core/manager-ui.css",
@@ -23843,9 +23843,9 @@
     {
       "selector": ".manager-ui-menu-item i",
       "css": 2,
-      "js": 2,
+      "js": 3,
       "html": 0,
-      "total": 4,
+      "total": 5,
       "files": {
         "css": [
           "src/core/manager-ui.css",
@@ -23861,9 +23861,9 @@
     {
       "selector": ".manager-ui-menu-item svg",
       "css": 2,
-      "js": 2,
+      "js": 3,
       "html": 0,
-      "total": 4,
+      "total": 5,
       "files": {
         "css": [
           "src/core/manager-ui.css",
@@ -23879,9 +23879,9 @@
     {
       "selector": ".manager-ui-menu-item:active",
       "css": 2,
-      "js": 2,
+      "js": 3,
       "html": 0,
-      "total": 4,
+      "total": 5,
       "files": {
         "css": [
           "src/core/manager-ui.css",
@@ -23897,9 +23897,9 @@
     {
       "selector": ".manager-ui-menu-item:focus",
       "css": 1,
-      "js": 2,
+      "js": 3,
       "html": 0,
-      "total": 3,
+      "total": 4,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -23914,9 +23914,9 @@
     {
       "selector": ".manager-ui-menu-item:hover",
       "css": 2,
-      "js": 2,
+      "js": 3,
       "html": 0,
-      "total": 4,
+      "total": 5,
       "files": {
         "css": [
           "src/core/manager-ui.css",
