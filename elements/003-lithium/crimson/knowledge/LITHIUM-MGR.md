@@ -53,7 +53,47 @@ const unsubscribe = window.lithiumSettings.onChange((settings) => {
 - `getAll()` — Get entire settings object
 - `onChange(callback)` — Subscribe to changes
 
-**Settings are stored in localStorage under `lithium_preferences` and synchronized across all managers in real-time.**
+---
+
+## Manager Header Features
+
+All managers display in a standardized slot with a unified header containing common UI elements.
+
+### Header Layout
+
+The manager slot header includes:
+
+| Element | Purpose | Position |
+|---------|---------|----------|
+| **Title Button** | Manager icon + name | Left |
+| **Search Bar** | Global Lithium search | Center-left |
+| **Fixed Buttons** | Keyboard, Zoom, Fullscreen, Manager Menu, Close | Right |
+
+### Manager Menu
+
+The **Manager Menu** (gear icon) provides quick access to manager-specific settings and related preferences in the User Profile Manager.
+
+**Menu Items:**
+- **Refresh Manager** — Reloads the current manager's data
+- **Profile Sections** — Links to relevant User Profile Manager sections based on Lookup 60 data
+
+**Data Source:** Lookup 60 (`key_idx = 1`) contains a JSON object mapping manager IDs to arrays of section indices. For example:
+
+```json
+{
+  "029": ["Queries", 29, -9]
+}
+```
+
+This creates menu items linking to:
+- Manager's own settings (index 29)
+- Related sections like Date Formats (index -9)
+
+**Icon/Label Resolution:**
+- **Manager sections** (>0): Use main menu data for icons and labels
+- **Internal sections** (<0): Use Lookup 60 (`key_idx = 0`) or fallback defaults
+
+**Selection Behavior:** Clicking a menu item opens the User Profile Manager, selects the corresponding section in the options table, expands the appropriate group, and displays the settings page.
 
 ---
 

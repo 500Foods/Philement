@@ -6,7 +6,8 @@
  * and manager sections use actual manager IDs.
  */
 
-import { eventBus, Events } from '../../core/event-bus.js';
+
+import { eventBus } from '../../core/event-bus.js';
 import { getClaims, storeJWT } from '../../core/jwt.js';
 import { getConfigValue } from '../../core/config.js';
 import { createRequest } from '../../core/json-request.js';
@@ -50,6 +51,7 @@ export default class ProfileManager {
     this.managerId = 3;  // Matches lithium.json "003.Profile"
     this.optionsTable = null;
     this.userOptions = [];
+    this.pendingExternalSection = null;
 
     this.leftPanelState = new PanelStateManager('lithium_profile_left');
     this.splitter = null;
@@ -198,14 +200,8 @@ export default class ProfileManager {
    * Render the profile manager template
    */
   async render() {
-    try {
-      const response = await fetch('/src/managers/profile-manager/profile-manager.html');
-      const html = await response.text();
-      this.container.innerHTML = html;
-    } catch (error) {
-      log(Subsystems.MANAGER, Status.ERROR, '[ProfileManager] Failed to load template:', error);
-      this.renderFallback();
-    }
+    const response = await fetch('/src/managers/profile-manager/profile-manager.html');
+    this.container.innerHTML = await response.text();
 
     this.cacheElements();
     processIcons(this.container);
@@ -573,6 +569,10 @@ export default class ProfileManager {
    * Setup event listeners
    */
   setupEventListeners() {
+    // Listen for external section selection requests
+    this._eventListenerBound = this.handleExternalSectionSelect.bind(this);
+    eventBus.on('profile:select-section', this._eventListenerBound);
+
     this.elements.collapseBtn?.addEventListener('click', () => this.toggleLeftPanel());
     this.elements.sectionLabelBtn?.addEventListener('click', () => this.switchTab('settings'));
     this.elements.tabCollection?.addEventListener('click', () => this.switchTab('collection'));
@@ -586,6 +586,107 @@ export default class ProfileManager {
 
     // Font button — toggle font popup
     this.elements.btnFont?.addEventListener('click', (e) => this.toggleFontPopup(e));
+
+
+  }
+
+
+
+
+
+  /**
+   * Handle external request to select a section
+   * @param {Object} data - Event data with index property
+   */
+  async handleExternalSectionSelect(data) {
+    const { index } = data;
+    if (index === undefined) return;
+
+    log(Subsystems.MANAGER, Status.INFO, `[ProfileManager] External section select: ${index}`);
+
+    // Store the pending selection
+    this.pendingExternalSection = index;
+
+    // If table is already loaded with data, apply immediately
+    if (this.tableManager?.optionsTable?.table && this.userOptions?.length > 0) {
+      await this._applyExternalSectionSelection();
+    }
+    // Otherwise, it will be applied after table loading in _restoreSelectedSection
+  }
+
+  /**
+   * Select a section externally (called from main manager)
+   * @param {number} index - The section index to select
+   */
+  async selectSection(index) {
+    log(Subsystems.MANAGER, Status.INFO, `[ProfileManager] External selectSection: ${index}`);
+    this.pendingExternalSection = index;
+    await this._applyExternalSectionSelection();
+  }
+
+  /**
+   * Apply pending external section selection
+   * @private
+   */
+  async _applyExternalSectionSelection() {
+    if (this.pendingExternalSection === null) return;
+
+    const index = this.pendingExternalSection;
+    this.pendingExternalSection = null; // Clear pending
+
+    log(Subsystems.MANAGER, Status.INFO, `[ProfileManager] Applying external section select: ${index}`);
+
+    // Ensure we're on the settings tab
+    if (this.currentTab !== 'settings') {
+      this.switchTab('settings');
+      log(Subsystems.MANAGER, Status.INFO, `[ProfileManager] Switched to settings tab`);
+    }
+
+    // Find and select the row in the table
+    if (this.tableManager?.optionsTable?.table) {
+      const table = this.tableManager.optionsTable.table;
+      const rows = table.getRows();
+
+      log(Subsystems.MANAGER, Status.INFO, `[ProfileManager] Table has ${rows.length} rows`);
+
+      // Find the row with matching index
+      const targetRow = rows.find(row => row.getData().index === index);
+
+      log(Subsystems.MANAGER, Status.INFO, `[ProfileManager] Target row found: ${!!targetRow}`);
+
+      if (targetRow) {
+        const rowData = targetRow.getData();
+
+        log(Subsystems.MANAGER, Status.INFO, `[ProfileManager] Selecting: ${rowData.label} (index ${rowData.index})`);
+
+        // Expand the group if it's collapsed
+        const groupName = rowData.section;
+        if (groupName) {
+          table.setGroupCollapsed(groupName, false);
+          log(Subsystems.MANAGER, Status.INFO, `[ProfileManager] Expanded group: ${groupName}`);
+        }
+
+        // Select the row
+        table.deselectRow();
+        targetRow.select();
+
+        log(Subsystems.MANAGER, Status.INFO, `[ProfileManager] Selected row`);
+
+        // Scroll into view
+        targetRow.getElement().scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+        // Trigger the selection handler
+        await this.tableManager.handleOptionSelected(rowData);
+
+        log(Subsystems.MANAGER, Status.INFO, `[ProfileManager] Triggered selection handler`);
+      } else {
+        log(Subsystems.MANAGER, Status.WARN, `[ProfileManager] Section with index ${index} not found`);
+        const indices = rows.map(r => r.getData().index);
+        log(Subsystems.MANAGER, Status.DEBUG, `[ProfileManager] Available indices:`, indices);
+      }
+    } else {
+      log(Subsystems.MANAGER, Status.WARN, `[ProfileManager] Table not available`);
+    }
   }
 
   /**
