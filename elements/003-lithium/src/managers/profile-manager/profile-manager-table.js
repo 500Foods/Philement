@@ -117,9 +117,17 @@ export class ProfileManagerTable {
   /**
    * Restore the previously selected section from localStorage
    * If no saved state (e.g., after localStorage purge), select the first record (Account)
+   * Skips restoration if there's a pending external section selection waiting to be applied.
    * @private
    */
   _restoreSelectedSection() {
+    // Don't restore if we have a pending external section (external selection takes priority)
+    if (this.pm.pendingExternalSection !== null) {
+      log(Subsystems.MANAGER, Status.INFO,
+        `[ProfileManager] Skipping section restore, pending external section: ${this.pm.pendingExternalSection}`);
+      return;
+    }
+
     try {
       const savedIndex = localStorage.getItem(this.pm._selectedSectionStorageKey);
       if (savedIndex === null) {

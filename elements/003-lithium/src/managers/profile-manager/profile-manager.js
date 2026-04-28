@@ -7,7 +7,7 @@
  */
 
 
-import { eventBus } from '../../core/event-bus.js';
+import { eventBus, Events } from '../../core/event-bus.js';
 import { getClaims, storeJWT } from '../../core/jwt.js';
 import { getConfigValue } from '../../core/config.js';
 import { createRequest } from '../../core/json-request.js';
@@ -619,9 +619,37 @@ export default class ProfileManager {
    * @param {number} index - The section index to select
    */
   async selectSection(index) {
+    console.log('[TRACE] selectSection START, index=', index);
     log(Subsystems.MANAGER, Status.INFO, `[ProfileManager] External selectSection: ${index}`);
     this.pendingExternalSection = index;
+    console.log('[TRACE] pendingExternalSection set to', this.pendingExternalSection);
+
+    console.log('[TRACE] about to check table, tableManager=', !!this.tableManager, 'optionsTable=', !!this.tableManager?.optionsTable, 'table=', !!this.tableManager?.optionsTable?.table);
+
+    // Wait for table to be ready
+    let attempts = 0;
+    while (!this.tableManager?.optionsTable?.table && attempts < 100) {
+      await new Promise(resolve => setTimeout(resolve, 50));
+      attempts++;
+    }
+    console.log('[TRACE] after while loop, attempts=', attempts, 'table=', !!this.tableManager?.optionsTable?.table);
+
+    if (!this.tableManager?.optionsTable?.table) {
+      log(Subsystems.MANAGER, Status.ERROR, `[ProfileManager] Table still not ready after waiting (${attempts} attempts)`);
+      this.pendingExternalSection = null;
+      return;
+    }
+
+    console.log('[TRACE] table ready, calling _applyExternalSectionSelection, pending=', this.pendingExternalSection);
+    log(Subsystems.MANAGER, Status.INFO, `[ProfileManager] Table is ready, calling _applyExternalSectionSelection`);
+
+    // Clear any existing selection first to avoid conflicts
+    this.tableManager.optionsTable.table.deselectRow();
+    this.settingsHandler.currentPageIndex = null;
+
     await this._applyExternalSectionSelection();
+    console.log('[TRACE] _applyExternalSectionSelection completed');
+    log(Subsystems.MANAGER, Status.INFO, `[ProfileManager] selectSection: _applyExternalSectionSelection completed`);
   }
 
   /**
@@ -629,7 +657,11 @@ export default class ProfileManager {
    * @private
    */
   async _applyExternalSectionSelection() {
-    if (this.pendingExternalSection === null) return;
+    log(Subsystems.MANAGER, Status.INFO, `[ProfileManager] _applyExternalSectionSelection called, pending: ${this.pendingExternalSection}`);
+    if (this.pendingExternalSection === null) {
+      log(Subsystems.MANAGER, Status.INFO, `[ProfileManager] No pending external section, returning`);
+      return;
+    }
 
     const index = this.pendingExternalSection;
     this.pendingExternalSection = null; // Clear pending
