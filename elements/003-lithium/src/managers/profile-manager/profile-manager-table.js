@@ -14,12 +14,14 @@ import { closeAllPopups } from '../../core/manager-ui.js';
 export class ProfileManagerTable {
   constructor(profileManager) {
     this.pm = profileManager; // Reference to parent ProfileManager
+    this._optionsTable = null; // Local reference to optionsTable
   }
 
   /**
    * Initialize the options table
    */
   async initOptionsTable() {
+    log(Subsystems.MANAGER, Status.INFO, '[ProfileManager] initOptionsTable() START');
     if (!this.pm.elements.tableContainer || !this.pm.elements.navigatorContainer) return;
 
     this.pm.optionsTable = new LithiumTable({
@@ -40,9 +42,15 @@ export class ProfileManagerTable {
       onRefresh: () => this.loadUserOptions(),
     });
 
+    // Also store reference on this (ProfileManagerTable) so it can be accessed as this.tableManager.optionsTable
+    this.optionsTable = this.pm.optionsTable;
+
     this.pm.editHelper.registerTable(this.pm.optionsTable);
+    log(Subsystems.MANAGER, Status.INFO, '[ProfileManager] initOptionsTable() about to call optionsTable.init()');
     await this.pm.optionsTable.init();
+    log(Subsystems.MANAGER, Status.INFO, '[ProfileManager] initOptionsTable() optionsTable.init() completed, table=', !!this.pm.optionsTable.table);
     await this.loadUserOptions();
+    log(Subsystems.MANAGER, Status.INFO, '[ProfileManager] initOptionsTable() loadUserOptions() completed');
   }
 
   /**

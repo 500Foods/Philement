@@ -124,6 +124,7 @@ export default class ProfileManager {
    * Initialize the profile manager
    */
   async init() {
+    log(Subsystems.MANAGER, Status.INFO, '[ProfileManager] init() START');
     this.api = createRequest();
 
     await this.render();
@@ -139,6 +140,9 @@ export default class ProfileManager {
     this.switchTab('settings');
 
     await this.tableManager.initOptionsTable();
+    log(Subsystems.MANAGER, Status.INFO, `[ProfileManager] initOptionsTable completed, tableManager.optionsTable=${!!this.tableManager?.optionsTable}, table=${!!this.tableManager?.optionsTable?.table}`);
+
+    this.setupSplitter();
     this.setupSplitter();
 
     await Promise.all([this.loadThemes(), this.loadDatabases()]);
@@ -619,12 +623,11 @@ export default class ProfileManager {
    * @param {number} index - The section index to select
    */
   async selectSection(index) {
-    console.log('[TRACE] selectSection START, index=', index);
-    log(Subsystems.MANAGER, Status.INFO, `[ProfileManager] External selectSection: ${index}`);
+    log(Subsystems.MANAGER, Status.INFO, `[ProfileManager] External selectSection: ${index}, this=${!!this}, ctor=${this?.constructor?.name}`);
     this.pendingExternalSection = index;
-    console.log('[TRACE] pendingExternalSection set to', this.pendingExternalSection);
 
-    console.log('[TRACE] about to check table, tableManager=', !!this.tableManager, 'optionsTable=', !!this.tableManager?.optionsTable, 'table=', !!this.tableManager?.optionsTable?.table);
+    log(Subsystems.MANAGER, Status.INFO,
+      `[ProfileManager] selectSection: tableManager=${!!this.tableManager}, optionsTable=${!!this.tableManager?.optionsTable}, table=${!!this.tableManager?.optionsTable?.table}`);
 
     // Wait for table to be ready
     let attempts = 0;
@@ -632,7 +635,9 @@ export default class ProfileManager {
       await new Promise(resolve => setTimeout(resolve, 50));
       attempts++;
     }
-    console.log('[TRACE] after while loop, attempts=', attempts, 'table=', !!this.tableManager?.optionsTable?.table);
+
+    log(Subsystems.MANAGER, Status.INFO,
+      `[ProfileManager] selectSection: after while, attempts=${attempts}, table=${!!this.tableManager?.optionsTable?.table}`);
 
     if (!this.tableManager?.optionsTable?.table) {
       log(Subsystems.MANAGER, Status.ERROR, `[ProfileManager] Table still not ready after waiting (${attempts} attempts)`);
@@ -640,15 +645,13 @@ export default class ProfileManager {
       return;
     }
 
-    console.log('[TRACE] table ready, calling _applyExternalSectionSelection, pending=', this.pendingExternalSection);
-    log(Subsystems.MANAGER, Status.INFO, `[ProfileManager] Table is ready, calling _applyExternalSectionSelection`);
+    log(Subsystems.MANAGER, Status.INFO, `[ProfileManager] Table is ready, calling _applyExternalSectionSelection, pending=${this.pendingExternalSection}`);
 
     // Clear any existing selection first to avoid conflicts
     this.tableManager.optionsTable.table.deselectRow();
     this.settingsHandler.currentPageIndex = null;
 
     await this._applyExternalSectionSelection();
-    console.log('[TRACE] _applyExternalSectionSelection completed');
     log(Subsystems.MANAGER, Status.INFO, `[ProfileManager] selectSection: _applyExternalSectionSelection completed`);
   }
 
