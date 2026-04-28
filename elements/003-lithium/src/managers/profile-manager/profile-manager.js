@@ -651,8 +651,12 @@ export default class ProfileManager {
     this.tableManager.optionsTable.table.deselectRow();
     this.settingsHandler.currentPageIndex = null;
 
-    await this._applyExternalSectionSelection();
-    log(Subsystems.MANAGER, Status.INFO, `[ProfileManager] selectSection: _applyExternalSectionSelection completed`);
+    try {
+      await this._applyExternalSectionSelection();
+      log(Subsystems.MANAGER, Status.INFO, `[ProfileManager] selectSection: _applyExternalSectionSelection completed`);
+    } catch (error) {
+      log(Subsystems.MANAGER, Status.ERROR, `[ProfileManager] Error in _applyExternalSectionSelection: ${error.message}`);
+    }
   }
 
   /**
@@ -694,12 +698,12 @@ export default class ProfileManager {
 
         log(Subsystems.MANAGER, Status.INFO, `[ProfileManager] Selecting: ${rowData.label} (index ${rowData.index})`);
 
-        // Expand the group if it's collapsed
-        const groupName = rowData.section;
-        if (groupName) {
-          table.setGroupCollapsed(groupName, false);
-          log(Subsystems.MANAGER, Status.INFO, `[ProfileManager] Expanded group: ${groupName}`);
+        // Expand the group if it's collapsed - get group directly from row
+        const group = targetRow.getGroup?.();
+        if (group) {
+          group.show(); // Expand the group
         }
+        log(Subsystems.MANAGER, Status.INFO, `[ProfileManager] Expanded group for: ${rowData.label}`);
 
         // Select the row
         table.deselectRow();
