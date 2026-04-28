@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS custom properties (variables) used across the Lithium codebase",
-    "generated": "2026-04-27T21:32:49.245Z",
+    "generated": "2026-04-28T03:02:56.982Z",
     "sources": {
       "css": "100 files in src/**/*.css",
       "js": "177 files in src/**/*.js",
       "html": "53 files in src/**/*.html + index.html"
     },
-    "total_variables": 247,
-    "total_occurrences": 3740
+    "total_variables": 255,
+    "total_occurrences": 3748
   },
   "variables": [
     {
@@ -713,6 +713,62 @@
     },
     {
       "name": "--line-height-tight",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--log-bg-debug",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--log-bg-error",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--log-bg-state",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--log-bg-trace",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--log-fg-debug",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--log-fg-error",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--log-fg-state",
+      "css": 1,
+      "js": 0,
+      "html": 0,
+      "total": 1
+    },
+    {
+      "name": "--log-fg-trace",
       "css": 1,
       "js": 0,
       "html": 0,
