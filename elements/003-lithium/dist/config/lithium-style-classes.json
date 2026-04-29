@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS class selectors/names used across the Lithium codebase",
-    "generated": "2026-04-28T16:01:56.440Z",
+    "generated": "2026-04-29T20:40:59.955Z",
     "sources": {
       "css": "100 files in src/**/*.css",
-      "js": "177 files in src/**/*.js",
+      "js": "201 files in src/**/*.js",
       "html": "53 files in src/**/*.html + index.html"
     },
-    "total_selectors": 2030,
-    "total_occurrences": 32058
+    "total_selectors": 2031,
+    "total_occurrences": 31918
   },
   "selectors": [
     {
@@ -174,15 +174,15 @@
     {
       "selector": ".app-sidebar.open",
       "css": 1,
-      "js": 5,
+      "js": 4,
       "html": 0,
-      "total": 6,
+      "total": 5,
       "files": {
         "css": [
           "src/styles/layout.css"
         ],
         "js": [
-          "src/managers/main/main.js",
+          "src/managers/main/main-keyboard.js",
           "src/shared/timezone-picker.js"
         ],
         "html": []
@@ -298,7 +298,7 @@
           "src/styles/components.css"
         ],
         "js": [
-          "src/app.js",
+          "src/app/lithium-app.js",
           "src/init/codemirror-init.js",
           "src/init/highlight-init.js",
           "src/init/jsoneditor-init.js",
@@ -319,7 +319,7 @@
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
-          "src/app.js",
+          "src/app/lithium-app.js",
           "src/init/codemirror-init.js",
           "src/init/highlight-init.js",
           "src/init/jsoneditor-init.js",
@@ -341,8 +341,8 @@
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/app.js",
-          "src/core/manager-ui.js",
+          "src/app/lithium-app.js",
+          "src/core/manager-header-buttons.js",
           "src/init/codemirror-init.js",
           "src/init/highlight-init.js",
           "src/init/jsoneditor-init.js",
@@ -363,8 +363,8 @@
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/app.js",
-          "src/core/manager-ui.js",
+          "src/app/lithium-app.js",
+          "src/core/manager-header-buttons.js",
           "src/init/codemirror-init.js",
           "src/init/highlight-init.js",
           "src/init/jsoneditor-init.js",
@@ -385,7 +385,7 @@
           "src/styles/components.css"
         ],
         "js": [
-          "src/app.js",
+          "src/app/lithium-app.js",
           "src/init/codemirror-init.js",
           "src/init/highlight-init.js",
           "src/init/jsoneditor-init.js",
@@ -406,7 +406,7 @@
           "src/styles/components.css"
         ],
         "js": [
-          "src/app.js",
+          "src/app/lithium-app.js",
           "src/init/codemirror-init.js",
           "src/init/highlight-init.js",
           "src/init/jsoneditor-init.js",
@@ -427,7 +427,7 @@
           "src/styles/components.css"
         ],
         "js": [
-          "src/app.js",
+          "src/app/lithium-app.js",
           "src/init/codemirror-init.js",
           "src/init/highlight-init.js",
           "src/init/jsoneditor-init.js",
@@ -448,7 +448,7 @@
           "src/styles/components.css"
         ],
         "js": [
-          "src/app.js",
+          "src/app/lithium-app.js",
           "src/init/codemirror-init.js",
           "src/init/highlight-init.js",
           "src/init/jsoneditor-init.js",
@@ -484,7 +484,7 @@
           "src/styles/components.css"
         ],
         "js": [
-          "src/app.js",
+          "src/app/lithium-app.js",
           "src/init/codemirror-init.js",
           "src/init/highlight-init.js",
           "src/init/jsoneditor-init.js",
@@ -505,7 +505,7 @@
           "src/styles/transitions.css"
         ],
         "js": [
-          "src/app.js",
+          "src/app/lithium-app.js",
           "src/init/codemirror-init.js",
           "src/init/highlight-init.js",
           "src/init/jsoneditor-init.js",
@@ -526,7 +526,7 @@
           "src/styles/transitions.css"
         ],
         "js": [
-          "src/app.js",
+          "src/app/lithium-app.js",
           "src/init/codemirror-init.js",
           "src/init/highlight-init.js",
           "src/init/jsoneditor-init.js",
@@ -582,7 +582,7 @@
           "src/styles/components.css"
         ],
         "js": [
-          "src/app.js",
+          "src/app/lithium-app.js",
           "src/init/codemirror-init.js",
           "src/init/highlight-init.js",
           "src/init/jsoneditor-init.js",
@@ -603,7 +603,7 @@
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
-          "src/app.js",
+          "src/app/lithium-app.js",
           "src/init/codemirror-init.js",
           "src/init/highlight-init.js",
           "src/init/jsoneditor-init.js",
@@ -624,7 +624,7 @@
           "src/styles/components.css"
         ],
         "js": [
-          "src/app.js",
+          "src/app/lithium-app.js",
           "src/init/codemirror-init.js",
           "src/init/highlight-init.js",
           "src/init/jsoneditor-init.js",
@@ -645,7 +645,7 @@
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
-          "src/app.js",
+          "src/app/lithium-app.js",
           "src/init/codemirror-init.js",
           "src/init/highlight-init.js",
           "src/init/jsoneditor-init.js",
@@ -667,7 +667,7 @@
           "src/styles/components.css"
         ],
         "js": [
-          "src/app.js",
+          "src/app/lithium-app.js",
           "src/init/codemirror-init.js",
           "src/init/highlight-init.js",
           "src/init/jsoneditor-init.js",
@@ -690,7 +690,7 @@
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
-          "src/app.js",
+          "src/app/lithium-app.js",
           "src/init/codemirror-init.js",
           "src/init/highlight-init.js",
           "src/init/jsoneditor-init.js",
@@ -713,7 +713,7 @@
           "src/styles/components.css"
         ],
         "js": [
-          "src/app.js",
+          "src/app/lithium-app.js",
           "src/init/codemirror-init.js",
           "src/init/highlight-init.js",
           "src/init/jsoneditor-init.js",
@@ -734,7 +734,7 @@
           "src/styles/components.css"
         ],
         "js": [
-          "src/app.js",
+          "src/app/lithium-app.js",
           "src/init/codemirror-init.js",
           "src/init/highlight-init.js",
           "src/init/jsoneditor-init.js",
@@ -755,7 +755,7 @@
           "src/styles/components.css"
         ],
         "js": [
-          "src/app.js",
+          "src/app/lithium-app.js",
           "src/init/codemirror-init.js",
           "src/init/highlight-init.js",
           "src/init/jsoneditor-init.js",
@@ -776,7 +776,7 @@
           "src/styles/components.css"
         ],
         "js": [
-          "src/app.js",
+          "src/app/lithium-app.js",
           "src/init/codemirror-init.js",
           "src/init/highlight-init.js",
           "src/init/jsoneditor-init.js",
@@ -797,7 +797,7 @@
           "src/styles/components.css"
         ],
         "js": [
-          "src/app.js",
+          "src/app/lithium-app.js",
           "src/init/codemirror-init.js",
           "src/init/highlight-init.js",
           "src/init/jsoneditor-init.js",
@@ -818,7 +818,7 @@
           "src/styles/components.css"
         ],
         "js": [
-          "src/app.js",
+          "src/app/lithium-app.js",
           "src/init/codemirror-init.js",
           "src/init/highlight-init.js",
           "src/init/jsoneditor-init.js",
@@ -1175,22 +1175,23 @@
     {
       "selector": ".col-manager-mode-btn.active",
       "css": 1,
-      "js": 75,
+      "js": 68,
       "html": 8,
-      "total": 84,
+      "total": 77,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
-          "src/app.js",
-          "src/core/manager-ui.js",
+          "src/app/manager-loader.js",
+          "src/core/font-popup.js",
+          "src/core/toolbar.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-ui.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-sidebar.js",
           "src/managers/profile-manager/profile-manager-settings.js",
           "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
@@ -1475,22 +1476,23 @@
     {
       "selector": ".col-manager-popup.depth-2 .col-manager-mode-btn.active",
       "css": 1,
-      "js": 79,
+      "js": 72,
       "html": 8,
-      "total": 88,
+      "total": 81,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
-          "src/app.js",
-          "src/core/manager-ui.js",
+          "src/app/manager-loader.js",
+          "src/core/font-popup.js",
+          "src/core/toolbar.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-ui.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-sidebar.js",
           "src/managers/profile-manager/profile-manager-settings.js",
           "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
@@ -1819,21 +1821,27 @@
     {
       "selector": ".col-manager-popup.visible",
       "css": 1,
-      "js": 114,
+      "js": 117,
       "html": 0,
-      "total": 115,
+      "total": 118,
       "files": {
         "css": [
           "src/tables/lithium-column-manager.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/app/auth-manager.js",
+          "src/app/lithium-app.js",
+          "src/core/font-popup.js",
+          "src/core/manager-export.js",
           "src/core/popup.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-logout.js",
+          "src/managers/main/main-slots.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
@@ -3140,23 +3148,24 @@
     {
       "selector": ".crimson-citation-header-btn.active",
       "css": 1,
-      "js": 77,
+      "js": 70,
       "html": 8,
-      "total": 86,
+      "total": 79,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
         ],
         "js": [
-          "src/app.js",
-          "src/core/manager-ui.js",
+          "src/app/manager-loader.js",
+          "src/core/font-popup.js",
+          "src/core/toolbar.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/crimson/crimson-ui.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-sidebar.js",
           "src/managers/profile-manager/profile-manager-settings.js",
           "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
@@ -3177,23 +3186,24 @@
     {
       "selector": ".crimson-citation-header-btn.active .crimson-citation-counter",
       "css": 1,
-      "js": 79,
+      "js": 72,
       "html": 8,
-      "total": 88,
+      "total": 81,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
         ],
         "js": [
-          "src/app.js",
-          "src/core/manager-ui.js",
+          "src/app/manager-loader.js",
+          "src/core/font-popup.js",
+          "src/core/toolbar.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/crimson/crimson-ui.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-sidebar.js",
           "src/managers/profile-manager/profile-manager-settings.js",
           "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
@@ -3554,7 +3564,7 @@
         "js": [
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-events.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-splitter.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/terminal/terminal.js",
           "src/managers/tour/tour.js",
@@ -3576,7 +3586,7 @@
         "js": [
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-events.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-splitter.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/terminal/terminal.js",
           "src/managers/tour/tour.js",
@@ -3588,21 +3598,27 @@
     {
       "selector": ".crimson-citation-popup.visible",
       "css": 1,
-      "js": 120,
+      "js": 123,
       "html": 0,
-      "total": 121,
+      "total": 124,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/app/auth-manager.js",
+          "src/app/lithium-app.js",
+          "src/core/font-popup.js",
+          "src/core/manager-export.js",
           "src/core/popup.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-logout.js",
+          "src/managers/main/main-slots.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
@@ -3913,23 +3929,24 @@
     {
       "selector": ".crimson-debug-btn.active",
       "css": 1,
-      "js": 77,
+      "js": 70,
       "html": 8,
-      "total": 86,
+      "total": 79,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
         ],
         "js": [
-          "src/app.js",
-          "src/core/manager-ui.js",
+          "src/app/manager-loader.js",
+          "src/core/font-popup.js",
+          "src/core/toolbar.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/crimson/crimson-ui.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-sidebar.js",
           "src/managers/profile-manager/profile-manager-settings.js",
           "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
@@ -4165,10 +4182,10 @@
           "src/managers/crimson/crimson.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-header-buttons.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-slots.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -5087,21 +5104,27 @@
     {
       "selector": ".crimson-overlay.visible",
       "css": 1,
-      "js": 112,
+      "js": 115,
       "html": 0,
-      "total": 113,
+      "total": 116,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/app/auth-manager.js",
+          "src/app/lithium-app.js",
+          "src/core/font-popup.js",
+          "src/core/manager-export.js",
           "src/core/popup.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-logout.js",
+          "src/managers/main/main-slots.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
@@ -5258,7 +5281,7 @@
         "js": [
           "src/managers/crimson/crimson-core.js",
           "src/managers/crimson/crimson-events.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-splitter.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/terminal/terminal.js",
           "src/managers/tour/tour.js",
@@ -5280,7 +5303,7 @@
         "js": [
           "src/managers/crimson/crimson-core.js",
           "src/managers/crimson/crimson-events.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-splitter.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/terminal/terminal.js",
           "src/managers/tour/tour.js",
@@ -5292,21 +5315,27 @@
     {
       "selector": ".crimson-popup.visible",
       "css": 1,
-      "js": 112,
+      "js": 115,
       "html": 0,
-      "total": 113,
+      "total": 116,
       "files": {
         "css": [
           "src/managers/crimson/crimson.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/app/auth-manager.js",
+          "src/app/lithium-app.js",
+          "src/core/font-popup.js",
+          "src/core/manager-export.js",
           "src/core/popup.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-logout.js",
+          "src/managers/main/main-slots.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
@@ -6441,7 +6470,7 @@
           "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/toolbar.js",
           "src/managers/session-log/session-log.js"
         ],
         "html": [
@@ -6914,21 +6943,27 @@
     {
       "selector": ".df-timezone-dropdown.visible",
       "css": 1,
-      "js": 113,
+      "js": 116,
       "html": 0,
-      "total": 114,
+      "total": 117,
       "files": {
         "css": [
           "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/app/auth-manager.js",
+          "src/app/lithium-app.js",
+          "src/core/font-popup.js",
+          "src/core/manager-export.js",
           "src/core/popup.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-logout.js",
+          "src/managers/main/main-slots.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
@@ -7104,7 +7139,7 @@
           "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [
-          "src/managers/main/main.js",
+          "src/managers/main/main-keyboard.js",
           "src/shared/timezone-picker.js"
         ],
         "html": []
@@ -7177,15 +7212,15 @@
     {
       "selector": ".df-timezone-picker.open",
       "css": 1,
-      "js": 5,
+      "js": 4,
       "html": 1,
-      "total": 7,
+      "total": 6,
       "files": {
         "css": [
           "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [
-          "src/managers/main/main.js",
+          "src/managers/main/main-keyboard.js",
           "src/shared/timezone-picker.js"
         ],
         "html": [
@@ -7196,15 +7231,15 @@
     {
       "selector": ".df-timezone-picker.open .df-timezone-dropdown-btn",
       "css": 1,
-      "js": 7,
+      "js": 6,
       "html": 2,
-      "total": 10,
+      "total": 9,
       "files": {
         "css": [
           "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
         ],
         "js": [
-          "src/managers/main/main.js",
+          "src/managers/main/main-keyboard.js",
           "src/shared/timezone-picker.js"
         ],
         "html": [
@@ -7714,7 +7749,7 @@
       "files": {
         "css": [],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-header-buttons.js",
           "src/managers/crimson/crimson-chat.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/crimson/crimson-ui.js"
@@ -7801,7 +7836,7 @@
       "files": {
         "css": [],
         "js": [
-          "src/app.js"
+          "src/app/lithium-app.js"
         ],
         "html": []
       }
@@ -7818,20 +7853,6 @@
         ],
         "js": [
           "src/managers/file-manager/file-manager.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".first-visible-col",
-      "css": 0,
-      "js": 3,
-      "html": 0,
-      "total": 3,
-      "files": {
-        "css": [],
-        "js": [
-          "src/tables/visual/visual-updates.js"
         ],
         "html": []
       }
@@ -7895,7 +7916,7 @@
           "src/styles/vendor-flatpickr.css"
         ],
         "js": [
-          "src/managers/main/main.js",
+          "src/managers/main/main-keyboard.js",
           "src/shared/flatpickr-picker.js",
           "src/shared/timezone-picker.js"
         ],
@@ -8287,22 +8308,23 @@
     {
       "selector": ".font-popup-style-btn.active",
       "css": 1,
-      "js": 75,
+      "js": 68,
       "html": 8,
-      "total": 84,
+      "total": 77,
       "files": {
         "css": [
           "src/core/manager-panels.css"
         ],
         "js": [
-          "src/app.js",
-          "src/core/manager-ui.js",
+          "src/app/manager-loader.js",
+          "src/core/font-popup.js",
+          "src/core/toolbar.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-ui.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-sidebar.js",
           "src/managers/profile-manager/profile-manager-settings.js",
           "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
@@ -8337,21 +8359,27 @@
     {
       "selector": ".font-popup.visible",
       "css": 1,
-      "js": 111,
+      "js": 114,
       "html": 0,
-      "total": 112,
+      "total": 115,
       "files": {
         "css": [
           "src/core/manager-panels.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/app/auth-manager.js",
+          "src/app/lithium-app.js",
+          "src/core/font-popup.js",
+          "src/core/manager-export.js",
           "src/core/popup.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-logout.js",
+          "src/managers/main/main-slots.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
@@ -8461,21 +8489,27 @@
     {
       "selector": ".footer-export-popup.visible",
       "css": 1,
-      "js": 111,
+      "js": 114,
       "html": 0,
-      "total": 112,
+      "total": 115,
       "files": {
         "css": [
           "src/core/manager-panels.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/app/auth-manager.js",
+          "src/app/lithium-app.js",
+          "src/core/font-popup.js",
+          "src/core/manager-export.js",
           "src/core/popup.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-logout.js",
+          "src/managers/main/main-slots.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
@@ -9001,7 +9035,7 @@
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/managers/main/main.js"
+          "src/managers/main/main-sidebar.js"
         ],
         "html": []
       }
@@ -9017,7 +9051,7 @@
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/managers/main/main.js"
+          "src/managers/main/main-sidebar.js"
         ],
         "html": []
       }
@@ -9496,7 +9530,7 @@
       "files": {
         "css": [],
         "js": [
-          "src/managers/main/main.js"
+          "src/managers/main/main-sidebar.js"
         ],
         "html": []
       }
@@ -9644,7 +9678,7 @@
           "src/init/jsoneditor.css"
         ],
         "js": [
-          "src/app.js",
+          "src/app/lithium-app.js",
           "src/init/codemirror-init.js",
           "src/init/highlight-init.js",
           "src/init/jsoneditor-init.js",
@@ -9665,7 +9699,7 @@
           "src/init/jsoneditor.css"
         ],
         "js": [
-          "src/app.js",
+          "src/app/lithium-app.js",
           "src/init/codemirror-init.js",
           "src/init/highlight-init.js",
           "src/init/jsoneditor-init.js",
@@ -9686,7 +9720,7 @@
           "src/init/jsoneditor.css"
         ],
         "js": [
-          "src/app.js",
+          "src/app/lithium-app.js",
           "src/init/codemirror-init.js",
           "src/init/highlight-init.js",
           "src/init/jsoneditor-init.js",
@@ -9707,7 +9741,7 @@
           "src/init/jsoneditor.css"
         ],
         "js": [
-          "src/app.js",
+          "src/app/lithium-app.js",
           "src/init/codemirror-init.js",
           "src/init/highlight-init.js",
           "src/init/jsoneditor-init.js",
@@ -10076,20 +10110,6 @@
       }
     },
     {
-      "selector": ".last-visible-col",
-      "css": 0,
-      "js": 3,
-      "html": 0,
-      "total": 3,
-      "files": {
-        "css": [],
-        "js": [
-          "src/tables/visual/visual-updates.js"
-        ],
-        "html": []
-      }
-    },
-    {
       "selector": ".li-lookup-edit-icon",
       "css": 0,
       "js": 2,
@@ -10223,7 +10243,7 @@
           "src/styles/tooltip.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/shortcuts-manager.js",
           "src/core/tooltip-api.js",
           "src/managers/tour/tour.js",
           "src/tables/column-manager/cm-ui.js"
@@ -10854,21 +10874,27 @@
     {
       "selector": ".lithium-col-chooser-popup.visible",
       "css": 1,
-      "js": 111,
+      "js": 114,
       "html": 0,
-      "total": 112,
+      "total": 115,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/app/auth-manager.js",
+          "src/app/lithium-app.js",
+          "src/core/font-popup.js",
+          "src/core/manager-export.js",
           "src/core/popup.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-logout.js",
+          "src/managers/main/main-slots.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
@@ -10916,7 +10942,7 @@
           "src/tables/lithium-table.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/toolbar.js"
         ],
         "html": [
           "src/managers/lookups/lookups.html",
@@ -10938,7 +10964,7 @@
           "src/tables/lithium-table.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/toolbar.js"
         ],
         "html": [
           "src/managers/lookups/lookups.html",
@@ -10961,11 +10987,13 @@
         ],
         "js": [
           "src/core/lithium-splitter.js",
-          "src/core/manager-ui.js",
           "src/core/panel-collapse.js",
+          "src/core/toolbar.js",
           "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-collapse.js",
+          "src/managers/main/main-sidebar.js",
+          "src/managers/main/main-state.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js"
@@ -11892,7 +11920,9 @@
           "src/tables/lithium-table.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-export.js",
+          "src/core/manager-menu.js",
+          "src/core/manager-popup-state.js",
           "src/core/popup.js",
           "src/core/zoom-control.js",
           "src/managers/lookups/lookups.js",
@@ -11917,7 +11947,9 @@
           "src/tables/lithium-table.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-export.js",
+          "src/core/manager-menu.js",
+          "src/core/manager-popup-state.js",
           "src/core/popup.js",
           "src/core/zoom-control.js",
           "src/managers/lookups/lookups.js",
@@ -11942,7 +11974,9 @@
           "src/tables/lithium-table.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-export.js",
+          "src/core/manager-menu.js",
+          "src/core/manager-popup-state.js",
           "src/core/popup.js",
           "src/core/zoom-control.js",
           "src/managers/lookups/lookups.js",
@@ -12157,21 +12191,27 @@
     {
       "selector": ".lithium-nav-popup.visible",
       "css": 1,
-      "js": 126,
+      "js": 129,
       "html": 0,
-      "total": 127,
+      "total": 130,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/app/auth-manager.js",
+          "src/app/lithium-app.js",
+          "src/core/font-popup.js",
+          "src/core/manager-export.js",
           "src/core/popup.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-logout.js",
+          "src/managers/main/main-slots.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
@@ -13347,6 +13387,62 @@
       "js": 10,
       "html": 8,
       "total": 19,
+      "files": {
+        "css": [
+          "src/tables/lithium-table.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/events/event-handlers.js",
+          "src/tables/lithium-table-base.js",
+          "src/tables/visual/column-tooltips.js",
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container .tabulator-header .tabulator-col.first-visible-col",
+      "css": 1,
+      "js": 13,
+      "html": 8,
+      "total": 22,
+      "files": {
+        "css": [
+          "src/tables/lithium-table.css"
+        ],
+        "js": [
+          "src/managers/crimson/crimson-citations.js",
+          "src/tables/column-manager/cm-ui.js",
+          "src/tables/events/event-handlers.js",
+          "src/tables/lithium-table-base.js",
+          "src/tables/visual/column-tooltips.js",
+          "src/tables/visual/visual-updates.js"
+        ],
+        "html": [
+          "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
+          "src/managers/profile-manager/profile-manager.html",
+          "src/managers/queries/queries.html",
+          "src/managers/style-manager/style-manager.html",
+          "src/managers/version-history/version-history.html"
+        ]
+      }
+    },
+    {
+      "selector": ".lithium-table-container .tabulator-header .tabulator-col.last-visible-col",
+      "css": 1,
+      "js": 13,
+      "html": 8,
+      "total": 22,
       "files": {
         "css": [
           "src/tables/lithium-table.css"
@@ -15655,7 +15751,7 @@
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/toolbar.js",
           "src/managers/session-log/session-log.js"
         ],
         "html": [
@@ -15679,7 +15775,7 @@
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/toolbar.js",
           "src/managers/session-log/session-log.js"
         ],
         "html": [
@@ -15703,7 +15799,7 @@
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/toolbar.js",
           "src/managers/session-log/session-log.js"
         ],
         "html": [
@@ -15727,7 +15823,7 @@
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/toolbar.js",
           "src/managers/session-log/session-log.js"
         ],
         "html": [
@@ -15752,7 +15848,7 @@
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/toolbar.js",
           "src/managers/session-log/session-log.js"
         ],
         "html": [
@@ -15777,7 +15873,7 @@
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/toolbar.js",
           "src/managers/session-log/session-log.js"
         ],
         "html": [
@@ -15802,7 +15898,7 @@
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/toolbar.js",
           "src/managers/session-log/session-log.js"
         ],
         "html": [
@@ -15827,7 +15923,7 @@
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/toolbar.js",
           "src/managers/session-log/session-log.js"
         ],
         "html": [
@@ -15852,7 +15948,7 @@
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/toolbar.js",
           "src/managers/session-log/session-log.js"
         ],
         "html": [
@@ -15869,22 +15965,23 @@
     {
       "selector": ".lithium-toolbar-btn.active",
       "css": 1,
-      "js": 100,
+      "js": 93,
       "html": 108,
-      "total": 209,
+      "total": 202,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/app.js",
-          "src/core/manager-ui.js",
+          "src/app/manager-loader.js",
+          "src/core/font-popup.js",
+          "src/core/toolbar.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-ui.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-sidebar.js",
           "src/managers/profile-manager/profile-manager-settings.js",
           "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
@@ -15909,22 +16006,23 @@
     {
       "selector": ".lithium-toolbar-btn.active:hover",
       "css": 1,
-      "js": 100,
+      "js": 93,
       "html": 108,
-      "total": 209,
+      "total": 202,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/app.js",
-          "src/core/manager-ui.js",
+          "src/app/manager-loader.js",
+          "src/core/font-popup.js",
+          "src/core/toolbar.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-ui.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-sidebar.js",
           "src/managers/profile-manager/profile-manager-settings.js",
           "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
@@ -15957,7 +16055,7 @@
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/toolbar.js",
           "src/managers/session-log/session-log.js"
         ],
         "html": [
@@ -15982,7 +16080,7 @@
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/toolbar.js",
           "src/managers/session-log/session-log.js"
         ],
         "html": [
@@ -16007,7 +16105,7 @@
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/toolbar.js",
           "src/managers/session-log/session-log.js"
         ],
         "html": [
@@ -16033,11 +16131,13 @@
         ],
         "js": [
           "src/core/lithium-splitter.js",
-          "src/core/manager-ui.js",
           "src/core/panel-collapse.js",
+          "src/core/toolbar.js",
           "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-collapse.js",
+          "src/managers/main/main-sidebar.js",
+          "src/managers/main/main-state.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/session-log/session-log.js",
@@ -16065,7 +16165,7 @@
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/toolbar.js",
           "src/managers/session-log/session-log.js"
         ],
         "html": [
@@ -16089,7 +16189,7 @@
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/toolbar.js",
           "src/managers/session-log/session-log.js"
         ],
         "html": [
@@ -16113,7 +16213,7 @@
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/toolbar.js",
           "src/managers/session-log/session-log.js"
         ],
         "html": [
@@ -16137,7 +16237,7 @@
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/toolbar.js",
           "src/managers/session-log/session-log.js"
         ],
         "html": [
@@ -16161,7 +16261,7 @@
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/toolbar.js",
           "src/managers/session-log/session-log.js"
         ],
         "html": [
@@ -16177,21 +16277,28 @@
     {
       "selector": ".lithium-toolbar-popup.visible",
       "css": 1,
-      "js": 132,
+      "js": 135,
       "html": 66,
-      "total": 199,
+      "total": 202,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/app/auth-manager.js",
+          "src/app/lithium-app.js",
+          "src/core/font-popup.js",
+          "src/core/manager-export.js",
           "src/core/popup.js",
+          "src/core/toolbar.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-logout.js",
+          "src/managers/main/main-slots.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
@@ -16232,7 +16339,7 @@
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/toolbar.js",
           "src/managers/session-log/session-log.js"
         ],
         "html": [
@@ -16256,7 +16363,7 @@
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/toolbar.js",
           "src/managers/session-log/session-log.js"
         ],
         "html": [
@@ -16280,7 +16387,7 @@
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/toolbar.js",
           "src/managers/session-log/session-log.js"
         ],
         "html": [
@@ -16304,7 +16411,7 @@
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/toolbar.js",
           "src/managers/session-log/session-log.js"
         ],
         "html": [
@@ -16328,7 +16435,7 @@
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/toolbar.js",
           "src/managers/session-log/session-log.js"
         ],
         "html": [
@@ -16344,22 +16451,23 @@
     {
       "selector": ".lithium-toolbar-state-btn.active",
       "css": 1,
-      "js": 97,
+      "js": 90,
       "html": 79,
-      "total": 177,
+      "total": 170,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/app.js",
-          "src/core/manager-ui.js",
+          "src/app/manager-loader.js",
+          "src/core/font-popup.js",
+          "src/core/toolbar.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-ui.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-sidebar.js",
           "src/managers/profile-manager/profile-manager-settings.js",
           "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
@@ -16391,7 +16499,7 @@
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/toolbar.js",
           "src/managers/session-log/session-log.js"
         ],
         "html": [
@@ -16415,7 +16523,7 @@
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/toolbar.js",
           "src/managers/queries/queries.js",
           "src/managers/session-log/session-log.js"
         ],
@@ -16440,7 +16548,7 @@
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/toolbar.js",
           "src/managers/queries/queries.js",
           "src/managers/session-log/session-log.js"
         ],
@@ -16465,7 +16573,7 @@
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/toolbar.js",
           "src/managers/queries/queries.js",
           "src/managers/session-log/session-log.js"
         ],
@@ -16490,7 +16598,7 @@
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/toolbar.js",
           "src/managers/queries/queries.js",
           "src/managers/session-log/session-log.js"
         ],
@@ -16507,23 +16615,24 @@
     {
       "selector": ".lithium-toolbar-tab.active",
       "css": 2,
-      "js": 98,
+      "js": 91,
       "html": 86,
-      "total": 186,
+      "total": 179,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css",
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
-          "src/app.js",
-          "src/core/manager-ui.js",
+          "src/app/manager-loader.js",
+          "src/core/font-popup.js",
+          "src/core/toolbar.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-ui.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-sidebar.js",
           "src/managers/profile-manager/profile-manager-settings.js",
           "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
@@ -16547,22 +16656,23 @@
     {
       "selector": ".lithium-toolbar-tab.active fa",
       "css": 1,
-      "js": 98,
+      "js": 91,
       "html": 86,
-      "total": 185,
+      "total": 178,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
-          "src/app.js",
-          "src/core/manager-ui.js",
+          "src/app/manager-loader.js",
+          "src/core/font-popup.js",
+          "src/core/toolbar.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-ui.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-sidebar.js",
           "src/managers/profile-manager/profile-manager-settings.js",
           "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
@@ -16594,7 +16704,7 @@
           "src/core/lithium-toolbar.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/toolbar.js",
           "src/managers/session-log/session-log.js"
         ],
         "html": [
@@ -16619,11 +16729,13 @@
         ],
         "js": [
           "src/core/lithium-splitter.js",
-          "src/core/manager-ui.js",
           "src/core/panel-collapse.js",
+          "src/core/toolbar.js",
           "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-collapse.js",
+          "src/managers/main/main-sidebar.js",
+          "src/managers/main/main-state.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/session-log/session-log.js",
@@ -16651,11 +16763,13 @@
         ],
         "js": [
           "src/core/lithium-splitter.js",
-          "src/core/manager-ui.js",
           "src/core/panel-collapse.js",
+          "src/core/toolbar.js",
           "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-collapse.js",
+          "src/managers/main/main-sidebar.js",
+          "src/managers/main/main-state.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/session-log/session-log.js",
@@ -16683,11 +16797,13 @@
         ],
         "js": [
           "src/core/lithium-splitter.js",
-          "src/core/manager-ui.js",
           "src/core/panel-collapse.js",
+          "src/core/toolbar.js",
           "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-collapse.js",
+          "src/managers/main/main-sidebar.js",
+          "src/managers/main/main-state.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/session-log/session-log.js",
@@ -17306,21 +17422,27 @@
     {
       "selector": ".lithium-tour-list-popup.visible",
       "css": 1,
-      "js": 112,
+      "js": 115,
       "html": 0,
-      "total": 113,
+      "total": 116,
       "files": {
         "css": [
           "src/managers/tour/tour.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/app/auth-manager.js",
+          "src/app/lithium-app.js",
+          "src/core/font-popup.js",
+          "src/core/manager-export.js",
           "src/core/popup.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-logout.js",
+          "src/managers/main/main-slots.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
@@ -17504,21 +17626,27 @@
     {
       "selector": ".lithium-video-tour-caption.visible",
       "css": 1,
-      "js": 113,
+      "js": 116,
       "html": 0,
-      "total": 114,
+      "total": 117,
       "files": {
         "css": [
           "src/managers/tour/tour.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/app/auth-manager.js",
+          "src/app/lithium-app.js",
+          "src/core/font-popup.js",
+          "src/core/manager-export.js",
           "src/core/popup.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-logout.js",
+          "src/managers/main/main-slots.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
@@ -17776,10 +17904,10 @@
           "src/managers/tour/tour.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-header-buttons.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-slots.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -18227,21 +18355,27 @@
     {
       "selector": ".lithium-video-tour-language-popup.visible",
       "css": 1,
-      "js": 112,
+      "js": 115,
       "html": 0,
-      "total": 113,
+      "total": 116,
       "files": {
         "css": [
           "src/managers/tour/tour.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/app/auth-manager.js",
+          "src/app/lithium-app.js",
+          "src/core/font-popup.js",
+          "src/core/manager-export.js",
           "src/core/popup.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-logout.js",
+          "src/managers/main/main-slots.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
@@ -18673,7 +18807,7 @@
         ],
         "js": [
           "src/managers/crimson/crimson-events.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-splitter.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/terminal/terminal.js",
           "src/managers/tour/tour.js",
@@ -18694,7 +18828,7 @@
         ],
         "js": [
           "src/managers/crimson/crimson-events.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-splitter.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/terminal/terminal.js",
           "src/managers/tour/tour.js",
@@ -18706,21 +18840,27 @@
     {
       "selector": ".lithium-video-tour-popup.visible",
       "css": 1,
-      "js": 112,
+      "js": 115,
       "html": 0,
-      "total": 113,
+      "total": 116,
       "files": {
         "css": [
           "src/managers/tour/tour.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/app/auth-manager.js",
+          "src/app/lithium-app.js",
+          "src/core/font-popup.js",
+          "src/core/manager-export.js",
           "src/core/popup.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-logout.js",
+          "src/managers/main/main-slots.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
@@ -19560,22 +19700,28 @@
     {
       "selector": ".login-container.visible",
       "css": 2,
-      "js": 112,
+      "js": 115,
       "html": 1,
-      "total": 115,
+      "total": 118,
       "files": {
         "css": [
           "src/managers/login/login.css",
           "src/styles/layout.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/app/auth-manager.js",
+          "src/app/lithium-app.js",
+          "src/core/font-popup.js",
+          "src/core/manager-export.js",
           "src/core/popup.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-logout.js",
+          "src/managers/main/main-slots.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
@@ -19642,22 +19788,28 @@
     {
       "selector": ".login-error.visible",
       "css": 2,
-      "js": 113,
+      "js": 116,
       "html": 1,
-      "total": 116,
+      "total": 119,
       "files": {
         "css": [
           "src/managers/login/login.css",
           "src/styles/layout.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/app/auth-manager.js",
+          "src/app/lithium-app.js",
+          "src/core/font-popup.js",
+          "src/core/manager-export.js",
           "src/core/popup.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-logout.js",
+          "src/managers/main/main-slots.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
@@ -20281,21 +20433,27 @@
     {
       "selector": ".login-mockup .login-error.visible",
       "css": 1,
-      "js": 114,
+      "js": 117,
       "html": 1,
-      "total": 116,
+      "total": 119,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/app/auth-manager.js",
+          "src/app/lithium-app.js",
+          "src/core/font-popup.js",
+          "src/core/manager-export.js",
           "src/core/popup.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-logout.js",
+          "src/managers/main/main-slots.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
@@ -20594,21 +20752,27 @@
     {
       "selector": ".login-subpanel.visible",
       "css": 1,
-      "js": 111,
+      "js": 114,
       "html": 4,
-      "total": 116,
+      "total": 119,
       "files": {
         "css": [
           "src/styles/layout.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/app/auth-manager.js",
+          "src/app/lithium-app.js",
+          "src/core/font-popup.js",
+          "src/core/manager-export.js",
           "src/core/popup.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-logout.js",
+          "src/managers/main/main-slots.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
@@ -20780,6 +20944,7 @@
           "src/managers/main/main.css"
         ],
         "js": [
+          "src/managers/main/main-keyboard.js",
           "src/managers/main/main.js",
           "src/shared/timezone-picker.js"
         ],
@@ -20825,21 +20990,27 @@
     {
       "selector": ".logout-overlay.visible",
       "css": 1,
-      "js": 111,
+      "js": 114,
       "html": 1,
-      "total": 113,
+      "total": 116,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/app/auth-manager.js",
+          "src/app/lithium-app.js",
+          "src/core/font-popup.js",
+          "src/core/manager-export.js",
           "src/core/popup.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-logout.js",
+          "src/managers/main/main-slots.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
@@ -20923,10 +21094,11 @@
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-export.js",
+          "src/core/manager-header-buttons.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-core.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-slots.js",
           "src/managers/terminal/terminal.js"
         ],
         "html": [
@@ -20946,10 +21118,11 @@
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-export.js",
+          "src/core/manager-header-buttons.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-core.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-slots.js",
           "src/managers/terminal/terminal.js"
         ],
         "html": [
@@ -20969,10 +21142,10 @@
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-header-buttons.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-slots.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -20998,7 +21171,7 @@
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/managers/main/main.js"
+          "src/managers/main/main-slots.js"
         ],
         "html": [
           "src/managers/login/login.html",
@@ -21025,21 +21198,27 @@
     {
       "selector": ".logout-panel.visible",
       "css": 1,
-      "js": 111,
+      "js": 114,
       "html": 4,
-      "total": 116,
+      "total": 119,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/app/auth-manager.js",
+          "src/app/lithium-app.js",
+          "src/core/font-popup.js",
+          "src/core/manager-export.js",
           "src/core/popup.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-logout.js",
+          "src/managers/main/main-slots.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
@@ -21722,22 +21901,23 @@
     {
       "selector": ".lookups-tab-btn.active",
       "css": 1,
-      "js": 76,
+      "js": 69,
       "html": 8,
-      "total": 85,
+      "total": 78,
       "files": {
         "css": [
           "src/managers/lookups/lookups.css"
         ],
         "js": [
-          "src/app.js",
-          "src/core/manager-ui.js",
+          "src/app/manager-loader.js",
+          "src/core/font-popup.js",
+          "src/core/toolbar.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-ui.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-sidebar.js",
           "src/managers/profile-manager/profile-manager-settings.js",
           "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
@@ -21813,22 +21993,23 @@
     {
       "selector": ".lookups-tab-pane.active",
       "css": 1,
-      "js": 76,
+      "js": 69,
       "html": 11,
-      "total": 88,
+      "total": 81,
       "files": {
         "css": [
           "src/managers/lookups/lookups.css"
         ],
         "js": [
-          "src/app.js",
-          "src/core/manager-ui.js",
+          "src/app/manager-loader.js",
+          "src/core/font-popup.js",
+          "src/core/toolbar.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-ui.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-sidebar.js",
           "src/managers/profile-manager/profile-manager-settings.js",
           "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
@@ -21997,6 +22178,9 @@
           "src/core/panel-collapse.js",
           "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-collapse.js",
+          "src/managers/main/main-sidebar.js",
+          "src/managers/main/main-state.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -22022,6 +22206,9 @@
           "src/core/panel-collapse.js",
           "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-collapse.js",
+          "src/managers/main/main-sidebar.js",
+          "src/managers/main/main-state.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -22047,6 +22234,9 @@
           "src/core/panel-collapse.js",
           "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-collapse.js",
+          "src/managers/main/main-sidebar.js",
+          "src/managers/main/main-state.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -22072,6 +22262,9 @@
           "src/core/panel-collapse.js",
           "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-collapse.js",
+          "src/managers/main/main-sidebar.js",
+          "src/managers/main/main-state.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -22097,6 +22290,9 @@
           "src/core/panel-collapse.js",
           "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-collapse.js",
+          "src/managers/main/main-sidebar.js",
+          "src/managers/main/main-state.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -22122,6 +22318,9 @@
           "src/core/panel-collapse.js",
           "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-collapse.js",
+          "src/managers/main/main-sidebar.js",
+          "src/managers/main/main-state.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -22147,6 +22346,9 @@
           "src/core/panel-collapse.js",
           "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-collapse.js",
+          "src/managers/main/main-sidebar.js",
+          "src/managers/main/main-state.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -22172,6 +22374,9 @@
           "src/core/panel-collapse.js",
           "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-collapse.js",
+          "src/managers/main/main-sidebar.js",
+          "src/managers/main/main-state.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -22197,6 +22402,9 @@
           "src/core/panel-collapse.js",
           "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-collapse.js",
+          "src/managers/main/main-sidebar.js",
+          "src/managers/main/main-state.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -22222,6 +22430,9 @@
           "src/core/panel-collapse.js",
           "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-collapse.js",
+          "src/managers/main/main-sidebar.js",
+          "src/managers/main/main-state.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -22247,6 +22458,9 @@
           "src/core/panel-collapse.js",
           "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-collapse.js",
+          "src/managers/main/main-sidebar.js",
+          "src/managers/main/main-state.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -22272,6 +22486,9 @@
           "src/core/panel-collapse.js",
           "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-collapse.js",
+          "src/managers/main/main-sidebar.js",
+          "src/managers/main/main-state.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -22297,6 +22514,9 @@
           "src/core/panel-collapse.js",
           "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-collapse.js",
+          "src/managers/main/main-sidebar.js",
+          "src/managers/main/main-state.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -22322,6 +22542,9 @@
           "src/core/panel-collapse.js",
           "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-collapse.js",
+          "src/managers/main/main-sidebar.js",
+          "src/managers/main/main-state.js",
           "src/managers/main/main.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -22335,15 +22558,16 @@
     {
       "selector": ".main-sidebar.open",
       "css": 1,
-      "js": 8,
+      "js": 7,
       "html": 1,
-      "total": 10,
+      "total": 9,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
           "src/core/tooltip-api.js",
+          "src/managers/main/main-keyboard.js",
           "src/managers/main/main.js",
           "src/shared/timezone-picker.js"
         ],
@@ -22395,7 +22619,7 @@
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/font-popup.js"
         ],
         "html": []
       }
@@ -22411,7 +22635,7 @@
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/font-popup.js"
         ],
         "html": []
       }
@@ -22427,7 +22651,7 @@
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/font-popup.js"
         ],
         "html": []
       }
@@ -22443,7 +22667,7 @@
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/font-popup.js"
         ],
         "html": []
       }
@@ -22459,7 +22683,7 @@
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/font-popup.js"
         ],
         "html": []
       }
@@ -22475,7 +22699,7 @@
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/font-popup.js"
         ],
         "html": []
       }
@@ -22491,7 +22715,7 @@
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/font-popup.js"
         ],
         "html": []
       }
@@ -22507,7 +22731,7 @@
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/font-popup.js"
         ],
         "html": []
       }
@@ -22523,7 +22747,7 @@
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/font-popup.js"
         ],
         "html": []
       }
@@ -22539,7 +22763,7 @@
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/font-popup.js"
         ],
         "html": []
       }
@@ -22555,7 +22779,7 @@
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/font-popup.js"
         ],
         "html": []
       }
@@ -22571,7 +22795,7 @@
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/font-popup.js"
         ],
         "html": []
       }
@@ -22587,7 +22811,7 @@
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/font-popup.js"
         ],
         "html": []
       }
@@ -22603,7 +22827,7 @@
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/font-popup.js"
         ],
         "html": []
       }
@@ -22619,7 +22843,7 @@
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/font-popup.js"
         ],
         "html": []
       }
@@ -22635,7 +22859,7 @@
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/font-popup.js"
         ],
         "html": []
       }
@@ -22649,7 +22873,7 @@
       "files": {
         "css": [],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/font-popup.js"
         ],
         "html": []
       }
@@ -22665,7 +22889,7 @@
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/font-popup.js"
         ],
         "html": []
       }
@@ -22681,7 +22905,7 @@
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/font-popup.js"
         ],
         "html": []
       }
@@ -22689,22 +22913,23 @@
     {
       "selector": ".manager-font-popup-style-btn.active",
       "css": 1,
-      "js": 96,
+      "js": 89,
       "html": 8,
-      "total": 105,
+      "total": 98,
       "files": {
         "css": [
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/app.js",
-          "src/core/manager-ui.js",
+          "src/app/manager-loader.js",
+          "src/core/font-popup.js",
+          "src/core/toolbar.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-ui.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-sidebar.js",
           "src/managers/profile-manager/profile-manager-settings.js",
           "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
@@ -22733,7 +22958,7 @@
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/font-popup.js"
         ],
         "html": []
       }
@@ -22741,21 +22966,27 @@
     {
       "selector": ".manager-font-popup.visible",
       "css": 1,
-      "js": 130,
+      "js": 133,
       "html": 0,
-      "total": 131,
+      "total": 134,
       "files": {
         "css": [
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/app/auth-manager.js",
+          "src/app/lithium-app.js",
+          "src/core/font-popup.js",
+          "src/core/manager-export.js",
           "src/core/popup.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-logout.js",
+          "src/managers/main/main-slots.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
@@ -22789,7 +23020,7 @@
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-export.js"
         ],
         "html": []
       }
@@ -22805,7 +23036,7 @@
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-export.js"
         ],
         "html": []
       }
@@ -22821,7 +23052,7 @@
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-export.js"
         ],
         "html": []
       }
@@ -22837,7 +23068,7 @@
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-export.js"
         ],
         "html": []
       }
@@ -22853,7 +23084,7 @@
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-export.js"
         ],
         "html": []
       }
@@ -22869,7 +23100,7 @@
           "src/core/popup.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-export.js"
         ],
         "html": []
       }
@@ -22885,7 +23116,7 @@
           "src/core/popup.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-export.js",
           "src/core/popup.js",
           "src/managers/lookups/lookups.js",
           "src/managers/queries/queries.js",
@@ -22906,7 +23137,7 @@
           "src/core/popup.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-export.js",
           "src/core/popup.js",
           "src/managers/lookups/lookups.js",
           "src/managers/queries/queries.js",
@@ -22927,7 +23158,7 @@
           "src/core/popup.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-export.js",
           "src/core/popup.js",
           "src/managers/lookups/lookups.js",
           "src/managers/queries/queries.js",
@@ -22948,7 +23179,7 @@
           "src/core/popup.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-export.js",
           "src/core/popup.js",
           "src/managers/lookups/lookups.js",
           "src/managers/queries/queries.js",
@@ -22969,7 +23200,7 @@
           "src/core/popup.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-export.js",
           "src/core/popup.js",
           "src/managers/lookups/lookups.js",
           "src/managers/queries/queries.js",
@@ -22990,7 +23221,7 @@
           "src/core/popup.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-export.js",
           "src/core/popup.js",
           "src/managers/lookups/lookups.js",
           "src/managers/queries/queries.js",
@@ -23011,7 +23242,7 @@
           "src/core/popup.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-export.js",
           "src/core/popup.js",
           "src/managers/lookups/lookups.js",
           "src/managers/queries/queries.js",
@@ -23032,7 +23263,7 @@
           "src/core/popup.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-export.js",
           "src/core/popup.js",
           "src/managers/lookups/lookups.js",
           "src/managers/queries/queries.js",
@@ -23053,7 +23284,7 @@
           "src/core/popup.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-export.js",
           "src/core/popup.js",
           "src/managers/lookups/lookups.js",
           "src/managers/queries/queries.js",
@@ -23066,21 +23297,27 @@
     {
       "selector": ".manager-footer-export-popup.visible",
       "css": 1,
-      "js": 124,
+      "js": 127,
       "html": 0,
-      "total": 125,
+      "total": 128,
       "files": {
         "css": [
           "src/core/popup.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/app/auth-manager.js",
+          "src/app/lithium-app.js",
+          "src/core/font-popup.js",
+          "src/core/manager-export.js",
           "src/core/popup.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-logout.js",
+          "src/managers/main/main-slots.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
@@ -23115,7 +23352,7 @@
           "src/styles/components.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-export.js",
           "src/core/popup.js",
           "src/managers/lookups/lookups.js",
           "src/managers/queries/queries.js",
@@ -23128,22 +23365,28 @@
     {
       "selector": ".manager-footer-popup.visible",
       "css": 2,
-      "js": 119,
+      "js": 122,
       "html": 0,
-      "total": 121,
+      "total": 124,
       "files": {
         "css": [
           "src/core/manager-ui.css",
           "src/styles/components.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/app/auth-manager.js",
+          "src/app/lithium-app.js",
+          "src/core/font-popup.js",
+          "src/core/manager-export.js",
           "src/core/popup.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-logout.js",
+          "src/managers/main/main-slots.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
@@ -23177,7 +23420,7 @@
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-export.js"
         ],
         "html": []
       }
@@ -23193,7 +23436,7 @@
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-export.js"
         ],
         "html": []
       }
@@ -23209,7 +23452,7 @@
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-export.js"
         ],
         "html": []
       }
@@ -23225,7 +23468,7 @@
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-export.js"
         ],
         "html": []
       }
@@ -23241,7 +23484,7 @@
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-export.js"
         ],
         "html": []
       }
@@ -23257,7 +23500,7 @@
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-export.js"
         ],
         "html": []
       }
@@ -23328,7 +23571,8 @@
         ],
         "js": [
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-slots.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -23350,9 +23594,10 @@
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-header-buttons.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-slots.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -23374,9 +23619,10 @@
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-header-buttons.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-slots.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -23398,9 +23644,10 @@
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-header-buttons.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-slots.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -23422,10 +23669,11 @@
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-header-buttons.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-slots.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -23452,9 +23700,10 @@
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-header-buttons.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-slots.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -23476,10 +23725,11 @@
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-header-buttons.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-slots.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -23506,9 +23756,10 @@
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-header-buttons.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-slots.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -23533,9 +23784,10 @@
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-header-buttons.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-slots.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -23561,7 +23813,8 @@
         ],
         "js": [
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-slots.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -23575,17 +23828,17 @@
     {
       "selector": ".manager-slot.slot-hidden",
       "css": 1,
-      "js": 32,
+      "js": 28,
       "html": 0,
-      "total": 33,
+      "total": 29,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/app.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-slots.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -23599,17 +23852,18 @@
     {
       "selector": ".manager-slot.slot-visible",
       "css": 1,
-      "js": 35,
+      "js": 33,
       "html": 0,
-      "total": 36,
+      "total": 34,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/app.js",
+          "src/app/manager-loader.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-slots.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -23631,7 +23885,7 @@
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/app.js"
+          "src/app/manager-loader.js"
         ],
         "html": []
       }
@@ -23639,22 +23893,23 @@
     {
       "selector": ".manager-transition-overlay.active",
       "css": 1,
-      "js": 76,
+      "js": 69,
       "html": 8,
-      "total": 85,
+      "total": 78,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/app.js",
-          "src/core/manager-ui.js",
+          "src/app/manager-loader.js",
+          "src/core/font-popup.js",
+          "src/core/toolbar.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-ui.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-sidebar.js",
           "src/managers/profile-manager/profile-manager-settings.js",
           "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
@@ -23681,7 +23936,7 @@
       "files": {
         "css": [],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-header-buttons.js"
         ],
         "html": []
       }
@@ -23697,7 +23952,8 @@
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-export.js",
+          "src/core/manager-header-buttons.js",
           "src/core/popup.js",
           "src/managers/terminal/terminal.js"
         ],
@@ -23716,7 +23972,10 @@
           "src/styles/components.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-export.js",
+          "src/core/manager-header-buttons.js",
+          "src/core/manager-menu.js",
+          "src/core/manager-popup-state.js",
           "src/core/popup.js",
           "src/core/zoom-control.js",
           "src/managers/lookups/lookups.js",
@@ -23739,8 +23998,8 @@
       "files": {
         "css": [],
         "js": [
-          "src/core/manager-ui.js",
-          "src/managers/main/main.js",
+          "src/core/manager-header-buttons.js",
+          "src/managers/main/main-keyboard.js",
           "src/managers/profile-manager/profile-manager.js"
         ],
         "html": []
@@ -23755,7 +24014,7 @@
       "files": {
         "css": [],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-header-buttons.js"
         ],
         "html": []
       }
@@ -23771,7 +24030,7 @@
           "src/managers/crimson/crimson.css"
         ],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-header-buttons.js"
         ],
         "html": []
       }
@@ -23801,7 +24060,7 @@
       "files": {
         "css": [],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-header-buttons.js"
         ],
         "html": []
       }
@@ -23815,8 +24074,8 @@
       "files": {
         "css": [],
         "js": [
-          "src/core/manager-ui.js",
-          "src/managers/main/main.js"
+          "src/core/manager-header-buttons.js",
+          "src/managers/main/main-keyboard.js"
         ],
         "html": []
       }
@@ -23834,7 +24093,7 @@
           "src/styles/components.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-menu.js",
           "src/core/popup.js"
         ],
         "html": []
@@ -23852,7 +24111,7 @@
           "src/core/popup.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-menu.js",
           "src/core/popup.js"
         ],
         "html": []
@@ -23870,7 +24129,7 @@
           "src/core/popup.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-menu.js",
           "src/core/popup.js"
         ],
         "html": []
@@ -23888,7 +24147,7 @@
           "src/core/popup.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-menu.js",
           "src/core/popup.js"
         ],
         "html": []
@@ -23905,7 +24164,7 @@
           "src/styles/components.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-menu.js",
           "src/core/popup.js"
         ],
         "html": []
@@ -23923,7 +24182,7 @@
           "src/core/popup.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-menu.js",
           "src/core/popup.js"
         ],
         "html": []
@@ -23938,7 +24197,7 @@
       "files": {
         "css": [],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-header-buttons.js"
         ],
         "html": []
       }
@@ -24166,7 +24425,7 @@
           "src/core/popup.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-export.js",
           "src/core/popup.js",
           "src/core/zoom-control.js",
           "src/managers/lookups/lookups.js",
@@ -24182,21 +24441,27 @@
     {
       "selector": ".manager-ui-popup.manager-footer-popup:not(.visible)",
       "css": 1,
-      "js": 140,
+      "js": 143,
       "html": 0,
-      "total": 141,
+      "total": 144,
       "files": {
         "css": [
           "src/core/popup.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/app/auth-manager.js",
+          "src/app/lithium-app.js",
+          "src/core/font-popup.js",
+          "src/core/manager-export.js",
           "src/core/popup.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-logout.js",
+          "src/managers/main/main-slots.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
@@ -24241,21 +24506,27 @@
     {
       "selector": ".manager-ui-popup.manager-header-popup:not(.visible)",
       "css": 1,
-      "js": 135,
+      "js": 138,
       "html": 0,
-      "total": 136,
+      "total": 139,
       "files": {
         "css": [
           "src/core/popup.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/app/auth-manager.js",
+          "src/app/lithium-app.js",
+          "src/core/font-popup.js",
+          "src/core/manager-export.js",
           "src/core/popup.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-logout.js",
+          "src/managers/main/main-slots.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
@@ -24281,21 +24552,27 @@
     {
       "selector": ".manager-ui-popup.visible",
       "css": 1,
-      "js": 132,
+      "js": 135,
       "html": 0,
-      "total": 133,
+      "total": 136,
       "files": {
         "css": [
           "src/core/popup.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/app/auth-manager.js",
+          "src/app/lithium-app.js",
+          "src/core/font-popup.js",
+          "src/core/manager-export.js",
           "src/core/popup.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-logout.js",
+          "src/managers/main/main-slots.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
@@ -24327,8 +24604,8 @@
       "files": {
         "css": [],
         "js": [
-          "src/core/manager-ui.js",
-          "src/managers/main/main.js"
+          "src/core/manager-header-buttons.js",
+          "src/managers/main/main-keyboard.js"
         ],
         "html": []
       }
@@ -24436,7 +24713,7 @@
       "files": {
         "css": [],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-header-buttons.js",
           "src/managers/terminal/terminal.js"
         ],
         "html": []
@@ -24451,7 +24728,7 @@
       "files": {
         "css": [],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-header-buttons.js"
         ],
         "html": []
       }
@@ -24479,7 +24756,7 @@
       "files": {
         "css": [],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-header-buttons.js"
         ],
         "html": []
       }
@@ -24507,8 +24784,8 @@
       "files": {
         "css": [],
         "js": [
-          "src/core/manager-ui.js",
-          "src/managers/main/main.js"
+          "src/core/manager-header-buttons.js",
+          "src/managers/main/main-keyboard.js"
         ],
         "html": []
       }
@@ -24556,7 +24833,7 @@
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/managers/main/main.js"
+          "src/managers/main/main-sidebar.js"
         ],
         "html": []
       }
@@ -24572,7 +24849,7 @@
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/managers/main/main.js"
+          "src/managers/main/main-sidebar.js"
         ],
         "html": []
       }
@@ -24588,7 +24865,7 @@
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/managers/main/main.js"
+          "src/managers/main/main-sidebar.js"
         ],
         "html": []
       }
@@ -24604,7 +24881,7 @@
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/managers/main/main.js"
+          "src/managers/main/main-sidebar.js"
         ],
         "html": []
       }
@@ -24624,7 +24901,9 @@
           "src/core/panel-collapse.js",
           "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-collapse.js",
+          "src/managers/main/main-sidebar.js",
+          "src/managers/main/main-state.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js"
@@ -24643,7 +24922,7 @@
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/managers/main/main.js"
+          "src/managers/main/main-sidebar.js"
         ],
         "html": []
       }
@@ -24659,7 +24938,7 @@
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/managers/main/main.js"
+          "src/managers/main/main-sidebar.js"
         ],
         "html": []
       }
@@ -24675,7 +24954,7 @@
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/managers/main/main.js"
+          "src/managers/main/main-sidebar.js"
         ],
         "html": []
       }
@@ -24691,7 +24970,7 @@
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/managers/main/main.js"
+          "src/managers/main/main-sidebar.js"
         ],
         "html": []
       }
@@ -24707,7 +24986,7 @@
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/managers/main/main.js"
+          "src/managers/main/main-sidebar.js"
         ],
         "html": []
       }
@@ -24715,22 +24994,23 @@
     {
       "selector": ".menu-item.active",
       "css": 1,
-      "js": 85,
+      "js": 78,
       "html": 8,
-      "total": 94,
+      "total": 87,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/app.js",
-          "src/core/manager-ui.js",
+          "src/app/manager-loader.js",
+          "src/core/font-popup.js",
+          "src/core/toolbar.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-ui.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-sidebar.js",
           "src/managers/profile-manager/profile-manager-settings.js",
           "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
@@ -24751,22 +25031,23 @@
     {
       "selector": ".menu-item.active .menu-item-count",
       "css": 1,
-      "js": 86,
+      "js": 79,
       "html": 8,
-      "total": 95,
+      "total": 88,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/app.js",
-          "src/core/manager-ui.js",
+          "src/app/manager-loader.js",
+          "src/core/font-popup.js",
+          "src/core/toolbar.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-ui.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-sidebar.js",
           "src/managers/profile-manager/profile-manager-settings.js",
           "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
@@ -24787,22 +25068,23 @@
     {
       "selector": ".menu-item.manager-open:not(.active",
       "css": 1,
-      "js": 86,
+      "js": 79,
       "html": 8,
-      "total": 95,
+      "total": 88,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/app.js",
-          "src/core/manager-ui.js",
+          "src/app/manager-loader.js",
+          "src/core/font-popup.js",
+          "src/core/toolbar.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-ui.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-sidebar.js",
           "src/managers/profile-manager/profile-manager-settings.js",
           "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
@@ -25633,21 +25915,27 @@
     {
       "selector": ".nav-popup.visible",
       "css": 1,
-      "js": 111,
+      "js": 114,
       "html": 0,
-      "total": 112,
+      "total": 115,
       "files": {
         "css": [
           "src/core/manager-panels.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/app/auth-manager.js",
+          "src/app/lithium-app.js",
+          "src/core/font-popup.js",
+          "src/core/manager-export.js",
           "src/core/popup.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-logout.js",
+          "src/managers/main/main-slots.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
@@ -25770,7 +26058,7 @@
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/managers/main/main.js"
+          "src/managers/main/main-keyboard.js"
         ],
         "html": []
       }
@@ -25778,21 +26066,27 @@
     {
       "selector": ".offline-indicator.visible",
       "css": 1,
-      "js": 112,
+      "js": 115,
       "html": 0,
-      "total": 113,
+      "total": 116,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/app/auth-manager.js",
+          "src/app/lithium-app.js",
+          "src/core/font-popup.js",
+          "src/core/manager-export.js",
           "src/core/popup.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-logout.js",
+          "src/managers/main/main-slots.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
@@ -26864,7 +27158,7 @@
       "files": {
         "css": [],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/toolbar.js"
         ],
         "html": []
       }
@@ -28091,22 +28385,23 @@
     {
       "selector": ".queries-tab-btn.active",
       "css": 1,
-      "js": 76,
+      "js": 69,
       "html": 8,
-      "total": 85,
+      "total": 78,
       "files": {
         "css": [
           "src/managers/queries/queries.css"
         ],
         "js": [
-          "src/app.js",
-          "src/core/manager-ui.js",
+          "src/app/manager-loader.js",
+          "src/core/font-popup.js",
+          "src/core/toolbar.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-ui.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-sidebar.js",
           "src/managers/profile-manager/profile-manager-settings.js",
           "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
@@ -28182,22 +28477,23 @@
     {
       "selector": ".queries-tab-pane.active",
       "css": 1,
-      "js": 76,
+      "js": 69,
       "html": 13,
-      "total": 90,
+      "total": 83,
       "files": {
         "css": [
           "src/managers/queries/queries.css"
         ],
         "js": [
-          "src/app.js",
-          "src/core/manager-ui.js",
+          "src/app/manager-loader.js",
+          "src/core/font-popup.js",
+          "src/core/toolbar.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-ui.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-sidebar.js",
           "src/managers/profile-manager/profile-manager-settings.js",
           "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
@@ -29153,22 +29449,23 @@
     {
       "selector": ".settings-page:not(.active)",
       "css": 1,
-      "js": 83,
+      "js": 76,
       "html": 52,
-      "total": 136,
+      "total": 129,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
-          "src/app.js",
-          "src/core/manager-ui.js",
+          "src/app/manager-loader.js",
+          "src/core/font-popup.js",
+          "src/core/toolbar.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-ui.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-sidebar.js",
           "src/managers/profile-manager/pages/page-placeholder.js",
           "src/managers/profile-manager/profile-manager-settings.js",
           "src/managers/profile-manager/profile-manager-table.js",
@@ -29234,22 +29531,23 @@
     {
       "selector": ".settings-page.active",
       "css": 1,
-      "js": 83,
+      "js": 76,
       "html": 52,
-      "total": 136,
+      "total": 129,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
-          "src/app.js",
-          "src/core/manager-ui.js",
+          "src/app/manager-loader.js",
+          "src/core/font-popup.js",
+          "src/core/toolbar.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-ui.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-sidebar.js",
           "src/managers/profile-manager/pages/page-placeholder.js",
           "src/managers/profile-manager/profile-manager-settings.js",
           "src/managers/profile-manager/profile-manager-table.js",
@@ -29782,7 +30080,7 @@
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/managers/main/main.js"
+          "src/managers/main/main-collapse.js"
         ],
         "html": [
           "src/managers/main/main.html"
@@ -29800,7 +30098,7 @@
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/managers/main/main.js"
+          "src/managers/main/main-collapse.js"
         ],
         "html": [
           "src/managers/main/main.html"
@@ -29818,7 +30116,7 @@
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/managers/main/main.js"
+          "src/managers/main/main-collapse.js"
         ],
         "html": [
           "src/managers/main/main.html"
@@ -29828,22 +30126,24 @@
     {
       "selector": ".sidebar-icon-btn.active",
       "css": 1,
-      "js": 76,
+      "js": 69,
       "html": 13,
-      "total": 90,
+      "total": 83,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/app.js",
-          "src/core/manager-ui.js",
+          "src/app/manager-loader.js",
+          "src/core/font-popup.js",
+          "src/core/toolbar.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-ui.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-collapse.js",
+          "src/managers/main/main-sidebar.js",
           "src/managers/profile-manager/profile-manager-settings.js",
           "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
@@ -29865,22 +30165,24 @@
     {
       "selector": ".sidebar-icon-btn.active:hover",
       "css": 1,
-      "js": 76,
+      "js": 69,
       "html": 13,
-      "total": 90,
+      "total": 83,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/app.js",
-          "src/core/manager-ui.js",
+          "src/app/manager-loader.js",
+          "src/core/font-popup.js",
+          "src/core/toolbar.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-ui.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-collapse.js",
+          "src/managers/main/main-sidebar.js",
           "src/managers/profile-manager/profile-manager-settings.js",
           "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
@@ -29910,7 +30212,7 @@
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/managers/main/main.js"
+          "src/managers/main/main-collapse.js"
         ],
         "html": [
           "src/managers/main/main.html"
@@ -29948,7 +30250,9 @@
           "src/core/panel-collapse.js",
           "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-collapse.js",
+          "src/managers/main/main-sidebar.js",
+          "src/managers/main/main-state.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js"
@@ -29973,7 +30277,9 @@
           "src/core/panel-collapse.js",
           "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-collapse.js",
+          "src/managers/main/main-sidebar.js",
+          "src/managers/main/main-state.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js"
@@ -29998,7 +30304,9 @@
           "src/core/panel-collapse.js",
           "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-collapse.js",
+          "src/managers/main/main-sidebar.js",
+          "src/managers/main/main-state.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js"
@@ -30023,7 +30331,9 @@
           "src/core/panel-collapse.js",
           "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-collapse.js",
+          "src/managers/main/main-sidebar.js",
+          "src/managers/main/main-state.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js"
@@ -30048,7 +30358,9 @@
           "src/core/panel-collapse.js",
           "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-collapse.js",
+          "src/managers/main/main-sidebar.js",
+          "src/managers/main/main-state.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js"
@@ -30073,7 +30385,9 @@
           "src/core/panel-collapse.js",
           "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-collapse.js",
+          "src/managers/main/main-sidebar.js",
+          "src/managers/main/main-state.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js"
@@ -30098,7 +30412,9 @@
           "src/core/panel-collapse.js",
           "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-collapse.js",
+          "src/managers/main/main-sidebar.js",
+          "src/managers/main/main-state.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js"
@@ -30123,7 +30439,9 @@
           "src/core/panel-collapse.js",
           "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-collapse.js",
+          "src/managers/main/main-sidebar.js",
+          "src/managers/main/main-state.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js"
@@ -30148,7 +30466,9 @@
           "src/core/panel-collapse.js",
           "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-collapse.js",
+          "src/managers/main/main-sidebar.js",
+          "src/managers/main/main-state.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js"
@@ -30173,7 +30493,9 @@
           "src/core/panel-collapse.js",
           "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-collapse.js",
+          "src/managers/main/main-sidebar.js",
+          "src/managers/main/main-state.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js"
@@ -30198,7 +30520,9 @@
           "src/core/panel-collapse.js",
           "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-collapse.js",
+          "src/managers/main/main-sidebar.js",
+          "src/managers/main/main-state.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js"
@@ -30219,7 +30543,7 @@
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/managers/main/main.js"
+          "src/managers/main/main-collapse.js"
         ],
         "html": [
           "src/managers/main/main.html"
@@ -30237,7 +30561,7 @@
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/managers/main/main.js"
+          "src/managers/main/main-collapse.js"
         ],
         "html": [
           "src/managers/main/main.html"
@@ -30255,7 +30579,7 @@
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/managers/main/main.js"
+          "src/managers/main/main-collapse.js"
         ],
         "html": [
           "src/managers/main/main.html"
@@ -30273,7 +30597,7 @@
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/managers/main/main.js"
+          "src/managers/main/main-collapse.js"
         ],
         "html": [
           "src/managers/main/main.html"
@@ -30291,7 +30615,7 @@
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/managers/main/main.js"
+          "src/managers/main/main-collapse.js"
         ],
         "html": [
           "src/managers/main/main.html"
@@ -30309,7 +30633,7 @@
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/managers/main/main.js"
+          "src/managers/main/main-collapse.js"
         ],
         "html": [
           "src/managers/main/main.html"
@@ -30327,7 +30651,7 @@
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/managers/main/main.js"
+          "src/managers/main/main-collapse.js"
         ],
         "html": [
           "src/managers/main/main.html"
@@ -30458,21 +30782,23 @@
     {
       "selector": ".sidebar-menu-btn.active",
       "css": 1,
-      "js": 76,
+      "js": 69,
       "html": 9,
-      "total": 86,
+      "total": 79,
       "files": {
         "css": [
           "src/styles/layout.css"
         ],
         "js": [
-          "src/app.js",
-          "src/core/manager-ui.js",
+          "src/app/manager-loader.js",
+          "src/core/font-popup.js",
+          "src/core/toolbar.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-ui.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-sidebar.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager-settings.js",
           "src/managers/profile-manager/profile-manager-table.js",
@@ -30544,15 +30870,15 @@
     {
       "selector": ".sidebar-overlay.open",
       "css": 1,
-      "js": 5,
+      "js": 4,
       "html": 1,
-      "total": 7,
+      "total": 6,
       "files": {
         "css": [
           "src/styles/layout.css"
         ],
         "js": [
-          "src/managers/main/main.js",
+          "src/managers/main/main-keyboard.js",
           "src/shared/timezone-picker.js"
         ],
         "html": [
@@ -30563,21 +30889,27 @@
     {
       "selector": ".sidebar-overlay.visible",
       "css": 1,
-      "js": 111,
+      "js": 114,
       "html": 1,
-      "total": 113,
+      "total": 116,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/app/auth-manager.js",
+          "src/app/lithium-app.js",
+          "src/core/font-popup.js",
+          "src/core/manager-export.js",
           "src/core/popup.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-logout.js",
+          "src/managers/main/main-slots.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
@@ -30678,7 +31010,7 @@
         ],
         "js": [
           "src/managers/crimson/crimson-events.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-splitter.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/terminal/terminal.js",
           "src/managers/tour/tour.js",
@@ -30701,7 +31033,7 @@
         ],
         "js": [
           "src/managers/crimson/crimson-events.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-splitter.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/terminal/terminal.js",
           "src/managers/tour/tour.js",
@@ -30809,8 +31141,8 @@
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/app.js",
-          "src/core/manager-ui.js",
+          "src/app/lithium-app.js",
+          "src/core/manager-header-buttons.js",
           "src/init/codemirror-init.js",
           "src/init/highlight-init.js",
           "src/init/jsoneditor-init.js",
@@ -30829,7 +31161,21 @@
       "files": {
         "css": [],
         "js": [
-          "src/managers/main/main.js"
+          "src/managers/main/main-slots.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".slot-fading-out",
+      "css": 0,
+      "js": 1,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [],
+        "js": [
+          "src/app/manager-loader.js"
         ],
         "html": []
       }
@@ -30843,7 +31189,7 @@
       "files": {
         "css": [],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-header-buttons.js"
         ],
         "html": []
       }
@@ -30858,7 +31204,7 @@
         "css": [],
         "js": [
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-slots.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -30879,7 +31225,7 @@
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/managers/main/main.js"
+          "src/managers/main/main-slots.js"
         ],
         "html": []
       }
@@ -30893,14 +31239,30 @@
       "files": {
         "css": [],
         "js": [
-          "src/core/manager-ui.js",
-          "src/managers/main/main.js"
+          "src/core/manager-header-buttons.js",
+          "src/managers/main/main-slots.js"
         ],
         "html": []
       }
     },
     {
       "selector": ".slot-header-search",
+      "css": 1,
+      "js": 6,
+      "html": 0,
+      "total": 7,
+      "files": {
+        "css": [
+          "src/core/manager-ui.css"
+        ],
+        "js": [
+          "src/managers/main/main-slots.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".slot-header-search-btn",
       "css": 1,
       "js": 7,
       "html": 0,
@@ -30910,13 +31272,13 @@
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/managers/main/main.js"
+          "src/managers/main/main-slots.js"
         ],
         "html": []
       }
     },
     {
-      "selector": ".slot-header-search-btn",
+      "selector": ".slot-header-search-clear",
       "css": 1,
       "js": 8,
       "html": 0,
@@ -30926,13 +31288,13 @@
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/managers/main/main.js"
+          "src/managers/main/main-slots.js"
         ],
         "html": []
       }
     },
     {
-      "selector": ".slot-header-search-clear",
+      "selector": ".slot-header-search-input",
       "css": 1,
       "js": 9,
       "html": 0,
@@ -30942,23 +31304,8 @@
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/managers/main/main.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".slot-header-search-input",
-      "css": 1,
-      "js": 10,
-      "html": 0,
-      "total": 11,
-      "files": {
-        "css": [
-          "src/core/manager-ui.css"
-        ],
-        "js": [
-          "src/managers/main/main.js"
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-slots.js"
         ],
         "html": []
       }
@@ -30966,15 +31313,16 @@
     {
       "selector": ".slot-header-search-input:focus",
       "css": 1,
-      "js": 10,
+      "js": 9,
       "html": 0,
-      "total": 11,
+      "total": 10,
       "files": {
         "css": [
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/managers/main/main.js"
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-slots.js"
         ],
         "html": []
       }
@@ -30982,15 +31330,16 @@
     {
       "selector": ".slot-header-search-input:placeholder-shown",
       "css": 1,
-      "js": 10,
+      "js": 9,
       "html": 0,
-      "total": 11,
+      "total": 10,
       "files": {
         "css": [
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/managers/main/main.js"
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-slots.js"
         ],
         "html": []
       }
@@ -30998,15 +31347,16 @@
     {
       "selector": ".slot-header-search-input:placeholder-shown::placeholder",
       "css": 1,
-      "js": 10,
+      "js": 9,
       "html": 0,
-      "total": 11,
+      "total": 10,
       "files": {
         "css": [
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/managers/main/main.js"
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-slots.js"
         ],
         "html": []
       }
@@ -31022,14 +31372,14 @@
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/app.js",
-          "src/core/manager-ui.js",
+          "src/app/lithium-app.js",
+          "src/core/manager-header-buttons.js",
           "src/init/codemirror-init.js",
           "src/init/highlight-init.js",
           "src/init/jsoneditor-init.js",
           "src/init/prism-init.js",
           "src/init/suneditor-init.js",
-          "src/managers/main/main.js"
+          "src/managers/main/main-slots.js"
         ],
         "html": []
       }
@@ -31045,8 +31395,8 @@
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/app.js",
-          "src/core/manager-ui.js",
+          "src/app/lithium-app.js",
+          "src/core/manager-header-buttons.js",
           "src/init/codemirror-init.js",
           "src/init/highlight-init.js",
           "src/init/jsoneditor-init.js",
@@ -31067,7 +31417,7 @@
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/managers/main/main.js"
+          "src/managers/main/main-slots.js"
         ],
         "html": []
       }
@@ -31083,7 +31433,7 @@
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/managers/main/main.js"
+          "src/managers/main/main-slots.js"
         ],
         "html": []
       }
@@ -31099,7 +31449,7 @@
           "src/core/manager-ui.css"
         ],
         "js": [
-          "src/managers/main/main.js"
+          "src/managers/main/main-slots.js"
         ],
         "html": []
       }
@@ -31449,22 +31799,23 @@
     {
       "selector": ".style-editor-toolbar .style-state-btn.active",
       "css": 1,
-      "js": 76,
+      "js": 69,
       "html": 8,
-      "total": 85,
+      "total": 78,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
         ],
         "js": [
-          "src/app.js",
-          "src/core/manager-ui.js",
+          "src/app/manager-loader.js",
+          "src/core/font-popup.js",
+          "src/core/toolbar.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-ui.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-sidebar.js",
           "src/managers/profile-manager/profile-manager-settings.js",
           "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
@@ -31507,10 +31858,10 @@
           "src/managers/style-manager/style-manager.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-header-buttons.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-slots.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -31626,22 +31977,23 @@
     {
       "selector": ".style-font-popup-style-btn.active",
       "css": 1,
-      "js": 75,
+      "js": 68,
       "html": 8,
-      "total": 84,
+      "total": 77,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
         ],
         "js": [
-          "src/app.js",
-          "src/core/manager-ui.js",
+          "src/app/manager-loader.js",
+          "src/core/font-popup.js",
+          "src/core/toolbar.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-ui.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-sidebar.js",
           "src/managers/profile-manager/profile-manager-settings.js",
           "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
@@ -31676,21 +32028,27 @@
     {
       "selector": ".style-font-popup.visible",
       "css": 1,
-      "js": 111,
+      "js": 114,
       "html": 0,
-      "total": 112,
+      "total": 115,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/app/auth-manager.js",
+          "src/app/lithium-app.js",
+          "src/core/font-popup.js",
+          "src/core/manager-export.js",
           "src/core/popup.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-logout.js",
+          "src/managers/main/main-slots.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
@@ -31748,22 +32106,23 @@
     {
       "selector": ".style-json-view.active",
       "css": 1,
-      "js": 75,
+      "js": 68,
       "html": 9,
-      "total": 85,
+      "total": 78,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
         ],
         "js": [
-          "src/app.js",
-          "src/core/manager-ui.js",
+          "src/app/manager-loader.js",
+          "src/core/font-popup.js",
+          "src/core/toolbar.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-ui.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-sidebar.js",
           "src/managers/profile-manager/profile-manager-settings.js",
           "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
@@ -31962,22 +32321,23 @@
     {
       "selector": ".style-mode-btn.active",
       "css": 1,
-      "js": 75,
+      "js": 68,
       "html": 8,
-      "total": 84,
+      "total": 77,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
         ],
         "js": [
-          "src/app.js",
-          "src/core/manager-ui.js",
+          "src/app/manager-loader.js",
+          "src/core/font-popup.js",
+          "src/core/toolbar.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-ui.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-sidebar.js",
           "src/managers/profile-manager/profile-manager-settings.js",
           "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
@@ -32278,22 +32638,23 @@
     {
       "selector": ".style-section-view.active",
       "css": 1,
-      "js": 75,
+      "js": 68,
       "html": 9,
-      "total": 85,
+      "total": 78,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
         ],
         "js": [
-          "src/app.js",
-          "src/core/manager-ui.js",
+          "src/app/manager-loader.js",
+          "src/core/font-popup.js",
+          "src/core/toolbar.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-ui.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-sidebar.js",
           "src/managers/profile-manager/profile-manager-settings.js",
           "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
@@ -32422,22 +32783,23 @@
     {
       "selector": ".style-target-circle.active",
       "css": 1,
-      "js": 77,
+      "js": 70,
       "html": 8,
-      "total": 86,
+      "total": 79,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
         ],
         "js": [
-          "src/app.js",
-          "src/core/manager-ui.js",
+          "src/app/manager-loader.js",
+          "src/core/font-popup.js",
+          "src/core/toolbar.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-ui.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-sidebar.js",
           "src/managers/profile-manager/profile-manager-settings.js",
           "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
@@ -32584,10 +32946,11 @@
           "src/styles/layout.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-export.js",
+          "src/core/manager-header-buttons.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-core.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-slots.js",
           "src/managers/terminal/terminal.js"
         ],
         "html": [
@@ -32607,10 +32970,11 @@
           "src/styles/layout.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-export.js",
+          "src/core/manager-header-buttons.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-core.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-slots.js",
           "src/managers/terminal/terminal.js"
         ],
         "html": [
@@ -32630,10 +32994,11 @@
           "src/styles/layout.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-export.js",
+          "src/core/manager-header-buttons.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-core.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-slots.js",
           "src/managers/terminal/terminal.js"
         ],
         "html": [
@@ -32653,10 +33018,11 @@
           "src/styles/layout.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-export.js",
+          "src/core/manager-header-buttons.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-core.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-slots.js",
           "src/managers/terminal/terminal.js"
         ],
         "html": [
@@ -32676,10 +33042,10 @@
           "src/styles/layout.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-header-buttons.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-slots.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -32705,10 +33071,10 @@
           "src/styles/layout.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-header-buttons.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-slots.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -32734,10 +33100,10 @@
           "src/styles/layout.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-header-buttons.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-slots.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -32763,10 +33129,10 @@
           "src/styles/layout.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-header-buttons.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-slots.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -32792,7 +33158,7 @@
           "src/styles/layout.css"
         ],
         "js": [
-          "src/managers/main/main.js"
+          "src/managers/main/main-slots.js"
         ],
         "html": [
           "src/managers/login/login.html",
@@ -32811,7 +33177,7 @@
           "src/styles/layout.css"
         ],
         "js": [
-          "src/managers/main/main.js"
+          "src/managers/main/main-slots.js"
         ],
         "html": [
           "src/managers/login/login.html",
@@ -32926,22 +33292,23 @@
     {
       "selector": ".tab-btn.active",
       "css": 1,
-      "js": 75,
+      "js": 68,
       "html": 8,
-      "total": 84,
+      "total": 77,
       "files": {
         "css": [
           "src/core/manager-panels.css"
         ],
         "js": [
-          "src/app.js",
-          "src/core/manager-ui.js",
+          "src/app/manager-loader.js",
+          "src/core/font-popup.js",
+          "src/core/toolbar.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-ui.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-sidebar.js",
           "src/managers/profile-manager/profile-manager-settings.js",
           "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
@@ -33004,22 +33371,23 @@
     {
       "selector": ".tab-pane.active",
       "css": 1,
-      "js": 75,
+      "js": 68,
       "html": 8,
-      "total": 84,
+      "total": 77,
       "files": {
         "css": [
           "src/core/manager-panels.css"
         ],
         "js": [
-          "src/app.js",
-          "src/core/manager-ui.js",
+          "src/app/manager-loader.js",
+          "src/core/font-popup.js",
+          "src/core/toolbar.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-ui.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-sidebar.js",
           "src/managers/profile-manager/profile-manager-settings.js",
           "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
@@ -33056,22 +33424,23 @@
     {
       "selector": ".tab-panel:not(.active)",
       "css": 1,
-      "js": 75,
+      "js": 68,
       "html": 10,
-      "total": 86,
+      "total": 79,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
-          "src/app.js",
-          "src/core/manager-ui.js",
+          "src/app/manager-loader.js",
+          "src/core/font-popup.js",
+          "src/core/toolbar.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-ui.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-sidebar.js",
           "src/managers/profile-manager/profile-manager-settings.js",
           "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
@@ -33092,22 +33461,23 @@
     {
       "selector": ".tab-panel.active",
       "css": 1,
-      "js": 75,
+      "js": 68,
       "html": 10,
-      "total": 86,
+      "total": 79,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
-          "src/app.js",
-          "src/core/manager-ui.js",
+          "src/app/manager-loader.js",
+          "src/core/font-popup.js",
+          "src/core/toolbar.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-ui.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-sidebar.js",
           "src/managers/profile-manager/profile-manager-settings.js",
           "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
@@ -33491,7 +33861,7 @@
           "src/init/tabulator-full.css"
         ],
         "js": [
-          "src/app.js",
+          "src/app/lithium-app.js",
           "src/init/codemirror-init.js",
           "src/init/highlight-init.js",
           "src/init/jsoneditor-init.js",
@@ -33512,7 +33882,7 @@
           "src/init/tabulator-full.css"
         ],
         "js": [
-          "src/app.js",
+          "src/app/lithium-app.js",
           "src/init/codemirror-init.js",
           "src/init/highlight-init.js",
           "src/init/jsoneditor-init.js",
@@ -33533,7 +33903,7 @@
           "src/init/tabulator-full.css"
         ],
         "js": [
-          "src/app.js",
+          "src/app/lithium-app.js",
           "src/init/codemirror-init.js",
           "src/init/highlight-init.js",
           "src/init/jsoneditor-init.js",
@@ -33554,7 +33924,7 @@
           "src/init/tabulator-full.css"
         ],
         "js": [
-          "src/app.js",
+          "src/app/lithium-app.js",
           "src/init/codemirror-init.js",
           "src/init/highlight-init.js",
           "src/init/jsoneditor-init.js",
@@ -33575,7 +33945,7 @@
           "src/init/tabulator-full.css"
         ],
         "js": [
-          "src/app.js",
+          "src/app/lithium-app.js",
           "src/init/codemirror-init.js",
           "src/init/highlight-init.js",
           "src/init/jsoneditor-init.js",
@@ -33788,22 +34158,23 @@
     {
       "selector": ".tabulator-simple .tabulator-page.active",
       "css": 1,
-      "js": 75,
+      "js": 68,
       "html": 8,
-      "total": 84,
+      "total": 77,
       "files": {
         "css": [
           "src/init/tabulator-simple.css"
         ],
         "js": [
-          "src/app.js",
-          "src/core/manager-ui.js",
+          "src/app/manager-loader.js",
+          "src/core/font-popup.js",
+          "src/core/toolbar.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-ui.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-sidebar.js",
           "src/managers/profile-manager/profile-manager-settings.js",
           "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
@@ -33978,10 +34349,10 @@
           "src/managers/terminal/terminal.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/manager-header-buttons.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-slots.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
@@ -34143,21 +34514,27 @@
     {
       "selector": ".terminal-overlay.visible",
       "css": 1,
-      "js": 112,
+      "js": 115,
       "html": 0,
-      "total": 113,
+      "total": 116,
       "files": {
         "css": [
           "src/managers/terminal/terminal.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/app/auth-manager.js",
+          "src/app/lithium-app.js",
+          "src/core/font-popup.js",
+          "src/core/manager-export.js",
           "src/core/popup.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-logout.js",
+          "src/managers/main/main-slots.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
@@ -34227,7 +34604,7 @@
         ],
         "js": [
           "src/managers/crimson/crimson-events.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-splitter.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/terminal/terminal.js",
           "src/managers/tour/tour.js",
@@ -34248,7 +34625,7 @@
         ],
         "js": [
           "src/managers/crimson/crimson-events.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-splitter.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/terminal/terminal.js",
           "src/managers/tour/tour.js",
@@ -34292,21 +34669,27 @@
     {
       "selector": ".terminal-popup.visible",
       "css": 1,
-      "js": 112,
+      "js": 115,
       "html": 0,
-      "total": 113,
+      "total": 116,
       "files": {
         "css": [
           "src/managers/terminal/terminal.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/app/auth-manager.js",
+          "src/app/lithium-app.js",
+          "src/core/font-popup.js",
+          "src/core/manager-export.js",
           "src/core/popup.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-logout.js",
+          "src/managers/main/main-slots.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
@@ -35096,7 +35479,7 @@
           "src/styles/toast.css"
         ],
         "js": [
-          "src/app.js",
+          "src/app/auth-manager.js",
           "src/shared/toast.js"
         ],
         "html": []
@@ -35643,22 +36026,23 @@
     {
       "selector": ".transition-overlay.active",
       "css": 1,
-      "js": 75,
+      "js": 68,
       "html": 9,
-      "total": 85,
+      "total": 78,
       "files": {
         "css": [
           "src/styles/layout.css"
         ],
         "js": [
-          "src/app.js",
-          "src/core/manager-ui.js",
+          "src/app/manager-loader.js",
+          "src/core/font-popup.js",
+          "src/core/toolbar.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-ui.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-sidebar.js",
           "src/managers/profile-manager/profile-manager-settings.js",
           "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
@@ -36164,7 +36548,7 @@
       "files": {
         "css": [],
         "js": [
-          "src/core/manager-ui.js"
+          "src/core/manager-export.js"
         ],
         "html": []
       }
@@ -36369,23 +36753,24 @@
     {
       "selector": ".zoom-popup-detent.active .zoom-popup-detent-mark",
       "css": 1,
-      "js": 115,
+      "js": 108,
       "html": 8,
-      "total": 124,
+      "total": 117,
       "files": {
         "css": [
           "src/core/popup.css"
         ],
         "js": [
-          "src/app.js",
-          "src/core/manager-ui.js",
+          "src/app/manager-loader.js",
+          "src/core/font-popup.js",
           "src/core/popup.js",
+          "src/core/toolbar.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-ui.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-sidebar.js",
           "src/managers/profile-manager/profile-manager-settings.js",
           "src/managers/profile-manager/profile-manager-table.js",
           "src/managers/profile-manager/profile-manager.js",
@@ -36810,7 +37195,9 @@
           "src/core/panel-collapse.js",
           "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-collapse.js",
+          "src/managers/main/main-sidebar.js",
+          "src/managers/main/main-state.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js"
@@ -36830,11 +37217,13 @@
         ],
         "js": [
           "src/core/lithium-splitter.js",
-          "src/core/manager-ui.js",
           "src/core/panel-collapse.js",
+          "src/core/toolbar.js",
           "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-collapse.js",
+          "src/managers/main/main-sidebar.js",
+          "src/managers/main/main-state.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js"
@@ -36860,11 +37249,13 @@
         ],
         "js": [
           "src/core/lithium-splitter.js",
-          "src/core/manager-ui.js",
           "src/core/panel-collapse.js",
+          "src/core/toolbar.js",
           "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-collapse.js",
+          "src/managers/main/main-sidebar.js",
+          "src/managers/main/main-state.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js"
@@ -36890,11 +37281,13 @@
         ],
         "js": [
           "src/core/lithium-splitter.js",
-          "src/core/manager-ui.js",
           "src/core/panel-collapse.js",
+          "src/core/toolbar.js",
           "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-collapse.js",
+          "src/managers/main/main-sidebar.js",
+          "src/managers/main/main-state.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js"
@@ -36923,7 +37316,9 @@
           "src/core/panel-collapse.js",
           "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-collapse.js",
+          "src/managers/main/main-sidebar.js",
+          "src/managers/main/main-state.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js"
@@ -36943,7 +37338,7 @@
         ],
         "js": [
           "src/managers/crimson/crimson-events.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-splitter.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/terminal/terminal.js",
           "src/managers/tour/tour.js",
@@ -37359,21 +37754,27 @@
     {
       "selector": "#main-layout.visible",
       "css": 1,
-      "js": 111,
+      "js": 114,
       "html": 0,
-      "total": 112,
+      "total": 115,
       "files": {
         "css": [
           "src/managers/main/main.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/app/auth-manager.js",
+          "src/app/lithium-app.js",
+          "src/core/font-popup.js",
+          "src/core/manager-export.js",
           "src/core/popup.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-logout.js",
+          "src/managers/main/main-slots.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
@@ -37439,7 +37840,7 @@
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/core/toolbar.js",
           "src/managers/session-log/session-log.js"
         ],
         "html": [
@@ -37467,7 +37868,9 @@
           "src/core/panel-collapse.js",
           "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-collapse.js",
+          "src/managers/main/main-sidebar.js",
+          "src/managers/main/main-state.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js"
@@ -37478,21 +37881,27 @@
     {
       "selector": "#profile-manager-page.visible",
       "css": 1,
-      "js": 111,
+      "js": 114,
       "html": 0,
-      "total": 112,
+      "total": 115,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/app/auth-manager.js",
+          "src/app/lithium-app.js",
+          "src/core/font-popup.js",
+          "src/core/manager-export.js",
           "src/core/popup.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-logout.js",
+          "src/managers/main/main-slots.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
@@ -37530,7 +37939,9 @@
           "src/core/panel-collapse.js",
           "src/core/tooltip-api.js",
           "src/managers/lookups/lookups.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-collapse.js",
+          "src/managers/main/main-sidebar.js",
+          "src/managers/main/main-state.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/queries/queries.js",
           "src/managers/style-manager/style-manager.js"
@@ -37550,7 +37961,7 @@
         ],
         "js": [
           "src/managers/crimson/crimson-events.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-splitter.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/terminal/terminal.js",
           "src/managers/tour/tour.js",
@@ -37576,21 +37987,27 @@
     {
       "selector": "#session-log-page.visible",
       "css": 1,
-      "js": 111,
+      "js": 114,
       "html": 0,
-      "total": 112,
+      "total": 115,
       "files": {
         "css": [
           "src/managers/session-log/session-log.css"
         ],
         "js": [
-          "src/core/manager-ui.js",
+          "src/app/auth-manager.js",
+          "src/app/lithium-app.js",
+          "src/core/font-popup.js",
+          "src/core/manager-export.js",
           "src/core/popup.js",
           "src/core/zoom-control.js",
           "src/managers/crimson/crimson-citations.js",
           "src/managers/crimson/crimson-core.js",
           "src/managers/login/login.js",
           "src/managers/lookups/lookups.js",
+          "src/managers/main/main-keyboard.js",
+          "src/managers/main/main-logout.js",
+          "src/managers/main/main-slots.js",
           "src/managers/main/main.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/managers/queries/queries-ui.js",
@@ -37735,7 +38152,7 @@
         ],
         "js": [
           "src/managers/crimson/crimson-events.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-splitter.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/terminal/terminal.js",
           "src/managers/tour/tour.js",
@@ -37756,7 +38173,7 @@
         ],
         "js": [
           "src/managers/crimson/crimson-events.js",
-          "src/managers/main/main.js",
+          "src/managers/main/main-splitter.js",
           "src/managers/queries/queries-ui.js",
           "src/managers/terminal/terminal.js",
           "src/managers/tour/tour.js",

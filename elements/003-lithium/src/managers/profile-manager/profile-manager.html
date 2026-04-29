@@ -39,27 +39,23 @@
 
         <div class="lithium-toolbar-placeholder"></div>
 
-        <!-- Editor controls (right) - always visible -->
-        <button type="button" class="lithium-toolbar-btn" id="btn-undo" data-collapsible-text data-editor-btn title="Undo (Ctrl+Z)">
+        <!-- Editor controls (right) - always visible, disabled by default -->
+        <button type="button" class="lithium-toolbar-btn" id="btn-undo" data-collapsible-text data-editor-btn title="Undo (Ctrl+Z)" disabled>
           <fa fa-rotate-left></fa>
-          <span>Undo</span>
         </button>
-        <button type="button" class="lithium-toolbar-btn" id="btn-redo" data-collapsible-text data-editor-btn title="Redo (Ctrl+Shift+Z)">
+        <button type="button" class="lithium-toolbar-btn" id="btn-redo" data-collapsible-text data-editor-btn title="Redo (Ctrl+Shift+Z)" disabled>
           <fa fa-rotate-right></fa>
-          <span>Redo</span>
         </button>
-        <button type="button" class="lithium-toolbar-btn" id="btn-fold" data-collapsible-text data-editor-btn title="Fold All">
+        <button type="button" class="lithium-toolbar-btn" id="btn-fold" data-collapsible-text data-editor-btn title="Fold All" disabled>
           <fa fa-compress></fa>
-          <span>Fold</span>
         </button>
-        <button type="button" class="lithium-toolbar-btn" id="btn-unfold" data-collapsible-text data-editor-btn title="Unfold All">
+        <button type="button" class="lithium-toolbar-btn" id="btn-unfold" data-collapsible-text data-editor-btn title="Unfold All" disabled>
           <fa fa-expand></fa>
-          <span>Unfold</span>
         </button>
-        <button type="button" class="lithium-toolbar-btn" id="btn-font" data-editor-btn title="Font Size">
+        <button type="button" class="lithium-toolbar-btn" id="btn-font" data-editor-btn title="Font Size" disabled>
           <fa fa-font-case></fa>
         </button>
-        <button type="button" class="lithium-toolbar-btn" id="btn-prettify" data-editor-btn title="Prettify JSON">
+        <button type="button" class="lithium-toolbar-btn" id="btn-prettify" data-editor-btn title="Prettify JSON" disabled>
           <fa fa-flower-tulip></fa>
         </button>
       </div>

@@ -115,7 +115,7 @@
   border: 1px solid var(--accent-alt-primary);
   background: var(--bg-secondary);
   position: relative;
-  min-width: 148px; /* Match nav block width */
+  min-width: 149px; /* Match nav block width */
 }
 
 /* ── Navigator Control Bar ────────────────────────────────────────────────── */
@@ -949,7 +949,7 @@ div.lithium-table-container > div:nth-child(1) > div:nth-child(1) > div:nth-chil
 /* ── First/Last Visible Column Classes ───────────────────────────────────── */
 
 /* We wanted this originally to hide duplicate right borders at edge of table, but
-** with our improved scrollbars on the job, they're now a useful addition I think.
+** with our improved scrollbars on the job, they're now a useful addition I think. */
 .lithium-table-container .tabulator-cell.first-visible-col,
 .lithium-table-container .tabulator-header .tabulator-col.first-visible-col {
   border-left: none;
@@ -959,7 +959,6 @@ div.lithium-table-container > div:nth-child(1) > div:nth-child(1) > div:nth-chil
 .lithium-table-container .tabulator-header .tabulator-col.last-visible-col {
   border-right: none !important;
 } 
-*/
 
 /* ── Edit Mode ────────────────────────────────────────────────────────────── */
 
