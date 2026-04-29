@@ -242,19 +242,21 @@ export class AuthManager {
     }
   }
 
-  async performQuickLogoutCleanup(logoutType) {
-    logAuth(Status.INFO, 'Performing quick logout cleanup');
-    await this._fadeOutForLogout();
-    await this.performLogoutActions('quick');
-    window.location.reload(true);
-  }
+   async performQuickLogoutCleanup(logoutType) {
+     logAuth(Status.INFO, 'Performing quick logout cleanup');
+     await this._fadeOutForLogout();
+     await this.performLogoutActions('quick');
+     clearJWT();
+     window.location.reload(true);
+   }
 
-  async performNormalLogoutCleanup(logoutType) {
-    logAuth(Status.INFO, 'Performing normal logout cleanup');
-    await this._fadeOutForLogout();
-    await this.performLogoutActions('normal');
-    window.location.reload(true);
-  }
+   async performNormalLogoutCleanup(logoutType) {
+     logAuth(Status.INFO, 'Performing normal logout cleanup');
+     await this._fadeOutForLogout();
+     await this.performLogoutActions('normal');
+     clearJWT();
+     window.location.reload(true);
+   }
 
   async performPublicLogoutCleanup(logoutType) {
     logAuth(Status.INFO, 'Performing public logout cleanup');
@@ -263,28 +265,21 @@ export class AuthManager {
     window.location.reload(true);
   }
 
-  async performGlobalLogoutCleanup(logoutType) {
-    logAuth(Status.INFO, 'Performing global logout cleanup');
-    // Immediately hide the main UI to prevent any flash during reload
-    const mainMgr = this.app.mainManagerInstance;
-    if (mainMgr?.elements?.layout) {
-      mainMgr.elements.layout.style.opacity = '0';
-      mainMgr.elements.layout.style.visibility = 'hidden';
-    }
-    // Destroy tooltips to prevent lingering
-    destroyAllTooltips();
-    await this.performLogoutActions('global');
-    window.location.reload(true);
-  }
+   async performGlobalLogoutCleanup(logoutType) {
+     logAuth(Status.INFO, 'Performing global logout cleanup');
+     // Fade out main UI (using the same fadeout as regular logout, but without logout panel)
+     await this._fadeOutForLogout();
+     await this.performLogoutActions('global');
+     window.location.reload(true);
+   }
 
-  async handleAuthExpired() {
-    logAuth(Status.WARN, 'Authentication expired, redirecting to login');
-    this.clearExpirationTimers();
-    clearJWT();
-    this.user = null;
-    this.app.loadedManagers.clear();
-    await this.loadLoginManager();
-  }
+   async handleAuthExpired() {
+     logAuth(Status.WARN, 'Authentication expired, redirecting to login');
+     // Clear expiration timers to prevent any further checks
+     this.clearExpirationTimers();
+     // Perform quick logout with fade-out transition
+     await this.performQuickLogoutCleanup('quick');
+   }
 
   async performLogoutActions(type = 'normal') {
     // For 'normal' logout, remove lithium_last_username
@@ -357,11 +352,11 @@ export class AuthManager {
     }
   }
 
-  /**
-   * Fade out UI elements for logout with proper JS-driven transitions.
-   * For regular logout: fades out logout panel first (750ms), then main UI (750ms).
-   * For profile manager global logout: fades out main UI directly (750ms).
-   */
+   /**
+    * Fade out UI elements for logout with proper JS-driven transitions.
+    * For regular logout: fades out logout panel first (900ms), then main UI (900ms).
+    * For profile manager global logout: fades out main UI directly (900ms).
+    */
   async _fadeOutForLogout() {
     const mainMgr = this.app.mainManagerInstance;
     if (!mainMgr) return;
@@ -372,60 +367,60 @@ export class AuthManager {
     // Disable all user interactions during logout to prevent clicks during fadeout
     document.body.style.pointerEvents = 'none';
 
-    // Fade out logout panel first (if visible) - two-stage JS transition
-    if (mainMgr.isLogoutPanelVisible && mainMgr.elements.logoutPanel) {
-      const panel = mainMgr.elements.logoutPanel;
-      const overlay = mainMgr.elements.logoutOverlay;
+     // Fade out logout panel first (if visible) - two-stage JS transition
+     if (mainMgr.isLogoutPanelVisible && mainMgr.elements.logoutPanel) {
+       const panel = mainMgr.elements.logoutPanel;
+       const overlay = mainMgr.elements.logoutOverlay;
 
-      // Stage 1: Set up transition and starting opacity
-      panel.style.transition = 'opacity 750ms ease-out';
-      panel.style.opacity = '1';
-      if (overlay) {
-        overlay.style.transition = 'opacity 750ms ease-out';
-        overlay.style.opacity = '1';
-      }
+       // Stage 1: Set up transition and starting opacity
+       panel.style.transition = 'opacity 900ms ease-out';
+       panel.style.opacity = '1';
+       if (overlay) {
+         overlay.style.transition = 'opacity 900ms ease-out';
+         overlay.style.opacity = '1';
+       }
 
-      // Wait for requestAnimationFrame to ensure styles are applied
-      await new Promise(resolve => requestAnimationFrame(resolve));
+       // Wait for requestAnimationFrame to ensure styles are applied
+       await new Promise(resolve => requestAnimationFrame(resolve));
 
-      // Stage 2: Trigger fade out
-      panel.style.opacity = '0';
-      if (overlay) overlay.style.opacity = '0';
+       // Stage 2: Trigger fade out
+       panel.style.opacity = '0';
+       if (overlay) overlay.style.opacity = '0';
 
-      // Wait for transition to complete
-      await new Promise(resolve => setTimeout(resolve, 750));
+       // Wait for transition to complete
+       await new Promise(resolve => setTimeout(resolve, 900));
 
-      // Clean up inline styles
-      panel.classList.remove('visible');
-      panel.style.transition = '';
-      panel.style.opacity = '';
-      if (overlay) {
-        overlay.classList.remove('visible');
-        overlay.style.transition = '';
-        overlay.style.opacity = '';
-      }
-    }
+       // Clean up inline styles
+       panel.classList.remove('visible');
+       panel.style.transition = '';
+       panel.style.opacity = '';
+       if (overlay) {
+         overlay.classList.remove('visible');
+         overlay.style.transition = '';
+         overlay.style.opacity = '';
+       }
+     }
 
-    // Fade out main layout - two-stage JS transition
-    const layout = mainMgr.elements.layout;
-    if (layout) {
-      // Stage 1: Set up transition and starting opacity
-      layout.style.transition = 'opacity 750ms ease-out';
-      layout.style.opacity = '1';
+     // Fade out main layout - two-stage JS transition
+     const layout = mainMgr.elements.layout;
+     if (layout) {
+       // Stage 1: Set up transition and starting opacity
+       layout.style.transition = 'opacity 900ms ease-out';
+       layout.style.opacity = '1';
 
-      // Wait for requestAnimationFrame to ensure styles are applied
-      await new Promise(resolve => requestAnimationFrame(resolve));
+       // Wait for requestAnimationFrame to ensure styles are applied
+       await new Promise(resolve => requestAnimationFrame(resolve));
 
-      // Stage 2: Trigger fade out
-      layout.style.opacity = '0';
+       // Stage 2: Trigger fade out
+       layout.style.opacity = '0';
 
-      // Wait for transition to complete
-      await new Promise(resolve => setTimeout(resolve, 750));
+       // Wait for transition to complete
+       await new Promise(resolve => setTimeout(resolve, 900));
 
-      // Clean up inline styles
-      layout.classList.remove('visible');
-      layout.style.transition = '';
-      layout.style.opacity = '';
-    }
+       // Clean up inline styles
+       layout.classList.remove('visible');
+       layout.style.transition = '';
+       layout.style.opacity = '';
+     }
   }
 }
