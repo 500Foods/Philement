@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS custom properties (variables) used across the Lithium codebase",
-    "generated": "2026-04-29T22:31:03.512Z",
+    "generated": "2026-04-29T23:01:24.529Z",
     "sources": {
       "css": "100 files in src/**/*.css",
       "js": "201 files in src/**/*.js",
       "html": "53 files in src/**/*.html + index.html"
     },
     "total_variables": 255,
-    "total_occurrences": 3747
+    "total_occurrences": 3748
   },
   "variables": [
     {
@@ -1714,10 +1714,10 @@
     },
     {
       "name": "--transition-duration",
-      "css": 120,
+      "css": 121,
       "js": 15,
       "html": 0,
-      "total": 135
+      "total": 136
     },
     {
       "name": "--transition-fast",

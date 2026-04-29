@@ -729,7 +729,7 @@
   justify-content: center;
   background: rgb(0 0 0 / 30%);
   opacity: 0;
-  transition: opacity var(--transition-duration, 0.2s) ease;
+  transition: opacity var(--transition-duration, 0.2s) ease, transform var(--transition-duration, 0.2s) ease;
   cursor: pointer;
   z-index: 5;
 }
@@ -752,10 +752,10 @@
   color: white;
   font-size: 32px;
   cursor: pointer;
-  transition: opacity 0.3s ease, background-color var(--transition-duration, 0.15s) ease, transform var(--transition-duration, 0.15s) ease;
+  transition: opacity 0.3s ease, background-color var(--transition-duration, 0.3s) ease, transform var(--transition-duration, 0.3s) ease;
   pointer-events: auto;
   opacity: 0;
-  transform: scale(0.25);
+  transform: scale(0.05);
 }
 
 .lithium-video-tour-big-play-btn:hover {
@@ -784,7 +784,7 @@
   color: white;
   font-size: 18px;
   cursor: pointer;
-  transition: opacity 0.3s ease, background-color var(--transition-duration) ease, border-color var(--transition-duration) ease, transform var(--transition-duration, 0.15s) ease;
+  transition: opacity 0.3s ease, background-color var(--transition-duration) ease, border-color var(--transition-duration) ease, transform var(--transition-duration, 0.3s) ease;
   position: absolute;
   top: 50%;
   opacity: 1;
@@ -819,55 +819,55 @@
 
 /* Compass layout - button positions */
 .lithium-video-tour-play-overlay .lithium-video-tour-back-10-btn {
-  transform: translateY(-50%) scale(0.25);
+  transform: translateY(-50%) scale(0.05);
   left: calc(50% - 75px);
   top: calc(50% - 53px);
   opacity: 0;
 }
 
 .lithium-video-tour-play-overlay .lithium-video-tour-back-30-btn {
-  transform: translateY(-50%) scale(0.25);
+  transform: translateY(-50%) scale(0.05);
   left: calc(50% - 75px);
   top: calc(50% + 53px);
   opacity: 0;
 }
 
 .lithium-video-tour-play-overlay .lithium-video-tour-back-to-start-btn {
-  transform: translateY(-50%) scale(0.25);
+  transform: translateY(-50%) scale(0.05);
   left: calc(50% - 98px);
   opacity: 0;
 }
 
 .lithium-video-tour-play-overlay .lithium-video-tour-forward-10-btn {
-  transform: translateY(-50%) scale(0.25);
+  transform: translateY(-50%) scale(0.05);
   top: calc(50% - 53px);
   right: calc(50% - 75px);
   opacity: 0;
 }
 
 .lithium-video-tour-play-overlay .lithium-video-tour-forward-30-btn {
-  transform: translateY(-50%) scale(0.25);
+  transform: translateY(-50%) scale(0.05);
   right: calc(50% - 75px);
   top: calc(50% + 53px);
   opacity: 0;
 }
 
 .lithium-video-tour-play-overlay .lithium-video-tour-forward-to-end-btn {
-  transform: translateY(-50%) scale(0.25);
+  transform: translateY(-50%) scale(0.05);
   right: calc(50% - 98px);
   opacity: 0;
 }
 
 /* Repeat button - bottom center */
 .lithium-video-tour-play-overlay .lithium-video-tour-repeat-btn {
-  transform: translateY(-50%) scale(0.25);
+  transform: translateY(-50%) scale(0.05);
   top: calc(50% + 75px);
   opacity: 0;
 }
 
 /* Subtitles button - top center */
 .lithium-video-tour-play-overlay .lithium-video-tour-subtitles-btn {
-  transform: translateY(-50%) scale(0.25);
+  transform: translateY(-50%) scale(0.05);
   top: calc(50% - 75px);
   opacity: 0;
 }
@@ -878,56 +878,56 @@
 .lithium-video-tour-content:hover .lithium-video-tour-play-overlay .lithium-video-tour-subtitles-btn {
   opacity: 1;
   transform: translateY(-50%) scale(1);
-  transition: opacity 0.3s ease 0ms, background-color var(--transition-duration) ease, border-color var(--transition-duration) ease, transform var(--transition-duration, 0.15s) ease;
+  transition: opacity 0.3s ease 0ms, background-color var(--transition-duration) ease, border-color var(--transition-duration) ease, transform var(--transition-duration, 0.3s) ease;
 }
 
 .lithium-video-tour-popup.ended .lithium-video-tour-play-overlay .lithium-video-tour-forward-10-btn,
 .lithium-video-tour-content:hover .lithium-video-tour-play-overlay .lithium-video-tour-forward-10-btn {
   opacity: 1;
   transform: translateY(-50%) scale(1);
-  transition: opacity 0.3s ease 100ms, background-color var(--transition-duration) ease, border-color var(--transition-duration) ease, transform var(--transition-duration, 0.15s) ease;
+  transition: opacity 0.3s ease 100ms, background-color var(--transition-duration) ease, border-color var(--transition-duration) ease, transform var(--transition-duration, 0.3s) ease;
 }
 
 .lithium-video-tour-popup.ended .lithium-video-tour-play-overlay .lithium-video-tour-forward-to-end-btn,
 .lithium-video-tour-content:hover .lithium-video-tour-play-overlay .lithium-video-tour-forward-to-end-btn {
   opacity: 1;                                                                                                                                                                           
   transform: translateY(-50%) scale(1);
-  transition: opacity 0.3s ease 200ms, background-color var(--transition-duration) ease, border-color var(--transition-duration) ease, transform var(--transition-duration, 0.15s) ease;
+  transition: opacity 0.3s ease 200ms, background-color var(--transition-duration) ease, border-color var(--transition-duration) ease, transform var(--transition-duration, 0.3s) ease;
 }
 
 .lithium-video-tour-popup.ended .lithium-video-tour-play-overlay .lithium-video-tour-forward-30-btn,
 .lithium-video-tour-content:hover .lithium-video-tour-play-overlay .lithium-video-tour-forward-30-btn {
   opacity: 1;
   transform: translateY(-50%) scale(1);
-  transition: opacity 0.3s ease 300ms, background-color var(--transition-duration) ease, border-color var(--transition-duration) ease, transform var(--transition-duration, 0.15s) ease;
+  transition: opacity 0.3s ease 300ms, background-color var(--transition-duration) ease, border-color var(--transition-duration) ease, transform var(--transition-duration, 0.3s) ease;
 }
 
 .lithium-video-tour-popup.ended .lithium-video-tour-play-overlay .lithium-video-tour-repeat-btn,
 .lithium-video-tour-content:hover .lithium-video-tour-play-overlay .lithium-video-tour-repeat-btn {
   opacity: 1;
   transform: translateY(-50%) scale(1);
-  transition: opacity 0.3s ease 400ms, background-color var(--transition-duration) ease, border-color var(--transition-duration) ease, transform var(--transition-duration, 0.15s) ease;
+  transition: opacity 0.3s ease 400ms, background-color var(--transition-duration) ease, border-color var(--transition-duration) ease, transform var(--transition-duration, 0.3s) ease;
 }
 
 .lithium-video-tour-popup.ended .lithium-video-tour-play-overlay .lithium-video-tour-back-30-btn,
 .lithium-video-tour-content:hover .lithium-video-tour-play-overlay .lithium-video-tour-back-30-btn {
   opacity: 1;
   transform: translateY(-50%) scale(1);  
-  transition: opacity 0.3s ease 500ms, background-color var(--transition-duration) ease, border-color var(--transition-duration) ease, transform var(--transition-duration, 0.15s) ease;
+  transition: opacity 0.3s ease 500ms, background-color var(--transition-duration) ease, border-color var(--transition-duration) ease, transform var(--transition-duration, 0.3s) ease;
 }
 
 .lithium-video-tour-popup.ended .lithium-video-tour-play-overlay .lithium-video-tour-back-to-start-btn,
 .lithium-video-tour-content:hover .lithium-video-tour-play-overlay .lithium-video-tour-back-to-start-btn {
   opacity: 1;
   transform: translateY(-50%) scale(1);
-  transition: opacity 0.3s ease 600ms, background-color var(--transition-duration) ease, border-color var(--transition-duration) ease, transform var(--transition-duration, 0.15s) ease;
+  transition: opacity 0.3s ease 600ms, background-color var(--transition-duration) ease, border-color var(--transition-duration) ease, transform var(--transition-duration, 0.3s) ease;
 }
 
 .lithium-video-tour-popup.ended .lithium-video-tour-play-overlay .lithium-video-tour-back-10-btn,
 .lithium-video-tour-content:hover .lithium-video-tour-play-overlay .lithium-video-tour-back-10-btn {
   opacity: 1;
   transform: translateY(-50%) scale(1);
-  transition: opacity 0.3s ease 700ms, background-color var(--transition-duration) ease, border-color var(--transition-duration) ease, transform var(--transition-duration, 0.15s) ease;
+  transition: opacity 0.3s ease 700ms, background-color var(--transition-duration) ease, border-color var(--transition-duration) ease, transform var(--transition-duration, 0.3s) ease;
 }
 
 /* Also ensure the play button wrapper and big play button fade in */

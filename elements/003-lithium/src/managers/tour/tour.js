@@ -2103,10 +2103,12 @@ export async function launchVideoTour(tour, options = {}) {
       log(Subsystems.MANAGER, Status.DEBUG, '[VideoTour] Video ended, looping (repeat on)');
       video.currentTime = 0;
       video.play();
-    } else {
-      log(Subsystems.MANAGER, Status.DEBUG, '[VideoTour] Video ended - show overlay');
-      popup.classList.add('ended');
-    }
+     } else {
+       log(Subsystems.MANAGER, Status.DEBUG, '[VideoTour] Video ended - show overlay');
+       requestAnimationFrame(() => {
+         popup.classList.add('ended');
+       });
+     }
   };
 
   video.addEventListener('ended', handleVideoEnded);
@@ -2175,12 +2177,14 @@ export async function launchVideoTour(tour, options = {}) {
     popup.classList.add('paused');
     popup.classList.remove('ended');
   });
-  video.addEventListener('ended', () => {
-    log(Subsystems.MANAGER, Status.DEBUG, '[VideoTour] Video ended event fired');
-    bigPlayBtn.innerHTML = '<fa fa-rotate-left></fa>';
-    popup.classList.add('ended');
-    popup.classList.remove('paused');
-  });
+   video.addEventListener('ended', () => {
+     log(Subsystems.MANAGER, Status.DEBUG, '[VideoTour] Video ended event fired');
+     bigPlayBtn.innerHTML = '<fa fa-rotate-left></fa>';
+     requestAnimationFrame(() => {
+       popup.classList.add('ended');
+     });
+     popup.classList.remove('paused');
+   });
 
   // Scrubber seeking
   scrubber.addEventListener('input', () => {
