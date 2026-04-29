@@ -446,7 +446,7 @@ class ToastManager {
     element.classList.add('toast-exit');
 
     // Remove from DOM after animation (use CSS variable with fallback for test environment)
-    let transitionDelay = 375; // Default fallback (--transition-duration / 2 = 750ms / 2)
+     let transitionDelay = 450; // Default fallback (--transition-duration / 2 = 900ms / 2)
     try {
       const computedDelay = getComputedStyle(document.documentElement).getPropertyValue('--transition-delay');
       if (computedDelay) {

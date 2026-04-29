@@ -311,9 +311,8 @@ export class LithiumApp {
       // Disable all user interactions immediately to prevent any clicks during logout
       document.body.style.pointerEvents = 'none';
 
-      // Clear JWT immediately to prevent any auth checks during fadeout from loading login manager
+      // Clear expiration timers immediately
       this.auth.clearExpirationTimers();
-      clearJWT();
 
       try {
         if (data.logoutType === 'quick') {
