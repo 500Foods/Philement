@@ -37,6 +37,7 @@ export class ProfileManagerTable {
       panelStateManager: this.pm.leftPanelState,
       localSearch: true,
       localSearchFields: ['section', 'label', 'search'],
+      tableWidthMode: 'narrow',
       onRowSelected: (rowData) => this.handleOptionSelected(rowData),
       onRowDeselected: () => this.handleOptionDeselected(),
       onRefresh: () => this.loadUserOptions(),
