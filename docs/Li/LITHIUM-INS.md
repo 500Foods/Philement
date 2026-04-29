@@ -47,6 +47,7 @@ When a file approaches this limit:
 - Split into logical modules
 - Extract reusable components
 - Move utility functions to shared modules
+- NOTE: This includes JS, HTML and CSS files typically.
 
 See [REFACTORING_PLAN.md](../../elements/003-lithium/docs/REFACTORING_PLAN.md) for examples of how to split large files.
 

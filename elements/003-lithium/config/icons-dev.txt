@@ -110,7 +110,6 @@
 <fa fa-play></fa>
 <fa fa-plus></fa>
 <fa fa-project-diagram></fa>
-<fa fa-puzzle-piece></fa>
 <fa fa-rabbit-running></fa>
 <fa fa-radiation></fa>
 <fa fa-receipt></fa>

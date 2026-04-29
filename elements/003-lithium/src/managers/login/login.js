@@ -98,6 +98,11 @@ export default class LoginManager {
    */
   saveRememberedUsername(username) {
     try {
+      // Check if we should not save username (e.g., after public/global logout)
+      if (sessionStorage.getItem('lithium_no_save_username') === 'true') {
+        sessionStorage.removeItem('lithium_no_save_username');
+        return; // Don't save
+      }
       if (username) {
         localStorage.setItem('lithium_last_username', username);
       }
@@ -1683,7 +1688,10 @@ export default class LoginManager {
     // Remember username for next visit
     this.saveRememberedUsername(username);
 
-    // Success — log and emit login event
+    // Fade out login page
+    await this.hide();
+
+    // Success — log and emit login event (after fade-out completes)
     const loginDuration = this._loginStart ? Math.round(performance.now() - this._loginStart) : 0;
     this._loginStart = null;
     log(LOGIN, Status.SUCCESS, `Login successful: user "${username}"`, loginDuration);
@@ -1693,9 +1701,6 @@ export default class LoginManager {
       roles: data.roles || [],
       expiresAt: data.expires_at,
     });
-
-    // Fade out login page
-    await this.hide();
   }
 
   /**

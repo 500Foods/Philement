@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS custom properties (variables) used across the Lithium codebase",
-    "generated": "2026-04-28T16:01:54.178Z",
+    "generated": "2026-04-29T20:40:57.407Z",
     "sources": {
       "css": "100 files in src/**/*.css",
-      "js": "177 files in src/**/*.js",
+      "js": "201 files in src/**/*.js",
       "html": "53 files in src/**/*.html + index.html"
     },
     "total_variables": 255,
-    "total_occurrences": 3748
+    "total_occurrences": 3747
   },
   "variables": [
     {
@@ -525,9 +525,9 @@
     {
       "name": "--font-sans",
       "css": 0,
-      "js": 5,
+      "js": 4,
       "html": 0,
-      "total": 5
+      "total": 4
     },
     {
       "name": "--font-serif",
@@ -552,10 +552,10 @@
     },
     {
       "name": "--font-size-base",
-      "css": 27,
+      "css": 28,
       "js": 0,
       "html": 0,
-      "total": 27
+      "total": 28
     },
     {
       "name": "--font-size-lg",
@@ -573,10 +573,10 @@
     },
     {
       "name": "--font-size-sm",
-      "css": 92,
+      "css": 91,
       "js": 0,
       "html": 0,
-      "total": 92
+      "total": 91
     },
     {
       "name": "--font-size-us",
@@ -637,16 +637,16 @@
     {
       "name": "--icon-gap",
       "css": 3,
-      "js": 1,
+      "js": 2,
       "html": 0,
-      "total": 4
+      "total": 5
     },
     {
       "name": "--icon-h",
       "css": 6,
-      "js": 1,
+      "js": 2,
       "html": 0,
-      "total": 7
+      "total": 8
     },
     {
       "name": "--icon-size-lg",
@@ -686,9 +686,9 @@
     {
       "name": "--icon-w",
       "css": 6,
-      "js": 1,
+      "js": 2,
       "html": 0,
-      "total": 7
+      "total": 8
     },
     {
       "name": "--light-text",
@@ -1091,17 +1091,17 @@
     },
     {
       "name": "--space-2",
-      "css": 188,
+      "css": 187,
       "js": 0,
       "html": 0,
-      "total": 188
+      "total": 187
     },
     {
       "name": "--space-3",
-      "css": 203,
+      "css": 202,
       "js": 2,
       "html": 0,
-      "total": 205
+      "total": 204
     },
     {
       "name": "--space-4",
@@ -1715,9 +1715,9 @@
     {
       "name": "--transition-duration",
       "css": 120,
-      "js": 16,
+      "js": 15,
       "html": 0,
-      "total": 136
+      "total": 135
     },
     {
       "name": "--transition-fast",

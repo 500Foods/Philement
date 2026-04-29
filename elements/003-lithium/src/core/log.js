@@ -18,6 +18,8 @@
  * e.g.: "000 123  |  2026-03-07 23:51:32.844  |  Startup  |  INFO  |  0.0  |  Application starting"
  */
 
+import { originalConsole } from './console-originals.js';
+
 // Log entry counter
 let _counter = 0;
 
@@ -68,6 +70,7 @@ export const Subsystems = {
   SESSIONLOG: 'SessionLog',
   WEBSOCKET: 'WebSocket',
   CRIMSON: 'Crimson',
+  CONSOLE: 'Console',
 };
 
 // Status constants
@@ -282,7 +285,10 @@ export function log(subsystem, status, description, duration = 0) {
   
   // Output to console only if enabled
   if (_consoleLogging) {
-    console.log(`[LOG] ${_formatEntry(entry)}`);
+    // Use originalConsole if available (production with console-capture),
+    // otherwise fall back to console.log (tests, or production without capture)
+    const consoleMethod = originalConsole.log || console.log;
+    consoleMethod(`[LOG] ${_formatEntry(entry)}`);
   }
   
   // Add to in-memory log store (never cleared)

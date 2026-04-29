@@ -111,7 +111,7 @@
     <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json">
 
-    <!-- Preload sign in partner images -->
+    <!-- Preload sign-in partner images -->
     <link rel="preload" href="assets/images/login_didit.png" as="image">
     <link rel="preload" href="assets/images/login_apple.png" as="image">
     <link rel="preload" href="assets/images/login_apple.png" as="image">
@@ -123,7 +123,12 @@
       html {
         background-color: #1A1A1A;
         color: #E0E0E0;
-      } 
+      }                                                        
+
+      /* Want this invisible initially before anything loads */
+      #main-layout {
+        opacity: 0;
+      }            
 
       /* Proof of life during long PWA song and dance.
          Fades in on load; app.js dismissSplash() fades out + removes from DOM
@@ -138,7 +143,8 @@
         font-size: 18px;
         font-weight: 700;
         opacity: 0;
-        animation: fadeIn 1000ms forwards;
+        animation: fadeIn 900ms forwards;
+        animation-delay: 200ms;
         filter: drop-shadow(0px 0px 5px black) drop-shadow(0px 0px 10px black) drop-shadow(0px 0px 15px black);
       }
       @keyframes fadeIn { to { opacity: 1; } }
@@ -152,12 +158,8 @@
       }
     </style>
 
-    <!-- Third-party Styles (CDN-loaded) -->
-    <!-- Font Awesome Icons -->
+    <!-- Font Awesome Icon SVG+JS Kit -->
     <script src="https://kit.fontawesome.com/0216bfa629.js" crossorigin="anonymous"></script>
-
-    <!-- Flatpickr (date picker - loaded on demand when needed) -->
-    <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css"> -->
 
   </head>
   <body>

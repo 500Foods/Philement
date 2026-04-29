@@ -9,6 +9,9 @@ import { retrieveJWT } from './jwt.js';
 import { eventBus, Events } from './event-bus.js';
 import { logHttpRequest, logHttpResponse, logGroup, Subsystems, Status } from './log.js';
 
+// Default request timeout (30 seconds)
+const DEFAULT_TIMEOUT_MS = 30000;
+
 /**
  * Build full URL from path
  * @param {string} path - API path
@@ -131,6 +134,36 @@ function _applyStatusError(error, response, data) {
 }
 
 /**
+ * Make a fetch request with timeout support
+ * @param {string} url - Request URL
+ * @param {Object} options - Fetch options
+ * @param {number} timeoutMs - Timeout in milliseconds
+ * @returns {Promise<Response>} Fetch response
+ */
+async function fetchWithTimeout(url, options, timeoutMs = DEFAULT_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    return response;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      const timeoutError = new Error(`Request timeout after ${timeoutMs}ms`);
+      timeoutError.status = 0;
+      timeoutError.data = { error: 'timeout', message: timeoutError.message };
+      throw timeoutError;
+    }
+    throw error;
+  }
+}
+
+/**
  * Make a GET request
  * @param {string} path - API path
  * @param {Object} options - Request options
@@ -143,7 +176,7 @@ export async function get(path, options = {}) {
   const url = buildUrl(path, config);
   const requestNum = logHttpRequest('GET', path);
   
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     method: 'GET',
     headers: getHeaders(includeAuth),
     ...fetchOptions,
@@ -175,7 +208,7 @@ export async function post(path, body, options = {}) {
   const url = buildUrl(path, config);
   const requestNum = logHttpRequest('POST', path);
   
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     method: 'POST',
     headers: getHeaders(includeAuth),
     body: JSON.stringify(body),
@@ -208,7 +241,7 @@ export async function put(path, body, options = {}) {
   const url = buildUrl(path, config);
   const requestNum = logHttpRequest('PUT', path);
   
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     method: 'PUT',
     headers: getHeaders(includeAuth),
     body: JSON.stringify(body),
@@ -240,7 +273,7 @@ export async function del(path, options = {}) {
   const url = buildUrl(path, config);
   const requestNum = logHttpRequest('DELETE', path);
   
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     method: 'DELETE',
     headers: getHeaders(includeAuth),
     ...fetchOptions,
@@ -272,7 +305,7 @@ export async function patch(path, body, options = {}) {
   const url = buildUrl(path, config);
   const requestNum = logHttpRequest('PATCH', path);
   
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     method: 'PATCH',
     headers: getHeaders(includeAuth),
     body: JSON.stringify(body),
