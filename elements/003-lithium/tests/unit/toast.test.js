@@ -92,8 +92,8 @@ describe('Toast System', () => {
 
       vi.advanceTimersByTime(1000);
 
-      // After duration + animation, toast should be removed (transition-delay = 375ms)
-      vi.advanceTimersByTime(375);
+       // After duration + animation, toast should be removed (transition-delay = 450ms)
+       vi.advanceTimersByTime(450);
       expect(container.querySelector(`[data-id="${id}"]`)).toBeNull();
 
       vi.useRealTimers();
@@ -249,8 +249,8 @@ describe('Toast System', () => {
 
       toast.dismiss(id);
 
-      // After animation delay (transition-delay = 375ms)
-      vi.advanceTimersByTime(375);
+       // After animation delay (transition-delay = 450ms)
+       vi.advanceTimersByTime(450);
       expect(container.querySelector(`[data-id="${id}"]`)).toBeNull();
 
       vi.useRealTimers();
@@ -289,8 +289,8 @@ describe('Toast System', () => {
 
       toast.dismissAll();
 
-      // Wait for animation (transition-delay = 375ms, use 400ms to be safe)
-      await new Promise(resolve => setTimeout(resolve, 400));
+       // Wait for animation (transition-delay = 450ms, use 500ms to be safe)
+       await new Promise(resolve => setTimeout(resolve, 500));
 
       expect(container.querySelectorAll('.toast').length).toBe(0);
     });
