@@ -22,35 +22,47 @@ export default defineConfig(({ mode }) => {
         // Don't empty the deploy dir (config may live there); do empty dist/
         emptyOutDir: !isDeploy,
 
-        // Generate source maps for debugging
-        sourcemap: true,
+        // Disable source maps for production builds (significant performance boost)
+        sourcemap: false,
 
-        // Enable all optimizations for production
-        minify: 'terser',
+        // Disable gzip-compressed size reporting for faster builds
+        reportCompressedSize: false,
+
+        // Enable all optimizations for production (use fast Oxc minifier)
+        minify: 'oxc',
         cssMinify: true,
         treeshake: true,
 
         // Target modern browsers
         target: 'esnext',
 
-        // Chunk size warning threshold (largest vendor chunk is ~581 kB)
-        chunkSizeWarningLimit: 708,
+        // Chunk size warning threshold (allow larger chunks for heavy libs)
+        chunkSizeWarningLimit: 1500,
 
-// Code splitting - chunk by library purpose (each manager loads only what it needs)
-      rollupOptions: {
+// Improved code splitting for better performance
+      rolldownOptions: {
         output: {
-          manualChunks: {
-            // Heavy UI libraries - split by purpose for cleaner manager dependency graphs
-            'vendor-tabulator': ['tabulator-tables'],              // Data grids (queries, style-manager, login)
-            'vendor-codemirror': [                                  // Code/text editors (queries, login, style-manager, session-log)
-              '@codemirror/lang-markdown', '@codemirror/lang-css', '@codemirror/lang-html',
-              '@codemirror/lang-javascript', '@codemirror/lang-sql',
-              '@codemirror/state', '@codemirror/theme-one-dark', '@codemirror/view', '@codemirror/commands'
-            ],
-            'vendor-editor': ['suneditor'],                        // Rich text editor (lookups only)
+          manualChunks(id) {
+            // Handle node_modules libraries
+            if (id.includes('node_modules')) {
+              // Keep heavy libraries in separate chunks
+              if (id.includes('tabulator')) return 'vendor-tabulator';
+              if (id.includes('codemirror')) return 'vendor-codemirror';
+              if (id.includes('luxon')) return 'vendor-luxon';
+              if (id.includes('marked')) return 'vendor-marked';
+              if (id.includes('shepherd')) return 'vendor-shepherd';
+              if (id.includes('suneditor')) return 'vendor-suneditor';
 
-            // Lighter utilities grouped together (change less frequently)
-            'vendor-utils': ['marked', 'dompurify', 'sql-formatter', 'country-flag-icons']
+              // Group smaller utilities together
+              return 'vendor-utils';
+            }
+
+            // Group all manager components together (reduces file count)
+            if (id.includes('/managers/') || id.includes('manager')) {
+              return 'managers';
+            }
+
+            // Everything else stays in the main bundle
           }
         },
         // Suppress warnings from node_modules (external dependencies we cannot control)

@@ -134,8 +134,8 @@ export default class QueriesManager {
       tabPanes: this.container.querySelectorAll('.queries-tab-pane'),
       collapseBtn: this.container.querySelector('#queries-collapse-btn'),
       sqlEditorContainer: this.container.querySelector('#queries-sql-editor'),
-      summaryEditorContainer: this.container.querySelector('#queries-tab-summary'),
-      collectionEditorContainer: this.container.querySelector('#queries-tab-collection'),
+      summaryEditorContainer: this.container.querySelector('#queries-summary-editor'),
+      collectionEditorContainer: this.container.querySelector('#queries-collection-editor'),
       previewContainer: this.container.querySelector('#queries-tab-preview'),
       undoBtn: this.container.querySelector('#queries-undo-btn'),
       redoBtn: this.container.querySelector('#queries-redo-btn'),
@@ -405,6 +405,19 @@ export default class QueriesManager {
     if (!isAlreadyActive) {
       this.elements.tabBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tabId));
       this.elements.tabPanes.forEach(pane => pane.classList.toggle('active', pane.id === `queries-tab-${tabId}`));
+    }
+
+    // Show/hide editor footers based on active tab
+    const footers = {
+      sql: this.editorManager?.sqlEditorFooter,
+      summary: this.editorManager?.summaryEditorFooter,
+      collection: this.editorManager?.collectionEditorFooter,
+    };
+    Object.values(footers).forEach(footer => {
+      footer?.hide();
+    });
+    if (footers[tabId]) {
+      footers[tabId].show();
     }
 
     const hasEditor = ['sql', 'summary', 'collection'].includes(tabId);
