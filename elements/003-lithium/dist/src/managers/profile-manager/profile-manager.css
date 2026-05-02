@@ -220,12 +220,17 @@
 
 /* ── Collection Tab JSON Editor ─────────────────────────────────────────── */
 
+.profile-collection-editor-wrapper {
+  margin: 0px var(--space-3);
+}                            
+
 .profile-collection-editor {
   position: relative;
   width: 100%;
   height: 100%;
   background: var(--bg-secondary);
   border-radius: var(--border-radius-md);
+  border: 1px solid var(--accent-alt-primary);
   overflow: hidden;
 }
 

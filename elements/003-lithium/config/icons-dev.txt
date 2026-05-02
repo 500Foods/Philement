@@ -27,6 +27,7 @@
 <fa fa-book-open-lines class="crimson-citation-link-icon"></fa>
 <fa fa-book-open-lines></fa>
 <fa fa-brackets-curly></fa>
+<fa fa-brackets-square></fa>
 <fa fa-briefcase></fa>
 <fa fa-broom></fa>
 <fa fa-bug></fa>
@@ -95,6 +96,7 @@
 <fa fa-link></fa>
 <fa fa-list-check></fa>
 <fa fa-list></fa>
+<fa fa-location-crosshairs></fa>
 <fa fa-lock></fa>
 <fa fa-magnifying-glass-plus></fa>
 <fa fa-magnifying-glass></fa>
@@ -132,6 +134,7 @@
 <fa fa-square></fa>
 <fa fa-star></fa>
 <fa fa-subtitles></fa>
+<fa fa-swap-arrows fa-rotate-90></fa>
 <fa fa-sync-alt></fa>
 <fa fa-sync></fa>
 <fa fa-table-columns></fa>

@@ -57,19 +57,31 @@
     </div>
     <div class="queries-tabs-content">
       <div class="queries-tab-pane active" id="queries-tab-sql">
-        <div class="queries-sql-editor" id="queries-sql-editor"></div>
+        <div class="editor-wrapper" id="queries-sql-editor-wrapper">
+          <div class="queries-sql-editor" id="queries-sql-editor">
+            <!-- Query Tab (edit query) -->    
+          </div>
+        </div>
       </div>
       <div class="queries-tab-pane" id="queries-tab-test">
         <!-- Test Tab (run query) -->
       </div>
       <div class="queries-tab-pane" id="queries-tab-summary">
-        <!-- Summary Editor (CodeMirror with Markdown) -->
+        <div class="editor-wrapper" id="queries-summary-editor-wrapper">
+          <div class="queries-summary-editor" id="queries-summary-editor">
+            <!-- Summary Editor (CodeMirror with Markdown) -->
+          </div>
+        </div>
       </div>
       <div class="queries-tab-pane" id="queries-tab-preview">
         <!-- Preview (rendered Markdown HTML) -->
       </div>
       <div class="queries-tab-pane" id="queries-tab-collection">
-        <!-- Collection Editor (JSON) -->
+        <div class="editor-wrapper" id="queries-collection-editor-wrapper">
+          <div class="queries-collection-editor" id="queries-collection-editor">
+            <!-- Collection Editor (JSON) -->
+          </div>
+        </div>
       </div>
     </div>
   </div>

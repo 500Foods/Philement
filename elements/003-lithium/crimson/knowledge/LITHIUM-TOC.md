@@ -85,6 +85,7 @@ Lithium requires a running Hydrogen backend. Do **not** run `npm run dev` to tes
 | [LITHIUM-ICN.md](LITHIUM-ICN.md) | Icon system — Font Awesome, config |
 | [LITHIUM-TIP.md](LITHIUM-TIP.md) | Tooltip system — FloatingUI, themes, arrows |
 | [LITHIUM-OSB.md](LITHIUM-OSB.md) | OverlayScrollbars — cross-browser scrollbar styling |
+| [LITHIUM-FTR.md](LITHIUM-FTR.md) | Editor Footer — CodeMirror footer with cursor/error/word wrap |
 
 ### Styling & CSS
 

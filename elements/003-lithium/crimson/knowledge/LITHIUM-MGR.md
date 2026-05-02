@@ -208,13 +208,13 @@ This creates menu items linking to:
 **Purpose:** User preferences
 
 **Features:**
-
 - Language selector
 - Date format (Intl.DateTimeFormat)
 - Time format (12h/24h)
 - Number format
 - Default database
 - Active theme quick-apply
+- **Collection Tab:** JSON editor with `LithiumEditorFooter` (cursor position, word wrap/bracket toggles)
 
 **Status:** ✅ Implemented (save flow pending API)
 
@@ -237,6 +237,7 @@ This creates menu items linking to:
 - **Footer:** Print, Email, Export controls with View/Data mode toggle
 - **Template System:** Save/load column configurations via localStorage
 - **Column Chooser:** Popup to show/hide/reorder columns
+- **Editor Footers:** Each CodeMirror instance (SQL, Summary, Collection) has a `LithiumEditorFooter` with cursor position, error count, and word wrap/bracket match toggles
 
 **Navigator Blocks:**
 
@@ -254,7 +255,7 @@ This creates menu items linking to:
 | 28 | Update System Query |
 | 32 | Query Search |
 
-**Status:** ✅ Fully Implemented with LithiumTable component
+**Status:** ✅ Fully Implemented with LithiumTable component and Editor Footers
 
 **Documentation:** [LITHIUM-MGR-QUERY.md](LITHIUM-MGR-QUERY.md)
 
@@ -278,6 +279,7 @@ This creates menu items linking to:
 - **Resizable Splitter:** Drag to resize left panel (200-600px range)
 - **Collapsible Left Panel:** Collapse/expand button in child header
 - **Footer:** Four select options — View/Data toggles for both parent and child tables
+- **JSON Editor Footer:** CodeMirror JSON editor includes `LithiumEditorFooter` with cursor position and toggle buttons
 
 **Navigator Blocks (per table):**
 
@@ -293,7 +295,7 @@ This creates menu items linking to:
 | 30 | Lookup Names (list of all lookups) |
 | 34 | Get Lookup List (values for a specific lookup) |
 
-**Status:** ✅ Fully Implemented with dual LithiumTable components
+**Status:** ✅ Fully Implemented with dual LithiumTable components and Editor Footer
 
 **Documentation:** [LITHIUM-MGR-LOOKUPS.md](LITHIUM-MGR-LOOKUPS.md)
 

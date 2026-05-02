@@ -28,14 +28,16 @@ if [ -d "$PAGES_BASE" ]; then
   find "$PAGES_BASE" -name "*.html" -type f -exec bash -c 'f="$1"; rel_path="${f#'"$TARGET_DIR/"'}"; target_dir="'"$TMP_DIR"'/$(dirname "$rel_path")"; mkdir -p "$target_dir"; mv "$f" "$target_dir/"' _ {} \;
 fi
 
-# Run html-minifier-terser on remaining HTML files
-"$BIN_DIR/html-minifier-terser" --input-dir "$TARGET_DIR" \
-  --output-dir "$TARGET_DIR" \
-  --file-ext html \
-  --collapse-whitespace \
-  --remove-comments \
-  --minify-js \
-  --minify-css
+# Run html-minifier-terser on remaining HTML files in parallel
+find "$TARGET_DIR" -name "*.html" -type f -print0 | \
+  xargs -0 -P "$(nproc 2>/dev/null || echo 4)" -I {} \
+  "$BIN_DIR/html-minifier-terser" \
+    --collapse-whitespace \
+    --remove-comments \
+    --minify-js \
+    --minify-css \
+    --output "{}" \
+    "{}"
 
 # Move page HTML files back
 if [ -d "$TMP_DIR" ]; then
