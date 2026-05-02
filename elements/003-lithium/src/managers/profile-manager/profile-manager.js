@@ -76,6 +76,12 @@ export default class ProfileManager {
         // Sync to collection tab
         this.collectionHandler?.setData(this.getCollectionData());
       },
+      removeSection: (sectionKey) => {
+        // Remove by setting to undefined which deletes the key
+        globalSettings.removeSection(sectionKey);
+        // Sync to collection tab
+        this.collectionHandler?.setData(this.getCollectionData());
+      },
       get: (path, defaultValue) => globalSettings.get(path, defaultValue),
       set: (path, value) => globalSettings.set(path, value),
       getSetting: (path, defaultValue) => globalSettings.get(path, defaultValue),

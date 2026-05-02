@@ -173,7 +173,7 @@ enum MHD_Result post_data_iterator(void *cls, enum MHD_ValueKind kind, const cha
 /**
  * Maximum POST body size for API requests (64KB default, sufficient for JSON)
  */
-#define API_MAX_POST_SIZE (64 * 1024)
+#define API_MAX_POST_SIZE (10240 * 1024)
 
 /**
  * Initial buffer capacity for POST body accumulation
