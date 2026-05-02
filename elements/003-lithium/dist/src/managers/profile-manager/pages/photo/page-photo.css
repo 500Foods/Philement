@@ -1,0 +1,221 @@
+/* Photo Settings Page Styles */
+
+.photo-editor-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: var(--space-4);
+}
+
+.photo-controls {
+  display: flex;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.photo-upload-btn {
+  cursor: pointer;
+}
+
+.photo-upload-btn input[type="file"] {
+  display: none;
+}
+
+/* 600x600 Editor Control */
+.photo-editor {
+  position: relative;
+  width: 600px;
+  height: 600px;
+  margin: 0 auto var(--space-4);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  background-color: var(--bg-secondary);
+  resize: both;
+  overflow: hidden;
+  min-width: 300px;
+  min-height: 300px;
+  max-width: 800px;
+  max-height: 800px;
+}
+
+/* Photo Image Container (clipped to editor bounds) */
+.photo-image-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.photo-image {
+  position: absolute;
+  transform-origin: center center;
+  max-width: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* Dimming Layer (above image, below preview overlay) */
+.photo-dimming-layer {
+  position: absolute;
+  top:0;
+  left:0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  background: rgb(0 0 0 / 50%);
+  mask-image: linear-gradient(black, black), 
+              linear-gradient(black, black);
+  mask-size: 100% 100%, 400px 400px;
+  mask-position: center, center;
+  mask-repeat: no-repeat, no-repeat;
+  mask-composite: exclude;
+}
+
+/* 400x400 Rounded Rectangle Preview Overlay */
+.photo-preview-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 400px;
+  height: 400px;
+  border: 2px solid var(--accent-primary);
+  border-radius: var(--border-radius-lg);
+  background-color: transparent;
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* Slider Containers */
+.photo-slider {
+  position: absolute;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.photo-slider-label {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* Top Slider (X Position) */
+.photo-slider-top {
+  top: 8px;
+  left: 50px;
+  right: 50px;
+  justify-content: center;
+}
+
+/* Left Slider (Y Position) */
+.photo-slider-left {
+  left: 8px;
+  top: 50px;
+  bottom: 50px;
+  flex-direction: column;
+}
+
+/* Right Slider (Scale) */
+.photo-slider-right {
+  right: 8px;
+  top: 50px;
+  bottom: 50px;
+  flex-direction: column;
+}
+
+/* Bottom Slider (Rotation) */
+.photo-slider-bottom {
+  bottom: 8px;
+  left: 50px;
+  right: 50px;
+  justify-content: center;
+}
+
+/* Range Input Styling */
+.photo-range {
+  width: 100%;
+  height: 8px;
+  appearance: none;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  outline: none;
+}
+
+.photo-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 0 2px rgb(0 0 0 / 50%);
+}
+
+.photo-range::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 0 2px rgb(0 0 0 / 50%);
+}
+
+/* Vertical Range Inputs */
+.photo-slider-left .photo-range,
+.photo-slider-right .photo-range {
+  writing-mode: vertical-lr;
+  direction: rtl;
+  width: 8px;
+  height: 100%;
+}
+
+/* Resize Handle */
+.photo-resize-handle {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  z-index: 5;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  cursor: se-resize;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.photo-resize-handle:hover {
+  background: var(--bg-hover);
+}
+
+/* Save Container */
+.photo-save-container {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.photo-status {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.photo-status.success {
+  color: var(--accent-success);
+}
+
+.photo-status.error {
+  color: var(--accent-danger);
+}

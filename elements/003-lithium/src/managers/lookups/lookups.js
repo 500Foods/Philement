@@ -23,6 +23,7 @@ import { log, Subsystems, Status } from '../../core/log.js';
 import { processIcons } from '../../core/icons.js';
 import { setupManagerFooterIcons, createFontPopup, closeExportPopup, initToolbars, positionPopup, closeAllPopups } from '../../core/manager-ui.js';
 import { ManagerEditHelper } from '../../core/manager-edit-helper.js';
+import { AuditInfoFooter } from '../../core/audit-info-footer.js';
 import SunEditor from 'suneditor';
 import 'suneditor/css/editor';
 import { EditorState, EditorView, undo, redo } from '../../core/codemirror.js';
@@ -113,18 +114,22 @@ export default class LookupsManager {
     this.fontPopup = null;
     this.editorFontSize = 14;
     this.editorFontFamily = 'var(--font-sans)';
+    
+    // Audit info footer
+    this.auditFooter = null;
   }
 
-  async init() {
-    await this.render();
-    this.setupEventListeners();
-    await this.initParentTable();
-    await this.initChildTable();
-    this.setupSplitters();
-    this.setupFooter();
-    this.setupTabs();
-    this.restorePanelState();
-  }
+   async init() {
+     await this.render();
+     this.setupEventListeners();
+     await this.initParentTable();
+     await this.initChildTable();
+     this.setupSplitters();
+     this.setupFooter();
+     this.setupTabs();
+     this.restorePanelState();
+     this.setupAuditFooter();
+   }
 
   async render() {
     try {
@@ -252,14 +257,28 @@ export default class LookupsManager {
     }
   }
 
-  setupTabs() {
-    // Tab switching
-    this.elements.tabBtns?.forEach(btn => {
-      btn.addEventListener('click', () => {
-        const tabId = btn.dataset.tab;
-        this.switchTab(tabId);
-      });
-    });
+   setupTabs() {
+     // Tab switching
+     this.elements.tabBtns?.forEach(btn => {
+       btn.addEventListener('click', () => {
+         const tabId = btn.dataset.tab;
+         this.switchTab(tabId);
+       });
+     });
+   }
+
+  setupAuditFooter() {
+    const slot = this.container.closest(".manager-slot");
+    if (!slot) return;
+
+    this.auditFooter = new AuditInfoFooter(this);
+    this.auditFooter.init();
+
+    // Attach to both tables so automatic updates work
+    if (this.parentTable) this.parentTable.auditFooter = this.auditFooter;
+    if (this.childTable) this.childTable.auditFooter = this.auditFooter;
+
+    log(Subsystems.MANAGER, Status.INFO, "[Lookups] Audit footer initialized");
   }
 
   switchTab(tabId) {
@@ -569,46 +588,49 @@ export default class LookupsManager {
     return `${lookupKey}:${valueKey}`;
   }
 
-  async handleParentRowSelected(rowData) {
-    if (!rowData) return;
+   async handleParentRowSelected(rowData) {
+     if (!rowData) return;
 
-    const lookupId = rowData.key_idx; // key_idx is the lookup_id for lookup_id=0 entries
-    const lookupName = rowData.value_txt;
-    const lookupKey = this._toSelectionKey(lookupId);
-    const isSameLookup = lookupKey != null && lookupKey === this._toSelectionKey(this.selectedLookupId);
+     const lookupId = rowData.key_idx; // key_idx is the lookup_id for lookup_id=0 entries
+     const lookupName = rowData.value_txt;
+     const lookupKey = this._toSelectionKey(lookupId);
+     const isSameLookup = lookupKey != null && lookupKey === this._toSelectionKey(this.selectedLookupId);
 
-    if (lookupId == null) return;
+     if (lookupId == null) return;
 
-    this.selectedLookupId = lookupId;
-    this.selectedLookupName = lookupName;
+      this.selectedLookupId = lookupId;
+      this.selectedLookupName = lookupName;
 
-    // Persist parent selection for restoration on next manager load
-    this._saveParentSelection(lookupId);
+      // Persist parent selection for restoration on next manager load
+      this._saveParentSelection(lookupId);
 
-    // A single click can surface duplicate selection callbacks while the table
-    // is settling. Reuse the in-flight request or keep the already-loaded child
-    // table rather than re-querying the same lookup twice.
-    if (isSameLookup) {
-      if (this._childLoadState?.lookupKey === lookupKey) return;
-      if (this._loadedChildLookupKey === lookupKey) return;
-    }
+     // A single click can surface duplicate selection callbacks while the table
+     // is settling. Reuse the in-flight request or keep the already-loaded child
+     // table rather than re-querying the same lookup twice.
+     if (isSameLookup) {
+       if (this._childLoadState?.lookupKey === lookupKey) return;
+       if (this._loadedChildLookupKey === lookupKey) return;
+     }
 
-    // Load child data for this lookup
-    await this.loadChildData(lookupId);
-  }
+     // Load child data for this lookup
+     await this.loadChildData(lookupId);
+   }
 
   handleParentRowDeselected() {
-    this.selectedLookupId = null;
-    this.selectedLookupName = null;
+  this.selectedLookupId = null;
+  this.selectedLookupName = null;
 
-    // Clear child table data
-    if (this.childTable?.table) {
-      this.childTable.table.setData([]);
-    }
-
-    // Clear detail view
-    this.clearDetailView();
+  // Clear child table data
+  if (this.childTable?.table) {
+    this.childTable.table.setData([]);
   }
+
+  // Clear detail view
+  this.clearDetailView();
+
+  // Clear audit footer when parent is deselected
+  this.auditFooter?.update(null);
+}
 
   async loadChildData(lookupId) {
     if (!this.childTable || !this.app?.api) return;
@@ -689,10 +711,10 @@ export default class LookupsManager {
     const isSameLookupValue = detailRequestKey != null
       && detailRequestKey === this._getDetailRequestKey(this.selectedLookupId, this.selectedLookupValue?.key_idx);
 
-    this.selectedLookupValue = rowData;
+  this.selectedLookupValue = rowData;
 
-    // Persist child selection keyed by current lookup
-    this._saveChildSelection(rowData);
+  // Persist child selection keyed by current lookup
+  this._saveChildSelection(rowData);
 
     // Duplicate selection callbacks can arrive for the same child row while the
     // first detail request is still in flight. Reuse the active fetch and avoid
@@ -707,9 +729,13 @@ export default class LookupsManager {
   }
 
   handleChildRowDeselected() {
-    this.selectedLookupValue = null;
-    this.clearDetailView();
-  }
+  this.selectedLookupValue = null;
+  this.clearDetailView();
+
+  // Revert to parent row data if still selected, otherwise clear
+  const parentRowData = this.parentTable?.getSelectedData()?.[0];
+  this.auditFooter?.update(parentRowData || null);
+}
 
   // ── Save Logic ─────────────────────────────────────────────────────────────
   // Both tables share QueryRef 43 for updates, which expects explicit named
@@ -1748,53 +1774,59 @@ _saveChildSelection(rowData) {
     log(Subsystems.MANAGER, Status.INFO, '[Lookups] Deactivated');
   }
 
-  /**
-   * Called before the manager is destroyed
-   */
-  cleanup() {
-    log(Subsystems.MANAGER, Status.INFO, '[Lookups] Cleaning up...');
+   /**
+    * Called before the manager is destroyed
+    */
+   cleanup() {
+     log(Subsystems.MANAGER, Status.INFO, '[Lookups] Cleaning up...');
 
-    // Clean up edit helper
-    this.editHelper?.destroy();
+     // Clean up edit helper
+     this.editHelper?.destroy();
 
-    // Destroy SunEditor OverlayScrollbars instance
-    if (this._sunEditorScrollbar) {
-      scrollbarManager.destroy(this._sunEditorScrollbar);
-      this._sunEditorScrollbar = null;
-    }
+     // Destroy SunEditor OverlayScrollbars instance
+     if (this._sunEditorScrollbar) {
+       scrollbarManager.destroy(this._sunEditorScrollbar);
+       this._sunEditorScrollbar = null;
+     }
 
-    // Destroy SunEditor
-    if (this.sunEditor) {
-      this.sunEditor.destroy();
-      this.sunEditor = null;
-    }
+     // Destroy SunEditor
+     if (this.sunEditor) {
+       this.sunEditor.destroy();
+       this.sunEditor = null;
+     }
 
-    // Destroy JSON editor (CodeMirror EditorView)
-    if (this.collectionEditor) {
-      this.collectionEditor.destroy();
-      this.collectionEditor = null;
-    }
+     // Destroy JSON editor (CodeMirror EditorView)
+     if (this.collectionEditor) {
+       this.collectionEditor.destroy();
+       this.collectionEditor = null;
+     }
 
-    // Remove font popup
-    if (this.fontPopup) {
-      this.fontPopup.remove();
-      this.fontPopup = null;
-    }
+     // Remove font popup
+     if (this.fontPopup) {
+       this.fontPopup.remove();
+       this.fontPopup = null;
+     }
 
-    // Close any open footer export popup
-    this._closeFooterExportPopup();
+     // Clean up audit footer
+     if (this.auditFooter) {
+       this.auditFooter.destroy();
+       this.auditFooter = null;
+     }
 
-    // Clean up splitters
-    this.leftSplitter?.destroy();
-    this.rightSplitter?.destroy();
-    this.leftSplitter = null;
-    this.rightSplitter = null;
+     // Close any open footer export popup
+     this._closeFooterExportPopup();
 
-    // Clean up tables
-    this.parentTable?.destroy();
-    this.childTable?.destroy();
+     // Clean up splitters
+     this.leftSplitter?.destroy();
+     this.rightSplitter?.destroy();
+     this.leftSplitter = null;
+     this.rightSplitter = null;
 
-    this.parentTable = null;
-    this.childTable = null;
-  }
+     // Clean up tables
+     this.parentTable?.destroy();
+     this.childTable?.destroy();
+
+     this.parentTable = null;
+     this.childTable = null;
+   }
 }

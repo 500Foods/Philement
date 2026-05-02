@@ -1,0 +1,26 @@
+<div class="settings-page" data-page-index="-12" id="settings-page--12">
+<section class="profile-section">
+<h3 class="section-title"><fa fa-camera></fa> Photo</h3>
+<div class="photo-editor-container">
+<div class="photo-controls">
+<label class="btn btn-primary photo-upload-btn"><fa fa-upload></fa> Upload Photo<input type="file" id="photo-upload" accept="image/*" hidden></label>
+<button type="button" class="btn btn-secondary" id="photo-capture-btn"><fa fa-camera></fa> Capture Photo</button>
+<button type="button" class="btn btn-danger" id="photo-remove-btn" disabled><fa fa-trash></fa> Remove</button>
+</div>
+<div class="photo-editor" id="photo-editor">
+<div class="photo-dimming-layer" id="photo-dimming"></div>
+<div class="photo-image-container" id="photo-image-container"><img id="photo-image" class="photo-image" alt="User photo"></div>
+<div class="photo-preview-overlay" id="photo-preview-overlay"></div>
+<div class="photo-slider photo-slider-top"><input type="range" id="slider-x" min="-200" max="200" value="0" class="photo-range"><label class="photo-slider-label">Left/Right</label></div>
+<div class="photo-slider photo-slider-left"><input type="range" id="slider-y" min="-200" max="200" value="0" class="photo-range" orient="vertical"><label class="photo-slider-label">Up/Down</label></div>
+<div class="photo-slider photo-slider-right"><input type="range" id="slider-scale" min="0.1" max="3" step="0.1" value="1" class="photo-range" orient="vertical"><label class="photo-slider-label">Scale</label></div>
+<div class="photo-slider photo-slider-bottom"><input type="range" id="slider-rotation" min="-180" max="180" value="0" class="photo-range"><label class="photo-slider-label">Rotation</label></div>
+<div class="photo-resize-handle" id="photo-resize-handle"><fa fa-expand></fa></div>
+</div>
+<div class="photo-save-container">
+<button type="button" class="btn btn-success" id="photo-save-btn" disabled><fa fa-save></fa> Save Photo</button>
+<span class="photo-status" id="photo-status"></span>
+</div>
+</div>
+</section>
+</div>

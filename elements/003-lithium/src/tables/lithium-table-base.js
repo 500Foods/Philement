@@ -185,6 +185,9 @@ export class LithiumTableBase {
     this.onExecuteSave = options.onExecuteSave || null; // Custom save logic — async (row, editHelper) => {}
     this.onDuplicate = options.onDuplicate || null; // Custom duplicate logic — async (rowData) => newRowData
 
+    // Audit footer reference (shared AuditInfoFooter instance)
+    this.auditFooter = options.auditFooter || null;
+
     // Column manager option
 
 
