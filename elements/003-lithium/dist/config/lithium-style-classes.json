@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS class selectors/names used across the Lithium codebase",
-    "generated": "2026-05-01T02:13:03.456Z",
+    "generated": "2026-05-02T00:45:39.444Z",
     "sources": {
       "css": "101 files in src/**/*.css",
       "js": "203 files in src/**/*.js",
       "html": "54 files in src/**/*.html + index.html"
     },
-    "total_selectors": 2072,
-    "total_occurrences": 32508
+    "total_selectors": 2080,
+    "total_occurrences": 32711
   },
   "selectors": [
     {
@@ -525,8 +525,8 @@
       "selector": ".btn",
       "css": 2,
       "js": 25,
-      "html": 4,
-      "total": 31,
+      "html": 0,
+      "total": 27,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css",
@@ -540,17 +540,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/pages/photo/page-photo.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn i",
       "css": 1,
       "js": 25,
-      "html": 4,
-      "total": 30,
+      "html": 0,
+      "total": 26,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -563,17 +561,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/pages/photo/page-photo.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn-counter",
       "css": 2,
       "js": 31,
-      "html": 4,
-      "total": 37,
+      "html": 0,
+      "total": 33,
       "files": {
         "css": [
           "src/core/manager-ui.css",
@@ -588,17 +584,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/pages/photo/page-photo.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn-counter[style*=\"display: none\"]",
       "css": 1,
       "js": 31,
-      "html": 4,
-      "total": 36,
+      "html": 0,
+      "total": 32,
       "files": {
         "css": [
           "src/core/manager-ui.css"
@@ -612,17 +606,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/pages/photo/page-photo.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn-danger",
       "css": 1,
       "js": 25,
-      "html": 5,
-      "total": 31,
+      "html": 0,
+      "total": 26,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -635,17 +627,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/pages/photo/page-photo.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn-danger:hover",
       "css": 1,
       "js": 25,
-      "html": 5,
-      "total": 31,
+      "html": 0,
+      "total": 26,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -658,17 +648,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/pages/photo/page-photo.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn-ghost",
       "css": 1,
       "js": 25,
-      "html": 4,
-      "total": 30,
+      "html": 0,
+      "total": 26,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -681,17 +669,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/pages/photo/page-photo.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn-ghost:hover",
       "css": 1,
       "js": 25,
-      "html": 4,
-      "total": 30,
+      "html": 0,
+      "total": 26,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -704,34 +690,30 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/pages/photo/page-photo.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn-group-sm",
       "css": 0,
       "js": 2,
-      "html": 4,
-      "total": 6,
+      "html": 0,
+      "total": 2,
       "files": {
         "css": [],
         "js": [
           "src/init/codemirror-init.js",
           "src/init/jsoneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/pages/photo/page-photo.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn-lg",
       "css": 1,
       "js": 25,
-      "html": 4,
-      "total": 30,
+      "html": 0,
+      "total": 26,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -744,17 +726,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/pages/photo/page-photo.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn-loading",
       "css": 1,
       "js": 25,
-      "html": 4,
-      "total": 30,
+      "html": 0,
+      "total": 26,
       "files": {
         "css": [
           "src/styles/transitions.css"
@@ -767,17 +747,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/pages/photo/page-photo.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn-loading::after",
       "css": 1,
       "js": 25,
-      "html": 4,
-      "total": 30,
+      "html": 0,
+      "total": 26,
       "files": {
         "css": [
           "src/styles/transitions.css"
@@ -790,17 +768,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/pages/photo/page-photo.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn-outline-primary",
       "css": 0,
       "js": 3,
-      "html": 4,
-      "total": 7,
+      "html": 0,
+      "total": 3,
       "files": {
         "css": [],
         "js": [
@@ -808,17 +784,15 @@
           "src/init/jsoneditor-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/pages/photo/page-photo.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn-outline-secondary",
       "css": 0,
       "js": 19,
-      "html": 4,
-      "total": 23,
+      "html": 0,
+      "total": 19,
       "files": {
         "css": [],
         "js": [
@@ -828,17 +802,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/pages/photo/page-photo.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn-primary",
       "css": 2,
       "js": 26,
-      "html": 5,
-      "total": 33,
+      "html": 0,
+      "total": 28,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css",
@@ -852,17 +824,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/pages/photo/page-photo.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn-primary:disabled",
       "css": 1,
       "js": 26,
-      "html": 5,
-      "total": 32,
+      "html": 0,
+      "total": 27,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -875,17 +845,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/pages/photo/page-photo.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn-primary:hover",
       "css": 1,
       "js": 26,
-      "html": 5,
-      "total": 32,
+      "html": 0,
+      "total": 27,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -898,17 +866,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/pages/photo/page-photo.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn-primary:hover:not(:disabled)",
       "css": 1,
       "js": 26,
-      "html": 5,
-      "total": 32,
+      "html": 0,
+      "total": 27,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -921,17 +887,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/pages/photo/page-photo.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn-secondary",
       "css": 2,
       "js": 25,
-      "html": 7,
-      "total": 34,
+      "html": 2,
+      "total": 29,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css",
@@ -946,7 +910,6 @@
           "src/init/suneditor-init.js"
         ],
         "html": [
-          "src/managers/profile-manager/pages/photo/page-photo.html",
           "src/managers/profile-manager/pages/tokens/page-tokens.html"
         ]
       }
@@ -955,8 +918,8 @@
       "selector": ".btn-secondary:hover:not(:disabled)",
       "css": 1,
       "js": 25,
-      "html": 7,
-      "total": 33,
+      "html": 2,
+      "total": 28,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -970,7 +933,6 @@
           "src/init/suneditor-init.js"
         ],
         "html": [
-          "src/managers/profile-manager/pages/photo/page-photo.html",
           "src/managers/profile-manager/pages/tokens/page-tokens.html"
         ]
       }
@@ -979,8 +941,8 @@
       "selector": ".btn-sm",
       "css": 1,
       "js": 40,
-      "html": 4,
-      "total": 45,
+      "html": 0,
+      "total": 41,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -993,17 +955,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/pages/photo/page-photo.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn-success",
       "css": 1,
       "js": 25,
-      "html": 5,
-      "total": 31,
+      "html": 0,
+      "total": 26,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -1016,17 +976,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/pages/photo/page-photo.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn-success:hover",
       "css": 1,
       "js": 25,
-      "html": 5,
-      "total": 31,
+      "html": 0,
+      "total": 26,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -1039,17 +997,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/pages/photo/page-photo.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn:disabled",
       "css": 1,
       "js": 25,
-      "html": 4,
-      "total": 30,
+      "html": 0,
+      "total": 26,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -1062,17 +1018,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/pages/photo/page-photo.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn:focus",
       "css": 1,
       "js": 25,
-      "html": 4,
-      "total": 30,
+      "html": 0,
+      "total": 26,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -1085,17 +1039,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/pages/photo/page-photo.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".btn:hover",
       "css": 1,
       "js": 25,
-      "html": 4,
-      "total": 30,
+      "html": 0,
+      "total": 26,
       "files": {
         "css": [
           "src/styles/components.css"
@@ -1108,9 +1060,7 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/pages/photo/page-photo.html"
-        ]
+        "html": []
       }
     },
     {
@@ -6753,8 +6703,8 @@
       "selector": ".df-sample-input-group .lithium-toolbar-btn",
       "css": 1,
       "js": 25,
-      "html": 102,
-      "total": 128,
+      "html": 114,
+      "total": 140,
       "files": {
         "css": [
           "src/managers/profile-manager/pages/date-formats/page-date-formats.css"
@@ -6766,6 +6716,7 @@
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
+          "src/managers/profile-manager/pages/photo/page-photo.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -7875,12 +7826,13 @@
     {
       "selector": ".disabled",
       "css": 0,
-      "js": 3,
+      "js": 5,
       "html": 0,
-      "total": 3,
+      "total": 5,
       "files": {
         "css": [],
         "js": [
+          "src/managers/profile-manager/pages/photo/page-photo.js",
           "src/managers/profile-manager/profile-manager.js",
           "src/tables/column-manager/cm-state.js"
         ],
@@ -9652,6 +9604,20 @@
       }
     },
     {
+      "selector": ".id",
+      "css": 0,
+      "js": 1,
+      "html": 0,
+      "total": 1,
+      "files": {
+        "css": [],
+        "js": [
+          "src/managers/profile-manager/pages/photo/page-photo.js"
+        ],
+        "html": []
+      }
+    },
+    {
       "selector": ".info-item",
       "css": 1,
       "js": 0,
@@ -9964,8 +9930,8 @@
       "selector": ".jsoneditor-nav .btn",
       "css": 1,
       "js": 26,
-      "html": 4,
-      "total": 31,
+      "html": 0,
+      "total": 27,
       "files": {
         "css": [
           "src/init/jsoneditor.css"
@@ -9978,17 +9944,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/pages/photo/page-photo.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".jsoneditor-nav .btn-group",
       "css": 1,
       "js": 28,
-      "html": 4,
-      "total": 33,
+      "html": 0,
+      "total": 29,
       "files": {
         "css": [
           "src/init/jsoneditor.css"
@@ -10001,17 +9965,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/pages/photo/page-photo.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".jsoneditor-nav .btn-group .btn",
       "css": 1,
       "js": 28,
-      "html": 4,
-      "total": 33,
+      "html": 0,
+      "total": 29,
       "files": {
         "css": [
           "src/init/jsoneditor.css"
@@ -10024,17 +9986,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/pages/photo/page-photo.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".jsoneditor-nav .btn:last-child",
       "css": 1,
       "js": 26,
-      "html": 4,
-      "total": 31,
+      "html": 0,
+      "total": 27,
       "files": {
         "css": [
           "src/init/jsoneditor.css"
@@ -10047,9 +10007,7 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/pages/photo/page-photo.html"
-        ]
+        "html": []
       }
     },
     {
@@ -16050,8 +16008,8 @@
       "selector": ".lithium-toolbar",
       "css": 1,
       "js": 21,
-      "html": 66,
-      "total": 88,
+      "html": 73,
+      "total": 95,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -16062,6 +16020,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/photo/page-photo.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -16074,8 +16033,8 @@
       "selector": ".lithium-toolbar > *:first-child",
       "css": 1,
       "js": 21,
-      "html": 66,
-      "total": 88,
+      "html": 73,
+      "total": 95,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -16086,6 +16045,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/photo/page-photo.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -16098,8 +16058,8 @@
       "selector": ".lithium-toolbar > *:last-child",
       "css": 1,
       "js": 21,
-      "html": 66,
-      "total": 88,
+      "html": 73,
+      "total": 95,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -16110,6 +16070,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/photo/page-photo.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -16122,8 +16083,8 @@
       "selector": ".lithium-toolbar-btn",
       "css": 1,
       "js": 25,
-      "html": 100,
-      "total": 126,
+      "html": 112,
+      "total": 138,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -16135,6 +16096,7 @@
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
+          "src/managers/profile-manager/pages/photo/page-photo.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -16147,8 +16109,8 @@
       "selector": ".lithium-toolbar-btn .lithium-toolbar-icon",
       "css": 1,
       "js": 25,
-      "html": 100,
-      "total": 126,
+      "html": 112,
+      "total": 138,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -16160,6 +16122,7 @@
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
+          "src/managers/profile-manager/pages/photo/page-photo.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -16172,8 +16135,8 @@
       "selector": ".lithium-toolbar-btn .lithium-toolbar-label",
       "css": 1,
       "js": 25,
-      "html": 100,
-      "total": 126,
+      "html": 112,
+      "total": 138,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -16185,6 +16148,7 @@
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
+          "src/managers/profile-manager/pages/photo/page-photo.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -16197,8 +16161,8 @@
       "selector": ".lithium-toolbar-btn:active",
       "css": 1,
       "js": 25,
-      "html": 100,
-      "total": 126,
+      "html": 112,
+      "total": 138,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -16210,6 +16174,7 @@
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
+          "src/managers/profile-manager/pages/photo/page-photo.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -16222,8 +16187,8 @@
       "selector": ".lithium-toolbar-btn:disabled",
       "css": 1,
       "js": 25,
-      "html": 100,
-      "total": 126,
+      "html": 112,
+      "total": 138,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -16235,6 +16200,7 @@
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
+          "src/managers/profile-manager/pages/photo/page-photo.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -16247,8 +16213,8 @@
       "selector": ".lithium-toolbar-btn:hover",
       "css": 1,
       "js": 25,
-      "html": 100,
-      "total": 126,
+      "html": 112,
+      "total": 138,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -16260,6 +16226,7 @@
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
+          "src/managers/profile-manager/pages/photo/page-photo.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -16272,8 +16239,8 @@
       "selector": ".lithium-toolbar-btn.active",
       "css": 1,
       "js": 93,
-      "html": 108,
-      "total": 202,
+      "html": 120,
+      "total": 214,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -16301,6 +16268,7 @@
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
+          "src/managers/profile-manager/pages/photo/page-photo.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -16313,8 +16281,8 @@
       "selector": ".lithium-toolbar-btn.active:hover",
       "css": 1,
       "js": 93,
-      "html": 108,
-      "total": 202,
+      "html": 120,
+      "total": 214,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -16342,6 +16310,7 @@
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
+          "src/managers/profile-manager/pages/photo/page-photo.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -16354,8 +16323,8 @@
       "selector": ".lithium-toolbar-btn.icon-only",
       "css": 1,
       "js": 25,
-      "html": 100,
-      "total": 126,
+      "html": 112,
+      "total": 138,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -16367,6 +16336,7 @@
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
+          "src/managers/profile-manager/pages/photo/page-photo.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -16379,8 +16349,8 @@
       "selector": ".lithium-toolbar-btn.lithium-collapse-btn",
       "css": 1,
       "js": 26,
-      "html": 107,
-      "total": 134,
+      "html": 119,
+      "total": 146,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -16392,6 +16362,7 @@
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
+          "src/managers/profile-manager/pages/photo/page-photo.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -16404,8 +16375,8 @@
       "selector": ".lithium-toolbar-btn.lithium-collapse-btn i",
       "css": 1,
       "js": 26,
-      "html": 107,
-      "total": 134,
+      "html": 119,
+      "total": 146,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -16417,6 +16388,7 @@
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
+          "src/managers/profile-manager/pages/photo/page-photo.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -16429,8 +16401,8 @@
       "selector": ".lithium-toolbar-btn.lithium-collapse-btn.collapsed i",
       "css": 1,
       "js": 69,
-      "html": 107,
-      "total": 177,
+      "html": 119,
+      "total": 189,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -16452,6 +16424,7 @@
         "html": [
           "src/managers/lookups/lookups.html",
           "src/managers/profile-manager/pages/date-formats/page-date-formats.html",
+          "src/managers/profile-manager/pages/photo/page-photo.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -16464,8 +16437,8 @@
       "selector": ".lithium-toolbar-placeholder",
       "css": 1,
       "js": 30,
-      "html": 73,
-      "total": 104,
+      "html": 81,
+      "total": 112,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -16476,6 +16449,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/photo/page-photo.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -16488,8 +16462,8 @@
       "selector": ".lithium-toolbar-popup",
       "css": 1,
       "js": 21,
-      "html": 66,
-      "total": 88,
+      "html": 73,
+      "total": 95,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -16500,6 +16474,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/photo/page-photo.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -16512,8 +16487,8 @@
       "selector": ".lithium-toolbar-popup-item",
       "css": 1,
       "js": 21,
-      "html": 66,
-      "total": 88,
+      "html": 73,
+      "total": 95,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -16524,6 +16499,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/photo/page-photo.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -16536,8 +16512,8 @@
       "selector": ".lithium-toolbar-popup-item i",
       "css": 1,
       "js": 21,
-      "html": 66,
-      "total": 88,
+      "html": 73,
+      "total": 95,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -16548,6 +16524,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/photo/page-photo.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -16560,8 +16537,8 @@
       "selector": ".lithium-toolbar-popup-item:hover",
       "css": 1,
       "js": 21,
-      "html": 66,
-      "total": 88,
+      "html": 73,
+      "total": 95,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -16572,6 +16549,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/photo/page-photo.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -16584,8 +16562,8 @@
       "selector": ".lithium-toolbar-popup.visible",
       "css": 1,
       "js": 138,
-      "html": 66,
-      "total": 205,
+      "html": 73,
+      "total": 212,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -16627,6 +16605,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/photo/page-photo.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -16639,8 +16618,8 @@
       "selector": ".lithium-toolbar-stack",
       "css": 1,
       "js": 21,
-      "html": 66,
-      "total": 88,
+      "html": 73,
+      "total": 95,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -16651,6 +16630,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/photo/page-photo.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -16663,8 +16643,8 @@
       "selector": ".lithium-toolbar-stack .lithium-toolbar",
       "css": 1,
       "js": 21,
-      "html": 66,
-      "total": 88,
+      "html": 73,
+      "total": 95,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -16675,6 +16655,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/photo/page-photo.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -16687,8 +16668,8 @@
       "selector": ".lithium-toolbar-state-btn",
       "css": 1,
       "js": 22,
-      "html": 71,
-      "total": 94,
+      "html": 78,
+      "total": 101,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -16699,6 +16680,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/photo/page-photo.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -16711,8 +16693,8 @@
       "selector": ".lithium-toolbar-state-btn:disabled",
       "css": 1,
       "js": 22,
-      "html": 71,
-      "total": 94,
+      "html": 78,
+      "total": 101,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -16723,6 +16705,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/photo/page-photo.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -16735,8 +16718,8 @@
       "selector": ".lithium-toolbar-state-btn:hover",
       "css": 1,
       "js": 22,
-      "html": 71,
-      "total": 94,
+      "html": 78,
+      "total": 101,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -16747,6 +16730,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/photo/page-photo.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -16759,8 +16743,8 @@
       "selector": ".lithium-toolbar-state-btn.active",
       "css": 1,
       "js": 90,
-      "html": 79,
-      "total": 170,
+      "html": 86,
+      "total": 177,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -16787,6 +16771,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/photo/page-photo.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -16799,8 +16784,8 @@
       "selector": ".lithium-toolbar-state-btn.css-state",
       "css": 1,
       "js": 23,
-      "html": 72,
-      "total": 96,
+      "html": 79,
+      "total": 103,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -16811,6 +16796,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/photo/page-photo.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -16823,8 +16809,8 @@
       "selector": ".lithium-toolbar-tab",
       "css": 1,
       "js": 23,
-      "html": 78,
-      "total": 102,
+      "html": 85,
+      "total": 109,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -16836,6 +16822,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/photo/page-photo.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -16848,8 +16835,8 @@
       "selector": ".lithium-toolbar-tab i",
       "css": 1,
       "js": 23,
-      "html": 78,
-      "total": 102,
+      "html": 85,
+      "total": 109,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -16861,6 +16848,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/photo/page-photo.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -16873,8 +16861,8 @@
       "selector": ".lithium-toolbar-tab:disabled",
       "css": 1,
       "js": 23,
-      "html": 78,
-      "total": 102,
+      "html": 85,
+      "total": 109,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -16886,6 +16874,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/photo/page-photo.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -16898,8 +16887,8 @@
       "selector": ".lithium-toolbar-tab:hover",
       "css": 1,
       "js": 23,
-      "html": 78,
-      "total": 102,
+      "html": 85,
+      "total": 109,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -16911,6 +16900,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/photo/page-photo.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -16923,8 +16913,8 @@
       "selector": ".lithium-toolbar-tab.active",
       "css": 2,
       "js": 91,
-      "html": 86,
-      "total": 179,
+      "html": 93,
+      "total": 186,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css",
@@ -16952,6 +16942,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/photo/page-photo.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -16964,8 +16955,8 @@
       "selector": ".lithium-toolbar-tab.active fa",
       "css": 1,
       "js": 91,
-      "html": 86,
-      "total": 178,
+      "html": 93,
+      "total": 185,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -16992,6 +16983,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/photo/page-photo.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -17004,8 +16996,8 @@
       "selector": ".lithium-toolbar-title",
       "css": 1,
       "js": 23,
-      "html": 68,
-      "total": 92,
+      "html": 75,
+      "total": 99,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -17016,6 +17008,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/photo/page-photo.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -17028,8 +17021,8 @@
       "selector": ".lithium-toolbar.collapsed-text .lithium-toolbar-state-btn[data-collapsible-text]",
       "css": 1,
       "js": 75,
-      "html": 71,
-      "total": 147,
+      "html": 78,
+      "total": 154,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -17050,6 +17043,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/photo/page-photo.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -17062,8 +17056,8 @@
       "selector": ".lithium-toolbar.collapsed-text .lithium-toolbar-tab[data-collapsible-text]",
       "css": 1,
       "js": 76,
-      "html": 78,
-      "total": 155,
+      "html": 85,
+      "total": 162,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -17084,6 +17078,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/photo/page-photo.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -17096,8 +17091,8 @@
       "selector": ".lithium-toolbar.collapsed-text .lithium-toolbar-title[data-collapsible-text]",
       "css": 1,
       "js": 76,
-      "html": 68,
-      "total": 145,
+      "html": 75,
+      "total": 152,
       "files": {
         "css": [
           "src/core/lithium-toolbar.css"
@@ -17118,6 +17113,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/photo/page-photo.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",
@@ -26773,32 +26769,208 @@
       }
     },
     {
-      "selector": ".photo-controls",
+      "selector": ".photo-custom-slider",
       "css": 1,
-      "js": 0,
-      "html": 1,
+      "js": 1,
+      "html": 0,
       "total": 2,
       "files": {
         "css": [
           "src/managers/profile-manager/pages/photo/page-photo.css"
         ],
-        "js": [],
+        "js": [
+          "src/managers/profile-manager/pages/photo/page-photo.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".photo-custom-slider-horizontal",
+      "css": 1,
+      "js": 1,
+      "html": 0,
+      "total": 2,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/pages/photo/page-photo.css"
+        ],
+        "js": [
+          "src/managers/profile-manager/pages/photo/page-photo.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".photo-custom-slider-horizontal .photo-slider-thumb",
+      "css": 1,
+      "js": 2,
+      "html": 4,
+      "total": 7,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/pages/photo/page-photo.css"
+        ],
+        "js": [
+          "src/managers/profile-manager/pages/photo/page-photo.js"
+        ],
         "html": [
           "src/managers/profile-manager/pages/photo/page-photo.html"
         ]
       }
     },
     {
-      "selector": ".photo-dimming-layer",
+      "selector": ".photo-custom-slider-horizontal .photo-slider-track",
       "css": 1,
-      "js": 0,
-      "html": 1,
+      "js": 2,
+      "html": 4,
+      "total": 7,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/pages/photo/page-photo.css"
+        ],
+        "js": [
+          "src/managers/profile-manager/pages/photo/page-photo.js"
+        ],
+        "html": [
+          "src/managers/profile-manager/pages/photo/page-photo.html"
+        ]
+      }
+    },
+    {
+      "selector": ".photo-custom-slider-horizontal.photo-slider-bottom",
+      "css": 1,
+      "js": 1,
+      "html": 5,
+      "total": 7,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/pages/photo/page-photo.css"
+        ],
+        "js": [
+          "src/managers/profile-manager/pages/photo/page-photo.js"
+        ],
+        "html": [
+          "src/managers/profile-manager/pages/photo/page-photo.html"
+        ]
+      }
+    },
+    {
+      "selector": ".photo-custom-slider-horizontal.photo-slider-top",
+      "css": 1,
+      "js": 1,
+      "html": 5,
+      "total": 7,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/pages/photo/page-photo.css"
+        ],
+        "js": [
+          "src/managers/profile-manager/pages/photo/page-photo.js"
+        ],
+        "html": [
+          "src/managers/profile-manager/pages/photo/page-photo.html"
+        ]
+      }
+    },
+    {
+      "selector": ".photo-custom-slider-vertical",
+      "css": 1,
+      "js": 1,
+      "html": 0,
       "total": 2,
       "files": {
         "css": [
           "src/managers/profile-manager/pages/photo/page-photo.css"
         ],
-        "js": [],
+        "js": [
+          "src/managers/profile-manager/pages/photo/page-photo.js"
+        ],
+        "html": []
+      }
+    },
+    {
+      "selector": ".photo-custom-slider-vertical .photo-slider-thumb",
+      "css": 1,
+      "js": 2,
+      "html": 4,
+      "total": 7,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/pages/photo/page-photo.css"
+        ],
+        "js": [
+          "src/managers/profile-manager/pages/photo/page-photo.js"
+        ],
+        "html": [
+          "src/managers/profile-manager/pages/photo/page-photo.html"
+        ]
+      }
+    },
+    {
+      "selector": ".photo-custom-slider-vertical .photo-slider-track",
+      "css": 1,
+      "js": 2,
+      "html": 4,
+      "total": 7,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/pages/photo/page-photo.css"
+        ],
+        "js": [
+          "src/managers/profile-manager/pages/photo/page-photo.js"
+        ],
+        "html": [
+          "src/managers/profile-manager/pages/photo/page-photo.html"
+        ]
+      }
+    },
+    {
+      "selector": ".photo-custom-slider-vertical.photo-slider-left",
+      "css": 1,
+      "js": 1,
+      "html": 5,
+      "total": 7,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/pages/photo/page-photo.css"
+        ],
+        "js": [
+          "src/managers/profile-manager/pages/photo/page-photo.js"
+        ],
+        "html": [
+          "src/managers/profile-manager/pages/photo/page-photo.html"
+        ]
+      }
+    },
+    {
+      "selector": ".photo-custom-slider-vertical.photo-slider-right",
+      "css": 1,
+      "js": 1,
+      "html": 5,
+      "total": 7,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/pages/photo/page-photo.css"
+        ],
+        "js": [
+          "src/managers/profile-manager/pages/photo/page-photo.js"
+        ],
+        "html": [
+          "src/managers/profile-manager/pages/photo/page-photo.html"
+        ]
+      }
+    },
+    {
+      "selector": ".photo-download-btn",
+      "css": 0,
+      "js": 1,
+      "html": 1,
+      "total": 2,
+      "files": {
+        "css": [],
+        "js": [
+          "src/managers/profile-manager/pages/photo/page-photo.js"
+        ],
         "html": [
           "src/managers/profile-manager/pages/photo/page-photo.html"
         ]
@@ -26869,16 +27041,98 @@
       }
     },
     {
-      "selector": ".photo-preview-overlay",
+      "selector": ".photo-preview",
       "css": 1,
       "js": 0,
-      "html": 1,
-      "total": 2,
+      "html": 4,
+      "total": 5,
       "files": {
         "css": [
           "src/managers/profile-manager/pages/photo/page-photo.css"
         ],
         "js": [],
+        "html": [
+          "src/managers/profile-manager/pages/photo/page-photo.html"
+        ]
+      }
+    },
+    {
+      "selector": ".photo-preview-overlay",
+      "css": 1,
+      "js": 0,
+      "html": 5,
+      "total": 6,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/pages/photo/page-photo.css"
+        ],
+        "js": [],
+        "html": [
+          "src/managers/profile-manager/pages/photo/page-photo.html"
+        ]
+      }
+    },
+    {
+      "selector": ".photo-preview:nth-child(1)",
+      "css": 1,
+      "js": 0,
+      "html": 4,
+      "total": 5,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/pages/photo/page-photo.css"
+        ],
+        "js": [],
+        "html": [
+          "src/managers/profile-manager/pages/photo/page-photo.html"
+        ]
+      }
+    },
+    {
+      "selector": ".photo-preview:nth-child(2)",
+      "css": 1,
+      "js": 0,
+      "html": 4,
+      "total": 5,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/pages/photo/page-photo.css"
+        ],
+        "js": [],
+        "html": [
+          "src/managers/profile-manager/pages/photo/page-photo.html"
+        ]
+      }
+    },
+    {
+      "selector": ".photo-preview:nth-child(3)",
+      "css": 1,
+      "js": 0,
+      "html": 4,
+      "total": 5,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/pages/photo/page-photo.css"
+        ],
+        "js": [],
+        "html": [
+          "src/managers/profile-manager/pages/photo/page-photo.html"
+        ]
+      }
+    },
+    {
+      "selector": ".photo-previews",
+      "css": 1,
+      "js": 1,
+      "html": 5,
+      "total": 7,
+      "files": {
+        "css": [
+          "src/managers/profile-manager/pages/photo/page-photo.css"
+        ],
+        "js": [
+          "src/managers/profile-manager/pages/photo/page-photo.js"
+        ],
         "html": [
           "src/managers/profile-manager/pages/photo/page-photo.html"
         ]
@@ -26886,38 +27140,6 @@
     },
     {
       "selector": ".photo-range",
-      "css": 1,
-      "js": 0,
-      "html": 4,
-      "total": 5,
-      "files": {
-        "css": [
-          "src/managers/profile-manager/pages/photo/page-photo.css"
-        ],
-        "js": [],
-        "html": [
-          "src/managers/profile-manager/pages/photo/page-photo.html"
-        ]
-      }
-    },
-    {
-      "selector": ".photo-range::-moz-range-thumb",
-      "css": 1,
-      "js": 0,
-      "html": 4,
-      "total": 5,
-      "files": {
-        "css": [
-          "src/managers/profile-manager/pages/photo/page-photo.css"
-        ],
-        "js": [],
-        "html": [
-          "src/managers/profile-manager/pages/photo/page-photo.html"
-        ]
-      }
-    },
-    {
-      "selector": ".photo-range::-webkit-slider-thumb",
       "css": 1,
       "js": 0,
       "html": 4,
@@ -26965,128 +27187,54 @@
       }
     },
     {
-      "selector": ".photo-save-container",
+      "selector": ".photo-slider-thumb",
       "css": 1,
-      "js": 0,
-      "html": 1,
-      "total": 2,
+      "js": 1,
+      "html": 4,
+      "total": 6,
       "files": {
         "css": [
           "src/managers/profile-manager/pages/photo/page-photo.css"
         ],
-        "js": [],
+        "js": [
+          "src/managers/profile-manager/pages/photo/page-photo.js"
+        ],
         "html": [
           "src/managers/profile-manager/pages/photo/page-photo.html"
         ]
       }
     },
     {
-      "selector": ".photo-slider",
+      "selector": ".photo-slider-thumb svg",
       "css": 1,
-      "js": 0,
-      "html": 8,
-      "total": 9,
+      "js": 1,
+      "html": 4,
+      "total": 6,
       "files": {
         "css": [
           "src/managers/profile-manager/pages/photo/page-photo.css"
         ],
-        "js": [],
+        "js": [
+          "src/managers/profile-manager/pages/photo/page-photo.js"
+        ],
         "html": [
           "src/managers/profile-manager/pages/photo/page-photo.html"
         ]
       }
     },
     {
-      "selector": ".photo-slider-bottom",
+      "selector": ".photo-slider-track",
       "css": 1,
-      "js": 0,
-      "html": 9,
-      "total": 10,
+      "js": 1,
+      "html": 4,
+      "total": 6,
       "files": {
         "css": [
           "src/managers/profile-manager/pages/photo/page-photo.css"
         ],
-        "js": [],
-        "html": [
-          "src/managers/profile-manager/pages/photo/page-photo.html"
-        ]
-      }
-    },
-    {
-      "selector": ".photo-slider-label",
-      "css": 1,
-      "js": 0,
-      "html": 12,
-      "total": 13,
-      "files": {
-        "css": [
-          "src/managers/profile-manager/pages/photo/page-photo.css"
+        "js": [
+          "src/managers/profile-manager/pages/photo/page-photo.js"
         ],
-        "js": [],
-        "html": [
-          "src/managers/profile-manager/pages/photo/page-photo.html"
-        ]
-      }
-    },
-    {
-      "selector": ".photo-slider-left",
-      "css": 1,
-      "js": 0,
-      "html": 9,
-      "total": 10,
-      "files": {
-        "css": [
-          "src/managers/profile-manager/pages/photo/page-photo.css"
-        ],
-        "js": [],
-        "html": [
-          "src/managers/profile-manager/pages/photo/page-photo.html"
-        ]
-      }
-    },
-    {
-      "selector": ".photo-slider-right",
-      "css": 1,
-      "js": 0,
-      "html": 9,
-      "total": 10,
-      "files": {
-        "css": [
-          "src/managers/profile-manager/pages/photo/page-photo.css"
-        ],
-        "js": [],
-        "html": [
-          "src/managers/profile-manager/pages/photo/page-photo.html"
-        ]
-      }
-    },
-    {
-      "selector": ".photo-slider-right .photo-range",
-      "css": 1,
-      "js": 0,
-      "html": 13,
-      "total": 14,
-      "files": {
-        "css": [
-          "src/managers/profile-manager/pages/photo/page-photo.css"
-        ],
-        "js": [],
-        "html": [
-          "src/managers/profile-manager/pages/photo/page-photo.html"
-        ]
-      }
-    },
-    {
-      "selector": ".photo-slider-top",
-      "css": 1,
-      "js": 0,
-      "html": 9,
-      "total": 10,
-      "files": {
-        "css": [
-          "src/managers/profile-manager/pages/photo/page-photo.css"
-        ],
-        "js": [],
         "html": [
           "src/managers/profile-manager/pages/photo/page-photo.html"
         ]
@@ -27153,30 +27301,12 @@
     },
     {
       "selector": ".photo-upload-btn",
-      "css": 1,
+      "css": 0,
       "js": 0,
       "html": 1,
-      "total": 2,
+      "total": 1,
       "files": {
-        "css": [
-          "src/managers/profile-manager/pages/photo/page-photo.css"
-        ],
-        "js": [],
-        "html": [
-          "src/managers/profile-manager/pages/photo/page-photo.html"
-        ]
-      }
-    },
-    {
-      "selector": ".photo-upload-btn input[type=\"file\"]",
-      "css": 1,
-      "js": 0,
-      "html": 1,
-      "total": 2,
-      "files": {
-        "css": [
-          "src/managers/profile-manager/pages/photo/page-photo.css"
-        ],
+        "css": [],
         "js": [],
         "html": [
           "src/managers/profile-manager/pages/photo/page-photo.html"
@@ -29693,8 +29823,8 @@
       "selector": ".section-title",
       "css": 1,
       "js": 1,
-      "html": 44,
-      "total": 46,
+      "html": 43,
+      "total": 45,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -29743,7 +29873,6 @@
           "src/managers/profile-manager/pages/notifications/page-notifications.html",
           "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
           "src/managers/profile-manager/pages/phone/page-phone.html",
-          "src/managers/profile-manager/pages/photo/page-photo.html",
           "src/managers/profile-manager/pages/startup/page-startup.html",
           "src/managers/profile-manager/pages/tokens/page-tokens.html",
           "src/managers/profile-manager/pages/training/page-training.html"
@@ -29754,8 +29883,8 @@
       "selector": ".section-title i",
       "css": 1,
       "js": 1,
-      "html": 44,
-      "total": 46,
+      "html": 43,
+      "total": 45,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -29804,7 +29933,6 @@
           "src/managers/profile-manager/pages/notifications/page-notifications.html",
           "src/managers/profile-manager/pages/number-formats/page-number-formats.html",
           "src/managers/profile-manager/pages/phone/page-phone.html",
-          "src/managers/profile-manager/pages/photo/page-photo.html",
           "src/managers/profile-manager/pages/startup/page-startup.html",
           "src/managers/profile-manager/pages/tokens/page-tokens.html",
           "src/managers/profile-manager/pages/training/page-training.html"
@@ -31919,8 +32047,8 @@
       "selector": ".slot-annotations-btn .btn-counter",
       "css": 1,
       "js": 31,
-      "html": 4,
-      "total": 36,
+      "html": 0,
+      "total": 32,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -31934,9 +32062,7 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/pages/photo/page-photo.html"
-        ]
+        "html": []
       }
     },
     {
@@ -32153,8 +32279,8 @@
       "selector": ".slot-notifications-btn .btn-counter",
       "css": 1,
       "js": 32,
-      "html": 4,
-      "total": 37,
+      "html": 0,
+      "total": 33,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -32169,17 +32295,15 @@
           "src/init/suneditor-init.js",
           "src/managers/main/main-slots.js"
         ],
-        "html": [
-          "src/managers/profile-manager/pages/photo/page-photo.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".slot-tickets-btn .btn-counter",
       "css": 1,
       "js": 31,
-      "html": 4,
-      "total": 36,
+      "html": 0,
+      "total": 32,
       "files": {
         "css": [
           "src/managers/main/main.css"
@@ -32193,9 +32317,7 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/pages/photo/page-photo.html"
-        ]
+        "html": []
       }
     },
     {
@@ -34652,8 +34774,8 @@
       "selector": ".tabulator-nav .btn",
       "css": 1,
       "js": 25,
-      "html": 4,
-      "total": 30,
+      "html": 0,
+      "total": 26,
       "files": {
         "css": [
           "src/init/tabulator-full.css"
@@ -34666,17 +34788,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/pages/photo/page-photo.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".tabulator-nav .btn-export",
       "css": 1,
       "js": 25,
-      "html": 4,
-      "total": 30,
+      "html": 0,
+      "total": 26,
       "files": {
         "css": [
           "src/init/tabulator-full.css"
@@ -34689,17 +34809,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/pages/photo/page-photo.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".tabulator-nav .btn-export .dropdown-menu",
       "css": 1,
       "js": 25,
-      "html": 4,
-      "total": 30,
+      "html": 0,
+      "total": 26,
       "files": {
         "css": [
           "src/init/tabulator-full.css"
@@ -34712,17 +34830,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/pages/photo/page-photo.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".tabulator-nav .btn-export:hover .dropdown-menu",
       "css": 1,
       "js": 25,
-      "html": 4,
-      "total": 30,
+      "html": 0,
+      "total": 26,
       "files": {
         "css": [
           "src/init/tabulator-full.css"
@@ -34735,17 +34851,15 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/pages/photo/page-photo.html"
-        ]
+        "html": []
       }
     },
     {
       "selector": ".tabulator-nav .btn:last-child",
       "css": 1,
       "js": 25,
-      "html": 4,
-      "total": 30,
+      "html": 0,
+      "total": 26,
       "files": {
         "css": [
           "src/init/tabulator-full.css"
@@ -34758,9 +34872,7 @@
           "src/init/prism-init.js",
           "src/init/suneditor-init.js"
         ],
-        "html": [
-          "src/managers/profile-manager/pages/photo/page-photo.html"
-        ]
+        "html": []
       }
     },
     {
@@ -38645,8 +38757,8 @@
       "selector": "#profile-left-panel .lithium-toolbar",
       "css": 1,
       "js": 21,
-      "html": 66,
-      "total": 88,
+      "html": 73,
+      "total": 95,
       "files": {
         "css": [
           "src/managers/profile-manager/profile-manager.css"
@@ -38657,6 +38769,7 @@
         ],
         "html": [
           "src/managers/lookups/lookups.html",
+          "src/managers/profile-manager/pages/photo/page-photo.html",
           "src/managers/profile-manager/profile-manager.html",
           "src/managers/queries/queries.html",
           "src/managers/session-log/session-log.html",

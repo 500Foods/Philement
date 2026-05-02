@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS custom properties (variables) used across the Lithium codebase",
-    "generated": "2026-05-01T02:13:01.193Z",
+    "generated": "2026-05-02T00:45:36.870Z",
     "sources": {
       "css": "101 files in src/**/*.css",
       "js": "203 files in src/**/*.js",
       "html": "54 files in src/**/*.html + index.html"
     },
     "total_variables": 255,
-    "total_occurrences": 3805
+    "total_occurrences": 3801
   },
   "variables": [
     {
@@ -20,10 +20,10 @@
     },
     {
       "name": "--accent-alt-primary",
-      "css": 38,
+      "css": 41,
       "js": 0,
       "html": 0,
-      "total": 38
+      "total": 41
     },
     {
       "name": "--accent-alt-primary-muted",
@@ -111,10 +111,10 @@
     },
     {
       "name": "--accent-primary",
-      "css": 189,
+      "css": 187,
       "js": 3,
       "html": 1,
-      "total": 193
+      "total": 191
     },
     {
       "name": "--accent-primary-hover",
@@ -265,10 +265,10 @@
     },
     {
       "name": "--border-color",
-      "css": 74,
+      "css": 73,
       "js": 1,
       "html": 0,
-      "total": 75
+      "total": 74
     },
     {
       "name": "--border-color-focus",
@@ -307,17 +307,17 @@
     },
     {
       "name": "--border-radius-lg",
-      "css": 30,
+      "css": 29,
       "js": 0,
       "html": 0,
-      "total": 30
+      "total": 29
     },
     {
       "name": "--border-radius-md",
-      "css": 141,
+      "css": 142,
       "js": 0,
       "html": 0,
-      "total": 141
+      "total": 142
     },
     {
       "name": "--border-radius-sm",
@@ -594,10 +594,10 @@
     },
     {
       "name": "--font-size-xs",
-      "css": 39,
+      "css": 38,
       "js": 0,
       "html": 0,
-      "total": 39
+      "total": 38
     },
     {
       "name": "--font-weight-bold",
@@ -1091,24 +1091,24 @@
     },
     {
       "name": "--space-2",
-      "css": 192,
+      "css": 193,
       "js": 0,
       "html": 0,
-      "total": 192
+      "total": 193
     },
     {
       "name": "--space-3",
-      "css": 208,
+      "css": 206,
       "js": 2,
       "html": 0,
-      "total": 210
+      "total": 208
     },
     {
       "name": "--space-4",
-      "css": 115,
+      "css": 114,
       "js": 0,
       "html": 0,
-      "total": 115
+      "total": 114
     },
     {
       "name": "--space-5",
@@ -1308,10 +1308,10 @@
     },
     {
       "name": "--text-secondary",
-      "css": 81,
+      "css": 80,
       "js": 1,
       "html": 0,
-      "total": 82
+      "total": 81
     },
     {
       "name": "--text-toggle",

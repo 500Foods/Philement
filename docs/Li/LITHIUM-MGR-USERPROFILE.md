@@ -72,7 +72,7 @@ The Settings tab displays different content based on the `index` field of the se
 | -9 | Formatting | Date Formats | `<fa fa-calendar></fa>` |
 | -10 | Formatting | Number Formats | `<fa fa-00></fa>` |
 | -11 | Application | Startup | `<fa fa-atom-simple></fa>` |
-| -12 | Application | Notifications | `<fa fa-bell></fa>` |
+| -12 | Application | Photo | `<fa fa-camera></fa>` |
 | -13 | Application | Concierge | `<fa fa-bell-concierge></fa>` |
 | -14 | Application | Annotations | `<fa fa-note-sticky></fa>` |
 | -15 | Application | Tours | `<fa fa-signs-post></fa>` |
@@ -1142,6 +1142,192 @@ The Date Formats section stores data in a structured JSON format:
 - **Dual Display**: Timezone comparison in primary/secondary rows
 
 This implementation serves as a reference for complex settings pages requiring real-time displays, custom controls, and sophisticated user interactions.
+
+---
+
+## Photo Settings (Index -12)
+
+The Photo page provides a user photo editor with upload, camera capture, and precise positioning controls. Users can adjust their photo and save a 200x200 PNG to settings.
+
+### UI Layout
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  [Upload Photo] [Capture Photo] [Remove]           │
+├─────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐     ┌─────────────┐                   │
+│  │  ↑/↓ (Y)  │     │  Scale      │                   │
+│  │  Fa icon   │     │  Fa icon   │                   │
+│  └─────────────┘     └─────────────┘                   │
+│          ←  ←  ←  [Photo Area]  →  →  →                    │
+│          [Left/Right (X) with Fa icon]                     │
+│                                                       │
+│  ┌─────────────────────────────────────────────┐      │
+│  │  Dimming Layer (50% opacity)              │      │
+│  │  ┌───────────────────────────┐          │      │
+│  │  │  400x400 Preview (rounded)  │          │      │
+│  │  │  ┌─────────────────┐      │          │      │
+│  │  │  │     Photo       │      │          │      │
+│  │  │  │  (draggable)   │      │          │      │
+│  │  │  └─────────────────┘      │          │      │
+│  │  └───────────────────────────┘          │      │
+│  └─────────────────────────────────────────────┘      │
+│                                                       │
+│          [Rotation] with Fa icon                        │
+│          ←  ←  ←  ←  →  →  →  →                    │
+│                                                       │
+│  ┌──────┐                                            │
+│  │Resize│ (bottom-right corner only)                  │
+│  └──────┘                                            │
+├─────────────────────────────────────────────────────────────┤
+│  [Save Photo]  Status message                          │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Features
+
+#### Photo Editor Control (600x600 base)
+- **Anchored to top-left**: Only bottom-right corner resizes via custom handle
+- **Aspect ratio maintained**: 1:1 (square) when resizing
+- **Min/Max size**: 300px to 800px
+
+#### Custom Sliders with Icon Thumbs
+All sliders use custom implementation (not native range inputs) to support icons on thumbs:
+
+| Slider | Position | Icon | Direction | Range | Step | Purpose |
+|--------|----------|------|-----------|-------|-------|
+| X Position | Top | `<fa fa-left-right></fa>` | Left/Right | -100% to 100% | 1 | Horizontal positioning |
+| Y Position | Left | `<fa fa-up-down></fa>` | Up/Down | -100% to 100% | 1 | Vertical positioning |
+| Scale | Right | `<fa fa-up-down-left-right></fa>` | Vertical | 0.0 to 4.0 | 0.01 | Zoom control |
+| Rotation | Bottom | `<fa fa-rotate></fa>` | Horizontal | -180 to 180 | 1 | Rotation control |
+
+- **Tooltip display**: Shows current value when dragging or hovering (positioned outside image area)
+- **Consistent direction**: Slider up = image up (Y-axis inverted for consistency with horizontal slider)
+
+#### Interaction Methods
+1. **Slider adjustment**: Drag slider thumb with icon to reposition/scale/rotate
+2. **Direct image drag**: Click and drag the photo itself to reposition (updates X/Y sliders)
+3. **Camera capture**: Uses `navigator.mediaDevices.getUserMedia()` with front-facing camera
+4. **File upload**: Accepts any image/* with 10MB limit
+
+#### Preview Overlay
+- **400x400 rounded rectangle** centered in 600x600 editor
+- **Scales proportionally** when editor is resized (maintains aspect ratio)
+- **Dimming layer**: 50% opacity overlay with transparent cutout for preview area
+- **Mask CSS**: Uses `mask-composite: exclude` for clean cutout effect
+
+### Settings Storage Structure
+
+```json
+{
+  "_name": "Photo",
+  "photo": "iVBORw0KGgo...",  // 200x200 PNG base64 (no data: prefix)
+  "original": "iVBORw0KGgo...", // Original uploaded photo base64
+  "originalWidth": 1920,        // Original image width (pixels)
+  "originalHeight": 1080,       // Original image height (pixels)
+  "timestamp": "2026-04-30T19:00:00.000Z",
+  "xPct": 0,                    // Horizontal offset (% of displayed bbox width, -100 to 100)
+  "yPct": 0,                    // Vertical offset (% of displayed bbox height, -100 to 100)
+  "scale": 1.0,              // Scale factor (1.0 = 100%)
+  "rotation": 0               // Rotation in degrees (-180 to 180)
+}
+```
+
+### File Structure
+
+```
+pages/photo/
+├── page-photo.html    # Editor HTML (multi-line format for minifier compatibility)
+├── page-photo.css     # Styles (custom sliders, tooltips, editor layout)
+└── page-photo.js      # Handler (PhotoPage extends BaseSettingsPage)
+```
+
+### Implementation Details
+
+#### Custom Slider System
+The native range inputs were replaced with custom sliders to support icons on thumbs:
+
+```javascript
+// Custom slider creation
+_createCustomSlider(config) {
+  const wrapper = document.createElement('div');
+  wrapper.className = `photo-custom-slider photo-custom-slider-${config.orientation}`;
+
+  const track = document.createElement('div');
+  const thumb = document.createElement('div');
+  thumb.innerHTML = `<fa ${config.icon}></fa>`;  // Icon on thumb
+
+  const tooltip = document.createElement('div');
+  tooltip.className = 'photo-slider-tooltip';
+  tooltip.textContent = value;  // Shows on drag/hover
+}
+```
+
+#### Image Transform Pipeline
+```
+1. User uploads/captures photo → stored in this.photoData
+2. Transform applied: translate(center + xPct% of bbox, center + yPct% of bbox) scale(scale) rotate(rotation)
+   Note: xPct/yPct are percentages of displayed bounding box (factoring scale and rotation)
+3. On save: Create temp canvas with full editor dimensions
+4. Apply same transforms to temp canvas
+5. Crop to preview overlay area (scaled to editor size)
+6. Draw cropped area to 200x200 output canvas
+7. Export as PNG base64 (data URL prefix stripped)
+```
+
+#### Loading Saved State
+```javascript
+// Load existing photo with all positions
+async _loadExistingPhoto() {
+  const section = this.getSectionData();  // Returns photoData object directly
+  if (section?.photo) {
+    this.photoData = `data:image/png;base64,${section.photo}`;
+    this.originalPhotoData = section.original
+      ? `data:image/png;base64,${section.original}`
+      : this.photoData;
+
+    // Restore slider positions (percentages relative to displayed bbox)
+    this.scale = section.scale || 1;
+    this.rotation = section.rotation || 0;
+
+    // Restore percentages (migrate from old pixel values if needed)
+    if (section.xPct !== undefined && section.yPct !== undefined) {
+      this.xPct = section.xPct;
+      this.yPct = section.yPct;
+    } else {
+      // Old format: approximate conversion
+      const bbox = this._getDisplayedBBox();
+      this.xPct = bbox.w ? ((section.x || 0) / bbox.w) * 100 : 0;
+      this.yPct = bbox.h ? ((section.y || 0) / bbox.h) * 100 : 0;
+    }
+
+    // Restore original dimensions
+    this.originalWidth = section.originalWidth || null;
+    this.originalHeight = section.originalHeight || null;
+
+    // Update custom sliders (y inverted for display)
+    this._updateSliderPosition(this._customSliders.x, this.xPct);
+    this._updateSliderPosition(this._customSliders.y, -this.yPct);
+  }
+}
+```
+
+### Toolbar
+A narrow toolbar (`.photo-toolbar`) appears below the editor:
+- **Width**: `fit-content` (not full width like standard LithiumToolbar)
+- **Contains**: Save button + status message
+- **Save button**: Disabled when no photo loaded, enables after upload/capture
+
+### Build Considerations
+- **HTML format**: Multi-line (not minified) to avoid `html-minifier-terser` parse errors with `<fa>` custom elements
+- **CSS lint**: Uses modern `rgb()` syntax, no vendor prefixes
+- **File size**: All files under 1000 lines (page-photo.js: ~670 lines)
+
+### Related Files
+- **Handler**: `src/managers/profile-manager/pages/photo/page-photo.js`
+- **Styles**: `src/managers/profile-manager/pages/photo/page-photo.css`
+- **HTML**: `src/managers/profile-manager/pages/photo/page-photo.html`
+- **Registry**: `src/managers/profile-manager/pages/page-registry.js` (maps -12 to PhotoPage)
 
 ---
 

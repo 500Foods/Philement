@@ -30,6 +30,7 @@
 <fa fa-briefcase></fa>
 <fa fa-broom></fa>
 <fa fa-bug></fa>
+<fa fa-bullseye></fa>
 <fa fa-calendar-days></fa>
 <fa fa-calendar></fa>
 <fa fa-camera></fa>
@@ -120,7 +121,6 @@
 <fa fa-right></fa>
 <fa fa-rotate-left></fa>
 <fa fa-rotate-right></fa>
-<fa fa-save></fa>
 <fa fa-search></fa>
 <fa fa-shield-halved></fa>
 <fa fa-sign-in-alt></fa>

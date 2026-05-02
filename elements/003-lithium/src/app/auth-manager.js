@@ -285,11 +285,28 @@ export class AuthManager {
     // For 'normal' logout, remove lithium_last_username
     if (type === 'normal') {
       localStorage.removeItem('lithium_last_username');
+
+      // Flush any pending settings to server before logout
+      if (window.lithiumSettings && typeof window.lithiumSettings.flush === 'function') {
+        try {
+          await window.lithiumSettings.flush();
+        } catch (e) {
+          logAuth(Status.WARN, `Failed to flush settings before logout: ${e.message}`);
+        }
+      }
     }
 
     // For 'public' logout, clear ALL localStorage for this site
     if (type === 'public') {
-      // Clear global settings service (in-memory state) BEFORE clearing localStorage
+      // Flush any pending settings to server before logout
+      if (window.lithiumSettings && typeof window.lithiumSettings.flush === 'function') {
+        try {
+          await window.lithiumSettings.flush();
+        } catch (e) {
+          logAuth(Status.WARN, `Failed to flush settings before logout: ${e.message}`);
+        }
+      }
+      // Clear global settings service (in-memory state) AFTER syncing
       if (window.lithiumSettings && typeof window.lithiumSettings.clear === 'function') {
         window.lithiumSettings.clear();
       }
@@ -304,9 +321,16 @@ export class AuthManager {
 
     // For 'global' logout, clear ALL localStorage for this site
     if (type === 'global') {
-      // Clear global settings service (in-memory state) BEFORE clearing localStorage
+      // Flush any pending settings to server before logout
+      if (window.lithiumSettings && typeof window.lithiumSettings.flush === 'function') {
+        try {
+          await window.lithiumSettings.flush();
+        } catch (e) {
+          logAuth(Status.WARN, `Failed to flush settings before logout: ${e.message}`);
+        }
+      }
+      // Clear global settings service (in-memory state) AFTER syncing
       if (window.lithiumSettings && typeof window.lithiumSettings.clear === 'function') {
-        window.lithiumSettings.clear();
         // Clear server settings for maximum security
         if (this.app.api) {
           try {
@@ -315,6 +339,7 @@ export class AuthManager {
             logAuth(Status.WARN, `Failed to clear server settings: ${e.message}`);
           }
         }
+        window.lithiumSettings.clear();
       }
       // Clear ALL localStorage for this origin
       localStorage.clear();
