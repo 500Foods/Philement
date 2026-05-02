@@ -315,6 +315,7 @@ export class ManagerLoader {
         outgoing.classList.add('slot-fading-out');
         setTimeout(() => {
           outgoing.classList.remove('slot-visible', 'slot-fading-out');
+          outgoing.classList.add('slot-hidden');
           resolve();
         }, duration);
       }));
@@ -322,6 +323,7 @@ export class ManagerLoader {
 
     if (incoming) {
       steps.push(new Promise(resolve => {
+        incoming.classList.remove('slot-hidden');
         incoming.classList.add('slot-visible');
         setTimeout(resolve, duration);
       }));

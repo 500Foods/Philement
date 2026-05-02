@@ -363,6 +363,7 @@
   height: 16px;
   transition: transform var(--transition-delay) ease;
   font-size: var(--font-size-xs);
+  color: #fff;
 }
 
 .group-name {

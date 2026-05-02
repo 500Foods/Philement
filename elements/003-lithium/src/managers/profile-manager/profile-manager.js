@@ -348,6 +348,7 @@ export default class ProfileManager {
     // Collection tab handler
     this.collectionHandler = new CollectionTabHandler({
       container: this.elements.collectionEditorContainer,
+      parent: this.container, // Manager main container (sibling of toolbar)
       onDirtyChange: (dirty) => {
         this.updateFooterButtons(dirty);
       },

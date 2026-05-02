@@ -16,6 +16,8 @@ import { log, Subsystems, Status } from '../../core/log.js';
 import {
   buildEditorExtensions,
   createReadOnlyCompartment,
+  createWordWrapCompartment,
+  createBracketMatchCompartment,
   setEditorContentNoHistory,
   setEditorEditable,
   updateUndoRedoButtons,
@@ -23,7 +25,11 @@ import {
   unfoldAllInEditor,
   formatSortedJson,
   compareJsonIgnoringKeyOrder,
+  initCodeMirrorScrollbars,
+  updateCodeMirrorScrollbars,
+  destroyCodeMirrorScrollbars,
 } from '../../core/codemirror-setup.js';
+import { LithiumEditorFooter } from '../../core/manager-ui.js';
 import { EditorState, EditorView, undo, redo } from '../../core/codemirror.js';
 
 /**
@@ -33,12 +39,16 @@ import { EditorState, EditorView, undo, redo } from '../../core/codemirror.js';
 export class CollectionTabHandler {
   constructor(options = {}) {
     this.container = options.container;
+    this.parent = options.parent || options.container?.parentNode; // Manager main container (sibling of toolbar)
     this.onDirtyChange = options.onDirtyChange || (() => {});
     this.onSave = options.onSave || (() => {});
     this.onCancel = options.onCancel || (() => {});
 
     this.editor = null;
     this.readOnlyCompartment = null;
+    this.wordWrapCompartment = null;
+    this.bracketMatchCompartment = null;
+    this.footer = null;
     this._initialData = null;
     this._isEditing = false;
 
@@ -64,6 +74,8 @@ export class CollectionTabHandler {
 
     try {
       this.readOnlyCompartment = createReadOnlyCompartment();
+      this.wordWrapCompartment = createWordWrapCompartment();
+      this.bracketMatchCompartment = createBracketMatchCompartment();
 
       const jsonStr = formatSortedJson(initialData, 2);
 
@@ -73,6 +85,10 @@ export class CollectionTabHandler {
         readOnly: true, // Start read-only, double-click to edit
         fontSize: this.fontSize,
         fontFamily: this.fontFamily,
+        wordWrapCompartment: this.wordWrapCompartment,
+        bracketMatchCompartment: this.bracketMatchCompartment,
+        wordWrap: false,
+        bracketMatch: true,
         onUpdate: (update) => {
           if (update.docChanged) {
             this.onDirtyChange(this.isDirty());
@@ -92,6 +108,28 @@ export class CollectionTabHandler {
         state: startState,
         parent: this.container,
       });
+
+      // Create editor footer (sibling of CodeMirror, inside editor wrapper)
+      const footerEl = document.createElement('div');
+      const editorWrapper = this.container.closest('.editor-wrapper');
+      if (editorWrapper) {
+        editorWrapper.appendChild(footerEl);
+      } else {
+        // Fallback: append to tab panel if wrapper not found
+        this.container.closest('.tab-panel')?.appendChild(footerEl);
+      }
+      this.footer = new LithiumEditorFooter({
+        container: footerEl,
+        editorView: this.editor,
+        wordWrapCompartment: this.wordWrapCompartment,
+        bracketMatchCompartment: this.bracketMatchCompartment,
+        initialWordWrap: false,
+        initialBracketMatch: true,
+      });
+      this.footer.init();
+
+      // Initialize OverlayScrollbars on the CodeMirror scroller
+      initCodeMirrorScrollbars(this.editor);
 
       // Store reference for external access
       this.container._cmView = this.editor;
@@ -307,9 +345,20 @@ export class CollectionTabHandler {
    * Destroy the editor instance
    */
   destroy() {
+    // Destroy OverlayScrollbars first
+    if (this.editor) {
+      destroyCodeMirrorScrollbars(this.editor);
+    }
+
+    if (this.footer) {
+      this.footer.destroy();
+      this.footer = null;
+    }
     this.editor?.destroy();
     this.editor = null;
     this.readOnlyCompartment = null;
+    this.wordWrapCompartment = null;
+    this.bracketMatchCompartment = null;
     this._initialData = null;
     this._isEditing = false;
   }

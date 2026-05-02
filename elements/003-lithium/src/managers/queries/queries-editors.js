@@ -16,14 +16,20 @@ import {
 import {
   buildEditorExtensions,
   createReadOnlyCompartment,
+  createWordWrapCompartment,
+  createBracketMatchCompartment,
   setEditorEditable,
   setEditorContentNoHistory,
   updateUndoRedoButtons,
   foldAllInEditor,
   unfoldAllInEditor,
   formatSortedJson,
+  initCodeMirrorScrollbars,
+  updateCodeMirrorScrollbars,
+  destroyCodeMirrorScrollbars,
   READONLY_CLASS,
 } from '../../core/codemirror-setup.js';
+import { LithiumEditorFooter } from '../../core/manager-ui.js';
 
 // Constants
 const MIN_FONT_SIZE = 10;
@@ -58,6 +64,8 @@ export class EditorManager {
 
     try {
       this._sqlReadOnlyCompartment = createReadOnlyCompartment();
+      this._sqlWordWrapCompartment = createWordWrapCompartment();
+      this._sqlBracketMatchCompartment = createBracketMatchCompartment();
 
       const extensions = buildEditorExtensions({
         language: 'sql',
@@ -65,6 +73,10 @@ export class EditorManager {
         readOnly: !this.manager.queryTable?.isEditing,
         fontSize: this.fontSettings.size,
         fontFamily: this.fontSettings.family,
+        wordWrapCompartment: this._sqlWordWrapCompartment,
+        bracketMatchCompartment: this._sqlBracketMatchCompartment,
+        wordWrap: false,
+        bracketMatch: true,
         onUpdate: (update) => {
           if (update.docChanged && this.manager.queryTable?.isEditing) {
             this.manager.editHelper.checkDirtyState();
@@ -83,6 +95,28 @@ export class EditorManager {
         state: startState,
         parent: container,
       });
+
+      // Create editor footer (sibling of CodeMirror, inside editor wrapper)
+      const sqlFooterEl = document.createElement('div');
+      const sqlWrapper = this.manager.elements.sqlEditorContainer.closest('.editor-wrapper');
+      if (sqlWrapper) {
+        sqlWrapper.appendChild(sqlFooterEl);
+      } else {
+        // Fallback: append to tab pane if wrapper not found
+        this.manager.elements.sqlEditorContainer.closest('.queries-tab-pane')?.appendChild(sqlFooterEl);
+      }
+      this.sqlEditorFooter = new LithiumEditorFooter({
+        container: sqlFooterEl,
+        editorView: this.sqlEditor,
+        wordWrapCompartment: this._sqlWordWrapCompartment,
+        bracketMatchCompartment: this._sqlBracketMatchCompartment,
+        initialWordWrap: false,
+        initialBracketMatch: true,
+      });
+      this.sqlEditorFooter.init();
+
+      // Initialize OverlayScrollbars on the CodeMirror scroller
+      initCodeMirrorScrollbars(this.sqlEditor);
 
       // Set initial visual state
       const isEditing = this.manager.queryTable?.isEditing || false;
@@ -108,6 +142,8 @@ export class EditorManager {
 
     try {
       this._summaryReadOnlyCompartment = createReadOnlyCompartment();
+      this._summaryWordWrapCompartment = createWordWrapCompartment();
+      this._summaryBracketMatchCompartment = createBracketMatchCompartment();
 
       const extensions = buildEditorExtensions({
         language: 'markdown',
@@ -115,6 +151,10 @@ export class EditorManager {
         readOnly: !this.manager.queryTable?.isEditing,
         fontSize: this.fontSettings.size,
         fontFamily: this.fontSettings.family,
+        wordWrapCompartment: this._summaryWordWrapCompartment,
+        bracketMatchCompartment: this._summaryBracketMatchCompartment,
+        wordWrap: false,
+        bracketMatch: true,
         onUpdate: (update) => {
           if (update.docChanged && this.manager.queryTable?.isEditing) {
             this.manager.editHelper.checkDirtyState();
@@ -132,6 +172,27 @@ export class EditorManager {
         state: startState,
         parent: container,
       });
+
+      // Create editor footer (sibling of CodeMirror, inside editor wrapper)
+      const summaryFooterEl = document.createElement('div');
+      const summaryWrapper = this.manager.elements.summaryEditorContainer.closest('.editor-wrapper');
+      if (summaryWrapper) {
+        summaryWrapper.appendChild(summaryFooterEl);
+      } else {
+        this.manager.elements.summaryEditorContainer.closest('.queries-tab-pane')?.appendChild(summaryFooterEl);
+      }
+      this.summaryEditorFooter = new LithiumEditorFooter({
+        container: summaryFooterEl,
+        editorView: this.summaryEditor,
+        wordWrapCompartment: this._summaryWordWrapCompartment,
+        bracketMatchCompartment: this._summaryBracketMatchCompartment,
+        initialWordWrap: false,
+        initialBracketMatch: true,
+      });
+      this.summaryEditorFooter.init();
+
+      // Initialize OverlayScrollbars on the CodeMirror scroller
+      initCodeMirrorScrollbars(this.summaryEditor);
 
       // Set initial visual state
       const isEditing = this.manager.queryTable?.isEditing || false;
@@ -165,12 +226,18 @@ export class EditorManager {
       const jsonStr = formatSortedJson(data, 2);
 
       this._jsonReadOnlyCompartment = createReadOnlyCompartment();
+      this._jsonWordWrapCompartment = createWordWrapCompartment();
+      this._jsonBracketMatchCompartment = createBracketMatchCompartment();
 
       const extensions = buildEditorExtensions({
         language: 'json',
         readOnlyCompartment: this._jsonReadOnlyCompartment,
         readOnly: !this.manager.queryTable?.isEditing,
         fontSize: 13,
+        wordWrapCompartment: this._jsonWordWrapCompartment,
+        bracketMatchCompartment: this._jsonBracketMatchCompartment,
+        wordWrap: false,
+        bracketMatch: true,
         onUpdate: (update) => {
           if (update.docChanged && this.manager.queryTable?.isEditing) {
             this.manager.editHelper.checkDirtyState();
@@ -189,6 +256,27 @@ export class EditorManager {
         state: startState,
         parent: container,
       });
+
+      // Create editor footer (sibling of CodeMirror, inside editor wrapper)
+      const collectionFooterEl = document.createElement('div');
+      const collectionWrapper = this.manager.elements.collectionEditorContainer.closest('.editor-wrapper');
+      if (collectionWrapper) {
+        collectionWrapper.appendChild(collectionFooterEl);
+      } else {
+        this.manager.elements.collectionEditorContainer.closest('.queries-tab-pane')?.appendChild(collectionFooterEl);
+      }
+      this.collectionEditorFooter = new LithiumEditorFooter({
+        container: collectionFooterEl,
+        editorView: this.collectionEditor,
+        wordWrapCompartment: this._jsonWordWrapCompartment,
+        bracketMatchCompartment: this._jsonBracketMatchCompartment,
+        initialWordWrap: false,
+        initialBracketMatch: true,
+      });
+      this.collectionEditorFooter.init();
+
+      // Initialize OverlayScrollbars on the CodeMirror scroller
+      initCodeMirrorScrollbars(this.collectionEditor);
 
       // Store references on container for compatibility
       container._cmView = this.collectionEditor;
@@ -295,16 +383,39 @@ export class EditorManager {
    * Destroy all editors
    */
   destroy() {
+    // Destroy OSB instances first
+    if (this.sqlEditor) {
+      destroyCodeMirrorScrollbars(this.sqlEditor);
+    }
+    if (this.summaryEditor) {
+      destroyCodeMirrorScrollbars(this.summaryEditor);
+    }
+    if (this.collectionEditor) {
+      destroyCodeMirrorScrollbars(this.collectionEditor);
+    }
+
+    if (this.sqlEditorFooter) {
+      this.sqlEditorFooter.destroy();
+      this.sqlEditorFooter = null;
+    }
     if (this.sqlEditor) {
       this.sqlEditor.destroy();
       this.sqlEditor = null;
     }
 
+    if (this.summaryEditorFooter) {
+      this.summaryEditorFooter.destroy();
+      this.summaryEditorFooter = null;
+    }
     if (this.summaryEditor) {
       this.summaryEditor.destroy();
       this.summaryEditor = null;
     }
 
+    if (this.collectionEditorFooter) {
+      this.collectionEditorFooter.destroy();
+      this.collectionEditorFooter = null;
+    }
     if (this.collectionEditor) {
       this.collectionEditor.destroy();
       this.collectionEditor = null;

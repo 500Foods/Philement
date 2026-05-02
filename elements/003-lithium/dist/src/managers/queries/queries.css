@@ -9,9 +9,9 @@
 
 @layer managers {
 
-/* ═════════════════════════════════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════════════════════════
    Queries Manager Styles
-   ═════════════════════════════════════════════════════════════════════════════
+   ════════════════════════════════════════════════════════════════════════════
    
    Layout follows the Lookups Manager pattern:
    - Left panel: Query list (LithiumTable)
@@ -21,9 +21,9 @@
    lithium-table.css via the .lithium-table-container and .lithium-nav-* classes.
    This file only contains manager-specific layout styles.
    
-   ═════════════════════════════════════════════════════════════════════════════ */
+   ══════════════════════════════════════════════════════════════════════════ */
 
-/* ── Main Container ─────────────────────────────────────────────────────── */
+/* ── Main Container ─────────────────────────────────────────────── */
 
 .queries-manager-container {
   display: flex;
@@ -36,7 +36,7 @@
   text-align: left;
 }
 
-/* ── Left Panel (Query List) ─────────────────────────────────────────────── */
+/* ── Left Panel (Query List) ──────────────────────────────────────── */
 
 .queries-left-panel {
   display: flex;
@@ -57,7 +57,7 @@
   min-height: 0;
 }
 
-/* ── Right Panel (Query Details) ────────────────────────────────────────── */
+/* ── Right Panel (Query Details) ─────────────────────────────────── */
 
 .queries-right-panel {
   flex: 1;
@@ -102,7 +102,7 @@
   color: var(--text-disabled);
 }
 
-/* ── Tabs Content ───────────────────────────────────────────────────────── */
+/* ── Tabs Content ───────────────────────────────────────────────── */
 
 .queries-tabs-content {
   flex: 1;
@@ -117,7 +117,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  padding: 0px var(--space-3) var(--space-2) var(--space-3);
+  padding: 0px var(--space-3);
   overflow: auto;
   opacity: 0;
   visibility: hidden;
@@ -130,13 +130,23 @@
   visibility: visible;
   pointer-events: auto;
   transition: opacity var(--transition-duration) ease-in-out, visibility 0s linear 0s;
+  display: flex;
+  flex-direction: column;
 }
 
-/* ── SQL Editor ─────────────────────────────────────────────────────────── */
+/* Editor wrapper fills tab pane */
+.editor-wrapper {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── SQL Editor ─────────────────────────────────────────────────── */
 
 .queries-sql-editor {
-  width: 100%;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
   border-radius: var(--border-radius-md);
   border: 1px solid var(--accent-alt-primary);
@@ -175,26 +185,25 @@
   padding-right: 8px;
 }
 
-/* ── Summary Editor ─────────────────────────────────────────────────────── */
+/* ── Summary Editor ──────────────────────────────────────────────── */
 
 #queries-tab-summary {
   width: 100%;
   height: 100%;
-  padding: var(--space-2) var(--space-3);
+  padding: 0px var(--space-3);
 }
 
-#queries-tab-summary > div {
-  border-radius: var(--border-radius-md);
+#queries-tab-summary > .editor-wrapper {
   overflow: hidden;
   height: 100%;
-  border: var(--border-standard);
 }
 
 .queries-summary-editor {
-  width: 100%;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
   border-radius: var(--border-radius-md);
+  border: 1px solid var(--accent-alt-primary);
 }
 
 .queries-summary-editor .cm-editor {
@@ -203,7 +212,7 @@
 
 /* Summary readonly visual feedback — now handled by shared .lithium-cm-readonly in base.css */
 
-/* ── Preview Tab ────────────────────────────────────────────────────────── */
+/* ── Preview Tab ─────────────────────────────────────────────────── */
 
 .queries-preview-content {
   padding: var(--space-4);
@@ -267,7 +276,7 @@
   color: var(--text-secondary);
 }
 
-/* ── Test Tab ───────────────────────────────────────────────────────────── */
+/* ── Test Tab ───────────────────────────────────────────────────── */
 
 .queries-test-content {
   padding: var(--space-4);
@@ -296,19 +305,23 @@
   overflow: auto;
 }
 
-/* ── Collection (JSON) Editor ───────────────────────────────────────────── */
+/* ── Collection (JSON) Editor ───────────────────────────────────── */
 
-.queries-tab-pane #queries-tab-collection {
-  padding: 0;
-  width: 100%;
-  height: 100%;
+.queries-collection-editor {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: var(--border-radius-md);
 }
 
-.queries-tab-pane #queries-tab-collection .cm-editor {
+#queries-tab-collection .cm-editor {
   height: 100%;
+  border: 1px solid var(--accent-alt-primary);
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
 }
 
-/* ── Footer Controls ────────────────────────────────────────────────────── */
+/* ── Footer Controls ─────────────────────────────────────────────── */
 
 .queries-footer-datasource {
   width: auto;
@@ -319,9 +332,9 @@
   color: white;
   font-size: var(--font-size-sm);
   cursor: pointer;
-   outline: none;
-   appearance: none;
-   transition: background-color var(--transition-fast);
+  outline: none;
+  appearance: none;
+  transition: background-color var(--transition-fast);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='white'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 8px center;
@@ -348,8 +361,7 @@
   border: none;
 }
 
-/* ── Toolbar Styles ──────────────────────────────────────────────────────── */
+/* ── Toolbar Styles ──────────────────────────────────────── */
 
 /* Uses lithium-toolbar.css as base - these are manager-specific overrides */
-
 } /* end @layer managers */

@@ -19,7 +19,9 @@ import path from 'path';
 
 const PROJECT_ROOT = path.resolve(import.meta.dirname, '..');
 const SRC_DIR = path.join(PROJECT_ROOT, 'src');
-const DIST_CONFIG_DIR = path.join(PROJECT_ROOT, 'dist', 'config');
+const DIST_CONFIG_DIR = process.env.LITHIUM_DEPLOY
+  ? path.join(process.env.LITHIUM_DEPLOY, 'config')
+  : path.join(PROJECT_ROOT, 'dist', 'config');
 
 // ---------------------------------------------------------------------------
 // Helpers

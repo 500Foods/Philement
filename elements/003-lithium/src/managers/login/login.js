@@ -14,6 +14,7 @@ import { hasLookup } from '../../shared/lookups.js';
 import { log, logGroup, getRawLog, Subsystems, Status } from '../../core/log.js';
 import { formatLogText, getFlagSvg, getPasswordManagerSelectors } from '../../shared/log-formatter.js';
 import { getTip } from '../../core/tooltip-api.js';
+import { scrollbarManager } from '../../core/scrollbar-manager.js';
 import {
   getBestGuessLocale,
   getLanguageData,
@@ -896,6 +897,10 @@ export default class LoginManager {
 
       logViewer.innerHTML = '';
       this._logEditor = new EditorView({ state, parent: logViewer });
+
+      // Initialize OverlayScrollbars on the CodeMirror scroller
+      const { initCodeMirrorScrollbars } = await import('../../core/codemirror-setup.js');
+      initCodeMirrorScrollbars(this._logEditor);
     } catch (error) {
       console.warn('[LoginManager] CodeMirror failed to load, using plain text:', error);
       logViewer.innerHTML = `<pre class="log-content">${logText}</pre>`;
@@ -1807,6 +1812,12 @@ export default class LoginManager {
    * Teardown the login manager
    */
   teardown() {
+    // Clean up CodeMirror OverlayScrollbars first
+    if (this._logEditor?._osbInstance) {
+      scrollbarManager.destroy(this._logEditor._osbInstance);
+      this._logEditor._osbInstance = null;
+    }
+
     // Clean up CodeMirror editor if present
     if (this._logEditor) {
       this._logEditor.destroy();

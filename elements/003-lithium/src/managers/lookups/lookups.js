@@ -21,7 +21,7 @@ import { authQuery } from '../../shared/conduit.js';
 import { toast } from '../../shared/toast.js';
 import { log, Subsystems, Status } from '../../core/log.js';
 import { processIcons } from '../../core/icons.js';
-import { setupManagerFooterIcons, createFontPopup, closeExportPopup, initToolbars, positionPopup, closeAllPopups } from '../../core/manager-ui.js';
+import { setupManagerFooterIcons, createFontPopup, closeExportPopup, initToolbars, positionPopup, closeAllPopups, LithiumEditorFooter } from '../../core/manager-ui.js';
 import { ManagerEditHelper } from '../../core/manager-edit-helper.js';
 import { AuditInfoFooter } from '../../core/audit-info-footer.js';
 import SunEditor from 'suneditor';
@@ -30,11 +30,16 @@ import { EditorState, EditorView, undo, redo } from '../../core/codemirror.js';
 import {
   buildEditorExtensions,
   createReadOnlyCompartment,
+  createWordWrapCompartment,
+  createBracketMatchCompartment,
   setEditorEditable,
   foldAllInEditor,
   unfoldAllInEditor,
   formatSortedJson,
   parseAndSortJson,
+  initCodeMirrorScrollbars,
+  updateCodeMirrorScrollbars,
+  destroyCodeMirrorScrollbars,
 } from '../../core/codemirror-setup.js';
 import { scrollbarManager } from '../../core/scrollbar-manager.js';
 import './lookups.css';
@@ -395,12 +400,18 @@ export default class LookupsManager {
 
     try {
       this._jsonReadOnlyCompartment = createReadOnlyCompartment();
+      this._jsonWordWrapCompartment = createWordWrapCompartment();
+      this._jsonBracketMatchCompartment = createBracketMatchCompartment();
 
       const extensions = buildEditorExtensions({
         language: 'json',
         readOnlyCompartment: this._jsonReadOnlyCompartment,
         readOnly: !this.childTable?.isEditing,
         fontSize: 13,
+        wordWrapCompartment: this._jsonWordWrapCompartment,
+        bracketMatchCompartment: this._jsonBracketMatchCompartment,
+        wordWrap: false,
+        bracketMatch: true,
         onUpdate: (update) => {
           if (update.docChanged && this.childTable?.isEditing) {
             this.editHelper.checkDirtyState();
@@ -416,6 +427,29 @@ export default class LookupsManager {
         state,
         parent: this.elements.jsonEditor,
       });
+
+      // Create editor footer (sibling of CodeMirror, inside editor wrapper)
+      const jsonFooterEl = document.createElement('div');
+      const jsonWrapper = this.elements.jsonEditor?.closest('.editor-wrapper');
+      if (jsonWrapper) {
+        jsonWrapper.appendChild(jsonFooterEl);
+      } else {
+        // Fallback: append to tab pane if wrapper not found
+        this.elements.jsonEditor?.closest('.lookups-tab-pane')?.appendChild(jsonFooterEl);
+      }
+      this.jsonEditorFooter = new LithiumEditorFooter({
+        container: jsonFooterEl,
+        editorView: this.collectionEditor,
+        wordWrapCompartment: this._jsonWordWrapCompartment,
+        bracketMatchCompartment: this._jsonBracketMatchCompartment,
+        initialWordWrap: false,
+        initialBracketMatch: true,
+      });
+      this.jsonEditorFooter.init();
+      this.jsonEditorFooter.hide(); // Hidden by default, shown when editor is visible
+
+      // Initialize OverlayScrollbars on the CodeMirror scroller
+      initCodeMirrorScrollbars(this.collectionEditor);
 
       // Store references on the container for compatibility
       this.elements.jsonEditor._cmView = this.collectionEditor;
@@ -1795,11 +1829,18 @@ _saveChildSelection(rowData) {
        this.sunEditor = null;
      }
 
-     // Destroy JSON editor (CodeMirror EditorView)
-     if (this.collectionEditor) {
-       this.collectionEditor.destroy();
-       this.collectionEditor = null;
-     }
+      // Destroy JSON editor (CodeMirror EditorView)
+      if (this.collectionEditor) {
+        destroyCodeMirrorScrollbars(this.collectionEditor);
+      }
+      if (this.jsonEditorFooter) {
+        this.jsonEditorFooter.destroy();
+        this.jsonEditorFooter = null;
+      }
+      if (this.collectionEditor) {
+        this.collectionEditor.destroy();
+        this.collectionEditor = null;
+      }
 
      // Remove font popup
      if (this.fontPopup) {

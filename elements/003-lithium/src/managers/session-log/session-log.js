@@ -15,6 +15,7 @@ import { log, getRawLog, Subsystems, Status } from '../../core/log.js';
 import { formatLogText } from '../../shared/log-formatter.js';
 import { createFontPopup, initToolbars } from '../../core/manager-ui.js';
 import { processIcons } from '../../core/icons.js';
+import { scrollbarManager } from '../../core/scrollbar-manager.js';
 import './session-log.css';
 
 // Convenience alias for this module's subsystem
@@ -241,7 +242,7 @@ export default class SessionLogManager {
     // Initialize CodeMirror
     try {
       const { EditorState, EditorView } = await import('../../core/codemirror.js');
-      const { buildEditorExtensions, createReadOnlyCompartment } = await import('../../core/codemirror-setup.js');
+      const { buildEditorExtensions, createReadOnlyCompartment, initCodeMirrorScrollbars } = await import('../../core/codemirror-setup.js');
 
       const roCompartment = createReadOnlyCompartment();
       const extensions = buildEditorExtensions({
@@ -255,7 +256,10 @@ export default class SessionLogManager {
       const state = EditorState.create({ doc: logText, extensions });
       viewer.innerHTML = '';
       this._logEditor = new EditorView({ state, parent: viewer });
-      
+       
+      // Initialize OverlayScrollbars on the CodeMirror scroller
+      initCodeMirrorScrollbars(this._logEditor);
+
       // Apply current font settings
       this.applyFontSettings();
     } catch (error) {
@@ -305,6 +309,12 @@ export default class SessionLogManager {
       this._fontPopupHide();
       this._fontPopupHide = null;
       this._fontPopup = null;
+    }
+
+    // Destroy CodeMirror OverlayScrollbars first
+    if (this._logEditor?._osbInstance) {
+      scrollbarManager.destroy(this._logEditor._osbInstance);
+      this._logEditor._osbInstance = null;
     }
 
     // Destroy the CodeMirror editor if present

@@ -23,6 +23,7 @@ import { togglePanelCollapse, restorePanelState } from '../../core/panel-collaps
 
 import { processIcons } from '../../core/icons.js';
 import { setupManagerFooterIcons, createFontPopup, closeExportPopup, initToolbars, positionPopup, closeAllPopups } from '../../core/manager-ui.js';
+import { LithiumEditorFooter } from '../../core/manager-ui.js';
 import { ManagerEditHelper } from '../../core/manager-edit-helper.js';
 import { authQuery } from '../../shared/conduit.js';
 import { toast } from '../../shared/toast.js';
@@ -40,10 +41,15 @@ import {
 import {
   buildEditorExtensions,
   createReadOnlyCompartment,
+  createWordWrapCompartment,
+  createBracketMatchCompartment,
   setEditorEditable,
   setEditorContentNoHistory,
   foldAllInEditor,
   unfoldAllInEditor,
+  initCodeMirrorScrollbars,
+  updateCodeMirrorScrollbars,
+  destroyCodeMirrorScrollbars,
 } from '../../core/codemirror-setup.js';
 
 // ── Hardcoded Sections Data ───────────────────────────────────────────────
@@ -218,6 +224,11 @@ export default class StyleManager {
     this.cssEditor = null;
     this.isCssEditorInEditMode = false;
     this._originalCssContent = '';
+    
+    // CodeMirror compartments for editor footer toggles
+    this.cmReadOnlyCompartment = null;
+    this.cmWordWrapCompartment = null;
+    this.cmBracketMatchCompartment = null;
     
     // Edit helper — consolidates edit mode, dirty tracking, and save/cancel buttons
     this.editHelper = new ManagerEditHelper({ name: 'Style' });
@@ -781,6 +792,8 @@ export default class StyleManager {
 
     try {
       this.cmReadOnlyCompartment = createReadOnlyCompartment();
+      this.cmWordWrapCompartment = createWordWrapCompartment();
+      this.cmBracketMatchCompartment = createBracketMatchCompartment();
 
       const extensions = buildEditorExtensions({
         language: 'css',
@@ -793,6 +806,10 @@ export default class StyleManager {
           }
         },
         ...this.editHelper.getCodeMirrorKeymapOptions(),
+        wordWrapCompartment: this.cmWordWrapCompartment,
+        wordWrap: false,
+        bracketMatchCompartment: this.cmBracketMatchCompartment,
+        bracketMatch: true,
       });
 
       const state = EditorState.create({ doc: '', extensions });
@@ -802,8 +819,24 @@ export default class StyleManager {
         parent: this.elements.cssEditor,
       });
 
+      // Initialize OverlayScrollbars on the CodeMirror scroller
+      initCodeMirrorScrollbars(this.cssEditor);
+
       // Set initial visual state (readonly)
       setEditorEditable(this.cssEditor, this.cmReadOnlyCompartment, false, this.elements.cssEditor);
+
+      // Create editor footer below the CSS editor
+      const footerEl = document.createElement('div');
+      this.elements.cssEditor.appendChild(footerEl);
+      this.cssEditorFooter = new LithiumEditorFooter({
+        container: footerEl,
+        editorView: this.cssEditor,
+        wordWrapCompartment: this.cmWordWrapCompartment,
+        bracketMatchCompartment: this.cmBracketMatchCompartment,
+        initialWordWrap: false,
+        initialBracketMatch: true,
+      });
+      this.cssEditorFooter.init();
 
       // Double-click to enter edit mode
       this.elements.cssEditor?.addEventListener('dblclick', () => {
@@ -1560,6 +1593,11 @@ ${selector}:disabled {
 
     // Clean up edit helper
     this.editHelper?.destroy();
+
+    // Destroy CSS editor OverlayScrollbars
+    if (this.cssEditor) {
+      destroyCodeMirrorScrollbars(this.cssEditor);
+    }
 
     // Remove preview style element
     if (this.previewStyleEl) {

@@ -164,7 +164,7 @@
   inset: 0;
   display: none;
   overflow: auto;
-  padding: var(--space-3);
+  padding: 0px var(--space-3);
 }
 
 .lookups-tab-pane.active {
@@ -178,6 +178,7 @@
   height: 100%;
   background: var(--bg-secondary);
   border-radius: var(--border-radius-md);
+  border: 1px solid var(--accent-alt-primary);
   overflow: hidden;
 }
 
