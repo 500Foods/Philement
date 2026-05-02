@@ -590,6 +590,79 @@ Without `onRefresh`, the Navigator refresh button calls `loadData()` with no par
   }
 ```
 
+
+### Audit Info Footer (Optional)
+
+If your table includes audit fields (`updated_by`, `updated_at`, and preferably `created_by`, `created_at`), you can display this information in the footer when a row is selected. The audit info footer shows "UserID = X" and a formatted timestamp, and clicking it opens a popup with full audit history.
+
+1. **Import the component**:
+
+   ```javascript
+   import { AuditInfoFooter } from '../../core/audit-info-footer.js';
+   ```
+
+2. **Add audit footer property** to the class constructor:
+
+   ```javascript
+   this.auditFooter = null;   // Audit info footer
+   ```
+
+3. **Initialize the audit footer** in `init()` (after `_setupFooter()`):
+
+   ```javascript
+   setupAuditFooter() {
+     const slot = this.container.closest(".manager-slot");
+     if (!slot) return;
+
+     this.auditFooter = new AuditInfoFooter(this);
+     this.auditFooter.init();
+     log(Subsystems.MANAGER, Status.INFO, "[MyManager] Audit footer initialized");
+   }
+   ```
+
+   And call it in `init()`:
+   ```javascript
+   this._setupFooter();
+   this.setupAuditFooter();
+   ```
+
+4. **Update the audit footer** when a row is selected:
+
+   ```javascript
+   async _handleRowSelected(rowData) {
+     if (!rowData) return;
+     
+     this.auditFooter?.update(rowData);  // Add this line
+     
+     // ... rest of selection handling
+   }
+   ```
+
+5. **Clear the audit footer** when deselected:
+
+   ```javascript
+   _handleRowDeselected() {
+     this.auditFooter?.update(null);  // Add this line
+     // ... rest of deselection handling
+   }
+   ```
+
+6. **Clean up** the audit footer in `cleanup()`:
+
+   ```javascript
+   cleanup() {
+     if (this.auditFooter) {
+       this.auditFooter.destroy();
+       this.auditFooter = null;
+     }
+     // ... rest of cleanup
+   }
+   ```
+
+The audit footer automatically checks for `updated_id` and `updated_at` fields in the selected row and displays them if present. It also shows `created_by` and `created_at` in the popup.
+
+The footer button is positioned after Save/Cancel (in the available space between Cancel and the right-side buttons like Crimson), and uses the existing placeholder for flex spacing.
+
 ### Lifecycle Methods
 
 ```javascript

@@ -29,6 +29,8 @@ import { processIcons } from '../../core/icons.js';
 import { setupManagerFooterIcons, createFontPopup, initToolbars, positionPopup, closeAllPopups } from '../../core/manager-ui.js';
 import { ManagerEditHelper } from '../../core/manager-edit-helper.js';
 import { formatSortedJson, parseAndSortJson } from '../../core/codemirror-setup.js';
+import { scrollbarManager } from '../../core/scrollbar-manager.js';
+import { AuditInfoFooter } from '../../core/audit-info-footer.js';
 
 // Editor management (CodeMirror init, font, prettify, undo/redo)
 import { createEditorManager } from './queries-editors.js';
@@ -54,6 +56,8 @@ export default class QueriesManager {
     this._loadedDetailRowId = null;
     this._pendingSqlContent = null;
     this._pendingSummaryContent = null;
+    // Audit info footer
+    this.auditFooter = null;
     this._pendingCollectionContent = null;
 
     // Panel state persistence
@@ -93,6 +97,7 @@ export default class QueriesManager {
     this._setupFooter();
     this._restorePanelState();
     this._loadSavedFontSettings();
+    this.setupAuditFooter();
   }
 
   /**
@@ -493,6 +498,8 @@ export default class QueriesManager {
     if (!rowData) return;
 
     const queryId = rowData.query_id || rowData.id;
+    // Update audit footer
+    this.auditFooter?.update(rowData);
     if (queryId == null) return;
 
     // Don't refetch if the same row is already selected
@@ -511,6 +518,8 @@ export default class QueriesManager {
     this.currentQuery = null;
     this._loadedDetailRowId = null;
     this._clearQueryDetails();
+    // Clear audit footer
+    this.auditFooter?.update(null);
   }
 
   async _loadQueryDetails(queryId) {
@@ -667,6 +676,19 @@ export default class QueriesManager {
       footerElements.cancelBtn,
       footerElements.dummyBtn,
     );
+  }
+
+  setupAuditFooter() {
+    const slot = this.container.closest(".manager-slot");
+    if (!slot) return;
+
+    this.auditFooter = new AuditInfoFooter(this);
+    this.auditFooter.init();
+
+    // Attach to table so automatic updates work
+    if (this.queryTable) this.queryTable.auditFooter = this.auditFooter;
+
+    log(Subsystems.MANAGER, Status.INFO, "[Queries] Audit footer initialized");
   }
 
   _getFooterDatasource() {
@@ -1148,6 +1170,11 @@ export default class QueriesManager {
 
     // Clean up splitter
     this.splitter?.destroy();
+    // Clean up audit footer
+    if (this.auditFooter) {
+      this.auditFooter.destroy();
+      this.auditFooter = null;
+    }
     this.splitter = null;
 
     // Clean up editor managers

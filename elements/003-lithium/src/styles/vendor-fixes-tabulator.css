@@ -19,6 +19,10 @@
   margin: 0px -4px;
 }
 
+div.lithium-table-container div.tabulator-tableholder div#tabulator-table-body.tabulator-table div.tabulator-row.tabulator-selectable.tabulator-row-odd.tabulator-selected div.tabulator-cell.tabulator-frozen.tabulator-frozen-left {
+  padding: 0px !important;
+}
+
 .lithium-table-container .tabulator-footer, .lithium-table-container .tabulator-calcs, .lithium-table-container .tabulator-calcs-bottom, .lithium-table-container .tabulator-calcs-holder {
 	border-top: none;
 	border-bottom: none;

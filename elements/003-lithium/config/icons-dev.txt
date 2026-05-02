@@ -82,6 +82,7 @@
 <fa fa-graduation-cap></fa>
 <fa fa-grip-dots-vertical></fa>
 <fa fa-hand></fa>
+<fa fa-history></fa>
 <fa fa-id-badge></fa>
 <fa fa-id-card></fa>
 <fa fa-images></fa>
@@ -119,6 +120,7 @@
 <fa fa-right></fa>
 <fa fa-rotate-left></fa>
 <fa fa-rotate-right></fa>
+<fa fa-save></fa>
 <fa fa-search></fa>
 <fa fa-shield-halved></fa>
 <fa fa-sign-in-alt></fa>
@@ -141,6 +143,7 @@
 <fa fa-triple-chevrons-left></fa>
 <fa fa-triple-chevrons-right></fa>
 <fa fa-up></fa>
+<fa fa-upload></fa>
 <fa fa-user-cog></fa>
 <fa fa-user-key></fa>
 <fa fa-user-secret></fa>

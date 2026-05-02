@@ -21,7 +21,7 @@ import LanguagePage from './language/page-language.js';
 import DateFormatsPage from './date-formats/page-date-formats.js';
 import NumberFormatsPage from './number-formats/page-number-formats.js';
 import StartupPage from './startup/page-startup.js';
-import NotificationsPage from './notifications/page-notifications.js';
+import PhotoPage from './photo/page-photo.js';
 import ConciergePage from './concierge/page-concierge.js';
 import AnnotationsPage from './annotations/page-annotations.js';
 
@@ -49,7 +49,7 @@ const INTERNAL_PAGE_MAP = {
   '-9': DateFormatsPage,
   '-10': NumberFormatsPage,
   '-11': StartupPage,
-  '-12': NotificationsPage,
+  '-12': PhotoPage,
   '-13': ConciergePage,
   '-14': AnnotationsPage,
   '-16': TrainingPage,
@@ -276,9 +276,9 @@ export class SettingsPageRegistry {
       '-8': 'language',
       '-9': 'date-formats',
       '-10': 'number-formats',
-      '-11': 'startup',
-      '-12': 'notifications',
-      '-13': 'concierge',
+       '-11': 'startup',
+       '-12': 'photo',
+       '-13': 'concierge',
       '-14': 'annotations',
       '-16': 'training',
       '-17': 'login-history',

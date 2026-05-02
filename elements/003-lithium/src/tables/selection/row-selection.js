@@ -64,6 +64,9 @@ export async function handleRowSelected(table, row) {
   }
 
   table.onRowSelected(row.getData());
+
+  // Update audit footer if attached
+  table.auditFooter?.update(row.getData());
 }
 
 /**
