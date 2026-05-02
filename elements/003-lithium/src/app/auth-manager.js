@@ -242,7 +242,7 @@ export class AuthManager {
     }
   }
 
-   async performQuickLogoutCleanup(logoutType) {
+   async performQuickLogoutCleanup() {
      logAuth(Status.INFO, 'Performing quick logout cleanup');
      await this._fadeOutForLogout();
      await this.performLogoutActions('quick');
@@ -250,7 +250,7 @@ export class AuthManager {
      window.location.reload(true);
    }
 
-   async performNormalLogoutCleanup(logoutType) {
+   async performNormalLogoutCleanup() {
      logAuth(Status.INFO, 'Performing normal logout cleanup');
      await this._fadeOutForLogout();
      await this.performLogoutActions('normal');
@@ -258,14 +258,14 @@ export class AuthManager {
      window.location.reload(true);
    }
 
-  async performPublicLogoutCleanup(logoutType) {
+  async performPublicLogoutCleanup() {
     logAuth(Status.INFO, 'Performing public logout cleanup');
     await this._fadeOutForLogout();
     await this.performLogoutActions('public');
     window.location.reload(true);
   }
 
-   async performGlobalLogoutCleanup(logoutType) {
+   async performGlobalLogoutCleanup() {
      logAuth(Status.INFO, 'Performing global logout cleanup');
      // Fade out main UI (using the same fadeout as regular logout, but without logout panel)
      await this._fadeOutForLogout();
