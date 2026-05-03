@@ -13,7 +13,7 @@
 
 import { log, getRawLog, Subsystems, Status } from '../../core/log.js';
 import { formatLogText } from '../../shared/log-formatter.js';
-import { createFontPopup, initToolbars } from '../../core/manager-ui.js';
+import { createFontPopup, initToolbars, LithiumEditorFooter } from '../../core/manager-ui.js';
 import { processIcons } from '../../core/icons.js';
 import { scrollbarManager } from '../../core/scrollbar-manager.js';
 import './session-log.css';
@@ -72,6 +72,7 @@ export default class SessionLogManager {
       page: this.container.querySelector('#session-log-page'),
       toolbar: this.container.querySelector('#session-log-toolbar'),
       viewer: this.container.querySelector('#session-log-viewer'),
+      footer: this.container.querySelector('#session-log-editor-footer'),
       refreshBtn: this.container.querySelector('#session-log-refresh-btn'),
       fontBtn: this.container.querySelector('#session-log-font-btn'),
       coverageBtn: this.container.querySelector('#session-log-coverage-btn'),
@@ -242,12 +243,16 @@ export default class SessionLogManager {
     // Initialize CodeMirror
     try {
       const { EditorState, EditorView } = await import('../../core/codemirror.js');
-      const { buildEditorExtensions, createReadOnlyCompartment } = await import('../../core/codemirror-setup.js');
+      const { buildEditorExtensions, createReadOnlyCompartment, createWordWrapCompartment, createBracketMatchCompartment } = await import('../../core/codemirror-setup.js');
 
       const roCompartment = createReadOnlyCompartment();
+      const wordWrapCompartment = createWordWrapCompartment();
+      const bracketMatchCompartment = createBracketMatchCompartment();
       const extensions = buildEditorExtensions({
         language: 'log',
         readOnlyCompartment: roCompartment,
+        wordWrapCompartment,
+        bracketMatchCompartment,
         readOnly: true,
         fontSize: this._fontSize,
         fontFamily: this._fontFamily,
@@ -257,6 +262,16 @@ export default class SessionLogManager {
       viewer.innerHTML = '';
       this._logEditor = new EditorView({ state, parent: viewer });
 
+      // Initialize editor footer
+      this._logEditorFooter = new LithiumEditorFooter({
+        container: this.elements.footer,
+        editorView: this._logEditor,
+        wordWrapCompartment,
+        bracketMatchCompartment,
+        initialWordWrap: false,
+        initialBracketMatch: true,
+      });
+      this._logEditorFooter.init();
 
       // Apply current font settings
       this.applyFontSettings();
@@ -319,6 +334,12 @@ export default class SessionLogManager {
     if (this._logEditor) {
       this._logEditor.destroy();
       this._logEditor = null;
+    }
+
+    // Destroy the editor footer if present
+    if (this._logEditorFooter) {
+      this._logEditorFooter.destroy();
+      this._logEditorFooter = null;
     }
 
     // Clear references

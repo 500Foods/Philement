@@ -110,15 +110,8 @@ const extensions = buildEditorExtensions({
         parent: this.container,
       });
 
-      // Create editor footer (sibling of CodeMirror, inside editor wrapper)
-      const footerEl = document.createElement('div');
-      const editorWrapper = this.container.closest('.editor-wrapper');
-      if (editorWrapper) {
-        editorWrapper.appendChild(footerEl);
-      } else {
-        // Fallback: append to tab panel if wrapper not found
-        this.container.closest('.tab-panel')?.appendChild(footerEl);
-      }
+      // Initialize editor footer (already in HTML)
+      const footerEl = document.querySelector('#profile-collection-editor-footer');
       this.footer = new LithiumEditorFooter({
         container: footerEl,
         editorView: this.editor,

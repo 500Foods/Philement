@@ -407,18 +407,7 @@ export default class QueriesManager {
       this.elements.tabPanes.forEach(pane => pane.classList.toggle('active', pane.id === `queries-tab-${tabId}`));
     }
 
-    // Show/hide editor footers based on active tab
-    const footers = {
-      sql: this.editorManager?.sqlEditorFooter,
-      summary: this.editorManager?.summaryEditorFooter,
-      collection: this.editorManager?.collectionEditorFooter,
-    };
-    Object.values(footers).forEach(footer => {
-      footer?.hide();
-    });
-    if (footers[tabId]) {
-      footers[tabId].show();
-    }
+
 
     const hasEditor = ['sql', 'summary', 'collection'].includes(tabId);
     // Undo/redo enabled only for editor tabs; actual enabled state is managed
