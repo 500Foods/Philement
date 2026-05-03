@@ -795,22 +795,26 @@ export default class StyleManager {
       this.cmWordWrapCompartment = createWordWrapCompartment();
       this.cmBracketMatchCompartment = createBracketMatchCompartment();
 
-      const extensions = buildEditorExtensions({
-        language: 'css',
-        readOnlyCompartment: this.cmReadOnlyCompartment,
-        readOnly: true,
-        fontSize: 14,
-        onUpdate: (update) => {
-          if (update.docChanged && this.isCssEditorInEditMode) {
-            this.handleCssEditorDirty();
-          }
-        },
-        ...this.editHelper.getCodeMirrorKeymapOptions(),
-        wordWrapCompartment: this.cmWordWrapCompartment,
-        wordWrap: false,
-        bracketMatchCompartment: this.cmBracketMatchCompartment,
-        bracketMatch: true,
-      });
+const extensions = buildEditorExtensions({
+         language: 'css',
+         readOnlyCompartment: this.cmReadOnlyCompartment,
+         readOnly: true,
+         fontSize: 14,
+          onUpdate: (update) => {
+            if (update.selectionSet) {
+              // Defer footer update to prevent DOM interference during CodeMirror updates
+              requestAnimationFrame(() => this.cssEditorFooter?.updateCursorPosition());
+            }
+            if (update.docChanged && this.isCssEditorInEditMode) {
+              this.handleCssEditorDirty();
+            }
+          },
+         ...this.editHelper.getCodeMirrorKeymapOptions(),
+         wordWrapCompartment: this.cmWordWrapCompartment,
+         wordWrap: false,
+         bracketMatchCompartment: this.cmBracketMatchCompartment,
+         bracketMatch: true,
+       });
 
       const state = EditorState.create({ doc: '', extensions });
 
@@ -1584,50 +1588,56 @@ ${selector}:disabled {
     }
   }
 
-  onDeactivate() {
-    log(Subsystems.MANAGER, Status.INFO, '[Style] Deactivated');
-  }
+onDeactivate() {
+     log(Subsystems.MANAGER, Status.INFO, '[Style] Deactivated');
+   }
 
-  cleanup() {
-    log(Subsystems.MANAGER, Status.INFO, '[Style] Cleaning up...');
+   cleanup() {
+     log(Subsystems.MANAGER, Status.INFO, '[Style] Cleaning up...');
 
-    // Clean up edit helper
-    this.editHelper?.destroy();
+     // Clean up edit helper
+     this.editHelper?.destroy();
 
-    // Destroy CSS editor OverlayScrollbars
-    if (this.cssEditor) {
-      destroyCodeMirrorScrollbars(this.cssEditor);
-    }
+     // Destroy CSS editor footer first (before editor)
+     if (this.cssEditorFooter) {
+       this.cssEditorFooter.destroy();
+       this.cssEditorFooter = null;
+     }
 
-    // Remove preview style element
-    if (this.previewStyleEl) {
-      this.previewStyleEl.remove();
-      this.previewStyleEl = null;
-    }
+     // Destroy CSS editor OverlayScrollbars
+     if (this.cssEditor) {
+       destroyCodeMirrorScrollbars(this.cssEditor);
+     }
 
-    if (this.fontPopup) {
-      this.fontPopup.remove();
-      this.fontPopup = null;
-    }
+     // Remove preview style element
+     if (this.previewStyleEl) {
+       this.previewStyleEl.remove();
+       this.previewStyleEl = null;
+     }
 
-    this._closeFooterExportPopup();
+     if (this.fontPopup) {
+       this.fontPopup.remove();
+       this.fontPopup = null;
+     }
 
-    // Clean up splitters
-    this.leftSplitter?.destroy();
-    this.rightSplitter?.destroy();
-    this.leftSplitter = null;
-    this.rightSplitter = null;
+     this._closeFooterExportPopup();
 
-    // Clean up tables
-    this.lookupTable?.destroy();
-    this.sectionsTable?.destroy();
+     // Clean up splitters
+     this.leftSplitter?.destroy();
+     this.rightSplitter?.destroy();
+     this.leftSplitter = null;
+     this.rightSplitter = null;
 
-    this.lookupTable = null;
-    this.sectionsTable = null;
+     // Clean up tables
+     this.lookupTable?.destroy();
+     this.sectionsTable?.destroy();
 
-    if (this.jsonEditor) {
-      this.jsonEditor.destroy();
-      this.jsonEditor = null;
-    }
-  }
-}
+     this.lookupTable = null;
+     this.sectionsTable = null;
+
+     if (this.cssEditor) {
+       this.cssEditor.destroy();
+       this.cssEditor = null;
+     }
+   }
+ }

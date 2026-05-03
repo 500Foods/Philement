@@ -79,27 +79,31 @@ export class CollectionTabHandler {
 
       const jsonStr = formatSortedJson(initialData, 2);
 
-      const extensions = buildEditorExtensions({
-        language: 'json',
-        readOnlyCompartment: this.readOnlyCompartment,
-        readOnly: true, // Start read-only, double-click to edit
-        fontSize: this.fontSize,
-        fontFamily: this.fontFamily,
-        wordWrapCompartment: this.wordWrapCompartment,
-        bracketMatchCompartment: this.bracketMatchCompartment,
-        wordWrap: false,
-        bracketMatch: true,
-        onUpdate: (update) => {
-          if (update.docChanged) {
-            this.onDirtyChange(this.isDirty());
-          }
-          if (update.transactions.length > 0) {
-            this._updateUndoRedoButtons();
-          }
-        },
-        onEscape: () => this.onCancel(),
-        onSave: () => this.onSave(),
-      });
+const extensions = buildEditorExtensions({
+         language: 'json',
+         readOnlyCompartment: this.readOnlyCompartment,
+         readOnly: true, // Start read-only, double-click to edit
+         fontSize: this.fontSize,
+         fontFamily: this.fontFamily,
+         wordWrapCompartment: this.wordWrapCompartment,
+         bracketMatchCompartment: this.bracketMatchCompartment,
+         wordWrap: false,
+         bracketMatch: true,
+          onUpdate: (update) => {
+            if (update.selectionSet) {
+              // Defer footer update to prevent DOM interference during CodeMirror updates
+              requestAnimationFrame(() => this.footer?.updateCursorPosition());
+            }
+            if (update.docChanged) {
+              this.onDirtyChange(this.isDirty());
+            }
+            if (update.transactions.length > 0) {
+              this._updateUndoRedoButtons();
+            }
+          },
+         onEscape: () => this.onCancel(),
+         onSave: () => this.onSave(),
+       });
 
       const startState = EditorState.create({ doc: jsonStr, extensions });
 
