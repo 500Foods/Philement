@@ -97,15 +97,8 @@ const extensions = buildEditorExtensions({
         parent: container,
       });
 
-      // Create editor footer (sibling of CodeMirror, inside editor wrapper)
-      const sqlFooterEl = document.createElement('div');
-      const sqlWrapper = this.manager.elements.sqlEditorContainer.closest('.editor-wrapper');
-      if (sqlWrapper) {
-        sqlWrapper.appendChild(sqlFooterEl);
-      } else {
-        // Fallback: append to tab pane if wrapper not found
-        this.manager.elements.sqlEditorContainer.closest('.queries-tab-pane')?.appendChild(sqlFooterEl);
-      }
+      // Initialize editor footer (already in HTML)
+      const sqlFooterEl = this.manager.container.querySelector('#queries-sql-editor-footer');
       this.sqlEditorFooter = new LithiumEditorFooter({
         container: sqlFooterEl,
         editorView: this.sqlEditor,
@@ -177,14 +170,8 @@ const extensions = buildEditorExtensions({
         parent: container,
       });
 
-      // Create editor footer (sibling of CodeMirror, inside editor wrapper)
-      const summaryFooterEl = document.createElement('div');
-      const summaryWrapper = this.manager.elements.summaryEditorContainer.closest('.editor-wrapper');
-      if (summaryWrapper) {
-        summaryWrapper.appendChild(summaryFooterEl);
-      } else {
-        this.manager.elements.summaryEditorContainer.closest('.queries-tab-pane')?.appendChild(summaryFooterEl);
-      }
+      // Initialize editor footer (already in HTML)
+      const summaryFooterEl = this.manager.container.querySelector('#queries-summary-editor-footer');
       this.summaryEditorFooter = new LithiumEditorFooter({
         container: summaryFooterEl,
         editorView: this.summaryEditor,
@@ -264,14 +251,8 @@ const extensions = buildEditorExtensions({
         parent: container,
       });
 
-      // Create editor footer (sibling of CodeMirror, inside editor wrapper)
-      const collectionFooterEl = document.createElement('div');
-      const collectionWrapper = this.manager.elements.collectionEditorContainer.closest('.editor-wrapper');
-      if (collectionWrapper) {
-        collectionWrapper.appendChild(collectionFooterEl);
-      } else {
-        this.manager.elements.collectionEditorContainer.closest('.queries-tab-pane')?.appendChild(collectionFooterEl);
-      }
+      // Initialize editor footer (already in HTML)
+      const collectionFooterEl = this.manager.container.querySelector('#queries-collection-editor-footer');
       this.collectionEditorFooter = new LithiumEditorFooter({
         container: collectionFooterEl,
         editorView: this.collectionEditor,

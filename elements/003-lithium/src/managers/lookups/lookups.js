@@ -425,15 +425,8 @@ export default class LookupsManager {
         parent: this.elements.jsonEditor,
       });
 
-      // Create editor footer (sibling of CodeMirror, inside editor wrapper)
-      const jsonFooterEl = document.createElement('div');
-      const jsonWrapper = this.elements.jsonEditor?.closest('.editor-wrapper');
-      if (jsonWrapper) {
-        jsonWrapper.appendChild(jsonFooterEl);
-      } else {
-        // Fallback: append to tab pane if wrapper not found
-        this.elements.jsonEditor?.closest('.lookups-tab-pane')?.appendChild(jsonFooterEl);
-      }
+      // Initialize editor footer (already in HTML)
+      const jsonFooterEl = this.container.querySelector('#lookups-json-editor-footer');
       this.jsonEditorFooter = new LithiumEditorFooter({
         container: jsonFooterEl,
         editorView: this.collectionEditor,
@@ -443,7 +436,6 @@ export default class LookupsManager {
         initialBracketMatch: true,
       });
       this.jsonEditorFooter.init();
-      this.jsonEditorFooter.hide(); // Hidden by default, shown when editor is visible
 
 
 
