@@ -160,9 +160,11 @@
     --font-size-xl: 20px;
     --font-size-2xl: 24px;
     --font-size-3xl: 32px;
+    
+    /* icon sizing */
     --icon-size-reg: 20px;
     --icon-size-sm: 15px;
-    --icon-size-md: 18px;
+    --icon-size-md: 16px; /* used in toolbars */
     --icon-size-nav: 14px;
     --icon-size-lg: 28px;
     --font-weight-normal: 400;
@@ -417,14 +419,38 @@
 
 @layer overrides {
 
-  /* Target CodeMirror and log viewers for consistent scrollbar visibility */
-  .cm-scroller,
-  .log-viewer,
-  .session-log-viewer {
-    /* Firefox: auto ensures visible scrollbars */
-    scrollbar-width: auto !important;
-    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track) !important;
-  }
+   /* Target CodeMirror for native scrollbar suppression */
+   .cm-editor,
+   .cm-editor *,
+   .cm-scroller,
+   .cm-content,
+   .cm-gutters {
+     /* Firefox */
+     scrollbar-width: none !important;
+     /* IE/Edge */
+     -ms-overflow-style: none !important;
+   }
+
+   /* Chrome/Safari/Edge */
+   .cm-editor::-webkit-scrollbar,
+   .cm-editor *::-webkit-scrollbar,
+   .cm-scroller::-webkit-scrollbar,
+   .cm-content::-webkit-scrollbar,
+   .cm-gutters::-webkit-scrollbar {
+     display: none !important;
+     width: 0 !important;
+     height: 0 !important;
+   }
+
+    /* Fallback for other scrollable elements */
+    .log-viewer,
+    .session-log-viewer {
+      /* Firefox: auto ensures visible scrollbars */
+      scrollbar-width: auto !important;
+      scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track) !important;
+    }
+
+
 
   /* ── Shared CodeMirror Editor Styles ─────────────────────────────────── */
 

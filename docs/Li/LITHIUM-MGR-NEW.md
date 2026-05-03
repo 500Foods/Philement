@@ -839,6 +839,7 @@ Navigator, sort icon, save/cancel button, and collapse icon styles are all share
 |----------|-------------|
 | [LITHIUM-TAB.md](LITHIUM-TAB.md) | LithiumTable component, Navigator, edit mode, queryRef resolution, collapsible panels, ManagerEditHelper |
 | [LITHIUM-BAR.md](LITHIUM-BAR.md) | **Toolbar System** — Standardized toolbars for managers |
+| [LITHIUM-CSB.md](LITHIUM-CSB.md) | **CodeMirror Scrollbars** — Custom scrollbar plugin for editors |
 | [LITHIUM-MGR-QUERY.md](LITHIUM-MGR-QUERY.md) | Reference single-table implementation |
 | [LITHIUM-MGR-LOOKUPS.md](LITHIUM-MGR-LOOKUPS.md) | Reference dual-table (parent/child) implementation |
 | [LITHIUM-MGR.md](LITHIUM-MGR.md) | Manager system overview |

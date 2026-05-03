@@ -8,6 +8,7 @@ import './styles/vendor-fixes.css';
 import './styles/scrollbars.css';
 import './styles/vendor-fixes-overlay-scrollbars.css';
 import './styles/vendor-fixes-tabulator.css';
+import './styles/vendor-fixes-codemirror.css';
 import './styles/layout.css';
 import './styles/components.css';
 import './styles/transitions.css';
