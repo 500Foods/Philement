@@ -145,6 +145,7 @@
 <fa fa-trash></fa>
 <fa fa-triple-chevrons-left></fa>
 <fa fa-triple-chevrons-right></fa>
+<fa fa-up-down></fa>
 <fa fa-up></fa>
 <fa fa-upload></fa>
 <fa fa-user-cog></fa>

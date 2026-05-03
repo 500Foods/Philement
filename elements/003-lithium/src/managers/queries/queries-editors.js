@@ -67,27 +67,31 @@ export class EditorManager {
       this._sqlWordWrapCompartment = createWordWrapCompartment();
       this._sqlBracketMatchCompartment = createBracketMatchCompartment();
 
-      const extensions = buildEditorExtensions({
-        language: 'sql',
-        readOnlyCompartment: this._sqlReadOnlyCompartment,
-        readOnly: !this.manager.queryTable?.isEditing,
-        fontSize: this.fontSettings.size,
-        fontFamily: this.fontSettings.family,
-        wordWrapCompartment: this._sqlWordWrapCompartment,
-        bracketMatchCompartment: this._sqlBracketMatchCompartment,
-        wordWrap: false,
-        bracketMatch: true,
-        onUpdate: (update) => {
-          if (update.docChanged && this.manager.queryTable?.isEditing) {
-            this.manager.editHelper.checkDirtyState();
-          }
-          // Update undo/redo button state whenever transaction state changes
-          if (update.transactions.length > 0) {
-            this._updateUndoRedoButtons();
-          }
-        },
-        ...this.manager.editHelper.getCodeMirrorKeymapOptions(),
-      });
+const extensions = buildEditorExtensions({
+         language: 'sql',
+         readOnlyCompartment: this._sqlReadOnlyCompartment,
+         readOnly: !this.manager.queryTable?.isEditing,
+         fontSize: this.fontSettings.size,
+         fontFamily: this.fontSettings.family,
+         wordWrapCompartment: this._sqlWordWrapCompartment,
+         bracketMatchCompartment: this._sqlBracketMatchCompartment,
+         wordWrap: false,
+         bracketMatch: true,
+          onUpdate: (update) => {
+            if (update.selectionSet) {
+              // Defer footer update to prevent DOM interference during CodeMirror updates
+              requestAnimationFrame(() => this.sqlEditorFooter?.updateCursorPosition());
+            }
+            if (update.docChanged && this.manager.queryTable?.isEditing) {
+              this.manager.editHelper.checkDirtyState();
+            }
+            // Update undo/redo button state whenever transaction state changes
+            if (update.transactions.length > 0) {
+              this._updateUndoRedoButtons();
+            }
+          },
+         ...this.manager.editHelper.getCodeMirrorKeymapOptions(),
+       });
 
       const startState = EditorState.create({ doc: initialContent, extensions });
 
@@ -145,26 +149,30 @@ export class EditorManager {
       this._summaryWordWrapCompartment = createWordWrapCompartment();
       this._summaryBracketMatchCompartment = createBracketMatchCompartment();
 
-      const extensions = buildEditorExtensions({
-        language: 'markdown',
-        readOnlyCompartment: this._summaryReadOnlyCompartment,
-        readOnly: !this.manager.queryTable?.isEditing,
-        fontSize: this.fontSettings.size,
-        fontFamily: this.fontSettings.family,
-        wordWrapCompartment: this._summaryWordWrapCompartment,
-        bracketMatchCompartment: this._summaryBracketMatchCompartment,
-        wordWrap: false,
-        bracketMatch: true,
-        onUpdate: (update) => {
-          if (update.docChanged && this.manager.queryTable?.isEditing) {
-            this.manager.editHelper.checkDirtyState();
-          }
-          if (update.transactions.length > 0) {
-            this._updateUndoRedoButtons();
-          }
-        },
-        ...this.manager.editHelper.getCodeMirrorKeymapOptions(),
-      });
+const extensions = buildEditorExtensions({
+         language: 'markdown',
+         readOnlyCompartment: this._summaryReadOnlyCompartment,
+         readOnly: !this.manager.queryTable?.isEditing,
+         fontSize: this.fontSettings.size,
+         fontFamily: this.fontSettings.family,
+         wordWrapCompartment: this._summaryWordWrapCompartment,
+         bracketMatchCompartment: this._summaryBracketMatchCompartment,
+         wordWrap: false,
+         bracketMatch: true,
+          onUpdate: (update) => {
+            if (update.selectionSet) {
+              // Defer footer update to prevent DOM interference during CodeMirror updates
+              requestAnimationFrame(() => this.summaryEditorFooter?.updateCursorPosition());
+            }
+            if (update.docChanged && this.manager.queryTable?.isEditing) {
+              this.manager.editHelper.checkDirtyState();
+            }
+            if (update.transactions.length > 0) {
+              this._updateUndoRedoButtons();
+            }
+          },
+         ...this.manager.editHelper.getCodeMirrorKeymapOptions(),
+       });
 
       const startState = EditorState.create({ doc: initialContent, extensions });
 
@@ -229,25 +237,29 @@ export class EditorManager {
       this._jsonWordWrapCompartment = createWordWrapCompartment();
       this._jsonBracketMatchCompartment = createBracketMatchCompartment();
 
-      const extensions = buildEditorExtensions({
-        language: 'json',
-        readOnlyCompartment: this._jsonReadOnlyCompartment,
-        readOnly: !this.manager.queryTable?.isEditing,
-        fontSize: 13,
-        wordWrapCompartment: this._jsonWordWrapCompartment,
-        bracketMatchCompartment: this._jsonBracketMatchCompartment,
-        wordWrap: false,
-        bracketMatch: true,
-        onUpdate: (update) => {
-          if (update.docChanged && this.manager.queryTable?.isEditing) {
-            this.manager.editHelper.checkDirtyState();
-          }
-          if (update.transactions.length > 0) {
-            this._updateUndoRedoButtons();
-          }
-        },
-        ...this.manager.editHelper.getCodeMirrorKeymapOptions(),
-      });
+const extensions = buildEditorExtensions({
+         language: 'json',
+         readOnlyCompartment: this._jsonReadOnlyCompartment,
+         readOnly: !this.manager.queryTable?.isEditing,
+         fontSize: 13,
+         wordWrapCompartment: this._jsonWordWrapCompartment,
+         bracketMatchCompartment: this._jsonBracketMatchCompartment,
+         wordWrap: false,
+         bracketMatch: true,
+          onUpdate: (update) => {
+            if (update.selectionSet) {
+              // Defer footer update to prevent DOM interference during CodeMirror updates
+              requestAnimationFrame(() => this.collectionEditorFooter?.updateCursorPosition());
+            }
+            if (update.docChanged && this.manager.queryTable?.isEditing) {
+              this.manager.editHelper.checkDirtyState();
+            }
+            if (update.transactions.length > 0) {
+              this._updateUndoRedoButtons();
+            }
+          },
+         ...this.manager.editHelper.getCodeMirrorKeymapOptions(),
+       });
 
       const startState = EditorState.create({ doc: jsonStr, extensions });
 

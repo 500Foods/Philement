@@ -45,4 +45,22 @@
 <fa fa-bars-sort></fa>
 <fa fa-book-bookmark></fa>
 <fa fa-bullseye-arrow></fa>
+<fa fa-chart-mixed></fa>
+<fa fa-robot></fa>
+<fa fa-photo-film-music></fa>
+<fa fa-books></fa>
+<fa fa-hammer-brush></fa>
+<fa fa-clipboard-list></fa>
+<fa fa-chart-diagram></fa>
+<fa fa-messages></fa>
+<fa fa-cabinet-filing></fa>
+<fa fa-arrows-spin></fa>
+<fa fa-helmet-safety></fa>
+<fa fa-clipboard-question></fa>
+<fa fa-video></fa>
+<fa fa-bookmark></fa>
+<fa fa-fire></fa>
+<fa fa-rotate></fa>
+<fa fa-up-down></fa>
+<fa fa-up-down-left-right></fa>
 

@@ -14,6 +14,9 @@ import './styles/transitions.css';
 import './styles/toast.css';
 import './styles/tooltip.css';
 
+// Camera popout styles (global component)
+import './managers/profile-manager/pages/photo/camera-popout.css';
+
 import { LithiumApp } from './app/lithium-app.js';
 import { log, Subsystems, Status, getRawLog, getDisplayLog, getRecentLogs, getCounter, getSessionId, setConsoleLogging, flush, getArchivedSessions, removeArchivedSession } from './core/log.js';
 import { tip, untip, initTooltips } from './core/tooltip-api.js';

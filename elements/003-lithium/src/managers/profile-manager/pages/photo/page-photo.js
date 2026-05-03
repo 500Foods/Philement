@@ -8,6 +8,7 @@
 import { BaseSettingsPage } from '../settings-page-base.js';
 import { log, Subsystems, Status } from '../../../../core/log.js';
 import { Tooltip } from '../../../../core/tooltip.js';
+import { CameraPopup } from './camera-popout.js';
 
 export class PhotoPage extends BaseSettingsPage {
   constructor(options = {}) {
@@ -31,6 +32,9 @@ export class PhotoPage extends BaseSettingsPage {
     this._isDragging = false;
     this._dragStart = { x: 0, y: 0, startX: 0, startY: 0 };
     this._saveTimeout = null;
+
+    // Camera popup
+    this.cameraPopup = null;
   }
 
   /**
@@ -42,6 +46,7 @@ export class PhotoPage extends BaseSettingsPage {
     this._bindEvents();
     await this._loadExistingPhoto();
     this._syncToolbarWidth();
+    this._initCameraPopup();
   }
 
   /**
@@ -56,6 +61,10 @@ export class PhotoPage extends BaseSettingsPage {
       removeBtn: container.querySelector('#photo-remove-btn'),
       resetBtn: container.querySelector('#photo-reset-btn'),
       downloadBtn: container.querySelector('.photo-download-btn'),
+      flipHBtn: container.querySelector('#photo-flip-h-btn'),
+      flipVBtn: container.querySelector('#photo-flip-v-btn'),
+      rotateLeftBtn: container.querySelector('#photo-rotate-left-btn'),
+      rotateRightBtn: container.querySelector('#photo-rotate-right-btn'),
       status: container.querySelector('#photo-status'),
       editor: container.querySelector('#photo-editor'),
       imageContainer: container.querySelector('#photo-image-container'),
@@ -63,11 +72,11 @@ export class PhotoPage extends BaseSettingsPage {
       dimming: container.querySelector('#photo-dimming'),
       previewOverlay: container.querySelector('#photo-preview-overlay'),
        resizeHandle: container.querySelector('#photo-resize-handle'),
-       toolbar: container.querySelector('#photo-toolbar'),
-       previews: container.querySelector('.photo-previews'),
-       preview40: container.querySelector('#photo-preview-40'),
-       preview80: container.querySelector('#photo-preview-80'),
-       preview150: container.querySelector('#photo-preview-150'),
+        toolbar: container.querySelector('#photo-toolbar'),
+        previews: container.querySelector('.photo-previews'),
+        preview40: container.querySelector('#photo-preview-40'),
+        preview80: container.querySelector('#photo-preview-80'),
+        preview150: container.querySelector('#photo-preview-150'),
     };
   }
 
@@ -341,6 +350,12 @@ case 'y':
     // Reset handler
     this.elements.resetBtn.addEventListener('click', () => this._handleReset());
 
+    // Transform handlers
+    this.elements.flipHBtn.addEventListener('click', () => this._handleFlipHorizontal());
+    this.elements.flipVBtn.addEventListener('click', () => this._handleFlipVertical());
+    this.elements.rotateLeftBtn.addEventListener('click', () => this._handleRotateLeft());
+    this.elements.rotateRightBtn.addEventListener('click', () => this._handleRotateRight());
+
     // Image drag handler
     this._setupImageDrag();
 
@@ -427,111 +442,35 @@ case 'y':
   }
 
   /**
-   * Handle photo capture from camera
+   * Initialize camera popup
+   * @private
+   */
+  _initCameraPopup() {
+    this.cameraPopup = new CameraPopup({
+      onCapture: (file) => this._handleCameraCapture(file)
+    });
+  }
+
+  /**
+   * Handle camera capture callback from popup
+   * @param {File} file - Captured image file
+   * @private
+   */
+  async _handleCameraCapture(file) {
+    this.originalFile = file;
+    await this._loadImageFromFile(file);
+    this._updateButtonStates();
+    this._resetToDefaultAndScaleImage();
+    await this._handleSave();
+  }
+
+  /**
+   * Handle photo capture from camera (shows popup)
    * @private
    */
   async _handleCapture() {
-    let stream = null;
-    let video = null;
-
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }
-      });
-
-      // Create video element
-      video = document.createElement('video');
-      video.setAttribute('autoplay', '');
-      video.setAttribute('playsinline', '');
-      video.setAttribute('muted', '');
-      video.srcObject = stream;
-
-      // Add to DOM with visibility hidden (needs to be in viewport to render)
-      video.style.position = 'fixed';
-      video.style.top = '0px';
-      video.style.left = '0px';
-      video.style.width = '1px';
-      video.style.height = '1px';
-      video.style.opacity = '0';
-      video.style.zIndex = '-1';
-      document.body.appendChild(video);
-
-      // Wait for video to be ready with proper event handling
-      await new Promise((resolve, _reject) => {
-        let resolved = false;
-
-        const onReady = () => {
-          if (resolved) return;
-          resolved = true;
-          video.removeEventListener('canplay', onReady);
-          video.removeEventListener('loadeddata', onReady);
-          resolve();
-        };
-
-        // Try multiple events for compatibility
-        video.addEventListener('canplay', onReady);
-        video.addEventListener('loadeddata', onReady);
-
-        // Force play
-        const playPromise = video.play();
-        if (playPromise != null) {
-          playPromise.catch(() => {});
-        }
-
-        // Timeout fallback (5 seconds)
-        setTimeout(() => {
-          if (!resolved) {
-            resolved = true;
-            onReady();
-          }
-        }, 5000);
-      });
-
-      // Additional wait to ensure frames are rendered
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Verify video has dimensions
-      if (video.videoWidth === 0 || video.videoHeight === 0) {
-        throw new Error('Video has no dimensions');
-      }
-
-      // Create canvas and capture frame
-      const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext('2d');
-
-      // Draw the current video frame
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-      // Convert to blob
-      const blob = await new Promise((resolve) => {
-        canvas.toBlob(resolve, 'image/jpeg', 0.92);
-      });
-
-      if (!blob || blob.size === 0) {
-        throw new Error('Failed to capture image from video');
-      }
-
-      // Create file and load
-      const file = new window.File([blob], 'capture.jpg', { type: 'image/jpeg' });
-      this.originalFile = file;
-      await this._loadImageFromFile(file);
-      this._updateButtonStates();
-      this._resetToDefaultAndScaleImage();
-      await this._handleSave();
-
-    } catch (error) {
-      log(Subsystems.MANAGER, Status.ERROR, '[PhotoPage] Camera capture failed:', error.message);
-      // this._showStatus('Camera capture failed. Please check permissions.', 'error');
-    } finally {
-      // Cleanup
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-      }
-      if (video) {
-        video.remove();
-      }
+    if (this.cameraPopup) {
+      this.cameraPopup.show();
     }
   }
 
@@ -834,12 +773,162 @@ case 'y':
   }
 
   /**
-   * Update button states based on current photo
+   * Handle flip horizontal button click
+   * @private
+   */
+  async _handleFlipHorizontal() {
+    if (!this.photoData) return;
+    await this._transformImage({ hFlip: true });
+  }
+
+  /**
+   * Handle flip vertical button click
+   * @private
+   */
+  async _handleFlipVertical() {
+    if (!this.photoData) return;
+    await this._transformImage({ vFlip: true });
+  }
+
+  /**
+   * Handle rotate left button click
+   * @private
+   */
+  async _handleRotateLeft() {
+    if (!this.photoData) return;
+    await this._transformImage({ rotation: -90 });
+  }
+
+  /**
+   * Handle rotate right button click
+   * @private
+   */
+  async _handleRotateRight() {
+    if (!this.photoData) return;
+    await this._transformImage({ rotation: 90 });
+  }
+
+  /**
+   * Transform image data using Canvas API and update the display
+   * @param {Object} transform - Transform options { hFlip, vFlip, rotation }
+   * @private
+   */
+  async _transformImage(transform) {
+    if (!this.photoData) return;
+
+    try {
+      // Create image element to get dimensions
+      const img = new Image();
+      img.src = this.photoData;
+
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+      });
+
+      const w = img.width;
+      const h = img.height;
+
+      // Determine canvas size (swap for 90°/270° rotation)
+      let cw = w;
+      let ch = h;
+      if (transform.rotation && Math.abs(transform.rotation) % 180 !== 0) {
+        cw = h;
+        ch = w;
+      }
+
+      // Create canvas and apply transforms
+      const canvas = document.createElement('canvas');
+      canvas.width = cw;
+      canvas.height = ch;
+
+      const ctx = canvas.getContext('2d', { alpha: false });
+      ctx.save();
+
+      // Move origin to center
+      ctx.translate(cw / 2, ch / 2);
+
+      // Apply rotation
+      if (transform.rotation) {
+        ctx.rotate(transform.rotation * Math.PI / 180);
+      }
+
+      // Apply flips
+      const hScale = transform.hFlip ? -1 : 1;
+      const vScale = transform.vFlip ? -1 : 1;
+      ctx.scale(hScale, vScale);
+
+      // Draw the image centered
+      ctx.drawImage(img, -w / 2, -h / 2, w, h);
+
+      ctx.restore();
+
+      // Convert to blob and create data URL
+      const blob = await new Promise(resolve => {
+        canvas.toBlob(resolve, 'image/jpeg', 0.92);
+      });
+
+      if (!blob || blob.size === 0) {
+        throw new Error('Failed to transform image');
+      }
+
+      // Create new data URL
+      const reader = new FileReader();
+      const dataUrl = await new Promise((resolve, reject) => {
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+
+      // Update the image data and display
+      this.photoData = dataUrl;
+      this.elements.image.src = this.photoData;
+
+      // Update original photo data with transformed version
+      this.originalPhotoData = dataUrl;
+
+      // Update dimensions if rotated
+      if (transform.rotation && Math.abs(transform.rotation) % 180 !== 0) {
+        [this.originalWidth, this.originalHeight] = [this.originalHeight, this.originalWidth];
+      }
+
+      // Reload image following same rules as new upload
+      // This will recalculate initialScale and reset positioning
+      this._resetToDefaultAndScaleImage();
+
+      // Update sliders and transform
+      this._updateSliderPosition(this._customSliders.x, this.xPct);
+      this._updateSliderPosition(this._customSliders.y, this.yPct);
+      this._updateSliderPosition(this._customSliders.scale, this.scale);
+      this._updateSliderPosition(this._customSliders.rotation, this.rotation);
+      this._updateImageTransform();
+
+      // Save changes first (updates the saved 200x200 photo)
+      await this._handleSave();
+
+      // Update previews (now shows the newly saved photo)
+      this._updatePreviews();
+
+      log(Subsystems.MANAGER, Status.INFO, '[PhotoPage] Image transformed successfully');
+
+    } catch (error) {
+      log(Subsystems.MANAGER, Status.ERROR, '[PhotoPage] Image transformation failed:', error.message);
+      // this._showStatus('Image transformation failed', 'error');
+    }
+  }
+
+  /**
+   * Update preview images with the saved 200px photo
    * @private
    */
   _updateButtonStates() {
     const hasPhoto = !!this.photoData;
     this.elements.removeBtn.disabled = !hasPhoto;
+    this.elements.flipHBtn.disabled = !hasPhoto;
+    this.elements.flipVBtn.disabled = !hasPhoto;
+    this.elements.rotateLeftBtn.disabled = !hasPhoto;
+    this.elements.rotateRightBtn.disabled = !hasPhoto;
+
     // Download button state
     if (this.originalPhotoData) {
       this.elements.downloadBtn.classList.remove('disabled');

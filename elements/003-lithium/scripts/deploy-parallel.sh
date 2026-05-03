@@ -139,7 +139,10 @@ mkdir -p "$LITHIUM_DEPLOY"
 echo "  Starting rsync transfer..."
 # rsync -a --delete --no-perms --times --whole-file --no-owner --no-group --inplace --info=progress2 "$LOCAL_DEPLOY_DIR/" "$LITHIUM_DEPLOY/"
 find "$LITHIUM_DEPLOY" -type f -o -type d > /dev/null 2>&1
-rsync -a --delete --no-perms --whole-file --no-owner --no-group --inplace --stats --info=progress2 "$LOCAL_DEPLOY_DIR/" "$LITHIUM_DEPLOY/"
+rsync -a --delete --no-perms --size-only --whole-file --no-owner --no-group --inplace --stats --info=progress2 "$LOCAL_DEPLOY_DIR/" "$LITHIUM_DEPLOY/"
+
+# Always copy index.html as it likely has changed but its size has not
+cp "${LOCAL_DEPLOY_DIR}"/*.* "${LITHIUM_DEPLOY}/"
 
 echo "  ✓ Build synchronized to target"
 
