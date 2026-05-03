@@ -763,6 +763,7 @@ eventBus.on(Events.THEME_CHANGED, (e) => {
 ## Related Documentation
 
 - Development setup: [LITHIUM-DEV.md](LITHIUM-DEV.md)
+- CodeMirror scrollbars: [LITHIUM-CSB.md](LITHIUM-CSB.md)
 - Libraries: [LITHIUM-LIB.md](LITHIUM-LIB.md)
 - Deployment: [LITHIUM-WEB.md](LITHIUM-WEB.md)
 - FAQ: [LITHIUM-FAQ.md](LITHIUM-FAQ.md)

@@ -37,9 +37,6 @@ import {
   unfoldAllInEditor,
   formatSortedJson,
   parseAndSortJson,
-  initCodeMirrorScrollbars,
-  updateCodeMirrorScrollbars,
-  destroyCodeMirrorScrollbars,
 } from '../../core/codemirror-setup.js';
 import { scrollbarManager } from '../../core/scrollbar-manager.js';
 import './lookups.css';
@@ -448,8 +445,7 @@ export default class LookupsManager {
       this.jsonEditorFooter.init();
       this.jsonEditorFooter.hide(); // Hidden by default, shown when editor is visible
 
-      // Initialize OverlayScrollbars on the CodeMirror scroller
-      initCodeMirrorScrollbars(this.collectionEditor);
+
 
       // Store references on the container for compatibility
       this.elements.jsonEditor._cmView = this.collectionEditor;

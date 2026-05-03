@@ -1,0 +1,65 @@
+/**
+ * CodeMirror Vendor Fixes - Custom Scrollbars
+ *
+ * Contains custom scrollbar styling and fixes for CodeMirror editors.
+ * This file must load BEFORE any manager CSS.
+ *
+ * @layer vendor-fixes.codemirror
+ */
+
+@layer vendor-fixes.codemirror {
+
+  /* ═════════════════════════════════════════════════════════════════════════════
+     CUSTOM CODEMIRROR SCROLLBAR STYLING
+     ═════════════════════════════════════════════════════════════════════════════ */
+
+  /* Custom CodeMirror scrollbar styling */
+  .cm-scroller .cm-scroller-track {
+    background: var(--os-track-bg);
+    border-radius: 0px;
+  }
+
+  .cm-scroller .cm-scroller-track.cm-scroller-track-v {
+    border-left: 1px solid var(--bg-row-border);
+    border-top-right-radius: 4px;
+    border-bottom-right-radius: 4px;
+    cursor: ns-resize;
+  }
+
+  .cm-scroller .cm-scroller-track.cm-scroller-track-h {
+    border-top: 1px solid var(--bg-row-border);
+    border-bottom-right-radius: 4px;
+    cursor: ew-resize;
+  }
+
+  .cm-scroller .cm-scroller-thumb {
+    background: var(--accent-alt-primary);
+    border-radius: var(--border-radius-full);
+          transition: background-color 0.3s ease, border 0.3s ease;
+  }
+
+  .cm-scroller .cm-scroller-track-v .cm-scroller-thumb:hover {
+    background: var(--accent-primary);
+    width: 8px;
+  }
+
+  .cm-scroller .cm-scroller-track-h .cm-scroller-thumb:hover {
+    background: var(--accent-primary);
+    height: 8px;
+  }
+
+  /* Corner styling - fills the gap when both scrollbars are visible */
+  .cm-scroller .cm-scroller-corner {
+    background: var(--bg-secondary);
+    border-radius: 0px;
+    border-bottom-right-radius: 4px;
+  }
+
+  /* Ensure scrollbars don't interfere with text selection */
+  .cm-scroller .cm-scroller-track,
+  .cm-scroller .cm-scroller-thumb,
+  .cm-scroller .cm-scroller-corner {
+    user-select: none;
+  }
+
+}

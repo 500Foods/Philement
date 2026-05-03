@@ -242,7 +242,7 @@ export default class SessionLogManager {
     // Initialize CodeMirror
     try {
       const { EditorState, EditorView } = await import('../../core/codemirror.js');
-      const { buildEditorExtensions, createReadOnlyCompartment, initCodeMirrorScrollbars } = await import('../../core/codemirror-setup.js');
+      const { buildEditorExtensions, createReadOnlyCompartment } = await import('../../core/codemirror-setup.js');
 
       const roCompartment = createReadOnlyCompartment();
       const extensions = buildEditorExtensions({
@@ -256,9 +256,7 @@ export default class SessionLogManager {
       const state = EditorState.create({ doc: logText, extensions });
       viewer.innerHTML = '';
       this._logEditor = new EditorView({ state, parent: viewer });
-       
-      // Initialize OverlayScrollbars on the CodeMirror scroller
-      initCodeMirrorScrollbars(this._logEditor);
+
 
       // Apply current font settings
       this.applyFontSettings();

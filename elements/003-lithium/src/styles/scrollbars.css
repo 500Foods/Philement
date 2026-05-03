@@ -447,16 +447,7 @@
     height: 0 !important;
   }
 
-  /* CodeMirror editors - match editor aesthetic */
-  .cm-editor .os-theme-lithium.os-scrollbar {
-    --os-size: 8px;
-    --os-handle-perpendicular-size: 6px;
-    --os-handle-perpendicular-size-hover: 6px;
-    --os-handle-perpendicular-size-active: 6px;
-    --os-padding-axis: 1px;
-    --os-padding-perpendicular: 1px;
-    --os-track-bg: var(--edit-gutter-bg, var(--bg-tertiary));
-  }
+
 
   /* SunEditor - match editor aesthetic */
   .sun-editor .os-theme-lithium.os-scrollbar {

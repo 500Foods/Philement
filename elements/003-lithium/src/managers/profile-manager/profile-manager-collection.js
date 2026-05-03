@@ -25,9 +25,6 @@ import {
   unfoldAllInEditor,
   formatSortedJson,
   compareJsonIgnoringKeyOrder,
-  initCodeMirrorScrollbars,
-  updateCodeMirrorScrollbars,
-  destroyCodeMirrorScrollbars,
 } from '../../core/codemirror-setup.js';
 import { LithiumEditorFooter } from '../../core/manager-ui.js';
 import { EditorState, EditorView, undo, redo } from '../../core/codemirror.js';
@@ -132,8 +129,7 @@ const extensions = buildEditorExtensions({
       });
       this.footer.init();
 
-      // Initialize OverlayScrollbars on the CodeMirror scroller
-      initCodeMirrorScrollbars(this.editor);
+
 
       // Store reference for external access
       this.container._cmView = this.editor;
