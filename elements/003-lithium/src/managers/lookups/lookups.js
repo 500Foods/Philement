@@ -399,6 +399,8 @@ export default class LookupsManager {
       this._jsonReadOnlyCompartment = createReadOnlyCompartment();
       this._jsonWordWrapCompartment = createWordWrapCompartment();
       this._jsonBracketMatchCompartment = createBracketMatchCompartment();
+      this._jsonSelectionHighlightCompartment = createSelectionHighlightCompartment();
+      this._jsonCommentContinuationCompartment = createCommentContinuationCompartment();
 
       const extensions = buildEditorExtensions({
         language: 'json',
@@ -407,8 +409,12 @@ export default class LookupsManager {
         fontSize: 13,
         wordWrapCompartment: this._jsonWordWrapCompartment,
         bracketMatchCompartment: this._jsonBracketMatchCompartment,
+        selectionHighlightCompartment: this._jsonSelectionHighlightCompartment,
+        commentContinuationCompartment: this._jsonCommentContinuationCompartment,
         wordWrap: false,
         bracketMatch: true,
+        selectionHighlight: true,
+        commentContinuation: true,
         onUpdate: (update) => {
           if (update.docChanged && this.childTable?.isEditing) {
             this.editHelper.checkDirtyState();
@@ -432,8 +438,12 @@ export default class LookupsManager {
         editorView: this.collectionEditor,
         wordWrapCompartment: this._jsonWordWrapCompartment,
         bracketMatchCompartment: this._jsonBracketMatchCompartment,
+        selectionHighlightCompartment: this._jsonSelectionHighlightCompartment,
+        commentContinuationCompartment: this._jsonCommentContinuationCompartment,
         initialWordWrap: false,
         initialBracketMatch: true,
+        initialSelectionHighlight: true,
+        initialCommentContinuation: true,
       });
       this.jsonEditorFooter.init();
 
