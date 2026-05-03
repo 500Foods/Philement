@@ -826,11 +826,9 @@ const extensions = buildEditorExtensions({
       // Set initial visual state (readonly)
       setEditorEditable(this.cssEditor, this.cmReadOnlyCompartment, false, this.elements.cssEditor);
 
-      // Create editor footer below the CSS editor
-      const footerEl = document.createElement('div');
-      this.elements.cssEditor.appendChild(footerEl);
+      // Initialize editor footer (already in HTML)
       this.cssEditorFooter = new LithiumEditorFooter({
-        container: footerEl,
+        container: this.elements.editorFooter,
         editorView: this.cssEditor,
         wordWrapCompartment: this.cmWordWrapCompartment,
         bracketMatchCompartment: this.cmBracketMatchCompartment,
