@@ -792,6 +792,8 @@ export default class StyleManager {
       this.cmReadOnlyCompartment = createReadOnlyCompartment();
       this.cmWordWrapCompartment = createWordWrapCompartment();
       this.cmBracketMatchCompartment = createBracketMatchCompartment();
+      this.cmSelectionHighlightCompartment = createSelectionHighlightCompartment();
+      this.cmCommentContinuationCompartment = createCommentContinuationCompartment();
 
 const extensions = buildEditorExtensions({
          language: 'css',
@@ -808,10 +810,14 @@ const extensions = buildEditorExtensions({
             }
           },
          ...this.editHelper.getCodeMirrorKeymapOptions(),
-         wordWrapCompartment: this.cmWordWrapCompartment,
-         wordWrap: false,
-         bracketMatchCompartment: this.cmBracketMatchCompartment,
-         bracketMatch: true,
+          wordWrapCompartment: this.cmWordWrapCompartment,
+          wordWrap: false,
+          bracketMatchCompartment: this.cmBracketMatchCompartment,
+          bracketMatch: true,
+          selectionHighlightCompartment: this.cmSelectionHighlightCompartment,
+          selectionHighlight: true,
+          commentContinuationCompartment: this.cmCommentContinuationCompartment,
+          commentContinuation: true,
        });
 
       const state = EditorState.create({ doc: '', extensions });
@@ -832,8 +838,12 @@ const extensions = buildEditorExtensions({
         editorView: this.cssEditor,
         wordWrapCompartment: this.cmWordWrapCompartment,
         bracketMatchCompartment: this.cmBracketMatchCompartment,
+        selectionHighlightCompartment: this.cmSelectionHighlightCompartment,
+        commentContinuationCompartment: this.cmCommentContinuationCompartment,
         initialWordWrap: false,
         initialBracketMatch: true,
+        initialSelectionHighlight: true,
+        initialCommentContinuation: true,
       });
       this.cssEditorFooter.init();
 

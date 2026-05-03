@@ -73,6 +73,8 @@ export class CollectionTabHandler {
       this.readOnlyCompartment = createReadOnlyCompartment();
       this.wordWrapCompartment = createWordWrapCompartment();
       this.bracketMatchCompartment = createBracketMatchCompartment();
+      this.selectionHighlightCompartment = createSelectionHighlightCompartment();
+      this.commentContinuationCompartment = createCommentContinuationCompartment();
 
       const jsonStr = formatSortedJson(initialData, 2);
 
@@ -82,10 +84,14 @@ const extensions = buildEditorExtensions({
          readOnly: true, // Start read-only, double-click to edit
          fontSize: this.fontSize,
          fontFamily: this.fontFamily,
-         wordWrapCompartment: this.wordWrapCompartment,
-         bracketMatchCompartment: this.bracketMatchCompartment,
-         wordWrap: false,
-         bracketMatch: true,
+          wordWrapCompartment: this.wordWrapCompartment,
+          bracketMatchCompartment: this.bracketMatchCompartment,
+          selectionHighlightCompartment: this.selectionHighlightCompartment,
+          commentContinuationCompartment: this.commentContinuationCompartment,
+          wordWrap: false,
+          bracketMatch: true,
+          selectionHighlight: true,
+          commentContinuation: true,
           onUpdate: (update) => {
             if (update.selectionSet) {
               // Defer footer update to prevent DOM interference during CodeMirror updates
@@ -117,8 +123,12 @@ const extensions = buildEditorExtensions({
         editorView: this.editor,
         wordWrapCompartment: this.wordWrapCompartment,
         bracketMatchCompartment: this.bracketMatchCompartment,
+        selectionHighlightCompartment: this.selectionHighlightCompartment,
+        commentContinuationCompartment: this.commentContinuationCompartment,
         initialWordWrap: false,
         initialBracketMatch: true,
+        initialSelectionHighlight: true,
+        initialCommentContinuation: true,
       });
       this.footer.init();
 
