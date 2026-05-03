@@ -63,6 +63,8 @@ export class EditorManager {
       this._sqlReadOnlyCompartment = createReadOnlyCompartment();
       this._sqlWordWrapCompartment = createWordWrapCompartment();
       this._sqlBracketMatchCompartment = createBracketMatchCompartment();
+      this._sqlSelectionHighlightCompartment = createSelectionHighlightCompartment();
+      this._sqlCommentContinuationCompartment = createCommentContinuationCompartment();
 
 const extensions = buildEditorExtensions({
          language: 'sql',
@@ -70,10 +72,14 @@ const extensions = buildEditorExtensions({
          readOnly: !this.manager.queryTable?.isEditing,
          fontSize: this.fontSettings.size,
          fontFamily: this.fontSettings.family,
-         wordWrapCompartment: this._sqlWordWrapCompartment,
-         bracketMatchCompartment: this._sqlBracketMatchCompartment,
-         wordWrap: false,
-         bracketMatch: true,
+          wordWrapCompartment: this._sqlWordWrapCompartment,
+          bracketMatchCompartment: this._sqlBracketMatchCompartment,
+          selectionHighlightCompartment: this._sqlSelectionHighlightCompartment,
+          commentContinuationCompartment: this._sqlCommentContinuationCompartment,
+          wordWrap: false,
+          bracketMatch: true,
+          selectionHighlight: true,
+          commentContinuation: true,
           onUpdate: (update) => {
             if (update.selectionSet) {
               // Defer footer update to prevent DOM interference during CodeMirror updates
@@ -104,8 +110,12 @@ const extensions = buildEditorExtensions({
         editorView: this.sqlEditor,
         wordWrapCompartment: this._sqlWordWrapCompartment,
         bracketMatchCompartment: this._sqlBracketMatchCompartment,
+        selectionHighlightCompartment: this._sqlSelectionHighlightCompartment,
+        commentContinuationCompartment: this._sqlCommentContinuationCompartment,
         initialWordWrap: false,
         initialBracketMatch: true,
+        initialSelectionHighlight: true,
+        initialCommentContinuation: true,
       });
       this.sqlEditorFooter.init();
 
@@ -137,6 +147,8 @@ const extensions = buildEditorExtensions({
       this._summaryReadOnlyCompartment = createReadOnlyCompartment();
       this._summaryWordWrapCompartment = createWordWrapCompartment();
       this._summaryBracketMatchCompartment = createBracketMatchCompartment();
+      this._summarySelectionHighlightCompartment = createSelectionHighlightCompartment();
+      this._summaryCommentContinuationCompartment = createCommentContinuationCompartment();
 
 const extensions = buildEditorExtensions({
          language: 'markdown',
@@ -144,10 +156,14 @@ const extensions = buildEditorExtensions({
          readOnly: !this.manager.queryTable?.isEditing,
          fontSize: this.fontSettings.size,
          fontFamily: this.fontSettings.family,
-         wordWrapCompartment: this._summaryWordWrapCompartment,
-         bracketMatchCompartment: this._summaryBracketMatchCompartment,
-         wordWrap: false,
-         bracketMatch: true,
+          wordWrapCompartment: this._summaryWordWrapCompartment,
+          bracketMatchCompartment: this._summaryBracketMatchCompartment,
+          selectionHighlightCompartment: this._summarySelectionHighlightCompartment,
+          commentContinuationCompartment: this._summaryCommentContinuationCompartment,
+          wordWrap: false,
+          bracketMatch: true,
+          selectionHighlight: true,
+          commentContinuation: true,
           onUpdate: (update) => {
             if (update.selectionSet) {
               // Defer footer update to prevent DOM interference during CodeMirror updates
@@ -177,8 +193,12 @@ const extensions = buildEditorExtensions({
         editorView: this.summaryEditor,
         wordWrapCompartment: this._summaryWordWrapCompartment,
         bracketMatchCompartment: this._summaryBracketMatchCompartment,
+        selectionHighlightCompartment: this._summarySelectionHighlightCompartment,
+        commentContinuationCompartment: this._summaryCommentContinuationCompartment,
         initialWordWrap: false,
         initialBracketMatch: true,
+        initialSelectionHighlight: true,
+        initialCommentContinuation: true,
       });
       this.summaryEditorFooter.init();
 
@@ -218,16 +238,22 @@ const extensions = buildEditorExtensions({
       this._jsonReadOnlyCompartment = createReadOnlyCompartment();
       this._jsonWordWrapCompartment = createWordWrapCompartment();
       this._jsonBracketMatchCompartment = createBracketMatchCompartment();
+      this._jsonSelectionHighlightCompartment = createSelectionHighlightCompartment();
+      this._jsonCommentContinuationCompartment = createCommentContinuationCompartment();
 
 const extensions = buildEditorExtensions({
          language: 'json',
          readOnlyCompartment: this._jsonReadOnlyCompartment,
          readOnly: !this.manager.queryTable?.isEditing,
          fontSize: 13,
-         wordWrapCompartment: this._jsonWordWrapCompartment,
-         bracketMatchCompartment: this._jsonBracketMatchCompartment,
-         wordWrap: false,
-         bracketMatch: true,
+          wordWrapCompartment: this._jsonWordWrapCompartment,
+          bracketMatchCompartment: this._jsonBracketMatchCompartment,
+          selectionHighlightCompartment: this._jsonSelectionHighlightCompartment,
+          commentContinuationCompartment: this._jsonCommentContinuationCompartment,
+          wordWrap: false,
+          bracketMatch: true,
+          selectionHighlight: true,
+          commentContinuation: true,
           onUpdate: (update) => {
             if (update.selectionSet) {
               // Defer footer update to prevent DOM interference during CodeMirror updates
@@ -258,8 +284,12 @@ const extensions = buildEditorExtensions({
         editorView: this.collectionEditor,
         wordWrapCompartment: this._jsonWordWrapCompartment,
         bracketMatchCompartment: this._jsonBracketMatchCompartment,
+        selectionHighlightCompartment: this._jsonSelectionHighlightCompartment,
+        commentContinuationCompartment: this._jsonCommentContinuationCompartment,
         initialWordWrap: false,
         initialBracketMatch: true,
+        initialSelectionHighlight: true,
+        initialCommentContinuation: true,
       });
       this.collectionEditorFooter.init();
 

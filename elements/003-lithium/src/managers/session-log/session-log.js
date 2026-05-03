@@ -243,19 +243,25 @@ export default class SessionLogManager {
     // Initialize CodeMirror
     try {
       const { EditorState, EditorView } = await import('../../core/codemirror.js');
-      const { buildEditorExtensions, createReadOnlyCompartment, createWordWrapCompartment, createBracketMatchCompartment } = await import('../../core/codemirror-setup.js');
+      const { buildEditorExtensions, createReadOnlyCompartment, createWordWrapCompartment, createBracketMatchCompartment, createSelectionHighlightCompartment, createCommentContinuationCompartment } = await import('../../core/codemirror-setup.js');
 
       const roCompartment = createReadOnlyCompartment();
       const wordWrapCompartment = createWordWrapCompartment();
       const bracketMatchCompartment = createBracketMatchCompartment();
+      const selectionHighlightCompartment = createSelectionHighlightCompartment();
+      const commentContinuationCompartment = createCommentContinuationCompartment();
       const extensions = buildEditorExtensions({
         language: 'log',
         readOnlyCompartment: roCompartment,
         wordWrapCompartment,
         bracketMatchCompartment,
+        selectionHighlightCompartment,
+        commentContinuationCompartment,
         readOnly: true,
         fontSize: this._fontSize,
         fontFamily: this._fontFamily,
+        selectionHighlight: true,
+        commentContinuation: true,
       });
 
       const state = EditorState.create({ doc: logText, extensions });
@@ -268,8 +274,12 @@ export default class SessionLogManager {
         editorView: this._logEditor,
         wordWrapCompartment,
         bracketMatchCompartment,
+        selectionHighlightCompartment,
+        commentContinuationCompartment,
         initialWordWrap: false,
         initialBracketMatch: true,
+        initialSelectionHighlight: true,
+        initialCommentContinuation: true,
       });
       this._logEditorFooter.init();
 

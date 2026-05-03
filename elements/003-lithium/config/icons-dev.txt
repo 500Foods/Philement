@@ -49,6 +49,7 @@
 <fa fa-clock></fa>
 <fa fa-cog></fa>
 <fa fa-command></fa>
+<fa fa-comment></fa>
 <fa fa-comments></fa>
 <fa fa-compress></fa>
 <fa fa-copy></fa>
@@ -84,6 +85,7 @@
 <fa fa-graduation-cap></fa>
 <fa fa-grip-dots-vertical></fa>
 <fa fa-hand></fa>
+<fa fa-highlighter></fa>
 <fa fa-history></fa>
 <fa fa-id-badge></fa>
 <fa fa-id-card></fa>
