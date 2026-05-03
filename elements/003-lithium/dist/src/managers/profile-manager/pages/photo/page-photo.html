@@ -13,22 +13,35 @@
         <div class="photo-resize-handle" id="photo-resize-handle"><fa fa-expand></fa></div>
       </div>
       <div class="lithium-toolbar" id="photo-toolbar">
+        <button type="button" class="lithium-toolbar-btn" id="photo-capture-btn" data-collapsible-text data-tooltip="Capture Image" data-tip-placement="bottom">
+          <fa fa-camera></fa>
+        </button>
         <label class="lithium-toolbar-btn photo-upload-btn" data-collapsible-text data-tooltip="Upload Image" data-tip-placement="bottom">
           <fa fa-upload></fa>
           <input type="file" id="photo-upload" accept="image/*" hidden>
         </label>
         <label class="lithium-toolbar-btn photo-download-btn" data-collapsible-text data-tooltip="Download Image" data-tip-placement="bottom">
-          <fa fa-download></fa>                          
+          <fa fa-download></fa>
         </label>
-        <button type="button" class="lithium-toolbar-btn" id="photo-capture-btn" data-collapsible-text data-tooltip="Capture Image" data-tip-placement="bottom">
-          <fa fa-camera></fa>
+        <div class="lithium-toolbar-placeholder"></div>
+        <button type="button" class="lithium-toolbar-btn photo-transform-btn" id="photo-flip-h-btn" disabled data-tooltip="Flip Horizontal" data-tip-placement="bottom">
+          <fa fa-left-right></fa>
+        </button>
+        <button type="button" class="lithium-toolbar-btn photo-transform-btn" id="photo-flip-v-btn" disabled data-tooltip="Flip Vertical" data-tip-placement="bottom">
+          <fa fa-up-down></fa>
+        </button>
+        <button type="button" class="lithium-toolbar-btn photo-transform-btn" id="photo-rotate-left-btn" disabled data-tooltip="Rotate Left" data-tip-placement="bottom">
+          <fa fa-rotate-left></fa>
+        </button>
+        <button type="button" class="lithium-toolbar-btn photo-transform-btn" id="photo-rotate-right-btn" disabled data-tooltip="Rotate Right" data-tip-placement="bottom">
+          <fa fa-rotate-right></fa>
         </button>
         <div class="lithium-toolbar-placeholder"></div>
-        <button type="button" class="lithium-toolbar-btn" id="photo-remove-btn" disabled data-collapsible-text data-tooltip="Clear Image" data-tip-placement="bottom">
-          <fa fa-trash></fa>
-        </button>
         <button type="button" class="lithium-toolbar-btn" id="photo-reset-btn" data-collapsible-text data-tooltip="Default Settings" data-tip-placement="bottom">
           <fa fa-bullseye></fa>
+        </button>
+        <button type="button" class="lithium-toolbar-btn" id="photo-remove-btn" disabled data-collapsible-text data-tooltip="Clear Image" data-tip-placement="bottom">
+          <fa fa-trash></fa>
         </button>
         <span class="photo-status" id="photo-status"></span>
       </div>

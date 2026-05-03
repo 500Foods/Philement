@@ -233,11 +233,14 @@ localStorage.setItem('lithium_user_pref', 'value');
 
 ---
 
-### 9. Popup Coordination System
+### 9. Popup/Popout Coordination System
 
-**Only one popup can be open at a time throughout the entire application.**
+**Only one popup or popout can be open at a time throughout the entire application.**
 
-All popups must participate in the global `close-all-popups` event system:
+- **Popups**: Small overlay dialogs (menus, confirmations, tooltips)
+- **Popouts**: Movable/resizable window-like dialogs (Terminal, Crimson, Camera)
+
+All popups and popouts must participate in the global `close-all-popups` event system:
 
 ```javascript
 // ✅ Correct - When opening a popup, dispatch close-all-popups first
@@ -254,7 +257,7 @@ document.addEventListener('close-all-popups', () => {
 if (this._transitioning) return; // Prevent double-click issues
 ```
 
-**Requirements for all popups:**
+**Requirements for all popups and popouts:**
 
 - **Dispatch `close-all-popups`** when opening (after closing others)
 - **Listen for `close-all-popups`** to close when others open
@@ -263,7 +266,7 @@ if (this._transitioning) return; // Prevent double-click issues
 - **Clean up event listeners** on destruction
 - **Show visual feedback** (active class on trigger buttons)
 
-**Rationale:** Multiple simultaneous popups create confusion, z-index conflicts, and poor UX. The global coordination system ensures a clean, predictable popup experience across the entire application.
+**Rationale:** Multiple simultaneous popups/popouts create confusion, z-index conflicts, and poor UX. The global coordination system ensures a clean, predictable experience across the entire application.
 
 ---
 
@@ -278,8 +281,8 @@ Before submitting code for review, verify:
 - [ ] Functions are extractable and testable
 - [ ] Existing CSS is reused where possible
 - [ ] New CSS follows naming conventions
-- [ ] Popups use `close-all-popups` event coordination
-- [ ] Popup trigger buttons show `.active` class when popup is open
+- [ ] Popups/popouts use `close-all-popups` event coordination
+- [ ] Popup/popout trigger buttons show `.active` class when open
 
 ---
 
