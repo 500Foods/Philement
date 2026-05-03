@@ -24,9 +24,6 @@ import {
   foldAllInEditor,
   unfoldAllInEditor,
   formatSortedJson,
-  initCodeMirrorScrollbars,
-  updateCodeMirrorScrollbars,
-  destroyCodeMirrorScrollbars,
   READONLY_CLASS,
 } from '../../core/codemirror-setup.js';
 import { LithiumEditorFooter } from '../../core/manager-ui.js';
@@ -119,8 +116,7 @@ const extensions = buildEditorExtensions({
       });
       this.sqlEditorFooter.init();
 
-      // Initialize OverlayScrollbars on the CodeMirror scroller
-      initCodeMirrorScrollbars(this.sqlEditor);
+
 
       // Set initial visual state
       const isEditing = this.manager.queryTable?.isEditing || false;
@@ -199,8 +195,7 @@ const extensions = buildEditorExtensions({
       });
       this.summaryEditorFooter.init();
 
-      // Initialize OverlayScrollbars on the CodeMirror scroller
-      initCodeMirrorScrollbars(this.summaryEditor);
+
 
       // Set initial visual state
       const isEditing = this.manager.queryTable?.isEditing || false;
@@ -287,8 +282,7 @@ const extensions = buildEditorExtensions({
       });
       this.collectionEditorFooter.init();
 
-      // Initialize OverlayScrollbars on the CodeMirror scroller
-      initCodeMirrorScrollbars(this.collectionEditor);
+
 
       // Store references on container for compatibility
       container._cmView = this.collectionEditor;

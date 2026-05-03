@@ -47,9 +47,6 @@ import {
   setEditorContentNoHistory,
   foldAllInEditor,
   unfoldAllInEditor,
-  initCodeMirrorScrollbars,
-  updateCodeMirrorScrollbars,
-  destroyCodeMirrorScrollbars,
 } from '../../core/codemirror-setup.js';
 
 // ── Hardcoded Sections Data ───────────────────────────────────────────────
@@ -314,6 +311,7 @@ export default class StyleManager {
       resetBtn: this.container.querySelector('#style-reset-btn'),
       copyCssBtn: this.container.querySelector('#style-copy-css-btn'),
       jsonEditor: this.container.querySelector('#style-json-editor'),
+      editorFooter: this.container.querySelector('#style-editor-footer'),
     };
 
     processIcons(this.container);
@@ -823,8 +821,7 @@ const extensions = buildEditorExtensions({
         parent: this.elements.cssEditor,
       });
 
-      // Initialize OverlayScrollbars on the CodeMirror scroller
-      initCodeMirrorScrollbars(this.cssEditor);
+
 
       // Set initial visual state (readonly)
       setEditorEditable(this.cssEditor, this.cmReadOnlyCompartment, false, this.elements.cssEditor);

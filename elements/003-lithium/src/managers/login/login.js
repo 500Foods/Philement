@@ -898,9 +898,7 @@ export default class LoginManager {
       logViewer.innerHTML = '';
       this._logEditor = new EditorView({ state, parent: logViewer });
 
-      // Initialize OverlayScrollbars on the CodeMirror scroller
-      const { initCodeMirrorScrollbars } = await import('../../core/codemirror-setup.js');
-      initCodeMirrorScrollbars(this._logEditor);
+
     } catch (error) {
       console.warn('[LoginManager] CodeMirror failed to load, using plain text:', error);
       logViewer.innerHTML = `<pre class="log-content">${logText}</pre>`;
