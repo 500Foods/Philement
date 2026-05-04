@@ -43,6 +43,10 @@ import {
   createReadOnlyCompartment,
   createWordWrapCompartment,
   createBracketMatchCompartment,
+  createSelectionHighlightCompartment,
+  createCommentContinuationCompartment,
+  createWhitespaceCompartment,
+  createVirtualColumnsCompartment,
   setEditorEditable,
   setEditorContentNoHistory,
   foldAllInEditor,
@@ -794,6 +798,8 @@ export default class StyleManager {
       this.cmBracketMatchCompartment = createBracketMatchCompartment();
       this.cmSelectionHighlightCompartment = createSelectionHighlightCompartment();
       this.cmCommentContinuationCompartment = createCommentContinuationCompartment();
+      this.cmWhitespaceCompartment = createWhitespaceCompartment();
+      this.cmVirtualColumnsCompartment = createVirtualColumnsCompartment();
 
 const extensions = buildEditorExtensions({
          language: 'css',
@@ -818,6 +824,9 @@ const extensions = buildEditorExtensions({
           selectionHighlight: true,
           commentContinuationCompartment: this.cmCommentContinuationCompartment,
           commentContinuation: true,
+          whitespaceCompartment: this.cmWhitespaceCompartment,
+          virtualColumnsCompartment: this.cmVirtualColumnsCompartment,
+          showWhitespace: false,
        });
 
       const state = EditorState.create({ doc: '', extensions });
@@ -840,10 +849,14 @@ const extensions = buildEditorExtensions({
         bracketMatchCompartment: this.cmBracketMatchCompartment,
         selectionHighlightCompartment: this.cmSelectionHighlightCompartment,
         commentContinuationCompartment: this.cmCommentContinuationCompartment,
+        whitespaceCompartment: this.cmWhitespaceCompartment,
+        virtualColumnsCompartment: this.cmVirtualColumnsCompartment,
         initialWordWrap: false,
         initialBracketMatch: true,
         initialSelectionHighlight: true,
         initialCommentContinuation: true,
+        initialWhitespace: false,
+        initialVirtualColumns: true,
       });
       this.cssEditorFooter.init();
 

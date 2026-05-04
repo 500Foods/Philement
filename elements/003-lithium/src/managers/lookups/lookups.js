@@ -32,6 +32,10 @@ import {
   createReadOnlyCompartment,
   createWordWrapCompartment,
   createBracketMatchCompartment,
+  createSelectionHighlightCompartment,
+  createCommentContinuationCompartment,
+  createWhitespaceCompartment,
+  createVirtualColumnsCompartment,
   setEditorEditable,
   foldAllInEditor,
   unfoldAllInEditor,
@@ -401,6 +405,8 @@ export default class LookupsManager {
       this._jsonBracketMatchCompartment = createBracketMatchCompartment();
       this._jsonSelectionHighlightCompartment = createSelectionHighlightCompartment();
       this._jsonCommentContinuationCompartment = createCommentContinuationCompartment();
+      this._jsonWhitespaceCompartment = createWhitespaceCompartment();
+      this._jsonVirtualColumnsCompartment = createVirtualColumnsCompartment();
 
       const extensions = buildEditorExtensions({
         language: 'json',
@@ -411,6 +417,8 @@ export default class LookupsManager {
         bracketMatchCompartment: this._jsonBracketMatchCompartment,
         selectionHighlightCompartment: this._jsonSelectionHighlightCompartment,
         commentContinuationCompartment: this._jsonCommentContinuationCompartment,
+        whitespaceCompartment: this._jsonWhitespaceCompartment,
+        virtualColumnsCompartment: this._jsonVirtualColumnsCompartment,
         wordWrap: false,
         bracketMatch: true,
         selectionHighlight: true,
@@ -440,10 +448,13 @@ export default class LookupsManager {
         bracketMatchCompartment: this._jsonBracketMatchCompartment,
         selectionHighlightCompartment: this._jsonSelectionHighlightCompartment,
         commentContinuationCompartment: this._jsonCommentContinuationCompartment,
+        whitespaceCompartment: this._jsonWhitespaceCompartment,
+        virtualColumnsCompartment: this._jsonVirtualColumnsCompartment,
         initialWordWrap: false,
         initialBracketMatch: true,
         initialSelectionHighlight: true,
         initialCommentContinuation: true,
+        initialVirtualColumns: true,
       });
       this.jsonEditorFooter.init();
 

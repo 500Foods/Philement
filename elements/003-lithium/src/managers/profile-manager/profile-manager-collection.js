@@ -18,6 +18,10 @@ import {
   createReadOnlyCompartment,
   createWordWrapCompartment,
   createBracketMatchCompartment,
+  createSelectionHighlightCompartment,
+  createCommentContinuationCompartment,
+  createWhitespaceCompartment,
+  createVirtualColumnsCompartment,
   setEditorContentNoHistory,
   setEditorEditable,
   updateUndoRedoButtons,
@@ -75,6 +79,8 @@ export class CollectionTabHandler {
       this.bracketMatchCompartment = createBracketMatchCompartment();
       this.selectionHighlightCompartment = createSelectionHighlightCompartment();
       this.commentContinuationCompartment = createCommentContinuationCompartment();
+      this.whitespaceCompartment = createWhitespaceCompartment();
+      this.virtualColumnsCompartment = createVirtualColumnsCompartment();
 
       const jsonStr = formatSortedJson(initialData, 2);
 
@@ -88,6 +94,8 @@ const extensions = buildEditorExtensions({
           bracketMatchCompartment: this.bracketMatchCompartment,
           selectionHighlightCompartment: this.selectionHighlightCompartment,
           commentContinuationCompartment: this.commentContinuationCompartment,
+          whitespaceCompartment: this.whitespaceCompartment,
+          virtualColumnsCompartment: this.virtualColumnsCompartment,
           wordWrap: false,
           bracketMatch: true,
           selectionHighlight: true,
@@ -125,10 +133,13 @@ const extensions = buildEditorExtensions({
         bracketMatchCompartment: this.bracketMatchCompartment,
         selectionHighlightCompartment: this.selectionHighlightCompartment,
         commentContinuationCompartment: this.commentContinuationCompartment,
+        whitespaceCompartment: this.whitespaceCompartment,
+        virtualColumnsCompartment: this.virtualColumnsCompartment,
         initialWordWrap: false,
         initialBracketMatch: true,
         initialSelectionHighlight: true,
         initialCommentContinuation: true,
+        initialVirtualColumns: true,
       });
       this.footer.init();
 

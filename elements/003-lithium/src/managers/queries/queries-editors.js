@@ -18,6 +18,10 @@ import {
   createReadOnlyCompartment,
   createWordWrapCompartment,
   createBracketMatchCompartment,
+  createSelectionHighlightCompartment,
+  createWhitespaceCompartment,
+  createCommentContinuationCompartment,
+  createVirtualColumnsCompartment,
   setEditorEditable,
   setEditorContentNoHistory,
   updateUndoRedoButtons,
@@ -65,8 +69,10 @@ export class EditorManager {
       this._sqlBracketMatchCompartment = createBracketMatchCompartment();
       this._sqlSelectionHighlightCompartment = createSelectionHighlightCompartment();
       this._sqlCommentContinuationCompartment = createCommentContinuationCompartment();
+      this._sqlWhitespaceCompartment = createWhitespaceCompartment();
+      this._sqlVirtualColumnsCompartment = createVirtualColumnsCompartment();
 
-const extensions = buildEditorExtensions({
+      const extensions = buildEditorExtensions({
          language: 'sql',
          readOnlyCompartment: this._sqlReadOnlyCompartment,
          readOnly: !this.manager.queryTable?.isEditing,
@@ -76,10 +82,13 @@ const extensions = buildEditorExtensions({
           bracketMatchCompartment: this._sqlBracketMatchCompartment,
           selectionHighlightCompartment: this._sqlSelectionHighlightCompartment,
           commentContinuationCompartment: this._sqlCommentContinuationCompartment,
+          whitespaceCompartment: this._sqlWhitespaceCompartment,
+          virtualColumnsCompartment: this._sqlVirtualColumnsCompartment,
           wordWrap: false,
           bracketMatch: true,
           selectionHighlight: true,
           commentContinuation: true,
+          showWhitespace: false,
           onUpdate: (update) => {
             if (update.selectionSet) {
               // Defer footer update to prevent DOM interference during CodeMirror updates
@@ -112,10 +121,14 @@ const extensions = buildEditorExtensions({
         bracketMatchCompartment: this._sqlBracketMatchCompartment,
         selectionHighlightCompartment: this._sqlSelectionHighlightCompartment,
         commentContinuationCompartment: this._sqlCommentContinuationCompartment,
+        whitespaceCompartment: this._sqlWhitespaceCompartment,
+        virtualColumnsCompartment: this._sqlVirtualColumnsCompartment,
         initialWordWrap: false,
         initialBracketMatch: true,
         initialSelectionHighlight: true,
         initialCommentContinuation: true,
+        initialWhitespace: false,
+        initialVirtualColumns: true,
       });
       this.sqlEditorFooter.init();
 
@@ -149,8 +162,10 @@ const extensions = buildEditorExtensions({
       this._summaryBracketMatchCompartment = createBracketMatchCompartment();
       this._summarySelectionHighlightCompartment = createSelectionHighlightCompartment();
       this._summaryCommentContinuationCompartment = createCommentContinuationCompartment();
+      this._summaryWhitespaceCompartment = createWhitespaceCompartment();
+      this._summaryVirtualColumnsCompartment = createVirtualColumnsCompartment();
 
-const extensions = buildEditorExtensions({
+      const extensions = buildEditorExtensions({
          language: 'markdown',
          readOnlyCompartment: this._summaryReadOnlyCompartment,
          readOnly: !this.manager.queryTable?.isEditing,
@@ -160,10 +175,13 @@ const extensions = buildEditorExtensions({
           bracketMatchCompartment: this._summaryBracketMatchCompartment,
           selectionHighlightCompartment: this._summarySelectionHighlightCompartment,
           commentContinuationCompartment: this._summaryCommentContinuationCompartment,
+          whitespaceCompartment: this._summaryWhitespaceCompartment,
+          virtualColumnsCompartment: this._summaryVirtualColumnsCompartment,
           wordWrap: false,
           bracketMatch: true,
           selectionHighlight: true,
           commentContinuation: true,
+          showWhitespace: false,
           onUpdate: (update) => {
             if (update.selectionSet) {
               // Defer footer update to prevent DOM interference during CodeMirror updates
@@ -195,10 +213,14 @@ const extensions = buildEditorExtensions({
         bracketMatchCompartment: this._summaryBracketMatchCompartment,
         selectionHighlightCompartment: this._summarySelectionHighlightCompartment,
         commentContinuationCompartment: this._summaryCommentContinuationCompartment,
+        whitespaceCompartment: this._summaryWhitespaceCompartment,
+        virtualColumnsCompartment: this._summaryVirtualColumnsCompartment,
         initialWordWrap: false,
         initialBracketMatch: true,
         initialSelectionHighlight: true,
         initialCommentContinuation: true,
+        initialWhitespace: false,
+        initialVirtualColumns: true,
       });
       this.summaryEditorFooter.init();
 
@@ -240,8 +262,10 @@ const extensions = buildEditorExtensions({
       this._jsonBracketMatchCompartment = createBracketMatchCompartment();
       this._jsonSelectionHighlightCompartment = createSelectionHighlightCompartment();
       this._jsonCommentContinuationCompartment = createCommentContinuationCompartment();
+      this._jsonWhitespaceCompartment = createWhitespaceCompartment();
+      this._jsonVirtualColumnsCompartment = createVirtualColumnsCompartment();
 
-const extensions = buildEditorExtensions({
+      const extensions = buildEditorExtensions({
          language: 'json',
          readOnlyCompartment: this._jsonReadOnlyCompartment,
          readOnly: !this.manager.queryTable?.isEditing,
@@ -250,10 +274,13 @@ const extensions = buildEditorExtensions({
           bracketMatchCompartment: this._jsonBracketMatchCompartment,
           selectionHighlightCompartment: this._jsonSelectionHighlightCompartment,
           commentContinuationCompartment: this._jsonCommentContinuationCompartment,
+          whitespaceCompartment: this._jsonWhitespaceCompartment,
+          virtualColumnsCompartment: this._jsonVirtualColumnsCompartment,
           wordWrap: false,
           bracketMatch: true,
           selectionHighlight: true,
           commentContinuation: true,
+          showWhitespace: false,
           onUpdate: (update) => {
             if (update.selectionSet) {
               // Defer footer update to prevent DOM interference during CodeMirror updates
@@ -286,10 +313,14 @@ const extensions = buildEditorExtensions({
         bracketMatchCompartment: this._jsonBracketMatchCompartment,
         selectionHighlightCompartment: this._jsonSelectionHighlightCompartment,
         commentContinuationCompartment: this._jsonCommentContinuationCompartment,
+        whitespaceCompartment: this._jsonWhitespaceCompartment,
+        virtualColumnsCompartment: this._jsonVirtualColumnsCompartment,
         initialWordWrap: false,
         initialBracketMatch: true,
         initialSelectionHighlight: true,
         initialCommentContinuation: true,
+        initialWhitespace: false,
+        initialVirtualColumns: true,
       });
       this.collectionEditorFooter.init();
 
