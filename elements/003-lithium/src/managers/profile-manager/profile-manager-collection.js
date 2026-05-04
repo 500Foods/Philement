@@ -74,13 +74,14 @@ export class CollectionTabHandler {
     this._initialData = JSON.parse(JSON.stringify(initialData));
 
     try {
-      this.readOnlyCompartment = createReadOnlyCompartment();
-      this.wordWrapCompartment = createWordWrapCompartment();
-      this.bracketMatchCompartment = createBracketMatchCompartment();
-      this.selectionHighlightCompartment = createSelectionHighlightCompartment();
-      this.commentContinuationCompartment = createCommentContinuationCompartment();
-      this.whitespaceCompartment = createWhitespaceCompartment();
-      this.virtualColumnsCompartment = createVirtualColumnsCompartment();
+       this.readOnlyCompartment = createReadOnlyCompartment();
+       this.wordWrapCompartment = createWordWrapCompartment();
+       this.bracketMatchCompartment = createBracketMatchCompartment();
+       this.selectionHighlightCompartment = createSelectionHighlightCompartment();
+       this.commentContinuationCompartment = createCommentContinuationCompartment();
+       this.whitespaceCompartment = createWhitespaceCompartment();
+       this.virtualColumnsCompartment = createVirtualColumnsCompartment();
+       this.indentUnitCompartment = createIndentUnitCompartment();
 
       const jsonStr = formatSortedJson(initialData, 2);
 
@@ -94,9 +95,10 @@ const extensions = buildEditorExtensions({
           bracketMatchCompartment: this.bracketMatchCompartment,
           selectionHighlightCompartment: this.selectionHighlightCompartment,
           commentContinuationCompartment: this.commentContinuationCompartment,
-          whitespaceCompartment: this.whitespaceCompartment,
-          virtualColumnsCompartment: this.virtualColumnsCompartment,
-          wordWrap: false,
+           whitespaceCompartment: this.whitespaceCompartment,
+           virtualColumnsCompartment: this.virtualColumnsCompartment,
+           indentUnitCompartment: this.indentUnitCompartment,
+           wordWrap: false,
           bracketMatch: true,
           selectionHighlight: true,
           commentContinuation: true,
@@ -126,21 +128,24 @@ const extensions = buildEditorExtensions({
 
       // Initialize editor footer (already in HTML)
       const footerEl = document.querySelector('#profile-collection-editor-footer');
-      this.footer = new LithiumEditorFooter({
-        container: footerEl,
-        editorView: this.editor,
-        wordWrapCompartment: this.wordWrapCompartment,
-        bracketMatchCompartment: this.bracketMatchCompartment,
-        selectionHighlightCompartment: this.selectionHighlightCompartment,
-        commentContinuationCompartment: this.commentContinuationCompartment,
-        whitespaceCompartment: this.whitespaceCompartment,
-        virtualColumnsCompartment: this.virtualColumnsCompartment,
-        initialWordWrap: false,
-        initialBracketMatch: true,
-        initialSelectionHighlight: true,
-        initialCommentContinuation: true,
-        initialVirtualColumns: true,
-      });
+       this.footer = new LithiumEditorFooter({
+         container: footerEl,
+         editorView: this.editor,
+         wordWrapCompartment: this.wordWrapCompartment,
+         bracketMatchCompartment: this.bracketMatchCompartment,
+         selectionHighlightCompartment: this.selectionHighlightCompartment,
+         commentContinuationCompartment: this.commentContinuationCompartment,
+         whitespaceCompartment: this.whitespaceCompartment,
+         indentUnitCompartment: this.indentUnitCompartment,
+         virtualColumnsCompartment: this.virtualColumnsCompartment,
+         initialWordWrap: false,
+         initialBracketMatch: true,
+         initialSelectionHighlight: true,
+         initialCommentContinuation: true,
+         initialWhitespace: false,
+         initialVirtualColumns: true,
+         storageKey: 'editors.profile.collection',
+       });
       this.footer.init();
 
 
