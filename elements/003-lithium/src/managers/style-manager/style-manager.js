@@ -230,7 +230,7 @@ export default class StyleManager {
     this.cmReadOnlyCompartment = null;
     this.cmWordWrapCompartment = null;
     this.cmBracketMatchCompartment = null;
-    
+
     // Edit helper — consolidates edit mode, dirty tracking, and save/cancel buttons
     this.editHelper = new ManagerEditHelper({ name: 'Style' });
 
