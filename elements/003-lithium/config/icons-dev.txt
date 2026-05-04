@@ -107,6 +107,7 @@
 <fa fa-note-sticky></fa>
 <fa fa-octagon></fa>
 <fa fa-palette></fa>
+<fa fa-paragraph></fa>
 <fa fa-party-horn></fa>
 <fa fa-pause></fa>
 <fa fa-pen-to-square></fa>
