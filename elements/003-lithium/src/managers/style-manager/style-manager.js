@@ -47,6 +47,7 @@ import {
   createCommentContinuationCompartment,
   createWhitespaceCompartment,
   createVirtualColumnsCompartment,
+  createIndentUnitCompartment,
   setEditorEditable,
   setEditorContentNoHistory,
   foldAllInEditor,
@@ -230,6 +231,8 @@ export default class StyleManager {
     this.cmReadOnlyCompartment = null;
     this.cmWordWrapCompartment = null;
     this.cmBracketMatchCompartment = null;
+    this.cmIndentUnitCompartment = null;
+    this.cmIndentUnitCompartment = null;
 
     // Edit helper — consolidates edit mode, dirty tracking, and save/cancel buttons
     this.editHelper = new ManagerEditHelper({ name: 'Style' });
@@ -799,37 +802,40 @@ export default class StyleManager {
       this.cmSelectionHighlightCompartment = createSelectionHighlightCompartment();
       this.cmCommentContinuationCompartment = createCommentContinuationCompartment();
       this.cmWhitespaceCompartment = createWhitespaceCompartment();
+      this.cmIndentUnitCompartment = createIndentUnitCompartment();
       this.cmVirtualColumnsCompartment = createVirtualColumnsCompartment();
 
 const extensions = buildEditorExtensions({
-         language: 'css',
-         readOnlyCompartment: this.cmReadOnlyCompartment,
-         readOnly: true,
-         fontSize: 14,
-          onUpdate: (update) => {
-            if (update.selectionSet) {
-              // Defer footer update to prevent DOM interference during CodeMirror updates
-              requestAnimationFrame(() => this.cssEditorFooter?.updateCursorPosition());
-            }
-            if (update.docChanged && this.isCssEditorInEditMode) {
-              this.handleCssEditorDirty();
-            }
-          },
-         ...this.editHelper.getCodeMirrorKeymapOptions(),
-          wordWrapCompartment: this.cmWordWrapCompartment,
-          wordWrap: false,
-          bracketMatchCompartment: this.cmBracketMatchCompartment,
-          bracketMatch: true,
-          selectionHighlightCompartment: this.cmSelectionHighlightCompartment,
-          selectionHighlight: true,
-          commentContinuationCompartment: this.cmCommentContinuationCompartment,
-          commentContinuation: true,
-          whitespaceCompartment: this.cmWhitespaceCompartment,
-          virtualColumnsCompartment: this.cmVirtualColumnsCompartment,
-          showWhitespace: false,
-       });
-
-      const state = EditorState.create({ doc: '', extensions });
+          language: 'css',
+          readOnlyCompartment: this.cmReadOnlyCompartment,
+          readOnly: true,
+          fontSize: 14,
+           onUpdate: (update) => {
+             if (update.selectionSet) {
+               // Defer footer update to prevent DOM interference during CodeMirror updates
+               requestAnimationFrame(() => this.cssEditorFooter?.updateCursorPosition());
+             }
+             if (update.docChanged && this.isCssEditorInEditMode) {
+               this.handleCssEditorDirty();
+             }
+           },
+          ...this.editHelper.getCodeMirrorKeymapOptions(),
+           wordWrapCompartment: this.cmWordWrapCompartment,
+           wordWrap: false,
+           bracketMatchCompartment: this.cmBracketMatchCompartment,
+           bracketMatch: true,
+           selectionHighlightCompartment: this.cmSelectionHighlightCompartment,
+           selectionHighlight: true,
+           commentContinuationCompartment: this.cmCommentContinuationCompartment,
+           commentContinuation: true,
+           whitespaceCompartment: this.cmWhitespaceCompartment,
+           virtualColumnsCompartment: this.cmVirtualColumnsCompartment,
+            indentUnitCompartment: this.cmIndentUnitCompartment,
+            initialIndentString: this._loadIndentUnit(),
+            showWhitespace: false,
+         });
+ 
+       const state = EditorState.create({ doc: '', extensions });
 
       this.cssEditor = new EditorView({
         state,
@@ -850,13 +856,16 @@ const extensions = buildEditorExtensions({
         selectionHighlightCompartment: this.cmSelectionHighlightCompartment,
         commentContinuationCompartment: this.cmCommentContinuationCompartment,
         whitespaceCompartment: this.cmWhitespaceCompartment,
+        indentUnitCompartment: this.cmIndentUnitCompartment,
         virtualColumnsCompartment: this.cmVirtualColumnsCompartment,
         initialWordWrap: false,
         initialBracketMatch: true,
         initialSelectionHighlight: true,
         initialCommentContinuation: true,
         initialWhitespace: false,
+        initialIndentString: this._loadIndentUnit(),
         initialVirtualColumns: true,
+        storageKey: 'style_css_editor',
       });
       this.cssEditorFooter.init();
 
@@ -925,6 +934,14 @@ ${selector}:disabled {
   /* Disabled styles here */
 }
 `;
+  }
+
+  _loadIndentUnit() {
+    try {
+      return localStorage.getItem('style_css_editor_indent_unit') || '\t';
+    } catch {
+      return '\t';
+    }
   }
 
   // ── Table Width Control ────────────────────────────────────────────────────

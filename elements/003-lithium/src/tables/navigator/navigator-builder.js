@@ -36,7 +36,7 @@ export function getNavigatorHTML({ cssPrefix, filtersVisible, readonly, alwaysEd
           <fa fa-left-right></fa>
         </button>
         <button type="button" class="lithium-nav-btn lithium-nav-btn-has-popup" id="${cssPrefix}-nav-layout" title="Table Layout">
-          <fa fa-table-columns></fa>
+          <fa fa-table-layout></fa>
         </button>
         <button type="button" class="lithium-nav-btn lithium-nav-btn-has-popup" id="${cssPrefix}-nav-template" title="Templates">
           <fa fa-star></fa>

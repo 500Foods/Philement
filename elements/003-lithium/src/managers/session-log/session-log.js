@@ -280,6 +280,7 @@ export default class SessionLogManager {
         initialBracketMatch: true,
         initialSelectionHighlight: true,
         initialCommentContinuation: true,
+        storageKey: 'editors.session-log',
       });
       this._logEditorFooter.init();
 
