@@ -64,4 +64,66 @@
     user-select: none;
   }
 
+  /* ═════════════════════════════════════════════════════════════════════════════
+     WHITESPACE VISUALIZATION
+     ═════════════════════════════════════════════════════════════════════════════ */
+
+  /* Base whitespace styling */
+  .cm-highlightSpace {
+    color: var(--text-muted, #666);
+  }
+
+  .cm-highlightTab::before {
+    content: '→';
+    color: var(--text-muted, #666);
+    position: absolute;
+  }
+
+  .cm-newline-marker {
+    color: var(--text-muted, #666);
+  }
+
+  .cm-whitespace-space::before {
+    content: '•';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--text-muted, #666);
+    font-size: 8px;
+    line-height: 1;
+    pointer-events: none;
+  }
+
+  .cm-whitespace-tab::before {
+    content: '→';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--text-muted, #666);
+    font-size: 9px;
+    line-height: 1;
+    pointer-events: none;
+  }
+
+  .cm-whitespace-newline::before {
+    content: '¶';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--text-muted, #666);
+    font-size: 9px;
+    line-height: 1;
+    pointer-events: none;
+  }
+
+  /* Reduce opacity in selection */
+  .cm-whitespace-space.cm-selected::before,
+  .cm-whitespace-tab.cm-selected::before,
+  .cm-whitespace-newline.cm-selected::before {
+    opacity: 0.5;
+  }
+
 }
