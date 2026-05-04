@@ -11,6 +11,7 @@
 <fa fa-angles-left id="collapse-icon"></fa>
 <fa fa-aperture></fa>
 <fa fa-arrow-down-a-z></fa>
+<fa fa-arrow-right-to-line></fa>
 <fa fa-arrow-rotate-left-10></fa>
 <fa fa-arrow-rotate-left-30></fa>
 <fa fa-arrow-rotate-left></fa>
@@ -140,7 +141,7 @@
 <fa fa-swap-arrows fa-rotate-90></fa>
 <fa fa-sync-alt></fa>
 <fa fa-sync></fa>
-<fa fa-table-columns></fa>
+<fa fa-table-layout></fa>
 <fa fa-table></fa>
 <fa fa-thought-bubble></fa>
 <fa fa-ticket></fa>

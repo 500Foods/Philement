@@ -400,13 +400,14 @@ export default class LookupsManager {
     }
 
     try {
-      this._jsonReadOnlyCompartment = createReadOnlyCompartment();
-      this._jsonWordWrapCompartment = createWordWrapCompartment();
-      this._jsonBracketMatchCompartment = createBracketMatchCompartment();
-      this._jsonSelectionHighlightCompartment = createSelectionHighlightCompartment();
-      this._jsonCommentContinuationCompartment = createCommentContinuationCompartment();
-      this._jsonWhitespaceCompartment = createWhitespaceCompartment();
-      this._jsonVirtualColumnsCompartment = createVirtualColumnsCompartment();
+       this._jsonReadOnlyCompartment = createReadOnlyCompartment();
+       this._jsonWordWrapCompartment = createWordWrapCompartment();
+       this._jsonBracketMatchCompartment = createBracketMatchCompartment();
+       this._jsonSelectionHighlightCompartment = createSelectionHighlightCompartment();
+       this._jsonCommentContinuationCompartment = createCommentContinuationCompartment();
+       this._jsonWhitespaceCompartment = createWhitespaceCompartment();
+       this._jsonVirtualColumnsCompartment = createVirtualColumnsCompartment();
+       this._jsonIndentUnitCompartment = createIndentUnitCompartment();
 
       const extensions = buildEditorExtensions({
         language: 'json',
@@ -417,9 +418,10 @@ export default class LookupsManager {
         bracketMatchCompartment: this._jsonBracketMatchCompartment,
         selectionHighlightCompartment: this._jsonSelectionHighlightCompartment,
         commentContinuationCompartment: this._jsonCommentContinuationCompartment,
-        whitespaceCompartment: this._jsonWhitespaceCompartment,
-        virtualColumnsCompartment: this._jsonVirtualColumnsCompartment,
-        wordWrap: false,
+           whitespaceCompartment: this._jsonWhitespaceCompartment,
+           virtualColumnsCompartment: this._jsonVirtualColumnsCompartment,
+           indentUnitCompartment: this._jsonIndentUnitCompartment,
+           wordWrap: false,
         bracketMatch: true,
         selectionHighlight: true,
         commentContinuation: true,
@@ -441,21 +443,24 @@ export default class LookupsManager {
 
       // Initialize editor footer (already in HTML)
       const jsonFooterEl = this.container.querySelector('#lookups-json-editor-footer');
-      this.jsonEditorFooter = new LithiumEditorFooter({
-        container: jsonFooterEl,
-        editorView: this.collectionEditor,
-        wordWrapCompartment: this._jsonWordWrapCompartment,
-        bracketMatchCompartment: this._jsonBracketMatchCompartment,
-        selectionHighlightCompartment: this._jsonSelectionHighlightCompartment,
-        commentContinuationCompartment: this._jsonCommentContinuationCompartment,
-        whitespaceCompartment: this._jsonWhitespaceCompartment,
-        virtualColumnsCompartment: this._jsonVirtualColumnsCompartment,
-        initialWordWrap: false,
-        initialBracketMatch: true,
-        initialSelectionHighlight: true,
-        initialCommentContinuation: true,
-        initialVirtualColumns: true,
-      });
+       this.jsonEditorFooter = new LithiumEditorFooter({
+         container: jsonFooterEl,
+         editorView: this.collectionEditor,
+         wordWrapCompartment: this._jsonWordWrapCompartment,
+         bracketMatchCompartment: this._jsonBracketMatchCompartment,
+         selectionHighlightCompartment: this._jsonSelectionHighlightCompartment,
+         commentContinuationCompartment: this._jsonCommentContinuationCompartment,
+         whitespaceCompartment: this._jsonWhitespaceCompartment,
+         indentUnitCompartment: this._jsonIndentUnitCompartment,
+         virtualColumnsCompartment: this._jsonVirtualColumnsCompartment,
+         initialWordWrap: false,
+         initialBracketMatch: true,
+         initialSelectionHighlight: true,
+         initialCommentContinuation: true,
+         initialWhitespace: false,
+         initialVirtualColumns: true,
+         storageKey: 'editors.lookups.json',
+       });
       this.jsonEditorFooter.init();
 
 

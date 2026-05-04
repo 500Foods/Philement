@@ -64,13 +64,14 @@ export class EditorManager {
     if (!container || this.sqlEditor) return;
 
     try {
-      this._sqlReadOnlyCompartment = createReadOnlyCompartment();
-      this._sqlWordWrapCompartment = createWordWrapCompartment();
-      this._sqlBracketMatchCompartment = createBracketMatchCompartment();
-      this._sqlSelectionHighlightCompartment = createSelectionHighlightCompartment();
-      this._sqlCommentContinuationCompartment = createCommentContinuationCompartment();
-      this._sqlWhitespaceCompartment = createWhitespaceCompartment();
-      this._sqlVirtualColumnsCompartment = createVirtualColumnsCompartment();
+       this._sqlReadOnlyCompartment = createReadOnlyCompartment();
+       this._sqlWordWrapCompartment = createWordWrapCompartment();
+       this._sqlBracketMatchCompartment = createBracketMatchCompartment();
+       this._sqlSelectionHighlightCompartment = createSelectionHighlightCompartment();
+       this._sqlCommentContinuationCompartment = createCommentContinuationCompartment();
+       this._sqlWhitespaceCompartment = createWhitespaceCompartment();
+       this._sqlVirtualColumnsCompartment = createVirtualColumnsCompartment();
+       this._sqlIndentUnitCompartment = createIndentUnitCompartment();
 
       const extensions = buildEditorExtensions({
          language: 'sql',
@@ -83,8 +84,9 @@ export class EditorManager {
           selectionHighlightCompartment: this._sqlSelectionHighlightCompartment,
           commentContinuationCompartment: this._sqlCommentContinuationCompartment,
           whitespaceCompartment: this._sqlWhitespaceCompartment,
-          virtualColumnsCompartment: this._sqlVirtualColumnsCompartment,
-          wordWrap: false,
+           virtualColumnsCompartment: this._sqlVirtualColumnsCompartment,
+           indentUnitCompartment: this._sqlIndentUnitCompartment,
+           wordWrap: false,
           bracketMatch: true,
           selectionHighlight: true,
           commentContinuation: true,
@@ -114,22 +116,24 @@ export class EditorManager {
 
       // Initialize editor footer (already in HTML)
       const sqlFooterEl = this.manager.container.querySelector('#queries-sql-editor-footer');
-      this.sqlEditorFooter = new LithiumEditorFooter({
-        container: sqlFooterEl,
-        editorView: this.sqlEditor,
-        wordWrapCompartment: this._sqlWordWrapCompartment,
-        bracketMatchCompartment: this._sqlBracketMatchCompartment,
-        selectionHighlightCompartment: this._sqlSelectionHighlightCompartment,
-        commentContinuationCompartment: this._sqlCommentContinuationCompartment,
-        whitespaceCompartment: this._sqlWhitespaceCompartment,
-        virtualColumnsCompartment: this._sqlVirtualColumnsCompartment,
-        initialWordWrap: false,
-        initialBracketMatch: true,
-        initialSelectionHighlight: true,
-        initialCommentContinuation: true,
-        initialWhitespace: false,
-        initialVirtualColumns: true,
-      });
+       this.sqlEditorFooter = new LithiumEditorFooter({
+         container: sqlFooterEl,
+         editorView: this.sqlEditor,
+         wordWrapCompartment: this._sqlWordWrapCompartment,
+         bracketMatchCompartment: this._sqlBracketMatchCompartment,
+         selectionHighlightCompartment: this._sqlSelectionHighlightCompartment,
+         commentContinuationCompartment: this._sqlCommentContinuationCompartment,
+         whitespaceCompartment: this._sqlWhitespaceCompartment,
+         indentUnitCompartment: this._sqlIndentUnitCompartment,
+         virtualColumnsCompartment: this._sqlVirtualColumnsCompartment,
+         initialWordWrap: false,
+         initialBracketMatch: true,
+         initialSelectionHighlight: true,
+         initialCommentContinuation: true,
+         initialWhitespace: false,
+         initialVirtualColumns: true,
+         storageKey: 'editors.queries.sql',
+       });
       this.sqlEditorFooter.init();
 
 
@@ -157,13 +161,14 @@ export class EditorManager {
     if (!container || this.summaryEditor) return;
 
     try {
-      this._summaryReadOnlyCompartment = createReadOnlyCompartment();
-      this._summaryWordWrapCompartment = createWordWrapCompartment();
-      this._summaryBracketMatchCompartment = createBracketMatchCompartment();
-      this._summarySelectionHighlightCompartment = createSelectionHighlightCompartment();
-      this._summaryCommentContinuationCompartment = createCommentContinuationCompartment();
-      this._summaryWhitespaceCompartment = createWhitespaceCompartment();
-      this._summaryVirtualColumnsCompartment = createVirtualColumnsCompartment();
+       this._summaryReadOnlyCompartment = createReadOnlyCompartment();
+       this._summaryWordWrapCompartment = createWordWrapCompartment();
+       this._summaryBracketMatchCompartment = createBracketMatchCompartment();
+       this._summarySelectionHighlightCompartment = createSelectionHighlightCompartment();
+       this._summaryCommentContinuationCompartment = createCommentContinuationCompartment();
+       this._summaryWhitespaceCompartment = createWhitespaceCompartment();
+       this._summaryVirtualColumnsCompartment = createVirtualColumnsCompartment();
+       this._summaryIndentUnitCompartment = createIndentUnitCompartment();
 
       const extensions = buildEditorExtensions({
          language: 'markdown',
@@ -176,8 +181,9 @@ export class EditorManager {
           selectionHighlightCompartment: this._summarySelectionHighlightCompartment,
           commentContinuationCompartment: this._summaryCommentContinuationCompartment,
           whitespaceCompartment: this._summaryWhitespaceCompartment,
-          virtualColumnsCompartment: this._summaryVirtualColumnsCompartment,
-          wordWrap: false,
+           virtualColumnsCompartment: this._summaryVirtualColumnsCompartment,
+           indentUnitCompartment: this._summaryIndentUnitCompartment,
+           wordWrap: false,
           bracketMatch: true,
           selectionHighlight: true,
           commentContinuation: true,
@@ -206,22 +212,24 @@ export class EditorManager {
 
       // Initialize editor footer (already in HTML)
       const summaryFooterEl = this.manager.container.querySelector('#queries-summary-editor-footer');
-      this.summaryEditorFooter = new LithiumEditorFooter({
-        container: summaryFooterEl,
-        editorView: this.summaryEditor,
-        wordWrapCompartment: this._summaryWordWrapCompartment,
-        bracketMatchCompartment: this._summaryBracketMatchCompartment,
-        selectionHighlightCompartment: this._summarySelectionHighlightCompartment,
-        commentContinuationCompartment: this._summaryCommentContinuationCompartment,
-        whitespaceCompartment: this._summaryWhitespaceCompartment,
-        virtualColumnsCompartment: this._summaryVirtualColumnsCompartment,
-        initialWordWrap: false,
-        initialBracketMatch: true,
-        initialSelectionHighlight: true,
-        initialCommentContinuation: true,
-        initialWhitespace: false,
-        initialVirtualColumns: true,
-      });
+       this.summaryEditorFooter = new LithiumEditorFooter({
+         container: summaryFooterEl,
+         editorView: this.summaryEditor,
+         wordWrapCompartment: this._summaryWordWrapCompartment,
+         bracketMatchCompartment: this._summaryBracketMatchCompartment,
+         selectionHighlightCompartment: this._summarySelectionHighlightCompartment,
+         commentContinuationCompartment: this._summaryCommentContinuationCompartment,
+         whitespaceCompartment: this._summaryWhitespaceCompartment,
+         indentUnitCompartment: this._summaryIndentUnitCompartment,
+         virtualColumnsCompartment: this._summaryVirtualColumnsCompartment,
+         initialWordWrap: false,
+         initialBracketMatch: true,
+         initialSelectionHighlight: true,
+         initialCommentContinuation: true,
+         initialWhitespace: false,
+         initialVirtualColumns: true,
+         storageKey: 'editors.queries.summary',
+       });
       this.summaryEditorFooter.init();
 
 
@@ -257,13 +265,14 @@ export class EditorManager {
     try {
       const jsonStr = formatSortedJson(data, 2);
 
-      this._jsonReadOnlyCompartment = createReadOnlyCompartment();
-      this._jsonWordWrapCompartment = createWordWrapCompartment();
-      this._jsonBracketMatchCompartment = createBracketMatchCompartment();
-      this._jsonSelectionHighlightCompartment = createSelectionHighlightCompartment();
-      this._jsonCommentContinuationCompartment = createCommentContinuationCompartment();
-      this._jsonWhitespaceCompartment = createWhitespaceCompartment();
-      this._jsonVirtualColumnsCompartment = createVirtualColumnsCompartment();
+       this._jsonReadOnlyCompartment = createReadOnlyCompartment();
+       this._jsonWordWrapCompartment = createWordWrapCompartment();
+       this._jsonBracketMatchCompartment = createBracketMatchCompartment();
+       this._jsonSelectionHighlightCompartment = createSelectionHighlightCompartment();
+       this._jsonCommentContinuationCompartment = createCommentContinuationCompartment();
+       this._jsonWhitespaceCompartment = createWhitespaceCompartment();
+       this._jsonVirtualColumnsCompartment = createVirtualColumnsCompartment();
+       this._jsonIndentUnitCompartment = createIndentUnitCompartment();
 
       const extensions = buildEditorExtensions({
          language: 'json',
@@ -275,8 +284,9 @@ export class EditorManager {
           selectionHighlightCompartment: this._jsonSelectionHighlightCompartment,
           commentContinuationCompartment: this._jsonCommentContinuationCompartment,
           whitespaceCompartment: this._jsonWhitespaceCompartment,
-          virtualColumnsCompartment: this._jsonVirtualColumnsCompartment,
-          wordWrap: false,
+           virtualColumnsCompartment: this._jsonVirtualColumnsCompartment,
+           indentUnitCompartment: this._jsonIndentUnitCompartment,
+           wordWrap: false,
           bracketMatch: true,
           selectionHighlight: true,
           commentContinuation: true,
@@ -306,22 +316,24 @@ export class EditorManager {
 
       // Initialize editor footer (already in HTML)
       const collectionFooterEl = this.manager.container.querySelector('#queries-collection-editor-footer');
-      this.collectionEditorFooter = new LithiumEditorFooter({
-        container: collectionFooterEl,
-        editorView: this.collectionEditor,
-        wordWrapCompartment: this._jsonWordWrapCompartment,
-        bracketMatchCompartment: this._jsonBracketMatchCompartment,
-        selectionHighlightCompartment: this._jsonSelectionHighlightCompartment,
-        commentContinuationCompartment: this._jsonCommentContinuationCompartment,
-        whitespaceCompartment: this._jsonWhitespaceCompartment,
-        virtualColumnsCompartment: this._jsonVirtualColumnsCompartment,
-        initialWordWrap: false,
-        initialBracketMatch: true,
-        initialSelectionHighlight: true,
-        initialCommentContinuation: true,
-        initialWhitespace: false,
-        initialVirtualColumns: true,
-      });
+       this.collectionEditorFooter = new LithiumEditorFooter({
+         container: collectionFooterEl,
+         editorView: this.collectionEditor,
+         wordWrapCompartment: this._jsonWordWrapCompartment,
+         bracketMatchCompartment: this._jsonBracketMatchCompartment,
+         selectionHighlightCompartment: this._jsonSelectionHighlightCompartment,
+         commentContinuationCompartment: this._jsonCommentContinuationCompartment,
+         whitespaceCompartment: this._jsonWhitespaceCompartment,
+         indentUnitCompartment: this._jsonIndentUnitCompartment,
+         virtualColumnsCompartment: this._jsonVirtualColumnsCompartment,
+         initialWordWrap: false,
+         initialBracketMatch: true,
+         initialSelectionHighlight: true,
+         initialCommentContinuation: true,
+         initialWhitespace: false,
+         initialVirtualColumns: true,
+         storageKey: 'editors.queries.collection',
+       });
       this.collectionEditorFooter.init();
 
 
