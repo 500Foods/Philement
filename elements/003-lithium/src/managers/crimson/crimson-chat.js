@@ -82,7 +82,12 @@ CrimsonManager.prototype.sendChatMessage = function(message) {
     this.currentStreamElement.classList.add('crimson-waiting');
   }
 
+  // Get previous conversation history (before adding new message)
   const history = this.conversationHistory.slice(-10);
+
+  // Add new user message to conversation history
+  this.conversationHistory.push({ role: 'user', content: message });
+
   this.addDebugMessage('SEND', `Sending with ${history.length} history messages, stream=${this.streamingEnabled}`);
 
   log(Subsystems.EVENTBUS, Status.INFO, `Crimson: Prompt sent (${message.length} chars)`);

@@ -36,6 +36,7 @@ import {
   createCommentContinuationCompartment,
   createWhitespaceCompartment,
   createVirtualColumnsCompartment,
+  createIndentUnitCompartment,
   setEditorEditable,
   foldAllInEditor,
   unfoldAllInEditor,
