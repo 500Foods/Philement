@@ -22,6 +22,7 @@ import {
   createWhitespaceCompartment,
   createCommentContinuationCompartment,
   createVirtualColumnsCompartment,
+  createIndentUnitCompartment,
   setEditorEditable,
   setEditorContentNoHistory,
   updateUndoRedoButtons,
