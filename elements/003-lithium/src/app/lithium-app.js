@@ -96,6 +96,11 @@ export class LithiumApp {
       this.setupEventListeners();
       logStartup('Event listeners registered');
 
+      // Track real user activity so the auth manager can refresh the JWT
+      // before the inactivity timeout fires.
+      this.setupActivityTracking();
+      logStartup('User activity tracking active');
+
       await this.auth.checkAuthAndLoad();
       logStartup('Auth check complete', Date.now() - initStart);
 
@@ -335,6 +340,36 @@ export class LithiumApp {
     eventBus.on(Events.AUTH_EXPIRED, () => {
       this.auth.handleAuthExpired();
     });
+  }
+
+  /**
+   * Listen for real user input and forward it to the auth manager so it can
+   * decide whether to renew the JWT or let it expire. Throttled so a typing
+   * burst or repeated clicks don't spam the call.
+   *
+   * Only discrete intentional inputs (mousedown, keydown, touchstart) count as
+   * activity — passive mouse movement does not. Renewal API requests don't
+   * dispatch any of these events so renewal will not self-trigger as activity.
+   */
+  setupActivityTracking() {
+    const ACTIVITY_THROTTLE_MS = 1000;
+    let lastDispatch = 0;
+
+    const onActivity = () => {
+      const now = Date.now();
+      if (now - lastDispatch < ACTIVITY_THROTTLE_MS) return;
+      lastDispatch = now;
+      if (this.auth && typeof this.auth.recordUserActivity === 'function') {
+        this.auth.recordUserActivity();
+      }
+    };
+
+    // Capture phase so we see the events even if a handler stops propagation.
+    // passive: true keeps us out of the way of scroll/touch performance paths.
+    const opts = { capture: true, passive: true };
+    document.addEventListener('mousedown', onActivity, opts);
+    document.addEventListener('keydown', onActivity, opts);
+    document.addEventListener('touchstart', onActivity, opts);
   }
 
   setupNetworkMonitoring() {
