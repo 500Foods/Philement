@@ -103,11 +103,30 @@ export class AuthManager {
 
     this._expirationWarningToastId = toast.warning(getMessage(), {
       title: 'Session Expiring',
-      description: 'Your session will expire soon. Please save your work.',
+      description: 'Your session will expire soon. Dismiss this notification or interact with the page to extend your session.',
       duration: 0,
       dismissible: true,
       subsystem: 'Auth',
     });
+
+    // Wire the toast's close button to attempt renewal instead of just hiding.
+    // Dismissing the warning is treated as an explicit "I'm still here" signal.
+    if (this._expirationWarningToastId) {
+      const toastEl = document.querySelector(`[data-id="${this._expirationWarningToastId}"]`);
+      const closeBtn = toastEl?.querySelector('.toast-header-close');
+      if (closeBtn) {
+        // Capture phase so we run before toast.js's own dismiss handler removes the element.
+        closeBtn.addEventListener('click', (e) => {
+          e.stopImmediatePropagation();
+          e.preventDefault();
+          logAuth(Status.INFO, 'Expiration warning dismissed by user, attempting renewal');
+          this.recordUserActivity();
+          this.renewToken().catch((error) => {
+            logAuth(Status.WARN, `Renewal after warning dismiss failed: ${error.message}`);
+          });
+        }, { capture: true });
+      }
+    }
 
     logAuth(Status.WARN, `Token expires in ${secondsRemaining}s`);
 
@@ -144,12 +163,25 @@ export class AuthManager {
 
   recordUserActivity() {
     this._lastUserActivity = Date.now();
+
+    // If the expiration warning is currently shown, real user activity should
+    // immediately attempt renewal instead of waiting for the countdown to hit 0.
+    // This is rate-limited by _isRenewing inside renewToken() and the 10s guard
+    // in _renewOnActivity().
+    if (this._expirationWarningActive) {
+      this._renewOnActivity();
+    }
   }
 
   async _renewOnActivity() {
     if (this._isRenewing) return;
-    const tokenAge = Date.now() - this._tokenScheduledAt;
-    if (tokenAge < 10000) return;
+
+    // Skip the 10s freshness guard when the warning is showing — at that point
+    // the token is genuinely close to expiry and the user needs renewal now.
+    if (!this._expirationWarningActive) {
+      const tokenAge = Date.now() - this._tokenScheduledAt;
+      if (tokenAge < 10000) return;
+    }
 
     const token = retrieveJWT();
     if (!token) return;
