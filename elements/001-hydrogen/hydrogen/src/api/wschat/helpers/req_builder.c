@@ -123,14 +123,10 @@ json_t* chat_request_build_openai(const ChatEngineConfig* engine,
         current = current->next;
     }
     json_object_set_new(root, "messages", messages_array);
-
-    // Temperature
-    if (params->temperature >= 0.0) {
-        json_object_set_new(root, "temperature", json_real(params->temperature));
-    } else if (engine->temperature_default >= 0.0) {
-        json_object_set_new(root, "temperature", json_real(engine->temperature_default));
-    }
-
+ 
+    // Temperature - Always set to 1.0 for all requests
+    json_object_set_new(root, "temperature", json_real(1.0));
+ 
     // Max tokens
     if (params->max_tokens > 0) {
         json_object_set_new(root, "max_tokens", json_integer(params->max_tokens));
@@ -315,13 +311,6 @@ json_t* chat_request_build_anthropic(const ChatEngineConfig* engine,
 
     json_object_set_new(root, "messages", messages_array);
 
-    // Temperature
-    if (params->temperature >= 0.0) {
-        json_object_set_new(root, "temperature", json_real(params->temperature));
-    } else if (engine->temperature_default >= 0.0) {
-        json_object_set_new(root, "temperature", json_real(engine->temperature_default));
-    }
-
     // Stream
     if (params->stream) {
         json_object_set_new(root, "stream", json_true());
@@ -362,12 +351,10 @@ json_t* chat_request_build_ollama(const ChatEngineConfig* engine,
 
     // Options (Ollama uses num_predict instead of max_tokens)
     json_t* options = json_object();
-    if (params->temperature >= 0.0) {
-        json_object_set_new(options, "temperature", json_real(params->temperature));
-    } else if (engine->temperature_default >= 0.0) {
-        json_object_set_new(options, "temperature", json_real(engine->temperature_default));
-    }
-
+    
+    // Temperature - Always set to 1.0 for all requests
+    json_object_set_new(options, "temperature", json_real(1.0));
+ 
     // Ollama uses num_predict for max_tokens
     int max_tokens = params->max_tokens > 0 ? params->max_tokens : engine->max_tokens;
     if (max_tokens > 0) {
