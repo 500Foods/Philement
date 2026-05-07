@@ -53,7 +53,7 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2026-05-06 23:18:32 UTC
+Last updated at 2026-05-06 23:31:21 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
@@ -62,7 +62,7 @@ C                             1095          47614          44662         170505
 SVG                            155            303           4089         162091
 Text                           219            216              0          83150
 Markdown                       706          26083            239          71988
-JavaScript                     207           9655          12721          45698
+JavaScript                     207           9662          12743          45736
 Lua                            201           4654           3622          32303
 Bourne Shell                   119           5736          80523          26656
 CSS                            115           2761           1559          14121
@@ -78,7 +78,7 @@ Delphi Form                      1              1              0             43
 YAML                             2              8             13             37
 Pascal                           2             11              2             31
 -------------------------------------------------------------------------------
-SUM:                          3461         100702         155521        1591960
+SUM:                          3461         100709         155543        1591998
 -------------------------------------------------------------------------------
 1396 Files were skipped (duplicate, binary, or without source code):
   svg: 629

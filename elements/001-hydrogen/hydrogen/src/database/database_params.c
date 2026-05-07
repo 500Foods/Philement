@@ -390,13 +390,20 @@ bool build_parameter_array(
         bool is_in_string = is_inside_string_literal(sql_template, match_start);
         
         if (!is_inside_macro && !is_in_string) {
+            // Check if this is a PostgreSQL type cast (::pattern)
+            // The regex matches ":text" in "::text", but this is a type cast, not a parameter
+            if (match.rm_so > 0 && *(search_ptr + match.rm_so - 1) == ':') {
+                search_ptr += match.rm_eo;
+                continue;
+            }
+
             // Extract parameter name to check if it's "interval" (PostgreSQL type)
             size_t name_len = (size_t)(match.rm_eo - match.rm_so - 1);
             char param_name[MAX_PARAM_NAME_LEN];
             if (name_len < sizeof(param_name)) {
                 memcpy(param_name, search_ptr + match.rm_so + 1, name_len);
                 param_name[name_len] = '\0';
-                
+
                 // Skip the :interval parameter (it's a PostgreSQL type, not a parameter)
                 if (strcmp(param_name, "interval") != 0) {
                     // Check if we've already seen this parameter
