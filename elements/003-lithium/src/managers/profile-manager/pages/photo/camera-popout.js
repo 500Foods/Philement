@@ -57,7 +57,7 @@ export class CameraPopup {
             <fa fa-camera></fa>
             <span>Take Photo</span>
           </button>
-          <button type="button" class="camera-header-placeholder" disabled></button>
+          <button type="button" class="camera-header-placeholder"></button>
           <button type="button" class="camera-header-close" data-tooltip="Close (ESC)">
             <fa fa-xmark></fa>
           </button>
@@ -72,6 +72,18 @@ export class CameraPopup {
             <label for="camera-select">Camera:</label>
             <select id="camera-select" disabled>
               <option value="">Loading cameras...</option>
+            </select>
+          </div>
+          <div class="camera-iso-selector" id="camera-iso-container" style="display:none;">
+            <label for="camera-iso">ISO:</label>
+            <select id="camera-iso">
+              <option value="auto">Auto</option>
+            </select>
+          </div>
+          <div class="camera-gain-selector" id="camera-gain-container" style="display:none;">
+            <label for="camera-gain">Gain:</label>
+            <select id="camera-gain">
+              <option value="auto">Auto</option>
             </select>
           </div>
           <div class="camera-transform-controls">
@@ -107,6 +119,10 @@ export class CameraPopup {
     // Cache elements
     this.videoElement = this.popup.querySelector('#camera-video');
     this.cameraSelect = this.popup.querySelector('#camera-select');
+    this.isoContainer = this.popup.querySelector('#camera-iso-container');
+    this.isoSelect = this.popup.querySelector('#camera-iso');
+    this.gainContainer = this.popup.querySelector('#camera-gain-container');
+    this.gainSelect = this.popup.querySelector('#camera-gain');
     this.startBtn = this.popup.querySelector('#camera-start-btn');
     this.captureBtn = this.popup.querySelector('#camera-capture-btn');
     this.retakeBtn = this.popup.querySelector('#camera-retake-btn');
@@ -158,6 +174,12 @@ export class CameraPopup {
 
     // Camera selection
     this.cameraSelect.addEventListener('change', this.handleDeviceChange);
+
+    // ISO selection
+    this.isoSelect.addEventListener('change', () => this.handleIsoChange());
+
+    // Gain selection
+    this.gainSelect.addEventListener('change', () => this.handleGainChange());
 
     // Resize handles
     const resizeHandles = this.popup.querySelectorAll('.camera-resize-handle');
@@ -257,19 +279,41 @@ export class CameraPopup {
   async startCamera(deviceId = null) {
     this.stopCamera();
 
+    const baseConstraints = {
+      width: { ideal: 4096 },
+      height: { ideal: 2160 },
+      facingMode: 'user',
+      noiseSuppression: false,
+      advanced: [
+        { exposureMode: 'manual' },
+        { iso: { ideal: 100 } },
+        { brightness: { ideal: 128 } },
+        { exposureCompensation: { ideal: 0 } },
+      ],
+    };
+
     const constraints = {
       video: deviceId
-        ? { deviceId: { exact: deviceId } }
-        : { facingMode: 'user' }
+        ? { ...baseConstraints, deviceId: { exact: deviceId } }
+        : baseConstraints
     };
 
     try {
       this.stream = await navigator.mediaDevices.getUserMedia(constraints);
       this.videoElement.srcObject = this.stream;
 
-      // Get the actual device ID
+      // Get the actual device ID and applied settings
       const track = this.stream.getVideoTracks()[0];
-      this.currentDeviceId = track.getSettings().deviceId || deviceId;
+      const settings = track.getSettings();
+      this.currentDeviceId = settings.deviceId || deviceId;
+
+      // Log actual resolution for debugging
+      log(Subsystems.MANAGER, Status.INFO,
+        `[CameraPopout] Camera started: ${settings.width}x${settings.height}`);
+
+      // Detect and populate ISO / Gain capabilities
+      await this._detectIsoCapabilities(track);
+      await this._detectGainCapabilities(track);
 
       // Populate camera list if not already done
       if (this.cameraSelect.options.length <= 1) {
@@ -286,8 +330,6 @@ export class CameraPopup {
 
       // Apply current transforms
       this.applyVideoTransforms();
-
-      log(Subsystems.MANAGER, Status.INFO, '[CameraPopout] Camera started');
 
     } catch (error) {
       log(Subsystems.MANAGER, Status.ERROR, '[CameraPopout] Failed to start camera:', error.message);
@@ -307,6 +349,173 @@ export class CameraPopup {
   }
 
   /**
+   * Detect ISO capabilities and populate ISO selector
+   * @param {MediaStreamTrack} track - Active video track
+   * @private
+   */
+  async _detectIsoCapabilities(track) {
+    try {
+      const capabilities = track.getCapabilities();
+      const settings = track.getSettings();
+
+      if (!capabilities.iso) {
+        this.isoContainer.style.display = 'none';
+        log(Subsystems.MANAGER, Status.INFO, '[CameraPopout] ISO control not supported');
+        return;
+      }
+
+      // Build ISO options from capabilities
+      const { min, max, step } = capabilities.iso;
+      const isoValues = [];
+      for (let v = min; v <= max; v = Math.round(v * step > 1 ? v * step : v + step)) {
+        isoValues.push(v);
+        if (v >= max) break;
+      }
+      // Add common standard ISO values within range
+      const standardIsos = [50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600];
+      standardIsos.forEach(iso => {
+        if (iso >= min && iso <= max && !isoValues.includes(iso)) {
+          isoValues.push(iso);
+        }
+      });
+      isoValues.sort((a, b) => a - b);
+
+      // Populate selector
+      this.isoSelect.innerHTML = '<option value="auto">Auto</option>';
+      isoValues.forEach(iso => {
+        const opt = document.createElement('option');
+        opt.value = iso;
+        opt.textContent = iso;
+        this.isoSelect.appendChild(opt);
+      });
+
+      // Set current value
+      const currentIso = settings.iso;
+      if (currentIso) {
+        this.isoSelect.value = currentIso;
+      }
+
+      this.isoContainer.style.display = '';
+      log(Subsystems.MANAGER, Status.INFO,
+        `[CameraPopout] ISO range: ${min}-${max}, current: ${currentIso || 'auto'}`);
+
+    } catch (error) {
+      log(Subsystems.MANAGER, Status.WARN, '[CameraPopout] ISO detection failed:', error.message);
+      this.isoContainer.style.display = 'none';
+    }
+  }
+
+  /**
+   * Handle ISO selection change
+   * @private
+   */
+  async handleIsoChange() {
+    if (!this.stream) return;
+
+    const track = this.stream.getVideoTracks()[0];
+    if (!track) return;
+
+    const value = this.isoSelect.value;
+    const constraints = {};
+
+    if (value === 'auto') {
+      constraints.advanced = [{ iso: 'auto' }];
+    } else {
+      const isoValue = parseInt(value, 10);
+      constraints.advanced = [{ iso: isoValue }];
+    }
+
+    try {
+      await track.applyConstraints(constraints);
+      const newSettings = track.getSettings();
+      log(Subsystems.MANAGER, Status.INFO,
+        `[CameraPopout] ISO set to: ${newSettings.iso || 'auto'}`);
+    } catch (error) {
+      log(Subsystems.MANAGER, Status.ERROR, '[CameraPopout] Failed to set ISO:', error.message);
+    }
+  }
+
+  /**
+   * Detect Gain capabilities and populate Gain selector
+   * @param {MediaStreamTrack} track - Active video track
+   * @private
+   */
+  async _detectGainCapabilities(track) {
+    try {
+      const capabilities = track.getCapabilities();
+      const settings = track.getSettings();
+
+      if (!capabilities.gain) {
+        this.gainContainer.style.display = 'none';
+        log(Subsystems.MANAGER, Status.INFO, '[CameraPopout] Gain control not supported');
+        return;
+      }
+
+      // Build Gain options from capabilities
+      const { min, max, step } = capabilities.gain;
+      const gainValues = [];
+      for (let v = min; v <= max; v = Math.round(v * step > 1 ? v * step : v + step)) {
+        gainValues.push(v);
+        if (v >= max) break;
+      }
+      gainValues.sort((a, b) => a - b);
+
+      // Populate selector
+      this.gainSelect.innerHTML = '<option value="auto">Auto</option>';
+      gainValues.forEach(gain => {
+        const opt = document.createElement('option');
+        opt.value = gain;
+        opt.textContent = gain;
+        this.gainSelect.appendChild(opt);
+      });
+
+      // Set current value
+      const currentGain = settings.gain;
+      if (currentGain !== undefined) {
+        this.gainSelect.value = currentGain;
+      }
+
+      this.gainContainer.style.display = '';
+      log(Subsystems.MANAGER, Status.INFO,
+        `[CameraPopout] Gain range: ${min}-${max}, current: ${currentGain !== undefined ? currentGain : 'auto'}`);
+
+    } catch (error) {
+      log(Subsystems.MANAGER, Status.WARN, '[CameraPopout] Gain detection failed:', error.message);
+      this.gainContainer.style.display = 'none';
+    }
+  }
+
+  /**
+   * Handle Gain selection change
+   * @private
+   */
+  async handleGainChange() {
+    if (!this.stream) return;
+
+    const track = this.stream.getVideoTracks()[0];
+    if (!track) return;
+
+    const value = this.gainSelect.value;
+    const constraints = {};
+
+    if (value === 'auto') {
+      constraints.advanced = [{ gain: 'auto' }];
+    } else {
+      const gainValue = parseInt(value, 10);
+      constraints.advanced = [{ gain: gainValue }];
+    }
+
+    try {
+      await track.applyConstraints(constraints);
+      const newSettings = track.getSettings();
+      log(Subsystems.MANAGER, Status.INFO,
+        `[CameraPopout] Gain set to: ${newSettings.gain !== undefined ? newSettings.gain : 'auto'}`);
+    } catch (error) {
+      log(Subsystems.MANAGER, Status.ERROR, '[CameraPopout] Failed to set Gain:', error.message);
+    }
+  }
+
+  /**
    * Populate camera selection dropdown
    */
   async populateCameraList() {
@@ -323,12 +532,27 @@ export class CameraPopup {
         return;
       }
 
-      videoDevices.forEach((device, index) => {
+      for (const device of videoDevices) {
         const opt = document.createElement('option');
         opt.value = device.deviceId;
-        opt.textContent = device.label || `Camera ${index + 1}`;
+
+        // Query capabilities to show resolution info
+        let resolutionInfo = '';
+        try {
+          const testStream = await navigator.mediaDevices.getUserMedia({
+            video: { deviceId: { exact: device.deviceId }, width: { ideal: 4096 }, height: { ideal: 2160 } }
+          });
+          const track = testStream.getVideoTracks()[0];
+          const settings = track.getSettings();
+          resolutionInfo = ` (${settings.width}x${settings.height})`;
+          track.stop();
+        } catch {
+          // Fallback: no resolution info
+        }
+
+        opt.textContent = (device.label || `Camera ${videoDevices.indexOf(device) + 1}`) + resolutionInfo;
         this.cameraSelect.appendChild(opt);
-      });
+      }
 
     } catch (error) {
       log(Subsystems.MANAGER, Status.ERROR, '[CameraPopout] Failed to enumerate cameras:', error.message);
@@ -442,9 +666,25 @@ export class CameraPopup {
 
       ctx.restore();
 
-      // Convert to blob
+      // Apply mild noise reduction via temporary downscale/upscale
+      // Step 1: draw to a small temp canvas (blur/noise average out)
+      const tempCanvas = document.createElement('canvas');
+      const scaleFactor = 0.5;
+      tempCanvas.width = Math.max(1, Math.round(cw * scaleFactor));
+      tempCanvas.height = Math.max(1, Math.round(ch * scaleFactor));
+      const tempCtx = tempCanvas.getContext('2d', { alpha: false });
+      tempCtx.imageSmoothingEnabled = true;
+      tempCtx.imageSmoothingQuality = 'high';
+      tempCtx.drawImage(this.canvas, 0, 0, tempCanvas.width, tempCanvas.height);
+
+      // Step 2: draw back to original canvas at full size
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(tempCanvas, 0, 0, cw, ch);
+
+      // Convert to blob at maximum quality
       const blob = await new Promise(resolve => {
-        this.canvas.toBlob(resolve, 'image/jpeg', 0.92);
+        this.canvas.toBlob(resolve, 'image/png');
       });
 
       if (!blob || blob.size === 0) {
@@ -452,7 +692,7 @@ export class CameraPopup {
       }
 
       // Create file
-      const file = new window.File([blob], 'capture.jpg', { type: 'image/jpeg' });
+      const file = new window.File([blob], 'capture.png', { type: 'image/png' });
 
       // Call callback if provided
       if (this.options.onCapture) {
@@ -581,10 +821,9 @@ export class CameraPopup {
    * Handle drag start
    */
   handleDragStart(e) {
-    // Allow dragging from the title area, but not from actionable controls
+    // Allow dragging from the title area and placeholder, but not from actionable controls
     if (e.target.closest([
       '.camera-header-close',
-      '.camera-header-placeholder',
       '#camera-select'
     ].join(', '))) return;
 
