@@ -11,7 +11,7 @@
    Camera Overlay
    ======================================== */
 
-.camera-overlay {
+.camera-popout-overlay {
   position: fixed;
   inset: 0;
   background: rgb(0 0 0 / 40%);
@@ -88,7 +88,10 @@
 .camera-header-placeholder {
   flex: 1;
   min-width: 0;
-}
+  border: none;
+  background: var(--accent-primary);
+  cursor: grab;
+}                                   
 
 .camera-header .subpanel-header-group {
   display: flex;
@@ -129,9 +132,8 @@
   align-items: center;
   justify-content: center;
   width: 40px;
-  height: 40px;
   padding: var(--space-2);
-  background: var(--accent-alt-primary);
+  background: var(--accent-primary);
   border: none;
   border-radius: 0 var(--border-radius-md) var(--border-radius-md) 0;
   color: var(--text-primary);
@@ -184,19 +186,25 @@
   gap: var(--space-3);
 }
 
-.camera-device-selector {
+.camera-device-selector,
+.camera-iso-selector,
+.camera-gain-selector {
   display: flex;
   align-items: center;
   gap: var(--space-2);
 }
 
-.camera-device-selector label {
+.camera-device-selector label,
+.camera-iso-selector label,
+.camera-gain-selector label {
   font-weight: 500;
   color: var(--text-primary);
   white-space: nowrap;
 }
 
-#camera-select {
+#camera-select,
+#camera-iso,
+#camera-gain {
   flex: 1;
   padding: var(--space-2) var(--space-3);
   border: 1px solid var(--border-primary);
@@ -206,7 +214,9 @@
   font-size: var(--font-size-sm);
 }
 
-#camera-select:disabled {
+#camera-select:disabled,
+#camera-iso:disabled,
+#camera-gain:disabled {
   background: var(--bg-disabled);
   color: var(--text-muted);
   cursor: not-allowed;
