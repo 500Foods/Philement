@@ -31,6 +31,11 @@ static const char* k_role_source_names[] = {
     "merge"                        // OIDC_RP_ROLE_SRC_MERGE
 };
 
+static const char* k_auth_method_names[] = {
+    "client_secret_basic",         // OIDC_RP_AUTH_METHOD_CLIENT_SECRET_BASIC
+    "client_secret_post"           // OIDC_RP_AUTH_METHOD_CLIENT_SECRET_POST
+};
+
 OIDCRPLinkStrategy oidc_rp_parse_link_strategy(const char* str) {
     if (!str) return OIDC_RP_LINK_MATCH_EMAIL_THEN_PROVISION;
     for (size_t i = 0; i < sizeof(k_link_strategy_names) / sizeof(k_link_strategy_names[0]); i++) {
@@ -65,6 +70,24 @@ const char* oidc_rp_role_source_name(OIDCRPRoleSource source) {
         return "unknown";
     }
     return k_role_source_names[idx];
+}
+
+OIDCRPAuthMethod oidc_rp_parse_auth_method(const char* str) {
+    if (!str) return OIDC_RP_AUTH_METHOD_CLIENT_SECRET_BASIC;
+    for (size_t i = 0; i < sizeof(k_auth_method_names) / sizeof(k_auth_method_names[0]); i++) {
+        if (strcmp(str, k_auth_method_names[i]) == 0) {
+            return (OIDCRPAuthMethod)i;
+        }
+    }
+    return OIDC_RP_AUTH_METHOD_CLIENT_SECRET_BASIC;
+}
+
+const char* oidc_rp_auth_method_name(OIDCRPAuthMethod method) {
+    size_t idx = (size_t)method;
+    if (idx >= sizeof(k_auth_method_names) / sizeof(k_auth_method_names[0])) {
+        return "unknown";
+    }
+    return k_auth_method_names[idx];
 }
 
 // Resolve a JSON string value (with ${env.X} substitution) into a freshly
@@ -128,6 +151,7 @@ static size_t take_string_array(json_t* obj, const char* key,
 static void provider_apply_defaults(OIDCRPProviderConfig* p) {
     p->scopes = strdup("openid profile email");
     p->verify_ssl = true;
+    p->auth_method = OIDC_RP_AUTH_METHOD_CLIENT_SECRET_BASIC;
     p->discovery_cache_seconds = 3600;
     p->jwks_cache_seconds = 3600;
     p->state_ttl_seconds = 600;
@@ -223,6 +247,14 @@ static void provider_load_from_json(OIDCRPProviderConfig* p, json_t* obj) {
         free(p->scopes); p->scopes = v;
     }
     p->verify_ssl = take_bool_or_default(obj, "VerifySsl", p->verify_ssl);
+
+    // AuthMethod: optional. Default is client_secret_basic.
+    char* am_str = take_string_or_null(obj, "AuthMethod");
+    if (am_str) {
+        p->auth_method = oidc_rp_parse_auth_method(am_str);
+        free(am_str);
+    }
+
     p->discovery_cache_seconds = take_int_or_default(obj, "DiscoveryCacheSeconds", p->discovery_cache_seconds);
     p->jwks_cache_seconds = take_int_or_default(obj, "JwksCacheSeconds", p->jwks_cache_seconds);
     p->state_ttl_seconds = take_int_or_default(obj, "StateTtlSeconds", p->state_ttl_seconds);
@@ -423,6 +455,7 @@ void dump_oidc_rp_config(const OIDCRelyingPartyConfig* config) {
         DUMP_STRING("――――Scopes", p->scopes);
         DUMP_SECRET("――――System API Key", p->system_api_key);
         DUMP_BOOL("――――Verify SSL", p->verify_ssl);
+        DUMP_STRING("――――Auth Method", oidc_rp_auth_method_name(p->auth_method));
         DUMP_INT("――――Discovery Cache Seconds", p->discovery_cache_seconds);
         DUMP_INT("――――JWKS Cache Seconds", p->jwks_cache_seconds);
         DUMP_INT("――――State TTL Seconds", p->state_ttl_seconds);

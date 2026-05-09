@@ -21,6 +21,8 @@
 
 #include <src/hydrogen.h>
 #include <microhttpd.h>
+#include <stdbool.h>
+#include <src/config/config_oidc_rp.h>
 
 /**
  * @brief Reports whether OIDC Relying Party endpoints should serve real
@@ -77,5 +79,113 @@ enum MHD_Result oidc_rp_send_method_not_allowed(struct MHD_Connection *connectio
                                                 const char *method,
                                                 const char *endpoint,
                                                 const char *expected_method);
+
+/**
+ * @brief Validate a `return_to` query parameter against the open-redirect
+ *        allow-list.
+ *
+ * The `return_to` value is a relative path inside Lithium that the
+ * post-handoff redirect will deep-link the user back to. To prevent
+ * open-redirect attacks (where an attacker tricks a user into clicking a
+ * Hydrogen URL that sends them to `evil.com` after sign-in), the value
+ * must satisfy ALL of:
+ *
+ *   - non-NULL pointer (NULL is treated as "not provided" — see below)
+ *   - non-empty
+ *   - starts with a single `/`
+ *   - second character is NOT `/` (rejects `//evil.com` protocol-relative)
+ *   - second character is NOT `\` (rejects `/\\evil.com` and friends)
+ *   - does NOT contain `://` (rejects schemes hidden mid-string)
+ *   - does NOT contain backslashes (Windows path separators that some
+ *     parsers treat as `/`)
+ *   - does NOT contain CR or LF (header-injection guard)
+ *
+ * NULL input is considered "no return_to provided" and returns `true`
+ * (the caller must check for NULL before using the value, but that is a
+ * different concern from validation). An empty string is rejected.
+ *
+ * @param return_to The candidate path. May be NULL.
+ * @return `true` if `return_to` is NULL or a safe relative path; `false`
+ *         if the value is present but unsafe.
+ */
+bool oidc_rp_safe_return_to(const char *return_to);
+
+/**
+ * @brief Build the full Keycloak authorization URL for a `/start` redirect.
+ *
+ * Constructs `${authorization_endpoint}?response_type=code&client_id=…
+ * &redirect_uri=…&scope=…&state=…&nonce=…&code_challenge=…
+ * &code_challenge_method=S256` with every value properly URL-encoded.
+ *
+ * Query parameters are appended in canonical order (matching the order
+ * specified above) to make the result trivially testable.
+ *
+ * The function does not validate that the inputs are well-formed — that
+ * is the caller's responsibility. It only handles encoding.
+ *
+ * @param authorization_endpoint The IdP authorization URL (from the
+ *        cached discovery doc). Must be non-NULL.
+ * @param client_id              The provider's `client_id`. Required.
+ * @param redirect_uri           The Hydrogen callback URL. Required.
+ * @param scope                  Space-separated scope list (e.g.
+ *        `"openid profile email"`). Required.
+ * @param state                  Opaque state token. Required.
+ * @param nonce                  Opaque nonce. Required.
+ * @param code_challenge         PKCE code challenge (S256). Required.
+ * @return Heap-allocated NUL-terminated URL, or NULL on bad inputs or
+ *         allocation failure. Caller must `free()`.
+ */
+char *oidc_rp_build_authorize_url(const char *authorization_endpoint,
+                                  const char *client_id,
+                                  const char *redirect_uri,
+                                  const char *scope,
+                                  const char *state,
+                                  const char *nonce,
+                                  const char *code_challenge);
+
+/**
+ * @brief Issue a 302 redirect with `Cache-Control: no-store`.
+ *
+ * Sends an empty body, the `Location` header set to `location`, and the
+ * `Cache-Control: no-store` header so intermediaries and the browser do
+ * not retain the URL (which embeds a `state` token visible only to this
+ * one transaction).
+ *
+ * Returns `MHD_YES` on success, `MHD_NO` on response-allocation failure.
+ *
+ * @param connection The MHD connection to respond on.
+ * @param location   The absolute URL to redirect to. Must be non-NULL
+ *                   and non-empty.
+ */
+enum MHD_Result oidc_rp_send_redirect(struct MHD_Connection *connection,
+                                      const char *location);
+
+/**
+ * @brief Lazily initialize the OIDC RP runtime (state store + discovery
+ *        cache) on first real use.
+ *
+ * Phase 14 of `docs/OIDC-PLAN.md` will move this to a proper startup
+ * hook in Hydrogen's launch sequence. Until then, Phase 10 calls this
+ * the first time `/oidc/start` is hit with `enabled=true`. The function
+ * is idempotent and thread-safe: subsequent calls are no-ops.
+ *
+ * Uses the first provider's `state_ttl_seconds` for the state store.
+ *
+ * @return `true` if the runtime is ready to serve requests after this
+ *         call; `false` on init failure (in which case the caller must
+ *         return a 500 envelope).
+ */
+bool oidc_rp_runtime_lazy_init(void);
+
+/**
+ * @brief Resolve the active provider config.
+ *
+ * Phase 10 always uses `Providers[0]`. Future phases will dispatch by
+ * provider name from the request. Returns NULL when OIDC RP is disabled
+ * or no providers are configured.
+ *
+ * @return Const pointer to the provider, or NULL.
+ */
+const OIDCRPProviderConfig *oidc_rp_get_active_provider(void);
 
 #endif // OIDC_RP_SERVICE_H

@@ -43,6 +43,12 @@ void test_test_seam_clear_drops_pending_fixture(void);
 void test_get_status_2xx_with_body(void);
 void test_get_status_4xx_returns_body_for_diagnosis(void);
 void test_get_status_zero_body_via_fixture(void);
+void test_post_rejects_null_url(void);
+void test_post_rejects_empty_url(void);
+void test_post_rejects_non_http_scheme(void);
+void test_post_uses_test_seam(void);
+void test_post_with_null_body_consumes_fixture(void);
+void test_post_with_authorization_header_consumes_fixture(void);
 
 void setUp(void) {
     oidc_rp_http_test_clear_responses();
@@ -218,6 +224,103 @@ void test_get_status_zero_body_via_fixture(void) {
 }
 
 // ---------------------------------------------------------------------------
+// POST companion (Phase 11)
+//
+// The POST wrapper shares the test seam and pre-flight pipeline with
+// GET. These tests verify the same arg-validation surface plus a few
+// POST-specific paths (NULL body acceptance, Authorization header
+// acceptance). End-to-end POST behaviour against the real network is
+// exercised by `test_42_oidc_rp.sh` against the mock Keycloak.
+// ---------------------------------------------------------------------------
+
+void test_post_rejects_null_url(void) {
+    OidcRpHttpResponse *r = oidc_rp_http_post(NULL, true,
+        "grant_type=foo", "application/x-www-form-urlencoded",
+        NULL, NULL);
+    TEST_ASSERT_NOT_NULL(r);
+    TEST_ASSERT_EQUAL_INT(0, r->http_status);
+    TEST_ASSERT_NULL(r->body);
+    TEST_ASSERT_NOT_NULL(r->error_message);
+    oidc_rp_http_response_free(r);
+}
+
+void test_post_rejects_empty_url(void) {
+    OidcRpHttpResponse *r = oidc_rp_http_post("", true,
+        NULL, "application/x-www-form-urlencoded", NULL, NULL);
+    TEST_ASSERT_NOT_NULL(r);
+    TEST_ASSERT_EQUAL_INT(0, r->http_status);
+    TEST_ASSERT_NULL(r->body);
+    TEST_ASSERT_NOT_NULL(r->error_message);
+    oidc_rp_http_response_free(r);
+}
+
+void test_post_rejects_non_http_scheme(void) {
+    OidcRpHttpResponse *r = oidc_rp_http_post("ftp://example.com/", true,
+        "k=v", "application/x-www-form-urlencoded", NULL, NULL);
+    TEST_ASSERT_NOT_NULL(r);
+    TEST_ASSERT_EQUAL_INT(0, r->http_status);
+    TEST_ASSERT_NULL(r->body);
+    TEST_ASSERT_NOT_NULL(r->error_message);
+    TEST_ASSERT_TRUE(strstr(r->error_message, "scheme") != NULL);
+    oidc_rp_http_response_free(r);
+}
+
+void test_post_uses_test_seam(void) {
+    oidc_rp_http_test_set_response(NULL, 200, "{\"id_token\":\"ok\"}");
+
+    OidcRpHttpResponse *r = oidc_rp_http_post(
+        "https://idp.example.com/token", true,
+        "grant_type=authorization_code",
+        "application/x-www-form-urlencoded",
+        "application/json",
+        "Basic dXNlcjpwYXNz");
+    TEST_ASSERT_NOT_NULL(r);
+    TEST_ASSERT_EQUAL_INT(200, r->http_status);
+    TEST_ASSERT_EQUAL_STRING("{\"id_token\":\"ok\"}", r->body);
+    TEST_ASSERT_NULL(r->error_message);
+    oidc_rp_http_response_free(r);
+}
+
+void test_post_with_null_body_consumes_fixture(void) {
+    // POST with no body is allowed (e.g. for token-revocation
+    // endpoints where the body is ignored). The seam should still
+    // serve the fixture deterministically.
+    oidc_rp_http_test_set_response(NULL, 204, "");
+
+    OidcRpHttpResponse *r = oidc_rp_http_post(
+        "https://idp.example.com/revoke", true,
+        NULL, NULL, NULL, NULL);
+    TEST_ASSERT_NOT_NULL(r);
+    TEST_ASSERT_EQUAL_INT(204, r->http_status);
+    TEST_ASSERT_NOT_NULL(r->body);
+    TEST_ASSERT_EQUAL_STRING("", r->body);
+    oidc_rp_http_response_free(r);
+}
+
+void test_post_with_authorization_header_consumes_fixture(void) {
+    // The Authorization header path allocates an oversized header
+    // buffer; this test exercises that branch with a long synthetic
+    // value so a buffer-sizing regression would surface here.
+    oidc_rp_http_test_set_response(NULL, 200, "ok-body");
+
+    char long_basic[300];
+    memset(long_basic, 0, sizeof(long_basic));
+    strcpy(long_basic, "Basic ");
+    for (size_t i = 6; i < sizeof(long_basic) - 1; i++) long_basic[i] = 'A';
+
+    OidcRpHttpResponse *r = oidc_rp_http_post(
+        "https://idp.example.com/token", true,
+        "grant_type=authorization_code",
+        "application/x-www-form-urlencoded",
+        NULL,
+        long_basic);
+    TEST_ASSERT_NOT_NULL(r);
+    TEST_ASSERT_EQUAL_INT(200, r->http_status);
+    TEST_ASSERT_EQUAL_STRING("ok-body", r->body);
+    oidc_rp_http_response_free(r);
+}
+
+// ---------------------------------------------------------------------------
 // Test runner
 // ---------------------------------------------------------------------------
 
@@ -235,5 +338,11 @@ int main(void) {
     RUN_TEST(test_get_status_2xx_with_body);
     RUN_TEST(test_get_status_4xx_returns_body_for_diagnosis);
     RUN_TEST(test_get_status_zero_body_via_fixture);
+    RUN_TEST(test_post_rejects_null_url);
+    RUN_TEST(test_post_rejects_empty_url);
+    RUN_TEST(test_post_rejects_non_http_scheme);
+    RUN_TEST(test_post_uses_test_seam);
+    RUN_TEST(test_post_with_null_body_consumes_fixture);
+    RUN_TEST(test_post_with_authorization_header_consumes_fixture);
     return UNITY_END();
 }

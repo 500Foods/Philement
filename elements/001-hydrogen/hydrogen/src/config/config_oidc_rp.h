@@ -73,6 +73,17 @@ typedef enum OIDCRPRoleSource {
     OIDC_RP_ROLE_SRC_MERGE = 3
 } OIDCRPRoleSource;
 
+// Token-endpoint authentication method (RFC 6749 §2.3.1, §3.2.1).
+//
+// CLIENT_SECRET_BASIC (default): credentials in the HTTP Basic auth
+//   header. URL-encoded per RFC 6749 §2.3.1 before base64.
+// CLIENT_SECRET_POST: credentials passed as form parameters in the
+//   request body. Less common; some IdPs require it.
+typedef enum OIDCRPAuthMethod {
+    OIDC_RP_AUTH_METHOD_CLIENT_SECRET_BASIC = 0,
+    OIDC_RP_AUTH_METHOD_CLIENT_SECRET_POST = 1
+} OIDCRPAuthMethod;
+
 // Provisioning defaults applied when a new account is auto-created.
 typedef struct OIDCRPProvisionDefaults {
     bool enabled;                     // Master switch for auto-provisioning
@@ -114,6 +125,7 @@ typedef struct OIDCRPProviderConfig {
     char* scopes;                     // Space-separated, default "openid profile email"
     char* system_api_key;             // SENSITIVE — used to mint the Hydrogen JWT
     bool verify_ssl;                  // TLS verification (mandatory in prod)
+    OIDCRPAuthMethod auth_method;     // Token-endpoint auth method (RFC 6749 §2.3.1)
 
     // Algorithm allow-list for ID-token signature verification.
     char* allowed_algorithms[8];
@@ -186,6 +198,12 @@ OIDCRPLinkStrategy oidc_rp_parse_link_strategy(const char* str);
 OIDCRPRoleSource oidc_rp_parse_role_source(const char* str);
 
 /*
+ * Convert an auth-method string to its enum value.
+ * Unknown strings return OIDC_RP_AUTH_METHOD_CLIENT_SECRET_BASIC.
+ */
+OIDCRPAuthMethod oidc_rp_parse_auth_method(const char* str);
+
+/*
  * Convert a link-strategy enum to a stable string (for logging / dump).
  */
 const char* oidc_rp_link_strategy_name(OIDCRPLinkStrategy strategy);
@@ -194,5 +212,10 @@ const char* oidc_rp_link_strategy_name(OIDCRPLinkStrategy strategy);
  * Convert a role-source enum to a stable string (for logging / dump).
  */
 const char* oidc_rp_role_source_name(OIDCRPRoleSource source);
+
+/*
+ * Convert an auth-method enum to a stable string (for logging / dump).
+ */
+const char* oidc_rp_auth_method_name(OIDCRPAuthMethod method);
 
 #endif /* CONFIG_OIDC_RP_H */

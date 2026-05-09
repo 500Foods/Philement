@@ -20,8 +20,15 @@
 # test_mock_keycloak_reachable()
 # test_mock_keycloak_discovery_doc()
 # test_mock_keycloak_jwks_doc()
+# test_mock_keycloak_token_happy_path()
+# test_mock_keycloak_token_invalid_grant()
+# test_mock_keycloak_token_unsupported_grant_type()
+# test_oidc_start_redirects_to_idp()
+# test_oidc_start_invalid_return_to_rejected()
 
 # CHANGELOG
+# 1.3.0 - 2026-05-09 - Phase 11: mock Keycloak /token endpoint sub-tests
+# 1.2.0 - 2026-05-09 - Phase 10: real /oidc/start redirect against mock IdP
 # 1.1.0 - 2026-05-09 - Phase 9: mock Keycloak reachability + discovery/JWKS
 # 1.0.0 - 2026-05-08 - Initial Phase 6 implementation: disabled-stub coverage
 
@@ -32,7 +39,7 @@ TEST_NAME="OIDC RP"
 TEST_ABBR="OID"
 TEST_NUMBER="42"
 TEST_COUNTER=0
-TEST_VERSION="1.1.0"
+TEST_VERSION="1.3.0"
 
 # Phase 9: mock Keycloak port. Picked outside the typical Hydrogen
 # port range (5000s) and the test config's WebServer port (5242). If
@@ -47,6 +54,7 @@ MOCK_KC_LOG=""
 setup_test_environment
 
 CONFIG_PATH="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_oidc_rp.json"
+CONFIG_PATH_ENABLED="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_oidc_rp_enabled.json"
 MOCK_KC_SCRIPT="${SCRIPT_DIR}/lib/mock_keycloak/server.js"
 
 # ---------------------------------------------------------------------------
@@ -359,6 +367,297 @@ test_mock_keycloak_jwks_doc() {
 }
 
 # ---------------------------------------------------------------------------
+# Phase 11: mock Keycloak /token endpoint
+# ---------------------------------------------------------------------------
+
+# Sub-test: POST /token with the canned `test-code-ok` returns 200
+# and a JSON bundle containing id_token + access_token + token_type +
+# expires_in. The id_token is intentionally a placeholder (not a real
+# JWT); Phase 12 will swap in a real signed token.
+test_mock_keycloak_token_happy_path() {
+    local response_file="${LOG_PREFIX}${TIMESTAMP}_mock_kc_token_ok.json"
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" \
+        "Mock Keycloak /token returns 200 + tokens for test-code-ok"
+
+    # Build the same x-www-form-urlencoded body Hydrogen will send.
+    # `code_verifier` is verified by neither the mock nor by RFC at
+    # this layer (the IdP simply trusts whatever Hydrogen sent), so
+    # any non-empty value works.
+    local body="grant_type=authorization_code"
+    body="${body}&code=test-code-ok"
+    body="${body}&redirect_uri=http%3A%2F%2Flocalhost%3A5243%2Fapi%2Fauth%2Foidc%2Fcallback"
+    body="${body}&code_verifier=fake-pkce-verifier-only-the-mock-sees-this"
+
+    local http_status
+    http_status=$(curl -s -X POST -w "%{http_code}" -o "${response_file}" \
+        -H "Content-Type: application/x-www-form-urlencoded" \
+        --max-time 5 \
+        --data "${body}" \
+        "http://127.0.0.1:${MOCK_KC_PORT}/realms/test/protocol/openid-connect/token" \
+        2>/dev/null || echo "000")
+
+    if [[ "${http_status}" != "200" ]]; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 \
+            "Token endpoint returned ${http_status} (expected 200)"
+        EXIT_CODE=1
+        return
+    fi
+
+    if command -v jq >/dev/null 2>&1; then
+        local id_tok acc_tok tok_type
+        id_tok=$(jq -r '.id_token // empty' "${response_file}" 2>/dev/null || echo "")
+        acc_tok=$(jq -r '.access_token // empty' "${response_file}" 2>/dev/null || echo "")
+        tok_type=$(jq -r '.token_type // empty' "${response_file}" 2>/dev/null || echo "")
+        if [[ -n "${id_tok}" ]] && [[ -n "${acc_tok}" ]] && [[ "${tok_type}" == "Bearer" ]]; then
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 \
+                "Token endpoint returned id_token + access_token + Bearer"
+            PASS_COUNT=$(( PASS_COUNT + 1 ))
+        else
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 \
+                "Token endpoint response missing fields (id=${id_tok:0:8}.. acc=${acc_tok:0:8}.. type=${tok_type})"
+            EXIT_CODE=1
+        fi
+    else
+        # Fallback: substring sanity if jq missing.
+        if "${GREP}" -q '"id_token"' "${response_file}" \
+            && "${GREP}" -q '"access_token"' "${response_file}"; then
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 \
+                "Token endpoint returned id_token + access_token (substring match)"
+            PASS_COUNT=$(( PASS_COUNT + 1 ))
+        else
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 \
+                "Token endpoint substring check failed"
+            EXIT_CODE=1
+        fi
+    fi
+}
+
+# Sub-test: POST /token with an unknown code returns 400 invalid_grant
+# (RFC 6749 §5.2). The mock intentionally accepts only the canned
+# `test-code-ok`; any other code yields invalid_grant.
+test_mock_keycloak_token_invalid_grant() {
+    local response_file="${LOG_PREFIX}${TIMESTAMP}_mock_kc_token_invalid_grant.json"
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" \
+        "Mock Keycloak /token returns 400 invalid_grant for unknown code"
+
+    local body="grant_type=authorization_code"
+    body="${body}&code=this-code-was-never-issued"
+    body="${body}&redirect_uri=http%3A%2F%2Flocalhost%3A5243%2Fcb"
+    body="${body}&code_verifier=v"
+
+    local http_status
+    http_status=$(curl -s -X POST -w "%{http_code}" -o "${response_file}" \
+        -H "Content-Type: application/x-www-form-urlencoded" \
+        --max-time 5 \
+        --data "${body}" \
+        "http://127.0.0.1:${MOCK_KC_PORT}/realms/test/protocol/openid-connect/token" \
+        2>/dev/null || echo "000")
+
+    if [[ "${http_status}" != "400" ]]; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 \
+            "Expected 400, got ${http_status}"
+        EXIT_CODE=1
+        return
+    fi
+
+    local actual_error=""
+    if command -v jq >/dev/null 2>&1; then
+        actual_error=$(jq -r '.error // empty' "${response_file}" 2>/dev/null || echo "")
+    fi
+
+    if [[ "${actual_error}" == "invalid_grant" ]]; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 \
+            "Unknown code rejected with 400 invalid_grant"
+        PASS_COUNT=$(( PASS_COUNT + 1 ))
+    elif [[ -z "${actual_error}" ]] && "${GREP}" -q '"invalid_grant"' "${response_file}"; then
+        # jq missing fallback.
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 \
+            "Unknown code rejected with 400 invalid_grant (substring match)"
+        PASS_COUNT=$(( PASS_COUNT + 1 ))
+    else
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 \
+            "Expected error=invalid_grant, got error=${actual_error}"
+        EXIT_CODE=1
+    fi
+}
+
+# Sub-test: POST /token with a wrong grant_type returns 400
+# unsupported_grant_type. Guards against accidentally accepting
+# password grants or anything else not specified by the plan.
+test_mock_keycloak_token_unsupported_grant_type() {
+    local response_file="${LOG_PREFIX}${TIMESTAMP}_mock_kc_token_unsupported.json"
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" \
+        "Mock Keycloak /token returns 400 unsupported_grant_type for client_credentials"
+
+    local body="grant_type=client_credentials&code=ignored"
+
+    local http_status
+    http_status=$(curl -s -X POST -w "%{http_code}" -o "${response_file}" \
+        -H "Content-Type: application/x-www-form-urlencoded" \
+        --max-time 5 \
+        --data "${body}" \
+        "http://127.0.0.1:${MOCK_KC_PORT}/realms/test/protocol/openid-connect/token" \
+        2>/dev/null || echo "000")
+
+    if [[ "${http_status}" != "400" ]]; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 \
+            "Expected 400, got ${http_status}"
+        EXIT_CODE=1
+        return
+    fi
+
+    if "${GREP}" -q "unsupported_grant_type" "${response_file}"; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 \
+            "Wrong grant_type rejected with 400 unsupported_grant_type"
+        PASS_COUNT=$(( PASS_COUNT + 1 ))
+    else
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 \
+            "Response missing unsupported_grant_type marker"
+        EXIT_CODE=1
+    fi
+}
+
+# ---------------------------------------------------------------------------
+# Phase 10: /oidc/start redirect against mock IdP
+# ---------------------------------------------------------------------------
+
+# Sub-test: GET /api/auth/oidc/start returns 302 with a Location header
+# pointing at the configured mock IdP authorization endpoint, with the
+# expected query parameters present (response_type, client_id, scope,
+# state, nonce, code_challenge, code_challenge_method=S256).
+test_oidc_start_redirects_to_idp() {
+    local base_url="$1"
+    local response_file="${LOG_PREFIX}${TIMESTAMP}_start_redirect.headers"
+
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" \
+        "GET /api/auth/oidc/start returns 302 to IdP with PKCE+state"
+
+    # -i prints headers with the body so we can grep the Location header.
+    # -L is OFF — we explicitly do NOT want curl to follow the redirect
+    #    because the mock IdP's /auth endpoint returns 404 (Phase 11+).
+    local http_status
+    http_status=$(curl -s -i -o "${response_file}" -w "%{http_code}" \
+        --max-time 5 \
+        "${base_url}/api/auth/oidc/start" 2>/dev/null || echo "000")
+
+    if [[ "${http_status}" != "302" ]]; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 \
+            "Expected 302, got ${http_status}"
+        EXIT_CODE=1
+        return
+    fi
+
+    # Extract Location header (case-insensitive match; some servers emit
+    # "Location:", others "location:"). Strip CR.
+    local location
+    location=$("${GREP}" -i '^location:' "${response_file}" 2>/dev/null \
+        | sed 's/^[Ll]ocation:[[:space:]]*//' \
+        | tr -d '\r' \
+        | head -n 1)
+
+    if [[ -z "${location}" ]]; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 \
+            "302 returned but no Location header found"
+        EXIT_CODE=1
+        return
+    fi
+
+    # Verify the Location starts with the mock authorization endpoint.
+    local expected_prefix="http://localhost:${MOCK_KC_PORT}/realms/test/protocol/openid-connect/auth?"
+    if [[ "${location}" != "${expected_prefix}"* ]]; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 \
+            "Location does not start with ${expected_prefix} (got: ${location:0:120}...)"
+        EXIT_CODE=1
+        return
+    fi
+
+    # Required query params per OIDC + plan:
+    local missing=""
+    local p
+    for p in response_type=code \
+             client_id= \
+             redirect_uri= \
+             scope= \
+             state= \
+             nonce= \
+             code_challenge= \
+             code_challenge_method=S256; do
+        if [[ "${location}" != *"${p}"* ]]; then
+            missing="${missing} ${p}"
+        fi
+    done
+
+    if [[ -n "${missing}" ]]; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 \
+            "Location missing required params:${missing}"
+        EXIT_CODE=1
+        return
+    fi
+
+    # Verify Cache-Control: no-store is set on the redirect.
+    if ! "${GREP}" -iq '^cache-control:[[:space:]]*no-store' "${response_file}"; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 \
+            "Redirect missing Cache-Control: no-store header"
+        EXIT_CODE=1
+        return
+    fi
+
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 \
+        "Redirect to IdP has all required params + Cache-Control: no-store"
+    PASS_COUNT=$(( PASS_COUNT + 1 ))
+}
+
+# Sub-test: GET /api/auth/oidc/start with an unsafe return_to is
+# rejected with 400 invalid_return_to before any state is generated.
+test_oidc_start_invalid_return_to_rejected() {
+    local base_url="$1"
+    local response_file="${LOG_PREFIX}${TIMESTAMP}_start_bad_return_to.json"
+
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" \
+        "GET /api/auth/oidc/start with unsafe return_to returns 400"
+
+    # The %2F%2Fevil.com encoded form decodes to //evil.com — protocol-
+    # relative URL. Must be rejected.
+    local http_status
+    http_status=$(curl -s -X GET -w "%{http_code}" -o "${response_file}" \
+        --max-time 5 \
+        "${base_url}/api/auth/oidc/start?return_to=%2F%2Fevil.com" 2>/dev/null \
+        || echo "000")
+
+    if [[ "${http_status}" != "400" ]]; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 \
+            "Expected 400, got ${http_status}"
+        EXIT_CODE=1
+        return
+    fi
+
+    if command -v jq >/dev/null 2>&1; then
+        local err
+        err=$(jq -r '.error // empty' "${response_file}" 2>/dev/null || echo "")
+        if [[ "${err}" != "invalid_return_to" ]]; then
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 \
+                "Expected error=invalid_return_to, got error=${err}"
+            EXIT_CODE=1
+            return
+        fi
+    fi
+
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 \
+        "Unsafe return_to rejected with 400 invalid_return_to"
+    PASS_COUNT=$(( PASS_COUNT + 1 ))
+}
+
+# Sub-test: GET /api/auth/oidc/start with the WRONG method on the
+# enabled config still returns 405 (the method check fires before the
+# feature gate). This guards against accidentally swapping the order
+# of checks in a future refactor.
+test_oidc_start_method_check_still_works_when_enabled() {
+    local base_url="$1"
+    test_oidc_endpoint_method_not_allowed "${base_url}" "start" "POST" \
+        "POST /api/auth/oidc/start (enabled config, still 405)"
+}
+
+# ---------------------------------------------------------------------------
 # Pre-flight: locate binary, validate config
 # ---------------------------------------------------------------------------
 
@@ -446,32 +745,36 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         # sub-tests just prove the mock works end-to-end against a
         # real HTTP client (curl), so future phases that wire the
         # real flow have a known-good fixture.
+        #
+        # Phase 10 also relies on the mock IdP being reachable for the
+        # /oidc/start redirect test below (Hydrogen fetches discovery
+        # from the mock when serving /start with Enabled=true).
+        MOCK_KC_STARTED=0
         print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Start mock Keycloak"
         # shellcheck disable=SC2310 # We want to continue even if the test fails
         if start_mock_keycloak; then
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Mock Keycloak started on port ${MOCK_KC_PORT} (PID ${MOCK_KC_PID})"
             PASS_COUNT=$(( PASS_COUNT + 1 ))
+            MOCK_KC_STARTED=1
 
             test_mock_keycloak_reachable
             test_mock_keycloak_discovery_doc
             test_mock_keycloak_jwks_doc
-
-            print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Stop mock Keycloak"
-            stop_mock_keycloak
-            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Mock Keycloak stopped"
-            PASS_COUNT=$(( PASS_COUNT + 1 ))
+            test_mock_keycloak_token_happy_path
+            test_mock_keycloak_token_invalid_grant
+            test_mock_keycloak_token_unsupported_grant_type
         else
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Mock Keycloak failed to start"
             # Do not fail the whole test if node is missing — the
-            # disabled-stub coverage above is still valid. Phase 9
+            # disabled-stub coverage above is still valid. Phase 9 + 10
             # sub-tests gracefully degrade.
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Skipping mock-Keycloak sub-tests"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Skipping mock-Keycloak + Phase 10 sub-tests"
         fi
     fi
 
-    # ---- Shutdown ----
+    # ---- Shutdown disabled-config Hydrogen before Phase 10 ----
     if [[ -n "${HYDROGEN_PID}" ]] && ps -p "${HYDROGEN_PID}" > /dev/null 2>&1; then
-        print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Stop Hydrogen Server"
+        print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Stop Hydrogen Server (disabled config)"
         # shellcheck disable=SC2310 # We want to continue even if the test fails
         if stop_hydrogen "${HYDROGEN_PID}" "${SERVER_LOG}" 10 5 "${RESULTS_DIR}"; then
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Server stopped cleanly"
@@ -482,6 +785,84 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         fi
         # shellcheck disable=SC2310 # Diagnostic-only; non-zero result must not abort the test
         check_time_wait_sockets "${SERVER_PORT}" || true
+        HYDROGEN_PID=""
+    fi
+
+    # ---- Phase 10: /oidc/start redirect against mock IdP ----
+    # Bring up a second Hydrogen instance with OIDC_RP.Enabled=true,
+    # pointing at the mock Keycloak we already started above. Skip
+    # cleanly if the mock didn't come up (e.g. node missing).
+    if [[ "${EXIT_CODE}" -eq 0 ]] && [[ "${MOCK_KC_STARTED:-0}" -eq 1 ]]; then
+        print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate enabled-mode config"
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
+        if validate_config_file "${CONFIG_PATH_ENABLED}"; then
+            ENABLED_PORT=$(get_webserver_port "${CONFIG_PATH_ENABLED}")
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Enabled config will use port: ${ENABLED_PORT}"
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Enabled config validated"
+            PASS_COUNT=$(( PASS_COUNT + 1 ))
+        else
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Enabled config validation failed"
+            EXIT_CODE=1
+        fi
+
+        if [[ "${EXIT_CODE}" -eq 0 ]]; then
+            print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Start Hydrogen Server (enabled config)"
+            ENABLED_HYDROGEN_PID=""
+            ENABLED_PID_VAR="ENABLED_HYDROGEN_PID_$$"
+            ENABLED_BASE_URL="http://localhost:${ENABLED_PORT}"
+            # shellcheck disable=SC2310 # We want to continue even if the test fails
+            if start_hydrogen_with_pid "${CONFIG_PATH_ENABLED}" "${SERVER_LOG}" 15 "${HYDROGEN_BIN}" "${ENABLED_PID_VAR}"; then
+                ENABLED_HYDROGEN_PID=$(eval "echo \$${ENABLED_PID_VAR}")
+                if [[ -n "${ENABLED_HYDROGEN_PID}" ]] && ps -p "${ENABLED_HYDROGEN_PID}" > /dev/null 2>&1; then
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Server started with PID ${ENABLED_HYDROGEN_PID}"
+                    PASS_COUNT=$(( PASS_COUNT + 1 ))
+                else
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Server PID missing after start"
+                    EXIT_CODE=1
+                fi
+            else
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to start Hydrogen with enabled config"
+                EXIT_CODE=1
+            fi
+
+            if [[ "${EXIT_CODE}" -eq 0 ]]; then
+                # shellcheck disable=SC2310 # We want to continue even if the test fails
+                if ! wait_for_server_ready "${ENABLED_BASE_URL}"; then
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Enabled-config server failed to become ready"
+                    EXIT_CODE=1
+                fi
+            fi
+
+            if [[ "${EXIT_CODE}" -eq 0 ]]; then
+                # ---- The actual Phase 10 sub-tests ----
+                test_oidc_start_redirects_to_idp "${ENABLED_BASE_URL}"
+                test_oidc_start_invalid_return_to_rejected "${ENABLED_BASE_URL}"
+                test_oidc_start_method_check_still_works_when_enabled "${ENABLED_BASE_URL}"
+            fi
+
+            # ---- Shutdown enabled-config Hydrogen ----
+            if [[ -n "${ENABLED_HYDROGEN_PID}" ]] && ps -p "${ENABLED_HYDROGEN_PID}" > /dev/null 2>&1; then
+                print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Stop Hydrogen Server (enabled config)"
+                # shellcheck disable=SC2310 # We want to continue even if the test fails
+                if stop_hydrogen "${ENABLED_HYDROGEN_PID}" "${SERVER_LOG}" 10 5 "${RESULTS_DIR}"; then
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Enabled-config server stopped cleanly"
+                    PASS_COUNT=$(( PASS_COUNT + 1 ))
+                else
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Enabled-config server shutdown had issues"
+                    EXIT_CODE=1
+                fi
+                # shellcheck disable=SC2310 # Diagnostic-only; non-zero result must not abort the test
+                check_time_wait_sockets "${ENABLED_PORT}" || true
+            fi
+        fi
+    fi
+
+    # ---- Stop the mock now that all dependent tests are done ----
+    if [[ "${MOCK_KC_STARTED:-0}" -eq 1 ]]; then
+        print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Stop mock Keycloak"
+        stop_mock_keycloak
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Mock Keycloak stopped"
+        PASS_COUNT=$(( PASS_COUNT + 1 ))
     fi
 else
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Skipping endpoint tests due to prerequisite failures"
