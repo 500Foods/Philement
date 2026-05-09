@@ -149,11 +149,16 @@ OidcRpHttpResponse *oidc_rp_http_post(const char *url,
  * @brief Test-only: register a canned response for any URL whose
  *        absolute form contains `url_substring`.
  *
- * Subsequent calls to `oidc_rp_http_get` whose URL contains the
- * substring will return the canned response without touching the
- * network. The fixture is consumed (single-use); register again to
- * serve a second request. NULL `body` is allowed and yields a
- * NULL-body response.
+ * Fixtures are queued FIFO (capacity 8 entries). Each call to
+ * `oidc_rp_http_get` / `_post` walks the queue head-to-tail and
+ * removes the first fixture whose URL substring matches the request
+ * URL. This lets a single test inject multiple consecutive responses
+ * (e.g. Phase 12 rotation-recovery, where the validator fetches the
+ * JWKS endpoint twice in a row).
+ *
+ * NULL `body` is allowed and yields a NULL-body response. NULL or
+ * empty `url_substring` registers a wildcard fixture that matches
+ * any URL.
  *
  * The Phase 9 unit tests use this to feed `oidc_rp_discovery_get`
  * and `oidc_rp_jwks_get` JSON fixtures without needing a running
@@ -161,8 +166,7 @@ OidcRpHttpResponse *oidc_rp_http_post(const char *url,
  *
  * @param url_substring  Substring matched against the request URL.
  *                       NULL or empty registers an unconditional
- *                       fixture (matches the next call regardless of
- *                       URL).
+ *                       fixture (matches any URL).
  * @param http_status    Status to report on the response.
  * @param body           NUL-terminated body, or NULL.
  */
@@ -174,7 +178,9 @@ void oidc_rp_http_test_set_response(const char *url_substring,
  * @brief Test-only: drop every queued fixture.
  *
  * Unity tearDown should call this so no leftover fixture leaks into
- * the next test.
+ * the next test. After this call the queue is empty and the next
+ * `oidc_rp_http_get` / `_post` will fall through to the real network
+ * path (or return a transport failure if the URL is unreachable).
  */
 void oidc_rp_http_test_clear_responses(void);
 

@@ -44,15 +44,22 @@ typedef struct ResponseBuffer {
     size_t capacity;
 } ResponseBuffer;
 
-// Test-only fixture queue (single entry, single-use).
+// Test-only fixture FIFO. Each entry is single-use: take_fixture()
+// removes the matching head entry. Phase 9 originally shipped this as
+// a one-slot queue; Phase 12's rotation-recovery flow needs to inject
+// two consecutive JWKS responses, so the queue grew up to a small
+// fixed-capacity ring. Production code never enqueues; the only cost
+// at runtime is an empty-queue check under the mutex.
+#define OIDC_RP_HTTP_TEST_QUEUE_CAP 8
+
 typedef struct TestFixture {
     char *url_substring;   // NULL means "match anything"
     long  http_status;
     char *body;
-    bool  pending;
 } TestFixture;
 
-static TestFixture g_test_fixture = {NULL, 0, NULL, false};
+static TestFixture g_test_queue[OIDC_RP_HTTP_TEST_QUEUE_CAP];
+static size_t g_test_queue_count = 0;
 static pthread_mutex_t g_test_fixture_lock = PTHREAD_MUTEX_INITIALIZER;
 
 // ---------------------------------------------------------------------------
@@ -103,19 +110,29 @@ static bool url_matches(const char *url, const char *substring) {
     return strstr(url, substring) != NULL;
 }
 
-// Drain a fixture out of the queue under lock. Returns true if a
-// fixture was claimed; the caller then owns the body string.
+// Drain the head fixture matching `url` out of the FIFO under lock.
+// Returns true if a fixture was claimed; the caller then owns the
+// body string. Walks the queue head-to-tail; the first match is
+// removed and remaining entries shift up. This preserves enqueue
+// order for tests that register multiple fixtures.
 static bool take_fixture(const char *url, long *out_status, char **out_body) {
     bool taken = false;
     pthread_mutex_lock(&g_test_fixture_lock);
-    if (g_test_fixture.pending && url_matches(url, g_test_fixture.url_substring)) {
-        *out_status = g_test_fixture.http_status;
-        *out_body   = g_test_fixture.body;  // transfer ownership
-        g_test_fixture.body = NULL;
-        free(g_test_fixture.url_substring);
-        g_test_fixture.url_substring = NULL;
-        g_test_fixture.pending = false;
-        taken = true;
+    for (size_t i = 0; i < g_test_queue_count; ++i) {
+        if (url_matches(url, g_test_queue[i].url_substring)) {
+            *out_status = g_test_queue[i].http_status;
+            *out_body   = g_test_queue[i].body;  // transfer ownership
+            free(g_test_queue[i].url_substring);
+            // Shift remaining entries down.
+            for (size_t j = i + 1; j < g_test_queue_count; ++j) {
+                g_test_queue[j - 1] = g_test_queue[j];
+            }
+            g_test_queue_count--;
+            // Zero the now-vacant tail slot for safety.
+            memset(&g_test_queue[g_test_queue_count], 0, sizeof(TestFixture));
+            taken = true;
+            break;
+        }
     }
     pthread_mutex_unlock(&g_test_fixture_lock);
     return taken;
@@ -363,24 +380,33 @@ void oidc_rp_http_test_set_response(const char *url_substring,
                                     long http_status,
                                     const char *body) {
     pthread_mutex_lock(&g_test_fixture_lock);
-    free(g_test_fixture.url_substring);
-    free(g_test_fixture.body);
-    g_test_fixture.url_substring = (url_substring && *url_substring)
-                                       ? strdup(url_substring)
-                                       : NULL;
-    g_test_fixture.http_status = http_status;
-    g_test_fixture.body = body ? strdup(body) : NULL;
-    g_test_fixture.pending = true;
+    if (g_test_queue_count >= OIDC_RP_HTTP_TEST_QUEUE_CAP) {
+        // Queue full — drop the oldest entry to keep the most recent
+        // fixtures, matching test author intent. Tests that hit this
+        // case probably have a leak in tearDown; it is louder to drop
+        // than to silently fail.
+        free(g_test_queue[0].url_substring);
+        free(g_test_queue[0].body);
+        for (size_t j = 1; j < g_test_queue_count; ++j) {
+            g_test_queue[j - 1] = g_test_queue[j];
+        }
+        g_test_queue_count--;
+    }
+    g_test_queue[g_test_queue_count].url_substring =
+        (url_substring && *url_substring) ? strdup(url_substring) : NULL;
+    g_test_queue[g_test_queue_count].http_status = http_status;
+    g_test_queue[g_test_queue_count].body = body ? strdup(body) : NULL;
+    g_test_queue_count++;
     pthread_mutex_unlock(&g_test_fixture_lock);
 }
 
 void oidc_rp_http_test_clear_responses(void) {
     pthread_mutex_lock(&g_test_fixture_lock);
-    free(g_test_fixture.url_substring);
-    free(g_test_fixture.body);
-    g_test_fixture.url_substring = NULL;
-    g_test_fixture.body = NULL;
-    g_test_fixture.http_status = 0;
-    g_test_fixture.pending = false;
+    for (size_t i = 0; i < g_test_queue_count; ++i) {
+        free(g_test_queue[i].url_substring);
+        free(g_test_queue[i].body);
+    }
+    memset(g_test_queue, 0, sizeof(g_test_queue));
+    g_test_queue_count = 0;
     pthread_mutex_unlock(&g_test_fixture_lock);
 }
