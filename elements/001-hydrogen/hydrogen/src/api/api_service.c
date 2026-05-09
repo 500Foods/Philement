@@ -32,6 +32,9 @@
  #include "auth/renew/renew.h"
  #include "auth/logout/logout.h"
  #include "auth/register/register.h"
+ #include "auth/oidc_rp/oidc_rp_start.h"
+ #include "auth/oidc_rp/oidc_rp_callback.h"
+ #include "auth/oidc_rp/oidc_rp_handoff.h"
 
 // Simple hardcoded endpoint validator and handler for /api/version
 bool is_exact_api_version_endpoint(const char *url) {
@@ -165,6 +168,9 @@ bool register_api_endpoints(void) {
         log_this(SR_API, "― %s/auth/renew", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/auth/logout", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/auth/register", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
+        log_this(SR_API, "― %s/auth/oidc/start", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
+        log_this(SR_API, "― %s/auth/oidc/callback", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
+        log_this(SR_API, "― %s/auth/oidc/handoff", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/system/info", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/system/health", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/system/test", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
@@ -593,6 +599,19 @@ enum MHD_Result handle_api_request(struct MHD_Connection *connection,
     else if (strcmp(path, "auth/register") == 0) {
         return handle_post_auth_register(connection, url, method, version, upload_data,
                                        upload_data_size, con_cls);
+    }
+    // OIDC Relying Party endpoints (Phase 6 stubs; gated by OIDC_RP.Enabled)
+    else if (strcmp(path, "auth/oidc/start") == 0) {
+        return handle_get_auth_oidc_start(connection, url, method, version, upload_data,
+                                          upload_data_size, con_cls);
+    }
+    else if (strcmp(path, "auth/oidc/callback") == 0) {
+        return handle_get_auth_oidc_callback(connection, url, method, version, upload_data,
+                                             upload_data_size, con_cls);
+    }
+    else if (strcmp(path, "auth/oidc/handoff") == 0) {
+        return handle_post_auth_oidc_handoff(connection, url, method, version, upload_data,
+                                             upload_data_size, con_cls);
     }
     // System endpoints
     else if (strcmp(path, "system/info") == 0) {
