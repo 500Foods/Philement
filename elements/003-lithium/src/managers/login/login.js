@@ -9,7 +9,8 @@
 import { eventBus, Events } from '../../core/event-bus.js';
 import { storeJWT } from '../../core/jwt.js';
 import { getConfig, getConfigValue } from '../../core/config.js';
-import { getTransitionDuration, waitForTransition } from '../../core/transitions.js';
+import { getTransitionDuration } from '../../core/transitions.js';
+import { LoginPanels } from './login-panels.js';
 import { hasLookup } from '../../shared/lookups.js';
 import { log, logGroup, getRawLog, Subsystems, Status } from '../../core/log.js';
 import { formatLogText, getFlagSvg, getPasswordManagerSelectors } from '../../shared/log-formatter.js';
@@ -41,11 +42,9 @@ export default class LoginManager {
     this.isSubmitting = false;
     this.isPasswordVisible = false;
     this.isCapsLockOn = false;
-    this.currentPanel = 'login'; // 'login', 'theme', 'logs', 'language', 'help'
-    this.panels = {};
     this.lookupListeners = [];
     this._startupComplete = false; // Tracks whether background startup has finished
-    this._loginFocusTimer = null; // Timer ID for the post-return-to-login focus delay
+    this._loginPanels = null; // LoginPanels instance (initialized in render)
     
     // Language panel state
     this._languageTable = null;
@@ -337,14 +336,20 @@ export default class LoginManager {
       languageCurrentCode: this.container.querySelector('#language-current-code'),
     };
 
-    // Cache panels for transition management
-    this.panels = {
-      login: this.elements.loginPanel,
-      theme: this.elements.themePanel,
-      logs: this.elements.logsPanel,
-      language: this.elements.languagePanel,
-      help: this.elements.helpPanel,
-    };
+    // Initialize LoginPanels with callbacks for panel-specific logic
+    this._loginPanels = new LoginPanels({
+      panels: {
+        login: this.elements.loginPanel,
+        theme: this.elements.themePanel,
+        logs: this.elements.logsPanel,
+        language: this.elements.languagePanel,
+        help: this.elements.helpPanel,
+      },
+      loginPanel: this.elements.loginPanel,
+      overlay: this.elements.overlay,
+      onBeforeSwitch: (targetPanel) => this._onBeforePanelSwitch(targetPanel),
+      onAfterSwitch: (fromPanel, toPanel, duration) => this._onAfterPanelSwitch(fromPanel, toPanel, duration),
+    });
   }
 
   /**
@@ -512,7 +517,7 @@ export default class LoginManager {
    * Note: Shortcuts (except ESC) only work when on the login panel
    */
   handleKeyboardShortcuts(event) {
-    const isOnLoginPanel = this.currentPanel === 'login';
+    const isOnLoginPanel = this._loginPanels?.currentPanel === 'login';
     
     // ESC - always works to return to login panel or clear fields
     if (event.key === 'Escape') {
@@ -552,7 +557,7 @@ export default class LoginManager {
     if (isOnLoginPanel) {
       this.handleClearUsername();
     } else {
-      log(LOGIN, Status.INFO, `Keyboard: ESC closed ${this.currentPanel} panel`);
+      log(LOGIN, Status.INFO, `Keyboard: ESC closed ${this._loginPanels?.currentPanel} panel`);
       this.switchPanel('login');
     }
     event.preventDefault();
@@ -599,7 +604,7 @@ export default class LoginManager {
    * @deprecated Use handleKeyboardShortcuts instead
    */
   handleEscapeKey(event) {
-    if (event.key === 'Escape' && this.currentPanel !== 'login') {
+    if (event.key === 'Escape' && this._loginPanels?.currentPanel !== 'login') {
       this.switchPanel('login');
     }
   }
@@ -632,20 +637,6 @@ export default class LoginManager {
       document.removeEventListener('keyup', this.handleKeyUp);
       this.handleKeyUp = null;
     }
-  }
-
-  /**
-   * Enable the transition overlay to block interactions
-   */
-  enableTransitionOverlay() {
-    this.elements.overlay?.classList.add('active');
-  }
-
-  /**
-   * Disable the transition overlay
-   */
-  disableTransitionOverlay() {
-    this.elements.overlay?.classList.remove('active');
   }
 
   /**
@@ -777,36 +768,28 @@ export default class LoginManager {
 
   /**
    * Switch between panels with fade transition
-   * @param {string} targetPanel - 'login', 'theme', or 'logs'
+   * Delegates to LoginPanels; keeps panel-specific logic here.
+   * @param {string} targetPanel - 'login', 'theme', 'logs', 'language', 'help'
    */
   async switchPanel(targetPanel) {
-    if (targetPanel === this.currentPanel) return;
-    const panelStart = performance.now();
+    if (!this._loginPanels) return;
+    await this._loginPanels.switchPanel(targetPanel);
+  }
 
-    const fromPanel = this.panels[this.currentPanel];
-    const toPanel = this.panels[targetPanel];
-
-    if (!toPanel) return;
-
-    // Cancel any pending focus-on-login timer from a previous switchPanel('login') call.
-    // This prevents a stale focus from firing on the wrong panel if the user navigates
-    // away before the delay expires (which would trigger 1Password on a subpanel).
-    if (this._loginFocusTimer !== null) {
-      clearTimeout(this._loginFocusTimer);
-      this._loginFocusTimer = null;
-    }
-
+  /**
+   * Called by LoginPanels before performing a panel transition.
+   * Handles panel-specific prep: password manager visibility, logs population,
+   * language panel init/cleanup.
+   * @param {string} targetPanel
+   * @private
+   */
+  _onBeforePanelSwitch(targetPanel) {
     // Hide password manager UI when leaving login panel, show when returning
     if (targetPanel === 'login') {
-      // Returning to login - re-enable password manager UI
       this.togglePasswordManagerUI(false);
     } else {
-      // Going to subpanel - hide password manager UI
       this.togglePasswordManagerUI(true);
     }
-
-    // Block interactions during transition
-    this.enableTransitionOverlay();
 
     // If switching to logs panel, populate it with action logs
     if (targetPanel === 'logs') {
@@ -830,31 +813,25 @@ export default class LoginManager {
         this._languageKeydownHandler = null;
       }
     }
+  }
 
-    // Perform crossfade transition
-    await this.performPanelTransition(fromPanel, toPanel);
+  /**
+   * Called by LoginPanels after a panel transition completes.
+   * Handles logging and focus management.
+   * @param {string} fromPanel
+   * @param {string} toPanel
+   * @private
+   */
+  _onAfterPanelSwitch(fromPanel, toPanel) {
+    log(LOGIN, Status.INFO, `Panel: ${fromPanel} → ${toPanel}`);
 
-    // Update current panel state
-    const fromPanelName = this.currentPanel;
-    this.currentPanel = targetPanel;
-    const panelDuration = Math.round(performance.now() - panelStart);
-    log(LOGIN, Status.INFO, `Panel: ${fromPanelName} → ${targetPanel}`, panelDuration);
-
-    // Re-enable interactions
-    this.disableTransitionOverlay();
-
-    // Focus management
-    if (targetPanel === 'login') {
-      // Delay the focus slightly to let the transition fully settle, then check
-      // we are still on the login panel before focusing.  Storing the timer ID
-      // lets any subsequent switchPanel call cancel it immediately, so 1Password
-      // is never triggered by a focus event that fires on the wrong panel.
-      this._loginFocusTimer = setTimeout(() => {
-        this._loginFocusTimer = null;
-        if (this.currentPanel === 'login') {
+    // Focus management when returning to login panel
+    if (toPanel === 'login') {
+      this._loginPanels.scheduleFocus(() => {
+        if (this._loginPanels.currentPanel === 'login') {
           this.elements.username?.focus();
         }
-      }, getTransitionDuration());
+      });
     }
   }
 
@@ -1365,101 +1342,6 @@ export default class LoginManager {
   }
 
   /**
-   * Perform the actual panel transition animation with crossfade
-   */
-  async performPanelTransition(fromElement, toElement) {
-    const duration = getTransitionDuration();
-
-    // Determine the correct display value for the target panel
-    const isLoginPanel = toElement === this.elements.loginPanel;
-    const targetDisplay = isLoginPanel ? 'block' : 'flex';
-
-    // If we have both elements, do a true crossfade with absolute positioning
-    if (fromElement && toElement) {
-      // Get current dimensions before we modify anything
-      const fromWidth = fromElement.offsetWidth;
-      const fromHeight = fromElement.offsetHeight;
-      const toWidth = toElement.offsetWidth || fromWidth; // fallback if not yet rendered
-      const toHeight = toElement.offsetHeight || fromHeight;
-      
-      // Position both panels absolutely in the center of the container
-      // This ensures they overlap perfectly during the crossfade
-      const centerStyles = `
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        margin: 0;
-      `;
-      
-      // Apply absolute positioning to from element (keep visible during fade)
-      fromElement.style.cssText = `
-        ${centerStyles}
-        width: ${fromWidth}px;
-        height: ${fromHeight}px;
-        display: ${fromElement.style.display || (fromElement === this.elements.loginPanel ? 'block' : 'flex')};
-        opacity: 1;
-        transition: opacity ${duration}ms ease-in-out;
-        z-index: 1;
-      `;
-      
-      // Prepare target element - also absolutely positioned in center
-      // Use the element's CSS-defined width based on panel type
-      let toCssWidth;
-      if (toElement === this.elements.loginPanel) {
-        toCssWidth = '360px';
-      } else if (toElement === this.elements.languagePanel) {
-        toCssWidth = '484px'; // Language panel is wider
-      } else {
-        toCssWidth = '384px'; // Default subpanel width
-      }
-      toElement.style.cssText = `
-        ${centerStyles}
-        width: ${toCssWidth};
-        display: ${targetDisplay};
-        opacity: 0;
-        transition: opacity ${duration}ms ease-in-out;
-        z-index: 2;
-      `;
-      
-      // Force reflow
-      void toElement.offsetHeight;
-
-      // Start crossfade
-      requestAnimationFrame(() => {
-        // Fade out current panel
-        fromElement.style.opacity = '0';
-        
-        // Fade in new panel (with slight delay for overlap effect)
-        setTimeout(() => {
-          toElement.style.opacity = '1';
-        }, duration / 4);
-      });
-
-      // Wait for transition to complete
-      await waitForTransition(duration + duration / 4 + 50);
-
-      // Clean up from element
-      fromElement.style.cssText = 'display: none;';
-      
-      // Restore target element to normal flow (remove absolute positioning)
-      // Keep its natural display and size
-      toElement.style.cssText = '';
-      toElement.style.display = targetDisplay;
-      toElement.style.opacity = '1';
-      toElement.classList.add('visible');
-    } else if (toElement) {
-      // No from element, just fade in normally
-      toElement.style.display = targetDisplay;
-      void toElement.offsetHeight;
-      requestAnimationFrame(() => {
-        toElement.classList.add('visible');
-      });
-      await waitForTransition(duration);
-    }
-  }
-
-  /**
    * Check if CAPS LOCK is on
    * Called on any key event anywhere on the page
    */
@@ -1590,7 +1472,7 @@ export default class LoginManager {
       
       // Fade out the current panel only
       // Let the app handle the transition to main manager
-      const currentPanelEl = this.panels[this.currentPanel];
+      const currentPanelEl = this._loginPanels?._panels[this._loginPanels?.currentPanel];
       if (currentPanelEl) {
         currentPanelEl.style.transition = `opacity ${duration}ms ease-in-out`;
         currentPanelEl.style.opacity = '0';
@@ -1835,10 +1717,7 @@ export default class LoginManager {
     }
 
     // Cancel any pending post-login-return focus timer
-    if (this._loginFocusTimer !== null) {
-      clearTimeout(this._loginFocusTimer);
-      this._loginFocusTimer = null;
-    }
+    this._loginPanels?.cancelPendingFocus();
 
     // Remove keyboard shortcut event listeners
     this.removeKeyboardShortcuts();
@@ -1853,12 +1732,14 @@ export default class LoginManager {
     this.lookupListeners.forEach(unsubscribe => unsubscribe());
     this.lookupListeners = [];
 
+    // Teardown LoginPanels
+    this._loginPanels?.teardown();
+    this._loginPanels = null;
+
     // Clear references
     this.elements = {};
-    this.panels = {};
     this.isPasswordVisible = false;
     this.isCapsLockOn = false;
-    this.currentPanel = 'login';
     this._languageData = [];
     this._currentLocale = null;
     this._bestGuessLocale = null;

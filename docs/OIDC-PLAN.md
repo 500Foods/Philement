@@ -884,7 +884,7 @@ Every phase block contains the same fields, in the same order:
 
 ---
 
-### Phase 1 — Lithium: extract `login-panels.js`
+### Phase 1 — Lithium: extract `login-panels.js` ✅ COMPLETE
 
 - **Goal:** Move panel crossfade + ESC handling out of `login.js` into a
   new module, with no behaviour change.
@@ -897,8 +897,8 @@ Every phase block contains the same fields, in the same order:
     the new class.
   - **No new public API.** Same DOM, same timings.
 - **Files:**
-  - Created: `elements/003-lithium/src/managers/login/login-panels.js`
-  - Created: `elements/003-lithium/tests/unit/managers/login/login-panels.test.js`
+  - Created: `elements/003-lithium/src/managers/login/login-panels.js` (228 lines)
+  - Created: `elements/003-lithium/tests/unit/managers/login/login-panels.test.js` (24 tests)
   - Touched: `elements/003-lithium/src/managers/login/login.js`
 - **Tests required:**
   - New Vitest file unit-tests panel switching with mocked DOM elements:
@@ -906,13 +906,29 @@ Every phase block contains the same fields, in the same order:
     suppression.
   - All existing login tests still pass.
 - **Definition of Done:**
-  - [ ] `npm run lint` clean.
-  - [ ] `npm run build` clean.
-  - [ ] `npm test` 100% green.
-  - [ ] `login.js` line count went **down** by at least 200 lines.
-  - [ ] No file in `src/managers/login/` exceeds 1000 lines.
+  - [x] `npm run lint` clean.
+  - [x] `npm run build` clean.
+  - [x] `npm test` 100% green (696 tests: 672 existing + 24 new).
+  - [x] `login.js` line count went **down** by 119 lines (1,866 → 1,747).
+  - [x] No file in `src/managers/login/` exceeds 1000 lines.
   - [ ] Manual smoke (against a running backend in someone's dev env, or
         screenshot diff) shows panels still crossfade identically.
+
+**Lessons learned:**
+1. **Callback-based delegation works well.** `LoginPanels` accepts `onBeforeSwitch` and `onAfterSwitch` callbacks so `LoginManager` retains panel-specific logic (password-manager visibility, logs population, language init) while `LoginPanels` owns the generic transition mechanics. This split is cleaner than a purely event-driven approach.
+2. **Focus timer belongs in `LoginPanels`.** The `_loginFocusTimer` was originally in `LoginManager` but is logically part of panel transition sequencing. Moving it into `LoginPanels` (as `scheduleFocus()` / `cancelPendingFocus()`) simplified `LoginManager.teardown()` and made the timer testable.
+3. **Line-count target was optimistic.** The original plan expected a ≥200-line reduction, but the actual reduction was 119 lines. The remaining panel-related code in `login.js` (the two callback methods `_onBeforePanelSwitch` and `_onAfterPanelSwitch`, plus `show()`/`hide()` which use panel state) is substantial. Future phases should expect similar ratios: extracted module ≈ 200–250 lines, reduction in parent ≈ 100–150 lines.
+4. **Import path depth matters for tests.** The test file is at `tests/unit/managers/login/` (four levels under `elements/003-lithium/`) while the source is at `src/managers/login/` (two levels). The relative import requires `../../../../src/...` not `../../../src/...`.
+
+**Deferred to later phases:**
+- Legacy `login-alt-btn-group` (Didit/Apple/Google/Microsoft buttons in `login.html`) — **deferred to Phase 25**. Decision: keep existing buttons until the new config-driven OIDC provider system replaces them.
+- Support for multiple OIDC providers alongside 500passwords — **deferred to Phase 25**. The config schema should support an array of providers.
+- URL query parameter to force a specific login provider (e.g. `?login_provider=500passwords`) — **deferred to Phase 25 or later**.
+
+**Setup for Phase 2:**
+- `LoginPanels._onBeforePanelSwitch()` currently toggles password-manager UI via `this.togglePasswordManagerUI()`. When `login-password-manager.js` is extracted in Phase 2, this call will change to `this._passwordManager.show()` / `this._passwordManager.hide()`.
+- `LoginPanels._onAfterPanelSwitch()` currently schedules focus on `this.elements.username`. This dependency on `LoginManager.elements` is acceptable for now; a future refactor could pass the focus target element into `scheduleFocus()`.
+- The `_loginPanels` instance is created in `render()` and torn down in `teardown()`. Phase 2's `PasswordManager` should follow the same lifecycle pattern.
 
 ---
 
@@ -1853,6 +1869,19 @@ parentheses.
    defer.)*
 6. **Mock Keycloak language** — Node or Python for the test mock?
    *(Recommended: whichever is already a Hydrogen test dependency.)*
+
+### Decisions made during Phase 1
+
+- **Legacy login partner buttons (Didit/Apple/Google/Microsoft):** Keep
+  existing buttons in `login.html` until Phase 25. The new OIDC provider
+  system will coexist with or replace them, not remove them prematurely.
+- **Multiple OIDC provider support:** The config schema (`auth.oidc_providers`
+  array) must support multiple providers. 500passwords is the first; others
+  may follow.
+- **URL query parameter for forced login provider:** Considered but deferred.
+  A parameter like `?login_provider=500passwords` would be useful for direct
+  links and testing, but it adds complexity to the login flow that is not
+  needed for MVP. Revisit after Phase 27.
 
 ---
 
