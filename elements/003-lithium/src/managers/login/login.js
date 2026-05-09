@@ -13,18 +13,11 @@ import { getTransitionDuration } from '../../core/transitions.js';
 import { LoginPanels } from './login-panels.js';
 import { hasLookup } from '../../shared/lookups.js';
 import { log, logGroup, getRawLog, Subsystems, Status } from '../../core/log.js';
-import { formatLogText, getFlagSvg, getPasswordManagerSelectors } from '../../shared/log-formatter.js';
+import { formatLogText } from '../../shared/log-formatter.js';
+import { PasswordManager } from './login-password-manager.js';
+import { LanguagePanel } from './login-language-panel.js';
 import { getTip } from '../../core/tooltip-api.js';
 import { scrollbarManager } from '../../core/scrollbar-manager.js';
-import {
-  getBestGuessLocale,
-  getLanguageData,
-  getCountryCode,
-  saveLocalePreference,
-  getSavedLocale,
-  supportedLocales,
-} from '../../shared/languages.js';
-import * as Flags from 'country-flag-icons/string/3x2';
 import '../../styles/vendor-tabulator.css';
 import './login.css';
 
@@ -45,12 +38,8 @@ export default class LoginManager {
     this.lookupListeners = [];
     this._startupComplete = false; // Tracks whether background startup has finished
     this._loginPanels = null; // LoginPanels instance (initialized in render)
-    
-    // Language panel state
-    this._languageTable = null;
-    this._languageData = [];
-    this._currentLocale = null;
-    this._bestGuessLocale = null;
+    this._passwordManager = null; // PasswordManager instance (initialized in render)
+    this._languagePanel = null; // LanguagePanel instance (initialized in render)
   }
 
   /**
@@ -336,6 +325,26 @@ export default class LoginManager {
       languageCurrentCode: this.container.querySelector('#language-current-code'),
     };
 
+    // Initialize PasswordManager
+    this._passwordManager = new PasswordManager();
+
+    // Initialize LanguagePanel
+    this._languagePanel = new LanguagePanel({
+      elements: {
+        languageTable: this.elements.languageTable,
+        languageFilter: this.elements.languageFilter,
+        languageClearFilter: this.elements.languageClearFilter,
+        languageCurrentBtn: this.elements.languageCurrentBtn,
+        languageCurrentFlag: this.elements.languageCurrentFlag,
+        languageCurrentCode: this.elements.languageCurrentCode,
+      },
+      onLocaleSelected: (locale, previousLocale) => {
+        // Locale selection is handled entirely within LanguagePanel;
+        // this callback exists for future extension if LoginManager
+        // needs to react to locale changes.
+      },
+    });
+
     // Initialize LoginPanels with callbacks for panel-specific logic
     this._loginPanels = new LoginPanels({
       panels: {
@@ -455,16 +464,16 @@ export default class LoginManager {
       this.switchPanel('help');
     });
 
-    // Language filter input
+    // Language filter input (delegated to LanguagePanel)
     this.elements.languageFilter?.addEventListener('input', (e) => {
-      this.filterLanguageTable(e.target.value);
+      this._languagePanel?.filter(e.target.value);
     });
 
     // Language clear filter button
     this.elements.languageClearFilter?.addEventListener('click', () => {
       if (this.elements.languageFilter) {
         this.elements.languageFilter.value = '';
-        this.filterLanguageTable('');
+        this._languagePanel?.filter('');
         this.elements.languageFilter.focus();
       }
     });
@@ -640,133 +649,6 @@ export default class LoginManager {
   }
 
   /**
-   * Password manager UI toggle state
-   */
-  _passwordManagerObserver = null;
-
-  /**
-   * Apply suppression styles to a password manager element.
-   * @param {HTMLElement} el - Element to suppress
-   * @private
-   */
-  _suppressElement(el) {
-    el.style.setProperty('display', 'none', 'important');
-    el.style.setProperty('visibility', 'hidden', 'important');
-    el.style.setProperty('opacity', '0', 'important');
-    el.style.setProperty('pointer-events', 'none', 'important');
-  }
-
-  /**
-   * Suppress elements matching a selector.
-   * @param {string} selector - CSS selector
-   * @private
-   */
-  _suppressSelector(selector) {
-    try {
-      document.querySelectorAll(selector).forEach(el => this._suppressElement(el));
-    } catch (e) {
-      // Invalid selector, skip
-    }
-  }
-
-  /**
-   * Suppress all password manager elements and reconnect observer.
-   * @param {string[]} selectors - Array of CSS selectors
-   * @private
-   */
-  _suppressAndReconnect(selectors) {
-    // Temporarily disconnect the observer while we mutate styles so that our
-    // own setAttribute calls do not re-trigger this callback (infinite loop).
-    // We immediately reconnect after the sweep so new 1Password injections
-    // are still caught.
-    this._passwordManagerObserver?.disconnect();
-    
-    try {
-      for (const selector of selectors) {
-        this._suppressSelector(selector);
-      }
-    } finally {
-      // Reconnect so future 1Password re-injections/re-shows are caught.
-      // Guard against calling observe() after teardown (observer may be null).
-      if (this._passwordManagerObserver) {
-        this._passwordManagerObserver.observe(document.body, {
-          childList: true,
-          subtree: true,
-          attributes: true,
-          attributeFilter: ['style', 'class'],
-        });
-      }
-    }
-  }
-
-  /**
-   * Start password manager UI suppression with MutationObserver.
-   * @param {string[]} selectors - Array of CSS selectors
-   * @private
-   */
-  _startSuppression(selectors) {
-    const suppressElements = () => this._suppressAndReconnect(selectors);
-
-    // Create the observer (initially disconnected; suppressElements reconnects it).
-    this._passwordManagerObserver = new MutationObserver(suppressElements);
-
-    // Run the initial suppression sweep, which also starts the observer.
-    suppressElements();
-
-    // Schedule a follow-up sweep on the next animation frame so we get the
-    // last word after any 1Password re-assertion in the same microtask flush.
-    requestAnimationFrame(suppressElements);
-  }
-
-  /**
-   * Stop password manager UI suppression.
-   * @private
-   */
-  _stopSuppression() {
-    document.body.classList.remove('hide-password-manager-ui');
-    this._passwordManagerObserver?.disconnect();
-    this._passwordManagerObserver = null;
-  }
-
-  /**
-   * Toggle password manager UI visibility
-   * Uses body class approach with MutationObserver for robustness
-   * @param {boolean} hide - True to hide, false to show
-   */
-  togglePasswordManagerUI(hide) {
-    const selectors = getPasswordManagerSelectors();
-    
-    if (hide) {
-      this._startSuppression(selectors);
-    } else {
-      this._stopSuppression();
-    }
-  }
-
-  /**
-   * Remove 1Password (and other password manager) injected elements from the DOM.
-   * Called after a successful login — at that point we want the elements gone
-   * entirely, not just hidden, so they do not linger in the post-login view.
-   */
-  removePasswordManagerElements() {
-    const selectors = getPasswordManagerSelectors();
-    for (const selector of selectors) {
-      try {
-        document.querySelectorAll(selector).forEach(el => el.remove());
-      } catch (e) {
-        // Invalid selector, skip
-      }
-    }
-  }
-
-  /**
-   * Hide password manager injected UI elements (legacy method, kept for compatibility)
-   */
-  hidePasswordManagerElements() {
-    this.togglePasswordManagerUI(true);
-  }
-
-  /**
    * Switch between panels with fade transition
    * Delegates to LoginPanels; keeps panel-specific logic here.
    * @param {string} targetPanel - 'login', 'theme', 'logs', 'language', 'help'
@@ -786,9 +668,9 @@ export default class LoginManager {
   _onBeforePanelSwitch(targetPanel) {
     // Hide password manager UI when leaving login panel, show when returning
     if (targetPanel === 'login') {
-      this.togglePasswordManagerUI(false);
+      this._passwordManager?.show();
     } else {
-      this.togglePasswordManagerUI(true);
+      this._passwordManager?.hide();
     }
 
     // If switching to logs panel, populate it with action logs
@@ -796,22 +678,11 @@ export default class LoginManager {
       this.populateLogsPanel();
     }
 
-    // If switching to language panel, initialize the language table
+    // If switching to language panel, show it; otherwise hide it
     if (targetPanel === 'language') {
-      this.initializeLanguagePanel();
-      // Add keyboard navigation listener
-      this._languageKeydownHandler = (e) => this._handleLanguageTableKeydown(e);
-      document.addEventListener('keydown', this._languageKeydownHandler);
+      this._languagePanel?.show();
     } else {
-      // Reset language filter when leaving language panel
-      if (this.elements.languageFilter) {
-        this.elements.languageFilter.value = '';
-      }
-      // Remove keyboard navigation listener
-      if (this._languageKeydownHandler) {
-        document.removeEventListener('keydown', this._languageKeydownHandler);
-        this._languageKeydownHandler = null;
-      }
+      this._languagePanel?.hide();
     }
   }
 
@@ -880,145 +751,6 @@ export default class LoginManager {
       console.warn('[LoginManager] CodeMirror failed to load, using plain text:', error);
       logViewer.innerHTML = `<pre class="log-content">${logText}</pre>`;
     }
-  }
-
-  /**
-   * Get SVG flag HTML for a country code
-   * @param {string} countryCode - ISO 3166-1 alpha-2 country code
-   * @returns {string} SVG HTML string
-   */
-  _getFlagSvg(countryCode) {
-    return getFlagSvg(countryCode);
-  }
-
-  /**
-   * Initialize the language panel with Tabulator table
-   */
-  async initializeLanguagePanel() {
-    // If table already exists, just refresh the data and selection
-    if (this._languageTable) {
-      this._refreshLanguageTableSelection();
-      this._focusLanguageTable();
-      return;
-    }
-
-    const tableContainer = this.elements.languageTable;
-    if (!tableContainer) {
-      console.warn('[LoginManager] Language table container not found');
-      return;
-    }
-
-    try {
-      await this._setupLanguageData();
-      this._updateCurrentLocaleButton();
-      await this._createLanguageTable(tableContainer);
-      this._setupLanguageTableEvents();
-      this._finalizeLanguageTableSetup();
-      
-      log(LOGIN, Status.INFO, `Language panel initialized. Best guess: ${this._bestGuessLocale}, Current: ${this._currentLocale}`);
-    } catch (error) {
-      this._handleLanguageTableError(error, tableContainer);
-    }
-  }
-
-  /**
-   * Set up language data and determine current locale
-   * @private
-   */
-  async _setupLanguageData() {
-    this._languageData = getLanguageData();
-
-    const savedLocale = getSavedLocale();
-    if (savedLocale && supportedLocales.includes(savedLocale)) {
-      this._currentLocale = savedLocale;
-      this._bestGuessLocale = savedLocale;
-    } else {
-      const ipinfoToken = getConfigValue('services.ipinfo_token', null);
-      this._bestGuessLocale = await getBestGuessLocale({ ipinfoToken });
-      this._currentLocale = this._bestGuessLocale;
-    }
-  }
-
-  /**
-   * Create the Tabulator language table
-   * @param {HTMLElement} tableContainer - Container element
-   * @private
-   */
-  async _createLanguageTable(tableContainer) {
-    const TabulatorModule = await import('tabulator-tables');
-    const Tabulator = TabulatorModule.TabulatorFull;
-    
-    if (typeof Tabulator !== 'function') {
-      console.error('[LoginManager] Tabulator import failed. Module structure:', Object.keys(TabulatorModule));
-      throw new Error(`Tabulator is not a constructor. Type: ${typeof Tabulator}`);
-    }
-
-    const sortElement = '<span class="lang-sort-icons"><span class="lang-sort-asc">▲</span><span class="lang-sort-desc">▼</span></span>';
-
-    this._languageTable = new Tabulator(tableContainer, {
-      data: this._languageData,
-      layout: 'fitColumns',
-      height: '100%',
-      selectable: 1,
-      resizableColumns: false,
-      movableColumns: true,
-      headerSortTristate: true,
-      headerSortElement: sortElement,
-      initialSort: [
-        { column: 'language', dir: 'asc' },
-        { column: 'country', dir: 'asc' },
-      ],
-      columns: this._getLanguageTableColumns(),
-    });
-  }
-
-  /**
-   * Get column definitions for language table
-   * @returns {Array} Column definitions
-   * @private
-   */
-  _getLanguageTableColumns() {
-    return [
-      {
-        title: '',
-        field: 'countryCode',
-        width: 50,
-        frozen: true,
-        hozAlign: 'center',
-        vertAlign: 'middle',
-        cssClass: 'language-flag-cell',
-        headerSort: false,
-        resizable: false,
-        formatter: (cell) => this._getFlagSvg(cell.getValue()),
-      },
-      {
-        title: 'Language',
-        field: 'language',
-        widthGrow: 2,
-        hozAlign: 'left',
-        vertAlign: 'middle',
-        headerSort: true,
-        resizable: false,
-      },
-      {
-        title: 'Country',
-        field: 'country',
-        widthGrow: 2,
-        hozAlign: 'left',
-        vertAlign: 'middle',
-        headerSort: true,
-        resizable: false,
-      },
-      {
-        title: 'Locale',
-        field: 'locale',
-        width: 80,
-        hozAlign: 'left',
-        vertAlign: 'middle',
-        headerSort: true,
-        resizable: false,
-      },
-    ];
   }
 
   /**
@@ -1424,7 +1156,7 @@ export default class LoginManager {
    */
   async show(skipUsernameFocus = false) {
     // Enable password manager UI when showing login
-    this.togglePasswordManagerUI(false);
+    this._passwordManager?.show();
     
     if (this.elements.loginPanel) {
       // Step 1: Set display to block (but opacity is still 0 from CSS)
@@ -1462,13 +1194,13 @@ export default class LoginManager {
       // Hide password manager UI elements before fading out to main.
       // This adds the body class, starts the MutationObserver, and sweeps
       // any existing elements so they disappear immediately.
-      this.togglePasswordManagerUI(true);
+      this._passwordManager?.hide();
 
       // Physically remove all injected password manager elements from the DOM.
       // This ensures they do not linger in the post-login view as invisible orphan
       // nodes (e.g. 1Password's live-region divs) and that 1Password cannot simply
       // re-show them by attribute mutation without re-inserting them first.
-      this.removePasswordManagerElements();
+      this._passwordManager?.removeAll();
       
       // Fade out the current panel only
       // Let the app handle the transition to main manager
@@ -1704,17 +1436,9 @@ export default class LoginManager {
       this._logEditor = null;
     }
 
-    // Clean up Tabulator table if present
-    if (this._languageTable) {
-      this._languageTable.destroy();
-      this._languageTable = null;
-    }
-
-    // Clean up language panel keyboard handler
-    if (this._languageKeydownHandler) {
-      document.removeEventListener('keydown', this._languageKeydownHandler);
-      this._languageKeydownHandler = null;
-    }
+    // Teardown LanguagePanel
+    this._languagePanel?.destroy();
+    this._languagePanel = null;
 
     // Cancel any pending post-login-return focus timer
     this._loginPanels?.cancelPendingFocus();
@@ -1723,10 +1447,8 @@ export default class LoginManager {
     this.removeKeyboardShortcuts();
 
     // Clean up password manager UI observer and remove any lingering injected elements
-    this._passwordManagerObserver?.disconnect();
-    this._passwordManagerObserver = null;
-    document.body.classList.remove('hide-password-manager-ui');
-    this.removePasswordManagerElements();
+    this._passwordManager?.destroy();
+    this._passwordManager = null;
 
     // Remove lookup event listeners
     this.lookupListeners.forEach(unsubscribe => unsubscribe());
@@ -1740,8 +1462,5 @@ export default class LoginManager {
     this.elements = {};
     this.isPasswordVisible = false;
     this.isCapsLockOn = false;
-    this._languageData = [];
-    this._currentLocale = null;
-    this._bestGuessLocale = null;
   }
 }
