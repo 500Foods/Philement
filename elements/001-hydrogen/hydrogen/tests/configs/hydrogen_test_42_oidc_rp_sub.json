@@ -1,0 +1,76 @@
+{
+    "Server": {
+        "ServerName": "hydrogen-test-42-oidc-rp-sub",
+        "PayloadKey": "${env.PAYLOAD_KEY}"
+    },
+    "WebServer": {
+        "EnableIPv4": true,
+        "EnableIPv6": false,
+        "Port": 5245
+    },
+    "API": {
+        "Enabled": true,
+        "Prefix": "/api",
+        "JWTSecret": "${env.HYDROGEN_DEMO_JWT_KEY}"
+    },
+    "Databases": {
+        "Connections": [
+            {
+                "Name": "Acuranzo",
+                "Engine": "sqlite",
+                "Enabled": true,
+                "Database": "tests/artifacts/database/sqlite/hydrodemo.sqlite",
+                "StmtCache": 100,
+                "Bootstrap": "SELECT query_id id, query_ref ref, query_status_a27 status, query_type_a28 type, query_dialect_a30 engine, query_queue_a58 queue, query_timeout timeout, name, code query FROM queries WHERE (query_status_a27 = 1) ORDER BY query_type_a28 desc;",
+                "AutoMigration": false,
+                "TestMigration": false,
+                "Parameters": {
+                    "LOGINRETRYWINDOW": 15,
+                    "IPADDRESS": "127.0.0.1"
+                },
+                "Schema": "",
+                "Migrations": "PAYLOAD:acuranzo",
+                "Queues": {
+                    "Slow": {
+                        "start": 2
+                    }
+                }
+            }
+        ]
+    },
+    "OIDC_RP": {
+        "Enabled": true,
+        "Database": "Acuranzo",
+        "Providers": [
+            {
+                "Name": "test-mock",
+                "Label": "Mock Keycloak",
+                "Issuer": "http://localhost:7042/realms/test",
+                "ClientId": "lithium-web",
+                "ClientSecret": "test-secret-not-validated-by-mock",
+                "RedirectUri": "http://localhost:5245/api/auth/oidc/callback",
+                "Scopes": "openid profile email",
+                "SystemApiKey": "${env.HYDROGEN_DEMO_API_KEY}",
+                "VerifySsl": false,
+                "AllowedAlgorithms": ["RS256"],
+                "DiscoveryCacheSeconds": 60,
+                "JwksCacheSeconds": 60,
+                "StateTtlSeconds": 600,
+                "HandoffTtlSeconds": 60,
+                "BindHandoffToIp": false,
+                "AccountLinking": {
+                    "Strategy": "match_sub_only",
+                    "RequireEmailVerified": false,
+                    "ProvisionDefaults": {
+                        "Enabled": false,
+                        "Authorized": false,
+                        "DefaultRoleNames": []
+                    }
+                },
+                "RoleMapping": {
+                    "Source": "database"
+                }
+            }
+        ]
+    }
+}

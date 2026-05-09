@@ -2,7 +2,7 @@
 
 # Test: OIDC Relying Party — End-to-End Coverage
 # Drives the OIDC RP endpoints through every gate the plan defines
-# from Phase 6 through Phase 13:
+# from Phase 6 through Phase 19:
 #
 #   - Disabled feature gate (Phase 6): all three endpoints respond
 #     503 {"error":"oidc_disabled"} when OIDC_RP.Enabled = false.
@@ -11,6 +11,9 @@
 #   - Mock IdP /token endpoint (Phases 11/12).
 #   - /oidc/start redirect to IdP with PKCE+state (Phase 10).
 #   - /oidc/handoff exchange via debug-only injector (Phase 13).
+#   - /oidc/callback full chain with stub linker (Phase 14).
+#   - match_sub_only linker: hit/miss paths (Phase 18).
+#   - match_email_only linker: hit/miss/ambiguous paths (Phase 19).
 #
 # The endpoint helper functions, mock-Keycloak lifecycle, and per-
 # phase sub-test functions live in tests/lib/oidc_rp_helpers.sh; this
@@ -20,6 +23,8 @@
 # (Helper functions live in tests/lib/oidc_rp_helpers.sh)
 
 # CHANGELOG
+# 1.8.0 - 2026-05-09 - Phase 19: match_email_only linker hit/miss/ambiguous sub-tests
+# 1.7.0 - 2026-05-09 - Phase 18: match_sub_only linker hit/miss sub-tests
 # 1.6.0 - 2026-05-09 - Phase 14: /oidc/callback end-to-end with stub linker
 # 1.5.0 - 2026-05-09 - Phase 13: real /oidc/handoff exchange + debug-inject sub-tests
 # 1.4.0 - 2026-05-09 - Phase 12: mock signs real RS256 JWTs; JWKS has real RSA keys; id_token shape sub-test
@@ -35,7 +40,7 @@ TEST_NAME="OIDC RP"
 TEST_ABBR="OID"
 TEST_NUMBER="42"
 TEST_COUNTER=0
-TEST_VERSION="1.6.0"
+TEST_VERSION="1.8.0"
 
 # Phase 9: mock Keycloak port. Picked outside the typical Hydrogen
 # port range (5000s) and the test config's WebServer port (5242). If
@@ -52,12 +57,16 @@ setup_test_environment
 CONFIG_PATH="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_oidc_rp.json"
 CONFIG_PATH_ENABLED="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_oidc_rp_enabled.json"
 CONFIG_PATH_FULL="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_oidc_rp_full.json"
+CONFIG_PATH_SUB="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_oidc_rp_sub.json"
+CONFIG_PATH_EMAIL="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_oidc_rp_email.json"
 MOCK_KC_SCRIPT="${SCRIPT_DIR}/lib/mock_keycloak/server.js"
 
 # shellcheck source=tests/lib/oidc_rp_helpers.sh # Phase 13 split for code-size cap
 source "$(dirname "${BASH_SOURCE[0]}")/lib/oidc_rp_helpers.sh"
 # shellcheck source=tests/lib/oidc_rp_helpers_callback.sh # Phase 14 callback helpers
 source "$(dirname "${BASH_SOURCE[0]}")/lib/oidc_rp_helpers_callback.sh"
+# shellcheck source=tests/lib/oidc_rp_helpers_link.sh # Phase 18 account-linker helpers
+source "$(dirname "${BASH_SOURCE[0]}")/lib/oidc_rp_helpers_link.sh"
 
 # Trap to make sure we do not leak a node process if the test script
 # fails between mock start and stop. The functions live in
@@ -384,6 +393,240 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     elif [[ "${MOCK_KC_STARTED:-0}" -eq 1 ]]; then
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
             "Skipping Phase 14 happy-path: missing demo SQLite db, HYDROGEN_DEMO_API_KEY, or jq"
+    fi
+
+    # ---- Phase 18: match_sub_only linker hit/miss sub-tests ----
+    # Spin up a fourth Hydrogen instance with the sub-only config
+    # (strategy="match_sub_only"). Uses the same SQLite demo db as Phase 14.
+    # Skipped when the prerequisites are absent (same guards as Phase 14).
+    if [[ "${EXIT_CODE}" -eq 0 ]] \
+        && [[ "${MOCK_KC_STARTED:-0}" -eq 1 ]] \
+        && [[ -n "${HYDROGEN_DEMO_API_KEY:-}" ]] \
+        && [[ -f "${PROJECT_DIR}/tests/artifacts/database/sqlite/hydrodemo.sqlite" ]] \
+        && command -v jq >/dev/null 2>&1 \
+        && command -v sqlite3 >/dev/null 2>&1; then
+
+        # Phase 18 seeds required rows (account_oidc_identities table +
+        # QueryRefs #080 and #084) directly into the demo DB via sqlite3
+        # in seed_oidc_identity, so AutoMigration is not needed. The seed
+        # helper uses INSERT OR IGNORE so it is idempotent.
+        DEMO_SQLITE="${PROJECT_DIR}/tests/artifacts/database/sqlite/hydrodemo.sqlite"
+
+        # Issuer must match the "Issuer" field in hydrogen_test_42_oidc_rp_sub.json.
+        MOCK_ISSUER="http://localhost:${MOCK_KC_PORT}/realms/test"
+        # Subject value that the mock Keycloak will embed in the id_token
+        # (see mock_keycloak/server.js line ~291: `sub: 'mock-sub-12345'`).
+        # We seed this exact value so the match_sub_only linker finds the row.
+        MOCK_SUBJECT="mock-sub-12345"
+
+        print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate sub-config (match_sub_only)"
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
+        if validate_config_file "${CONFIG_PATH_SUB}"; then
+            SUB_PORT=$(get_webserver_port "${CONFIG_PATH_SUB}")
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Sub config will use port: ${SUB_PORT}"
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Sub-config validated"
+            PASS_COUNT=$(( PASS_COUNT + 1 ))
+
+            print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Start Hydrogen Server (sub config, match_sub_only)"
+            SUB_HYDROGEN_PID=""
+            SUB_PID_VAR="SUB_HYDROGEN_PID_$$"
+            SUB_BASE_URL="http://localhost:${SUB_PORT}"
+            # Capture the current log end so the migration-wait below
+            # only searches log lines added by THIS Hydrogen instance.
+            SUB_LOG_OFFSET=$(( $(wc -l < "${SERVER_LOG}" 2>/dev/null || echo 0) + 1 ))
+            # shellcheck disable=SC2310 # We want to continue even if the test fails
+            if start_hydrogen_with_pid "${CONFIG_PATH_SUB}" "${SERVER_LOG}" 30 "${HYDROGEN_BIN}" "${SUB_PID_VAR}"; then
+                SUB_HYDROGEN_PID=$(eval "echo \$${SUB_PID_VAR}")
+                if [[ -n "${SUB_HYDROGEN_PID}" ]] && ps -p "${SUB_HYDROGEN_PID}" > /dev/null 2>&1; then
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Server started with PID ${SUB_HYDROGEN_PID}"
+                    PASS_COUNT=$(( PASS_COUNT + 1 ))
+                else
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Sub-config server PID missing after start"
+                    EXIT_CODE=1
+                fi
+            else
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to start Hydrogen with sub config"
+                EXIT_CODE=1
+            fi
+
+            if [[ "${EXIT_CODE}" -eq 0 ]]; then
+                # shellcheck disable=SC2310 # We want to continue even if the test fails
+                if ! wait_for_server_ready "${SUB_BASE_URL}"; then
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Sub-config server failed to become ready"
+                    EXIT_CODE=1
+                fi
+            fi
+
+            if [[ "${EXIT_CODE}" -eq 0 ]]; then
+                # Wait for QTC bootstrap. AutoMigration is disabled (Phase 18
+                # seeds rows directly), so we just wait for "Migration Current:"
+                # which Hydrogen logs after the bootstrap query populates the QTC
+                # from the existing queries table. Use SUB_LOG_OFFSET to avoid
+                # matching migration log lines from earlier Hydrogen instances.
+                MIGRATION_NOW=$(date +%s)
+                MIGRATION_DEADLINE=$(( MIGRATION_NOW + 30 ))
+                while true; do
+                    MIGRATION_NOW=$(date +%s)
+                    if [[ ${MIGRATION_NOW} -ge ${MIGRATION_DEADLINE} ]]; then
+                        break
+                    fi
+                    # shellcheck disable=SC2310 # Polling on success/timeout — non-zero grep is "not yet ready"
+                    if tail -n +"${SUB_LOG_OFFSET}" "${SERVER_LOG}" 2>/dev/null \
+                        | "${GREP}" -q -E "Migration completed in|Migration Current:"; then
+                        break
+                    fi
+                    sleep 0.2
+                done
+                sleep 1
+
+                # Phase 18 happy path: pre-seed identity, drive chain, get JWT.
+                # shellcheck disable=SC2310 # We want to continue even if the test fails
+                test_oidc_link_match_sub_only_hit \
+                    "${SUB_BASE_URL}" "${DEMO_SQLITE}" "${MOCK_ISSUER}" "${MOCK_SUBJECT}"
+
+                # Phase 18 miss path: no identity row → no_account redirect.
+                # shellcheck disable=SC2310 # We want to continue even if the test fails
+                test_oidc_link_match_sub_only_miss \
+                    "${SUB_BASE_URL}" "${DEMO_SQLITE}" "${MOCK_ISSUER}" "${MOCK_SUBJECT}"
+            fi
+
+            # Shutdown sub-config Hydrogen.
+            if [[ -n "${SUB_HYDROGEN_PID:-}" ]] && ps -p "${SUB_HYDROGEN_PID}" > /dev/null 2>&1; then
+                print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Stop Hydrogen Server (sub config)"
+                # shellcheck disable=SC2310 # We want to continue even if the test fails
+                if stop_hydrogen "${SUB_HYDROGEN_PID}" "${SERVER_LOG}" 10 5 "${RESULTS_DIR}"; then
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Sub-config server stopped cleanly"
+                    PASS_COUNT=$(( PASS_COUNT + 1 ))
+                else
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Sub-config server shutdown had issues"
+                    EXIT_CODE=1
+                fi
+                # shellcheck disable=SC2310 # Diagnostic-only; non-zero result must not abort the test
+                check_time_wait_sockets "${SUB_PORT}" || true
+            fi
+            # No DB copy to clean up — Phase 18 uses the shared demo DB
+            # with idempotent INSERT OR IGNORE for the seeded rows.
+        else
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Sub-config validation failed"
+            EXIT_CODE=1
+        fi
+    elif [[ "${MOCK_KC_STARTED:-0}" -eq 1 ]]; then
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
+            "Skipping Phase 18 sub-tests: missing demo SQLite db, HYDROGEN_DEMO_API_KEY, sqlite3, or jq"
+    fi
+
+    # ---- Phase 19: match_email_only linker hit/miss/ambiguous sub-tests ----
+    # Spin up a fifth Hydrogen instance with the email-only config
+    # (strategy="match_email_only"). Uses the same SQLite demo db.
+    # Skipped when the prerequisites are absent (same guards as Phase 18).
+    if [[ "${EXIT_CODE}" -eq 0 ]] \
+        && [[ "${MOCK_KC_STARTED:-0}" -eq 1 ]] \
+        && [[ -n "${HYDROGEN_DEMO_API_KEY:-}" ]] \
+        && [[ -f "${PROJECT_DIR}/tests/artifacts/database/sqlite/hydrodemo.sqlite" ]] \
+        && command -v jq >/dev/null 2>&1 \
+        && command -v sqlite3 >/dev/null 2>&1; then
+
+        DEMO_SQLITE="${PROJECT_DIR}/tests/artifacts/database/sqlite/hydrodemo.sqlite"
+        MOCK_ISSUER="http://localhost:${MOCK_KC_PORT}/realms/test"
+        # Subject emitted by the mock IdP (see mock_keycloak/server.js).
+        MOCK_SUBJECT="mock-sub-12345"
+        # Email emitted by the mock IdP.
+        MOCK_EMAIL="mockuser@example.com"
+
+        print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate email-config (match_email_only)"
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
+        if validate_config_file "${CONFIG_PATH_EMAIL}"; then
+            EMAIL_PORT=$(get_webserver_port "${CONFIG_PATH_EMAIL}")
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Email config will use port: ${EMAIL_PORT}"
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Email-config validated"
+            PASS_COUNT=$(( PASS_COUNT + 1 ))
+
+            print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Start Hydrogen Server (email config, match_email_only)"
+            EMAIL_HYDROGEN_PID=""
+            EMAIL_PID_VAR="EMAIL_HYDROGEN_PID_$$"
+            EMAIL_BASE_URL="http://localhost:${EMAIL_PORT}"
+            EMAIL_LOG_OFFSET=$(( $(wc -l < "${SERVER_LOG}" 2>/dev/null || echo 0) + 1 ))
+            # shellcheck disable=SC2310 # We want to continue even if the test fails
+            if start_hydrogen_with_pid "${CONFIG_PATH_EMAIL}" "${SERVER_LOG}" 30 "${HYDROGEN_BIN}" "${EMAIL_PID_VAR}"; then
+                EMAIL_HYDROGEN_PID=$(eval "echo \$${EMAIL_PID_VAR}")
+                if [[ -n "${EMAIL_HYDROGEN_PID}" ]] && ps -p "${EMAIL_HYDROGEN_PID}" > /dev/null 2>&1; then
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Server started with PID ${EMAIL_HYDROGEN_PID}"
+                    PASS_COUNT=$(( PASS_COUNT + 1 ))
+                else
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Email-config server PID missing after start"
+                    EXIT_CODE=1
+                fi
+            else
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to start Hydrogen with email config"
+                EXIT_CODE=1
+            fi
+
+            if [[ "${EXIT_CODE}" -eq 0 ]]; then
+                # shellcheck disable=SC2310 # We want to continue even if the test fails
+                if ! wait_for_server_ready "${EMAIL_BASE_URL}"; then
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Email-config server failed to become ready"
+                    EXIT_CODE=1
+                fi
+            fi
+
+            if [[ "${EXIT_CODE}" -eq 0 ]]; then
+                # Wait for QTC bootstrap (same pattern as Phase 18).
+                EMAIL_NOW=$(date +%s)
+                EMAIL_DEADLINE=$(( EMAIL_NOW + 30 ))
+                while true; do
+                    EMAIL_NOW=$(date +%s)
+                    if [[ ${EMAIL_NOW} -ge ${EMAIL_DEADLINE} ]]; then
+                        break
+                    fi
+                    # shellcheck disable=SC2310 # Polling on success/timeout
+                    if tail -n +"${EMAIL_LOG_OFFSET}" "${SERVER_LOG}" 2>/dev/null \
+                        | "${GREP}" -q -E "Migration completed in|Migration Current:"; then
+                        break
+                    fi
+                    sleep 0.2
+                done
+                sleep 1
+
+                # Phase 19 hit path: seed email, drive chain, get JWT.
+                # shellcheck disable=SC2310 # We want to continue even if the test fails
+                test_oidc_link_match_email_only_hit \
+                    "${EMAIL_BASE_URL}" "${DEMO_SQLITE}" \
+                    "${MOCK_ISSUER}" "${MOCK_SUBJECT}" "${MOCK_EMAIL}"
+
+                # Phase 19 miss path: no email contact → no_account.
+                # shellcheck disable=SC2310 # We want to continue even if the test fails
+                test_oidc_link_match_email_only_miss \
+                    "${EMAIL_BASE_URL}" "${DEMO_SQLITE}" \
+                    "${MOCK_ISSUER}" "${MOCK_SUBJECT}" "${MOCK_EMAIL}"
+
+                # Phase 19 ambiguous path: email on two accounts → email_ambiguous.
+                # shellcheck disable=SC2310 # We want to continue even if the test fails
+                test_oidc_link_match_email_only_ambiguous \
+                    "${EMAIL_BASE_URL}" "${DEMO_SQLITE}" \
+                    "${MOCK_ISSUER}" "${MOCK_SUBJECT}" "${MOCK_EMAIL}"
+            fi
+
+            # Shutdown email-config Hydrogen.
+            if [[ -n "${EMAIL_HYDROGEN_PID:-}" ]] && ps -p "${EMAIL_HYDROGEN_PID}" > /dev/null 2>&1; then
+                print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Stop Hydrogen Server (email config)"
+                # shellcheck disable=SC2310 # We want to continue even if the test fails
+                if stop_hydrogen "${EMAIL_HYDROGEN_PID}" "${SERVER_LOG}" 10 5 "${RESULTS_DIR}"; then
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Email-config server stopped cleanly"
+                    PASS_COUNT=$(( PASS_COUNT + 1 ))
+                else
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Email-config server shutdown had issues"
+                    EXIT_CODE=1
+                fi
+                # shellcheck disable=SC2310 # Diagnostic-only; non-zero result must not abort the test
+                check_time_wait_sockets "${EMAIL_PORT}" || true
+            fi
+        else
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Email-config validation failed"
+            EXIT_CODE=1
+        fi
+    elif [[ "${MOCK_KC_STARTED:-0}" -eq 1 ]]; then
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
+            "Skipping Phase 19 sub-tests: missing demo SQLite db, HYDROGEN_DEMO_API_KEY, sqlite3, or jq"
     fi
 
     # ---- Stop the mock now that all dependent tests are done ----
