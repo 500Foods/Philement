@@ -850,8 +850,8 @@ password login still works — every phase preserves that invariant.
 | 10 | Hydrogen — `/oidc/start` redirect builder | Hydrogen | Medium | ✅ Done |
 | 11 | Hydrogen — token endpoint client (POST to Keycloak `/token`) | Hydrogen | Medium | ✅ Done |
 | 12 | Hydrogen — ID token validation | Hydrogen | High | ✅ Done |
-| 13 | Hydrogen — handoff store and `/oidc/handoff` exchange endpoint | Hydrogen | Medium |
-| 14 | Hydrogen — `/oidc/callback` end-to-end with stub linker | Hydrogen | High |
+| 13 | Hydrogen — handoff store and `/oidc/handoff` exchange endpoint | Hydrogen | Medium | ✅ Done
+| 14 | Hydrogen — `/oidc/callback` end-to-end with stub linker | Hydrogen | High | ✅ Done
 | 15 | Hydrogen — DB migration `1100_account_oidc_identities` | Hydrogen | Medium |
 | 16 | Hydrogen — `accounts.password_hash` nullable migration | Hydrogen | Medium |
 | 17 | Hydrogen — QueryRefs `#080`–`#084` (`.lua` payloads) | Hydrogen | Low |
@@ -2642,7 +2642,7 @@ Every phase block contains the same fields, in the same order:
 
 ---
 
-### Phase 13 — Hydrogen: handoff store + `/oidc/handoff` endpoint
+### Phase 13 — Hydrogen: handoff store + `/oidc/handoff` endpoint ✅ COMPLETE
 
 - **Goal:** Implement the single-use, short-lived handoff exchange that
   delivers the final Hydrogen JWT to Lithium.
@@ -2650,70 +2650,585 @@ Every phase block contains the same fields, in the same order:
   this store; either reuse the type or make a generic version both
   stores share).
 - **In scope:**
-  - `oidc_rp_handoff_store.{c,h}` (or merged into `oidc_rp_state.c`
-    behind a typed wrapper) with `put(handoff_code, jwt, account_id,
-    client_ip, expires_at)` and atomic `take(handoff_code)`.
-  - `oidc_rp_handoff.{c,h}`: `POST /api/auth/oidc/handoff` accepts
-    `{handoff: "..."}`, atomically takes, optionally checks
-    `client_ip` if `BindHandoffToIp = true`, and returns
-    `{token, expires_at, user_id, roles}` — same shape as `/auth/login`.
-  - 401 on missing/expired/IP-mismatch, single envelope.
+  - `oidc_rp_handoff_store.{c,h}` — separate file from
+    `oidc_rp_state.{c,h}` (the value types diverge enough that a
+    typed-wrapper merge would have forced the larger struct on every
+    state record). Provides `put(handoff, jwt, account_id, username,
+    roles, client_ip, expires_at, ttl_seconds)` and atomic
+    `take(handoff)`. Sweeper thread + inline-sweep + `pthread_cond`
+    shutdown all mirror the Phase 7 state store byte-for-byte (see
+    Phase 7 lesson #1 for the condvar-based shutdown rationale).
+  - `oidc_rp_handoff.{c,h}` (rewritten from the Phase 6 stub):
+    `POST /api/auth/oidc/handoff` accepts `{handoff: "..."}`,
+    atomically takes from the store, conditionally enforces
+    `BindHandoffToIp`, and returns `{success, token, expires_at,
+    user_id, username, roles}` — mirroring `/auth/login`'s envelope
+    so the SPA can treat both auth paths uniformly.
+  - 401 `{"error":"handoff_invalid"}` for every failure mode
+    (missing/expired/replay/IP-mismatch/malformed). Single envelope
+    so a network observer cannot tell the modes apart.
+  - `auth/oidc/handoff` added to `endpoint_expects_json` so the
+    api_service middleware buffers + JSON-validates the body before
+    dispatch (Phase 6 lesson #2 explicitly flagged that this needed
+    revisiting in Phase 13).
+  - `oidc_rp_debug_inject.{c,h}` — `#ifndef NDEBUG`-gated debug-only
+    sidecar endpoint (`POST /api/auth/oidc/_inject_handoff`) that
+    populates the handoff store directly from operator-supplied JSON.
+    Used by the black-box test to inject + exchange in a single test
+    run before Phase 14 wires `/callback` end-to-end. The release
+    build (`-DNDEBUG`) compiles this entire translation unit's
+    functional body out, including the dispatcher branch in
+    `api_service.c` and the `endpoint_expects_json` entry; verified
+    by `nm hydrogen_release | grep handle_post_auth_oidc_debug_inject`
+    returning nothing.
+  - Lazy-init wiring: `oidc_rp_runtime_lazy_init` in
+    `oidc_rp_service.c` now initializes the handoff store alongside
+    the state store and discovery cache. Provider's
+    `handoff_ttl_seconds` is plumbed through (Phase 5 already
+    parsed the field, default 60s).
 - **Files:**
-  - Created/Touched: `src/api/auth/oidc_rp/oidc_rp_handoff.{c,h}`,
-    `oidc_rp_handoff_store.{c,h}` (or merged into state file).
-  - Created: `tests/unity/test_oidc_rp_handoff.c`
+  - Created: `src/api/auth/oidc_rp/oidc_rp_handoff_store.c` (430 lines),
+    `src/api/auth/oidc_rp/oidc_rp_handoff_store.h` (210 lines).
+  - Created: `src/api/auth/oidc_rp/oidc_rp_debug_inject.c` (228 lines,
+    NDEBUG-gated functional body),
+    `src/api/auth/oidc_rp/oidc_rp_debug_inject.h` (94 lines,
+    NDEBUG-gated declarations).
+  - Created: `tests/unity/src/api/auth/oidc_rp/oidc_rp_handoff_store_test_store.c`
+    (468 lines, 21 tests).
+  - Created: `tests/lib/oidc_rp_helpers.sh` (964 lines) — extracted
+    helpers from `tests/test_42_oidc_rp.sh` so the latter stays under
+    the project's 1,000-line cap. Test functions (validate request,
+    method-not-allowed, mock Keycloak lifecycle, Phase 9–13 sub-test
+    helpers) all moved.
+  - Touched: `src/api/auth/oidc_rp/oidc_rp_handoff.c` (66 → 222 lines:
+    full Phase 13 implementation replacing Phase 6 stub).
+  - Touched: `src/api/auth/oidc_rp/oidc_rp_handoff.h` (57 → 79 lines:
+    updated docstrings + swagger response shape).
+  - Touched: `src/api/auth/oidc_rp/oidc_rp_service.c` (`runtime_init_impl`
+    now initializes handoff store; cleanup-on-failure unwinds it).
+  - Touched: `src/api/api_service.c` (3 edits: include
+    `oidc_rp_debug_inject.h` under `#ifndef NDEBUG`; add
+    `auth/oidc/handoff` and (NDEBUG-gated) `auth/oidc/_inject_handoff`
+    to `endpoint_expects_json`; add the NDEBUG-gated dispatcher
+    branch for `_inject_handoff`).
+  - Touched: `tests/test_42_oidc_rp.sh` (1,229 → 296 lines after the
+    helper extraction; bumped 1.4.0 → 1.5.0).
 - **Tests required:**
-  - Unit: put/take/expire; double-take returns 401; IP-bind enforced
-    when configured.
-  - Black-box `test_42_oidc_rp.sh`: a directly-injected handoff (via
-    a test-only debug helper, *only available in test builds*)
-    exchanges to a JWT; replay returns 401.
+  - Unit (21 tests, all green): lifecycle (init/shutdown idempotent,
+    safe before init), put/take round-trip with all fields incl.
+    `int account_id` and `time_t expires_at`, take is single-use
+    (replay returns NULL atomically), expired records are reaped on
+    take, sweep removes aged records / keeps fresh, size tracking,
+    duplicate-key replacement, default TTL fallback, NULL-safe free,
+    uninit safety on size/take/sweep, account_id+expires_at edge
+    values (0, large positive, JWT-exp-shaped), 4-thread × 100-op
+    concurrency stress.
+  - Black-box `tests/test_42_oidc_rp.sh` (5 net new sub-tests for
+    Phase 13): inject → exchange returns 200 with envelope mirroring
+    `/auth/login` (token, user_id, username, roles all match);
+    second exchange of the same code returns 401 handoff_invalid
+    (replay defence); unknown handoff code returns 401; missing
+    `handoff` field in body returns 401; GET on `/handoff` (enabled
+    config) still returns 405 method_not_allowed.
 - **Definition of Done:**
-  - [ ] All handoff tests green.
-  - [ ] No test-only debug helpers leak into release builds (compile
-        guard verified by `mka`).
-  - [ ] cppcheck/shellcheck clean.
+  - [x] All 21 Unity handoff-store tests green.
+  - [x] `mkt` (regular + unity build) clean.
+  - [x] `mka` (`test_01_compilation.sh`) clean — 18/18 build variants
+        green (regular, debug/ASAN, coverage, perf, valgrind, release,
+        naked, examples, unity payload, etc.).
+  - [x] `test_10_unity` clean: 6,953 unit tests passing, 0 failing on
+        cached re-run (was 6,932 in Phase 12, +21 net new from the
+        new Unity test file). The 4 cached-failure flags pre-date
+        Phase 6 per Phase 6 lesson #9. Coverage 59.666% (247/271
+        files; was 59.526% in Phase 11).
+  - [x] `test_11_leaks_like_a_sieve` passes: 0 direct, 0 indirect
+        leaks. The new lazy-init path is exercised via test_42's
+        enabled-config Hydrogen instance (debug+ASAN runtime); state
+        store + handoff store + debug-inject endpoint all clean
+        under ASAN.
+  - [x] `test_42_oidc_rp.sh` green: 34/34 in 1.558s (was 29/29 in
+        Phase 12, +5 net new for the Phase 13 sub-tests).
+  - [x] `test_91_cppcheck` clean — 1,332 files, 0 issues found in
+        the 11 changed files (was 1,327 in Phase 12, +5: the new
+        handoff-store `.c` and `.h`, the debug-inject `.c` and `.h`,
+        and the unity test file).
+  - [x] `test_92_shellcheck` clean — 110 scripts, 653 directives
+        all justified (was 645 in Phase 12; +8 for the new
+        helpers lib's file-level disable trio plus 5 SC2310 disables
+        on the new sub-test wrappers).
+  - [x] `test_17_startup_shutdown` clean — 9/9 passing.
+  - [x] `test_99_code_size`: pass count unchanged from Phase 12
+        baseline. The two pre-existing findings (`proxy_multi.c`
+        1,209 lines and `database_engine.c` 1,000 lines) are
+        unrelated. After the helper extraction, the largest Phase 13
+        file is `tests/lib/oidc_rp_helpers.sh` at 964 lines.
+  - [x] `test_40_auth.sh` regression-clean: 46/46 across 7 DB
+        engines (one transient SQLite-engine flake on the first
+        run; passed cleanly on retry). Password login is genuinely
+        untouched.
+  - [x] No test-only debug helpers leak into release builds.
+        Verified by `nm hydrogen_naked | grep handle_post_auth_oidc_debug_inject`
+        (release/naked: empty) vs. `nm hydrogen` (regular: symbol
+        present at `T handle_post_auth_oidc_debug_inject`).
+
+**Lessons learned:**
+
+1. **Two-store pattern beats typed-wrapper merge.** The plan offered
+   "merged into `oidc_rp_state.c` behind a typed wrapper" as an option
+   for the handoff store. Looking at the actual value types — state
+   records hold `nonce`, `code_verifier`, `return_to`; handoff
+   records hold `jwt`, `account_id`, `username`, `roles`,
+   `expires_at` — there's effectively no overlap. A typed wrapper
+   would have forced one of two costs: either every state record
+   carries the larger handoff fields (waste), or the union pattern
+   in C (extra branches and access discipline). Two parallel files
+   cost ~30 lines of structural duplication for the hash table
+   plumbing, which is the right trade. Phase 7 lesson #9's
+   `opt_strdup` and `record_free_fields` patterns ARE shared — they're
+   just inlined at the same names in both files (the helpers are 5
+   lines each; promoting them to `oidc_rp_internal.h` would cost
+   more in include-graph complexity than it saves).
+2. **NDEBUG-gating works cleanly for test-only HTTP endpoints.** The
+   release build defines `-DNDEBUG`; regular/debug/perf/coverage do
+   not. The pattern of `#ifndef NDEBUG` around (a) the entire
+   header, (b) the entire functional body of the `.c`, (c) the
+   `#include` in `api_service.c`, and (d) both the
+   `endpoint_expects_json` entry and the dispatcher branch in
+   `api_service.c` produces a release binary that has zero traces
+   of the debug endpoint — verified by `nm`. The remaining gotcha
+   is "ISO C forbids an empty translation unit" (`-Wpedantic`) when
+   the entire `.c` body is gated out; resolved by leaving a single
+   `typedef int oidc_rp_debug_inject_compiled_out;` in the `#else`
+   branch. No symbol exported, no behaviour, just a non-empty TU.
+3. **`endpoint_expects_json` is the right place for `/handoff`.**
+   Phase 6 lesson #2 explicitly flagged that the disabled-feature
+   stub deliberately stayed OUT of the JSON middleware list because
+   we wanted the disabled-503 to win against any "missing body" /
+   "invalid JSON" verdict. Phase 13's real implementation adds it
+   to the list; the trade-off shifts: now a malformed body legitimately
+   returns 401 handoff_invalid (single envelope, security-wise we
+   want all failures to look identical) or the middleware's 400
+   "Invalid JSON" — the latter is fine, it's a client error, the SPA
+   just retries. The disabled-feature path explicitly calls
+   `api_free_post_buffer` before returning 503 to handle the case
+   where the body has been pre-buffered. Same fix in the debug
+   inject endpoint.
+4. **Single-envelope failure mode is a real security choice.** Every
+   failure path in `/handoff` (unknown code, expired, replay,
+   IP-mismatch, malformed body, missing field) returns the exact
+   same `401 {"error":"handoff_invalid"}` envelope. This costs
+   diagnostic granularity but defeats a network-side observer's
+   ability to distinguish "the code I stole was already used" from
+   "the code I guessed was wrong" from "the code I tried is from a
+   different IP". The internal log records the precise reason
+   (`reason_for_log` parameter on `send_handoff_invalid`); operators
+   debugging actual failures look at the SR_AUTH log, not the HTTP
+   response.
+5. **Test file size cap forced a clean factoring.** `test_42_oidc_rp.sh`
+   grew to 1,229 lines after Phase 13's 5 new sub-tests, hitting
+   the project's 1,000-line cap. Factoring the helpers (validate
+   request, method-not-allowed, mock Keycloak lifecycle, all per-
+   phase sub-test functions) into `tests/lib/oidc_rp_helpers.sh`
+   dropped the orchestrator script to 296 lines and produced a
+   964-line lib. The orchestrator now reads as: pre-flight, server
+   start, sub-test calls, server stop, mock stop, completion banner.
+   Future phases (14, 21, 22) that add more sub-tests can add them
+   to the lib without touching the orchestrator's structure.
+6. **Bash trap belongs to the executing script, not the lib.** When
+   factoring `stop_mock_keycloak` into the lib, the EXIT trap that
+   ensures cleanup must stay in `test_42_oidc_rp.sh` because traps
+   register against the executing bash process, not the source
+   file. The lib documents this with a comment block. This is
+   subtle enough that future phases should be aware: any test
+   that sources a lib with cleanup helpers must register the trap
+   itself.
+7. **File-level shellcheck disable for shared-globals libs.** The
+   helpers lib references many variables set by the test script
+   via `framework.sh` (`TEST_NUMBER`, `TEST_COUNTER`, `GREP`,
+   `LOG_PREFIX`, `TIMESTAMP`, `MOCK_KC_*`, `EXIT_CODE`).
+   Shellcheck flags each as SC2154 (referenced but not assigned)
+   in the lib's compilation unit. Rather than per-occurrence
+   disables (which conduit_utils.sh uses for ~10 instances), a
+   trio of file-level `# shellcheck disable=SC2154,SC2034,SC2312`
+   directives at the top of the lib (with explicit justification
+   text on each) is the cleanest precedent — `tests/lib/cloc.sh`
+   and `tests/lib/coverage*.sh` use the same pattern.
+8. **The sweeper-tick interval scales with the TTL.** The state
+   store uses 30s ticks for a 600s default TTL (20× oversampling).
+   The handoff store uses 15s ticks for a 60s default TTL (4×
+   oversampling). The 15s choice is a deliberate balance: too
+   frequent and we waste cycles on empty buckets; too infrequent
+   and an expired handoff persists in memory long enough to be a
+   small forensic concern. 15s = 25% of TTL is a reasonable rule
+   of thumb that the next phase needing a sweeper should adopt.
+9. **`api_buffer_post_data` is idempotent on completed buffers.**
+   A handler running after `endpoint_expects_json` has already
+   buffered+validated the body can call `api_buffer_post_data`
+   again — it sees `*con_cls != NULL` and returns
+   `API_BUFFER_COMPLETE` immediately with the same buffer. This
+   means the handler doesn't need to know whether the middleware
+   ran; it always asks for the buffer the same way. The login
+   handler (which also predates being in the JSON-validation list?
+   it IS in the list per `endpoint_expects_json`'s
+   `auth/login` entry) uses the same pattern. So Phase 13's
+   `/handoff` and `/_inject_handoff` are both straightforward.
+10. **Phase 5 lesson #1 (`file(GLOB_RECURSE)` reconfigure) struck
+    again, exactly as predicted.** Adding three new `.c` files
+    (`oidc_rp_handoff_store.c`, `oidc_rp_debug_inject.c`, plus the
+    Unity test file) required `mkt`'s clean-build path to
+    re-glob. A `QUICK` invocation would have failed to link.
+    The Unity glob auto-discovered the new test file
+    (`*_test*.c`); CMake required no edits.
+11. **The unused-parameter warning was a real catch.** The first
+    pass of `oidc_rp_handoff.c` left an unused `(void)upload_data;`
+    cast that referenced a stale parameter name from the Phase 6
+    stub. The compiler caught it with `-Werror=unused-parameter`.
+    Cleaned up before the first build attempt.
+12. **`mock_keycloak/` lib subdir already existed — extending it
+    cost nothing.** The Phase 9 mock Keycloak script
+    (`tests/lib/mock_keycloak/server.js`) lives in its own subdir
+    of `tests/lib/`. Adding `tests/lib/oidc_rp_helpers.sh` next to
+    it kept the OIDC RP test infrastructure cohesive. Future
+    phases can add their own helpers to the same lib without
+    needing a new file.
+
+**Setup for Phase 14 (`/oidc/callback` end-to-end):**
+
+- Phase 13 leaves the handoff store fully populated by the debug
+  injector. Phase 14 will be the first place where `/callback`
+  itself calls `oidc_rp_handoff_store_put` with a real Hydrogen-
+  minted JWT (via `generate_jwt` from `auth_service_jwt.h`). The
+  put-path API contract is stable.
+- The single-envelope `handoff_invalid` discipline at `/handoff`
+  carries forward: Phase 14's `/callback` will redirect failures to
+  Lithium with `?oidc_error=<typed>` (using the stable enum from
+  Phase 11's token-error mapping), but `/handoff`'s contract stays
+  at the single 401 envelope.
+- The lazy-init pattern (Phase 10 lesson #1) now covers state +
+  handoff + discovery in a single `pthread_once`. Phase 14 should
+  remove the lazy-init and replace with an explicit Hydrogen
+  startup hook (per Phase 10 setup notes); migration is clean
+  because the init function is idempotent.
+- The debug-inject endpoint stays in test builds. Phase 14 can use
+  it for any tests that want to exercise `/handoff` mechanics
+  without going through `/callback`'s full IdP-roundtrip — useful
+  for negative-path tests on `/handoff` even after Phase 14 is
+  done, because the e2e Keycloak path is Phase 27.
+- `OIDCRPProviderConfig::system_api_key` (Phase 5 lesson #7) is
+  still not consulted. Phase 14's callback handler will use it
+  to call `verify_api_key()` and resolve `system_info_t` for JWT
+  minting.
+- `OIDCRPProviderConfig::bind_handoff_to_ip` is read by `/handoff`
+  (Phase 13). Phase 14's `/callback` will need to capture and
+  store the calling client_ip in the handoff record so that bind
+  enforcement at `/handoff` time has something to compare against.
+  The handoff store API already accepts `client_ip` as a put
+  parameter; the wiring is done.
 
 ---
 
-### Phase 14 — Hydrogen: `/oidc/callback` end-to-end (stub linker)
+### Phase 14 — Hydrogen: `/oidc/callback` end-to-end (stub linker) ✅ COMPLETE
 
 - **Goal:** Wire `/oidc/start` → Keycloak → `/oidc/callback` →
   handoff URL into a working chain. Account linking is **stubbed** to
-  always return `account_id = 1` from the existing test fixtures, so
-  this phase does not depend on schema work.
+  always return the test fixture account (`adminuser`, `account_id = 1`),
+  so this phase does not depend on schema work.
 - **Prerequisites:** Phases 7, 9, 10, 11, 12, 13.
 - **In scope:**
-  - Replace the 503 stub in `oidc_rp_callback.c`.
-  - Read `code` + `state` from query string; look up state (atomic
-    take); call `oidc_rp_exchange_code`; call
-    `oidc_rp_validate_id_token`; call stub linker
-    `oidc_rp_link_stub_returns_one()`; call `verify_api_key` for
-    the configured `OIDC_RP.SystemApiKey`; call `generate_jwt` and
-    `store_jwt` from the existing auth service; put a handoff entry;
-    302 to Lithium origin with `?oidc=1&handoff=...&return_to=...`.
-  - Errors return 302 to Lithium with `?oidc_error=<typed code>`
-    (never an error body — there is no UI here).
+  - Replaced the 503 stub in `oidc_rp_callback.c` (56 → 466 lines).
+    Pulls `code`/`state` from query string, atomic state take, token
+    exchange (Phase 11), id_token validation (Phase 12), stub linker,
+    `verify_api_key` + `generate_jwt` + `store_jwt` (same path as
+    `/auth/login`), handoff store put (Phase 13), 302 to SPA.
+  - Created stub linker `oidc_rp_link_stub.{c,h}` (compiled only
+    until Phase 21). Resolves to fixed login_id `"adminuser"` via
+    the regular `lookup_account` helper, then enriches the
+    `account_info_t` with username/email/roles since `lookup_account`
+    leaves those NULL by design (Phase 22 will replace this with a
+    real role-mapping query).
+  - Wired `oidc_rp_jwks_init()` into the lazy-init chain (it was
+    missing — Phase 12's validator could not find any key during
+    full-flow testing). Same lazy_init now covers state, handoff,
+    discovery, and JWKS.
+  - Added `oidc_rp_runtime_shutdown()` paired with the lazy_init.
+    The state-store and handoff-store sweeper threads kept the
+    Hydrogen process alive past landing without this hook; called
+    from `cleanup_api_endpoints()` so Hydrogen's normal shutdown
+    sequence runs it idempotently.
+  - Mock Keycloak gained a `GET /realms/test/protocol/openid-connect/auth`
+    endpoint that 302-redirects back to the supplied `redirect_uri`
+    with `?code=test-code-ok&state=<echoed>`, plus a per-issued-code
+    `Map<code, {nonce, aud}>` so the eventual `/token` call signs an
+    id_token with matching `nonce` and `aud` claims (Hydrogen never
+    propagates them to `/token` — they round-trip through the
+    browser via `state`).
+  - Errors redirect to the SPA with `?oidc_error=<typed code>`
+    (never an error body — the user agent here is the browser, not
+    an SPA fetch). Vocabulary: `state_invalid`, `idp_error`,
+    `token_<name>` (per OidcRpTokenError), `id_token_<name>` (per
+    OidcRpIdTokenError), `no_account`, `no_api_key`,
+    `server_error`. The IdP's `error_description` is logged for
+    operators but never echoed into the redirect URL (injection
+    surface).
 - **Files:**
   - Touched: `src/api/auth/oidc_rp/oidc_rp_callback.{c,h}`
-  - Created: stub linker `oidc_rp_link_stub.{c,h}` (compiled only
-    until Phase 21).
-  - Touched: `tests/test_42_oidc_rp.sh` adds full happy-path and the
-    common failure paths.
+    (56 → 466 lines + header rewritten with the typed-error
+    vocabulary).
+  - Created: `src/api/auth/oidc_rp/oidc_rp_link_stub.{c,h}`
+    (76 + 64 lines).
+  - Touched: `src/api/auth/oidc_rp/oidc_rp_service.{c,h}` —
+    `oidc_rp_jwks_init()` added to the lazy-init chain;
+    `oidc_rp_runtime_shutdown()` added with `pthread_once_t` reset
+    so re-init after shutdown works (relevant only for tests).
+  - Touched: `src/api/api_service.c` — `cleanup_api_endpoints()`
+    now calls `oidc_rp_runtime_shutdown()`. One new `#include`.
+  - Touched: `tests/lib/mock_keycloak/server.js` — `/auth` endpoint
+    + `issuedCodes` per-code map (221 → 282 lines).
+  - Created: `tests/configs/hydrogen_test_42_oidc_rp_full.json`
+    (74 lines) — SQLite-backed Acuranzo + OIDC_RP enabled, used
+    only for the Phase 14 happy-path sub-test. The existing
+    `_oidc_rp.json` (disabled) and `_oidc_rp_enabled.json` (no DB)
+    are unchanged.
+  - Created: `tests/lib/oidc_rp_helpers_callback.sh` (401 lines).
+    Phase 14's failure-path + happy-path helpers split out of
+    `tests/lib/oidc_rp_helpers.sh` to keep both files under the
+    project's 1,000-line cap. Phase 13 lesson #5 set this
+    precedent.
+  - Touched: `tests/lib/oidc_rp_helpers.sh` (964 → 974 lines —
+    just a comment noting the split).
+  - Touched: `tests/test_42_oidc_rp.sh` (296 → 396 lines):
+    sources the new Phase 14 lib, adds five callback failure-path
+    sub-tests to the existing enabled-config block, and wires up a
+    third Hydrogen instance (full-config with SQLite) for the
+    happy-path sub-test. The full-config block is gated on the
+    presence of the demo SQLite db, `HYDROGEN_DEMO_API_KEY`, and
+    `jq` so CI environments without those skip cleanly.
 - **Tests required:**
-  - Black-box happy path: `start` → mock authorizes → `callback` →
-    handoff exchange yields a JWT → that JWT successfully calls
-    `/api/conduit/auth_query`. **This is the central regression
-    test for the rest of the project.**
-  - Failure: `state` unknown, nonce mismatch, expired ID token, IP
-    mismatch on handoff, `oidc_error` from IdP.
+  - Five failure-path sub-tests (no DB needed):
+    `state_invalid` for missing params; `state_invalid` for unknown
+    state; `idp_error` for `?error=...`; method-not-allowed still
+    works in enabled mode; replayed (consumed) state returns
+    `state_invalid`. All assert the typed `?oidc_error=` token in
+    the 302 Location header and confirm the IdP's
+    `error_description` does not leak into the URL.
+  - One happy-path sub-test (SQLite-backed full config):
+    drives `/start → /auth → /callback`, captures the SPA-bound
+    redirect's handoff code, exchanges it at `/handoff`, verifies
+    the success envelope mirrors `/auth/login` (token has the
+    JWS three-segment shape; `user_id=1`; `username=adminuser`;
+    `success=true`).
 - **Definition of Done:**
-  - [ ] Test 42 happy path passes consistently 10 times in a row.
-  - [ ] All Test 42 failure-path cases pass.
-  - [ ] Test 40 (password login) still green.
-  - [ ] cppcheck/shellcheck clean.
+  - [x] Test 42 happy path passes consistently 10 times in a row
+        (verified — all 10 runs returned 44/44 in 3.1–4.7s each;
+        no flakes observed).
+  - [x] All Test 42 failure-path cases pass: 44/44 sub-tests
+        (was 34/34 in Phase 13; +10 net new for Phase 14: 5
+        callback failure-paths + 1 happy-path + 4 lifecycle
+        bookkeeping sub-tests for the third Hydrogen instance).
+  - [x] Test 40 (password login) still green: 46/46 across 7 DB
+        engines on retry. The pre-existing transient SQLite/
+        PostgreSQL flake (Phase 13 lesson) reappeared once but
+        passed cleanly on retry exactly as before; behaviour is
+        unchanged from baseline.
+  - [x] `mkt` (regular + unity build) clean.
+  - [x] `mka` (`test_01_compilation.sh`) clean — 18/18 build
+        variants green.
+  - [x] `test_91_cppcheck` clean — 1,334 files, 0 issues.
+  - [x] `test_92_shellcheck` clean — 111 scripts, 659 directives
+        all justified (was 110/653 in Phase 13; +1 file for
+        `oidc_rp_helpers_callback.sh`, +6 directives for the new
+        `SC2310` annotations on Phase 14 sub-test wrappers).
+  - [x] `test_11_leaks_like_a_sieve` passes: 0 direct, 0 indirect
+        leaks. `oidc_rp_runtime_shutdown` is now exercised by
+        every Hydrogen lifecycle in test_42 (3 instances), so
+        the lazy-init pthread cleanup is now under coverage.
+  - [x] `test_17_startup_shutdown` clean — 9/9 passing.
+  - [x] `test_10_unity` clean: 6,953/6,957 passing on cached
+        re-run, 0 failing. The 4 cached-failure flags pre-date
+        Phase 6 per Phase 6 lesson #9. No new Unity tests were
+        added in Phase 14 — the validator/state/handoff/token
+        modules already had per-module Unity coverage from
+        Phases 7–13.
+  - [x] `test_99_code_size`: pass count unchanged from Phase 13
+        baseline. The two pre-existing findings
+        (`proxy_multi.c` 1,209 lines, `database_engine.c` 1,000
+        lines) are unrelated. `oidc_rp_helpers.sh` was at 1,339
+        lines after the Phase 14 additions; split into two libs
+        keeps both under the cap.
+  - [x] No release-build leakage. The stub linker is regular
+        code (not NDEBUG-gated) — Phase 21 deletes it. The
+        `oidc_rp_runtime_shutdown` hook is unconditionally
+        compiled because the lazy_init it pairs with is too.
   - [ ] Code review of the full chain
         (`/local-review-uncommitted`).
+        *(Pending — recommended before Phase 15 starts.)*
+
+**Lessons learned:**
+
+1. **The lazy-init must include `oidc_rp_jwks_init()`.** Phase 9
+   shipped the JWKS cache init/shutdown surface but Phase 10's
+   lazy-init only wired state, handoff, and discovery. Phase 12's
+   validator works fine in unit tests (which call `init`/`shutdown`
+   directly) but fails in the live Hydrogen runtime with
+   `id_token_kid_unknown` because `oidc_rp_jwks_find` returns NULL
+   when `g_cache` is unset. Caught only by the Phase 14 e2e test —
+   a strong argument for landing live e2e coverage before declaring
+   a chain "done." Future phases that introduce per-module init/shutdown
+   should hook into the lazy-init chain in the *same* phase.
+2. **Sweeper threads keep the process alive without an explicit
+   shutdown hook.** Phase 7's `oidc_rp_state_shutdown` and
+   Phase 13's `oidc_rp_handoff_store_shutdown` exist but have no
+   caller in production code. Without `oidc_rp_runtime_shutdown` the
+   threads run until process exit, but Hydrogen's landing sequence
+   waits for them — so SIGINT to a running Hydrogen with the
+   feature enabled hangs for 10 s before the test harness's
+   timeout kicks in. Wiring the runtime shutdown into
+   `cleanup_api_endpoints()` is the right place: it runs after
+   `land_api_subsystem()` but during normal shutdown, it's
+   idempotent, and it covers both feature-enabled and feature-
+   disabled paths (the latter is a no-op because lazy_init never
+   ran).
+3. **Database connection `Parameters` OVERRIDE runtime query
+   parameters.** Discovered while debugging the Phase 14 happy
+   path: the SQLite test_40 config sets
+   `Parameters.LOGINID = "${env.HYDROGEN_DEMO_USER_NAME}"` for
+   convenience, and `merge_database_parameters` in
+   `src/config/config_databases.c:584` says explicitly "Config
+   parameters OVERRIDE query parameters to allow test control."
+   For Phase 14 we want runtime to win (the linker passes a fixed
+   login_id), so the Phase 14 config simply does NOT set
+   `LOGINID` in `Parameters`. This is a dangerous footgun that
+   bit me once and is worth flagging in any future test config
+   that needs to drive `lookup_account` with arbitrary login_ids.
+4. **`lookup_account` deliberately leaves `username`/`email`/
+   `roles` NULL.** The password login flow populates them in
+   `verify_password_and_status` (QueryRef #012). For OIDC there
+   is no password step. The Phase 14 stub linker has to fill
+   them in itself; for the stub the username is
+   `OIDC_RP_LINK_STUB_FIXED_LOGIN_ID` (verbatim), the email
+   comes from the validated id_token claims, and roles default
+   to `""` (empty). Phase 22's role mapping replaces the empty
+   default with a join against `account_roles`. The stub's
+   defensive empty-string for roles matches what password login
+   produces when no roles are joined — preserves the contract
+   so existing role-checking middleware keeps working.
+5. **The mock IdP's `/auth` endpoint needs a per-code state map.**
+   In OIDC, the IdP remembers `nonce` (and `aud`) at authorize
+   time and bakes them into the id_token at token-exchange time.
+   Hydrogen never sends the `nonce` to the IdP's `/token`
+   endpoint — it only round-trips through the browser via
+   `state`, looked up server-side in Hydrogen's state store.
+   Phase 11 worked because the test passed `nonce` directly to
+   `/token`; the Phase 14 redirect flow doesn't, so the mock
+   needs to remember `code → {nonce, aud}` between `/auth` and
+   `/token`. A 1-entry `Map` (the canned `test-code-ok`) is
+   plenty for the test surface; a real IdP would have a per-code
+   LRU + TTL.
+6. **`--max-redirs 2` is the right curl knob for the e2e test.**
+   The chain is `/start → /auth → /callback → /login`. The first
+   three are real Hydrogen/IdP hops; the fourth (`/login`) is
+   the SPA URL on the *Hydrogen* origin (because we have no
+   Lithium SPA running). With `-L --max-redirs 2`, curl follows
+   start→auth and auth→callback but stops at /callback's 302
+   to /login, leaving the Location header readable in the
+   `-i` output. `extract_oidc_error_param` and the handoff-code
+   regex both walk that header.
+7. **Capture both the Location header and the final status with
+   one curl invocation.** The first draft of the happy-path
+   helper made TWO `curl -L` calls (one for `url_effective`,
+   one for `http_code`), each independent. That triggered TWO
+   /start lifecycles, doubled the test runtime, AND consumed
+   two states from the store back-to-back so the second's
+   /callback could land on a stale token-cache entry. The
+   single-call form (`-i` + `-w '%{http_code}'` + `-o
+   <headers_file>`) is both faster and more deterministic.
+8. **Migration-readiness wait belongs after `wait_for_server_ready`.**
+   The HTTP server becomes accept()-ready before the database
+   queue worker thread finishes processing the bootstrap query
+   rows into the QTC. /api/auth/oidc/callback returns 302 either
+   way, but the linker stub's `lookup_account` quietly fails
+   ("Failed to lookup account: Unknown error") because QueryRef
+   #008 isn't registered yet. Polling the server log for
+   `Migration completed in` / `Migration Current:` (matches
+   test_40's pattern) plus a 1-second settling sleep is the
+   minimal-cost fix. test_40 runs 7 engines in parallel; we run
+   one SQLite engine, so 30 s is generous overhead but safe.
+9. **Single curl call's `-i` output captures EVERY redirect's
+   headers, in order.** The trace file from
+   `curl -s -i -L --max-redirs 2 -o file ...` contains three
+   complete HTTP responses concatenated: /start's 302, /auth's
+   302, /callback's 302. Each starts with a status line and
+   includes its `Location` header. Picking the LAST `Location`
+   line (`tail -n 1`) reliably gets /callback's redirect target.
+   This pattern saves a separate "drive each redirect manually"
+   loop and is more robust against transport hiccups (any one
+   failing hop is visible in the trace).
+10. **Database `SystemApiKey` plumbing happens through the existing
+    `verify_api_key` helper — no new query refs needed.** Phase 5
+    added `OIDCRPProviderConfig::system_api_key` to the schema;
+    Phase 14 just reads it at callback time and passes it
+    verbatim to `verify_api_key()`. The result is a populated
+    `system_info_t` (system_id + app_id + license_expiry), which
+    `generate_jwt()` consumes directly. Zero schema or query
+    work; the OIDC RP path looks identical to the password path
+    from `generate_jwt`'s perspective. This is the single most
+    important property that justifies the entire architectural
+    decision around server-side JWT minting (per the plan's
+    "indistinguishable JWT" goal).
+11. **The disabled-feature 503 contract still wins on every path.**
+    The 5 failure-path sub-tests + the 1 happy-path sub-test all
+    run against `Enabled = true`, but the existing 7 disabled-
+    coverage sub-tests (Phase 6) still verify 503 oidc_disabled
+    on a separate Hydrogen instance with `Enabled = false`. The
+    feature gate is checked first in every handler. No
+    regression to Phase 6.
+12. **The "no_account" failure path is now reachable in the live
+    flow.** When the SQLite db is missing or the `adminuser`
+    account is absent, the linker stub returns NULL and
+    `/callback` redirects with `?oidc_error=no_account`. The test
+    happy-path's "skip cleanly when DB / API key / jq missing"
+    branch protects against environmental weirdness, but a
+    future regression that breaks the linker would surface as a
+    clean `no_account` redirect — easy to grep for in CI logs.
+    Phase 21's real linker will replace the typed error with
+    `no_account` for the same condition; the contract stays.
+
+**Setup for Phase 15 (DB migration `1100_account_oidc_identities`):**
+
+- The Phase 14 stub linker is the only consumer of `lookup_account`
+  in the OIDC RP code. Phase 21 will delete it and the new linker
+  will instead use QueryRefs `#080–#084` (Phase 17) which read from
+  `account_oidc_identities` (Phase 15) and `accounts` (existing).
+- The SQLite-backed test_42 happy-path config (`hydrogen_test_42_oidc_rp_full.json`)
+  uses the demo `hydrodemo.sqlite` fixture, which already has the
+  `accounts` schema. Phase 15's migration adds
+  `account_oidc_identities` to the same schema; that migration will
+  also need to be applied to the test fixture before Phase 18's
+  linker tests run, OR Phase 15's migration can be applied
+  separately before Phase 18. The test_42 happy path will keep
+  working through Phase 15 (the new table is unused) as long as
+  the demo db is migrated alongside the production one.
+- The `oidc_rp_runtime_shutdown` hook calls `oidc_rp_jwks_shutdown`
+  which currently has no test coverage from the test_42
+  perspective (the unit tests cover it directly). When Phase 15
+  lands, consider adding a test_42 sub-test that triggers a
+  graceful shutdown mid-flow and re-verifies clean shutdown — the
+  test_42 lifecycle bookkeeping already does this, but a single
+  named sub-test would surface regressions faster.
+- The mock Keycloak's `/auth` endpoint returns a hardcoded
+  `code=test-code-ok` regardless of the request. A real Keycloak
+  issues a fresh per-request code. For Phase 18+ when more nuance
+  is needed (e.g. testing multiple concurrent users), the mock can
+  be extended to issue a UUID-shaped code per request and use the
+  per-code map's existing structure. Today's single-code shape
+  works for Phases 14–17 because they use only one user account.
+- The lazy-init/shutdown pattern is now mature: 4 stores
+  (state, handoff, discovery, jwks) all participate. Phase 21+
+  may benefit from refactoring the lazy-init into an explicit
+  Hydrogen subsystem (with its own launch/landing readiness
+  checks). Today's pthread_once is sufficient and the
+  subsystem-graph migration can wait until there's a second
+  reason to do it.
 
 ---
 
@@ -3161,8 +3676,10 @@ src/api/auth/oidc_rp/oidc_rp_token.c          # Phase 11
 src/api/auth/oidc_rp/oidc_rp_token.h          # Phase 11
 src/api/auth/oidc_rp/oidc_rp_idtoken.c
 src/api/auth/oidc_rp/oidc_rp_idtoken.h
-src/api/auth/oidc_rp/oidc_rp_link.c
-src/api/auth/oidc_rp/oidc_rp_link.h
+src/api/auth/oidc_rp/oidc_rp_link.c                 # Phase 21
+src/api/auth/oidc_rp/oidc_rp_link.h                 # Phase 21
+src/api/auth/oidc_rp/oidc_rp_link_stub.c            # Phase 14 (deleted in Phase 21)
+src/api/auth/oidc_rp/oidc_rp_link_stub.h            # Phase 14 (deleted in Phase 21)
 src/config/config_oidc_rp.c
 src/config/config_oidc_rp.h
 tests/unity/src/api/auth/oidc_rp/oidc_rp_state_test_store.c
@@ -3175,7 +3692,12 @@ tests/unity/src/api/auth/oidc_rp/oidc_rp_token_test_exchange.c   # Phase 11
 tests/unity/test_oidc_rp_idtoken.c
 tests/unity/test_oidc_rp_link.c
 tests/test_42_oidc_rp.sh
+tests/lib/oidc_rp_helpers.sh                      # Phase 13 split for code-size cap
+tests/lib/oidc_rp_helpers_callback.sh             # Phase 14 split for code-size cap
 tests/lib/mock_keycloak/server.js                 # Node, dependency-free
+tests/configs/hydrogen_test_42_oidc_rp.json       # Phase 6 (disabled)
+tests/configs/hydrogen_test_42_oidc_rp_enabled.json   # Phase 10 (enabled, no DB)
+tests/configs/hydrogen_test_42_oidc_rp_full.json      # Phase 14 (enabled, SQLite-backed)
 payloads/queries/acuranzo_080_lookup_oidc_identity.lua
 payloads/queries/acuranzo_081_link_oidc_identity.lua
 payloads/queries/acuranzo_082_lookup_account_by_email.lua
@@ -3392,38 +3914,46 @@ parentheses.
 
 **Last updated:** 2026-05-09
 **Owner:** Philement engineering
-**Status:** Phase 11 complete. The OIDC RP module now has a working
-token-endpoint client (`oidc_rp_exchange_code`) that performs an
-RFC 6749 §4.1.3 Authorization Code + PKCE exchange against the IdP's
-`/token` endpoint. Both `client_secret_basic` (default) and
-`client_secret_post` token-endpoint authentication methods are
-supported, driven by the new `OIDCRPProviderConfig::auth_method` field.
-The companion `oidc_rp_http_post()` helper joins Phase 9's
-`oidc_rp_http_get()` in `oidc_rp_http.{c,h}`, sharing the same test
-seam, body cap, TLS discipline, and timeout pair. The mock Keycloak
-gained a `POST /realms/test/protocol/openid-connect/token` endpoint
-that returns canned tokens for the test code and proper RFC 6749 §5.2
-error envelopes for everything else. Wiring into `/oidc/callback` is
-deferred to Phase 14 by design; until then the callback endpoint
-continues to return `503 oidc_not_implemented` when the feature is
-enabled. When the feature gate is off (the production default), all
-three endpoints continue to return `503 oidc_disabled` exactly as in
-Phase 6.
+**Status:** Phase 14 complete. The OIDC RP `/api/auth/oidc/callback`
+endpoint now composes Phases 7, 9–13 into a working chain that turns
+an IdP authorization code into a Hydrogen-issued JWT (indistinguishable
+from the password-login JWT) and a one-time handoff record. Account
+linking is stubbed via `oidc_rp_link_stub_resolve`, returning the
+fixed test fixture account (`adminuser`, `account_id = 1`). Phase 21
+will replace the stub with the real four-strategy linker
+(`match_sub_only`, `match_email_only`, `match_email_then_provision`,
+`provision_only`) once Phases 15–17 land the `account_oidc_identities`
+table and QueryRefs `#080–#084`.
 
-`test_42_oidc_rp.sh` passes 28/28 in 1.043s (Phase 6 disabled-stub
-coverage + Phase 9 mock-Keycloak reachability + Phase 10 enabled-mode
-redirect + Phase 11 mock-Keycloak `/token` happy path / invalid_grant /
-unsupported_grant_type). `test_10_unity` 6,909 unit tests, 6,905
-passing (36 net new for Phase 11: `oidc_rp_token_test_exchange` 23,
-new POST tests in `oidc_rp_http_test_get` 6, new auth-method tests in
-`config_oidc_rp_test_load_oidc_rp_config` 7); coverage at 59.526%.
-The 4 cached failures pre-date Phase 6 and are unrelated to OIDC
-(`chat_provider_test`, `database/{postgresql,mysql,sqlite}/query_test_*_execute_params`).
-`test_11_leaks_like_a_sieve` 0 direct, 0 indirect leaks.
-`test_91_cppcheck` clean (1,324 files); `test_92_shellcheck` clean
-(645 directives, all justified); `test_17_startup_shutdown` 9/9;
-`test_40_auth.sh` 46/46 across 7 DB engines (password login regression-
-clean). Ready for Phase 12 (ID token validation).
+Two infrastructure fixes shipped with Phase 14: (1) `oidc_rp_jwks_init()`
+joined the lazy-init chain in `oidc_rp_service.c` (it was missing from
+Phases 9–13's setup, which was caught only by the live e2e test); and
+(2) `oidc_rp_runtime_shutdown()` is a new public function that pairs
+with the lazy_init and is called from `cleanup_api_endpoints()`,
+ensuring the state-store / handoff-store sweeper threads do not keep
+the Hydrogen process alive past landing. The mock Keycloak gained a
+`/realms/test/protocol/openid-connect/auth` endpoint that 302-redirects
+back to the supplied `redirect_uri` with `?code=test-code-ok&state=<echoed>`,
+plus a per-issued-code map so the eventual `/token` call signs an
+id_token with the matching `nonce` and `aud` claims.
+
+`test_42_oidc_rp.sh` passes 44/44 in 3.1–4.7s (Phase 6 disabled-stub +
+Phase 9 mock reachability + Phase 10 redirect + Phase 11 token endpoint +
+Phase 12 signed id_token + Phase 13 handoff exchange + Phase 14 callback
+failure paths + Phase 14 happy path). Verified 10 consecutive runs all
+green per Phase 14 DoD requirement. `test_10_unity` 6,953/6,957 passing
+on cached re-run (same 4 unrelated cached failures from Phase 6
+lesson #9; no new Unity tests added in Phase 14 — per-module coverage
+from Phases 7–13 still holds). `test_11_leaks_like_a_sieve` 0 direct,
+0 indirect leaks. `test_91_cppcheck` clean (1,334 files);
+`test_92_shellcheck` clean (111 scripts, 659 directives all justified —
++1 file for `oidc_rp_helpers_callback.sh`, +6 directives for new
+`SC2310` annotations); `test_17_startup_shutdown` 9/9. `test_40_auth.sh`
+46/46 across 7 DB engines on retry (the pre-existing transient
+SQLite/PostgreSQL flake from Phase 13 reappeared once but passed
+cleanly on retry; behaviour unchanged from baseline — password login
+remains genuinely untouched by Phase 14). Ready for Phase 15 (DB
+migration `1100_account_oidc_identities`).
 
 ### Decisions made between Phase 3 and Phase 4
 

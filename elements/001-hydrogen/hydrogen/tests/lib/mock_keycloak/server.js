@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /*
- * Tiny mock Keycloak (Phase 9 + Phase 11 + Phase 12).
+ * Tiny mock Keycloak (Phase 9 + Phase 11 + Phase 12 + Phase 14).
  *
  * Serves just enough surface for `test_42_oidc_rp.sh` to exercise the
  * Hydrogen OIDC RP discovery + JWKS + token-exchange + id-token
- * validation paths:
+ * validation + callback chain:
  *
  *   GET /realms/test/.well-known/openid-configuration
  *       → JSON discovery doc that points at this same server.
@@ -14,6 +14,13 @@
  *         (kid=test-key-1). The keypair is generated on every server
  *         start; the public half is exported as a JWK and the private
  *         half is retained in memory for /token signing.
+ *
+ *   GET /realms/test/protocol/openid-connect/auth   (Phase 14)
+ *       → Skips the user-login UI entirely and 302-redirects the
+ *         browser straight back to the supplied redirect_uri with
+ *         `?code=test-code-ok&state=<echoed>`. The mock takes the
+ *         flow's word that the user authenticated; the real login
+ *         UX is irrelevant to the OIDC RP code paths under test.
  *
  *   POST /realms/test/protocol/openid-connect/token   (Phase 11+12)
  *       → On valid grant_type=authorization_code with the canned
@@ -179,15 +186,74 @@ function parseForm(body) {
     return out;
 }
 
+// Phase 14: per-issued-code state map. The /auth handler stashes the
+// nonce + client_id supplied by the RP at authorization-request time
+// here, keyed by the canned `code = "test-code-ok"`. The /token
+// handler retrieves them so the signed id_token's `nonce` and `aud`
+// claims match what the RP originally requested. Without this, the
+// Hydrogen-side id_token validator would reject the token with
+// nonce_mismatch.
+//
+// Phases 11+12 used the form-parameter fallback (the test harness
+// passed nonce + client_id directly to /token); the Phase 14 redirect
+// flow doesn't propagate them through the browser, so we need this
+// in-memory bridge. The map is bounded by the canned single-code
+// design (max 1 entry); a future revision that issues per-request
+// codes would need an LRU + TTL.
+const issuedCodes = new Map();
+
+// Phase 14: handle GET /auth.
+//
+// Skips the user-login UI entirely and redirects the browser back
+// to the supplied `redirect_uri` with `?code=test-code-ok&state=<echoed>`.
+// Captures the request's `nonce` and `client_id` so the eventual
+// /token call can sign an id_token with matching claims.
+//
+// Inputs (URL-encoded query params per OIDC Core 1.0 §3.1.2.1):
+//   - redirect_uri (required)
+//   - state        (required — echoed back unmodified)
+//   - nonce        (optional — defaults to "test-nonce")
+//   - client_id    (optional — defaults to "lithium-web")
+//   - everything else (response_type, scope, code_challenge*) is
+//     accepted but ignored.
+function handleAuthGet(req, res) {
+    const url = new URL(req.url || '/', `http://localhost:${port}`);
+    const redirectUri = url.searchParams.get('redirect_uri');
+    const state       = url.searchParams.get('state');
+    const nonce       = url.searchParams.get('nonce') || 'test-nonce';
+    const clientId    = url.searchParams.get('client_id') || 'lithium-web';
+
+    if (!redirectUri || !state) {
+        send(res, 400, {
+            error: 'invalid_request',
+            error_description: 'redirect_uri and state are required',
+        });
+        return;
+    }
+
+    issuedCodes.set('test-code-ok', { nonce, aud: clientId });
+
+    const target = new URL(redirectUri);
+    target.searchParams.set('code', 'test-code-ok');
+    target.searchParams.set('state', state);
+
+    res.writeHead(302, {
+        Location: target.toString(),
+        'Cache-Control': 'no-store',
+        'Content-Length': 0,
+    });
+    res.end();
+}
+
 // Phase 11+12: handle POST /token.
 //
 // Accepts the canned `code === 'test-code-ok'` and returns a 200
 // JSON response with a real RS256-signed id_token + a placeholder
-// access_token. The id_token's `aud` claim is taken from the
-// `client_id` form parameter (or `lithium-web` if absent), and its
-// `nonce` claim is taken from the `nonce` form parameter (or the
-// canned default `"test-nonce"` if absent). All other claims are
-// deterministic so the test harness can assert against them.
+// access_token. Phase 14 update: the id_token's `aud` and `nonce`
+// claims are pulled from the per-code map populated by /auth. If
+// the code was set up directly (e.g. by older Phase 11 unit-style
+// tests calling /token alone), the form-parameter fallbacks still
+// apply.
 //
 // Any other code returns 400 invalid_grant. Wrong grant_type
 // returns 400 unsupported_grant_type.
@@ -213,8 +279,11 @@ function handleTokenPost(req, res) {
         }
 
         const now = Math.floor(Date.now() / 1000);
-        const aud = params.client_id || 'lithium-web';
-        const nonce = params.nonce || 'test-nonce';
+        const issued = issuedCodes.get('test-code-ok') || {};
+        // Prefer the per-code map (Phase 14 redirect flow); fall back
+        // to form parameters (Phase 11/12 direct-call style).
+        const aud   = issued.aud   || params.client_id || 'lithium-web';
+        const nonce = issued.nonce || params.nonce     || 'test-nonce';
 
         const idToken = signJwt({
             iss: ISSUER,
@@ -255,6 +324,13 @@ const server = http.createServer((req, res) => {
     if (req.method === 'GET' &&
         url === `/realms/${REALM}/protocol/openid-connect/certs`) {
         send(res, 200, JWKS_DOC);
+        return;
+    }
+    // Phase 14: authorization endpoint. Match by path prefix so the
+    // query string can ride along.
+    if (req.method === 'GET' &&
+        url.startsWith(`/realms/${REALM}/protocol/openid-connect/auth`)) {
+        handleAuthGet(req, res);
         return;
     }
     if (req.method === 'POST' &&
