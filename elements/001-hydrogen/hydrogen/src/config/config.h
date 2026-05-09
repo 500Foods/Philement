@@ -71,6 +71,7 @@ bool is_file_readable(const char* path);
 #include "config_print.h"                // M. Print
 #include "config_resources.h"            // N. Resources
 #include "config_oidc.h"                 // O. OIDC
+#include "config_oidc_rp.h"              // O-RP. OIDC Relying Party
 #include "config_notify.h"               // P. Notify
 
 // Support for configuration value handling and type conversion

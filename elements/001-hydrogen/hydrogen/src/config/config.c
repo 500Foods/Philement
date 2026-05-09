@@ -79,6 +79,7 @@ bool load_mailrelay_config(json_t* root, AppConfig* config);
 bool load_print_config(json_t* root, AppConfig* config);
 bool load_resources_config(json_t* root, AppConfig* config);
 bool load_oidc_config(json_t* root, AppConfig* config);
+bool load_oidc_rp_config(json_t* root, AppConfig* config);
 bool load_notify_config(json_t* root, AppConfig* config);
 
 /*
@@ -370,6 +371,7 @@ AppConfig* load_config(const char* cmdline_path) {
     LOAD_CONFIG("M", SR_PRINT,           load_print_config);
     LOAD_CONFIG("N", SR_RESOURCES,       load_resources_config);
     LOAD_CONFIG("O", SR_OIDC,            load_oidc_config);
+    LOAD_CONFIG("O-RP", SR_AUTH,         load_oidc_rp_config);
     LOAD_CONFIG("P", SR_NOTIFY,          load_notify_config);
 
     #undef LOAD_SERVER_CONFIG
@@ -499,6 +501,7 @@ void dumpAppConfig(const AppConfig* config, const char* section) {
     DUMP_CONFIG_SECTION("M", SR_PRINT,       print,       dump_print_config);
     DUMP_CONFIG_SECTION("N", SR_RESOURCES,   resources,   dump_resources_config);
     DUMP_CONFIG_SECTION("O", SR_OIDC,        oidc,        dump_oidc_config);
+    DUMP_CONFIG_SECTION("O-RP", SR_AUTH,      oidc_rp,     dump_oidc_rp_config);
     DUMP_CONFIG_SECTION("P", SR_NOTIFY,      notify,      dump_notify_config);
 
     #undef DUMP_CONFIG_SECTION
@@ -537,6 +540,7 @@ void clean_app_config(AppConfig* config) {
     cleanup_print_config(&config->print);              // M. Print Configuration
     cleanup_resources_config(&config->resources);      // N. Resources Configuration
     cleanup_oidc_config(&config->oidc);                // O. OIDC Configuration
+    cleanup_oidc_rp_config(&config->oidc_rp);          // O-RP. OIDC Relying Party
     cleanup_notify_config(&config->notify);            // P. Notify Configuration
 
 }

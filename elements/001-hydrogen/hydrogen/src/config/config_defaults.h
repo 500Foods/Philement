@@ -56,6 +56,7 @@ void initialize_config_defaults_mail_relay(AppConfig* config);
 void initialize_config_defaults_print(AppConfig* config);
 void initialize_config_defaults_resources(AppConfig* config);
 void initialize_config_defaults_oidc(AppConfig* config);
+void initialize_config_defaults_oidc_rp(AppConfig* config);
 void initialize_config_defaults_notify(AppConfig* config);
 
 #endif /* HYDROGEN_CONFIG_DEFAULTS_H */

@@ -127,6 +127,22 @@ typedef struct OIDCTokensConfig OIDCTokensConfig;
 struct OIDCSecurityConfig;
 typedef struct OIDCSecurityConfig OIDCSecurityConfig;
 
+// O-RP. OIDC Relying Party Configuration (Hydrogen as RP, distinct from OIDCConfig above)
+struct OIDCRelyingPartyConfig;
+typedef struct OIDCRelyingPartyConfig OIDCRelyingPartyConfig;
+
+struct OIDCRPProviderConfig;
+typedef struct OIDCRPProviderConfig OIDCRPProviderConfig;
+
+struct OIDCRPAccountLinking;
+typedef struct OIDCRPAccountLinking OIDCRPAccountLinking;
+
+struct OIDCRPProvisionDefaults;
+typedef struct OIDCRPProvisionDefaults OIDCRPProvisionDefaults;
+
+struct OIDCRPRoleMapping;
+typedef struct OIDCRPRoleMapping OIDCRPRoleMapping;
+
 // P. Notify Configuration
 struct NotifyConfig;
 typedef struct NotifyConfig NotifyConfig;

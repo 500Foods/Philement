@@ -1,0 +1,14 @@
+{
+    "Server": {
+        "ServerName": "hydrogen-test-42-oidc-rp"
+    },
+    "WebServer": {
+        "EnableIPv4": true,
+        "EnableIPv6": false,
+        "Port": 5242
+    },
+    "API": {
+        "Enabled": true,
+        "Prefix": "/api"
+    }
+}
