@@ -183,12 +183,12 @@ test_oidc_callback_method_check_still_works_when_enabled() {
 # The happy path needs all five moving parts:
 #   1. Mock IdP (already running from the Phase 9-13 block).
 #   2. SQLite-backed Hydrogen with OIDC_RP enabled and the demo
-#      Acuranzo schema (where `adminuser` is account_id=1, the value
-#      the Phase 14 stub linker resolves to).
+#      Acuranzo schema, with an identity row pre-seeded for
+#      adminuser (account_id=1) so the sub fast-path fires (Phase 21).
 #   3. The mock's /auth endpoint redirecting back to Hydrogen's
 #      /callback with code=test-code-ok (Phase 14 mock change).
 #   4. /callback minting a real Hydrogen JWT and putting a handoff
-#      record (Phase 14 implementation).
+#      record using the real linker (stub removed in Phase 21).
 #   5. /handoff exchanging the code for the JWT envelope (Phase 13).
 #
 # The driver curl follows the redirect chain (start -> auth -> callback)
@@ -293,24 +293,26 @@ test_oidc_callback_happy_path_end_to_end() {
         return
     fi
 
-    # The Phase 14 stub linker resolves to account_id=1 (adminuser).
-    # If those values change, this assertion is the canary.
-    if [[ "${user_id}" != "1" ]]; then
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 \
-            "Expected user_id=1 (stub linker), got user_id=${user_id}"
-        EXIT_CODE=1
-        return
-    fi
+     # The pre-seeded identity links to account_id=1 (adminuser). The
+     # username in the handoff envelope now comes from the IdP's
+     # preferred_username claim (real linker, Phase 21 — no longer the
+     # stub's fixed "adminuser"). Assert user_id=1 and non-empty username.
+     if [[ "${user_id}" != "1" ]]; then
+         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 \
+             "Expected user_id=1 (seeded identity for adminuser), got user_id=${user_id}"
+         EXIT_CODE=1
+         return
+     fi
 
-    if [[ "${username}" != "adminuser" ]]; then
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 \
-            "Expected username=adminuser, got username=${username}"
-        EXIT_CODE=1
-        return
-    fi
+     if [[ -z "${username}" ]]; then
+         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 \
+             "Expected non-empty username from IdP claims, got empty string"
+         EXIT_CODE=1
+         return
+     fi
 
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 \
-        "Full chain OK: JWT envelope user_id=${user_id} username=${username}"
+     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 \
+         "Full chain OK: JWT envelope user_id=${user_id} username=${username} (real linker, sub fast-path)"
     PASS_COUNT=$(( PASS_COUNT + 1 ))
 }
 

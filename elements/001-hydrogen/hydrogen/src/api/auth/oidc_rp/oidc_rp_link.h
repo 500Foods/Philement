@@ -2,43 +2,37 @@
  * @file oidc_rp_link.h
  * @brief OIDC RP account linker — resolve an IdP identity to a Hydrogen account.
  *
- * Phase 18 of the OIDC plan (`docs/OIDC-PLAN.md`) implemented
- * `match_sub_only`: look up the OIDC identity by `(issuer, subject)` via
- * QueryRef #080; on a hit, update `last_seen_at` via QueryRef #084 and
- * return the resolved account.
+ * Public API for the account-linking step of the OIDC RP flow. The
+ * implementation is split across dedicated per-strategy modules:
  *
- * Phase 19 adds `match_email_only` (QueryRefs #080, #082, #081):
- *   1. Try QueryRef #080 (sub-match) first — already-linked users stay fast.
- *   2. On sub-miss, if `email_verified == true` (and `RequireEmailVerified`
- *      config allows it), call QueryRef #082 (lookup by email in
- *      `account_contacts`).
- *   3. On a single-row hit: call QueryRef #081 to insert a new
- *      `account_oidc_identities` row, linking the account. Return the account.
- *   4. On a multi-row hit (two accounts with the same email): reject with
- *      `OIDC_RP_LINK_EMAIL_AMBIGUOUS` — admin must merge accounts first.
- *   5. On a miss (or unverified email): return `OIDC_RP_LINK_NO_ACCOUNT`.
+ *   - oidc_rp_link_sub.c      — `match_sub_only`   (Phase 18)
+ *   - oidc_rp_link_email.c    — `match_email_only`  (Phase 19)
+ *   - oidc_rp_link_provision.c — `provision_only`   (Phase 20)
+ *   - oidc_rp_link_default.c  — `match_email_then_provision` (Phase 21)
  *
- * Subsequent phases extend this module further:
- *   - Phase 20 adds auto-provisioning (QueryRef #083).
- *   - Phase 21 composes all strategies into the default
- *     `match_email_then_provision` flow and deletes
- *     `oidc_rp_link_stub.{c,h}`.
+ * Shared helpers (QueryRef wrappers, account_info_t builder, test seam)
+ * live in oidc_rp_link_internal.{c,h}.
  *
- * The strategy to apply is read from the active provider's
- * `account_linking.strategy` field (parsed in Phase 5). Phases 18–19
- * handle `OIDC_RP_LINK_MATCH_SUB_ONLY` and `OIDC_RP_LINK_MATCH_EMAIL_ONLY`;
- * remaining strategies fall through to the stub linker until implemented.
+ * Strategy overview:
+ *
+ *   `match_sub_only` — trust the (iss, sub) tuple only; fail if no link.
+ *   `match_email_only` — fast-path via (iss, sub); on miss, link by
+ *     verified email; EMAIL_AMBIGUOUS if two accounts share the email.
+ *   `provision_only` — fast-path via (iss, sub); on miss, provision a
+ *     new account if prerequisites (Enabled, email_verified, domain) pass.
+ *   `match_email_then_provision` (default) — fast-path via (iss, sub);
+ *     on miss, try email-link; on email-miss, provision if allowed.
+ *
+ * Phase 22 will add role-mapping (default-role assignment for provisioned
+ * accounts and IdP role-claim → Hydrogen role mapping).
  *
  * Logging policy:
- *   - NEVER log `email` on the success path. Only log `email` on
- *     failed-link events so operators can diagnose mismatches.
- *   - Always log `iss` (truncated to 64 chars), `sub` (truncated to
- *     16 chars), `account_id` (on success), and `strategy`.
- *   - Use `SR_AUTH` subsystem with `OIDC_RP` prefix per the plan's
- *     `docs/OIDC-PLAN.md` § "Logging".
+ *   - NEVER log `email` on the success path.
+ *   - Log `iss` (truncated to 64 chars) and `sub` (truncated to 16 chars)
+ *     on every outcome; log `account_id` on success.
+ *   - Use `SR_AUTH` subsystem with `OIDC_RP` prefix.
  *
- * Thread safety: all public functions are reentrant. The database
- * queue they invoke is itself thread-safe.
+ * Thread safety: all public functions are reentrant.
  *
  * @author Hydrogen Framework
  * @date 2026-05-09
@@ -66,9 +60,14 @@ typedef enum OidcRpLinkResult {
     OIDC_RP_LINK_DB_ERROR = 3,        /**< Database query failed. */
     OIDC_RP_LINK_DISABLED = 4,        /**< OIDC feature is disabled. */
     OIDC_RP_LINK_ACCOUNT_DISABLED = 5,/**< Account exists but is disabled. */
-    OIDC_RP_LINK_EMAIL_AMBIGUOUS = 6  /**< Two accounts share the same email;
+    OIDC_RP_LINK_EMAIL_AMBIGUOUS = 6, /**< Two accounts share the same email;
                                            admin must merge before linking.
                                            Added in Phase 19. */
+    OIDC_RP_LINK_PROVISION_DISALLOWED_EMAIL = 7
+                                      /**< Provisioning was attempted but the
+                                           IdP-supplied email domain is not on
+                                           the configured `AllowedEmailDomains`
+                                           list. Added in Phase 20. */
 } OidcRpLinkResult;
 
 /**
@@ -89,19 +88,12 @@ const char *oidc_rp_link_result_name(OidcRpLinkResult result);
  * find or create an `accounts` row and return a populated
  * `account_info_t`.
  *
- * Phases 18–19 implement `OIDC_RP_LINK_MATCH_SUB_ONLY` and
- * `OIDC_RP_LINK_MATCH_EMAIL_ONLY`. For `match_sub_only`:
- *   1. Call QueryRef #080 with `(issuer, subject)` from `claims`.
- *   2. On zero rows: return `OIDC_RP_LINK_NO_ACCOUNT`.
- *   3. On one row: call QueryRef #084 to update `last_seen_at`,
- *      then populate the `account_info_t`.
- *
- * For `match_email_only`:
- *   1. Try #080 first (already-linked users stay fast).
- *   2. On sub-miss and email_verified: call QueryRef #082 (lookup by email).
- *   3. One row → call QueryRef #081 to link, then return account.
- *   4. Two+ rows → return `OIDC_RP_LINK_EMAIL_AMBIGUOUS`.
- *   5. Zero rows (or unverified email) → return `OIDC_RP_LINK_NO_ACCOUNT`.
+ * All four strategies are implemented as of Phase 21. See the per-strategy
+ * source files for detailed flow descriptions:
+ *   - oidc_rp_link_sub.c      (match_sub_only)
+ *   - oidc_rp_link_email.c    (match_email_only)
+ *   - oidc_rp_link_provision.c (provision_only)
+ *   - oidc_rp_link_default.c  (match_email_then_provision)
  *
  * On `OIDC_RP_LINK_OK`, `*out_account` is set to a newly-allocated
  * `account_info_t*` with `id`, `enabled`, `authorized`, `username`,

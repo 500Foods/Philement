@@ -2,6 +2,12 @@
  * Unity Test File: OIDC RP account linker — Phase 18 (match_sub_only)
  *                                           + Phase 19 (match_email_only).
  *
+ * Phase 20's `provision_only` tests live in a sibling file,
+ * `oidc_rp_link_test_provision.c`. Phase 21's
+ * `match_email_then_provision` tests live in
+ * `oidc_rp_link_test_default.c`. Splitting by phase keeps each file
+ * under the project-wide 1,000-line cap.
+ *
  * Covers `oidc_rp_link_resolve` from
  * `src/api/auth/oidc_rp/oidc_rp_link.c`.
  *
@@ -52,9 +58,8 @@
  *       race) + #080 re-fetch miss → LINK_OK (identity still linked,
  *       touch skipped non-fatally).
  *
- *   Unimplemented strategy:
- *     - Strategy = match_email_then_provision → NO_ACCOUNT (logged as
- *       not-yet-implemented; lands in Phases 20–21).
+ *   Phase 21 `match_email_then_provision` strategy tests live in
+ *   `oidc_rp_link_test_default.c` (separate sibling binary).
  */
 
 #include <src/hydrogen.h>
@@ -294,8 +299,6 @@ void test_match_email_only_082_zero_rows_returns_no_account(void);
 void test_match_email_only_082_ambiguous_returns_email_ambiguous(void);
 void test_match_email_only_082_db_error_returns_db_error(void);
 void test_match_email_only_081_race_still_returns_ok(void);
-/* Unimplemented strategy */
-void test_unimplemented_strategy_returns_no_account(void);
 
 /* -------------------------------------------------------------------------
  * error_name
@@ -309,6 +312,9 @@ void test_error_name_covers_all_values(void) {
     TEST_ASSERT_EQUAL_STRING("db_error",         oidc_rp_link_result_name(OIDC_RP_LINK_DB_ERROR));
     TEST_ASSERT_EQUAL_STRING("disabled",         oidc_rp_link_result_name(OIDC_RP_LINK_DISABLED));
     TEST_ASSERT_EQUAL_STRING("account_disabled", oidc_rp_link_result_name(OIDC_RP_LINK_ACCOUNT_DISABLED));
+    TEST_ASSERT_EQUAL_STRING("email_ambiguous",  oidc_rp_link_result_name(OIDC_RP_LINK_EMAIL_AMBIGUOUS));
+    TEST_ASSERT_EQUAL_STRING("provision_disallowed_email",
+                             oidc_rp_link_result_name(OIDC_RP_LINK_PROVISION_DISALLOWED_EMAIL));
     /* Unknown value. */
     TEST_ASSERT_EQUAL_STRING("unknown",          oidc_rp_link_result_name((OidcRpLinkResult)99));
 }
@@ -849,26 +855,6 @@ void test_match_email_only_081_race_still_returns_ok(void) {
     free_account_info(account);
 }
 
-/* -------------------------------------------------------------------------
- * Unimplemented strategy
- * -------------------------------------------------------------------------
- */
-
-void test_unimplemented_strategy_returns_no_account(void) {
-    /* Use match_email_then_provision — not implemented until Phase 20. */
-    OIDCRPProviderConfig p = make_provider(OIDC_RP_LINK_MATCH_EMAIL_THEN_PROVISION);
-    OidcRpIdTokenClaims claims = make_claims(
-        "https://example.com", "sub-x", NULL, "x@example.com", true);
-
-    account_info_t *account = NULL;
-    OidcRpLinkResult r = oidc_rp_link_resolve(&p, &claims, "Lithium", &account);
-
-    /* The linker logs "not yet implemented" and returns NO_ACCOUNT. */
-    TEST_ASSERT_EQUAL(OIDC_RP_LINK_NO_ACCOUNT, r);
-    TEST_ASSERT_NULL(account);
-    /* The seam must NOT have been called (the linker returns before querying). */
-    TEST_ASSERT_EQUAL_INT(0, g_call_count);
-}
 
 /* -------------------------------------------------------------------------
  * main
@@ -908,7 +894,6 @@ int main(void) {
     RUN_TEST(test_match_email_only_082_ambiguous_returns_email_ambiguous);
     RUN_TEST(test_match_email_only_082_db_error_returns_db_error);
     RUN_TEST(test_match_email_only_081_race_still_returns_ok);
-    RUN_TEST(test_unimplemented_strategy_returns_no_account);
 
     return UNITY_END();
 }

@@ -1,15 +1,14 @@
 /*
- * OIDC RP /callback endpoint — Phase 19 update
+ * OIDC RP /callback endpoint — Phase 21 update
  *
  * Composes Phases 7, 9, 10, 11, 12, 13 into the working chain that
  * turns an IdP authorization code into a Hydrogen JWT and a one-time
  * handoff record. See oidc_rp_callback.h for the step-by-step flow
  * and the typed-error vocabulary.
  *
- * Account linking (Phase 18–19): `match_sub_only` and `match_email_only`
- * are handled by `oidc_rp_link_resolve` (the real linker). All other
- * strategies continue to route through `oidc_rp_link_stub_resolve`
- * until Phases 20–21 implement them. Phase 21 removes the stub.
+ * Account linking (Phase 21): all four strategies are handled by
+ * `oidc_rp_link_resolve` (the real linker). The Phase 14 stub linker
+ * (`oidc_rp_link_stub`) has been deleted in this phase.
  *
  * Logging policy: NEVER logs `code`, `state`, `nonce`, `id_token`,
  * `access_token`, the minted Hydrogen JWT, or the handoff code.
@@ -34,7 +33,6 @@
 #include "oidc_rp_handoff_store.h"
 #include "oidc_rp_pkce.h"
 #include "oidc_rp_link.h"
-#include "oidc_rp_link_stub.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -433,51 +431,40 @@ enum MHD_Result handle_get_auth_oidc_callback(
     account_info_t *account = NULL;
     OIDCRPLinkStrategy strategy = provider->account_linking.strategy;
 
-    if (strategy == OIDC_RP_LINK_MATCH_SUB_ONLY ||
-        strategy == OIDC_RP_LINK_MATCH_EMAIL_ONLY) {
-        // Phases 18–19: real linker for match_sub_only and match_email_only.
-        OidcRpLinkResult link_result =
-            oidc_rp_link_resolve(provider, claims, database, &account);
-        if (link_result != OIDC_RP_LINK_OK || !account) {
-            const char *err_code;
-            switch (link_result) {
-                case OIDC_RP_LINK_ACCOUNT_DISABLED:
-                    err_code = "account_disabled";
-                    break;
-                case OIDC_RP_LINK_EMAIL_AMBIGUOUS:
-                    err_code = "email_ambiguous";
-                    break;
-                case OIDC_RP_LINK_OK:          /* should not reach here */
-                case OIDC_RP_LINK_NO_ACCOUNT:
-                case OIDC_RP_LINK_BAD_INPUT:
-                case OIDC_RP_LINK_DB_ERROR:
-                case OIDC_RP_LINK_DISABLED:
-                default:
-                    err_code = "no_account";
-                    break;
-            }
-            log_this(SR_AUTH,
-                     "OIDC RP /callback: linker returned %s (strategy=%s)",
-                     LOG_LEVEL_ALERT, 2,
-                     oidc_rp_link_result_name(link_result),
-                     oidc_rp_link_strategy_name(strategy));
-            enum MHD_Result ret =
-                redirect_with_error(connection, provider, err_code, return_to);
-            oidc_rp_idtoken_claims_free(claims);
-            oidc_rp_state_record_free(state_record);
-            return ret;
+    // Phase 21: all four strategies route through the real linker.
+    OidcRpLinkResult link_result =
+        oidc_rp_link_resolve(provider, claims, database, &account);
+    if (link_result != OIDC_RP_LINK_OK || !account) {
+        const char *err_code;
+        switch (link_result) {
+            case OIDC_RP_LINK_ACCOUNT_DISABLED:
+                err_code = "account_disabled";
+                break;
+            case OIDC_RP_LINK_EMAIL_AMBIGUOUS:
+                err_code = "email_ambiguous";
+                break;
+            case OIDC_RP_LINK_PROVISION_DISALLOWED_EMAIL:
+                err_code = "provision_disallowed_email";
+                break;
+            case OIDC_RP_LINK_OK:          /* should not reach here */
+            case OIDC_RP_LINK_NO_ACCOUNT:
+            case OIDC_RP_LINK_BAD_INPUT:
+            case OIDC_RP_LINK_DB_ERROR:
+            case OIDC_RP_LINK_DISABLED:
+            default:
+                err_code = "no_account";
+                break;
         }
-    } else {
-        // Phases 20–21 handle match_email_then_provision and provision_only.
-        // Until those phases land, fall back to the Phase 14 stub linker so
-        // existing test coverage stays intact.
-        account = oidc_rp_link_stub_resolve(claims, database);
-        if (!account) {
-            oidc_rp_idtoken_claims_free(claims);
-            oidc_rp_state_record_free(state_record);
-            return redirect_with_error(connection, provider, "no_account",
-                                       return_to);
-        }
+        log_this(SR_AUTH,
+                 "OIDC RP /callback: linker returned %s (strategy=%s)",
+                 LOG_LEVEL_ALERT, 2,
+                 oidc_rp_link_result_name(link_result),
+                 oidc_rp_link_strategy_name(strategy));
+        enum MHD_Result ret =
+            redirect_with_error(connection, provider, err_code, return_to);
+        oidc_rp_idtoken_claims_free(claims);
+        oidc_rp_state_record_free(state_record);
+        return ret;
     }
 
     // ---- API key + system info (server-side, never sent to browser) ----
