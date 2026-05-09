@@ -1,0 +1,48 @@
+{
+    "Server": {
+        "ServerName": "hydrogen-test-42-oidc-rp-enabled"
+    },
+    "WebServer": {
+        "EnableIPv4": true,
+        "EnableIPv6": false,
+        "Port": 5243
+    },
+    "API": {
+        "Enabled": true,
+        "Prefix": "/api"
+    },
+    "OIDC_RP": {
+        "Enabled": true,
+        "Database": "Lithium",
+        "Providers": [
+            {
+                "Name": "test-mock",
+                "Label": "Mock Keycloak",
+                "Issuer": "http://localhost:7042/realms/test",
+                "ClientId": "lithium-web",
+                "ClientSecret": "test-secret-not-used-until-phase-11",
+                "RedirectUri": "http://localhost:5243/api/auth/oidc/callback",
+                "Scopes": "openid profile email",
+                "VerifySsl": false,
+                "AllowedAlgorithms": ["RS256"],
+                "DiscoveryCacheSeconds": 60,
+                "JwksCacheSeconds": 60,
+                "StateTtlSeconds": 600,
+                "HandoffTtlSeconds": 60,
+                "BindHandoffToIp": false,
+                "AccountLinking": {
+                    "Strategy": "match_email_then_provision",
+                    "RequireEmailVerified": true,
+                    "ProvisionDefaults": {
+                        "Enabled": false,
+                        "Authorized": false,
+                        "DefaultRoleNames": ["user"]
+                    }
+                },
+                "RoleMapping": {
+                    "Source": "database"
+                }
+            }
+        ]
+    }
+}

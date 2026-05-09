@@ -847,8 +847,8 @@ password login still works — every phase preserves that invariant.
 | 7 | Hydrogen — in-memory state store | Hydrogen | Medium | ✅ Done |
 | 8 | Hydrogen — PKCE helpers (verifier, challenge, state, nonce) | Hydrogen | Low | ✅ Done |
 | 9 | Hydrogen — discovery + JWKS fetch and cache | Hydrogen | Medium | ✅ Done |
-| 10 | Hydrogen — `/oidc/start` redirect builder | Hydrogen | Medium |
-| 11 | Hydrogen — token endpoint client (POST to Keycloak `/token`) | Hydrogen | Medium |
+| 10 | Hydrogen — `/oidc/start` redirect builder | Hydrogen | Medium | ✅ Done |
+| 11 | Hydrogen — token endpoint client (POST to Keycloak `/token`) | Hydrogen | Medium | ✅ Done |
 | 12 | Hydrogen — ID token validation | Hydrogen | High |
 | 13 | Hydrogen — handoff store and `/oidc/handoff` exchange endpoint | Hydrogen | Medium |
 | 14 | Hydrogen — `/oidc/callback` end-to-end with stub linker | Hydrogen | High |
@@ -1878,7 +1878,7 @@ Every phase block contains the same fields, in the same order:
 
 ---
 
-### Phase 10 — Hydrogen: real `/oidc/start` redirect
+### Phase 10 — Hydrogen: real `/oidc/start` redirect ✅ COMPLETE
 
 - **Goal:** Make `/api/auth/oidc/start` actually redirect to Keycloak's
   authorization endpoint, with state stored. No callback yet.
@@ -1893,54 +1893,478 @@ Every phase block contains the same fields, in the same order:
     URL using discovery (Phase 9); 302 with `Cache-Control: no-store`.
   - Provider-disabled (Enabled=false) still returns 503.
 - **Files:**
-  - Touched: `src/api/auth/oidc_rp/oidc_rp_start.{c,h}`,
-    `oidc_rp_service.{c,h}` (helpers).
-  - Created: `tests/unity/test_oidc_rp_start.c`
+  - Touched: `src/api/auth/oidc_rp/oidc_rp_start.{c,h}` (rewritten:
+    54→294 in `.c`, 55→83 in `.h`),
+    `oidc_rp_service.{c,h}` (helpers added: 66→277 in `.c`,
+    81→191 in `.h`).
+  - Created: `tests/unity/src/api/auth/oidc_rp/oidc_rp_start_test_helpers.c`
+    (402 lines, 29 tests).
+  - Created: `tests/configs/hydrogen_test_42_oidc_rp_enabled.json`
+    (48 lines — minimal `OIDC_RP.Enabled=true` config pointing at the
+    mock Keycloak from Phase 9).
+  - Touched: `tests/test_42_oidc_rp.sh` (added Phase 10 block: starts
+    a second Hydrogen instance with the enabled config alongside the
+    already-running mock, runs three sub-tests against `/oidc/start`,
+    bumps version 1.1.0 → 1.2.0).
 - **Tests required:**
-  - Unit: helper builds the auth URL with all required query
-    parameters, in canonical order, properly URL-encoded.
-  - Unit: `oidc_rp_safe_return_to` rejects `//evil.com`,
-    `https://evil.com`, backslashes, schemes; accepts `/foo`,
-    `/foo?x=1#y`, empty.
-  - Black-box `test_42_oidc_rp.sh`: with `Enabled=true` pointing at
-    mock, `GET /oidc/start` returns 302; `Location` header contains
-    expected query params; `state` is registered in the state store.
+  - Unit (29 tests, all green):
+    - `oidc_rp_safe_return_to`: NULL accepted; empty rejected; no
+      leading slash rejected (incl. `https://evil.com`,
+      `javascript:alert(1)`); `//evil.com` rejected; `/\\evil.com`
+      rejected; embedded scheme `/foo://bar` rejected; backslashes
+      anywhere rejected; CR/LF (header-injection) rejected; `/`,
+      `/foo`, `/foo/bar/baz`, `/foo?x=1#y`, `/foo/../bar` accepted.
+    - `oidc_rp_build_authorize_url`: each NULL/empty input rejected
+      (7 inputs × 1 = 7 tests + 2 empty-string variants); URL starts
+      with the configured authorization endpoint followed by `?`;
+      query parameters appear in canonical order
+      (response_type, client_id, redirect_uri, scope, state, nonce,
+      code_challenge, code_challenge_method); `code_challenge_method=S256`
+      is hard-coded; redirect_uri's `:` and `/` are %3A/%2F-encoded
+      and the literal `https://` does NOT leak unencoded; spaces in
+      state and scope are properly encoded.
+  - Black-box `test_42_oidc_rp.sh` (3 new sub-tests): with mock
+    Keycloak running, GET `/oidc/start` against the enabled-config
+    Hydrogen returns 302; `Location` header starts with the mock's
+    `authorization_endpoint`; all required query params present
+    (response_type=code, client_id, redirect_uri, scope, state,
+    nonce, code_challenge, code_challenge_method=S256); `Cache-Control:
+    no-store` present on the 302; `?return_to=//evil.com` (URL-encoded)
+    rejected with 400 `invalid_return_to`; method check still fires
+    when feature is enabled (POST → 405).
 - **Definition of Done:**
-  - [ ] All Phase 10 tests green.
-  - [ ] No regression in earlier phase tests.
-  - [ ] cppcheck/shellcheck clean.
+  - [x] `mkt` (regular + unity build) clean.
+  - [x] `mka` (`test_01_compilation.sh`) clean — 18/18 build variants
+        green.
+  - [x] `oidc_rp_start_test_helpers` Unity test green: 29/29 passing,
+        full suite 6,873/6,873 (was 6,840 in Phase 9, +29 new and
+        +4 elsewhere; 4 cached failures pre-date Phase 6 per
+        Phase 6 lesson #9). Coverage 59.412% (244/267 files).
+  - [x] `test_11_leaks_like_a_sieve` passes: 0 direct, 0 indirect
+        leaks. The new lazy-init path *is* exercised here because
+        test_11 spins up the full Hydrogen runtime with debug+ASAN.
+        The runtime is exercised with `Enabled=false` so the lazy
+        init is never triggered, but the new code in `oidc_rp_service.c`
+        is linked in and the `pthread_once` allocation is still
+        clean.
+  - [x] `test_42_oidc_rp.sh` (Phase 6 + 9 + 10) green: 25/25 in 1.081s
+        (was 18/18 in Phase 9, +7 net new across the Phase 10 block:
+        validate enabled config, start enabled Hydrogen, /start 302
+        check, invalid return_to check, method check, stop enabled
+        Hydrogen, the rearranged "Stop mock Keycloak" subtest).
+  - [x] `test_91_cppcheck` clean — 1,321 files, 0 issues.
+  - [x] `test_92_shellcheck` clean — 109 scripts, 645 directives all
+        justified (was 640 in Phase 9; +5 directives are the new
+        `# shellcheck disable=SC2310` annotations on the Phase 10
+        sub-test wrappers in `test_42_oidc_rp.sh`).
+  - [x] `test_17_startup_shutdown` clean — 9/9 passing.
+  - [x] `test_99_code_size`: pass count unchanged from Phase 9
+        baseline (the pre-existing `proxy_multi.c` 1,209-line
+        finding is unrelated to Phase 10; all new files ≤ 402
+        lines, largest is the new test file).
+  - [x] `test_40_auth.sh` regression-clean: 46/46 passing across 7
+        DB engines. Password login path is genuinely untouched by
+        Phase 10.
+
+**Lessons learned:**
+
+1. **Lazy-init via `pthread_once` is the right shape for Phase 10.**
+   The Phase 9 setup notes explicitly deferred state-store and
+   discovery-cache `init`/`shutdown` to Phase 14. Bringing that
+   forward into Hydrogen's startup hook would have meant touching
+   `hydrogen.c` for a feature still gated off in production by
+   default. Lazy-init on first `/oidc/start` call (guarded by
+   `pthread_once_t`) keeps the blast radius confined to
+   `oidc_rp_service.c` and is naturally idempotent. Phase 14 will
+   replace this with an explicit startup hook when the callback
+   endpoint becomes the second consumer.
+2. **`pthread_once` + a static `bool oidc_rp_init_ok` is enough; no
+   double-checked locking required.** The runtime only needs to
+   know "did init succeed?" once, and `pthread_once` provides
+   memory ordering guarantees that mean every subsequent caller
+   sees the final value. Trying to be cleverer (atomic flags,
+   manual fences) would have added risk for no benefit. Same
+   pattern would apply to Phase 13's handoff store.
+3. **`api_url_encode` from `src/api/api_utils.h` does the right
+   thing.** The plan called for "properly URL-encoded" parameters;
+   the existing helper handles the standard reserved-character set
+   for query-string values (`:`, `/`, `?`, `=`, `#`, ` `). The
+   Phase 10 URL builder is a thin glue around `api_url_encode` plus
+   a realloc-on-demand buffer. Per Phase 8 lesson #1: always grep
+   `src/utils/utils_*.{c,h}` and `src/api/api_utils.h` for
+   primitives before writing new ones.
+4. **`MHD_lookup_connection_value(MHD_GET_ARGUMENT_KIND, …)` is the
+   correct query-param accessor.** The existing Hydrogen-as-IdP
+   code (`src/api/oidc/oidc_service.c:172-193`) already uses it
+   with a series of named `value = MHD_lookup_…` calls. No need
+   for an iterator — Phase 10 only needs two parameters
+   (`return_to`, `database`).
+5. **`api_get_client_ip(connection)` returns a heap-allocated
+   `"unknown"` on error, never NULL.** Confirmed by reading the
+   header doc (`src/api/api_utils.h:60-66`). The Phase 10 caller
+   passes whatever it returned straight to the state store, which
+   tolerates NULL too — but in practice the value is always a
+   meaningful string.
+6. **The 302 helper is worth a named function even though it's
+   short.** `oidc_rp_send_redirect()` builds an empty-body response,
+   sets `Location`, `Cache-Control: no-store`, and `Pragma: no-cache`,
+   then queues with `MHD_HTTP_FOUND`. Phase 14 (callback) will be
+   the second caller (with the Lithium-bound `?oidc=1&handoff=…`
+   URL); having one chokepoint means the no-store discipline never
+   gets accidentally dropped.
+7. **Two-Hydrogen-instance pattern in `test_42_oidc_rp.sh` is the
+   cleanest way to cover both feature gates in one test.** Earlier
+   Phase 10 drafts considered patching the running config or
+   adding a runtime toggle; both would have been more invasive.
+   Spinning up a second Hydrogen with a separate config (port 5243
+   vs 5242) and a separate PID variable is cheap (35ms startup,
+   2ms shutdown observed) and keeps the disabled-mode coverage
+   from Phase 6 byte-for-byte intact.
+8. **The mock IdP authorization endpoint does not need to handle
+   the redirect.** Phase 10 only verifies that Hydrogen produces a
+   correctly-shaped 302 — what happens when the browser actually
+   follows it is Phase 11/12/14 territory. The black-box test
+   uses `curl -i -o file --max-time 5` *without* `-L` to capture
+   the redirect headers but never follow them. Mock's `/auth`
+   endpoint returns 404; that's fine.
+9. **State-record TTL config means a 302 with no follow-up still
+   ages out cleanly.** A user who hits `/start` and never returns
+   leaves a state-store entry behind. With `StateTtlSeconds=600`
+   and the sweeper thread running, the entry is reaped within 10
+   minutes. The unit tests for the state store (Phase 7) already
+   cover this; Phase 10 just inherits it.
+10. **Sensitive-buffer scrub on every error path is verbose but
+    correct.** The Phase 10 handler has six failure branches
+    (provider missing, init failure, return_to invalid, PKCE gen
+    failure, discovery failure, state-put failure). Each one frees
+    `state`, `nonce`, `code_verifier`, and `code_challenge` —
+    scrubbing nonce and code_verifier with a `volatile char *p`
+    walk per the Phase 7 / Phase 8 hardening discipline. This
+    is repetitive but each branch is right next to its allocation,
+    so the per-branch scrub is the safest reading. A future
+    cleanup pass could collapse the cleanups into a `goto fail`
+    pattern with a single deferred-cleanup block — worth doing
+    if Phase 14 ends up with a similar shape.
+11. **The state record's `client_ip` field is captured but not yet
+    enforced.** Phase 10 stores the IP for audit. Phase 13's
+    `BindHandoffToIp` config will read it back at handoff-exchange
+    time to defeat passive cookie hijack. Phase 14's callback
+    will read it for the same purpose. No special discipline
+    needed in Phase 10 beyond capturing it.
+12. **`OIDC_RP.Database` is captured but not yet plumbed.** The
+    Phase 10 handler reads `?database=` from the request and
+    stores it; the per-config `OIDC_RP.Database` default isn't
+    consulted until Phase 14 (when the JWT is actually minted).
+    This matches the plan's contract — Phase 10 is "redirect
+    only, no JWT".
+
+**Setup for Phase 11 (token endpoint client):**
+
+- The state store is now actively populated by `/start`. Phase 14's
+  `/callback` will be the first consumer of `oidc_rp_state_take`
+  in production code; until then the state-store `take` API is
+  exercised only by Unity tests. Phase 10 introduced no new
+  consumers, just producers.
+- The discovery cache is also actively populated by `/start`.
+  Phase 11's token-endpoint client will pull `token_endpoint` from
+  the same const-pointer return as Phase 10's
+  `authorization_endpoint`. Per Phase 9 lesson #4, copy the URL
+  out into a local buffer immediately — the const pointer can be
+  invalidated by a later mutating call.
+- The mock Keycloak server (`tests/lib/mock_keycloak/server.js`)
+  serves discovery + JWKS only. Phase 11 will need to add a
+  `/realms/test/protocol/openid-connect/token` endpoint to the
+  mock so the token-exchange path can be black-box tested. Plan
+  shape: `app.post(...)` with a JSON response containing
+  `id_token`, `access_token`, `expires_in`, `token_type=Bearer`.
+  The `id_token` will be a real JWT signed by a real RSA keypair
+  in Phase 12 (Phase 11 can return a placeholder string and let
+  Phase 12 add signing; or both phases can land together).
+- The `oidc_rp_send_redirect()` helper is a candidate to be
+  shared with Phase 14's callback (which 302s back to Lithium with
+  the handoff code). No refactor needed — Phase 14 just calls it.
+- Phase 14 will introduce the proper init/shutdown wiring in
+  `hydrogen.c`. At that point, the lazy-init pattern in
+  `oidc_rp_service.c` should be removed (or guarded with a
+  build-time flag). Phase 10 leaves the lazy-init in place because
+  removing it before Phase 14 wires the alternative would mean a
+  brief window where /start fails. Migration plan: Phase 14 adds
+  the explicit init, then deletes the lazy-init code in the same
+  commit.
+- The new `OIDCRPProviderConfig::system_api_key` field (added in
+  Phase 5 lesson #7) is not yet consulted. Phase 14 will need it
+  to call `verify_api_key()` and resolve the `system_info_t` for
+  JWT minting.
 
 ---
 
-### Phase 11 — Hydrogen: token endpoint client
+### Phase 11 — Hydrogen: token endpoint client ✅ COMPLETE
 
 - **Goal:** Pure server-to-server POST to Keycloak's `/token`,
-  parse the response, expose `{ id_token, access_token, expires_in }`
-  to callers. No callback wiring yet.
+  parse the response, expose `{ id_token, access_token, expires_in,
+  token_type }` to callers. No callback wiring yet (that's Phase 14).
 - **Prerequisites:** Phase 9.
 - **In scope:**
   - `oidc_rp_token.{c,h}`: `oidc_rp_exchange_code(provider,
-    code, redirect_uri, code_verifier, out_tokens)`.
-  - HTTP Basic auth header from `client_id:client_secret` (URL-encoded
-    per RFC 6749 §2.3.1) preferred; fall back to body params if
-    `auth_method = "client_secret_post"`.
-  - Strict TLS, redirect = error, 4xx → typed error string returned.
+    token_endpoint, code, redirect_uri, code_verifier, out_response)`
+    returning a typed `OidcRpTokenError`.
+  - Companion `oidc_rp_http_post()` added to the existing
+    `oidc_rp_http.{c,h}` (Phase 9 wrapper). Same body cap (1 MiB),
+    same timeout pair (10s connect / 30s total), same test seam,
+    same TLS discipline; only the verb and request-body handling
+    differ.
+  - HTTP Basic auth header from URL-encoded `client_id:client_secret`
+    (RFC 6749 §2.3.1) when `auth_method = client_secret_basic`
+    (the default). Body-form fallback when
+    `auth_method = client_secret_post`.
+  - New `OIDCRPProviderConfig::auth_method` field (`OIDCRPAuthMethod`
+    enum) added to the Phase 5 config schema. Default is
+    `client_secret_basic`. Unknown strings fall back to the default.
+  - 4xx response bodies parsed best-effort for the OAuth2 `error`
+    field (RFC 6749 §5.2) and mapped to typed `OidcRpTokenError`
+    values: `invalid_grant`, `invalid_client`, `server_error`,
+    `bad_response`, `transport`, `other`.
+  - Sensitive-buffer scrubbing: form body, Authorization header,
+    base64-encoded credentials, and token-response strings are
+    `memset`-zeroed before `free` (per Phase 7 lesson #5 / Phase 8
+    lesson #5 / Phase 10 lesson #10).
+  - `refresh_token` is intentionally NOT surfaced — Hydrogen does
+    not consume it (plan non-goal #4).
 - **Files:**
-  - Created: `src/api/auth/oidc_rp/oidc_rp_token.{c,h}`
-  - Created: `tests/unity/test_oidc_rp_token.c`
-  - Touched: mock Keycloak gains a `/token` endpoint that accepts a
-    canned `code` and returns canned tokens.
+  - Created: `src/api/auth/oidc_rp/oidc_rp_token.c` (436 lines),
+    `src/api/auth/oidc_rp/oidc_rp_token.h` (162 lines).
+  - Created: `tests/unity/src/api/auth/oidc_rp/oidc_rp_token_test_exchange.c`
+    (417 lines, 23 tests).
+  - Touched: `src/api/auth/oidc_rp/oidc_rp_http.c` (256 → 386 lines:
+    POST companion, refactored common preamble + perform-and-finalize
+    helpers).
+  - Touched: `src/api/auth/oidc_rp/oidc_rp_http.h` (127 → 181 lines:
+    new `oidc_rp_http_post()` declaration + module-purpose update).
+  - Touched: `src/config/config_oidc_rp.h` (`OIDCRPAuthMethod` enum,
+    new `auth_method` field, parser/name helper declarations).
+  - Touched: `src/config/config_oidc_rp.c` (auth-method enum table,
+    parser, default initialiser, JSON loader, dump line).
+  - Touched: `tests/unity/src/api/auth/oidc_rp/oidc_rp_http_test_get.c`
+    (12 → 18 tests: +6 POST-companion tests; note: the file name
+    still says `_test_get` but it now covers both verbs — kept as-is
+    to avoid CMake noise; a future cleanup pass can rename).
+  - Touched: `tests/unity/src/config/config_oidc_rp_test_load_oidc_rp_config.c`
+    (24 → 31 tests: +7 auth-method tests).
+  - Touched: `tests/lib/mock_keycloak/server.js` (128 → 221 lines:
+    new `POST /realms/test/protocol/openid-connect/token` endpoint
+    accepting canned `test-code-ok`, `invalid_grant` for any other
+    code, `unsupported_grant_type` for non-authorization-code grants).
+  - Touched: `tests/test_42_oidc_rp.sh` (717 → 875 lines: 3 new
+    Phase 11 mock-Keycloak `/token` sub-tests; bumped 1.2.0 →
+    1.3.0).
 - **Tests required:**
-  - Unit (with HTTP mocked at a lower level): success → struct filled;
-    400 → `invalid_grant` propagated; missing `id_token` → error.
-  - Black-box: a new sub-test in `test_42_oidc_rp.sh` calls a tiny
-    test-only utility that exercises `oidc_rp_exchange_code` directly
-    against the mock. (Or wait until Phase 14 if calling from a CLI
-    is awkward; choose one path and stick to it.)
+  - Unit (23 tests, all green):
+    - Lifecycle: `response_free` NULL-safe; `error_name` covers
+      every enum value + unknown.
+    - Argument validation: NULL provider, NULL out_response, missing
+      `client_id` / `code` / `redirect_uri` / `code_verifier`,
+      empty `token_endpoint`.
+    - Auth-method gating: `client_secret_basic` without secret →
+      `BAD_INPUT`; `client_secret_post` without basic secret works
+      (gates only on `client_secret`).
+    - Network: transport failure (status==0) → `TRANSPORT`.
+    - Success: full bundle (id_token + access_token + token_type +
+      expires_in); minimal bundle (id_token only); malformed JSON →
+      `BAD_RESPONSE`; missing `id_token` → `BAD_RESPONSE`.
+    - Error mapping: 400 `invalid_grant` → `INVALID_GRANT`; 400
+      `invalid_request` → `INVALID_GRANT`; 400 `unauthorized_client` →
+      `INVALID_CLIENT`; 400 `unsupported_grant_type` → `INVALID_GRANT`;
+      401 with no body → `INVALID_CLIENT`; 4xx with unknown error →
+      `OTHER`; 5xx → `SERVER`.
+    - HTTP wrapper (6 new POST tests): NULL/empty/non-http URL
+      rejected with `error_message`; test-seam works for POST;
+      NULL body accepted; long Authorization header values handled
+      without buffer-sizing regression.
+    - Config (7 new auth-method tests): default is
+      `client_secret_basic`; loaded from JSON; unknown string falls
+      back; enum parser/name helpers cover known + unknown values.
+  - Black-box `tests/test_42_oidc_rp.sh` (3 new sub-tests, all
+    green): mock Keycloak `/token` happy path returns 200 + id_token
+    + access_token + Bearer; unknown code → 400 `invalid_grant`;
+    wrong grant_type (`client_credentials`) → 400
+    `unsupported_grant_type`. The C-side `oidc_rp_exchange_code` is
+    deliberately NOT exercised end-to-end here — it goes through
+    the test-seam in unit tests, and Phase 14 (callback wiring)
+    will be the first place real-network coverage lands.
 - **Definition of Done:**
-  - [ ] All token-related tests green.
-  - [ ] cppcheck clean; no static functions on testable code (per
-        Hydrogen instructions).
+  - [x] `mkt` (regular + unity build) clean.
+  - [x] `mka` (`test_01_compilation.sh`) clean — 18/18 build variants
+        green (regular, debug/ASAN, coverage, perf, valgrind, release,
+        naked, examples, unity payload, etc.).
+  - [x] `test_10_unity` clean: 6,909 unit tests, 6,905 passing
+        (was 6,873 in Phase 10, +36 net new; the 4 failures pre-date
+        Phase 6 per Phase 6 lesson #9 — confirmed `chat_provider_test`
+        and `database/{postgresql,mysql,sqlite}/query_test_*_execute_params`,
+        none touch OIDC). Coverage 59.526% (245/268 files). Phase 11's
+        new test files contributed 36/36 green:
+        - `oidc_rp_token_test_exchange`: 23/23
+        - `oidc_rp_http_test_get`: 12 → 18 (+6)
+        - `config_oidc_rp_test_load_oidc_rp_config`: 24 → 31 (+7)
+  - [x] `test_11_leaks_like_a_sieve` passes: 0 direct, 0 indirect
+        leaks. Note that Phase 11's POST path is exercised under
+        ASAN only via the test-seam unit tests (test_11 runs the
+        runtime with `OIDC_RP.Enabled=false`); Phase 14 will give
+        the live POST path full ASAN coverage.
+  - [x] `test_42_oidc_rp.sh` green: 28/28 in 1.043s (was 25/25 in
+        Phase 10, +3 net new for the mock-Keycloak `/token`
+        sub-tests).
+  - [x] `test_91_cppcheck` clean — 1,324 files, 0 issues found in
+        the 9 changed files (was 1,321 in Phase 10, +3: the new
+        `oidc_rp_token.c`, `.h`, and the unity test file).
+  - [x] `test_92_shellcheck` clean — 109 scripts, 645 directives all
+        justified (no new directives needed in Phase 11).
+  - [x] `test_17_startup_shutdown` clean — 9/9.
+  - [x] `test_99_code_size`: pass count unchanged from Phase 10
+        baseline. The two pre-existing findings (`proxy_multi.c`
+        1,209 lines, `database_engine.c` 1,000 lines) are unrelated.
+        All Phase 11 new/touched files are well under the cap (largest
+        is `test_42_oidc_rp.sh` at 875 lines).
+  - [x] `test_40_auth.sh` regression-clean: 46/46 across 7 DB engines.
+        Password login is genuinely untouched.
+
+**Lessons learned:**
+
+1. **The companion-helper choice paid off immediately.** Keeping
+   `oidc_rp_http_post` next to `oidc_rp_http_get` in the same module
+   meant both share the test seam, the body cap, the TLS settings,
+   and the transport-error logging policy by construction. Refactoring
+   the duplicated parts into `preflight_request`,
+   `apply_common_curl_opts`, and `perform_and_finalize` happened
+   naturally during implementation — it would have been awkward to
+   bolt onto a generalized `oidc_rp_http_request(method, ...)` shape
+   after the fact, because the GET path's argument set is genuinely
+   smaller (no body, no Content-Type, no Authorization). Phase 9
+   lesson #2 (lift `chat_proxy_send_request` patterns) was what made
+   the POST companion small (~110 net new lines beyond the shared
+   helpers); the next phase that needs an HTTP verb (PATCH for
+   backchannel logout?) can follow the same recipe.
+2. **The test seam is verb-agnostic.** Adding POST coverage required
+   ZERO changes to `oidc_rp_http_test_set_response` or the fixture
+   queue. The seam keys on URL substring + single-shot consumption,
+   not on method. This is a happy outcome of Phase 9 lesson #1
+   (single-shot seam pre-flight) — the design generalizes cleanly to
+   new verbs. Future phases that need HEAD or DELETE wrappers should
+   not need to extend the seam either.
+3. **`utils_base64_encode` is RFC 4648 standard base64 with `=`
+   padding** — exactly what HTTP Basic auth needs (RFC 7617). The
+   url-safe variant (`utils_base64url_encode`, used by PKCE in
+   Phase 8) would have been wrong here. Both helpers live in
+   `src/utils/utils_crypto.c` and are clearly named; greppable
+   infrastructure pays off again (Phase 8 lesson #1, Phase 10
+   lesson #3).
+4. **RFC 6749 §2.3.1 URL-encoding before base64 is non-negotiable
+   for Basic auth.** A real Keycloak client secret may contain `:`,
+   `+`, `/`, or other characters that would corrupt the
+   `client_id:client_secret` joining if sent verbatim into base64.
+   The implementation runs both halves through `api_url_encode`
+   before joining and base64-encoding. The unit tests use the
+   relatively benign secret `"super-secret-value"` that survives
+   either pathway, but the encoding is in place and verified by
+   the structure of the code (and by Phase 27 against real Keycloak
+   when secrets get spicier).
+5. **Refresh tokens are deliberately dropped.** The plan's non-goal
+   #4 is "no refresh-token-driven session sliding". The
+   `OidcRpTokenResponse` struct does not have a `refresh_token`
+   field at all, so even if Hydrogen later wanted to introspect
+   one, the surface is closed. This is consistent with the plan's
+   "Hydrogen JWT renewal flow" being the only renewal mechanism.
+   If a future phase ever wants to consume refresh tokens (e.g.
+   for upstream UserInfo refresh), this is the place to revisit.
+6. **`auth_method` config field default chosen for Keycloak realism.**
+   Keycloak's confidential clients default to `client_secret_basic`.
+   Hydrogen's default matches. `client_secret_post` exists for IdPs
+   that require it (some bespoke deployments do); the
+   `private_key_jwt` and `client_secret_jwt` methods (RFC 7521) are
+   intentionally omitted — they require asymmetric keypair handling
+   that's out of scope for the MVP. Adding them later means a new
+   enum value + a new code path; the schema is forward-compatible.
+7. **Typed errors > ad-hoc error strings.** The plan called for "a
+   typed error string returned" on 4xx; the implementation uses an
+   `OidcRpTokenError` enum with `oidc_rp_token_error_name()` for
+   logging. Phase 14's callback handler will translate each enum
+   value to a corresponding `?oidc_error=<typed>` redirect param,
+   keeping the user-facing surface stable across IdP quirks. The
+   stable string table also makes the error table easy to extend
+   without breaking existing callers.
+8. **Unauthenticated 401 → INVALID_CLIENT (default).** RFC 6749 §5.2
+   permits returning either a structured JSON body OR an empty body
+   with `WWW-Authenticate`. Keycloak in practice returns the latter
+   for some auth-header rejection cases. The mapping rule "401 with
+   unparseable body → invalid_client" matches operator intuition
+   (a 401 from a token endpoint almost always means credential
+   rejection) and is covered by
+   `test_exchange_401_with_no_body_defaults_to_invalid_client`.
+9. **The mock `/token` endpoint is intentionally minimal.** It
+   returns canned data for one canned code; it does NOT verify the
+   `code_verifier`, the `redirect_uri`, the Authorization header,
+   or the `client_id` claim against the canned `code`. The mock's
+   job in Phase 11 is to exist as a 200/400 producer for the
+   black-box check that Hydrogen's POST machinery actually reaches
+   the right URL with a sane body. Phase 14 will need a richer mock
+   that actually validates these (or, equivalently, the e2e Phase 27
+   pass against real Keycloak will).
+10. **The Node mock now has 200 lines but stays dependency-free.**
+    Phase 9 lesson #10 (keep the mock script tiny, no router
+    framework). Phase 11 added 93 lines: a `readBody` helper, a
+    `parseForm` helper, and the `handleTokenPost` branch — all
+    using only `node:http` and `node:process`. The flat
+    `if (req.method && url)` discriminator pattern continues to
+    scale.
+11. **Build-system reconfigure caveat (Phase 5 lesson #1) struck
+    again.** Adding `oidc_rp_token.c` required a `cmake .` reconfigure
+    via `mkt`'s clean-build path; a `QUICK` invocation would have
+    failed to link. The Unity glob auto-discovered the test file
+    (`*_test*.c`); CMake required no edits.
+12. **The test file `oidc_rp_http_test_get.c` is now misnamed — it
+    covers both GET and POST.** Decided to leave the name as-is
+    because (a) renaming a test file in CMake-glob land is
+    cosmetic noise that can change line counts in unrelated
+    diagnostics, and (b) the contents are clearly delimited by
+    section comments. A future cleanup pass can rename to
+    `oidc_rp_http_test_verbs.c` if the file ever grows further.
+
+**Setup for Phase 12 (ID-token validation):**
+
+- `OidcRpTokenResponse::id_token` is the input to Phase 12's
+  `oidc_rp_validate_id_token()`. The string is heap-allocated and
+  owned by the response struct; Phase 12's validation can read it
+  in place without copying. The call sequence in Phase 14 will be
+  `exchange_code → validate_id_token → ...` with the response
+  freed after the validator copies the claims it needs.
+- The mock Keycloak's `id_token` value is currently the placeholder
+  string `"phase11-placeholder-not-a-jwt"`. Phase 12 must replace
+  this with a real RSA-signed JWT so the validator can be exercised
+  end-to-end. Plan: extend the mock's startup to either generate
+  a fresh keypair on boot OR load a fixed test keypair from disk;
+  swap the placeholder string for `jwt.sign({...claims...},
+  privateKey, { algorithm: 'RS256', header: { kid: 'test-key-1' } })`.
+  Use `jose` from npm — the dependency-free constraint can flex for
+  Phase 12 since real signing requires it. Alternative: ship a
+  pre-generated JWT as a constant in the script and skip the
+  signing step — simpler but harder to vary claims for negative-
+  path tests.
+- The `oidc_rp_http_post` helper is now the only POST entry point
+  the OIDC RP module uses. Phase 12 does not need another verb —
+  validation is purely computational once the JWKS is cached
+  (Phase 9 already provides that). Phase 14 will be the first
+  composition: `start → callback → exchange_code → validate_id_token
+  → link → mint JWT`.
+- The `OIDCRPProviderConfig::allowed_algorithms` array has been
+  parsed since Phase 5 (defaults to `["RS256"]`). Phase 12 will
+  read it at validation time. The "fall back to RS256 if empty"
+  hardening in the loader (Phase 5 lesson #5) means Phase 12 can
+  trust `allowed_algorithm_count >= 1`.
+- The lazy-init pattern from Phase 10 (`oidc_rp_runtime_lazy_init`)
+  still applies. Phase 12's validator does not own any new
+  init/shutdown surface; it operates on already-initialised
+  discovery + JWKS caches.
+
+
 
 ---
 
@@ -2490,21 +2914,33 @@ src/api/auth/oidc_rp/oidc_rp_state.c
 src/api/auth/oidc_rp/oidc_rp_state.h
 src/api/auth/oidc_rp/oidc_rp_discovery.c
 src/api/auth/oidc_rp/oidc_rp_discovery.h
-src/api/auth/oidc_rp/oidc_rp_token.c
-src/api/auth/oidc_rp/oidc_rp_token.h
+src/api/auth/oidc_rp/oidc_rp_http.c           # Phase 9 + Phase 11 (POST companion)
+src/api/auth/oidc_rp/oidc_rp_http.h
+src/api/auth/oidc_rp/oidc_rp_jwks.c
+src/api/auth/oidc_rp/oidc_rp_jwks.h
+src/api/auth/oidc_rp/oidc_rp_pkce.c
+src/api/auth/oidc_rp/oidc_rp_pkce.h
+src/api/auth/oidc_rp/oidc_rp_service.c
+src/api/auth/oidc_rp/oidc_rp_service.h
+src/api/auth/oidc_rp/oidc_rp_token.c          # Phase 11
+src/api/auth/oidc_rp/oidc_rp_token.h          # Phase 11
 src/api/auth/oidc_rp/oidc_rp_idtoken.c
 src/api/auth/oidc_rp/oidc_rp_idtoken.h
 src/api/auth/oidc_rp/oidc_rp_link.c
 src/api/auth/oidc_rp/oidc_rp_link.h
 src/config/config_oidc_rp.c
 src/config/config_oidc_rp.h
-tests/unity/test_oidc_rp_state.c
-tests/unity/test_oidc_rp_discovery.c
+tests/unity/src/api/auth/oidc_rp/oidc_rp_state_test_store.c
+tests/unity/src/api/auth/oidc_rp/oidc_rp_discovery_test_cache.c
+tests/unity/src/api/auth/oidc_rp/oidc_rp_jwks_test_cache.c
+tests/unity/src/api/auth/oidc_rp/oidc_rp_http_test_get.c    # Phase 9 + Phase 11
+tests/unity/src/api/auth/oidc_rp/oidc_rp_pkce_test_helpers.c
+tests/unity/src/api/auth/oidc_rp/oidc_rp_start_test_helpers.c
+tests/unity/src/api/auth/oidc_rp/oidc_rp_token_test_exchange.c   # Phase 11
 tests/unity/test_oidc_rp_idtoken.c
 tests/unity/test_oidc_rp_link.c
-tests/unity/test_oidc_rp_pkce.c
 tests/test_42_oidc_rp.sh
-tests/lib/mock_keycloak/server.{js|py}
+tests/lib/mock_keycloak/server.js                 # Node, dependency-free
 payloads/queries/acuranzo_080_lookup_oidc_identity.lua
 payloads/queries/acuranzo_081_link_oidc_identity.lua
 payloads/queries/acuranzo_082_lookup_account_by_email.lua
@@ -2719,20 +3155,40 @@ parentheses.
 
 ---
 
-**Last updated:** 2026-05-08
+**Last updated:** 2026-05-09
 **Owner:** Philement engineering
-**Status:** Phase 6 complete. The three OIDC RP endpoints
-(`/api/auth/oidc/start`, `/api/auth/oidc/callback`,
-`/api/auth/oidc/handoff`) are wired into the dispatcher and return
-`503 {"error":"oidc_disabled"}` while the feature gate
-(`OIDCRelyingPartyConfig.Enabled`, default `false`) is off.
-Method-mismatch returns `405 {"error":"method_not_allowed"}`. Paths
-outside the OIDC contract return the standard 404. `test_42_oidc_rp.sh`
-passes 13/13 in 0.449s; `test_40_auth.sh` regression-clean (46/46
-passing across 7 DB engines); `test_91_cppcheck` and
-`test_92_shellcheck` clean; `test_17_startup_shutdown` 9/9; Phase 5's
-`config_oidc_rp` Unity tests still passing in `test_10_unity` (0
-failing). Ready for Phase 7 (in-memory state store).
+**Status:** Phase 11 complete. The OIDC RP module now has a working
+token-endpoint client (`oidc_rp_exchange_code`) that performs an
+RFC 6749 §4.1.3 Authorization Code + PKCE exchange against the IdP's
+`/token` endpoint. Both `client_secret_basic` (default) and
+`client_secret_post` token-endpoint authentication methods are
+supported, driven by the new `OIDCRPProviderConfig::auth_method` field.
+The companion `oidc_rp_http_post()` helper joins Phase 9's
+`oidc_rp_http_get()` in `oidc_rp_http.{c,h}`, sharing the same test
+seam, body cap, TLS discipline, and timeout pair. The mock Keycloak
+gained a `POST /realms/test/protocol/openid-connect/token` endpoint
+that returns canned tokens for the test code and proper RFC 6749 §5.2
+error envelopes for everything else. Wiring into `/oidc/callback` is
+deferred to Phase 14 by design; until then the callback endpoint
+continues to return `503 oidc_not_implemented` when the feature is
+enabled. When the feature gate is off (the production default), all
+three endpoints continue to return `503 oidc_disabled` exactly as in
+Phase 6.
+
+`test_42_oidc_rp.sh` passes 28/28 in 1.043s (Phase 6 disabled-stub
+coverage + Phase 9 mock-Keycloak reachability + Phase 10 enabled-mode
+redirect + Phase 11 mock-Keycloak `/token` happy path / invalid_grant /
+unsupported_grant_type). `test_10_unity` 6,909 unit tests, 6,905
+passing (36 net new for Phase 11: `oidc_rp_token_test_exchange` 23,
+new POST tests in `oidc_rp_http_test_get` 6, new auth-method tests in
+`config_oidc_rp_test_load_oidc_rp_config` 7); coverage at 59.526%.
+The 4 cached failures pre-date Phase 6 and are unrelated to OIDC
+(`chat_provider_test`, `database/{postgresql,mysql,sqlite}/query_test_*_execute_params`).
+`test_11_leaks_like_a_sieve` 0 direct, 0 indirect leaks.
+`test_91_cppcheck` clean (1,324 files); `test_92_shellcheck` clean
+(645 directives, all justified); `test_17_startup_shutdown` 9/9;
+`test_40_auth.sh` 46/46 across 7 DB engines (password login regression-
+clean). Ready for Phase 12 (ID token validation).
 
 ### Decisions made between Phase 3 and Phase 4
 

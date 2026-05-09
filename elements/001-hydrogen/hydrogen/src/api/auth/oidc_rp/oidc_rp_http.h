@@ -1,11 +1,14 @@
 /**
  * @file oidc_rp_http.h
- * @brief OIDC Relying Party — narrow outbound HTTP GET helper.
+ * @brief OIDC Relying Party — narrow outbound HTTP GET/POST helpers.
  *
- * Phase 9 of the OIDC plan (`docs/OIDC-PLAN.md`). This wrapper does
- * one thing: synchronously GET a URL and return the body + HTTP
- * status. It exists so that Phase 9's discovery and JWKS callers
- * have a single, testable point of contact with libcurl.
+ * Phase 9 of the OIDC plan (`docs/OIDC-PLAN.md`) introduced the GET
+ * wrapper for discovery + JWKS. Phase 11 added a companion POST
+ * wrapper for the token-endpoint exchange. Both share the same test
+ * seam, body cap, and TLS discipline.
+ *
+ * The wrappers exist so that all outbound HTTP from the OIDC RP code
+ * has a single, testable point of contact with libcurl.
  *
  * Design notes:
  *
@@ -90,6 +93,57 @@ void oidc_rp_http_response_free(OidcRpHttpResponse *response);
 OidcRpHttpResponse *oidc_rp_http_get(const char *url,
                                      bool verify_ssl,
                                      const char *accept);
+
+/**
+ * @brief Synchronous HTTP POST.
+ *
+ * Phase 11 companion to `oidc_rp_http_get`. Same constraints (TLS
+ * verify mandatory in production, no redirect-following, 1 MiB body
+ * cap, 30 s total timeout / 10 s connect timeout) and the same test
+ * seam.
+ *
+ * Used today by the token-endpoint client (`oidc_rp_token.c`) to
+ * exchange an authorization code for tokens.
+ *
+ * The body is sent as-is in the request body. The Content-Type
+ * header is set from `content_type`. If `authorization` is non-NULL,
+ * an `Authorization: <authorization>` header is added — this is how
+ * we send `Authorization: Basic …` for the `client_secret_basic`
+ * token-endpoint auth method. Caller is responsible for the entire
+ * value (e.g. `"Basic dXNlcjpwYXNz"`); the helper does not prepend
+ * `Basic ` itself.
+ *
+ * Constraints (mirrors GET):
+ *   - URL scheme MUST be http or https.
+ *   - Redirects are NOT followed (a 302 from a token endpoint would
+ *     indicate misconfiguration; following it could leak credentials).
+ *   - Connect timeout 10 s, total 30 s.
+ *   - Response body capped at 1 MiB.
+ *
+ * @param url            Absolute http(s) URL. Must be non-NULL.
+ * @param verify_ssl     When true, libcurl verifies peer + host.
+ *                       Production MUST pass true.
+ * @param body           Request body bytes (NUL-terminated). Pass
+ *                       NULL or empty for an empty-bodied POST. The
+ *                       helper does not free the buffer.
+ * @param content_type   Value for the `Content-Type` request header
+ *                       (e.g. `"application/x-www-form-urlencoded"`).
+ *                       Pass NULL to omit.
+ * @param accept         Optional `Accept` header (e.g.
+ *                       `"application/json"`). Pass NULL to omit.
+ * @param authorization  Optional `Authorization` header value. Caller
+ *                       owns formatting (e.g. `"Basic dXNlcjpwYXNz"`).
+ *                       Pass NULL to omit.
+ * @return Newly-allocated response; never NULL on caller mistakes
+ *         (returns a struct with `error_message` set). Returns NULL
+ *         only on calloc failure for the struct itself.
+ */
+OidcRpHttpResponse *oidc_rp_http_post(const char *url,
+                                      bool verify_ssl,
+                                      const char *body,
+                                      const char *content_type,
+                                      const char *accept,
+                                      const char *authorization);
 
 /**
  * @brief Test-only: register a canned response for any URL whose
