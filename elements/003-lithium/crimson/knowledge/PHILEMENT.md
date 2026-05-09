@@ -53,12 +53,12 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2026-05-07 16:38:47 UTC
+Last updated at 2026-05-07 17:45:00 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
 JSON                           315            323              0         976941
-C                             1095          47614          44662         170505
+C                             1095          47615          44664         170509
 SVG                            155            303           4089         162093
 Text                           220            217              0          83582
 Markdown                       706          26083            239          71988
@@ -78,22 +78,22 @@ Delphi Form                      1              1              0             43
 YAML                             2              8             13             37
 Pascal                           2             11              2             31
 -------------------------------------------------------------------------------
-SUM:                          3463         100743         155576        1597563
+SUM:                          3463         100744         155578        1597567
 -------------------------------------------------------------------------------
-1396 Files were skipped (duplicate, binary, or without source code):
-  svg: 629
+1365 Files were skipped (duplicate, binary, or without source code):
+  svg: 622
   css: 300
   html: 234
-  png: 56
   md: 40
+  png: 40
   js: 24
   br: 16
-  mp4: 15
   lua: 12
-  jpg: 6
-  woff2: 6
+  mp4: 10
   gitignore: 5
+  jpg: 5
   json: 5
+  woff2: 4
   clp: 3
   ico: 3
   lintignore-markdown: 3
