@@ -2,7 +2,7 @@
 
 # Test: OIDC Relying Party — End-to-End Coverage
 # Drives the OIDC RP endpoints through every gate the plan defines
-# from Phase 6 through Phase 21:
+# from Phase 6 through Phase 22:
 #
 #   - Disabled feature gate (Phase 6): all three endpoints respond
 #     503 {"error":"oidc_disabled"} when OIDC_RP.Enabled = false.
@@ -18,6 +18,8 @@
 #     domain (Phase 20).
 #   - match_email_then_provision (default): sub fast-path + provision
 #     path (Phase 21).
+#   - Role mapping: database (QueryRef #017), idp_realm_roles, merge
+#     (Phase 22).
 #
 # The endpoint helper functions, mock-Keycloak lifecycle, and per-
 # phase sub-test functions live in tests/lib/oidc_rp_helpers.sh; this
@@ -27,6 +29,7 @@
 # (Helper functions live in tests/lib/oidc_rp_helpers.sh)
 
 # CHANGELOG
+# 2.1.0 - 2026-05-09 - Phase 22: role-mapping database/idp_realm_roles/merge sub-tests; mock emits realm_access.roles
 # 2.0.0 - 2026-05-09 - Phase 21: match_email_then_provision (default strategy): sub fast-path + provision sub-tests; stub linker removed
 # 1.9.0 - 2026-05-09 - Phase 20: provision_only linker happy + blocked sub-tests
 # 1.8.0 - 2026-05-09 - Phase 19: match_email_only linker hit/miss/ambiguous sub-tests
@@ -46,7 +49,7 @@ TEST_NAME="OIDC RP"
 TEST_ABBR="OID"
 TEST_NUMBER="42"
 TEST_COUNTER=0
-TEST_VERSION="2.0.0"
+TEST_VERSION="2.1.0"
 
 # Phase 9: mock Keycloak port. Picked outside the typical Hydrogen
 # port range (5000s) and the test config's WebServer port (5242). If
@@ -68,6 +71,8 @@ CONFIG_PATH_EMAIL="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_oidc_rp_em
 CONFIG_PATH_PROVISION="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_oidc_rp_provision.json"
 CONFIG_PATH_PROVISION_BLOCKED="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_oidc_rp_provision_blocked.json"
 CONFIG_PATH_DEFAULT="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_oidc_rp_default.json"
+CONFIG_PATH_ROLES_IDP="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_oidc_rp_roles_idp.json"
+CONFIG_PATH_ROLES_MERGE="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_oidc_rp_roles_merge.json"
 MOCK_KC_SCRIPT="${SCRIPT_DIR}/lib/mock_keycloak/server.js"
 
 # shellcheck source=tests/lib/oidc_rp_helpers.sh # Phase 13 split for code-size cap
@@ -80,6 +85,8 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib/oidc_rp_helpers_link.sh"
 source "$(dirname "${BASH_SOURCE[0]}")/lib/oidc_rp_helpers_provision.sh"
 # shellcheck source=tests/lib/oidc_rp_helpers_default.sh # Phase 21 match_email_then_provision sub-tests
 source "$(dirname "${BASH_SOURCE[0]}")/lib/oidc_rp_helpers_default.sh"
+# shellcheck source=tests/lib/oidc_rp_helpers_roles.sh # Phase 22 role-mapping sub-tests
+source "$(dirname "${BASH_SOURCE[0]}")/lib/oidc_rp_helpers_roles.sh"
 
 # Trap to make sure we do not leak a node process if the test script
 # fails between mock start and stop. The functions live in
@@ -903,6 +910,37 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     elif [[ "${MOCK_KC_STARTED:-0}" -eq 1 ]]; then
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
             "Skipping Phase 21 sub-tests: missing demo SQLite db, HYDROGEN_DEMO_API_KEY, sqlite3, or jq"
+    fi
+
+    # ---- Phase 22: role mapping ----
+    # Uses the already-running default-config Hydrogen (port 5249) for the
+    # database-source sub-test, plus two new instances for idp_realm_roles
+    # and merge. The default-config instance is passed in as its base URL.
+    if [[ "${EXIT_CODE}" -eq 0 ]] \
+        && [[ "${MOCK_KC_STARTED:-0}" -eq 1 ]] \
+        && [[ -n "${HYDROGEN_DEMO_API_KEY:-}" ]] \
+        && [[ -f "${PROJECT_DIR}/tests/artifacts/database/sqlite/hydrodemo.sqlite" ]] \
+        && command -v jq >/dev/null 2>&1 \
+        && command -v sqlite3 >/dev/null 2>&1; then
+
+        DEMO_SQLITE="${PROJECT_DIR}/tests/artifacts/database/sqlite/hydrodemo.sqlite"
+        MOCK_ISSUER="http://localhost:${MOCK_KC_PORT}/realms/test"
+        MOCK_SUBJECT="mock-sub-12345"
+
+        # The default-config Hydrogen instance (port 5249) was started in
+        # Phase 21's run_phase21_default_tests call and is now stopped.
+        # Re-start it here for the Phase 22 database-source sub-test.
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
+        run_phase22_roles_tests \
+            "http://localhost:5249" \
+            "${CONFIG_PATH_ROLES_IDP}" \
+            "${CONFIG_PATH_ROLES_MERGE}" \
+            "${DEMO_SQLITE}" \
+            "${MOCK_ISSUER}" "${MOCK_SUBJECT}" \
+            "${HYDROGEN_BIN}" "${SERVER_LOG}" "${RESULTS_DIR}"
+    elif [[ "${MOCK_KC_STARTED:-0}" -eq 1 ]]; then
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
+            "Skipping Phase 22 sub-tests: missing demo SQLite db, HYDROGEN_DEMO_API_KEY, sqlite3, or jq"
     fi
 
     # ---- Stop the mock now that all dependent tests are done ----

@@ -1,5 +1,5 @@
 /*
- * OIDC RP /callback endpoint — Phase 21 update
+ * OIDC RP /callback endpoint — Phase 22 update
  *
  * Composes Phases 7, 9, 10, 11, 12, 13 into the working chain that
  * turns an IdP authorization code into a Hydrogen JWT and a one-time
@@ -8,7 +8,12 @@
  *
  * Account linking (Phase 21): all four strategies are handled by
  * `oidc_rp_link_resolve` (the real linker). The Phase 14 stub linker
- * (`oidc_rp_link_stub`) has been deleted in this phase.
+ * (`oidc_rp_link_stub`) has been deleted in Phase 21.
+ *
+ * Role mapping (Phase 22): after account resolution and before
+ * `generate_jwt`, `oidc_rp_roles_apply` populates `account->roles`
+ * according to `RoleMapping.Source` (database, idp_realm_roles,
+ * idp_client_roles, or merge).
  *
  * Logging policy: NEVER logs `code`, `state`, `nonce`, `id_token`,
  * `access_token`, the minted Hydrogen JWT, or the handoff code.
@@ -33,6 +38,7 @@
 #include "oidc_rp_handoff_store.h"
 #include "oidc_rp_pkce.h"
 #include "oidc_rp_link.h"
+#include "oidc_rp_roles.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -466,6 +472,13 @@ enum MHD_Result handle_get_auth_oidc_callback(
         oidc_rp_state_record_free(state_record);
         return ret;
     }
+
+    // ---- Role mapping (Phase 22) ----
+    // Populate account->roles according to RoleMapping.Source before the JWT
+    // is minted. Non-fatal: on DB error, account->roles stays as "" and the
+    // user logs in with an empty roles list. The call site mirrors the
+    // discipline from Phase 18 lesson #2 (QueryRef #084 touch is non-fatal).
+    oidc_rp_roles_apply(provider, claims, database, account);
 
     // ---- API key + system info (server-side, never sent to browser) ----
     const char *system_api_key = provider->system_api_key;

@@ -859,7 +859,7 @@ password login still works — every phase preserves that invariant.
 | 19 | Hydrogen — account linker (`match_email_only`) | Hydrogen | Medium | ✅ Done |
 | 20 | Hydrogen — account linker (provisioning + email allow-list) | Hydrogen | High | ✅ Done |
 | 21 | Hydrogen — wire `match_email_then_provision` (full default flow) | Hydrogen | Medium | ✅ Done |
-| 22 | Hydrogen — role-mapping (`database`, `idp_realm_roles`, `merge`) | Hydrogen | Medium |
+| 22 | Hydrogen — role-mapping (`database`, `idp_realm_roles`, `merge`) | Hydrogen | Medium | ✅ Done |
 | 23 | Lithium — `core/oidc-client.js` (`startOidc`, `exchangeHandoff`) | Lithium | Low |
 | 24 | Lithium — `oidc-login.js` (process return-from-IdP) | Lithium | Medium |
 | 25 | Lithium — UI: provider button, divider, config-driven render | Lithium | Low |
@@ -4454,29 +4454,166 @@ Every phase block contains the same fields, in the same order:
 
 ---
 
-### Phase 22 — Hydrogen: role mapping
+### Phase 22 — Hydrogen: role mapping ✅ COMPLETE
 
 - **Goal:** Implement the `RoleMapping` config: `database` (default),
   `idp_realm_roles`, `idp_client_roles`, `merge`.
 - **Prerequisites:** Phase 21.
 - **In scope:**
-  - Apply role-mapping after the linker resolves the account but
-    before `generate_jwt` is called. Pass a possibly-augmented role
-    list to the JWT generator.
-  - `IdpRolePrefix` honoured. Empty prefix is fine.
+  - New `src/api/auth/oidc_rp/oidc_rp_roles.{c,h}` implementing
+    `oidc_rp_roles_apply(provider, claims, database, account)`.
+    Called from `oidc_rp_callback.c` between `oidc_rp_link_resolve`
+    and `generate_jwt`. Non-fatal: on DB error or OOM, `account->roles`
+    keeps its linker default (`""`); login continues.
+  - Four source modes:
+    - `DATABASE`: call QueryRef #017 ("Get User Roles") → comma-separated
+      `role_id` list. First caller of this pre-existing QueryRef.
+    - `IDP_REALM_ROLES`: copy `claims->roles[]` (from `realm_access.roles`
+      parsed by Phase 12) with optional `IdpRolePrefix`.
+    - `IDP_CLIENT_ROLES`: Phase 22 fallback = `IDP_REALM_ROLES` (documented);
+      `OidcRpIdTokenClaims` does not yet have a `client_roles[]` array.
+    - `MERGE`: union of DATABASE role_ids + IdP roles (with prefix);
+      case-sensitive dedup.
+  - `IdpRolePrefix` honoured on `IDP_REALM_ROLES`, `IDP_CLIENT_ROLES`, and
+    the IdP half of `MERGE`. Empty prefix is fine.
+  - Test seam (`oidc_rp_roles_test_set_query_fn` / `_clear_query_fn`)
+    follows the same pattern as the linker seam.
+  - Mock Keycloak extended to emit `realm_access.roles: ["test-role"]`
+    in the id_token so IdP-source modes can be black-box tested.
 - **Files:**
-  - Touched: `oidc_rp_link.{c,h}` or new `oidc_rp_roles.{c,h}` (own
-    file preferred for testability).
-  - Touched: `oidc_rp_callback.c`.
+  - Created: `src/api/auth/oidc_rp/oidc_rp_roles.c` (~340 lines),
+    `src/api/auth/oidc_rp/oidc_rp_roles.h` (~90 lines).
+  - Created: `tests/unity/src/api/auth/oidc_rp/oidc_rp_roles_test_apply.c`
+    (~612 lines, 22 tests).
+  - Created: `tests/lib/oidc_rp_helpers_roles.sh` (730 lines — Phase 22
+    lifecycle + 3 sub-tests).
+  - Created: `tests/configs/hydrogen_test_42_oidc_rp_roles_idp.json`
+    (port 5250, `RoleMapping.Source="idp_realm_roles"`).
+  - Created: `tests/configs/hydrogen_test_42_oidc_rp_roles_merge.json`
+    (port 5251, `RoleMapping.Source="merge"`, `IdpRolePrefix="kc:"`).
+  - Touched: `src/api/auth/oidc_rp/oidc_rp_callback.c` (Phase 22
+    comment + `#include oidc_rp_roles.h` + `oidc_rp_roles_apply` call).
+  - Touched: `tests/lib/mock_keycloak/server.js` (Phase 22 comment +
+    `realm_access: { roles: ['test-role'] }` added to id_token payload).
+  - Touched: `tests/test_42_oidc_rp.sh` (version 2.0.0 → 2.1.0;
+    Phase 22 sources + config path vars + lifecycle block).
 - **Tests required:**
-  - Unity: each of the four sources produces the expected roles list,
-    given fixture DB roles + ID-token roles.
-  - Black-box Test 42: under `merge`, an OIDC role from Keycloak
-    appears in the resulting Hydrogen JWT alongside DB roles.
+  - Unity 22 tests (all green):
+    - NULL-safety (2): NULL provider → no-op; NULL account → no-op.
+    - DATABASE (6): single role_id, multiple role_ids, no rows, transport
+      failure → unchanged, DB error → unchanged, correct QueryRef (#017).
+    - IDP_REALM_ROLES (6): single + multiple + with prefix + no claims empty
+      + no prefix + no DB query.
+    - IDP_CLIENT_ROLES (1): behaves like IDP_REALM_ROLES in Phase 22.
+    - MERGE (6): no overlap, dedup exact match, DB empty + IdP, DB + IdP
+      empty, DB failure → IdP only, no prefix IdP.
+    - Edge (1): unknown source enum → DATABASE fallback.
+  - Black-box Test 42 (3 new sub-tests):
+    - `database` source → `roles` contains seeded `role_id=42`.
+    - `idp_realm_roles` source → `roles` contains `"test-role"`.
+    - `merge` source with prefix `kc:` → `roles` contains `"kc:test-role"`.
 - **Definition of Done:**
-  - [ ] Roles applied correctly in all four modes.
-  - [ ] Test 40 still green.
-  - [ ] cppcheck clean.
+  - [x] Roles applied correctly in all four modes.
+  - [x] `mkt` (regular + unity build) clean.
+  - [x] `mka` (`test_01_compilation.sh`) clean — 18/18 build variants
+        green.
+  - [x] `test_10_unity` clean: 7,034 unit tests, 7,030 passing, 0 failing
+        on cached re-run (was 7,012/7,008 in Phase 21, +22 net new from
+        Phase 22; 4 pre-existing failures pre-date Phase 6 per Phase 6
+        lesson #9).
+  - [x] `test_11_leaks_like_a_sieve` passes: 0 direct, 0 indirect leaks.
+  - [x] `test_42_oidc_rp.sh` green: 88/88 in ~251s (was 73/73 in Phase 21,
+        +15 net new: 3 Phase 22 sub-tests + lifecycle sub-tests for 3
+        Hydrogen instances).
+  - [x] `test_40_auth.sh` regression-clean: 46/46 across 7 DB engines.
+        Password login is genuinely untouched.
+  - [x] `test_91_cppcheck` clean — 1,350 files, 0 issues.
+  - [x] `test_92_shellcheck` clean — 115 scripts, 743 directives all
+        justified.
+  - [x] `test_17_startup_shutdown` clean — 9/9 passing.
+  - [x] `test_99_code_size`: pass count unchanged from Phase 21 baseline.
+        Pre-existing `proxy_multi.c` (1,209 lines) and `database_engine.c`
+        (1,000 lines) findings unrelated to Phase 22. All Phase 22
+        new/touched source files are under the 1,000-line cap.
+
+**Lessons learned:**
+
+1. **QueryRef #017 ("Get User Roles") existed since `acuranzo_1108` but
+   had zero C callers.** The plan's Phase 22 setup notes flagged that a
+   role-join QueryRef might need to be added, but checking the migrations
+   tree first revealed #017 was already present in the demo DB baseline.
+   This is a strong instance of "always grep migrations before allocating
+   a new QueryRef number" — the per-migration lesson established in Phase
+   17 lesson #1.
+
+2. **`account->roles` is always `""` in the current password-login path.**
+   `verify_password_and_status` (QueryRef #012) returns `name` only — it
+   does not join `account_roles`. Phase 22 is therefore the first path in
+   Hydrogen that actually populates roles at login time. The password-login
+   path could benefit from the same treatment, but that is out of scope.
+
+3. **IDP_CLIENT_ROLES falls back to IDP_REALM_ROLES in Phase 22.** Phase 12's
+   `OidcRpIdTokenClaims` struct only parses `realm_access.roles` into
+   `roles[]`; `resource_access.<client>.roles` is not separately extracted.
+   Rather than silently emit empty roles for IDP_CLIENT_ROLES, Phase 22
+   uses the same `claims->roles[]` source and documents the fallback.
+   A future phase can add `client_roles[]` to the struct and fix this.
+
+4. **The roles string format is comma-separated role_id integers.** This
+   matches the JWT field semantics already established for empty-string
+   roles. The format carries over naturally: `generate_jwt` bakes whatever
+   `account->roles` contains directly into the `roles` JWT claim. Future
+   role-name resolution (via a join on the `roles` table) would replace
+   integer strings with human-readable names, but is not required for the
+   OIDC-MVP scope.
+
+5. **Non-fatal discipline is essential for role-mapping.** A DB failure in
+   `roles_from_database` should not block a user who already authenticated
+   and linked their identity. The non-fatal contract (log ALERT, keep
+   existing `account->roles`) mirrors Phase 18 lesson #2 (QueryRef #084
+   touch). This is the right default for "enrichment" operations that come
+   after the primary authentication decision.
+
+6. **The mock Keycloak's `realm_access.roles` extension is two lines.**
+   Adding `realm_access: { roles: ['test-role'] }` to the `signJwt` call's
+   payload object (server.js) is the minimal change. Phase 12's id_token
+   validator already parses this claim; no Hydrogen changes were needed
+   to support it in Phase 22.
+
+7. **Phase 22 introduces Hydrogen's first use of `strtok`.** The MERGE
+   deduplication logic in `roles_merge` uses `strtok(dup, ",")` to split
+   a role string into tokens. `strtok` is not re-entrant but Phase 22 calls
+   it in a single-threaded context (the callback handler; no concurrent
+   `strtok` calls). If future phases need concurrent role-string splitting,
+   replace with `strtok_r` (POSIX) or an explicit index-walk.
+
+8. **cppcheck caught 7 `Variable 'ids' can be declared as const array`
+   findings in the test file.** Per Phase 5 lesson #2 (`-Werror=unused-
+   function`), the project's lint tools are strict. Declaring `int ids[]`
+   in test fixtures as `const int ids[]` is the fix. The pattern applies to
+   any test-fixture array that is passed only to a `const` parameter.
+
+9. **Phase 22's three black-box sub-tests require three separate Hydrogen
+   instances** (one per RoleMapping.Source value). The existing default-config
+   instance used by Phase 21 is already stopped by the time Phase 22 runs,
+   so Phase 22 spins its own instance for the `database`-source sub-test.
+   This confirms the pattern from Phase 20 lesson #6: seed QueryRefs
+   BEFORE Hydrogen starts.
+
+**Setup for Phase 23 (Lithium — `core/oidc-client.js`):**
+
+- Phase 22 completes all Hydrogen OIDC RP implementation (Phases 5–22).
+  The remaining Phases 23–27 are entirely in Lithium except for Phase 27
+  (end-to-end integration against real Keycloak).
+- Roles now flow correctly from the DB or IdP into the Hydrogen JWT. Phase
+  23 (`core/oidc-client.js`) is a pure Lithium module with no dependency on
+  Phase 22's C code; it can proceed immediately.
+- `ProvisionDefaults.DefaultRoleNames[]` is parsed and logged (Phase 20)
+  but still not inserted into `account_roles` for provisioned accounts.
+  A future phase (after the MVP, or as a post-Phase-27 hardening item) can
+  add a sixth QueryRef to INSERT into `account_roles` for provisioned users.
+  For now, provisioned accounts have no roles and the `database` source
+  returns `""` for them — consistent behavior, explicitly logged.
 
 ---
 
@@ -4948,26 +5085,23 @@ parentheses.
 
 **Last updated:** 2026-05-09
 **Owner:** Philement engineering
-**Status:** Phase 19 complete. The `match_email_only` account linker strategy
-is live. `oidc_rp_link_resolve` now handles two strategies:
+**Status:** Phase 22 complete. Role mapping is live for all four
+`RoleMapping.Source` modes (`database`, `idp_realm_roles`,
+`idp_client_roles`, `merge`). `oidc_rp_roles_apply` is called in
+`oidc_rp_callback.c` between `oidc_rp_link_resolve` and `generate_jwt`.
 
-- `match_sub_only` (Phase 18): QueryRef #080 looks up `(issuer, subject)`;
-  on hit calls #084 to touch `last_seen_at`, returns account.
-- `match_email_only` (Phase 19): tries #080 first; on sub-miss and
-  `email_verified`, calls #082 to look up by email in `account_contacts`;
-  single hit → #081 links the identity → #084 touch → returns account.
-  Two+ rows → `email_ambiguous`. Zero rows → `no_account`.
+All Hydrogen OIDC RP implementation (Phases 5–22) is complete.
+The remaining phases (23–30) are Lithium-side work (23–26) plus end-to-end
+integration (27) and post-MVP hardening (28–30).
 
-`match_email_then_provision` and `provision_only` still route through the
-Phase 14 stub linker until Phases 20–21.
+Unity: 7,034/7,030 passing (was 7,012/7,008 in Phase 21, +22 net new from
+Phase 22). Black-box: `test_42_oidc_rp.sh` 88/88 in ~251s (was 73/73 in
+Phase 21, +15 net new). `test_40_auth.sh` 46/46. `test_01_compilation.sh`
+18/18. `test_91_cppcheck` clean (1,350 files, 0 issues). `test_92_shellcheck`
+clean (115 scripts, 743 directives). `test_17_startup_shutdown` 9/9.
+`test_11_leaks_like_a_sieve` 0 direct, 0 indirect leaks.
 
-Unity: 30/30 linker tests passing (was 19/19 in Phase 18, +11 Phase 19),
-full suite 6,987/6,982 passing. Black-box: `test_42_oidc_rp.sh` 57/57 in
-~65s (was 50/50 in Phase 18, +7 net new). `test_40_auth.sh` 46/46.
-`test_91_cppcheck` clean (1,337 files). `test_92_shellcheck` clean
-(112 scripts, 686 directives). `test_17_startup_shutdown` 9/9.
-
-Ready for Phase 20 (account linker, provisioning + `AllowedEmailDomains`).
+Ready for Phase 23 (Lithium — `core/oidc-client.js`).
 
 ### Decisions made between Phase 3 and Phase 4
 

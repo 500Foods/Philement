@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
- * Tiny mock Keycloak (Phase 9 + Phase 11 + Phase 12 + Phase 14).
+ * Tiny mock Keycloak (Phase 9 + Phase 11 + Phase 12 + Phase 14 + Phase 22).
  *
  * Serves just enough surface for `test_42_oidc_rp.sh` to exercise the
  * Hydrogen OIDC RP discovery + JWKS + token-exchange + id-token
@@ -296,6 +296,9 @@ function handleTokenPost(req, res) {
             email_verified: true,
             preferred_username: 'mockuser',
             name: 'Mock User',
+            // Phase 22: realm_access.roles for IDP_REALM_ROLES / MERGE mapping.
+            // A single stable role name so test assertions are predictable.
+            realm_access: { roles: ['test-role'] },
         });
 
         send(res, 200, {
