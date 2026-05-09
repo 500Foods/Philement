@@ -32,9 +32,13 @@
  #include "auth/renew/renew.h"
  #include "auth/logout/logout.h"
  #include "auth/register/register.h"
- #include "auth/oidc_rp/oidc_rp_start.h"
- #include "auth/oidc_rp/oidc_rp_callback.h"
- #include "auth/oidc_rp/oidc_rp_handoff.h"
+#include "auth/oidc_rp/oidc_rp_start.h"
+#include "auth/oidc_rp/oidc_rp_callback.h"
+#include "auth/oidc_rp/oidc_rp_handoff.h"
+#include "auth/oidc_rp/oidc_rp_service.h"
+#ifndef NDEBUG
+#include "auth/oidc_rp/oidc_rp_debug_inject.h"
+#endif
 
 // Simple hardcoded endpoint validator and handler for /api/version
 bool is_exact_api_version_endpoint(const char *url) {
@@ -90,6 +94,13 @@ void cleanup_api_endpoints(void) {
         unregister_web_endpoint(app_config->api.prefix);
         log_this(SR_API, "Unregistered API endpoints", LOG_LEVEL_DEBUG, 0);
     }
+
+    // Phase 14: tear down the OIDC RP runtime if it was lazily
+    // initialized. Without this, the state-store / handoff-store
+    // sweeper threads keep the process alive after Hydrogen's
+    // landing sequence completes. Idempotent and safe when the
+    // feature is disabled or never used.
+    oidc_rp_runtime_shutdown();
 }
 
 // Main API handler that matches the WebServerEndpoint handler signature
@@ -168,9 +179,13 @@ bool register_api_endpoints(void) {
         log_this(SR_API, "― %s/auth/renew", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/auth/logout", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/auth/register", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
-        log_this(SR_API, "― %s/auth/oidc/start", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
-        log_this(SR_API, "― %s/auth/oidc/callback", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
-        log_this(SR_API, "― %s/auth/oidc/handoff", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
+       log_this(SR_API, "― %s/auth/oidc/start", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
+       log_this(SR_API, "― %s/auth/oidc/callback", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
+       log_this(SR_API, "― %s/auth/oidc/handoff", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
+#ifndef NDEBUG
+       log_this(SR_API, "― %s/auth/oidc/_inject_handoff (debug, non-release builds only)",
+                LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
+#endif
         log_this(SR_API, "― %s/system/info", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/system/health", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/system/test", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
@@ -345,6 +360,19 @@ static bool endpoint_expects_json(const char *path) {
         "auth/renew",
         "auth/logout",
         "auth/register",
+        // OIDC RP handoff exchange (Phase 13). The disabled-feature
+        // path explicitly handles the case where the body has been
+        // pre-buffered but the feature is gated off — it returns the
+        // 503 envelope after freeing the buffer. See oidc_rp_handoff.c.
+        "auth/oidc/handoff",
+#ifndef NDEBUG
+        // Debug-only handoff injector (Phase 13). Test builds only;
+        // the route branch in this file is also #ifndef NDEBUG-gated,
+        // so a release binary will 404 the URL before any handler
+        // dispatch. Listed here so the JSON middleware validates the
+        // injection body before it reaches the handler.
+        "auth/oidc/_inject_handoff",
+#endif
         "system/test",
         "system/config",
         "conduit/query",
@@ -613,6 +641,13 @@ enum MHD_Result handle_api_request(struct MHD_Connection *connection,
         return handle_post_auth_oidc_handoff(connection, url, method, version, upload_data,
                                              upload_data_size, con_cls);
     }
+#ifndef NDEBUG
+    // Phase 13 debug injector. Compiled out of release builds.
+    else if (strcmp(path, "auth/oidc/_inject_handoff") == 0) {
+        return handle_post_auth_oidc_debug_inject(connection, url, method, version, upload_data,
+                                                  upload_data_size, con_cls);
+    }
+#endif
     // System endpoints
     else if (strcmp(path, "system/info") == 0) {
         return handle_system_info_request(connection);

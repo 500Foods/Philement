@@ -26,7 +26,9 @@
 // Local includes
 #include "oidc_rp_service.h"
 #include "oidc_rp_state.h"
+#include "oidc_rp_handoff_store.h"
 #include "oidc_rp_discovery.h"
+#include "oidc_rp_jwks.h"
 
 #include <pthread.h>
 #include <stdlib.h>
@@ -235,11 +237,17 @@ static bool             oidc_rp_init_ok    = false;
 
 static void oidc_rp_runtime_init_impl(void) {
     int state_ttl = 600;                       // Plan default — 10 minutes
+    int handoff_ttl = 60;                      // Plan default — 60 seconds
     if (app_config && app_config->oidc_rp.provider_count > 0) {
-        int provider_ttl =
+        int provider_state_ttl =
             app_config->oidc_rp.providers[0].state_ttl_seconds;
-        if (provider_ttl > 0) {
-            state_ttl = provider_ttl;
+        if (provider_state_ttl > 0) {
+            state_ttl = provider_state_ttl;
+        }
+        int provider_handoff_ttl =
+            app_config->oidc_rp.providers[0].handoff_ttl_seconds;
+        if (provider_handoff_ttl > 0) {
+            handoff_ttl = provider_handoff_ttl;
         }
     }
     if (!oidc_rp_state_init(state_ttl)) {
@@ -248,22 +256,59 @@ static void oidc_rp_runtime_init_impl(void) {
                  LOG_LEVEL_ERROR, 0);
         return;
     }
+    if (!oidc_rp_handoff_store_init(handoff_ttl)) {
+        log_this(SR_AUTH,
+                 "OIDC RP: failed to initialize handoff store",
+                 LOG_LEVEL_ERROR, 0);
+        oidc_rp_state_shutdown();
+        return;
+    }
     if (!oidc_rp_discovery_init()) {
         log_this(SR_AUTH,
                  "OIDC RP: failed to initialize discovery cache",
                  LOG_LEVEL_ERROR, 0);
+        oidc_rp_handoff_store_shutdown();
+        oidc_rp_state_shutdown();
+        return;
+    }
+    if (!oidc_rp_jwks_init()) {
+        log_this(SR_AUTH,
+                 "OIDC RP: failed to initialize JWKS cache",
+                 LOG_LEVEL_ERROR, 0);
+        oidc_rp_discovery_shutdown();
+        oidc_rp_handoff_store_shutdown();
         oidc_rp_state_shutdown();
         return;
     }
     oidc_rp_init_ok = true;
     log_this(SR_AUTH,
-             "OIDC RP: runtime initialized (state TTL=%ds)",
-             LOG_LEVEL_STATE, 1, state_ttl);
+             "OIDC RP: runtime initialized (state TTL=%ds, handoff TTL=%ds)",
+             LOG_LEVEL_STATE, 2, state_ttl, handoff_ttl);
 }
 
 bool oidc_rp_runtime_lazy_init(void) {
     pthread_once(&oidc_rp_init_once, oidc_rp_runtime_init_impl);
     return oidc_rp_init_ok;
+}
+
+void oidc_rp_runtime_shutdown(void) {
+    if (!oidc_rp_init_ok) {
+        // Either lazy_init was never called or it failed. Either way,
+        // there's nothing to tear down.
+        return;
+    }
+    oidc_rp_jwks_shutdown();
+    oidc_rp_discovery_shutdown();
+    oidc_rp_handoff_store_shutdown();
+    oidc_rp_state_shutdown();
+    oidc_rp_init_ok = false;
+    // Reset the pthread_once gate so a subsequent lazy_init starts
+    // afresh (only relevant for tests / re-init-after-config-reload).
+    static const pthread_once_t fresh_once = PTHREAD_ONCE_INIT;
+    oidc_rp_init_once = fresh_once;
+    log_this(SR_AUTH,
+             "OIDC RP: runtime shut down",
+             LOG_LEVEL_STATE, 0);
 }
 
 const OIDCRPProviderConfig *oidc_rp_get_active_provider(void) {
