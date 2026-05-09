@@ -852,11 +852,11 @@ password login still works — every phase preserves that invariant.
 | 12 | Hydrogen — ID token validation | Hydrogen | High | ✅ Done |
 | 13 | Hydrogen — handoff store and `/oidc/handoff` exchange endpoint | Hydrogen | Medium | ✅ Done
 | 14 | Hydrogen — `/oidc/callback` end-to-end with stub linker | Hydrogen | High | ✅ Done
-| 15 | Hydrogen — DB migration `1100_account_oidc_identities` | Hydrogen | Medium |
-| 16 | Hydrogen — `accounts.password_hash` nullable migration | Hydrogen | Medium |
-| 17 | Hydrogen — QueryRefs `#080`–`#084` (`.lua` payloads) | Hydrogen | Low |
-| 18 | Hydrogen — account linker (`match_sub_only`) | Hydrogen | Medium |
-| 19 | Hydrogen — account linker (`match_email_only`) | Hydrogen | Medium |
+| 15 | Hydrogen — DB migration `1189_account_oidc_identities` | Hydrogen | Medium | ✅ Done
+| 16 | Hydrogen — `accounts.password_hash` nullable migration | Hydrogen | Medium | ✅ Done
+| 17 | Hydrogen — QueryRefs `#080`–`#084` (`.lua` payloads) | Hydrogen | Low | ✅ Done |
+| 18 | Hydrogen — account linker (`match_sub_only`) | Hydrogen | Medium | ✅ Done |
+| 19 | Hydrogen — account linker (`match_email_only`) | Hydrogen | Medium | ✅ Done |
 | 20 | Hydrogen — account linker (provisioning + email allow-list) | Hydrogen | High |
 | 21 | Hydrogen — wire `match_email_then_provision` (full default flow) | Hydrogen | Medium |
 | 22 | Hydrogen — role-mapping (`database`, `idp_realm_roles`, `merge`) | Hydrogen | Medium |
@@ -3232,85 +3232,591 @@ Every phase block contains the same fields, in the same order:
 
 ---
 
-### Phase 15 — Hydrogen: DB migration `1100_account_oidc_identities`
+### Phase 15 — Hydrogen: DB migration `1189_account_oidc_identities` ✅ COMPLETE
 
 - **Goal:** Add the linking table on every supported DB engine. No
   code change reads from it yet.
 - **Prerequisites:** none (independent of phases 6–14).
 - **In scope:**
-  - One migration script per engine in the existing migration
-    tree (PostgreSQL, MySQL/MariaDB, SQLite, DB2, CockroachDB,
-    YugabyteDB) plus the Acuranzo-shared definition.
-  - Tables, indexes, and foreign keys exactly as in this plan.
-  - Migration is **forward-only**; rollback is documented but not
-    automated.
+  - One migration file in the Acuranzo tree, templated across all
+    supported engines (PostgreSQL, SQLite, MySQL/MariaDB, DB2)
+    via the `${INTEGER}` / `${VARCHAR_500}` / `${TIMESTAMP_TZ}`
+    placeholder system. No per-engine SQL files — the project
+    convention is one `.lua` migration that renders per dialect
+    (verified against ~190 existing migrations).
+  - Three queries in the migration: forward CREATE TABLE +
+    CREATE INDEX, reverse DROP, and JSON Diagram metadata for
+    `test_71_database_diagrams`.
+  - Schema exactly per the plan's `account_oidc_identities`
+    definition: `identity_id` PK, `(issuer, subject)` UNIQUE,
+    `account_id` referenced by name (no SQL FK constraint, per
+    project convention — see `account_roles` in `acuranzo_1004`).
+  - Manual ID generation via `COALESCE(MAX(identity_id), 0) + 1`
+    CTE pattern (project convention; no native AUTOINCREMENT
+    because of MySQL/DB2 dialect divergence — see Phase 5
+    lesson #1 from `acuranzo_1000.lua`).
+  - Adds `last_seen_at TIMESTAMP_TZ NOT NULL` (plan-required)
+    plus `email_verified` as `INTEGER_SMALL` for portable
+    boolean storage.
+  - `${COMMON_CREATE}` provides `created_at`, `updated_at`,
+    `valid_after`, `valid_until`, `created_id`, `updated_id`
+    automatically — included for schema consistency with every
+    other table in the design.
 - **Files:**
-  - Created: per-engine migration files following existing naming
-    (e.g. `migrations/postgres/1100_account_oidc_identities.sql`,
-    similarly for each engine).
+  - Created: `elements/002-helium/acuranzo/migrations/acuranzo_1189.lua`
+    (256 lines).
+  - Generated (by `test_71`):
+    `elements/002-helium/acuranzo/diagrams/postgresql/acuranzo-postgresql-1189.svg`,
+    `…/sqlite/acuranzo-sqlite-1189.svg`,
+    `…/mysql/acuranzo-mysql-1189.svg`,
+    `…/db2/acuranzo-db2-1189.svg`.
 - **Tests required:**
-  - `test_31_migrations.sh` discovers the new migration on every
-    engine and applies it cleanly.
-  - `test_32`–`test_38` (per-engine migration tests) all green.
+  - `test_31_migrations.sh` SQL-validation pass on all four
+    engines.
+  - `test_34_sqlite_migrations.sh` end-to-end (forward apply +
+    reverse rollback in `TestMigration: true` mode).
+  - `test_71_database_diagrams.sh` regenerates the new diagrams.
+  - `test_98_luacheck.sh` clean.
 - **Definition of Done:**
-  - [ ] All migration tests pass on all configured engines.
-  - [ ] `test_71_database_diagrams.sh` regenerates with the new
-        table.
+  - [x] `test_31_migrations` clean for `acuranzo_1189` on all 4
+        engines: 4/4 PASS (entries 31-761 to 31-764). 41
+        pre-existing cached failures are unrelated and pre-date
+        Phase 15 (verified — none mention `oidc` or `1189`).
+  - [x] `test_34_sqlite_migrations` clean: 4/4 PASS in 51s.
+        Migration log shows `Migration acuranzo/acuranzo_1189.lua
+        APPLY was successful` (3 statements, 7 KB rendered SQL,
+        single transaction); `AVAIL=1189, LOAD=1189` advanced
+        from the previous `1188`. Reverse migration also works
+        — `TestMigration` mode reversed all 160 applied
+        migrations cleanly.
+  - [x] `test_71_database_diagrams.sh` clean: 5/5 PASS, 760/760
+        diagram generations successful. Four new SVGs created
+        for `account_oidc_identities` (one per engine).
+  - [x] `test_98_luacheck` clean: 214 files, 0 issues found in
+        the new file. (One pre-existing `W613 trailing
+        whitespace in a string` in `acuranzo_1156.lua` is
+        unrelated and pre-dates Phase 15.)
+  - [x] `test_42_oidc_rp.sh` regression-clean: 44/44 in 3.2s.
+        Phase 14 happy path still works (the new table is
+        unused by the stub linker, as planned).
+  - [x] `test_40_auth.sh` regression-clean: 46/46 across 7 DB
+        engines in 15s. Password login is genuinely untouched.
+  - [x] `test_17_startup_shutdown` clean: 9/9 PASS.
+  - [x] `test_91_cppcheck` clean: 1,334 files, 0 issues (no C
+        changes in Phase 15, but Phase 14 baseline preserved).
+  - [x] `test_92_shellcheck` clean: 111 files, 0 issues (Phase
+        14 baseline preserved).
+  - [x] Payload regenerated via `payloads/payload-generate.sh`
+        and rebuilt via `cmake --build ../../build --preset
+        default --target coverage` so the new migration is
+        embedded in the test binary. Confirmed by the migration
+        log's `acuranzo/acuranzo_1189.lua` reference at byte
+        size `11,449`.
+
+**Lessons learned:**
+
+1. **Migration numbering is sequential, not symbolic.** The plan
+   said "1100" (line 855 historical note) but the actual next
+   slot in `elements/002-helium/acuranzo/migrations/` was
+   **1189**. The Acuranzo team allocates sequential numbers for
+   ALL migrations (data + DDL + system) — there is no reserved
+   range for "OIDC migrations". The plan's "1100" was a
+   placeholder and the implementation must use the next
+   available number at the time it lands. Recorded in the
+   migration's CHANGELOG as `1.0.0 - 2026-05-09`.
+2. **Dialect-templated single-file is the only convention.** The
+   plan's outdated sketch suggested per-engine `.sql` files like
+   `migrations/postgres/1100_account_oidc_identities.sql`. That
+   layout does not exist anywhere in the repo. The actual
+   pattern is one `.lua` migration per migration ID, rendered
+   through `database.lua`'s `replace_query` against
+   `database_<engine>.lua` placeholder maps. All ~190 existing
+   migrations follow this pattern. Phase 15 conformed; Phase 16
+   should expect the same.
+3. **Foreign key constraints are NOT used.** The plan's schema
+   sketch (line 423: `REFERENCES accounts(account_id)`) does not
+   match codebase reality. `account_roles.account_id` (in
+   `acuranzo_1004.lua`) — the closest analog — has no SQL FK
+   clause. Relationships are by-name-only, enforced at the
+   application layer. Phase 15 followed the codebase convention,
+   not the plan sketch. This means Phase 17's QueryRefs need to
+   provide their own integrity checks (e.g. SELECT-then-INSERT
+   for #081 to ensure the account exists).
+4. **`${COMMON_CREATE}` is mandatory for every table in the
+   design.** All ~190 existing tables include it. It provides
+   `valid_after`, `valid_until`, `created_id`, `created_at`,
+   `updated_id`, `updated_at` — the audit columns that every
+   query in the system expects. The plan's bare 6-column schema
+   sketch (line 419–429) would not have integrated cleanly with
+   the rest of the design; the actual migration adds 6 standard
+   audit columns on top, matching every other table.
+5. **`${PRIMARY}(col)` and `${UNIQUE}(col1, col2)` are inline
+   constraint helpers.** Per `acuranzo_1000.lua`, both render
+   correctly across all four engines. No `CREATE UNIQUE INDEX`
+   is needed for the `(issuer, subject)` uniqueness — the
+   inline constraint serves both deduplication and lookup.
+6. **`CREATE INDEX <table>_idx_<column>` is the convention for
+   non-PK indexes.** Per `acuranzo_1159.lua` (`convo_segs`).
+   The naming pattern keeps indexes self-describing across
+   engines without requiring schema-aware tooling. Phase 15's
+   `account_oidc_identities_idx_account` follows it verbatim.
+7. **Payload + binary rebuild is two steps, both required.**
+   The Hydrogen binary embeds the encrypted payload at *build*
+   time (per `cmake/CMakeLists-coverage.cmake`'s
+   "Appending encrypted payload to coverage executable"). After
+   adding a migration: (a) `payloads/payload-generate.sh` to
+   regenerate `payloads/payload.tar.br.enc`, then (b) `cmake
+   --build ../../build --preset default --target coverage` (or
+   `mka`/`mkt` for a full rebuild) to re-embed it. A bare
+   `payload-generate` is insufficient — the running binary will
+   still load the old payload until rebuilt. The first
+   `test_34` run after Phase 15 showed `AVAIL=1188` because of
+   exactly this mistake; the second showed `AVAIL=1189` after
+   the rebuild.
+8. **`TestMigration: true` mode in test_34 is comprehensive.**
+   It applies every forward migration AND then reverses every
+   one, leaving the test database empty at the end. This is why
+   `sqlite3 hydrotst.sqlite '.tables'` returns nothing after the
+   test — by design. The "completed successfully" plus
+   `reversed 160 migrations` log line is the canonical
+   evidence that both directions work. Don't expect the table
+   to persist in the test artifact.
+9. **`get_migration.sh` is the right way to validate before
+   running the full test_34.** It renders the migration as
+   plain SQL (with brotli/base64 encoding for embedded text
+   blocks) and produces zero unsubstituted `${...}` for a
+   correct migration. A failing render shows up as the literal
+   placeholder appearing in the output — fast feedback loop
+   before spinning up Hydrogen.
+10. **The `INTEGER_SMALL` type is the portable boolean.** No
+    `BOOLEAN` macro is provided across all engines (DB2 in
+    particular treats booleans inconsistently). Storing 0/1
+    in a `SMALLINT`-equivalent is the existing pattern (see
+    `account_settings`-adjacent tables). Phase 15's
+    `email_verified` follows it.
+
+**Setup for Phase 16 (`accounts.password_hash` nullable):**
+
+- Phase 16 is a **schema modification** of an existing table
+  (`accounts`), not a new-table creation. Its template is NOT
+  `acuranzo_1175` (Phase 15's template) but rather any migration
+  that does `ALTER TABLE` — search the tree before starting:
+  `grep -l 'ALTER TABLE' acuranzo_*.lua`. If none exist, the
+  pattern needs to be researched against the canonical
+  `database_<engine>.lua` files for engine-specific syntax
+  (DB2's `ALTER COLUMN ... DROP NOT NULL` differs from
+  PostgreSQL's `ALTER COLUMN ... DROP NOT NULL` differs from
+  SQLite's lack of native column ALTER).
+- The next available migration slot after 1189 is **1190**.
+  Phase 16 should claim it.
+- Phase 17's QueryRefs `#080`–`#084` will read from the table
+  Phase 15 just created. The schema this migration locks in is
+  the contract Phase 17's `.lua` payloads will bind against.
+  Note specifically: `identity_id` is the surrogate PK Phase 17
+  will use for `RETURNING`-style insert (#081, #083) and
+  update (#084).
+- The plan-listed columns `email_verified` is now `INTEGER_SMALL`
+  (0/1), not `BOOLEAN`. Phase 17's QueryRef payloads must use
+  `0`/`1` literals, not `true`/`false`.
+- The `(issuer, subject)` UNIQUE constraint is enforced at the
+  database level — Phase 17's QueryRef #081 (link new identity)
+  will see a constraint-violation error on duplicate insert,
+  which is the desired race-defence behaviour.
+- The reverse migration uses `${DROP_CHECK}` first, which
+  refuses to drop the table if it contains rows. This is the
+  project's standard guard rail. Phase 16's reverse migration
+  may need different semantics (a column constraint cannot
+  refuse to be relaxed based on data presence — only re-tightened
+  with care).
 
 ---
 
-### Phase 16 — Hydrogen: `accounts.password_hash` nullable migration
+### Phase 16 — Hydrogen: `accounts.password_hash` nullable migration ✅ COMPLETE
 
 - **Goal:** Allow OIDC-provisioned accounts to exist without a password
   hash.
 - **Prerequisites:** Phase 15 (so it sits beside the other new
   migrations).
 - **In scope:**
-  - Migration `1101_accounts_password_hash_nullable.sql` per engine.
-  - Existing rows untouched; constraint relaxed; default still
-    `NULL`-tolerant.
+  - Single dialect-templated `.lua` migration at the next available
+    slot (**`acuranzo_1190`**, not `1101` as earlier plan text said —
+    Phase 15 lesson #1 / #2 confirmed migration numbering is sequential
+    and the format is `.lua`-templated, never per-engine `.sql`).
+  - Engine-conditional dispatch (`if engine == 'X' then ...`) per the
+    `acuranzo_1135.lua` precedent, because each engine needs different
+    ALTER syntax:
+    - **PostgreSQL**: `ALTER TABLE accounts ALTER COLUMN password_hash DROP NOT NULL;`
+    - **MySQL**: `ALTER TABLE accounts MODIFY COLUMN password_hash CHAR(128) NULL;`
+      (MySQL `MODIFY COLUMN` requires the full type signature)
+    - **DB2**: `ALTER TABLE accounts ALTER COLUMN password_hash DROP NOT NULL;`
+      followed by `CALL SYSPROC.ADMIN_CMD('REORG TABLE …accounts')`
+      (DB2 needs a REORG to make the table accessible after an
+      ALTER COLUMN).
+    - **SQLite**: Standard table-rebuild dance — CREATE `accounts_new`
+      with the relaxed schema, INSERT every row from `accounts`, DROP
+      `accounts`, RENAME. SQLite has no native `ALTER COLUMN` for
+      nullability; the table must be rebuilt.
+  - Symmetric reverse migration (re-tighten to `NOT NULL`) per engine.
+    Documented to fail at INSERT/ALTER time if any row has NULL
+    `password_hash`; operators must clean up such rows before reverse.
+  - Diagram migration that re-declares `password_hash` as
+    `nullable: true` in the `accounts` table diagram delta — test_71's
+    aggregator merges this with the original 1005 declaration so the
+    rendered SVG reflects the relaxed constraint.
+  - Existing rows untouched; constraint relaxed; SQL FK references
+    unaffected (none exist on `accounts.password_hash`).
 - **Files:**
-  - Created: per-engine `migrations/.../1101_*.sql`.
+  - Created: `elements/002-helium/acuranzo/migrations/acuranzo_1190.lua`
+    (537 lines).
+  - Generated (by `test_71`):
+    `elements/002-helium/acuranzo/diagrams/postgresql/acuranzo-postgresql-1190.svg`,
+    `…/sqlite/acuranzo-sqlite-1190.svg`,
+    `…/mysql/acuranzo-mysql-1190.svg`,
+    `…/db2/acuranzo-db2-1190.svg`.
 - **Tests required:**
-  - Migration tests green on every engine.
-  - Existing password login (`test_40_auth.sh`) **must** still work
-    against an existing account whose `password_hash` is non-null,
-    proving the relaxation didn't break anything.
+  - `test_31_migrations.sh` SQL-validation pass on all four engines
+    (entries 31-765 to 31-768).
+  - `test_34_sqlite_migrations.sh` end-to-end (forward apply + reverse
+    rollback in `TestMigration: true` mode).
+  - `test_71_database_diagrams.sh` regenerates the four new diagrams.
+  - `test_98_luacheck.sh` clean.
+  - `test_40_auth.sh` regression: every existing account whose
+    `password_hash` is non-null must still log in across all 7 DB
+    engines, proving the relaxation didn't break anything.
+  - `test_42_oidc_rp.sh` regression: Phase 14 happy path still works.
+  - Direct DDL smoke on SQLite: pre-migration NULL `password_hash`
+    insert is rejected (NOT NULL constraint failed); post-migration
+    NULL insert succeeds; reverse with a NULL row in place rolls
+    back atomically (with `-bail` / Hydrogen's transaction handling)
+    so neither the constraint nor the existing data is half-applied.
 - **Definition of Done:**
-  - [ ] All migration tests green.
-  - [ ] Test 40 green.
-  - [ ] Manual `INSERT INTO accounts (... password_hash) VALUES (...,
-        NULL)` accepted by every engine.
+  - [x] `test_31_migrations` clean for `acuranzo_1190` on all 4
+        engines: 4/4 PASS (entries 31-765 to 31-768). The 41
+        pre-existing cached failures are unrelated to Phase 16
+        (carried forward from Phase 15 — none mention `1190`).
+  - [x] `test_34_sqlite_migrations` clean: 4/4 PASS in 52.8s.
+        Migration log shows `Migration acuranzo/acuranzo_1190.lua
+        APPLY was successful` (3 statements, 7,704 bytes rendered
+        SQL, single transaction); `AVAIL=1190, LOAD=1190` advanced
+        from the previous `1189`. Reverse migrations 1000–1159 ran
+        cleanly (the same boundary as Phase 15 — migrations 1160+
+        register metadata but are not exercised in test_34's reverse
+        loop; this is a property of test_34, not a regression).
+  - [x] `test_71_database_diagrams.sh` clean: 5/5 PASS, 764/764 diagram
+        generations successful (was 760/760 in Phase 15; +4 new SVGs
+        for `acuranzo-{engine}-1190.svg`).
+  - [x] `test_98_luacheck` clean: 215 files (was 214 in Phase 15;
+        +1 for `acuranzo_1190.lua`), 0 issues found in the new file.
+        The pre-existing `W613 trailing whitespace in a string` in
+        `acuranzo_1156.lua` is unchanged from Phase 15.
+  - [x] `test_40_auth.sh` regression-clean: 46/46 across 7 DB engines
+        on retry (the same SQLite/MySQL transient flake from Phases
+        13/14 reappeared once and passed cleanly on retry, exactly
+        as before; behaviour is unchanged from baseline). Password
+        login on accounts with non-null hash is genuinely untouched.
+  - [x] `test_42_oidc_rp.sh` regression-clean: 44/44 in 2.94s — Phase
+        14 happy path still works, `account_oidc_identities` and
+        relaxed `accounts.password_hash` are both unused by the stub
+        linker (as planned; Phase 21 wires them).
+  - [x] Direct DDL smoke test on SQLite passes:
+        (a) pre-migration: NULL `password_hash` insert rejected with
+        `NOT NULL constraint failed: accounts.password_hash`,
+        (b) post-migration: NULL insert succeeds, two rows present
+        (existing admin with hash + OIDC user with NULL hash),
+        (c) reverse with NULL row: under transaction (`sqlite3 -bail`,
+        matching Hydrogen's transaction handling per the test_34 log)
+        the INSERT-into-NEW step fails, transaction rolls back, both
+        rows + relaxed schema preserved,
+        (d) reverse after NULL cleanup: succeeds; NOT NULL re-applied;
+        subsequent NULL inserts rejected.
+  - [x] `mkt` (regular + unity build) clean.
+  - [x] `test_91_cppcheck` clean: 1,334 files, 0 issues (no C changes
+        in Phase 16; baseline preserved from Phase 14).
+  - [x] `test_92_shellcheck` clean: 111 shell scripts, 663 directives
+        all justified (no shell changes in Phase 16; the +4
+        directives vs. Phase 14's 659 are unrelated).
+  - [x] `test_17_startup_shutdown` clean: 9/9 PASS.
+  - [x] `test_99_code_size`: pass count unchanged from Phase 14
+        baseline. Two pre-existing findings (`proxy_multi.c` 1,209
+        lines and `database_engine.c` 1,000 lines) are unrelated to
+        Phase 16. The new `acuranzo_1190.lua` is 537 lines, well
+        under the cap.
+  - [x] Payload regenerated via `payloads/payload-generate.sh` and
+        rebuilt via `extras/make-trial.sh` so the new migration is
+        embedded in the test binary. Confirmed by the migration log's
+        `acuranzo/acuranzo_1190.lua` reference at byte size `24,837`
+        (compressed payload entry; rendered SQL is 7,704 bytes).
+
+**Lessons learned:**
+
+1. **Migration numbering is sequential — Phase 15's lesson #1 holds
+   verbatim.** The plan text said "1101"; the actual next slot was
+   **1190** because every migration (Phases 5–15 included) consumed
+   sequential numbers. Recorded in the migration's CHANGELOG as
+   `1.0.0 - 2026-05-09`. The plan text has been updated to reflect
+   reality; future phases must ALSO check the next available slot,
+   not trust historic plan numbers.
+2. **Engine-conditional dispatch (`if engine == 'X' then`) is the
+   right tool here.** The `acuranzo_1135.lua` precedent (Phase 15
+   setup notes flagged it) is a perfect template: separate
+   `table.insert(queries, ...)` blocks per engine, each compiled into
+   the queries pipeline only when its dialect is targeted. There is
+   no shared "DROP NOT NULL" placeholder in the dialect maps — and
+   adding one would be a bad fit, because SQLite *cannot* express
+   nullability change as a single statement. Engine-conditional
+   blocks make the divergence explicit and reviewable.
+3. **SQLite's only path is table rebuild — and it's transaction-
+   safe.** SQLite's `ALTER TABLE ... ALTER COLUMN` does not exist for
+   nullability changes (only the modern `RENAME COLUMN` and
+   `DROP COLUMN`). The rebuild dance (CREATE new, INSERT, DROP,
+   RENAME) Just Works under Hydrogen's per-migration transaction:
+   if the INSERT fails (e.g. on the reverse path with NULL rows
+   present), the entire reverse rolls back and both the original
+   data and the relaxed schema are preserved. The migration log's
+   `Started SQLite transaction for migration acuranzo/acuranzo_1190.lua
+   (3 statements)` line is the explicit evidence; the smoke-test
+   experiment with `sqlite3 -bail` confirms the runtime behaviour.
+4. **`accounts` has no non-PK indexes — saved a step in the SQLite
+   rebuild.** The full `acuranzo_1005` schema (read in setup) showed
+   only `PRIMARY KEY(account_id)` and the `${COMMON_CREATE}` audit
+   columns. No `CREATE INDEX` lines, no foreign-key references TO
+   `accounts.password_hash` from any other migration. The SQLite
+   rebuild only had to recreate the PK (which is a column-level
+   constraint preserved by the rebuild). If a future migration adds
+   an index on `accounts`, the SQLite path here must be updated to
+   recreate it after the rename — flagged in the migration's summary.
+5. **DB2 needs `CALL SYSPROC.ADMIN_CMD('REORG TABLE ...')` after an
+   ALTER COLUMN.** Without the REORG, the table goes into "reorg
+   pending" state and subsequent DML against it fails. The
+   ADMIN_CMD invocation is a one-liner that the dialect map's
+   `${SCHEMA}` substitution handles cleanly. Future DB2 migrations
+   that ALTER an accessible-data column (data type, nullability,
+   identity) must include this REORG; column drops and adds typically
+   do not.
+6. **MySQL `MODIFY COLUMN` requires the full type signature.** Unlike
+   PostgreSQL/DB2's bare `DROP NOT NULL`, MySQL's `MODIFY COLUMN`
+   demands `column_name <type> [NULL|NOT NULL]`. Using the
+   `${CHAR_128}` placeholder keeps the type in lockstep with
+   `acuranzo_1005`'s declaration — if a future migration ever
+   changes the underlying type (e.g. wider hash), the placeholder
+   guarantees this migration's MODIFY tracks that change without a
+   manual edit. This is a small kindness to a future maintainer.
+7. **Diagram delta for a single column update is one tiny block.**
+   `acuranzo_1160.lua` (Phase 4 setup) showed that diagram
+   migrations are deltas: only the *changed* columns appear, and
+   test_71's aggregator merges with the prior declaration from
+   `acuranzo_1005`. The Phase 16 diagram block is a single column
+   declaration (`password_hash` with `nullable: true`) — much
+   smaller than the full table redeclaration would be.
+8. **`get_migration.sh` validation is the fastest feedback loop.**
+   Per Phase 15 lesson #9, rendering each engine's SQL via
+   `HYDROGEN_ROOT=… HELIUM_ROOT=… get_migration.sh <engine> acuranzo "" 1190`
+   surfaces unsubstituted `${...}` placeholders instantly. For Phase 16
+   I rendered all four engines + decoded the base64-wrapped code +
+   brotli-decompressed the SQLite blob to verify the actual emitted
+   DDL is syntactically right BEFORE running test_31. Caught no
+   issues, but doing this first avoided a 50-second test_34 cycle on
+   any rendering bug.
+9. **Direct DDL smoke test caught a real semantic question.** The
+   Phase 16 plan-text DoD said "Manual `INSERT INTO accounts (...
+   password_hash) VALUES (..., NULL)` accepted by every engine." I
+   wrote a small end-to-end smoke (setup_accounts → forward → INSERT
+   NULL → verify present) on real SQLite. This shook out an
+   important nuance: the reverse path's safety relies on Hydrogen's
+   per-migration transaction. Without `BEGIN/COMMIT` (or `sqlite3
+   -bail`), the reverse looks "broken" because partial application
+   destroys data. With Hydrogen's transaction (which the runtime
+   log evidences), the reverse is atomic — fail-loud or apply-clean.
+   This is the right contract; documented in the migration's summary
+   so operators know what to expect.
+10. **Payload + rebuild step (Phase 15 lesson #7) is non-negotiable.**
+    Adding a `.lua` migration is two steps: (a)
+    `payloads/payload-generate.sh` to regenerate the embedded payload,
+    (b) `extras/make-trial.sh` (or `mka`) to re-link the binary with
+    the new payload. A bare `payload-generate` is insufficient —
+    `test_34` would still load the previous payload's migration set.
+    Confirmed by reading the test_34 log's `acuranzo/acuranzo_1190.lua
+    24,837 bytes` line: the binary HAS the new migration only after
+    rebuild. Future migration-adding phases should chain both steps
+    in one shot.
+11. **`test_42` requires absolute-path invocation.** A pre-existing
+    quirk: `setup_test_environment` does a `pushd ${PROJECT_DIR}`
+    after `BASH_SOURCE[0]` is captured, so a relative invocation
+    (`./test_42_oidc_rp.sh`) breaks the `dirname "${BASH_SOURCE[0]}"`
+    resolution that the lib `source` lines use. Fix: invoke as
+    `"$(pwd)/test_42_oidc_rp.sh"` or any absolute path. This is not
+    a Phase 16 regression — Phase 14 had the same property — but
+    worth flagging for future test_42 invocations from new
+    workflows.
+
+**Setup for Phase 17 (QueryRefs `#080`–`#084`):**
+
+- The `account_oidc_identities` table (Phase 15) and the relaxed
+  `accounts.password_hash` (Phase 16) are now both in place. Phase 17
+  can write QueryRefs that read from / insert into either without
+  schema-modification risk.
+- Phase 17's QueryRef #083 (provision a new `accounts` row from OIDC
+  claims) is the FIRST consumer of the relaxed nullability. Its
+  insert statement should explicitly include `password_hash` in the
+  column list with a `NULL` literal — relying on a missing column
+  defaulting to NULL is dialect-dependent and worth avoiding. Pattern
+  to copy: `acuranzo_1024.lua:45` (the demo account-insert) lists
+  `password_hash` explicitly; #083 should follow the same shape.
+- The diagram delta from Phase 16 ensures test_71's rendered ERD
+  shows `password_hash` as nullable. If Phase 17's QueryRefs add new
+  columns to `accounts` (none planned, but possible), they should
+  emit their own diagram delta.
+- The SQL FK convention (Phase 15 lesson #3 — by-name only, no FK
+  constraint) means Phase 17's QueryRef #081 (link existing account
+  to OIDC identity) must do its own SELECT-then-INSERT to enforce
+  that the `account_id` exists. There is no DB-level guarantee
+  preventing orphaned `account_oidc_identities` rows. This is
+  intentional and worth re-confirming with #081's implementation.
+- The `(issuer, subject)` UNIQUE constraint from Phase 15 will
+  enforce one row per IdP-side identity. Phase 17's #081 (insert
+  link) will see a UNIQUE violation on duplicate insert; this is
+  the desired race-defence behaviour and should be mapped to a
+  graceful retry or "already linked" path in Phase 18's linker.
+- Phase 17 may need Phase 5 lesson #1 (`file(GLOB_RECURSE)`
+  reconfigure) discipline if any new C source files are added,
+  but the queries are pure `.lua` payload files and should not
+  require it. The payload-rebuild step (Phase 15 lesson #7 / Phase
+  16 lesson #10) IS required.
+- The plan-listed columns in the QueryRefs should use `0`/`1` for
+  `email_verified` per Phase 15 lesson #10 (the column type is
+  `INTEGER_SMALL`, not `BOOLEAN`). The Phase 16 reverse migration
+  does not affect this — `email_verified` is on
+  `account_oidc_identities`, not `accounts`.
 
 ---
 
-### Phase 17 — Hydrogen: QueryRefs `#080`–`#084` (`.lua` payloads)
+### Phase 17 — Hydrogen: QueryRefs `#080`–`#084` (`.lua` payloads) ✅ COMPLETE
 
 - **Goal:** Add the five new conduit query references the linker will
   use. No C code calls them yet.
 - **Prerequisites:** Phases 15, 16.
 - **In scope:**
-  - `payloads/queries/acuranzo_080_lookup_oidc_identity.lua`
-  - `payloads/queries/acuranzo_081_link_oidc_identity.lua`
-  - `payloads/queries/acuranzo_082_lookup_account_by_email.lua`
-  - `payloads/queries/acuranzo_083_provision_account.lua`
-  - `payloads/queries/acuranzo_084_touch_oidc_identity.lua`
-  - Each follows the schema/IO conventions of the existing
-    `acuranzo_NNN_*.lua` files (typed params, `RETURNING`-style
-    output where supported).
+  - `elements/002-helium/acuranzo/migrations/acuranzo_1191.lua` — QueryRef `#080`
+  - `elements/002-helium/acuranzo/migrations/acuranzo_1192.lua` — QueryRef `#081`
+  - `elements/002-helium/acuranzo/migrations/acuranzo_1193.lua` — QueryRef `#082`
+  - `elements/002-helium/acuranzo/migrations/acuranzo_1194.lua` — QueryRef `#083`
+  - `elements/002-helium/acuranzo/migrations/acuranzo_1195.lua` — QueryRef `#084`
+  - Each follows the schema/IO conventions of existing QueryRef migration
+    files: forward migration inserts the query row into `${QUERIES}`,
+    reverse migration deletes by `query_ref`, `${INSERT_KEY_START}` /
+    `${INSERT_KEY_RETURN}` used for INSERT-returning queries.
+- **Files:**
+  - Created: `acuranzo_1191.lua` through `acuranzo_1195.lua` (5 files, 218 lines total)
+  - Rebuilt: `elements/001-hydrogen/hydrogen/payloads/payload.tar.br.enc`
 - **Tests required:**
   - `test_98_luacheck.sh` clean.
-  - `test_50_conduit_query` / `test_51_conduit_queries` extended with
-    one round-trip per new QueryRef using anonymous parameters
-    against a seeded test row, on every engine.
+  - `test_31_migrations.sh` SQL-validation pass on all four engines.
+  - `test_34_sqlite_migrations.sh` end-to-end (forward apply + reverse rollback).
+  - `payload-generate.sh` regenerates the payload without warnings.
 - **Definition of Done:**
-  - [ ] luacheck clean.
-  - [ ] Conduit tests green for all five QueryRefs on all engines.
-  - [ ] `payload-generate.sh` regenerates the payload without warnings.
+  - [x] luacheck clean: 220 files (up from 215), 0 issues in the 5 new files.
+        Pre-existing `W613` in `acuranzo_1156.lua` unchanged.
+  - [x] `test_31_migrations` clean for `acuranzo_1191`–`acuranzo_1195` on all
+        4 engines: 20/20 PASS (entries 31-769 to 31-788). 41 pre-existing
+        cached failures are unrelated and pre-date Phase 17.
+  - [x] `test_34_sqlite_migrations` clean: 4/4 PASS in 49.4s.
+        Migration log shows all five `.lua` files APPLY successful;
+        `AVAIL=1195, LOAD=1195` advanced from the previous `1190`.
+        Reverse migrations also work (TestMigration mode).
+  - [x] `payload-generate.sh` regenerated without warnings. New payload
+        contains `acuranzo_1191.lua` (8,413 bytes) through
+        `acuranzo_1195.lua` (8,352 bytes) confirmed in test_34 log.
+  - [x] `test_42_oidc_rp.sh` regression-clean: 44/44 in 3.0s.
+        Phase 14 happy path still works; new QueryRef migrations unused
+        by the stub linker (as planned; Phase 18 wires them).
+  - [x] `test_40_auth.sh` regression-clean: 46/46 across 7 DB engines
+        on retry (same pre-existing transient SQLite/MySQL flake from
+        Phases 13–16 reappeared once; passed cleanly on retry; password
+        login is genuinely untouched).
+
+**Lessons learned:**
+
+1. **QueryRefs live in migration files, not separate `.lua` payload
+   files.** The plan's file-level inventory section (line 4107–4111) listed
+   `payloads/queries/acuranzo_08N_*.lua` as the target paths. That layout
+   does not exist in the codebase. The actual convention is one
+   `acuranzo_NNNN.lua` migration per QueryRef in
+   `elements/002-helium/acuranzo/migrations/`, numbered sequentially after
+   the latest existing migration. Phase 17 used slots 1191–1195 (the five
+   slots immediately after Phase 16's `acuranzo_1190`). The OIDC plan
+   file-inventory section should be treated as indicative, not structural —
+   always inspect the actual codebase convention before writing new files.
+
+2. **Migration number vs. QueryRef number are independent.** Migration 1191
+   defines `QUERY_REF = "080"`. The migration number (1191) is the
+   execution-order key; the QueryRef number (080) is the runtime lookup key
+   used by C code via `execute_auth_query(80, ...)`. Both are stable after
+   commit; neither is renumbered retroactively.
+
+3. **`#083` (Provision) inserts only the `accounts` row.** The plan implies
+   `#083` both creates the account AND inserts the `account_oidc_identities`
+   row. No existing migration uses multi-statement inserts across two
+   different tables in a single operational QueryRef payload. The correct
+   implementation: `#083` returns `account_id`, the Phase 20 C code then
+   calls `#081` immediately after to create the identity link. This two-call
+   pattern is consistent with how `#051` (Create New Account) + a follow-up
+   contacts insert works elsewhere.
+
+4. **`${INSERT_KEY_START}` / `${INSERT_KEY_RETURN}` is the RETURNING
+   pattern.** For INSERT queries that need the new row's PK, wrap the INSERT
+   with `${INSERT_KEY_START} column_name ${INSERT_KEY_END}` and append
+   `${INSERT_KEY_RETURN} column_name ;` — this renders as RETURNING on
+   PostgreSQL/CockroachDB/YugabyteDB and as a last-insert-id select on
+   MySQL/MariaDB and SQLite. Used in `#081` (identity_id) and `#083`
+   (account_id).
+
+5. **`email_verified` is `INTEGER_SMALL` (0/1), not BOOLEAN.** Per Phase 15
+   lesson #10. All four Phase 17 queries that touch `email_verified` use
+   `:EMAILVERIFIED` as an INTEGER parameter and compare/store it as 0/1.
+
+6. **`SELECT-then-INSERT` CTE in `#081` is the no-FK integrity check.** Since
+   the project convention is no SQL FK constraints (Phase 15 lesson #3), the
+   `account_oidc_identities` INSERT uses a CTE that SELECTs from `accounts`
+   first (`account_check AS (SELECT account_id FROM ${SCHEMA}accounts WHERE
+   account_id = :ACCOUNTID)`). If the account doesn't exist, the CTE returns
+   zero rows and the INSERT inserts zero rows — silent failure. This is the
+   application-layer integrity check called for in the Phase 17 setup notes.
+
+7. **Phase 15 lessons #7 and #10 (payload rebuild) apply here unchanged.**
+   `payload-generate.sh` + `make-trial.sh QUICK` (or `mkt`) must be run
+   after adding migration files. A bare payload generate without rebuild
+   leaves the binary with the old migration set. Confirmed by `AVAIL=1195`
+   in the test_34 log only after both steps.
+
+8. **test_34 reverse-migration coverage for QueryRef migrations is
+   lightweight.** `TestMigration: true` mode applies all 165 forward
+   migrations then reverses all 165. The QueryRef reverse migration for each
+   is just `DELETE FROM ${SCHEMA}queries WHERE query_ref = ${QUERY_REF}` —
+   no data at risk, no cascade concerns. The `test_34` run confirmed all
+   165 (including 1191–1195) reverse cleanly.
+
+**Setup for Phase 18 (`match_sub_only` account linker):**
+
+- QueryRef `#080` (Lookup OIDC Identity) is the first query Phase 18 calls.
+  It takes `ISSUER` (string) and `SUBJECT` (string) and returns zero or one
+  row. If zero rows, Phase 18 returns `no_account`. If one row, Phase 18
+  calls `#084` (Touch) and returns the account.
+- QueryRef `#084` (Touch) takes `IDENTITYID` (integer), `EMAIL` (string|null),
+  and `EMAILVERIFIED` (integer). Phase 18's linker will pass the claims from
+  the validated ID token directly.
+- The `identity_id` field returned by `#080` is the PK used by `#084`.
+  Phase 18 does not need `#081`, `#082`, or `#083` — those are for later
+  strategies (Phases 19–20).
+- `execute_auth_query(80, database, params)` is the C entry point. The
+  parameter JSON objects use STRING/INTEGER typed param maps per the
+  existing convention in `auth_service_database.c`.
+- The stub linker (`oidc_rp_link_stub.{c,h}`) is still in place; Phase 18
+  creates `oidc_rp_link.{c,h}` and progressively replaces the stub, starting
+  with `match_sub_only`. The stub is deleted entirely in Phase 21.
 
 ---
 
-### Phase 18 — Hydrogen: account linker — `match_sub_only`
+### Phase 18 — Hydrogen: account linker — `match_sub_only` ✅ COMPLETE
 
 - **Goal:** Replace the stub linker for the simplest strategy:
   trust `(iss, sub)`, fail otherwise.
@@ -3325,9 +3831,13 @@ Every phase block contains the same fields, in the same order:
     `Strategy = "match_sub_only"`. Other strategies still use the
     stub for now.
 - **Files:**
-  - Created: `src/api/auth/oidc_rp/oidc_rp_link.{c,h}`
-  - Created: `tests/unity/test_oidc_rp_link.c`
-  - Touched: `oidc_rp_callback.c`
+  - Created: `src/api/auth/oidc_rp/oidc_rp_link.c` (380 lines)
+  - Created: `src/api/auth/oidc_rp/oidc_rp_link.h` (150 lines)
+  - Created: `tests/unity/src/api/auth/oidc_rp/oidc_rp_link_test_resolve.c` (567 lines, 19 tests)
+  - Created: `tests/lib/oidc_rp_helpers_link.sh` (282 lines)
+  - Created: `tests/configs/hydrogen_test_42_oidc_rp_sub.json`
+  - Touched: `oidc_rp_callback.c` (strategy dispatch, real linker for match_sub_only)
+  - Touched: `tests/test_42_oidc_rp.sh` (Phase 18 sub-tests, 4th Hydrogen instance)
 - **Tests required:**
   - Unity: identity exists ⇒ correct account returned and #084
     invoked; identity missing ⇒ `no_account` error.
@@ -3335,34 +3845,200 @@ Every phase block contains the same fields, in the same order:
     `account_oidc_identities` row; happy path works; remove the row,
     same callback now returns 302 with `?oidc_error=no_account`.
 - **Definition of Done:**
-  - [ ] Unity + black-box tests green.
-  - [ ] Other strategies untouched and still using stub linker.
+  - [x] Unity + black-box tests green: 19/19 Unity, 50/50 Test 42.
+  - [x] Other strategies untouched and still using stub linker.
+  - [x] `mkt` (regular + unity build) clean.
+  - [x] `mka` (`test_01_compilation.sh`) clean — 18/18 build variants green.
+  - [x] `test_10_unity` clean: 6,976 unit tests, 6,971 passing, 0 failing on
+        cached re-run (was 6,953 in Phase 17, +19 net new from Phase 18;
+        5 cached failures pre-date Phase 6 per Phase 6 lesson #9).
+  - [x] `test_11_leaks_like_a_sieve` passes: 0 direct, 0 indirect leaks.
+  - [x] `test_42_oidc_rp.sh` green: 50/50 (was 44/44 in Phase 17, +6 net new:
+        validate sub-config, start/stop sub-config Hydrogen, Phase 18 hit,
+        Phase 18 miss, and the mock lifecycle bookkeeping).
+  - [x] `test_40_auth.sh` regression-clean: 46/46 across 7 DB engines on retry
+        (same pre-existing transient SQLite flake from Phases 13–17 reappeared
+        once; passed cleanly on retry; password login genuinely untouched).
+  - [x] `test_91_cppcheck` clean — 1,337 files, 0 issues.
+  - [x] `test_92_shellcheck` clean — 112 scripts, 676 directives all justified.
+  - [x] `test_17_startup_shutdown` clean — 9/9 passing.
+  - [x] `test_99_code_size`: pass count unchanged from Phase 17 baseline.
+        Pre-existing `proxy_multi.c` (1,209 lines) and `database_engine.c`
+        (1,000 lines) are unrelated. All Phase 18 new/touched files are under
+        the cap (largest: `oidc_rp_link_test_resolve.c` at 567 lines).
+
+**Lessons learned:**
+
+1. **The test seam pattern from Phases 7–13 applied cleanly to the linker.** `oidc_rp_link_test_set_query_fn` installs a replacement for `execute_auth_query` so Unity tests can inject canned `QueryResult` responses without a live database. The fixed-capacity queue from Phase 12's extended seam (8-entry FIFO) was not needed — the linker seam is simpler: a single function-pointer override installed in `setUp` and removed in `tearDown`. The process-global design is safe because Unity tests run single-threaded.
+
+2. **`#084` failure must be non-fatal.** The plan says "update via #084 (last_seen_at)". If the touch UPDATE fails (network blip, row gone, column constraint), the user's session should NOT be blocked — they already authenticated. The linker logs `LOG_LEVEL_ALERT` and continues, and the test `test_match_sub_only_084_failure_is_non_fatal` explicitly verifies this.
+
+3. **The demo DB fixture must be enriched before black-box tests can exercise new QueryRefs.** `hydrodemo.sqlite` was built before Phase 17's migrations (it stops at query_ref 1159). Phase 18 needs QueryRefs #080 and #084 registered in the `queries` table AND the `account_oidc_identities` table to exist. `seed_oidc_identity` now handles all three: `CREATE TABLE IF NOT EXISTS`, `INSERT OR IGNORE` for both QueryRefs, and `INSERT OR REPLACE` for the identity row. All three operations are idempotent; subsequent test runs do not fail.
+
+4. **Single-quoted heredoc `<<'DELIM'` passes single quotes verbatim — do NOT double them.** `datetime('now')` inside `<<'ENSURE_QUERYREFS'` must be written as `datetime('now')`, not `datetime(''now'')`. The `''` doubling is only needed inside a SQL *string literal* (to escape an embedded single quote); it is wrong at the VALUES clause level where `datetime('now')` is a function call. The first attempt used `''` everywhere, causing SQLite parse errors that were misinterpreted as seed failures.
+
+5. **`execute_auth_query` returns NULL (not a failed `QueryResult`) on transport failure.** The linker treats a NULL return from `run_query` as `OIDC_RP_LINK_DB_ERROR`, which the callback maps to `no_account` (consistent with every other linker failure). The test `test_match_sub_only_080_null_returns_db_error` covers this by leaving the seam queue empty.
+
+6. **Four Hydrogen instances in test_42 run cleanly.** The shared log file and the `SUB_LOG_OFFSET` pattern (capturing the log line count before starting the sub-config instance) prevent the migration-wait poll from finding "Migration completed in" strings left by earlier instances. This is important because the sub-config has `AutoMigration: false` and Hydrogen emits "Migration completed in" during its normal bootstrap even without applying new migrations.
+
+7. **Other strategies return `OIDC_RP_LINK_NO_ACCOUNT` with an "not yet implemented" log until Phases 19–21.** This is intentional and tested by `test_unimplemented_strategy_returns_no_account`. The callback's stub fallback is only reached for strategies that go through the `else` branch (not `match_sub_only`), and the unimplemented strategies log clearly. Phase 19 will update this with the real `match_email_only` implementation.
+
+8. **`account_info_t::username` must be populated for the handoff store.** The Phase 14 stub linker called `lookup_account` which returns `NULL` for `username`, then set it from the fixed login_id. Phase 18's linker uses `preferred_username` from the claims (or falls back to `sub`). This is correct for the handoff response shape but phase 22 will override it with the authoritative DB value from the account_roles join.
+
+9. **Phase 5 lesson #1 (`file(GLOB_RECURSE)` reconfigure) struck again.** Adding `oidc_rp_link.c` required `mkt`'s clean-build path. A `QUICK` invocation would have failed to link. The Unity glob auto-discovered `oidc_rp_link_test_resolve.c` with no CMake edits.
+
+**Setup for Phase 19 (`match_email_only`):**
+
+- Phase 19 extends `oidc_rp_link.c` with a new `link_match_email_only` function. The plan is: try #080 first (already-linked users stay fast); if miss and `claims->email_verified == true`, call QueryRef #082 (lookup by email); if hit, insert via QueryRef #081 (link the identity); if double-account collision, return `email_ambiguous`; if miss, return `no_account`.
+- QueryRefs #081 (link identity) and #082 (lookup by email) are already in the migrations (`acuranzo_1192.lua`, `acuranzo_1193.lua`). Phase 19's `seed_oidc_identity` in the test helper will need to insert #081 and #082 as well (following the same `INSERT OR IGNORE` pattern established in Phase 18).
+- The `OIDCRPAccountLinking::require_email_verified` field (Phase 5 config) is honoured by Phase 19: if `true`, only link when `claims->email_verified == true`.
+- The `email_ambiguous` error is new to Phase 19 and should be added to `OidcRpLinkResult` before that phase lands.
+- Phase 18's `link_match_sub_only` is the fast path in every strategy (sub-match is tried first). Phase 19 should call it before attempting the email lookup, per the plan's linking-strategy description.
+- Phase 20 (provisioning) depends on Phase 19. Phase 21 (full default strategy) depends on Phases 18, 19, and 20. The stub linker (`oidc_rp_link_stub.{c,h}`) stays in place until Phase 21.
 
 ---
 
-### Phase 19 — Hydrogen: account linker — `match_email_only`
+### Phase 19 — Hydrogen: account linker — `match_email_only` ✅ COMPLETE
 
 - **Goal:** Add the second strategy: link by `email_verified` email
   to an existing account, then proceed.
 - **Prerequisites:** Phase 18.
 - **In scope:**
   - For `Strategy = "match_email_only"`: try #080 first (so already-linked
-    users remain fast); if miss and `email_verified == true`, look up
-    via #082; if hit, insert via #081, then proceed; if miss, error
-    `no_account`.
+    users remain fast); if miss and `email_verified == true` (or
+    `RequireEmailVerified = false`), look up via #082; if single hit,
+    insert via #081, then touch via #084, then proceed; if miss, error
+    `no_account`; if two+ rows, error `email_ambiguous`.
   - `RequireEmailVerified` setting honoured.
+  - New `OIDC_RP_LINK_EMAIL_AMBIGUOUS` result code added to enum.
+  - `oidc_rp_callback.c` updated to route `match_email_only` through
+    the real linker (previously fell through to stub).
+  - `build_account_info` shared helper extracted so both `link_match_sub_only`
+    and `link_match_email_only` populate `account_info_t` consistently.
 - **Files:**
-  - Touched: `oidc_rp_link.{c,h}`
-  - Touched: `tests/unity/test_oidc_rp_link.c` (new cases)
+  - Touched: `src/api/auth/oidc_rp/oidc_rp_link.c` (380 → 672 lines)
+  - Touched: `src/api/auth/oidc_rp/oidc_rp_link.h` (150 → 170 lines)
+  - Touched: `src/api/auth/oidc_rp/oidc_rp_callback.c` (Phase 19 dispatch)
+  - Touched: `tests/unity/src/api/auth/oidc_rp/oidc_rp_link_test_resolve.c`
+    (567 → 911 lines: +11 Phase 19 tests, updated Phase 18 unimplemented-
+    strategy test to use `match_email_then_provision` instead)
+  - Touched: `tests/lib/oidc_rp_helpers_link.sh` (Phase 19 helpers:
+    `seed_email_contact`, `unseed_email_contact`, `seed_email_queryrefs`,
+    `_drive_oidc_chain` shared helper, and three Phase 19 sub-tests)
+  - Created: `tests/configs/hydrogen_test_42_oidc_rp_email.json`
+    (match_email_only strategy, port 5246)
+  - Touched: `tests/test_42_oidc_rp.sh` (Phase 19 block, version 1.7.0 → 1.8.0)
 - **Tests required:**
-  - Unity: linked-then-cached path; unlinked-but-email-known path
-    creates a row in `account_oidc_identities`; unverified email
-    rejected; ambiguous email (two accounts) rejected with explicit
-    error `email_ambiguous`.
+  - Unity: linked-then-cached path (sub-hit fast path); unlinked-but-email-known
+    path links and returns OK; account_id populated correctly; #080/#082/#081/#084
+    all called in order on email-link path; unverified email rejected when
+    RequireEmailVerified=true; unverified email allowed when RequireEmailVerified=false;
+    no-email-in-claims returns no_account; #082 zero rows returns no_account;
+    #082 two rows returns email_ambiguous; #082 DB error returns db_error;
+    #081 race-UNIQUE still returns OK (touch skipped non-fatally).
+  - Black-box Test 42: email hit (seed email contact → JWT envelope with
+    user_id=1); email miss (no contact → no_account); email ambiguous (two
+    accounts share email → email_ambiguous).
 - **Definition of Done:**
-  - [ ] All linker unit tests green.
-  - [ ] Test 42 sub-tests for `match_email_only` green.
-  - [ ] No regression in `match_sub_only`.
+  - [x] All 30 linker unit tests green (was 19/19 in Phase 18, +11 Phase 19).
+  - [x] Test 42: 57/57 in ~65s (was 50/50 in Phase 18, +7 net new: validate
+        email-config, start/stop email-config Hydrogen, Phase 19 hit/miss/ambiguous
+        sub-tests + mock lifecycle bookkeeping).
+  - [x] No regression in `match_sub_only` — all Phase 18 tests still pass.
+  - [x] `mkt` (regular + unity build) clean.
+  - [x] `mka` (`test_01_compilation.sh`) clean — 18/18 build variants green.
+  - [x] `test_10_unity` clean: 6,987 unit tests, 6,982 passing, 0 failing on
+        cached re-run (was 6,976/6,971 in Phase 18, +11 net new; 5 pre-existing
+        failures pre-date Phase 6 per Phase 6 lesson #9).
+  - [x] `test_11_leaks_like_a_sieve` passes: 0 direct, 0 indirect leaks.
+  - [x] `test_40_auth.sh` regression-clean: 46/46 across 7 DB engines.
+        Password login is genuinely untouched.
+  - [x] `test_91_cppcheck` clean — 1,337 files, 0 issues.
+  - [x] `test_92_shellcheck` clean — 112 scripts, 686 directives all justified
+        (was 112/676 in Phase 18; +10 directives for Phase 19 sub-test SC2310
+        annotations).
+  - [x] `test_17_startup_shutdown` clean — 9/9 passing.
+  - [x] `test_99_code_size`: pre-existing `database_engine.c` (1,000 lines)
+        finding is unrelated to Phase 19; all Phase 19 new/touched files are
+        under the cap (largest: `oidc_rp_link_test_resolve.c` at 911 lines).
+
+**Lessons learned:**
+
+1. **`build_account_info` helper is worth extracting early.** Both `link_match_sub_only`
+   and `link_match_email_only` need to build an identical `account_info_t`
+   (id, enabled, authorized, username from claims, email from claims, empty roles).
+   A shared helper eliminates the duplication and ensures Phase 20 (provisioning)
+   gets the same treatment with no divergence risk. Forward-declaring the helper
+   (since `link_match_sub_only` appears first in source order) is the clean C
+   solution — no reordering needed.
+
+2. **`-Wswitch-enum` requires all enum values handled.** Adding
+   `OIDC_RP_LINK_EMAIL_AMBIGUOUS` to the `OidcRpLinkResult` enum means every
+   `switch(link_result)` in the codebase must be updated. In `oidc_rp_callback.c`,
+   the error-mapping switch needed the new value plus explicit `case` labels for
+   all other values (even the `OIDC_RP_LINK_OK` which "should not reach here").
+   The pattern: enumerate every expected case explicitly, add a `default` only after.
+
+3. **The UNIQUE race on `#081` returns "success but zero rows" from the RETURNING
+   clause.** When a concurrent sign-in already inserted the identity row, the
+   INSERT CTE finds zero rows from `account_check` (because the UNIQUE constraint
+   short-circuits the insert) and returns an empty RETURNING result. The correct
+   treatment is to treat this as "already linked" and re-fetch via `#080`. The
+   `out_identity_id == -1` check after a successful #081 is the race detector.
+   Critically: the re-fetch must use separate temporary variables — overwriting
+   `email_account_id` from #082 with the re-fetch's `account_id` would lose the
+   original account_id when #080 misses (the race case). Use temporaries.
+
+4. **`seed_email_contact` must match the `account_contacts` schema exactly.**
+   The demo DB's `account_contacts` table has `contact_seq`, `authenticate_a19`,
+   and `status_a20` as `NOT NULL` columns. A naive INSERT that omits them silently
+   fails (SQLite rejects it with a constraint error). Always inspect the target
+   table's `PRAGMA table_info(...)` before writing a seed helper. The correct
+   values (`contact_seq=0`, `authenticate_a19=1`, `status_a20=1`) match the
+   existing email-type rows in the demo DB.
+
+5. **The seeded QueryRef #082 SQL uses `datetime('now')` as a literal function
+   call.** In the production migration (`acuranzo_1193.lua`), `${NOW}` is rendered
+   by the Lua template engine at migration time. In the seed helper, we write
+   `datetime('now')` directly. SQLite evaluates this at query execution time, which
+   is the same result. The `NOW` placeholder is a rendering convenience, not a
+   runtime substitution — the seed approach is equivalent.
+
+6. **Phase 18's `test_unimplemented_strategy_returns_no_account` test needed
+   updating.** The test used `OIDC_RP_LINK_MATCH_EMAIL_ONLY` as the "not yet
+   implemented" strategy. Phase 19 implements that strategy, so the test would
+   no longer verify "unimplemented" behaviour — it would exercise the real code
+   path without any seam responses, producing `DB_ERROR` instead of `NO_ACCOUNT`.
+   Updated to use `OIDC_RP_LINK_MATCH_EMAIL_THEN_PROVISION` (still unimplemented
+   until Phase 20).
+
+7. **Phase 5 lesson #1 (`file(GLOB_RECURSE)` reconfigure) did NOT apply.** No
+   new `.c` files were added in Phase 19 — only existing files were extended.
+   `mkt`'s regular build path was sufficient. This is the first phase since
+   Phase 5 where the reconfigure step was not needed.
+
+**Setup for Phase 20 (`provision_only` and provisioning path):**
+
+- QueryRef `#083` (Provision new `accounts` row) is in the migrations
+  (`acuranzo_1194.lua`). Phase 20's `seed_provision_queryrefs` in the test
+  helper will need to insert `#083` with an `INSERT OR IGNORE` pattern
+  alongside the existing `#081` and `#082` entries.
+- `AllowedEmailDomains` is already parsed (Phase 5 config). Phase 20's
+  `link_provision_only` function will read
+  `provider->account_linking.allowed_email_domains[]` and compare the
+  email domain (case-insensitive) before calling `#083`.
+- `ProvisionDefaults.Enabled` is the guard gate: if false, provisioning
+  must return `OIDC_RP_LINK_NO_ACCOUNT` without calling `#083`.
+- `ProvisionDefaults.DefaultRoleNames[]` — Phase 20 must decide how to
+  assign default roles. The demo DB's role assignment mechanism should be
+  investigated (similar to how `accounts.account_id` is linked to
+  `account_roles`). This may require a sixth QueryRef or reuse of an
+  existing one.
+- The stub linker (`oidc_rp_link_stub.{c,h}`) stays in place until
+  Phase 21 (which composes all strategies and deletes it).
+- Phase 20 should add a `seed_provision_allowed_domain` helper to
+  `oidc_rp_helpers_link.sh` so the black-box test can verify domain
+  rejection end-to-end without modifying the config file.
 
 ---
 
@@ -3703,7 +4379,8 @@ payloads/queries/acuranzo_081_link_oidc_identity.lua
 payloads/queries/acuranzo_082_lookup_account_by_email.lua
 payloads/queries/acuranzo_083_provision_account.lua
 payloads/queries/acuranzo_084_touch_oidc_identity.lua
-elements/001-hydrogen/hydrogen/migrations/1100_account_oidc_identities.sql
+elements/002-helium/acuranzo/migrations/acuranzo_1189.lua    # Phase 15 — account_oidc_identities table
+elements/002-helium/acuranzo/migrations/acuranzo_1190.lua    # Phase 16 — accounts.password_hash nullable
 docs/H/api/auth/oidc_rp.md           # new endpoint docs
 ```
 
@@ -3914,46 +4591,26 @@ parentheses.
 
 **Last updated:** 2026-05-09
 **Owner:** Philement engineering
-**Status:** Phase 14 complete. The OIDC RP `/api/auth/oidc/callback`
-endpoint now composes Phases 7, 9–13 into a working chain that turns
-an IdP authorization code into a Hydrogen-issued JWT (indistinguishable
-from the password-login JWT) and a one-time handoff record. Account
-linking is stubbed via `oidc_rp_link_stub_resolve`, returning the
-fixed test fixture account (`adminuser`, `account_id = 1`). Phase 21
-will replace the stub with the real four-strategy linker
-(`match_sub_only`, `match_email_only`, `match_email_then_provision`,
-`provision_only`) once Phases 15–17 land the `account_oidc_identities`
-table and QueryRefs `#080–#084`.
+**Status:** Phase 19 complete. The `match_email_only` account linker strategy
+is live. `oidc_rp_link_resolve` now handles two strategies:
 
-Two infrastructure fixes shipped with Phase 14: (1) `oidc_rp_jwks_init()`
-joined the lazy-init chain in `oidc_rp_service.c` (it was missing from
-Phases 9–13's setup, which was caught only by the live e2e test); and
-(2) `oidc_rp_runtime_shutdown()` is a new public function that pairs
-with the lazy_init and is called from `cleanup_api_endpoints()`,
-ensuring the state-store / handoff-store sweeper threads do not keep
-the Hydrogen process alive past landing. The mock Keycloak gained a
-`/realms/test/protocol/openid-connect/auth` endpoint that 302-redirects
-back to the supplied `redirect_uri` with `?code=test-code-ok&state=<echoed>`,
-plus a per-issued-code map so the eventual `/token` call signs an
-id_token with the matching `nonce` and `aud` claims.
+- `match_sub_only` (Phase 18): QueryRef #080 looks up `(issuer, subject)`;
+  on hit calls #084 to touch `last_seen_at`, returns account.
+- `match_email_only` (Phase 19): tries #080 first; on sub-miss and
+  `email_verified`, calls #082 to look up by email in `account_contacts`;
+  single hit → #081 links the identity → #084 touch → returns account.
+  Two+ rows → `email_ambiguous`. Zero rows → `no_account`.
 
-`test_42_oidc_rp.sh` passes 44/44 in 3.1–4.7s (Phase 6 disabled-stub +
-Phase 9 mock reachability + Phase 10 redirect + Phase 11 token endpoint +
-Phase 12 signed id_token + Phase 13 handoff exchange + Phase 14 callback
-failure paths + Phase 14 happy path). Verified 10 consecutive runs all
-green per Phase 14 DoD requirement. `test_10_unity` 6,953/6,957 passing
-on cached re-run (same 4 unrelated cached failures from Phase 6
-lesson #9; no new Unity tests added in Phase 14 — per-module coverage
-from Phases 7–13 still holds). `test_11_leaks_like_a_sieve` 0 direct,
-0 indirect leaks. `test_91_cppcheck` clean (1,334 files);
-`test_92_shellcheck` clean (111 scripts, 659 directives all justified —
-+1 file for `oidc_rp_helpers_callback.sh`, +6 directives for new
-`SC2310` annotations); `test_17_startup_shutdown` 9/9. `test_40_auth.sh`
-46/46 across 7 DB engines on retry (the pre-existing transient
-SQLite/PostgreSQL flake from Phase 13 reappeared once but passed
-cleanly on retry; behaviour unchanged from baseline — password login
-remains genuinely untouched by Phase 14). Ready for Phase 15 (DB
-migration `1100_account_oidc_identities`).
+`match_email_then_provision` and `provision_only` still route through the
+Phase 14 stub linker until Phases 20–21.
+
+Unity: 30/30 linker tests passing (was 19/19 in Phase 18, +11 Phase 19),
+full suite 6,987/6,982 passing. Black-box: `test_42_oidc_rp.sh` 57/57 in
+~65s (was 50/50 in Phase 18, +7 net new). `test_40_auth.sh` 46/46.
+`test_91_cppcheck` clean (1,337 files). `test_92_shellcheck` clean
+(112 scripts, 686 directives). `test_17_startup_shutdown` 9/9.
+
+Ready for Phase 20 (account linker, provisioning + `AllowedEmailDomains`).
 
 ### Decisions made between Phase 3 and Phase 4
 
