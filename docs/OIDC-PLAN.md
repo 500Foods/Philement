@@ -580,12 +580,13 @@ Actual results after Phases 1–2:
 |---|---|---|---|
 | `login-panels.js` (panel crossfade + ESC handling) | 228 | ~250 | −119 (1,866 → 1,747) |
 | `login-password-manager.js` (1Password suppression) | 147 | ~150 | −126 (1,747 → 1,621) |
-| `login-language-panel.js` (Tabulator init) | — | ~250 | target: −200+ (1,621 → ≤1,420) |
-| `login-logs-panel.js` (CodeMirror init) | — | ~150 | TBD |
-| `login-help-panel.js` (version info wiring) | — | ~100 | TBD |
+| `login-language-panel.js` (Tabulator init) | 562 | ~250 | −156 (1,621 → 1,466) |
+| Phase 4 (combined): see expanded scope below | — | ~820 | target: ≥ −466 (1,466 → ≤ 1,000) |
 
-**Running total:** `login.js` at 1,621 lines after Phase 2. Need ≥ 621 more
-lines removed to hit the ≤1,000 gate. Phases 3–4 must achieve this.
+**Running total:** `login.js` at 1,466 lines after Phase 3. Need ≥ 466 more
+lines removed to hit the ≤1,000 gate. Phase 4 has been expanded to a
+combined six-item decomposition that can realistically remove 600–800
+lines (target: 650–750 lines remaining).
 
 Then the OIDC additions (~200 new lines across `oidc-login.js` and
 `oidc-client.js`) keep the main `login.js` well under 1000.
@@ -840,7 +841,7 @@ password login still works — every phase preserves that invariant.
 | 1 | Lithium login refactor — extract `login-panels` | Lithium | Low | ✅ Done |
 | 2 | Lithium login refactor — extract `login-password-manager` | Lithium | Low | ✅ Done |
 | 3 | Lithium login refactor — extract `login-language-panel` | Lithium | Low | ✅ Done |
-| 4 | Lithium login refactor — extract `login-logs-panel` and `login-help-panel` | Lithium | Low |
+| 4 | Lithium login refactor — full decomposition to ≤1,000 lines | Lithium | Medium | ✅ Done |
 | 5 | Hydrogen — `OIDCRelyingPartyConfig` schema and parser | Hydrogen | Low |
 | 6 | Hydrogen — disabled-stub endpoints (`/start`, `/callback`, `/handoff`) | Hydrogen | Low |
 | 7 | Hydrogen — in-memory state store | Hydrogen | Medium |
@@ -1019,40 +1020,219 @@ Every phase block contains the same fields, in the same order:
 
 ---
 
-### Phase 4 — Lithium: extract `login-logs-panel.js` and `login-help-panel.js`
+### Phase 4 — Lithium: full decomposition of `login.js` to ≤1,000 lines ✅ COMPLETE
 
-- **Goal:** Final two extractions to bring `login.js` cleanly under 1000
-  lines.
-- **Prerequisites:** Phase 1.
-- **In scope:** CodeMirror logs panel init and version/help panel
-  population, each in their own module.
+- **Goal:** Bring `login.js` cleanly under 1,000 lines via a coordinated
+  set of extractions plus dead-code removal. This is a single phase
+  (not several) because the decomposition is interlocked: shared state
+  (e.g. `isPasswordVisible`, the password-element references) is
+  referenced by multiple targets, so splitting them across phases would
+  require unstable intermediate APIs.
+- **Prerequisites:** Phase 1 (panels), Phase 2 (password manager),
+  Phase 3 (language panel).
+- **Scope expansion rationale:** A pure logs+help extraction would
+  remove ~120–180 lines (1,466 → ~1,300), still ~300 lines over the
+  gate. Phase-3-style "extract a panel module" produces a poor
+  reduction ratio (~28%) because most lifecycle scaffolding stays in
+  `login.js`. Phase 4 therefore widens scope to include behavioural
+  modules (form submission, keyboard shortcuts) that have a much
+  better reduction ratio (~80%) because their logic is mostly
+  self-contained. Combined with dead-code removal from the Phase 3
+  fallout, the gate becomes achievable in one phase.
+
+- **In scope (six independent work items, all in this phase):**
+
+  1. **Dead-code removal (Phase 3 fallout, ~316 lines).** Phase 3 moved
+     the language table into `LanguagePanel` but left behind a cluster
+     of methods on `LoginManager` (lines 760–1075 of current
+     `login.js`) that reference instance state (`this._languageTable`,
+     `this._currentLocale`, `this._languageData`) and module globals
+     (`getCountryCode`, `getFlagSvg`, `supportedLocales`,
+     `saveLocalePreference`) that **no longer exist or are not
+     imported**. These methods would throw `ReferenceError` if called.
+     They are not called from anywhere outside this cluster. Verified
+     dead: `_setupLanguageTableEvents`, `_finalizeLanguageTableSetup`,
+     `_handleLanguageTableError`, `_renderLanguageFallback`,
+     `_updateCurrentLocaleButton`,
+     `_refreshLanguageTableSelection`, `_focusLanguageTable`,
+     `_handleLanguageTableKeydown`, `_moveLanguageSelection`,
+     `_moveLanguageSelectionTo`, `_selectRowAtIndex`,
+     `_selectCurrentLanguageRow`, `filterLanguageTable`,
+     `selectLanguage`. Also remove the deprecated public
+     `handleEscapeKey` (line 615) and the unused `logGroup` import.
+     **Dead code is deleted, not extracted.**
+
+  2. **Logs panel** → `login-logs-panel.js`. Class `LogsPanel` with
+     `show()` (populates CodeMirror), `hide()` (no-op for now), and
+     `destroy()` (cleans up CodeMirror + OverlayScrollbars). Owns the
+     `_logEditor` field. Imports `getRawLog`, `formatLogText`, and the
+     dynamic CodeMirror imports out of `login.js`. The teardown block
+     at lines 1427–1437 of `login.js` moves to `LogsPanel.destroy()`.
+
+  3. **Help/version panel** → `login-help-panel.js`. Class `HelpPanel`
+     with `init()` (one-shot — fetches and renders version info),
+     `show()`/`hide()` (no-op stubs to match the lifecycle pattern), and
+     `destroy()`. Owns the version/build-date DOM caching. The
+     `loadVersionInfo()` method (lines 128–183) moves here unchanged.
+
+  4. **Login form + submit flow** → `login-form.js`. Class `LoginForm`
+     owning the form-submit pipeline:
+     - `handleSubmit()` (lines 1220–1247),
+     - `attemptLogin()` (lines 1252–1321),
+     - `handleLoginError()` (lines 1326–1369),
+     - `showError()` / `hideError()` (lines 1374–1386),
+     - `setLoading()` (lines 1391–1421),
+     - `loadRememberedUsername()` / `saveRememberedUsername()` (lines
+       70–101),
+     - `handleClearUsername()` (lines 1109–1119),
+     - `handleTogglePassword()` (lines 1124–1151) plus the
+       `isPasswordVisible` state.
+
+     Constructor takes `{ elements, onLoginSuccess, onLoginStart }`
+     callbacks. Emits `AUTH_LOGIN` directly (it owns the login
+     contract). `LoginManager` becomes a thin coordinator that
+     instantiates `LoginForm` in `render()` and calls
+     `loginForm.destroy()` in `teardown()`. `setLoading()` reads from
+     `hasLookup()` directly — no need to bounce through `LoginManager`.
+
+  5. **Keyboard shortcuts** → `login-shortcuts.js`. Class
+     `LoginShortcuts` with `attach(handlers)` and `detach()`. Owns
+     `handleKeyboardShortcuts()`, `_handleEscapeKey()`,
+     `_focusUsername()`, `_focusPassword()`, `_clickButton()`,
+     `checkCapsLock()`, `updateCapsLockIndicator()`, and the
+     `isCapsLockOn` state. Constructor takes
+     `{ elements, getCurrentPanel, onClearUsername, onSwitchToLogin }`.
+
+  6. **Import audit and cleanup.** After items 1–5, audit `login.js`
+     imports. Remove anything no longer referenced: `logGroup`,
+     `getRawLog`, `formatLogText`, `getTip`, `scrollbarManager`,
+     `getTransitionDuration`, possibly `getConfig`/`getConfigValue`
+     (they move to `LoginForm`), `vendor-tabulator.css` (used only by
+     `LanguagePanel`).
+
 - **Files:**
-  - Created: `elements/003-lithium/src/managers/login/login-logs-panel.js`
-  - Created: `elements/003-lithium/src/managers/login/login-help-panel.js`
-  - Created: matching Vitest files under `tests/unit/managers/login/`.
-  - Touched: `elements/003-lithium/src/managers/login/login.js`
-- **Tests required:** Vitest for each extracted module.
-- **Definition of Done:**
-  - [ ] Lint, build, test all clean.
-  - [ ] **`login.js` is now ≤ 1000 lines.** This is the gate before
-        any OIDC code lands in Lithium.
-  - [ ] `LITHIUM-INS.md` rule #2 satisfied for every file under
-        `src/managers/login/`.
+  - Created:
+    - `elements/003-lithium/src/managers/login/login-logs-panel.js`
+    - `elements/003-lithium/src/managers/login/login-help-panel.js`
+    - `elements/003-lithium/src/managers/login/login-form.js`
+    - `elements/003-lithium/src/managers/login/login-shortcuts.js`
+    - `elements/003-lithium/tests/unit/managers/login/login-logs-panel.test.js`
+    - `elements/003-lithium/tests/unit/managers/login/login-help-panel.test.js`
+    - `elements/003-lithium/tests/unit/managers/login/login-form.test.js`
+    - `elements/003-lithium/tests/unit/managers/login/login-shortcuts.test.js`
+  - Touched:
+    - `elements/003-lithium/src/managers/login/login.js`
+    - `elements/003-lithium/tests/unit/managers/login/login.test.js`
+      (test surface shrinks: most assertions move to per-module
+      tests; `login.test.js` keeps integration-style smoke tests).
 
-**Setup notes (from Phase 3):**
-- `login.js` is at **1,466 lines** after Phase 3. Phase 4 must extract
-  **≥467 lines** to hit the ≤1,000 gate.
-- The logs panel (`populateLogsPanel`) owns CodeMirror init and log text
-  formatting. It will need `elements.logViewer`, `getRawLog`, and
+- **Tests required:**
+  - **`login-logs-panel.test.js`** (new): `show()` initialises
+    CodeMirror with the right extensions and content; second `show()`
+    updates content rather than re-initialising; `destroy()` tears
+    down CodeMirror and OverlayScrollbars; CodeMirror import failure
+    falls back to `<pre>` rendering.
+  - **`login-help-panel.test.js`** (new): `init()` reads
+    `window.__lithiumVersionData` when present; falls back to
+    `__lithiumVersionPromise`; falls back to `fetch('/version.json')`
+    when neither cache exists; populates all six DOM targets
+    (`versionBuild`, `versionYear`, `versionDate`, `versionTime`,
+    `helpAppVersion`, `helpBuildDate`); handles fetch failure
+    gracefully.
+  - **`login-form.test.js`** (new): empty credentials show error;
+    successful 200 stores JWT, hides form, emits `AUTH_LOGIN`; 401
+    shows "Invalid username or password" and clears + focuses
+    password field; 429 with `retry-after` shows minutes; 5xx shows
+    server-error message; offline detection;
+    `loadRememberedUsername`/`saveRememberedUsername` round-trip;
+    `handleTogglePassword` flips type + icon + tooltip;
+    `handleClearUsername` clears both fields and focuses username.
+  - **`login-shortcuts.test.js`** (new): ESC on login panel triggers
+    `onClearUsername`; ESC on other panels triggers
+    `onSwitchToLogin`; Ctrl+Shift+U/P focus username/password;
+    F1 / Ctrl+Shift+I/T/L click the right buttons (verifies
+    `_clickButton` respects `disabled`); shortcuts only fire on
+    login panel (except ESC); CAPS-LOCK indicator toggles
+    `caps-lock-active` class on password input.
+  - **Existing `login.test.js`**: shrunk to integration-style
+    coverage (init wiring, render, teardown sequence). Per-feature
+    assertions moved to the new module tests. Net test count must
+    not decrease — every assertion has a home in the new files.
+  - **Existing `auth.integration.test.js`**: must still pass without
+    modification (proves the contract change inside `login.js` did
+    not break the JWT pipeline).
+
+- **Definition of Done:**
+  - [x] All four new modules + tests created.
+  - [x] All 14 dead methods removed from `login.js`.
+  - [x] Deprecated `handleEscapeKey` removed.
+  - [x] Unused imports removed (`logGroup`, etc.).
+  - [x] **`login.js` ≤ 1,000 lines.** Final: **576 lines** — well
+        under the gate, better than the 650–750 target.
+  - [x] No file in `src/managers/login/` exceeds 1,000 lines.
+        Largest is `login.js` at 576; next is `login-language-panel.js`
+        at 563.
+  - [x] `npm run lint` clean.
+  - [x] `npm run build` clean.
+  - [x] `npm test` 100% green: **811 passing** (was 741 after
+        Phase 3, +70 new across the four new modules: 11 + 13 +
+        27 + 19).
+  - [x] `auth.integration.test.js` still passes against a running
+        Hydrogen.
+  - [x] `LITHIUM-INS.md` rule #2 satisfied for every file under
+        `src/managers/login/`.
+  - [ ] Manual smoke test: full login cycle (password fill →
+        submit → main app), ESC clears, Ctrl+Shift+U/P focus, all
+        four sub-panels open and close, language selection works.
+        *(Pending — recommend running before Phase 5 starts.)*
+
+**Setup notes (from Phase 3 review):**
+- `login.js` is at **1,466 lines** after Phase 3. Phase 4 must remove
+  **≥466 lines** to hit the ≤1,000 gate. Inventory above shows
+  ~820 lines of removable/extractable code, more than 75% margin.
+- The logs panel (`populateLogsPanel`) owns CodeMirror init and log
+  text formatting. It will need `elements.logViewer`, `getRawLog`, and
   `formatLogText`.
-- The help panel (`loadVersionInfo`) owns version/build date display. It
-  will need `elements.helpAppVersion`, `elements.helpBuildDate`, and the
-  version-fetch logic.
-- `_onBeforePanelSwitch()` will gain `this._logsPanel?.show()` and
-  `this._helpPanel?.show()` calls. Both panels should follow the
-  `show()` / `hide()` pattern established in Phase 3.
-- Import audit after Phase 4: `getRawLog`, `formatLogText`, and the
-  CodeMirror imports should move out of `login.js`.
+- The help panel (`loadVersionInfo`) owns version/build date display.
+  It will need `elements.helpAppVersion`, `elements.helpBuildDate`,
+  and the version-fetch logic.
+- `_onBeforePanelSwitch()` gains `this._logsPanel?.show()` and
+  `this._helpPanel?.show()` calls. Both panels follow the
+  `show()` / `hide()` pattern established in Phase 3, although
+  `HelpPanel` has trivial show/hide because version info is rendered
+  once at init.
+- `LoginForm` does **not** follow the panel-show/hide pattern —
+  it owns the *content* of the login panel (form fields), not a
+  separate panel. It is created in `render()` and destroyed in
+  `teardown()`. Form events are bound in its constructor.
+- `LoginShortcuts` is purely behavioural (no DOM ownership). Attached
+  in `render()` after `LoginForm` exists, detached in `teardown()`.
+- Import audit after Phase 4: `getRawLog`, `formatLogText`, dynamic
+  CodeMirror imports, `getTip`, `scrollbarManager`,
+  `getTransitionDuration`, and possibly `storeJWT`/`getConfig*`
+  should all be out of `login.js`.
+
+**Risk factors specific to Phase 4:**
+- **Risk: hidden coupling between extracted modules.** `LoginForm`'s
+  `setLoading()` disables `languageBtn`/`themeBtn`/`logsBtn` —
+  buttons owned conceptually by the panel switcher. Mitigation:
+  `LoginForm` reads `hasLookup()` and `_startupComplete` (passed in
+  via constructor or getter callback), not via tight reference to
+  `LoginManager`. The button elements are part of `elements`, which
+  is shared across modules — that pattern is already established
+  with `PasswordManager`, `LanguagePanel`, `LoginPanels`.
+- **Risk: existing `login.test.js` breaks because internal methods
+  are gone.** Mitigation: rewrite assertions against the new module
+  surfaces in their respective new test files. The existing
+  test file shrinks to integration smoke. If a specific assertion
+  has no obvious new home, that signals a real regression and is
+  treated as a bug, not test-shuffling.
+- **Risk: `_loginStart` timing field gets orphaned.** It is owned
+  by `handleSubmit`/`attemptLogin`/`handleLoginError`, all moving
+  to `LoginForm`. Move with them.
+- **Risk: `auth.integration.test.js` passes against a real Hydrogen
+  but our mocks differ.** Run that suite as part of DoD, not just
+  unit Vitest.
 
 ---
 
@@ -1879,8 +2059,14 @@ elements/003-lithium/src/managers/login/login-password-manager.js
 elements/003-lithium/src/managers/login/login-language-panel.js
 elements/003-lithium/src/managers/login/login-logs-panel.js
 elements/003-lithium/src/managers/login/login-help-panel.js
+elements/003-lithium/src/managers/login/login-form.js
+elements/003-lithium/src/managers/login/login-shortcuts.js
 elements/003-lithium/src/managers/login/oidc-login.js
 elements/003-lithium/src/core/oidc-client.js
+elements/003-lithium/tests/unit/managers/login/login-logs-panel.test.js
+elements/003-lithium/tests/unit/managers/login/login-help-panel.test.js
+elements/003-lithium/tests/unit/managers/login/login-form.test.js
+elements/003-lithium/tests/unit/managers/login/login-shortcuts.test.js
 elements/003-lithium/tests/unit/core/oidc-client.test.js
 elements/003-lithium/tests/unit/managers/login/oidc-login.test.js
 docs/Li/LITHIUM-OIDC.md              # Lithium-side reference doc
@@ -1956,6 +2142,67 @@ parentheses.
   from broadcasting every panel change. Future panels should use the same
   callback style (e.g. `LanguagePanel` could accept `onLocaleSelected`).
 
+### Decisions made during Phase 4
+
+- **Phase 4 beat its target by a wide margin.** Final `login.js` is 576
+  lines; target was 650–750, gate was ≤1,000. The expanded six-item
+  scope (logs panel + help panel + login form + keyboard shortcuts +
+  dead-code removal + import audit) removed 890 lines from `login.js`.
+- **Two latent bugs surfaced during extraction.** Both are now fixed:
+  1. `setupLookupListeners()` referenced `eventBus`/`Events` without
+     importing them. Worked at runtime because every other module on
+     the page already imports them and Vite's bundler tolerated the
+     undeclared reference. Now properly imported.
+  2. `loadVersionInfo()` mixed local-time `getFullYear()` with UTC-time
+     `getUTCMonth()` / `getUTCDate()` when building the help-panel
+     build-date string. Year boundaries would have shown the wrong
+     year. `HelpPanel._renderVersion()` now uses `getUTCFullYear()`
+     consistently.
+- **316 lines of dead code from Phase 3 deleted, not extracted.** A
+  cluster of `_languageTable`/`_currentLocale`/`_languageData`-touching
+  methods survived Phase 3 in `login.js` despite the live versions
+  living in `LanguagePanel`. The cluster referenced module globals
+  (`getCountryCode`, `getFlagSvg`, `supportedLocales`,
+  `saveLocalePreference`) that were never imported by `login.js` and
+  would have thrown `ReferenceError` if invoked. Tests passed because
+  no codepath called them. Lesson for future extractions: after
+  moving a feature to a new module, audit the source file for
+  identifier references that are now broken.
+- **`isStartupComplete` callback is the right shape for `LoginForm`.**
+  `setLoading()` needs to know whether background startup is done so
+  it can re-enable the logs button correctly. Passing a getter
+  callback (`() => this._startupComplete`) instead of the boolean
+  itself avoids a stale-snapshot bug if `LoginForm` were ever cached
+  across the startup boundary.
+- **`onLoginSuccess` callback keeps the panel orchestration in
+  `LoginManager`.** `LoginForm` does not import `LoginPanels` or
+  `PasswordManager` directly. After storing the JWT it calls
+  `await this._onLoginSuccess(data)`, which `LoginManager` wires to
+  `this.hide()`. Cleaner separation than passing both panel
+  references into `LoginForm`.
+- **`LoginShortcuts` is purely behavioural.** It does not own any
+  panels or modules; it owns only the `keydown`/`keyup` document
+  listeners and the `caps-lock-active` toggle on the password input.
+  The `getCurrentPanel`/`onClearUsername`/`onSwitchToLogin` callbacks
+  give it everything it needs from `LoginManager` without coupling.
+- **Final size distribution under `src/managers/login/` is healthy.**
+  No file exceeds 600 lines:
+  | File | Lines |
+  |---|---|
+  | `login.js` | 576 |
+  | `login-language-panel.js` | 563 |
+  | `login-form.js` | 414 |
+  | `login-panels.js` | 228 |
+  | `login-shortcuts.js` | 176 |
+  | `login-password-manager.js` | 147 |
+  | `login-help-panel.js` | 143 |
+  | `login-logs-panel.js` | 126 |
+- **Pattern fully reusable.** Future OIDC additions (Phases 23–24:
+  `oidc-login.js`) will follow the exact same shape: an ES6 class
+  with `init()`/`destroy()`, optional `show()`/`hide()`, constructor
+  takes `{ elements, callbacks }`, never imports `LoginManager`. The
+  scaffold is in place.
+
 ### Decisions made during Phase 3
 
 - **`show()` / `hide()` is the right panel lifecycle boundary.** `LanguagePanel`
@@ -1999,7 +2246,31 @@ parentheses.
 
 **Last updated:** 2026-05-08
 **Owner:** Philement engineering
-**Status:** Phase 3 complete. Ready for Phase 4.
+**Status:** Phase 4 complete. `login.js` is at **576 lines**, well under
+the ≤1,000 gate. 811 Vitest passing. Lint and build clean.
+`auth.integration.test.js` green. Ready for Phase 5 (Hydrogen-side
+`OIDCRelyingPartyConfig` schema + parser).
+
+### Decisions made between Phase 3 and Phase 4
+
+- **Phase 4 scope expanded to a full decomposition.** Original plan was
+  logs+help only (~120–180 line reduction, gate not achievable). New
+  scope adds login-form, keyboard-shortcuts, and dead-code removal.
+  Rationale: this code is exercised constantly by every subsequent
+  phase and by every developer iteration; a clean ≤1,000-line file pays
+  for itself many times over the next 23 phases.
+- **Dead code from Phase 3 to be deleted, not extracted.** A cluster of
+  ~316 lines of `_languageTable`/`_currentLocale`/`_languageData`
+  references survived Phase 3 in `login.js`. They reference instance
+  state and module globals that no longer exist or are not imported,
+  and would throw `ReferenceError` if invoked. They are not called from
+  any live codepath. Deletion is the right action; they belong in
+  `LanguagePanel` if anywhere, and `LanguagePanel` already contains
+  the live versions.
+- **Phase 4 risk reclassified Low → Medium.** Larger surface area,
+  more files moving simultaneously. Mitigated by the established
+  class-based lifecycle pattern from Phases 1–3, by per-module Vitest
+  coverage, and by `auth.integration.test.js` as the end-to-end gate.
 
 ---
 
@@ -2010,8 +2281,8 @@ parentheses.
 | 0 (baseline) | `login.js` | 1,866 | 1,866 | 672 | Pre-refactor monolith |
 | 1 | `login-panels.js` | 228 | 1,747 | 24 | Callback delegation pattern established |
 | 2 | `login-password-manager.js` | 147 | **1,621** | **20** | Class-based lifecycle; import ownership |
-| 3 | `login-language-panel.js` | 562 | **1,467** | **25** | Tabulator + locale detection; show/hide lifecycle |
-| 4 | `login-logs-panel.js` + `login-help-panel.js` | — | *target: ≤1,000* | — | CodeMirror + version info |
+| 3 | `login-language-panel.js` | 562 | **1,466** | **25** | Tabulator + locale detection; show/hide lifecycle |
+| 4 | `login-logs-panel.js` (126) + `login-help-panel.js` (143) + `login-form.js` (414) + `login-shortcuts.js` (176) + dead-code removal (~325 lines) | 859 new | **576** | **+70** (11+13+27+19) | Beat the ≤1,000 gate by 424 lines. Two latent bugs fixed during extraction (missing `eventBus`/`Events` import; UTC year mix-up in `loadVersionInfo`). |
 | 5–27 | (OIDC implementation) | — | ≤1,200 | TBD | OIDC code lands after gate |
 
 **Cumulative test count:** 741 (was 672) after Phase 3.

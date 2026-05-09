@@ -18,6 +18,7 @@ import {
 } from '../../shared/languages.js';
 import { getConfigValue } from '../../core/config.js';
 import { eventBus, Events } from '../../core/event-bus.js';
+import '../../styles/vendor-tabulator.css';
 
 // Convenience alias for this module's subsystem
 const LOGIN = Subsystems.LOGIN;
