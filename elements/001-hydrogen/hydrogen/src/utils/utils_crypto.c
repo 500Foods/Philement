@@ -14,6 +14,12 @@
 #include <openssl/hmac.h>
 #include <openssl/sha.h>
 #include <openssl/rand.h>
+#include <openssl/core_names.h>
+#include <openssl/param_build.h>
+#include <openssl/err.h>
+
+// jansson for JWK parsing
+#include <jansson.h>
 
 // Local includes
 #include "utils_crypto.h"
@@ -35,6 +41,10 @@ unsigned char* utils_hmac_sha256(const unsigned char* data, size_t data_len,
                                   unsigned int* output_len);
 char* utils_password_hash(const char* password, int account_id);
 bool utils_random_bytes(unsigned char* buffer, size_t length);
+EVP_PKEY* utils_jwk_rsa_to_pkey(const char* jwk_json);
+bool utils_rs256_verify(EVP_PKEY* pkey,
+                         const unsigned char* input, size_t input_len,
+                         const unsigned char* signature, size_t sig_len);
 
 /**
  * Standard Base64 encode data WITH padding (RFC 4648)
@@ -223,4 +233,162 @@ bool utils_random_bytes(unsigned char* buffer, size_t length) {
     }
 
     return true;
+}
+
+/**
+ * Parse an RSA JWK into an EVP_PKEY public key.
+ *
+ * Implementation notes:
+ *  - Only `kty == "RSA"` is supported. ES256/PS256/etc. land in a
+ *    later phase if ever needed; the Phase 5 `AllowedAlgorithms`
+ *    config already gates which algorithms callers will request.
+ *  - Private-key parameters (`d`, `p`, `q`, `dp`, `dq`, `qi`) are
+ *    intentionally ignored. The returned key is public-only.
+ *  - Uses the OpenSSL 3.x `EVP_PKEY_fromdata` API. OpenSSL 1.1.x is
+ *    not supported (the project's minimum is OpenSSL 3.x; verified in
+ *    Phase 12 setup).
+ *  - On any failure path, a single structured log line is emitted at
+ *    LOG_LEVEL_ALERT under "CRYPTO" so callers can omit error
+ *    handling beyond NULL-checking the return value.
+ */
+EVP_PKEY* utils_jwk_rsa_to_pkey(const char* jwk_json) {
+    if (!jwk_json) return NULL;
+
+    json_error_t jerr;
+    json_t* root = json_loads(jwk_json, 0, &jerr);
+    if (!root) {
+        log_this("CRYPTO", "JWK parse failed: invalid JSON", LOG_LEVEL_ALERT, 0);
+        return NULL;
+    }
+    if (!json_is_object(root)) {
+        log_this("CRYPTO", "JWK parse failed: not a JSON object", LOG_LEVEL_ALERT, 0);
+        json_decref(root);
+        return NULL;
+    }
+
+    const json_t* j_kty = json_object_get(root, "kty");
+    const json_t* j_n = json_object_get(root, "n");
+    const json_t* j_e = json_object_get(root, "e");
+
+    if (!json_is_string(j_kty) || !json_is_string(j_n) || !json_is_string(j_e)) {
+        log_this("CRYPTO", "JWK parse failed: missing or non-string kty/n/e", LOG_LEVEL_ALERT, 0);
+        json_decref(root);
+        return NULL;
+    }
+
+    if (strcmp(json_string_value(j_kty), "RSA") != 0) {
+        log_this("CRYPTO",
+                 "JWK parse failed: unsupported kty (only RSA supported)",
+                 LOG_LEVEL_ALERT, 0);
+        json_decref(root);
+        return NULL;
+    }
+
+    size_t n_len = 0, e_len = 0;
+    unsigned char* n_bytes = utils_base64url_decode(json_string_value(j_n), &n_len);
+    unsigned char* e_bytes = utils_base64url_decode(json_string_value(j_e), &e_len);
+
+    if (!n_bytes || !e_bytes || n_len == 0 || e_len == 0) {
+        log_this("CRYPTO", "JWK parse failed: base64url decode of n/e failed", LOG_LEVEL_ALERT, 0);
+        free(n_bytes);
+        free(e_bytes);
+        json_decref(root);
+        return NULL;
+    }
+
+    EVP_PKEY* pkey = NULL;
+    EVP_PKEY_CTX* pctx = NULL;
+    OSSL_PARAM_BLD* bld = OSSL_PARAM_BLD_new();
+    OSSL_PARAM* params = NULL;
+    BIGNUM* bn_n = BN_bin2bn(n_bytes, (int)n_len, NULL);
+    BIGNUM* bn_e = BN_bin2bn(e_bytes, (int)e_len, NULL);
+
+    if (!bld || !bn_n || !bn_e) {
+        log_this("CRYPTO", "JWK->EVP_PKEY: BIGNUM/PARAM_BLD allocation failed", LOG_LEVEL_ALERT, 0);
+        goto cleanup;
+    }
+
+    if (!OSSL_PARAM_BLD_push_BN(bld, OSSL_PKEY_PARAM_RSA_N, bn_n) ||
+        !OSSL_PARAM_BLD_push_BN(bld, OSSL_PKEY_PARAM_RSA_E, bn_e)) {
+        log_this("CRYPTO", "JWK->EVP_PKEY: failed to push RSA parameters", LOG_LEVEL_ALERT, 0);
+        goto cleanup;
+    }
+
+    params = OSSL_PARAM_BLD_to_param(bld);
+    if (!params) {
+        log_this("CRYPTO", "JWK->EVP_PKEY: PARAM_BLD_to_param failed", LOG_LEVEL_ALERT, 0);
+        goto cleanup;
+    }
+
+    pctx = EVP_PKEY_CTX_new_from_name(NULL, "RSA", NULL);
+    if (!pctx) {
+        log_this("CRYPTO", "JWK->EVP_PKEY: EVP_PKEY_CTX_new_from_name failed", LOG_LEVEL_ALERT, 0);
+        goto cleanup;
+    }
+
+    if (EVP_PKEY_fromdata_init(pctx) <= 0 ||
+        EVP_PKEY_fromdata(pctx, &pkey, EVP_PKEY_PUBLIC_KEY, params) <= 0) {
+        log_this("CRYPTO", "JWK->EVP_PKEY: EVP_PKEY_fromdata failed", LOG_LEVEL_ALERT, 0);
+        if (pkey) {
+            EVP_PKEY_free(pkey);
+            pkey = NULL;
+        }
+        goto cleanup;
+    }
+
+cleanup:
+    // All cleanup below runs on both success and failure paths.
+    // `pkey` is the only resource that survives the function — it
+    // lives independently of the construction-time inputs (OpenSSL
+    // copies the BIGNUMs out of the OSSL_PARAM array internally).
+    // Every resource freed here is consumed by `EVP_PKEY_fromdata`
+    // through OSSL_PARAM, NOT retained by the resulting `pkey`. So
+    // the success path is correct: free everything except `pkey`.
+    if (params) OSSL_PARAM_free(params);
+    if (bld) OSSL_PARAM_BLD_free(bld);
+    if (pctx) EVP_PKEY_CTX_free(pctx);
+    if (bn_n) BN_free(bn_n);
+    if (bn_e) BN_free(bn_e);
+    free(n_bytes);
+    free(e_bytes);
+    json_decref(root);
+    return pkey;
+}
+
+/**
+ * Verify an RS256 signature.
+ *
+ * Bad signature ⇒ silent false. OpenSSL internal error ⇒ logged false.
+ */
+bool utils_rs256_verify(EVP_PKEY* pkey,
+                         const unsigned char* input, size_t input_len,
+                         const unsigned char* signature, size_t sig_len) {
+    if (!pkey || !input || input_len == 0 || !signature || sig_len == 0) {
+        return false;
+    }
+
+    EVP_MD_CTX* mdctx = EVP_MD_CTX_new();
+    if (!mdctx) {
+        log_this("CRYPTO", "RS256 verify: EVP_MD_CTX_new failed", LOG_LEVEL_ALERT, 0);
+        return false;
+    }
+
+    bool ok = false;
+    if (EVP_DigestVerifyInit(mdctx, NULL, EVP_sha256(), NULL, pkey) != 1) {
+        log_this("CRYPTO", "RS256 verify: EVP_DigestVerifyInit failed", LOG_LEVEL_ALERT, 0);
+        EVP_MD_CTX_free(mdctx);
+        return false;
+    }
+
+    int rc = EVP_DigestVerify(mdctx, signature, sig_len, input, input_len);
+    if (rc == 1) {
+        ok = true;
+    } else if (rc < 0) {
+        // Negative return = OpenSSL internal error (not just a bad
+        // signature). Bad signature is rc == 0.
+        log_this("CRYPTO", "RS256 verify: EVP_DigestVerify internal error", LOG_LEVEL_ALERT, 0);
+    }
+
+    EVP_MD_CTX_free(mdctx);
+    return ok;
 }

@@ -23,10 +23,12 @@
 # test_mock_keycloak_token_happy_path()
 # test_mock_keycloak_token_invalid_grant()
 # test_mock_keycloak_token_unsupported_grant_type()
+# test_mock_keycloak_id_token_header_and_claims()
 # test_oidc_start_redirects_to_idp()
 # test_oidc_start_invalid_return_to_rejected()
 
 # CHANGELOG
+# 1.4.0 - 2026-05-09 - Phase 12: mock signs real RS256 JWTs; JWKS has real RSA keys; id_token shape sub-test
 # 1.3.0 - 2026-05-09 - Phase 11: mock Keycloak /token endpoint sub-tests
 # 1.2.0 - 2026-05-09 - Phase 10: real /oidc/start redirect against mock IdP
 # 1.1.0 - 2026-05-09 - Phase 9: mock Keycloak reachability + discovery/JWKS
@@ -39,7 +41,7 @@ TEST_NAME="OIDC RP"
 TEST_ABBR="OID"
 TEST_NUMBER="42"
 TEST_COUNTER=0
-TEST_VERSION="1.3.0"
+TEST_VERSION="1.4.0"
 
 # Phase 9: mock Keycloak port. Picked outside the typical Hydrogen
 # port range (5000s) and the test config's WebServer port (5242). If
@@ -345,14 +347,18 @@ test_mock_keycloak_jwks_doc() {
     fi
 
     if command -v jq >/dev/null 2>&1; then
-        local key_count first_kid
+        local key_count first_kid first_n_len
         key_count=$(jq '.keys | length' "${response_file}" 2>/dev/null || echo "0")
         first_kid=$(jq -r '.keys[0].kid // empty' "${response_file}" 2>/dev/null || echo "")
-        if [[ "${key_count}" -ge 1 ]] && [[ -n "${first_kid}" ]]; then
-            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "JWKS has ${key_count} key(s); first kid=${first_kid}"
+        # Phase 12: the JWKS now ships a real RSA modulus. The base64url
+        # of a 2048-bit modulus is ~342 chars; treat anything < 100 as
+        # the old placeholder.
+        first_n_len=$(jq -r '.keys[0].n // empty' "${response_file}" 2>/dev/null | wc -c | tr -d ' ')
+        if [[ "${key_count}" -ge 1 ]] && [[ -n "${first_kid}" ]] && [[ "${first_n_len}" -ge 100 ]]; then
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "JWKS has ${key_count} key(s); kid=${first_kid}; modulus length=${first_n_len} chars"
             PASS_COUNT=$(( PASS_COUNT + 1 ))
         else
-            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "JWKS has no keyed entries"
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "JWKS missing required fields (count=${key_count} kid=${first_kid} n_len=${first_n_len})"
             EXIT_CODE=1
         fi
     else
@@ -372,12 +378,13 @@ test_mock_keycloak_jwks_doc() {
 
 # Sub-test: POST /token with the canned `test-code-ok` returns 200
 # and a JSON bundle containing id_token + access_token + token_type +
-# expires_in. The id_token is intentionally a placeholder (not a real
-# JWT); Phase 12 will swap in a real signed token.
+# expires_in. Phase 12 expectation: id_token is a real RS256-signed
+# JWT (3 segments separated by '.', each base64url) — not the Phase 11
+# placeholder string.
 test_mock_keycloak_token_happy_path() {
     local response_file="${LOG_PREFIX}${TIMESTAMP}_mock_kc_token_ok.json"
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" \
-        "Mock Keycloak /token returns 200 + tokens for test-code-ok"
+        "Mock Keycloak /token returns 200 + signed JWT for test-code-ok"
 
     # Build the same x-www-form-urlencoded body Hydrogen will send.
     # `code_verifier` is verified by neither the mock nor by RFC at
@@ -404,17 +411,23 @@ test_mock_keycloak_token_happy_path() {
     fi
 
     if command -v jq >/dev/null 2>&1; then
-        local id_tok acc_tok tok_type
+        local id_tok acc_tok tok_type seg_count
         id_tok=$(jq -r '.id_token // empty' "${response_file}" 2>/dev/null || echo "")
         acc_tok=$(jq -r '.access_token // empty' "${response_file}" 2>/dev/null || echo "")
         tok_type=$(jq -r '.token_type // empty' "${response_file}" 2>/dev/null || echo "")
-        if [[ -n "${id_tok}" ]] && [[ -n "${acc_tok}" ]] && [[ "${tok_type}" == "Bearer" ]]; then
+        # Phase 12: id_token must be a 3-segment compact JWS.
+        if [[ -n "${id_tok}" ]]; then
+            seg_count=$(awk -F. '{print NF}' <<< "${id_tok}")
+        else
+            seg_count=0
+        fi
+        if [[ -n "${id_tok}" ]] && [[ -n "${acc_tok}" ]] && [[ "${tok_type}" == "Bearer" ]] && [[ "${seg_count}" -eq 3 ]]; then
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 \
-                "Token endpoint returned id_token + access_token + Bearer"
+                "Token endpoint returned signed id_token (3 segments) + access_token + Bearer"
             PASS_COUNT=$(( PASS_COUNT + 1 ))
         else
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 \
-                "Token endpoint response missing fields (id=${id_tok:0:8}.. acc=${acc_tok:0:8}.. type=${tok_type})"
+                "Token endpoint response invalid (id_seg=${seg_count} acc=${acc_tok:0:8}.. type=${tok_type})"
             EXIT_CODE=1
         fi
     else
@@ -429,6 +442,96 @@ test_mock_keycloak_token_happy_path() {
                 "Token endpoint substring check failed"
             EXIT_CODE=1
         fi
+    fi
+}
+
+# Phase 12 sub-test: verify that the mock's signed id_token has
+# Keycloak-shaped header (alg=RS256, kid=test-key-1) and required
+# OIDC claims (iss, sub, aud, exp, iat, nonce). This is a black-box
+# sanity check on the mock; Hydrogen-side validation has full
+# coverage in the Unity tests.
+test_mock_keycloak_id_token_header_and_claims() {
+    local response_file="${LOG_PREFIX}${TIMESTAMP}_mock_kc_token_jwt.json"
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" \
+        "Mock Keycloak id_token header + claims match expected shape"
+
+    local body="grant_type=authorization_code"
+    body="${body}&code=test-code-ok"
+    body="${body}&redirect_uri=http%3A%2F%2Flocalhost%3A5243%2Fcb"
+    body="${body}&code_verifier=v"
+    body="${body}&client_id=lithium-web"
+    body="${body}&nonce=phase12-nonce"
+
+    local http_status
+    http_status=$(curl -s -X POST -w "%{http_code}" -o "${response_file}" \
+        -H "Content-Type: application/x-www-form-urlencoded" \
+        --max-time 5 \
+        --data "${body}" \
+        "http://127.0.0.1:${MOCK_KC_PORT}/realms/test/protocol/openid-connect/token" \
+        2>/dev/null || echo "000")
+
+    if [[ "${http_status}" != "200" ]]; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 \
+            "Token endpoint returned ${http_status} (expected 200)"
+        EXIT_CODE=1
+        return
+    fi
+
+    if ! command -v jq >/dev/null 2>&1; then
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "jq not available; skipping JWT decode sub-test"
+        return
+    fi
+
+    local id_tok header_b64 payload_b64
+    id_tok=$(jq -r '.id_token // empty' "${response_file}" 2>/dev/null || echo "")
+    header_b64=$(awk -F. '{print $1}' <<< "${id_tok}")
+    payload_b64=$(awk -F. '{print $2}' <<< "${id_tok}")
+
+    if [[ -z "${header_b64}" ]] || [[ -z "${payload_b64}" ]]; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "id_token has empty header/payload segments"
+        EXIT_CODE=1
+        return
+    fi
+
+    # base64url-decode helper: pad, swap chars, decode.
+    decode_b64u() {
+        local s="${1//-/+}"
+        s="${s//_//}"
+        local pad=$(( (4 - ${#s} % 4) % 4 ))
+        local i
+        for (( i = 0; i < pad; i++ )); do s="${s}="; done
+        printf '%s' "${s}" | base64 -d 2>/dev/null
+    }
+
+    local header_json payload_json
+    header_json=$(decode_b64u "${header_b64}")
+    payload_json=$(decode_b64u "${payload_b64}")
+
+    local alg kid iss sub aud exp iat nonce_claim
+    alg=$(jq -r '.alg // empty' <<< "${header_json}" 2>/dev/null || echo "")
+    kid=$(jq -r '.kid // empty' <<< "${header_json}" 2>/dev/null || echo "")
+    iss=$(jq -r '.iss // empty' <<< "${payload_json}" 2>/dev/null || echo "")
+    sub=$(jq -r '.sub // empty' <<< "${payload_json}" 2>/dev/null || echo "")
+    aud=$(jq -r '.aud // empty' <<< "${payload_json}" 2>/dev/null || echo "")
+    exp=$(jq -r '.exp // empty' <<< "${payload_json}" 2>/dev/null || echo "")
+    iat=$(jq -r '.iat // empty' <<< "${payload_json}" 2>/dev/null || echo "")
+    nonce_claim=$(jq -r '.nonce // empty' <<< "${payload_json}" 2>/dev/null || echo "")
+
+    if [[ "${alg}" == "RS256" ]] \
+        && [[ "${kid}" == "test-key-1" ]] \
+        && [[ -n "${iss}" ]] \
+        && [[ -n "${sub}" ]] \
+        && [[ "${aud}" == "lithium-web" ]] \
+        && [[ -n "${exp}" ]] \
+        && [[ -n "${iat}" ]] \
+        && [[ "${nonce_claim}" == "phase12-nonce" ]]; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 \
+            "id_token header alg=${alg} kid=${kid}; aud=${aud} nonce=${nonce_claim}"
+        PASS_COUNT=$(( PASS_COUNT + 1 ))
+    else
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 \
+            "id_token shape mismatch (alg=${alg} kid=${kid} iss=${iss:0:20}.. aud=${aud} nonce=${nonce_claim})"
+        EXIT_CODE=1
     fi
 }
 
@@ -763,6 +866,8 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
             test_mock_keycloak_token_happy_path
             test_mock_keycloak_token_invalid_grant
             test_mock_keycloak_token_unsupported_grant_type
+            # Phase 12: signed id_token shape check
+            test_mock_keycloak_id_token_header_and_claims
         else
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Mock Keycloak failed to start"
             # Do not fail the whole test if node is missing — the

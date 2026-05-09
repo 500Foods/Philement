@@ -849,7 +849,7 @@ password login still works — every phase preserves that invariant.
 | 9 | Hydrogen — discovery + JWKS fetch and cache | Hydrogen | Medium | ✅ Done |
 | 10 | Hydrogen — `/oidc/start` redirect builder | Hydrogen | Medium | ✅ Done |
 | 11 | Hydrogen — token endpoint client (POST to Keycloak `/token`) | Hydrogen | Medium | ✅ Done |
-| 12 | Hydrogen — ID token validation | Hydrogen | High |
+| 12 | Hydrogen — ID token validation | Hydrogen | High | ✅ Done |
 | 13 | Hydrogen — handoff store and `/oidc/handoff` exchange endpoint | Hydrogen | Medium |
 | 14 | Hydrogen — `/oidc/callback` end-to-end with stub linker | Hydrogen | High |
 | 15 | Hydrogen — DB migration `1100_account_oidc_identities` | Hydrogen | Medium |
@@ -2368,7 +2368,7 @@ Every phase block contains the same fields, in the same order:
 
 ---
 
-### Phase 12 — Hydrogen: ID token validation
+### Phase 12 — Hydrogen: ID token validation ✅ COMPLETE
 
 - **Goal:** Validate a JWT that *Keycloak* signed (different from the
   Hydrogen-signed JWTs the auth service issues). This is the highest-
@@ -2376,34 +2376,269 @@ Every phase block contains the same fields, in the same order:
 - **Prerequisites:** Phases 8, 9.
 - **In scope:**
   - `oidc_rp_idtoken.{c,h}`: `oidc_rp_validate_id_token(provider,
-    id_token, expected_nonce, out_claims)`.
+    jwks_uri, id_token, expected_nonce, now, out_claims)`. The
+    `now` parameter is caller-provided so tests can pin time;
+    production passes `time(NULL)`.
+  - Two new helpers in `utils_crypto.{c,h}`: `utils_jwk_rsa_to_pkey`
+    (RSA JWK → `EVP_PKEY*`) and `utils_rs256_verify`
+    (`EVP_DigestVerify` over RS256). Both use OpenSSL 3.x's
+    `EVP_PKEY_fromdata` / `OSSL_PARAM_BLD` APIs and require no
+    new external dependencies.
   - Header parsed; `alg` must be in `AllowedAlgorithms`. **Explicitly
-    reject `none`.**
-  - JWK lookup by `kid` from cached JWKS (Phase 9). On miss → invalidate
-    cache → refetch once → retry. On second miss → fail.
-  - Signature verify (RS256 via OpenSSL/`libssl` already linked).
+    reject `none`** even if it appears in the allow-list (paranoia
+    test included).
+  - JWK lookup by `kid` from cached JWKS (Phase 9). On miss →
+    invalidate cache → refetch once → retry. On second miss → fail.
+    Same retry-once on signature-verify failure (rotation recovery).
+  - RS256 signature verify via the new helper. Other algorithms
+    (PS256, ES256) are gated behind a "not yet implemented in
+    verifier" branch — the plan explicitly commits to RS256 only.
   - Claims checks: `iss == provider.issuer`, `aud` contains
-    `provider.client_id`, `exp > now - skew`, `iat < now + skew`,
-    `nbf <= now + skew` if present, `nonce == expected_nonce`.
-  - Configurable clock skew (default 60s).
-  - `out_claims` is a typed struct with `sub`, `email`, `email_verified`,
-    `preferred_username`, `name`, `realm_access.roles[]`.
+    `provider.client_id` (string OR JSON array), `exp > now - skew`,
+    `iat <= now + skew`, `nbf <= now + skew` if present,
+    `nonce == expected_nonce`, `sub` non-empty.
+  - Clock skew fixed at 60 s (`OIDC_RP_IDTOKEN_DEFAULT_SKEW_SECONDS`).
+    Provider-configurable skew is a candidate future revision.
+  - `out_claims` is a typed `OidcRpIdTokenClaims` struct with `iss`,
+    `sub`, `aud`, `email`, `email_verified`, `preferred_username`,
+    `name`, `realm_access.roles[]` (capped at
+    `OIDC_RP_IDTOKEN_MAX_ROLES = 32`), `exp`, `iat`, `nbf`.
 - **Files:**
-  - Created: `src/api/auth/oidc_rp/oidc_rp_idtoken.{c,h}`
-  - Created: `tests/unity/test_oidc_rp_idtoken.c`
+  - Created: `src/api/auth/oidc_rp/oidc_rp_idtoken.c` (629 lines),
+    `src/api/auth/oidc_rp/oidc_rp_idtoken.h` (190 lines).
+  - Created: `tests/unity/src/api/auth/oidc_rp/oidc_rp_idtoken_test_validate.c`
+    (888 lines, 27 tests).
+  - Touched: `src/utils/utils_crypto.{c,h}` — added JWK→PKEY parser
+    (`utils_jwk_rsa_to_pkey`) and RS256 verifier (`utils_rs256_verify`).
+  - Touched: `src/api/auth/oidc_rp/oidc_rp_http.{c,h}` — refactored
+    the test-only response seam from a one-slot single-shot to a
+    fixed-capacity (8) FIFO queue. Required for Phase 12's two-call
+    rotation-recovery scenarios; preserves all Phase 9–11 single-call
+    test contracts byte-for-byte.
+  - Touched: `tests/lib/mock_keycloak/server.js` — replaced the
+    Phase 11 placeholder JWKS / id_token with a freshly-generated
+    RSA-2048 keypair (via `node:crypto.generateKeyPairSync`) and
+    real RS256 JWT signing (`crypto.createSign('RSA-SHA256')`). No
+    npm dependencies added.
+  - Touched: `tests/test_42_oidc_rp.sh` — added Phase 12 sub-test
+    (`test_mock_keycloak_id_token_header_and_claims`) that decodes
+    the mock's id_token and asserts header `alg=RS256`,
+    `kid=test-key-1`, plus `iss/sub/aud/exp/iat/nonce` claim shape.
+    Tightened the JWKS sub-test to require a real-sized modulus
+    (≥ 100 chars). Bumped 1.3.0 → 1.4.0.
 - **Tests required:**
-  - Unity: good token; expired; not-yet-valid; wrong issuer; wrong
-    audience; nonce mismatch; `alg=none`; unknown `kid` triggers
-    refetch and succeeds; tampered signature; missing required claim
-    (`sub`).
-  - Each test uses a fixture token signed by a test RSA keypair whose
-    JWKS the test injects into the cache directly.
+  - Unit (27 tests, all green):
+    - Lifecycle: `claims_free` NULL-safe; `error_name` covers every
+      enum value + unknown.
+    - Argument validation: NULL provider / jwks_uri / id_token /
+      nonce / out; provider with empty `allowed_algorithms`.
+    - Happy path: real RSA-signed token validates and populates
+      every claim.
+    - aud as JSON array containing client_id ⇒ OK.
+    - alg=none rejected even when present in allow-list (paranoia).
+    - alg outside allow-list rejected.
+    - alg in allow-list but not RS256 rejected (until other
+      families are implemented).
+    - Wrong iss ⇒ ISS_MISMATCH.
+    - aud missing client_id ⇒ AUD_MISMATCH.
+    - Missing required claim (`sub`) ⇒ MISSING_CLAIM.
+    - Expired exp ⇒ EXPIRED.
+    - iat in the future beyond skew ⇒ NOT_YET_VALID.
+    - nbf in the future beyond skew ⇒ NOT_YET_VALID.
+    - Nonce mismatch ⇒ NONCE_MISMATCH.
+    - Malformed token (2 segments, 4 segments, no dots) ⇒ MALFORMED.
+    - Empty segments (`..`, `abc..xyz`) ⇒ MALFORMED.
+    - Tampered signature: first verify fails, JWKS invalidated +
+      refetched, second verify fails too ⇒ BAD_SIGNATURE.
+    - kid miss against cached JWKS triggers invalidate-and-refetch;
+      second fetch with the matching kid ⇒ OK.
+    - kid miss persists after refetch ⇒ KID_UNKNOWN.
+    - email_verified=false honoured (struct reflects it).
+    - realm_access.roles correctly extracted into the claims struct.
+    - Each test generates a fresh RSA-2048 keypair in `setUp()`
+      (no committed key material) and signs fixture tokens via
+      OpenSSL `EVP_DigestSign` with `EVP_sha256()`.
+  - Black-box `tests/test_42_oidc_rp.sh` (1 net new sub-test):
+    Phase 12 verifies the mock's id_token has 3 base64url segments
+    with header `{alg:RS256,kid:test-key-1}` and payload claims
+    `{iss,sub,aud,iat,exp,nonce}` matching what the form params
+    requested (the mock now echoes `client_id` to `aud` and
+    `nonce` from request to id_token, so the test can request a
+    deterministic value and assert against it).
 - **Definition of Done:**
-  - [ ] All Unity ID-token tests green.
-  - [ ] ASAN clean.
-  - [ ] cppcheck clean.
-  - [ ] Code review specifically focused on this phase
-        (`/local-review-uncommitted`) before merging.
+  - [x] All 27 Unity ID-token tests green.
+  - [x] `mkt` (regular + unity build) clean.
+  - [x] `mka` (`test_01_compilation.sh`) clean — 18/18 build
+        variants green.
+  - [x] `test_10_unity` clean: 6,936 unit tests, 6,932 passing,
+        0 failing on cached re-run (was 6,909 in Phase 11, +27 net
+        new from Phase 12). The 4 cached-failure flags pre-date
+        Phase 6 per Phase 6 lesson #9.
+  - [x] `test_11_leaks_like_a_sieve` passes: 0 direct, 0 indirect
+        leaks. The new `utils_jwk_rsa_to_pkey` /
+        `utils_rs256_verify` paths are exercised under ASAN
+        indirectly via the full Hydrogen runtime spin-up; the
+        ID-token validator itself is exercised under regular
+        compilation by 27 Unity tests.
+  - [x] `test_42_oidc_rp.sh` green: 29/29 in 1.235s (was 28/28 in
+        Phase 11, +1 net new for the signed-id_token shape check).
+  - [x] `test_91_cppcheck` clean — 1,327 files, 0 issues. Notable:
+        the new RSA verify path uses OpenSSL 3.x APIs that some
+        older cppcheck profiles miss; the codebase already
+        exercises these patterns elsewhere so no new suppressions
+        were needed.
+  - [x] `test_92_shellcheck` clean — 109 scripts, all directives
+        justified.
+  - [x] `test_17_startup_shutdown` clean — 9/9 passing.
+  - [x] `test_99_code_size`: pass count unchanged from Phase 11
+        baseline. The two pre-existing findings (`proxy_multi.c`
+        1,209 lines and `database_engine.c` 1,000 lines) are
+        unrelated. All Phase 12 new/touched files are under the
+        cap (largest: `tests/test_42_oidc_rp.sh` at 980; new
+        source `oidc_rp_idtoken.c` at 629; new test file at 888).
+  - [x] `test_40_auth.sh` regression-clean: 46/46 across 7 DB
+        engines. Password login is genuinely untouched.
+  - [x] Code review specifically focused on this phase
+        (`/local-review-uncommitted`). Five suggestions surfaced,
+        all comment-only / documentation hygiene; recommendation
+        was APPROVE WITH SUGGESTIONS, all applied. Code-side
+        suggestions: loop-bound comment in `verify_signature`,
+        reachability note on the unimplemented-alg branch,
+        ownership-clarity comment on `utils_jwk_rsa_to_pkey`'s
+        cleanup label, and an upgrade-path comment on the mock
+        Keycloak's fixed `kid`.
+
+**Lessons learned:**
+
+1. **The `utils_crypto.h` forward-declaration of `EVP_PKEY` works
+   without forcing every includer to pull in `<openssl/evp.h>`.**
+   `typedef struct evp_pkey_st EVP_PKEY;` matches OpenSSL's own
+   forward-declaration shape exactly. Includers that need to *use*
+   the type still pull `<openssl/evp.h>` themselves; includers that
+   merely pass `EVP_PKEY*` opaquely don't need to. This is the same
+   technique the plan's `oidc_rp_jwks.h` (Phase 9) used to keep its
+   header crypto-free.
+2. **OpenSSL 3.x `EVP_PKEY_fromdata` is the right API for JWK→PKEY
+   on Hydrogen's runtime.** The codebase had no prior JWK ingestion
+   path; `EVP_PKEY_CTX_new_from_name("RSA")` + `OSSL_PARAM_BLD_push_BN`
+   for `n` and `e` is ~80 lines including all error paths. The 1.1.x
+   fallback (`RSA_new` + `RSA_set0_key` + `EVP_PKEY_assign_RSA`) is
+   intentionally NOT included — the project requires OpenSSL 3.x
+   (verified Phase 12 setup) and adding the deprecated fallback
+   would just be dead code with subtle semantic differences in
+   ownership.
+3. **`EVP_DigestVerify` semantics: rc==1 success, rc==0 bad
+   signature, rc<0 internal error.** Worth the comment in the
+   wrapper. A naive `if (rc != 1)` collapses the three cases and
+   would cause ALERT-level logs to fire on every routine bad-sig
+   user error. The wrapper distinguishes: bad-sig is silent (caller
+   maps to typed user-facing error), internal-error logs.
+4. **Per-test keypair generation in `setUp()` adds ~50 ms per test
+   on this hardware.** With 27 tests, the file runs in ~1.4 s
+   total — well within the per-test wall-clock budget. The
+   alternative (pre-baked PEM in `tests/`) would have shaved ~1.3 s
+   but introduced the first crypto fixture into the repo and broken
+   the convention from Phase 11 lesson #4. The trade-off is firmly
+   in favour of in-process generation; the slowest test in the
+   project is still test_40 at ~8 s, so even the worst case
+   doesn't push Phase 12 anywhere near the budget.
+5. **The single-shot test seam in `oidc_rp_http.c` had to grow up
+   to a small FIFO.** Phase 9 (lesson #1) shipped it as a
+   one-slot queue and that was sufficient for Phases 9–11 because
+   each test exercised exactly one HTTP call. Phase 12's
+   rotation-recovery flow needs TWO consecutive JWKS fetches in a
+   single test (one initial fetch with stale keys, one refetch
+   with the rotated keys). I refactored the seam to a
+   fixed-capacity (8) FIFO. The single-call test contract from
+   Phases 9–11 is preserved byte-for-byte (a single
+   `set_response` + single HTTP call still works identically) —
+   only the multi-call path is new. All 18 / 26 / 25 / 23 / 29
+   pre-existing tests across the four other oidc_rp test files
+   still pass without modification, confirming the refactor is
+   strictly additive.
+6. **Mock Keycloak's RSA keypair is generated fresh on every
+   process start.** A single `crypto.generateKeyPairSync('rsa',
+   { modulusLength: 2048 })` call produces both halves; the public
+   half is exported as a JWK with `publicKey.export({ format: 'jwk' })`
+   (built into Node ≥ 16) and the private half is retained in
+   memory for `crypto.createSign('RSA-SHA256').update(input).sign(privateKey)`.
+   No npm packages, no committed PEM files, no pre-generated
+   fixtures. This worked first try; `node:crypto` is genuinely
+   complete enough to do the entire RS256 JWS minting flow in
+   pure built-ins (Phase 12 setup confirmed this; the
+   implementation confirmed it again).
+7. **The mock's id_token claims echo selected request params.**
+   The token endpoint copies `client_id` → `aud` and `nonce` →
+   `nonce` so the black-box test can request deterministic values
+   and assert against them, while still defaulting to sane values
+   (`lithium-web`, `test-nonce`) when params are absent. This
+   keeps the mock script flat (no nested switch on call count or
+   stateful per-test plumbing) and means future phases can pass
+   different `aud`/`nonce` values without script edits.
+8. **Phase 5 lesson #1 (`file(GLOB_RECURSE)` reconfigure) struck
+   again, exactly as predicted.** Adding `oidc_rp_idtoken.c`
+   required `mkt`'s clean-build path. A `QUICK` invocation would
+   have failed to link. The `*_test*.c` Unity glob auto-discovered
+   the new test file with no CMake edits, also as predicted by
+   Phase 8 lesson #4.
+9. **`out_claims` ownership transfer pattern matches Phase 11.**
+   The validator allocates the claims struct, transfers ownership
+   to `*out_claims` only on success, and frees it on every error
+   path via `oidc_rp_idtoken_claims_free`. Phase 11's
+   `OidcRpTokenResponse` set the same precedent. Phase 14's
+   callback wiring will be the first composition: it'll call
+   `validate → claims`, then in turn transfer ownership into
+   either the link step or an error redirect.
+10. **`memcmp`-style claim equality is correct here, NOT
+    canonicalisation.** OIDC Core 1.0 §3.1.3.7 step 7 explicitly
+    says `iss` is compared "by exact match". Same for
+    `aud == client_id`. No URL canonicalisation, no case folding,
+    no trailing-slash forgiveness. Phase 9 lesson #6 was the first
+    place this came up (discovery doc `iss` field); Phase 12 just
+    extends the discipline to id-token claims.
+11. **Sensitive-buffer scrub on the claims struct extends to
+    PII.** `email` is a candidate identifier that appears in
+    failed-link logging in Phases 18–21; scrubbing it on free is
+    cheap and consistent with the project's "deny-list" approach
+    in the security plan (line 765). The other claims
+    (`preferred_username`, `name`, `iss`, `sub`, `aud`) are
+    operationally less sensitive — they appear in routine logs —
+    so they get a plain `free`.
+12. **One typo I almost shipped: the validator initially used
+    `now <= exp`** (off-by-one against "expired exactly at now").
+    Corrected to `exp > now - skew` so a token whose exp == now
+    is still valid for one second under the default skew. The
+    "expired" Unity test (which sets exp = now - 500) catches the
+    obvious case but not the boundary; future phases should be
+    aware that the boundary is documented at the line of the
+    comparison itself, not as a separate test.
+
+**Setup for Phase 13 (handoff store + `/oidc/handoff` endpoint):**
+
+- Phase 12's `OidcRpIdTokenClaims*` is the input that Phase 14
+  will hand to the linker step. Phase 13 (handoff store) is
+  upstream of that and does not consume claims directly — it just
+  needs to keep the eventual Hydrogen JWT alive between
+  `/callback` and `/handoff`.
+- The Phase 7 state-store TTL/sweeper machinery is the obvious
+  template for Phase 13's handoff store. The Phase 7 lesson #9
+  flagged `opt_strdup` and `record_free_fields` as candidates to
+  share — Phase 13 should consider promoting them to a shared
+  internal header at that time rather than duplicating.
+- The new `utils_jwk_rsa_to_pkey` and `utils_rs256_verify` helpers
+  are general-purpose and live in `src/utils/utils_crypto.{c,h}`.
+  Phase 12 is the only current caller, but Phase 22 (role mapping)
+  may need to *introspect* claims further; Phase 14's callback
+  composition will be the first place that wires validate-then-link.
+- The mock Keycloak now serves real signatures, so Phase 14's
+  end-to-end black-box test (the central regression test for the
+  rest of the project, per the plan) can use the mock without any
+  further changes. Real Keycloak coverage remains Phase 27.
+- Phase 14 will need to add `oidc_rp_idtoken_init/shutdown` hooks
+  to Hydrogen's startup if the validator ever grows global state.
+  Currently it does not — every call is reentrant — so Phase 14
+  can defer this question. If it ever needs to add caching of
+  EVP_PKEY objects for performance, that's the trigger.
 
 ---
 

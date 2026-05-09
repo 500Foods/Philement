@@ -1,32 +1,33 @@
 #!/usr/bin/env node
 /*
- * Tiny mock Keycloak (Phase 9 + Phase 11).
+ * Tiny mock Keycloak (Phase 9 + Phase 11 + Phase 12).
  *
  * Serves just enough surface for `test_42_oidc_rp.sh` to exercise the
- * Hydrogen OIDC RP discovery + JWKS + token-exchange paths:
+ * Hydrogen OIDC RP discovery + JWKS + token-exchange + id-token
+ * validation paths:
  *
  *   GET /realms/test/.well-known/openid-configuration
  *       → JSON discovery doc that points at this same server.
  *
  *   GET /realms/test/protocol/openid-connect/certs
- *       → JWKS document with one fixture RSA key (kid=test-key-1).
+ *       → JWKS document with one freshly-generated RSA public key
+ *         (kid=test-key-1). The keypair is generated on every server
+ *         start; the public half is exported as a JWK and the private
+ *         half is retained in memory for /token signing.
  *
- *   POST /realms/test/protocol/openid-connect/token   (Phase 11)
+ *   POST /realms/test/protocol/openid-connect/token   (Phase 11+12)
  *       → On valid grant_type=authorization_code with the canned
- *         code "test-code-ok", responds 200 with a placeholder
- *         id_token / access_token bundle. On any other code, responds
- *         400 {"error":"invalid_grant"}. On a missing or wrong
- *         grant_type, 400 {"error":"unsupported_grant_type"}.
- *
- *         The id_token is a non-JWT placeholder string ("phase11-
- *         placeholder-not-a-jwt"); Phase 12 will replace it with a
- *         real RSA-signed JWT so id-token validation can be tested.
+ *         code "test-code-ok", responds 200 with a real RS256-signed
+ *         id_token + access_token bundle. The id_token claims include
+ *         iss, sub, aud, iat, exp, and a nonce derived from the
+ *         optional `nonce` form parameter (if absent, defaults to
+ *         "test-nonce" so unit-test fixtures can predict it).
+ *         On any other code, responds 400 {"error":"invalid_grant"}.
+ *         On a missing or wrong grant_type, 400
+ *         {"error":"unsupported_grant_type"}.
  *
  *   GET /health
  *       → 200 "ok" — used by the test harness to wait for readiness.
- *
- * Future phases will add:
- *   GET  /realms/test/protocol/openid-connect/auth
  *
  * Usage:
  *   node tests/lib/mock_keycloak/server.js [port]   (default 7042)
@@ -35,13 +36,13 @@
  * accepting connections; the test harness greps for that line. SIGTERM
  * triggers a clean shutdown.
  *
- * The fixture RSA key is intentionally a placeholder — no signing
- * happens here. Phase 12 (ID token validation) will replace it with
- * a real keypair so the mock can sign id_tokens.
+ * Dependencies: Node built-ins only (`node:http`, `node:process`,
+ * `node:crypto`). No npm install required.
  */
 
 import http from 'node:http';
 import process from 'node:process';
+import crypto from 'node:crypto';
 
 const port = parseInt(process.argv[2], 10) || 7042;
 
@@ -71,20 +72,62 @@ const DISCOVERY_DOC = {
     code_challenge_methods_supported: ['S256'],
 };
 
-// Placeholder JWKS — Phase 12 will swap in a real keypair so the mock
-// can sign id_tokens. Phase 9 only validates *parsing* and *caching*.
+// Phase 12: generate a fresh RSA-2048 keypair on startup. The public
+// half is exported as a JWK and served via the JWKS endpoint; the
+// private half is retained for signing /token responses. A fresh key
+// per process means tests are insensitive to leaked key material from
+// previous runs and removes any need to commit PEM files to the repo.
+//
+// `KID` is fixed for Phase 12 since the only rotation flow exercised
+// in this phase happens through the Hydrogen-side test seam. If a
+// future phase needs to test mock-side key rotation (e.g. an
+// integration test where Hydrogen's JWKS cache is invalidated by a
+// real change in the mock's served keys), expand to a
+// `Map<kid, {publicKey, privateKey}>` and add a `/admin/rotate-keys`
+// endpoint that mints a new entry. The current shape is the simplest
+// thing that works; the upgrade path is straightforward.
+const KID = 'test-key-1';
+const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
+    modulusLength: 2048,
+});
+
+const PUBLIC_JWK = publicKey.export({ format: 'jwk' });
+
 const JWKS_DOC = {
     keys: [
         {
-            kid: 'test-key-1',
-            kty: 'RSA',
+            kid: KID,
+            kty: PUBLIC_JWK.kty,
             alg: 'RS256',
             use: 'sig',
-            n: 'placeholder-n-base64url',
-            e: 'AQAB',
+            n: PUBLIC_JWK.n,
+            e: PUBLIC_JWK.e,
         },
     ],
 };
+
+// Sign a payload as a compact JWS (RS256) under our private key.
+// `payloadObj` is plain JSON; this function adds nothing beyond what
+// the caller specifies.
+function signJwt(payloadObj) {
+    const header = {
+        alg: 'RS256',
+        kid: KID,
+        typ: 'JWT',
+    };
+    const headerB64 = Buffer.from(JSON.stringify(header), 'utf8')
+        .toString('base64url');
+    const payloadB64 = Buffer.from(JSON.stringify(payloadObj), 'utf8')
+        .toString('base64url');
+    const signingInput = `${headerB64}.${payloadB64}`;
+
+    const sig = crypto.createSign('RSA-SHA256')
+        .update(signingInput)
+        .sign(privateKey);
+    const sigB64 = sig.toString('base64url');
+
+    return `${signingInput}.${sigB64}`;
+}
 
 function send(res, status, body, contentType = 'application/json') {
     const buf = typeof body === 'string'
@@ -136,13 +179,18 @@ function parseForm(body) {
     return out;
 }
 
-// Phase 11: handle POST /token.
+// Phase 11+12: handle POST /token.
 //
 // Accepts the canned `code === 'test-code-ok'` and returns a 200
-// JSON response with placeholder id_token + access_token. Any other
-// code returns 400 invalid_grant. Wrong grant_type returns 400
-// unsupported_grant_type. The id_token value is intentionally NOT a
-// real JWT (Phase 12 will replace this with a signed token).
+// JSON response with a real RS256-signed id_token + a placeholder
+// access_token. The id_token's `aud` claim is taken from the
+// `client_id` form parameter (or `lithium-web` if absent), and its
+// `nonce` claim is taken from the `nonce` form parameter (or the
+// canned default `"test-nonce"` if absent). All other claims are
+// deterministic so the test harness can assert against them.
+//
+// Any other code returns 400 invalid_grant. Wrong grant_type
+// returns 400 unsupported_grant_type.
 function handleTokenPost(req, res) {
     readBody(req, (body) => {
         const params = parseForm(body);
@@ -164,11 +212,28 @@ function handleTokenPost(req, res) {
             return;
         }
 
+        const now = Math.floor(Date.now() / 1000);
+        const aud = params.client_id || 'lithium-web';
+        const nonce = params.nonce || 'test-nonce';
+
+        const idToken = signJwt({
+            iss: ISSUER,
+            sub: 'mock-sub-12345',
+            aud,
+            iat: now,
+            exp: now + 300,
+            nonce,
+            email: 'mockuser@example.com',
+            email_verified: true,
+            preferred_username: 'mockuser',
+            name: 'Mock User',
+        });
+
         send(res, 200, {
             access_token: 'phase11-placeholder-access-token',
             token_type: 'Bearer',
             expires_in: 300,
-            id_token: 'phase11-placeholder-not-a-jwt',
+            id_token: idToken,
             // refresh_token deliberately omitted; Hydrogen does not
             // consume it (plan non-goal #4).
             scope: 'openid profile email',
