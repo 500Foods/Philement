@@ -23,8 +23,10 @@ void cleanup_oidc_rp_config(OIDCRelyingPartyConfig* config);
 void dump_oidc_rp_config(const OIDCRelyingPartyConfig* config);
 OIDCRPLinkStrategy oidc_rp_parse_link_strategy(const char* str);
 OIDCRPRoleSource oidc_rp_parse_role_source(const char* str);
+OIDCRPAuthMethod oidc_rp_parse_auth_method(const char* str);
 const char* oidc_rp_link_strategy_name(OIDCRPLinkStrategy strategy);
 const char* oidc_rp_role_source_name(OIDCRPRoleSource source);
+const char* oidc_rp_auth_method_name(OIDCRPAuthMethod method);
 
 // Forward declarations of test functions.
 void test_oidc_rp_null_root_uses_defaults(void);
@@ -51,6 +53,13 @@ void test_oidc_rp_link_strategy_name_known(void);
 void test_oidc_rp_link_strategy_name_out_of_range(void);
 void test_oidc_rp_role_source_name_known(void);
 void test_oidc_rp_role_source_name_out_of_range(void);
+void test_oidc_rp_auth_method_default_is_basic(void);
+void test_oidc_rp_auth_method_loaded_from_json(void);
+void test_oidc_rp_auth_method_unknown_falls_back_to_basic(void);
+void test_oidc_rp_parse_auth_method_known(void);
+void test_oidc_rp_parse_auth_method_unknown_falls_back(void);
+void test_oidc_rp_auth_method_name_known(void);
+void test_oidc_rp_auth_method_name_out_of_range(void);
 
 void setUp(void) {
     // Some tests poke at HYDROGEN_OIDC_CLIENT_SECRET — make sure we start
@@ -133,6 +142,7 @@ static json_t* make_full_provider_json(void) {
     json_object_set_new(p, "Scopes", json_string("openid profile email roles"));
     json_object_set_new(p, "SystemApiKey", json_string("sys-api-key"));
     json_object_set_new(p, "VerifySsl", json_true());
+    json_object_set_new(p, "AuthMethod", json_string("client_secret_post"));
     json_object_set_new(p, "DiscoveryCacheSeconds", json_integer(7200));
     json_object_set_new(p, "JwksCacheSeconds", json_integer(7200));
     json_object_set_new(p, "StateTtlSeconds", json_integer(900));
@@ -206,6 +216,7 @@ void test_oidc_rp_full_provider_loaded(void) {
     TEST_ASSERT_EQUAL_STRING("openid profile email roles", p->scopes);
     TEST_ASSERT_EQUAL_STRING("sys-api-key", p->system_api_key);
     TEST_ASSERT_TRUE(p->verify_ssl);
+    TEST_ASSERT_EQUAL_INT(OIDC_RP_AUTH_METHOD_CLIENT_SECRET_POST, p->auth_method);
     TEST_ASSERT_EQUAL_INT(7200, p->discovery_cache_seconds);
     TEST_ASSERT_EQUAL_INT(7200, p->jwks_cache_seconds);
     TEST_ASSERT_EQUAL_INT(900, p->state_ttl_seconds);
@@ -264,6 +275,7 @@ void test_oidc_rp_provider_defaults_when_partial(void) {
     TEST_ASSERT_NULL(prov->client_secret);
     TEST_ASSERT_EQUAL_STRING("openid profile email", prov->scopes);
     TEST_ASSERT_TRUE(prov->verify_ssl);
+    TEST_ASSERT_EQUAL_INT(OIDC_RP_AUTH_METHOD_CLIENT_SECRET_BASIC, prov->auth_method);
     TEST_ASSERT_EQUAL_INT(3600, prov->discovery_cache_seconds);
     TEST_ASSERT_EQUAL_INT(3600, prov->jwks_cache_seconds);
     TEST_ASSERT_EQUAL_INT(600, prov->state_ttl_seconds);
@@ -559,6 +571,107 @@ void test_oidc_rp_role_source_name_out_of_range(void) {
 }
 
 // ---------------------------------------------------------------------------
+// AuthMethod (Phase 11)
+// ---------------------------------------------------------------------------
+
+void test_oidc_rp_auth_method_default_is_basic(void) {
+    AppConfig config;
+    memset(&config, 0, sizeof(config));
+
+    json_t* root = json_object();
+    json_t* section = json_object();
+    json_object_set_new(section, "Enabled", json_true());
+
+    json_t* providers = json_array();
+    json_t* p = json_object();
+    json_object_set_new(p, "Name", json_string("p"));
+    // Deliberately omit AuthMethod to verify default.
+    json_array_append_new(providers, p);
+    json_object_set_new(section, "Providers", providers);
+    json_object_set_new(root, "OIDC_RP", section);
+
+    TEST_ASSERT_TRUE(load_oidc_rp_config(root, &config));
+    TEST_ASSERT_EQUAL_INT(OIDC_RP_AUTH_METHOD_CLIENT_SECRET_BASIC,
+                          config.oidc_rp.providers[0].auth_method);
+
+    json_decref(root);
+    cleanup_oidc_rp_config(&config.oidc_rp);
+}
+
+void test_oidc_rp_auth_method_loaded_from_json(void) {
+    AppConfig config;
+    memset(&config, 0, sizeof(config));
+
+    json_t* root = json_object();
+    json_t* section = json_object();
+    json_object_set_new(section, "Enabled", json_true());
+
+    json_t* providers = json_array();
+    json_t* p = json_object();
+    json_object_set_new(p, "Name", json_string("p"));
+    json_object_set_new(p, "AuthMethod", json_string("client_secret_post"));
+    json_array_append_new(providers, p);
+    json_object_set_new(section, "Providers", providers);
+    json_object_set_new(root, "OIDC_RP", section);
+
+    TEST_ASSERT_TRUE(load_oidc_rp_config(root, &config));
+    TEST_ASSERT_EQUAL_INT(OIDC_RP_AUTH_METHOD_CLIENT_SECRET_POST,
+                          config.oidc_rp.providers[0].auth_method);
+
+    json_decref(root);
+    cleanup_oidc_rp_config(&config.oidc_rp);
+}
+
+void test_oidc_rp_auth_method_unknown_falls_back_to_basic(void) {
+    AppConfig config;
+    memset(&config, 0, sizeof(config));
+
+    json_t* root = json_object();
+    json_t* section = json_object();
+    json_object_set_new(section, "Enabled", json_true());
+
+    json_t* providers = json_array();
+    json_t* p = json_object();
+    json_object_set_new(p, "Name", json_string("p"));
+    json_object_set_new(p, "AuthMethod", json_string("private_key_jwt_unsupported"));
+    json_array_append_new(providers, p);
+    json_object_set_new(section, "Providers", providers);
+    json_object_set_new(root, "OIDC_RP", section);
+
+    TEST_ASSERT_TRUE(load_oidc_rp_config(root, &config));
+    TEST_ASSERT_EQUAL_INT(OIDC_RP_AUTH_METHOD_CLIENT_SECRET_BASIC,
+                          config.oidc_rp.providers[0].auth_method);
+
+    json_decref(root);
+    cleanup_oidc_rp_config(&config.oidc_rp);
+}
+
+void test_oidc_rp_parse_auth_method_known(void) {
+    TEST_ASSERT_EQUAL_INT(OIDC_RP_AUTH_METHOD_CLIENT_SECRET_BASIC,
+                          oidc_rp_parse_auth_method("client_secret_basic"));
+    TEST_ASSERT_EQUAL_INT(OIDC_RP_AUTH_METHOD_CLIENT_SECRET_POST,
+                          oidc_rp_parse_auth_method("client_secret_post"));
+}
+
+void test_oidc_rp_parse_auth_method_unknown_falls_back(void) {
+    TEST_ASSERT_EQUAL_INT(OIDC_RP_AUTH_METHOD_CLIENT_SECRET_BASIC,
+                          oidc_rp_parse_auth_method("garbage"));
+    TEST_ASSERT_EQUAL_INT(OIDC_RP_AUTH_METHOD_CLIENT_SECRET_BASIC,
+                          oidc_rp_parse_auth_method(NULL));
+}
+
+void test_oidc_rp_auth_method_name_known(void) {
+    TEST_ASSERT_EQUAL_STRING("client_secret_basic",
+                             oidc_rp_auth_method_name(OIDC_RP_AUTH_METHOD_CLIENT_SECRET_BASIC));
+    TEST_ASSERT_EQUAL_STRING("client_secret_post",
+                             oidc_rp_auth_method_name(OIDC_RP_AUTH_METHOD_CLIENT_SECRET_POST));
+}
+
+void test_oidc_rp_auth_method_name_out_of_range(void) {
+    TEST_ASSERT_EQUAL_STRING("unknown", oidc_rp_auth_method_name((OIDCRPAuthMethod)999));
+}
+
+// ---------------------------------------------------------------------------
 // Test runner
 // ---------------------------------------------------------------------------
 
@@ -592,6 +705,14 @@ int main(void) {
     RUN_TEST(test_oidc_rp_link_strategy_name_out_of_range);
     RUN_TEST(test_oidc_rp_role_source_name_known);
     RUN_TEST(test_oidc_rp_role_source_name_out_of_range);
+
+    RUN_TEST(test_oidc_rp_auth_method_default_is_basic);
+    RUN_TEST(test_oidc_rp_auth_method_loaded_from_json);
+    RUN_TEST(test_oidc_rp_auth_method_unknown_falls_back_to_basic);
+    RUN_TEST(test_oidc_rp_parse_auth_method_known);
+    RUN_TEST(test_oidc_rp_parse_auth_method_unknown_falls_back);
+    RUN_TEST(test_oidc_rp_auth_method_name_known);
+    RUN_TEST(test_oidc_rp_auth_method_name_out_of_range);
 
     return UNITY_END();
 }
