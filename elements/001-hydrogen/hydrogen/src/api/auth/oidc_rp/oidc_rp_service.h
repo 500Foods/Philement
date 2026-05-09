@@ -188,4 +188,23 @@ bool oidc_rp_runtime_lazy_init(void);
  */
 const OIDCRPProviderConfig *oidc_rp_get_active_provider(void);
 
+/**
+ * @brief Tear down the OIDC RP runtime, if it was lazily initialized.
+ *
+ * Phase 14: paired counterpart to `oidc_rp_runtime_lazy_init`. Stops
+ * the state-store and handoff-store sweeper threads (joining them
+ * via condvar wakeup), tears down the discovery + JWKS caches, and
+ * resets the `pthread_once` gate so a subsequent re-init is
+ * possible. Idempotent and safe to call when no init ever ran.
+ *
+ * Without this, the lazily-spawned sweeper threads keep the process
+ * alive past the normal Hydrogen shutdown sequence, causing the
+ * test harness to time out on `stop_hydrogen`.
+ *
+ * Phase 21+ may move this to a proper Hydrogen subsystem-shutdown
+ * hook; until then, Hydrogen's main shutdown path calls this
+ * directly.
+ */
+void oidc_rp_runtime_shutdown(void);
+
 #endif // OIDC_RP_SERVICE_H
