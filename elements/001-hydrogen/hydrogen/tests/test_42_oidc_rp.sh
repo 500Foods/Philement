@@ -2,7 +2,7 @@
 
 # Test: OIDC Relying Party — End-to-End Coverage
 # Drives the OIDC RP endpoints through every gate the plan defines
-# from Phase 6 through Phase 19:
+# from Phase 6 through Phase 21:
 #
 #   - Disabled feature gate (Phase 6): all three endpoints respond
 #     503 {"error":"oidc_disabled"} when OIDC_RP.Enabled = false.
@@ -11,9 +11,13 @@
 #   - Mock IdP /token endpoint (Phases 11/12).
 #   - /oidc/start redirect to IdP with PKCE+state (Phase 10).
 #   - /oidc/handoff exchange via debug-only injector (Phase 13).
-#   - /oidc/callback full chain with stub linker (Phase 14).
+#   - /oidc/callback full chain (Phase 14; stub linker removed in Phase 21).
 #   - match_sub_only linker: hit/miss paths (Phase 18).
 #   - match_email_only linker: hit/miss/ambiguous paths (Phase 19).
+#   - provision_only linker: happy path (creates account) + blocked
+#     domain (Phase 20).
+#   - match_email_then_provision (default): sub fast-path + provision
+#     path (Phase 21).
 #
 # The endpoint helper functions, mock-Keycloak lifecycle, and per-
 # phase sub-test functions live in tests/lib/oidc_rp_helpers.sh; this
@@ -23,6 +27,8 @@
 # (Helper functions live in tests/lib/oidc_rp_helpers.sh)
 
 # CHANGELOG
+# 2.0.0 - 2026-05-09 - Phase 21: match_email_then_provision (default strategy): sub fast-path + provision sub-tests; stub linker removed
+# 1.9.0 - 2026-05-09 - Phase 20: provision_only linker happy + blocked sub-tests
 # 1.8.0 - 2026-05-09 - Phase 19: match_email_only linker hit/miss/ambiguous sub-tests
 # 1.7.0 - 2026-05-09 - Phase 18: match_sub_only linker hit/miss sub-tests
 # 1.6.0 - 2026-05-09 - Phase 14: /oidc/callback end-to-end with stub linker
@@ -40,7 +46,7 @@ TEST_NAME="OIDC RP"
 TEST_ABBR="OID"
 TEST_NUMBER="42"
 TEST_COUNTER=0
-TEST_VERSION="1.8.0"
+TEST_VERSION="2.0.0"
 
 # Phase 9: mock Keycloak port. Picked outside the typical Hydrogen
 # port range (5000s) and the test config's WebServer port (5242). If
@@ -59,6 +65,9 @@ CONFIG_PATH_ENABLED="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_oidc_rp_
 CONFIG_PATH_FULL="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_oidc_rp_full.json"
 CONFIG_PATH_SUB="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_oidc_rp_sub.json"
 CONFIG_PATH_EMAIL="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_oidc_rp_email.json"
+CONFIG_PATH_PROVISION="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_oidc_rp_provision.json"
+CONFIG_PATH_PROVISION_BLOCKED="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_oidc_rp_provision_blocked.json"
+CONFIG_PATH_DEFAULT="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_oidc_rp_default.json"
 MOCK_KC_SCRIPT="${SCRIPT_DIR}/lib/mock_keycloak/server.js"
 
 # shellcheck source=tests/lib/oidc_rp_helpers.sh # Phase 13 split for code-size cap
@@ -67,6 +76,10 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib/oidc_rp_helpers.sh"
 source "$(dirname "${BASH_SOURCE[0]}")/lib/oidc_rp_helpers_callback.sh"
 # shellcheck source=tests/lib/oidc_rp_helpers_link.sh # Phase 18 account-linker helpers
 source "$(dirname "${BASH_SOURCE[0]}")/lib/oidc_rp_helpers_link.sh"
+# shellcheck source=tests/lib/oidc_rp_helpers_provision.sh # Phase 20 provision_only sub-tests
+source "$(dirname "${BASH_SOURCE[0]}")/lib/oidc_rp_helpers_provision.sh"
+# shellcheck source=tests/lib/oidc_rp_helpers_default.sh # Phase 21 match_email_then_provision sub-tests
+source "$(dirname "${BASH_SOURCE[0]}")/lib/oidc_rp_helpers_default.sh"
 
 # Trap to make sure we do not leak a node process if the test script
 # fails between mock start and stop. The functions live in
@@ -291,20 +304,21 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         fi
     fi
 
-    # ---- Phase 14: full happy-path against SQLite-backed Hydrogen ----
-    # The mock Keycloak is still running. Start a third Hydrogen
-    # instance with the demo SQLite Acuranzo schema attached so
-    # /callback can resolve account_id=1 (adminuser) via the stub
-    # linker, mint a real Hydrogen JWT, and put a handoff record.
-    # Skipped cleanly when the demo SQLite db, the demo API key env
-    # var, or jq are missing.
-    if [[ "${EXIT_CODE}" -eq 0 ]] \
-        && [[ "${MOCK_KC_STARTED:-0}" -eq 1 ]] \
-        && [[ -n "${HYDROGEN_DEMO_API_KEY:-}" ]] \
-        && [[ -f "${PROJECT_DIR}/tests/artifacts/database/sqlite/hydrodemo.sqlite" ]] \
-        && command -v jq >/dev/null 2>&1; then
+     # ---- Phase 14 / Phase 21: full happy-path against SQLite-backed Hydrogen ----
+     # The mock Keycloak is still running. Start a third Hydrogen instance with
+     # the demo SQLite Acuranzo schema attached. The full config uses
+     # match_email_then_provision. We pre-seed the identity row for adminuser
+     # (account_id=1) and the required QueryRefs so the sub fast-path fires and
+     # the linker resolves to account_id=1 without provisioning.
+     # Skipped cleanly when the demo SQLite db, the demo API key env var, or
+     # jq are missing.
+     if [[ "${EXIT_CODE}" -eq 0 ]] \
+         && [[ "${MOCK_KC_STARTED:-0}" -eq 1 ]] \
+         && [[ -n "${HYDROGEN_DEMO_API_KEY:-}" ]] \
+         && [[ -f "${PROJECT_DIR}/tests/artifacts/database/sqlite/hydrodemo.sqlite" ]] \
+         && command -v jq >/dev/null 2>&1; then
 
-        print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate full-config (SQLite + OIDC RP)"
+         print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate full-config (SQLite + OIDC RP)"
         # shellcheck disable=SC2310 # We want to continue even if the test fails
         if validate_config_file "${CONFIG_PATH_FULL}"; then
             FULL_PORT=$(get_webserver_port "${CONFIG_PATH_FULL}")
@@ -312,11 +326,30 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Full-config validated"
             PASS_COUNT=$(( PASS_COUNT + 1 ))
 
-            print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Start Hydrogen Server (full config, SQLite)"
-            FULL_HYDROGEN_PID=""
-            FULL_PID_VAR="FULL_HYDROGEN_PID_$$"
-            FULL_BASE_URL="http://localhost:${FULL_PORT}"
-            # Generous timeout — SQLite queries cache initialization
+             # Seed QueryRefs + identity row for adminuser (account_id=1)
+             # BEFORE Hydrogen starts so the QTC bootstrap picks them up.
+             # The mock IdP's sub claim is MOCK_SUBJECT (mock-sub-12345).
+             # The full config uses match_email_then_provision with
+             # RequireEmailVerified=true and provisioning disabled, so the
+             # sub fast-path is the only path that can succeed.
+             FULL_DEMO_SQLITE="${PROJECT_DIR}/tests/artifacts/database/sqlite/hydrodemo.sqlite"
+             FULL_MOCK_ISSUER="http://localhost:${MOCK_KC_PORT}/realms/test"
+             FULL_MOCK_SUBJECT="mock-sub-12345"
+             if command -v sqlite3 >/dev/null 2>&1; then
+                 seed_oidc_queryref_seed_only "${FULL_DEMO_SQLITE}" || true
+                 seed_email_queryrefs "${FULL_DEMO_SQLITE}" || true
+                 seed_provision_queryrefs "${FULL_DEMO_SQLITE}" || true
+                 # Pre-seed the identity row for account_id=1 (adminuser) so
+                 # the sub fast-path fires. Idempotent: INSERT OR REPLACE.
+                 seed_oidc_identity "${FULL_DEMO_SQLITE}" 1 \
+                     "${FULL_MOCK_ISSUER}" "${FULL_MOCK_SUBJECT}" || true
+             fi
+
+             print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Start Hydrogen Server (full config, SQLite)"
+             FULL_HYDROGEN_PID=""
+             FULL_PID_VAR="FULL_HYDROGEN_PID_$$"
+             FULL_BASE_URL="http://localhost:${FULL_PORT}"
+             # Generous timeout — SQLite queries cache initialization
             # plus stmt cache prewarm is heavier than the no-DB cases.
             # shellcheck disable=SC2310 # We want to continue even if the test fails
             if start_hydrogen_with_pid "${CONFIG_PATH_FULL}" "${SERVER_LOG}" 30 "${HYDROGEN_BIN}" "${FULL_PID_VAR}"; then
@@ -368,9 +401,21 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
                 # convention).
                 sleep 1
 
-                # The actual Phase 14 happy-path black-box test.
-                test_oidc_callback_happy_path_end_to_end "${FULL_BASE_URL}"
-            fi
+                 # Phase 14/21 happy-path: drives /start → /auth → /callback →
+                 # /handoff end-to-end. The linker resolves via sub fast-path
+                 # (pre-seeded identity) and returns the Hydrogen JWT for
+                 # account_id=1 (adminuser).
+                 test_oidc_callback_happy_path_end_to_end "${FULL_BASE_URL}"
+
+                 # Cleanup: remove the pre-seeded identity row so subsequent
+                 # test runs start clean. (The row was inserted with
+                 # seed_oidc_identity above, not as a side-effect of the
+                 # real linker, so delete it unconditionally.)
+                 if command -v sqlite3 >/dev/null 2>&1; then
+                     unseed_oidc_identity "${FULL_DEMO_SQLITE}" \
+                         "${FULL_MOCK_ISSUER}" "${FULL_MOCK_SUBJECT}" || true
+                 fi
+             fi
 
             # ---- Shutdown full-config Hydrogen ----
             if [[ -n "${FULL_HYDROGEN_PID}" ]] && ps -p "${FULL_HYDROGEN_PID}" > /dev/null 2>&1; then
@@ -627,6 +672,237 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     elif [[ "${MOCK_KC_STARTED:-0}" -eq 1 ]]; then
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
             "Skipping Phase 19 sub-tests: missing demo SQLite db, HYDROGEN_DEMO_API_KEY, sqlite3, or jq"
+    fi
+
+    # ---- Phase 20: provision_only linker happy + blocked sub-tests ----
+    # Two more Hydrogen instances:
+    #   - provision-config (port 5247): AllowedEmailDomains=["example.com"]
+    #     The mock IdP emits 'mockuser@example.com' so the happy path
+    #     provisions a new account row.
+    #   - provision-blocked (port 5248): AllowedEmailDomains=["philement.com"]
+    #     The mock IdP's 'mockuser@example.com' is rejected with
+    #     ?oidc_error=provision_disallowed_email and NO account row is created.
+    if [[ "${EXIT_CODE}" -eq 0 ]] \
+        && [[ "${MOCK_KC_STARTED:-0}" -eq 1 ]] \
+        && [[ -n "${HYDROGEN_DEMO_API_KEY:-}" ]] \
+        && [[ -f "${PROJECT_DIR}/tests/artifacts/database/sqlite/hydrodemo.sqlite" ]] \
+        && command -v jq >/dev/null 2>&1 \
+        && command -v sqlite3 >/dev/null 2>&1; then
+
+        DEMO_SQLITE="${PROJECT_DIR}/tests/artifacts/database/sqlite/hydrodemo.sqlite"
+        MOCK_ISSUER="http://localhost:${MOCK_KC_PORT}/realms/test"
+        MOCK_SUBJECT="mock-sub-12345"
+        MOCK_EMAIL="mockuser@example.com"
+
+        # ---- Provision happy-path Hydrogen instance ----
+        print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate provision-config (provision_only allow=example.com)"
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
+        if validate_config_file "${CONFIG_PATH_PROVISION}"; then
+            PROVISION_PORT=$(get_webserver_port "${CONFIG_PATH_PROVISION}")
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Provision config will use port: ${PROVISION_PORT}"
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Provision-config validated"
+            PASS_COUNT=$(( PASS_COUNT + 1 ))
+
+            # Seed QueryRefs BEFORE Hydrogen starts so the QTC bootstrap
+            # picks them up. The seeds are idempotent (INSERT OR IGNORE).
+            # Required for #083 specifically — the demo DB does not ship
+            # Phase 17 migrations applied, so #083 is absent on a clean
+            # checkout. Phase 16's accounts.password_hash NOT NULL
+            # relaxation also happens in seed_provision_queryrefs so the
+            # provisioning insert succeeds at runtime.
+            seed_oidc_queryref_seed_only "${DEMO_SQLITE}" || true
+            seed_email_queryrefs "${DEMO_SQLITE}" || true
+            seed_provision_queryrefs "${DEMO_SQLITE}" || true
+
+            print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Start Hydrogen Server (provision config)"
+            PROVISION_HYDROGEN_PID=""
+            PROVISION_PID_VAR="PROVISION_HYDROGEN_PID_$$"
+            PROVISION_BASE_URL="http://localhost:${PROVISION_PORT}"
+            PROVISION_LOG_OFFSET=$(( $(wc -l < "${SERVER_LOG}" 2>/dev/null || echo 0) + 1 ))
+            # shellcheck disable=SC2310 # We want to continue even if the test fails
+            if start_hydrogen_with_pid "${CONFIG_PATH_PROVISION}" "${SERVER_LOG}" 30 "${HYDROGEN_BIN}" "${PROVISION_PID_VAR}"; then
+                PROVISION_HYDROGEN_PID=$(eval "echo \$${PROVISION_PID_VAR}")
+                if [[ -n "${PROVISION_HYDROGEN_PID}" ]] && ps -p "${PROVISION_HYDROGEN_PID}" > /dev/null 2>&1; then
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Server started with PID ${PROVISION_HYDROGEN_PID}"
+                    PASS_COUNT=$(( PASS_COUNT + 1 ))
+                else
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Provision-config server PID missing after start"
+                    EXIT_CODE=1
+                fi
+            else
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to start Hydrogen with provision config"
+                EXIT_CODE=1
+            fi
+
+            if [[ "${EXIT_CODE}" -eq 0 ]]; then
+                # shellcheck disable=SC2310 # We want to continue even if the test fails
+                if ! wait_for_server_ready "${PROVISION_BASE_URL}"; then
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Provision-config server failed to become ready"
+                    EXIT_CODE=1
+                fi
+            fi
+
+            if [[ "${EXIT_CODE}" -eq 0 ]]; then
+                # Wait for QTC bootstrap.
+                PROVISION_NOW=$(date +%s)
+                PROVISION_DEADLINE=$(( PROVISION_NOW + 30 ))
+                while true; do
+                    PROVISION_NOW=$(date +%s)
+                    if [[ ${PROVISION_NOW} -ge ${PROVISION_DEADLINE} ]]; then
+                        break
+                    fi
+                    # shellcheck disable=SC2310 # Polling on success/timeout
+                    if tail -n +"${PROVISION_LOG_OFFSET}" "${SERVER_LOG}" 2>/dev/null \
+                        | "${GREP}" -q -E "Migration completed in|Migration Current:"; then
+                        break
+                    fi
+                    sleep 0.2
+                done
+                sleep 1
+
+                # Phase 20 happy path: domain on allow-list → provisioning succeeds.
+                # shellcheck disable=SC2310 # We want to continue even if the test fails
+                test_oidc_link_provision_only_happy \
+                    "${PROVISION_BASE_URL}" "${DEMO_SQLITE}" \
+                    "${MOCK_ISSUER}" "${MOCK_SUBJECT}" "${MOCK_EMAIL}"
+            fi
+
+            # Shutdown provision-config Hydrogen.
+            if [[ -n "${PROVISION_HYDROGEN_PID:-}" ]] && ps -p "${PROVISION_HYDROGEN_PID}" > /dev/null 2>&1; then
+                print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Stop Hydrogen Server (provision config)"
+                # shellcheck disable=SC2310 # We want to continue even if the test fails
+                if stop_hydrogen "${PROVISION_HYDROGEN_PID}" "${SERVER_LOG}" 10 5 "${RESULTS_DIR}"; then
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Provision-config server stopped cleanly"
+                    PASS_COUNT=$(( PASS_COUNT + 1 ))
+                else
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Provision-config server shutdown had issues"
+                    EXIT_CODE=1
+                fi
+                # shellcheck disable=SC2310 # Diagnostic-only; non-zero result must not abort the test
+                check_time_wait_sockets "${PROVISION_PORT}" || true
+            fi
+        else
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Provision-config validation failed"
+            EXIT_CODE=1
+        fi
+
+        # ---- Provision blocked-domain Hydrogen instance ----
+        if [[ "${EXIT_CODE}" -eq 0 ]]; then
+            print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate provision-blocked-config (allow=philement.com)"
+            # shellcheck disable=SC2310 # We want to continue even if the test fails
+            if validate_config_file "${CONFIG_PATH_PROVISION_BLOCKED}"; then
+                BLOCKED_PORT=$(get_webserver_port "${CONFIG_PATH_PROVISION_BLOCKED}")
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Provision-blocked config will use port: ${BLOCKED_PORT}"
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Provision-blocked-config validated"
+                PASS_COUNT=$(( PASS_COUNT + 1 ))
+
+                # Seed QueryRefs BEFORE Hydrogen starts (idempotent —
+                # already done above for the provision-config instance,
+                # but safe to repeat here in case earlier instance failed
+                # to start).
+                seed_oidc_queryref_seed_only "${DEMO_SQLITE}" || true
+                seed_email_queryrefs "${DEMO_SQLITE}" || true
+                seed_provision_queryrefs "${DEMO_SQLITE}" || true
+
+                print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Start Hydrogen Server (provision-blocked config)"
+                BLOCKED_HYDROGEN_PID=""
+                BLOCKED_PID_VAR="BLOCKED_HYDROGEN_PID_$$"
+                BLOCKED_BASE_URL="http://localhost:${BLOCKED_PORT}"
+                BLOCKED_LOG_OFFSET=$(( $(wc -l < "${SERVER_LOG}" 2>/dev/null || echo 0) + 1 ))
+                # shellcheck disable=SC2310 # We want to continue even if the test fails
+                if start_hydrogen_with_pid "${CONFIG_PATH_PROVISION_BLOCKED}" "${SERVER_LOG}" 30 "${HYDROGEN_BIN}" "${BLOCKED_PID_VAR}"; then
+                    BLOCKED_HYDROGEN_PID=$(eval "echo \$${BLOCKED_PID_VAR}")
+                    if [[ -n "${BLOCKED_HYDROGEN_PID}" ]] && ps -p "${BLOCKED_HYDROGEN_PID}" > /dev/null 2>&1; then
+                        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Server started with PID ${BLOCKED_HYDROGEN_PID}"
+                        PASS_COUNT=$(( PASS_COUNT + 1 ))
+                    else
+                        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Provision-blocked-config server PID missing"
+                        EXIT_CODE=1
+                    fi
+                else
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to start Hydrogen with provision-blocked config"
+                    EXIT_CODE=1
+                fi
+
+                if [[ "${EXIT_CODE}" -eq 0 ]]; then
+                    # shellcheck disable=SC2310 # We want to continue even if the test fails
+                    if ! wait_for_server_ready "${BLOCKED_BASE_URL}"; then
+                        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Provision-blocked-config server failed to become ready"
+                        EXIT_CODE=1
+                    fi
+                fi
+
+                if [[ "${EXIT_CODE}" -eq 0 ]]; then
+                    BLOCKED_NOW=$(date +%s)
+                    BLOCKED_DEADLINE=$(( BLOCKED_NOW + 30 ))
+                    while true; do
+                        BLOCKED_NOW=$(date +%s)
+                        if [[ ${BLOCKED_NOW} -ge ${BLOCKED_DEADLINE} ]]; then
+                            break
+                        fi
+                        # shellcheck disable=SC2310 # Polling on success/timeout
+                        if tail -n +"${BLOCKED_LOG_OFFSET}" "${SERVER_LOG}" 2>/dev/null \
+                            | "${GREP}" -q -E "Migration completed in|Migration Current:"; then
+                            break
+                        fi
+                        sleep 0.2
+                    done
+                    sleep 1
+
+                    # Phase 20 blocked path: domain mismatch → provision_disallowed_email.
+                    # shellcheck disable=SC2310 # We want to continue even if the test fails
+                    test_oidc_link_provision_only_blocked \
+                        "${BLOCKED_BASE_URL}" "${DEMO_SQLITE}" \
+                        "${MOCK_ISSUER}" "${MOCK_SUBJECT}"
+                fi
+
+                # Shutdown blocked-config Hydrogen.
+                if [[ -n "${BLOCKED_HYDROGEN_PID:-}" ]] && ps -p "${BLOCKED_HYDROGEN_PID}" > /dev/null 2>&1; then
+                    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Stop Hydrogen Server (provision-blocked config)"
+                    # shellcheck disable=SC2310 # We want to continue even if the test fails
+                    if stop_hydrogen "${BLOCKED_HYDROGEN_PID}" "${SERVER_LOG}" 10 5 "${RESULTS_DIR}"; then
+                        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Provision-blocked-config server stopped cleanly"
+                        PASS_COUNT=$(( PASS_COUNT + 1 ))
+                    else
+                        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Provision-blocked-config server shutdown had issues"
+                        EXIT_CODE=1
+                    fi
+                    # shellcheck disable=SC2310 # Diagnostic-only; non-zero result must not abort the test
+                    check_time_wait_sockets "${BLOCKED_PORT}" || true
+                fi
+            else
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Provision-blocked-config validation failed"
+                EXIT_CODE=1
+            fi
+        fi
+    elif [[ "${MOCK_KC_STARTED:-0}" -eq 1 ]]; then
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
+            "Skipping Phase 20 sub-tests: missing demo SQLite db, HYDROGEN_DEMO_API_KEY, sqlite3, or jq"
+    fi
+
+    # ---- Phase 21: match_email_then_provision (default strategy) ----
+    # Lifecycle helper is in oidc_rp_helpers_default.sh to keep this
+    # orchestrator under the 1,000-line cap.
+    if [[ "${EXIT_CODE}" -eq 0 ]] \
+        && [[ "${MOCK_KC_STARTED:-0}" -eq 1 ]] \
+        && [[ -n "${HYDROGEN_DEMO_API_KEY:-}" ]] \
+        && [[ -f "${PROJECT_DIR}/tests/artifacts/database/sqlite/hydrodemo.sqlite" ]] \
+        && command -v jq >/dev/null 2>&1 \
+        && command -v sqlite3 >/dev/null 2>&1; then
+
+        DEMO_SQLITE="${PROJECT_DIR}/tests/artifacts/database/sqlite/hydrodemo.sqlite"
+        MOCK_ISSUER="http://localhost:${MOCK_KC_PORT}/realms/test"
+        MOCK_SUBJECT="mock-sub-12345"
+        MOCK_EMAIL="mockuser@example.com"
+
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
+        run_phase21_default_tests \
+            "${CONFIG_PATH_DEFAULT}" "${DEMO_SQLITE}" \
+            "${MOCK_ISSUER}" "${MOCK_SUBJECT}" "${MOCK_EMAIL}" \
+            "${HYDROGEN_BIN}" "${SERVER_LOG}" "${RESULTS_DIR}"
+    elif [[ "${MOCK_KC_STARTED:-0}" -eq 1 ]]; then
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
+            "Skipping Phase 21 sub-tests: missing demo SQLite db, HYDROGEN_DEMO_API_KEY, sqlite3, or jq"
     fi
 
     # ---- Stop the mock now that all dependent tests are done ----

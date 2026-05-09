@@ -4,11 +4,12 @@
 # shellcheck disable=SC2034 # EXIT_CODE is set by the test script and re-exported through these helpers
 # shellcheck disable=SC2312 # Several diagnostic command substitutions intentionally swallow the inner exit code
 
-# OIDC RP Account Linker Test Utilities (Phase 18 + Phase 19)
+# OIDC RP Account Linker Test Utilities (Phase 18 + Phase 19 + Phase 20)
 #
 # Helpers for black-box testing the account-linker strategies:
 #   Phase 18: match_sub_only   (QueryRefs #080, #084)
 #   Phase 19: match_email_only (QueryRefs #080, #082, #081, #084)
+#   Phase 20: provision_only   (QueryRefs #080, #083, #081, #084)
 #
 # Requires the SQLite-backed Hydrogen instance plus the demo Acuranzo
 # database at tests/artifacts/database/sqlite/hydrodemo.sqlite.
@@ -19,13 +20,19 @@
 #   - seed_email_contact:       insert a mock email into account_contacts
 #   - unseed_email_contact:     delete the seeded email contact row
 #   - seed_email_queryrefs:     ensure QueryRefs #081 and #082 are present
+#   - seed_provision_queryrefs: ensure QueryRef #083 is present
+#   - get_max_account_id:       capture pre-provision max account_id
+#   - delete_account:           remove a provisioned accounts row + its identity link
 #   - test_oidc_link_match_sub_only_hit:    pre-seeded identity → JWT
 #   - test_oidc_link_match_sub_only_miss:   no identity row → no_account
 #   - test_oidc_link_match_email_only_hit:  email match → linked → JWT
 #   - test_oidc_link_match_email_only_miss: no email contact → no_account
 #   - test_oidc_link_match_email_only_ambiguous: two accounts, same email → email_ambiguous
+#   - test_oidc_link_provision_only_happy:  provisions account → JWT envelope
+#   - test_oidc_link_provision_only_blocked: domain not on allow-list → provision_disallowed_email
 #
 # CHANGELOG
+# 1.2.0 - 2026-05-09 - Phase 20: provision_only helpers + sub-tests.
 # 1.1.0 - 2026-05-09 - Phase 19: match_email_only helpers.
 # 1.0.0 - 2026-05-09 - Initial creation for Phase 18 account linker.
 
@@ -318,6 +325,135 @@ SELECT
     datetime('now'), datetime('now', '+10 years'), 1, datetime('now'), 1, datetime('now')
 WHERE NOT EXISTS (SELECT 1 FROM queries WHERE query_ref = 82 AND query_type_a28 = 1);
 ENSURE_EMAIL_QUERYREFS
+}
+
+# Ensure QueryRef #083 (provision new accounts row) is registered in the
+# queries table. Phase 20's provision_only linker calls #083 before #081.
+# The demo SQLite fixture was built before Phase 17 migrations, so Phase 20
+# tests need this seed to make the linker succeed.
+#
+# The query inserts a new row into accounts with password_hash=NULL,
+# status_a16=1 (active), iana_timezone_a17=1 (UTC), and reasonable defaults
+# for the validity window. It returns the new account_id from the
+# RETURNING clause, which the linker then passes to #081.
+#
+# This helper also relaxes the NOT NULL constraint on accounts.password_hash
+# in the demo SQLite fixture (Phase 16's migration normally does this, but
+# AutoMigration is disabled for these tests). The relaxation uses SQLite's
+# writable_schema PRAGMA to edit the stored CREATE TABLE statement in
+# place — no row data is touched. This is idempotent: running it twice is
+# a no-op once the column is nullable.
+#
+# Args:
+#   $1  sqlite_db  path to the SQLite database file
+seed_provision_queryrefs() {
+    local sqlite_db="$1"
+
+    if ! command -v sqlite3 >/dev/null 2>&1; then
+        return 1
+    fi
+
+    # Check whether password_hash is currently NOT NULL; only then run
+    # the table recreation.
+    local password_notnull
+    password_notnull=$(sqlite3 "${sqlite_db}" \
+        "SELECT \"notnull\" FROM pragma_table_info('accounts') WHERE name='password_hash';" 2>/dev/null || echo "1")
+
+    if [[ "${password_notnull}" == "1" ]]; then
+        # Modern SQLite (≥ 3.36) blocks PRAGMA writable_schema for
+        # sqlite_master. Use the official recreate-table-and-copy idiom
+        # (https://www.sqlite.org/lang_altertable.html#otheralter) to drop
+        # the NOT NULL on password_hash. All steps in a single transaction
+        # so the table is never visible in a half-migrated state.
+        sqlite3 "${sqlite_db}" <<'RELAX_PASSWORD_HASH'
+BEGIN;
+CREATE TABLE accounts_new (
+    account_id              integer          NOT NULL,
+    status_a16              integer          NOT NULL,
+    iana_timezone_a17       integer          NOT NULL,
+    name                    text             NOT NULL,
+    first_name              text                     ,
+    middle_name             text                     ,
+    last_name               text             NOT NULL,
+    password_hash           char(128)                ,
+    summary                 text             NOT NULL,
+    collection              text                     ,
+    valid_after             text                     ,
+    valid_until             text                     ,
+    created_id              integer          NOT NULL,
+    created_at              text             NOT NULL,
+    updated_id              integer          NOT NULL,
+    updated_at              text             NOT NULL,
+    PRIMARY KEY(account_id)
+);
+INSERT INTO accounts_new
+    (account_id, status_a16, iana_timezone_a17, name, first_name, middle_name,
+     last_name, password_hash, summary, collection, valid_after, valid_until,
+     created_id, created_at, updated_id, updated_at)
+SELECT
+    account_id, status_a16, iana_timezone_a17, name, first_name, middle_name,
+    last_name, password_hash, summary, collection, valid_after, valid_until,
+    created_id, created_at, updated_id, updated_at
+FROM accounts;
+DROP TABLE accounts;
+ALTER TABLE accounts_new RENAME TO accounts;
+COMMIT;
+RELAX_PASSWORD_HASH
+    fi
+
+    sqlite3 "${sqlite_db}" <<'ENSURE_PROVISION_QUERYREFS'
+INSERT OR IGNORE INTO queries (
+    query_id, query_ref,
+    query_status_a27, query_type_a28, query_dialect_a30,
+    query_queue_a58, query_timeout,
+    code, name, summary, collection,
+    valid_after, valid_until, created_id, created_at, updated_id, updated_at
+)
+SELECT
+    (SELECT COALESCE(MAX(query_id), 0) + 1 FROM queries),
+    83, 1, 1, 2, 1, 5000,
+    'INSERT INTO accounts (account_id, name, first_name, last_name, password_hash, status_a16, iana_timezone_a17, summary, collection, valid_after, valid_until, created_id, created_at, updated_id, updated_at) WITH next_account_id AS (SELECT COALESCE(MAX(account_id), 0) + 1 AS new_account_id FROM accounts) SELECT new_account_id, :USERNAME, :FIRST_NAME, :LAST_NAME, NULL, 1, 1, :SUMMARY, ''{}'', ''2025-01-01 00:00:00'', ''2035-01-01 00:00:00'', 0, datetime(''now''), 0, datetime(''now'') FROM next_account_id RETURNING account_id',
+    'OIDC RP: Provision OIDC Account',
+    'Phase 20 seed: create a new accounts row with password_hash=NULL',
+    '{}',
+    datetime('now'), datetime('now', '+10 years'), 1, datetime('now'), 1, datetime('now')
+WHERE NOT EXISTS (SELECT 1 FROM queries WHERE query_ref = 83 AND query_type_a28 = 1);
+ENSURE_PROVISION_QUERYREFS
+}
+
+# Capture the current MAX(account_id) so the test can detect a newly
+# provisioned account afterwards. Echoes the value to stdout.
+# Args:
+#   $1  sqlite_db
+get_max_account_id() {
+    local sqlite_db="$1"
+
+    if ! command -v sqlite3 >/dev/null 2>&1; then
+        echo "0"
+        return 1
+    fi
+
+    sqlite3 "${sqlite_db}" "SELECT COALESCE(MAX(account_id), 0) FROM accounts;"
+}
+
+# Delete a provisioned accounts row plus any rows in account_oidc_identities
+# referencing it. Used as cleanup after Phase 20 sub-tests so the demo DB
+# is left in its original state.
+# Args:
+#   $1  sqlite_db
+#   $2  account_id  the account_id to remove
+delete_account() {
+    local sqlite_db="$1"
+    local account_id="$2"
+
+    if ! command -v sqlite3 >/dev/null 2>&1; then
+        return 1
+    fi
+
+    sqlite3 "${sqlite_db}" <<EOF
+DELETE FROM account_oidc_identities WHERE account_id = ${account_id};
+DELETE FROM accounts WHERE account_id = ${account_id};
+EOF
 }
 
 # ---------------------------------------------------------------------------
