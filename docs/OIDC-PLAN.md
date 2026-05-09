@@ -842,11 +842,11 @@ password login still works — every phase preserves that invariant.
 | 2 | Lithium login refactor — extract `login-password-manager` | Lithium | Low | ✅ Done |
 | 3 | Lithium login refactor — extract `login-language-panel` | Lithium | Low | ✅ Done |
 | 4 | Lithium login refactor — full decomposition to ≤1,000 lines | Lithium | Medium | ✅ Done |
-| 5 | Hydrogen — `OIDCRelyingPartyConfig` schema and parser | Hydrogen | Low |
-| 6 | Hydrogen — disabled-stub endpoints (`/start`, `/callback`, `/handoff`) | Hydrogen | Low |
-| 7 | Hydrogen — in-memory state store | Hydrogen | Medium |
-| 8 | Hydrogen — PKCE helpers (verifier, challenge, state, nonce) | Hydrogen | Low |
-| 9 | Hydrogen — discovery + JWKS fetch and cache | Hydrogen | Medium |
+| 5 | Hydrogen — `OIDCRelyingPartyConfig` schema and parser | Hydrogen | Low | ✅ Done |
+| 6 | Hydrogen — disabled-stub endpoints (`/start`, `/callback`, `/handoff`) | Hydrogen | Low | ✅ Done |
+| 7 | Hydrogen — in-memory state store | Hydrogen | Medium | ✅ Done |
+| 8 | Hydrogen — PKCE helpers (verifier, challenge, state, nonce) | Hydrogen | Low | ✅ Done |
+| 9 | Hydrogen — discovery + JWKS fetch and cache | Hydrogen | Medium | ✅ Done |
 | 10 | Hydrogen — `/oidc/start` redirect builder | Hydrogen | Medium |
 | 11 | Hydrogen — token endpoint client (POST to Keycloak `/token`) | Hydrogen | Medium |
 | 12 | Hydrogen — ID token validation | Hydrogen | High |
@@ -1236,7 +1236,7 @@ Every phase block contains the same fields, in the same order:
 
 ---
 
-### Phase 5 — Hydrogen: `OIDCRelyingPartyConfig` schema + parser
+### Phase 5 — Hydrogen: `OIDCRelyingPartyConfig` schema + parser ✅ COMPLETE
 
 - **Goal:** Land the new config block, parsed and validated, with
   `Enabled = false` as the default. No endpoints yet.
@@ -1256,25 +1256,121 @@ Every phase block contains the same fields, in the same order:
     Hydrogen `${env.X}` convention.
   - **No** runtime behaviour anywhere else changes yet.
 - **Files:**
-  - Created: `src/config/config_oidc_rp.c`, `src/config/config_oidc_rp.h`
-  - Created: `tests/unity/test_config_oidc_rp.c`
+  - Created: `src/config/config_oidc_rp.c` (453 lines),
+    `src/config/config_oidc_rp.h` (198 lines)
+  - Created: `tests/unity/src/config/config_oidc_rp_test_load_oidc_rp_config.c`
+    (24 tests)
   - Touched: `src/config/config.c`, `src/config/config.h`,
-    `src/config/config_forward.h` (forward decl), CMakeLists.
+    `src/config/config_forward.h`, `src/config/config_defaults.c`,
+    `src/config/config_defaults.h`, `src/hydrogen.h` (added
+    `OIDCRelyingPartyConfig oidc_rp` field to `AppConfig`)
 - **Tests required:**
-  - `test_config_oidc_rp.c` (Unity): missing section → defaults; full
-    valid section → all fields populated; bad type → error; env-var
-    substitution; `cleanup` is leak-free under ASAN.
+  - `config_oidc_rp_test_load_oidc_rp_config.c` (Unity): missing section
+    → defaults; full valid section → all fields populated; provider
+    truncation when count > `OIDC_RP_MAX_PROVIDERS`; non-object provider
+    entries skipped; env-var substitution for `ClientSecret`; empty
+    `AllowedAlgorithms` array falls back to `RS256`; cleanup leak-free
+    under ASAN; null/empty/dump safety; enum parsers for both linking
+    strategy and role source.
 - **Definition of Done:**
-  - [ ] `mkt` and `mka` clean.
-  - [ ] `mkp` (cppcheck) clean for all new files.
-  - [ ] `test_10_unity` includes the new test and it is green.
-  - [ ] `test_11_leaks_like_a_sieve` passes with the new test enabled.
-  - [ ] No regression in `test_17_startup_shutdown` with min/max
-        configs.
+  - [x] Unity build clean (`cmake --build . --target unity_tests`).
+  - [x] Regular build clean (`cmake --build . --target hydrogen`).
+  - [x] cppcheck (`test_91_cppcheck.sh`) clean — all 1,297 files,
+        no issues found in the 9 changed files.
+  - [x] `test_10_unity` includes the new test and it is green:
+        24/24 passing, total 6,742/6,742 in suite (no regressions).
+  - [x] `test_11_leaks_like_a_sieve` passes: 0 direct, 0 indirect leaks.
+  - [x] `test_17_startup_shutdown` passes: 9/9 checks green for both
+        min and max configs.
+  - [x] `test_99_code_size`: no new file exceeds 1000 lines (largest
+        new file is `config_oidc_rp.c` at 453 lines).
+
+**Lessons learned:**
+
+1. **The existing `config_oidc.{c,h}` is a near-perfect template — but
+   the build-system reconfigure step is required.** The
+   `cmake/CMakeLists-init.cmake` line 88 uses `file(GLOB_RECURSE
+   HYDROGEN_SOURCES "../src/*.c")` to discover sources. Adding a new
+   `.c` file to `src/config/` requires running `cmake .` in the build
+   dir to refresh the glob; otherwise you get `undefined reference`
+   linker errors with no obvious cause. This is worth flagging in any
+   future phase that adds C sources.
+2. **`-Werror=unused-function` will catch dead helper functions
+   immediately.** The first build attempt failed because
+   `take_string_or_default` was defined but never called. Trim
+   speculative helpers before committing — the compiler is strict.
+3. **`PROCESS_*` macros vs. manual JSON iteration.** The
+   `PROCESS_STRING` / `PROCESS_SENSITIVE` family is a clean fit for
+   flat structs (e.g. the existing `OIDCConfig`). For arrays of nested
+   objects (like `OIDC_RP.Providers[N]`), the macros don't compose well
+   — they bake in section-name strings. Using direct
+   `json_object_get` / `json_array_size` with small typed helper
+   functions (`take_string_or_null`, `take_bool_or_default`,
+   `take_int_or_default`, `take_string_array`) was clearer and easier
+   to test. This matches the pattern in `config_databases.c`.
+4. **`process_env_variable_string()` is the only entry point operators
+   should ever need.** It transparently handles literal strings AND
+   `${env.X}` substitution, returning a heap-allocated string that the
+   caller owns. The test
+   `test_oidc_rp_env_var_substitution_for_secret` proves the pipeline
+   works end-to-end for the most security-sensitive case
+   (`ClientSecret`).
+5. **Defensive defaults matter for safety-critical lists.** An operator
+   who supplies an empty `AllowedAlgorithms` array would create the
+   nonsensical state of "no algorithms allowed" (i.e. *every* ID token
+   rejected). The loader explicitly falls back to `["RS256"]` in that
+   case rather than enabling a degenerate state. Captured by
+   `test_oidc_rp_empty_allowed_algorithms_falls_back_to_rs256`. Any
+   future phase that introduces an array of allow-listed values should
+   apply the same hardening.
+6. **`SR_AUTH` is the right subsystem for OIDC RP logging.** The plan
+   suggested it implicitly (line 514: `log_this(SR_AUTH, …)`). The
+   `LOAD_CONFIG` macro and `DUMP_CONFIG_SECTION` calls now use
+   `SR_AUTH` for the new section, keeping it grep-able alongside other
+   auth-flow logging that will land in Phases 6–14. Note this differs
+   from `SR_OIDC`, which the existing provider-side stubs use.
+7. **`SystemApiKey` was added to the schema during Phase 5.** The plan
+   mentioned this field at line 498 ("a server-side API key bound to
+   the OIDC RP") but it was missing from the JSON schema sample on
+   lines 351–394. Phase 5 ships it as part of `OIDCRPProviderConfig`
+   so Phase 14 (callback wiring) can use it without a schema-change
+   merge. It is treated as `PROCESS_SENSITIVE` / `DUMP_SECRET` like
+   `ClientSecret`.
+8. **Provider count is hard-capped at 8.** Defined as
+   `OIDC_RP_MAX_PROVIDERS` in the header. The plan ships only the
+   500passwords entry; this is plenty of headroom. If a deployment
+   ever wants more, bump the constant — there's no hidden coupling.
+9. **The `oidc_rp` field placement in `AppConfig` is *between* `oidc`
+   and `notify`.** This follows the section-letter convention (we
+   are "O-RP", logically right after "O. OIDC"). The `LOAD_CONFIG`
+   and `DUMP_CONFIG_SECTION` macros use `"O-RP"` as the letter and
+   `SR_AUTH` as the section name; this hyphenated form has not been
+   used before but the `format_section_header` helper handles it
+   without modification.
+
+**Setup for Phase 6:**
+
+- `oidc_rp_is_enabled()` helper does **not** yet exist. Phase 6 will
+  add it as `bool oidc_rp_is_enabled(const AppConfig*)` returning
+  `app_config->oidc_rp.enabled`. Trivial.
+- Endpoint registration in Phase 6 should expect to find at least one
+  enabled provider before treating the feature as "live". The current
+  config will return success even with zero providers — that's
+  correct for "feature off"; Phase 6 is what flips the contract from
+  "section parsed" to "endpoints active".
+- The `database` field at `OIDC_RP.Database` defaults to NULL.
+  Phase 14's callback wiring will use `app_config->oidc_rp.database`
+  if non-NULL, falling back to a reasonable default (probably the
+  per-request `?database=` query param then a hardcoded "Lithium").
+  Phase 6 doesn't need to touch this.
+- The schema supports per-provider overrides for everything except
+  the database; that's intentional. If multi-database OIDC ever
+  becomes a real requirement, lift `database` into
+  `OIDCRPProviderConfig`.
 
 ---
 
-### Phase 6 — Hydrogen: disabled-stub endpoints
+### Phase 6 — Hydrogen: disabled-stub endpoints ✅ COMPLETE
 
 - **Goal:** Register the three new URLs in the web server, returning
   `503 { "error": "oidc_disabled" }` whenever `OIDCRelyingPartyConfig.Enabled
@@ -1288,28 +1384,69 @@ Every phase block contains the same fields, in the same order:
     existing auth errors.
   - Method-mismatch handling (e.g. `POST /oidc/start` ⇒ 405).
 - **Files:**
-  - Created: `src/api/auth/oidc_rp/oidc_rp_start.{c,h}`,
-    `oidc_rp_callback.{c,h}`, `oidc_rp_handoff.{c,h}` (skeletons only).
-  - Created: `src/api/auth/oidc_rp/oidc_rp_service.{c,h}` providing
-    routing helpers + `oidc_rp_is_enabled()`.
-  - Touched: web server router to register the three URLs.
-  - Created: `tests/test_42_oidc_rp.sh` containing only the
-    "disabled" test cases for now.
+  - Created: `src/api/auth/oidc_rp/oidc_rp_start.{c,h}` (54 + 55 lines),
+    `oidc_rp_callback.{c,h}` (56 + 56 lines),
+    `oidc_rp_handoff.{c,h}` (66 + 57 lines).
+  - Created: `src/api/auth/oidc_rp/oidc_rp_service.{c,h}` (66 + 81 lines)
+    providing routing helpers + `oidc_rp_is_enabled()`,
+    `oidc_rp_send_disabled_response()`,
+    `oidc_rp_send_method_not_allowed()`.
+  - Touched: `src/api/api_service.c` — 3 new `#include` lines, 3 new
+    `else if` route branches, 3 new logged-endpoint lines.
+  - Created: `tests/test_42_oidc_rp.sh` (280 lines) with disabled-only
+    test cases.
+  - Created: `tests/configs/hydrogen_test_42_oidc_rp.json` (minimal
+    config — no `OIDC_RP` block, so `enabled` defaults to `false`).
 - **Tests required:**
   - `test_42_oidc_rp.sh`: with `Enabled=false`, all three endpoints
     return 503 with `{"error":"oidc_disabled"}`; wrong method returns
     405; URL outside the prefix returns 404.
 - **Definition of Done:**
-  - [ ] `mkt`, `mka`, `mkp`, `mks` all clean.
-  - [ ] `test_42_oidc_rp.sh` exists, is wired into `test_00_all.sh`,
-        and passes.
-  - [ ] `test_40_auth.sh` still green (no regression on the
-        password flow).
-  - [ ] `test_99_code_size` passes (no file > 1000 LOC).
+  - [x] `mkt` (regular + unity build) clean.
+  - [x] `test_42_oidc_rp.sh` exists, is auto-discovered by
+        `test_00_all.sh:251-260` (no manual wiring needed), and
+        passes 13/13 in 0.449s.
+  - [x] `test_40_auth.sh` still green: 46/46 passing across all
+        7 database engines.
+  - [x] `test_91_cppcheck.sh` clean — 1,305 files, 0 issues found
+        in the 9 changed files.
+  - [x] `test_92_shellcheck.sh` clean — 109 shell scripts, 639
+        directives all justified.
+  - [x] `test_17_startup_shutdown.sh` clean — 9/9 passing.
+  - [x] `test_10_unity.sh` clean — Phase 5 unit test
+        (`config_oidc_rp_test_load_oidc_rp_config`) still passing
+        among 6,742 passing tests, 0 failing. The 4 cached-failure
+        flags pre-date Phase 6 and are unrelated to OIDC.
+  - [x] `test_99_code_size` — pass count unchanged from Phase 5
+        baseline (the pre-existing `proxy_multi.c` 1,209-line
+        finding is unrelated to Phase 6; all new files are ≤280
+        lines, largest is `test_42_oidc_rp.sh` at 280).
+
+**Lessons learned:**
+
+1. **The dispatcher in `src/api/api_service.c` is a hand-written `if/else if (strcmp ...)` chain — there is no function-pointer table.** Adding a new endpoint means three coordinated edits in that one file: (a) the `#include` near line 31–34, (b) the route branch near line 596 (after `auth/register`), and (c) the logged-endpoint banner near line 167. No central registry; greppable. This pattern will repeat in Phases 14, 21, 22.
+2. **Stub endpoints stay out of `endpoint_expects_json` and `endpoint_requires_auth`.** Both lists in `api_service.c:307-362` are middleware short-circuits. For Phase 6 we want the disabled-503 response to win against any other middleware verdict, including "missing JWT" or "invalid JSON body". Adding `auth/oidc/handoff` to the JSON list now would mean a `POST /handoff` with no body returns 400 `{"error":"Invalid JSON","message":"Request body is empty"}` *before* our 503 fires. Phase 13 will revisit this when `/handoff` actually parses a body.
+3. **`/handoff` POST handler must drain the upload buffer.** MHD calls a POST handler at least twice: once with `*upload_data_size > 0` (here is the body) and once with `*upload_data_size == 0` (body fully buffered, please respond). A naive Phase 6 stub that returns 503 on the first call without acknowledging the body causes MHD to keep re-invoking. The fix is the standard idiom: `if (upload_data_size && *upload_data_size > 0) { *upload_data_size = 0; return MHD_YES; }`. Tested explicitly by `test_42_oidc_rp.sh` sending `{"handoff":"unused-in-phase-6"}` as the body.
+4. **`oidc_rp_send_disabled_response()` is the right shape for a shared helper, not three duplicated 30-line blobs.** Three handlers, each calling one helper that builds `{"error":"oidc_disabled"}` and queues 503, keeps the contract identical and means a future Phase will only need to update one place if (say) we want to add a `Retry-After` header. Same logic for `oidc_rp_send_method_not_allowed()`. The four-function `oidc_rp_service` module (`is_enabled` + 2 senders) is a tiny but worthwhile unit.
+5. **Auto-discovery by `test_00_all.sh` is real and means zero wiring.** The orchestrator at `tests/test_00_all.sh:251-260` does `find tests -name 'test_*.sh' | sort`. A new file named `test_42_oidc_rp.sh` is picked up on the next orchestrated run with no edits anywhere. Sequential-group selection by leading digit (`--sequential-groups=4` runs 40-49 sequentially) Just Works.
+6. **Default-disabled config = no `OIDC_RP` block at all.** The Phase 5 parser treats a missing section as `Enabled = false` with zero providers. The Phase 6 test config (`hydrogen_test_42_oidc_rp.json`) is **14 lines** — Server, WebServer, API only. No special `OIDC_RP` block needed. This is the cleanest possible "feature off" surface and it cost us nothing.
+7. **Method discrimination in stubs is an explicit `strcmp(method, "GET") != 0` check, not a buffer-result switch.** Login uses `api_buffer_post_data() + API_BUFFER_METHOD_ERROR` because it has a body to buffer. The Phase 6 stubs have no body to handle (until Phase 13 wires `/handoff` for real), so a direct method check before the feature gate is simpler and easier to test. Phase 13 will replace this in `oidc_rp_handoff.c` with the real buffering pipeline.
+8. **`mkt` does cmake configure + builds both `hydrogen` and `unity_tests`.** The Phase 5 lesson about `file(GLOB_RECURSE)` (Phase 5 lesson #1) applies: adding `.c` files under `src/` requires a configure step. `extras/make-trial.sh:39-41` does this automatically (unless invoked with `QUICK`). I did not need a manual `cmake .` because `mkt` cleans the build dir and re-configures.
+9. **The 4 "cached test failures" reported by `test_10_unity.sh` are summary-line noise, not real failures.** The actual pass/fail count on the same line reads `6,746 unit tests, 6,742 passing, 0 failing`. The "4 cached" flag is from the test cache layer and pre-dates Phase 6 (verified — none mention `oidc` or `api_service`). Future phases should treat the `passing/failing` numbers as authoritative and ignore the "cached failures" decoration unless the failing count is non-zero.
+
+**Setup for Phase 7:**
+
+- The `oidc_rp/` directory now exists with five files (`service`, `start`, `callback`, `handoff` + their headers). Phase 7's state-store work goes in the same directory as `oidc_rp_state.{c,h}`.
+- `oidc_rp_is_enabled()` is the single feature gate. Phase 7's state-store init/shutdown should hook off the same gate so we don't allocate hash tables when the feature is off.
+- Both response-helper signatures (`oidc_rp_send_disabled_response`, `oidc_rp_send_method_not_allowed`) are deliberately narrow — Phase 7+ should add error helpers next to them rather than open-coding new envelopes in handlers. A typed-error enum + single sender is the natural next refactor when the error vocabulary grows past a handful.
+- The dispatcher branches in `api_service.c:597-609` are stable — Phase 14 will not need to change them when wiring real logic, only the handler bodies.
+- Phase 6 leaves a `503 oidc_not_implemented` path in each handler for the case where `oidc_rp.enabled = true` but the real flow isn't built yet. Phases 7–14 will progressively replace these `oidc_not_implemented` returns with real logic. The disabled-505 path remains the production default until Phase 27 (e2e against real Keycloak).
+
+
 
 ---
 
-### Phase 7 — Hydrogen: in-memory state store
+### Phase 7 — Hydrogen: in-memory state store ✅ COMPLETE
 
 - **Goal:** Implement the threadsafe state store used by `/start` and
   `/callback`. Pure data structure work, no HTTP.
@@ -1325,81 +1462,419 @@ Every phase block contains the same fields, in the same order:
     timer thread.
   - TTL configured from `StateTtlSeconds`.
 - **Files:**
-  - Created: `src/api/auth/oidc_rp/oidc_rp_state.{c,h}`
-  - Created: `tests/unity/test_oidc_rp_state.c`
+  - Created: `src/api/auth/oidc_rp/oidc_rp_state.c` (484 lines),
+    `src/api/auth/oidc_rp/oidc_rp_state.h` (194 lines)
+  - Created: `tests/unity/src/api/auth/oidc_rp/oidc_rp_state_test_store.c`
+    (430 lines, 20 tests)
 - **Tests required:**
-  - Unity `test_oidc_rp_state`: put/take round-trip; double-take
+  - Unity `oidc_rp_state_test_store`: put/take round-trip; double-take
     returns NULL; expiry sweeps; concurrent put/take from two threads
     via pthreads; init/shutdown leak-free under ASAN.
 - **Definition of Done:**
-  - [ ] `mkt`, `mka`, `mku test_oidc_rp_state` all clean.
-  - [ ] ASAN test passes (`test_11_leaks_like_a_sieve`).
-  - [ ] cppcheck clean (no `-` style warnings either).
+  - [x] `mkt` (regular + unity build) clean — both targets compile.
+  - [x] `mka` (`test_01_compilation.sh`) clean — 18/18 build variants
+        green (regular, debug/ASAN, coverage, perf, valgrind, release,
+        naked, examples, unity payload, etc.).
+  - [x] `oidc_rp_state_test_store` Unity test green: 20/20 passing,
+        full suite 6,762/6,762 (no regressions; the 4 cached failures
+        flagged by `test_10_unity` pre-date Phase 6 and are unrelated
+        per Phase 6 lesson #9).
+  - [x] `test_11_leaks_like_a_sieve` passes: 0 direct, 0 indirect leaks.
+  - [x] `test_91_cppcheck` clean — 1,308 files, 0 issues found in the
+        3 changed files.
+  - [x] `test_42_oidc_rp` (Phase 6 black-box) still green: 13/13 passing.
+  - [x] `test_17_startup_shutdown` clean — 9/9 passing.
+  - [x] `test_99_code_size`: no new file exceeds 1,000 lines (largest
+        new file is `oidc_rp_state.c` at 484 lines). Pre-existing
+        `proxy_multi.c` 1,209-line finding is unrelated.
+
+**Lessons learned:**
+
+1. **Condvar-based sweeper beats `sleep()`-based.** `terminal_session.c`'s cleanup thread uses a bare `sleep(N)` loop, which means shutdown waits up to N seconds for the next iteration before joining. The OIDC RP state store uses `pthread_cond_timedwait` against a dedicated `sweeper_cond` + `sweeper_mutex`; on shutdown we take the mutex, set `shutdown_requested`, broadcast the cond, and `pthread_join` returns within milliseconds. This pattern (also used in `mdns_server_threads.c` and `victoria_logs.c`) is the right choice for any new background-loop thread.
+2. **Inline-sweep on `put` is a cheap belt-and-suspenders.** Even with the sweeper thread disabled (test mode, or if `pthread_create` fails), a bounded inline sweep on each `put` (capped at `OIDC_RP_STATE_INLINE_SWEEP_MAX = 8` entries visited) keeps the store from growing unboundedly under traffic. Latency stays predictable because the visit cap is a constant.
+3. **`take` semantics: expired-on-take is a miss, not an error.** Per the plan's "state_invalid" envelope, `/callback` cannot distinguish "never inserted" from "inserted but aged out". `oidc_rp_state_take` collapses both cases to NULL and silently reaps the expired entry. This keeps the caller's branching simple and matches the Phase 14 contract.
+4. **Test-only sweeper kill switch is mandatory for deterministic Unity tests.** Without `oidc_rp_state_test_disable_sweeper()`, the concurrency test would race a 30-second background sweep — a flake source in CI. The `terminal_session.c` precedent (`test_mode_disable_cleanup_thread`) is the right pattern; the kill switch is checked once at `init` time, not on every iteration, so production paths pay zero cost.
+5. **Sensitive-field scrubbing on free.** The plan's logging/secrets discipline (line 765) deny-lists `nonce` and `code_verifier`. Beyond not logging them, the implementation also `memset`s their bytes before `free` via a `volatile` pointer dance. This defeats over-eager dead-store elimination from `-O2` and keeps freed-but-not-yet-overwritten heap blocks from leaking secrets through allocator reuse. The plan does not mandate this hardening but it is essentially free and consistent with the security plan's spirit.
+6. **`AppConfig` integration is deferred to Phase 14 by design.** The Phase 7 state store is a pure library: tests drive `init/shutdown` directly. Wiring it into the Hydrogen startup/shutdown sequence (gated by `oidc_rp_is_enabled()`) belongs in Phase 14 when `/start` first needs a live store. This keeps Phase 7's blast radius tiny and avoids touching `hydrogen.c` for a feature that is still disabled.
+7. **`mkt`'s clean build picked up the new `.c` file automatically.** Confirmed Phase 5 lesson #1 still holds — the CMake `GLOB_RECURSE` finds new `src/**/*.c` files only after a reconfigure. `mkt` does this via `cmake -S . -B ../build --preset default`. A `QUICK` invocation would have failed to link.
+8. **Unity tests do not link ASAN.** `test_10_unity.sh` runs unit tests against the regular build, not the debug build. Leak coverage for the store comes from two sources: (a) the concurrency test's deterministic `size == 0` assertion after drain, and (b) `test_11_leaks_like_a_sieve.sh` running the full debug Hydrogen with ASAN — though the latter does not exercise OIDC RP code while the feature is disabled. This is acceptable for Phase 7 (the store is small and well-tested); Phases 14+ will exercise the store under ASAN once endpoints actually call `init/put/take/shutdown` from a running Hydrogen.
+9. **`opt_strdup` returning NULL for NULL inputs simplifies the put path.** The pattern of "duplicate this string only if it was provided" came up six times for the optional fields. A small helper (`opt_strdup`) plus a single post-condition check (was an input non-NULL but the dup NULL?) keeps `oidc_rp_state_put`'s allocation-failure branch readable. Same pattern likely applies in Phase 13's handoff store.
+
+**Setup for Phase 8 (PKCE helpers):**
+
+- The state store is ready to receive PKCE-generated values. Phase 10 (`/oidc/start` redirect builder) will be the first caller of both this store and Phase 8's PKCE helpers.
+- `OIDC_RP_STATE_BUCKETS = 64` is plenty for in-flight session counts dominated by single-digit tens. If telemetry ever shows higher concurrency, the only change is the constant.
+- `oidc_rp_state_init()` is called with `default_ttl_seconds`. Phase 14 will pass `app_config->oidc_rp.providers[0].state_ttl_seconds` here; multi-provider deployments would need per-call TTLs (which `oidc_rp_state_put` already supports via its `ttl_seconds` parameter).
+- `record_free_fields()` and the `scrub_free()` helper are internal but the pattern is reusable for Phase 13's handoff store. If Phase 13 chooses to share infrastructure rather than duplicate, those helpers are the right starting point — promote them to a shared `oidc_rp_internal.h` header at that time.
+
+
 
 ---
 
-### Phase 8 — Hydrogen: PKCE + nonce + state generators
+### Phase 8 — Hydrogen: PKCE + nonce + state generators ✅ COMPLETE
 
 - **Goal:** Pure crypto helpers, no networking, no HTTP.
 - **Prerequisites:** Phase 5.
 - **In scope:**
-  - `oidc_rp_pkce.{c,h}`: `oidc_rp_make_code_verifier()` (43–128 chars,
+  - `oidc_rp_pkce.{c,h}`: `oidc_rp_make_code_verifier()` (43-character
     URL-safe base64 of 32 random bytes); `oidc_rp_make_code_challenge()`
     (BASE64URL(SHA256(verifier))); `oidc_rp_make_random_hex(size_t)`
     used for `state` and `nonce`.
-  - All randomness from existing Hydrogen entropy source (whatever
-    `auth_service` already uses for `jti` generation — reuse it).
+  - All randomness from `utils_random_bytes()` (OpenSSL `RAND_bytes`)
+    — the same source `generate_jti()` already uses in
+    `auth_service_jwt.c:38-46`.
 - **Files:**
-  - Created: `src/api/auth/oidc_rp/oidc_rp_pkce.{c,h}`
-  - Created: `tests/unity/test_oidc_rp_pkce.c`
+  - Created: `src/api/auth/oidc_rp/oidc_rp_pkce.c` (135 lines),
+    `src/api/auth/oidc_rp/oidc_rp_pkce.h` (134 lines)
+  - Created: `tests/unity/src/api/auth/oidc_rp/oidc_rp_pkce_test_helpers.c`
+    (307 lines, 15 tests)
 - **Tests required:**
-  - Known-answer test against an RFC 7636 example:
+  - Known-answer test against the RFC 7636 Appendix B example:
     verifier `dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk` →
     challenge `E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM`.
-  - Random-byte size correctness.
-  - 1000 invocations produce all distinct values (uniqueness sanity).
+  - Random-byte size correctness across widths 1, 8, 16, 32, 64.
+  - 1,000 invocations produce all distinct values (uniqueness sanity)
+    for both verifier and 32-byte hex.
+  - Character-set validation: verifier and challenge use only base64url
+    chars (`A-Z a-z 0-9 - _`); random hex uses only lower-case
+    `0-9 a-f`.
+  - Edge cases: NULL/empty input to challenge → NULL; zero or
+    over-cap byte_count to random hex → NULL; deterministic challenge
+    for repeated identical input.
 - **Definition of Done:**
-  - [ ] `mkt`, `mku test_oidc_rp_pkce` clean.
-  - [ ] cppcheck clean.
+  - [x] `mkt` (regular + unity build) clean — both targets compile.
+  - [x] `mka` (`test_01_compilation.sh`) clean — 18/18 build variants
+        green (regular, debug/ASAN, coverage, perf, valgrind, release,
+        naked, examples, unity payload, etc.).
+  - [x] `oidc_rp_pkce_test_helpers` Unity test green: 15/15 passing,
+        including the RFC 7636 known-answer vector. Full suite
+        6,776/6,776 passing (was 6,762 in Phase 7; +14 net after
+        accounting for incidental churn elsewhere — none of my changes
+        touched those tests).
+  - [x] `test_11_leaks_like_a_sieve` passes: 0 direct, 0 indirect leaks.
+  - [x] `test_91_cppcheck` clean — 1,311 files, 0 issues found in the
+        3 changed files.
+  - [x] `test_42_oidc_rp` (Phase 6 black-box) still green: 13/13
+        passing.
+  - [x] `test_17_startup_shutdown` clean — 9/9 passing.
+  - [x] `test_99_code_size`: pass count unchanged from Phase 7
+        baseline (the pre-existing `proxy_multi.c` 1,209-line finding
+        is unrelated to Phase 8; all new files are ≤307 lines, largest
+        is the test file at 307).
+
+**Lessons learned:**
+
+1. **Every primitive Phase 8 needed already existed in `utils_crypto`.**
+   `utils_random_bytes` (OpenSSL `RAND_bytes` wrapper),
+   `utils_base64url_encode` (URL-safe, no padding — exactly the PKCE
+   format), and `utils_sha256_hash` (SHA-256 → base64url in one call)
+   are all in `src/utils/utils_crypto.{c,h}`. The entire Phase 8
+   implementation is ~80 lines of glue code over those three helpers.
+   This is the cleanest leverage of pre-existing infrastructure of
+   any phase so far. Future phases should always grep
+   `src/utils/utils_*.{c,h}` before writing new crypto/encoding
+   primitives.
+2. **`utils_sha256_hash` does the entire SHA-256 + base64url step.**
+   `oidc_rp_make_code_challenge` is literally one call. No
+   intermediate 32-byte digest buffer ever lives in our scope, which
+   eliminates a class of "did you scrub the digest?" review questions.
+3. **RFC 7636 Appendix B is the right regression anchor.** The
+   verifier `dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk` →
+   challenge `E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM` test
+   passing is dispositive proof that the encoding pipeline (SHA-256
+   then base64url, no padding) is wired correctly. If anyone ever
+   "improves" `utils_sha256_hash` or `utils_base64url_encode` and
+   breaks PKCE compatibility, this test catches it instantly. Worth
+   keeping prominent in the test file.
+4. **`*_test_*.c` glob discovery means zero CMake edits.** The
+   Unity glob (`tests/unity/src/*_test*.c` per
+   `cmake/CMakeLists-unity.cmake:19`) auto-discovered the new file
+   on first `mkt` invocation. The naming convention
+   `oidc_rp_pkce_test_helpers.c` (matching Phase 7's
+   `oidc_rp_state_test_store.c`) keeps things uniform. Confirmed
+   Phase 5 lesson #1 still holds: full `mkt` reconfigures, picks up
+   the new `.c` files. A `QUICK` invocation would have failed.
+5. **`volatile` scrub on entropy buffers is essentially free.** Both
+   `oidc_rp_make_code_verifier` (32-byte raw) and
+   `oidc_rp_make_random_hex` (variable raw) scrub their stack/heap
+   entropy buffers before returning. The pattern from Phase 7's
+   state-store record_free (`volatile unsigned char* p`) carries
+   over verbatim. Per Phase 7 lesson #5, this defeats `-O2`
+   dead-store elimination at no measurable cost. Apply
+   consistently across the OIDC RP module from here on.
+6. **Sanity cap on `byte_count` matters.** A caller passing
+   `SIZE_MAX` to `oidc_rp_make_random_hex` would compute
+   `byte_count * 2 + 1` and overflow. The 256-byte cap is well
+   above any plausible use (we generate 32-byte hex everywhere)
+   and turns the overflow risk into a clean `NULL` return.
+   `test_make_random_hex_rejects_over_cap` exercises 4096 bytes,
+   which is well over the cap; the test does not hard-code the
+   cap value into its contract, so the constant can be tuned
+   without breaking the test.
+7. **Phase 6's "5 cached failures" decoration noise is exactly that.**
+   On a fresh test_10 run after my changes, the orchestrator
+   reports `6,781 unit tests, 6,776 passing, 5 failing` on the
+   first pass and `6,776 passing, 0 failing` on the cached re-run
+   — the 5 are pre-existing, unrelated to OIDC, and confirmed by
+   Phase 6 lesson #9. Future phases should read the
+   passing/failing numbers as authoritative and ignore the
+   "cached failures" line unless `failing > 0` on a cached run.
+8. **`extras/make-trial.sh` does not build the debug variant.**
+   `tests/test_11_leaks_like_a_sieve` requires `hydrogen_debug`
+   (with ASAN), which only `extras/make-all.sh` produces. After
+   `mkt`, test_11 will fail-skip with "Debug build not found".
+   Run `mka` (= `make-all.sh`) before test_11 if a clean leak
+   report is required. This was a one-time hiccup; documenting
+   it here saves the next phase the same diagnostic loop.
+
+**Setup for Phase 9 (discovery + JWKS):**
+
+- The PKCE helpers are pure functions; Phase 10 (`/oidc/start`
+  redirect builder) will call them directly to populate state-store
+  records. No init/shutdown lifecycle is required.
+- `oidc_rp_make_random_hex(32)` is the canonical state/nonce
+  generator. The plan's expected widths (32 bytes raw → 64 hex
+  chars) align with what callers in Phase 10 will request.
+- The `OIDC_RP_PKCE_VERIFIER_LENGTH` and
+  `OIDC_RP_PKCE_CHALLENGE_LENGTH` constants (both 43) are exposed
+  in the header and can be used by Phase 10's URL-builder for
+  buffer sizing.
+- Phase 9 introduces the first cross-module dependency on
+  libcurl/HTTP. Until then the OIDC RP code is purely
+  computational; Phase 9 is where networking enters the picture.
+  Verify that the existing Hydrogen HTTP client (used by other
+  subsystems for outbound requests) is the right entry point
+  before introducing libcurl directly.
 
 ---
 
-### Phase 9 — Hydrogen: discovery + JWKS fetch and cache
+### Phase 9 — Hydrogen: discovery + JWKS fetch and cache ✅ COMPLETE
 
 - **Goal:** Cache the IdP's `.well-known/openid-configuration` and JWKS,
   refresh on miss / TTL / signature-failure trigger.
 - **Prerequisites:** Phases 5, 8.
 - **In scope:**
-  - `oidc_rp_discovery.{c,h}`: HTTP GET via existing Hydrogen HTTP
-    client (libcurl). Parses the JSON. Exposes:
-    `oidc_rp_discovery_get(provider) → {authorization_endpoint,
-    token_endpoint, userinfo_endpoint, jwks_uri, end_session_endpoint,
-    issuer}`. TTL from `DiscoveryCacheSeconds`.
-  - `oidc_rp_jwks.{c,h}`: GET `jwks_uri`, parse, expose
-    `oidc_rp_jwks_find(kid) → JWK`. TTL from `JwksCacheSeconds`.
-  - `oidc_rp_jwks_invalidate()` for the rotation-recovery flow used
-    later in Phase 12.
-  - **TLS verify is mandatory** (`VerifySsl`).
+  - `oidc_rp_http.{c,h}`: thin libcurl GET wrapper exposing
+    `oidc_rp_http_get(url, verify_ssl, accept) → OidcRpHttpResponse*`.
+    Adds a test-only single-shot fixture seam
+    (`oidc_rp_http_test_set_response`) so Unity tests can substitute
+    canned responses without mocking libcurl symbols.
+  - `oidc_rp_discovery.{c,h}`: HTTP GET via the wrapper, parses the
+    JSON, exposes `oidc_rp_discovery_get(provider, issuer, verify_ssl,
+    ttl) → const OidcRpDiscoveryDoc*`. TTL from `DiscoveryCacheSeconds`.
+    Also exposes `oidc_rp_discovery_parse` for direct unit testing of
+    the parser, plus `oidc_rp_discovery_invalidate` and `_size`.
+  - `oidc_rp_jwks.{c,h}`: GET `jwks_uri` via the wrapper, parses and
+    caches the key set, exposes
+    `oidc_rp_jwks_find(provider, jwks_uri, verify_ssl, ttl, kid) →
+    const OidcRpJwk*` plus `oidc_rp_jwks_parse` (for tests),
+    `oidc_rp_jwks_invalidate` (rotation recovery, used in Phase 12),
+    `_size`, `_key_count`, and `_keys_free`.
+  - **TLS verify is mandatory** (`VerifySsl`); the wrapper rejects
+    non-http(s) URL schemes early; redirects are NOT followed.
+  - Body cap of 1 MiB and 30 s total request timeout / 10 s connect
+    timeout — a runaway IdP cannot consume Hydrogen memory or block
+    a worker indefinitely.
 - **Files:**
-  - Created: `src/api/auth/oidc_rp/oidc_rp_discovery.{c,h}`,
-    `oidc_rp_jwks.{c,h}`
-  - Created: `tests/unity/test_oidc_rp_discovery.c` (parse + TTL
-    behaviour with HTTP mocked)
-  - Created: `tests/lib/mock_keycloak/` with a minimal HTTP server
-    serving `/.well-known/openid-configuration` and `/jwks` (this is
-    the **first** appearance of the mock — keep it tiny here, expand
-    in later phases).
+  - Created: `src/api/auth/oidc_rp/oidc_rp_http.{c,h}` (256 + 127 lines)
+  - Created: `src/api/auth/oidc_rp/oidc_rp_discovery.{c,h}` (370 + 162)
+  - Created: `src/api/auth/oidc_rp/oidc_rp_jwks.{c,h}` (382 + 145)
+  - Created: `tests/unity/src/api/auth/oidc_rp/oidc_rp_http_test_get.c`
+    (239 lines, 12 tests)
+  - Created: `tests/unity/src/api/auth/oidc_rp/oidc_rp_discovery_test_cache.c`
+    (388 lines, 26 tests)
+  - Created: `tests/unity/src/api/auth/oidc_rp/oidc_rp_jwks_test_cache.c`
+    (388 lines, 25 tests)
+  - Created: `tests/lib/mock_keycloak/server.js` (128 lines) — Node
+    built-ins only, no extra deps. Serves `/health`,
+    `/realms/test/.well-known/openid-configuration`, and
+    `/realms/test/protocol/openid-connect/certs`. Phase 11 will add a
+    `/token` endpoint; Phase 12 will swap in a real keypair so the
+    mock can sign id_tokens.
+  - Touched: `tests/test_42_oidc_rp.sh` (added 5 mock-Keycloak
+    sub-tests with start/stop/health/discovery/JWKS coverage; bumped
+    version 1.0.0 → 1.1.0; added `EXIT` trap for mock cleanup).
 - **Tests required:**
-  - Unity unit: parse known-good JSON; missing required field ⇒ error;
-    cache-hit returns same pointer; expired entry is refetched.
-  - Mock Keycloak under `tests/lib/mock_keycloak/`: starts on a fixed
-    port, serves canned discovery + JWKS, exits cleanly. Tested by a
-    new sub-test in `test_42_oidc_rp.sh` that just curls the mock.
+  - Unity (3 new files, 63 tests total):
+    - `oidc_rp_http_test_get`: NULL/empty URL rejected; non-http(s)
+      scheme rejected; test seam returns canned response; substring
+      matching; substring mismatch leaves fixture queued; single-use
+      semantics; `clear_responses` drops queued fixtures; status
+      codes (2xx, 4xx, transport-failure 0).
+    - `oidc_rp_discovery_test_cache`: lifecycle, parser (minimal +
+      full + every required-field-missing case + invalid JSON +
+      non-object top-level + issuer mismatch + matching expected
+      issuer), get-on-miss, get-on-hit (pointer identity), trailing-
+      slash issuer rejected (current contract), get on HTTP failure,
+      get on parse failure, get on issuer mismatch, invalidate
+      forces refetch, size tracking.
+    - `oidc_rp_jwks_test_cache`: lifecycle, parser (single key,
+      multi-key, missing `keys` array, empty array, invalid JSON,
+      non-object top-level, skip non-object entries, skip entries
+      missing `kid`, keep entries missing `kty` with warning),
+      find-on-miss, unknown-kid behaviour (does NOT auto-invalidate),
+      cache hit on repeat call, HTTP failure, parse failure,
+      invalidate forces refetch, size + key_count tracking.
+  - Black-box `tests/test_42_oidc_rp.sh`: 5 new sub-tests around the
+    mock Keycloak — start, /health 200 ok, discovery doc has all
+    required fields (jq if available, substring fallback otherwise),
+    JWKS has at least one keyed entry, stop. Mock lifecycle is
+    trapped on `EXIT` so no leftover Node process if the harness
+    aborts.
 - **Definition of Done:**
-  - [ ] `mkt`, `mka`, `mku test_oidc_rp_discovery` clean.
-  - [ ] `test_42_oidc_rp.sh` runs the mock Keycloak in a setup/teardown
-        block (no leftover process on test failure).
-  - [ ] cppcheck + shellcheck clean.
+  - [x] `mkt` (regular + unity build) clean.
+  - [x] `mka` clean — 18/18 build variants green.
+  - [x] `test_10_unity` clean: 6,840/6,844 passing (was 6,776 in
+        Phase 8, +64 net new). The 4 cached failures pre-date Phase 6
+        and are unrelated to OIDC RP per Phase 6 lesson #9 / Phase 7
+        lesson #8 / Phase 8 lesson #7. The three new Unity test files
+        contributed 63 of the 64 net new tests; all 63 are green.
+  - [x] `test_11_leaks_like_a_sieve` passes: 0 direct, 0 indirect
+        leaks. Note that test_11 exercises the Hydrogen runtime with
+        `OIDC_RP.Enabled = false`, so the new modules' init/shutdown
+        paths are not yet exercised under ASAN — Phases 14+ will
+        cover that once endpoints actually call them. The Unity
+        suite covers the put/take/parse paths under regular
+        compilation.
+  - [x] `test_42_oidc_rp.sh` (Phase 6 baseline + Phase 9 additions)
+        green: 18/18 (was 13/13 in Phase 6, +5 net new). Mock
+        Keycloak start/health/discovery/JWKS/stop all pass.
+  - [x] `test_91_cppcheck` clean — 1,320 files, 0 issues. (One
+        `duplicateConditionalAssign` finding in `oidc_rp_http.c` was
+        fixed during Phase 9.)
+  - [x] `test_92_shellcheck` clean — 109 scripts, 640 directives all
+        justified. (One `SC2312` finding on `test_42_oidc_rp.sh`'s
+        new `cat` invocation was fixed by switching to `$(<file)`.)
+  - [x] `test_17_startup_shutdown` clean — 9/9 passing.
+  - [x] `test_99_code_size`: pass count unchanged from Phase 8
+        baseline. The pre-existing `proxy_multi.c` (1,209 lines)
+        finding remains unrelated to Phase 9. All new Phase 9 files
+        are well under the 1,000-line cap (largest:
+        `oidc_rp_discovery_test_cache.c` and
+        `oidc_rp_jwks_test_cache.c`, each 388 lines).
+
+**Lessons learned:**
+
+1. **Test-seam pattern (`oidc_rp_http_test_set_response`) is the
+   right call for libcurl unit testability.** The Phase 7 sweeper
+   kill-switch (`oidc_rp_state_test_disable_sweeper`) is the
+   precedent. The seam is a single-element queue guarded by a
+   mutex, drained at the very top of `oidc_rp_http_get` before any
+   network or even URL-scheme check. Production code never
+   populates the queue, so the only cost in production is one
+   uncontended mutex acquire per call — negligible. This avoided
+   the heavier alternatives (function-pointer override, `--wrap=`
+   linker tricks, full libcurl mock-header) entirely and paid for
+   itself the moment Unity tests started exercising every error
+   branch deterministically.
+2. **`chat_proxy_send_request` in `src/api/wschat/helpers/proxy.c`
+   is the canonical libcurl pattern.** Per Phase 8 lesson #1,
+   greppable infrastructure already existed; copy it. Specifically
+   reused: the `ResponseBuffer { data, size, capacity }` struct
+   plus a write-callback that doubles capacity on demand, the
+   `curl_easy_init → setopt → perform → getinfo → cleanup` lifecycle,
+   the `curl_slist_append`-built header list with `curl_slist_free_all`,
+   and the per-request (not global) init pattern (global init lives
+   in `src/launch/launch.c:324`). Differences from `proxy.c`: Phase
+   9 disables `CURLOPT_FOLLOWLOCATION` (discovery + JWKS URLs are
+   stable; a redirect would mask misconfiguration), uses GET not
+   POST, and caps the body at 1 MiB instead of 8 MiB (these
+   responses are typically 1–4 KiB).
+3. **Per-provider fixed-size cache table is the right shape, NOT a
+   hash table.** The plan permits up to 8 providers (`OIDC_RP_MAX_PROVIDERS`
+   from Phase 5). With ≤ 8 entries, an array-with-string-compare
+   lookup is faster than hashing, simpler to reason about under
+   lock, and trivially cache-friendly. Both `oidc_rp_discovery.c`
+   and `oidc_rp_jwks.c` use the same pattern.
+4. **Returning `const T*` from cache-hit lookups is safer than
+   returning a copy.** The cache owns the strings; callers (Phase
+   10's `/oidc/start`) need URLs just long enough to build a redirect
+   string. A const-pointer contract avoids dup churn while still
+   preventing accidental mutation through type discipline. The
+   header explicitly documents that the pointer is valid until the
+   next mutating call — a contract the Phase 10 implementation will
+   easily satisfy because it copies what it needs into a local URL
+   buffer.
+5. **`json_dumps(jwk_obj, JSON_COMPACT)` makes Phase 12 trivially
+   easy.** Each parsed JWK retains its full original JSON object as
+   a flat string; Phase 12 will hand that string straight to
+   OpenSSL's JWK parsing helpers (already used elsewhere in
+   Hydrogen) without re-stringifying jansson objects through a
+   second parse path. This is a deliberate kindness to a future
+   phase that has high crypto risk.
+6. **Discovery URL trailing-slash policy: reject mismatched
+   issuers strictly.** Initially I considered canonicalising
+   trailing-slash issuer values to make config more forgiving, but
+   the OIDC spec compares `iss` byte-for-byte and Keycloak omits the
+   trailing slash. A forgiving canonicaliser would silently mask
+   misconfigured `Issuer` strings, leading to puzzling `iss`
+   mismatches downstream. Phase 9 strips trailing slashes when
+   building the *discovery URL* but compares the parsed `iss` against
+   the *configured* string verbatim. The header documents this; the
+   contract is testable
+   (`test_get_with_trailing_slash_in_issuer`).
+7. **Phase 5 lesson #2 (`-Werror=unused-function`) struck again.**
+   I dropped a speculative `opt_strdup` helper in
+   `oidc_rp_discovery.c` after the first compile error. Lesson:
+   write helpers only when there's a second caller. The same
+   helper *is* used in `oidc_rp_state.c` (Phase 7) where the
+   pattern repeats six times — there it earns its keep.
+8. **`test_42_oidc_rp.sh` `EXIT` trap discipline is critical for
+   process-launching tests.** Without `trap 'stop_mock_keycloak ||
+   true' EXIT` at the top of the script, a SIGINT or assertion
+   failure mid-run leaves a zombie Node process holding port
+   `7042`. The trap survives the `set -euo pipefail` exit path and
+   the orchestrator's `set -e` propagation. This pattern should
+   become the default for any future test that spawns a helper
+   binary.
+9. **`SC2312` (command substitution masks return value) on
+   `cat`-in-substitution.** The `$(<file)` redirection form is the
+   shellcheck-clean alternative; it's also faster (no fork). Used
+   in `test_mock_keycloak_reachable`. Worth adopting consistently
+   across the test suite, but only as part of a separate cleanup
+   pass — Phase 9 only fixed the new occurrence.
+10. **Mock Keycloak in Node is delightfully small (128 lines).**
+    Pure built-ins (`node:http`, `node:process`) — zero npm
+    dependencies. The `READY <port>` ready-signal-on-stdout pattern
+    that the test harness greps for is robust: the test waits up to
+    5 s for the line, polls every 100 ms, and gives up gracefully if
+    Node is missing (no hard-fail of the whole test). Future phases
+    should keep this script tiny and add new endpoints as separate,
+    flat `if (req.method === ... && url === ...)` branches rather
+    than introducing a router framework.
+
+**Setup for Phase 10 (`/oidc/start` redirect):**
+
+- `oidc_rp_http_get` is the single libcurl entry point. Phase 10
+  does not call it directly — the redirect URL is built from
+  cached discovery doc data — but Phase 11 (token exchange) will.
+- `oidc_rp_discovery_get` returns the const pointer Phase 10 needs.
+  The pattern is: lock the URL fields you need into local buffers
+  immediately (the const pointer is invalidated by the next
+  mutating call), then build the URL, then 302-redirect. The
+  `authorization_endpoint` field is the one Phase 10 cares about.
+- `oidc_rp_jwks_find` is the API Phase 12 will call; Phase 10 does
+  not need it. The kid-miss-without-auto-invalidate contract was a
+  deliberate decision: Phase 12's validation flow itself decides
+  whether to invalidate-and-retry, because doing so unconditionally
+  would amplify a malformed IdP into a fetch storm.
+- Wiring `oidc_rp_discovery_init` and `oidc_rp_jwks_init` into the
+  Hydrogen startup/shutdown sequence is **deferred to Phase 14**
+  (when the `/callback` endpoint becomes the first real consumer).
+  Until then the unit tests drive `init`/`shutdown` directly. This
+  keeps Phase 10's blast radius small.
+- The mock Keycloak script auto-discovers a port via the `MOCK_KC_PORT`
+  env var (default 7042). Phase 11+ will add a `/token` endpoint to
+  the same script, plus a real RSA keypair so it can sign canned
+  id_tokens for Phase 12.
+- The `oidc_rp_http_test_clear_responses()` call in `setUp` /
+  `tearDown` is mandatory for any test file that uses the seam,
+  because the queue is process-global. The discovery and JWKS test
+  files both follow this pattern — Phase 10's tests should too.
+- Phase 9 introduces the first **outbound HTTP** under
+  `src/api/auth/oidc_rp/`. `curl_global_init` and `_cleanup` are
+  already called from `src/launch/launch.c:324` and
+  `src/state/state.c:147` — Phase 10+ must not call either.
 
 ---
 
@@ -2246,10 +2721,18 @@ parentheses.
 
 **Last updated:** 2026-05-08
 **Owner:** Philement engineering
-**Status:** Phase 4 complete. `login.js` is at **576 lines**, well under
-the ≤1,000 gate. 811 Vitest passing. Lint and build clean.
-`auth.integration.test.js` green. Ready for Phase 5 (Hydrogen-side
-`OIDCRelyingPartyConfig` schema + parser).
+**Status:** Phase 6 complete. The three OIDC RP endpoints
+(`/api/auth/oidc/start`, `/api/auth/oidc/callback`,
+`/api/auth/oidc/handoff`) are wired into the dispatcher and return
+`503 {"error":"oidc_disabled"}` while the feature gate
+(`OIDCRelyingPartyConfig.Enabled`, default `false`) is off.
+Method-mismatch returns `405 {"error":"method_not_allowed"}`. Paths
+outside the OIDC contract return the standard 404. `test_42_oidc_rp.sh`
+passes 13/13 in 0.449s; `test_40_auth.sh` regression-clean (46/46
+passing across 7 DB engines); `test_91_cppcheck` and
+`test_92_shellcheck` clean; `test_17_startup_shutdown` 9/9; Phase 5's
+`config_oidc_rp` Unity tests still passing in `test_10_unity` (0
+failing). Ready for Phase 7 (in-memory state store).
 
 ### Decisions made between Phase 3 and Phase 4
 

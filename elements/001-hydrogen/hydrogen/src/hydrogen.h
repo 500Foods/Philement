@@ -143,6 +143,7 @@ struct AppConfig {
     PrintConfig print;             // M. Print configuration
     ResourceConfig resources;      // N. Resources configuration
     OIDCConfig oidc;               // O. OIDC configuration
+    OIDCRelyingPartyConfig oidc_rp; // O-RP. OIDC Relying Party (Keycloak/etc)
     NotifyConfig notify;           // P. Notify configuration
 };
 

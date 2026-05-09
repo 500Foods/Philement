@@ -67,6 +67,7 @@ bool initialize_config_defaults(AppConfig* config) {
     initialize_config_defaults_print(config);
     initialize_config_defaults_resources(config);
     initialize_config_defaults_oidc(config);
+    initialize_config_defaults_oidc_rp(config);
     initialize_config_defaults_notify(config);
 
     log_this(SR_CONFIG, "― Successfully initialized configuration defaults", LOG_LEVEL_DEBUG, 0);
@@ -478,6 +479,23 @@ void initialize_config_defaults_oidc(AppConfig* config) {
         config->oidc.tokens.encryption_alg = NULL;
         
         log_this(SR_CONFIG, "――― Applied config defaults for OIDC", LOG_LEVEL_DEBUG, 0);
+    }
+}
+
+// O-RP. OIDC Relying Party Configuration Defaults
+//
+// Default state is disabled with no providers. Operators opt in by adding
+// the OIDC_RP block to their JSON config. All sensitive fields default to
+// NULL — populated only via JSON, where they typically reference
+// ${env.HYDROGEN_OIDC_CLIENT_SECRET} and ${env.HYDROGEN_OIDC_SYSTEM_API_KEY}.
+void initialize_config_defaults_oidc_rp(AppConfig* config) {
+    if (config) {
+        memset(&config->oidc_rp, 0, sizeof(config->oidc_rp));
+        config->oidc_rp.enabled = false;
+        config->oidc_rp.provider_count = 0;
+        config->oidc_rp.database = NULL;
+
+        log_this(SR_CONFIG, "――― Applied config defaults for OIDC_RP", LOG_LEVEL_DEBUG, 0);
     }
 }
 
