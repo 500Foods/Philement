@@ -860,8 +860,8 @@ password login still works — every phase preserves that invariant.
 | 20 | Hydrogen — account linker (provisioning + email allow-list) | Hydrogen | High | ✅ Done |
 | 21 | Hydrogen — wire `match_email_then_provision` (full default flow) | Hydrogen | Medium | ✅ Done |
 | 22 | Hydrogen — role-mapping (`database`, `idp_realm_roles`, `merge`) | Hydrogen | Medium | ✅ Done |
-| 23 | Lithium — `core/oidc-client.js` (`startOidc`, `exchangeHandoff`) | Lithium | Low |
-| 24 | Lithium — `oidc-login.js` (process return-from-IdP) | Lithium | Medium |
+| 23 | Lithium — `core/oidc-client.js` (`startOidc`, `exchangeHandoff`) | Lithium | Low | ✅ Done |
+| 24 | Lithium — `oidc-login.js` (process return-from-IdP) | Lithium | Medium | ✅ Done |
 | 25 | Lithium — UI: provider button, divider, config-driven render | Lithium | Low |
 | 26 | Lithium — `auth.last_method` setting and subtle highlighting | Lithium | Low |
 | 27 | Both — End-to-end against real Keycloak (dev environment) | Hydrogen + Lithium | High |
@@ -4617,7 +4617,7 @@ Every phase block contains the same fields, in the same order:
 
 ---
 
-### Phase 23 — Lithium: `core/oidc-client.js`
+### Phase 23 — Lithium: `core/oidc-client.js` ✅ COMPLETE
 
 - **Goal:** Pure helper module, fully unit-testable, no DOM.
 - **Prerequisites:** Phase 4 (refactor done; `login.js` ≤ 1000 lines).
@@ -4631,20 +4631,78 @@ Every phase block contains the same fields, in the same order:
     returns the parsed response. Throws on non-2xx with structured
     error info.
 - **Files:**
-  - Created: `src/core/oidc-client.js`
-  - Created: `tests/unit/core/oidc-client.test.js`
+  - Created: `elements/003-lithium/src/core/oidc-client.js` (180 lines)
+  - Created: `elements/003-lithium/tests/unit/core/oidc-client.test.js`
+    (286 lines, 26 tests)
 - **Tests required:**
   - Vitest: URL is built correctly with and without `return_to` and
     `database`; missing provider throws; `exchangeHandoff` parses
     success; on 401 throws `Error` with `error.code = "handoff_invalid"`;
     network failure throws with `error.code = "network"`.
 - **Definition of Done:**
-  - [ ] Lint, build, test all clean.
-  - [ ] `oidc-client.js` is a pure ES6 module with no DOM access.
+  - [x] Lint, build, test all clean.
+  - [x] `oidc-client.js` is a pure ES6 module with no DOM access.
+
+**Lessons learned:**
+
+1. **Dependency injection via `deps` object is the cleanest test seam for
+   pure JS modules.** Each function accepts an optional `deps` parameter
+   with `{ getConfigValue, window, fetch }` overrides. Production callers
+   pass nothing (defaults apply automatically); tests inject stubs. This
+   pattern avoids module-level mutable globals and is compatible with
+   Vitest's ES module isolation.
+
+2. **`window` injection avoids JSDOM/happy-dom navigation side-effects.**
+   Assigning `window.location.href` in happy-dom triggers a navigation
+   event that is not meaningful in unit tests. Injecting a plain object
+   `{ location: { href: '' } }` is enough for assertion; the real
+   `window` is passed only in production code paths.
+
+3. **`startOidc` must validate `return_to` format before passing it to
+   the server, not after.** The server also validates (open-redirect
+   defence in Hydrogen's `oidc_rp_safe_return_to`), but failing fast
+   client-side with a non-navigating path avoids a round-trip. The
+   validation rule is identical to the server's: must start with `/`
+   and not be a `//`-protocol-relative URL.
+
+4. **`exchangeHandoff` uses `credentials: "omit"`.** The OIDC handoff
+   exchange is a single-purpose one-shot POST. Cookies are not used for
+   auth; omitting credentials is the correct default (per the plan's
+   Lithium security section) and is verified explicitly by a test.
+
+5. **All three error codes (`handoff_invalid`, `server_error`, `network`)
+   are typed on `err.code`.** Phase 24's `oidc-login.js` will branch on
+   `err.code` to produce user-facing messages. The stable code vocabulary
+   is the contract; `err.message` is for developer-facing logging only.
+
+6. **The `tests/unit/core/` subdirectory is new.** Vitest's glob
+   `tests/unit/**/*.test.js` picks it up automatically — no config
+   changes needed. The naming convention `tests/unit/core/oidc-client.test.js`
+   mirrors the source path `src/core/oidc-client.js`.
+
+7. **`new URL(path, base)` handles relative and absolute start_url
+   cleanly.** If `provider.start_url` is `/api/auth/oidc/start` (relative),
+   `new URL('/api/auth/oidc/start', 'http://localhost:8080')` produces the
+   correct absolute URL. If it were already absolute, the base is ignored.
+   The `url.searchParams.set(...)` API handles encoding (e.g. `return_to`
+   `/queries` → `%2Fqueries`) without manual `encodeURIComponent` calls.
+
+**Setup for Phase 24 (`oidc-login.js`):**
+
+- Phase 24's `processOidcReturn(loginManager)` will import `exchangeHandoff`
+  from this module. The `deps` injection pattern is available for Phase 24's
+  Vitest tests to mock both `exchangeHandoff` and `storeJWT` without a live
+  server.
+- `startOidc` is imported by Phase 25's button click handler. Phase 24 only
+  consumes the return-from-IdP flow (`?oidc=1&handoff=…`).
+- The error codes `handoff_invalid`, `server_error`, and `network` are the
+  stable vocabulary Phase 24's `mapOidcHandoffError(err)` will switch on to
+  produce user-facing messages. No additional error codes are expected from
+  Phase 24's perspective.
 
 ---
 
-### Phase 24 — Lithium: `oidc-login.js` (return-from-IdP processor)
+### Phase 24 — Lithium: `oidc-login.js` (return-from-IdP processor) ✅ COMPLETE
 
 - **Goal:** When Lithium boots with `?oidc=1&handoff=...`, exchange
   the handoff and complete login as if a password login had succeeded.
@@ -4656,19 +4714,80 @@ Every phase block contains the same fields, in the same order:
   - Errors mapped to a small enum of user-facing strings; never echo
     the raw `oidc_error` value.
 - **Files:**
-  - Created: `src/managers/login/oidc-login.js`
-  - Created: `tests/unit/managers/login/oidc-login.test.js`
-  - Touched: `src/managers/login/login.js` (one new call from
-    `init()`).
+  - Created: `elements/003-lithium/src/managers/login/oidc-login.js`
+    (175 lines)
+  - Created: `elements/003-lithium/tests/unit/managers/login/oidc-login.test.js`
+    (325 lines, 28 tests)
+  - Touched: `elements/003-lithium/src/managers/login/login.js`
+    (576 → 594 lines: import + `processOidcReturn` call in `init()`).
 - **Tests required:**
   - Vitest: no `?oidc=1` ⇒ no-op; with handoff ⇒ exchange called,
     JWT stored, AUTH_LOGIN emitted, login UI hidden;
     `?oidc_error=...` ⇒ error displayed, no fetch; URL is cleaned
     in all branches.
 - **Definition of Done:**
-  - [ ] Lint, build, test all clean.
+  - [x] Lint, build, test all clean.
   - [ ] Manual smoke: visit `/?oidc=1&handoff=fake` ⇒ login form
         re-shows with a clean URL and a friendly error.
+        *(Pending — requires a running Lithium+Hydrogen dev environment.)*
+
+**Lessons learned:**
+
+1. **URL cleaning must happen before any async work.** The handoff code
+   is a security-sensitive one-time token. Setting
+   `window.history.replaceState` as the very first action (before the
+   `exchangeHandoff` `await`) guarantees the code is never visible in
+   browser history even if the exchange throws asynchronously. All test
+   branches verify that `replaceState` was called first.
+
+2. **The `return_to` param must survive URL cleaning.** The clean URL
+   passed to `replaceState` is `pathname + return_to` when `return_to`
+   is present, not just `pathname`. This lets the app deep-link the user
+   to the correct manager after a successful OIDC login. The test
+   "preserves return_to in the clean URL" pins this contract.
+
+3. **`processOidcReturn` returns `true` for both success and error
+   paths when OIDC params were present.** The return value signals
+   "I handled the URL", not "login succeeded". `login.js init()` uses a
+   second check (`retrieveJWT()`) to distinguish the two cases: if a
+   JWT is already stored, the OIDC login succeeded and `init()` returns
+   early; if not, the form is shown with the error message already
+   visible.
+
+4. **Error codes are mapped to enumerated messages; the raw code is
+   never sent to the DOM.** `mapOidcError(code)` is a pure lookup with
+   prefix-match fallback for compound codes like `token_invalid_grant`.
+   This prevents any server-controlled string from being reflected
+   into user-visible HTML (XSS vector). Tests verify that known codes
+   produce expected substrings AND that unknown codes do not leak the
+   raw code string.
+
+5. **The `deps` injection pattern from Phase 23 applies verbatim.**
+   `processOidcReturn` accepts `deps = { exchangeHandoff, storeJWT,
+   eventBus, window }`, making every external dependency swappable in
+   tests. No `vi.mock` of the entire module is needed for the happy path;
+   tests just inject stubs directly.
+
+6. **Dynamic `import('../../core/jwt.js')` in `login.js init()` is the
+   minimal way to check JWT presence without adding a permanent static
+   import.** `login.js` already imports everything it needs; the
+   `retrieveJWT` check is a one-off that only runs when `wasOidcReturn`
+   is true. Using a dynamic import avoids cluttering the module-level
+   imports for a rare code path.
+
+**Setup for Phase 25 (provider button UI):**
+
+- Phase 25 needs to wire `startOidc(provider.id, returnTo)` to the
+  button click handler in `login.js` or its render helper. The import of
+  `startOidc` from `oidc-client.js` can live either in `login.js` or in
+  a dedicated click-handler closure.
+- The `auth.oidc_providers` array is already read by `oidc-client.js`
+  at `startOidc` call time. Phase 25 just needs to render one button per
+  entry in the array and wire the click.
+- The `?return_to=` deep-link param is already supported by
+  `processOidcReturn` (Phase 24) and by `startOidc` (Phase 23). Phase 25
+  can pass `window.location.pathname` (or a manager-specific path) as
+  `returnTo` so the user lands back where they were.
 
 ---
 
@@ -5085,23 +5204,25 @@ parentheses.
 
 **Last updated:** 2026-05-09
 **Owner:** Philement engineering
-**Status:** Phase 22 complete. Role mapping is live for all four
-`RoleMapping.Source` modes (`database`, `idp_realm_roles`,
-`idp_client_roles`, `merge`). `oidc_rp_roles_apply` is called in
-`oidc_rp_callback.c` between `oidc_rp_link_resolve` and `generate_jwt`.
+**Status:** Phase 24 complete. `src/managers/login/oidc-login.js` is live:
+`processOidcReturn` handles the full OIDC return-from-IdP leg (URL cleaning,
+handoff exchange, JWT storage, AUTH_LOGIN emission, error mapping). Wired
+into `LoginManager.init()`.
 
 All Hydrogen OIDC RP implementation (Phases 5–22) is complete.
-The remaining phases (23–30) are Lithium-side work (23–26) plus end-to-end
+Lithium OIDC client helper (Phase 23) and return processor (Phase 24) are
+complete.
+The remaining phases (25–30) are Lithium-side UI (25–26) plus end-to-end
 integration (27) and post-MVP hardening (28–30).
 
-Unity: 7,034/7,030 passing (was 7,012/7,008 in Phase 21, +22 net new from
-Phase 22). Black-box: `test_42_oidc_rp.sh` 88/88 in ~251s (was 73/73 in
-Phase 21, +15 net new). `test_40_auth.sh` 46/46. `test_01_compilation.sh`
-18/18. `test_91_cppcheck` clean (1,350 files, 0 issues). `test_92_shellcheck`
-clean (115 scripts, 743 directives). `test_17_startup_shutdown` 9/9.
-`test_11_leaks_like_a_sieve` 0 direct, 0 indirect leaks.
+Hydrogen: Unity 7,034/7,030 passing. Black-box: `test_42_oidc_rp.sh` 88/88.
+`test_40_auth.sh` 46/46. All Hydrogen quality gates unchanged from Phase 22.
 
-Ready for Phase 23 (Lithium — `core/oidc-client.js`).
+Lithium: Vitest **865/865 passing** (was 837 after Phase 23, +28 new from
+Phase 24). `npm run lint` clean. `npm run build` clean.
+`login.js` is 594 lines (was 576; still well under the 1,000-line cap).
+
+Ready for Phase 25 (Lithium — provider button UI).
 
 ### Decisions made between Phase 3 and Phase 4
 
