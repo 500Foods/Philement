@@ -327,6 +327,9 @@ export default class LoginManager {
 
     // Render OIDC provider buttons from config (no-op if array is empty).
     this.renderOidcProviders();
+
+    // Subtly highlight the last-used login method (Phase 26).
+    this.applyPasswordRecentHighlight();
   }
 
   /**
@@ -396,17 +399,26 @@ export default class LoginManager {
    *   - Has class `login-btn-oidc` and `data-provider="<id>"`.
    *   - Displays a Font Awesome icon (from `provider.icon`) followed by the
    *     `provider.label` text.
-   *   - On click calls `startOidc(provider.id, window.location.pathname)`.
+   *   - On click: records `auth.last_method` as `'oidc:<id>'` in
+   *     `lithiumSettings` (before navigation away), then calls
+   *     `startOidc(provider.id, window.location.pathname)`.
+   *
+   * On render, if `auth.last_method` in `lithiumSettings` starts with
+   * `'oidc:'` and matches this provider's id, the `.is-recent` class is
+   * added to the button as a subtle highlight (Phase 26).
    *
    * @param {Object} [deps] - Dependency injection for tests.
-   * @param {Function} [deps.getConfigValue] - Config accessor override.
-   * @param {Function} [deps.startOidc]      - startOidc override.
-   * @param {Object}   [deps.window]         - Window override.
+   * @param {Function} [deps.getConfigValue]   - Config accessor override.
+   * @param {Function} [deps.startOidc]        - startOidc override.
+   * @param {Object}   [deps.window]           - Window override.
+   * @param {Object}   [deps.lithiumSettings]  - lithiumSettings override.
    */
   renderOidcProviders(deps = {}) {
-    const gcv        = deps.getConfigValue ?? getConfigValue;
-    const startOidcFn = deps.startOidc    ?? startOidc;
-    const win        = deps.window        ?? (typeof window !== 'undefined' ? window : null);
+    const gcv             = deps.getConfigValue ?? getConfigValue;
+    const startOidcFn     = deps.startOidc      ?? startOidc;
+    const win             = deps.window         ?? (typeof window !== 'undefined' ? window : null);
+    const settings        = deps.lithiumSettings ??
+      (typeof window !== 'undefined' ? window.lithiumSettings : null);
 
     const providers = gcv('auth.oidc_providers', []);
 
@@ -417,6 +429,9 @@ export default class LoginManager {
     const divider   = this.elements.oidcDivider;
 
     if (!container || !divider) return;
+
+    // Read the stored last-used login method for the `.is-recent` highlight.
+    const lastMethod = settings?.get('auth.last_method') ?? null;
 
     // Build one button per valid provider.
     let rendered = 0;
@@ -442,10 +457,22 @@ export default class LoginManager {
       labelEl.textContent = provider.label;
       btn.appendChild(labelEl);
 
+      // Subtle highlight if this provider was the last login method used.
+      // Matches 'oidc:<id>' (written pre-navigation) or plain 'oidc'
+      // (written on successful handoff exchange).
+      if (lastMethod === `oidc:${provider.id}` || lastMethod === 'oidc') {
+        btn.classList.add('is-recent');
+      }
+
       // Click handler: full-page navigation to /oidc/start.
       btn.addEventListener('click', () => {
         log(LOGIN, Status.INFO, `OIDC provider button clicked: "${provider.id}"`);
         try {
+          // Record the selected provider *before* navigating away so it
+          // survives the page reload and can be used for the highlight on
+          // the next render (Phase 26).
+          settings?.set('auth.last_method', `oidc:${provider.id}`);
+
           const returnTo = win?.location?.pathname ?? null;
           startOidcFn(provider.id, returnTo, { getConfigValue: gcv, window: win });
         } catch (err) {
@@ -464,6 +491,24 @@ export default class LoginManager {
     container.style.display = '';
 
     log(LOGIN, Status.INFO, `OIDC: rendered ${rendered} provider button(s)`);
+  }
+
+  /**
+   * Apply the `.is-recent` highlight to the password submit button when
+   * `auth.last_method === 'password'` in `lithiumSettings` (Phase 26).
+   *
+   * Called from `render()` after all sub-modules are initialised.
+   *
+   * @param {Object} [deps] - Dependency injection for tests.
+   * @param {Object} [deps.lithiumSettings] - lithiumSettings override.
+   */
+  applyPasswordRecentHighlight(deps = {}) {
+    const settings = deps.lithiumSettings ??
+      (typeof window !== 'undefined' ? window.lithiumSettings : null);
+    const lastMethod = settings?.get('auth.last_method') ?? null;
+    if (lastMethod === 'password' && this.elements.submit) {
+      this.elements.submit.classList.add('is-recent');
+    }
   }
 
   /**
