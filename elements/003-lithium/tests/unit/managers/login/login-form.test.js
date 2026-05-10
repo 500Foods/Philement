@@ -436,4 +436,65 @@ describe('LoginForm', () => {
       vi.useRealTimers();
     });
   });
+
+  // Phase 26: auth.last_method setting ----------------------------------------
+
+  describe('auth.last_method — Phase 26', () => {
+    function makeSuccessFetch() {
+      return vi.fn(() => Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({
+          token: 'h.p.s',
+          user_id: 1,
+          username: 'alice',
+          roles: [],
+          expires_at: '2027-01-01T00:00:00Z',
+        }),
+        headers: new Headers(),
+      }));
+    }
+
+    it('sets auth.last_method to "password" on successful login', async () => {
+      const settings = { set: vi.fn() };
+      global.fetch = makeSuccessFetch();
+      form = new LoginForm({ elements, deps: { lithiumSettings: settings } });
+      form.init();
+      elements.username.value = 'alice';
+      elements.password.value = 'pw';
+
+      await form.handleSubmit();
+
+      expect(settings.set).toHaveBeenCalledWith('auth.last_method', 'password');
+    });
+
+    it('does not set auth.last_method when login fails', async () => {
+      const settings = { set: vi.fn() };
+      global.fetch = vi.fn(() => Promise.resolve({
+        ok: false,
+        status: 401,
+        json: () => Promise.resolve({}),
+        headers: new Headers(),
+      }));
+      form = new LoginForm({ elements, deps: { lithiumSettings: settings } });
+      form.init();
+      elements.username.value = 'alice';
+      elements.password.value = 'wrong';
+
+      await form.handleSubmit();
+
+      expect(settings.set).not.toHaveBeenCalledWith('auth.last_method', 'password');
+    });
+
+    it('does not throw when lithiumSettings is absent (no window.lithiumSettings)', async () => {
+      global.fetch = makeSuccessFetch();
+      // No lithiumSettings in deps, and window.lithiumSettings is undefined.
+      form = new LoginForm({ elements, deps: {} });
+      form.init();
+      elements.username.value = 'alice';
+      elements.password.value = 'pw';
+
+      // Should not throw even though window.lithiumSettings is not set.
+      await expect(form.handleSubmit()).resolves.not.toThrow();
+    });
+  });
 });
