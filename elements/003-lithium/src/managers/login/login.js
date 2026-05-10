@@ -18,6 +18,8 @@ import { HelpPanel } from './login-help-panel.js';
 import { LoginForm } from './login-form.js';
 import { LoginShortcuts } from './login-shortcuts.js';
 import { processOidcReturn } from './oidc-login.js';
+import { startOidc } from '../../core/oidc-client.js';
+import { getConfigValue } from '../../core/config.js';
 import './login.css';
 
 // Convenience alias for this module's subsystem
@@ -228,6 +230,8 @@ export default class LoginManager {
       languageCurrentBtn: this.container.querySelector('#language-current-btn'),
       languageCurrentFlag: this.container.querySelector('#language-current-flag'),
       languageCurrentCode: this.container.querySelector('#language-current-code'),
+      oidcDivider: this.container.querySelector('#login-oidc-divider'),
+      oidcProviders: this.container.querySelector('#login-providers'),
     };
 
     // Initialize PasswordManager
@@ -320,6 +324,9 @@ export default class LoginManager {
       onClearUsername: () => this._loginForm?.handleClearUsername(),
       onSwitchToLogin: () => this.switchPanel('login'),
     });
+
+    // Render OIDC provider buttons from config (no-op if array is empty).
+    this.renderOidcProviders();
   }
 
   /**
@@ -375,6 +382,98 @@ export default class LoginManager {
         </div>
       </div>
     `;
+  }
+
+  /**
+   * Render zero-or-more OIDC provider buttons beneath the login form.
+   *
+   * Reads `auth.oidc_providers` from the Lithium config. If the array is
+   * absent or empty, neither the divider nor the providers container is shown.
+   * Per LITHIUM-INS.md rule #1 (no fallback path), there is no greyed-out
+   * placeholder — the UI simply does not render when OIDC is disabled.
+   *
+   * Each button:
+   *   - Has class `login-btn-oidc` and `data-provider="<id>"`.
+   *   - Displays a Font Awesome icon (from `provider.icon`) followed by the
+   *     `provider.label` text.
+   *   - On click calls `startOidc(provider.id, window.location.pathname)`.
+   *
+   * @param {Object} [deps] - Dependency injection for tests.
+   * @param {Function} [deps.getConfigValue] - Config accessor override.
+   * @param {Function} [deps.startOidc]      - startOidc override.
+   * @param {Object}   [deps.window]         - Window override.
+   */
+  renderOidcProviders(deps = {}) {
+    const gcv        = deps.getConfigValue ?? getConfigValue;
+    const startOidcFn = deps.startOidc    ?? startOidc;
+    const win        = deps.window        ?? (typeof window !== 'undefined' ? window : null);
+
+    const providers = gcv('auth.oidc_providers', []);
+
+    // Nothing to render — leave divider and container hidden.
+    if (!Array.isArray(providers) || providers.length === 0) return;
+
+    const container = this.elements.oidcProviders;
+    const divider   = this.elements.oidcDivider;
+
+    if (!container || !divider) return;
+
+    // Build one button per valid provider.
+    let rendered = 0;
+    providers.forEach((provider) => {
+      if (!provider || !provider.id || !provider.label) return;
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'login-btn-oidc';
+      btn.setAttribute('data-provider', provider.id);
+      btn.setAttribute('aria-label', provider.label);
+
+      // Icon (Font Awesome class, e.g. "fa-key").
+      if (provider.icon) {
+        const iconEl = document.createElement('span');
+        iconEl.className = `login-btn-oidc__icon fa-duotone fa-thin ${provider.icon}`;
+        iconEl.setAttribute('aria-hidden', 'true');
+        btn.appendChild(iconEl);
+      }
+
+      // Label text.
+      const labelEl = document.createElement('span');
+      labelEl.textContent = provider.label;
+      btn.appendChild(labelEl);
+
+      // Click handler: full-page navigation to /oidc/start.
+      btn.addEventListener('click', () => {
+        log(LOGIN, Status.INFO, `OIDC provider button clicked: "${provider.id}"`);
+        try {
+          const returnTo = win?.location?.pathname ?? null;
+          startOidcFn(provider.id, returnTo, { getConfigValue: gcv, window: win });
+        } catch (err) {
+          log(LOGIN, Status.ERROR, `OIDC startOidc failed: ${err.message}`);
+          this.showError('Sign-in could not start. Please try again.');
+        }
+      });
+
+      container.appendChild(btn);
+      rendered++;
+    });
+
+    // Show the divider and the container only if at least one button was rendered.
+    if (rendered === 0) return;
+    divider.style.display = '';
+    container.style.display = '';
+
+    log(LOGIN, Status.INFO, `OIDC: rendered ${rendered} provider button(s)`);
+  }
+
+  /**
+   * Show an error banner in the login form.
+   * Delegates to LoginForm; safe to call even before render() completes
+   * (LoginForm may not yet be initialised).
+   * @param {string} message
+   */
+  showError(message) {
+    this._loginForm?.showError(message);
   }
 
   /**
