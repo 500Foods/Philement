@@ -101,6 +101,8 @@ Lithium requires a running Hydrogen backend. Do **not** run `npm run dev` to tes
 | File | Purpose |
 |------|--------|
 | [LITHIUM-JWT.md](LITHIUM-JWT.md) | JWT authentication — lifecycle, claims, validation |
+| [LITHIUM-OIDC.md](LITHIUM-OIDC.md) | OpenID Connect sign-in — user/operator-facing reference |
+| [LITHIUM-KEYCLOAK.md](LITHIUM-KEYCLOAK.md) | OIDC implementer recipe — for building new client SPAs |
 | [LITHIUM-CFG.md](LITHIUM-CFG.md) | Configuration — lithium.json, settings |
 | [LITHIUM-PWA.md](LITHIUM-PWA.md) | PWA — service worker, fast updates |
 
