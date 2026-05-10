@@ -862,7 +862,7 @@ password login still works — every phase preserves that invariant.
 | 22 | Hydrogen — role-mapping (`database`, `idp_realm_roles`, `merge`) | Hydrogen | Medium | ✅ Done |
 | 23 | Lithium — `core/oidc-client.js` (`startOidc`, `exchangeHandoff`) | Lithium | Low | ✅ Done |
 | 24 | Lithium — `oidc-login.js` (process return-from-IdP) | Lithium | Medium | ✅ Done |
-| 25 | Lithium — UI: provider button, divider, config-driven render | Lithium | Low |
+| 25 | Lithium — UI: provider button, divider, config-driven render | Lithium | Low | ✅ Done |
 | 26 | Lithium — `auth.last_method` setting and subtle highlighting | Lithium | Low |
 | 27 | Both — End-to-end against real Keycloak (dev environment) | Hydrogen + Lithium | High |
 | 28 | Phase-5-style hardening: health check field | Hydrogen | Low |
@@ -4791,36 +4791,132 @@ Every phase block contains the same fields, in the same order:
 
 ---
 
-### Phase 25 — Lithium: provider button UI
+### Phase 25 — Lithium: provider button UI ✅ COMPLETE
 
 - **Goal:** Render zero-or-more "Sign in with X" buttons under the
   password form, driven by `auth.oidc_providers` config.
 - **Prerequisites:** Phases 23, 24.
 - **In scope:**
-  - Add the `<div class="login-divider">` and `<div class="login-providers">`
-    blocks to `login.html`.
-  - Button is generated at render time from config; FA icon class
-    pulled from `provider.icon`. CSS-first (no inline styles).
-  - Click handler calls `startOidc(provider.id, returnTo)`.
-  - When `auth.oidc_providers` is empty/missing, neither divider nor
-    buttons render.
+  - Added `<div class="login-divider" id="login-oidc-divider">` and
+    `<div class="login-providers" id="login-providers">` to `login.html`
+    (both `style="display:none"` by default; shown only when at least one
+    valid provider is rendered — per rule #1, no greyed-out fallback).
+  - `renderOidcProviders(deps)` added to `LoginManager`: reads
+    `auth.oidc_providers` from config, builds one `<button
+    class="login-btn-oidc" data-provider="…">` per valid entry, then
+    shows the divider and container.
+  - Click handler calls `startOidc(provider.id, returnTo)` where
+    `returnTo = window.location.pathname`. On throw, calls `showError()`.
+  - `showError(message)` proxy added to `LoginManager` — delegates to
+    `this._loginForm?.showError(message)`. Fixes a correctness gap from
+    Phase 24 where `processOidcReturn` called `loginManager.showError()`
+    but the method was only on `LoginForm`.
+  - CSS-first: all styling in `login.css` under `@layer managers`.
+    No inline styles on the buttons themselves. Per-provider brand accent
+    via `[data-provider="500passwords"]` selector. `.is-recent` hook
+    ready for Phase 26.
+  - `auth.oidc_providers` array added to `config/lithium.json` with the
+    `500passwords` entry.
+  - `startOidc` and `getConfigValue` imported into `login.js` — both
+    injected via `deps` in tests.
 - **Files:**
-  - Touched: `src/managers/login/login.html`
-  - Touched: `src/managers/login/login.css`
-  - Touched: `src/managers/login/login.js`
-  - Touched: `config/lithium.json` (add the `auth.oidc_providers`
-    array with the `500passwords` entry, gated by env-specific
-    config files for prod).
-  - Touched: `tests/unit/managers/login/login.test.js`
+  - Touched: `elements/003-lithium/src/managers/login/login.html`
+    (+13 lines — divider + providers slots)
+  - Touched: `elements/003-lithium/src/managers/login/login.css`
+    (+100 lines — divider and provider button styles)
+  - Touched: `elements/003-lithium/src/managers/login/login.js`
+    (576 → 693 lines — `renderOidcProviders`, `showError`, new imports)
+  - Touched: `elements/003-lithium/config/lithium.json`
+    (added `auth.oidc_providers` array)
+  - Created: `elements/003-lithium/tests/unit/managers/login/login.test.js`
+    (313 lines, 22 tests)
 - **Tests required:**
-  - Vitest: with empty array, no button rendered; with one provider,
-    one button with the right label/icon; click triggers `startOidc`
-    with the right provider id; ESC still works on login panel.
+  - Vitest: empty array → no button / no divider; entries missing id or
+    label skipped; one provider → one button with correct label, icon,
+    `data-provider`, `aria-label`, `type="button"`; click triggers
+    `startOidc` with the right provider id and `pathname` as `returnTo`;
+    click for second of two providers triggers the right id; `startOidc`
+    throw → `showError` called; multiple providers → multiple buttons;
+    divider shown with multiple providers; `showError` delegates to
+    `_loginForm`; `showError` safe when `_loginForm` is null.
 - **Definition of Done:**
-  - [ ] Lint, build, test all clean.
+  - [x] Lint, build, test all clean.
+  - [x] `npm run lint` clean (exit 0).
+  - [x] `npm run build` clean (no errors).
+  - [x] `npm test` (Vitest) **887/887 passing** (was 865 after Phase 24,
+        +22 new from the new `login.test.js`).
+  - [x] `login.js` at **693 lines** — well under the ≤1,000-line cap.
+  - [x] No file in `src/managers/login/` exceeds 1,000 lines.
+  - [x] `login.css` at **660 lines** — single @layer managers block
+        plus the existing @layer vendor-fixes block.
+  - [x] `LITHIUM-INS.md` rule #4 (CSS-first) satisfied: all button
+        styling in `login.css`; no inline styles on generated buttons.
+  - [x] `LITHIUM-INS.md` rule #1 (no fallback) satisfied: empty
+        `oidc_providers` → neither divider nor container visible.
   - [ ] Visual check (in any modern browser) confirms the button
         looks aligned with existing `login-btn-primary`.
-  - [ ] `LITHIUM-INS.md` rule #4 (CSS-first) verified by code review.
+        *(Pending — requires a running Lithium dev environment.)*
+
+**Lessons learned:**
+
+1. **`showError` was missing from `LoginManager` — a Phase 24 correctness
+   gap.** `processOidcReturn` (Phase 24) calls `loginManager.showError()`
+   but `LoginManager` only had `LoginForm.showError`. The method worked in
+   unit tests because the test stub mocked `showError` directly on the
+   `loginManager` object. Phase 25 adds the proxy, closing the gap.
+   Lesson: whenever a module calls `this.someMethod()` on an injected
+   object, verify that object's class actually exposes that method; do
+   not rely solely on the test stub shape.
+
+2. **The "rendered > 0" guard is the right divider visibility check.**
+   The initial implementation showed the divider whenever
+   `providers.length > 0`, but the spec says "when at least one valid
+   button is rendered" — entries with missing `id` or `label` are skipped.
+   Counting rendered buttons and only calling `divider.style.display = ''`
+   when `rendered > 0` is the correct check. Caught by the test
+   "skips entries that are missing id or label".
+
+3. **Dependency injection via `deps` parameter scales cleanly to a third
+   consumer.** `startOidc` (Phase 23) and `processOidcReturn` (Phase 24)
+   both use the `deps` pattern. `renderOidcProviders(deps)` follows it
+   identically: `deps.getConfigValue`, `deps.startOidc`, `deps.window`.
+   The test file requires zero `vi.mock` calls for these three dependencies
+   — they're injected directly. This is the fourth module in the login
+   subsystem using this pattern; it has proven stable.
+
+4. **`login.js` grew 99 lines but stays well under the cap.** The new
+   `renderOidcProviders` method (80 lines) and `showError` proxy (7 lines)
+   bring `login.js` from 594 to 693 lines. The 1,000-line gate is
+   satisfied with 307 lines to spare. Even after Phase 26 (~20 lines),
+   the file will remain under the cap.
+
+5. **CSS `@layer managers` contains all new styles; `@layer vendor-fixes`
+   is untouched.** The divider and provider button rules follow the
+   established layer discipline. No `!important` overrides were needed.
+   The `.is-recent` class is declared with a placeholder style block so
+   Phase 26 can add its highlight rule without a structural change.
+
+6. **`data-provider` attribute is the right hook for per-provider styling.**
+   `[data-provider="500passwords"]` as the CSS selector keeps provider-
+   specific brand accents out of the JavaScript entirely. New providers
+   added to `auth.oidc_providers` only need a CSS rule addition, not a
+   JS change. This matches the plan's "CSS-first" discipline.
+
+7. **Font Awesome icon rendered as a `<span>` with class, not `<fa>`.** The
+   existing `<fa fa-xmark>` custom element pattern used elsewhere in
+   `login.html` is for static HTML that the FA library processes at
+   parse time. Dynamically-created buttons use `document.createElement`
+   so the standard `fa-duotone fa-thin fa-key` class approach is correct
+   and consistent with how FA icons are used in other dynamically-rendered
+   parts of Lithium.
+
+**Setup for Phase 26 (`auth.last_method` and subtle highlighting):**
+
+- Phase 26 adds `window.lithiumSettings.set('auth.last_method', 'oidc:<provider>')` on successful OIDC login in `oidc-login.js` and `'password'` on password login in `login-form.js`.
+- On `render()`, Phase 26 reads the setting and adds the `.is-recent` CSS class to the matching button or input. The `.is-recent` selector stub is already in `login.css` — Phase 26 adds only the visual style rules.
+- The `renderOidcProviders` call in `render()` happens after `LoginShortcuts` init. Phase 26 can add the `.is-recent` class inside `renderOidcProviders` after buttons are built, gated on `window.lithiumSettings.get('auth.last_method')`.
+- `lithiumSettings` should be injected via `deps` in `renderOidcProviders` for testability, following the pattern already in place for `getConfigValue` and `startOidc`.
+- The test file (`login.test.js`) is the right home for Phase 26's new assertions about `.is-recent` class toggling.
 
 ---
 
@@ -5202,27 +5298,31 @@ parentheses.
 
 ---
 
-**Last updated:** 2026-05-09
+**Last updated:** 2026-05-10
 **Owner:** Philement engineering
-**Status:** Phase 24 complete. `src/managers/login/oidc-login.js` is live:
-`processOidcReturn` handles the full OIDC return-from-IdP leg (URL cleaning,
-handoff exchange, JWT storage, AUTH_LOGIN emission, error mapping). Wired
-into `LoginManager.init()`.
+**Status:** Phase 25 complete. The "Sign in with 500 Passwords" provider
+button is live. `renderOidcProviders()` reads `auth.oidc_providers` from
+config, builds CSS-first `<button class="login-btn-oidc">` elements, and
+wires click → `startOidc()`. `LoginManager.showError()` proxy also added
+(fixes Phase 24 correctness gap). `config/lithium.json` has the
+`500passwords` entry.
 
 All Hydrogen OIDC RP implementation (Phases 5–22) is complete.
-Lithium OIDC client helper (Phase 23) and return processor (Phase 24) are
-complete.
-The remaining phases (25–30) are Lithium-side UI (25–26) plus end-to-end
-integration (27) and post-MVP hardening (28–30).
+Lithium OIDC client helper (Phase 23), return processor (Phase 24), and
+provider button UI (Phase 25) are complete.
+The remaining phases are: Phase 26 (Lithium — `auth.last_method` + subtle
+highlighting), Phase 27 (end-to-end integration against real Keycloak),
+and post-MVP hardening (Phases 28–30).
 
 Hydrogen: Unity 7,034/7,030 passing. Black-box: `test_42_oidc_rp.sh` 88/88.
 `test_40_auth.sh` 46/46. All Hydrogen quality gates unchanged from Phase 22.
 
-Lithium: Vitest **865/865 passing** (was 837 after Phase 23, +28 new from
-Phase 24). `npm run lint` clean. `npm run build` clean.
-`login.js` is 594 lines (was 576; still well under the 1,000-line cap).
+Lithium: Vitest **887/887 passing** (was 865 after Phase 24, +22 new from
+Phase 25). `npm run lint` clean. `npm run build` clean.
+`login.js` is 693 lines (was 594; well under the 1,000-line cap).
 
-Ready for Phase 25 (Lithium — provider button UI).
+Ready for Phase 26 (Lithium — `auth.last_method` setting and subtle
+highlighting).
 
 ### Decisions made between Phase 3 and Phase 4
 
