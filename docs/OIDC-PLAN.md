@@ -836,8 +836,8 @@ password login still works — every phase preserves that invariant.
 
 ### Phase index
 
-| # | Title | Project | Risk |
-|---|---|---|---|
+| # | Title | Project | Risk | Status |
+|---|---|---|---|---|
 | 1 | Lithium login refactor — extract `login-panels` | Lithium | Low | ✅ Done |
 | 2 | Lithium login refactor — extract `login-password-manager` | Lithium | Low | ✅ Done |
 | 3 | Lithium login refactor — extract `login-language-panel` | Lithium | Low | ✅ Done |
@@ -850,10 +850,10 @@ password login still works — every phase preserves that invariant.
 | 10 | Hydrogen — `/oidc/start` redirect builder | Hydrogen | Medium | ✅ Done |
 | 11 | Hydrogen — token endpoint client (POST to Keycloak `/token`) | Hydrogen | Medium | ✅ Done |
 | 12 | Hydrogen — ID token validation | Hydrogen | High | ✅ Done |
-| 13 | Hydrogen — handoff store and `/oidc/handoff` exchange endpoint | Hydrogen | Medium | ✅ Done
-| 14 | Hydrogen — `/oidc/callback` end-to-end with stub linker | Hydrogen | High | ✅ Done
-| 15 | Hydrogen — DB migration `1189_account_oidc_identities` | Hydrogen | Medium | ✅ Done
-| 16 | Hydrogen — `accounts.password_hash` nullable migration | Hydrogen | Medium | ✅ Done
+| 13 | Hydrogen — handoff store and `/oidc/handoff` exchange endpoint | Hydrogen | Medium | ✅ Done |
+| 14 | Hydrogen — `/oidc/callback` end-to-end with stub linker | Hydrogen | High | ✅ Done |
+| 15 | Hydrogen — DB migration `1189_account_oidc_identities` | Hydrogen | Medium | ✅ Done |
+| 16 | Hydrogen — `accounts.password_hash` nullable migration | Hydrogen | Medium | ✅ Done |
 | 17 | Hydrogen — QueryRefs `#080`–`#084` (`.lua` payloads) | Hydrogen | Low | ✅ Done |
 | 18 | Hydrogen — account linker (`match_sub_only`) | Hydrogen | Medium | ✅ Done |
 | 19 | Hydrogen — account linker (`match_email_only`) | Hydrogen | Medium | ✅ Done |
@@ -863,11 +863,11 @@ password login still works — every phase preserves that invariant.
 | 23 | Lithium — `core/oidc-client.js` (`startOidc`, `exchangeHandoff`) | Lithium | Low | ✅ Done |
 | 24 | Lithium — `oidc-login.js` (process return-from-IdP) | Lithium | Medium | ✅ Done |
 | 25 | Lithium — UI: provider button, divider, config-driven render | Lithium | Low | ✅ Done |
-| 26 | Lithium — `auth.last_method` setting and subtle highlighting | Lithium | Low |
-| 27 | Both — End-to-end against real Keycloak (dev environment) | Hydrogen + Lithium | High |
-| 28 | Phase-5-style hardening: health check field | Hydrogen | Low |
-| 29 | Phase-5-style hardening: backchannel logout | Hydrogen | Medium |
-| 30 | Phase-5-style hardening: RP-initiated logout in Lithium | Hydrogen + Lithium | Medium |
+| 26 | Lithium — `auth.last_method` setting and subtle highlighting | Lithium | Low | ✅ Done |
+| 27 | Both — End-to-end against real Keycloak (dev environment) | Hydrogen + Lithium | High | 🚧 In progress |
+| 28 | Phase-5-style hardening: health check field | Hydrogen | Low | Post-MVP |
+| 29 | Phase-5-style hardening: backchannel logout | Hydrogen | Medium | Post-MVP |
+| 30 | Phase-5-style hardening: RP-initiated logout in Lithium | Hydrogen + Lithium | Medium | Post-MVP |
 
 Phases 28–30 are explicitly **post-MVP**. Phases 1–27 are the
 must-ship scope for "OIDC login works in production".
@@ -4965,8 +4965,15 @@ Every phase block contains the same fields, in the same order:
 - **Files:**
   - Touched: dev-only config files (not committed if they contain
     secrets).
-  - Created: `docs/Li/LITHIUM-OIDC.md` and
-    `docs/H/api/auth/oidc_rp.md` (operator-facing reference docs).
+  - Touched: `elements/001-hydrogen/hydrogen/examples/configs/hydrogen.json`
+    (added `Lithium` database stub and `OIDC_RP` block with
+    `Enabled: false` so the schema is documented).
+  - Created: `docs/Li/LITHIUM-OIDC.md` (operator/user-facing reference).
+  - Created: `docs/Li/LITHIUM-KEYCLOAK.md` (implementer reference for
+    future Hydrogen client SPAs).
+  - Created: `docs/H/api/auth/oidc_rp.md` (Hydrogen RP endpoint reference).
+  - Created: `docs/H/plans/OIDC_E2E_LOG.md` (manual test checklist).
+  - Touched: `docs/Li/LITHIUM-TOC.md`, `docs/H/SITEMAP.md` (link new docs).
 - **Tests required:**
   - Manual test plan executed and ticked off (recorded in a
     Markdown checklist committed under `docs/H/plans/OIDC_E2E_LOG.md`):
@@ -5300,29 +5307,40 @@ parentheses.
 
 **Last updated:** 2026-05-10
 **Owner:** Philement engineering
-**Status:** Phase 25 complete. The "Sign in with 500 Passwords" provider
-button is live. `renderOidcProviders()` reads `auth.oidc_providers` from
-config, builds CSS-first `<button class="login-btn-oidc">` elements, and
-wires click → `startOidc()`. `LoginManager.showError()` proxy also added
-(fixes Phase 24 correctness gap). `config/lithium.json` has the
-`500passwords` entry.
+**Status:** Phases 1–26 complete. Phase 27 (end-to-end integration
+against real Keycloak) is in progress. All implementation code on
+both Hydrogen and Lithium is shipped; the remaining work is operator
+configuration of the real Keycloak instance plus the seven-item manual
+test checklist captured in `docs/H/plans/OIDC_E2E_LOG.md`.
 
-All Hydrogen OIDC RP implementation (Phases 5–22) is complete.
-Lithium OIDC client helper (Phase 23), return processor (Phase 24), and
-provider button UI (Phase 25) are complete.
-The remaining phases are: Phase 26 (Lithium — `auth.last_method` + subtle
-highlighting), Phase 27 (end-to-end integration against real Keycloak),
-and post-MVP hardening (Phases 28–30).
+Phase 27 documentation deliverables shipped:
+
+- `docs/H/api/auth/oidc_rp.md` — Hydrogen RP endpoint reference (operator-facing).
+- `docs/Li/LITHIUM-OIDC.md` — Lithium-side OIDC user/operator reference.
+- `docs/Li/LITHIUM-KEYCLOAK.md` — implementer recipe for new Hydrogen client SPAs.
+- `docs/H/plans/OIDC_E2E_LOG.md` — manual test checklist log.
+- Example `hydrogen.json` updated with `Lithium` DB stub and `OIDC_RP`
+  block (default `Enabled: false`).
+
+Phase 27 production configuration (out-of-repo, deploy environment only):
+
+- Keycloak realm: `festival` at `https://www.500passwords.com`
+- Keycloak client: `lithium` (confidential, S256 PKCE)
+- `HYDROGEN_OIDC_CLIENT_ID` and `HYDROGEN_OIDC_CLIENT_SECRET` env vars set
+- `OIDC_RP.Database`: `Lithium`
+- `OIDC_RP.Providers[0].Issuer`: `https://www.500passwords.com/realms/festival`
+- `OIDC_RP.Providers[0].RedirectUri`: `https://lithium.philement.com/api/auth/oidc/callback`
+- `AccountLinking.Strategy`: `match_email_only` (no auto-provisioning)
 
 Hydrogen: Unity 7,034/7,030 passing. Black-box: `test_42_oidc_rp.sh` 88/88.
 `test_40_auth.sh` 46/46. All Hydrogen quality gates unchanged from Phase 22.
 
-Lithium: Vitest **887/887 passing** (was 865 after Phase 24, +22 new from
-Phase 25). `npm run lint` clean. `npm run build` clean.
-`login.js` is 693 lines (was 594; well under the 1,000-line cap).
+Lithium: Vitest 887/887 passing as of Phase 25, with Phase 26 additions.
+`npm run lint` clean. `npm run build` clean.
 
-Ready for Phase 26 (Lithium — `auth.last_method` setting and subtle
-highlighting).
+Post-MVP work (Phases 28–30): OIDC RP health check, backchannel logout,
+RP-initiated logout. To be planned in detail after Phase 27 is in
+production.
 
 ### Decisions made between Phase 3 and Phase 4
 

@@ -49,6 +49,10 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [system_info.md](/docs/H/api/system/system_info.md)
 - [system_version.md](/docs/H/api/system/system_version.md)
 
+### Folder: /docs/api/auth
+
+- [oidc_rp.md](/docs/H/api/auth/oidc_rp.md): OIDC Relying Party endpoints (`/api/auth/oidc/start`, `/callback`, `/handoff`)
+
 ### Folder: /docs/deployment
 
 - [docker.md](/docs/H/core/deployment/docker.md)
@@ -72,6 +76,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 
 - [DATABASE_PLAN.md](/docs/H/plans/DATABASE_PLAN.md): Implementation plan for Database feature
 - [TERMINAL_PLAN.md](/docs/H/plans/TERMINAL_PLAN.md): Implementation plan for Terminal feature
+- [OIDC_E2E_LOG.md](/docs/H/plans/OIDC_E2E_LOG.md): OIDC end-to-end manual test log (Phase 27)
 
 ### Folder: /docs/reference
 

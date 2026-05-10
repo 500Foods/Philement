@@ -101,6 +101,18 @@
       </div>
 
     </form>
+
+    <!-- OIDC provider buttons — rendered at runtime from auth.oidc_providers config.
+         The divider and providers container are hidden by default; login.js shows them
+         only when at least one provider is configured. Per LITHIUM-INS.md rule #1
+         (no fallback path), nothing renders if the array is empty or absent. -->
+    <div class="login-divider" id="login-oidc-divider" style="display: none;">
+      <span>or</span>
+    </div>
+    <div class="login-providers" id="login-providers" style="display: none;">
+      <!-- Provider buttons are injected here by login.js renderOidcProviders() -->
+    </div>
+
   </div>
 
   <!-- Theme Selector Panel (initially hidden) -->
