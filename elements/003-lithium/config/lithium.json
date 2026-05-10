@@ -9,7 +9,15 @@
   "auth": {
     "api_key": "EveryGoodBoyDeservesFudge",
     "default_database": "Lithium",
-    "session_timeout_minutes": 30
+    "session_timeout_minutes": 30,
+    "oidc_providers": [
+      {
+        "id": "500passwords",
+        "label": "Sign in with 500 Passwords",
+        "icon": "fa-key",
+        "start_url": "/api/auth/oidc/start"
+      }
+    ]
   },
   "login partners": {
     "didit": true,
