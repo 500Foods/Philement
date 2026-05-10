@@ -333,8 +333,52 @@
                 "User": "${env.CANVAS_DB_USER}",
                 "Pass": "${env.CANVAS_DB_PASS}",
                 "Workers": 1
+            },
+            "Lithium": {
+                "Enabled": true,
+                "Type": "postgres",
+                "Host": "${env.LITHIUM_DB_HOST}",
+                "Port": "${env.LITHIUM_DB_PORT}",
+                "Database": "${env.LITHIUM_DB_NAME}",
+                "User": "${env.LITHIUM_DB_USER}",
+                "Pass": "${env.LITHIUM_DB_PASS}",
+                "Workers": 1
             }
         }
+    },
+    "OIDC_RP": {
+        "Enabled": false,
+        "Database": "Lithium",
+        "Providers": [
+            {
+                "Name": "500passwords",
+                "Label": "500 Passwords",
+                "Issuer": "https://www.500passwords.com/realms/festival",
+                "ClientId": "${env.HYDROGEN_OIDC_CLIENT_ID}",
+                "ClientSecret": "${env.HYDROGEN_OIDC_CLIENT_SECRET}",
+                "RedirectUri": "https://lithium.philement.com/api/auth/oidc/callback",
+                "Scopes": "openid profile email",
+                "VerifySsl": true,
+                "AllowedAlgorithms": ["RS256"],
+                "DiscoveryCacheSeconds": 3600,
+                "JwksCacheSeconds": 3600,
+                "StateTtlSeconds": 600,
+                "HandoffTtlSeconds": 60,
+                "BindHandoffToIp": true,
+                "AccountLinking": {
+                    "Strategy": "match_email_only",
+                    "ProvisionDefaults": {
+                        "Enabled": false,
+                        "Authorized": false,
+                        "DefaultRoleNames": ["user"]
+                    },
+                    "RequireEmailVerified": true
+                },
+                "RoleMapping": {
+                    "Source": "database"
+                }
+            }
+        ]
     },
     "MailRelay": {
         "Enabled": true,
