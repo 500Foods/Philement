@@ -104,6 +104,7 @@ function mapOidcError(code) {
  *   - `deps.storeJWT(token)`       — override JWT storage
  *   - `deps.eventBus`              — override event bus
  *   - `deps.window`                — override window (for URL / history)
+ *   - `deps.lithiumSettings`       — override window.lithiumSettings
  * @returns {Promise<boolean>} true if OIDC params were present, false otherwise.
  */
 export async function processOidcReturn(loginManager, deps = {}) {
@@ -144,11 +145,19 @@ export async function processOidcReturn(loginManager, deps = {}) {
   const exchangeFn  = deps.exchangeHandoff ?? exchangeHandoff;
   const storeJWTFn  = deps.storeJWT       ?? storeJWT;
   const bus         = deps.eventBus       ?? eventBus;
+  const settings    = deps.lithiumSettings ??
+    (typeof window !== 'undefined' ? window.lithiumSettings : null);
 
   try {
     const data = await exchangeFn(handoff);
 
     storeJWTFn(data.token);
+
+    // Record the last-used login method. The provider ID was written to
+    // settings in the click handler (pre-navigation) as 'oidc:<id>'.
+    // Writing 'oidc' here confirms the full exchange completed — it also
+    // covers edge cases where the pre-navigation write was skipped.
+    settings?.set('auth.last_method', 'oidc');
 
     log(AUTH, Status.SUCCESS,
       `OIDC login successful: user_id=${data.user_id}, username="${data.username ?? ''}"`);

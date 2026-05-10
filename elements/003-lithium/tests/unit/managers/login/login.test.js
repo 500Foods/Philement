@@ -422,3 +422,124 @@ describe('showError — proxy to LoginForm', () => {
     expect(() => lm.showError('oops')).not.toThrow();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Phase 26: auth.last_method — .is-recent highlight
+// ---------------------------------------------------------------------------
+
+describe('renderOidcProviders — is-recent highlight (Phase 26)', () => {
+  beforeEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  it('adds is-recent class to the button when last_method matches oidc:<id>', () => {
+    const lm       = makeSubject();
+    const settings = { get: vi.fn((key) => key === 'auth.last_method' ? 'oidc:500passwords' : null), set: vi.fn() };
+    const deps     = { ...makeProviderDeps(), lithiumSettings: settings };
+    lm.renderOidcProviders(deps);
+    const btn = lm.elements.oidcProviders.querySelector('.login-btn-oidc');
+    expect(btn.classList.contains('is-recent')).toBe(true);
+  });
+
+  it('adds is-recent class when last_method is plain "oidc"', () => {
+    const lm       = makeSubject();
+    const settings = { get: vi.fn((key) => key === 'auth.last_method' ? 'oidc' : null), set: vi.fn() };
+    const deps     = { ...makeProviderDeps(), lithiumSettings: settings };
+    lm.renderOidcProviders(deps);
+    const btn = lm.elements.oidcProviders.querySelector('.login-btn-oidc');
+    expect(btn.classList.contains('is-recent')).toBe(true);
+  });
+
+  it('does not add is-recent class when last_method is "password"', () => {
+    const lm       = makeSubject();
+    const settings = { get: vi.fn((key) => key === 'auth.last_method' ? 'password' : null), set: vi.fn() };
+    const deps     = { ...makeProviderDeps(), lithiumSettings: settings };
+    lm.renderOidcProviders(deps);
+    const btn = lm.elements.oidcProviders.querySelector('.login-btn-oidc');
+    expect(btn.classList.contains('is-recent')).toBe(false);
+  });
+
+  it('does not add is-recent class when no setting is stored', () => {
+    const lm       = makeSubject();
+    const settings = { get: vi.fn(() => null), set: vi.fn() };
+    const deps     = { ...makeProviderDeps(), lithiumSettings: settings };
+    lm.renderOidcProviders(deps);
+    const btn = lm.elements.oidcProviders.querySelector('.login-btn-oidc');
+    expect(btn.classList.contains('is-recent')).toBe(false);
+  });
+
+  it('does not add is-recent class when last_method matches a different provider id', () => {
+    const lm       = makeSubject();
+    const settings = { get: vi.fn((key) => key === 'auth.last_method' ? 'oidc:other-provider' : null), set: vi.fn() };
+    const deps     = { ...makeProviderDeps(), lithiumSettings: settings };
+    lm.renderOidcProviders(deps);
+    const btn = lm.elements.oidcProviders.querySelector('.login-btn-oidc');
+    expect(btn.classList.contains('is-recent')).toBe(false);
+  });
+
+  it('sets auth.last_method to "oidc:<id>" when button is clicked', () => {
+    const lm       = makeSubject();
+    const settings = { get: vi.fn(() => null), set: vi.fn() };
+    const startFn  = vi.fn();
+    const deps     = { ...makeProviderDeps(oneProviderConfig(), { startOidc: startFn }), lithiumSettings: settings };
+    lm.renderOidcProviders(deps);
+    const btn = lm.elements.oidcProviders.querySelector('.login-btn-oidc');
+    btn.click();
+    expect(settings.set).toHaveBeenCalledWith('auth.last_method', 'oidc:500passwords');
+  });
+
+  it('does not throw when lithiumSettings is absent', () => {
+    const lm   = makeSubject();
+    const deps = makeProviderDeps();
+    // No lithiumSettings in deps — should not throw.
+    expect(() => lm.renderOidcProviders(deps)).not.toThrow();
+  });
+});
+
+describe('applyPasswordRecentHighlight — Phase 26', () => {
+  beforeEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  it('adds is-recent to submit button when last_method is "password"', () => {
+    const lm       = makeSubject();
+    const submit   = document.createElement('button');
+    submit.id      = 'login-submit';
+    lm.elements.submit = submit;
+    const settings = { get: vi.fn((key) => key === 'auth.last_method' ? 'password' : null) };
+    lm.applyPasswordRecentHighlight({ lithiumSettings: settings });
+    expect(submit.classList.contains('is-recent')).toBe(true);
+  });
+
+  it('does not add is-recent to submit button when last_method is "oidc"', () => {
+    const lm       = makeSubject();
+    const submit   = document.createElement('button');
+    lm.elements.submit = submit;
+    const settings = { get: vi.fn((key) => key === 'auth.last_method' ? 'oidc' : null) };
+    lm.applyPasswordRecentHighlight({ lithiumSettings: settings });
+    expect(submit.classList.contains('is-recent')).toBe(false);
+  });
+
+  it('does not add is-recent to submit button when no setting is stored', () => {
+    const lm       = makeSubject();
+    const submit   = document.createElement('button');
+    lm.elements.submit = submit;
+    const settings = { get: vi.fn(() => null) };
+    lm.applyPasswordRecentHighlight({ lithiumSettings: settings });
+    expect(submit.classList.contains('is-recent')).toBe(false);
+  });
+
+  it('does not throw when submit element is absent', () => {
+    const lm       = makeSubject();
+    lm.elements.submit = null;
+    const settings = { get: vi.fn(() => 'password') };
+    expect(() => lm.applyPasswordRecentHighlight({ lithiumSettings: settings })).not.toThrow();
+  });
+
+  it('does not throw when lithiumSettings is absent', () => {
+    const lm     = makeSubject();
+    const submit = document.createElement('button');
+    lm.elements.submit = submit;
+    expect(() => lm.applyPasswordRecentHighlight({})).not.toThrow();
+  });
+});

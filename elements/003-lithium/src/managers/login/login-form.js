@@ -40,11 +40,14 @@ export class LoginForm {
    * @param {Function} [options.isStartupComplete] - Returns boolean.
    *   Used by `setLoading()` to decide if the logs button should be
    *   re-enabled when loading finishes. Defaults to `() => true`.
+   * @param {Object} [options.deps] - Dependency overrides (for testing).
+   *   - `deps.lithiumSettings` — override for `window.lithiumSettings`.
    */
-  constructor({ elements, onLoginSuccess, isStartupComplete } = {}) {
+  constructor({ elements, onLoginSuccess, isStartupComplete, deps } = {}) {
     this.elements = elements || {};
     this._onLoginSuccess = onLoginSuccess || (async () => {});
     this._isStartupComplete = isStartupComplete || (() => true);
+    this._deps = deps || {};
 
     this.isSubmitting = false;
     this.isPasswordVisible = false;
@@ -290,6 +293,13 @@ export class LoginForm {
       throw new Error('No token received from server');
     }
     storeJWT(data.token);
+
+    // Record the last-used login method so the UI can subtly highlight it
+    // on the next visit (Phase 26).
+    const settings = this._deps.lithiumSettings ??
+      (typeof window !== 'undefined' ? window.lithiumSettings : null);
+    settings?.set('auth.last_method', 'password');
+
     this.saveRememberedUsername(username);
 
     // Hand off to caller (e.g. LoginManager.hide()) before emitting the

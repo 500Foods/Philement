@@ -485,9 +485,15 @@
 }
 
 /* Subtle "recently used" highlight — added by login.js when
-   auth.last_method matches this provider (Phase 26). */
+   auth.last_method matches this login method (Phase 26).
+   The same class is applied to both the OIDC provider button and
+   the password submit button to indicate which path was used last. */
 .login-btn-oidc.is-recent {
   border-color: var(--accent-primary);
+  box-shadow: 0 0 0 1px var(--accent-primary);
+}
+
+#login-submit.is-recent {
   box-shadow: 0 0 0 1px var(--accent-primary);
 }
 

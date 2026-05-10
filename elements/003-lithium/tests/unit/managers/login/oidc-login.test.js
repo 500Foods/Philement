@@ -448,3 +448,64 @@ describe('processOidcReturn — exchange failure', () => {
     expect(lm.hide).not.toHaveBeenCalled();
   });
 });
+
+// ---------------------------------------------------------------------------
+// auth.last_method — Phase 26
+// ---------------------------------------------------------------------------
+
+describe('processOidcReturn — auth.last_method (Phase 26)', () => {
+  it('sets auth.last_method to "oidc" on successful exchange', async () => {
+    const lm       = makeLoginManager();
+    const win      = makeWindow('?oidc=1&handoff=abc123');
+    const exchange = makeExchangeSuccess();
+    const store    = vi.fn();
+    const bus      = makeEventBus();
+    const settings = { set: vi.fn() };
+
+    await processOidcReturn(lm, {
+      window: win, exchangeHandoff: exchange, storeJWT: store,
+      eventBus: bus, lithiumSettings: settings,
+    });
+
+    expect(settings.set).toHaveBeenCalledWith('auth.last_method', 'oidc');
+  });
+
+  it('does not set auth.last_method when exchange fails', async () => {
+    const lm       = makeLoginManager();
+    const win      = makeWindow('?oidc=1&handoff=bad');
+    const err      = Object.assign(new Error('handoff expired'), { code: 'handoff_invalid' });
+    const exchange = vi.fn().mockRejectedValue(err);
+    const settings = { set: vi.fn() };
+
+    await processOidcReturn(lm, {
+      window: win, exchangeHandoff: exchange, lithiumSettings: settings,
+    });
+
+    expect(settings.set).not.toHaveBeenCalledWith('auth.last_method', 'oidc');
+  });
+
+  it('does not set auth.last_method when oidc_error is present', async () => {
+    const lm       = makeLoginManager();
+    const win      = makeWindow('?oidc=1&oidc_error=state_invalid');
+    const settings = { set: vi.fn() };
+
+    await processOidcReturn(lm, { window: win, lithiumSettings: settings });
+
+    expect(settings.set).not.toHaveBeenCalled();
+  });
+
+  it('does not throw when lithiumSettings is absent', async () => {
+    const lm       = makeLoginManager();
+    const win      = makeWindow('?oidc=1&handoff=abc123');
+    const exchange = makeExchangeSuccess();
+    const store    = vi.fn();
+    const bus      = makeEventBus();
+
+    await expect(
+      processOidcReturn(lm, {
+        window: win, exchangeHandoff: exchange, storeJWT: store, eventBus: bus,
+        lithiumSettings: null,
+      })
+    ).resolves.toBe(true);
+  });
+});
