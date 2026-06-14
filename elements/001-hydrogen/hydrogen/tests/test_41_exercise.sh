@@ -4,6 +4,9 @@
 # Starts one Hydrogen server with all 7 database engines configured,
 # runs 500 auth requests cycling across databases, and scrapes
 # Prometheus metrics to track memory growth for leak detection.
+# When hydrogen_debug (ASAN) build is available, launches with it and
+# performs post-shutdown LeakSanitizer analysis on the server log
+# for definitive leak detection on DB queue / auth paths.
 #
 # This test runs a single server with PostgreSQL, MySQL, SQLite, DB2,
 # MariaDB, CockroachDB, and YugabyteDB all simultaneously configured.
@@ -12,6 +15,8 @@
 #
 # Uses conduit_utils.sh library for server lifecycle management,
 # matching the proven approach from tests 50 and 51.
+# Purpose: exercise DB-heavy paths (unlike test_11 which avoids DBs)
+# with both RSS growth heuristics and ASAN when available.
 
 # FUNCTIONS
 # scrape_metrics()
@@ -19,6 +24,20 @@
 # run_auth_request()
 
 # CHANGELOG
+# 3.3.0 - 2026-06-14 - Enhanced for thorough DB/auth leak detection (ASAN + RSS)
+#                     - When hydrogen_debug (ASAN build) is available, launch server under it
+#                       with ASAN_OPTIONS=detect_leaks=1:leak_check_at_exit=1:... during exercise
+#                     - Post-shutdown LeakSanitizer analysis on the exercise server log (direct/indirect counts)
+#                     - Complements existing RSS steady-state growth heuristic (now secondary)
+#                     - Exercises real DB paths: execute_auth_query, DQM pending/await, QueryRefs for login,
+#                       JWT store/revoke, rate limiting, account lookup, password verify across 7 engines
+#                     - Fixed latent leaks in database_pending.c: late/expired QueryResult now always use
+#                       database_engine_cleanup_result (was raw free + TODOs); orphan signals cleaned
+#                     - Purpose: test_11 avoids DBs; test_41 is the DB stress + leak exercise
+#                     - Increased startup/webserver-ready timeouts in conduit_utils.sh (120s default)
+#                       and set higher (180s) via CONDUIT_*_TIMEOUT when forcing ASAN debug for 7DB case
+#                     - Guarded ASAN leak analysis subtest: only report "no leaks" if server actually started
+#                       and exercise ran; on startup failure under ASAN, skip rather than falsely pass
 # 3.2.0 - 2026-03-20 - Tightened leak threshold from 2 KB/req to 1 KB/req
 #                     - Observed steady-state rate ~0.51 KB/req across 500 requests
 #                     - 1 KB/req gives ~2x safety margin while catching leaks earlier
@@ -56,7 +75,7 @@ TEST_NAME="Exercise"
 TEST_ABBR="EXE"
 TEST_NUMBER="41"
 TEST_COUNTER=0
-TEST_VERSION="3.2.0"
+TEST_VERSION="3.3.0"
 
 TOTAL_REQUESTS=500
 SNAPSHOT_INTERVAL=50
@@ -89,6 +108,85 @@ if find_hydrogen_binary "${PROJECT_DIR}"; then
 else
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to find Hydrogen binary"
     EXIT_CODE=1
+fi
+
+# ── Detect ASAN Debug Build for Thorough Leak Checks ─────────────────
+# test_11 uses debug/ASAN but deliberately avoids DBs. test_41's purpose
+# is DB/auth stress (conduit + 7 engines + 500 logins) + leak detection.
+# When hydrogen_debug (ASAN-enabled) is present we launch the exercise
+# server under it and post-process LeakSanitizer output from its log.
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Detect ASAN Debug Build"
+
+ASAN_MODE=false
+ASAN_HYDROGEN_BIN=""
+# Probe common locations for the debug binary next to the regular one.
+# We *always* resolve to an absolute path (or ./prefixed) here so that when we
+# later do "export HYDROGEN_BIN=..." and conduit_utils does "${HYDROGEN_BIN}" ...
+# in a subshell/background, it can actually exec it. Bare names like "hydrogen_debug"
+# only work by luck in the test script's cwd context; they produce "command not found"
+# in the launch context (exactly what the server log showed).
+# Note on payload: the plain "hydrogen_debug" target (see cmake/CMakeLists-debug.cmake)
+# only adds ASAN flags; it does *not* run the embed_payload.sh step that regular,
+# coverage and release do. If the binary we pick lacks the appended encrypted payload,
+# the server will fail to load PAYLOAD: resources (Swagger, migrations tagged PAYLOAD:acuranzo,
+# terminal, etc.) and never print "STARTUP COMPLETE". We still allow it (with a warning)
+# so that the long-timeout run + guarded ASAN analysis can reveal the real error in the log.
+for cand in \
+    "${HYDROGEN_BIN_BASE}_debug" \
+    "hydrogen_debug" \
+    "$(dirname "${HYDROGEN_BIN}" 2>/dev/null || echo ".")/hydrogen_debug" \
+    "${PROJECT_DIR}/hydrogen_debug" \
+    "build/hydrogen_debug" ; do
+    if [[ -n "${cand}" ]]; then
+        # Resolve to absolute (preferred) or ./relative so it is directly executable later
+        local_resolved="${cand}"
+        if command -v realpath >/dev/null 2>&1; then
+            local_resolved=$(realpath "${cand}" 2>/dev/null || echo "${cand}")
+        elif command -v readlink >/dev/null 2>&1; then
+            # readlink -f is common; fall back gracefully
+            local_resolved=$(readlink -f "${cand}" 2>/dev/null || echo "${cand}")
+        fi
+        if [[ "${local_resolved}" != /* && -f "${local_resolved}" ]]; then
+            local_resolved="./${local_resolved}"
+        fi
+        if [[ -x "${local_resolved}" ]]; then
+            if { readelf -s "${local_resolved}" || true; } | "${GREP}" -q "__asan"; then
+                # Payload heuristic: look for evidence the encrypted payload was appended.
+                if strings "${local_resolved}" 2>/dev/null | "${GREP}" -q -E 'PAYLOAD:|<<<< HERE BE ME TREASURE >>>' ; then
+                    ASAN_HYDROGEN_BIN="${local_resolved}"
+                else
+                    ASAN_HYDROGEN_BIN="${local_resolved}"
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "WARNING: ${local_resolved} has ASAN but may lack embedded payload (plain debug target skips embed_payload.sh)"
+                fi
+                ASAN_MODE=true
+                break
+            fi
+        fi
+    fi
+done
+
+    if [[ "${ASAN_MODE}" == true ]]; then
+    # Resolve the candidate to an absolute path. The framework's find_hydrogen_binary
+    # often ends up with bare names (e.g. "hydrogen_coverage") that happen to be resolvable
+    # in the test runner's context. For our explicit override to the debug binary we must
+    # ensure the value we export as HYDROGEN_BIN is directly executable by the shell in
+    # run_conduit_server (which does "${HYDROGEN_BIN}" ...). Bare names fail when . is not
+    # on $PATH (common). Use REALPATH if available (provided by framework).
+    if [[ -n "${REALPATH:-}" ]] && command -v "${REALPATH}" >/dev/null 2>&1; then
+        ASAN_HYDROGEN_BIN=$("${REALPATH}" "${ASAN_HYDROGEN_BIN}" 2>/dev/null || echo "${ASAN_HYDROGEN_BIN}")
+    else
+        # Fallback: if it looks relative and exists here, make it ./relative so exec works
+        if [[ "${ASAN_HYDROGEN_BIN}" != /* && -f "${ASAN_HYDROGEN_BIN}" ]]; then
+            ASAN_HYDROGEN_BIN="./${ASAN_HYDROGEN_BIN}"
+        fi
+    fi
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "ASAN debug build found: ${ASAN_HYDROGEN_BIN}"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "ASAN debug build available - exercise will run under LeakSanitizer"
+    PASS_COUNT=$(( PASS_COUNT + 1 ))
+else
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "No ASAN debug build found (or not executable/with __asan); RSS heuristic only"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "No debug/ASAN build - using RSS growth heuristic for leak detection"
+    PASS_COUNT=$(( PASS_COUNT + 1 ))
 fi
 
 # ── Validate Environment ────────────────────────────────────────────
@@ -212,8 +310,44 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     EXERCISE_LOG_SUFFIX="exercise"
     RESULT_FILE="${LOG_PREFIX}${TIMESTAMP}_${EXERCISE_LOG_SUFFIX}.result"
     METRICS_LOG="${LOG_PREFIX}${TIMESTAMP}_metrics.log"
+    # Always define for shellcheck; set dedicated path only when running under ASAN debug build
+    ASAN_EXERCISE_LOG=""
+    if [[ "${ASAN_MODE}" == true ]]; then
+        ASAN_EXERCISE_LOG="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_${EXERCISE_LOG_SUFFIX}_asan.log"
+    fi
 
     true > "${METRICS_LOG}"
+
+    # If ASAN debug build is available, launch the exercise server under it
+    # so we can harvest LeakSanitizer output from its log at shutdown.
+    # We still use the same port/config; we temporarily override HYDROGEN_BIN
+    # for the run_conduit_server call, then restore it.
+    ORIGINAL_HYDROGEN_BIN="${HYDROGEN_BIN}"
+    if [[ "${ASAN_MODE}" == true && -n "${ASAN_HYDROGEN_BIN}" ]]; then
+        # Guarantee an absolute (or at worst ./ -prefixed) path for the launch.
+        # The probe above may have left a bare basename. conduit_utils does
+        # "${HYDROGEN_BIN}" ... in a background subshell; bare names fail there
+        # with "command not found" unless . is in $PATH for that context.
+        if [[ "${ASAN_HYDROGEN_BIN}" != /* ]]; then
+            if command -v realpath >/dev/null 2>&1; then
+                ASAN_HYDROGEN_BIN=$(realpath "${ASAN_HYDROGEN_BIN}" 2>/dev/null || echo "${ASAN_HYDROGEN_BIN}")
+            else
+                ASAN_HYDROGEN_BIN="$(pwd)/${ASAN_HYDROGEN_BIN##*/}"
+            fi
+        fi
+        # Export for the conduit_utils server launch (it sources ${HYDROGEN_BIN})
+        export HYDROGEN_BIN="${ASAN_HYDROGEN_BIN}"
+        # Comprehensive ASAN options (leak_check_at_exit ensures report on SIGINT/SIGTERM shutdown)
+        export ASAN_OPTIONS="detect_leaks=1:leak_check_at_exit=1:verbosity=1:log_threads=1:print_stats=1"
+        # Give ASAN-instrumented multi-DB startup (7 engines + migrations + Slow queues) plenty of time.
+        # run_conduit_server and the webserver-ready loop honor these.
+        export CONDUIT_STARTUP_TIMEOUT=180
+        export CONDUIT_WEBSERVER_READY_TIMEOUT=180
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Launching exercise server under ASAN debug build for leak analysis"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "ASAN_OPTIONS=${ASAN_OPTIONS}"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Startup timeouts extended for ASAN+7DBs (CONDUIT_STARTUP_TIMEOUT=${CONDUIT_STARTUP_TIMEOUT}, WEBSERVER_READY=${CONDUIT_WEBSERVER_READY_TIMEOUT})"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Effective HYDROGEN_BIN for launch: ${HYDROGEN_BIN}"
+    fi
 
     # Use run_conduit_server() from conduit_utils.sh for proven startup,
     # migration waiting, database readiness, and webserver readiness
@@ -225,7 +359,8 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         EXIT_CODE=1
     else
         # Parse server info - format is "base_url:pid"
-        HYDROGEN_PID=$(echo "${server_info}" | awk -F: '{print $4}')
+        # Conduit helper returns "base_url:pid" (two fields after the scheme/port). Use $NF for robustness.
+        HYDROGEN_PID=$(echo "${server_info}" | awk -F: '{print $NF}')
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Server started: ${server_info}"
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Server log: build/tests/logs/test_${TEST_NUMBER}_${TIMESTAMP}_${EXERCISE_LOG_SUFFIX}.log"
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Server started successfully"
@@ -500,6 +635,67 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     fi
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Server stopped"
     PASS_COUNT=$(( PASS_COUNT + 1 ))
+
+    # ── ASAN Leak Analysis (if we ran under hydrogen_debug) ─────────
+    # The ASAN log is the same exercise log (ASAN writes to stderr which we
+    # redirected into the server log). We saved a dedicated copy above for
+    # clarity and will scan it for LeakSanitizer summaries.
+    if [[ "${ASAN_MODE}" == true ]]; then
+        print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "ASAN LeakSanitizer Analysis"
+
+        # Restore original binary for any subsequent tooling (not strictly needed here)
+        export HYDROGEN_BIN="${ORIGINAL_HYDROGEN_BIN}"
+
+        # Only attempt "no leaks" success if the server actually started and
+        # the exercise phase was reached. A startup failure under ASAN should
+        # not be reported as "no leaks detected".
+        if [[ "${EXIT_CODE}" -ne 0 || "${server_info}" == "FAILED:0" ]]; then
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Skipping ASAN leak analysis: server did not start successfully under ASAN debug build"
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "ASAN: server startup failed under debug build - no leak data produced"
+            # Do not increment PASS; keep failure visible. Do not force EXIT_CODE here;
+            # the earlier "Server startup failed" already set EXIT_CODE=1.
+        else
+            # Prefer dedicated ASAN log if present; else fall back to regular server log
+            ASAN_LOG_CANDIDATE="${ASAN_EXERCISE_LOG}"
+            if [[ ! -f "${ASAN_LOG_CANDIDATE}" ]]; then
+                ASAN_LOG_CANDIDATE="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_${EXERCISE_LOG_SUFFIX}.log"
+            fi
+
+            if [[ -f "${ASAN_LOG_CANDIDATE}" ]]; then
+                # Copy for artifacts
+                cp "${ASAN_LOG_CANDIDATE}" "${METRICS_LOG%.log}_asan.log" 2>/dev/null || true
+
+                DIRECT_LEAKS=$("${GREP}" -c "Direct leak of" "${ASAN_LOG_CANDIDATE}" 2>/dev/null | head -1 || echo "0" || true)
+                INDIRECT_LEAKS=$("${GREP}" -c "Indirect leak of" "${ASAN_LOG_CANDIDATE}" 2>/dev/null | head -1 || echo "0" || true)
+
+                DIRECT_LEAKS=$(echo "${DIRECT_LEAKS}" | tr -d '\n\r' | "${GREP}" -o '[0-9]*' | head -1 || true)
+                INDIRECT_LEAKS=$(echo "${INDIRECT_LEAKS}" | tr -d '\n\r' | "${GREP}" -o '[0-9]*' | head -1 || true)
+                [[ -z "${DIRECT_LEAKS}" ]] && DIRECT_LEAKS=0
+                [[ -z "${INDIRECT_LEAKS}" ]] && INDIRECT_LEAKS=0
+
+                {
+                    echo ""
+                    echo "=== ASAN LEAKSANITIZER SUMMARY ==="
+                    echo "Direct leaks: ${DIRECT_LEAKS}"
+                    echo "Indirect leaks: ${INDIRECT_LEAKS}"
+                    echo "Log: ${ASAN_LOG_CANDIDATE}"
+                } >> "${METRICS_LOG}"
+
+                if [[ "${DIRECT_LEAKS}" -gt 0 || "${INDIRECT_LEAKS}" -gt 0 ]]; then
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "ASAN: Direct=${DIRECT_LEAKS}, Indirect=${INDIRECT_LEAKS}"
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "ASAN detected leaks: ${DIRECT_LEAKS} direct, ${INDIRECT_LEAKS} indirect (see ${ASAN_LOG_CANDIDATE})"
+                    EXIT_CODE=1
+                else
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "ASAN: no leaks reported (Direct=0, Indirect=0)"
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "ASAN: no leaks detected in exercise run"
+                    PASS_COUNT=$(( PASS_COUNT + 1 ))
+                fi
+            else
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "ASAN log not found for leak analysis (expected at ${ASAN_LOG_CANDIDATE})"
+                EXIT_CODE=1
+            fi
+        fi
+    fi
 
     # ── Print Summary ───────────────────────────────────────────────
 
