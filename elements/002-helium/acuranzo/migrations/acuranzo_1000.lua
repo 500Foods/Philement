@@ -431,8 +431,7 @@ table.insert(queries,{sql=[[
         ]=]
                                                                             AS summary,
                                                                             -- DIAGRAM_START
-        ${JSON_INGEST_START}
-        [=[
+        ${JSON_INGEST_START}[=[
             {
                 "diagram": [
                     {
@@ -560,8 +559,7 @@ table.insert(queries,{sql=[[
                     }
                 ]
             }
-        ]=]
-        ${JSON_INGEST_END}
+        ]=]${JSON_INGEST_END}
                                                                             -- DIAGRAM_END
                                                                             AS collection,
         ${COMMON_INSERT}

@@ -73,8 +73,7 @@ table.insert(queries,{sql=[[
 
                     Source: `elements/003-lithium/config/tabulator/queries/query-manager.json`
                 ]==],
-                ${JSON_INGEST_START}
-[===[
+                ${JSON_INGEST_START}[===[
 {
   "$schema": "../tabledef-schema.json",
   "$version": "1.0.0",
@@ -302,13 +301,13 @@ table.insert(queries,{sql=[[
               and query_type_a28 = ${TYPE_APPLIED_MIGRATION};
         ]=]
                                                                             AS code,
-        'Remove ${SCHEMA_NAME} schema from Lookup ${LOOKUP_ID}'             AS name,
-        [=[
-            # Reverse Migration ${MIGRATION}: Remove ${SCHEMA_NAME} schema from Lookup ${LOOKUP_ID}
+         'Remove ${TABLEDEF_NAME} tableDef from Lookup ${LOOKUP_ID}'             AS name,
+         [=[
+             # Reverse Migration ${MIGRATION}: Remove ${TABLEDEF_NAME} tableDef from Lookup ${LOOKUP_ID}
 
-            This is provided for completeness when testing the migration system
-            to ensure that forward and reverse migrations are complete.
-        ]=]
+             This is provided for completeness when testing the migration system
+             to ensure that forward and reverse migrations are complete.
+         ]=]
                                                                             AS summary,
         '{}'                                                                AS collection,
         ${COMMON_INSERT}

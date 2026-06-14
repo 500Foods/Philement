@@ -45,10 +45,8 @@ table.insert(queries,{sql=[[
 
 
                 ]==],
-                ${JSON_INGEST_START}
-[===[
-{
-}
+                ${JSON_INGEST_START}[===[
+{}
 ]===]
                 ${JSON_INGEST_END}, ${COMMON_VALUES});
 
@@ -105,13 +103,13 @@ table.insert(queries,{sql=[[
               and query_type_a28 = ${TYPE_APPLIED_MIGRATION};
         ]=]
                                                                             AS code,
-        'Remove ${SCHEMA_NAME} schema from Lookup ${LOOKUP_ID}'             AS name,
-        [=[
-            # Reverse Migration ${MIGRATION}: Remove ${SCHEMA_NAME} schema from Lookup ${LOOKUP_ID}
+         'Remove ${TABLEDEF_NAME} tableDef from Lookup ${LOOKUP_ID}'             AS name,
+         [=[
+             # Reverse Migration ${MIGRATION}: Remove ${TABLEDEF_NAME} tableDef from Lookup ${LOOKUP_ID}
 
-            This is provided for completeness when testing the migration system
-            to ensure that forward and reverse migrations are complete.
-        ]=]
+             This is provided for completeness when testing the migration system
+             to ensure that forward and reverse migrations are complete.
+         ]=]
                                                                             AS summary,
         '{}'                                                                AS collection,
         ${COMMON_INSERT}
