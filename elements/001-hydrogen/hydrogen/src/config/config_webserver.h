@@ -44,6 +44,11 @@ typedef struct WebServerConfig {
     // NEW: Global CORS default that subsystems can override
     char* cors_origin;             // NEW: Global CORS default "*" - can be overridden per subsystem
 
+    // ChaCha (Cap) configuration for anonymous form protection (env fallback via ${env.CHACHA_*})
+    char* chacha_server;
+    char* chacha_site_id;
+    char* chacha_secret;
+
     // NEW: Custom headers configuration
     HeaderRule* headers;           // Array of custom header rules
     size_t headers_count;          // Number of header rules

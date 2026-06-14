@@ -99,6 +99,9 @@ bool load_webserver_config(json_t* root, AppConfig* config) {
     webserver->web_root = strdup("/tmp/hydrogen");
     webserver->upload_path = strdup("/upload");
     webserver->upload_dir = strdup("/tmp/hydrogen");
+    webserver->chacha_server = strdup("${env.CHACHA_SERVER}");
+    webserver->chacha_site_id = strdup("${env.CHACHA_SITEID}");
+    webserver->chacha_secret = strdup("${env.CHACHA_SECRET}");
 
     success = PROCESS_SECTION(root, "WebServer");
     
@@ -112,6 +115,9 @@ bool load_webserver_config(json_t* root, AppConfig* config) {
     success = success && PROCESS_STRING(root, webserver, upload_path, "WebServer.UploadPath", "WebServer");
     success = success && PROCESS_STRING(root, webserver, upload_dir, "WebServer.UploadDir", "WebServer");
     success = success && PROCESS_SIZE(root, webserver, max_upload_size, "WebServer.MaxUploadSize", "WebServer");
+    success = success && PROCESS_STRING(root, webserver, chacha_server, "WebServer.ChaChaServer", "WebServer");
+    success = success && PROCESS_STRING(root, webserver, chacha_site_id, "WebServer.ChaChaSiteID", "WebServer");
+    success = success && PROCESS_STRING(root, webserver, chacha_secret, "WebServer.ChaChaSecret", "WebServer");
 
     // Process connection settings
     success = success && PROCESS_INT(root, webserver, thread_pool_size, "WebServer.ThreadPoolSize", "WebServer");
@@ -164,6 +170,9 @@ void dump_webserver_config(const WebServerConfig* config) {
     DUMP_STRING("―― Upload Path", config->upload_path);
     DUMP_STRING("―― Upload Directory", config->upload_dir);
     DUMP_SIZE("―― Max Upload Size", config->max_upload_size);
+    DUMP_STRING("―― ChaCha Server", config->chacha_server);
+    DUMP_STRING("―― ChaCha Site ID", config->chacha_site_id);
+    DUMP_SECRET("―― ChaCha Secret", config->chacha_secret);
 
     // Connection settings
     DUMP_TEXT("――", "Connection Settings");
@@ -195,6 +204,9 @@ void cleanup_webserver_config(WebServerConfig* config) {
     free(config->web_root);
     free(config->upload_path);
     free(config->upload_dir);
+    free(config->chacha_server);
+    free(config->chacha_site_id);
+    free(config->chacha_secret);
 
     // Clean up custom headers
     if (config->headers) {

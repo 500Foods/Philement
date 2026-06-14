@@ -9,7 +9,9 @@ The primary Helium project documentation can be found in [Helium Docs](/docs/He/
 
 ## Schemas
 
-- The [Acuranzo](acuranzo/README.md) schema is intended for use with the JavaScript-based web app that forms the basis of the front-end, akin to Mainsail or others.
+- The [Acuranzo](acuranzo/README.md) schema is intended for use with the JavaScript-based web app that forms the basis of the front-end, akin to Mainsail or others. (Most active migrations; primary target PostgreSQL 15+ via YugabyteDB.)
 - The [GAIUS](gaius/README.md) schema describes tables for the [GAIUS Project](https://www.gaiusmodel.com) which has nothing at all to do with 3D printing.
 - The [GLM](glm/README.md) schema describes tables form the [GLM Project](https://www.500foods.com) which also has nothing at all to do with 3D printing.
 - The [Helium](helium/README.md) schema describes tables targeting 3D printing directly, including printer information, filament mangement, and so on.
+
+**For migration authors (especially AI/LLMs)**: The primary Helium documentation and strict authoring rules are in `/docs/He/README.md`, with the critical "For AI / LLM Migration Generation" guidance and study order in `/docs/He/GUIDE.md`. Always start by reading `/docs/He/MIGRATION_ANATOMY.md` and `/docs/He/MACRO_REFERENCE.md`.

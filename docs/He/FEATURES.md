@@ -6,8 +6,8 @@ The Helium project provides a comprehensive database migration and schema manage
 
 Single migration files work seamlessly across all supported database engines:
 
-- **PostgreSQL** v16/v17 - Primary development platform
-- **MySQL/MariaDB** - Widely tested alternative
+- **PostgreSQL 15+** (primary via YugabyteDB) - Primary development and test platform. All active work targets PG15-compatible behavior.
+- **MySQL/MariaDB** - Widely tested alternative (see Hydrogen `test_36_mariadb_migrations.sh`, `test_33_mysql_migrations.sh`).
 - **SQLite** v3 - Embedded applications
 - **IBM DB2** v10-12 - Enterprise deployments
 

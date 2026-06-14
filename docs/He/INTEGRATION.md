@@ -191,7 +191,7 @@ Comprehensive logging for troubleshooting:
 ### Development Guidelines
 
 - **Test Locally**: Always test migrations on local database first
-- **Use All Engines**: Validate on all supported databases in CI/CD
+- **Use All Engines**: Validate on all supported databases in CI/CD (primary focus: YugabyteDB/PG15 via `test_38_yugabytedb_migrations.sh` and `test_32_postgres_migrations.sh`).
 - **Document Changes**: Include clear descriptions in migration metadata
 - **Plan Rollbacks**: Ensure reverse migrations are comprehensive
 

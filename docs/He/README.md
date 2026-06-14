@@ -17,10 +17,12 @@ say, a 3D printer, as a service and you've got 99% of what it takes to run Mains
 
 The Helium project provides database schemas and migrations (collectively referred to as "designs") for the Hydrogen server system. It supports multiple database engines - currently including the following.
 
-- [PostgreSQL 16+](https://www.postgresql.org/) - Advanced open source relational database
+- [PostgreSQL 15+](https://www.postgresql.org/) (primary target via [YugabyteDB](https://www.yugabyte.com/)) - Advanced open source relational database. All active development and testing focuses on PG15-compatible behavior.
 - [MariaDB 10.5+](https://mariadb.org/) - Enhanced, drop-in MySQL replacement[^mysql-note]
 - [SQLite 3.35+](https://www.sqlite.org/) - Self-contained, serverless SQL database engine
 - [IBM DB2 (LUW) 10+](https://www.ibm.com/products/db2-database) - Enterprise-grade relational database system
+
+YugabyteDB is treated as the primary PostgreSQL-compatible platform for ongoing work (see Hydrogen `test_38_yugabytedb_migrations.sh`). Migrations must remain compatible with PostgreSQL 15 semantics.
 
 [^mysql-note]: The original intent was for MySQL/MariaDB support, but only MariaDB is included in the test environment. MySQL compatibility should be carefully evaluated if needd.
 
@@ -35,7 +37,8 @@ The Hydrogen project is what uses these files. The migration files themsleves ca
 
 - [Test 30 - Database Subsystem Test](/docs/H/tests/test_30_database.md) - Validates Database Queue Manager (DQM) startup and functionality across multiple database engines
 - [Test 31 - Migration Validation](/docs/H/tests/test_31_migrations.md) - Performs static analysis on database migration files using SQL linting tools
-- [Test 32 - PostgreSQL Migrations](/docs/H/tests/test_32_postgres_migrations.md) - Tests PostgreSQL database migration performance and execution
+- [Test 32 - PostgreSQL Migrations](/docs/H/tests/test_32_postgres_migrations.md) - Tests PostgreSQL 15+ / YugabyteDB (primary active target) database migration performance and execution
+- [Test 38 - YugabyteDB Migrations](/elements/001-hydrogen/hydrogen/tests/test_38_yugabytedb_migrations.sh) - End-to-end migration bootstrap test against YugabyteDB (PG15-compatible)
 - [Test 33 - MySQL Migrations](/docs/H/tests/test_33_mysql_migrations.md) - Tests MySQL/MariaDB database migration performance and execution
 - [Test 34 - SQLite Migrations](/docs/H/tests/test_34_sqlite_migrations.md) - Tests SQLite database migration performance and execution
 - [Test 35 - DB2 Migrations](/docs/H/tests/test_35_db2_migrations.md) - Tests IBM DB2 database migration performance and execution
@@ -43,6 +46,8 @@ The Hydrogen project is what uses these files. The migration files themsleves ca
 - [Test 98 - Lua Code Analysis](/docs/H/tests/test_98_luacheck.md) - Performs static analysis on Lua source files using luacheck tool
 
 IN addtion, [Test 01 - Compilation](/docs/H/tests/test_01_compilation.md) builds the Hydrgoen payload which typically includes the migration files. As part of the build step, it checks to see if the migrations files have been updated more recently than the paylod. If so, it regenerates the payload and also runs the [helium_update.sh](/elements/002-helium/scripts/helium_update.sh) script.
+
+**Critical for running tests after migration changes**: Most Hydrogen tests run against the compiled binary + embedded payload. After changing Helium migrations you must usually run `mkt` (make-trial) or `mka` (make-all) — aliases defined in `~/.zshrc` — to rebuild the payload before executing tests such as 30, 31–38 or 71. See the note in [TESTING_GUIDE.md](/docs/He/TESTING_GUIDE.md).
 
 ## Table of Contents
 

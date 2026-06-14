@@ -4,7 +4,9 @@ This migration contains the extensive DDL and SQL for the GLM database - Greenho
 
 The goal of including a migration here is to provide a path forward from an aging Windows app into a modern JavasScript web-app. It also makes for an interesting proving ground as there are plenty of examples of more complex queries and lots of sample data to play with.
 
-As this gets implemented, it, like the other schemas here, will be structured to support DB2, MySQL/MariaDB, PostgreSQL, and SQLite engines.
+As this gets implemented, it, like the other schemas here, will be structured to support DB2, MySQL/MariaDB, PostgreSQL 15+ (primary via YugabyteDB), and SQLite engines.
+
+For migration authoring rules and AI guidance, see the Helium docs: `/docs/He/GUIDE.md` (For AI / LLM section) and `/docs/He/MIGRATION_ANATOMY.md`.
 
 ## Database Files
 

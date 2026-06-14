@@ -4,6 +4,8 @@ The Helium migration is intended for use within the 3D printing environment. Thi
 
 Early days, so lots of things could find their way into here.
 
+Primary target for Helium migrations overall is PostgreSQL 15+ via YugabyteDB. Authoritative guidance for writing or generating migrations lives in `/docs/He/`: start with `MIGRATION_ANATOMY.md`, `MACRO_REFERENCE.md`, and the "For AI / LLM Migration Generation" section in `GUIDE.md`.
+
 ## Database Files
 
 | File | Purpose |

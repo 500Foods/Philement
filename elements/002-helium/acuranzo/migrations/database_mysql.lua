@@ -20,8 +20,8 @@ return {
     CHAR_20 = "char(20)",
     CHAR_50 = "char(50)",
     CHAR_128 = "char(128)",
-    DATE = "DATE",
-    DATETIME = "DATETIME",
+    DATE = "date",
+    DATETIME = "datetime",
     FLOAT = "float",
     FLOAT_BIG = "double",
     INSERT_KEY_START = "-- ",
@@ -44,10 +44,10 @@ return {
     SIZE_INTEGER_BIG = "8",
     SIZE_INTEGER_SMALL = "2",
     SIZE_TIMESTAMP = "7",
-    TEXT = "VARCHAR(255)",
+    TEXT = "varchar(255)",
     TEXT_BIG = "text",
-    TIME = "TIME",
-    TIMESTAMP = "TIMESTAMP",
+    TIME = "time",
+    TIMESTAMP = "timestamp",
     TIMESTAMP_TZ = "datetime(3)",
     TRMS = "DATE_SUB(${NOW}, INTERVAL ",
     TRME = " MINUTE)",
@@ -84,7 +84,7 @@ return {
     -- DROP FUNCTION IF EXISTS brotli_decompress;
     -- NOTE: Drop function added to migration 1000 so that this is a single statement for the preparation phase
     BROTLI_DECOMPRESS_FUNCTION = [[
-        CREATE FUNCTION brotli_decompress RETURNS STRING SONAME 'brotli_decompress.so';
+        CREATE FUNCTION brotli_decompress RETURNS string SONAME 'brotli_decompress.so';
     ]],
 
     JSON = "longtext",
@@ -98,11 +98,11 @@ return {
         DETERMINISTIC
         BEGIN
           DECLARE fixed longtext DEFAULT '';
-          DECLARE i INT DEFAULT 1;
-          DECLARE L INT DEFAULT CHAR_LENGTH(s);
-          DECLARE ch CHAR(1);
-          DECLARE in_str BOOL DEFAULT FALSE;
-          DECLARE esc BOOL DEFAULT FALSE;
+           DECLARE i int DEFAULT 1;
+           DECLARE L int DEFAULT CHAR_LENGTH(s);
+           DECLARE ch char(1);
+           DECLARE in_str bool DEFAULT FALSE;
+           DECLARE esc bool DEFAULT FALSE;
           -- fast path: check validity without exception
           IF JSON_VALID(s) THEN
             RETURN s;
