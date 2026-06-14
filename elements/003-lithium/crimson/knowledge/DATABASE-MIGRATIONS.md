@@ -1,6 +1,8 @@
 # Acuranzo Database Design
 
-This folder contains the migrations (aka database DDL and SQL) for creating a new instance of an Acuranzo database. Current supported engines include PostgreSQL, MySQL, SQLite, and IBM DB2.
+This folder contains the migrations (aka database DDL and SQL) for creating a new instance of an Acuranzo database. Current supported engines include PostgreSQL 15+ (primary target via YugabyteDB), MySQL/MariaDB, SQLite, and IBM DB2.
+
+All active development and AI-assisted migration work targets PostgreSQL 15 semantics (exercised primarily through YugabyteDB — see Hydrogen `test_38_yugabytedb_migrations.sh`). See the authoritative guidance in `/docs/He/GUIDE.md` (section "For AI / LLM Migration Generation") and `/docs/He/MIGRATION_ANATOMY.md`.
 
  The [migration_index.sh](../scripts/migration_index.sh) script can be used to automatically update the Migrations table below - [helium_update.sh](../scripts/helium_update.sh) will update all schema documents as well as perform other repository housekeeping tasks.
 
@@ -223,4 +225,11 @@ in the migrations themselves so that they get populated in the database directly
 | [1186](/elements/002-helium/acuranzo/migrations/acuranzo_1186.lua) | lookups | 1.0.0 | 2026-04-12 | 4 | ✗ | LithiumTable style-manager-sections (lookup_id 059, key_idx 9) |
 | [1187](/elements/002-helium/acuranzo/migrations/acuranzo_1187.lua) | lookups | 1.0.0 | 2026-03-15 | 4 | ✗ | LithiumTable version-manager (lookup_id 059, key_idx 10) |
 | [1188](/elements/002-helium/acuranzo/migrations/acuranzo_1188.lua) | queries | 1.0.0 | 2026-04-23 | 4 | ✗ | QueryRef #075 - Create Account Settings |
-| **189** | | | | **958** | **189** | |
+| [1189](/elements/002-helium/acuranzo/migrations/acuranzo_1189.lua) | account_oidc_identities | 1.0.0 | 2026-05-09 | 7 | ✓ | Creates the account_oidc_identities table (OIDC RP Phase 15) |
+| [1190](/elements/002-helium/acuranzo/migrations/acuranzo_1190.lua) | accounts | 1.0.0 | 2026-05-09 | 25 | ✓ | Relax accounts.password_hash to NULL for OIDC-provisioned accounts (OIDC RP Phase 16) |
+| [1191](/elements/002-helium/acuranzo/migrations/acuranzo_1191.lua) | queries | 1.0.0 | 2026-05-09 | 4 | ✗ | QueryRef #080 - OIDC RP: Lookup OIDC Identity (Phase 17) |
+| [1192](/elements/002-helium/acuranzo/migrations/acuranzo_1192.lua) | queries | 1.0.0 | 2026-05-09 | 4 | ✗ | QueryRef #081 - OIDC RP: Link OIDC Identity (Phase 17) |
+| [1193](/elements/002-helium/acuranzo/migrations/acuranzo_1193.lua) | queries | 1.0.0 | 2026-05-09 | 4 | ✗ | QueryRef #082 - OIDC RP: Lookup Account by Email (Phase 17) |
+| [1194](/elements/002-helium/acuranzo/migrations/acuranzo_1194.lua) | queries | 1.0.0 | 2026-05-09 | 4 | ✗ | QueryRef #083 - OIDC RP: Provision OIDC Account (Phase 17) |
+| [1195](/elements/002-helium/acuranzo/migrations/acuranzo_1195.lua) | queries | 1.0.0 | 2026-05-09 | 4 | ✗ | QueryRef #084 - OIDC RP: Touch OIDC Identity (Phase 17) |
+| **196** | | | | **1010** | **196** | |
