@@ -1,6 +1,8 @@
 # Acuranzo Database Design
 
-This folder contains the migrations (aka database DDL and SQL) for creating a new instance of an Acuranzo database. Current supported engines include PostgreSQL, MySQL, SQLite, and IBM DB2.
+This folder contains the migrations (aka database DDL and SQL) for creating a new instance of an Acuranzo database. Current supported engines include PostgreSQL 15+ (primary target via YugabyteDB), MySQL/MariaDB, SQLite, and IBM DB2.
+
+All active development and AI-assisted migration work targets PostgreSQL 15 semantics (exercised primarily through YugabyteDB — see Hydrogen `test_38_yugabytedb_migrations.sh`). See the authoritative guidance in `/docs/He/GUIDE.md` (section "For AI / LLM Migration Generation") and `/docs/He/MIGRATION_ANATOMY.md`.
 
  The [migration_index.sh](../scripts/migration_index.sh) script can be used to automatically update the Migrations table below - [helium_update.sh](../scripts/helium_update.sh) will update all schema documents as well as perform other repository housekeeping tasks.
 

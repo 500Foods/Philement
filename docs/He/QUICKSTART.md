@@ -6,7 +6,7 @@ This 10-minute tutorial will guide you through creating, testing, and rolling ba
 
 - **Lua 5.1+** installed with luarocks
 - **lua-brotli** library: `luarocks install lua-brotli`
-- **Database**: PostgreSQL, MySQL, or SQLite running locally
+- **Database**: YugabyteDB (PG15-compatible) / PostgreSQL 15+ (primary target), MySQL/MariaDB, or SQLite running locally.
 - **Basic SQL knowledge**
 
 ## Step 1: Create Your First Migration (2 minutes)
@@ -123,13 +123,13 @@ lua -e "require 'acuranzo_9999'"
 
 ## Step 3: Run the Forward Migration (2 minutes)
 
-Execute the migration against your database:
+Execute the migration against your database (primary target is YugabyteDB / PG15-compatible PostgreSQL):
 
 ```bash
-# For PostgreSQL
+# For PostgreSQL 15+ or YugabyteDB (primary)
 lua database.lua postgresql acuranzo public < acuranzo_9999.lua | psql -h localhost -U your_user -d your_database
 
-# For MySQL
+# For MySQL/MariaDB
 lua database.lua mysql acuranzo your_schema < acuranzo_9999.lua | mysql -h localhost -u your_user -p your_database
 
 # For SQLite
@@ -179,18 +179,18 @@ rm acuranzo_9999.lua
 
 ## What You Learned
 
-✅ **Migration Structure**: How migrations are Lua functions returning query arrays
-✅ **Macro System**: Using `${TABLE}`, `${SCHEMA}`, etc. for database portability
-✅ **Forward/Reverse Pattern**: Every change needs an undo operation
-✅ **Query States**: How migrations transition from forward → applied → reverse → forward
-✅ **Multi-Engine Support**: Same migration works on PostgreSQL, MySQL, SQLite, DB2
+✅ **Migration Structure**: How migrations are Lua functions returning query arrays (the canonical `INSERT INTO ${SCHEMA}${QUERIES} ...` form).
+✅ **Macro System**: Using `${TABLE}`, `${SCHEMA}`, `${DROP_CHECK}`, `${SUBQUERY_DELIMITER}`, `${JSON_INGEST_START/END}`, `${COMMON_CREATE}`, `${COMMON_DIAGRAM}`, etc. for database portability.
+✅ **Forward/Reverse/Diagram Triad**: Every schema change needs a forward (with state UPDATE inside code), a reverse (often with `${DROP_CHECK}`), and a diagram migration (with `object_ref` + JSON in `collection`).
+✅ **Query States**: How migrations transition 1000 (forward) → 1003 (applied) → 1001 (reverse) → 1000 (forward).
+✅ **Multi-Engine Support**: Same migration works on PostgreSQL 15+ (YugabyteDB primary), MySQL/MariaDB, SQLite, DB2 — but rare per-engine blocks are allowed when documented.
 
 ## Next Steps
 
-- Read the [Migration Creation Guide](/docs/He/GUIDE.md) for advanced patterns
-- Study existing migrations like `acuranzo_1001.lua`
-- Learn about the [Macro System](/docs/He/MACRO_REFERENCE.md)
-- Explore [Testing Guide](/docs/He/TESTING_GUIDE.md) for validation techniques
+- Read the [Migration Creation Guide](/docs/He/GUIDE.md), especially the **"For AI / LLM Migration Generation"** section and the mandatory study order.
+- Study recent real migrations in order: `acuranzo_1189.lua`, `acuranzo_1159.lua`, `acuranzo_1190.lua`, then `acuranzo_1000.lua`.
+- Learn about the [Macro System](/docs/He/MACRO_REFERENCE.md) and [Migration Anatomy](/docs/He/MIGRATION_ANATOMY.md).
+- Explore [Testing Guide](/docs/He/TESTING_GUIDE.md) and run Hydrogen's `test_31_migrations.sh`, `test_32_postgres_migrations.sh`, `test_38_yugabytedb_migrations.sh`.
 
 ## Troubleshooting
 
@@ -201,7 +201,7 @@ rm acuranzo_9999.lua
 ### Database connection errors
 
 - Verify your database is running and credentials are correct
-- Check that the `queries` table exists (run a real migration first)
+- Check that the `queries` table exists (run a real migration first, starting with the bootstrap `acuranzo_1000.lua`)
 
 ### Migration doesn't appear in queries table
 
@@ -212,3 +212,14 @@ rm acuranzo_9999.lua
 
 - Verify you're using the correct database engine name (postgresql, mysql, sqlite, db2)
 - Check that database.lua and the engine-specific files are present
+
+### State machine problems (wrong query_type_a28 after running)
+
+- Re-read `docs/He/MIGRATION_ANATOMY.md`.
+- The state transition `UPDATE` must be **inside** the embedded `code` block of the forward/reverse query, not outside.
+- Reverse must reset back to `TYPE_FORWARD_MIGRATION`, not leave it applied.
+
+### AI-generated migration feels "off"
+
+- Stop and re-read the **"For AI / LLM Migration Generation"** section in `docs/He/GUIDE.md`.
+- Study the real recent migrations in the order listed there instead of guessing.
