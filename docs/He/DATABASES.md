@@ -4,16 +4,18 @@ The Helium project supports multiple database engines, allowing you to deploy th
 
 ## Primary Databases
 
-### PostgreSQL v16/v17
+### PostgreSQL 15+ (via YugabyteDB)
 
-- **Status**: Primary development platform
-- **Features**: Full JSON support, advanced indexing, excellent concurrency
-- **Use Cases**: Production deployments, complex queries, high concurrency
-- **Setup**: Native support with no additional extensions required
+- **Status**: Primary development and test platform. All active schema work targets PostgreSQL 15 compatibility.
+- **Primary runtime**: [YugabyteDB](https://www.yugabyte.com/) (PostgreSQL 15 wire-compatible). See Hydrogen test `test_38_yugabytedb_migrations.sh`.
+- **Features**: Full JSON support, advanced indexing, excellent concurrency; Yugabyte adds distributed scale.
+- **Use Cases**: Production deployments (Yugabyte), complex queries, high concurrency.
+- **Setup**: Native support with no additional extensions required for core functionality. Use YugabyteDB for primary validation.
+- **Important**: Do not assume PostgreSQL 16+ features. Target PG15 semantics (e.g., no reliance on newer syntax or functions).
 
 ### MySQL/MariaDB
 
-- **Status**: Widely tested alternative
+- **Status**: Widely tested alternative (validation via `test_36_mariadb_migrations.sh` and `test_33_mysql_migrations.sh`)
 - **Features**: Broad compatibility, extensive tooling ecosystem
 - **Use Cases**: Legacy systems, web applications, cost-effective deployments
 - **Setup**: Requires FROM_BASE64() function for content decoding
@@ -68,14 +70,16 @@ All migrations are designed to work across all supported databases through the m
 
 ## Testing Requirements
 
-For comprehensive testing, set up all supported databases in your CI/CD pipeline:
+For comprehensive testing, set up all supported databases in your CI/CD pipeline. Primary validation runs against YugabyteDB (PG15-compatible) and the other engines via the Hydrogen test suite (see `test_31_migrations.sh`, `test_32_postgres_migrations.sh`, `test_38_yugabytedb_migrations.sh`, etc.).
 
 ```bash
-# PostgreSQL
-docker run -d --name postgres -e POSTGRES_PASSWORD=test postgres:16
+# PostgreSQL 15 (or YugabyteDB)
+docker run -d --name postgres -e POSTGRES_PASSWORD=test postgres:15
+# or yugabytedb/yugabyte:latest for primary target
 
-# MySQL
+# MySQL/MariaDB
 docker run -d --name mysql -e MYSQL_ROOT_PASSWORD=test mysql:8
+docker run -d --name mariadb -e MARIADB_ROOT_PASSWORD=test mariadb:10.5
 
 # SQLite (no setup required)
 # DB2 (requires license)
@@ -90,9 +94,10 @@ docker run -d --name mysql -e MYSQL_ROOT_PASSWORD=test mysql:8
 
 ### For Production
 
-- **PostgreSQL**: Complex applications, high concurrency
-- **MySQL**: Web applications, cost-sensitive deployments
-- **DB2**: Enterprise requirements, regulatory compliance
+- **YugabyteDB (PG15-compatible) / PostgreSQL 15+**: Primary target for new work; complex applications, high concurrency, distributed scale.
+- **MySQL/MariaDB**: Web applications, cost-sensitive deployments (validated via dedicated tests).
+- **DB2**: Enterprise requirements, regulatory compliance.
+- **SQLite**: Embedded / single-printer / development use.
 
 ### For Embedded/Mobile
 

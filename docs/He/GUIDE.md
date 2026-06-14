@@ -2,6 +2,62 @@
 
 This guide explains how to create new database migrations for the Helium system. Migrations are written in Lua and support embedding SQL, JSON, and Markdown content directly without escaping.
 
+> **IMPORTANT FOR AI ASSISTANTS / LLMs**: If you are generating or editing migrations, read the section **"For AI / LLM Migration Generation"** below first, then study the recommended files in order. Do not rely on generic migration patterns from other frameworks. Helium uses an indirect `INSERT INTO queries` pattern with a strict state machine.
+
+## For AI / LLM Migration Generation
+
+**Goal**: Produce correct, complete, reversible, multi-engine Acuranzo (or other design) migrations that pass Hydrogen's test suite (especially `test_31_migrations.sh`, `test_32_postgres_migrations.sh`, `test_38_yugabytedb_migrations.sh`, and `test_71_database_diagrams.sh`).
+
+### Mandatory Study Order (follow this sequence)
+
+1. `docs/He/MIGRATION_ANATOMY.md` — Understand the `queries` table, the three migration types, and the state machine (1000 forward → 1003 applied → 1001 reverse). This is the most important conceptual document.
+2. `docs/He/MACRO_REFERENCE.md` — Know every `${MACRO}` you are allowed to use and where they come from (database.lua + per-engine files).
+3. A recent simple new-table migration, e.g. `elements/002-helium/acuranzo/migrations/acuranzo_1189.lua` (table + indexes + forward/reverse/diagram, uses `${DROP_CHECK}`, `${SUBQUERY_DELIMITER}`, `${JSON_INGEST_START/END}`, `object_ref`, `${COMMON_DIAGRAM}`).
+4. A recent content-heavy or Brotli-related migration, e.g. `elements/002-helium/acuranzo/migrations/acuranzo_1159.lua` (convo_segs).
+5. A per-engine special-case migration, e.g. `elements/002-helium/acuranzo/migrations/acuranzo_1190.lua` (ALTER COLUMN nullability — shows conditional blocks per engine + diagram update).
+6. The bootstrap: `elements/002-helium/acuranzo/migrations/acuranzo_1000.lua` (UDFs, Base64, Brotli, timezone functions).
+7. `docs/He/GUIDE.md` (this file) — templates and patterns, now that you understand the why.
+8. `docs/He/QUICKSTART.md` and `docs/He/TESTING_GUIDE.md` — how to manually validate what you generate.
+9. Hydrogen test scripts (especially `test_31_migrations.sh`) to understand what will be checked (sqruff, unsubstituted `${...}`, cross-engine generation).
+
+Only after the above should you write or modify a migration.
+
+### Non-Negotiable Rules for Every Migration You Generate
+
+- The migration file **must** be a Lua function with exact signature: `return function(engine, design_name, schema_name, cfg) ... return queries end`
+- Top of file **must** have:
+  ```lua
+  -- luacheck: no max line length
+  -- luacheck: no unused args
+  ```
+- Header **must** contain a `-- CHANGELOG` with version/date/description.
+- **Always** produce three query records for schema changes:
+  1. Forward (`${TYPE_FORWARD_MIGRATION}` = 1000) — the real DDL/DML + an `UPDATE ... SET query_type_a28 = ${TYPE_APPLIED_MIGRATION}` inside the embedded `code` block.
+  2. Reverse (`${TYPE_REVERSE_MIGRATION}` = 1001) — undoes it + resets state back to 1000.
+  3. Diagram (`${TYPE_DIAGRAM_MIGRATION}` = 1002) — JSON in `collection` using `${JSON_INGEST_START}` / `${JSON_INGEST_END}`. Include `"object_ref": "${MIGRATION}"`. For tables use `${COMMON_DIAGRAM}` for the audit columns.
+- The **actual executable SQL** lives inside the `code` column as a `[=[ ... ]=]` multiline string. The outer structure is always an `INSERT INTO ${SCHEMA}${QUERIES} ...`.
+- Use `${SUBQUERY_DELIMITER}` between statements inside the embedded code.
+- For table drops in reverse, use `${DROP_CHECK};` before the `DROP TABLE`.
+- For new tables or schema changes, set `cfg.TABLE` and `cfg.MIGRATION`.
+- Use only documented macros from `MACRO_REFERENCE.md`. Never invent `${SOMETHING}`.
+- Every migration must be self-contained and reversible. The reverse must be able to run cleanly after the forward (for testing).
+- Rare engine differences are allowed with `if engine == 'xxx' then ... end` blocks (see acuranzo_1190.lua). Document why in the summary.
+- After changes, the model (or human) must be able to run the Hydrogen migration validation tests without failures.
+
+If you cannot follow all of the above from the source material, ask for clarification or re-read the anatomy document instead of guessing.
+
+### Quick Canonical Checklist (use before emitting any migration)
+
+- [ ] Correct function signature and luacheck directives
+- [ ] CHANGELOG entry
+- [ ] cfg.TABLE + cfg.MIGRATION set
+- [ ] Forward query with state UPDATE inside the code block to TYPE_APPLIED_MIGRATION
+- [ ] Reverse query that resets state to TYPE_FORWARD_MIGRATION (and uses DROP_CHECK for tables)
+- [ ] Diagram query with proper JSON_INGEST wrappers, object_ref, and COMMON_DIAGRAM where appropriate
+- [ ] All SQL uses only allowed macros + ${SUBQUERY_DELIMITER}
+- [ ] Summary Markdown is clear and explains purpose, columns, indexes, and any engine quirks
+- [ ] Tested mentally against PostgreSQL 15 / YugabyteDB semantics first (primary target)
+
 ## Lua Basics for Migrations
 
 Before diving into migration creation, let's cover the essential Lua concepts you'll need:
@@ -451,7 +507,9 @@ For status and reference tables:
 
 ## Copy/Paste Templates
 
-### Basic Table Creation Template
+### Basic Table Creation Template (Modern Canonical Form)
+
+This is the current style used in recent Acuranzo migrations (e.g. 1189). It includes `${DROP_CHECK}` in reverse, `object_ref`, `${COMMON_DIAGRAM}`, and the full state machine.
 
 ```lua
 -- Forward Migration
@@ -473,28 +531,151 @@ table.insert(queries,{sql=[=[
         ${QTC_SLOW}                                                         AS query_queue_a58,
         ${TIMEOUT}                                                          AS query_timeout,
         [=[
-            CREATE TABLE ${SCHEMA}${TABLE} (
-                id          ${INTEGER}      PRIMARY KEY,
-                name        ${VARCHAR_100}  NOT NULL,
+            CREATE TABLE ${SCHEMA}${TABLE}
+            (
+                id                      ${INTEGER}          NOT NULL,
+                name                    ${VARCHAR_100}      NOT NULL,
                 ${COMMON_CREATE}
+                ${PRIMARY}(id)
             );
+
+            ${SUBQUERY_DELIMITER}
+
+            CREATE INDEX ${TABLE}_idx_name
+                ON ${SCHEMA}${TABLE}(name);
 
             ${SUBQUERY_DELIMITER}
 
             UPDATE ${SCHEMA}${QUERIES}
               SET query_type_a28 = ${TYPE_APPLIED_MIGRATION}
             WHERE query_ref = ${MIGRATION}
-              AND query_type_a28 = ${TYPE_FORWARD_MIGRATION};
+              and query_type_a28 = ${TYPE_FORWARD_MIGRATION};
         ]=]
                                                                                 AS code,
-        'Create ${TABLE} table'                                            AS name,
+        'Create ${TABLE} Table'                                             AS name,
         [=[
-            # Migration ${MIGRATION}: Create ${TABLE} Table
+            # Forward Migration ${MIGRATION}: Create ${TABLE} Table
 
-            Description of what this table stores and why it was created.
+            Brief description of purpose, key columns, and indexes.
         ]=]
                                                                                 AS summary,
         '{}'                                                                AS collection,
+        ${COMMON_INSERT}
+    FROM next_query_id;
+
+]=]}})
+```
+
+Reverse (note `${DROP_CHECK}` and state reset):
+
+```lua
+table.insert(queries,{sql=[=[
+
+    INSERT INTO ${SCHEMA}${QUERIES} (
+        ${QUERIES_INSERT}
+    )
+    WITH next_query_id AS (
+        SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+        FROM ${SCHEMA}${QUERIES}
+    )
+    SELECT
+        new_query_id                                                        AS query_id,
+        ${MIGRATION}                                                        AS query_ref,
+        ${STATUS_ACTIVE}                                                    AS query_status_a27,
+        ${TYPE_REVERSE_MIGRATION}                                           AS query_type_a28,
+        ${DIALECT}                                                          AS query_dialect_a30,
+        ${QTC_SLOW}                                                         AS query_queue_a58,
+        ${TIMEOUT}                                                          AS query_timeout,
+        [=[
+            ${DROP_CHECK};
+
+            ${SUBQUERY_DELIMITER}
+
+            DROP TABLE ${SCHEMA}${TABLE};
+
+            ${SUBQUERY_DELIMITER}
+
+            UPDATE ${SCHEMA}${QUERIES}
+              SET query_type_a28 = ${TYPE_FORWARD_MIGRATION}
+            WHERE query_ref = ${MIGRATION}
+              and query_type_a28 = ${TYPE_APPLIED_MIGRATION};
+        ]=]
+                                                                                AS code,
+        'Drop ${TABLE} Table'                                               AS name,
+        [=[
+            # Reverse Migration ${MIGRATION}: Drop ${TABLE} Table
+
+            Drops the table created by the forward migration.
+        ]=]
+                                                                                AS summary,
+        '{}'                                                                AS collection,
+        ${COMMON_INSERT}
+    FROM next_query_id;
+
+]=]}})
+```
+
+Diagram (note `object_ref` and `${COMMON_DIAGRAM}`):
+
+```lua
+table.insert(queries,{sql=[=[
+
+    INSERT INTO ${SCHEMA}${QUERIES} (
+        ${QUERIES_INSERT}
+    )
+    WITH next_query_id AS (
+        SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+        FROM ${SCHEMA}${QUERIES}
+    )
+    SELECT
+        new_query_id                                                        AS query_id,
+        ${MIGRATION}                                                        AS query_ref,
+        ${STATUS_ACTIVE}                                                    AS query_status_a27,
+        ${TYPE_DIAGRAM_MIGRATION}                                           AS query_type_a28,
+        ${DIALECT}                                                          AS query_dialect_a30,
+        ${QTC_SLOW}                                                         AS query_queue_a58,
+        ${TIMEOUT}                                                          AS query_timeout,
+        'JSON Table Definition in collection'                               AS code,
+        'Diagram Tables: ${SCHEMA}${TABLE}'                                 AS name,
+        [=[
+            # Diagram Migration ${MIGRATION}
+
+            ## Diagram Tables: ${SCHEMA}${TABLE}
+        ]=]
+                                                                                AS summary,
+                                                                                -- DIAGRAM_START
+        ${JSON_INGEST_START}
+        [=[
+            {
+                "diagram": [
+                    {
+                        "object_type": "table",
+                        "object_id": "table.${TABLE}",
+                        "object_ref": "${MIGRATION}",
+                        "table": [
+                            {
+                                "name": "id",
+                                "datatype": "${INTEGER}",
+                                "nullable": false,
+                                "primary_key": true,
+                                "unique": true
+                            },
+                            {
+                                "name": "name",
+                                "datatype": "${VARCHAR_100}",
+                                "nullable": false,
+                                "primary_key": false,
+                                "unique": false
+                            },
+                            ${COMMON_DIAGRAM}
+                        ]
+                    }
+                ]
+            }
+        ]=]
+        ${JSON_INGEST_END}
+                                                                                -- DIAGRAM_END
+                                                                                AS collection,
         ${COMMON_INSERT}
     FROM next_query_id;
 
@@ -659,23 +840,26 @@ These templates provide a starting point for common migration patterns. Copy, mo
 
 ## Best Practices
 
-1. **Always include reverse migrations** for testing
-2. **Use diagram migrations** for schema changes
-3. **Test migrations** on all supported databases
-4. **Use descriptive names** and summaries
-5. **Include CHANGELOG** entries
-6. **Leverage macros** for database portability
-7. **Embed content directly** - no escaping needed
+1. **Always include reverse migrations** for testing (and use `${DROP_CHECK}` for table drops).
+2. **Use diagram migrations** for every schema change (table, significant column change). Include `object_ref` and `${COMMON_DIAGRAM}`.
+3. **Test migrations** on all supported databases, with primary focus on PostgreSQL 15 / YugabyteDB (see Hydrogen `test_38_yugabytedb_migrations.sh` and `test_32_postgres_migrations.sh`).
+4. **Use descriptive names** and summaries. Summaries should explain purpose, columns, indexes, and any engine-specific behavior.
+5. **Include CHANGELOG** entries at the top of every migration file.
+6. **Leverage macros** for database portability — never hard-code engine-specific syntax except in rare guarded `if engine == 'xxx'` blocks.
+7. **Embed content directly** - no escaping needed. Use `[=[ ... ]=]` for the `code` and `summary` blocks.
+8. **Put the state transition UPDATE inside the embedded `code`** for forward and reverse migrations.
+9. **Use `${SUBQUERY_DELIMITER}`** between statements inside the embedded code.
+10. **Keep reverse migrations safe** — for data-changing reverses, document manual prerequisites (e.g. "delete or assign passwords before reversing").
 
 ## Migration Workflow
 
-1. Create migration file: `schema_XXXX.lua`
-2. Implement forward migration
-3. Implement reverse migration
-4. Add diagram migration (if schema changes)
-5. Test on all database engines
-6. Run `migration_index.sh` to update documentation
-7. Commit changes
+1. Create migration file: `acuranzo_XXXX.lua` (or appropriate design prefix).
+2. Implement forward migration (with state UPDATE to APPLIED inside the code block).
+3. Implement reverse migration (with `${DROP_CHECK}` for tables + state reset to FORWARD).
+4. Add diagram migration (if schema changes) using `object_ref` + `${COMMON_DIAGRAM}`.
+5. Validate locally with `lua database.lua postgresql ...` and the Hydrogen test suite (`test_31_migrations.sh`, `test_32...`, `test_38...`).
+6. Run `helium_update.sh` (or `migration_index.sh`) to update documentation.
+7. Commit changes.
 
 ## File Naming
 
@@ -687,9 +871,13 @@ These templates provide a starting point for common migration patterns. Copy, mo
 
 Migrations are tested by:
 
-1. Running forward migration
-2. Running reverse migration
-3. Verifying data integrity
-4. Checking on all supported databases
+1. Running forward migration (state becomes 1003 / applied).
+2. Running reverse migration (state returns to 1000 / forward).
+3. Verifying data integrity and that reverse truly undoes the change.
+4. Checking on all supported databases, with primary emphasis on PostgreSQL 15 / YugabyteDB.
 
-The system ensures forward and reverse migrations are complete and reversible.
+The system (via the `queries` table state machine and Hydrogen tests) ensures forward and reverse migrations are complete and reversible. See `docs/He/TESTING_GUIDE.md` and the Hydrogen tests `test_31_migrations.sh`, `test_32_postgres_migrations.sh`, `test_38_yugabytedb_migrations.sh`, and `test_71_database_diagrams.sh`.
+
+### Primary Target Reminder
+
+All active development targets **PostgreSQL 15 semantics** (exercised primarily through YugabyteDB). Do not rely on PostgreSQL 16+ features. Validate that your generated SQL is compatible with PG15 / YugabyteDB first.

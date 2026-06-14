@@ -155,6 +155,26 @@ lua database.lua postgresql acuranzo public < acuranzo_9999.lua | psql ...
 SELECT * FROM queries WHERE query_ref = '9999';  -- Should be type 1000 again
 ```
 
+## Important: Payload Rebuilds When Changing Migrations
+
+The vast majority of Hydrogen tests (including all the migration-related ones: Test 30, 31–38, 71, etc.) execute against a built Hydrogen binary. That binary embeds the current Helium migrations inside its **payload**.
+
+After editing any files under `elements/002-helium/` (migrations, database.lua, etc.):
+
+- You **must** rebuild the payload before running Hydrogen tests that exercise migrations, otherwise the tests will run against stale embedded migrations.
+- Use the shell aliases defined in `~/.zshrc`:
+  - `mkt` — "make trial" (faster incremental build, typical for development)
+  - `mka` — "make all" (full build)
+- These aliases expand to something like:
+  ```bash
+  cdh && extras/make-trial.sh ; cd - > /dev/null 2>&1
+  ```
+  (where `cdh` changes to the Hydrogen directory).
+
+The Hydrogen build itself (see Test 01 - Compilation) also detects when migration files are newer than the payload and will automatically regenerate it (and run `helium_update.sh`).
+
+Only after the payload is current should you run the individual migration tests described below.
+
 ## Running Hydrogen Test Suite
 
 Hydrogen includes comprehensive tests for Helium migrations.
@@ -168,6 +188,8 @@ cd elements/001-hydrogen/hydrogen
 ./tests/test_30_database.sh
 ```
 
+> **Remember**: If you have edited any Helium migrations since the last build, run `mkt` or `mka` first (see "Important: Payload Rebuilds When Changing Migrations" above) so the tests see the updated migrations inside the Hydrogen payload.
+
 ### Test 31: Migration Validation
 
 Tests migration processing across all engines:
@@ -176,6 +198,8 @@ Tests migration processing across all engines:
 cd elements/001-hydrogen/hydrogen
 ./tests/test_31_migrations.sh
 ```
+
+> **Remember**: If you have edited any Helium migrations since the last build, run `mkt` or `mka` first (see "Important: Payload Rebuilds When Changing Migrations" above) so the tests see the updated migrations inside the Hydrogen payload.
 
 This test:
 
@@ -192,6 +216,8 @@ Tests ERD generation from diagram migrations:
 cd elements/001-hydrogen/hydrogen
 ./tests/test_71_database_diagrams.sh
 ```
+
+> **Remember**: If you have edited any Helium migrations since the last build, run `mkt` or `mka` first (see "Important: Payload Rebuilds When Changing Migrations" above) so the tests see the updated migrations inside the Hydrogen payload (and so diagram extraction sees the latest JSON metadata).
 
 ## Debugging Common Issues
 
