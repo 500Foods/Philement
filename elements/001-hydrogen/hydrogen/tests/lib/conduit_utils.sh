@@ -495,8 +495,19 @@ run_conduit_server() {
     local start_time
     start_time=${SECONDS}
 
+    # Startup timeout: 15s is often enough for a fast regular binary with 1 DB.
+    # For multi-DB configs (e.g. test_41 with 7 engines + migrations + Slow queues)
+    # or when launching an ASAN-instrumented debug build (hydrogen_debug), startup
+    # can legitimately take 30-120s. Use a generous default here; the migration
+    # wait below is already 300s. Callers that need even more can set
+    # CONDUIT_STARTUP_TIMEOUT before calling.
+    local startup_timeout=120
+    if [[ -n "${CONDUIT_STARTUP_TIMEOUT:-}" ]]; then
+        startup_timeout="${CONDUIT_STARTUP_TIMEOUT}"
+    fi
+
     while true; do
-        if [[ $((SECONDS - start_time)) -ge 15 ]]; then  # STARTUP_TIMEOUT
+        if [[ $((SECONDS - start_time)) -ge ${startup_timeout} ]]; then
             break
         fi
 
@@ -562,11 +573,16 @@ run_conduit_server() {
         check_database_readiness "${log_file}" "${result_file}"
 
         # Wait for webserver to be ready for HTTP requests
+        # Support override for slow starts (ASAN debug builds + multi-DB configs).
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Waiting for webserver to be ready for HTTP requests..."
         local server_ready=false
         local server_ready_start=${SECONDS}
+        local webserver_ready_timeout=120
+        if [[ -n "${CONDUIT_WEBSERVER_READY_TIMEOUT:-}" ]]; then
+            webserver_ready_timeout="${CONDUIT_WEBSERVER_READY_TIMEOUT}"
+        fi
         while true; do
-            if [[ $((SECONDS - server_ready_start)) -ge 30 ]]; then
+            if [[ $((SECONDS - server_ready_start)) -ge ${webserver_ready_timeout} ]]; then
                 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Webserver readiness timeout"
                 break
             fi

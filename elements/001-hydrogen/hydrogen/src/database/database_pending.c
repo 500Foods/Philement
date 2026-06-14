@@ -62,8 +62,7 @@ void pending_result_manager_destroy(PendingResultManager* manager, const char* d
             // Clean up the pending result
             if (pending->query_id) free(pending->query_id);
             if (pending->result) {
-                // TODO: Add proper QueryResult cleanup when implemented
-                free(pending->result);
+                database_engine_cleanup_result(pending->result);
             }
             pthread_mutex_destroy(&pending->result_lock);
             pthread_cond_destroy(&pending->result_ready);
@@ -238,8 +237,10 @@ bool pending_result_signal_ready(
         log_this(dqm_label ? dqm_label : SR_DATABASE, "Query result signaled as ready", LOG_LEVEL_DEBUG, 0);
     } else {
         log_this(dqm_label ? dqm_label : SR_DATABASE, "Query result not found for signaling", LOG_LEVEL_ERROR, 0);
-        // Clean up the result if not claimed - but don't free it here as caller owns it
-        // The caller (test) will handle cleanup
+        // Late delivery after waiter gave up or pending was reaped: dispose of it here.
+        if (result) {
+            database_engine_cleanup_result(result);
+        }
     }
 
     return found;
@@ -344,8 +345,7 @@ size_t pending_result_cleanup_expired(PendingResultManager* manager, const char*
                 // Clean up the pending result
                 if (pending->query_id) free(pending->query_id);
                 if (pending->result) {
-                    // TODO: Add proper QueryResult cleanup when implemented
-                    free(pending->result);
+                    database_engine_cleanup_result(pending->result);
                 }
                 pthread_mutex_destroy(&pending->result_lock);
                 pthread_cond_destroy(&pending->result_ready);
