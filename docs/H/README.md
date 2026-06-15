@@ -49,6 +49,10 @@ Hydrogen is currently designed for technical users who:
 ### Core Documentation
 
 - [**Documentation Hub**](/docs/H/core/README.md) - Start here for comprehensive overview
+- [**Architecture Overview**](/docs/H/core/ARCHITECTURE.md) - High-level architectural patterns
+- [**API Overview**](/docs/H/core/API_OVERVIEW.md) - All endpoints in one place
+- [**Chat System**](/docs/H/core/CHAT_SYSTEM.md) - AI chat streaming architecture
+- [**Database Abstraction**](/docs/H/core/DATABASE_ABSTRACTION.md) - Multi-engine database layer
 - [**Subsystems Documentation**](/docs/H/core/subsystems/README.md) - Overview of all Hydrogen subsystems
 - [**Developer Onboarding**](/docs/H/core/developer_onboarding.md) - Visual architecture overview and code navigation
 - [**Quick Start Guide**](/docs/H/core/guides/quick-start.md) - Get up and running quickly
@@ -84,6 +88,7 @@ Hydrogen is currently designed for technical users who:
 - [**Migrations**](/docs/H/plans/MIGRATIONS.md) - Performance improvements to the Migration system
 - [**Conduit**](/docs/H/plans/CONDUIT.md) - Implementation plan for Conduit Service endpoints
 - [**Auth**](/docs/H/plans/AUTH_PLAN.md) - Implementation plan for Auth subsystem
+- [**Conduit REST API**](/docs/H/core/subsystems/conduit/conduit_api.md) - Database query by reference
 
 ### Examples & Implementation
 

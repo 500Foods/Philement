@@ -551,17 +551,10 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [tests/test_24_uploads.sh](/elements/001-hydrogen/hydrogen/tests/test_24_uploads.sh) - File upload functionality tests
 - [tests/test_25_mdns.sh](/elements/001-hydrogen/hydrogen/tests/test_25_mdns.sh) - mDNS service discovery tests
 - [tests/test_26_terminal.sh](/elements/001-hydrogen/hydrogen/tests/test_26_terminal.sh) - Terminal interface tests
-- [tests/test_50_conduit_query.sh](/elements/001-hydrogen/hydrogen/tests/test_50_conduit_query.sh) - Conduit single query endpoint testing (public queries across 7 database engines)
-- [tests/test_51_conduit_queries.sh](/elements/001-hydrogen/hydrogen/tests/test_51_conduit_queries.sh) - Conduit multiple queries endpoint testing (batch queries across 7 database engines)
-- [tests/test_52_conduit_auth_query.sh](/elements/001-hydrogen/hydrogen/tests/test_52_conduit_auth_query.sh) - Conduit authenticated single query endpoint testing (JWT-protected queries across 7 database engines)
-- [tests/test_53_conduit_auth_queries.sh](/elements/001-hydrogen/hydrogen/tests/test_53_conduit_auth_queries.sh) - Conduit authenticated multiple queries endpoint testing (batch authenticated queries across 7 database engines)
-- [tests/test_54_conduit_alt_query.sh](/elements/001-hydrogen/hydrogen/tests/test_54_conduit_alt_query.sh) - Conduit alt single query endpoint testing (cross-database single queries with JWT authentication)
-- [tests/test_55_conduit_alt_queries.sh](/elements/001-hydrogen/hydrogen/tests/test_55_conduit_alt_queries.sh) - Conduit alt multiple queries endpoint testing (cross-database batch queries with JWT authentication)
 
-### Database Tests
+### API Tests
 
 - [tests/test_30_database.sh](/elements/001-hydrogen/hydrogen/tests/test_30_database.sh) - All Engines Parallel Operational Test
-- [tests/test_31_migrations.sh](/elements/001-hydrogen/hydrogen/tests/test_31_migrations.sh) - Database migration validation
 - [tests/test_32_postgres_migrations.sh](/elements/001-hydrogen/hydrogen/tests/test_32_postgres_migrations.sh) - PostgreSQL migration performance test
 - [tests/test_33_mysql_migrations.sh](/elements/001-hydrogen/hydrogen/tests/test_33_mysql_migrations.sh) - MySQL migration performance test
 - [tests/test_34_sqlite_migrations.sh](/elements/001-hydrogen/hydrogen/tests/test_34_sqlite_migrations.sh) - SQLite migration performance test
@@ -570,6 +563,15 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [tests/test_37_cockroachdb_migrations.sh](/elements/001-hydrogen/hydrogen/tests/test_37_cockroachdb_migrations.sh) - CockroachDB migration performance test
 - [tests/test_38_yugabytedb_migrations.sh](/elements/001-hydrogen/hydrogen/tests/test_38_yugabytedb_migrations.sh) - YugabyteDB migration performance test
 - [tests/test_40_auth.sh](/elements/001-hydrogen/hydrogen/tests/test_40_auth.sh) - Authentication endpoints testing (JWT tokens across multiple database engines)
+- [tests/test_41_exercise.sh](/elements/001-hydrogen/hydrogen/tests/test_41_exercise.sh) - Memory stress test (500 auth requests across 7 databases with leak detection)
+- [tests/test_42_oidc_rp.sh](/elements/001-hydrogen/hydrogen/tests/test_42_oidc_rp.sh) - OIDC Relying Party - complete authentication flow testing
+- [tests/test_50_conduit_query.sh](/elements/001-hydrogen/hydrogen/tests/test_50_conduit_query.sh) - Conduit single query endpoint testing (public queries across 7 database engines)
+- [tests/test_51_conduit_queries.sh](/elements/001-hydrogen/hydrogen/tests/test_51_conduit_queries.sh) - Conduit multiple queries endpoint testing (batch queries across 7 database engines)
+- [tests/test_52_conduit_auth_query.sh](/elements/001-hydrogen/hydrogen/tests/test_52_conduit_auth_query.sh) - Conduit authenticated single query endpoint testing (JWT-protected queries across 7 database engines)
+- [tests/test_53_conduit_auth_queries.sh](/elements/001-hydrogen/hydrogen/tests/test_53_conduit_auth_queries.sh) - Conduit authenticated multiple queries endpoint testing (batch authenticated queries across 7 database engines)
+- [tests/test_54_conduit_alt_query.sh](/elements/001-hydrogen/hydrogen/tests/test_54_conduit_alt_query.sh) - Conduit alt single query endpoint testing (cross-database single queries with JWT authentication)
+- [tests/test_55_conduit_alt_queries.sh](/elements/001-hydrogen/hydrogen/tests/test_55_conduit_alt_queries.sh) - Conduit alt multiple queries endpoint testing (cross-database batch queries with JWT authentication)
+- [tests/test_60_performance.sh](/elements/001-hydrogen/hydrogen/tests/test_60_performance.sh) - Performance benchmarking across databases (5 iterations measuring query response times)
 
 ### Deliverables
 
@@ -609,7 +611,14 @@ This document provides a comprehensive overview of the Hydrogen project's file o
   - [lifecycle.sh](/elements/001-hydrogen/hydrogen/tests/lib/lifecycle.sh) - Test lifecycle management
   - [log_output.sh](/elements/001-hydrogen/hydrogen/tests/lib/log_output.sh) - Log output formatting
   - [network_utils.sh](/elements/001-hydrogen/hydrogen/tests/lib/network_utils.sh) - Network testing utilities
-  
+  - [oidc_rp_helpers.sh](/elements/001-hydrogen/hydrogen/tests/lib/oidc_rp_helpers.sh) - OIDC RP core testing utilities
+  - [oidc_rp_helpers_callback.sh](/elements/001-hydrogen/hydrogen/tests/lib/oidc_rp_helpers_callback.sh) - OIDC RP callback testing utilities
+  - [oidc_rp_helpers_link.sh](/elements/001-hydrogen/hydrogen/tests/lib/oidc_rp_helpers_link.sh) - OIDC RP linker testing utilities
+  - [oidc_rp_helpers_provision.sh](/elements/001-hydrogen/hydrogen/tests/lib/oidc_rp_helpers_provision.sh) - OIDC RP provisioning testing utilities
+  - [oidc_rp_helpers_default.sh](/elements/001-hydrogen/hydrogen/tests/lib/oidc_rp_helpers_default.sh) - OIDC RP default strategy testing utilities
+- [oidc_rp_helpers_roles.sh](/elements/001-hydrogen/hydrogen/tests/lib/oidc_rp_helpers_roles.sh) - OIDC RP role mapping testing utilities
+  - [conduit_utils.sh](/elements/001-hydrogen/hydrogen/tests/lib/conduit_utils.sh) - Conduit endpoint testing utilities
+
 </details>
 
 ## Build Tools & Utilities

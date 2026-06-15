@@ -97,7 +97,14 @@ tests/          Test framework
 - tests/test_38_yugabytedb_migrations.sh - YugabyteDB migration performance test
 - tests/test_40_auth.sh - Authentication endpoints testing (JWT tokens across multiple database engines)
 - tests/test_41_exercise.sh - Memory exercise stress test (500 auth requests across 7 databases with leak detection)
-- tests/test_51_conduit.sh - Conduit endpoints testing (all 4 endpoints with full parameter support across 7 database engines)
+- tests/test_42_oidc_rp.sh - OIDC Relying Party - complete authentication flow testing through Role Mapping
+- tests/test_50_conduit_query.sh - Single public query endpoint testing
+- tests/test_51_conduit_queries.sh - Conduit multiple queries endpoint testing
+- tests/test_52_conduit_auth_query.sh - Authenticated single query endpoint
+- tests/test_53_conduit_auth_queries.sh - Authenticated batch query endpoint
+- tests/test_54_conduit_alt_query.sh - Cross-database single query with override
+- tests/test_55_conduit_alt_queries.sh - Cross-database batch query with override
+- tests/test_60_performance.sh - Performance benchmarking across databases
 - tests/test_70_installer.sh - Standalone installer building test
 - tests/test_71_database_diagrams.sh - Database diagram generation
 - tests/test_89_coverage.sh - Shows Unity and Blackbox test coverage

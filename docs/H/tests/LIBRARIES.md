@@ -48,6 +48,21 @@ These libraries were created as part of the test suite migration to replace supp
 
 - **[Profile Test Suite](/docs/H/tests/profile_test_suite.md)** - Documentation for `profile_test_suite.sh`, providing strace-based performance profiling and system call analysis for test scripts.
 
+## OIDC RP Libraries
+
+These libraries provide testing utilities for the OIDC Relying Party endpoints (test_42_oidc_rp.sh):
+
+- **[OIDC RP Helpers](/docs/H/tests/oidc_rp_helpers.md)** - Core utilities, mock IdP management, Phase 6/10/13 tests. [Script](/elements/001-hydrogen/hydrogen/tests/lib/oidc_rp_helpers.sh)
+- **[OIDC RP Callback Helpers](/docs/H/tests/oidc_rp_helpers_callback.md)** - Phase 14 callback error path tests. [Script](/elements/001-hydrogen/hydrogen/tests/lib/oidc_rp_helpers_callback.sh)
+- **[OIDC RP Link Helpers](/docs/H/tests/oidc_rp_helpers_link.md)** - Phases 18/19/20 account linker tests. [Script](/elements/001-hydrogen/hydrogen/tests/lib/oidc_rp_helpers_link.sh)
+- **[OIDC RP Provision Helpers](/docs/H/tests/oidc_rp_helpers_provision.md)** - Phase 20 provisioning-specific helpers. [Script](/elements/001-hydrogen/hydrogen/tests/lib/oidc_rp_helpers_provision.sh)
+- **[OIDC RP Default Helpers](/docs/H/tests/oidc_rp_helpers_default.md)** - Phase 21 match_email_then_provision strategy tests. [Script](/elements/001-hydrogen/hydrogen/tests/lib/oidc_rp_helpers_default.sh)
+- **[OIDC RP Roles Helpers](/docs/H/tests/oidc_rp_helpers_roles.md)** - Phase 22 role mapping tests. [Script](/elements/001-hydrogen/hydrogen/tests/lib/oidc_rp_helpers_roles.sh)
+
+## Conduit Libraries
+
+- **[Conduit Utils Library](/docs/H/tests/conduit_utils.md)** - Conduit endpoint testing utilities, server lifecycle management. [Script](/elements/001-hydrogen/hydrogen/tests/lib/conduit_utils.sh)
+
 ## Related Documentation
 
 - [TESTING.md](/docs/H/tests/TESTING.md) - Main documentation for the Hydrogen test suite.
