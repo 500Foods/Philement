@@ -1,0 +1,420 @@
+/**
+ * Camera Popout Styles
+ *
+ * A draggable, resizable popout for camera capture with live preview and controls.
+ * Styled to match the Lithium design system with subpanel-header-group styling.
+ */
+
+@layer managers {
+
+/* ========================================
+   Camera Overlay
+   ======================================== */
+
+.camera-popout-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgb(0 0 0 / 40%);
+  z-index: 20000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--transition-duration) ease, visibility var(--transition-duration) ease;
+}
+
+.camera-popout-overlay.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ========================================
+   Camera Popup Window
+   ======================================== */
+
+.camera-popout {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  /* Position set via JS centerPopup() */
+  /* Initial size set via JS, but provide defaults */
+  width: 600px;
+  height: 500px;
+  min-width: 400px;
+  min-height: 300px;
+  max-width: 95vw;
+  max-height: 95vh;
+  background: var(--bg-primary);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-lg);
+  z-index: 20001;
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--transition-duration) ease, visibility var(--transition-duration) ease;
+}
+
+.camera-popout.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.camera-popout.dragging {
+  transition: none;
+  cursor: grabbing;
+}
+
+.camera-popout.resizing {
+  transition: none;
+}
+
+/* ========================================
+   Camera Header - Matching Manager Slot Header Style
+   ======================================== */
+
+.camera-header {
+  flex-shrink: 0;
+  padding: var(--space-3);
+  background: var(--bg-secondary);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  cursor: grab;
+  user-select: none;
+}
+
+.camera-header:active {
+  cursor: grabbing;
+}
+
+.camera-header-placeholder {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: var(--accent-primary);
+  cursor: grab;
+}                                   
+
+.camera-header .subpanel-header-group {
+  display: flex;
+  gap: 2px;
+  width: 100%;
+  flex: 1;
+  min-width: 0;
+}
+
+.camera-header-primary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4) var(--space-2) var(--space-3);
+  background: var(--accent-primary);
+  border: none;
+  border-radius: var(--border-radius-md) 0 0 var(--border-radius-md);
+  color: white;
+  font-size: var(--font-size-lg);
+  font-weight: 500;
+  cursor: grab;
+  flex-shrink: 0;
+}
+
+.camera-header-primary:active {
+  cursor: grabbing;
+}
+
+.camera-header-primary fa,
+.camera-header-primary i,
+.camera-header-primary .fa-icon {
+  font-size: var(--font-size-xl);
+  color: white;
+}
+
+.camera-header-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  padding: var(--space-2);
+  background: var(--accent-primary);
+  border: none;
+  border-radius: 0 var(--border-radius-md) var(--border-radius-md) 0;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background-color var(--transition-duration) ease;
+}
+
+.camera-header-close:hover {
+  background: var(--accent-alt-secondary);
+}
+
+/* ========================================
+   Camera Content
+   ======================================== */
+
+.camera-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Video Container */
+.camera-video-container {
+  flex: 1;
+  position: relative;
+  background: #000;
+  border-radius: 0 0 var(--border-radius-md) var(--border-radius-md);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#camera-video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform-origin: center;
+  transition: transform 0.2s ease;
+}
+
+/* Controls */
+.camera-controls {
+  padding: var(--space-3);
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-primary);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.camera-device-selector,
+.camera-iso-selector,
+.camera-gain-selector {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.camera-device-selector label,
+.camera-iso-selector label,
+.camera-gain-selector label {
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+#camera-select,
+#camera-iso,
+#camera-gain {
+  flex: 1;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--border-radius-md);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+}
+
+#camera-select:disabled,
+#camera-iso:disabled,
+#camera-gain:disabled {
+  background: var(--bg-disabled);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.camera-transform-controls {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.camera-flip-btn,
+.camera-rotate-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: var(--space-2);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--border-radius-md);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all var(--transition-duration) ease;
+}
+
+.camera-flip-btn:hover:not(:disabled),
+.camera-rotate-btn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--accent-primary);
+}
+
+.camera-flip-btn:disabled,
+.camera-rotate-btn:disabled {
+  background: var(--bg-disabled);
+  color: var(--text-muted);
+  cursor: not-allowed;
+  border-color: var(--border-disabled);
+}
+
+/* Actions */
+.camera-actions {
+  padding: var(--space-3);
+  background: var(--bg-primary);
+  border-top: 1px solid var(--border-primary);
+  display: flex;
+  gap: var(--space-2);
+  justify-content: center;
+}
+
+.camera-actions button {
+  padding: var(--space-2) var(--space-4);
+  border: none;
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-duration) ease;
+}
+
+#camera-start-btn,
+#camera-retake-btn {
+  background: var(--accent-primary);
+  color: white;
+}
+
+#camera-start-btn:hover,
+#camera-retake-btn:hover {
+  background: var(--accent-primary-hover);
+}
+
+#camera-capture-btn {
+  background: var(--success-bg);
+  color: var(--success-text);
+}
+
+#camera-capture-btn:hover:not(:disabled) {
+  background: var(--success-bg-hover);
+}
+
+#camera-capture-btn:disabled {
+  background: var(--bg-disabled);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+/* ========================================
+   Resize Handles
+   ======================================== */
+
+.camera-resize-handle {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background: var(--accent-primary);
+  border-radius: 50%;
+  cursor: nw-resize;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity var(--transition-duration) ease;
+}
+
+.camera-popout:hover .camera-resize-handle {
+  opacity: 0.7;
+}
+
+.camera-resize-handle:hover {
+  opacity: 1 !important;
+  background: var(--accent-primary-hover);
+}
+
+.camera-resize-handle-tl {
+  top: -10px;
+  left: -10px;
+  cursor: nw-resize;
+}
+
+.camera-resize-handle-tr {
+  top: -10px;
+  right: -10px;
+  cursor: ne-resize;
+}
+
+.camera-resize-handle-bl {
+  bottom: -10px;
+  left: -10px;
+  cursor: sw-resize;
+}
+
+.camera-resize-handle-br {
+  bottom: -10px;
+  right: -10px;
+  cursor: se-resize;
+}
+
+/* ========================================
+   Responsive Design
+   ======================================== */
+
+@media (width <= 768px) {
+  .camera-popout {
+    width: 95vw;
+    height: 80vh;
+    min-width: 320px;
+    min-height: 400px;
+  }
+
+  .camera-controls {
+    padding: var(--space-2);
+  }
+
+  .camera-transform-controls {
+    gap: var(--space-1);
+  }
+
+  .camera-flip-btn,
+  .camera-rotate-btn {
+    width: 36px;
+    height: 36px;
+    padding: var(--space-1);
+  }
+
+  .camera-actions {
+    padding: var(--space-2);
+    flex-direction: column;
+  }
+
+  .camera-actions button {
+    width: 100%;
+  }
+}
+
+/* ========================================
+   Dark Theme Adjustments
+   ======================================== */
+
+@media (prefers-color-scheme: dark) {
+.camera-popout-overlay {
+    background: rgb(0 0 0 / 60%);
+  }
+}
+
+/* ========================================
+   Focus and Accessibility
+   ======================================== */
+
+.camera-popout:focus-within .camera-resize-handle {
+  opacity: 0.7;
+}
+
+.camera-flip-btn:focus-visible,
+.camera-rotate-btn:focus-visible,
+.camera-actions button:focus-visible,
+#camera-select:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+}

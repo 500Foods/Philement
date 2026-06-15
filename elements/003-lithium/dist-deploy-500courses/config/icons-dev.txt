@@ -1,0 +1,182 @@
+<fa circle-question></fa>
+<fa class="lithium-grouping-sort-asc" fa-angle-up></fa>
+<fa class="lithium-grouping-sort-desc" fa-angle-down></fa>
+<fa class="lithium-grouping-sort-none" fa-angles-up-down></fa>
+<fa class="lithium-tour-list-item-video-indicator" fa-play></fa>
+<fa class="manager-footer-export-icon fa-list"></fa>
+<fa fa-00></fa>
+<fa fa-address-book></fa>
+<fa fa-angle-right class="lithium-group-toggle-icon"></fa>
+<fa fa-angles-left class="lithium-collapse-icon"></fa>
+<fa fa-angles-left id="collapse-icon"></fa>
+<fa fa-aperture></fa>
+<fa fa-arrow-down-a-z></fa>
+<fa fa-arrow-right-to-line></fa>
+<fa fa-arrow-rotate-left-10></fa>
+<fa fa-arrow-rotate-left-30></fa>
+<fa fa-arrow-rotate-left></fa>
+<fa fa-arrow-rotate-right-10></fa>
+<fa fa-arrow-rotate-right-30></fa>
+<fa fa-arrow-rotate-right></fa>
+<fa fa-arrow-up-right-from-square></fa>
+<fa fa-arrows-rotate></fa>
+<fa fa-at></fa>
+<fa fa-atom-simple></fa>
+<fa fa-bars></fa>
+<fa fa-bell-concierge></fa>
+<fa fa-bell></fa>
+<fa fa-book-open-lines class="crimson-citation-link-icon"></fa>
+<fa fa-book-open-lines></fa>
+<fa fa-brackets-curly></fa>
+<fa fa-brackets-square></fa>
+<fa fa-briefcase></fa>
+<fa fa-broom></fa>
+<fa fa-bug></fa>
+<fa fa-bullseye></fa>
+<fa fa-calendar-days></fa>
+<fa fa-calendar></fa>
+<fa fa-camera></fa>
+<fa fa-caret-large-right></fa>
+<fa fa-chart-line></fa>
+<fa fa-chart-simple-horizontal></fa>
+<fa fa-check></fa>
+<fa fa-chevron-down></fa>
+<fa fa-chevron-left></fa>
+<fa fa-chevron-right></fa>
+<fa fa-chevron-up></fa>
+<fa fa-chevrons-left></fa>
+<fa fa-chevrons-right></fa>
+<fa fa-circle-question></fa>
+<fa fa-clock></fa>
+<fa fa-cog></fa>
+<fa fa-command></fa>
+<fa fa-comment></fa>
+<fa fa-comments></fa>
+<fa fa-compress></fa>
+<fa fa-copy></fa>
+<fa fa-cube></fa>
+<fa fa-database></fa>
+<fa fa-download></fa>
+<fa fa-earth-americas></fa>
+<fa fa-envelope></fa>
+<fa fa-eraser></fa>
+<fa fa-exclamation-circle></fa>
+<fa fa-exclamation-triangle></fa>
+<fa fa-expand></fa>
+<fa fa-eye></fa>
+<fa fa-face-disguise></fa>
+<fa fa-file-alt></fa>
+<fa fa-file-csv></fa>
+<fa fa-file-excel></fa>
+<fa fa-file-export></fa>
+<fa fa-file-import></fa>
+<fa fa-file-invoice></fa>
+<fa fa-file-lines></fa>
+<fa fa-file-pdf></fa>
+<fa fa-filter></fa>
+<fa fa-flag-checkered></fa>
+<fa fa-flag></fa>
+<fa fa-flask></fa>
+<fa fa-flower-tulip></fa>
+<fa fa-folder-open></fa>
+<fa fa-font-case></fa>
+<fa fa-gear-complex></fa>
+<fa fa-globe></fa>
+<fa fa-graduation-cap fa-flip-horizontal></fa>
+<fa fa-graduation-cap></fa>
+<fa fa-grip-dots-vertical></fa>
+<fa fa-hand></fa>
+<fa fa-highlighter></fa>
+<fa fa-history></fa>
+<fa fa-id-badge></fa>
+<fa fa-id-card></fa>
+<fa fa-images></fa>
+<fa fa-info-circle></fa>
+<fa fa-key></fa>
+<fa fa-layer-group></fa>
+<fa fa-left-right></fa>
+<fa fa-left></fa>
+<fa fa-link></fa>
+<fa fa-list-check></fa>
+<fa fa-list></fa>
+<fa fa-location-crosshairs></fa>
+<fa fa-lock></fa>
+<fa fa-magnifying-glass-plus></fa>
+<fa fa-magnifying-glass></fa>
+<fa fa-maximize></fa>
+<fa fa-minimize></fa>
+<fa fa-note-sticky></fa>
+<fa fa-octagon></fa>
+<fa fa-palette></fa>
+<fa fa-paragraph></fa>
+<fa fa-party-horn></fa>
+<fa fa-pause></fa>
+<fa fa-pen-to-square></fa>
+<fa fa-pencil></fa>
+<fa fa-person-running-fast></fa>
+<fa fa-phone></fa>
+<fa fa-play></fa>
+<fa fa-plus></fa>
+<fa fa-project-diagram></fa>
+<fa fa-rabbit-running></fa>
+<fa fa-radiation></fa>
+<fa fa-receipt></fa>
+<fa fa-redo></fa>
+<fa fa-repeat></fa>
+<fa fa-right-from-bracket></fa>
+<fa fa-right></fa>
+<fa fa-rotate-left></fa>
+<fa fa-rotate-right></fa>
+<fa fa-search></fa>
+<fa fa-shield-halved></fa>
+<fa fa-sign-in-alt></fa>
+<fa fa-sign-out-alt></fa>
+<fa fa-signs-post></fa>
+<fa fa-sitemap></fa>
+<fa fa-square-full></fa>
+<fa fa-square-terminal></fa>
+<fa fa-square></fa>
+<fa fa-star></fa>
+<fa fa-subtitles></fa>
+<fa fa-swap-arrows fa-rotate-90></fa>
+<fa fa-sync-alt></fa>
+<fa fa-sync></fa>
+<fa fa-table-layout></fa>
+<fa fa-table></fa>
+<fa fa-thought-bubble></fa>
+<fa fa-ticket></fa>
+<fa fa-trash-can></fa>
+<fa fa-trash></fa>
+<fa fa-triple-chevrons-left></fa>
+<fa fa-triple-chevrons-right></fa>
+<fa fa-up-down></fa>
+<fa fa-up></fa>
+<fa fa-upload></fa>
+<fa fa-user-cog></fa>
+<fa fa-user-key></fa>
+<fa fa-user-secret></fa>
+<fa fa-user-shield></fa>
+<fa fa-user></fa>
+<fa fa-users></fa>
+<fa fa-volume-high></fa>
+<fa fa-volume-low></fa>
+<fa fa-volume-xmark></fa>
+<fa fa-water></fa>
+<fa fa-wrench></fa>
+<fa fa-xmark></fa>
+<i class="fa-brands fa-css3"></i>
+<i class="fa-brands fa-github"></i>
+<i class="fa-brands fa-html5"></i>
+<i class="fa-brands fa-js"></i>
+<i class="fa-brands fa-markdown"></i>
+<i class="fa-duotone fa-thin fa-grip-dots-vertical"></i>
+<i class="fa-kit-duotone fa-crimson"></i>
+<i class="fa-solid fa-square"></i>
+<i class="fa-solid fa-square-full"></i>
+<i class="fas fa-check-circle"></i>
+<i class="fas fa-chevron-down"></i>
+<i class="fas fa-exclamation-triangle"></i>
+<i class="fas fa-info-circle"></i>
+<i class="fas fa-times"></i>
+<i class="fas fa-times-circle"></i>
+<i class='fa fa-fw fa-flag'></i>

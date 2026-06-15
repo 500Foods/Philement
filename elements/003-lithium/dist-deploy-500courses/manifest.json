@@ -1,0 +1,33 @@
+{
+  "name": "Lithium",
+  "short_name": "Lithium",
+  "description": "Lithium - A Philement Project. A modern Progressive Web App built with vanilla JavaScript.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#1A1A1A",
+  "theme_color": "#5C6BC0",
+  "orientation": "any",
+  "scope": "./",
+  "icons": [
+    {
+      "src": "assets/images/logo-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/images/logo-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/images/logo-li.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
+}

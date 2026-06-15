@@ -1,0 +1,1111 @@
+/**
+ * Main Menu Manager Styles
+ * 
+ * Layout: Resizable Sidebar + Workspace + Header Bar
+ * Sidebar has gradient header (like login panel), scrollable menu, icon footer
+ * Splitter between sidebar and main content (220px-400px range)
+ */
+
+@layer managers {
+
+/* ========================================
+   Logout Overlay and Panel
+   ======================================== */
+
+/* Dark overlay covering entire viewport */
+.logout-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgb(0 0 0 / 60%);
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity var(--transition-duration) ease, visibility var(--transition-duration) ease;
+}
+
+.logout-overlay.visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+/* Logout panel - outer container for positioning */
+.logout-panel {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1001;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--transition-duration) ease, visibility var(--transition-duration) ease;
+}
+
+.logout-panel.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Inner panel - styled like manager slots and login subpanels */
+.logout-panel-inner {
+  width: 480px;
+  max-width: 90vw;
+  max-height: 90vh;
+  background: var(--bg-primary);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Header matching manager slot header style */
+.logout-panel-header {
+  flex-shrink: 0;
+  padding: var(--space-4);
+  margin: var(--space-4);  
+}
+
+.logout-panel-header .subpanel-header-group {
+  display: flex;
+  gap: 2px;
+}
+
+.logout-panel-header .subpanel-header-primary {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--accent-primary);
+  border: none;
+  border-radius: var(--border-radius-md) 0 0 var(--border-radius-md);
+  color: white;
+  font-size: var(--font-size-xl);
+  font-weight: 500;
+  cursor: default;
+}
+
+.logout-panel-header .subpanel-header-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 35px;
+  padding: var(--space-2);
+  border: none;
+  border-radius: 0 var(--border-radius-md) var(--border-radius-md) 0;
+  color: white;
+  font-size: var(--font-size-xl);
+  cursor: pointer;
+  transition: background-color var(--transition-fast) ease;
+}
+
+.logout-panel-header .subpanel-header-close:hover {
+  background: var(--accent-hover);
+}
+
+/* Content area */
+.logout-panel-content {
+  flex: 1;
+  padding: 0 var(--space-5) var(--space-5) var(--space-5);;
+  overflow-y: auto;
+}
+
+/* Logout options - clean vertical stack */
+.logout-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* Individual logout option - two column layout with type and description */
+.logout-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-secondary);
+  border: var(--border-standard);
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast) ease;
+  text-align: left;
+}
+
+.logout-option:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent-primary);
+}
+
+.logout-option:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px rgb(92 107 192 / 30%);
+}
+
+.logout-option.selected {
+  border-color: var(--accent-primary);
+  background: var(--bg-hover);
+}
+
+/* Logout type label - left column */
+.logout-option-type {
+  min-width: 80px;
+  padding: var(--space-3);
+  background: var(--accent-primary);
+  color: white;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  text-align: center;
+  border-radius: var(--border-radius-sm);
+  flex-shrink: 0;
+}
+
+.logout-option-type svg {
+  font-size: 15px;
+  margin-right: 5px;
+}
+
+/* Logout description - right column, multiline */
+.logout-option-desc {
+  flex: 1;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  line-height: 1.25;
+}
+
+/* ========================================
+   Main Layout Container
+   ======================================== */
+
+#main-layout {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  background: var(--bg-primary);
+  opacity: 0;
+  transition: opacity var(--transition-std) ease;
+  will-change: transform;
+}
+
+#main-layout.zoom-transition {
+  transition: transform 200ms cubic-bezier(0.25, 0.46, 0.45, 0.94), width 200ms cubic-bezier(0.25, 0.46, 0.45, 0.94), height 200ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+#main-layout.visible {
+  opacity: 1;
+}
+
+/* ========================================
+   Sidebar - Fixed 100% height
+   ======================================== */
+
+.main-sidebar {
+  width: 260px;
+  min-width: 220px;
+  max-width: 400px;
+  height: 100%;
+  background: var(--bg-secondary);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  position: relative;
+  transition: width calc(var(--transition-duration) / 2) ease, min-width calc(var(--transition-duration) / 2) ease, max-width calc(var(--transition-duration) / 2) ease;
+}
+
+/* Collapsed state */
+.main-sidebar.collapsed {
+  width: 50px !important;
+  min-width: 50px !important;
+  max-width: 50px !important;
+}
+
+/* Gradient header matching login panel */
+.sidebar-header-gradient {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  margin: var(--space-2) var(--space-3); 
+  border-radius: var(--border-radius-md);
+  background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+  color: white;
+  min-height: 35px;     
+  max-height: 35px;
+  height: 35px;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Radar status icon in sidebar header (replaces old ws-status) */
+.sidebar-header-gradient .radar-icon {
+  width: 32px;
+  height: 32px;
+  margin-left: auto;
+  margin-right: -3px;
+  color: var(--accent-focus);
+  cursor: default;
+  flex-shrink: 0;
+}
+
+/* Radar state colors — rim + center hub use currentColor */
+.sidebar-header-gradient .radar-icon.radar-connected {
+  color: #86efac;
+}
+
+.sidebar-header-gradient .radar-icon.radar-flaky {
+  color: #fde68a;
+}
+
+.sidebar-header-gradient .radar-icon.radar-disconnected {
+  color: #fca5a5;
+}
+
+/* Radar in sidebar body - positioned between menu and footer */
+.sidebar-radar-container {
+  padding: var(--space-3);
+  flex-shrink: 0;
+}
+
+.sidebar-radar-container .radar-icon {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  margin: 0 auto;
+}
+
+/* Header radar (small) */
+#radar-icon {
+  cursor: pointer;
+}
+
+/* Sidebar radar (large) */
+#radar-icon-sidebar {
+  cursor: pointer;
+  display: none;
+}
+
+.sidebar-logo {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+
+.sidebar-header-text {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex: 1;
+  min-width: 0;
+  transition: opacity calc(var(--transition-duration) / 2) ease;
+}
+
+.sidebar-title {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: white;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* Fade out title when collapsed - opacity transition for smooth fade */
+.main-sidebar.collapsed .sidebar-header-text {
+  opacity: 0;
+}
+
+/* ========================================
+   Sidebar Menu (Scrollable)
+   ======================================== */
+
+.sidebar-menu {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-2) var(--space-3);
+}
+
+/* ========================================
+   Menu Groups (Collapsible)
+   ======================================== */
+
+.menu-group {
+  margin-bottom: 0px;
+}
+
+.menu-group-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0px var(--space-2);
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+  color: var(--text-secondary);
+  font-size: var(--font-size-base);
+  text-transform: uppercase;
+}
+
+.menu-group-header:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.group-toggle-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  transition: transform var(--transition-delay) ease;
+  font-size: var(--font-size-xs);
+  color: #fff;
+}
+
+.group-name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.menu-group-items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-left: var(--space-2);
+  overflow: hidden;
+  transition: max-height var(--transition-duration) ease, opacity var(--transition-duration) ease;
+  max-height: 1000px;
+  opacity: 1;
+}
+
+.menu-group-items.collapsed {
+  max-height: 0;
+  opacity: 0;
+}
+
+/* ========================================
+   Menu Items
+   ======================================== */
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+  white-space: nowrap;
+  overflow: hidden;     
+  font-size: var(--icon-size-reg);
+  position: relative;
+}
+
+.menu-item:hover {
+  background: var(--bg-tertiary);
+}
+
+.menu-item.active {
+  background: var(--accent-primary);
+  color: white;
+}
+
+.menu-item.manager-open:not(.active, :hover) {
+  background: var(--accent-active);
+}
+
+.menu-item fa-icon,
+.menu-item i {
+  width: 20px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.menu-item-name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: opacity calc(var(--transition-duration) / 2) ease;
+  font-size: var(--font-size-base);
+}
+
+/* Count badge */
+.menu-item-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  padding: 2px 6px;
+  background: var(--accent-secondary);
+  color: white;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  border-radius: var(--border-radius-sm);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.menu-item.active .menu-item-count {
+  background: rgb(255 255 255 / 20%);
+}
+
+/* ========================================
+   Collapsed Sidebar Menu
+   ======================================== */
+
+/* When sidebar is collapsed, show flat list of icons */
+.main-sidebar.collapsed .menu-group-header {
+  display: none;
+}
+
+.main-sidebar.collapsed .menu-group {
+  margin-bottom: 0;
+}
+
+.main-sidebar.collapsed .menu-group-items {
+  display: flex !important;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-left: 0;
+  max-height: none !important;
+  opacity: 1 !important;
+}
+
+.main-sidebar.collapsed .menu-item {
+  justify-content: center;
+  padding: var(--space-2);
+}
+
+.main-sidebar.collapsed .menu-item-name,
+.main-sidebar.collapsed .menu-item-count {
+  display: none;
+}
+
+/* ========================================
+   Sidebar Footer with Icon Group — Two-Stage Animation
+
+   Collapse:
+     Stage 1 — Icons slide horizontally behind the arrow icon,
+               sidebar narrows, arrow rotates left → up.
+     Stage 2 — flex-direction snaps to column, icons fan out
+               vertically, arrow rotates up → right.
+
+   Expand (reverse):
+     Stage 1 — Icons collapse vertically back to a stack,
+               arrow rotates right → down.
+     Stage 2 — flex-direction snaps to row, icons fan out
+               horizontally, sidebar widens, arrow rotates
+               down → left.
+
+   Transforms are JS-driven for per-stage coordination.
+   CSS controls layout, sizing, and border-radius.
+   Each stage uses half of --transition-duration.
+   ======================================== */
+
+.sidebar-footer {
+  padding: var(--space-2) var(--space-3);
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+}
+
+/* Icon group container */
+.sidebar-icon-group {
+  /* Animation tuning — adjust these to resize icons / spacing */
+  --icon-h: 35px;
+  --icon-w: 40px;
+  --icon-gap: 2px;
+  --icon-count: 5;
+  --stage-dur: calc(var(--transition-duration) / 2);
+
+  display: flex;
+  flex-direction: row;
+  gap: var(--icon-gap);
+  width: 100%;
+  height: var(--icon-h);
+  position: relative;
+  transition: width var(--stage-dur) ease,
+              height var(--stage-dur) ease;
+  outline: 5px solid var(--accent-primary);
+  outline-offset: -10px;
+}
+
+/* Individual icon wrapper */
+.sidebar-icon-wrapper {
+  position: relative;
+  flex: 1 0 var(--icon-w);
+  min-width: var(--icon-w);
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+  z-index: 1;
+  /* transform is JS-driven; flex-grow animates for layout/outline sync */
+  transition: transform var(--stage-dur) ease,
+              flex-grow var(--stage-dur) ease;
+}
+
+/* Z-index stacking order — first icon (arrow) on top */
+.sidebar-icon-wrapper[data-index="0"] { z-index: 5; }
+.sidebar-icon-wrapper[data-index="1"] { z-index: 4; }
+.sidebar-icon-wrapper[data-index="2"] { z-index: 3; }
+.sidebar-icon-wrapper[data-index="3"] { z-index: 2; }
+.sidebar-icon-wrapper[data-index="4"] { z-index: 1; }
+
+/* Icon button styling */
+.sidebar-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-3);
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  background-color: var(--accent-primary);
+  border: none;
+  color: white;
+  font-size: var(--font-size-xl);
+  cursor: pointer;
+  transition:
+    background-color var(--transition-fast),
+    border-radius var(--stage-dur) ease;
+  position: relative;
+}
+
+/* ---- Expanded state (default) ---- */
+
+/* ---- Hover / disabled ---- */
+
+.sidebar-icon-btn:hover {
+  background-color: var(--accent-hover);
+}
+
+.sidebar-icon-btn:disabled {
+  background-color: var(--text-disabled);
+  cursor: not-allowed;
+}
+
+.sidebar-icon-group:not(.collapsed) .sidebar-icon-btn {
+  border-radius: 0;
+}
+
+.sidebar-icon-group:not(.collapsed) .sidebar-icon-wrapper:first-child .sidebar-icon-btn {
+  border-top-left-radius: var(--border-radius-md);
+  border-bottom-left-radius: var(--border-radius-md);
+}
+
+.sidebar-icon-group:not(.collapsed) .sidebar-icon-wrapper:last-child .sidebar-icon-btn {
+  border-top-right-radius: var(--border-radius-md);
+  border-bottom-right-radius: var(--border-radius-md);
+}
+
+.sidebar-icon-group.collapsed .sidebar-icon-btn {
+  border-radius: var(--border-radius-md);
+}
+
+.sidebar-icon-group.stacking .sidebar-icon-btn {
+  border-radius: var(--border-radius-md) !important;
+}
+
+/* ---- Stage 1: Collapsed / stacked ---- */
+
+.sidebar-icon-group.collapsed {
+  width: var(--icon-w);
+  height: var(--icon-h);
+}
+
+.sidebar-icon-group.collapsed .sidebar-icon-wrapper {
+  flex: 0 0 var(--icon-w);
+}
+
+/* ---- Stage 2: Collapsed + vertical (fanned out) ---- */
+
+.sidebar-icon-group.collapsed.vertical {
+  flex-direction: column;
+  height: calc(var(--icon-count) * var(--icon-h)
+             + (var(--icon-count) - 1) * var(--icon-gap));
+  outline-offset: -15px;
+}
+
+.sidebar-icon-group.collapsed.vertical .sidebar-icon-wrapper {
+  flex: 0 0 var(--icon-h);
+}
+
+/* Top / bottom rounding in vertical layout */
+.sidebar-icon-group.collapsed.vertical .sidebar-icon-btn {
+  border-radius: 0;
+}
+
+.sidebar-icon-group.collapsed.vertical .sidebar-icon-wrapper:first-child .sidebar-icon-btn {
+  border-top-left-radius: var(--border-radius-md);
+  border-top-right-radius: var(--border-radius-md);
+}
+
+.sidebar-icon-group.collapsed.vertical .sidebar-icon-wrapper:last-child .sidebar-icon-btn {
+  border-bottom-left-radius: var(--border-radius-md);
+  border-bottom-right-radius: var(--border-radius-md);
+}
+
+.sidebar-icon-btn.sidebar-logout:hover {
+  background-color: var(--accent-danger);
+}
+
+/* Active state for utility manager buttons (profile, session-log) */
+.sidebar-icon-btn.active {
+	background-color: var(--accent-toggle);
+	color: var(--text-toggle);
+}
+
+.sidebar-icon-btn.active:hover {
+  background-color: var(--accent-secondary);
+}
+
+/* ---- Collapse icon (arrow) rotation ---- */
+/* JS drives the rotation value; broader selector ensures
+   the transition survives Font Awesome SVG replacement. */
+
+#sidebar-collapse-btn > *,
+#collapse-icon {
+  transition: transform var(--stage-dur) ease;
+}
+
+.main-sidebar:not(.collapsed) .menu-item[title]::after {
+  display: none;
+}
+
+/* ========================================
+   Splitter
+   ======================================== */
+
+.sidebar-splitter {
+  width: 6px;
+  background: transparent;
+  cursor: col-resize;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+  transition: background-color 0.2s ease;
+  margin: 4px 0px;
+  border-radius: 3px;
+}
+
+.sidebar-splitter:hover,
+.sidebar-splitter.resizing {
+  background-color: var(--accent-primary);
+}
+
+/* Visual indicator line in the splitter */
+.sidebar-splitter::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 40px;
+  background-color: var(--border-color);
+  border-radius: 1px;
+  transition: background-color 0.2s ease;
+  display: none;
+}
+
+.sidebar-splitter:hover::after,
+.sidebar-splitter.resizing::after {
+  background-color: white;
+}
+
+/* Disable text selection during resize */
+body.resizing {
+  user-select: none;
+  cursor: col-resize;
+}
+
+body.resizing * {
+  cursor: col-resize !important;
+}
+
+/* Hide splitter when sidebar is collapsed */
+.main-sidebar.collapsed + .sidebar-splitter {
+  display: none;
+}
+
+/* ========================================
+   Manager Area (right side)
+   The manager-area is position:relative so manager slots can be absolute.
+   ======================================== */
+
+.manager-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  position: relative;
+  background: var(--bg-secondary);
+}
+
+/* Mobile menu button (hidden on desktop, floats above slots) */
+.mobile-menu-btn {
+  display: none;
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-2);
+  z-index: 20;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+/* ========================================
+   Manager Slot — the crossfade unit (header + workspace + footer)
+   Each loaded manager gets its own slot.
+   Slots are absolutely positioned within manager-area for crossfade.
+   ======================================== */
+
+.manager-slot {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  transition: opacity var(--transition-duration) ease-in-out;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.manager-slot.slot-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.manager-slot.slot-hidden {
+  opacity: 0;
+  pointer-events: none;
+  /* Use visibility to truly hide after transition, but allow opacity to animate */
+  visibility: hidden;
+  transition: opacity var(--transition-duration) ease-in-out, visibility 0s linear var(--transition-duration);
+}
+
+/* ========================================
+   Manager Transition Overlay
+   Blocks mouse clicks during manager crossfade transitions.
+   ======================================== */
+
+.manager-transition-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  /* Invisible but captures all clicks when active */
+  background: transparent;
+  pointer-events: none;
+}
+
+.manager-transition-overlay.active {
+  pointer-events: auto;
+}
+
+/* ========================================
+   Manager Slot Header
+   One unified subpanel-header-group spanning the full width.
+   Left: icon + name (flex:1).  Right: close button (fixed).
+   ======================================== */
+
+.manager-slot-header {
+  flex-shrink: 0;
+  padding: var(--space-2) var(--space-3) 0px var(--space-3);
+  background: var(--bg-secondary);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* Full-width header button group */
+.manager-slot-header .subpanel-header-group {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Title button (icon + name) takes all remaining space */
+.manager-slot-header .subpanel-header-primary {
+  flex: 1;
+  min-width: 0;
+}
+
+.manager-slot-header .subpanel-header-primary span {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  padding-right: var(--space-3);
+}
+
+/* ========================================
+   Manager Slot Workspace
+   Flex:1, holds the manager content.
+   No padding here — managers control their own padding/layout.
+   ======================================== */
+
+.manager-slot-workspace {
+  flex: 1;
+  overflow: hidden;
+  min-height: 0px;
+  position: relative;
+  border-radius: var(--border-radius-md);
+}
+
+/* ========================================
+   Manager Slot Footer
+   Single unified subpanel-header-group spanning the full width.
+   Reports btn (left, flex:1) → manager-injected extras → fixed action icons.
+   Managers add buttons via mainManager.addFooterButtons(slotId, 'left'|'right', [...]).
+   ======================================== */
+
+.manager-slot-footer {
+  flex-shrink: 0;
+  padding: 0px var(--space-3) var(--space-2) var(--space-3);
+  background: var(--bg-secondary);
+  display: flex;
+  align-items: center;
+}
+
+/* Footer: single full-width button group */
+.manager-slot-footer .subpanel-header-group {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Reports / title button takes all remaining space */
+.manager-slot-footer .slot-reports-btn {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.manager-slot-footer .slot-reports-btn span {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+@media (width <= 768px) {
+  /* On mobile, footer reports text abbreviated */
+  .manager-slot-footer .slot-reports-btn span {
+    display: none;
+  }
+}
+
+/* ========================================
+   Footer Button Counters
+   Fixed 3-digit counter display with leading zeros
+   ======================================== */
+
+.btn-counter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  padding: 2px 4px;
+  margin-left: 6px;
+  background: var(--accent-primary);
+  color: white;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  border-radius: var(--border-radius-sm);
+  letter-spacing: 0.5px;
+}
+
+/* Counter variations for different button types */
+.slot-notifications-btn .btn-counter {
+  background: var(--accent-primary);
+}
+
+.slot-tickets-btn .btn-counter {
+  background: var(--accent-secondary);
+}
+
+.slot-annotations-btn .btn-counter {
+  background: var(--accent-success, #28a745);
+}
+
+/* Offline indicator (inside slot header, right side) */
+.offline-indicator {
+  display: none;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  background: var(--accent-warning);
+  color: var(--bg-primary);
+  font-size: var(--font-size-sm);
+  border-radius: var(--border-radius-md);
+  flex-shrink: 0;
+}
+
+.offline-indicator.visible {
+  display: flex;
+}
+
+/* Legacy: manager-container is now .manager-slot-workspace
+   Keep for backward compatibility with existing managers that use it */
+.manager-container {
+  width: 100%;
+  height: 100%;
+}
+
+/* ========================================
+   Mobile Overlay
+   ======================================== */
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgb(0 0 0 / 50%);
+  z-index: 99;
+}
+
+.sidebar-overlay.visible {
+  display: block;
+}
+
+/* ========================================
+   Responsive: Stack sidebar on mobile
+   ======================================== */
+
+@media (width <= 768px) {
+  .main-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 100;
+    transform: translateX(-100%);
+    transition: transform var(--transition-std);
+    width: 260px !important;
+    min-width: 260px !important;
+    max-width: 260px !important;
+  }
+
+  .main-sidebar.open {
+    transform: translateX(0);
+  }
+
+  .main-sidebar.collapsed {
+    width: 260px !important;
+    min-width: 260px !important;
+    max-width: 260px !important;
+  }
+
+  /* Show text on mobile even when "collapsed" */
+  .main-sidebar.collapsed .sidebar-header-text,
+  .main-sidebar.collapsed .menu-item span {
+    display: block;
+    opacity: 1;
+    width: auto;
+  }
+
+  /* Reset icon group to expanded horizontal on mobile */
+  .sidebar-icon-group.collapsed,
+  .sidebar-icon-group.collapsed.vertical {
+    flex-direction: row !important;
+    width: 100% !important;
+    height: var(--icon-h, 35px) !important;
+  }
+
+  .sidebar-icon-group.collapsed .sidebar-icon-wrapper,
+  .sidebar-icon-group.collapsed.vertical .sidebar-icon-wrapper {
+    flex: 1 1 var(--icon-w, 40px) !important;
+    transform: none !important;
+  }
+
+  .sidebar-splitter {
+    display: none;
+  }
+
+  /* Arrow rotation is JS-driven; force-reset on mobile */
+  #sidebar-collapse-btn > *,
+  #collapse-icon {
+    transform: none !important;
+  }
+
+  /* On mobile, show mobile menu button (override absolute positioning) */
+  .mobile-menu-btn {
+    display: flex;
+    position: static;
+  }
+
+  /* On mobile, footer reports text abbreviated */
+
+  /* On mobile, manager-area slot headers need room for the menu btn */
+  .manager-slot-header {
+    padding-left: calc(40px + var(--space-3) * 2);
+  }
+
+  /* On mobile, always show full menu with groups */
+  .main-sidebar.collapsed .menu-group-header,
+  .main-sidebar:not(.collapsed) .menu-group-header {
+    display: flex;
+  }
+
+  .main-sidebar.collapsed .menu-group-items,
+  .main-sidebar:not(.collapsed) .menu-group-items {
+    max-height: 1000px !important;
+    opacity: 1 !important;
+    padding-left: var(--space-2);
+  }
+
+  .main-sidebar.collapsed .menu-item,
+  .main-sidebar:not(.collapsed) .menu-item {
+    justify-content: flex-start;
+    padding: var(--space-2) var(--space-4);
+  }
+
+  .main-sidebar.collapsed .menu-item-name,
+  .main-sidebar:not(.collapsed) .menu-item-name,
+  .main-sidebar.collapsed .menu-item-count,
+  .main-sidebar:not(.collapsed) .menu-item-count {
+    display: inline-flex;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  #main-layout,
+  .main-sidebar,
+  .menu-item,
+  .sidebar-icon-btn,
+  .sidebar-icon-wrapper,
+  .sidebar-icon-group,
+  .header-btn,
+  .manager-slot,
+  .manager-slot.slot-hidden,
+  .logout-overlay,
+  .logout-panel,
+  .logout-option,
+  .sidebar-title,
+  .menu-item span,
+  #sidebar-collapse-btn > *,
+  #collapse-icon,
+  .sidebar-splitter,
+  .sidebar-splitter::after,
+  .logout-panel-header .subpanel-header-close {
+    transition: none !important;
+  }
+
+  .manager-slot,
+  .manager-slot.slot-hidden {
+    transition: opacity 0.01ms ease, visibility 0.01ms ease !important;
+  }
+}
+
+} /* end @layer managers */

@@ -1,0 +1,45 @@
+{
+  "server": {
+    "url": "https://lithium.philement.com",
+    "api_prefix": "/api",
+    "websocket_url": "wss://lithium.philement.com/wss",
+    "websocket_key": "ABCDEFGHIJKLMNOP",
+    "websocket_protocol": "hydrogen"
+  },
+  "auth": {
+    "api_key": "EveryGoodBoyDeservesFudge",
+    "default_database": "Lithium",
+    "session_timeout_minutes": 30
+  },
+  "app": {
+    "name": "Lithium",
+    "tagline": "A Philement Project",
+    "version": "1.0.0",
+    "logo": "/assets/images/logo-li.svg",
+    "default_theme": "dark",
+    "default_language": "en-US"
+  },
+  "branding": {
+    "title": "Lithium",
+    "description": "Lithium - A Philement Project. A modern Progressive Web App built with vanilla JavaScript.",
+    "keywords": "Lithium, Philement, PWA, Progressive Web App, Vanilla JavaScript, SPA",
+    "author": "Philement",
+    "theme_color": "#1A1A1A",
+    "icon": "favicon.ico",
+    "apple_touch_icon": "/assets/images/logo-192x192.png",
+    "apple_mobile_web_app_title": "Lithium",
+    "application_name": "Lithium",
+    "splash_welcome": "Welcome to Lithium"
+  },
+  "icons": {
+    "set": "duotone",
+    "weight": "thin",
+    "prefix": "fa-duotone fa-thin",
+    "fallback": "solid"
+  },
+  "features": {
+    "offline_mode": true,
+    "install_prompt": true,
+    "debug_logging": false
+  }
+}
