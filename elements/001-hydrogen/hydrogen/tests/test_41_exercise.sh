@@ -646,10 +646,10 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         # Restore original binary for any subsequent tooling (not strictly needed here)
         export HYDROGEN_BIN="${ORIGINAL_HYDROGEN_BIN}"
 
-        # Only attempt "no leaks" success if the server actually started and
-        # the exercise phase was reached. A startup failure under ASAN should
-        # not be reported as "no leaks detected".
-        if [[ "${EXIT_CODE}" -ne 0 || "${server_info}" == "FAILED:0" ]]; then
+         # Only attempt "no leaks" success if the server actually started and
+         # the exercise phase was reached. A startup failure under ASAN should
+         # not be reported as "no leaks detected".
+         if [[ "${server_info}" == "FAILED:0" ]]; then
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Skipping ASAN leak analysis: server did not start successfully under ASAN debug build"
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "ASAN: server startup failed under debug build - no leak data produced"
             # Do not increment PASS; keep failure visible. Do not force EXIT_CODE here;

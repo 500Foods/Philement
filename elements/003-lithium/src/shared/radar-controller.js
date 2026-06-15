@@ -7,9 +7,10 @@
  *   - WS connection health (rim color, sweep animation)
  *   - WS keepalive heartbeats (sweep line flash)
  *
- * Animation is time-based (not frame-count-based), so all timing is
- * deterministic and independent of frame rate. The sweep completes a
- * full 360° rotation in exactly SWEEP_PERIOD_MS.
+ * Sweep animation is now handled by CSS for smoother performance,
+ * while angle tracking remains time-based (not frame-count-based) for
+ * accurate ping detection. The sweep completes a full 360° rotation
+ * in exactly SWEEP_PERIOD_MS.
  *
  * Target lifecycle:
  *   1. Appear bright white at the sweep arm tip position (60% radius)
@@ -107,6 +108,25 @@ function ensurePingCSS() {
     #radar-icon-sidebar {
       color: var(--accent-primary, #5C6BC0);
       transition: color 0.4s ease;
+    }
+    /* Sweep animation - moved to CSS for smoother performance */
+    #sweep-group,
+    #sweep-arm,
+    #sweep-group-sidebar,
+    #sweep-arm-sidebar {
+      animation: sweep-rotation ${SWEEP_PERIOD_MS}ms linear infinite;
+      transform-origin: ${CX}px ${CY}px;
+    }
+    /* Pause sweep when disconnected */
+    .radar-disconnected #sweep-group,
+    .radar-disconnected #sweep-arm,
+    .radar-disconnected #sweep-group-sidebar,
+    .radar-disconnected #sweep-arm-sidebar {
+      animation-play-state: paused;
+    }
+    @keyframes sweep-rotation {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
     }
   `;
   document.head.appendChild(styleEl);
@@ -435,25 +455,12 @@ function startRadarLoop() {
     const dt = timestamp - lastTimestamp;
     lastTimestamp = timestamp;
 
-    // Advance angle based on elapsed time
+    // Advance angle based on elapsed time (for ping detection)
     angle = (angle + SWEEP_DPS * dt) % 360;
 
-    // Only update the active radar's sweep
-    if (activeRadar === 'header') {
-      if (sweepGroup) {
-        sweepGroup.setAttribute('transform', `rotate(${angle} ${CX} ${CY})`);
-      }
-      if (sweepArm) {
-        sweepArm.setAttribute('transform', `rotate(${angle} ${CX} ${CY})`);
-      }
-    } else {
-      if (sweepGroupSidebar) {
-        sweepGroupSidebar.setAttribute('transform', `rotate(${angle} ${CX} ${CY})`);
-      }
-      if (sweepArmSidebar) {
-        sweepArmSidebar.setAttribute('transform', `rotate(${angle} ${CX} ${CY})`);
-      }
-    }
+    // Only update the active radar's sweep - NOW CSS-HANDLED
+    // We keep the angle variable updated for ping detection only
+    // Actual sweep rotation is handled by CSS animation
 
     // Check for sweep-pass pings on active targets
     activeTargets.forEach((target) => {

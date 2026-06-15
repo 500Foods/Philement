@@ -606,12 +606,12 @@ json_t* merge_database_parameters(const DatabaseConnection* conn, json_t* query_
                 json_object_set_new(merged_params, type_key, type_obj);
             }
 
-            // Override query param with config value (config takes precedence)
-            json_object_set(type_obj, param_name, json_deep_copy(param_value));
+                 // Override query param with config value (config takes precedence)
+                 json_object_set_new(type_obj, param_name, json_deep_copy(param_value));
         } else {
-            // For any other type (objects, arrays, etc.), keep at top level
-            // Override with config value
-            json_object_set(merged_params, param_name, json_deep_copy(param_value));
+                 // For any other type (objects, arrays, etc.), keep at top level
+                 // Override with config value
+                 json_object_set_new(merged_params, param_name, json_deep_copy(param_value));
         }
     }
 
