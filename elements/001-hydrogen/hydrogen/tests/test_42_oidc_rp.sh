@@ -45,8 +45,8 @@
 set -euo pipefail
 
 # Test Configuration
-TEST_NAME="OIDC RP"
-TEST_ABBR="OID"
+TEST_NAME="OIDC Relying Party"
+TEST_ABBR="ORP"
 TEST_NUMBER="42"
 TEST_COUNTER=0
 TEST_VERSION="2.1.0"
