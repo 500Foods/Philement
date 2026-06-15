@@ -85,8 +85,24 @@ And Test 11 is all about Unity unit tests, where we have custom code written to 
 - **[test_33_mysql_migrations.sh](/docs/H/tests/test_33_mysql_migrations.md)**: MySQL migration performance test
 - **[test_34_sqlite_migrations.sh](/docs/H/tests/test_34_sqlite_migrations.md)**: SQLite migration performance test
 - **[test_35_db2_migrations.sh](/docs/H/tests/test_35_db2_migrations.md)**: DB2 migration performance test
+- **[test_36_mariadb_migrations.sh](/docs/H/tests/test_36_mariadb_migrations.md)**: MariaDB migration performance test
+- **[test_37_cockroachdb_migrations.sh](/docs/H/tests/test_37_cockroachdb_migrations.md)**: CockroachDB migration performance test
+- **[test_38_yugabytedb_migrations.sh](/docs/H/tests/test_38_yugabytedb_migrations.md)**: YugabyteDB migration performance test
 - **[test_71_database_diagrams.sh](/docs/H/tests/test_71_database_diagrams.md)**: Database diagram generation
-- **[test_51_conduit.sh](/docs/H/tests/test_51_conduit.md)**: Conduit Query endpoint test
+
+### Conduit Tests
+
+- **[test_40_auth.sh](/docs/H/tests/test_40_auth.md)**: Authentication endpoints testing (JWT tokens across multiple database engines)
+- **[test_41_exercise.sh](/docs/H/tests/test_41_exercise.md)**: Memory stress test with all 7 databases and leak detection
+- **[test_42_oidc_rp.sh](/docs/H/tests/test_42_oidc_rp.md)**: OIDC Relying Party - complete authentication flow testing
+- **[test_50_conduit_query.sh](/docs/H/tests/test_50_conduit_query.md)**: Single public query endpoint testing
+- **[test_51_conduit_queries.sh](/docs/H/tests/test_51_conduit_queries.md)**: Conduit multiple queries endpoint testing
+- **[test_52_conduit_auth_query.sh](/docs/H/tests/test_52_conduit_auth_query.md)**: Authenticated single query endpoint
+- **[test_53_conduit_auth_queries.sh](/docs/H/tests/test_53_conduit_auth_queries.md)**: Authenticated batch query endpoint
+- **[test_54_conduit_alt_query.sh](/docs/H/tests/test_54_conduit_alt_query.md)**: Cross-database single query with override
+- **[test_55_conduit_alt_queries.sh](/docs/H/tests/test_55_conduit_alt_queries.md)**: Cross-database batch query with override
+- **[test_60_performance.sh](/docs/H/tests/test_60_performance.md)**: Performance benchmarking across databases
+- **[test_70_installer.sh](/docs/H/tests/test_70_installer.md)**: Standalone installer building test
 
 ### Static Analysis & Code Quality Tests
 
