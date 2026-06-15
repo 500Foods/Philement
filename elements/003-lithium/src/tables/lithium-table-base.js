@@ -576,10 +576,29 @@ export class LithiumTableBase {
     }
    }
 
-  _updateTableScrollbars() {
+_updateTableScrollbars() {
     if (!this._scrollbarInstance) {
       return;
     }
+
+    // Cancel any pending update - we only need one deferred update
+    if (this._scrollbarUpdateTimer) {
+      window.clearTimeout(this._scrollbarUpdateTimer);
+      this._scrollbarUpdateTimer = 0;
+    }
+
+    // Debounce all updates into a single requestAnimationFrame
+    // This prevents multiple expensive OSB updates from competing with
+    // radar animation and other UI during rapid data loading
+    if (!this._scrollbarUpdateRaf1) {
+      this._scrollbarUpdateRaf1 = requestAnimationFrame(() => {
+        this._scrollbarUpdateRaf1 = 0;
+        if (this._scrollbarInstance && !this._scrollbarInstance.destroyed) {
+          scrollbarManager.update(this._scrollbarInstance);
+        }
+      });
+    }
+  }
 
     if (this._scrollbarUpdateTimer) {
       window.clearTimeout(this._scrollbarUpdateTimer);
