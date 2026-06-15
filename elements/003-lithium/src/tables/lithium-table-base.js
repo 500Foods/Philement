@@ -600,35 +600,6 @@ _updateTableScrollbars() {
     }
   }
 
-    if (this._scrollbarUpdateTimer) {
-      window.clearTimeout(this._scrollbarUpdateTimer);
-      this._scrollbarUpdateTimer = 0;
-    }
-
-    if (this._scrollbarUpdateRaf1) {
-      window.cancelAnimationFrame(this._scrollbarUpdateRaf1);
-      this._scrollbarUpdateRaf1 = 0;
-    }
-
-    if (this._scrollbarUpdateRaf2) {
-      window.cancelAnimationFrame(this._scrollbarUpdateRaf2);
-      this._scrollbarUpdateRaf2 = 0;
-    }
-
-    scrollbarManager.update(this._scrollbarInstance);
-    this._scrollbarUpdateRaf1 = requestAnimationFrame(() => {
-      scrollbarManager.update(this._scrollbarInstance);
-      this._scrollbarUpdateRaf2 = requestAnimationFrame(() => {
-        scrollbarManager.update(this._scrollbarInstance);
-      });
-    });
-
-    this._scrollbarUpdateTimer = window.setTimeout(() => {
-      scrollbarManager.update(this._scrollbarInstance);
-      this._scrollbarUpdateTimer = 0;
-    }, 90);
-  }
-
   // ── Group Icon Animation (delegated to GroupIconAnimator) ─────────────────
 
   updateGroupIcons() {
