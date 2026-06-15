@@ -581,12 +581,6 @@ _updateTableScrollbars() {
       return;
     }
 
-    // Cancel any pending update - we only need one deferred update
-    if (this._scrollbarUpdateTimer) {
-      window.clearTimeout(this._scrollbarUpdateTimer);
-      this._scrollbarUpdateTimer = 0;
-    }
-
     // Debounce all updates into a single requestAnimationFrame
     // This prevents multiple expensive OSB updates from competing with
     // radar animation and other UI during rapid data loading
@@ -751,24 +745,9 @@ _updateTableScrollbars() {
       this._scrollbarInstance = null;
     }
 
-    if (this._scrollbarUpdateTimer) {
-      window.clearTimeout(this._scrollbarUpdateTimer);
-      this._scrollbarUpdateTimer = 0;
-    }
-
     if (this._scrollbarUpdateRaf1) {
       window.cancelAnimationFrame(this._scrollbarUpdateRaf1);
       this._scrollbarUpdateRaf1 = 0;
-    }
-
-    if (this._scrollbarUpdateRaf2) {
-      window.cancelAnimationFrame(this._scrollbarUpdateRaf2);
-      this._scrollbarUpdateRaf2 = 0;
-    }
-
-    if (this._scrollbarInstance) {
-      scrollbarManager.destroy(this._scrollbarInstance);
-      this._scrollbarInstance = null;
     }
 
     if (this.table) {
