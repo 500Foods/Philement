@@ -21,6 +21,10 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 ## Folder: /docs/H/core
 
 - [README.md](/docs/H/core/README.md)
+- [ARCHITECTURE.md](/docs/H/core/ARCHITECTURE.md): High-level architecture overview
+- [API_OVERVIEW.md](/docs/H/core/API_OVERVIEW.md): Unified API endpoint reference
+- [CHAT_SYSTEM.md](/docs/H/core/CHAT_SYSTEM.md): Chat streaming architecture
+- [DATABASE_ABSTRACTION.md](/docs/H/core/DATABASE_ABSTRACTION.md): Multi-engine database support
 - [ai_integration.md](/docs/H/core/ai_integration.md)
 - [api.md](/docs/H/core/subsystems/api/api.md)
 - [coding_guidelines.md](/docs/H/core/coding_guidelines.md)
@@ -38,6 +42,16 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [thread_monitoring.md](/docs/H/core/subsystems/threads/threads.md)
 - [web_socket.md](/docs/H/core/subsystems/websocket/websocket.md)
 - [metrics/README.md](/docs/H/metrics/README.md) - Build metrics documentation
+
+### Folder: /docs/H/core/subsystems/websocket
+
+- [websocket.md](/docs/H/core/subsystems/websocket/websocket.md): WebSocket status interface
+- [websocket_chat.md](/docs/H/core/subsystems/websocket/websocket_chat.md): Streaming chat API via WebSocket
+
+### Folder: /docs/H/core/subsystems/conduit
+
+- [README.md](/docs/H/core/subsystems/conduit/README.md): Conduit subsystem overview
+- [conduit_api.md](/docs/H/core/subsystems/conduit/conduit_api.md): REST API for database query execution by reference
 
 ### Folder: /docs/H/core/subsystems
 
@@ -207,7 +221,23 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [test_37_cockroachdb_migrations.md](/docs/H/tests/test_37_cockroachdb_migrations.md): CockroachDB migration performance test
 - [test_38_yugabytedb_migrations.md](/docs/H/tests/test_38_yugabytedb_migrations.md): YugabyteDB migration performance test
 - [test_40_auth.md](/docs/H/tests/test_40_auth.md): Authentication endpoints testing (JWT tokens across multiple database engines)
-- [test_51_conduit.md](/docs/H/tests/test_51_conduit.md): Conduit endpoints testing (all 4 endpoints with full parameter support across 7 database engines)
+- [test_41_exercise.md](/docs/H/tests/test_41_exercise.md): Memory exercise stress test (500 auth requests across 7 databases with leak detection)
+- [test_42_oidc_rp.md](/docs/H/tests/test_42_oidc_rp.md): OIDC Relying Party - end-to-end authentication flow testing
+- [test_50_conduit_query.md](/docs/H/tests/test_50_conduit_query.md): Single public query endpoint testing
+- [test_51_conduit_queries.md](/docs/H/tests/test_51_conduit_queries.md): Conduit multiple queries endpoint testing
+- [test_52_conduit_auth_query.md](/docs/H/tests/test_52_conduit_auth_query.md): Authenticated single query endpoint
+- [test_53_conduit_auth_queries.md](/docs/H/tests/test_53_conduit_auth_queries.md): Authenticated batch query endpoint
+- [test_54_conduit_alt_query.md](/docs/H/tests/test_54_conduit_alt_query.md): Cross-database single query with override
+- [test_55_conduit_alt_queries.md](/docs/H/tests/test_55_conduit_alt_queries.md): Cross-database batch query with override
+- [test_60_performance.md](/docs/H/tests/test_60_performance.md): Performance benchmarking across databases
+- OIDC RP Library Documentation:
+  - [oidc_rp_helpers.md](/docs/H/tests/oidc_rp_helpers.md)
+  - [oidc_rp_helpers_callback.md](/docs/H/tests/oidc_rp_helpers_callback.md)
+  - [oidc_rp_helpers_link.md](/docs/H/tests/oidc_rp_helpers_link.md)
+  - [oidc_rp_helpers_provision.md](/docs/H/tests/oidc_rp_helpers_provision.md)
+  - [oidc_rp_helpers_default.md](/docs/H/tests/oidc_rp_helpers_default.md)
+  - [oidc_rp_helpers_roles.md](/docs/H/tests/oidc_rp_helpers_roles.md)
+- [conduit_utils.md](/docs/H/tests/conduit_utils.md): Conduit endpoint testing utilities
 - [test_70_installer.md](/docs/H/tests/test_70_installer.md): Standalone installer building test
 - [test_71_database_diagrams.md](/docs/H/tests/test_71_database_diagrams.md): Standalone installer building test
 - [test_89_coverage.md](/docs/H/tests/test_89_coverage.md): Build system coverage information

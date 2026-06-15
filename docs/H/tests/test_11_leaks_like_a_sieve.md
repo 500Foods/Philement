@@ -1,8 +1,8 @@
-# Test 10: Memory Leak Detection (test_10_leaks_like_a_sieve.sh)
+# Test 11: Memory Leak Detection
 
 ## Overview
 
-**test_10_leaks_like_a_sieve.sh** is a comprehensive memory leak detection test that uses AddressSanitizer (ASAN) to analyze the Hydrogen server for memory leaks, memory errors, and resource management issues.
+The [`test_11_leaks_like_a_sieve.sh`](/elements/001-hydrogen/hydrogen/tests/test_11_leaks_like_a_sieve.sh) script performs memory leak detection for the Hydrogen server using AddressSanitizer (ASAN) in a debug build.
 
 ## Purpose
 
@@ -11,71 +11,136 @@ This test validates that the Hydrogen server:
 - Does not leak memory during normal operation
 - Properly manages allocated resources
 - Handles memory operations safely
-- Releases all allocated memory on shutdown
+- Releases all allocated memory on graceful shutdown
+
+The test uses ASAN's LeakSanitizer to detect direct and indirect memory leaks.
 
 ## Test Configuration
 
-- **Test Number**: 10
-- **Category**: Memory Analysis
-- **Dependencies**: ASAN-enabled build, minimal test configuration
-- **Timeout**: Extended (due to ASAN overhead)
+- **Test Name**: Memory Leak Detection
+- **Test Abbreviation**: SIV
+- **Test Number**: 11
+- **Version**: 4.1.0
 
-## Test Process
+## Key Features
 
-### ASAN Analysis
+### ASAN Integration
 
-1. **Startup Testing**: Launches Hydrogen with ASAN supervision
-2. **Memory Monitoring**: Tracks all memory allocations and deallocations
-3. **Leak Detection**: Identifies any memory that is not properly freed
-4. **Error Detection**: Catches memory access violations and buffer overflows
+The test requires a debug build (`hydrogen_debug`) with AddressSanitizer enabled:
 
-### Memory Categories Checked
+```bash
+# Verify ASAN is compiled in
+readelf -s hydrogen_debug | grep __asan
+```
 
-- **Direct Leaks**: Memory that is leaked with no references
-- **Indirect Leaks**: Memory that is lost due to pointer chain breaks
+ASAN_OPTIONS configured:
+
+ ```text
+ detect_leaks=1      # Enable leak detection
+ leak_check_at_exit=1  # Check for leaks at shutdown
+ verbosity=1          # Show detailed output
+ log_threads=1        # Track thread-related issues
+ print_stats=1        # Print memory statistics
+ ```
+
+### Minimal Configuration
+
+Uses `hydrogen_test_11_leaks.json` with:
+
+- Port 5030
+- Minimal subsystems to reduce noise
+- No databases (pure infrastructure test)
+
+This differs from `test_41_exercise.sh` which tests database-heavy paths.
+
+## Test Flow
+
+1. **Locate Debug Build**: Find `hydrogen_debug` binary
+2. **Validate ASAN**: Confirm `__asan` symbols present
+3. **Validate Config**: Check configuration file exists
+4. **Start Server**: Launch with ASAN_OPTIONS
+5. **Wait for Ready**: Poll for `STARTUP COMPLETE` (5s timeout)
+6. **Exercise Operations**: Make basic API calls to `/api/system/health`
+7. **Shutdown**: Send SIGTERM to trigger graceful shutdown
+8. **Analyze Output**: Grep log for LeakSanitizer report
+
+## Leak Detection
+
+### Leak Categories
+
+| Type | Description |
+|------|-------------|
+| **Direct Leak** | Memory allocated and never freed, no pointers to it |
+| **Indirect Leak** | Memory reachable only through leaked pointers |
+
+### Analysis
+
+The test scans the server log for:
+
+- `Direct leak of X bytes in Y allocations`
+- `Indirect leak of X bytes in Y allocations`
+
+If both counts are zero, the test passes.
 
 ## Expected Results
 
-- **Zero Memory Leaks**: No direct or indirect leaks
-- **Clean Shutdown**: All allocated memory properly released
-- **No Memory Errors**: No invalid memory access or corruption
+### Success Criteria
 
-## Usage
+- Debug build with ASAN found
+- Server starts within 5 seconds
+- Server logs startup time
+- Server shuts down gracefully after SIGTERM
+- LeakSanitizer reports 0 direct and 0 indirect leaks
 
-```bash
-# Run memory leak detection test
-./test_10_leaks_like_a_sieve.sh
+### Output Artifacts
 
-# Run as part of test suite
-./test_00_all.sh 10_leaks_like_a_sieve
+- **`test_11_{timestamp}_leaks.log`**: Full server output including ASAN report
+- **`test_11_{timestamp}_leak_report.log`**: Copy of leak analysis
+- **`test_11_{timestamp}_leak_summary.log`**: Summary of leak counts
+
+### Sample Output
+
+```text
+Memory Leak Analysis Summary
+============================
+Direct Leaks Found: 0
+Indirect Leaks Found: 0
+
+No memory leaks detected
 ```
 
 ## Troubleshooting
 
 ### Common Issues
 
-- **False Positives**: Some system libraries may report minor leaks
-- **Performance Impact**: ASAN slows execution
-- **Large Output**: ASAN generates verbose debugging information
+- **Debug build not found**: Build with `cmake -DCMAKE_BUILD_TYPE=Debug ..`
+- **No ASAN symbols**: Ensure `-fsanitize=address` is in debug build flags
+- **Startup timeout**: Check for startup errors in log
+- **False positives**: Some system libraries may report minor leaks; focus on Hydrogen code in stack traces
 
-### Analysis Tips
+### Manual ASAN Testing
 
-- Focus on "Direct leak" and "Indirect leak" reports
-- Check for patterns in leaked memory (repeated allocations)
-- Review the call stack for leak sources
+Run Hydrogen directly under ASAN:
+
+```bash
+ASAN_OPTIONS="detect_leaks=1:leak_check_at_exit=1" \
+    valgrind --suppressions=.valgrind.supp \
+    ./hydrogen_debug tests/configs/hydrogen_test_11_leaks.json
+```
 
 ## Integration
 
-This test integrates with:
+This test runs as part of the full test suite:
 
-- **test_00_all.sh**: Automatic execution in test suite
-- **test_22_startup_shutdown.sh**: Complementary lifecycle testing
-- **test_26_shutdown.sh**: Additional shutdown validation
+```bash
+# Run this specific test
+./tests/test_11_leaks_like_a_sieve.sh
 
-## Performance Notes
+# Run as part of suite
+./tests/test_00_all.sh 11_leaks_like_a_sieve
+```
 
-- ASAN adds runtime overhead
-- May require increased timeout values for complex operations
-- Memory usage is also increased during analysis
+## Related Documentation
 
-For more information on memory debugging techniques, see the [Testing Documentation](/docs/H/core/testing.md).
+- [test_41_exercise.md](/docs/H/tests/test_41_exercise.md) - Database-heavy stress test with RSS leak detection
+- [lib/framework.md](/docs/H/tests/framework.md) - Test framework utilities

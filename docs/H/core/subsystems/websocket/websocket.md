@@ -184,6 +184,7 @@ More WebSocket features will be documented here as they are implemented, includi
 - Temperature monitoring
 - Command interface
 - Error notifications
+- **Chat streaming**: See [WebSocket Chat](/docs/H/core/subsystems/websocket/websocket_chat.md) for AI chat integration
 
 ## Implementation Details
 
