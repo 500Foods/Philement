@@ -108,11 +108,13 @@ Before considering the implementation complete, the following must be verified:
 The WebSocket streaming implementation was updated to address blocking issues and improve robustness:
 
 #### Problem Identified
+
 - `curl_easy_perform()` was blocking the LWS event loop
 - Server became unresponsive after multiple concurrent streaming requests
 - TTFB was slow compared to provider playgrounds
 
 #### Solution Implemented
+
 - **Detached thread streaming**: Each streaming request spawns a detached worker thread
 - **Non-blocking LWS loop**: Function returns immediately, LWS callback completes
 - **CURLOPT_NOSIGNAL**: Thread-safe CURL configuration
@@ -121,9 +123,11 @@ The WebSocket streaming implementation was updated to address blocking issues an
 - **Stream tracking**: Active streams tracked for monitoring and cleanup
 
 #### Known Limitation: Thread Safety
+
 The worker thread writes chunks directly to the WebSocket via `lws_write()`. This is technically not thread-safe per LWS documentation (writes should occur in the service thread). Works in practice for moderate loads.
 
 **Future improvement**: Implement queue-based streaming:
+
 1. Thread-safe chunk queue
 2. `lws_callback_on_writable()` to trigger writes
 3. Write from LWS service thread in writable callback
@@ -131,7 +135,9 @@ The worker thread writes chunks directly to the WebSocket via `lws_write()`. Thi
 Or migrate to libcurl multi interface integrated with LWS event loop.
 
 #### Connection Diagnostics
+
 Added CURL debug callback for troubleshooting connection issues:
+
 - Logs TCP connection establishment
 - Logs TLS/SSL handshake events
 - Logs HTTP protocol negotiation
@@ -140,12 +146,14 @@ Added CURL debug callback for troubleshooting connection issues:
 #### Architecture Decision: Threads vs Multi Interface
 
 **Current approach (Threads):**
+
 - One thread per streaming request
 - Simple, robust implementation
 - Works well for moderate concurrency (tens of simultaneous streams)
 - Appropriate for current use case where multi-host requests are uncommon
 
 **Future consideration (libcurl Multi Interface):**
+
 - Event-driven, single-threaded approach
 - Scales to thousands of concurrent streams
 - Integrates with LWS event loop via `curl_multi_socket_action()`
