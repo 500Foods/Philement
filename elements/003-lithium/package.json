@@ -37,7 +37,8 @@
     "deploy:prune": "node scripts/prune-deploy-assets.js",
     "deploy:brotli": "node scripts/generate-brotli.js",
     "deploy:brotli:fast": "BROTLI_JOBS=12 scripts/generate-brotli.sh",
-    "deploy:brotli:timed": "npm run deploy:brotli 2>&1 | tee /tmp/brotli-timing.log"
+    "deploy:brotli:timed": "npm run deploy:brotli 2>&1 | tee /tmp/brotli-timing.log",
+    "deploy:500courses": "bash scripts/deploy-500courses.sh"
   },
   "dependencies": {
     "@codemirror/lang-json": "^6.0.1",

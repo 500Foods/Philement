@@ -1,0 +1,90 @@
+/**
+ * Session Log Manager Styles
+ *
+ * Utility manager — renders in the manager-slot workspace.
+ * Features a toolbar with refresh, font selector, and coverage buttons,
+ * plus a full-height CodeMirror log viewer.
+ */
+
+@import url('../../core/lithium-toolbar.css');
+
+@layer managers {
+
+/* Full-height page container — fills the slot-workspace absolutely */
+#session-log-page {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin: var(--space-1) var(--space-3);
+  border-radius: var(--border-radius-md);
+  /* Fade-in on show */
+  opacity: 0;
+  transition: opacity var(--transition-normal) ease;  
+}
+
+/* Toolbar styling (lithium-toolbar classes are in lithium-toolbar.css) */
+#session-log-toolbar {
+  flex-shrink: 0;
+}
+
+/* Viewer takes remaining vertical space */
+.session-log-viewer {
+  flex: 1 1 auto;
+  overflow: hidden;
+  min-height: 0px;
+}
+
+/* Placeholder shown before CodeMirror initializes */
+.session-log-viewer .log-placeholder {
+  padding: var(--space-5);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+}
+
+/* Force CodeMirror to fill the viewer */
+.session-log-viewer .cm-editor {
+  height: 100%;
+}
+
+/* Force Vanadium Mono across all CodeMirror elements.
+   The oneDark theme injects its own font-family; this wins. */
+#session-log-viewer .cm-editor,
+#session-log-viewer .cm-editor .cm-scroller,
+#session-log-viewer .cm-editor .cm-content,
+#session-log-viewer .cm-editor .cm-line,
+#session-log-viewer .cm-editor .cm-gutters,
+#session-log-viewer .cm-editor .cm-lineNumbers {
+  font-family: var(--font-mono) !important;
+}
+
+/* Refresh button spin animation (matches LithiumTable navigator) */
+.session-log-refresh-spin > i,
+.session-log-refresh-spin > svg {
+  animation: session-log-refresh-spin 0.75s ease-in-out;
+}
+
+@keyframes session-log-refresh-spin {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+#session-log-page.visible {
+  opacity: 1;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  #session-log-page {
+    transition: none;
+  }
+  
+  .session-log-refresh-spin > i,
+  .session-log-refresh-spin > svg {
+    animation: none;
+  }
+}
+
+} /* end @layer managers */

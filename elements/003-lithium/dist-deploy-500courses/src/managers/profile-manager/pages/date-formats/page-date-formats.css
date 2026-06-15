@@ -1,0 +1,523 @@
+/* Date Formats Settings Page Styles */
+
+.settings-page .df-content {
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+.df-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.df-sample-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.df-sample-row {
+  display: flex;
+  margin: 0px var(--space-3) var(--space-5) var(--space-3)
+}
+
+.df-sample-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.df-sample-label {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.df-sample-current {
+  font-size: var(--font-size-lg);
+  color: var(--accent-primary);
+}
+
+.df-sample-input-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.df-sample-input-group .lithium-toolbar-btn {
+  flex-shrink: 0;
+}
+
+.df-sample-input-group .form-input {
+  min-width: 200px;
+}
+
+.df-sample-input-group span {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  flex: 1;
+  min-width: 0;
+}
+
+.df-tz-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.df-tz-group .form-input {
+  min-width: 200px;
+  font-size: var(--font-size-sm);
+}
+
+.df-tz-group .form-select {
+  min-width: 260px;
+  max-width: 360px;
+}
+
+.df-section {
+  padding: var(--space-md);
+}
+
+.df-table-wrapper {
+  overflow-x: auto;
+  margin: var(--space-3);
+  border: 1px solid var(--accent-alt-primary);
+  border-radius: var(--border-radius-md);
+  max-width: 900px;
+}
+
+.df-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.df-table th,
+.df-table td {
+  padding: var(--space-2);
+  text-align: left;
+  border-bottom: 1px solid var(--bg-row-border);
+  border-right: 1px solid var(--bg-row-border);
+  white-space: nowrap;
+}
+
+.df-table th {
+  background: var(--accent-alt-primary);
+	color: var(--text-primary);
+	font-weight: 500;
+}
+
+.df-table tr:nth-child(odd) {
+  background: var(--bg-row-odd);
+}
+
+.df-table tr:nth-child(even) {
+  background: var(--bg-row-even);
+}
+
+.df-table th.df-col-name,
+.df-table th.df-col-format,
+.df-table th.df-col-current,
+.df-table th.df-col-example {
+  padding: 0px 6px;
+}
+
+.df-table input {
+  width: 100% !important;
+  font-size: var(--font-size-sm);
+  padding: 0px 5px;
+  border: none;
+  background: var(--text-primary);
+  border-radius: var(--border-radius-xs);
+}
+
+.df-table input:focus {
+  background: white;
+}
+
+.df-table .df-example,
+.df-table .df-current {
+  font-family: var(--font-mono);
+  min-width: 80px;
+}
+
+.df-table .df-name {
+  min-width: 100px;
+}
+
+.df-table .df-locked {
+  color: white;
+}
+
+.df-table .df-col-icon {
+  width: 24px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.df-table .df-col-name {
+  width: 150px;
+  min-width: 150px;
+  max-width: 150px;
+  padding: 4px 6px;
+}
+
+.df-table .df-col-format {
+  width: 225px;
+  min-width: 225px;
+  max-width: 225px;
+}
+
+.df-table .df-col-example,
+.df-table .df-col-current {
+  min-width: 150px;
+  padding: 4px 6px;
+}
+
+.df-table .df-col-current {
+  border-right: none;
+}
+
+.df-delete-btn {
+  background: none;
+  border: none;
+  color: var(--accent-danger);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.df-delete-btn:hover {
+  filter: drop-shadow(0px 0px 1px black) drop-shadow(0px 0px 3px white);
+}
+
+.df-add-header-btn {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: var(--icon-size-nav);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.df-add-header-btn:hover {
+  filter: drop-shadow(0px 0px 1px black) drop-shadow(0px 0px 3px white);
+}
+
+.df-table tfoot td {
+  border-bottom: none;
+  padding: var(--space-md) var(--space-sm);
+}
+
+/* Top tables for Date Formats */
+.df-top-tables {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin: var(--space-3);
+  align-items: stretch; /* Make tables equal height */
+  max-width: 900px;
+}
+
+.df-top-tables .df-table-wrapper {
+  flex: 1;
+  margin: 0; /* Remove margin for top tables */
+  height: 77px; /* enough for two rows and not a pixel more */
+  overflow: hidden;
+}
+
+.df-top-tables .df-table {
+  height: fit-content; /* Allow natural height */
+}
+
+.df-table-caption {
+  caption-side: top;
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  padding: 2px 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--accent-alt-primary);
+}
+
+.df-current-datetime-table-wrapper,
+.df-sample-datetime-table-wrapper {
+  max-width: 250px;
+}
+
+.df-timezone-table th {
+  width: 100px; /* Narrower for "Browser" / "Override" */
+}
+
+.df-timezone-table td {
+  padding: var(--space-2);
+}
+
+.df-timezone-table .df-timezone-caption,
+.df-timezone-table .df-col-name {
+  max-width: 75px;
+  min-width: 75px;
+  width: 75px;
+}
+
+.df-timezone-table {
+  background: var(--accent-alt-primary);
+}
+
+/* Custom Timezone Picker */
+.df-timezone-picker {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 0px var(--space-2);
+	border: 1px solid var(--bg-row-border);
+	border-radius: var(--border-radius-xs);
+	background: var(--text-primary);
+	cursor: pointer;
+	transition: border-color var(--transition-fast);
+	color: black;
+}
+
+.df-timezone-picker:hover {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 1px;
+}
+
+.df-timezone-picker.open {
+  background: var(--accent-toggle);
+}
+
+.df-selected-timezone {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  flex: 1;
+  color: var(--text-primary);
+}
+
+.df-timezone-dropdown-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: black;
+  transition: transform var(--transition-fast);
+}
+
+#df-browser-timezone,
+.df-timezone-table > tbody:nth-child(2) > tr:nth-child(1) > th:nth-child(1) {
+  border-top: 1px solid var(--bg-row-border);
+}
+
+.df-timezone-table > tbody:nth-child(2) > tr:nth-child(2) > td:nth-child(2) {
+  padding: 2px 4px 3px;
+}
+
+.df-timezone-picker.open .df-timezone-dropdown-btn {
+  transform: rotate(180deg);
+}
+
+/* Timezone dropdown popup */
+.df-timezone-dropdown {
+  position: absolute;
+  background: var(--bg-primary);
+  border: 1px solid var(--accent-alt-primary);
+  border-bottom-left-radius: var(--border-radius-md);
+  border-bottom-right-radius: var(--border-radius-md);
+  border-top-left-radius: 0px;
+  border-top-right-radius: 0px;
+  box-shadow: var(--shadow-lg);
+  z-index: 1000;
+  min-height: 200px;
+  max-height: 400px;
+  min-width: 250px;
+  width: 300px;
+  overflow: hidden;
+  opacity: 0;
+  transform: scale(0.5);
+  transform-origin: top left !important;
+  transition: opacity var(--transition-duration, 350ms) ease,
+              transform var(--transition-duration, 350ms) ease;
+  resize: both;
+  display: flex;
+  flex-direction: column;
+}
+
+.df-timezone-dropdown.visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.df-timezone-filter {
+  padding: var(--space-2);
+  border-bottom: 1px solid var(--bg-row-border);
+  background: var(--bg-secondary);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.df-timezone-filter input {
+  flex: 1;
+  font-size: var(--font-size-sm);
+  border-radius: var(--border-radius-xs);
+  padding: 0px 6px;
+  border: none;
+  margin: 2px;
+}
+
+.df-timezone-filter-clear {
+  background: none;
+  border: none;
+  position: absolute;
+  right: 10px;
+  padding: 0;
+  cursor: pointer;
+  color: black;
+  font-size: 12px;
+}
+
+.df-timezone-filter-clear:hover {
+  opacity: 1;
+}
+
+.df-timezone-resize-handle {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 16px;
+  height: 16px;
+  cursor: nw-resize;
+  background: linear-gradient(135deg,transparent 50%,var(--border-color) 50%);
+  flex-shrink: 0;
+}
+
+.df-timezone-list {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto !important;
+}
+
+.df-timezone-item {
+  padding: var(--space-2);
+  cursor: pointer;
+  border-bottom: 1px solid var(--bg-row-border);
+  transition: background var(--transition-fast);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.df-timezone-name {
+  flex: 1;
+  font-size: var(--font-size-sm);
+}
+
+.df-timezone-time {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  padding-right: 15px; /* just in case scrollbars overlay */
+}
+
+.df-timezone-item:hover,
+.df-timezone-item.selected {
+  background: var(--accent-alt-primary);
+}
+
+.df-timezone-item:last-child {
+  border-bottom: none;
+}
+
+.df-timezone-group {
+  margin-bottom: var(--space-2);
+}
+
+.df-timezone-group-header {
+  padding: var(--space-2);
+  font-size: var(--font-size-sm);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--bg-row-border);
+}
+
+.df-add-btn {
+  font-size: var(--font-size-sm);
+}
+
+.df-custom-item input.df-format-name-input {
+  width: 120px;
+  font-size: var(--font-size-sm);
+}
+
+#df-picker-btn {
+  padding: 0px;
+  height: 18px;
+  color: white;
+}
+
+/* Token Reference */
+.df-token-section {
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.df-token-table-container {
+  min-height: 300px;
+  max-height: 300px;
+  max-width: 900px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.df-token-table-container .tabulator {
+  height: 100% !important;
+}
+
+.df-token-navigator {
+  flex-shrink: 0;
+  max-width: 910px;
+}
+
+/* Flatpickr positioning fix within settings pages */
+.settings-page .flatpickr-calendar {
+  z-index: 1000;
+}
+
+/* Flatpickr popup wrapper — uses manager-header-popup animation */
+.flatpickr-popup-wrapper {
+  padding: var(--space-2);
+  background-color: var(--bg-secondary);
+}
+
+.flatpickr-popup-wrapper .flatpickr-calendar {
+  box-shadow: none;
+  background: transparent;
+  border: none;
+}
+
+/* Responsive */
+@media (width <= 768px) {
+  .df-sample-row {
+    flex-direction: column;
+  }
+
+  .df-table .df-format-input {
+    width: 120px;
+  }
+
+  .df-table th:nth-child(4),
+  .df-table td:nth-child(4),
+  .df-table th:nth-child(5),
+  .df-table td:nth-child(5) {
+    display: none;
+  }
+}

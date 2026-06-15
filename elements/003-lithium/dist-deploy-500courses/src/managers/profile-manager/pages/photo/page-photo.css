@@ -1,0 +1,223 @@
+/* Photo Settings Page Styles */
+
+.photo-editor-container {
+  max-width: 800px;
+  margin: 0px;
+  padding: var(--space-4);
+}
+
+/* 600x600 Editor Control - Anchored to top-left */
+.photo-editor {
+  position: relative;
+  width: 600px;
+  height: 600px;
+  margin: 0; /* Changed from 0 auto to anchor top-left */
+  border: 1px solid var(--accent-alt-primary);
+  border-radius: var(--border-radius-md);
+  background-color: var(--bg-secondary);
+  resize: none;
+  overflow: hidden;
+  min-width: 300px;
+  min-height: 300px;
+  max-width: 800px;
+  max-height: 800px;
+  transform-origin: top left; /* Added for top-left origin */
+}
+
+/* Photo Image Container (clipped to editor bounds) */
+.photo-image-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  z-index: 1;
+  cursor: move;
+}
+
+.photo-image {
+  position: absolute;
+  transform-origin: center center;
+  max-width: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* Preview Overlay - Combines dimming and border */
+.photo-preview-overlay {
+  position: absolute;
+  inset: 16.6%;
+  background: transparent;
+  border-radius: 50px;
+  box-shadow: 0 0 0 9999px rgba(0 0 0 / 50%);
+  z-index: 2;
+  pointer-events: none;
+  border: 1px solid var(--accent-alt-primary);
+}
+
+/* Custom Slider Containers */
+.photo-custom-slider {
+  position: absolute;
+  z-index: 4;
+}
+
+.photo-custom-slider-horizontal {
+  height: 24px;
+  left: 50px;
+  right: 50px;
+}
+
+.photo-custom-slider-horizontal.photo-slider-top {
+  top: 8px;
+}
+
+.photo-custom-slider-horizontal.photo-slider-bottom {
+  bottom: 8px;
+}
+
+.photo-custom-slider-vertical {
+  width: 24px;
+  top: 50px;
+  bottom: 50px;
+}
+
+.photo-custom-slider-vertical.photo-slider-left {
+  left: 8px;
+}
+
+.photo-custom-slider-vertical.photo-slider-right {
+  right: 8px;
+}
+
+/* Custom Slider Track */
+.photo-slider-track {
+  position: absolute;
+  background: var(--bg-tertiary);
+  opacity: 0.5;
+  border-radius: 6px;
+}
+
+.photo-custom-slider-horizontal .photo-slider-track {
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 16px;
+  transform: translateY(-50%);
+}
+
+.photo-custom-slider-vertical .photo-slider-track {
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 16px;
+  transform: translateX(-50%);
+}
+
+/* Custom Slider Thumb with Icon */
+.photo-slider-thumb {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  cursor: pointer;
+  border: 1px solid white;
+  box-shadow: 0 0 2px rgb(0 0 0 / 50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 18px;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+}
+
+.photo-custom-slider-horizontal .photo-slider-thumb {
+  top: 50%;
+}
+
+.photo-custom-slider-vertical .photo-slider-thumb {
+  left: 50%;
+}
+
+.photo-slider-thumb svg {
+  pointer-events: none;
+}
+
+/* Hide old range inputs */
+.photo-range {
+  display: none;
+}
+
+/* Resize Handle - Bottom Right Only */
+.photo-resize-handle {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  z-index: 5;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  cursor: se-resize;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.photo-resize-handle:hover {
+  background: var(--bg-hover);
+}
+
+/* Status Message */
+.photo-status {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin-left: var(--space-2);
+  display: none;
+}
+
+.photo-status.success {
+  color: var(--accent-success);
+}
+
+.photo-status.error {
+  color: var(--accent-danger);
+}
+
+#photo-toolbar {
+  margin: var(--space-2) 0px;
+}                            
+
+/* Preview Images Below Toolbar */
+.photo-previews {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.photo-preview {
+  border-radius: var(--border-radius-md);
+  object-fit: cover;
+  border: 1px solid var(--accent-alt-primary);
+}
+
+.photo-preview:nth-child(1) {
+  width: 32px;
+  height: 32px;
+}
+
+.photo-preview:nth-child(2) {
+  width: 64px;
+  height: 64px;
+}
+
+.photo-preview:nth-child(3) {
+  width: 128px;
+  height: 128px;
+}
