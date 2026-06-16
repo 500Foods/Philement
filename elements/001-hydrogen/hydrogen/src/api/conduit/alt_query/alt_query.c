@@ -453,12 +453,22 @@ enum MHD_Result handle_conduit_alt_query_request(
     webserver_thread_suspended = false;
     pthread_mutex_unlock(&webserver_suspend_lock);
 
-    // Step 14: Build response
-    json_t* response = build_response_json(query_ref, database, cache_entry, selected_queue, pending, NULL);
-    unsigned int http_status = json_is_true(json_object_get(response, "success")) ?
-                              MHD_HTTP_OK : determine_http_status(pending, pending_result_get(pending));
+     // Step 14: Build response
+     json_t* response = build_response_json(query_ref, database, cache_entry, selected_queue, pending, NULL);
+     unsigned int http_status = json_is_true(json_object_get(response, "success")) ?
+                               MHD_HTTP_OK : determine_http_status(pending, pending_result_get(pending));
 
-    // Add DQM statistics to response
+     // Cleanup: unregister the pending result
+     char* dqm_label = database_queue_generate_label(selected_queue);
+     if (dqm_label) {
+         PendingResultManager* pending_mgr = get_pending_result_manager();
+         if (pending_mgr) {
+             pending_result_unregister(pending_mgr, pending, dqm_label);
+         }
+         free(dqm_label);
+     }
+
+     // Add DQM statistics to response
     if (global_queue_manager) {
         json_t* dqm_stats = database_queue_manager_get_stats_json(global_queue_manager);
         if (dqm_stats) {

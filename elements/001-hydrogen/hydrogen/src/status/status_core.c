@@ -34,8 +34,13 @@ void status_core_cleanup(void) {
 // Free dynamically allocated memory in CPU metrics
 static void free_cpu_metrics(CpuMetrics *cpu) {
     if (cpu) {
-        free(cpu->per_core_usage);
-        cpu->per_core_usage = NULL;
+        if (cpu->per_core_usage) {
+            for (int i = 0; i < cpu->core_count; i++) {
+                free(cpu->per_core_usage[i]);
+            }
+            free(cpu->per_core_usage);
+            cpu->per_core_usage = NULL;
+        }
         cpu->core_count = 0;
     }
 }
@@ -97,6 +102,7 @@ void free_system_metrics(SystemMetrics *metrics) {
     free_service_thread_metrics(&metrics->websocket.threads);
     free_service_thread_metrics(&metrics->mdns.threads);
     free_service_thread_metrics(&metrics->print.threads);
+    free_service_thread_metrics(&metrics->database.threads);
 
     // Finally, free the metrics structure itself
     free(metrics);
