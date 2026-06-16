@@ -327,14 +327,24 @@ json_t* execute_single_query(const char *database, json_t *query_obj)
     }
 
     // Build response using new helper function
-    json_t *result = build_response_json(query_ref, database, cache_entry, selected_queue, pending, message);
+     json_t *result = build_response_json(query_ref, database, cache_entry, selected_queue, pending, message);
 
-    // Clean up
-    free(query_id);
-    free(converted_sql);
-    free_parameter_list(param_list);
-    if (ordered_params) free(ordered_params);
-    if (message) free(message);
+     // Cleanup: unregister the pending result and free allocated resources
+     char* dqm_label = database_queue_generate_label(selected_queue);
+     if (dqm_label) {
+         PendingResultManager* pending_mgr = get_pending_result_manager();
+         if (pending_mgr) {
+             pending_result_unregister(pending_mgr, pending, dqm_label);
+         }
+         free(dqm_label);
+     }
+
+     // Clean up
+     free(query_id);
+     free(converted_sql);
+     free_parameter_list(param_list);
+     if (ordered_params) free(ordered_params);
+     if (message) free(message);
 
     log_this(SR_API, "execute_single_query: Query completed, query_ref=%d",
              LOG_LEVEL_DEBUG, 1, query_ref);

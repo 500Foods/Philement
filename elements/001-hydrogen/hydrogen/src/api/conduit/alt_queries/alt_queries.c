@@ -743,9 +743,20 @@ enum MHD_Result handle_conduit_alt_queries_request(
         return send_conduit_error_response(connection, "Internal server error", MHD_HTTP_INTERNAL_SERVER_ERROR);
     }
     
-    for (size_t i = 0; i < unique_query_count; i++) {
-        unique_results[i] = build_response_json(query_refs[i], database, cache_entries[i], selected_queues[i], pending_results[i], NULL);
-    }
+     for (size_t i = 0; i < unique_query_count; i++) {
+         unique_results[i] = build_response_json(query_refs[i], database, cache_entries[i], selected_queues[i], pending_results[i], NULL);
+
+         // Cleanup: unregister the pending result
+         char* dqm_label = database_queue_generate_label(selected_queues[i]);
+         if (dqm_label) {
+             PendingResultManager* pending_mgr = get_pending_result_manager();
+             if (pending_mgr) {
+                 pending_result_unregister(pending_mgr, pending_results[i], dqm_label);
+             }
+             free(dqm_label);
+         }
+         pending_results[i] = NULL;
+     }
 
     // Map results back to original query order using helper functions
     for (size_t i = 0; i < original_query_count; i++) {

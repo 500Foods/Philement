@@ -395,10 +395,10 @@ enum MHD_Result handle_query_submission(struct MHD_Connection *connection, const
 }
 
 enum MHD_Result handle_response_building(struct MHD_Connection *connection, int query_ref,
-                                          const char* database, const QueryCacheEntry* cache_entry,
-                                          const DatabaseQueue* selected_queue, PendingQueryResult* pending,
-                                          char* query_id, char* converted_sql, ParameterList* param_list,
-                                          TypedParameter** ordered_params, const char* message) {
+                                           const char* database, const QueryCacheEntry* cache_entry,
+                                           const DatabaseQueue* selected_queue, PendingQueryResult* pending,
+                                           char* query_id, char* converted_sql, ParameterList* param_list,
+                                           TypedParameter** ordered_params, const char* message) {
     // Mark unused parameters
     (void)query_id;
     (void)converted_sql;
@@ -408,9 +408,29 @@ enum MHD_Result handle_response_building(struct MHD_Connection *connection, int 
     // Wait for result and build response
     json_t* response = build_response_json(query_ref, database, cache_entry, selected_queue, pending, message);
     unsigned int http_status = json_is_true(json_object_get(response, "success")) ?
-                                MHD_HTTP_OK : determine_http_status(pending, pending_result_get(pending));
+                                 MHD_HTTP_OK : determine_http_status(pending, pending_result_get(pending));
 
     enum MHD_Result http_result = api_send_json_response(connection, response, http_status);
+
+    // Cleanup: unregister the pending result and free allocated resources
+    char* dqm_label = database_queue_generate_label((DatabaseQueue*)selected_queue);
+    if (dqm_label) {
+        PendingResultManager* pending_mgr = get_pending_result_manager();
+        if (pending_mgr) {
+            pending_result_unregister(pending_mgr, pending, dqm_label);
+        }
+        free(dqm_label);
+    }
+
+    free(query_id);
+    free(converted_sql);
+    free_parameter_list(param_list);
+    if (ordered_params) {
+        free(ordered_params);
+    }
+    if (message) {
+        free((char*)message);
+    }
 
     return http_result;
 }
