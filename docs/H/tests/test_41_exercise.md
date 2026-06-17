@@ -189,7 +189,7 @@ DATABASE_READY_SQLite=true
 
 ### Sample Output
 
-```
+```text
 Request   RSS_MB      Delta_MB    Queries     Conns    HTTP_Req  FDs
 =======   ========    ========    ========    ======== ========  ====
 [50/500]  45.2 MB     +12.3 MB    1520        8        1600      24

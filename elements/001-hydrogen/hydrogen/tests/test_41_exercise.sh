@@ -850,7 +850,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
                     block_requests=$(( N_CNT - NATIVE_PROGRESS_START_COUNT ))
                     block_elapsed=$(( now_ts - NATIVE_PROGRESS_START_TIME ))
                     if (( block_elapsed < 1 )); then block_elapsed=1; fi
-                    rate=$(awk "BEGIN { r = $block_requests / $block_elapsed; printf \"%.0f\", r }")
+                    rate=$(awk "BEGIN { r = ${block_requests} / ${block_elapsed}; printf \"%.0f\", r }")
                     remaining=$(( NATIVE_TOTAL_REQUESTS - N_CNT ))
                     if (( rate > 0 )); then
                         eta_sec=$(( remaining / rate ))
