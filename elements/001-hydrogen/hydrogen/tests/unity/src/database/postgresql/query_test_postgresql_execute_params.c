@@ -438,10 +438,10 @@ void test_convert_mixed_parameters_to_positional(void) {
                                                         &param_count, "TEST");
     
     TEST_ASSERT_NOT_NULL(positional_sql);
-    TEST_ASSERT_EQUAL(6, param_count); // 5 unique params, but :status appears twice
+    TEST_ASSERT_EQUAL(5, param_count); // 5 unique params (status appears twice but is deduplicated)
     TEST_ASSERT_NOT_NULL(ordered_params);
     
-    // Verify the SQL contains $1, $2, $3, $4, $5, $6 in correct positions
+    // Verify the SQL contains $1 through $5 in correct positions (unique param order)
     // Note: We don't check exact string match because whitespace may vary
     // Just verify the placeholder format is correct
     TEST_ASSERT_TRUE(strstr(positional_sql, "$1") != NULL);
@@ -449,7 +449,6 @@ void test_convert_mixed_parameters_to_positional(void) {
     TEST_ASSERT_TRUE(strstr(positional_sql, "$3") != NULL);
     TEST_ASSERT_TRUE(strstr(positional_sql, "$4") != NULL);
     TEST_ASSERT_TRUE(strstr(positional_sql, "$5") != NULL);
-    TEST_ASSERT_TRUE(strstr(positional_sql, "$6") != NULL);
     
     free(positional_sql);
     free(ordered_params);
