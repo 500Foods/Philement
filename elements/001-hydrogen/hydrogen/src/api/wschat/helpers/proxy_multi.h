@@ -88,6 +88,35 @@ typedef struct MultiStreamContext {
     struct MultiStreamContext* prev;
 } MultiStreamContext;
 
+// Internal CURL stream context (stored via CURLOPT_PRIVATE)
+typedef struct {
+    MultiStreamContext* stream_ctx;
+    ChatProxyStreamChunkCallback chunk_callback;
+    void* user_data;
+    char* line_buffer;
+    size_t line_buffer_len;
+    size_t line_buffer_capacity;
+    size_t bytes_received;
+    size_t chunks_processed;
+    bool first_data_logged;
+    bool seen_done;
+    char* post_done_buffer;
+    size_t post_done_len;
+    size_t post_done_capacity;
+} CurlStreamContext;
+
+// Chunk queue internal functions (implemented in proxy_mq.c)
+void chunk_queue_init(StreamChunkQueue* queue);
+void chunk_queue_destroy(StreamChunkQueue* queue);
+bool chunk_queue_enqueue(StreamChunkQueue* queue, const char* json_data, size_t data_len);
+StreamChunkNode* chunk_queue_dequeue(StreamChunkQueue* queue);
+bool chunk_queue_has_data(const StreamChunkQueue* queue);
+size_t chunk_queue_get_count(const StreamChunkQueue* queue);
+
+// CURL callbacks (implemented in proxy_mc.c)
+size_t multi_stream_write_callback(const void* contents, size_t size, size_t nmemb, void* userp);
+int multi_stream_debug_callback(CURL* handle, curl_infotype type, char* data, size_t size, void* userptr);
+
 // Multi-curl streaming manager
 typedef struct {
     CURLM* multi_handle;             // CURL multi handle

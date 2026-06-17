@@ -30,6 +30,7 @@ template={file}:{line}:{column}: {severity}: {message} ({id})
 suppress=unusedStructMember
 suppress=knownConditionTrueFalse:src/api/conduit/chat/chat_storage.c
 suppress=constVariablePointer
+suppress=constParameterPointer:src/api/wschat/helpers/proxy_mc.c
 
 # Define platform macros for cppcheck
 define=__linux__=1
