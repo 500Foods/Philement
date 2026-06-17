@@ -209,5 +209,6 @@ void free_jwt_config(jwt_config_t* config);
 void free_account_info(account_info_t* account);
 void free_jwt_claims(jwt_claims_t* claims);
 void free_jwt_validation_result(jwt_validation_result_t* result);
+void free_query_result(QueryResult* result);
 
 #endif /* HYDROGEN_AUTH_SERVICE_H */

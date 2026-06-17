@@ -80,6 +80,9 @@ bool database_queue_create_underlying_queue(DatabaseQueue* db_queue, const char*
         return false;
     }
 
+    // Acquire reference to the queue for this DatabaseQueue
+    queue_acquire(db_queue->queue);
+
     // Track memory allocation for the Lead queue
     track_queue_allocation(&database_queue_memory, sizeof(DatabaseQueue));
 
