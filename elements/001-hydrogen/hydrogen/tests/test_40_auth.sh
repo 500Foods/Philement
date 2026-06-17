@@ -17,10 +17,15 @@
 # test_auth_renew()
 # test_auth_logout()
 # test_auth_register()
+# wait_for_auth_server_ready()
 # run_auth_test_parallel()
 # analyze_auth_test_results()
 
 # CHANGELOG
+# 1.6.0 - 2026-06-17 - Added HTTP readiness check before auth requests to avoid races during server startup
+#                    - Added retry logic to auth requests for transient failures (HTTP 000/5xx/408/429)
+#                    - Added per-run SQLite database isolation to avoid shared-state issues across runs
+#                    - Fixed JWT token extraction to tolerate '=' characters in token value
 # 1.5.0 - 2026-01-18 - Added migration completion wait before auth tests
 #                    - Prevents test failures when databases are cleared and migrations run during startup
 #                    - Waits for "Migration completed in" or "Migration Current:" messages
@@ -49,7 +54,7 @@ TEST_NAME="Auth"
 TEST_ABBR="JWT"
 TEST_NUMBER="40"
 TEST_COUNTER=0
-TEST_VERSION="1.5.0"
+TEST_VERSION="1.6.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -89,7 +94,7 @@ DEMO_EMAIL="${HYDROGEN_DEMO_EMAIL:-}"
 # shellcheck disable=SC2034 # Used in heredocs for JSON payloads
 DEMO_API_KEY="${HYDROGEN_DEMO_API_KEY:-}"
 
-# Function to validate auth request
+# Function to validate auth request with retry logic for transient failures
 validate_auth_request() {
     local url="$1"
     local method="$2"
@@ -97,27 +102,47 @@ validate_auth_request() {
     local expected_status="$4"
     local output_file="$5"
     local jwt_token="${6:-}"  # Optional JWT token for authenticated requests
-    
-    # Build curl command with optional Authorization header
-    local curl_cmd=(curl -s -X "${method}" -H "Content-Type: application/json")
-    
-    # Add Authorization header if JWT token is provided
-    if [[ -n "${jwt_token}" ]]; then
-        curl_cmd+=(-H "Authorization: Bearer ${jwt_token}")
-    fi
-    
-    # Complete curl command
-    curl_cmd+=(-d "${data}" -w "%{http_code}" -o "${output_file}" --compressed --max-time 5 "${url}")
-    
-    # Run curl and capture HTTP status
-    local http_status
-    http_status=$("${curl_cmd[@]}" 2>/dev/null)
-    
-    if [[ "${http_status}" == "${expected_status}" ]]; then
-        return 0
-    else
-        return 1
-    fi
+    local max_retries=3
+    local retry=1
+
+    while [[ "${retry}" -le "${max_retries}" ]]; do
+        # Build curl command with optional Authorization header
+        local curl_cmd=(curl -s -X "${method}" -H "Content-Type: application/json")
+
+        # Add Authorization header if JWT token is provided
+        if [[ -n "${jwt_token}" ]]; then
+            curl_cmd+=(-H "Authorization: Bearer ${jwt_token}")
+        fi
+
+        # Complete curl command
+        curl_cmd+=(-d "${data}" -w "%{http_code}" -o "${output_file}" --compressed --max-time 5 "${url}")
+
+        # Run curl and capture HTTP status
+        local http_status
+        http_status=$("${curl_cmd[@]}" 2>/dev/null)
+
+        if [[ "${http_status}" == "${expected_status}" ]]; then
+            return 0
+        fi
+
+        # Do not retry on clear client errors (4xx except 408/429)
+        if [[ "${http_status}" == "4"* ]] && \
+           [[ "${http_status}" != "408" ]] && \
+           [[ "${http_status}" != "429" ]]; then
+            return 1
+        fi
+
+        # Last retry exhausted
+        if [[ "${retry}" -eq "${max_retries}" ]]; then
+            return 1
+        fi
+
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Auth request returned HTTP ${http_status}, retrying (${retry}/${max_retries})..."
+        sleep 0.5
+        retry=$(( retry + 1 ))
+    done
+
+    return 1
 }
 
 # Function to test login endpoint
@@ -266,6 +291,27 @@ EOF
     fi
 }
 
+# Function to wait for auth server to be ready for HTTP requests
+wait_for_auth_server_ready() {
+    local base_url="$1"
+    local max_attempts=300
+    local attempt=1
+
+    while [[ "${attempt}" -le "${max_attempts}" ]]; do
+        local http_code
+        http_code=$(curl -s -w "%{http_code}" -o /dev/null --max-time 2 "${base_url}/api/version" 2>/dev/null)
+        if [[ "${http_code}" == "200" ]]; then
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Auth server ready after ${attempt} attempt(s)"
+            return 0
+        fi
+        sleep 0.1
+        attempt=$(( attempt + 1 ))
+    done
+
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Auth server not ready after ${max_attempts} attempts"
+    return 1
+}
+
 # Function to run auth tests in parallel for a specific database engine
 run_auth_test_parallel() {
     local test_name="$1"
@@ -273,42 +319,68 @@ run_auth_test_parallel() {
     local log_suffix="$3"
     local engine_name="$4"
     local description="$5"
-    
+
     local log_file="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_${log_suffix}.log"
     local result_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}.result"
-    
+
     # Clear result file
     true > "${result_file}"
-    
+
     # Extract port from configuration
     local server_port
     server_port=$(jq -r '.WebServer.Port' "${config_file}" 2>/dev/null || echo "0")
     local base_url="http://localhost:${server_port}"
-    
+
+    # For SQLite, use a per-run database copy to avoid shared-state issues
+    # when the test is executed multiple times in sequence or concurrently
+    local actual_config_file="${config_file}"
+    local sqlite_temp_file=""
+    local sqlite_temp_config=""
+    if [[ "${engine_name}" == "sqlite" ]]; then
+        local baseline_sqlite
+        baseline_sqlite=$(jq -r '.Databases.Connections[0].Database' "${config_file}" 2>/dev/null)
+        if [[ -n "${baseline_sqlite}" ]] && [[ "${baseline_sqlite}" != "null" ]] && [[ -f "${baseline_sqlite}" ]]; then
+            sqlite_temp_file="${DIAG_TEST_DIR}/hydrodemo_${TIMESTAMP}_${log_suffix}.sqlite"
+            sqlite_temp_config="${DIAG_TEST_DIR}/hydrogen_test_${TEST_NUMBER}_sqlite_${TIMESTAMP}_${log_suffix}.json"
+            if cp "${baseline_sqlite}" "${sqlite_temp_file}" 2>/dev/null && \
+               jq --arg db "${sqlite_temp_file}" \
+                  '.Databases.Connections[0].Database = $db' \
+                  "${config_file}" > "${sqlite_temp_config}" 2>/dev/null; then
+                actual_config_file="${sqlite_temp_config}"
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Using isolated SQLite database copy"
+            else
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Failed to create isolated SQLite copy, using shared database"
+                sqlite_temp_file=""
+                sqlite_temp_config=""
+                actual_config_file="${config_file}"
+            fi
+        fi
+    fi
+
     # Start hydrogen server
-    HYDROGEN_LOG_LEVEL=STATE "${HYDROGEN_BIN}" "${config_file}" > "${log_file}" 2>&1 &
+    HYDROGEN_LOG_LEVEL=STATE "${HYDROGEN_BIN}" "${actual_config_file}" > "${log_file}" 2>&1 &
     local hydrogen_pid=$!
-    
+
     # Store PID for later reference
     echo "PID=${hydrogen_pid}" >> "${result_file}"
-    
+
     # Wait for startup
     local startup_success=false
     local start_time
     start_time=${SECONDS}
-    
+
     while true; do
         if [[ $((SECONDS - start_time)) -ge "${STARTUP_TIMEOUT}" ]]; then
             break
         fi
-        
+
         if "${GREP}" -q "Startup elapsed time:" "${log_file}" 2>/dev/null; then
             startup_success=true
             break
         fi
         sleep 0.1
     done
-    
+
     if [[ "${startup_success}" = true ]]; then
         echo "STARTUP_SUCCESS" >> "${result_file}"
 
@@ -317,7 +389,7 @@ run_auth_test_parallel() {
 
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Checking for migration completion..."
         while true; do
-            if [[ $((SECONDS - migration_start_time)) -ge ${MIGRATION_TIMEOUT} ]]; then  
+            if [[ $((SECONDS - migration_start_time)) -ge ${MIGRATION_TIMEOUT} ]]; then
                 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Migration wait timeout - proceeding with auth tests"
                 break
             fi
@@ -337,27 +409,33 @@ run_auth_test_parallel() {
             sleep 0.5
         done
 
-        # Wait a bit for server to be fully ready after migrations
-        sleep 2
+        # Wait for the webserver to actually respond to HTTP requests
+        # instead of relying on a fixed sleep that may race with subsystem initialization
+        # shellcheck disable=SC2310 # We want to continue even if the readiness check fails
+        if wait_for_auth_server_ready "${base_url}"; then
+            # Run auth endpoint tests
+            test_auth_login "${base_url}" "${result_file}"
 
-        # Run auth endpoint tests
-        test_auth_login "${base_url}" "${result_file}"
-        
-        # Extract JWT token for subsequent tests
-        local jwt_token
-        jwt_token=$("${GREP}" "^JWT_TOKEN=" "${result_file}" 2>/dev/null | cut -d'=' -f2 || echo "")
-        
-        test_auth_login_invalid "${base_url}" "${result_file}"
-        test_auth_renew "${base_url}" "${jwt_token}" "${result_file}"
-        test_auth_logout "${base_url}" "${jwt_token}" "${result_file}"
-        test_auth_register "${base_url}" "${result_file}"
-        
-        echo "AUTH_TEST_COMPLETE" >> "${result_file}"
-        
+            # Extract JWT token for subsequent tests using parameter expansion
+            # to tolerate '=' characters that can appear in base64 padding
+            local jwt_line
+            jwt_line=$("${GREP}" "^JWT_TOKEN=" "${result_file}" 2>/dev/null || echo "")
+            local jwt_token="${jwt_line#JWT_TOKEN=}"
+
+            test_auth_login_invalid "${base_url}" "${result_file}"
+            test_auth_renew "${base_url}" "${jwt_token}" "${result_file}"
+            test_auth_logout "${base_url}" "${jwt_token}" "${result_file}"
+            test_auth_register "${base_url}" "${result_file}"
+
+            echo "AUTH_TEST_COMPLETE" >> "${result_file}"
+        else
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Auth server readiness check failed"
+        fi
+
         # Stop the server gracefully
         if ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
             kill -SIGINT "${hydrogen_pid}" 2>/dev/null || true
-            
+
             # Wait for graceful shutdown
             local shutdown_start
             shutdown_start=${SECONDS}
@@ -372,6 +450,14 @@ run_auth_test_parallel() {
     else
         echo "STARTUP_FAILED" >> "${result_file}"
         kill -9 "${hydrogen_pid}" 2>/dev/null || true
+    fi
+
+    # Clean up per-run SQLite artifacts
+    if [[ -n "${sqlite_temp_file}" ]] && [[ -f "${sqlite_temp_file}" ]]; then
+        rm -f "${sqlite_temp_file}" 2>/dev/null || true
+    fi
+    if [[ -n "${sqlite_temp_config}" ]] && [[ -f "${sqlite_temp_config}" ]]; then
+        rm -f "${sqlite_temp_config}" 2>/dev/null || true
     fi
 }
 

@@ -16,6 +16,7 @@ The documentation for the project is in /docs/H/
 ## ⚠️ CRITICAL INSTRUCTIONS
 
 - Review /docs/H/tests/TESTING.md before continuing
+- Aliases and other env vars are defined in ~/.zshrc
 - After ANY C coding change, run alias `mkt` to perform a test build - can be run from any directory
 - The trial build outputs minimal text - typically only error messages - greatly reducing AI token usage
 - Once test build succeeds, run alias `mka` to perform build against all targets - can be run from any directory

@@ -13,7 +13,7 @@ This script validates that the Hydrogen server correctly handles JWT-based authe
 - **Script Name**: `test_40_auth.sh`
 - **Test Name**: Auth (engines: 7)
 - **Test Abbreviation**: JWT
-- **Version**: 1.5.0
+- **Version**: 1.6.0
 - **Dependencies**: Uses modular libraries from `lib/` directory
 
 ## Key Features
@@ -185,6 +185,7 @@ The test uses parallel execution patterns similar to [`test_30_database.sh`](/do
 
 ## Version History
 
+- **1.6.0** (2026-06-17): Replaced fixed post-migration sleep with an HTTP readiness check against `/api/version`, added retry logic for transient auth request failures, added per-run SQLite database isolation, and made JWT token extraction tolerant of `=` characters in token values
 - **1.5.0** (2026-01-18): Added migration completion wait before auth tests to prevent failures when databases are cleared
 - **1.4.0** (2026-01-14): Expanded to cover all 7 database engines (PostgreSQL, MySQL, SQLite, DB2, MariaDB, CockroachDB, YugabyteDB)
 - **1.3.0** (2026-01-13): Fixed JWT token passing for renew/logout endpoints
