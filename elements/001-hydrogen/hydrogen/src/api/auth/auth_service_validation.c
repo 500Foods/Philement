@@ -270,15 +270,13 @@ bool check_ip_whitelist(const char* client_ip, const char* database) {
         return false; // Fail-safe: assume not whitelisted
     }
 
-    // If row_count > 0, IP is in whitelist
-    bool is_whitelisted = result->success && result->row_count > 0;
+     // If row_count > 0, IP is in whitelist
+     bool is_whitelisted = result->success && result->row_count > 0;
 
-    // Cleanup
-    if (result->error_message) free(result->error_message);
-    if (result->data_json) free(result->data_json);
-    free(result);
+     // Cleanup
+     free_query_result(result);
 
-    if (is_whitelisted) {
+     if (is_whitelisted) {
         log_this(SR_AUTH, "IP %s is whitelisted", LOG_LEVEL_DEBUG, 1, client_ip);
     }
 
@@ -313,15 +311,13 @@ bool check_ip_blacklist(const char* client_ip, const char* database) {
         return false; // Fail-safe: assume not blacklisted
     }
 
-    // If row_count > 0, IP is in blacklist
-    bool is_blacklisted = result->success && result->row_count > 0;
+     // If row_count > 0, IP is in blacklist
+     bool is_blacklisted = result->success && result->row_count > 0;
 
-    // Cleanup
-    if (result->error_message) free(result->error_message);
-    if (result->data_json) free(result->data_json);
-    free(result);
+     // Cleanup
+     free_query_result(result);
 
-    if (is_blacklisted) {
+     if (is_blacklisted) {
         log_this(SR_AUTH, "IP %s is blacklisted", LOG_LEVEL_ALERT, 1, client_ip);
     }
 

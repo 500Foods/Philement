@@ -47,18 +47,10 @@ void database_queue_destroy(DatabaseQueue* db_queue) {
 
     // Clean up the single queue
     // CRITICAL: Multiple DatabaseQueues may share the same underlying Queue* (via queue_create_with_label reuse)
-    // Check if this queue pointer is still valid before attempting to destroy it
-    // This prevents double-free when multiple DatabaseQueues share the same Queue*
+    // Use proper reference counting to avoid leaks and double-free
     if (db_queue->queue) {
-        // Store queue pointer for comparison (don't access queue->name - could be freed!)
-        Queue* queue_ptr = db_queue->queue;
-        
-        // Only destroy if queue pointer looks valid (basic sanity check)
-        // A more robust check would require queue reference counting, but this prevents the worst crashes
-        if ((uintptr_t)queue_ptr >= 0x1000) {
-            queue_destroy(queue_ptr);
-        }
-        db_queue->queue = NULL;  // Clear pointer regardless
+        queue_release(db_queue->queue);
+        db_queue->queue = NULL;
     }
 
     // Clean up persistent connection BEFORE freeing strings (needs labels for logging)

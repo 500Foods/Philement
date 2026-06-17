@@ -244,36 +244,53 @@ void queue_destroy(Queue* queue) {
         return;
     }
 
-    // CRITICAL: Detect double-free by checking if queue is still in hash table
-    // If queue was already destroyed, it won't be in the hash table and we should skip destruction
-    // Search ALL hash buckets by queue pointer (not by name, which might be freed already)
-    bool found_in_hash = false;
-    
+    // If queue name is NULL, it has already been destroyed
+    // We lock the queue mutex to safely access queue->name
+    MutexResult name_lock_result = MUTEX_LOCK(&queue->mutex, SR_QUEUES);
+    if (name_lock_result == MUTEX_SUCCESS) {
+        if (queue->name == NULL) {
+            mutex_unlock(&queue->mutex);
+            return;
+        }
+        mutex_unlock(&queue->mutex);
+    } else {
+        // If we cannot lock the mutex, we cannot safely check the name.
+        // However, if the queue is already destroyed, the name might be NULL.
+        // We proceed with caution; if the queue is not destroyed, we may cause a double-free.
+        // This is a rare case; we assume the queue is not destroyed and proceed.
+    }
+
+    // Remove from hash table if present
     MutexResult hash_lock_result = MUTEX_LOCK(&queue_system.mutex, SR_QUEUES);
     if (hash_lock_result == MUTEX_SUCCESS) {
         // Search all buckets for this queue pointer (don't rely on potentially-freed name)
-        for (int i = 0; i < QUEUE_HASH_SIZE && !found_in_hash; i++) {
+        for (int i = 0; i < QUEUE_HASH_SIZE; i++) {
             Queue** current = &queue_system.queues[i];
             while (*current) {
                 if (*current == queue) {
                     *current = queue->hash_next;  // Remove from linked list
-                    found_in_hash = true;
-                    break;
+                    break; // Remove only once
                 }
                 current = &(*current)->hash_next;
             }
         }
         mutex_unlock(&queue_system.mutex);
     }
-    
-    // If queue wasn't in hash table, it was already destroyed - skip cleanup to prevent double-free
-    if (!found_in_hash) {
-        return;
-    }
+    // If not found in hash table, it may have been removed already, but we still need to destroy it.
 
     // Decrement refcount (creator had 1 ref, destroy call releases it)
-    queue->refcount--;
-    
+    // We lock the queue mutex to safely access refcount
+    MutexResult refcount_lock_result = MUTEX_LOCK(&queue->mutex, SR_QUEUES);
+    if (refcount_lock_result != MUTEX_SUCCESS) {
+        // If we cannot lock, we cannot safely decrement refcount.
+        // We assume the queue is not referenced and proceed to destroy.
+        // This is a risk, but better than leaking.
+        queue->refcount = 0; // Assume zero to proceed with destruction
+    } else {
+        queue->refcount--;
+        mutex_unlock(&queue->mutex);
+    }
+
     // If refs are still held by other threads, mark for deferred destruction
     // The actual struct free will happen in queue_release when refcount reaches 0
     if (queue->refcount > 0) {
@@ -310,37 +327,58 @@ bool queue_destroy_safe(Queue* queue) {
         return false;
     }
 
-    // Check if queue is still in hash table
-    bool found_in_hash = false;
-    
+    // If queue name is NULL, it has already been destroyed
+    // We lock the queue mutex to safely access queue->name
+    MutexResult name_lock_result = MUTEX_LOCK(&queue->mutex, SR_QUEUES);
+    if (name_lock_result == MUTEX_SUCCESS) {
+        if (queue->name == NULL) {
+            mutex_unlock(&queue->mutex);
+            return false;
+        }
+        mutex_unlock(&queue->mutex);
+    } else {
+        // If we cannot lock the mutex, we cannot safely check the name.
+        // However, if the queue is already destroyed, the name might be NULL.
+        // We proceed with caution; if the queue is not destroyed, we may cause a double-free.
+        // This is a rare case; we assume the queue is not destroyed and proceed.
+    }
+
+    // Decrement refcount (we lock the queue mutex to safely access refcount)
+    MutexResult refcount_lock_result = MUTEX_LOCK(&queue->mutex, SR_QUEUES);
+    if (refcount_lock_result != MUTEX_SUCCESS) {
+        // If we cannot lock, we cannot safely decrement refcount.
+        // We assume the queue is not referenced and proceed to destroy.
+        // This is a risk, but better than leaking.
+        queue->refcount = 0; // Assume zero to proceed with destruction
+    } else {
+        queue->refcount--;
+        mutex_unlock(&queue->mutex);
+    }
+
+    if (queue->refcount > 0) {
+        // Still referenced, mark for destruction when refcount drops to zero
+        queue->pending_destroy = true;
+        return false;
+    }
+
+    // Refcount is zero, we can destroy the queue.
+    // Remove from hash table if present
     MutexResult hash_lock_result = MUTEX_LOCK(&queue_system.mutex, SR_QUEUES);
     if (hash_lock_result == MUTEX_SUCCESS) {
-        for (int i = 0; i < QUEUE_HASH_SIZE && !found_in_hash; i++) {
+        // Search all buckets for this queue pointer (don't rely on potentially-freed name)
+        for (int i = 0; i < QUEUE_HASH_SIZE; i++) {
             Queue** current = &queue_system.queues[i];
             while (*current) {
                 if (*current == queue) {
-                    *current = queue->hash_next;
-                    found_in_hash = true;
-                    break;
+                    *current = queue->hash_next;  // Remove from linked list
+                    break; // Remove only once
                 }
                 current = &(*current)->hash_next;
             }
         }
         mutex_unlock(&queue_system.mutex);
     }
-    
-    // If not in hash, already destroyed
-    if (!found_in_hash) {
-        return false;
-    }
-
-    // Decrement refcount
-    queue->refcount--;
-    
-    if (queue->refcount > 0) {
-        queue->pending_destroy = true;
-        return false;  // Not fully destroyed yet
-    }
+    // If not found in hash table, it may have been removed already, but we still need to destroy it.
 
     // Free any remaining elements (queue should already be empty via queue_clear,
     // but we check to be safe in case queue_clear wasn't called)
@@ -359,8 +397,6 @@ bool queue_destroy_safe(Queue* queue) {
         queue->size = 0;
         mutex_unlock(&queue->mutex);
     }
-    
-    // Destroy synchronization primitives
     pthread_mutex_destroy(&queue->mutex);
     pthread_cond_destroy(&queue->not_empty);
     pthread_cond_destroy(&queue->not_full);
@@ -368,11 +404,11 @@ bool queue_destroy_safe(Queue* queue) {
     // Free the queue name and structure
     if (queue->name && (uintptr_t)queue->name >= 0x1000) {
         free(queue->name);
-        queue->name = NULL;
     }
     free(queue);
     return true;
 }
+
 
 // Increment refcount for a queue (call when borrowing a queue pointer)
 void queue_acquire(Queue* queue) {

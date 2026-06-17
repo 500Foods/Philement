@@ -33,6 +33,14 @@ void free_query_result(QueryResult* result) {
     if (result) {
         if (result->error_message) free(result->error_message);
         if (result->data_json) free(result->data_json);
+        if (result->column_names) {
+            for (size_t i = 0; i < result->column_count; i++) {
+                if (result->column_names[i]) {
+                    free(result->column_names[i]);
+                }
+            }
+            free(result->column_names);
+        }
         free(result);
     }
 }

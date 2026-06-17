@@ -303,8 +303,13 @@ DatabaseQuery* database_queue_await_result(DatabaseQueue* db_queue, const char* 
     int wait_result = pending_result_wait(pending, dqm_label);
 
     if (wait_result != 0) {
-        // Timeout or error occurred
-        if (pending_result_is_timed_out(pending)) {
+        // Check if timeout before unregistering
+        bool timed_out = pending_result_is_timed_out(pending);
+        
+        // Clean up the pending entry
+        pending_result_unregister(pending_mgr, pending, dqm_label);
+        
+        if (timed_out) {
             log_this(dqm_label, "Query timed out: %s", LOG_LEVEL_ALERT, 1, query_id);
             // Record timeout in DQM statistics
             database_queue_record_timeout(db_queue);
