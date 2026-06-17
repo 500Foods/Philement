@@ -53,16 +53,16 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2026-06-17 19:07:48 UTC
+Last updated at 2026-06-17 19:19:10 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-JSON                           369            364              0        1236729
+JSON                           369            364              0        1236759
 SVG                            167            327           4581         183537
 C                             1133          49642          47172         181147
 JavaScript                     276          29943          43647         181137
 Text                           261            258              0         102166
-Markdown                       693          27694            239          79795
+Markdown                       694          27709            241          79915
 Lua                            208           4883           3715          33697
 Bourne Shell                   127           6343          84000          30151
 CSS                            123           2860           1611          14653
@@ -78,15 +78,15 @@ Delphi Form                      1              1              0             43
 YAML                             2              8             13             37
 Pascal                           2             11              2             31
 -------------------------------------------------------------------------------
-SUM:                          3710         125882         195188        2057043
+SUM:                          3711         125897         195190        2057193
 -------------------------------------------------------------------------------
-2042 Files were skipped (duplicate, binary, or without source code):
+2041 Files were skipped (duplicate, binary, or without source code):
   svg: 645
   css: 466
   br: 365
   html: 343
   png: 56
-  md: 41
+  md: 40
   js: 24
   mp4: 15
   lua: 12
