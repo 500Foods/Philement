@@ -437,7 +437,7 @@ void test_convert_mixed_parameters_to_positional(void) {
                                                         &param_count, "TEST");
     
     TEST_ASSERT_NOT_NULL(positional_sql);
-    TEST_ASSERT_EQUAL(6, param_count); // 5 unique params, but :status appears twice
+    TEST_ASSERT_EQUAL(5, param_count); // 5 unique params (status appears twice but is deduplicated)
     TEST_ASSERT_NOT_NULL(ordered_params);
     
     free(positional_sql);

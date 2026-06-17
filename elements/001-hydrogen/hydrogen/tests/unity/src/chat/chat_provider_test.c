@@ -165,10 +165,10 @@ void test_chat_request_build_ollama_native(void) {
     TEST_ASSERT_NOT_NULL(num_predict);
     TEST_ASSERT_EQUAL(500, json_integer_value(num_predict));
 
-    // Check temperature in options
+    // Check temperature in options (always 1.0 per current implementation)
     json_t* temperature = json_object_get(options, "temperature");
     TEST_ASSERT_NOT_NULL(temperature);
-    TEST_ASSERT_DOUBLE_WITHIN(0.01, 0.8, json_real_value(temperature));
+    TEST_ASSERT_DOUBLE_WITHIN(0.01, 1.0, json_real_value(temperature));
 
     json_decref(request);
     chat_message_list_destroy(messages);

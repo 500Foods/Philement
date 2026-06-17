@@ -159,11 +159,9 @@ void test_pending_result_signal_ready_not_found(void) {
     mock_result->affected_rows = 0;
 
     // Try to signal a non-existent query
+    // Note: signal_ready now disposes of the result itself when the query_id is not found
     bool signaled = pending_result_signal_ready(manager, "non_existent", mock_result, NULL);
     TEST_ASSERT_FALSE(signaled);
-
-    // Clean up the result since it wasn't claimed
-    free(mock_result);
 
     pending_result_manager_destroy(manager, NULL);
 }
