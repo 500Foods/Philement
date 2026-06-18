@@ -25,8 +25,8 @@ static bool always_false_validator(const char* url) {
 }
 
 static bool prefix_validator(const char* url) {
-    // Only allow URLs that start with "/api/"
-    return strncmp(url, "/api/", 5) == 0;
+    // Allow URLs that start with "/api/" or "/special/"
+    return strncmp(url, "/api/", 5) == 0 || strncmp(url, "/special/", 9) == 0;
 }
 
 // Dummy handler functions for testing
@@ -199,28 +199,38 @@ static void test_get_endpoint_for_url_long_url(void) {
 }
 
 static void test_get_endpoint_for_url_special_characters(void) {
-    // Test URL with special characters
+    // Test URL with special characters - use prefix_validator to test actual prefix matching
     WebServerEndpoint endpoint = {0};
     endpoint.prefix = "/special";
-    endpoint.validator = always_true_validator;
+    endpoint.validator = prefix_validator;
     endpoint.handler = dummy_handler;
 
     bool registered = register_web_endpoint(&endpoint);
     TEST_ASSERT_TRUE(registered);
 
-    const char* test_urls[] = {
-        "/special@#$%^&*()",
-        "/special?param=value",
-        "/special#fragment",
-        "/special with spaces",
+    // URLs that start with /special/ should match
+    const char* matching_urls[] = {
+        "/special/path",
         "/special/中文/测试"
     };
 
-    for (size_t i = 0; i < sizeof(test_urls) / sizeof(test_urls[0]); i++) {
-        const WebServerEndpoint* result = get_endpoint_for_url(test_urls[i]);
-        // These should match since validator always returns true
+    for (size_t i = 0; i < sizeof(matching_urls) / sizeof(matching_urls[0]); i++) {
+        const WebServerEndpoint* result = get_endpoint_for_url(matching_urls[i]);
         TEST_ASSERT_NOT_NULL(result);
         TEST_ASSERT_EQUAL_STRING("/special", result->prefix);
+    }
+
+    // URLs that don't start with /special/ should not match
+    const char* non_matching_urls[] = {
+        "/special@#$%^&*()",
+        "/special?param=value",
+        "/special#fragment",
+        "/special with spaces"
+    };
+
+    for (size_t i = 0; i < sizeof(non_matching_urls) / sizeof(non_matching_urls[0]); i++) {
+        const WebServerEndpoint* result = get_endpoint_for_url(non_matching_urls[i]);
+        TEST_ASSERT_NULL(result);
     }
 
     // Clean up
