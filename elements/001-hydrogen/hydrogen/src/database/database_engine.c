@@ -912,7 +912,6 @@ void database_engine_clear_prepared_statements(DatabaseHandle* connection) {
     // CRITICAL: After transaction commit/rollback, PreparedStatement structures may be corrupted
     // Transaction cleanup may have invalidated the entire structure including name/sql_template pointers
     // Attempting to free these can cause heap corruption and crashes
-    
     // SAFEST approach: Just NULL out the pointers and accept small memory leak
     // Migrations are bootstrap-time operations, so a few leaked structures won't matter
     // Better to leak memory than crash the system
