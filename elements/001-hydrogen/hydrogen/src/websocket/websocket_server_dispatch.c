@@ -385,14 +385,38 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
                     }
                 }
 
-                // Fallback to checking Authorization header
-                int length = lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_AUTHORIZATION);
-                if (length > 0) {
-                    char buf[256];
-                    lws_hdr_copy(wsi, buf, sizeof(buf), WSI_TOKEN_HTTP_AUTHORIZATION);
-                    log_this(SR_WEBSOCKET, "Found Authorization header: %s", LOG_LEVEL_DEBUG, 1, buf);
-                } else {
-                    log_this(SR_WEBSOCKET, "No Authorization header present", LOG_LEVEL_DEBUG, 0);
+                // Fallback to checking Authorization header (validate directly, like query param)
+                {
+                    int length = lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_AUTHORIZATION);
+                    if (length > 0 && length < 256) {
+                        char buf[256];
+                        lws_hdr_copy(wsi, buf, sizeof(buf), WSI_TOKEN_HTTP_AUTHORIZATION);
+                        log_this(SR_WEBSOCKET, "Found Authorization header: %s", LOG_LEVEL_DEBUG, 1, buf);
+
+                        // Expect "Key <value>"
+                        if (strncmp(buf, "Key ", 4) == 0) {
+                            const char *key = buf + 4;
+                            if (ws_context && strcmp(key, ws_context->auth_key) == 0) {
+                                // Authentication successful via header during protocol filtering
+                                if (user_data) {
+                                    WebSocketSessionData *auth_session = (WebSocketSessionData *)user_data;
+                                    if (!auth_session->authenticated_key) {
+                                        auth_session->authenticated_key = strdup(key);
+                                    }
+                                }
+                                log_this(SR_WEBSOCKET, "Authentication successful via Authorization header during protocol filtering", LOG_LEVEL_STATE, 0);
+                                return 0;
+                            } else {
+                                log_this(SR_WEBSOCKET, "Authorization header key does not match server key", LOG_LEVEL_ALERT, 0);
+                            }
+                        } else {
+                            log_this(SR_WEBSOCKET, "Authorization header does not use 'Key ' scheme", LOG_LEVEL_ALERT, 0);
+                        }
+                    } else if (length > 0) {
+                        log_this(SR_WEBSOCKET, "Authorization header too long", LOG_LEVEL_ALERT, 0);
+                    } else {
+                        log_this(SR_WEBSOCKET, "No Authorization header present", LOG_LEVEL_DEBUG, 0);
+                    }
                 }
 
                 log_this(SR_WEBSOCKET, "All authentication methods failed, denying connection", LOG_LEVEL_ALERT, 0);
