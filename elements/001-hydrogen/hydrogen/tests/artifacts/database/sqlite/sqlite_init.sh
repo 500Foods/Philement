@@ -2,4 +2,4 @@
 
 set -eou pipefail
 
-sqlite3 hydrotst.sqlite < sqlite_init.sql
+sqlite3 2> /dev/null hydrotst.sqlite < sqlite_init.sql

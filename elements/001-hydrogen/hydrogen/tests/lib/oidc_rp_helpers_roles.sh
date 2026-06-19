@@ -58,7 +58,7 @@ seed_roles_queryref() {
 
     # Insert QueryRef #017 as a SQL-type query if it is not already present.
     # The query selects role_id from account_roles filtered by validity window.
-    sqlite3 "${sqlite_db}" <<'SEED_017' 2>/dev/null || true
+    sqlite3 2> /dev/null "${sqlite_db}" <<'SEED_017' 2>/dev/null || true
 INSERT OR IGNORE INTO queries (
     query_id, query_ref, query_status_a27, query_type_a28,
     query_dialect_a30, query_queue_a58, query_timeout,
@@ -97,7 +97,7 @@ seed_role_row() {
     local sqlite_db="$1"
     if [[ ! -f "${sqlite_db}" ]]; then return 1; fi
 
-    sqlite3 "${sqlite_db}" <<'SEED_ROLE' 2>/dev/null || true
+    sqlite3 2> /dev/null "${sqlite_db}" <<'SEED_ROLE' 2>/dev/null || true
 INSERT OR IGNORE INTO account_roles (
     account_id, role_id, system_id, status_a37,
     created_id, created_at, updated_id, updated_at
@@ -119,7 +119,7 @@ unseed_role_row() {
     local sqlite_db="$1"
     if [[ ! -f "${sqlite_db}" ]]; then return 0; fi
 
-    sqlite3 "${sqlite_db}" \
+    sqlite3 2> /dev/null "${sqlite_db}" \
         "DELETE FROM account_roles WHERE account_id=1 AND role_id=42 AND system_id=1;" \
         2>/dev/null || true
 }

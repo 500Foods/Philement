@@ -256,6 +256,6 @@ seed_oidc_queryref_seed_only() {
 
     # Remove the sentinel row immediately — we only wanted the side
     # effects (table + QueryRefs).
-    sqlite3 "${sqlite_db}" \
+    sqlite3 2> /dev/null "${sqlite_db}" \
         "DELETE FROM account_oidc_identities WHERE issuer='__phase20_queryref_seed__' AND subject='__phase20_queryref_seed__';"
 }
