@@ -62,7 +62,7 @@ seed_oidc_identity() {
     # inline with the same columns. CREATE TABLE IF NOT EXISTS is a
     # no-op when the table already exists, so this is safe to run
     # against any version of the fixture.
-    sqlite3 "${sqlite_db}" <<'ENSURE_TABLE'
+    sqlite3 2> /dev/null "${sqlite_db}" <<'ENSURE_TABLE'
 CREATE TABLE IF NOT EXISTS account_oidc_identities (
     identity_id   INTEGER PRIMARY KEY,
     account_id    INTEGER NOT NULL,
@@ -96,7 +96,7 @@ ENSURE_TABLE
     #   query_dialect_a30 = 2 (SQLite — matches the demo DB engine)
     #   query_queue_a58  = 1  (medium/slow queue — same as other auth queries)
     #   query_timeout    = 5000 (5 s — same as existing auth queries)
-    sqlite3 "${sqlite_db}" <<'ENSURE_QUERYREFS'
+    sqlite3 2> /dev/null "${sqlite_db}" <<'ENSURE_QUERYREFS'
 INSERT OR IGNORE INTO queries (
     query_id, query_ref,
     query_status_a27, query_type_a28, query_dialect_a30,
@@ -132,7 +132,7 @@ SELECT
 WHERE NOT EXISTS (SELECT 1 FROM queries WHERE query_ref = 84 AND query_type_a28 = 1);
 ENSURE_QUERYREFS
 
-    sqlite3 "${sqlite_db}" <<EOF
+    sqlite3 2> /dev/null "${sqlite_db}" <<EOF
 INSERT OR REPLACE INTO account_oidc_identities (
     identity_id,
     account_id,
@@ -180,7 +180,7 @@ unseed_oidc_identity() {
         return 1
     fi
 
-    sqlite3 "${sqlite_db}" \
+    sqlite3 2> /dev/null "${sqlite_db}" \
         "DELETE FROM account_oidc_identities WHERE issuer='${issuer}' AND subject='${subject}';"
 }
 
@@ -204,7 +204,7 @@ seed_email_contact() {
     # contact_type_a18 = 0 means email (per QueryRef #082 / #011 contract).
     # contact_seq=0, authenticate_a19=1, status_a20=1 match existing email rows.
     # INSERT OR IGNORE: idempotent; won't fail if the row already exists.
-    sqlite3 "${sqlite_db}" <<EOF
+    sqlite3 2> /dev/null "${sqlite_db}" <<EOF
 INSERT OR IGNORE INTO account_contacts (
     contact_id,
     account_id,
@@ -258,7 +258,7 @@ unseed_email_contact() {
         return 1
     fi
 
-    sqlite3 "${sqlite_db}" \
+    sqlite3 2> /dev/null "${sqlite_db}" \
         "DELETE FROM account_contacts WHERE account_id=${account_id} AND contact='${email}' AND contact_type_a18=0;"
 }
 
@@ -290,7 +290,7 @@ seed_email_queryrefs() {
         return 1
     fi
 
-    sqlite3 "${sqlite_db}" <<'ENSURE_EMAIL_QUERYREFS'
+    sqlite3 2> /dev/null "${sqlite_db}" <<'ENSURE_EMAIL_QUERYREFS'
 INSERT OR IGNORE INTO queries (
     query_id, query_ref,
     query_status_a27, query_type_a28, query_dialect_a30,
@@ -365,7 +365,7 @@ seed_provision_queryrefs() {
         # (https://www.sqlite.org/lang_altertable.html#otheralter) to drop
         # the NOT NULL on password_hash. All steps in a single transaction
         # so the table is never visible in a half-migrated state.
-        sqlite3 "${sqlite_db}" <<'RELAX_PASSWORD_HASH'
+        sqlite3 2> /dev/null "${sqlite_db}" <<'RELAX_PASSWORD_HASH'
 BEGIN;
 CREATE TABLE accounts_new (
     account_id              integer          NOT NULL,
@@ -401,7 +401,7 @@ COMMIT;
 RELAX_PASSWORD_HASH
     fi
 
-    sqlite3 "${sqlite_db}" <<'ENSURE_PROVISION_QUERYREFS'
+    sqlite3 2> /dev/null "${sqlite_db}" <<'ENSURE_PROVISION_QUERYREFS'
 INSERT OR IGNORE INTO queries (
     query_id, query_ref,
     query_status_a27, query_type_a28, query_dialect_a30,
@@ -433,7 +433,7 @@ get_max_account_id() {
         return 1
     fi
 
-    sqlite3 "${sqlite_db}" "SELECT COALESCE(MAX(account_id), 0) FROM accounts;"
+    sqlite3 2> /dev/null "${sqlite_db}" "SELECT COALESCE(MAX(account_id), 0) FROM accounts;"
 }
 
 # Delete a provisioned accounts row plus any rows in account_oidc_identities
@@ -450,7 +450,7 @@ delete_account() {
         return 1
     fi
 
-    sqlite3 "${sqlite_db}" <<EOF
+    sqlite3 2> /dev/null "${sqlite_db}" <<EOF
 DELETE FROM account_oidc_identities WHERE account_id = ${account_id};
 DELETE FROM accounts WHERE account_id = ${account_id};
 EOF
