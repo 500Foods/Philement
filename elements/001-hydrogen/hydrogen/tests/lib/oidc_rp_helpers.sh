@@ -1,27 +1,9 @@
-#!/usr/bin/env bash
+ #!/usr/bin/env bash
 
 # shellcheck disable=SC2154 # All globals (TEST_NUMBER, TEST_COUNTER, GREP, LOG_PREFIX, TIMESTAMP, MOCK_KC_*, etc.) are set by the test script via framework.sh before sourcing this lib
 # shellcheck disable=SC2034 # EXIT_CODE is set by the test script and re-exported through these helpers
 # shellcheck disable=SC2312 # Several diagnostic command substitutions intentionally swallow the inner exit code; helpers either fall back gracefully or || true the outer call
 
-# OIDC RP Test Utilities Library
-# Provides helpers for testing the OIDC Relying Party endpoints in
-# tests/test_42_oidc_rp.sh, including:
-#
-#   - validate_oidc_request:   issue a request and check status + .error
-#   - test_oidc_endpoint_disabled / _method_not_allowed / _unknown_path_404
-#   - start_mock_keycloak / stop_mock_keycloak (Phase 9)
-#   - test_mock_keycloak_*:     reachability, discovery, JWKS, token,
-#                               id_token shape (Phases 9, 11, 12)
-#   - test_oidc_start_*:        Phase 10 redirect builder coverage
-#   - test_oidc_handoff_*:      Phase 13 handoff exchange coverage
-#   - inject_handoff:           helper that POSTs to the debug-only
-#                               /_inject_handoff endpoint (test builds)
-#
-# Extracted from test_42_oidc_rp.sh in Phase 13 to keep that script
-# under the project's 1000-line cap (LITHIUM-INS rule equivalent on
-# the Hydrogen side).
-#
 # CHANGELOG
 # 1.1.0 - 2026-06-20 - Added wait_for_migration_ready (canonical "READY FOR REQUESTS" signal) to
 #                      replace the per-phase tail-offset migration-wait loops that timed out ~30s
@@ -29,36 +11,6 @@
 #                      nothing). Cuts Test 42 runtime from ~250s to a few seconds of real work.
 # 1.0.0 - 2026-05-09 - Initial extraction from test_42_oidc_rp.sh during Phase 13.
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-# Wait until a freshly-started Hydrogen instance has finished loading its
-# query template cache (QTC) and is ready to dispatch queries. The HTTP
-# server accepts connections before the database queue bootstrap finishes
-# populating the QTC, so OIDC linker queries (#080/#082/#017 etc.) can
-# otherwise race ahead of readiness.
-#
-# Keys off the canonical "READY FOR REQUESTS" signal, which Hydrogen logs
-# exactly once after EVERY enabled database's Lead DQM has completed its
-# full connect -> bootstrap -> migration sequence (see
-# database_signal_ready_if_complete() in src/database/database.c). This is
-# the same signal Test 50/conduit_utils.sh uses. We keep the older
-# "Migration completed in|Migration Current:" strings as a fallback so the
-# helper still works against any build that predates the signal.
-#
-# Each Hydrogen instance TRUNCATES the shared SERVER_LOG on start (see
-# lifecycle.sh: `true > "${log_file}"`), so the signal always lands in the
-# CURRENT log. We therefore grep the whole log directly — NOT
-# `tail -n +<offset>`. The old offset-based loops captured a line number
-# from the PREVIOUS (longer) instance's log, which after truncation pointed
-# past EOF, so they matched nothing and burned the full 30s timeout every
-# time (~30s × 7 instances ≈ the bulk of the historical test runtime).
-#
-# Args:
-#   $1  server_log   path to the shared server log
-#   $2  [timeout]    max seconds to wait (default 30)
-# Returns 0 once the signal is seen, 1 on timeout (caller proceeds anyway).
 wait_for_migration_ready() {
     local server_log="$1"
     local timeout="${2:-30}"

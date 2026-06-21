@@ -5,6 +5,7 @@
 # Validates that required and optional environment variables are properly configured
 
 # CHANGELOG
+# 1.2.0 - 2026-06-21 - Added a bunch for Test 41/42 - new tests
 # 1.1.0 - 2026-01-08 - Added HYDROGEN_SCHEMA which is used directly by hydrogen to valdate its schema
 # 1.0.0 - 2025-12-06 - Initial version - Environment variable validation for shell configuration
 
@@ -194,7 +195,7 @@ declare -a ENV_WHITELIST=(
     "MOCK_KC_LOG" "MOCK_KC_PID"
     "MOCK_KC_PORT" "MOCK_KC_SCRIPT" "MOCK_SUBJECT" "OIDC_CHAIN_ERROR" "OIDC_CHAIN_HANDOFF" "OIDC_CHAIN_STATUS"
     # First found in tests/lib/conduit_utils.sh
-    "CONDUIT_STARTUP_TIMEOUT" "CONDUIT_WEBSERVER_READY_TIMEOUT"
+    "CONDUIT_STARTUP_TIMEOUT" "CONDUIT_WEBSERVER_READY_TIMEOUT" "CONDUIT_MIGRATION_TIMEOUT"
     # Remaining tests    
     "BLACKBOX_COVERAGE_DIR" "CACHED_VALIDATIONS" "CAPTURE_LOG" "CLOC_EXIT_CODE" "CLOC_PID" "CODE_LINES" 
     "CONFIG_1" "CONFIG_2" "CONFIG_PATH" "CONTENT_TEST_RESULT" "CPPCHECK_OUTPUT" "CROSS_CONFIG_404_TEST_RESULT" 

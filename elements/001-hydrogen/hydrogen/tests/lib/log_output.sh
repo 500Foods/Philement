@@ -205,7 +205,7 @@ print_test_suite_header() {
             "header": "Test Title",
             "key": "test_name",
             "datatype": "text",
-            "width": 61
+            "width": 62
         },
         {
             "header": "Version",
@@ -274,7 +274,7 @@ print_test_header() {
             "header": "Test Title",
             "key": "test_name",
             "datatype": "text",
-            "width": 61
+            "width": 62
         },
         {
             "header": "Version",
@@ -627,7 +627,7 @@ print_test_completion() {
             "datatype": "text"
         },
         {
-            "header": "Test Name",
+            "header": "Test Title",
             "key": "test_name",
             "datatype": "text",
             "width": 52    
@@ -664,7 +664,7 @@ print_test_completion() {
             "key": "elapsed",
             "datatype": "float",
             "justification": "right",
-            "width": 10
+            "width": 11
         }
     ]
 }
