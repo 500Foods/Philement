@@ -23,6 +23,10 @@
 # sourced library file comfortably under the cap.
 #
 # CHANGELOG
+# 1.1.0 - 2026-06-20 - Parallel-safety fix: clean up the linker-reported provisioned account_id
+#                      (.user_id) via delete_provisioned_account instead of MAX(account_id); replace
+#                      the racy user_id==max+1 assertion with user_id>before_max; verify the blocked
+#                      path by absence of a new identity link rather than a MAX delta.
 # 1.0.0 - 2026-05-09 - Initial creation, Phase 20 provision_only sub-tests.
 
 # ---------------------------------------------------------------------------
@@ -87,8 +91,15 @@ test_oidc_link_provision_only_happy() {
     seed_email_queryrefs "${sqlite_db}" || true
     seed_provision_queryrefs "${sqlite_db}" || true
 
-    # Capture pre-provision MAX(account_id). The new account will be
-    # max+1.
+    # Capture pre-provision MAX(account_id) purely as a diagnostic
+    # lower-bound. We intentionally do NOT derive the provisioned
+    # account_id from MAX(account_id): Tests 40/41 run in the same
+    # parallel batch (group 4x) against this SAME shared demo SQLite
+    # database and may INSERT their own accounts between our capture and
+    # our cleanup. Relying on MAX would race — we could assert the wrong
+    # id, or delete a sibling test's freshly-provisioned account while
+    # leaking our own. The linker reports the authoritative provisioned
+    # account_id in the JWT envelope (.user_id); we clean up by THAT id.
     local before_max
     before_max=$(get_max_account_id "${sqlite_db}")
 
@@ -96,13 +107,6 @@ test_oidc_link_provision_only_happy() {
     _drive_oidc_chain "${base_url}" "${headers_file}"
 
     if [[ -z "${OIDC_CHAIN_HANDOFF}" ]]; then
-        # On failure, surface the error and try to find any provisioned row
-        # so cleanup can remove it.
-        local post_max
-        post_max=$(get_max_account_id "${sqlite_db}")
-        if [[ "${post_max}" -gt "${before_max}" ]]; then
-            delete_account "${sqlite_db}" "${post_max}" || true
-        fi
         unseed_oidc_identity "${sqlite_db}" "${issuer}" "${subject}" || true
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 \
             "No handoff code (oidc_error=${OIDC_CHAIN_ERROR:-none}, status=${OIDC_CHAIN_STATUS})"
@@ -118,13 +122,18 @@ test_oidc_link_provision_only_happy() {
         --max-time 5 "${base_url}/api/auth/oidc/handoff" \
         2>/dev/null || echo "000")
 
-    # Determine the new account_id (max+1) for cleanup.
-    local after_max
-    after_max=$(get_max_account_id "${sqlite_db}")
+    local token user_id success
+    token=$(jq -r   '.token   // empty' "${exchange_file}" 2>/dev/null || echo "")
+    user_id=$(jq -r '.user_id // empty' "${exchange_file}" 2>/dev/null || echo "")
+    success=$(jq -r '.success // empty' "${exchange_file}" 2>/dev/null || echo "")
 
-    # Cleanup — always run, even if assertions below fail.
-    if [[ "${after_max}" -gt "${before_max}" ]]; then
-        delete_account "${sqlite_db}" "${after_max}" || true
+    # Cleanup — always run, even if assertions below fail. Delete the
+    # EXACT account the linker provisioned (.user_id), not MAX(account_id),
+    # so concurrent inserts by Tests 40/41 cannot misdirect the delete.
+    # delete_provisioned_account guards against nuking a pre-existing demo
+    # account (only deletes when the row is newer than before_max).
+    if [[ -n "${user_id}" ]]; then
+        delete_provisioned_account "${sqlite_db}" "${user_id}" "${before_max}" || true
     fi
     unseed_oidc_identity "${sqlite_db}" "${issuer}" "${subject}" || true
 
@@ -135,11 +144,6 @@ test_oidc_link_provision_only_happy() {
         return
     fi
 
-    local token user_id success
-    token=$(jq -r   '.token   // empty' "${exchange_file}" 2>/dev/null || echo "")
-    user_id=$(jq -r '.user_id // empty' "${exchange_file}" 2>/dev/null || echo "")
-    success=$(jq -r '.success // empty' "${exchange_file}" 2>/dev/null || echo "")
-
     if [[ "${success}" != "true" ]] \
         || [[ -z "${token}" ]] \
         || [[ "${token}" != *"."*"."* ]]; then
@@ -149,18 +153,21 @@ test_oidc_link_provision_only_happy() {
         return
     fi
 
-    # The provisioned account_id should be exactly one greater than the
-    # pre-flight max.
-    local expected_id=$(( before_max + 1 ))
-    if [[ "${user_id}" != "${expected_id}" ]]; then
+    # Robust provisioning assertion (parallel-safe): the linker must have
+    # created a genuinely NEW account, i.e. user_id is greater than the
+    # pre-flight max. We deliberately avoid asserting user_id == max+1
+    # because a sibling test (40/41) may have provisioned an account in
+    # between, legitimately bumping our id past max+1. The exact-equality
+    # check was the source of the intermittent failures.
+    if [[ -z "${user_id}" ]] || [[ "${user_id}" -le "${before_max}" ]]; then
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 \
-            "Expected user_id=${expected_id} (max+1), got user_id=${user_id} (before=${before_max} after=${after_max})"
+            "Expected a newly provisioned user_id > ${before_max} (pre-flight max), got user_id=${user_id:-none}"
         EXIT_CODE=1
         return
     fi
 
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 \
-        "provision_only happy: JWT envelope user_id=${user_id} (account provisioned, email=${email#*@})"
+        "provision_only happy: JWT envelope user_id=${user_id} (new account provisioned > max=${before_max}, email=${email#*@})"
     PASS_COUNT=$(( PASS_COUNT + 1 ))
 }
 
@@ -206,22 +213,27 @@ test_oidc_link_provision_only_blocked() {
     seed_email_queryrefs "${sqlite_db}" || true
     seed_provision_queryrefs "${sqlite_db}" || true
 
-    # Capture pre-flight max so we can verify NO account was provisioned.
-    local before_max
-    before_max=$(get_max_account_id "${sqlite_db}")
-
     # Drive the chain.
     _drive_oidc_chain "${base_url}" "${headers_file}"
 
-    # Verify accounts table did not grow.
-    local after_max
-    after_max=$(get_max_account_id "${sqlite_db}")
-    if [[ "${after_max}" -ne "${before_max}" ]]; then
-        # Defensive cleanup just in case.
-        delete_account "${sqlite_db}" "${after_max}" || true
+    # Verify the linker did NOT provision an account for our (issuer,
+    # subject). We check for a NEW identity link rather than comparing
+    # MAX(account_id): Tests 40/41 share this demo DB in the same parallel
+    # batch and may legitimately grow the accounts table while this
+    # sub-test runs, so a MAX delta is not evidence of OUR provisioning.
+    # The linker links via #081 immediately after #083, so the presence
+    # of an identity row for (issuer, subject) is the authoritative signal
+    # that provisioning happened.
+    local linked_account_id
+    linked_account_id=$(sqlite3 2> /dev/null "${sqlite_db}" \
+        "SELECT account_id FROM account_oidc_identities WHERE issuer='${issuer}' AND subject='${subject}' LIMIT 1;" \
+        || echo "")
+    if [[ -n "${linked_account_id}" ]]; then
+        # Defensive cleanup just in case the linker wrongly provisioned.
+        delete_account "${sqlite_db}" "${linked_account_id}" || true
         unseed_oidc_identity "${sqlite_db}" "${issuer}" "${subject}" || true
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 \
-            "Account row was provisioned despite domain mismatch (before=${before_max} after=${after_max})"
+            "Account row was provisioned despite domain mismatch (account_id=${linked_account_id})"
         EXIT_CODE=1
         return
     fi

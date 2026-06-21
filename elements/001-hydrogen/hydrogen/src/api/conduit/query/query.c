@@ -223,8 +223,9 @@ enum MHD_Result handle_conduit_query_request(
                                       param_list, ordered_params, message);
     json_decref(request_json);
 
-    // Clean up message
-    if (message) free(message);
+    // NOTE: handle_response_building() takes ownership of and frees message
+    // (along with query_id, converted_sql, param_list, ordered_params), so we
+    // must NOT free message again here or we get a double-free.
 
     log_this(SR_API, "%s: Conduit query request processing completed", LOG_LEVEL_TRACE, 1, conduit_service_name());
 

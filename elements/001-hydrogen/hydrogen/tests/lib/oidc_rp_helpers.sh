@@ -23,11 +23,61 @@
 # the Hydrogen side).
 #
 # CHANGELOG
+# 1.1.0 - 2026-06-20 - Added wait_for_migration_ready (canonical "READY FOR REQUESTS" signal) to
+#                      replace the per-phase tail-offset migration-wait loops that timed out ~30s
+#                      each (shared SERVER_LOG is truncated per instance, so stale offsets matched
+#                      nothing). Cuts Test 42 runtime from ~250s to a few seconds of real work.
 # 1.0.0 - 2026-05-09 - Initial extraction from test_42_oidc_rp.sh during Phase 13.
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+# Wait until a freshly-started Hydrogen instance has finished loading its
+# query template cache (QTC) and is ready to dispatch queries. The HTTP
+# server accepts connections before the database queue bootstrap finishes
+# populating the QTC, so OIDC linker queries (#080/#082/#017 etc.) can
+# otherwise race ahead of readiness.
+#
+# Keys off the canonical "READY FOR REQUESTS" signal, which Hydrogen logs
+# exactly once after EVERY enabled database's Lead DQM has completed its
+# full connect -> bootstrap -> migration sequence (see
+# database_signal_ready_if_complete() in src/database/database.c). This is
+# the same signal Test 50/conduit_utils.sh uses. We keep the older
+# "Migration completed in|Migration Current:" strings as a fallback so the
+# helper still works against any build that predates the signal.
+#
+# Each Hydrogen instance TRUNCATES the shared SERVER_LOG on start (see
+# lifecycle.sh: `true > "${log_file}"`), so the signal always lands in the
+# CURRENT log. We therefore grep the whole log directly — NOT
+# `tail -n +<offset>`. The old offset-based loops captured a line number
+# from the PREVIOUS (longer) instance's log, which after truncation pointed
+# past EOF, so they matched nothing and burned the full 30s timeout every
+# time (~30s × 7 instances ≈ the bulk of the historical test runtime).
+#
+# Args:
+#   $1  server_log   path to the shared server log
+#   $2  [timeout]    max seconds to wait (default 30)
+# Returns 0 once the signal is seen, 1 on timeout (caller proceeds anyway).
+wait_for_migration_ready() {
+    local server_log="$1"
+    local timeout="${2:-30}"
+    local deadline
+    deadline=$(( $(date +%s) + timeout ))
+    while true; do
+        if [[ $(date +%s) -ge ${deadline} ]]; then
+            return 1
+        fi
+        # shellcheck disable=SC2310 # Polling on success/timeout — non-zero grep is "not yet ready"
+        if "${GREP}" -q -E "READY FOR REQUESTS|Migration completed in|Migration Current:" "${server_log}" 2>/dev/null; then
+            # Brief settling pause so the QTC is fully usable by
+            # handle_api_request paths (matches test_40's convention).
+            sleep 1
+            return 0
+        fi
+        sleep 0.2
+    done
+}
 
 # Issues an HTTP request and verifies (a) the HTTP status and
 # (b) that the response body is JSON containing the expected

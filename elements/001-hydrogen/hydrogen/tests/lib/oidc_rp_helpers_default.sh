@@ -42,6 +42,11 @@
 # project-wide 1,000-line cap (LITHIUM-INS.md rule equivalent for Hydrogen).
 #
 # CHANGELOG
+# 1.2.0 - 2026-06-20 - Speed-up: replace broken tail-offset migration-wait loop with
+#                      wait_for_migration_ready (canonical "READY FOR REQUESTS" signal).
+# 1.1.0 - 2026-06-20 - Parallel-safety fix: provision path cleans up the linker-reported account_id
+#                      via delete_provisioned_account instead of MAX(account_id), and asserts
+#                      user_id>before_max instead of the racy user_id==max+1.
 # 1.0.0 - 2026-05-09 - Initial creation, Phase 21 default-strategy sub-tests.
 
 # ---------------------------------------------------------------------------
@@ -199,22 +204,19 @@ test_oidc_link_default_provision() {
     seed_email_queryrefs "${sqlite_db}" || true
     seed_provision_queryrefs "${sqlite_db}" || true
 
-    # Capture pre-provision max.
+    # Capture pre-provision max as a diagnostic lower-bound only. The
+    # authoritative provisioned account_id comes from the JWT envelope
+    # (.user_id); we never derive it from MAX(account_id) because Tests
+    # 40/41 share this demo DB in the same parallel batch and may insert
+    # accounts concurrently (see oidc_rp_helpers_provision.sh for the full
+    # rationale).
     local before_max
     before_max=$(get_max_account_id "${sqlite_db}")
 
     _drive_oidc_chain "${base_url}" "${headers_file}"
 
-    local after_max
-    after_max=$(get_max_account_id "${sqlite_db}")
-
-    # Cleanup always runs.
-    if [[ "${after_max}" -gt "${before_max}" ]]; then
-        delete_account "${sqlite_db}" "${after_max}" || true
-    fi
-    unseed_oidc_identity "${sqlite_db}" "${issuer}" "${subject}" || true
-
     if [[ -z "${OIDC_CHAIN_HANDOFF}" ]]; then
+        unseed_oidc_identity "${sqlite_db}" "${issuer}" "${subject}" || true
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 \
             "No handoff code (oidc_error=${OIDC_CHAIN_ERROR:-none}, status=${OIDC_CHAIN_STATUS})"
         EXIT_CODE=1
@@ -228,17 +230,24 @@ test_oidc_link_default_provision() {
         --max-time 5 "${base_url}/api/auth/oidc/handoff" \
         2>/dev/null || echo "000")
 
+    local user_id success token
+    user_id=$(jq -r '.user_id // empty' "${exchange_file}" 2>/dev/null || echo "")
+    success=$(jq -r '.success // empty' "${exchange_file}" 2>/dev/null || echo "")
+    token=$(jq -r   '.token   // empty' "${exchange_file}" 2>/dev/null || echo "")
+
+    # Cleanup always runs — delete the exact provisioned account_id, not
+    # MAX(account_id), guarded against clobbering pre-existing accounts.
+    if [[ -n "${user_id}" ]]; then
+        delete_provisioned_account "${sqlite_db}" "${user_id}" "${before_max}" || true
+    fi
+    unseed_oidc_identity "${sqlite_db}" "${issuer}" "${subject}" || true
+
     if [[ "${exchange_status}" != "200" ]]; then
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 \
             "/handoff exchange returned ${exchange_status} (expected 200)"
         EXIT_CODE=1
         return
     fi
-
-    local user_id success token
-    user_id=$(jq -r '.user_id // empty' "${exchange_file}" 2>/dev/null || echo "")
-    success=$(jq -r '.success // empty' "${exchange_file}" 2>/dev/null || echo "")
-    token=$(jq -r   '.token   // empty' "${exchange_file}" 2>/dev/null || echo "")
 
     if [[ "${success}" != "true" ]] \
         || [[ -z "${token}" ]] \
@@ -249,16 +258,18 @@ test_oidc_link_default_provision() {
         return
     fi
 
-    local expected_id=$(( before_max + 1 ))
-    if [[ "${user_id}" != "${expected_id}" ]]; then
+    # Parallel-safe assertion: a genuinely new account was provisioned,
+    # i.e. user_id > pre-flight max. Exact max+1 equality was racy under
+    # concurrent inserts from sibling tests and is intentionally dropped.
+    if [[ -z "${user_id}" ]] || [[ "${user_id}" -le "${before_max}" ]]; then
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 \
-            "Expected user_id=${expected_id} (provisioned max+1), got user_id=${user_id}"
+            "Expected a newly provisioned user_id > ${before_max} (pre-flight max), got user_id=${user_id:-none}"
         EXIT_CODE=1
         return
     fi
 
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 \
-        "default provision path: JWT envelope user_id=${user_id} (new account provisioned, email=${email#*@})"
+        "default provision path: JWT envelope user_id=${user_id} (new account provisioned > max=${before_max}, email=${email#*@})"
     PASS_COUNT=$(( PASS_COUNT + 1 ))
 }
 
@@ -312,8 +323,6 @@ run_phase21_default_tests() {
     local default_hydrogen_pid=""
     local default_pid_var="DEFAULT_HYDROGEN_PID_$$"
     local default_base_url="http://localhost:${default_port}"
-    local default_log_offset
-    default_log_offset=$(( $(wc -l < "${server_log}" 2>/dev/null || echo 0) + 1 ))
 
     # shellcheck disable=SC2310 # We want to continue even if the test fails
     if start_hydrogen_with_pid "${config_path}" "${server_log}" 30 "${hydrogen_bin}" "${default_pid_var}"; then
@@ -339,22 +348,10 @@ run_phase21_default_tests() {
     fi
 
     if [[ "${EXIT_CODE}" -eq 0 ]]; then
-        local default_now default_deadline
-        default_now=$(date +%s)
-        default_deadline=$(( default_now + 30 ))
-        while true; do
-            default_now=$(date +%s)
-            if [[ ${default_now} -ge ${default_deadline} ]]; then
-                break
-            fi
-            # shellcheck disable=SC2310 # Polling on success/timeout
-            if tail -n +"${default_log_offset}" "${server_log}" 2>/dev/null \
-                | "${GREP}" -q -E "Migration completed in|Migration Current:"; then
-                break
-            fi
-            sleep 0.2
-        done
-        sleep 1
+        # Wait for the canonical READY FOR REQUESTS signal before driving
+        # linker queries.
+        # shellcheck disable=SC2310 # Diagnostic-only; proceed even on timeout
+        wait_for_migration_ready "${server_log}" 30 || true
 
         # Phase 21 sub-path (a): sub fast-path.
         # shellcheck disable=SC2310 # We want to continue even if the test fails
