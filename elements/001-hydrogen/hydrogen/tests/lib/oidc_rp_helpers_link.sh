@@ -32,6 +32,10 @@
 #   - test_oidc_link_provision_only_blocked: domain not on allow-list → provision_disallowed_email
 #
 # CHANGELOG
+# 1.3.0 - 2026-06-20 - Parallel-safety fix for intermittent failures under the shared demo DB:
+#                      added delete_provisioned_account (delete by linker-reported user_id, not MAX),
+#                      added unseed_email_contact_everywhere and used it to scrub orphaned mock-email
+#                      contacts in the match_email_only hit/miss paths.
 # 1.2.0 - 2026-05-09 - Phase 20: provision_only helpers + sub-tests.
 # 1.1.0 - 2026-05-09 - Phase 19: match_email_only helpers.
 # 1.0.0 - 2026-05-09 - Initial creation for Phase 18 account linker.
@@ -262,6 +266,27 @@ unseed_email_contact() {
         "DELETE FROM account_contacts WHERE account_id=${account_id} AND contact='${email}' AND contact_type_a18=0;"
 }
 
+# Delete the mock email contact from EVERY account, regardless of which
+# account it is attached to. Used to scrub any orphaned contact left by a
+# crashed prior run (or by a provisioned account a sibling test/this test
+# failed to clean up). Without this, a single stray contact for the mock
+# email makes the #082 lookup return >1 row and turns the match_email_only
+# HIT path into a spurious email_ambiguous failure.
+# Args:
+#   $1  sqlite_db  path to the SQLite database file
+#   $2  email      string (case-insensitive match)
+unseed_email_contact_everywhere() {
+    local sqlite_db="$1"
+    local email="$2"
+
+    if ! command -v sqlite3 >/dev/null 2>&1; then
+        return 1
+    fi
+
+    sqlite3 2> /dev/null "${sqlite_db}" \
+        "DELETE FROM account_contacts WHERE LOWER(contact)=LOWER('${email}') AND contact_type_a18=0;"
+}
+
 # Seed a second account with the same email to trigger email_ambiguous.
 # We use account_id=2 which exists in the demo DB as 'demouser'.
 seed_ambiguous_email_contact() {
@@ -454,6 +479,38 @@ delete_account() {
 DELETE FROM account_oidc_identities WHERE account_id = ${account_id};
 DELETE FROM accounts WHERE account_id = ${account_id};
 EOF
+}
+
+# Parallel-safe cleanup for a provisioned account. Deletes the EXACT
+# account_id the linker reported in the JWT envelope (.user_id), but only
+# when that id is newer than the pre-flight max — guarding against ever
+# deleting a pre-existing demo account (ids 1..before_max) if the linker
+# resolved to one instead of provisioning. This avoids the MAX(account_id)
+# race where a sibling test (40/41) inserting into the same shared demo DB
+# could otherwise misdirect the delete to the wrong row.
+# Args:
+#   $1  sqlite_db
+#   $2  account_id  the linker-reported provisioned account_id (.user_id)
+#   $3  before_max  MAX(account_id) captured before driving the chain
+delete_provisioned_account() {
+    local sqlite_db="$1"
+    local account_id="$2"
+    local before_max="$3"
+
+    if ! command -v sqlite3 >/dev/null 2>&1; then
+        return 1
+    fi
+
+    # Only delete genuinely-new rows. A non-numeric or pre-existing id is
+    # left untouched so we never clobber demo fixtures or a sibling test.
+    if [[ ! "${account_id}" =~ ^[0-9]+$ ]] || [[ ! "${before_max}" =~ ^[0-9]+$ ]]; then
+        return 0
+    fi
+    if [[ "${account_id}" -le "${before_max}" ]]; then
+        return 0
+    fi
+
+    delete_account "${sqlite_db}" "${account_id}"
 }
 
 # ---------------------------------------------------------------------------
@@ -717,6 +774,12 @@ test_oidc_link_match_email_only_hit() {
     # Ensure no prior identity link exists (so #080 misses and #082/#081 fire).
     unseed_oidc_identity "${sqlite_db}" "${issuer}" "${subject}" || true
 
+    # Scrub any orphaned contact for this email left on OTHER accounts by a
+    # crashed prior run or a leaked provisioned account. A single stray row
+    # would make #082 return >1 row and flip this HIT path into a spurious
+    # email_ambiguous failure (the historical intermittent symptom).
+    unseed_email_contact_everywhere "${sqlite_db}" "${email}" || true
+
     # Seed the email contact so #082 can find it.
     # shellcheck disable=SC2310 # We want to continue even if the seed fails
     if ! seed_email_contact "${sqlite_db}" 1 "${email}"; then
@@ -815,11 +878,12 @@ test_oidc_link_match_email_only_miss() {
         return
     fi
 
-    # Guarantee no identity link and no email contact exist.
+    # Guarantee no identity link and no email contact exist anywhere.
+    # Scrub the email from EVERY account (not just 1 and 2) so an orphaned
+    # contact from a crashed run or a leaked provisioned account cannot make
+    # #082 match and turn this miss path into a spurious hit.
     unseed_oidc_identity "${sqlite_db}" "${issuer}" "${subject}" || true
-    unseed_email_contact "${sqlite_db}" 1 "${email}" || true
-    # Also clear any seeded ambiguous contact from a prior run.
-    unseed_ambiguous_email_contact "${sqlite_db}" "${email}" || true
+    unseed_email_contact_everywhere "${sqlite_db}" "${email}" || true
 
     # Ensure QueryRefs are present.
     seed_email_queryrefs "${sqlite_db}" || true

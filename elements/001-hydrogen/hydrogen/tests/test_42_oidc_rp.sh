@@ -29,6 +29,8 @@
 # (Helper functions live in tests/lib/oidc_rp_helpers.sh)
 
 # CHANGELOG
+# 2.2.0 - 2026-06-20 - Speed-up: replace per-phase migration-wait loops (broken tail-offset against the per-instance-truncated shared log; timed out ~30s each, ~250s total) with wait_for_migration_ready keyed off the canonical "READY FOR REQUESTS" signal
+# 2.1.1 - 2026-06-20 - Fix intermittent failures under parallel execution (shared demo DB with Tests 40/41): provision cleanup/assertions now key off the linker-reported user_id instead of MAX(account_id); match_email_only paths scrub orphaned mock-email contacts
 # 2.1.0 - 2026-05-09 - Phase 22: role-mapping database/idp_realm_roles/merge sub-tests; mock emits realm_access.roles
 # 2.0.0 - 2026-05-09 - Phase 21: match_email_then_provision (default strategy): sub fast-path + provision sub-tests; stub linker removed
 # 1.9.0 - 2026-05-09 - Phase 20: provision_only linker happy + blocked sub-tests
@@ -49,7 +51,7 @@ TEST_NAME="OIDC Relying Party"
 TEST_ABBR="ORP"
 TEST_NUMBER="42"
 TEST_COUNTER=0
-TEST_VERSION="2.1.0"
+TEST_VERSION="2.2.0"
 
 # Phase 9: mock Keycloak port. Picked outside the typical Hydrogen
 # port range (5000s) and the test config's WebServer port (5242). If
@@ -383,30 +385,10 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
 
             if [[ "${EXIT_CODE}" -eq 0 ]]; then
                 # The HTTP server becomes ready before the database queue
-                # bootstrap finishes loading the QTC. Poll the server log
-                # for the "Migration completed in" / "Migration Current"
-                # signal that all auth queries (e.g. #008 lookup_account)
-                # are ready to dispatch. 30s is plenty for SQLite +
-                # bootstrap-query path; YugabyteDB-style slowness does
-                # not apply here.
-                MIGRATION_NOW=$(date +%s)
-                MIGRATION_DEADLINE=$(( MIGRATION_NOW + 30 ))
-                while true; do
-                    MIGRATION_NOW=$(date +%s)
-                    if [[ ${MIGRATION_NOW} -ge ${MIGRATION_DEADLINE} ]]; then
-                        break
-                    fi
-                    # shellcheck disable=SC2310 # We poll on success/timeout — non-zero grep is "not yet ready"
-                    if "${GREP}" -q -E "Migration completed in|Migration Current:" \
-                        "${SERVER_LOG}" 2>/dev/null; then
-                        break
-                    fi
-                    sleep 0.2
-                done
-                # Brief settling pause for the QTC to be fully usable
-                # by handle_api_request paths (matches test_40's
-                # convention).
-                sleep 1
+                # bootstrap finishes loading the QTC. Wait for the
+                # migration/QTC-ready signal before driving linker queries.
+                # shellcheck disable=SC2310 # Diagnostic-only; proceed even on timeout
+                wait_for_migration_ready "${SERVER_LOG}" 30 || true
 
                  # Phase 14/21 happy-path: drives /start → /auth → /callback →
                  # /handoff end-to-end. The linker resolves via sub fast-path
@@ -483,9 +465,6 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
             SUB_HYDROGEN_PID=""
             SUB_PID_VAR="SUB_HYDROGEN_PID_$$"
             SUB_BASE_URL="http://localhost:${SUB_PORT}"
-            # Capture the current log end so the migration-wait below
-            # only searches log lines added by THIS Hydrogen instance.
-            SUB_LOG_OFFSET=$(( $(wc -l < "${SERVER_LOG}" 2>/dev/null || echo 0) + 1 ))
             # shellcheck disable=SC2310 # We want to continue even if the test fails
             if start_hydrogen_with_pid "${CONFIG_PATH_SUB}" "${SERVER_LOG}" 30 "${HYDROGEN_BIN}" "${SUB_PID_VAR}"; then
                 SUB_HYDROGEN_PID=$(eval "echo \$${SUB_PID_VAR}")
@@ -510,26 +489,10 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
             fi
 
             if [[ "${EXIT_CODE}" -eq 0 ]]; then
-                # Wait for QTC bootstrap. AutoMigration is disabled (Phase 18
-                # seeds rows directly), so we just wait for "Migration Current:"
-                # which Hydrogen logs after the bootstrap query populates the QTC
-                # from the existing queries table. Use SUB_LOG_OFFSET to avoid
-                # matching migration log lines from earlier Hydrogen instances.
-                MIGRATION_NOW=$(date +%s)
-                MIGRATION_DEADLINE=$(( MIGRATION_NOW + 30 ))
-                while true; do
-                    MIGRATION_NOW=$(date +%s)
-                    if [[ ${MIGRATION_NOW} -ge ${MIGRATION_DEADLINE} ]]; then
-                        break
-                    fi
-                    # shellcheck disable=SC2310 # Polling on success/timeout — non-zero grep is "not yet ready"
-                    if tail -n +"${SUB_LOG_OFFSET}" "${SERVER_LOG}" 2>/dev/null \
-                        | "${GREP}" -q -E "Migration completed in|Migration Current:"; then
-                        break
-                    fi
-                    sleep 0.2
-                done
-                sleep 1
+                # Wait for the canonical READY FOR REQUESTS signal so the QTC
+                # is populated before driving linker queries.
+                # shellcheck disable=SC2310 # Diagnostic-only; proceed even on timeout
+                wait_for_migration_ready "${SERVER_LOG}" 30 || true
 
                 # Phase 18 happy path: pre-seed identity, drive chain, get JWT.
                 # shellcheck disable=SC2310 # We want to continue even if the test fails
@@ -597,7 +560,6 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
             EMAIL_HYDROGEN_PID=""
             EMAIL_PID_VAR="EMAIL_HYDROGEN_PID_$$"
             EMAIL_BASE_URL="http://localhost:${EMAIL_PORT}"
-            EMAIL_LOG_OFFSET=$(( $(wc -l < "${SERVER_LOG}" 2>/dev/null || echo 0) + 1 ))
             # shellcheck disable=SC2310 # We want to continue even if the test fails
             if start_hydrogen_with_pid "${CONFIG_PATH_EMAIL}" "${SERVER_LOG}" 30 "${HYDROGEN_BIN}" "${EMAIL_PID_VAR}"; then
                 EMAIL_HYDROGEN_PID=$(eval "echo \$${EMAIL_PID_VAR}")
@@ -622,22 +584,9 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
             fi
 
             if [[ "${EXIT_CODE}" -eq 0 ]]; then
-                # Wait for QTC bootstrap (same pattern as Phase 18).
-                EMAIL_NOW=$(date +%s)
-                EMAIL_DEADLINE=$(( EMAIL_NOW + 30 ))
-                while true; do
-                    EMAIL_NOW=$(date +%s)
-                    if [[ ${EMAIL_NOW} -ge ${EMAIL_DEADLINE} ]]; then
-                        break
-                    fi
-                    # shellcheck disable=SC2310 # Polling on success/timeout
-                    if tail -n +"${EMAIL_LOG_OFFSET}" "${SERVER_LOG}" 2>/dev/null \
-                        | "${GREP}" -q -E "Migration completed in|Migration Current:"; then
-                        break
-                    fi
-                    sleep 0.2
-                done
-                sleep 1
+                # Wait for the canonical READY FOR REQUESTS signal.
+                # shellcheck disable=SC2310 # Diagnostic-only; proceed even on timeout
+                wait_for_migration_ready "${SERVER_LOG}" 30 || true
 
                 # Phase 19 hit path: seed email, drive chain, get JWT.
                 # shellcheck disable=SC2310 # We want to continue even if the test fails
@@ -725,7 +674,6 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
             PROVISION_HYDROGEN_PID=""
             PROVISION_PID_VAR="PROVISION_HYDROGEN_PID_$$"
             PROVISION_BASE_URL="http://localhost:${PROVISION_PORT}"
-            PROVISION_LOG_OFFSET=$(( $(wc -l < "${SERVER_LOG}" 2>/dev/null || echo 0) + 1 ))
             # shellcheck disable=SC2310 # We want to continue even if the test fails
             if start_hydrogen_with_pid "${CONFIG_PATH_PROVISION}" "${SERVER_LOG}" 30 "${HYDROGEN_BIN}" "${PROVISION_PID_VAR}"; then
                 PROVISION_HYDROGEN_PID=$(eval "echo \$${PROVISION_PID_VAR}")
@@ -750,22 +698,9 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
             fi
 
             if [[ "${EXIT_CODE}" -eq 0 ]]; then
-                # Wait for QTC bootstrap.
-                PROVISION_NOW=$(date +%s)
-                PROVISION_DEADLINE=$(( PROVISION_NOW + 30 ))
-                while true; do
-                    PROVISION_NOW=$(date +%s)
-                    if [[ ${PROVISION_NOW} -ge ${PROVISION_DEADLINE} ]]; then
-                        break
-                    fi
-                    # shellcheck disable=SC2310 # Polling on success/timeout
-                    if tail -n +"${PROVISION_LOG_OFFSET}" "${SERVER_LOG}" 2>/dev/null \
-                        | "${GREP}" -q -E "Migration completed in|Migration Current:"; then
-                        break
-                    fi
-                    sleep 0.2
-                done
-                sleep 1
+                # Wait for the canonical READY FOR REQUESTS signal.
+                # shellcheck disable=SC2310 # Diagnostic-only; proceed even on timeout
+                wait_for_migration_ready "${SERVER_LOG}" 30 || true
 
                 # Phase 20 happy path: domain on allow-list → provisioning succeeds.
                 # shellcheck disable=SC2310 # We want to continue even if the test fails
@@ -815,7 +750,6 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
                 BLOCKED_HYDROGEN_PID=""
                 BLOCKED_PID_VAR="BLOCKED_HYDROGEN_PID_$$"
                 BLOCKED_BASE_URL="http://localhost:${BLOCKED_PORT}"
-                BLOCKED_LOG_OFFSET=$(( $(wc -l < "${SERVER_LOG}" 2>/dev/null || echo 0) + 1 ))
                 # shellcheck disable=SC2310 # We want to continue even if the test fails
                 if start_hydrogen_with_pid "${CONFIG_PATH_PROVISION_BLOCKED}" "${SERVER_LOG}" 30 "${HYDROGEN_BIN}" "${BLOCKED_PID_VAR}"; then
                     BLOCKED_HYDROGEN_PID=$(eval "echo \$${BLOCKED_PID_VAR}")
@@ -840,21 +774,9 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
                 fi
 
                 if [[ "${EXIT_CODE}" -eq 0 ]]; then
-                    BLOCKED_NOW=$(date +%s)
-                    BLOCKED_DEADLINE=$(( BLOCKED_NOW + 30 ))
-                    while true; do
-                        BLOCKED_NOW=$(date +%s)
-                        if [[ ${BLOCKED_NOW} -ge ${BLOCKED_DEADLINE} ]]; then
-                            break
-                        fi
-                        # shellcheck disable=SC2310 # Polling on success/timeout
-                        if tail -n +"${BLOCKED_LOG_OFFSET}" "${SERVER_LOG}" 2>/dev/null \
-                            | "${GREP}" -q -E "Migration completed in|Migration Current:"; then
-                            break
-                        fi
-                        sleep 0.2
-                    done
-                    sleep 1
+                    # Wait for the canonical READY FOR REQUESTS signal.
+                    # shellcheck disable=SC2310 # Diagnostic-only; proceed even on timeout
+                    wait_for_migration_ready "${SERVER_LOG}" 30 || true
 
                     # Phase 20 blocked path: domain mismatch → provision_disallowed_email.
                     # shellcheck disable=SC2310 # We want to continue even if the test fails

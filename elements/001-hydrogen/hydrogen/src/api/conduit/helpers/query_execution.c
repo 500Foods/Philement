@@ -193,8 +193,12 @@ bool prepare_and_submit_query(DatabaseQueue* selected_queue, const char* query_i
         json_decref(param_json);
     }
 
-    // Submit query to selected queue
+    // Submit query to selected queue. The submit path serializes the query
+    // (including parameter_json) into its own copy for the queue, so the
+    // parameter_json allocated above is owned by this function and must be
+    // freed here to avoid leaking it.
     bool submit_result = database_queue_submit_query(selected_queue, &db_query);
+    free(db_query.parameter_json);
     return submit_result;
 #endif
 }

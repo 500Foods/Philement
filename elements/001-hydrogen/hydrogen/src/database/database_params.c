@@ -302,6 +302,20 @@ char* convert_named_to_positional(
                 continue;
             }
 
+            // Ensure this is a complete parameter token and not merely the
+            // prefix of a longer parameter name (e.g. :TIME matching inside
+            // :TIMESTAMP, or :DATE inside :DATETIME). The character immediately
+            // following the match must not be a valid identifier character.
+            char next_char = pos[named_param_len];
+            if ((next_char >= 'a' && next_char <= 'z') ||
+                (next_char >= 'A' && next_char <= 'Z') ||
+                (next_char >= '0' && next_char <= '9') ||
+                next_char == '_') {
+                // Partial match against a longer parameter name - skip it
+                pos = strstr(pos + 1, named_param);
+                continue;
+            }
+
             size_t prefix_len = (size_t)(pos - result);
             size_t suffix_len = strlen(pos + named_param_len);
 

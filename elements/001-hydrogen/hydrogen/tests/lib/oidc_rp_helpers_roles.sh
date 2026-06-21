@@ -40,6 +40,9 @@
 #   - seed_provision_queryrefs
 #
 # CHANGELOG
+# 1.1.0 - 2026-06-20 - Speed-up: replace broken tail-offset migration-wait loops (which timed out
+#                      ~30s each because the shared SERVER_LOG is truncated per instance) with
+#                      wait_for_migration_ready keyed off the canonical "READY FOR REQUESTS" signal.
 # 1.0.0 - 2026-05-09 - Initial creation, Phase 22 role-mapping sub-tests.
 
 # ---------------------------------------------------------------------------
@@ -511,8 +514,6 @@ run_phase22_roles_tests() {
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Start Hydrogen Server (Phase 22 default config)"
     local p22_default_pid=""
     local p22_default_pid_var="P22_DEFAULT_HYDROGEN_PID_$$"
-    local p22_default_log_offset
-    p22_default_log_offset=$(( $(wc -l < "${server_log}" 2>/dev/null || echo 0) + 1 ))
 
     # shellcheck disable=SC2310 # We want to continue even if the test fails
     if start_hydrogen_with_pid "${p22_default_config}" "${server_log}" 30 "${hydrogen_bin}" "${p22_default_pid_var}"; then
@@ -538,18 +539,8 @@ run_phase22_roles_tests() {
     fi
 
     if [[ "${EXIT_CODE}" -eq 0 ]]; then
-        local p22_deadline
-        p22_deadline=$(( $(date +%s) + 30 ))
-        while true; do
-            if [[ $(date +%s) -ge ${p22_deadline} ]]; then break; fi
-            # shellcheck disable=SC2310 # Polling
-            if tail -n +"${p22_default_log_offset}" "${server_log}" 2>/dev/null \
-                | "${GREP}" -q -E "Migration completed in|Migration Current:"; then
-                break
-            fi
-            sleep 0.2
-        done
-        sleep 1
+        # shellcheck disable=SC2310 # Diagnostic-only; proceed even on timeout
+        wait_for_migration_ready "${server_log}" 30 || true
 
         # Phase 22 sub-test (a): database source.
         # shellcheck disable=SC2310 # We want to continue even if the test fails
@@ -589,8 +580,6 @@ run_phase22_roles_tests() {
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Start Hydrogen Server (idp-roles config)"
     local idp_hydrogen_pid=""
     local idp_pid_var="IDP_ROLES_HYDROGEN_PID_$$"
-    local idp_log_offset
-    idp_log_offset=$(( $(wc -l < "${server_log}" 2>/dev/null || echo 0) + 1 ))
 
     # shellcheck disable=SC2310 # We want to continue even if the test fails
     if start_hydrogen_with_pid "${config_path_idp}" "${server_log}" 30 "${hydrogen_bin}" "${idp_pid_var}"; then
@@ -616,18 +605,8 @@ run_phase22_roles_tests() {
     fi
 
     if [[ "${EXIT_CODE}" -eq 0 ]]; then
-        local idp_deadline
-        idp_deadline=$(( $(date +%s) + 30 ))
-        while true; do
-            if [[ $(date +%s) -ge ${idp_deadline} ]]; then break; fi
-            # shellcheck disable=SC2310 # Polling
-            if tail -n +"${idp_log_offset}" "${server_log}" 2>/dev/null \
-                | "${GREP}" -q -E "Migration completed in|Migration Current:"; then
-                break
-            fi
-            sleep 0.2
-        done
-        sleep 1
+        # shellcheck disable=SC2310 # Diagnostic-only; proceed even on timeout
+        wait_for_migration_ready "${server_log}" 30 || true
 
         # Phase 22 sub-test (b): idp_realm_roles source.
         # shellcheck disable=SC2310 # We want to continue even if the test fails
@@ -667,8 +646,6 @@ run_phase22_roles_tests() {
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Start Hydrogen Server (merge config)"
     local merge_hydrogen_pid=""
     local merge_pid_var="MERGE_HYDROGEN_PID_$$"
-    local merge_log_offset
-    merge_log_offset=$(( $(wc -l < "${server_log}" 2>/dev/null || echo 0) + 1 ))
 
     # shellcheck disable=SC2310 # We want to continue even if the test fails
     if start_hydrogen_with_pid "${config_path_merge}" "${server_log}" 30 "${hydrogen_bin}" "${merge_pid_var}"; then
@@ -694,18 +671,8 @@ run_phase22_roles_tests() {
     fi
 
     if [[ "${EXIT_CODE}" -eq 0 ]]; then
-        local merge_deadline
-        merge_deadline=$(( $(date +%s) + 30 ))
-        while true; do
-            if [[ $(date +%s) -ge ${merge_deadline} ]]; then break; fi
-            # shellcheck disable=SC2310 # Polling
-            if tail -n +"${merge_log_offset}" "${server_log}" 2>/dev/null \
-                | "${GREP}" -q -E "Migration completed in|Migration Current:"; then
-                break
-            fi
-            sleep 0.2
-        done
-        sleep 1
+        # shellcheck disable=SC2310 # Diagnostic-only; proceed even on timeout
+        wait_for_migration_ready "${server_log}" 30 || true
 
         # Phase 22 sub-test (c): merge source.
         # shellcheck disable=SC2310 # We want to continue even if the test fails
