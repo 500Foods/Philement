@@ -32,6 +32,7 @@ void free_readiness_messages(LaunchReadiness* readiness) {
 volatile sig_atomic_t server_starting = 1;  // Start as true, will be set to false once startup complete
 volatile sig_atomic_t server_running = 0;
 volatile sig_atomic_t server_stopping = 0;
+volatile sig_atomic_t server_ready = 0;      // True only once ALL databases/migrations are complete (Ready For Requests)
 volatile sig_atomic_t restart_requested = 0;
 volatile sig_atomic_t handler_flags_reset_needed = 0;  // For signal handler reset tracking
 volatile int restart_count = 0;
@@ -105,6 +106,7 @@ void signal_handler(int sig) {
             
             // Set signal-based shutdown flag for rapid exit
             __sync_bool_compare_and_swap(&signal_based_shutdown, 0, 1);
+            __sync_bool_compare_and_swap(&server_ready, 1, 0);
             __sync_bool_compare_and_swap(&server_running, 1, 0);
             __sync_bool_compare_and_swap(&server_stopping, 0, 1);
             __sync_synchronize();

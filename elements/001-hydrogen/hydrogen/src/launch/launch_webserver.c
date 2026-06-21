@@ -288,36 +288,36 @@ int launch_webserver_subsystem(void) {
     // Wait for server to fully initialize (up to 10 seconds)
     int max_tries = 10000; // 10 seconds total
     int tries = 0;
-    bool server_ready = false;
+    bool daemon_ready = false;
 
     log_this(SR_WEBSERVER, "Waiting for initialization", LOG_LEVEL_DEBUG, 0);
 
     // Phase 1: Immediate check (no sleep)
-    server_ready = check_webserver_daemon_ready();
+    daemon_ready = check_webserver_daemon_ready();
 
     // Phase 2: CPU-friendly busy wait with yield (first 100 tries = ~10ms)
-    while (!server_ready && tries < 100) {
+    while (!daemon_ready && tries < 100) {
         sched_yield(); // Yield CPU to other threads
-        server_ready = check_webserver_daemon_ready();
-        if (server_ready) break;
+        daemon_ready = check_webserver_daemon_ready();
+        if (daemon_ready) break;
         tries++;
     }
 
     // Phase 3: Short microsecond sleeps (next 900 tries = ~9ms with 10us sleeps)
     struct timespec micro_wait = {0, 10000}; // 10 microseconds
-    while (!server_ready && tries < 1000) {
+    while (!daemon_ready && tries < 1000) {
         nanosleep(&micro_wait, NULL);
-        server_ready = check_webserver_daemon_ready();
-        if (server_ready) break;
+        daemon_ready = check_webserver_daemon_ready();
+        if (daemon_ready) break;
         tries++;
     }
 
     // Phase 4: Longer millisecond sleeps for remaining time
     struct timespec milli_wait = {0, 1000000}; // 1ms
-    while (!server_ready && tries < max_tries) {
+    while (!daemon_ready && tries < max_tries) {
         nanosleep(&milli_wait, NULL);
-        server_ready = check_webserver_daemon_ready();
-        if (server_ready) break;
+        daemon_ready = check_webserver_daemon_ready();
+        if (daemon_ready) break;
         tries++;
 
         if (tries % 1000 == 0) { // Log every second
@@ -325,7 +325,7 @@ int launch_webserver_subsystem(void) {
         }
     }
 
-    if (!server_ready) {
+    if (!daemon_ready) {
         log_this(SR_WEBSERVER, "Web server failed to start within timeout", LOG_LEVEL_ERROR, 0);
         shutdown_web_server();
         return 0;

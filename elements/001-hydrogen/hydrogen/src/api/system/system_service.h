@@ -15,6 +15,7 @@
 #include "appconfig/appconfig.h"
 #include "info/info.h"
 #include "health/health.h"
+#include "readiness/readiness.h"
 #include "prometheus/prometheus.h"
 #include "recent/recent.h"
 #include "test/test.h"

@@ -11,6 +11,10 @@
 # analyze_conduit_results()
 
 # CHANGELOG
+# 1.1.2 - 2026-06-20 - Added per-database migration marker diagnostics to help troubleshoot
+#                      why databases are reported "not ready" (readiness check only matches
+#                      "Migration completed", but server may emit "Migration process completed
+#                      ... QTC populated from bootstrap queries" instead)
 # 1.1.1 - 2026-03-03 - Fixed SC2129: Use grouped redirects instead of individual redirects
 # 1.1.0 - 2026-02-18 - Implemented 7x2 cross-database testing matrix with different combinations
 #                    - Each of 7 databases' JWT tokens used to query 2 different databases
@@ -27,7 +31,7 @@ TEST_NAME="Conduit Alt Queries"
 TEST_ABBR="CFM"
 TEST_NUMBER="55"
 TEST_COUNTER=0
-TEST_VERSION="1.1.1"
+TEST_VERSION="1.1.2"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -301,6 +305,49 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     result_file="${LOG_PREFIX}${TIMESTAMP}_${CONDUIT_LOG_SUFFIX}.result"
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Unified Server: ${TESTS_DIR}/logs/${log_file##*/}"
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Unified Server: ${DIAG_TEST_DIR}/${result_file##*/}"
+
+    # Diagnostic: per-database migration marker report.
+    # The readiness check in check_database_readiness() only matches the
+    # "Migration completed" marker, while the server can instead emit
+    # "Migration process completed ... QTC populated from bootstrap queries"
+    # for some engines. This block surfaces which markers were actually logged
+    # for each database so a "not ready" result can be diagnosed quickly.
+    if [[ -f "${log_file}" ]]; then
+        print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${CONDUIT_DESCRIPTION}: Database Readiness Diagnostics"
+        for diag_db_engine in "${!DATABASE_NAMES[@]}"; do
+            diag_db_name="${DATABASE_NAMES[${diag_db_engine}]}"
+
+            diag_ready="unknown"
+            if "${GREP}" -q "DATABASE_READY_${diag_db_engine}=true" "${result_file}" 2>/dev/null; then
+                diag_ready="READY"
+            elif "${GREP}" -q "DATABASE_READY_${diag_db_engine}=false" "${result_file}" 2>/dev/null; then
+                diag_ready="NOT-READY"
+            fi
+
+            diag_completed_in=0
+            if "${GREP}" -q "${diag_db_name}.*Migration completed in" "${log_file}" 2>/dev/null; then
+                diag_completed_in=1
+            fi
+
+            diag_process_completed=0
+            if "${GREP}" -q "${diag_db_name}.*Migration process completed.*QTC populated from bootstrap queries" "${log_file}" 2>/dev/null; then
+                diag_process_completed=1
+            fi
+
+            diag_conn_success=0
+            if "${GREP}" -q "${diag_db_name}.*Connection attempt: SUCCESS" "${log_file}" 2>/dev/null; then
+                diag_conn_success=1
+            fi
+
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${diag_db_engine} (${diag_db_name}): status=${diag_ready}, conn_success=${diag_conn_success}, 'Migration completed in'=${diag_completed_in}, 'Migration process completed'=${diag_process_completed}"
+
+            # Highlight the specific mismatch: migration succeeded via the
+            # process-completed marker, but readiness check did not detect it.
+            if [[ "${diag_ready}" == "NOT-READY" && "${diag_completed_in}" -eq 0 && "${diag_process_completed}" -eq 1 ]]; then
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "  ^ MISMATCH: ${diag_db_engine} migration completed via 'Migration process completed' marker but readiness check only matches 'Migration completed'"
+            fi
+        done
+    fi
 
     # Custom analysis for Test 55 - only check results we actually produce
     total_passed=0

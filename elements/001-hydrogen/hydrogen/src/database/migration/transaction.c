@@ -357,7 +357,7 @@ bool execute_mysql_migration(DatabaseHandle* connection, char** statements, size
             log_this(dqm_label, "Failed to commit migration %s", LOG_LEVEL_ERROR, 1, migration_file);
             transaction_success = false;
         } else {
-            log_this(dqm_label, "Migration %s APPLY was succcessful", LOG_LEVEL_TRACE, 1, migration_file);
+            log_this(dqm_label, "Migration %s APPLY was successful", LOG_LEVEL_TRACE, 1, migration_file);
         }
     } else {
         // Rollback the transaction

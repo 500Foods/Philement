@@ -220,6 +220,10 @@ void* database_queue_worker_thread(void* arg) {
         // NOTE: This is needed by tests 32, 33, 34, and 35 as confirmation of Lead DQM Launch 
         log_this(dqm_label, "Lead DQM initialization is complete", LOG_LEVEL_DEBUG, 0);
 
+        // If this Lead completing means ALL enabled databases are now ready, emit the
+        // canonical "READY FOR REQUESTS" signal (logged exactly once across all threads).
+        database_signal_ready_if_complete();
+
     }
 
     free(dqm_label);
