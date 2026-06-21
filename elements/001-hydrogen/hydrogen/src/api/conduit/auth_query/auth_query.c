@@ -361,7 +361,10 @@ enum MHD_Result handle_conduit_auth_query_request(
                                         &ordered_params, &param_count, &message);
     
     if (result != MHD_YES || !converted_sql) {
-        // Error response already sent by helper, or parameter error - cleanup and return
+        // Error response already sent by helper, or parameter conversion failed.
+        // On this path converted_sql is NULL, but handle_parameter_processing() may have
+        // left param_list (and ordered_params) allocated, and message set. Those are owned
+        // by us here, so free them via cleanup. converted_sql is NULL so it is a no-op.
         log_this(SR_AUTH, "handle_conduit_auth_query_request: Parameter processing failed (result=%d, converted_sql=%p)",
                  LOG_LEVEL_TRACE, 2, result, (void*)converted_sql);
         cleanup_auth_query_resources(request_json, jwt_result, NULL, param_list, converted_sql, ordered_params, param_count, message);
@@ -375,9 +378,11 @@ enum MHD_Result handle_conduit_auth_query_request(
     result = handle_queue_selection(connection, jwt_database, query_ref, cache_entry,
                                    param_list, converted_sql, ordered_params, &selected_queue);
     if (result != MHD_YES) {
-        // Error response already sent by helper
+        // Error response already sent by helper. handle_queue_selection() frees
+        // converted_sql, param_list and ordered_params on failure, so only
+        // request_json and jwt_result remain ours.
         log_this(SR_AUTH, "handle_conduit_auth_query_request: Queue selection failed", LOG_LEVEL_TRACE, 0);
-        cleanup_auth_query_resources(request_json, jwt_result, NULL, param_list, converted_sql, ordered_params, param_count, message);
+        cleanup_auth_query_resources(request_json, jwt_result, NULL, NULL, NULL, NULL, 0, message);
         return MHD_YES; // Error response was already sent by helper
     }
     log_this(SR_AUTH, "handle_conduit_auth_query_request: Queue selection succeeded (selected_queue=%p)", LOG_LEVEL_TRACE, 1, (void*)selected_queue);
@@ -388,9 +393,11 @@ enum MHD_Result handle_conduit_auth_query_request(
     result = handle_query_id_generation(connection, jwt_database, query_ref, param_list,
                                        converted_sql, ordered_params, &query_id);
     if (result != MHD_YES) {
-        // Error response already sent by helper
+        // Error response already sent by helper. handle_query_id_generation() frees
+        // converted_sql, param_list and ordered_params on failure (query_id was not
+        // allocated), so only request_json and jwt_result remain ours.
         log_this(SR_AUTH, "handle_conduit_auth_query_request: Query ID generation failed", LOG_LEVEL_TRACE, 0);
-        cleanup_auth_query_resources(request_json, jwt_result, NULL, param_list, converted_sql, ordered_params, param_count, message);
+        cleanup_auth_query_resources(request_json, jwt_result, NULL, NULL, NULL, NULL, 0, message);
         return MHD_YES; // Error response was already sent by helper
     }
     log_this(SR_AUTH, "handle_conduit_auth_query_request: Query ID generated: %s", LOG_LEVEL_TRACE, 1, query_id ? query_id : "(null)");
@@ -402,9 +409,11 @@ enum MHD_Result handle_conduit_auth_query_request(
                                         param_list, converted_sql, ordered_params,
                                         cache_entry, &pending);
     if (result != MHD_YES) {
-        // Error response already sent by helper
+        // Error response already sent by helper. handle_pending_registration() frees
+        // query_id, converted_sql, param_list and ordered_params on failure, so only
+        // request_json and jwt_result remain ours.
         log_this(SR_AUTH, "handle_conduit_auth_query_request: Pending registration failed", LOG_LEVEL_TRACE, 0);
-        cleanup_auth_query_resources(request_json, jwt_result, query_id, param_list, converted_sql, ordered_params, param_count, message);
+        cleanup_auth_query_resources(request_json, jwt_result, NULL, NULL, NULL, NULL, 0, message);
         return MHD_YES; // Error response was already sent by helper
     }
     log_this(SR_AUTH, "handle_conduit_auth_query_request: Pending registration succeeded", LOG_LEVEL_TRACE, 0);
@@ -414,9 +423,11 @@ enum MHD_Result handle_conduit_auth_query_request(
     result = handle_query_submission(connection, jwt_database, query_ref, selected_queue, query_id,
                                     converted_sql, param_list, ordered_params, param_count, cache_entry);
     if (result != MHD_YES) {
-        // Error response already sent by helper
+        // Error response already sent by helper. handle_query_submission() frees
+        // query_id, converted_sql, param_list and ordered_params on failure, so only
+        // request_json and jwt_result remain ours.
         log_this(SR_AUTH, "handle_conduit_auth_query_request: Query submission failed", LOG_LEVEL_TRACE, 0);
-        cleanup_auth_query_resources(request_json, jwt_result, query_id, param_list, converted_sql, ordered_params, param_count, message);
+        cleanup_auth_query_resources(request_json, jwt_result, NULL, NULL, NULL, NULL, 0, message);
         return MHD_YES; // Error response was already sent by helper
     }
     log_this(SR_AUTH, "handle_conduit_auth_query_request: Query submission succeeded", LOG_LEVEL_TRACE, 0);
@@ -429,9 +440,13 @@ enum MHD_Result handle_conduit_auth_query_request(
     
     log_this(SR_AUTH, "handle_conduit_auth_query_request: Response building returned %d", LOG_LEVEL_TRACE, 1, result);
 
-    // Clean up
+    // Clean up.
+    // IMPORTANT: handle_response_building() takes ownership of and frees query_id,
+    // converted_sql, param_list, ordered_params, and message. We must NOT free those
+    // again here or we get a double-free. Only the request JSON and the JWT result
+    // remain owned by this function.
     log_this(SR_AUTH, "handle_conduit_auth_query_request: Cleaning up resources", LOG_LEVEL_TRACE, 0);
-    cleanup_auth_query_resources(request_json, jwt_result, query_id, param_list, converted_sql, ordered_params, param_count, message);
+    cleanup_auth_query_resources(request_json, jwt_result, NULL, NULL, NULL, NULL, 0, NULL);
 
     // CRITICAL: Always return MHD_YES when a response was queued (even error responses).
     // Returning MHD_NO tells libmicrohttpd to close the connection without sending the response.

@@ -329,6 +329,38 @@ int database_get_total_queue_count(void);
 void database_get_queue_counts_by_type(int* lead_count, int* slow_count, int* medium_count, int* fast_count, int* cache_count);
 void database_get_counts_by_type(int* postgres_count, int* mysql_count, int* sqlite_count, int* db2_count);
 
+// Readiness reporting
+// Per-database readiness snapshot used to build the readiness signal and the
+// /api/system/readiness endpoint. A database is considered "started" once its
+// Lead DQM has completed the full conductor sequence (connect -> bootstrap ->
+// migration -> additional queues).
+#define DATABASE_READINESS_MAX MAX_DATABASES
+typedef struct DatabaseReadinessEntry {
+    char name[128];   // Database name (e.g. "Lithium")
+    bool ready;       // True once the Lead DQM conductor sequence has completed
+} DatabaseReadinessEntry;
+
+typedef struct DatabaseReadiness {
+    int expected;                                          // Configured (enabled) databases
+    int started;                                           // Lead DQMs that have completed their sequence
+    bool all_ready;                                        // True only when started >= expected (and expected > 0 covered by caller)
+    int count;                                             // Number of populated entries
+    DatabaseReadinessEntry entries[DATABASE_READINESS_MAX]; // Per-database snapshot
+} DatabaseReadiness;
+
+// Fills the provided snapshot with per-database readiness. Thread-safe.
+// Returns true if every enabled database's Lead DQM has completed its sequence.
+bool database_get_readiness(DatabaseReadiness* readiness);
+
+// Convenience wrapper: returns true only when all enabled databases are ready.
+bool database_all_leads_ready(void);
+
+// Evaluate overall readiness and, the first time ALL enabled databases are ready,
+// atomically set the global server_ready flag and emit the canonical
+// "READY FOR REQUESTS" log line exactly once. Safe to call from multiple threads.
+// Returns true if the server is (now) ready for requests.
+bool database_signal_ready_if_complete(void);
+
 // Helper functions for database_add_database (for testing)
 DatabaseEngineInterface* database_get_engine_interface(const char* engine);
 const DatabaseConnection* database_find_connection_config(const char* name);

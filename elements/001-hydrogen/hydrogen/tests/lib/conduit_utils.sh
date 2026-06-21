@@ -12,6 +12,19 @@
 # test_conduit_multiple_queries_endpoint()
 
 # CHANGELOG
+# 1.7.0 - 2026-06-20 - Switched run_conduit_server() readiness to the canonical "READY FOR REQUESTS" signal
+#                    - Replaced hardcoded expected_databases=7 + per-engine migration-string polling +
+#                      fixed sleep with a single grep for "READY FOR REQUESTS" (emitted once all DBs are ready)
+#                    - Webserver readiness now polls /api/system/readiness (200 when ready, 503 while starting)
+#                      instead of /api/version; removed the fixed 1s sleep
+#                    - Added CONDUIT_MIGRATION_TIMEOUT override for the readiness wait
+#                    - check_database_readiness() now also matches the "Migration process completed ... QTC
+#                      populated from bootstrap queries" marker for per-database ready flags
+# 1.6.0 - 2026-06-20 - Fixed JWT token array index misalignment in acquire_jwt_tokens()
+#                    - eval "name=(${jwt_tokens[*]})" word-split and dropped empty
+#                      placeholder elements, collapsing the array and breaking the
+#                      index->database mapping relied on by cross-database tests (53/54/55)
+#                    - Now serializes each element single-quoted so empty placeholders are preserved
 # 1.5.0 - 2026-01-24 - Modified validate_conduit_request() to conditionally send request body only for non-GET methods
 #                    - GET requests no longer send Content-Type header or empty data body
 # 1.4.0 - 2026-01-21 - Enhanced validate_conduit_request() for non-200 responses
@@ -223,8 +236,12 @@ check_database_readiness() {
             sleep 5
         fi
 
-        # Check for successful migration completion
+        # Check for successful migration completion. Match either completion marker the
+        # server can emit per database: "Migration completed [in ...]" or
+        # "Migration process completed ... QTC populated from bootstrap queries".
         if "${GREP}" -q "${db_name}.*Migration completed" "${log_file}" 2>/dev/null; then
+            db_ready=true
+        elif "${GREP}" -q "${db_name}.*Migration process completed.*QTC populated from bootstrap queries" "${log_file}" 2>/dev/null; then
             db_ready=true
         fi
 
@@ -304,9 +321,24 @@ EOF
     done
 
     # Store the JWT tokens in a test-specific global variable to avoid subshell issues
-    # and prevent conflicts between concurrent test executions
+    # and prevent conflicts between concurrent test executions.
+    #
+    # IMPORTANT: The jwt_tokens array intentionally contains empty-string placeholders
+    # for databases that were not ready / failed login, so that array indices stay
+    # aligned with the DATABASE_NAMES iteration order. Cross-database tests (53, 54, 55)
+    # rely on this positional alignment. A naive `eval "${name}=(${jwt_tokens[*]})"`
+    # word-splits the joined string and silently drops empty elements, collapsing the
+    # array and breaking the index→database mapping. Build a quoted element list so
+    # empty placeholders are preserved exactly.
     local global_var_name="JWT_TOKENS_RESULT_${TEST_NUMBER}"
-    eval "${global_var_name}=(${jwt_tokens[*]})"
+    local jwt_tokens_quoted=""
+    local jwt_token_elem
+    for jwt_token_elem in "${jwt_tokens[@]}"; do
+        # Escape any single quotes within the token, then single-quote the element
+        # so empty strings remain as distinct '' positional entries.
+        jwt_tokens_quoted+=" '${jwt_token_elem//\'/\'\\\'\'}'"
+    done
+    eval "${global_var_name}=(${jwt_tokens_quoted})"
 
 }
 
@@ -521,60 +553,43 @@ run_conduit_server() {
     if [[ "${startup_success}" = true ]]; then
         echo "STARTUP_SUCCESS" >> "${result_file}"
 
-        # Wait for all database migrations to complete individually
+        # Wait for the server to become Ready For Requests. The Hydrogen server emits a
+        # single canonical "READY FOR REQUESTS" log line only once EVERY enabled database's
+        # Lead DQM has completed its full conductor sequence (connect -> bootstrap ->
+        # migration -> additional queues). Keying off this one signal replaces the previous
+        # brittle approach (hardcoded expected_databases=7 + per-engine migration-string
+        # greps + a fixed sleep), and works for any number of configured databases.
         local migration_start_time=${SECONDS}
-        local completed_databases=0
-        local expected_databases=7
+        local migration_timeout=300
+        if [[ -n "${CONDUIT_MIGRATION_TIMEOUT:-}" ]]; then
+            migration_timeout="${CONDUIT_MIGRATION_TIMEOUT}"
+        fi
+        local ready_signalled=false
 
-        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Waiting for all ${expected_databases} database migrations to complete..."
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Waiting for server to be Ready For Requests (all database migrations complete)..."
         while true; do
-            if [[ $((SECONDS - migration_start_time)) -ge 300 ]]; then  # MIGRATION_TIMEOUT
-                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Migration wait timeout - proceeding with conduit tests (${completed_databases}/${expected_databases} databases ready)"
+            if [[ $((SECONDS - migration_start_time)) -ge ${migration_timeout} ]]; then
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Readiness wait timeout after ${migration_timeout}s - proceeding with conduit tests"
                 break
             fi
 
-            # Count completed migrations for each database
-            local current_completed=0
-            for db_name in "${DATABASE_NAMES[@]}"; do
-                # Check for individual database migration completion
-                if "${GREP}" -q "${db_name}.*Migration completed in" "${log_file}" 2>/dev/null; then
-                    current_completed=$(( current_completed + 1 ))
-                elif "${GREP}" -q "${db_name}.*Migration process completed.*QTC populated from bootstrap queries" "${log_file}" 2>/dev/null; then
-                    current_completed=$(( current_completed + 1 ))
-                fi
-            done
-
-            # Update completed count if it increased
-            if [[ ${current_completed} -gt ${completed_databases} ]]; then
-                completed_databases=${current_completed}
-                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Migration progress: ${completed_databases}/${expected_databases} databases completed"
-            fi
-
-            # Check if all databases have completed migration
-            if [[ ${completed_databases} -ge ${expected_databases} ]]; then
-                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "All ${expected_databases} database migrations completed - proceeding with conduit tests"
-                break
-            fi
-
-            # Also check if no migration was needed (when migrations are already up to date)
-            if "${GREP}" -q "Migration Current:" "${log_file}" 2>/dev/null; then
-                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Migrations already current - proceeding with conduit tests"
+            if "${GREP}" -q "READY FOR REQUESTS" "${log_file}" 2>/dev/null; then
+                ready_signalled=true
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Server signalled READY FOR REQUESTS - proceeding with conduit tests"
                 break
             fi
 
             sleep 0.1
         done
 
-        # Wait a bit for server to be fully ready after migrations
-        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Waiting for webserver to be fully ready..."
-        sleep 1
-
-        # Check which databases are ready for testing
+        # Check which databases are ready for testing (per-database flags are still needed
+        # so cross-database tests can skip engines that failed to come up).
         check_database_readiness "${log_file}" "${result_file}"
 
-        # Wait for webserver to be ready for HTTP requests
-        # Support override for slow starts (ASAN debug builds + multi-DB configs).
-        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Waiting for webserver to be ready for HTTP requests..."
+        # Confirm the webserver is serving requests by polling the authoritative readiness
+        # endpoint. It returns HTTP 200 only once the server is Ready For Requests, and 503
+        # while still starting. Support override for slow starts (ASAN debug builds + multi-DB).
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Confirming webserver readiness via /api/system/readiness..."
         local server_ready=false
         local server_ready_start=${SECONDS}
         local webserver_ready_timeout=120
@@ -587,16 +602,19 @@ run_conduit_server() {
                 break
             fi
             local http_code
-            http_code=$(curl -s -w "%{http_code}" -o /dev/null --max-time 5 "${base_url}/api/version" 2>/dev/null)
+            http_code=$(curl -s -w "%{http_code}" -o /dev/null --max-time 5 "${base_url}/api/system/readiness" 2>/dev/null)
             if [[ "${http_code}" == "200" ]]; then
                 server_ready=true
-                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Webserver is ready for HTTP requests"
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Webserver is ready for HTTP requests (readiness endpoint returned 200)"
                 break
             fi
             sleep 0.1
         done
 
         if [[ "${server_ready}" = false ]]; then
+            if [[ "${ready_signalled}" = true ]]; then
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "READY FOR REQUESTS was logged but readiness endpoint did not return 200"
+            fi
             echo "STARTUP_FAILED" >> "${result_file}"
             kill -9 "${hydrogen_pid}" 2>/dev/null || true
             echo "FAILED:0"

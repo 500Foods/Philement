@@ -164,5 +164,6 @@ extern size_t registry_failed;
 extern volatile sig_atomic_t server_starting;
 extern volatile sig_atomic_t server_stopping;
 extern volatile sig_atomic_t server_running;
+extern volatile sig_atomic_t server_ready;
 
 #endif /* HYDROGEN_H */

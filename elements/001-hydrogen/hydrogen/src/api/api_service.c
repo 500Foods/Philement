@@ -188,6 +188,7 @@ bool register_api_endpoints(void) {
 #endif
         log_this(SR_API, "― %s/system/info", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/system/health", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
+        log_this(SR_API, "― %s/system/readiness", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/system/test", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/system/version", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/system/config", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
@@ -522,6 +523,25 @@ enum MHD_Result handle_api_request(struct MHD_Connection *connection,
     }
 
     // ========================================================================
+    // READINESS GATE
+    // Until the server is Ready For Requests (all databases/migrations complete),
+    // reject database-backed Conduit endpoints with HTTP 503 so callers (and any
+    // ingress that does not consult the readiness probe) do not hit a half-ready
+    // backend. Probe/health/version/auth and other non-conduit endpoints are not
+    // gated so liveness and readiness checks continue to work during startup.
+    // ========================================================================
+    if (server_ready == 0 && strncmp(path, "conduit/", 8) == 0) {
+        log_this(SR_API, "Readiness gate: rejecting %s with 503 (server not ready)",
+                 LOG_LEVEL_DEBUG, 1, path);
+        json_t *not_ready = json_object();
+        json_object_set_new(not_ready, "success", json_false());
+        json_object_set_new(not_ready, "error", json_string("Service Unavailable"));
+        json_object_set_new(not_ready, "message",
+                            json_string("Server is starting; databases/migrations are not yet complete"));
+        return api_send_json_response(connection, not_ready, MHD_HTTP_SERVICE_UNAVAILABLE);
+    }
+
+    // ========================================================================
     // JWT AUTHENTICATION MIDDLEWARE
     // On the FIRST callback (*con_cls == NULL), perform early JWT validation
     // for protected endpoints. This rejects unauthorized requests BEFORE any
@@ -654,6 +674,9 @@ enum MHD_Result handle_api_request(struct MHD_Connection *connection,
     }
     else if (strcmp(path, "system/health") == 0) {
         return handle_system_health_request(connection);
+    }
+    else if (strcmp(path, "system/readiness") == 0) {
+        return handle_system_readiness_request(connection);
     }
     else if (strcmp(path, "system/test") == 0) {
         return handle_system_test_request(connection, method, upload_data,

@@ -363,7 +363,7 @@ int launch_websocket_subsystem(void) {
     struct timespec wait_time = {0, 100000000}; // 100ms intervals
     int max_tries = 100; // 10 seconds total
     int tries = 0;
-    bool server_ready = false;
+    bool daemon_ready = false;
 
     while (tries < max_tries) {
         nanosleep(&wait_time, NULL);
@@ -402,7 +402,7 @@ int launch_websocket_subsystem(void) {
                 freeifaddrs(ifaddr);
             }
             
-            server_ready = true;
+            daemon_ready = true;
             break;
         }
         tries++;
@@ -412,7 +412,7 @@ int launch_websocket_subsystem(void) {
         }
     }
 
-    if (!server_ready) {
+    if (!daemon_ready) {
         log_this(SR_WEBSOCKET, "Websocket server failed to start within timeout", LOG_LEVEL_ERROR, 0);
         stop_websocket_server();
         cleanup_websocket_server();

@@ -138,8 +138,8 @@ enum MHD_Result handle_conduit_status_request(
         json_object_set_new(error_response, "error", json_string("Method not allowed"));
         json_object_set_new(error_response, "message", json_string("Only GET requests are supported"));
 
+        // api_send_json_response takes ownership of error_response and decrefs it.
         api_send_json_response(connection, error_response, MHD_HTTP_METHOD_NOT_ALLOWED);
-        json_decref(error_response);
         return MHD_NO;
     }
 
@@ -150,8 +150,8 @@ enum MHD_Result handle_conduit_status_request(
         json_object_set_new(error_response, "error", json_string("Database manager not available"));
         json_object_set_new(error_response, "details", json_string("Global queue manager is not initialized"));
 
+        // api_send_json_response takes ownership of error_response and decrefs it.
         api_send_json_response(connection, error_response, MHD_HTTP_INTERNAL_SERVER_ERROR);
-        json_decref(error_response);
         return MHD_NO;
     }
 
@@ -266,8 +266,9 @@ enum MHD_Result handle_conduit_status_request(
 
     json_object_set_new(response, "databases", databases);
 
+    // api_send_json_response takes ownership of response and decrefs it internally.
+    // Do NOT decref it again here or we get a heap-use-after-free.
     enum MHD_Result result = api_send_json_response(connection, response, MHD_HTTP_OK);
-    json_decref(response);
 
     log_this(SR_API, "handle_conduit_status_request: Status request completed (authenticated: %s)", LOG_LEVEL_DEBUG, 1, has_jwt ? "yes" : "no");
 

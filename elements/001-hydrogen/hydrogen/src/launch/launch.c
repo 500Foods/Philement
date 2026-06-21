@@ -543,6 +543,28 @@ int startup_hydrogen(const char* config_path) {
         log_this(SR_STARTUP, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
 
     log_group_end();
- 
+
+    // Readiness signal:
+    // When databases are configured, "READY FOR REQUESTS" is emitted asynchronously by
+    // the last Lead DQM to finish its conductor sequence (see process.c). When NO databases
+    // are enabled there is nothing to wait for, so declare readiness here so deployments
+    // without databases (and their K8s readiness probes) still go Ready.
+    {
+        DatabaseReadiness readiness;
+        database_get_readiness(&readiness);
+        if (readiness.expected == 0) {
+            if (__sync_bool_compare_and_swap(&server_ready, 0, 1)) {
+                __sync_synchronize();
+                log_this(SR_STARTUP, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
+                log_this(SR_STARTUP, "READY FOR REQUESTS", LOG_LEVEL_STATE, 0);
+                log_this(SR_STARTUP, "― Databases ready:       %d/%d", LOG_LEVEL_STATE, 2, 0, 0);
+                log_this(SR_STARTUP, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
+            }
+        } else if (readiness.all_ready) {
+            // Edge case: all databases already finished before this point.
+            database_signal_ready_if_complete();
+        }
+    }
+
     return 1;
 }

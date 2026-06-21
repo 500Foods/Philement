@@ -303,3 +303,112 @@ void database_get_queue_counts_by_type(int* lead_count, int* slow_count, int* me
 
     mutex_unlock(&global_queue_manager->manager_lock);
 }
+
+/*
+ * Fill a readiness snapshot describing each database's Lead DQM completion state.
+ *
+ * A database is considered "ready" (started) once its Lead DQM has completed the
+ * full conductor sequence (connect -> bootstrap -> migration -> additional queues),
+ * tracked by conductor_sequence_completed. The snapshot also reports the configured
+ * (enabled) database count so callers can determine when ALL expected databases are done.
+ *
+ * Returns true only when every enabled database is ready (started >= expected and expected > 0).
+ */
+bool database_get_readiness(DatabaseReadiness* readiness) {
+    if (!readiness) {
+        return false;
+    }
+
+    // Initialize snapshot
+    memset(readiness, 0, sizeof(*readiness));
+
+    // Expected count comes from configuration (number of enabled connections)
+    int expected = 0;
+    if (app_config) {
+        const DatabaseConfig* db_config = &app_config->databases;
+        for (int i = 0; i < db_config->connection_count; i++) {
+            if (db_config->connections[i].enabled) {
+                expected = expected + 1;
+            }
+        }
+    }
+    readiness->expected = expected;
+
+    if (!global_queue_manager) {
+        // No manager yet: nothing has started
+        readiness->all_ready = false;
+        return false;
+    }
+
+    MutexResult lock_result = MUTEX_LOCK(&global_queue_manager->manager_lock, SR_DATABASE);
+    if (lock_result != MUTEX_SUCCESS) {
+        readiness->all_ready = false;
+        return false;
+    }
+
+    int started = 0;
+    for (size_t i = 0; i < global_queue_manager->database_count; i++) {
+        const DatabaseQueue* db_queue = global_queue_manager->databases[i];
+        if (!db_queue || !db_queue->is_lead_queue) {
+            continue;
+        }
+
+        if (readiness->count < DATABASE_READINESS_MAX) {
+            DatabaseReadinessEntry* entry = &readiness->entries[readiness->count];
+            if (db_queue->database_name) {
+                snprintf(entry->name, sizeof(entry->name), "%s", db_queue->database_name);
+            } else {
+                snprintf(entry->name, sizeof(entry->name), "Unknown");
+            }
+            entry->ready = db_queue->conductor_sequence_completed;
+            readiness->count = readiness->count + 1;
+        }
+
+        if (db_queue->conductor_sequence_completed) {
+            started = started + 1;
+        }
+    }
+
+    mutex_unlock(&global_queue_manager->manager_lock);
+
+    readiness->started = started;
+    // All ready only when there is at least one expected database and every one has started.
+    readiness->all_ready = (expected > 0 && started >= expected);
+
+    return readiness->all_ready;
+}
+
+/*
+ * Convenience wrapper that returns true only when all enabled databases are ready.
+ */
+bool database_all_leads_ready(void) {
+    DatabaseReadiness readiness;
+    return database_get_readiness(&readiness);
+}
+
+/*
+ * Evaluate overall readiness and emit the canonical "READY FOR REQUESTS" signal once.
+ *
+ * The global server_ready flag is flipped 0 -> 1 atomically so that, even when several
+ * Lead DQM threads complete concurrently, exactly one of them logs the terminal signal.
+ */
+bool database_signal_ready_if_complete(void) {
+    DatabaseReadiness readiness;
+    bool all_ready = database_get_readiness(&readiness);
+
+    if (!all_ready) {
+        return false;
+    }
+
+    // Only the thread that wins the 0 -> 1 transition logs the signal.
+    if (__sync_bool_compare_and_swap(&server_ready, 0, 1)) {
+        __sync_synchronize();
+        log_this(SR_STARTUP, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
+        log_this(SR_STARTUP, "READY FOR REQUESTS", LOG_LEVEL_STATE, 0);
+        log_this(SR_STARTUP, "― Databases ready:       %d/%d", LOG_LEVEL_STATE, 2,
+                 readiness.started, readiness.expected);
+        log_this(SR_STARTUP, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
+    }
+
+    return true;
+}

@@ -187,9 +187,29 @@ Incomplete items:
 
 - [ ] Run full test suite and capture coverage
 - [ ] Add integration-level tests for end-to-end flows
-- [ ] Cross-check `LITHIUM-TOC.md`
+ - [ ] Cross-check `LITHIUM-TOC.md`
 - [ ] Update `LITHIUM-FAQ.md` with refactor summary
 - [ ] Move plan to `Plans-Complete/`
+
+---
+
+## Priority 4 — Unity ASAN Test Variant (Not Started)
+
+### Unity ASAN Plan — Memory-safety gate over the Unity suite
+
+**Status:** Not started
+**Document:** [`/docs/H/plans/UNITY_ASAN_PLAN.md`](/docs/H/plans/UNITY_ASAN_PLAN.md)
+
+Add a separate `unity_asan` build variant (parallel `build/unity_asan/` tree, `-fsanitize=address`, no gcov) plus a new test that runs the Unity suite under ASAN with `detect_leaks=0` to catch use-after-free / double-free / heap-buffer-overflow on unit-testable code that no blackbox test can reach (e.g. wschat chat handlers, malloc-failure branches, pure string/buffer helpers). Prompted by the `api_send_json_response()` double-free class fixed in the conduit/wschat handlers.
+
+Phases:
+
+- [ ] Phase 1 — `unity_asan` CMake variant (separate object tree, gcov untouched)
+- [ ] Phase 2 — ASAN test harness (new test script; grep logs for AddressSanitizer)
+- [ ] Phase 3 — Triage first run for real UAF/double-free/overflow bugs
+- [ ] Phase 4 (optional, later) — Fixture-leak cleanup then `detect_leaks=1` gate
+
+**Note:** Intentionally NOT a full leak gate (Tests 11/41 already cover leaks at the integration level). Do NOT add ASAN to the existing gcov Unity build — it corrupts coverage reconciliation.
 
 ---
 
@@ -205,6 +225,7 @@ Incomplete items:
 | Database Subsystem | 6 phases | 2 | - | 4 (3-6) |
 | Terminal Subsystem | 6 phases | 6 | - | - |
 | Mirage Proxy Network | 1 | 0 | - | 1 (implementation deferred) |
+| Unity ASAN | 4 phases | 0 | - | 4 (1-4 not started) |
 
 **Legend:**
 

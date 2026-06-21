@@ -476,8 +476,9 @@ enum MHD_Result handle_conduit_alt_query_request(
         }
     }
 
+    // api_send_json_response takes ownership of response and decrefs it internally.
+    // Do NOT decref it again here or we get a heap-use-after-free.
     enum MHD_Result http_result = api_send_json_response(connection, response, http_status);
-    json_decref(response);
 
     // Clean up
     cleanup_alt_query_resources(database, query_id, param_list, converted_sql, ordered_params, param_count, message);

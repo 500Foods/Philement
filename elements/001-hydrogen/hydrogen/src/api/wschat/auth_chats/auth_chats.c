@@ -62,7 +62,7 @@ enum MHD_Result handle_auth_chats_request(struct MHD_Connection *connection,
         json_object_set_new(error, "success", json_false());
         json_object_set_new(error, "error", json_string("Method not allowed - use POST"));
         enum MHD_Result ret = api_send_json_response(connection, error, MHD_HTTP_METHOD_NOT_ALLOWED);
-        json_decref(error);
+        // api_send_json_response takes ownership and decrefs internally
         return ret;
     }
 
@@ -77,7 +77,7 @@ enum MHD_Result handle_auth_chats_request(struct MHD_Connection *connection,
         json_object_set_new(error, "success", json_false());
         json_object_set_new(error, "error", json_string(error_msg));
         enum MHD_Result ret = api_send_json_response(connection, error, MHD_HTTP_UNAUTHORIZED);
-        json_decref(error);
+        // api_send_json_response takes ownership and decrefs internally
         free_jwt_validation_result(&jwt_result);
         return ret;
     }
@@ -97,7 +97,7 @@ enum MHD_Result handle_auth_chats_request(struct MHD_Connection *connection,
         json_object_set_new(error, "success", json_false());
         json_object_set_new(error, "error", json_string("Token missing database claim"));
         enum MHD_Result ret = api_send_json_response(connection, error, MHD_HTTP_FORBIDDEN);
-        json_decref(error);
+        // api_send_json_response takes ownership and decrefs internally
         free_jwt_validation_result(&jwt_result);
         return ret;
     }
@@ -113,7 +113,7 @@ enum MHD_Result handle_auth_chats_request(struct MHD_Connection *connection,
         json_object_set_new(error, "success", json_false());
         json_object_set_new(error, "error", json_string("Invalid JSON in request body"));
         enum MHD_Result ret = api_send_json_response(connection, error, MHD_HTTP_BAD_REQUEST);
-        json_decref(error);
+        // api_send_json_response takes ownership and decrefs internally
         return ret;
     }
 
@@ -126,7 +126,7 @@ enum MHD_Result handle_auth_chats_request(struct MHD_Connection *connection,
         json_object_set_new(error, "success", json_false());
         json_object_set_new(error, "error", json_string("Missing or invalid 'engines' array"));
         enum MHD_Result ret = api_send_json_response(connection, error, MHD_HTTP_BAD_REQUEST);
-        json_decref(error);
+        // api_send_json_response takes ownership and decrefs internally
         return ret;
     }
 
@@ -138,7 +138,7 @@ enum MHD_Result handle_auth_chats_request(struct MHD_Connection *connection,
         json_object_set_new(error, "success", json_false());
         json_object_set_new(error, "error", json_string("Engines array must contain 1-10 engine names"));
         enum MHD_Result ret = api_send_json_response(connection, error, MHD_HTTP_BAD_REQUEST);
-        json_decref(error);
+        // api_send_json_response takes ownership and decrefs internally
         return ret;
     }
 
@@ -151,7 +151,7 @@ enum MHD_Result handle_auth_chats_request(struct MHD_Connection *connection,
         json_object_set_new(error, "success", json_false());
         json_object_set_new(error, "error", json_string("Missing or invalid 'messages' array"));
         enum MHD_Result ret = api_send_json_response(connection, error, MHD_HTTP_BAD_REQUEST);
-        json_decref(error);
+        // api_send_json_response takes ownership and decrefs internally
         return ret;
     }
 
@@ -164,7 +164,7 @@ enum MHD_Result handle_auth_chats_request(struct MHD_Connection *connection,
         json_object_set_new(error, "success", json_false());
         json_object_set_new(error, "error", json_string("Database not found"));
         enum MHD_Result ret = api_send_json_response(connection, error, MHD_HTTP_BAD_REQUEST);
-        json_decref(error);
+        // api_send_json_response takes ownership and decrefs internally
         return ret;
     }
 
@@ -177,7 +177,7 @@ enum MHD_Result handle_auth_chats_request(struct MHD_Connection *connection,
         json_object_set_new(error, "success", json_false());
         json_object_set_new(error, "error", json_string("Chat not enabled for this database"));
         enum MHD_Result ret = api_send_json_response(connection, error, MHD_HTTP_SERVICE_UNAVAILABLE);
-        json_decref(error);
+        // api_send_json_response takes ownership and decrefs internally
         return ret;
     }
 
@@ -190,7 +190,7 @@ enum MHD_Result handle_auth_chats_request(struct MHD_Connection *connection,
         json_object_set_new(error, "success", json_false());
         json_object_set_new(error, "error", json_string("Failed to allocate request array"));
         enum MHD_Result ret = api_send_json_response(connection, error, MHD_HTTP_INTERNAL_SERVER_ERROR);
-        json_decref(error);
+        // api_send_json_response takes ownership and decrefs internally
         return ret;
     }
 
@@ -286,7 +286,7 @@ enum MHD_Result handle_auth_chats_request(struct MHD_Connection *connection,
         json_object_set_new(error, "success", json_false());
         json_object_set_new(error, "error", json_string("No valid or healthy engines found"));
         enum MHD_Result ret = api_send_json_response(connection, error, MHD_HTTP_BAD_REQUEST);
-        json_decref(error);
+        // api_send_json_response takes ownership and decrefs internally
         return ret;
     }
 
@@ -309,7 +309,7 @@ enum MHD_Result handle_auth_chats_request(struct MHD_Connection *connection,
         json_object_set_new(error, "success", json_false());
         json_object_set_new(error, "error", json_string("Failed to allocate engine names array"));
         enum MHD_Result ret = api_send_json_response(connection, error, MHD_HTTP_INTERNAL_SERVER_ERROR);
-        json_decref(error);
+        // api_send_json_response takes ownership and decrefs internally
         return ret;
     }
     for (size_t i = 0; i < valid_requests; i++) {
@@ -410,6 +410,6 @@ enum MHD_Result handle_auth_chats_request(struct MHD_Connection *connection,
     json_decref(request_json);
 
     enum MHD_Result ret = api_send_json_response(connection, response, MHD_HTTP_OK);
-    json_decref(response);
+    // api_send_json_response takes ownership and decrefs internally
     return ret;
 }

@@ -53,7 +53,7 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
         api_free_post_buffer(con_cls);
         json_t *error = auth_chat_build_error_response("Method not allowed - use POST");
         enum MHD_Result ret = api_send_json_response(connection, error, MHD_HTTP_METHOD_NOT_ALLOWED);
-        json_decref(error);
+        // api_send_json_response takes ownership and decrefs internally
         return ret;
     }
 
@@ -66,7 +66,7 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
         const char *error_msg = jwt_result.claims ? "Invalid token" : "Authentication required";
         json_t *error = auth_chat_build_error_response(error_msg);
         enum MHD_Result ret = api_send_json_response(connection, error, MHD_HTTP_UNAUTHORIZED);
-        json_decref(error);
+        // api_send_json_response takes ownership and decrefs internally
         free_jwt_validation_result(&jwt_result);
         return ret;
     }
@@ -84,7 +84,7 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
         api_free_post_buffer(con_cls);
         json_t *error = auth_chat_build_error_response("Token missing database claim");
         enum MHD_Result ret = api_send_json_response(connection, error, MHD_HTTP_FORBIDDEN);
-        json_decref(error);
+        // api_send_json_response takes ownership and decrefs internally
         free_jwt_validation_result(&jwt_result);
         return ret;
     }
@@ -98,7 +98,7 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
         free_jwt_validation_result(&jwt_result);
         json_t *error_response = auth_chat_build_error_response("Invalid JSON in request body");
         enum MHD_Result ret = api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
-        json_decref(error_response);
+        // api_send_json_response takes ownership and decrefs internally
         return ret;
     }
 
@@ -125,7 +125,7 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
         json_t *error_response = auth_chat_build_error_response(error_message ? error_message : "Invalid request");
         free(error_message);
         enum MHD_Result ret = api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
-        json_decref(error_response);
+        // api_send_json_response takes ownership and decrefs internally
         return ret;
     }
 
@@ -137,7 +137,7 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
         chat_context_free_hash_array(context_hashes, context_hash_count);
         json_t *error_response = auth_chat_build_error_response("Streaming not yet implemented");
         enum MHD_Result ret = api_send_json_response(connection, error_response, MHD_HTTP_NOT_IMPLEMENTED);
-        json_decref(error_response);
+        // api_send_json_response takes ownership and decrefs internally
         return ret;
     }
 
@@ -150,7 +150,7 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
         chat_context_free_hash_array(context_hashes, context_hash_count);
         json_t *error_response = auth_chat_build_error_response("Database not found");
         enum MHD_Result ret = api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
-        json_decref(error_response);
+        // api_send_json_response takes ownership and decrefs internally
         return ret;
     }
 
@@ -163,7 +163,7 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
         chat_context_free_hash_array(context_hashes, context_hash_count);
         json_t *error_response = auth_chat_build_error_response("Chat not enabled for this database");
         enum MHD_Result ret = api_send_json_response(connection, error_response, MHD_HTTP_SERVICE_UNAVAILABLE);
-        json_decref(error_response);
+        // api_send_json_response takes ownership and decrefs internally
         return ret;
     }
 
@@ -182,7 +182,7 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
         chat_context_free_hash_array(context_hashes, context_hash_count);
         json_t *error_response = auth_chat_build_error_response(engine_name ? "Engine not found" : "No default engine configured");
         enum MHD_Result ret = api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
-        json_decref(error_response);
+        // api_send_json_response takes ownership and decrefs internally
         return ret;
     }
 
@@ -194,7 +194,7 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
         chat_context_free_hash_array(context_hashes, context_hash_count);
         json_t *error_response = auth_chat_build_error_response("Engine is currently unavailable");
         enum MHD_Result ret = api_send_json_response(connection, error_response, MHD_HTTP_SERVICE_UNAVAILABLE);
-        json_decref(error_response);
+        // api_send_json_response takes ownership and decrefs internally
         return ret;
     }
 
@@ -278,7 +278,7 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
         json_decref(request_json);
         json_t *error_response = auth_chat_build_error_response("Failed to build request");
         enum MHD_Result ret = api_send_json_response(connection, error_response, MHD_HTTP_INTERNAL_SERVER_ERROR);
-        json_decref(error_response);
+        // api_send_json_response takes ownership and decrefs internally
         return ret;
     }
 
@@ -295,7 +295,7 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
                  request_size, engine->max_payload_mb);
         json_t *error_response = auth_chat_build_error_response(error_buf);
         enum MHD_Result ret = api_send_json_response(connection, error_response, MHD_HTTP_REQUEST_ENTITY_TOO_LARGE);
-        json_decref(error_response);
+        // api_send_json_response takes ownership and decrefs internally
         return ret;
     }
 
@@ -334,7 +334,7 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
         json_t *error_response = auth_chat_build_error_response(error_msg);
         chat_proxy_result_destroy(proxy_result);
         enum MHD_Result ret = api_send_json_response(connection, error_response, MHD_HTTP_BAD_GATEWAY);
-        json_decref(error_response);
+        // api_send_json_response takes ownership and decrefs internally
         return ret;
     }
 
@@ -351,7 +351,7 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
         chat_parsed_response_destroy(parsed);
         chat_proxy_result_destroy(proxy_result);
         enum MHD_Result ret = api_send_json_response(connection, error_response, MHD_HTTP_BAD_GATEWAY);
-        json_decref(error_response);
+        // api_send_json_response takes ownership and decrefs internally
         return ret;
     }
 
@@ -388,7 +388,7 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
         chat_proxy_result_destroy(proxy_result);
         json_t *error_response = auth_chat_build_error_response("Memory allocation failed");
         enum MHD_Result ret = api_send_json_response(connection, error_response, MHD_HTTP_INTERNAL_SERVER_ERROR);
-        json_decref(error_response);
+        // api_send_json_response takes ownership and decrefs internally
         return ret;
     }
 
@@ -529,7 +529,7 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
     chat_proxy_result_destroy(proxy_result);
 
     enum MHD_Result ret = api_send_json_response(connection, response, MHD_HTTP_OK);
-    json_decref(response);
+    // api_send_json_response takes ownership and decrefs internally
     return ret;
 }
 

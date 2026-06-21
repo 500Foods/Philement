@@ -91,6 +91,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [DATABASE_PLAN.md](/docs/H/plans/DATABASE_PLAN.md): Implementation plan for Database feature
 - [TERMINAL_PLAN.md](/docs/H/plans/TERMINAL_PLAN.md): Implementation plan for Terminal feature
 - [OIDC_E2E_LOG.md](/docs/H/plans/OIDC_E2E_LOG.md): OIDC end-to-end manual test log (Phase 27)
+- [UNITY_ASAN_PLAN.md](/docs/H/plans/UNITY_ASAN_PLAN.md): Plan for a separate ASAN Unity test variant (memory-safety gate)
 
 ### Folder: /docs/reference
 
