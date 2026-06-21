@@ -112,7 +112,7 @@ int main(void) {
     RUN_TEST(test_execute_single_alt_query_null_query_obj);
     RUN_TEST(test_execute_single_alt_query_missing_query_ref);
     RUN_TEST(test_execute_single_alt_query_invalid_query_ref_type);
-    // RUN_TEST(test_execute_single_alt_query_with_params);  // SKIPPED - requires full database queue setup
+    if (0) RUN_TEST(test_execute_single_alt_query_with_params);  // SKIPPED - requires full database queue setup
 
     return UNITY_END();
 }

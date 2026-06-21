@@ -261,3 +261,58 @@ Confirms GET on `/handoff` returns 405 even when OIDC is enabled.
 - [oidc_rp_helpers_default.md](/docs/H/tests/oidc_rp_helpers_default.md) - Phase 21 default strategy
 - [oidc_rp_helpers_roles.md](/docs/H/tests/oidc_rp_helpers_roles.md) - Phase 22 role mapping
 - [OIDC RP Implementation Plan](/docs/H/plans/AUTH_PLAN.md)
+
+## Script comments
+
+This was taken from the script and placed here for reference
+
+```bash
+# OIDC RP Test Utilities Library
+# Provides helpers for testing the OIDC Relying Party endpoints in
+# tests/test_42_oidc_rp.sh, including:
+#
+#   - validate_oidc_request:   issue a request and check status + .error
+#   - test_oidc_endpoint_disabled / _method_not_allowed / _unknown_path_404
+#   - start_mock_keycloak / stop_mock_keycloak (Phase 9)
+#   - test_mock_keycloak_*:     reachability, discovery, JWKS, token,
+#                               id_token shape (Phases 9, 11, 12)
+#   - test_oidc_start_*:        Phase 10 redirect builder coverage
+#   - test_oidc_handoff_*:      Phase 13 handoff exchange coverage
+#   - inject_handoff:           helper that POSTs to the debug-only
+#                               /_inject_handoff endpoint (test builds)
+#
+# Extracted from test_42_oidc_rp.sh in Phase 13 to keep that script
+# under the project's 1000-line cap (LITHIUM-INS rule equivalent on
+# the Hydrogen side).
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+# Wait until a freshly-started Hydrogen instance has finished loading its
+# query template cache (QTC) and is ready to dispatch queries. The HTTP
+# server accepts connections before the database queue bootstrap finishes
+# populating the QTC, so OIDC linker queries (#080/#082/#017 etc.) can
+# otherwise race ahead of readiness.
+#
+# Keys off the canonical "READY FOR REQUESTS" signal, which Hydrogen logs
+# exactly once after EVERY enabled database's Lead DQM has completed its
+# full connect -> bootstrap -> migration sequence (see
+# database_signal_ready_if_complete() in src/database/database.c). This is
+# the same signal Test 50/conduit_utils.sh uses. We keep the older
+# "Migration completed in|Migration Current:" strings as a fallback so the
+# helper still works against any build that predates the signal.
+#
+# Each Hydrogen instance TRUNCATES the shared SERVER_LOG on start (see
+# lifecycle.sh: `true > "${log_file}"`), so the signal always lands in the
+# CURRENT log. We therefore grep the whole log directly — NOT
+# `tail -n +<offset>`. The old offset-based loops captured a line number
+# from the PREVIOUS (longer) instance's log, which after truncation pointed
+# past EOF, so they matched nothing and burned the full 30s timeout every
+# time (~30s × 7 instances ≈ the bulk of the historical test runtime).
+#
+# Args:
+#   $1  server_log   path to the shared server log
+#   $2  [timeout]    max seconds to wait (default 30)
+# Returns 0 once the signal is seen, 1 on timeout (caller proceeds anyway).
+```

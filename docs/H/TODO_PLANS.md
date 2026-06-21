@@ -187,7 +187,7 @@ Incomplete items:
 
 - [ ] Run full test suite and capture coverage
 - [ ] Add integration-level tests for end-to-end flows
- - [ ] Cross-check `LITHIUM-TOC.md`
+- [ ] Cross-check `LITHIUM-TOC.md`
 - [ ] Update `LITHIUM-FAQ.md` with refactor summary
 - [ ] Move plan to `Plans-Complete/`
 

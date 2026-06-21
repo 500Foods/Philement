@@ -739,7 +739,7 @@ layout_json_content='{
             "header": "Duration",
             "key": "elapsed",
             "datatype": "float",
-            "width": 10,
+            "width": 11,
             "justification": "right",
             "summary": "sum"
         }
