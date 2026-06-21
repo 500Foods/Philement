@@ -28,7 +28,7 @@
 void test_execute_single_alt_query_null_query_obj(void);
 void test_execute_single_alt_query_missing_query_ref(void);
 void test_execute_single_alt_query_invalid_query_ref_type(void);
-//void test_execute_single_alt_query_with_params(void);  // SKIPPED - requires full database queue setup
+void test_execute_single_alt_query_with_params(void);  // SKIPPED - requires full database queue setup
 
 // Test fixtures
 void setUp(void) {

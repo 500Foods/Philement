@@ -630,7 +630,7 @@ cat > "${layout_json}" << EOF
             "datatype": "float",
             "justification": "right",
             "summary": "",
-            "width": 7
+            "width": 8
         }
     ]
 }
