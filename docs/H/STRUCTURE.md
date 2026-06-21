@@ -25,6 +25,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [PROMPTS.md](/docs/H/PROMPTS.md) - More about prompts
 - [CURIOSITIES.md](/docs/H/CURIOSITIES.md) - More about the project
 - [SETUP.md](/docs/H/SETUP.md) - Installation and setup instructions
+- [DEPLOYMENT.md](/docs/H/DEPLOYMENT.md) - Standalone VPS and Kubernetes/DOKS deployment guide
 - [SECRETS.md](/docs/H/SECRETS.md) - Security configuration guide
 - [SITEMAP.md](/docs/H/SITEMAP.md) - Project navigation and file index
 - [STRUCTURE.md](/docs/H/STRUCTURE.md) - This file - project structure overview

@@ -9,6 +9,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [LICENSE.md](/elements/001-hydrogen/hydrogen/LICENSE.md): Standard MIT License (duplicate)
 - [INSTRUCTIONS.md](/docs/H/INSTRUCTIONS.md): "Recipe For Success" targetting AI models (or humans!) that are working on the project
 - [RELEASES.md](/RELEASES.md): Version history index and instructions
+- [DEPLOYMENT.md](/docs/H/DEPLOYMENT.md): Standalone VPS and Kubernetes/DOKS deployment strategies, health checks, with and without databases
 - [SECRETS.md](/docs/H/SECRETS.md): Outlines how secrets are managed in the project
 - [SETUP.md](/docs/H/SETUP.md): Describes how to setup the dev environment
 - [SITEMAP.md](/docs/H/SITEMAP.md): An index to all the Markdown files in the proejct
