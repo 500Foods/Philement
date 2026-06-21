@@ -1,4 +1,4 @@
- #!/usr/bin/env bash
+#!/usr/bin/env bash
 
 # shellcheck disable=SC2154 # All globals (TEST_NUMBER, TEST_COUNTER, GREP, LOG_PREFIX, TIMESTAMP, MOCK_KC_*, etc.) are set by the test script via framework.sh before sourcing this lib
 # shellcheck disable=SC2034 # EXIT_CODE is set by the test script and re-exported through these helpers
