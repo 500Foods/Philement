@@ -1,4 +1,4 @@
-# Unity Unity Tests
+# Unity Unit Tests
 
 Unity tests provide comprehensive unit testing for individual functions and modules within the Hydrogen codebase. The Unity testing framework enables thorough validation of core logic, edge cases, and boundary conditions at the function level. Of particular note, the testing framework is constructed in such a way as to create individual executable tests that link directly to object files of the project. We're not adding
 any code at all to our release build that has any kind of intsrumentation in it, really. But by linking to our object code directly, we can get coverage information that can be compared between our blackbox and unity tests to give an overall coverage report in great detail.
@@ -17,9 +17,9 @@ Other folders use the same file and folder conventions:
 
 - Unity tests are in tests/unity/src/
 - Unity gcov results are in build/unity/src/
-- Blacbox gcov results are in build/coverage/src/
+- Blackbox gcov results are in build/coverage/src/
 
-gcov files are named <source.c.gcov>
+gcov files are named `<source.c.gcov>`
 
 ## Source Code Organization and Naming Convention
 
@@ -62,6 +62,8 @@ tests/unity/src/
 - `payload_test_validate_payload_key.c` - Tests only the `validate_payload_key()` function
 - `swagger_test_is_swagger_request.c` - Tests only the `is_swagger_request()` function
 - `swagger_test_init_swagger_support.c` - Tests only the `init_swagger_support()` function
+
+**Forward Declaration Rule**: Declare each test function prototype exactly **once**, immediately after the module's forward declarations and before `setUp()`. Some older test files repeat prototypes two or three times — this is harmless but adds noise and should not be copied when writing new tests.
 
 ## Test File Structure
 
@@ -136,6 +138,45 @@ mku payload_test_cleanup
 - **Parallel Building**: Multiple Unity tests can be built simultaneously
 - **Coverage Instrumentation**: All tests include gcov coverage by default
 - **Dependency Management**: Tests are properly linked with required libraries and source objects
+
+## Coverage-Driven Workflow
+
+The most efficient way to improve Unity coverage is to use the `add_coverage.sh` tool in `extras/` before writing any tests. It cross-references the Unity gcov data against the blackbox gcov data and reports only the lines that are uncovered in **both** suites — the lines where a new Unity test will actually move the combined coverage needle.
+
+### Step-by-Step Coverage Improvement Process
+
+```bash
+# 1. Run the full Unity test suite to ensure gcov data is fresh
+mkt
+
+# 2. Identify lines missing from both coverage sets for a specific source file
+cd $HYDROGEN_ROOT
+extras/add_coverage.sh utils/utils_crypto.c
+
+# Output: Lines not covered in both files:
+# --------------------------------------------------
+#   260:        log_this("CRYPTO", "JWK parse failed: invalid JSON", LOG_LEVEL_ALERT, 0);
+#   ...
+```
+
+The tool requires that both gcov files already exist (`build/unity/src/...` and `build/coverage/src/...`). If the Unity gcov file is missing it means no Unity test has been built for that source file yet — all lines are uncovered and you should look at the source file directly.
+
+### Reading the Output
+
+- Lines flagged by `add_coverage.sh` are the highest-priority targets — they are not covered by either the blackbox integration tests or the existing Unity tests.
+- Lines covered by the blackbox tests but not by Unity are lower priority; adding Unity tests for them still improves Unity-only metrics but has no effect on combined coverage.
+- Lines covered by neither suite that live inside third-party library failure paths (e.g., deep OpenSSL allocation failures, `RAND_bytes` returning -1) represent the **irreducible floor**. These require malloc fault injection to reach and are impractical to cover; accept them and move on.
+
+### Recognising the Irreducible Floor
+
+When the remaining uncovered lines all look like:
+
+```c
+log_this("SUBSYSTEM", "some internal library failed", LOG_LEVEL_ALERT, 0);
+return false;   // or return NULL;
+```
+
+...and the failing call is to a third-party function (`HMAC`, `RAND_bytes`, `EVP_MD_CTX_new`, `OSSL_PARAM_BLD_new`, etc.), stop. These are OpenSSL/system internal allocation failure paths that cannot be triggered without patching `malloc` at a precise call depth. They are acceptable uncovered lines; document them in a comment and move on to the next source file.
 
 ## Writing Comprehensive Tests
 
@@ -457,6 +498,64 @@ void test_services_array_processing(void) {
 }
 ```
 
+#### Testing Cryptographic and Signing Functions
+
+Functions that verify cryptographic signatures need a real key pair. Generate one inside the test file using the library's own API rather than embedding hardcoded test vectors (which can become stale or incorrect).
+
+Use a module-level static key pointer that is generated once and freed in `main()` after `UNITY_END()`:
+
+```c
+static EVP_PKEY* g_test_private_key = NULL;
+
+// Helper: generate a 2048-bit RSA key pair (called lazily by tests that need it)
+static void generate_test_keypair(void) {
+    if (g_test_private_key != NULL) return;
+
+    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new_from_name(NULL, "RSA", NULL);
+    if (!ctx) return;
+    if (EVP_PKEY_keygen_init(ctx) <= 0 ||
+        EVP_PKEY_CTX_set_rsa_keygen_bits(ctx, 2048) <= 0 ||
+        EVP_PKEY_keygen(ctx, &g_test_private_key) <= 0) {
+        g_test_private_key = NULL;
+    }
+    EVP_PKEY_CTX_free(ctx);
+}
+
+int main(void) {
+    UNITY_BEGIN();
+    RUN_TEST(test_rs256_verify_valid_signature);
+    // ... other tests ...
+    int result = UNITY_END();
+
+    // Free shared resources after all tests have run
+    if (g_test_private_key) {
+        EVP_PKEY_free(g_test_private_key);
+        g_test_private_key = NULL;
+    }
+    return result;
+}
+```
+
+An RSA key using `EVP_PKEY` serves as both the private key (for signing in tests) and public key (for verification by the function under test) since it contains both components.
+
+#### Skipping Tests When Prerequisites Are Unavailable
+
+Use `TEST_IGNORE_MESSAGE()` when a test requires a resource (like a generated key pair) that could not be set up. This marks the test as ignored rather than failing, which is honest about why the test did not run:
+
+```c
+void test_rs256_verify_valid_signature(void) {
+    generate_test_keypair();
+    if (!g_test_private_key) {
+        TEST_IGNORE_MESSAGE("Could not generate test key pair, skipping test");
+        return;
+    }
+
+    // ... test body ...
+}
+```
+
+This is preferable to `TEST_FAIL_MESSAGE` when the skip reason is an environment constraint rather than a code defect.
+
 #### Coverage Maximization Strategies
 
 1. **Target high-value functions** that provide maximum coverage gain
@@ -717,6 +816,29 @@ The project currently provides the following mock libraries:
 - **Functions**: `malloc`, `free`, `strdup`, `gethostname`
 - **Usage**: Enable with `#define USE_MOCK_SYSTEM` in test files
 
+### Globally Pre-Defined Mocks
+
+The CMake build system passes several `USE_MOCK_*` defines to **every** Unity test compilation unit. Do **not** re-define these in your test files — the compiler will emit a `-Werror` redefinition error.
+
+Mocks that are always active (defined globally in CMakeLists.txt):
+
+- `USE_MOCK_LOGGING` — `log_this` is remapped to `mock_log_this` for all Unity tests
+- `USE_MOCK_LIBMICROHTTPD` — MHD functions mocked globally
+- `USE_MOCK_SYSTEM` — `malloc`/`free`/`strdup`/`gethostname` mocked globally
+
+Because `USE_MOCK_LOGGING` is always active, you never need to `#include <unity/mocks/mock_logging.h>` or call `mock_logging_reset_all()` just to silence log output — logging is already redirected. Include the mock header only if you need to **inspect** what was logged (e.g., asserting the log message content via `mock_logging_get_last_message()`).
+
+```c
+// ❌ WRONG - causes -Werror redefinition compile failure
+#define USE_MOCK_LOGGING
+#include <unity/mocks/mock_logging.h>
+
+// ✅ CORRECT - already active globally, no action needed
+// log_this() calls in the code under test are silently captured
+```
+
+For mocks that are **not** globally pre-defined, the normal `#define USE_MOCK_X` / `#include` pattern applies.
+
 ### How to Use Mocks in Test Files
 
 #### Basic Setup Pattern
@@ -727,8 +849,9 @@ The project currently provides the following mock libraries:
 #include <unity.h>
 
 // Enable mocks BEFORE including source headers
+// NOTE: USE_MOCK_LOGGING, USE_MOCK_LIBMICROHTTPD, USE_MOCK_SYSTEM are
+// already defined globally by CMake - do not redefine them here.
 #define USE_MOCK_NETWORK
-#define USE_MOCK_SYSTEM
 #include <unity/mocks/mock_network.h>
 #include <unity/mocks/mock_system.h>
 
