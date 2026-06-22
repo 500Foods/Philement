@@ -226,6 +226,7 @@ Phases:
 | Terminal Subsystem | 6 phases | 6 | - | - |
 | Mirage Proxy Network | 1 | 0 | - | 1 (implementation deferred) |
 | Unity ASAN | 4 phases | 0 | - | 4 (1-4 not started) |
+| Cap / cap_query (Hydrogen Phase 2) | Phase 2 | 2.0 pre-work | - | See CAP_PLAN.md + detailed gates in docs/H/plans/CAP_PLAN_QUERY.md |
 
 **Legend:**
 
@@ -245,3 +246,12 @@ Per [`TERMINAL_PLAN.md`](/docs/H/plans/TERMINAL_PLAN.md), all phases are marked 
 ### Mirage Plan
 
 Per [`MIRAGE_PLAN.md`](/docs/H/plans/MIRAGE_PLAN.md), this is an architecture design document for a distributed proxy network. It describes the dual-server architecture (Mirage server + Remote server) but has no implementation phases defined. Implementation is deferred.
+
+### Cap / cap_query Plan
+
+The actionable work for phase 2 (Hydrogen side: config checks, verify helper, endpoint, protected-type lookup and guards, fallback, tests, docs) lives in:
+
+- High-level coordination view: /mnt/extra/Projects/CAP_PLAN.md Phase 2 section.
+- Gated item-by-item plan: [`/docs/H/plans/CAP_PLAN_QUERY.md`](/docs/H/plans/CAP_PLAN_QUERY.md).
+
+Cap is **not yet in the above status table** because the first real gates begin when implementation starts. Mark items complete in CAP_PLAN_QUERY.md as gates are passed; keep CAP_PLAN.md as the short external coordination summary.
