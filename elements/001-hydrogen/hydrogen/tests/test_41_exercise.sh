@@ -24,6 +24,38 @@
 # run_auth_request()
 
 # CHANGELOG
+# 3.9.0 - 2026-06-22 - Stop hand-rolling output in the native run:
+#                     - Removed the bespoke per-100-request progress block (ETA/rate timing and the
+#                       separate test_41_progress.log side-channel). That custom code was the only
+#                       structural difference from the (clean) first exercise loop and was the source
+#                       of the stray "INFO1"/"PASS1" / leading-digit artifacts on the native lines.
+#                     - Periodic native snapshots are now emitted with print_output (DATA), the standard
+#                       harness idiom for dumping captured data values, instead of a custom print_message.
+#                     - Dropped NATIVE_PROGRESS_LOG / NATIVE_PROGRESS_INTERVAL (and their test_03 whitelist
+#                       entries). Per-snapshot metrics are still written to the native metrics log file.
+# 3.8.0 - 2026-06-22 - Harness-norms + presentation:
+#                     - The long native (hydrogen_release) RSS run is now a single proper subtest
+#                       ("Native RSS Measurement (5000 requests)"): one TEST header, INFO progress
+#                       lines, and exactly one terminal PASS/FAIL per code path. Previously it
+#                       emitted bare INFO/PASS calls hanging off the prior subtest counter.
+#                     - Native server shutdown moved before the steady-state verdict so the PASS/FAIL
+#                       is the last line of the subtest.
+#                     - Footer growth title now colorized via {BLUE}...{RESET} to match tests 30/60/99,
+#                       e.g. "Exercise  Growth: 1,512 B/req".
+#                     - Requires framework.sh >= 3.1.0 / log_output.sh >= 4.3.0 which widen the elapsed
+#                       column to 4-digit seconds so the collected-output sort stays aligned past 999.999s
+#                       (this test is ~20m). (Note: that overflow was a separate latent issue; it was not
+#                       the cause of the native-line artifacts addressed in 3.9.0.)
+# 3.7.0 - 2026-06-22 - Reliability + reporting fixes:
+#                     - scrape_metrics() now retries (SCRAPE_MAX_ATTEMPTS, SCRAPE_CURL_TIMEOUT, SCRAPE_RETRY_DELAY)
+#                       and only accepts a response containing hydrogen_ metrics. Under ASAN the Prometheus
+#                       endpoint could be momentarily unresponsive under heavy auth load, causing every snapshot
+#                       and the final scrape to return "No metrics returned" and fail "Collect Final Metrics".
+#                     - Fixed doubled timestamp in METRICS_LOG/RESULT_FILE/NATIVE_* filenames: LOG_PREFIX already
+#                       embeds ${TIMESTAMP}, so the extra ${TIMESTAMP} produced paths like
+#                       test_41_<ts><ts>_metrics.log. Now uses ${LOG_PREFIX}_... .
+#                     - Footer title now reports the native steady-state growth rate in bytes/request from the
+#                       long 5000-request native run, e.g. "Exercise (Growth: 1,512 B/req)".
 # 3.6.0 - 2026-06-17 - Extended the native (hydrogen_release) RSS measurement run to 5000 iterations (from 500).
 #                     Snapshots now every 500 requests (NATIVE_SNAPSHOT_INTERVAL) during the long run to distinguish
 #                     warmup growth from steady-state or slow accumulation. Uses NATIVE_* constants for the extended
@@ -90,7 +122,7 @@ TEST_NAME="Exercise"
 TEST_ABBR="EXE"
 TEST_NUMBER="41"
 TEST_COUNTER=0
-TEST_VERSION="3.6.0"
+TEST_VERSION="3.9.0"
 
 TOTAL_REQUESTS=500
 SNAPSHOT_INTERVAL=50
@@ -98,11 +130,20 @@ METRICS_DELAY=1  # Seconds to wait before scraping metrics
 MIDPOINT_REQUEST=$(( TOTAL_REQUESTS / 2 ))  # For steady-state leak analysis (first run)
 LEAK_THRESHOLD_KB_PER_REQ=1  # Max KB/request growth in second half before flagging as leak
 
+# Prometheus scrape resilience (see scrape_metrics). Under ASAN the endpoint
+# can momentarily fail to respond while under heavy auth load, so we retry.
+SCRAPE_MAX_ATTEMPTS=5    # Total curl attempts per scrape before giving up
+SCRAPE_CURL_TIMEOUT=15   # Per-attempt curl --max-time (seconds)
+SCRAPE_RETRY_DELAY=2     # Seconds to wait between scrape attempts
+
 # Extended native (non-ASAN) run parameters for memory growth observation
 NATIVE_TOTAL_REQUESTS=5000
 NATIVE_SNAPSHOT_INTERVAL=500
 NATIVE_MIDPOINT_REQUEST=$(( NATIVE_TOTAL_REQUESTS / 2 ))  # Midpoint for native steady-state analysis
-NATIVE_PROGRESS_INTERVAL=100  # Emit progress record every N requests in the long native run
+
+# Captured native steady-state growth (bytes/request) from the long native run.
+# Surfaced in the footer title. Empty until the native analysis computes it.
+NATIVE_STEADY_BYTES_PER_REQ=""
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -277,11 +318,29 @@ PASS_COUNT=$(( PASS_COUNT + 1 ))
 # ── Helper Functions ────────────────────────────────────────────────
 
 # Function to scrape Prometheus metrics from the server
+# Retries a few times because under ASAN (shadow memory + quarantine) the
+# server can be momentarily unresponsive while servicing heavy auth load,
+# producing empty/partial scrapes ("No metrics returned"). We retry with a
+# short backoff and only accept a response that actually contains hydrogen_
+# metrics; on total failure we echo "" so callers can detect the miss.
 scrape_metrics() {
     local prom_url="$1"
-    # Give the server a moment to update its internal stats
+    local attempt response
+    # Give the server a moment to update its internal stats before first try
     sleep "${METRICS_DELAY}"
-    curl -s --max-time 10 "${prom_url}" 2>/dev/null || echo ""
+    for ((attempt=1; attempt<=SCRAPE_MAX_ATTEMPTS; attempt++)); do
+        response=$(curl -s --max-time "${SCRAPE_CURL_TIMEOUT}" "${prom_url}" 2>/dev/null || true)
+        if [[ -n "${response}" ]] && echo "${response}" | "${GREP}" -q "hydrogen_" 2>/dev/null; then
+            echo "${response}"
+            return 0
+        fi
+        # Backoff before the next attempt (skip the wait after the final try)
+        if [[ "${attempt}" -lt "${SCRAPE_MAX_ATTEMPTS}" ]]; then
+            sleep "${SCRAPE_RETRY_DELAY}"
+        fi
+    done
+    # All attempts exhausted without valid hydrogen_ metrics
+    echo ""
 }
 
 # Function to extract a metric value from Prometheus text format
@@ -329,8 +388,10 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Start Hydrogen Server"
 
     EXERCISE_LOG_SUFFIX="exercise"
-    RESULT_FILE="${LOG_PREFIX}${TIMESTAMP}_${EXERCISE_LOG_SUFFIX}.result"
-    METRICS_LOG="${LOG_PREFIX}${TIMESTAMP}_metrics.log"
+    # LOG_PREFIX already embeds the timestamp (test_<n>_<TIMESTAMP>); do NOT append
+    # ${TIMESTAMP} again or the resulting filenames carry a doubled timestamp.
+    RESULT_FILE="${LOG_PREFIX}_${EXERCISE_LOG_SUFFIX}.result"
+    METRICS_LOG="${LOG_PREFIX}_metrics.log"
     # Always define for shellcheck; set dedicated path only when running under ASAN debug build
     ASAN_EXERCISE_LOG=""
     if [[ "${ASAN_MODE}" == true ]]; then
@@ -738,11 +799,17 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     fi
 
     # ── Native Release RSS Measurement ──────────────────────────────
-    # Second identical 500-request auth exercise using hydrogen_release
-    # (non-ASAN). RSS growth numbers here are authoritative for leak
-    # detection because there is no shadow memory / quarantine overhead.
-    # Runs after ASAN shutdown. Separate metrics log for comparison.
-    # Always attempt (diagnostic); previous EXIT_CODE from ASAN leaks does not block data collection.
+    # Long native (non-ASAN) memory-growth run using hydrogen_release.
+    # RSS growth numbers here are authoritative for leak detection because
+    # there is no shadow memory / quarantine overhead. Runs after ASAN
+    # shutdown. Separate metrics log for comparison. Always attempt
+    # (diagnostic); previous EXIT_CODE from ASAN leaks does not block it.
+    #
+    # This is a single subtest following harness norms: one TEST header,
+    # INFO lines for progress/diagnostics, and exactly one terminal
+    # PASS/FAIL per code path.
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Native RSS Measurement (${NATIVE_TOTAL_REQUESTS} requests)"
+
     # Locate a non-ASAN release binary (hydrogen_release preferred)
     RELEASE_BIN=""
     for cand in \
@@ -776,11 +843,10 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Starting native RSS measurement with: ${RELEASE_BIN}"
 
         NATIVE_SUFFIX="exercise_native"
-        NATIVE_RESULT="${LOG_PREFIX}${TIMESTAMP}_${NATIVE_SUFFIX}.result"
-        NATIVE_METRICS="${LOG_PREFIX}${TIMESTAMP}_metrics_native.log"
-        NATIVE_PROGRESS_LOG="${LOGS_DIR}/test_${TEST_NUMBER}_progress.log"
+        # LOG_PREFIX already embeds the timestamp; avoid doubling it.
+        NATIVE_RESULT="${LOG_PREFIX}_${NATIVE_SUFFIX}.result"
+        NATIVE_METRICS="${LOG_PREFIX}_metrics_native.log"
         true > "${NATIVE_METRICS}"
-        true > "${NATIVE_PROGRESS_LOG}"
 
         SAVED_HYDROGEN_BIN="${HYDROGEN_BIN}"
         export HYDROGEN_BIN="${RELEASE_BIN}"
@@ -795,8 +861,8 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         native_info=$(run_conduit_server "${CONFIG_FILE}" "${NATIVE_SUFFIX}" "Exercise-Native" "${NATIVE_RESULT}")
 
         if [[ "${native_info}" == "FAILED:0" ]]; then
-            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Native server startup failed"
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Skipping native RSS data collection"
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Native server startup failed"
         else
             NATIVE_PID=$(echo "${native_info}" | awk -F: '{print $NF}')
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Native server started: ${native_info}"
@@ -816,7 +882,6 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
             N_INIT_MB=$(echo "${N_INIT_RSS}" | awk '{printf "%.1f", $1/1024/1024}')
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Native initial RSS: ${N_INIT_MB} MB, Queries: ${N_INIT_Q}, FDs: ${N_INIT_F}"
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Native total requests: ${NATIVE_TOTAL_REQUESTS}, snapshot every ${NATIVE_SNAPSHOT_INTERVAL}"
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Native progress log: ${NATIVE_PROGRESS_LOG} (every ${NATIVE_PROGRESS_INTERVAL} requests)"
 
             {
                 echo "=== NATIVE RELEASE EXERCISE (hydrogen_release) ==="
@@ -832,42 +897,11 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
             N_CNT=0
             N_MID=0
 
-            # Progress timing for the long native run (separate from the 500-iter snapshot metrics)
-            NATIVE_PROGRESS_START_TIME=$(date +%s)
-            NATIVE_PROGRESS_START_COUNT=0
-
             for ((i=1; i<=NATIVE_TOTAL_REQUESTS; i++)); do
                 ndx=$(( (i-1) % N_DB_CNT ))
                 dbn="${NATIVE_DBS[${ndx}]}"
                 run_auth_request "${BASE_URL}" "${dbn}" "${i}"
                 N_CNT=$((N_CNT+1))
-
-                # Separate progress log every NATIVE_PROGRESS_INTERVAL (e.g. 100)
-                # Written to a dedicated progress file so the main test output and
-                # STATE-level server log stay clean while still giving visibility.
-                if (( N_CNT % NATIVE_PROGRESS_INTERVAL == 0 )); then
-                    now_ts=$(date +%s)
-                    block_requests=$(( N_CNT - NATIVE_PROGRESS_START_COUNT ))
-                    block_elapsed=$(( now_ts - NATIVE_PROGRESS_START_TIME ))
-                    if (( block_elapsed < 1 )); then block_elapsed=1; fi
-                    rate=$(awk "BEGIN { r = ${block_requests} / ${block_elapsed}; printf \"%.0f\", r }")
-                    remaining=$(( NATIVE_TOTAL_REQUESTS - N_CNT ))
-                    if (( rate > 0 )); then
-                        eta_sec=$(( remaining / rate ))
-                        eta_min=$(( eta_sec / 60 ))
-                        eta_str="${eta_min}m"
-                    else
-                        eta_str="?"
-                    fi
-                    ts=$(date -Iseconds 2>/dev/null || date '+%Y-%m-%d %H:%M:%S')
-                    printf "%s  Processed %d/%d in %ds @ %s/s ETA: %s\n" \
-                        "${ts}" "${N_CNT}" "${NATIVE_TOTAL_REQUESTS}" "${block_elapsed}" "${rate}" "${eta_str}" \
-                        >> "${NATIVE_PROGRESS_LOG}"
-
-                    # Reset for next block of NATIVE_PROGRESS_INTERVAL requests
-                    NATIVE_PROGRESS_START_TIME=${now_ts}
-                    NATIVE_PROGRESS_START_COUNT=${N_CNT}
-                fi
 
                 if (( N_CNT % NATIVE_SNAPSHOT_INTERVAL == 0 )); then
                     NM=$(scrape_metrics "${PROMETHEUS_URL}")
@@ -899,7 +933,10 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
                             "${NDC}" "${NCL}" "${NPH}" "${NPM}" \
                             >> "${NATIVE_METRICS}"
 
-                        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
+                        # Periodic scraped metrics are data, not status: emit as DATA
+                        # via print_output (same idiom as other tests dumping captured
+                        # values), letting the framework collect/render it.
+                        print_output "${TEST_NUMBER}" "${TEST_COUNTER}" \
                             "[NATIVE ${N_CNT}/${NATIVE_TOTAL_REQUESTS}] RSS: ${NR_MB}MB (Δ${ND}MB) | Queries: ${NQ} | FDs: ${NF} | PrepCache: ${NP} | InFlight: ${NI} | Ctx: ${NAC} | DBConns: ${NDC}/${NCL} | PrepHits/Miss: ${NPH}/${NPM}"
                     fi
                 fi
@@ -914,7 +951,6 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
             NG_MB=$(echo "${NF_RSS} ${N_INIT_RSS}" | awk '{printf "%.1f", ($1-$2)/1024/1024}')
 
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Native final RSS: ${NF_MB} MB | Growth: ${NG_MB} MB over ${N_CNT} requests (target ${NATIVE_TOTAL_REQUESTS})"
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Native progress log: ${NATIVE_PROGRESS_LOG}"
 
             {
                 echo ""
@@ -924,16 +960,27 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
                 echo "Queries: ${NF_Q}  FDs: ${NF_F}"
             } >> "${NATIVE_METRICS}"
 
+            # Stop the native server now so the subtest's terminal PASS/FAIL
+            # (the steady-state verdict below) is the last line of the subtest.
+            if [[ -n "${NATIVE_PID:-}" ]]; then
+                shutdown_conduit_server "${NATIVE_PID}" "${NATIVE_RESULT}"
+            fi
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Native server stopped"
+
             # Native steady-state analysis (RSS heuristic is authoritative here)
             # Uses NATIVE_* constants so the extended run (5000) is analyzed correctly.
             if [[ "${N_MID}" -gt 0 && "${NF_RSS}" -gt 0 ]]; then
                 NSH=$(( NATIVE_TOTAL_REQUESTS - NATIVE_MIDPOINT_REQUEST ))
                 NSG=$(echo "${NF_RSS} ${N_MID}" | awk '{printf "%d", $1 - $2}')
                 NSK=$(echo "${NSG} ${NSH}" | awk '{if ($2>0) printf "%.2f", $1/$2/1024; else print "0"}')
+                # Native steady-state growth in *bytes* per request (last NSH reqs of the
+                # 5000-request native run). Used for the footer title. Rounded to integer B.
+                NSB=$(echo "${NSG} ${NSH}" | awk '{if ($2>0) printf "%d", $1/$2; else print "0"}')
+                NATIVE_STEADY_BYTES_PER_REQ="${NSB}"
                 NFH=$(echo "${N_MID} ${N_INIT_RSS}" | awk '{printf "%.1f", ($1-$2)/1024}')
 
                 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Native warmup (first ${NATIVE_MIDPOINT_REQUEST} reqs): ${NFH} KB"
-                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Native steady-state (last ${NSH} reqs): ${NSK} KB/request (threshold: ${LEAK_THRESHOLD_KB_PER_REQ})"
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Native steady-state (last ${NSH} reqs): ${NSK} KB/request (${NSB} B/req) (threshold: ${LEAK_THRESHOLD_KB_PER_REQ})"
 
                 {
                     echo ""
@@ -957,11 +1004,6 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Native leak analysis skipped (no midpoint)"
                 PASS_COUNT=$(( PASS_COUNT + 1 ))
             fi
-
-            if [[ -n "${NATIVE_PID:-}" ]]; then
-                shutdown_conduit_server "${NATIVE_PID}" "${NATIVE_RESULT}"
-            fi
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Native server stopped"
         fi
 
         export HYDROGEN_BIN="${SAVED_HYDROGEN_BIN}"
@@ -977,6 +1019,18 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
 else
     # Skip exercise if prerequisites failed
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Skipping exercise due to prerequisite failures"
+fi
+
+# Augment the footer title with the measured native steady-state growth rate
+# (bytes/request) from the long 5000-request native run, e.g.
+#   41-EXE | Exercise  Growth: 1,512 B/req
+# The {BLUE}...{RESET} markers are rendered by the tables engine for color,
+# matching the footer-title convention used by tests 30, 60 and 99.
+# Only append when we actually captured a value (native run ran and analyzed).
+if [[ -n "${NATIVE_STEADY_BYTES_PER_REQ}" ]]; then
+    # shellcheck disable=SC2310 # format_number returns the raw value on locale failure
+    NATIVE_GROWTH_DISPLAY=$(format_number "${NATIVE_STEADY_BYTES_PER_REQ}")
+    TEST_NAME="${TEST_NAME}  {BLUE}Growth: ${NATIVE_GROWTH_DISPLAY} B/req{RESET}"
 fi
 
 # Print test completion summary

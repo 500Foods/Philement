@@ -23,6 +23,10 @@
 # print_test_completion()
 
 # CHANGELOG
+# 4.3.0 - 2026-06-22 - dump_collected_output() sort key widened to match the new 4-digit
+#                     elapsed-time field (SSSS.ZZZ) from framework.sh get_elapsed_time().
+#                     Fixes mis-ordered/mis-rendered collected output for tests exceeding
+#                     999.999s of elapsed time (e.g. test_41).
 # 4.2.0 - 2026-01-23 - Added print_marker() to be a little more stylish
 # 4.1.0 - 2026-01-01 - Added HELIUM_ROOT path filtering to process_message() function
 # 4.0.0 - 2025-12-05 - Added HYDROGEN_ROOT and HELIUM_ROOT environment variable checks
@@ -68,7 +72,7 @@ export LOG_OUTPUT_GUARD="true"
 
 # Library metadata
 LOG_OUTPUT_NAME="Log Output Library"
-LOG_OUTPUT_VERSION="4.0.0"
+LOG_OUTPUT_VERSION="4.3.0"
 export LOG_OUTPUT_NAME LOG_OUTPUT_VERSION
 
 # Global variables for test/subtest numbering
@@ -152,8 +156,13 @@ dump_collected_output() {
     
     # Check if string has content
     if [[ -n "${OUTPUT_COLLECTION}" ]]; then
-        # Use printf to output the collected string, pipe through sort, preserving ANSI codes
-        "${PRINTF}" '%b' "${OUTPUT_COLLECTION}" 2>/dev/null | sort -k1.9,1.15 -k1.18,1.25n || true
+        # Use printf to output the collected string, pipe through sort, preserving ANSI codes.
+        # Sort keys are fixed BYTE columns (after %b expands the leading ANSI color escape):
+        #   - chars 9-15  : the subtest ref (e.g. "41-014")
+        #   - chars 18-26 : the elapsed time field "SSSS.ZZZ" (4-digit seconds; see
+        #                   get_elapsed_time in framework.sh). Sorting numerically here
+        #                   keeps lines in chronological order within a subtest.
+        "${PRINTF}" '%b' "${OUTPUT_COLLECTION}" 2>/dev/null | sort -k1.9,1.15 -k1.18,1.26n || true
     fi
 }
 
