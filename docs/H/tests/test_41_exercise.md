@@ -237,3 +237,122 @@ This test runs as part of the full test suite:
 - [test_11_leaks_like_a_sieve.md](/docs/H/tests/test_11_leaks_like_a_sieve.md) - Pure infrastructure leak detection
 - [conduit_utils.md](/docs/H/tests/conduit_utils.md) - Conduit testing utilities
 - [Test Framework](/docs/H/tests/TESTING.md) - Overall testing approach
+
+## From the script
+
+```bash
+# Test: Memory Exercise - Single Server Auth Stress Test
+# Starts one Hydrogen server with all 7 database engines configured,
+# runs 500 auth requests cycling across databases, and scrapes
+# Prometheus metrics to track memory growth for leak detection.
+# When hydrogen_debug (ASAN) build is available, launches with it and
+# performs post-shutdown LeakSanitizer analysis on the server log
+# for definitive leak detection on DB queue / auth paths.
+#
+# This test runs a single server with PostgreSQL, MySQL, SQLite, DB2,
+# MariaDB, CockroachDB, and YugabyteDB all simultaneously configured.
+# Auth requests cycle round-robin across all databases while metrics
+# are collected at regular intervals.
+#
+# Uses conduit_utils.sh library for server lifecycle management,
+# matching the proven approach from tests 50 and 51.
+# Purpose: exercise DB-heavy paths (unlike test_11 which avoids DBs)
+# with both RSS growth heuristics and ASAN when available.
+
+# FUNCTIONS
+# scrape_metrics()
+# get_metric()
+# run_auth_request()
+
+# CHANGELOG
+# 3.9.0 - 2026-06-22 - Stop hand-rolling output in the native run:
+#                     - Removed the bespoke per-100-request progress block (ETA/rate timing and the
+#                       separate test_41_progress.log side-channel). That custom code was the only
+#                       structural difference from the (clean) first exercise loop and was the source
+#                       of the stray "INFO1"/"PASS1" / leading-digit artifacts on the native lines.
+#                     - Periodic native snapshots are now emitted with print_output (DATA), the standard
+#                       harness idiom for dumping captured data values, instead of a custom print_message.
+#                     - Dropped NATIVE_PROGRESS_LOG / NATIVE_PROGRESS_INTERVAL (and their test_03 whitelist
+#                       entries). Per-snapshot metrics are still written to the native metrics log file.
+# 3.8.0 - 2026-06-22 - Harness-norms + presentation:
+#                     - The long native (hydrogen_release) RSS run is now a single proper subtest
+#                       ("Native RSS Measurement (5000 requests)"): one TEST header, INFO progress
+#                       lines, and exactly one terminal PASS/FAIL per code path. Previously it
+#                       emitted bare INFO/PASS calls hanging off the prior subtest counter.
+#                     - Native server shutdown moved before the steady-state verdict so the PASS/FAIL
+#                       is the last line of the subtest.
+#                     - Footer growth title now colorized via {BLUE}...{RESET} to match tests 30/60/99,
+#                       e.g. "Exercise  Growth: 1,512 B/req".
+#                     - Requires framework.sh >= 3.1.0 / log_output.sh >= 4.3.0 which widen the elapsed
+#                       column to 4-digit seconds so the collected-output sort stays aligned past 999.999s
+#                       (this test is ~20m). (Note: that overflow was a separate latent issue; it was not
+#                       the cause of the native-line artifacts addressed in 3.9.0.)
+# 3.7.0 - 2026-06-22 - Reliability + reporting fixes:
+#                     - scrape_metrics() now retries (SCRAPE_MAX_ATTEMPTS, SCRAPE_CURL_TIMEOUT, SCRAPE_RETRY_DELAY)
+#                       and only accepts a response containing hydrogen_ metrics. Under ASAN the Prometheus
+#                       endpoint could be momentarily unresponsive under heavy auth load, causing every snapshot
+#                       and the final scrape to return "No metrics returned" and fail "Collect Final Metrics".
+#                     - Fixed doubled timestamp in METRICS_LOG/RESULT_FILE/NATIVE_* filenames: LOG_PREFIX already
+#                       embeds ${TIMESTAMP}, so the extra ${TIMESTAMP} produced paths like
+#                       test_41_<ts><ts>_metrics.log. Now uses ${LOG_PREFIX}_... .
+#                     - Footer title now reports the native steady-state growth rate in bytes/request from the
+#                       long 5000-request native run, e.g. "Exercise (Growth: 1,512 B/req)".
+# 3.6.0 - 2026-06-17 - Extended the native (hydrogen_release) RSS measurement run to 5000 iterations (from 500).
+#                     Snapshots now every 500 requests (NATIVE_SNAPSHOT_INTERVAL) during the long run to distinguish
+#                     warmup growth from steady-state or slow accumulation. Uses NATIVE_* constants for the extended
+#                     run while preserving the original 500-iter run (with 50-iter snapshots) for ASAN + short RSS.
+#                     Updated leak analysis, progress messages, and headers to use the native request count.
+#                     For the long native run only: set HYDROGEN_LOG_LEVEL=STATE before launch (via run_conduit_server).
+#                     TRACE/DEBUG output is not required for RSS measurement; it was producing 100s of MB–GB logs and
+#                     unnecessary I/O. "STARTUP COMPLETE" and "Migration completed..." messages used by readiness checks
+#                     are emitted at STATE level, so the native phase still waits correctly. ASAN/short first run keeps
+#                     default (full) logging for LeakSanitizer detail.
+# 3.4.0 - 2026-06-16 - RSS-based "leak suspected" no longer fails test under ASAN mode (heuristic is secondary);
+#                     high steady-state RSS during ASAN exercise is expected (shadow memory + quarantine + allocator
+#                     behavior) and does not indicate a userspace leak when LeakSanitizer reports clean. Still logs
+#                     observed rates for diagnostics. Prevents false positive FAIL when ASAN is the authoritative check.
+#                     Addresses misreporting in test 41 runs under hydrogen_debug.
+# 3.3.0 - 2026-06-14 - Enhanced for thorough DB/auth leak detection (ASAN + RSS)
+#                     - When hydrogen_debug (ASAN build) is available, launch server under it
+#                       with ASAN_OPTIONS=detect_leaks=1:leak_check_at_exit=1:... during exercise
+#                     - Post-shutdown LeakSanitizer analysis on the exercise server log (direct/indirect counts)
+#                     - Complements existing RSS steady-state growth heuristic (now secondary)
+#                     - Exercises real DB paths: execute_auth_query, DQM pending/await, QueryRefs for login,
+#                       JWT store/revoke, rate limiting, account lookup, password verify across 7 engines
+#                     - Fixed latent leaks in database_pending.c: late/expired QueryResult now always use
+#                       database_engine_cleanup_result (was raw free + TODOs); orphan signals cleaned
+#                     - Purpose: test_11 avoids DBs; test_41 is the DB stress + leak exercise
+#                     - Increased startup/webserver-ready timeouts in conduit_utils.sh (120s default)
+#                       and set higher (180s) via CONDUIT_*_TIMEOUT when forcing ASAN debug for 7DB case
+#                     - Guarded ASAN leak analysis subtest: only report "no leaks" if server actually started
+#                       and exercise ran; on startup failure under ASAN, skip rather than falsely pass
+# 3.2.0 - 2026-03-20 - Tightened leak threshold from 2 KB/req to 1 KB/req
+#                     - Observed steady-state rate ~0.51 KB/req across 500 requests
+#                     - 1 KB/req gives ~2x safety margin while catching leaks earlier
+# 3.1.0 - 2026-03-19 - Added memory leak detection with steady-state growth analysis
+#                     - Compares last-half growth rate to detect unbounded leaks
+#                     - Threshold: 2 KB/request in second half flags as leak
+#                     - Reports warmup vs steady-state growth separately
+# 3.0.0 - 2026-03-19 - Adopted conduit_utils.sh approach from tests 50/51
+#                     - Uses run_conduit_server() for startup/migration/readiness
+#                     - Uses DATABASE_NAMES from conduit_utils.sh (Demo_PG, etc.)
+#                     - Uses check_database_readiness() for per-DB readiness
+#                     - Uses shutdown_conduit_server() for clean shutdown
+#                     - Config updated to match test 50 database naming pattern
+#                     - Removed ad-hoc startup/migration handling
+#                     - Removed HYDROGEN_LOG_LEVEL=STATE (was hiding migration logs)
+# 2.1.0 - 2026-03-19 - Per-database migration awareness
+#                     - Only tests databases that successfully complete migration
+#                     - DB-specific log checking (30s fast-fail, 180s max timeout)
+#                     - Reports ready vs total databases before exercising
+#                     - All output routed through print_message (no raw tee)
+# 2.0.0 - 2026-03-19 - Rewrote to use single server with all 7 databases
+#                     - Fixed metrics URL from /metrics to /api/system/prometheus
+#                     - Added API prefix extraction from config
+#                     - Added delay between metric scrapes for stats to update
+#                     - Created dedicated config hydrogen_test_41_exercise.json
+#                     - Cycles auth requests round-robin across all databases
+#                     - Follows test_40 wiring patterns for framework integration
+# 1.1.0 - 2026-03-19 - Initial implementation
+# 1.0.0 - 2026-03-19 - Created
+```
