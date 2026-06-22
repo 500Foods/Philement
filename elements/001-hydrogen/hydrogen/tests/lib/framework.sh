@@ -19,6 +19,11 @@
 # evaluate_test_result_silent()
 
 # CHANGELOG
+# 3.1.0 - 2026-06-22 - get_elapsed_time() now uses a 4-digit seconds field (SSSS.ZZZ).
+#                     The previous 3-digit (%03d) format overflowed for tests running
+#                     longer than 999.999s (e.g. test_41 at ~20m), shifting the fixed
+#                     sort columns used by dump_collected_output and producing stray
+#                     numeric prefixes/suffixes (the "INFO2"/"PASS2" artifacts).
 # 3.0.0 - 2025-12-05 - Added HYDROGEN_ROOT and HELIUM_ROOT environment variable checks
 # 2.8.1 - 2025-08-18 - Upgraded elapsed_time() to use $EPOCHREALTIME for more performance
 # 2.8.0 - 2025-08-08 - Cleaned out some mktemp calls
@@ -83,7 +88,7 @@ fi
 
 # Library metadata
 FRAMEWORK_NAME="Framework Library"
-FRAMEWORK_VERSION="3.0.0"
+FRAMEWORK_VERSION="3.1.0"
 export FRAMEWORK_NAME FRAMEWORK_VERSION
 
 # Use this once
@@ -193,9 +198,13 @@ get_elapsed_time() {
             diff_ms=$((diff_ms + 1000))
             diff_secs=$((diff_secs - 1))
         fi
-        "${PRINTF}" "%03d.%03d" "${diff_secs}" "${diff_ms}"
+        # Width 4 for seconds (SSSS.ZZZ) so long-running tests (>999s, e.g. test_41
+        # at ~20m) keep a fixed-width elapsed column. The collected-output sort in
+        # log_output.sh (dump_collected_output) relies on this fixed width to order
+        # lines correctly; a 3-digit format overflowed and shifted every column.
+        "${PRINTF}" "%04d.%03d" "${diff_secs}" "${diff_ms}"
     else
-        echo "000.000"
+        echo "0000.000"
     fi
 }
 

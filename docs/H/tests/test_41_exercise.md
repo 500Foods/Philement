@@ -21,7 +21,11 @@ This complements `test_11_leaks_like_a_sieve.sh`, which performs leak detection 
 - **Test Name**: Exercise
 - **Test Abbreviation**: EXE
 - **Test Number**: 41
-- **Version**: 3.3.0
+- **Version**: 3.8.0
+
+The footer title reports the native steady-state growth rate measured during the long 5,000-request native run, for example `41-EXE | Exercise  Growth: 1,512 B/req` (the growth segment is colorized).
+
+The long native (hydrogen_release) measurement runs as a single subtest ("Native RSS Measurement"): a TEST header, INFO progress lines every 500 requests, and a single terminal PASS/FAIL.
 
 ## Key Features
 
