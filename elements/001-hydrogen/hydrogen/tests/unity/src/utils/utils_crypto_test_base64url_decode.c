@@ -26,24 +26,12 @@ void test_base64url_decode_null_input(void);
 void test_base64url_decode_null_output_length(void);
 void test_base64url_decode_empty_string(void);
 void test_base64url_decode_invalid_length(void);
-void test_base64url_decode_url_safe_chars(void);
-void test_base64url_decode_roundtrip_basic(void);
-void test_base64url_decode_roundtrip_binary(void);
-void test_base64url_decode_length_2(void);
-void test_base64url_decode_length_3(void);
-void test_base64url_decode_length_4(void);
-void test_base64url_decode_large_data(void);
-void test_base64url_decode_jwt_payload(void);
-void test_base64url_decode_basic_string(void);
-void test_base64url_decode_short_string(void);
-void test_base64url_decode_single_character(void);
-void test_base64url_decode_exact_multiple_of_four(void);
-void test_base64url_decode_binary_data(void);
-void test_base64url_decode_all_zeros(void);
-void test_base64url_decode_null_input(void);
-void test_base64url_decode_null_output_length(void);
-void test_base64url_decode_empty_string(void);
-void test_base64url_decode_invalid_length(void);
+void test_base64url_decode_invalid_char_pos0(void);
+void test_base64url_decode_invalid_char_pos1(void);
+void test_base64url_decode_invalid_char_pos2(void);
+void test_base64url_decode_invalid_char_pos3(void);
+void test_base64url_decode_double_padding(void);
+void test_base64url_decode_single_padding(void);
 void test_base64url_decode_url_safe_chars(void);
 void test_base64url_decode_roundtrip_basic(void);
 void test_base64url_decode_roundtrip_binary(void);
@@ -69,6 +57,12 @@ void test_base64url_decode_null_input(void);
 void test_base64url_decode_null_output_length(void);
 void test_base64url_decode_empty_string(void);
 void test_base64url_decode_invalid_length(void);
+void test_base64url_decode_invalid_char_pos0(void);
+void test_base64url_decode_invalid_char_pos1(void);
+void test_base64url_decode_invalid_char_pos2(void);
+void test_base64url_decode_invalid_char_pos3(void);
+void test_base64url_decode_double_padding(void);
+void test_base64url_decode_single_padding(void);
 void test_base64url_decode_url_safe_chars(void);
 void test_base64url_decode_roundtrip_basic(void);
 void test_base64url_decode_roundtrip_binary(void);
@@ -193,6 +187,66 @@ void test_base64url_decode_invalid_length(void) {
     
     // Should fail due to invalid length
     TEST_ASSERT_NULL(result);
+}
+
+// Test invalid character at position 0 in a group
+void test_base64url_decode_invalid_char_pos0(void) {
+    // '!' is not a valid base64url character
+    const char* encoded = "!BCD";
+    size_t output_length = 0;
+    unsigned char* result = utils_base64url_decode(encoded, &output_length);
+    TEST_ASSERT_NULL(result);
+}
+
+// Test invalid character at position 1 in a group
+void test_base64url_decode_invalid_char_pos1(void) {
+    // 'A!CD' - '!' at position 1 is invalid
+    const char* encoded = "A!CD";
+    size_t output_length = 0;
+    unsigned char* result = utils_base64url_decode(encoded, &output_length);
+    TEST_ASSERT_NULL(result);
+}
+
+// Test invalid character at position 2 in a group
+void test_base64url_decode_invalid_char_pos2(void) {
+    // 'AB!D' - '!' at position 2 is invalid
+    const char* encoded = "AB!D";
+    size_t output_length = 0;
+    unsigned char* result = utils_base64url_decode(encoded, &output_length);
+    TEST_ASSERT_NULL(result);
+}
+
+// Test invalid character at position 3 in a group
+void test_base64url_decode_invalid_char_pos3(void) {
+    // 'ABC!' - '!' at position 3 is invalid
+    const char* encoded = "ABC!";
+    size_t output_length = 0;
+    unsigned char* result = utils_base64url_decode(encoded, &output_length);
+    TEST_ASSERT_NULL(result);
+}
+
+// Test padding: double '==' adjustment (decoded_length -= 2)
+void test_base64url_decode_double_padding(void) {
+    // "QQ==" is standard base64 for "A" (single byte), with double padding
+    const char* encoded = "QQ==";
+    size_t output_length = 0;
+    unsigned char* result = utils_base64url_decode(encoded, &output_length);
+    TEST_ASSERT_NOT_NULL(result);
+    TEST_ASSERT_EQUAL(1, output_length);
+    TEST_ASSERT_EQUAL('A', result[0]);
+    free(result);
+}
+
+// Test padding: single '=' adjustment (decoded_length -= 1)
+void test_base64url_decode_single_padding(void) {
+    // "SGk=" is standard base64 for "Hi" (two bytes), with single padding
+    const char* encoded = "SGk=";
+    size_t output_length = 0;
+    unsigned char* result = utils_base64url_decode(encoded, &output_length);
+    TEST_ASSERT_NOT_NULL(result);
+    TEST_ASSERT_EQUAL(2, output_length);
+    TEST_ASSERT_EQUAL_MEMORY("Hi", result, output_length);
+    free(result);
 }
 
 // Test decoding with URL-safe characters
@@ -354,7 +408,15 @@ int main(void) {
     
     // Invalid input tests
     RUN_TEST(test_base64url_decode_invalid_length);
-    
+    RUN_TEST(test_base64url_decode_invalid_char_pos0);
+    RUN_TEST(test_base64url_decode_invalid_char_pos1);
+    RUN_TEST(test_base64url_decode_invalid_char_pos2);
+    RUN_TEST(test_base64url_decode_invalid_char_pos3);
+
+    // Padding tests
+    RUN_TEST(test_base64url_decode_double_padding);
+    RUN_TEST(test_base64url_decode_single_padding);
+
     // URL-safe character tests
     RUN_TEST(test_base64url_decode_url_safe_chars);
     

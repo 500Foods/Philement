@@ -36,6 +36,7 @@ Hydrogen is currently designed for technical users who:
 - [**AI Prompts**](/docs/H/PROMPTS.md) - Development guide optimized for AI assistance
 - [**Project Structure**](/docs/H/STRUCTURE.md) - Complete file organization and architecture overview
 - [**Build Environment**](/docs/H/SETUP.md) - Build and runtime requirements, environment setup
+- [**Deployment Guide**](/docs/H/DEPLOYMENT.md) - Standalone VPS and Kubernetes/DOKS deployment, health checks, with and without databases
 - [**Secrets Management**](/docs/H/SECRETS.md) - Environment variables and security configuration
 - [**Release Notes**](/RELEASES.md) - Detailed version history and changes
 - [**Markdown Site Map**](/docs/H/SITEMAP.md) - Index to all Markdown files in this repository
