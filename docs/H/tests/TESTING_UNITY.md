@@ -141,12 +141,12 @@ mku payload_test_cleanup
 
 ## Coverage-Driven Workflow
 
-The most efficient way to improve Unity coverage is to use the `add_coverage.sh` tool in `extras/` before writing any tests. It cross-references the Unity gcov data against the blackbox gcov data and reports only the lines that are uncovered in **both** suites — the lines where a new Unity test will actually move the combined coverage needle.
+The most efficient way to check Unity coverage is to use the `add_coverage.sh` tool in `extras/` before writing any tests. It cross-references the Unity gcov data against the blackbox gcov data and reports only the lines that are uncovered in **both** suites — the lines where a new Unity test will actually move the combined coverage needle.
 
 ### Step-by-Step Coverage Improvement Process
 
 ```bash
-# 1. Run the full Unity test suite to ensure gcov data is fresh
+# 1. Run the full Unity test suite to ensure gcov data is fresh ONLY if NEW source files are created
 mkt
 
 # 2. Identify lines missing from both coverage sets for a specific source file
@@ -558,12 +558,15 @@ This is preferable to `TEST_FAIL_MESSAGE` when the skip reason is an environment
 
 #### Coverage Maximization Strategies
 
-1. **Target high-value functions** that provide maximum coverage gain
-2. **Test all public functions** in the module
-3. **Exercise all code paths** with different input combinations
-4. **Validate coverage reports** regularly to identify gaps
-5. **Test helper functions indirectly** through public interfaces
-6. **Focus on complex logic branches** that are hard to test through integration tests
+1. Ensure that there are NO static functions as those cannot be tested
+2. Split larger source files (particuarly > 300 instrumented lines) into smaller files
+3. Consider using helper functions to make large complex functions easier to test
+4. Target high-value functions that provide maximum coverage gain
+5. Test all public functions in the module
+6. Exercise all code paths with different input combinations
+7. Validate coverage reports regularly to identify gaps
+8. Test helper functions indirectly through public interfaces
+9. Focus on complex logic branches that are hard to test through integration tests
 
 #### Test Organization Best Practices
 
