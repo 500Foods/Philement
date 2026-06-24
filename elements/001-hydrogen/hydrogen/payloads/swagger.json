@@ -3473,6 +3473,58 @@
         }
       }
     },
+    "/system/readiness": {
+      "get": {
+        "summary": "Readiness check endpoint",
+        "description": "Returns HTTP 200 when the server is ready to accept requests (all databases and migrations complete), or HTTP 503 while startup/migrations are still in progress. Intended for use as a Kubernetes readiness probe so traffic is routed elsewhere until the pod is fully ready.",
+        "operationId": "getSystemReadiness",
+        "tags": [
+          "System Service"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ready": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "status": {
+                      "type": "string",
+                      "example": "ready"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ready": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "status": {
+                      "type": "string",
+                      "example": "starting Demo_PG; started Demo_SQL"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/system/recent": {
       "get": {
         "summary": "Recent log messages endpoint",

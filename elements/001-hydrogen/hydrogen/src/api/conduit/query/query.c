@@ -142,7 +142,7 @@ enum MHD_Result handle_conduit_query_request(
     DatabaseQueue* db_queue = NULL;
     QueryCacheEntry* cache_entry = NULL;
     bool query_not_found = false;
-    result = handle_database_lookup(connection, database, query_ref, &db_queue, &cache_entry, &query_not_found, true);
+    result = handle_database_lookup(connection, database, query_ref, &db_queue, &cache_entry, &query_not_found, 10);
     if (result != MHD_YES) {
         json_decref(request_json);
         return MHD_YES; // Error response was already sent by helper
@@ -163,6 +163,16 @@ enum MHD_Result handle_conduit_query_request(
     }
 
     log_this(SR_API, "%s: Database and query lookup successful", LOG_LEVEL_TRACE, 1, conduit_service_name());
+
+    // Enforce statement-type restrictions for public queries
+    if (cache_entry && !query_statement_type_allowed(cache_entry->query_type, cache_entry->sql_template)) {
+        json_t* response = create_validation_error_response(
+            "STATEMENT_TYPE_NOT_ALLOWED",
+            "Public query may only execute SELECT statements");
+        enum MHD_Result http_result = api_send_json_response(connection, response, MHD_HTTP_BAD_REQUEST);
+        json_decref(request_json);
+        return http_result;
+    }
 
     // Step 5: Parse and convert parameters
     ParameterList* param_list;
@@ -220,7 +230,7 @@ enum MHD_Result handle_conduit_query_request(
     // Step 10: Wait for result and build response
     result = handle_response_building(connection, query_ref, database, cache_entry,
                                       selected_queue, pending, query_id, converted_sql,
-                                      param_list, ordered_params, message);
+                                      param_list, ordered_params, message, false);
     json_decref(request_json);
 
     // NOTE: handle_response_building() takes ownership of and frees message

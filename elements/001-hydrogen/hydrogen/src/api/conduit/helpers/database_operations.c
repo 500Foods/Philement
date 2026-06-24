@@ -100,6 +100,129 @@ bool lookup_database_and_public_query(DatabaseQueue** db_queue, QueryCacheEntry*
     return true;
 }
 
+// Lookup database queue and protected query cache entry (query_type_a28 = 11)
+bool lookup_database_and_protected_query(DatabaseQueue** db_queue, QueryCacheEntry** cache_entry,
+                                          const char* database, int query_ref) {
+    if (!db_queue || !cache_entry || !database) {
+        return false; // NULL pointer parameters not allowed
+    }
+
+    *db_queue = lookup_database_queue(database);
+    if (!*db_queue) {
+        *cache_entry = NULL; // Ensure cache_entry is NULL when database lookup fails
+        return false;
+    }
+
+    if (!(*db_queue)->query_cache) {
+        *cache_entry = NULL;
+        return false;
+    }
+
+    // Use the type-filtered lookup for protected queries (type = 11)
+    *cache_entry = query_cache_lookup_by_ref_and_type((*db_queue)->query_cache, query_ref, 11, SR_API);
+    if (!*cache_entry) {
+        return false;
+    }
+
+    // Defensive assertion: the returned entry must really be type 11
+    if ((*cache_entry)->query_type != 11) {
+        *cache_entry = NULL;
+        return false;
+    }
+
+    return true;
+}
+
+// Advance past leading whitespace and SQL comments (-- line comments and
+// /* */ block comments). String literals are respected so that '--' or '/*'
+// inside a literal does not trigger comment skipping. Returns a pointer to
+// the first non-whitespace, non-comment character.
+static const char* skip_sql_whitespace_and_comments(const char* sql) {
+    if (!sql) {
+        return NULL;
+    }
+
+    const char* p = sql;
+    while (*p) {
+        // Skip whitespace
+        if (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r') {
+            p++;
+            continue;
+        }
+
+        // Skip single-line comments
+        if (p[0] == '-' && p[1] == '-') {
+            p += 2;
+            while (*p && *p != '\n') {
+                p++;
+            }
+            continue;
+        }
+
+        // Skip block comments
+        if (p[0] == '/' && p[1] == '*') {
+            p += 2;
+            while (*p && !(p[0] == '*' && p[1] == '/')) {
+                p++;
+            }
+            if (*p) {
+                p += 2; // skip past */
+            }
+            continue;
+        }
+
+        // Skip string literals so we don't misinterpret content inside them
+        if (*p == '\'' || *p == '"') {
+            char quote = *p++;
+            while (*p && *p != quote) {
+                if (*p == '\\' && *(p + 1)) {
+                    p += 2; // skip escaped character
+                } else {
+                    p++;
+                }
+            }
+            if (*p) {
+                p++; // skip closing quote
+            }
+            continue;
+        }
+
+        break;
+    }
+
+    return p;
+}
+
+// Check whether a SQL template's leading statement is allowed for the given query type.
+// query_type 10 (public) allows only SELECT.
+// query_type 11 (protected) allows SELECT, INSERT, UPDATE, DELETE.
+// Other types are not validated here.
+bool query_statement_type_allowed(int query_type, const char* sql_template) {
+    if (!sql_template) {
+        return false;
+    }
+
+    const char* p = skip_sql_whitespace_and_comments(sql_template);
+    if (!p || !*p) {
+        return false;
+    }
+
+    if (query_type == 10) {
+        // Public queries: SELECT only
+        return strncasecmp(p, "SELECT", 6) == 0;
+    }
+
+    if (query_type == 11) {
+        // Protected queries: DML statements only (no DDL)
+        return strncasecmp(p, "SELECT", 6) == 0 ||
+               strncasecmp(p, "INSERT", 6) == 0 ||
+               strncasecmp(p, "UPDATE", 6) == 0 ||
+               strncasecmp(p, "DELETE", 6) == 0;
+    }
+
+    return true;
+}
+
 // Select optimal queue for query execution
 DatabaseQueue* select_query_queue(const char* database, const char* queue_type) {
 #ifdef USE_MOCK_SELECT_QUERY_QUEUE
@@ -110,11 +233,13 @@ DatabaseQueue* select_query_queue(const char* database, const char* queue_type) 
 }
 
 enum MHD_Result handle_database_lookup(struct MHD_Connection *connection, const char* database,
-                                        int query_ref, DatabaseQueue** db_queue, QueryCacheEntry** cache_entry,
-                                        bool* query_not_found, bool require_public) {
+                                         int query_ref, DatabaseQueue** db_queue, QueryCacheEntry** cache_entry,
+                                         bool* query_not_found, int query_type) {
     bool lookup_success;
-    if (require_public) {
+    if (query_type == 10) {
         lookup_success = lookup_database_and_public_query(db_queue, cache_entry, database, query_ref);
+    } else if (query_type == 11) {
+        lookup_success = lookup_database_and_protected_query(db_queue, cache_entry, database, query_ref);
     } else {
         lookup_success = lookup_database_and_query(db_queue, cache_entry, database, query_ref);
     }

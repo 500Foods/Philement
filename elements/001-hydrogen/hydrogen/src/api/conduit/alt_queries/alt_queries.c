@@ -429,7 +429,7 @@ enum MHD_Result execute_single_alt_query(
     *cache_entry = NULL;
     bool query_not_found = false;
     
-    enum MHD_Result lookup_result = handle_database_lookup(connection, database, *query_ref, &db_queue, cache_entry, &query_not_found, false);
+    enum MHD_Result lookup_result = handle_database_lookup(connection, database, *query_ref, &db_queue, cache_entry, &query_not_found, 0);
     if (lookup_result != MHD_YES) {
         log_this(SR_AUTH, "execute_single_alt_query: Database lookup failed for query %d", LOG_LEVEL_ERROR, 1, *query_ref);
         return MHD_NO;

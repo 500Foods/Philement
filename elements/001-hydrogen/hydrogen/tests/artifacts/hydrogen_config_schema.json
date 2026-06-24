@@ -75,6 +75,18 @@
           "description": "Maximum upload size in bytes",
           "minimum": 0
         },
+        "ChaChaServer": {
+          "type": "string",
+          "description": "ChaCha (Cap) verification server URL, can use environment variable syntax like ${env.CHACHA_SERVER}"
+        },
+        "ChaChaSiteID": {
+          "type": "string",
+          "description": "ChaCha (Cap) site identifier, can use environment variable syntax like ${env.CHACHA_SITEID}"
+        },
+        "ChaChaSecret": {
+          "type": "string",
+          "description": "ChaCha (Cap) secret key, can use environment variable syntax like ${env.CHACHA_SECRET}"
+        },
         "Headers": {
           "type": "array",
           "description": "Custom HTTP headers configuration",

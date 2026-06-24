@@ -296,6 +296,11 @@ declare -a ENV_VARS=(
     "HYDROTST_DB_PASS|30-35|Acuranzo database password|Password for connecting to the Acuranzo database."
     "HYDROTST_DB_TYPE|30-35|Acuranzo database type|Type of the Acuranzo database (e.g., postgres)."
 
+    # Cap server aka ChaCha 
+    "CHACHA_SECRET|56|ChaCha (Cap) Server secret|Secret key."
+    "CHACHA_SITEID|56|ChaCha (Cap) Server SiteID|Unique identifier for this usage."
+    "CHACHA_SERVER|56|ChaCha (Cap) Server|URL for server."
+    
 )
 
 # Function to check if environment variable is set and not empty

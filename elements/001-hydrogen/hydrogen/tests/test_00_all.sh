@@ -188,6 +188,9 @@ SEQUENTIAL_MODE=false
 # (duplicate key errors, locked SQLite, rate-limit exhaustion). Keep them sequential
 # so each test gets a clean shot at the shared databases while still exercising
 # internal concurrent query handling.
+# NOTE: test_56_cap_query.sh is part of group 5x and now exercises both
+# negative paths (missing/invalid token) and positive protected-query INSERT
+# paths using the Cap fallback path. It is wired to full auto-run.
 SEQUENTIAL_GROUPS=(4 5)
 TEST_ARGS=()
 

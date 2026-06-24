@@ -166,9 +166,11 @@ After editing any files under `elements/002-helium/` (migrations, database.lua, 
   - `mkt` — "make trial" (faster incremental build, typical for development)
   - `mka` — "make all" (full build)
 - These aliases expand to something like:
+
   ```bash
   cdh && extras/make-trial.sh ; cd - > /dev/null 2>&1
   ```
+
   (where `cdh` changes to the Hydrogen directory).
 
 The Hydrogen build itself (see Test 01 - Compilation) also detects when migration files are newer than the payload and will automatically regenerate it (and run `helium_update.sh`).
