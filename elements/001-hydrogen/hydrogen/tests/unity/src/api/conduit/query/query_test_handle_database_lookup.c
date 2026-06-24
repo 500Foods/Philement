@@ -29,8 +29,8 @@ void test_handle_database_lookup_database_not_found(void);
 
 // Forward declaration for the function being tested
 enum MHD_Result handle_database_lookup(struct MHD_Connection *connection, const char* database,
-                                      int query_ref, DatabaseQueue** db_queue, QueryCacheEntry** cache_entry,
-                                      bool* query_not_found, bool require_public);
+                                       int query_ref, DatabaseQueue** db_queue, QueryCacheEntry** cache_entry,
+                                       bool* query_not_found, int query_type);
 
 void setUp(void) {
     mock_system_reset_all();
@@ -61,7 +61,7 @@ void test_handle_database_lookup_database_not_found(void) {
     QueryCacheEntry* cache_entry = NULL;
     bool query_not_found = false;
 
-    enum MHD_Result result = handle_database_lookup((struct MHD_Connection*)&mock_connection, "nonexistent_db", 123, &db_queue, &cache_entry, &query_not_found, false);
+    enum MHD_Result result = handle_database_lookup((struct MHD_Connection*)&mock_connection, "nonexistent_db", 123, &db_queue, &cache_entry, &query_not_found, 0);
 
     TEST_ASSERT_EQUAL(MHD_YES, result);
     TEST_ASSERT_NULL(db_queue);

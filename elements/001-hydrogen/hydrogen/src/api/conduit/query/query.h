@@ -112,7 +112,7 @@ enum MHD_Result handle_field_extraction(struct MHD_Connection *connection, json_
                                         int* query_ref, const char** database, json_t** params_json);
 enum MHD_Result handle_database_lookup(struct MHD_Connection *connection, const char* database,
                                        int query_ref, DatabaseQueue** db_queue, QueryCacheEntry** cache_entry,
-                                       bool* query_not_found, bool require_public);
+                                       bool* query_not_found, int query_type);
 enum MHD_Result handle_parameter_processing(struct MHD_Connection *connection, json_t* params_json,
                                              const DatabaseQueue* db_queue, const QueryCacheEntry* cache_entry,
                                              const char* database, int query_ref,
@@ -140,7 +140,8 @@ enum MHD_Result handle_response_building(struct MHD_Connection *connection, int 
                                          const char* database, const QueryCacheEntry* cache_entry,
                                          const DatabaseQueue* selected_queue, PendingQueryResult* pending,
                                          char* query_id, char* converted_sql, ParameterList* param_list,
-                                         TypedParameter** ordered_params, const char* message);
+                                         TypedParameter** ordered_params, const char* message,
+                                         bool cap_fallback);
 
 enum MHD_Result handle_conduit_query_request(
     struct MHD_Connection *connection,

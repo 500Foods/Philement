@@ -357,7 +357,7 @@ enum MHD_Result handle_conduit_alt_query_request(
     DatabaseQueue *db_queue = NULL;
     QueryCacheEntry *cache_entry = NULL;
     bool query_not_found = false;
-    result = handle_database_lookup(connection, database, query_ref, &db_queue, &cache_entry, &query_not_found, false);
+    result = handle_database_lookup(connection, database, query_ref, &db_queue, &cache_entry, &query_not_found, 0);
     if (result != MHD_YES) {
         free(database);
         if (params_json) {

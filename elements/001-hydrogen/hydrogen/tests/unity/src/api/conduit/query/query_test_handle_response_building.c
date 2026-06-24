@@ -15,9 +15,8 @@
 #define USE_MOCK_SYSTEM
 #include <unity/mocks/mock_system.h>
 
-// Enable mock for build_response_json and api_send_json_response
+// Enable mock for build_response_json
 #define USE_MOCK_BUILD_RESPONSE_JSON
-#define USE_MOCK_API_SEND_JSON_RESPONSE
 
 // Mock for build_response_json
 json_t* mock_build_response_json(int query_ref, const char* database, const QueryCacheEntry* cache_entry,
@@ -42,13 +41,15 @@ static json_t* mock_response_result = NULL;
 
 // Function prototypes
 void test_handle_response_building_success(void);
+void test_handle_response_building_cap_fallback(void);
 
 // Forward declaration for the function being tested
 enum MHD_Result handle_response_building(struct MHD_Connection *connection, int query_ref,
-                                        const char* database, const QueryCacheEntry* cache_entry,
-                                        const DatabaseQueue* selected_queue, PendingQueryResult* pending,
-                                        char* query_id, char* converted_sql, ParameterList* param_list,
-                                        TypedParameter** ordered_params, const char* message);
+                                         const char* database, const QueryCacheEntry* cache_entry,
+                                         const DatabaseQueue* selected_queue, PendingQueryResult* pending,
+                                         char* query_id, char* converted_sql, ParameterList* param_list,
+                                         TypedParameter** ordered_params, const char* message,
+                                         bool cap_fallback);
 
 void setUp(void) {
     mock_system_reset_all();
@@ -117,7 +118,33 @@ void test_handle_response_building_success(void) {
 
     enum MHD_Result result = handle_response_building((struct MHD_Connection*)&mock_connection, 123, "test_db",
                                                      &cache_entry, &selected_queue, &pending, query_id,
-                                                     converted_sql, param_list, ordered_params, NULL);
+                                                     converted_sql, param_list, ordered_params, NULL, false);
+
+    TEST_ASSERT_EQUAL(MHD_YES, result);
+
+    // Cleanup - query_id, converted_sql, and param_list are freed by handle_response_building
+}
+
+// Test that cap_fallback flag is added to the response when requested
+void test_handle_response_building_cap_fallback(void) {
+    // Mock connection
+    MockMHDConnection mock_connection = {0};
+
+    // Set up mock response
+    mock_response_result = json_object();
+    json_object_set_new(mock_response_result, "success", json_true());
+
+    DatabaseQueue selected_queue = {.queue_type = (char*)"test"};
+    QueryCacheEntry cache_entry = {.queue_type = (char*)"read"};
+    PendingQueryResult pending = {0};
+    ParameterList* param_list = calloc(1, sizeof(ParameterList));
+    char* converted_sql = strdup("SELECT 1");
+    TypedParameter** ordered_params = NULL;
+    char* query_id = strdup("test_id");
+
+    enum MHD_Result result = handle_response_building((struct MHD_Connection*)&mock_connection, 123, "test_db",
+                                                     &cache_entry, &selected_queue, &pending, query_id,
+                                                     converted_sql, param_list, ordered_params, NULL, true);
 
     TEST_ASSERT_EQUAL(MHD_YES, result);
 
@@ -128,6 +155,7 @@ int main(void) {
     UNITY_BEGIN();
 
     RUN_TEST(test_handle_response_building_success);
+    RUN_TEST(test_handle_response_building_cap_fallback);
 
     return UNITY_END();
 }

@@ -18,9 +18,10 @@
  #include "system/version/version.h"
  #include "system/system_service.h"
  #include "system/upload/upload.h"
- #include "conduit/conduit_service.h"
- #include "conduit/query/query.h"
- #include "conduit/auth_query/auth_query.h"
+#include "conduit/conduit_service.h"
+#include "conduit/query/query.h"
+#include "conduit/cap/cap_query.h"
+#include "conduit/auth_query/auth_query.h"
  #include "conduit/auth_queries/auth_queries.h"
  #include "conduit/queries/queries.h"
  #include "conduit/alt_query/alt_query.h"
@@ -198,6 +199,7 @@ bool register_api_endpoints(void) {
         log_this(SR_API, "― %s/system/upload", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/conduit/query", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/conduit/queries", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
+        log_this(SR_API, "― %s/conduit/cap_query", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/conduit/alt_query", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/conduit/auth_query", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/conduit/auth_queries", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
@@ -378,6 +380,7 @@ static bool endpoint_expects_json(const char *path) {
         "system/config",
         "conduit/query",
         "conduit/queries",
+        "conduit/cap_query",
         "conduit/auth_query",
         "conduit/auth_queries",
         "conduit/alt_query",
@@ -710,6 +713,10 @@ enum MHD_Result handle_api_request(struct MHD_Connection *connection,
     else if (strcmp(path, "conduit/queries") == 0) {
         return handle_conduit_queries_request(connection, url, method, upload_data,
                                      upload_data_size, con_cls);
+    }
+    else if (strcmp(path, "conduit/cap_query") == 0) {
+        return handle_conduit_cap_query_request(connection, url, method, upload_data,
+                                                upload_data_size, con_cls);
     }
     else if (strcmp(path, "conduit/alt_query") == 0) {
         return handle_conduit_alt_query_request(connection, url, method, upload_data,

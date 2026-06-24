@@ -88,9 +88,23 @@ NON_PUBLIC_QUERY_REFS=(
     ["45"]="Get Lookup:true"
 )
 
+# Protected Cap query references for conduit cap_query testing
+# Format: "query_ref:description:params_json"
+# Populated with real QueryRefs once Helium Phase 2b registers the protected INSERT queries.
+declare -A PROTECTED_CAP_QUERY_REFS
+PROTECTED_CAP_QUERY_REFS=(
+    # These require Helium migrations 1196-1200 to be applied to the target database.
+    # The test environment sets CHACHA_SERVER to an unreachable URL to force the
+    # FALLBACK path, so no real Cap token is needed for automated testing.
+    # Parameters are grouped by type (STRING, INTEGER, etc.) as expected by parse_typed_parameters.
+    ["85"]="Insert Course Suggestion:{\"STRING\":{\"COURSE_NAME\":\"Test Course\",\"SUMMARY\":\"Test summary\",\"DETAIL\":\"<p>Test detail</p>\",\"INTENDED_AUDIENCE\":\"Beginners\",\"ADDITIONAL_FEATURES\":\"None\",\"SUBMITTER_NAME\":\"Test User\",\"SUBMITTER_EMAIL\":\"test@example.com\",\"CHACHA_TOKEN\":\"test-token\",\"CHACHA_SITE\":\"a9b8369d3b\",\"IP_ADDRESS\":\"127.0.0.1\"}}"
+    ["86"]="Insert Contact Submission:{\"STRING\":{\"NAME\":\"Test User\",\"EMAIL\":\"test@example.com\",\"SUBJECT\":\"Test Subject\",\"MESSAGE\":\"<p>Test message</p>\",\"CHACHA_TOKEN\":\"test-token\",\"CHACHA_SITE\":\"a9b8369d3b\",\"IP_ADDRESS\":\"127.0.0.1\"}}"
+)
+
 # Export variables for use in scripts that source this library
 export PUBLIC_QUERY_REFS
 export NON_PUBLIC_QUERY_REFS
+export PROTECTED_CAP_QUERY_REFS
 
 # Function to validate conduit request with optional JWT authentication
 validate_conduit_request() {

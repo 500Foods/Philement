@@ -402,7 +402,8 @@ enum MHD_Result handle_response_building(struct MHD_Connection *connection, int 
                                            const char* database, const QueryCacheEntry* cache_entry,
                                            const DatabaseQueue* selected_queue, PendingQueryResult* pending,
                                            char* query_id, char* converted_sql, ParameterList* param_list,
-                                           TypedParameter** ordered_params, const char* message) {
+                                           TypedParameter** ordered_params, const char* message,
+                                           bool cap_fallback) {
     // Mark unused parameters
     (void)query_id;
     (void)converted_sql;
@@ -411,8 +412,14 @@ enum MHD_Result handle_response_building(struct MHD_Connection *connection, int 
 
     // Wait for result and build response
     json_t* response = build_response_json(query_ref, database, cache_entry, selected_queue, pending, message);
+
+    // Add Cap fallback flag when the caller accepted the request despite a transient verify failure
+    if (cap_fallback && response) {
+        json_object_set_new(response, "cap_fallback", json_true());
+    }
+
     unsigned int http_status = json_is_true(json_object_get(response, "success")) ?
-                                 MHD_HTTP_OK : determine_http_status(pending, pending_result_get(pending));
+                                  MHD_HTTP_OK : determine_http_status(pending, pending_result_get(pending));
 
     enum MHD_Result http_result = api_send_json_response(connection, response, http_status);
 

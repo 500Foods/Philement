@@ -42,7 +42,7 @@ table.insert(queries,{sql=[[
             VALUES
                 (${LOOKUP_ID}, ${KEY_IDX}, 1, '${SCHEMA_NAME}', 0, 2, '',
                 [==[
-                    # Style Manager Base Variables 
+                    # Style Manager Base Variables
 
 
                 ]==],

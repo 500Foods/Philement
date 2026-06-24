@@ -6,7 +6,10 @@
     "WebServer": {
         "EnableIPv4": true,
         "EnableIPv6": false,
-        "Port": 5500
+        "Port": 5500,
+        "ChaChaServer": "${env.CHACHA_SERVER}",
+        "ChaChaSiteID": "${env.CHACHA_SITEID}",
+        "ChaChaSecret": "${env.CHACHA_SECRET}"
     },
     "API": {
         "Enabled": true,

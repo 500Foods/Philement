@@ -59,6 +59,13 @@ bool lookup_database_and_query(DatabaseQueue** db_queue, QueryCacheEntry** cache
 bool lookup_database_and_public_query(DatabaseQueue** db_queue, QueryCacheEntry** cache_entry,
                                        const char* database, int query_ref);
 
+// Lookup database queue and protected query cache entry (query_type_a28 = 11)
+bool lookup_database_and_protected_query(DatabaseQueue** db_queue, QueryCacheEntry** cache_entry,
+                                          const char* database, int query_ref);
+
+// Check whether a SQL template's leading statement is allowed for the query type
+bool query_statement_type_allowed(int query_type, const char* sql_template);
+
 // Parse and convert parameters
 bool process_parameters(json_t* params_json, ParameterList** param_list,
                         const char* sql_template, DatabaseEngineType engine_type,
@@ -128,8 +135,8 @@ enum MHD_Result handle_auth_query_field_extraction(struct MHD_Connection *connec
 enum MHD_Result handle_buffer_null_case(struct MHD_Connection *connection);
 
 enum MHD_Result handle_database_lookup(struct MHD_Connection *connection, const char* database,
-                                        int query_ref, DatabaseQueue** db_queue, QueryCacheEntry** cache_entry,
-                                        bool* query_not_found, bool require_public);
+                                         int query_ref, DatabaseQueue** db_queue, QueryCacheEntry** cache_entry,
+                                         bool* query_not_found, int query_type);
 
 enum MHD_Result handle_parameter_processing(struct MHD_Connection *connection, json_t* params_json,
                                              const DatabaseQueue* db_queue, const QueryCacheEntry* cache_entry,
@@ -163,6 +170,7 @@ enum MHD_Result handle_response_building(struct MHD_Connection *connection, int 
                                           const char* database, const QueryCacheEntry* cache_entry,
                                           const DatabaseQueue* selected_queue, PendingQueryResult* pending,
                                           char* query_id, char* converted_sql, ParameterList* param_list,
-                                          TypedParameter** ordered_params, const char* message);
+                                          TypedParameter** ordered_params, const char* message,
+                                          bool cap_fallback);
 
 #endif /* CONDUIT_HELPERS_H */

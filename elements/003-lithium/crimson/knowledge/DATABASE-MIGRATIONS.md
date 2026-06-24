@@ -232,4 +232,9 @@ in the migrations themselves so that they get populated in the database directly
 | [1193](/elements/002-helium/acuranzo/migrations/acuranzo_1193.lua) | queries | 1.0.0 | 2026-05-09 | 4 | ✗ | QueryRef #082 - OIDC RP: Lookup Account by Email (Phase 17) |
 | [1194](/elements/002-helium/acuranzo/migrations/acuranzo_1194.lua) | queries | 1.0.0 | 2026-05-09 | 4 | ✗ | QueryRef #083 - OIDC RP: Provision OIDC Account (Phase 17) |
 | [1195](/elements/002-helium/acuranzo/migrations/acuranzo_1195.lua) | queries | 1.0.0 | 2026-05-09 | 4 | ✗ | QueryRef #084 - OIDC RP: Touch OIDC Identity (Phase 17) |
-| **196** | | | | **1010** | **196** | |
+| [1196](/elements/002-helium/acuranzo/migrations/acuranzo_1196.lua) | lookups | 1.0.0 | 2026-06-24 | 4 | ✗ | Adds key_idx 11 'SQL - Protected' to Lookup 028 - Query Type (Cap Phase 2b) |
+| [1197](/elements/002-helium/acuranzo/migrations/acuranzo_1197.lua) | course_suggestions | 1.0.0 | 2026-06-24 | 8 | ✓ | Creates the course_suggestions table (Cap Phase 2b: Suggest a Course form) |
+| [1198](/elements/002-helium/acuranzo/migrations/acuranzo_1198.lua) | queries | 1.0.0 | 2026-06-24 | 4 | ✗ | QueryRef #085 - Insert Course Suggestion (Cap-protected, slow queue) |
+| [1199](/elements/002-helium/acuranzo/migrations/acuranzo_1199.lua) | contact_submissions | 1.0.0 | 2026-06-24 | 8 | ✓ | Creates the contact_submissions table (Cap Phase 2b: Contact Us form) |
+| [1200](/elements/002-helium/acuranzo/migrations/acuranzo_1200.lua) | queries | 1.0.0 | 2026-06-24 | 4 | ✗ | QueryRef #086 - Insert Contact Submission (Cap-protected, slow queue) |
+| **201** | | | | **1038** | **201** | |

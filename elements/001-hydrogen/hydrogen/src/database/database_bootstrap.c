@@ -267,22 +267,23 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
                                  int queue_type_int = (int)json_integer_value(queue_type_obj);
                                  int timeout_seconds = (int)json_integer_value(timeout_seconds_obj);
                                  
-                                 // Cache useful queries:
-                                 // - type 0-3: Regular queries (internal_sql=0, system_sql=1, system_ddl=2, reporting_sql=3)
-                                 // - type 10: Public queries (used by Conduit public endpoints)
-                                 // - type 1000: Forward migrations (needed during APPLY phase)
-                                 // - type 1001: Reverse migrations (needed during TEST phase)
-                                 // Skip type=1002 (diagrams) and type=1003 (applied migrations) - these are never used again
-                                 if (query_type <= 3 || query_type == 10 || query_type == 1000 || query_type == 1001) {
-                                     // Convert integer queue type to string (0=cache, 1=slow, 2=medium, 3=fast)
-                                     const char* queue_type_str = NULL;
-                                     switch (queue_type_int) {
-                                         case 0: queue_type_str = "cache"; break;
-                                         case 1: queue_type_str = "slow"; break;
-                                         case 2: queue_type_str = "medium"; break;
-                                         case 3: queue_type_str = "fast"; break;
-                                         default: queue_type_str = "slow"; break; // Default fallback
-                                     }
+                                  // Cache useful queries:
+                                  // - type 0-3: Regular queries (internal_sql=0, system_sql=1, system_ddl=2, reporting_sql=3)
+                                  // - type 10: Public queries (used by Conduit public endpoints)
+                                  // - type 11: Cap-protected queries (used by Conduit cap_query endpoint)
+                                  // - type 1000: Forward migrations (needed during APPLY phase)
+                                  // - type 1001: Reverse migrations (needed during TEST phase)
+                                  // Skip type=1002 (diagrams) and type=1003 (applied migrations) - these are never used again
+                                  if (query_type <= 3 || query_type == 10 || query_type == 11 || query_type == 1000 || query_type == 1001) {
+                                      // Convert integer queue type to string (0=slow, 1=medium, 2=fast, 3=cache)
+                                      const char* queue_type_str = NULL;
+                                      switch (queue_type_int) {
+                                          case 0: queue_type_str = "slow"; break;
+                                          case 1: queue_type_str = "medium"; break;
+                                          case 2: queue_type_str = "fast"; break;
+                                          case 3: queue_type_str = "cache"; break;
+                                          default: queue_type_str = "slow"; break; // Default fallback
+                                      }
 
                                      // Create and add QTC entry with type field
                                      QueryCacheEntry* entry = query_cache_entry_create(

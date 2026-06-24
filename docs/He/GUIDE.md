@@ -26,10 +26,12 @@ Only after the above should you write or modify a migration.
 
 - The migration file **must** be a Lua function with exact signature: `return function(engine, design_name, schema_name, cfg) ... return queries end`
 - Top of file **must** have:
+
   ```lua
   -- luacheck: no max line length
   -- luacheck: no unused args
   ```
+
 - Header **must** contain a `-- CHANGELOG` with version/date/description.
 - **Always** produce three query records for schema changes:
   1. Forward (`${TYPE_FORWARD_MIGRATION}` = 1000) — the real DDL/DML + an `UPDATE ... SET query_type_a28 = ${TYPE_APPLIED_MIGRATION}` inside the embedded `code` block.
