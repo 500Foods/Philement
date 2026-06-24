@@ -71,6 +71,7 @@ void setUp(void) {
 
     test_cache = chat_engine_cache_create("test_db");
     test_queue = (DatabaseQueue*)calloc(1, sizeof(DatabaseQueue));
+    TEST_ASSERT_NOT_NULL(test_queue);
     test_queue->database_name = strdup("test_db");
     test_queue->chat_engine_cache = test_cache;
 

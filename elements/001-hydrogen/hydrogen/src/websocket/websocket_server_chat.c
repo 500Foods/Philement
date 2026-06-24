@@ -332,37 +332,13 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
         // Streaming mode - Using multi_curl for thread-safe, non-blocking streaming
 
         // Wait for any previous stream to fully complete before starting new one
-        // cppcheck-suppress nullPointerRedundantCheck - session validated at function entry
         if (session->chat_stream_active || session->multi_stream_ctx) {
             log_this(SR_WEBSOCKET_CHAT, "Waiting for previous stream to complete before starting new one",
                      LOG_LEVEL_DEBUG, 0);
         }
 
-        // Allocate stream context on heap (managed by session cleanup)
-        StreamContext* stream_ctx = (StreamContext*)calloc(1, sizeof(StreamContext));
-        if (!stream_ctx) {
-            send_chat_error(wsi, "Failed to allocate stream context", request_id);
-            free(engine_name);
-            chat_context_free_hash_array(context_hashes, context_hash_count);
-            json_decref(request_json);
-            return -1;
-        }
-
-        stream_ctx->wsi = wsi;
-        stream_ctx->request_id = request_id ? strdup(request_id) : NULL;
-        stream_ctx->model = engine_name ? strdup(engine_name) : NULL;
-        stream_ctx->chunk_index = 0;
-        stream_ctx->stream_completed = false;
-        stream_ctx->finish_reason = NULL;
-        stream_ctx->first_chunk_logged = false;
-        stream_ctx->connection_valid = &session->connection_valid;
-        stream_ctx->stream_active = &session->chat_stream_active;
-        stream_ctx->multi_stream_ctx = NULL;
-        clock_gettime(CLOCK_MONOTONIC, &stream_ctx->start_time);
-
         // Mark stream as active on session BEFORE starting the stream
-        // cppcheck: session guaranteed non-null due to check at function entry
-        if (session) session->chat_stream_active = true;
+        session->chat_stream_active = true;
 
         // Log that prompt is being sent to model server
         size_t request_size = strlen(request_json_str);
@@ -381,11 +357,7 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
             log_this(SR_WEBSOCKET_CHAT, "Multi-stream manager not available for request %s",
                      LOG_LEVEL_ERROR, 1, request_id ? request_id : "unknown");
 
-            if (session) session->chat_stream_active = false;
-            free(stream_ctx->finish_reason);
-            free(stream_ctx->request_id);
-            free(stream_ctx->model);
-            free(stream_ctx);
+            session->chat_stream_active = false;
             free(engine_name);
             chat_context_free_hash_array(context_hashes, context_hash_count);
             free(request_json_str);
@@ -412,12 +384,7 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
             log_this(SR_WEBSOCKET_CHAT, "Failed to start multi-stream for request %s",
                      LOG_LEVEL_ERROR, 1, request_id ? request_id : "unknown");
 
-            if (session) session->chat_stream_active = false;
-
-            free(stream_ctx->finish_reason);
-            free(stream_ctx->request_id);
-            free(stream_ctx->model);
-            free(stream_ctx);
+            session->chat_stream_active = false;
 
             free(engine_name);
             chat_context_free_hash_array(context_hashes, context_hash_count);
@@ -426,7 +393,6 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
             return -1;
         }
 
-        stream_ctx->multi_stream_ctx = multi_ctx;
         session->multi_stream_ctx = multi_ctx;
 
         lws_callback_on_writable(wsi);

@@ -375,6 +375,7 @@ run_unity_tests() {
     # Process cached tests efficiently - single cache file read, instant processing
     local cached_count=${#cached_tests[@]}
     local to_run_count=${#tests_to_run[@]}
+    local cached_failures=0
 
     if [[ "${cached_count}" -gt 0 ]]; then
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Processing ${cached_count} cached test results..."
@@ -382,7 +383,8 @@ run_unity_tests() {
         # Process all cached results using pure bash - no external commands
         local cached_total=0 cached_passed=0 cached_pass_count=0 cached_fail_count=0
         local cached_long_running=0 cached_failures=0
-        
+        local cached_failed_tests=()
+
         for test_path in "${cached_tests[@]}"; do
             # Extract data from cache using bash parameter expansion
             local cache_entry="${CACHE_DATA[${test_path}]}"
@@ -402,6 +404,8 @@ run_unity_tests() {
             
             if [[ "${failed_count}" -gt "0" ]]; then
                 cached_failures=$((cached_failures + 1))
+                cached_failed_tests+=("${test_path}")
+                echo "${test_path}" >> "${UNITY_FAILURES_FILE}"
             fi
             
             if [[ "${is_long_running}" == "1" ]]; then
@@ -422,6 +426,9 @@ run_unity_tests() {
         if [[ "${cached_failures}" -gt 0 ]]; then
             overall_result=1
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${cached_failures} cached tests have failures"
+            for failed_test in "${cached_failed_tests[@]}"; do
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "  Cached failure: ${failed_test}"
+            done
         fi
     fi
     
@@ -460,6 +467,10 @@ run_unity_tests() {
     local total_failed=0
     local batch_num=0
     local filecounter=0
+
+    if [[ "${cached_failures}" -gt 0 ]]; then
+        total_failed=${cached_failures}
+    fi
 
     if [[ "${total_tests}" -gt 0 ]]; then
         # Only calculate batch sizes if there are tests to run
