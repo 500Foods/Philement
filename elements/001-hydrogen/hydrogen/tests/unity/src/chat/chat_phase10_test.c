@@ -35,14 +35,16 @@ void test_cache_dir_no_database_in_path(void);
 static const char* TEST_DATABASE = "test_phase10_db";
 
 void setUp(void) {
-    // Clean up any test cache directory
-    system("rm -rf ./cache 2>/dev/null");
+    // Ensure default cache dir for default-path tests
     unsetenv(CHAT_CACHE_DIR_ENV_VAR);
+    system("rm -rf ./cache 2>/dev/null");
 }
 
 void tearDown(void) {
     // Clean up after each test
     system("rm -rf ./cache 2>/dev/null");
+    system("rm -rf /tmp/chat_phase10_test_cache 2>/dev/null");
+    unsetenv(CHAT_CACHE_DIR_ENV_VAR);
 }
 
 // Test 1: Default cache directory is ./cache
@@ -91,6 +93,11 @@ void test_cache_dir_no_database_in_path(void) {
 
 // Test 4: Two-tier directory structure (first 2 chars as subfolder)
 void test_cache_two_tier_structure(void) {
+    // Use a unique cache directory to avoid racing with chat_lru_cache_test
+    // which also targets the default ./cache path during parallel test execution
+    setenv(CHAT_CACHE_DIR_ENV_VAR, "/tmp/chat_phase10_test_cache", 1);
+    system("rm -rf /tmp/chat_phase10_test_cache 2>/dev/null");
+
     // Create a mock cache to test the directory structure
     ChatLRUCache* cache = chat_lru_cache_init(TEST_DATABASE, 1024 * 1024);
     TEST_ASSERT_NOT_NULL(cache);
@@ -119,6 +126,9 @@ void test_cache_two_tier_structure(void) {
 
     free(cache_dir);
     chat_lru_cache_shutdown(cache);
+
+    system("rm -rf /tmp/chat_phase10_test_cache 2>/dev/null");
+    unsetenv(CHAT_CACHE_DIR_ENV_VAR);
 }
 
 // Test 5: Batch retrieve handles NULL database gracefully

@@ -83,8 +83,12 @@ static int cache_hits = 0;  // Track cache hits across all database checks
 
 // Get the cache file path for a specific database
 char* get_cache_file_path(const char *db_name) {
-    const struct passwd *pw = getpwuid(getuid());
-    if (!pw) return NULL;
+    struct passwd pwbuf;
+    struct passwd *pw = NULL;
+    char buf[1024];
+    if (getpwuid_r(getuid(), &pwbuf, buf, sizeof(buf), &pw) != 0 || !pw) {
+        return NULL;
+    }
 
     const char *home = pw->pw_dir;
     char *cache_path = malloc(strlen(home) + strlen("/.cache/hydrogen/dependency/") + strlen(db_name) + 1);
@@ -96,8 +100,12 @@ char* get_cache_file_path(const char *db_name) {
 
 // Ensure cache directory exists
 bool ensure_cache_dir(void) {
-    const struct passwd *pw = getpwuid(getuid());
-    if (!pw) return false;
+    struct passwd pwbuf;
+    struct passwd *pw = NULL;
+    char buf[1024];
+    if (getpwuid_r(getuid(), &pwbuf, buf, sizeof(buf), &pw) != 0 || !pw) {
+        return false;
+    }
 
     const char *home = pw->pw_dir;
     char cache_dir[PATH_MAX];
@@ -106,19 +114,19 @@ bool ensure_cache_dir(void) {
     snprintf(cache_dir, sizeof(cache_dir), "%s/.cache", home);
     struct stat st;
     if (stat(cache_dir, &st) != 0) {
-        if (mkdir(cache_dir, 0755) != 0) return false;
+        if (mkdir(cache_dir, 0755) != 0 && errno != EEXIST) return false;
     }
 
     // Create ~/.cache/hydrogen if it doesn't exist
     snprintf(cache_dir, sizeof(cache_dir), "%s/.cache/hydrogen", home);
     if (stat(cache_dir, &st) != 0) {
-        if (mkdir(cache_dir, 0755) != 0) return false;
+        if (mkdir(cache_dir, 0755) != 0 && errno != EEXIST) return false;
     }
 
     // Create ~/.cache/hydrogen/dependency if it doesn't exist
     snprintf(cache_dir, sizeof(cache_dir), "%s/.cache/hydrogen/dependency", home);
     if (stat(cache_dir, &st) != 0) {
-        if (mkdir(cache_dir, 0755) != 0) return false;
+        if (mkdir(cache_dir, 0755) != 0 && errno != EEXIST) return false;
     }
 
     return true;

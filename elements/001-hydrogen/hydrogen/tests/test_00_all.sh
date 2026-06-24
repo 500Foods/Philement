@@ -183,7 +183,12 @@ declare -a TEST_ELAPSED
 # Command line argument parsing
 SKIP_TESTS=false
 SEQUENTIAL_MODE=false
-SEQUENTIAL_GROUPS=()
+# Groups 4x and 5x share the same database schemas/SQLite file across multiple
+# conduit/OIDC tests. Running them in parallel causes migration/query collisions
+# (duplicate key errors, locked SQLite, rate-limit exhaustion). Keep them sequential
+# so each test gets a clean shot at the shared databases while still exercising
+# internal concurrent query handling.
+SEQUENTIAL_GROUPS=(4 5)
 TEST_ARGS=()
 
 # Parse all arguments
