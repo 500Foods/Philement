@@ -283,6 +283,54 @@ bool sqlite_connect(ConnectionConfig* config, DatabaseHandle** connection, const
         return false;
     }
 
+    // Configure SQLite for better concurrent access from multiple processes.
+    // These are best-effort: busy_timeout helps readers/writers wait briefly
+    // instead of failing immediately, and WAL mode allows readers and writers
+    // to coexist. WAL can only be enabled when no other connection holds the
+    // database lock, so we retry a few times and log a warning if unavailable.
+    if (sqlite3_exec_ptr) {
+        char* err_msg = NULL;
+        const int busy_ms = 5000;
+        char pragma_sql[64];
+        snprintf(pragma_sql, sizeof(pragma_sql), "PRAGMA busy_timeout = %d;", busy_ms);
+        int pragma_rc = sqlite3_exec_ptr(sqlite_db, pragma_sql, NULL, NULL, &err_msg);
+        if (pragma_rc != SQLITE_OK) {
+            log_this(designator ? designator : SR_DATABASE,
+                     "SQLite busy_timeout pragma failed (%d): %s", LOG_LEVEL_ALERT, 2,
+                     pragma_rc, err_msg ? err_msg : "unknown");
+        }
+        if (err_msg && sqlite3_free_ptr) {
+            sqlite3_free_ptr(err_msg);
+            err_msg = NULL;
+        }
+
+        // Try WAL mode with retries; another process may hold the lock briefly.
+        int wal_attempts = 5;
+        bool wal_enabled = false;
+        for (int attempt = 0; attempt < wal_attempts; attempt++) {
+            pragma_rc = sqlite3_exec_ptr(sqlite_db, "PRAGMA journal_mode = WAL;", NULL, NULL, &err_msg);
+            if (pragma_rc == SQLITE_OK) {
+                wal_enabled = true;
+                break;
+            }
+            if (err_msg && sqlite3_free_ptr) {
+                sqlite3_free_ptr(err_msg);
+                err_msg = NULL;
+            }
+            if (attempt < wal_attempts - 1) {
+                usleep(10000); // 10ms between attempts
+            }
+        }
+        if (!wal_enabled) {
+            log_this(designator ? designator : SR_DATABASE,
+                     "SQLite WAL mode unavailable for %s (concurrent access may be limited)",
+                     LOG_LEVEL_ALERT, 1, db_path);
+        }
+        if (err_msg && sqlite3_free_ptr) {
+            sqlite3_free_ptr(err_msg);
+        }
+    }
+
     // Load crypto extension if crypto.so was loaded (must be done immediately after opening)
     if (crypto_handle) {
         const char* log_subsystem = designator ? designator : SR_DATABASE;

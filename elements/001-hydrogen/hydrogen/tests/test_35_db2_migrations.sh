@@ -165,6 +165,21 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     # Run the migration test
     run_migration_test "${CONFIG_FILE}" "${ENGINE_REF}" "${LOG_LINE_PATTERN}" "${TIMEOUT}"
 
+    # Re-run once if migration completed suspiciously fast (<10s).
+    # A sub-10s cycle suggests the database was already in the expected state
+    # (e.g. left behind by a previous test) and the migrations were skipped.
+    first_result_file="${LOG_PREFIX}_${ENGINE_REF}.result"
+    if [[ -f "${first_result_file}" ]]; then
+        first_run_time=$("${GREP}" "MIGRATION_TIME=" "${first_result_file}" 2>/dev/null | cut -d'=' -f2)
+        if [[ -n "${first_run_time}" ]]; then
+            too_fast=$(awk "BEGIN {print (${first_run_time} < 10)}")
+            if [[ "${too_fast}" == "1" ]]; then
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Migration completed in ${first_run_time}s (< 10s) - re-running once to verify"
+                run_migration_test "${CONFIG_FILE}" "${ENGINE_REF}" "${LOG_LINE_PATTERN}" "${TIMEOUT}"
+            fi
+        fi
+    fi
+
     # Analyze results
     result_file="${LOG_PREFIX}_${ENGINE_REF}.result"
     log_file="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_${ENGINE_REF}.log"

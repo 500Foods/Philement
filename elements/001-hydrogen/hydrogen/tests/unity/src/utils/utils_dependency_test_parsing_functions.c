@@ -28,11 +28,15 @@ void test_parsing_with_null_output(void);
 void setUp(void) {
     // Reset all mocks before each test
     mock_system_reset_all();
+    // Disable the on-disk dependency cache to avoid races with other tests
+    // touching ~/.cache/hydrogen/dependency and the getpwuid() thread-safety issue
+    setenv("HYDROGEN_DEP_CACHE", "1", 1);
 }
 
 void tearDown(void) {
     // Reset mocks after each test
     mock_system_reset_all();
+    unsetenv("HYDROGEN_DEP_CACHE");
 }
 
 // Integration test for database parsing functions
