@@ -95,7 +95,8 @@ json_t* parse_query_result_data(const QueryResult* result);
 
 // Build success response JSON
 json_t* build_success_response(int query_ref, const QueryCacheEntry* cache_entry,
-                              const QueryResult* result, const DatabaseQueue* selected_queue, const char* message);
+                               const QueryResult* result, const DatabaseQueue* selected_queue,
+                               const char* intended_queue_type, const char* message);
 
 // Build error response JSON
 json_t* build_error_response(int query_ref, const char* database, const QueryCacheEntry* cache_entry,
@@ -106,7 +107,8 @@ json_t* build_invalid_queryref_response(int query_ref, const char* database, con
 
 // Build response JSON
 json_t* build_response_json(int query_ref, const char* database, const QueryCacheEntry* cache_entry,
-                            const DatabaseQueue* selected_queue, PendingQueryResult* pending, const char* message);
+                            const DatabaseQueue* selected_queue, PendingQueryResult* pending,
+                            const char* message, const char* intended_queue_type);
 
 // Determine HTTP status code based on result
 unsigned int determine_http_status(const PendingQueryResult* pending, const QueryResult* result);
@@ -167,10 +169,10 @@ enum MHD_Result handle_query_submission(struct MHD_Connection *connection, const
                                          const QueryCacheEntry* cache_entry);
 
 enum MHD_Result handle_response_building(struct MHD_Connection *connection, int query_ref,
-                                          const char* database, const QueryCacheEntry* cache_entry,
-                                          const DatabaseQueue* selected_queue, PendingQueryResult* pending,
-                                          char* query_id, char* converted_sql, ParameterList* param_list,
-                                          TypedParameter** ordered_params, const char* message,
-                                          bool cap_fallback);
+                                           const char* database, const QueryCacheEntry* cache_entry,
+                                           const DatabaseQueue* selected_queue, PendingQueryResult* pending,
+                                           char* query_id, char* converted_sql, ParameterList* param_list,
+                                           TypedParameter** ordered_params, const char* message,
+                                           bool cap_fallback, const char* intended_queue_type);
 
 #endif /* CONDUIT_HELPERS_H */

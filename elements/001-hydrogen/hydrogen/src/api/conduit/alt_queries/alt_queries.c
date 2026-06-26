@@ -744,7 +744,7 @@ enum MHD_Result handle_conduit_alt_queries_request(
     }
     
      for (size_t i = 0; i < unique_query_count; i++) {
-         unique_results[i] = build_response_json(query_refs[i], database, cache_entries[i], selected_queues[i], pending_results[i], NULL);
+         unique_results[i] = build_response_json(query_refs[i], database, cache_entries[i], selected_queues[i], pending_results[i], NULL, NULL);
 
          // Cleanup: unregister the pending result
          char* dqm_label = database_queue_generate_label(selected_queues[i]);

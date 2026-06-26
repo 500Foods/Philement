@@ -432,11 +432,11 @@ enum MHD_Result handle_conduit_auth_query_request(
     }
     log_this(SR_AUTH, "handle_conduit_auth_query_request: Query submission succeeded", LOG_LEVEL_TRACE, 0);
 
-    // Step 11: Wait for result and build response
+// Step 11: Wait for result and build response
     log_this(SR_AUTH, "handle_conduit_auth_query_request: Step 11 - Building response", LOG_LEVEL_TRACE, 0);
     result = handle_response_building(connection, query_ref, jwt_database, cache_entry,
-                                     selected_queue, pending, query_id, converted_sql,
-                                     param_list, ordered_params, message, false);
+                                      selected_queue, pending, query_id, converted_sql,
+                                      param_list, ordered_params, message, false, NULL);
     
     log_this(SR_AUTH, "handle_conduit_auth_query_request: Response building returned %d", LOG_LEVEL_TRACE, 1, result);
 

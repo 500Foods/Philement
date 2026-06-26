@@ -454,7 +454,7 @@ enum MHD_Result handle_conduit_alt_query_request(
     pthread_mutex_unlock(&webserver_suspend_lock);
 
      // Step 14: Build response
-     json_t* response = build_response_json(query_ref, database, cache_entry, selected_queue, pending, NULL);
+     json_t* response = build_response_json(query_ref, database, cache_entry, selected_queue, pending, NULL, NULL);
      unsigned int http_status = json_is_true(json_object_get(response, "success")) ?
                                MHD_HTTP_OK : determine_http_status(pending, pending_result_get(pending));
 

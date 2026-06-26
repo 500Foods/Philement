@@ -230,7 +230,7 @@ enum MHD_Result handle_conduit_query_request(
     // Step 10: Wait for result and build response
     result = handle_response_building(connection, query_ref, database, cache_entry,
                                       selected_queue, pending, query_id, converted_sql,
-                                      param_list, ordered_params, message, false);
+                                      param_list, ordered_params, message, false, NULL);
     json_decref(request_json);
 
     // NOTE: handle_response_building() takes ownership of and frees message

@@ -467,7 +467,7 @@ json_t* execute_single_auth_query(const char *database, json_t *query_obj)
     }
 
      // Build response using helper function
-     json_t *result = build_response_json(query_ref, database, cache_entry, selected_queue, pending, message);
+     json_t *result = build_response_json(query_ref, database, cache_entry, selected_queue, pending, message, NULL);
 
      // Cleanup: unregister the pending result and free allocated resources
      char* dqm_label = database_queue_generate_label(selected_queue);
