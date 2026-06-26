@@ -51,18 +51,23 @@ static enum MHD_Result send_cap_verify_error(struct MHD_Connection *connection,
 /**
  * Select the execution queue for a cap-protected query.
  * Type 11 queries are always forced onto the slow queue.
+ * Intended queue type is returned for accurate response labeling.
  */
 static enum MHD_Result handle_cap_queue_selection(struct MHD_Connection *connection,
-                                                  const char* database,
-                                                  int query_ref,
-                                                  const QueryCacheEntry* cache_entry,
-                                                  ParameterList* param_list,
-                                                  char* converted_sql,
-                                                  TypedParameter** ordered_params,
-                                                  DatabaseQueue** selected_queue) {
+                                                   const char* database,
+                                                   int query_ref,
+                                                   const QueryCacheEntry* cache_entry,
+                                                   ParameterList* param_list,
+                                                   char* converted_sql,
+                                                   TypedParameter** ordered_params,
+                                                   DatabaseQueue** selected_queue,
+                                                   const char** intended_queue_type) {
     const char* queue_type = (cache_entry && cache_entry->query_type == 11)
-                                 ? "slow"
-                                 : (cache_entry ? cache_entry->queue_type : "slow");
+                               ? "slow"
+                               : (cache_entry ? cache_entry->queue_type : "slow");
+    if (intended_queue_type) {
+        *intended_queue_type = queue_type;
+    }
     *selected_queue = select_query_queue(database, queue_type);
     if (!*selected_queue) {
         free(converted_sql);
@@ -241,9 +246,11 @@ enum MHD_Result handle_conduit_cap_query_request(
         return MHD_YES;
     }
 
-    DatabaseQueue* selected_queue;
+DatabaseQueue* selected_queue;
+    const char* intended_queue_type;
     result = handle_cap_queue_selection(connection, database, query_ref, cache_entry,
-                                        param_list, converted_sql, ordered_params, &selected_queue);
+                                        param_list, converted_sql, ordered_params, &selected_queue,
+                                        &intended_queue_type);
     if (result != MHD_YES) {
         json_decref(request_json);
         return MHD_YES;
@@ -259,8 +266,8 @@ enum MHD_Result handle_conduit_cap_query_request(
 
     PendingQueryResult* pending;
     result = handle_pending_registration(connection, database, query_ref, query_id,
-                                         param_list, converted_sql, ordered_params,
-                                         cache_entry, &pending);
+                                       param_list, converted_sql, ordered_params,
+                                       cache_entry, &pending);
     if (result != MHD_YES) {
         json_decref(request_json);
         return MHD_YES;
@@ -275,7 +282,7 @@ enum MHD_Result handle_conduit_cap_query_request(
 
     result = handle_response_building(connection, query_ref, database, cache_entry,
                                       selected_queue, pending, query_id, converted_sql,
-                                      param_list, ordered_params, message, cap_fallback);
+                                      param_list, ordered_params, message, cap_fallback, intended_queue_type);
     json_decref(request_json);
 
     log_this(SR_API, "%s: Cap-protected query request processing completed", LOG_LEVEL_TRACE, 1, conduit_service_name());

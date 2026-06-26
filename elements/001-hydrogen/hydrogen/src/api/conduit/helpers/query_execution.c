@@ -229,7 +229,8 @@ json_t* parse_query_result_data(const QueryResult* result) {
 
 // Build success response JSON
 json_t* build_success_response(int query_ref, const QueryCacheEntry* cache_entry,
-                              const QueryResult* result, const DatabaseQueue* selected_queue, const char* message) {
+                               const QueryResult* result, const DatabaseQueue* selected_queue,
+                               const char* intended_queue_type, const char* message) {
     json_t* response = json_object();
 
     json_object_set_new(response, "success", json_true());
@@ -243,7 +244,8 @@ json_t* build_success_response(int query_ref, const QueryCacheEntry* cache_entry
     json_object_set_new(response, "row_count", json_integer((json_int_t)result->row_count));
     json_object_set_new(response, "column_count", json_integer((json_int_t)result->column_count));
     json_object_set_new(response, "execution_time_ms", json_integer(result->execution_time_ms));
-    json_object_set_new(response, "queue_used", json_string(selected_queue->queue_type));
+    // Use intended queue type if provided, otherwise fall back to selected_queue's type
+    json_object_set_new(response, "queue_used", json_string(intended_queue_type ? intended_queue_type : selected_queue->queue_type));
 
     // Add message if provided
     if (message && strlen(message) > 0) {
@@ -317,11 +319,12 @@ json_t* build_invalid_queryref_response(int query_ref, const char* database, con
 
 // Build response JSON
 json_t* build_response_json(int query_ref, const char* database, const QueryCacheEntry* cache_entry,
-                            const DatabaseQueue* selected_queue, PendingQueryResult* pending, const char* message) {
+                            const DatabaseQueue* selected_queue, PendingQueryResult* pending,
+                            const char* message, const char* intended_queue_type) {
     const QueryResult* result = wait_for_query_result(pending);
 
     if (result && result->success && !result->error_message) {
-        return build_success_response(query_ref, cache_entry, result, selected_queue, message);
+        return build_success_response(query_ref, cache_entry, result, selected_queue, intended_queue_type, message);
     } else {
         return build_error_response(query_ref, database, cache_entry, pending, result, message);
     }
@@ -399,11 +402,11 @@ enum MHD_Result handle_query_submission(struct MHD_Connection *connection, const
 }
 
 enum MHD_Result handle_response_building(struct MHD_Connection *connection, int query_ref,
-                                           const char* database, const QueryCacheEntry* cache_entry,
-                                           const DatabaseQueue* selected_queue, PendingQueryResult* pending,
-                                           char* query_id, char* converted_sql, ParameterList* param_list,
-                                           TypedParameter** ordered_params, const char* message,
-                                           bool cap_fallback) {
+                                            const char* database, const QueryCacheEntry* cache_entry,
+                                            const DatabaseQueue* selected_queue, PendingQueryResult* pending,
+                                            char* query_id, char* converted_sql, ParameterList* param_list,
+                                            TypedParameter** ordered_params, const char* message,
+                                            bool cap_fallback, const char* intended_queue_type) {
     // Mark unused parameters
     (void)query_id;
     (void)converted_sql;
@@ -411,7 +414,7 @@ enum MHD_Result handle_response_building(struct MHD_Connection *connection, int 
     (void)ordered_params;
 
     // Wait for result and build response
-    json_t* response = build_response_json(query_ref, database, cache_entry, selected_queue, pending, message);
+    json_t* response = build_response_json(query_ref, database, cache_entry, selected_queue, pending, message, intended_queue_type);
 
     // Add Cap fallback flag when the caller accepted the request despite a transient verify failure
     if (cap_fallback && response) {
@@ -419,7 +422,7 @@ enum MHD_Result handle_response_building(struct MHD_Connection *connection, int 
     }
 
     unsigned int http_status = json_is_true(json_object_get(response, "success")) ?
-                                  MHD_HTTP_OK : determine_http_status(pending, pending_result_get(pending));
+                                MHD_HTTP_OK : determine_http_status(pending, pending_result_get(pending));
 
     enum MHD_Result http_result = api_send_json_response(connection, response, http_status);
 
