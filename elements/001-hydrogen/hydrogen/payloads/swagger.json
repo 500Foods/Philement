@@ -1530,6 +1530,176 @@
         ]
       }
     },
+    "/conduit/cap_query": {
+      "post": {
+        "summary": "Execute a Cap-protected database query by reference",
+        "description": "Executes a pre-defined protected query from the Query Table Cache after verifying a Cap (ChaCha) token with the configured siteverify endpoint. Anonymous callers do not need a JWT; instead they supply a Cap response token and site identifier. Protected queries are forced onto the slow queue and restricted to SELECT, INSERT, UPDATE, or DELETE statements. On transient Cap verification failures the request is accepted with cap_fallback set to true.",
+        "operationId": "executeCapProtectedQueryByReferencePost",
+        "tags": [
+          "Conduit Service"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "query_ref",
+                    "database",
+                    "rows"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Indicates successful query execution",
+                      "example": true
+                    },
+                    "cap_fallback": {
+                      "type": "boolean",
+                      "description": "True when Cap verification was transiently unavailable and the request was accepted anyway",
+                      "example": false
+                    },
+                    "query_ref": {
+                      "type": "integer",
+                      "description": "The query reference ID that was executed",
+                      "example": 85
+                    },
+                    "database": {
+                      "type": "string",
+                      "description": "Database name",
+                      "example": "Demo_PG"
+                    },
+                    "rows": {
+                      "type": "array",
+                      "description": "Array of result rows as JSON objects",
+                      "items": {
+                        "type": "object"
+                      },
+                      "example": [
+                        {
+                          "suggestion_id": 1
+                        }
+                      ]
+                    },
+                    "row_count": {
+                      "type": "integer",
+                      "description": "Number of rows returned",
+                      "example": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "Error code",
+                      "example": "CAP_TOKEN_INVALID"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Human-readable error detail",
+                      "example": "Cap token rejected by verifier"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "query_ref",
+                  "database",
+                  "chachaToken",
+                  "chachaSite"
+                ],
+                "properties": {
+                  "query_ref": {
+                    "type": "integer",
+                    "description": "Protected query identifier from Query Table Cache (query_type_a28 = 11)",
+                    "example": 85
+                  },
+                  "database": {
+                    "type": "string",
+                    "description": "Target database name",
+                    "example": "Demo_PG"
+                  },
+                  "chachaToken": {
+                    "type": "string",
+                    "description": "Cap response token solved by the client",
+                    "example": "cap-token-from-widget"
+                  },
+                  "chachaSite": {
+                    "type": "string",
+                    "description": "Cap public site identifier",
+                    "example": "a9b8369d3b"
+                  },
+                  "params": {
+                    "type": "object",
+                    "description": "Typed parameters for query execution (optional)",
+                    "properties": {
+                      "STRING": {
+                        "type": "object",
+                        "description": "String parameters as key-value pairs",
+                        "example": {
+                          "COURSE_NAME": "Calculus I"
+                        }
+                      },
+                      "INTEGER": {
+                        "type": "object",
+                        "description": "Integer parameters as key-value pairs",
+                        "example": {
+                          "count": 1
+                        }
+                      },
+                      "BOOLEAN": {
+                        "type": "object",
+                        "description": "Boolean parameters as key-value pairs",
+                        "example": {
+                          "active": true
+                        }
+                      },
+                      "FLOAT": {
+                        "type": "object",
+                        "description": "Float parameters as key-value pairs",
+                        "example": {
+                          "score": 9.5
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/conduit/queries": {
       "post": {
         "summary": "Execute multiple database queries in parallel",
