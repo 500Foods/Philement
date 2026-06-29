@@ -37,3 +37,7 @@ The Migration Strategy document focuses on optimizing database migration perform
 ## [CHAT PLAN](/docs/H/plans/CHAT_PLAN_SUMMARY.md) ✅ **Phases 1-10 COMPLETE**
 
 The Chat Service Implementation Plan describes the 13-phase approach for building an AI chat proxy service within the Conduit API. It provides a comprehensive chat infrastructure supporting multiple AI providers (OpenAI, Anthropic, Ollama), content-addressable storage with Brotli compression, and client-server optimization via context hashing. The implementation includes authenticated endpoints, batch operations, local LRU caching, and cross-server segment recovery. Completed phases cover libcurl integration, chat engine cache (CEC), health monitoring, public/authenticated endpoints, multi-provider support, storage pipeline, context hashing, and disk caching. Remaining phases (11-13) will add streaming support, advanced multi-modal features, and enterprise capabilities.
+
+## [MAIL RELAY PLAN](/docs/H/plans/MAILRELAY_PLAN.md)
+
+Implementation of SMTP mail relay functionality.
