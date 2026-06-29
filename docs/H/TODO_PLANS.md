@@ -247,11 +247,11 @@ Per [`TERMINAL_PLAN.md`](/docs/H/plans/TERMINAL_PLAN.md), all phases are marked 
 
 Per [`MIRAGE_PLAN.md`](/docs/H/plans/MIRAGE_PLAN.md), this is an architecture design document for a distributed proxy network. It describes the dual-server architecture (Mirage server + Remote server) but has no implementation phases defined. Implementation is deferred.
 
-### Cap / cap_query Plan
+### Cap / cap_query Plan (COMPLETE)
 
 The actionable work for phase 2 (Hydrogen side: config checks, verify helper, endpoint, protected-type lookup and guards, fallback, tests, docs) lives in:
 
 - High-level coordination view: /mnt/extra/Projects/CAP_PLAN.md Phase 2 section.
-- Gated item-by-item plan: [`/docs/H/plans/CAP_PLAN_QUERY.md`](/docs/H/plans/CAP_PLAN_QUERY.md).
+- Gated item-by-item plan: [`/docs/H/plans/CAP_PLAN_QUERY-COMPLETE.md`](/docs/H/plans/CAP_PLAN_QUERY-COMPLETE.md).
 
 Cap is **not yet in the above status table** because the first real gates begin when implementation starts. Mark items complete in CAP_PLAN_QUERY.md as gates are passed; keep CAP_PLAN.md as the short external coordination summary.
