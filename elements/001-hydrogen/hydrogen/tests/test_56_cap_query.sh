@@ -6,6 +6,11 @@
 # CHACHA_SERVER at an unreachable URL, so no real browser-solved token is
 # required in CI.
 
+# CHANGELOG
+# 1.2.0 - 2026-06-28 - Added queue_used == "slow" assertion for protected INSERT success cases
+# 1.1.0 - 2026-06-24 - Added positive fallback-path tests for QueryRefs #085 and #086
+# 1.0.0 - 2026-06-22 - Initial negative-path tests for cap_query
+
 set -euo pipefail
 
 # Test Configuration
@@ -13,7 +18,7 @@ TEST_NAME="Conduit Cap Query"
 TEST_ABBR="CCQ"
 TEST_NUMBER="56"
 TEST_COUNTER=0
-TEST_VERSION="1.1.0"
+TEST_VERSION="1.2.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -109,11 +114,13 @@ test_cap_query_success() {
     local actual_error=""
     local returned_id=""
     local cap_fallback="false"
+    local queue_used=""
     if command -v jq >/dev/null 2>&1 && [[ -f "${response_file}" ]]; then
         success_val=$(jq -r '.success // "false"' "${response_file}" 2>/dev/null || echo "false")
         actual_error=$(jq -r '.error // empty' "${response_file}" 2>/dev/null || true)
         returned_id=$(jq -r '.rows[0].suggestion_id // .rows[0].submission_id // empty' "${response_file}" 2>/dev/null || true)
         cap_fallback=$(jq -r '.cap_fallback // "false"' "${response_file}" 2>/dev/null || echo "false")
+        queue_used=$(jq -r '.queue_used // empty' "${response_file}" 2>/dev/null || true)
         [[ -n "${actual_error}" ]] && print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Error: ${actual_error}"
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Results in ${response_file}"
     fi
@@ -135,6 +142,11 @@ test_cap_query_success() {
 
     if [[ "${expect_fallback}" == "true" && "${cap_fallback}" != "true" ]]; then
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description} - expected cap_fallback=true in response"
+        return 1
+    fi
+
+    if [[ "${queue_used}" != "slow" ]]; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description} - expected queue_used='slow', got '${queue_used}'"
         return 1
     fi
 
