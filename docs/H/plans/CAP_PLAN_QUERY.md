@@ -401,7 +401,7 @@ Added `TYPE_PROTECTED = 11` to the `query_types` table and `cfg.TYPE_PROTECTED =
 
 At that point the Hydrogen part of CAP_PLAN.md Phase 2 can be marked complete and the frontend work (Phase 3) can proceed safely.
 
-**Status (2026-06-24)**: All Hydrogen-side gates 2.0-2.7 and 2.9 are complete. Helium migrations 1196-1200 register QueryRefs #085 (course_suggestions) and #086 (contact_submissions) as protected type-11 queries on the slow queue. The positive end-to-end path through `test_56_cap_query.sh` now passes (using the Cap fallback path with `CHACHA_SERVER` pointed at an unreachable URL so CI does not need a real browser-solved token). Minor follow-up: the response currently reports `queue_used: "Lead"` even though `cap_query.c` selects the slow queue; the actual execution queue is correct.
+**Status (2026-06-28)**: All Hydrogen-side gates 2.0-2.7 and 2.9 are complete. Helium migrations 1196-1200 register QueryRefs #085 (course_suggestions) and #086 (contact_submissions) as protected type-11 queries on the slow queue. The positive end-to-end path through `test_56_cap_query.sh` passes (using the Cap fallback path with `CHACHA_SERVER` pointed at an unreachable URL so CI does not need a real browser-solved token). The response correctly reports `queue_used: "slow"`; an assertion in `test_56_cap_query.sh` now enforces this.
 
 ---
 
@@ -421,6 +421,7 @@ Do not commit real Cap secrets.
 
 - 2026-06-22: Created from Kilo review of current state + CAP_PLAN Phase 2 summary. Fleshed to atomic gates.
 - 2026-06-24: Helium Phase 2b implementation section added. Migrations 1196-1200 authored (Lookup 028 update, course_suggestions table, QueryRef #085 INSERT, contact_submissions table, QueryRef #086 INSERT). Fixed queue_type integer mapping in `database_bootstrap.c` to match `database.lua` (0=slow, 1=medium, 2=fast, 3=cache). Added `TYPE_PROTECTED = 11` to `database.lua`. Enabled positive path in `test_56_cap_query.sh` using the Cap fallback path (unreachable `CHACHA_SERVER`). Fixed `query_statement_type_allowed()` in `database_operations.c` to skip leading SQL comments so the `INSERT_KEY_*` macro pattern works for protected INSERTs. `mkt` + `mkp` + `luacheck` + `shellcheck` all pass; `test_56_cap_query.sh` passes 8/8.
-- Next update: after real Cap token happy-path tested or queue_used response label corrected.
+- 2026-06-28: Verified `queue_used` now reports `"slow"` for cap_query protected INSERTs. Removed stale note about `"Lead"` label. Added `queue_used == "slow"` assertion to `test_56_cap_query.sh` positive cases.
+- Next update: after real Cap token happy-path tested or if further client integration issues arise.
 
 **End of CAP_PLAN_QUERY.md for now.**
