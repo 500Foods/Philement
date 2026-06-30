@@ -41,3 +41,7 @@ The Chat Service Implementation Plan describes the 13-phase approach for buildin
 ## [MAIL RELAY PLAN](/docs/H/plans/MAILRELAY_PLAN.md)
 
 Implementation of SMTP mail relay functionality.
+
+## [LUA PLAN](/docs/H/plans/LUA_PLAN.md)
+
+Implementation of LUA general scripting functionality.
