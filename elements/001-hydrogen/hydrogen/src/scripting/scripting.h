@@ -37,6 +37,13 @@ extern lua_State* scripting_orchestrator_state;
 struct Scoreboard;
 extern struct Scoreboard* scripting_scoreboard;
 
+// The scripting subsystem's worker pool (Phase 7). Allocated by
+// scripting_workers_init() during launch and destroyed during
+// landing. Owns the job queue, worker pthread IDs, and the in-memory
+// script registry. NULL when the subsystem is not running.
+struct ScriptingWorkerPool;
+extern struct ScriptingWorkerPool* scripting_workers;
+
 // Initialize the Scripting subsystem's static state.
 // Called once from launch_scripting_subsystem(). Idempotent.
 void scripting_init_state(void);

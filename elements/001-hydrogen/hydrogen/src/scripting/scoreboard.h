@@ -41,6 +41,7 @@
 // System headers
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <time.h>
 
 // Project headers
@@ -84,6 +85,17 @@ typedef struct {
     struct timespec     created_at;
     struct timespec     started_at;      // 0,0 until status -> RUNNING
     struct timespec     finished_at;     // 0,0 until status -> terminal
+
+    // Phase 8: per-job resource limits (snapshotted at submit time so
+    // later config edits don't change a running job's contract) and
+    // progress (updated by the lua_sethook-driven progress hook).
+    int                 instruction_hook_interval;  // frequency of hook ticks; 0 = use config default
+    size_t              memory_soft_limit_kb;      // 0 = no soft limit / use config default
+    size_t              memory_hard_limit_kb;      // 0 = no hard limit; LONG_MAX = use config default
+    bool                enforce_limits;            // false for the Orchestrator (and any opt-out job)
+
+    uint64_t            instruction_count;         // 0 until first hook tick
+    size_t              memory_used_kb;            // 0 until first periodic GC sample
 } ScoreboardEntry;
 
 /*
@@ -113,6 +125,27 @@ Scoreboard* scoreboard_create(void);
 void scoreboard_destroy(Scoreboard* sb);
 
 /*
+ * Per-job resource limits. Snapshotted from the scoreboard entry into
+ * the per-lua_State extraspace context by the worker, so the hook
+ * reads a stable contract even if the global config changes mid-job.
+ *
+ * A zero value means "use the corresponding config default" (filled in
+ * by scoreboard_submit_with_limits at submit time, not by the hook).
+ *
+ * enforce_limits is a per-job opt-out: false means the hook will still
+ * update instruction_count and memory_used_kb for observability, but
+ * will never warn or abort the job. This is how the Orchestrator (and
+ * any future long-running tier-2 script) keeps the same observability
+ * path without risking being killed by its own growth.
+ */
+typedef struct {
+    int    instruction_hook_interval;  // 0 = use config default
+    size_t memory_soft_limit_kb;       // 0 = use config default
+    size_t memory_hard_limit_kb;       // 0 = use config default; SIZE_MAX explicitly = no limit
+    bool   enforce_limits;             // default true
+} ScoreboardJobLimits;
+
+/*
  * Append a new job to the scoreboard.
  *
  *   sb          - the scoreboard (non-NULL)
@@ -127,8 +160,26 @@ void scoreboard_destroy(Scoreboard* sb);
  *
  * Concurrency: thread-safe; the entries array is protected by sb->mutex.
  * The capacity grows on demand (realloc) when full.
+ *
+ * Phase 8: this is a thin wrapper around scoreboard_submit_with_limits
+ * passing limits=NULL (which resolves all zero fields to config defaults
+ * and sets enforce_limits=true).
  */
 char* scoreboard_submit(Scoreboard* sb, const char* script_name, const char* params_json);
+
+/*
+ * Submit with explicit per-job resource limits. Limits==NULL is
+ * equivalent to scoreboard_submit() (config defaults, enforce_limits=true).
+ *
+ * A zero field in `limits` means "use the config default". A field set
+ * to SIZE_MAX for memory_hard_limit_kb means "no hard limit". A
+ * non-NULL limits pointer with all fields zero is therefore identical
+ * to NULL.
+ */
+char* scoreboard_submit_with_limits(Scoreboard* sb,
+                                    const char* script_name,
+                                    const char* params_json,
+                                    const ScoreboardJobLimits* limits);
 
 /*
  * Look up a job by its 5-char ID.
@@ -178,5 +229,19 @@ size_t scoreboard_count(Scoreboard* sb);
  * "unknown" for out-of-range values; never returns NULL.
  */
 const char* scoreboard_status_name(ScoreboardJobStatus status);
+
+/*
+ * Update the per-job progress fields (instruction_count, memory_used_kb).
+ * Thread-safe. Returns true if a matching entry was found and updated,
+ * false if the ID is unknown or memory could not be allocated.
+ *
+ * This is a pure data update: it does NOT change the job's status and
+ * does NOT stamp started_at/finished_at. It is called from the
+ * lua_sethook-driven progress hook (Phase 8) on every memory sample
+ * tick, so it must be cheap and lock-bounded.
+ */
+bool scoreboard_update_progress(Scoreboard* sb, const char* job_id,
+                                uint64_t instruction_count,
+                                size_t memory_used_kb);
 
 #endif /* HYDROGEN_SCRIPTING_SCOREBOARD_H */

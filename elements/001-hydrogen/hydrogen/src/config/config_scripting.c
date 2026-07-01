@@ -26,6 +26,7 @@ bool load_scripting_config(json_t* root, AppConfig* config) {
     scripting->DefaultQueryTimeout = 30;
     scripting->DefaultMaxRuntime = 3600;
     scripting->InstructionHookInterval = 5000;
+    scripting->MemorySampleEveryNHooks = 20;
     scripting->MemorySoftLimitKB = 32768;
     scripting->MemoryHardLimitKB = 65536;
 
@@ -47,6 +48,7 @@ bool load_scripting_config(json_t* root, AppConfig* config) {
     success = success && PROCESS_INT(root, scripting, DefaultQueryTimeout, "Scripting.DefaultQueryTimeout", "Scripting");
     success = success && PROCESS_INT(root, scripting, DefaultMaxRuntime, "Scripting.DefaultMaxRuntime", "Scripting");
     success = success && PROCESS_INT(root, scripting, InstructionHookInterval, "Scripting.InstructionHookInterval", "Scripting");
+    success = success && PROCESS_INT(root, scripting, MemorySampleEveryNHooks, "Scripting.MemorySampleEveryNHooks", "Scripting");
     success = success && PROCESS_INT(root, scripting, MemorySoftLimitKB, "Scripting.MemorySoftLimitKB", "Scripting");
     success = success && PROCESS_INT(root, scripting, MemoryHardLimitKB, "Scripting.MemoryHardLimitKB", "Scripting");
     success = success && PROCESS_BOOL(root, scripting, AllowDBModuleLoad, "Scripting.AllowDBModuleLoad", "Scripting");
@@ -107,6 +109,7 @@ void dump_scripting_config(const ScriptingConfig* config) {
     DUMP_INT("Default Query Timeout", config->DefaultQueryTimeout);
     DUMP_INT("Default Max Runtime", config->DefaultMaxRuntime);
     DUMP_INT("Instruction Hook Interval", config->InstructionHookInterval);
+    DUMP_INT("Memory Sample Every N Hooks", config->MemorySampleEveryNHooks);
     DUMP_INT("Memory Soft Limit (KB)", config->MemorySoftLimitKB);
     DUMP_INT("Memory Hard Limit (KB)", config->MemoryHardLimitKB);
     DUMP_BOOL("Allow DB Module Load", config->AllowDBModuleLoad);

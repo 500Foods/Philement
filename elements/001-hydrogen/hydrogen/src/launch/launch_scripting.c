@@ -17,6 +17,7 @@
 // Local includes
 #include "launch.h"
 #include <src/scripting/scripting.h>
+#include <src/scripting/worker_pool.h>
 
 // External declarations
 extern ServiceThreads scripting_threads;
@@ -143,6 +144,15 @@ int launch_scripting_subsystem(void) {
                  app_config->scripting.WorkerCount,
                  app_config->scripting.DefaultDatabase ? app_config->scripting.DefaultDatabase : "(none)",
                  app_config->scripting.Orchestrator ? app_config->scripting.Orchestrator : "(none)");
+    }
+
+    // Phase 7: bring up the worker pool. WorkerCount was validated in
+    // check_scripting_launch_readiness (1..MAX_CONCURRENT_JOBS).
+    int worker_count = app_config ? app_config->scripting.WorkerCount : 2;
+    if (!scripting_workers_init(worker_count)) {
+        log_this(SR_SCRIPTING, "LAUNCH: " SR_SCRIPTING " FAILED (worker pool init)",
+                 LOG_LEVEL_ERROR, 0);
+        return 0;
     }
 
     log_this(SR_SCRIPTING, "LAUNCH: " SR_SCRIPTING " COMPLETE", LOG_LEVEL_STATE, 0);
