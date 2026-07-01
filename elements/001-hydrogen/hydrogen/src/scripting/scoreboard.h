@@ -1,0 +1,182 @@
+/*
+ * Scripting Subsystem - Scoreboard
+ *
+ * Phase 5 of the LUA_PLAN. Thread-safe in-memory scoreboard that tracks
+ * Lua jobs. The scoreboard is the single shared, mutex-protected
+ * structure between the worker pool, the Orchestrator, and any REST
+ * waiters (see LUA_PLAN.md Risks section).
+ *
+ * v1 surface is intentionally minimal:
+ *   - submit a job, getting a 5-char Hydrogen ID back
+ *   - look up a job by ID (returns a heap copy; caller frees)
+ *   - update a job's status (stamps started_at / finished_at)
+ *   - count entries
+ *   - create / destroy
+ *
+ * Fields added by later phases (Phase 8: instruction_count, memory;
+ * Phase 9: current_state; Phase 10: max_runtime, kill flag;
+ * Phase 12: has_waiter, waiter_context, result_ref; Phase 25: result
+ * artifacts) are NOT in v1. The struct reserves placeholder comments
+ * for them so the growth path is obvious.
+ *
+ * Concurrency model:
+ *   - One pthread_mutex_t protects the entries array.
+ *   - find() returns a copy so callers can read fields without holding
+ *     the mutex (and so the data survives a realloc inside submit()).
+ *   - The mutex is held only for short critical sections: appending
+ *     during submit, copying during find, status transitions during
+ *     update. Operations that may block (DB, HTTP) are NOT done under
+ *     the mutex - those happen against the copy returned by find().
+ *
+ * v1 does not have:
+ *   - iteration (Phase 11's H.scoreboard.list)
+ *   - waiting/condition variables (Phase 12)
+ *   - persistence or restart-survival (out of scope for this plan)
+ *   - capacity upper bound; the array grows on demand.
+ */
+
+#ifndef HYDROGEN_SCRIPTING_SCOREBOARD_H
+#define HYDROGEN_SCRIPTING_SCOREBOARD_H
+
+// System headers
+#include <stdbool.h>
+#include <stddef.h>
+#include <time.h>
+
+// Project headers
+#include <src/globals.h>   // ID_LEN, ID_CHARS
+
+// Forward declaration; defined in this header below.
+struct Scoreboard;
+
+/*
+ * Status values for a scoreboard entry. Ordered so the natural
+ * progression is monotonic (PENDING -> RUNNING -> terminal), which
+ * makes status comparisons meaningful.
+ */
+typedef enum {
+    SCOREBOARD_JOB_PENDING   = 0,   // Submitted, not yet claimed by a worker
+    SCOREBOARD_JOB_RUNNING   = 1,   // A worker has claimed and is executing
+    SCOREBOARD_JOB_COMPLETED = 2,   // Worker finished successfully
+    SCOREBOARD_JOB_FAILED    = 3,   // Worker reported an error
+    SCOREBOARD_JOB_KILLED    = 4    // Killed (Phase 10) or shutdown-forced
+} ScoreboardJobStatus;
+
+/*
+ * One job tracked by the scoreboard.
+ *
+ * String fields (script_name, params_json) are owned by the entry
+ * (allocated with strdup on submit, freed on entry removal or on
+ * scoreboard_destroy). Timestamps with zero tv_sec are "not set".
+ *
+ * Reserved for later phases (NOT populated by v1):
+ *   - instruction_count, memory_used_bytes  (Phase 8 hook)
+ *   - current_state                          (Phase 9 H.set_current_state)
+ *   - max_runtime_seconds, kill_requested    (Phase 10)
+ *   - has_waiter, waiter_context, result_ref (Phase 12)
+ *   - result_type, result_location           (Phase 25)
+ */
+typedef struct {
+    char                job_id[ID_LEN + 1];
+    char*               script_name;     // strdup'd; freed by entry destroy
+    char*               params_json;     // strdup'd; freed by entry destroy; may be NULL
+    ScoreboardJobStatus status;
+    struct timespec     created_at;
+    struct timespec     started_at;      // 0,0 until status -> RUNNING
+    struct timespec     finished_at;     // 0,0 until status -> terminal
+} ScoreboardEntry;
+
+/*
+ * The scoreboard itself.
+ *
+ * v1 has a single growable array, protected by a single mutex. List
+ * operations (Phase 11) and waiter condvars (Phase 12) are additive
+ * and do not change this layout.
+ */
+typedef struct Scoreboard {
+    ScoreboardEntry*    entries;
+    size_t              count;
+    size_t              capacity;
+    pthread_mutex_t     mutex;
+} Scoreboard;
+
+/*
+ * Create a new, empty scoreboard. Returns NULL on allocation failure.
+ * Destroy with scoreboard_destroy().
+ */
+Scoreboard* scoreboard_create(void);
+
+/*
+ * Free a scoreboard and all of its entries. Safe to call with NULL.
+ * Idempotent (calling twice is a no-op the second time).
+ */
+void scoreboard_destroy(Scoreboard* sb);
+
+/*
+ * Append a new job to the scoreboard.
+ *
+ *   sb          - the scoreboard (non-NULL)
+ *   script_name - non-NULL script identifier (e.g. "orchestrator.submit")
+ *   params_json - opaque JSON string for the job's parameters, or NULL.
+ *                 Ownership: scoreboard strdup's the string, so the
+ *                 caller may free its own copy after the call returns.
+ *
+ * Returns a pointer to a heap-allocated C string containing the new
+ * job_id (5-char Hydrogen ID). The caller is responsible for free()'ing
+ * the returned string. Returns NULL on allocation failure.
+ *
+ * Concurrency: thread-safe; the entries array is protected by sb->mutex.
+ * The capacity grows on demand (realloc) when full.
+ */
+char* scoreboard_submit(Scoreboard* sb, const char* script_name, const char* params_json);
+
+/*
+ * Look up a job by its 5-char ID.
+ *
+ * Returns a heap-allocated copy of the entry (caller frees with
+ * scoreboard_entry_free). Returns NULL if the ID is unknown or if
+ * memory cannot be allocated.
+ *
+ * The copy is independent of the scoreboard - subsequent submit,
+ * update_status, or destroy calls do not invalidate it.
+ */
+ScoreboardEntry* scoreboard_find(Scoreboard* sb, const char* job_id);
+
+/*
+ * Free a ScoreboardEntry returned by scoreboard_find. Safe with NULL.
+ */
+void scoreboard_entry_free(ScoreboardEntry* entry);
+
+/*
+ * Update the status of a job.
+ *
+ *   sb        - the scoreboard
+ *   job_id    - the 5-char ID to update
+ *   new_status - the new status
+ *
+ * Returns true if a matching entry was found and updated. Returns
+ * false if the ID is unknown (no change made).
+ *
+ * Side effects on timestamps:
+ *   - Any transition *into* RUNNING (from PENDING) stamps started_at
+ *     to "now".
+ *   - Any transition into a terminal state (COMPLETED, FAILED, KILLED)
+ *     stamps finished_at to "now".
+ *   - Idempotent: re-setting the same status is a no-op (returns true
+ *     but does not re-stamp timestamps).
+ */
+bool scoreboard_update_status(Scoreboard* sb, const char* job_id, ScoreboardJobStatus new_status);
+
+/*
+ * Number of entries currently in the scoreboard. Thread-safe (briefly
+ * takes the mutex). Returns 0 for a NULL scoreboard.
+ */
+size_t scoreboard_count(Scoreboard* sb);
+
+/*
+ * Human-readable name for a status value (for logging). Returns
+ * "unknown" for out-of-range values; never returns NULL.
+ */
+const char* scoreboard_status_name(ScoreboardJobStatus status);
+
+#endif /* HYDROGEN_SCRIPTING_SCOREBOARD_H */

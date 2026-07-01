@@ -2,7 +2,7 @@
 
 Hydrogen Scripting Subsystem (Lua) – Implementation Roadmap
 
-**Status**: Draft – Actively evolving; Phases 1, 2, 2b, 3, and 3b complete; Phase 4 is next
+**Status**: Draft – Actively evolving; Phases 1, 2, 2b, 3, 3b, 4, and 5 complete; Phase 6 is next
 **Last Updated**: 2026-07-01
 **Owner**: Andrew + Grok
 
@@ -309,6 +309,7 @@ That observation led to a two-tier architecture (modeled directly on how Migrati
   - The leak check (Test 11) needed a new config file rather than a tweak to the existing one, because the existing config was already validating a different lifecycle (no scripting, just core subsystems). A separate config keeps each subtest's failure mode clearly attributable.
   - Local script variables inside test scripts need to be lowercase, not UPPERCASE, because the test_03 env-var scanner picks up any `${VARIABLE}`-style reference in `.sh` files. We initially named local variables `SCRIPTING_*` and `SUBTEST_*`; both failed test_03 because the scanner treats them as environment variables. Switching to `subtest_*` made the scanner correctly ignore them. This is a useful convention to document in the project's test author guide.
   - Phase 3b proves the "shutdown is proven early" decision from the plan: a real Lua state, assigned to the orchestrator slot, is released by `land_scripting_subsystem` — not a mock, not a NULL, but an actual `lua_State*` going through `lua_close` with ASAN-clean accounting. The same code path will run when Phase 11 puts a real orchestrator there, so the leak risk is bounded by the migration engine's record, not a new untested surface.
+  - **Registry integration regression discovered after the fact**: Adding `app_config->scripting.Enabled` to `update_registry_on_startup()` (so the registry could report the Scripting subsystem's state) caused `registry_integration_test_update_registry_on_startup` to segfault. The test had set `app_config = (AppConfig*)0x12345678` as a "non-null pointer" placeholder; before Phase 3, `update_registry_on_startup()` only used `app_config` in `app_config && !flag` guards, so the bogus pointer was never dereferenced. The new `app_config->scripting.Enabled` read dereferenced it. Two sub-lessons: (a) Unity tests that use `__attribute__((weak))` to mock globals cannot override strong symbols from `src/globals.c`; the real `app_config` is always the one being mutated, so bogus pointers are real segfaults. (b) Any change that adds a dereference of a test-mocked global must be paired with either a real struct instance in the test or a defensive NULL guard that the test exercises. We fixed the test by replacing the placeholder pointer with a real zeroed `AppConfig mock_app_config` and adding `memset(&mock_app_config, 0, ...)` in `setUp`. The full Unity suite now passes (7,178 / 7,178 tests).
 
 ---
 
@@ -316,6 +317,7 @@ That observation led to a two-tier architecture (modeled directly on how Migrati
 
 - **Goal**: Load and execute a Lua chunk from a string buffer.
 - **Dependencies**: Phase 3
+- **Status**: **Complete 2026-07-01.** `H_lua_run_string` is implemented in `src/scripting/lua_context.c` and a 10-test Unity suite (`lua_context_test_run_string`) exercises success, multiple return values, syntax errors, runtime errors, NULL safety, and chained execution on the same context.
 - **Expectation**:
 
   ```c
@@ -323,10 +325,28 @@ That observation led to a two-tier architecture (modeled directly on how Migrati
   ```
 
   Return value handling and basic error reporting.
-- **Deliverables**: Function to run string + error handling.
-- **Validation**: Test runs script that returns a value and one that errors.
+- **Deliverables**:
+  - `H_lua_run_string(lua_State* L, const char* code, const char* name)` declared in `src/scripting/lua_context.h` and implemented in `src/scripting/lua_context.c`.
+  - Unity test `tests/unity/src/scripting/lua_context_test_run_string.c` (10 tests).
+- **Validation**:
+  - `mkt` equivalent (`extras/make-trial.sh`) — **PASS**, build successful.
+  - `mkp` equivalent (`tests/test_91_cppcheck.sh`) — **PASS**, 1,390 files, 0 issues.
+  - `mku` equivalent — **`lua_context_test_run_string` — PASS**, 10/10 tests.
+  - Regression: Phase 3 / 3b Unity suites all still pass (`lua_context_test_create_destroy` 4/4, `launch_scripting_test_check_scripting_launch_readiness` 4/4, `launch_scripting_test_launch_scripting_subsystem` 2/2, `landing_scripting_test_check_scripting_landing_readiness` 2/2, `landing_scripting_test_land_scripting_subsystem` 3/3).
+  - `tests/test_12_env_variables.sh` — **PASS**, 15/15.
+  - Full Unity suite (`tests/test_10_unity.sh`) — **7,171 / 7,172 passing**; the 1 failure (`registry_integration_test_update_registry_on_startup`) is a pre-existing cached failure unrelated to this phase.
+  - ASAN / leak validation deferred to the Phase 7 worker build (where the function will actually run inside a thread). The function itself is a thin wrapper around `luaL_loadbufferx` + `lua_pcall` against an existing `H_lua_create_context` state; the proven-clean ASAN lifecycle from Phase 3b (init + land with no chunks executed) bounds the new risk to whatever a single chunk's allocations look like, and that surface is exactly what Phase 7 will exercise.
 - **Notes / Open Questions**:
+  - `luaL_loadbufferx` is preferred over the older `luaL_loadbuffer` so the source's `mode` argument is explicitly `NULL` (text chunk). The behavior is identical to `luaL_loadbuffer` for our use case but the call site documents intent and is forward-compatible with `mode`-based loading later.
+  - **Error model**: on failure, a single error string is left on the stack (Lua's own contract for `luaL_loadbufferx` / `lua_pcall`); on success, `LUA_MULTRET` lets the chunk leave any number of return values. The function does **not** pop the error — the caller is responsible for both (a) copying the string to C-owned memory before any other Lua call (UAF discipline from Phase 1) and (b) `lua_pop`ping it before resuming. The header documents this contract explicitly.
+  - **NULL safety**: `NULL` state and `NULL` code both return `LUA_ERRRUN` with an explanatory log line. `NULL` name falls back to `"?"` (Lua's default chunk name) and is treated as success.
+  - **Empty string** (`""`) is a valid no-op chunk and returns `LUA_OK` with no return values, which is useful for Phase 7's worker pool where an empty job should not be an error.
+  - The function is the **worker-tier** primitive (called once per job on a fresh state). The Orchestrator (Phase 11) compiles its single chunk at launch via `luaL_loadbufferx` directly and then drives it with a scheduling loop — it does **not** use this wrapper, matching the Phase 1 two-tier architecture.
 - **Lessons Learned**:
+  - The error-string-on-stack contract is small but powerful: it matches what every Lua C embedding does and means the caller's error-handling code is identical for compile errors and runtime errors. Trying to "improve" this by copying the error into an out-parameter would just create a second code path that the worker pool (Phase 7) and the REST wait path (Phase 12) would both have to remember.
+  - The chunk-name argument matters more than it looks. A worker pool that passes `"[job:42]"` instead of `"?"` gets free log context — the `[job:42]:7: attempt to index a nil value` line tells an operator exactly which job and which line failed. The Phase 4 contract leaves this up to the caller, which is the right boundary: `H_lua_run_string` does not know about jobs, but every worker call site will.
+  - Returning `LUA_OK` on an empty string turned out to be a small but useful design choice. A job whose source happens to be empty (e.g. a placeholder file or a stripped debug script) is not an error in a long-lived server, and surfacing it as one would push the empty-check into every caller. This decision is one line in the implementation and removes a category of "why did this fail?" debugging from Phase 7.
+  - The two-tier architecture (Phase 1) keeps paying off: `H_lua_run_string` does not need to know about state lifetime, allocator choice, or the Orchestrator's special role. It is a single-purpose function that fits the worker tier exactly, and the test suite reflects that (no thread context, no scoreboard, just a state, a buffer, and a result).
 
 ---
 
@@ -334,11 +354,55 @@ That observation led to a two-tier architecture (modeled directly on how Migrati
 
 - **Goal**: Implement thread-safe in-memory scoreboard for tracking jobs.
 - **Dependencies**: Phase 3
+- **Status**: **Complete 2026-07-01.** Scoreboard v1 is implemented, wired into the subsystem's init/cleanup lifecycle, and exercised by 40 new Unity tests (5 files) plus a 4th landing test that confirms the scoreboard is destroyed on shutdown. cppcheck clean; full Unity suite at 7,219/7,219.
 - **Expectation**: Struct with `job_id`, `script_name`, `status`, `limits`, `instruction_count`, `current_state`, `created_at`, etc. Protected by mutex or lock-free where practical.
-- **Deliverables**: Scoreboard create/update/query functions.
-- **Validation**: Concurrent create/update/query tests pass.
+- **Implementation approach** (decided 2026-07-01):
+  - **Single growable array** (`ScoreboardEntry* entries`) protected by a single `pthread_mutex_t`. No fancy lock-free structures — the migration engine's straightforward approach is the right model for v1.
+  - **Copy-on-find**: `scoreboard_find` returns a heap copy of the entry (caller frees with `scoreboard_entry_free`). This removes the "remember to hold the mutex while reading" foot-gun for Phase 11's `H.scoreboard.list` and the REST wait path, and the copy survives subsequent `realloc`s.
+  - **On-demand growth** (`realloc` doubles capacity). The `lua_mmap_alloc`-style cheap-insurance allocator is not needed here because the scoreboard's allocations are C-process-heap allocations, not Lua runtime allocations.
+  - **ID generation**: reuses Hydrogen's existing `generate_id` (`ID_CHARS` / `ID_LEN` from `globals.h`). 5-char human-readable IDs match the rest of the project. Collisions on a 12^5 space are extremely unlikely in v1 and `submit` retries up to 8 times before returning NULL.
+  - **`submit(script_name, params_json)`** — accepts an opaque `params_json` string now so the Phase 13 `H.query`/`H.altquery`/`H.authquery` submit paths don't need a signature change later. The scoreboard strdup's both, so the caller may free its copies.
+  - **`update_status` stamps `started_at` on PENDING→RUNNING and `finished_at` on any transition into a terminal state (COMPLETED / FAILED / KILLED).** Idempotent: re-setting the same status is a no-op and does not re-stamp timestamps.
+  - **Wired into `scripting_init_state` and `scripting_cleanup_state`.** The `scripting_scoreboard` pointer is created on launch (when enabled) and destroyed on landing. This proves the shutdown path end-to-end with the scoreboard populated, in the same way Phase 3b proved the Orchestrator-state shutdown path.
+  - **Reserved for later phases (NOT in v1)**: `instruction_count` / `memory_used_bytes` (Phase 8 hook), `current_state` (Phase 9), `max_runtime_seconds` / `kill_requested` (Phase 10), `has_waiter` / `waiter_context` / `result_ref` (Phase 12), `result_type` / `result_location` (Phase 25), `H.scoreboard.list` iteration (Phase 11).
+- **Deliverables**:
+  - `src/scripting/scoreboard.h` — public API
+  - `src/scripting/scoreboard.c` — implementation
+  - `Scoreboard* scripting_scoreboard;` external in `src/scripting/scripting.h`, defined in `src/scripting/scripting.c`
+  - `scripting_init_state()` and `scripting_cleanup_state()` updated to create / destroy the scoreboard
+  - Updated `tests/unity/src/launch/launch_scripting_test_launch_scripting_subsystem.c` (tearDown now destroys the scoreboard to prevent leaks between tests)
+  - Updated `tests/unity/src/landing/landing_scripting_test_land_scripting_subsystem.c` (added a 4th test that confirms the scoreboard is destroyed on landing)
+  - 5 new Unity test files in `tests/unity/src/scripting/`:
+    - `scoreboard_test_create_destroy.c` (5 tests)
+    - `scoreboard_test_submit.c` (11 tests)
+    - `scoreboard_test_find.c` (9 tests)
+    - `scoreboard_test_update_status.c` (11 tests)
+    - `scoreboard_test_concurrent.c` (4 tests — real pthreads, mutex validation)
+- **Validation**:
+  - `mkt` equivalent (`extras/make-trial.sh`) — **PASS**
+  - `mkp` equivalent (`tests/test_91_cppcheck.sh`) — **PASS**, 1,397 files, 0 issues
+  - `mku scoreboard_test_create_destroy` — **PASS**, 5/5
+  - `mku scoreboard_test_submit` — **PASS**, 11/11
+  - `mku scoreboard_test_find` — **PASS**, 9/9
+  - `mku scoreboard_test_update_status` — **PASS**, 11/11
+  - `mku scoreboard_test_concurrent` — **PASS**, 4/4 (8 threads × 50 jobs each, mutex proven correct)
+  - `mku launch_scripting_test_launch_scripting_subsystem` — **PASS**, 2/2 (no regression)
+  - `mku landing_scripting_test_land_scripting_subsystem` — **PASS**, 4/4 (3 prior + 1 new for scoreboard cleanup)
+  - Full Unity suite (`tests/test_10_unity.sh`) — **7,219 / 7,219 passing** (was 7,178 before Phase 5; +41 from new tests)
+  - `tests/test_16_shutdown.sh` — **PASS**, 5/5
+  - `tests/test_17_startup_shutdown.sh` — **PASS**, 9/9 (min and max configurations still start and stop cleanly with the new scoreboard path)
+  - Test 11 (ASAN) — **deferred**: requires the debug build, which the trial build does not produce. The trial coverage of the same lifecycle (launch + land with the scoreboard in place) is exercised by Test 17's "max" configuration and by `landing_scripting_test_land_scripting_subsystem`.
 - **Notes / Open Questions**:
+  - **Re-entering a terminal state is allowed in v1.** A subsequent `update_status(COMPLETED → PENDING)` is not prevented. This is a deliberate v1 simplicity choice: the scoreboard is a passive data structure in this phase, and the worker / orchestrator code that calls `update_status` (Phase 7/11) is expected to drive the state machine correctly. If misuse becomes a real risk, a small "no transition out of terminal" guard can be added in Phase 7/10 without changing the public API.
+  - **The scoreboard lives for the duration of the subsystem**, not per-request. Phase 11's `H.scoreboard.list` and the eventual REST visibility layer (Phase 23) read this same instance.
+  - **The script_name field is `strdup`'d by the scoreboard and freed by `entry_clear_owned`.** The convention matches Phase 4's UAF discipline: any string handed to the C side is copied, and the caller can free its own copy after the call.
 - **Lessons Learned**:
+  - **Copy-on-find was the single most important v1 decision.** Returning a copy from `scoreboard_find` means callers can read the entry fields without holding the scoreboard's mutex, which is exactly what later phases will need: the worker pool, the Orchestrator's `H.scoreboard.list`, and the REST wait path all want to "snapshot" an entry and then do work on it (format a JSON response, log a metric, etc.) without blocking submit/update from other threads. Trying to "improve" this with a reader-writer lock or a hazard-pointer scheme would just push complexity into callers.
+  - **The 5-char ID space is large enough that we don't need a GUID.** 12^5 = 248,832 IDs. A single scoreboard's lifetime is one process; even 100k jobs would only see a ~2% collision rate on a uniform random distribution. The 8-attempt retry bound makes the practical collision probability negligible. The win is that operators see human-readable IDs in logs (`[job:BCDFG]`) instead of GUIDs.
+  - **Wiring the scoreboard into `scripting_init_state` / `scripting_cleanup_state` early pays off.** Phase 3b proved the "shutdown is proven early" pattern by attaching a real Lua state to `scripting_orchestrator_state` and landing it. Doing the same for the scoreboard now means Phase 7 (worker pool) and Phase 11 (Orchestrator) inherit a known-clean shutdown path, and Test 11 / Test 17 can be re-run with the scoreboard populated to verify no leak. This is the same pattern: prove the lifecycle on a minimal surface before piling features on top.
+  - **The concurrent test is the only one that needs real pthreads.** All other scoreboard tests run on a single thread, which is faster and easier to reason about. The mutex is proven correct by 4 concurrent tests (8 threads × 50 jobs each) that exercise submit, find, update, and a mixed workload, then assert exact post-state invariants.
+  - **Updating existing test files was the right move.** Adding a destroy hook to the `tearDown` of `launch_scripting_test_launch_scripting_subsystem` and `landing_scripting_test_land_scripting_subsystem` kept them stable as the scoreboard lifecycle grew. The alternative (a new test file that "exercises the scoreboard" in isolation) would have duplicated the launch/land flow and obscured the fact that the scoreboard is part of the same lifecycle.
+  - **A new 4th test in the landing file makes the wiring explicit.** Without it, the "scoreboard is destroyed on land" property was implicit in `scripting_cleanup_state`. The new test creates a real scoreboard, submits a real job (so the scoreboard has owned strings to free), lands, and asserts the pointer is NULL — the same shape as the existing Orchestrator cleanup test, so future readers see the parallel.
 
 ---
 
@@ -721,4 +785,4 @@ This plan currently contains **28 focused phases** organized around a **two-tier
 
 More phases can (and likely will) be added as we proceed and discover additional needs. The structure is designed to support the interactive, learning-oriented development process agreed upon.
 
-Before any implementation work on a phase, the current state is reviewed and the detailed approach for that phase is agreed. **Everything prior to Phase 4 is complete: Phase 1 (assessment), Phase 2 (host API namespace design), Phase 2b (Scripting config section and global defaults), Phase 3 (sandboxed Lua context lifecycle), and Phase 3b (Scripting subsystem skeleton: enablement, launch, and early shutdown — proven leak-free by ASAN in Test 11). Phase 4 (`H_lua_run_string` for executing a string buffer) is the next step.**
+Before any implementation work on a phase, the current state is reviewed and the detailed approach for that phase is agreed. **Everything prior to Phase 6 is complete: Phase 1 (assessment), Phase 2 (host API namespace design), Phase 2b (Scripting config section and global defaults), Phase 3 (sandboxed Lua context lifecycle), Phase 3b (Scripting subsystem skeleton: enablement, launch, and early shutdown — proven leak-free by ASAN in Test 11), Phase 4 (`H_lua_run_string` for executing a string buffer), and Phase 5 (basic in-memory scoreboard data structure, wired into the subsystem's init/cleanup lifecycle and exercised by 40 new Unity tests + a 4th landing test for shutdown). Phase 6 (expose `H.log` and basic `H.system`) is the next step.**

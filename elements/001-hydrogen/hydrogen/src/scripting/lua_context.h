@@ -56,4 +56,38 @@ void H_lua_destroy_context(lua_State* L);
  */
 void H_lua_install_api(lua_State* L);
 
+/*
+ * Load and execute a Lua chunk from a NUL-terminated string.
+ *
+ * Phase 4: the minimal wrapper that turns a string buffer into a
+ * successful (or failed) chunk execution. Compiles the source with
+ * luaL_loadbuffer and runs it with lua_pcall.
+ *
+ * Parameters:
+ *   L    - a sandboxed Lua state created by H_lua_create_context.
+ *          May be NULL, in which case the call is a no-op and
+ *          LUA_ERRRUN is returned.
+ *   code - the Lua source code as a NUL-terminated string. May not
+ *          be NULL; a NULL is treated as a runtime error.
+ *   name - a chunk name used in error messages (e.g. "[orchestrator]"
+ *          or "[job:42]"). May be NULL, in which case Lua uses "?" .
+ *
+ * Returns:
+ *   LUA_OK on success; on success, the chunk's return values are left
+ *   on the Lua stack for the caller to consume (lua_gettop tells how
+ *   many, lua_pop removes them).
+ *
+ *   On failure, returns a non-zero Lua status (LUA_ERRSYNTAX, LUA_ERRRUN,
+ *   LUA_ERRMEM, ...) and leaves a single error string on top of the
+ *   stack. The caller is expected to copy that string out of Lua-owned
+ *   memory (UAF discipline) before touching the state again and to
+ *   pop it with lua_pop before resuming other work.
+ *
+ * Ownership: the caller owns L and the resulting stack values. This
+ * function neither creates nor destroys the state and does not call
+ * lua_close on failure (the migration engine's per-call-state pattern
+ * already handles that at the worker level).
+ */
+int H_lua_run_string(lua_State* L, const char* code, const char* name);
+
 #endif /* HYDROGEN_SCRIPTING_LUA_CONTEXT_H */
