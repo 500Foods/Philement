@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
+#include <stdint.h>
 
 // Local includes
 #include "scoreboard.h"
@@ -139,12 +140,16 @@ void scoreboard_destroy(Scoreboard* sb) {
     free(sb);
 }
 
-char* scoreboard_submit(Scoreboard* sb, const char* script_name, const char* params_json) {
+char* scoreboard_submit_with_limits(Scoreboard* sb,
+                                    const char* script_name,
+                                    const char* params_json,
+                                    const ScoreboardJobLimits* limits) {
     if (!sb) {
         return NULL;
     }
     if (!script_name) {
-        log_this(SR_LUA, "scoreboard_submit: NULL script_name", LOG_LEVEL_ERROR, 0);
+        log_this(SR_LUA, "scoreboard_submit_with_limits: NULL script_name",
+                 LOG_LEVEL_ERROR, 0);
         return NULL;
     }
 
@@ -161,6 +166,42 @@ char* scoreboard_submit(Scoreboard* sb, const char* script_name, const char* par
         }
     }
 
+    // Phase 8: resolve limits. We snapshot from app_config (if
+    // available) at submit time so later config edits don't change a
+    // running job's contract. The hook reads from the entry copy
+    // (filled by scoreboard_find), not from app_config.
+    //
+    // Zero fields mean "use the config default" (or for hard_limit,
+    // SIZE_MAX means "no limit"). Non-NULL limits with all-zero fields
+    // is therefore identical to NULL.
+    int    hook_interval = 0;
+    size_t soft_kb = 0;
+    size_t hard_kb = 0;
+    bool   enforce = true;
+    if (limits) {
+        hook_interval = limits->instruction_hook_interval;
+        soft_kb = limits->memory_soft_limit_kb;
+        hard_kb = limits->memory_hard_limit_kb;
+        enforce = limits->enforce_limits;
+    }
+    if (app_config) {
+        if (hook_interval <= 0) {
+            hook_interval = app_config->scripting.InstructionHookInterval;
+        }
+        if (soft_kb == 0) {
+            soft_kb = (size_t)app_config->scripting.MemorySoftLimitKB;
+        }
+        if (hard_kb == 0) {
+            int cfg_hard = app_config->scripting.MemoryHardLimitKB;
+            hard_kb = (cfg_hard > 0) ? (size_t)cfg_hard : SIZE_MAX;
+        }
+    } else {
+        // No config: leave zero fields as zero. The hook handles
+        // 0 soft / 0 hard by skipping the check (see lua_hook.c).
+        // hook_interval was already left at 0 above if the caller
+        // didn't provide a positive value.
+    }
+
     pthread_mutex_lock(&sb->mutex);
 
     if (!entries_grow_if_needed(sb)) {
@@ -175,7 +216,7 @@ char* scoreboard_submit(Scoreboard* sb, const char* script_name, const char* par
         pthread_mutex_unlock(&sb->mutex);
         free(dup_script);
         free(dup_params);
-        log_this(SR_LUA, "scoreboard_submit: could not generate unique id after %d retries",
+        log_this(SR_LUA, "scoreboard_submit_with_limits: could not generate unique id after %d retries",
                  LOG_LEVEL_ERROR, 1, SCOREBOARD_ID_RETRY_LIMIT);
         return NULL;
     }
@@ -189,6 +230,15 @@ char* scoreboard_submit(Scoreboard* sb, const char* script_name, const char* par
     timespec_now(&entry->created_at);
     timespec_clear(&entry->started_at);
     timespec_clear(&entry->finished_at);
+
+    // Phase 8: per-job limits + initial progress = 0.
+    entry->instruction_hook_interval = hook_interval;
+    entry->memory_soft_limit_kb = soft_kb;
+    entry->memory_hard_limit_kb = hard_kb;
+    entry->enforce_limits = enforce;
+    entry->instruction_count = 0;
+    entry->memory_used_kb = 0;
+
     sb->count++;
 
     char* result = strdup(new_id);
@@ -209,6 +259,11 @@ char* scoreboard_submit(Scoreboard* sb, const char* script_name, const char* par
     }
 
     return result;
+}
+
+char* scoreboard_submit(Scoreboard* sb, const char* script_name, const char* params_json) {
+    // Phase 8: limits=NULL means "config defaults, enforce_limits=true".
+    return scoreboard_submit_with_limits(sb, script_name, params_json, NULL);
 }
 
 ScoreboardEntry* scoreboard_find(Scoreboard* sb, const char* job_id) {
@@ -307,6 +362,33 @@ size_t scoreboard_count(Scoreboard* sb) {
     size_t c = sb->count;
     pthread_mutex_unlock(&sb->mutex);
     return c;
+}
+
+bool scoreboard_update_progress(Scoreboard* sb, const char* job_id,
+                                uint64_t instruction_count,
+                                size_t memory_used_kb) {
+    if (!sb || !job_id) {
+        return false;
+    }
+    bool updated = false;
+    pthread_mutex_lock(&sb->mutex);
+    for (size_t i = 0; i < sb->count; i++) {
+        ScoreboardEntry* entry = &sb->entries[i];
+        if (strcmp(entry->job_id, job_id) != 0) {
+            continue;
+        }
+        // Monotonic: the hook is the only writer of these fields, but
+        // belt-and-braces: never let progress go backwards.
+        if (instruction_count > entry->instruction_count) {
+            entry->instruction_count = instruction_count;
+        }
+        // Memory is non-monotonic (GC can free); record the latest sample.
+        entry->memory_used_kb = memory_used_kb;
+        updated = true;
+        break;
+    }
+    pthread_mutex_unlock(&sb->mutex);
+    return updated;
 }
 
 const char* scoreboard_status_name(ScoreboardJobStatus status) {

@@ -235,6 +235,56 @@ static int H_lua_system_version(lua_State* L) {
     return 1;
 }
 
+// H.gc.* implementations ///////////////////////////////////////////////////
+
+/*
+ * H.gc.collect() - run a full GC cycle and return the freed memory
+ * in KB. Maps to lua_gc(L, LUA_GCCOLLECT, 0).
+ *
+ * Potentially expensive: the calling Lua state blocks until the
+ * cycle completes. The progress hook deliberately does NOT call
+ * this; long-running scripts (the Orchestrator) call it on their
+ * own cadence in their scheduling loop.
+ */
+static int H_lua_gc_collect(lua_State* L) {
+    lua_Integer kb = lua_gc(L, LUA_GCCOLLECT, 0);
+    lua_pushnumber(L, (lua_Number)kb);
+    return 1;
+}
+
+/*
+ * H.gc.step() - perform a single GC step (lua_gc LUA_GCSTEP). Much
+ * cheaper than collect(); the hook uses this to nudge the GC when
+ * the soft memory limit is exceeded.
+ */
+static int H_lua_gc_step(lua_State* L) {
+    lua_Integer kb = lua_gc(L, LUA_GCSTEP, 0);
+    lua_pushnumber(L, (lua_Number)kb);
+    return 1;
+}
+
+/*
+ * H.gc.count() - return current memory in KB (lua_gc LUA_GCCOUNT).
+ * Same primitive the hook uses, exposed to Lua for explicit
+ * measurement (e.g. a script that wants to log memory before
+ * allocating a large table).
+ */
+static int H_lua_gc_count(lua_State* L) {
+    lua_Integer kb = lua_gc(L, LUA_GCCOUNT, 0);
+    lua_pushnumber(L, (lua_Number)kb);
+    return 1;
+}
+
+/*
+ * H.gc.isrunning() - return true if the GC is currently running
+ * (lua_gc LUA_GCISRUNNING). Mostly useful for diagnostics.
+ */
+static int H_lua_gc_isrunning(lua_State* L) {
+    int running = lua_gc(L, LUA_GCISRUNNING, 0);
+    lua_pushboolean(L, running != 0);
+    return 1;
+}
+
 // Install functions ////////////////////////////////////////////////////////
 
 /*
@@ -296,4 +346,31 @@ void H_lua_install_system(lua_State* L) {
     lua_pushcfunction(L, H_lua_system_version);     lua_setfield(L, -2, "version");
 
     lua_pop(L, 2); // pop H.system and H
+}
+
+/*
+ * Populate H.gc with the four explicit-GC-control functions.
+ */
+void H_lua_install_gc(lua_State* L) {
+    if (!L) return;
+
+    lua_getglobal(L, "H");
+    if (!lua_istable(L, -1)) {
+        log_this(SR_LUA, "H_lua_install_gc: H table missing", LOG_LEVEL_ERROR, 0);
+        lua_pop(L, 1);
+        return;
+    }
+    lua_getfield(L, -1, "gc");
+    if (!lua_istable(L, -1)) {
+        log_this(SR_LUA, "H_lua_install_gc: H.gc not a table", LOG_LEVEL_ERROR, 0);
+        lua_pop(L, 2);
+        return;
+    }
+
+    lua_pushcfunction(L, H_lua_gc_collect);   lua_setfield(L, -2, "collect");
+    lua_pushcfunction(L, H_lua_gc_step);      lua_setfield(L, -2, "step");
+    lua_pushcfunction(L, H_lua_gc_count);     lua_setfield(L, -2, "count");
+    lua_pushcfunction(L, H_lua_gc_isrunning); lua_setfield(L, -2, "isrunning");
+
+    lua_pop(L, 2); // pop H.gc and H
 }

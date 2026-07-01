@@ -42,8 +42,9 @@ typedef struct ScriptingConfig {
     int DefaultQueryTimeout;                               // Default timeout in seconds for query/HTTP/LLM handles and service tokens
     int DefaultMaxRuntime;                                 // Default per-job max runtime in seconds
     int InstructionHookInterval;                            // Frequency of scoreboard updates in VM instructions
-    int MemorySoftLimitKB;                                 // Soft memory limit in KB; warning + GC hint
-    int MemoryHardLimitKB;                                 // Hard memory limit in KB; kills the job
+    int MemorySampleEveryNHooks;                           // Sample lua_gc memory every N hook calls (default 20)
+    int MemorySoftLimitKB;                                 // Default soft memory limit in KB; warning + GC hint
+    int MemoryHardLimitKB;                                 // Default hard memory limit in KB; kills the job
     ScriptingSandboxConfig Sandbox;                        // Sandbox policy
 
     // Script source roots (filesystem paths)

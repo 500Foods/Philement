@@ -12,6 +12,9 @@
  // Project includes
 #include <src/hydrogen.h>
 
+// Standard includes
+#include <stdlib.h>   // malloc, free
+
 // Third-party includes
 #include <lua.h>
 #include <lauxlib.h>
@@ -183,7 +186,7 @@ void H_lua_install_api(lua_State* L) {
     // Empty sub-table placeholders so scripts that read H.log can do
     // so without raising an error during the bring-up phases.
     static const char* placeholder_names[] = {
-        "log", "system",
+        "log", "system", "gc",
         "query", "altquery", "authquery", "wait",
         "http", "llm", "mail", "notify",
         "sleep", "shutdown_requested", "set_current_state",
@@ -200,10 +203,14 @@ void H_lua_install_api(lua_State* L) {
 
     // Phase 6: populate H.log and H.system with real C functions.
     // Both install functions re-fetch H from globals and fill the
-    // placeholder sub-tables in place. Later phases will add their
-    // own install calls here.
+    // placeholder sub-tables in place. Later phases add their own
+    // install calls here.
     H_lua_install_log(L);
     H_lua_install_system(L);
+    // Phase 8: explicit GC control for the Orchestrator (and any
+    // long-running script that wants to manage its own memory).
+    // The progress hook only samples; it never collects.
+    H_lua_install_gc(L);
 }
 
 /*
@@ -265,4 +272,57 @@ int H_lua_run_string(lua_State* L, const char* code, const char* name) {
     }
 
     return LUA_OK;
+}
+
+// Per-state job context /////////////////////////////////////////////////////
+
+/*
+ * Set the per-state job context. Pass a NULL pointer to clear.
+ *
+ * The context lives in the state's "extraspace" (Lua 5.4 API) - a
+ * pointer-sized slot tied 1:1 to the lua_State, allocated by
+ * lua_newstate and freed by lua_close. We store a pointer to a
+ * heap-allocated H_lua_job_context, owned and freed by the caller
+ * (the worker pool / Orchestrator). The state only holds the pointer.
+ *
+ * Why a heap-allocated context and not just stuffing the struct into
+ * the extraspace directly: the extraspace is a single pointer-sized
+ * slot. Our struct is much larger, so we must indirect through a
+ * pointer. A heap allocation is the cleanest portable choice.
+ *
+ * Note: lua_getextraspace is a pure macro that returns a pointer to
+ * the extraspace block; it does NOT push anything onto the Lua
+ * stack. Do not lua_pop after it.
+ */
+void H_lua_set_job_context(lua_State* L, const H_lua_job_context* ctx) {
+    if (!L) {
+        return;
+    }
+    H_lua_job_context** slot = (H_lua_job_context**)lua_getextraspace(L);
+
+    // Free any prior context so we don't leak when called twice.
+    if (*slot) {
+        free(*slot);
+        *slot = NULL;
+    }
+
+    if (!ctx) {
+        return;
+    }
+    H_lua_job_context* dup = malloc(sizeof(H_lua_job_context));
+    if (!dup) {
+        log_this(SR_LUA, "H_lua_set_job_context: allocation failed",
+                 LOG_LEVEL_ERROR, 0);
+        return;
+    }
+    *dup = *ctx;
+    *slot = dup;
+}
+
+H_lua_job_context* H_lua_get_job_context(lua_State* L) {
+    if (!L) {
+        return NULL;
+    }
+    H_lua_job_context** slot = (H_lua_job_context**)lua_getextraspace(L);
+    return *slot;
 }

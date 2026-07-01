@@ -19,12 +19,20 @@
 
 // System headers
 #include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
 // Third-party headers
 #include <lua.h>
 
 // Project headers
 #include <src/config/config.h>
+#include <src/globals.h>   // ID_LEN
+
+// Forward declaration to avoid pulling scoreboard.h into every Lua
+// include path. scoreboard.h includes this header's companions but
+// here we only need the pointer type.
+struct Scoreboard;
 
 /*
  * Create a sandboxed Lua state.
@@ -89,5 +97,50 @@ void H_lua_install_api(lua_State* L);
  * already handles that at the worker level).
  */
 int H_lua_run_string(lua_State* L, const char* code, const char* name);
+
+/*
+ * Per-lua_State job context. Stored in the state's "extraspace" (a
+ * pointer-sized slot tied 1:1 to the state by Lua 5.4) so the
+ * progress hook (Phase 8) can identify which job is running without
+ * touching the Lua registry or globals.
+ *
+ * Two-tier usage:
+ *   - Workers: filled by scripting_worker_process_one() before
+ *     H_lua_install_progress_hook(). The hook reads scoreboard and
+ *     job_id to write progress and enforce limits.
+ *   - Orchestrator: filled by Phase 11 launch code with
+ *     enforce_limits = false so the hook never kills it.
+ *
+ * String fields are owned by the C caller (the scoreboard entry
+ * already strdup's script_name, so copying the job_id into this
+ * fixed-size buffer is UAF-safe across the state lifetime).
+ *
+ * soft_warned is a per-state one-shot so we don't spam the log on
+ * every hook tick once memory exceeds the soft limit.
+ */
+typedef struct {
+    char             job_id[ID_LEN + 1];   // empty string means "no job context"
+    struct Scoreboard* scoreboard;
+    int              hook_interval;        // copy of entry->instruction_hook_interval
+    size_t           soft_limit_kb;        // copy of entry->memory_soft_limit_kb
+    size_t           hard_limit_kb;        // copy of entry->memory_hard_limit_kb
+    bool             enforce_limits;       // copy of entry->enforce_limits
+    bool             soft_warned;          // one-shot soft-limit warning flag
+    uint64_t         local_instruction_count;  // bumped in-hook; flushed to scoreboard on sample ticks
+} H_lua_job_context;
+
+/*
+ * Set the per-state job context. Pass a NULL pointer to clear.
+ * The context is stored in the state's extraspace, so it follows
+ * the state, not the calling thread.
+ */
+void H_lua_set_job_context(lua_State* L, const H_lua_job_context* ctx);
+
+/*
+ * Get a pointer to the per-state job context. The pointer is owned
+ * by the state (it points into the extraspace). Returns NULL if the
+ * state is NULL or no context has been set.
+ */
+H_lua_job_context* H_lua_get_job_context(lua_State* L);
 
 #endif /* HYDROGEN_SCRIPTING_LUA_CONTEXT_H */

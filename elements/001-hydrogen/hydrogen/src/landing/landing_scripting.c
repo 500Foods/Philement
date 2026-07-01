@@ -20,6 +20,7 @@
 #include <src/state/state_types.h>
 #include <src/scripting/scripting.h>
 #include <src/scripting/lua_context.h>
+#include <src/scripting/worker_pool.h>
 
 // External declarations
 extern ServiceThreads scripting_threads;
@@ -97,9 +98,16 @@ int land_scripting_subsystem(void) {
 
     scripting_system_shutdown = 1;
 
+    // Phase 7: stop the worker pool first. This drains the queue,
+    // joins worker threads, and frees the pool. The scoreboard must
+    // remain alive until the workers have exited (workers update it
+    // as they finish each job), so worker pool teardown precedes
+    // scripting_cleanup_state.
+    scripting_workers_destroy();
+
     // scripting_cleanup_state destroys any Orchestrator lua_State and
-    // re-initializes the thread tracking structure. Safe to call
-    // even if launch_scripting_subsystem was never invoked.
+    // the scoreboard, and re-initializes the thread tracking structure.
+    // Safe to call even if launch_scripting_subsystem was never invoked.
     scripting_cleanup_state();
 
     log_this(SR_SCRIPTING, "LANDING: " SR_SCRIPTING " COMPLETE", LOG_LEVEL_DEBUG, 0);
