@@ -102,6 +102,8 @@
 #define SR_AUTH             "Auth"
 #define SR_NOTIFY           "Notify"
 #define SR_MIRAGE           "Mirage"
+#define SR_SCRIPTING        "Scripting"   // Lua scripting subsystem (Phase 2b+)
+#define SR_LUA              "Lua"         // Per-script log tag (host API calls)
 
 // Additional sub-Subsystem Tracking
 #define SR_WEBSOCKET_LIB    "WebSocket-Lib"     // Low-level libwebsockets diagnostics
@@ -112,7 +114,7 @@
 
 #define INITIAL_REGISTRY_CAPACITY 20
 #define MAX_DEPENDENCIES 20
-#define MAX_SUBSYSTEMS 18  // Total number of subsystems (Registry, Payload, Threads, Network, Database, Logging, WebServer, API, Swagger, WebSocket, Terminal, mDNS Server, mDNS Client, Mail Relay, Print, Resources, OIDC, Notify)
+#define MAX_SUBSYSTEMS 19  // Total number of subsystems (Registry, Payload, Threads, Network, Database, Logging, WebServer, API, Swagger, WebSocket, Terminal, mDNS Server, mDNS Client, Mail Relay, Print, Resources, OIDC, Notify, Scripting)
 
 // LOGGING ////////////////////////////////////////////////////////////////////////////////////////
 

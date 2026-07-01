@@ -147,4 +147,11 @@ typedef struct OIDCRPRoleMapping OIDCRPRoleMapping;
 struct NotifyConfig;
 typedef struct NotifyConfig NotifyConfig;
 
+// Q. Scripting Configuration
+struct ScriptingConfig;
+typedef struct ScriptingConfig ScriptingConfig;
+
+struct ScriptingSandboxConfig;
+typedef struct ScriptingSandboxConfig ScriptingSandboxConfig;
+
 #endif /* CONFIG_FORWARD_H */

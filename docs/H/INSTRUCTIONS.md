@@ -204,6 +204,7 @@ M. Print
 N. Resources
 O. OIDC
 P. Notify
+Q. Scripting
 Q. Mirage
 
 ## SUBSYSTEM ORDER
@@ -229,6 +230,7 @@ App uses subsystems and a launch/landing system to control them. Details in src/
 17. OIDC
 18. Notify
 19. Mirage
+20. Scripting
 
 ## LAUNCH / LANDING
 

@@ -43,6 +43,7 @@ extern ServiceThreads websocket_threads;
 extern ServiceThreads mdns_server_threads;
 extern ServiceThreads print_threads;
 extern ServiceThreads database_threads;
+extern ServiceThreads scripting_threads;
 
 // Thread management functions
 void init_service_threads(ServiceThreads *threads, const char* subsystem_name);

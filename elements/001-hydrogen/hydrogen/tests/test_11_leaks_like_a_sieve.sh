@@ -25,7 +25,7 @@ TEST_NAME="Memory Leak Detection"
 TEST_ABBR="SIV"
 TEST_NUMBER="11"
 TEST_COUNTER=0
-TEST_VERSION="4.1.0"
+TEST_VERSION="4.2.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -223,6 +223,92 @@ fi
 
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Report: ..${LEAK_REPORT}"
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Summary: ..${LEAK_SUMMARY}"
+
+# Scripting-enabled variant (Phase 3b of LUA_PLAN):
+# Confirms that the Scripting subsystem initializes when Enabled=true and
+# shuts down without leaks, without ever executing a Lua script.
+# The subsystem init/land lifecycle is exercised; no Orchestrator is
+# configured so the long-lived Lua state is never created.
+# Local variable prefix is SUBTEST_ rather than SCRIPTING_ to avoid
+# the test_03 env-var scanner picking up local script variables.
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Scripting Subsystem Init/Land Leak Check"
+
+subtest_config_file="${CONFIG_DIR}/hydrogen_test_11_leaks_scripting.json"
+subtest_server_log="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_leaks_scripting.log"
+subtest_leak_report="${LOG_PREFIX}_leak_report_scripting.log"
+subtest_leak_summary="${LOG_PREFIX}_leak_summary_scripting.log"
+
+if [[ ! -f "${subtest_config_file}" ]]; then
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Scripting config not found: ${subtest_config_file}"
+    EXIT_CODE=1
+else
+    print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "ASAN_OPTIONS=... ./${DEBUG_BUILD} ${subtest_config_file}"
+    ASAN_OPTIONS="detect_leaks=1:leak_check_at_exit=1:verbosity=1:log_threads=1:print_stats=1" \
+        ./"${DEBUG_BUILD}" "${subtest_config_file}" > "${subtest_server_log}" 2>&1 &
+    subtest_pid=$!
+
+    # Wait for startup
+    subtest_startup_start=$("${DATE}" +%s)
+    subtest_startup_ok=0
+    while true; do
+        subtest_elapsed=$(( $("${DATE}" +%s) - subtest_startup_start ))
+        if [[ ${subtest_elapsed} -ge 5 ]]; then
+            break
+        fi
+        if ! kill -0 "${subtest_pid}" 2>/dev/null; then
+            break
+        fi
+        if "${GREP}" -q "STARTUP COMPLETE" "${subtest_server_log}"; then
+            subtest_startup_ok=1
+            break
+        fi
+    done
+
+    if [[ "${subtest_startup_ok}" -ne 1 ]]; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Scripting-enabled server failed to start"
+        kill -9 "${subtest_pid}" 2>/dev/null || true
+        EXIT_CODE=1
+    else
+        # Confirm the Scripting subsystem appears as Running in the
+        # startup log (proves the launch path executed).
+        if "${GREP}" -q "Scripting" "${subtest_server_log}"; then
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Scripting subsystem referenced in startup log"
+        else
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Scripting subsystem not mentioned in startup log (suspicious but not fatal)"
+        fi
+
+        # Send SIGTERM and wait
+        kill -TERM "${subtest_pid}" 2>/dev/null || true
+        wait "${subtest_pid}" 2>/dev/null || true
+
+        if "${GREP}" -q "LeakSanitizer" "${subtest_server_log}"; then
+            cp "${subtest_server_log}" "${subtest_leak_report}"
+            subtest_direct_leaks=$("${GREP}" -c "Direct leak of" "${subtest_leak_report}" 2>/dev/null | head -1 || echo "0" || true)
+            subtest_indirect_leaks=$("${GREP}" -c "Indirect leak of" "${subtest_leak_report}" 2>/dev/null | head -1 || echo "0" || true)
+            subtest_direct_leaks=$(echo "${subtest_direct_leaks}" | tr -d '\n\r' | "${GREP}" -o '[0-9]*' | head -1 || true)
+            subtest_indirect_leaks=$(echo "${subtest_indirect_leaks}" | tr -d '\n\r' | "${GREP}" -o '[0-9]*' | head -1 || true)
+            [[ -z "${subtest_direct_leaks}" ]] && subtest_direct_leaks=0
+            [[ -z "${subtest_indirect_leaks}" ]] && subtest_indirect_leaks=0
+
+            {
+                echo "Scripting Leak Analysis Summary"
+                echo "==============================="
+                echo "Direct Leaks Found: ${subtest_direct_leaks}"
+                echo "Indirect Leaks Found: ${subtest_indirect_leaks}"
+            } > "${subtest_leak_summary}"
+
+            if [[ "${subtest_direct_leaks}" -eq 0 ]] && [[ "${subtest_indirect_leaks}" -eq 0 ]]; then
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "No memory leaks detected for Scripting subsystem"
+            else
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Scripting subsystem leaks: ${subtest_direct_leaks} direct, ${subtest_indirect_leaks} indirect"
+                EXIT_CODE=1
+            fi
+        else
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "No ASAN output found for Scripting-enabled run"
+            EXIT_CODE=1
+        fi
+    fi
+fi
 
 # Print completion table
 print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"

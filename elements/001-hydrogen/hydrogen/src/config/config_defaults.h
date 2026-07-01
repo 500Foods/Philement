@@ -58,5 +58,6 @@ void initialize_config_defaults_resources(AppConfig* config);
 void initialize_config_defaults_oidc(AppConfig* config);
 void initialize_config_defaults_oidc_rp(AppConfig* config);
 void initialize_config_defaults_notify(AppConfig* config);
+void initialize_config_defaults_scripting(AppConfig* config);
 
 #endif /* HYDROGEN_CONFIG_DEFAULTS_H */
