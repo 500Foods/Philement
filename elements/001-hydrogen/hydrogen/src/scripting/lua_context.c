@@ -19,6 +19,7 @@
 
 // Local includes
 #include "lua_context.h"
+#include "scripting_api.h"
 
 // External allocator shared with the database migration engine.
 // Cheap insurance against process-heap contamination; both subsystems
@@ -196,6 +197,13 @@ void H_lua_install_api(lua_State* L) {
     }
 
     lua_pop(L, 1);
+
+    // Phase 6: populate H.log and H.system with real C functions.
+    // Both install functions re-fetch H from globals and fill the
+    // placeholder sub-tables in place. Later phases will add their
+    // own install calls here.
+    H_lua_install_log(L);
+    H_lua_install_system(L);
 }
 
 /*
