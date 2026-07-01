@@ -69,6 +69,7 @@ bool initialize_config_defaults(AppConfig* config) {
     initialize_config_defaults_oidc(config);
     initialize_config_defaults_oidc_rp(config);
     initialize_config_defaults_notify(config);
+    initialize_config_defaults_scripting(config);
 
     log_this(SR_CONFIG, "― Successfully initialized configuration defaults", LOG_LEVEL_DEBUG, 0);
     return true;
@@ -499,7 +500,7 @@ void initialize_config_defaults_oidc_rp(AppConfig* config) {
     }
 }
 
-// P. Notify Configuration Defaults 
+// P. Notify Configuration Defaults
 void initialize_config_defaults_notify(AppConfig* config) {
     if (config) {
         config->notify.enabled = false;
@@ -514,7 +515,38 @@ void initialize_config_defaults_notify(AppConfig* config) {
         config->notify.smtp.timeout = 30;
         config->notify.smtp.max_retries = 3;
         config->notify.smtp.from_address = strdup("hydrogen@localhost");
-        
+
         log_this(SR_CONFIG, "――― Applied config defaults for Notify", LOG_LEVEL_DEBUG, 0);
+    }
+}
+
+// Q. Scripting Configuration Defaults
+//
+// The scripting subsystem is disabled by default. Operators opt in by
+// setting "Scripting.Enabled": true in the JSON configuration. When enabled,
+// the orchestrator script path is optional - a deployment with no orchestrator
+// can still trigger jobs externally (REST, etc.) once Phase 3b lands.
+void initialize_config_defaults_scripting(AppConfig* config) {
+    if (config) {
+        memset(&config->scripting, 0, sizeof(config->scripting));
+
+        // Enabled defaults to false (memset above)
+        config->scripting.WorkerCount = 2;
+        config->scripting.DefaultQueryTimeout = 30;
+        config->scripting.DefaultMaxRuntime = 3600;
+        config->scripting.InstructionHookInterval = 5000;
+        config->scripting.MemorySoftLimitKB = 32768;
+        config->scripting.MemoryHardLimitKB = 65536;
+
+        // Sandbox defaults: strict - no io, no debug, no loadlib, no os.execute
+        config->scripting.Sandbox.AllowOsTime = true;
+        config->scripting.Sandbox.AllowOsExecute = false;
+        config->scripting.Sandbox.AllowIo = false;
+        config->scripting.Sandbox.AllowDebug = false;
+        config->scripting.Sandbox.AllowLoadlib = false;
+
+        config->scripting.AllowDBModuleLoad = false;
+
+        log_this(SR_CONFIG, "――― Applied config defaults for Scripting", LOG_LEVEL_DEBUG, 0);
     }
 }

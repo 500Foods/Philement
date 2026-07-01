@@ -81,6 +81,7 @@ bool load_resources_config(json_t* root, AppConfig* config);
 bool load_oidc_config(json_t* root, AppConfig* config);
 bool load_oidc_rp_config(json_t* root, AppConfig* config);
 bool load_notify_config(json_t* root, AppConfig* config);
+bool load_scripting_config(json_t* root, AppConfig* config);
 
 /*
  * Load and validate configuration with comprehensive error handling
@@ -373,6 +374,7 @@ AppConfig* load_config(const char* cmdline_path) {
     LOAD_CONFIG("O", SR_OIDC,            load_oidc_config);
     LOAD_CONFIG("O-RP", SR_AUTH,         load_oidc_rp_config);
     LOAD_CONFIG("P", SR_NOTIFY,          load_notify_config);
+    LOAD_CONFIG("Q", SR_SCRIPTING,       load_scripting_config);
 
     #undef LOAD_SERVER_CONFIG
     #undef LOAD_CONFIG
@@ -503,6 +505,7 @@ void dumpAppConfig(const AppConfig* config, const char* section) {
     DUMP_CONFIG_SECTION("O", SR_OIDC,        oidc,        dump_oidc_config);
     DUMP_CONFIG_SECTION("O-RP", SR_AUTH,      oidc_rp,     dump_oidc_rp_config);
     DUMP_CONFIG_SECTION("P", SR_NOTIFY,      notify,      dump_notify_config);
+    DUMP_CONFIG_SECTION("Q", SR_SCRIPTING,   scripting,   dump_scripting_config);
 
     #undef DUMP_CONFIG_SECTION
     #undef DUMP_NOT_IMPLEMENTED
@@ -542,6 +545,7 @@ void clean_app_config(AppConfig* config) {
     cleanup_oidc_config(&config->oidc);                // O. OIDC Configuration
     cleanup_oidc_rp_config(&config->oidc_rp);          // O-RP. OIDC Relying Party
     cleanup_notify_config(&config->notify);            // P. Notify Configuration
+    cleanup_scripting_config(&config->scripting);      // Q. Scripting Configuration
 
 }
 

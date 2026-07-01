@@ -1,0 +1,29 @@
+{
+    "Server": {
+        "Description": "This is a Hydrogen configuration file for Test 11 with the Scripting subsystem enabled.",
+        "ServerName": "hydrogen-test-11-scripting",
+        "PayloadKey": "${env.PAYLOAD_KEY}"
+    },
+    "WebServer": {
+        "EnableIPv4": true,
+        "EnableIPv6": false,
+        "Port": 5111
+    },
+    "Scripting": {
+        "Enabled": true,
+        "WorkerCount": 2,
+        "DefaultQueryTimeout": 30,
+        "DefaultMaxRuntime": 3600,
+        "InstructionHookInterval": 5000,
+        "MemorySoftLimitKB": 32768,
+        "MemoryHardLimitKB": 65536,
+        "Sandbox": {
+            "AllowOsTime": true,
+            "AllowOsExecute": false,
+            "AllowIo": false,
+            "AllowDebug": false,
+            "AllowLoadlib": false
+        },
+        "AllowDBModuleLoad": false
+    }
+}

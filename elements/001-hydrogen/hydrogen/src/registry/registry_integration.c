@@ -108,6 +108,10 @@ void update_registry_on_startup(void) {
     update_service_thread_metrics(&print_threads);
     update_subsystem_on_startup(SR_PRINT, print_threads.thread_count > 0);
 
+    // Scripting - No dedicated worker pool yet (Phase 7); report the
+    // subsystem as running when scripting is enabled in config.
+    update_subsystem_on_startup(SR_SCRIPTING, app_config && app_config->scripting.Enabled);
+
 }
 
 /*

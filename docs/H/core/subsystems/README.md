@@ -90,6 +90,13 @@ The Resources subsystem is a core component of the Hydrogen project that manages
 
 - [README.md](/docs/H/core/subsystems/resources/README.md)
 
+## Scripting
+
+The Scripting subsystem embeds a Lua 5.4 runtime inside Hydrogen and exposes a curated host API as the `H` global table to scripts. It is the in-server automation layer that turns Hydrogen into a programmable platform: scheduled jobs, event handlers, report writers, multi-stage workflows, simulations, and REST-triggered jobs all run as Lua scripts under the same host API.
+
+- [README.md](/docs/H/core/subsystems/scripting/README.md)
+- [lua_api.md](/docs/H/core/subsystems/scripting/lua_api.md)
+
 ## Swagger
 
 The Swagger subsystem is the interactive documentation system that provides a user-friendly web interface for exploring and testing the system's API capabilities, making complex technical features accessible to everyone.

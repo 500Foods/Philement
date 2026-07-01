@@ -145,6 +145,7 @@ struct AppConfig {
     OIDCConfig oidc;               // O. OIDC configuration
     OIDCRelyingPartyConfig oidc_rp; // O-RP. OIDC Relying Party (Keycloak/etc)
     NotifyConfig notify;           // P. Notify configuration
+    ScriptingConfig scripting;     // Q. Scripting configuration
 };
 
 // Defined in global.c

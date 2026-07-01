@@ -419,7 +419,8 @@ ReadinessResults handle_readiness_checks(void) {
     process_subsystem_readiness(&results, &index, SR_RESOURCES, check_resources_launch_readiness());
     process_subsystem_readiness(&results, &index, SR_OIDC, check_oidc_launch_readiness());
     process_subsystem_readiness(&results, &index, SR_NOTIFY, check_notify_launch_readiness());
-    
+    process_subsystem_readiness(&results, &index, SR_SCRIPTING, check_scripting_launch_readiness());
+
     log_this(SR_LAUNCH, "LAUNCH READINESS COMPLETE", LOG_LEVEL_DEBUG, 0);
 
     return results;
