@@ -31,6 +31,12 @@ extern ServiceThreads scripting_threads;
 // configured orchestrator script.
 extern lua_State* scripting_orchestrator_state;
 
+// The scripting subsystem's scoreboard (Phase 5). Allocated when
+// scripting is enabled and destroyed during landing. The Orchestrator
+// (Phase 11) and the worker pool (Phase 7) read and write it.
+struct Scoreboard;
+extern struct Scoreboard* scripting_scoreboard;
+
 // Initialize the Scripting subsystem's static state.
 // Called once from launch_scripting_subsystem(). Idempotent.
 void scripting_init_state(void);

@@ -21,17 +21,29 @@ void test_update_registry_on_startup_no_subsystems_running(void);
 void test_update_registry_on_startup_mixed_subsystems_running(void);
 void test_update_registry_on_startup_null_app_config(void);
 
-// Mock external variables using weak attributes
+// Mock external variables using weak attributes.
+// NOTE: app_config is intentionally NOT declared here. It is a strong
+// global defined in src/globals.c, so a weak declaration in this file
+// would be ignored by the linker and the test's assignments would mutate
+// the real global anyway. Instead, we point the real global at a real
+// AppConfig instance (or NULL) during each test.
 __attribute__((weak)) ServiceThreads logging_threads = {0};
 __attribute__((weak)) ServiceThreads webserver_threads = {0};
 __attribute__((weak)) ServiceThreads websocket_threads = {0};
 __attribute__((weak)) ServiceThreads mdns_server_threads = {0};
 __attribute__((weak)) ServiceThreads print_threads = {0};
-__attribute__((weak)) AppConfig *app_config = NULL;
 __attribute__((weak)) volatile sig_atomic_t mdns_client_system_shutdown = 0;
 __attribute__((weak)) volatile sig_atomic_t mail_relay_system_shutdown = 0;
 __attribute__((weak)) volatile sig_atomic_t swagger_system_shutdown = 0;
 __attribute__((weak)) volatile sig_atomic_t terminal_system_shutdown = 0;
+
+// A real AppConfig struct that tests can point the real app_config at.
+// Phase 3 of the LUA_PLAN added app_config->scripting.Enabled reads to
+// update_registry_on_startup(); a bogus pointer like 0x12345678 would
+// now dereference invalid memory and crash. Zero-initialization keeps
+// all subsystems in their default (disabled/off) state unless a test
+// explicitly flips a flag.
+static AppConfig mock_app_config = {0};
 
 // Mock functions for registry operations
 __attribute__((weak)) void update_service_thread_metrics(ServiceThreads *threads) {
@@ -55,6 +67,7 @@ void setUp(void) {
     mail_relay_system_shutdown = 0;
     swagger_system_shutdown = 0;
     terminal_system_shutdown = 0;
+    memset(&mock_app_config, 0, sizeof(mock_app_config));
 }
 
 void tearDown(void) {
@@ -70,7 +83,7 @@ void test_update_registry_on_startup_all_subsystems_running(void) {
     websocket_threads.thread_count = 1;
     mdns_server_threads.thread_count = 1;
     print_threads.thread_count = 1;
-    app_config = (AppConfig*)0x12345678; // Non-null pointer
+    app_config = &mock_app_config;  // Point real global at real struct
     mdns_client_system_shutdown = 0;
     mail_relay_system_shutdown = 0;
     swagger_system_shutdown = 0;
@@ -92,7 +105,7 @@ void test_update_registry_on_startup_no_subsystems_running(void) {
     websocket_threads.thread_count = 0;
     mdns_server_threads.thread_count = 0;
     print_threads.thread_count = 0;
-    app_config = (AppConfig*)0x12345678; // Non-null pointer
+    app_config = &mock_app_config;  // Point real global at real struct
     mdns_client_system_shutdown = 1;
     mail_relay_system_shutdown = 1;
     swagger_system_shutdown = 1;
@@ -112,7 +125,7 @@ void test_update_registry_on_startup_mixed_subsystems_running(void) {
     websocket_threads.thread_count = 2;     // Running
     mdns_server_threads.thread_count = 0;   // Not running
     print_threads.thread_count = 1;         // Running
-    app_config = (AppConfig*)0x12345678;   // Non-null pointer
+    app_config = &mock_app_config;          // Point real global at real struct
     mdns_client_system_shutdown = 0;        // Running (not shutdown)
     mail_relay_system_shutdown = 1;         // Not running (shutdown)
     swagger_system_shutdown = 0;            // Running (not shutdown)
@@ -132,7 +145,7 @@ void test_update_registry_on_startup_null_app_config(void) {
     websocket_threads.thread_count = 1;
     mdns_server_threads.thread_count = 1;
     print_threads.thread_count = 1;
-    app_config = NULL; // Null app_config
+    app_config = NULL; // Real global app_config left NULL
     mdns_client_system_shutdown = 0;
     mail_relay_system_shutdown = 0;
     swagger_system_shutdown = 0;

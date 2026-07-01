@@ -197,3 +197,64 @@ void H_lua_install_api(lua_State* L) {
 
     lua_pop(L, 1);
 }
+
+/*
+ * Compile and run a Lua chunk from a NUL-terminated string.
+ *
+ * Phase 4 implementation. Intentionally minimal: a thin, well-defined
+ * wrapper around luaL_loadbuffer + lua_pcall with the two-tier
+ * architecture (Phase 1) in mind:
+ *
+ *   - Workers will call this exactly once per job on a fresh state, so
+ *     we do not retain bytecode or accumulate any compile-once state.
+ *   - The Orchestrator (Phase 11) compiles its own chunk via
+ *     luaL_loadbuffer once at launch and then drives it with a
+ *     scheduling loop, NOT through this function. This wrapper is
+ *     therefore the worker-tier primitive.
+ *
+ * Error model: on failure, a single error string is left on the stack
+ * (Lua's own contract for luaL_loadbuffer / lua_pcall). The caller is
+ * expected to copy that string into C-owned memory (UAF discipline
+ * from Phase 1) and then lua_pop it before doing anything else with
+ * the state. This keeps string lifetimes simple and matches the
+ * pattern used in the migration engine (execute_load.c, etc.).
+ */
+int H_lua_run_string(lua_State* L, const char* code, const char* name) {
+    if (!L) {
+        log_this(SR_LUA, "H_lua_run_string called with NULL lua_State", LOG_LEVEL_ERROR, 0);
+        return LUA_ERRRUN;
+    }
+
+    if (!code) {
+        log_this(SR_LUA, "H_lua_run_string called with NULL code", LOG_LEVEL_ERROR, 0);
+        lua_pushliteral(L, "H_lua_run_string: code is NULL");
+        return LUA_ERRRUN;
+    }
+
+    size_t len = strlen(code);
+    const char* chunk_name = name ? name : "?";
+
+    int load_rc = luaL_loadbufferx(L, code, len, chunk_name, NULL);
+    if (load_rc != LUA_OK) {
+        // luaL_loadbufferx left the syntax/compile error on the stack.
+        // Copy to C-owned memory for logging; the caller's caller will
+        // still see the error string on the stack when it returns.
+        const char* lua_err = lua_tostring(L, -1);
+        log_this(SR_LUA, "Failed to compile chunk %s: %s", LOG_LEVEL_ERROR, 2,
+                 chunk_name, lua_err ? lua_err : "(no message)");
+        return load_rc;
+    }
+
+    // LUA_MULTRET lets the chunk return any number of values; the
+    // caller reads lua_gettop(L) to discover how many.
+    int call_rc = lua_pcall(L, 0, LUA_MULTRET, 0);
+    if (call_rc != LUA_OK) {
+        // lua_pcall left the runtime error on the stack.
+        const char* lua_err = lua_tostring(L, -1);
+        log_this(SR_LUA, "Failed to execute chunk %s: %s", LOG_LEVEL_ERROR, 2,
+                 chunk_name, lua_err ? lua_err : "(no message)");
+        return call_rc;
+    }
+
+    return LUA_OK;
+}

@@ -13,6 +13,7 @@
 // Module under test
 #include <src/launch/launch.h>
 #include <src/scripting/scripting.h>
+#include <src/scripting/scoreboard.h>
 
 // Forward declaration for the function under test
 int launch_scripting_subsystem(void);
@@ -27,6 +28,10 @@ void setUp(void) {
 }
 
 void tearDown(void) {
+    // Phase 5: scripting_init_state allocates a scoreboard; destroy it
+    // here so the scoreboard doesn't leak between tests in this
+    // executable.
+    scripting_cleanup_state();
     scripting_system_shutdown = 0;
     scripting_orchestrator_state = NULL;
 }

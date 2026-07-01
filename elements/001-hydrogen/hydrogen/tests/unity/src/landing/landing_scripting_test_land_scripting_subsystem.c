@@ -15,6 +15,7 @@
 #include <src/landing/landing.h>
 #include <src/scripting/scripting.h>
 #include <src/scripting/lua_context.h>
+#include <src/scripting/scoreboard.h>
 
 // Forward declaration for the function under test
 int land_scripting_subsystem(void);
@@ -23,14 +24,22 @@ int land_scripting_subsystem(void);
 void test_land_scripting_subsystem_basic(void);
 void test_land_scripting_subsystem_idempotent(void);
 void test_land_scripting_subsystem_cleans_up_orchestrator(void);
+void test_land_scripting_subsystem_cleans_up_scoreboard(void);
 
 void setUp(void) {
     scripting_system_shutdown = 0;
     scripting_orchestrator_state = NULL;
+    scripting_scoreboard = NULL;
     memset(&scripting_threads, 0, sizeof(scripting_threads));
 }
 
 void tearDown(void) {
+    // Defensive: destroy any scoreboard left behind so we don't leak
+    // across tests in this executable.
+    if (scripting_scoreboard) {
+        scoreboard_destroy(scripting_scoreboard);
+        scripting_scoreboard = NULL;
+    }
     // Reset to a clean baseline
     scripting_system_shutdown = 0;
     scripting_orchestrator_state = NULL;
@@ -66,12 +75,30 @@ void test_land_scripting_subsystem_cleans_up_orchestrator(void) {
     TEST_ASSERT_NULL(scripting_orchestrator_state);
 }
 
+// Phase 5: land also destroys the scoreboard. Establishes the
+// "scoreboard lifecycle is wired into landing" invariant.
+void test_land_scripting_subsystem_cleans_up_scoreboard(void) {
+    scripting_scoreboard = scoreboard_create();
+    TEST_ASSERT_NOT_NULL(scripting_scoreboard);
+
+    // Submit one job so the scoreboard has owned strings to free.
+    char* id = scoreboard_submit(scripting_scoreboard, "test_script", "{\"k\":\"v\"}");
+    TEST_ASSERT_NOT_NULL(id);
+    free(id);
+    TEST_ASSERT_EQUAL(1, scoreboard_count(scripting_scoreboard));
+
+    int result = land_scripting_subsystem();
+    TEST_ASSERT_EQUAL(1, result);
+    TEST_ASSERT_NULL(scripting_scoreboard);
+}
+
 int main(void) {
     UNITY_BEGIN();
 
     RUN_TEST(test_land_scripting_subsystem_basic);
     RUN_TEST(test_land_scripting_subsystem_idempotent);
     RUN_TEST(test_land_scripting_subsystem_cleans_up_orchestrator);
+    RUN_TEST(test_land_scripting_subsystem_cleans_up_scoreboard);
 
     return UNITY_END();
 }
