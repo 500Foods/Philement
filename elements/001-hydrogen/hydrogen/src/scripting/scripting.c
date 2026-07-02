@@ -20,6 +20,7 @@
 #include "scripting.h"
 #include "lua_context.h"
 #include "scoreboard.h"
+#include "source_cache.h"
 
 // Long-lived Orchestrator state placeholder. NULL in Phase 3b - Phase 11
 // will allocate and compile a real Orchestrator state here.
@@ -29,6 +30,11 @@ lua_State* scripting_orchestrator_state = NULL;
 // when the subsystem is enabled; destroyed by scripting_cleanup_state.
 Scoreboard* scripting_scoreboard = NULL;
 
+// Source cache pointer. NULL until allocated by launch_scripting_subsystem
+// when the subsystem is enabled; destroyed by scripting_cleanup_state.
+// Shared across all lua_State instances for DB-backed `require`.
+SourceCache* scripting_source_cache = NULL;
+
 /*
  * Initialize the subsystem's static state. Safe to call multiple times.
  */
@@ -37,6 +43,9 @@ void scripting_init_state(void) {
     scripting_orchestrator_state = NULL;
     if (!scripting_scoreboard) {
         scripting_scoreboard = scoreboard_create();
+    }
+    if (!scripting_source_cache) {
+        scripting_source_cache = source_cache_create();
     }
     init_service_threads(&scripting_threads, SR_SCRIPTING);
 }
@@ -57,6 +66,10 @@ void scripting_cleanup_state(void) {
     if (scripting_scoreboard) {
         scoreboard_destroy(scripting_scoreboard);
         scripting_scoreboard = NULL;
+    }
+    if (scripting_source_cache) {
+        source_cache_destroy(scripting_source_cache);
+        scripting_source_cache = NULL;
     }
     scripting_system_shutdown = 1;
     init_service_threads(&scripting_threads, SR_SCRIPTING);

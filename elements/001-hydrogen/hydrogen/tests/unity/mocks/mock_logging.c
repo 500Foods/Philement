@@ -61,6 +61,12 @@ static char mock_last_message[1024] = {0};
 static int mock_last_priority = 0;
 static int mock_expected_calls = 0;
 
+// History buffer so tests can assert that a message was logged at any
+// point during the test, not only as the final message.
+#define MOCK_LOG_HISTORY_SIZE 64
+static char mock_history[MOCK_LOG_HISTORY_SIZE][1024];
+static size_t mock_history_count = 0;
+
 // Mock implementation of cleanup_log_buffer
 void mock_cleanup_log_buffer(void) {
     // Mock implementation does nothing - just tracks that it was called
@@ -91,6 +97,14 @@ void mock_log_this(const char* subsystem, const char* format, int priority, int 
     vsnprintf(mock_last_message, sizeof(mock_last_message) - 1, format, args);
     va_end(args);
 
+    // Store in searchable history
+    if (mock_history_count < MOCK_LOG_HISTORY_SIZE) {
+        strncpy(mock_history[mock_history_count], mock_last_message,
+                sizeof(mock_history[0]) - 1);
+        mock_history[mock_history_count][sizeof(mock_history[0]) - 1] = '\0';
+        mock_history_count++;
+    }
+
     // Print to stderr for debugging
     fprintf(stderr, "MOCK_LOG: [%s] %s (priority: %d, calls: %d)\n", subsystem ? subsystem : "(null)", mock_last_message, priority, mock_call_count);
 }
@@ -102,6 +116,10 @@ void mock_logging_reset_all(void) {
     mock_last_message[0] = '\0';
     mock_last_priority = 0;
     mock_expected_calls = 0;
+    mock_history_count = 0;
+    for (size_t i = 0; i < MOCK_LOG_HISTORY_SIZE; i++) {
+        mock_history[i][0] = '\0';
+    }
 }
 
 // Get call count
@@ -117,6 +135,19 @@ const char* mock_logging_get_last_subsystem(void) {
 // Get last message
 const char* mock_logging_get_last_message(void) {
     return mock_last_message;
+}
+
+// Search the full log history for a substring
+bool mock_logging_message_contains(const char* substring) {
+    if (!substring) {
+        return false;
+    }
+    for (size_t i = 0; i < mock_history_count; i++) {
+        if (strstr(mock_history[i], substring) != NULL) {
+            return true;
+        }
+    }
+    return false;
 }
 
 // Get last priority

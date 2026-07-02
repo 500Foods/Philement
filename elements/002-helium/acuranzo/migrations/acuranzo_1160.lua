@@ -32,14 +32,46 @@ table.insert(queries,{sql=[[
         ${TIMEOUT}                                                          AS query_timeout,
         [=[
             ALTER TABLE ${SCHEMA}${TABLE}
-                ADD COLUMN segment_refs ${JSON},
-                ADD COLUMN engine_name ${VARCHAR_50},
-                ADD COLUMN model ${VARCHAR_100},
-                ADD COLUMN tokens_prompt ${INTEGER},
-                ADD COLUMN tokens_completion ${INTEGER},
-                ADD COLUMN cost_total ${FLOAT},
-                ADD COLUMN user_id ${INTEGER},
-                ADD COLUMN duration_ms ${INTEGER},
+                ADD COLUMN segment_refs ${JSON};
+
+            ${SUBQUERY_DELIMITER}
+
+            ALTER TABLE ${SCHEMA}${TABLE}
+                ADD COLUMN engine_name ${VARCHAR_50};
+
+            ${SUBQUERY_DELIMITER}
+
+            ALTER TABLE ${SCHEMA}${TABLE}
+                ADD COLUMN model ${VARCHAR_100};
+
+            ${SUBQUERY_DELIMITER}
+
+            ALTER TABLE ${SCHEMA}${TABLE}
+                ADD COLUMN tokens_prompt ${INTEGER};
+
+            ${SUBQUERY_DELIMITER}
+
+            ALTER TABLE ${SCHEMA}${TABLE}
+                ADD COLUMN tokens_completion ${INTEGER};
+
+            ${SUBQUERY_DELIMITER}
+
+            ALTER TABLE ${SCHEMA}${TABLE}
+                ADD COLUMN cost_total ${FLOAT};
+
+            ${SUBQUERY_DELIMITER}
+
+            ALTER TABLE ${SCHEMA}${TABLE}
+                ADD COLUMN user_id ${INTEGER};
+
+            ${SUBQUERY_DELIMITER}
+
+            ALTER TABLE ${SCHEMA}${TABLE}
+                ADD COLUMN duration_ms ${INTEGER};
+
+            ${SUBQUERY_DELIMITER}
+
+            ALTER TABLE ${SCHEMA}${TABLE}
                 ADD COLUMN session_id ${CHAR_20};
 
             ${SUBQUERY_DELIMITER}
@@ -98,15 +130,47 @@ table.insert(queries,{sql=[[
         ${TIMEOUT}                                                          AS query_timeout,
         [=[
             ALTER TABLE ${SCHEMA}${TABLE}
-                DROP COLUMN IF EXISTS segment_refs,
-                DROP COLUMN IF EXISTS engine_name,
-                DROP COLUMN IF EXISTS model,
-                DROP COLUMN IF EXISTS tokens_prompt,
-                DROP COLUMN IF EXISTS tokens_completion,
-                DROP COLUMN IF EXISTS cost_total,
-                DROP COLUMN IF EXISTS user_id,
-                DROP COLUMN IF EXISTS duration_ms,
-                DROP COLUMN IF EXISTS session_id;
+                DROP COLUMN segment_refs;
+
+            ${SUBQUERY_DELIMITER}
+
+            ALTER TABLE ${SCHEMA}${TABLE}
+                DROP COLUMN engine_name;
+
+            ${SUBQUERY_DELIMITER}
+
+            ALTER TABLE ${SCHEMA}${TABLE}
+                DROP COLUMN model;
+
+            ${SUBQUERY_DELIMITER}
+
+            ALTER TABLE ${SCHEMA}${TABLE}
+                DROP COLUMN tokens_prompt;
+
+            ${SUBQUERY_DELIMITER}
+
+            ALTER TABLE ${SCHEMA}${TABLE}
+                DROP COLUMN tokens_completion;
+
+            ${SUBQUERY_DELIMITER}
+
+            ALTER TABLE ${SCHEMA}${TABLE}
+                DROP COLUMN cost_total;
+
+            ${SUBQUERY_DELIMITER}
+
+            ALTER TABLE ${SCHEMA}${TABLE}
+                DROP COLUMN user_id;
+
+            ${SUBQUERY_DELIMITER}
+
+            ALTER TABLE ${SCHEMA}${TABLE}
+                DROP COLUMN duration_ms;
+
+            ${SUBQUERY_DELIMITER}
+
+            ALTER TABLE ${SCHEMA}${TABLE}
+                DROP COLUMN session_id;
 
             ${SUBQUERY_DELIMITER}
 

@@ -80,6 +80,10 @@ void test_lua_create_and_destroy_roundtrip(void) {
 // (it replaces the Phase 3 placeholder sub-table when the install
 // function runs), so it is validated as a function below rather than
 // a table here.
+//
+// Note: in Phase 11, H.sleep and H.shutdown_requested are top-level
+// functions on H (replacing their Phase 3 placeholder sub-tables of
+// the same names), so they are validated as functions below.
 void test_lua_create_context_installs_H_table(void) {
     lua_State* L = H_lua_create_context();
     TEST_ASSERT_NOT_NULL(L);
@@ -88,10 +92,9 @@ void test_lua_create_context_installs_H_table(void) {
     TEST_ASSERT_TRUE(lua_istable(L, -1));
 
     static const char* subtables[] = {
-        "log", "system",
+        "log", "system", "gc",
         "query", "altquery", "authquery", "wait",
         "http", "llm", "mail", "notify",
-        "sleep", "shutdown_requested",
         "scoreboard",
         NULL
     };
@@ -107,6 +110,15 @@ void test_lua_create_context_installs_H_table(void) {
     // sub-table with a cfunction.
     lua_getfield(L, -1, "set_current_state");
     TEST_ASSERT_TRUE_MESSAGE(lua_isfunction(L, -1), "H.set_current_state");
+    lua_pop(L, 1);
+
+    // Phase 11: H.sleep and H.shutdown_requested are top-level
+    // functions on H, replacing their Phase 3 placeholder sub-tables.
+    lua_getfield(L, -1, "sleep");
+    TEST_ASSERT_TRUE_MESSAGE(lua_isfunction(L, -1), "H.sleep");
+    lua_pop(L, 1);
+    lua_getfield(L, -1, "shutdown_requested");
+    TEST_ASSERT_TRUE_MESSAGE(lua_isfunction(L, -1), "H.shutdown_requested");
     lua_pop(L, 1);
 
     lua_pop(L, 1); // pop H table

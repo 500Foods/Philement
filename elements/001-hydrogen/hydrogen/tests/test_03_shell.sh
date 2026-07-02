@@ -5,6 +5,7 @@
 # Validates that required and optional environment variables are properly configured
 
 # CHANGELOG
+# 1.3.0 - 2026-07-02 - Added Test 43 scripting helper vars to the ENV_VARS allow-list
 # 1.2.0 - 2026-06-21 - Added a bunch for Test 41/42 - new tests
 # 1.1.0 - 2026-01-08 - Added HYDROGEN_SCHEMA which is used directly by hydrogen to valdate its schema
 # 1.0.0 - 2025-12-06 - Initial version - Environment variable validation for shell configuration
@@ -30,7 +31,7 @@ TEST_NAME="Shell Variables"
 TEST_ABBR="ZSH"
 TEST_NUMBER="03"
 TEST_COUNTER=0
-TEST_VERSION="1.0.0"
+TEST_VERSION="1.3.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "${HYDROGEN_ROOT}/tests/lib/framework.sh"
@@ -171,6 +172,9 @@ declare -a ENV_WHITELIST=(
     "ENABLED_PORT" "FULL_BASE_URL" "FULL_DEMO_SQLITE" "FULL_HYDROGEN_PID" "FULL_MOCK_ISSUER" "FULL_MOCK_SUBJECT"
     "FULL_PID_VAR" "FULL_PORT" "HYDROGEN_PID_VAR" "MIGRATION_DEADLINE" "MIGRATION_NOW" "MOCK_EMAIL" "MOCK_ISSUER" 
     "BLOCKED_BASE_URL" "BLOCKED_DEADLINE" "BLOCKED_HYDROGEN_PID" "BLOCKED_LOG_OFFSET" "BLOCKED_NOW" "BLOCKED_PID_VAR" "BLOCKED_PORT"
+    # First found in tests/test_43_scripting.sh (and tests/lib/scripting_helpers.sh)
+    "SCRIPTING_HELPERS_NAME" "SCRIPTING_HELPERS_VERSION" "SCRIPTING_HELPERS_GUARD"
+    "SCRIPTING_FAIL_MARKERS" "SCRIPTING_TEST_CONFIGS" "TICK_SETTLE_SECONDS"
     # First found in tests/test_51_conduit.sh
     "CONDUIT_CONFIG_FILE" "CONDUIT_DESCRIPTION" "CONDUIT_ENGINE_NAME" "CONDUIT_LOG_SUFFIX"
     # First found in tests/test_60_performance.sh

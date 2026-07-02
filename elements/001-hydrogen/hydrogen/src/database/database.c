@@ -8,6 +8,7 @@
 #include "database_connstring.h"
 #include "database_manage.h"
 #include "database_execute.h"
+#include <src/scripting/orchestrator.h>
 /*
  * Database Subsystem Core Implementation
  *
@@ -408,6 +409,11 @@ bool database_signal_ready_if_complete(void) {
         log_this(SR_STARTUP, "― Databases ready:       %d/%d", LOG_LEVEL_STATE, 2,
                  readiness.started, readiness.expected);
         log_this(SR_STARTUP, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
+        // Phase 11d: with databases, this Lead DQM is the only place
+        // that emits the signal. The Orchestrator's DB-load (QueryRef
+        // #087) is gated on READY FOR REQUESTS, so the launch never
+        // races the DB subsystem.
+        scripting_orchestrator_load_configured();
     }
 
     return true;

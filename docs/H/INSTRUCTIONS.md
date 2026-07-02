@@ -99,6 +99,7 @@ tests/          Test framework
 - tests/test_40_auth.sh - Authentication endpoints testing (JWT tokens across multiple database engines)
 - tests/test_41_exercise.sh - Memory exercise stress test (500 auth requests across 7 databases with leak detection)
 - tests/test_42_oidc_rp.sh - OIDC Relying Party - complete authentication flow testing through Role Mapping
+- tests/test_43_scripting.sh - Scripting subsystem Orchestrator lifecycle across all 7 database engines in parallel (with/without DefaultDatabase, fail-fast)
 - tests/test_50_conduit_query.sh - Single public query endpoint testing
 - tests/test_51_conduit_queries.sh - Conduit multiple queries endpoint testing
 - tests/test_52_conduit_auth_query.sh - Authenticated single query endpoint

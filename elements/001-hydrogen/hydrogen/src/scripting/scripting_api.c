@@ -38,6 +38,10 @@
 #include "scripting_api.h"
 #include "lua_context.h"   // H_lua_job_context, H_lua_get_job_context
 #include "scoreboard.h"     // scoreboard_update_current_state
+#include "scripting.h"      // scripting_system_shutdown, scripting_scoreboard
+#include "source_cache.h"   // source_cache_get/put
+#include "orchestrator.h"   // scripting_fetch_script_source
+#include "worker_pool.h"    // scripting_submit_job_with_source
 
 // H.log.* implementations //////////////////////////////////////////////////
 
@@ -349,6 +353,303 @@ static int H_lua_set_current_state(lua_State* L) {
     return 0;
 }
 
+// H.sleep / H.shutdown_requested implementations ///////////////////////////
+
+/*
+ * H.sleep(milliseconds) - cooperative sleep.
+ *
+ * Phase 11: blocks the calling Lua state for up to `milliseconds`
+ * ms, polling the subsystem's shutdown flag every 100 ms. Returns
+ * early if the flag is set, so a long H.sleep wakes up promptly
+ * when landing begins. Returns nothing.
+ *
+ * Non-positive or missing argument is treated as "no sleep" and
+ * returns immediately. A non-numeric argument logs an error and
+ * returns (does not raise).
+ */
+static int H_lua_sleep(lua_State* L) {
+    int nargs = lua_gettop(L);
+    int ms = 0;
+    if (nargs < 1) {
+        // No-op: treat as zero sleep. The host path is a leaf.
+        return 0;
+    }
+    if (lua_isnumber(L, 1)) {
+        double v = lua_tonumber(L, 1);
+        if (v <= 0.0) {
+            return 0;
+        }
+        ms = (int)v;
+    } else {
+        log_this(SR_SCRIPTING, "H.sleep: argument must be a number",
+                 LOG_LEVEL_ERROR, 0);
+        return 0;
+    }
+
+    // Poll the shutdown flag every 100 ms. usleep is interrupt-safe
+    // and short enough that even a 5-second H.sleep wakes up within
+    // ~100 ms of a landing signal.
+    #define H_SLEEP_POLL_USEC (100 * 1000)
+    int slept_us = 0;
+    int total_us = ms * 1000;
+    while (slept_us < total_us) {
+        if (scripting_system_shutdown) {
+            return 0;
+        }
+        int slice = total_us - slept_us;
+        if (slice > H_SLEEP_POLL_USEC) {
+            slice = H_SLEEP_POLL_USEC;
+        }
+        usleep((useconds_t)slice);
+        slept_us += slice;
+    }
+    return 0;
+    #undef H_SLEEP_POLL_USEC
+}
+
+/*
+ * H.shutdown_requested() -> boolean.
+ *
+ * Phase 11: returns true if the scripting subsystem's shutdown flag
+ * has been set. The Orchestrator's scheduling loop is expected to
+ * check this on every iteration and exit cleanly. Cheap read of a
+ * volatile sig_atomic_t; safe to call from any Lua state.
+ */
+static int H_lua_shutdown_requested(lua_State* L) {
+    lua_pushboolean(L, scripting_system_shutdown != 0);
+    return 1;
+}
+
+// H.scoreboard.* implementations //////////////////////////////////////////
+
+/*
+ * Resolve the scoreboard for the current Lua context.
+ *
+ * Workers have a per-state job context with a non-NULL scoreboard
+ * pointer (set by the worker pool at hook install time). The
+ * Orchestrator (and bare test states) have no job context; for
+ * those, fall back to the subsystem's scripting_scoreboard global
+ * so the Orchestrator can list/submit/cancel from its scheduling
+ * loop. Returns NULL only if no scoreboard is available (subsystem
+ * not running, or a test that did not initialize state).
+ */
+static Scoreboard* resolve_active_scoreboard(lua_State* L) {
+    H_lua_job_context* ctx = H_lua_get_job_context(L);
+    if (ctx && ctx->scoreboard) {
+        return ctx->scoreboard;
+    }
+    return scripting_scoreboard;
+}
+
+/*
+ * Push a ScoreboardEntry as a Lua table with all read-only fields.
+ * Used by H.scoreboard.list and H.scoreboard.get. NULL entry is
+ * a no-op.
+ */
+static void push_scoreboard_entry_as_table(lua_State* L, const ScoreboardEntry* e) {
+    if (!e) {
+        lua_pushnil(L);
+        return;
+    }
+    lua_newtable(L);
+
+    lua_pushstring(L, e->job_id);                  lua_setfield(L, -2, "job_id");
+    lua_pushstring(L, e->script_name ? e->script_name : ""); lua_setfield(L, -2, "script_name");
+    lua_pushstring(L, scoreboard_status_name(e->status));
+                                                    lua_setfield(L, -2, "status");
+    if (e->params_json) {
+        lua_pushstring(L, e->params_json);
+    } else {
+        lua_pushnil(L);
+    }
+                                                    lua_setfield(L, -2, "params_json");
+    lua_pushnumber(L, (lua_Number)e->created_at.tv_sec);
+                                                    lua_setfield(L, -2, "created_at");
+    if (e->started_at.tv_sec != 0) {
+        lua_pushnumber(L, (lua_Number)e->started_at.tv_sec);
+    } else {
+        lua_pushnil(L);
+    }
+                                                    lua_setfield(L, -2, "started_at");
+    if (e->finished_at.tv_sec != 0) {
+        lua_pushnumber(L, (lua_Number)e->finished_at.tv_sec);
+    } else {
+        lua_pushnil(L);
+    }
+                                                    lua_setfield(L, -2, "finished_at");
+    lua_pushinteger(L, (lua_Integer)e->instruction_count);
+                                                    lua_setfield(L, -2, "instruction_count");
+    lua_pushinteger(L, (lua_Integer)e->memory_used_kb);
+                                                    lua_setfield(L, -2, "memory_used_kb");
+    if (e->current_state) {
+        lua_pushstring(L, e->current_state);
+    } else {
+        lua_pushnil(L);
+    }
+                                                    lua_setfield(L, -2, "current_state");
+    lua_pushinteger(L, (lua_Integer)e->max_runtime_seconds);
+                                                    lua_setfield(L, -2, "max_runtime_seconds");
+    lua_pushboolean(L, e->kill_requested);
+                                                    lua_setfield(L, -2, "kill_requested");
+}
+
+/*
+ * H.scoreboard.list() -> array of jobs.
+ */
+static int H_lua_scoreboard_list(lua_State* L) {
+    Scoreboard* sb = resolve_active_scoreboard(L);
+    ScoreboardEntry** list = NULL;
+    size_t count = 0;
+    if (!scoreboard_list(sb, &list, &count)) {
+        log_this(SR_SCRIPTING, "H.scoreboard.list: snapshot failed",
+                 LOG_LEVEL_ERROR, 0);
+        lua_newtable(L);
+        return 1;
+    }
+    lua_newtable(L);
+    for (size_t i = 0; i < count; i++) {
+        push_scoreboard_entry_as_table(L, list[i]);
+        lua_rawseti(L, -2, (lua_Integer)(i + 1));
+    }
+    scoreboard_list_free(list, count);
+    return 1;
+}
+
+/*
+ * H.scoreboard.get(job_id) -> job | nil
+ */
+static int H_lua_scoreboard_get(lua_State* L) {
+    int nargs = lua_gettop(L);
+    if (nargs < 1 || !lua_isstring(L, 1)) {
+        log_this(SR_SCRIPTING, "H.scoreboard.get: missing or non-string job_id",
+                 LOG_LEVEL_ERROR, 0);
+        lua_pushnil(L);
+        return 1;
+    }
+    const char* job_id = lua_tostring(L, 1);
+    if (!job_id) {
+        lua_pushnil(L);
+        return 1;
+    }
+    Scoreboard* sb = resolve_active_scoreboard(L);
+    ScoreboardEntry* e = scoreboard_find(sb, job_id);
+    if (!e) {
+        lua_pushnil(L);
+        return 1;
+    }
+    push_scoreboard_entry_as_table(L, e);
+    scoreboard_entry_free(e);
+    return 1;
+}
+
+/*
+ * H.scoreboard.submit(entry) -> job_id | nil
+ *
+ * entry is a table with at least script_name (string). params_json
+ * (string) is optional. Uses scripting_submit_job_with_source
+ * (Phase 7) under the hood; the source is empty unless the entry
+ * carries a `source` field, in which case it is registered inline.
+ *
+ * The Orchestrator typically only knows the script name (the
+ * source lives in the registry / DB loader) so the source field
+ * is optional; for an Orchestrator that wants to submit ad-hoc
+ * snippets, the source field provides an inline path.
+ */
+static int H_lua_scoreboard_submit(lua_State* L) {
+    int nargs = lua_gettop(L);
+    if (nargs < 1 || !lua_istable(L, 1)) {
+        log_this(SR_SCRIPTING,
+                 "H.scoreboard.submit: entry must be a table",
+                 LOG_LEVEL_ERROR, 0);
+        lua_pushnil(L);
+        return 1;
+    }
+    // script_name
+    lua_getfield(L, 1, "script_name");
+    if (!lua_isstring(L, -1)) {
+        log_this(SR_SCRIPTING,
+                 "H.scoreboard.submit: entry.script_name must be a string",
+                 LOG_LEVEL_ERROR, 0);
+        lua_pop(L, 1);
+        lua_pushnil(L);
+        return 1;
+    }
+    const char* script_name = lua_tostring(L, -1);
+    char script_name_buf[256];
+    if (script_name) {
+        snprintf(script_name_buf, sizeof(script_name_buf), "%s", script_name);
+    } else {
+        script_name_buf[0] = '\0';
+    }
+    lua_pop(L, 1);
+
+    // params_json (optional)
+    char* params_json = NULL;
+    lua_getfield(L, 1, "params_json");
+    if (lua_isstring(L, -1)) {
+        const char* p = lua_tostring(L, -1);
+        if (p) {
+            params_json = strdup(p);
+        }
+    }
+    lua_pop(L, 1);
+
+    // source (optional, for inline-registration)
+    char* source = NULL;
+    lua_getfield(L, 1, "source");
+    if (lua_isstring(L, -1)) {
+        const char* s = lua_tostring(L, -1);
+        if (s) {
+            source = strdup(s);
+        }
+    }
+    lua_pop(L, 1);
+
+    // Copy strings out of Lua memory (UAF discipline from Phase 1):
+    // the worker pool may submit and return before the caller
+    // releases its arguments, and we are about to drop the Lua
+    // values. Use the local copies instead.
+    char* job_id;
+    if (source) {
+        job_id = scripting_submit_job_with_source(script_name_buf, source, params_json);
+        free(source);
+    } else {
+        job_id = scripting_submit_job(script_name_buf, params_json);
+    }
+    free(params_json);
+
+    if (!job_id) {
+        lua_pushnil(L);
+        return 1;
+    }
+    lua_pushstring(L, job_id);
+    free(job_id);
+    return 1;
+}
+
+/*
+ * H.scoreboard.cancel(job_id) -> boolean
+ */
+static int H_lua_scoreboard_cancel(lua_State* L) {
+    int nargs = lua_gettop(L);
+    if (nargs < 1 || !lua_isstring(L, 1)) {
+        log_this(SR_SCRIPTING,
+                 "H.scoreboard.cancel: missing or non-string job_id",
+                 LOG_LEVEL_ERROR, 0);
+        lua_pushboolean(L, 0);
+        return 1;
+    }
+    const char* job_id = lua_tostring(L, 1);
+    if (!job_id) {
+        lua_pushboolean(L, 0);
+        return 1;
+    }
+    Scoreboard* sb = resolve_active_scoreboard(L);
+    bool ok = scoreboard_request_kill(sb, job_id);
+    lua_pushboolean(L, ok ? 1 : 0);
+    return 1;
+}
+
 // Install functions ////////////////////////////////////////////////////////
 
 /*
@@ -463,4 +764,218 @@ void H_lua_install_set_current_state(lua_State* L) {
     lua_setfield(L, -2, "set_current_state");
 
     lua_pop(L, 1); // pop H
+}
+
+/*
+ * Populate H.sleep and H.shutdown_requested. Both are top-level
+ * functions on H, replacing the Phase 3 placeholder sub-tables of
+ * the same names.
+ */
+void H_lua_install_sleep_shutdown(lua_State* L) {
+    if (!L) return;
+
+    lua_getglobal(L, "H");
+    if (!lua_istable(L, -1)) {
+        log_this(SR_LUA, "H_lua_install_sleep_shutdown: H table missing",
+                 LOG_LEVEL_ERROR, 0);
+        lua_pop(L, 1);
+        return;
+    }
+
+    lua_pushcfunction(L, H_lua_sleep);
+    lua_setfield(L, -2, "sleep");
+
+    lua_pushcfunction(L, H_lua_shutdown_requested);
+    lua_setfield(L, -2, "shutdown_requested");
+
+    lua_pop(L, 1); // pop H
+}
+
+/*
+ * Populate H.scoreboard with the four scoreboard access functions.
+ * The sub-table itself was created in Phase 3 as a placeholder; this
+ * replaces its empty contents with the real functions.
+ */
+void H_lua_install_scoreboard(lua_State* L) {
+    if (!L) return;
+
+    lua_getglobal(L, "H");
+    if (!lua_istable(L, -1)) {
+        log_this(SR_LUA, "H_lua_install_scoreboard: H table missing",
+                 LOG_LEVEL_ERROR, 0);
+        lua_pop(L, 1);
+        return;
+    }
+    lua_getfield(L, -1, "scoreboard");
+    if (!lua_istable(L, -1)) {
+        log_this(SR_LUA, "H_lua_install_scoreboard: H.scoreboard not a table",
+                 LOG_LEVEL_ERROR, 0);
+        lua_pop(L, 2);
+        return;
+    }
+
+    lua_pushcfunction(L, H_lua_scoreboard_list);   lua_setfield(L, -2, "list");
+    lua_pushcfunction(L, H_lua_scoreboard_get);    lua_setfield(L, -2, "get");
+    lua_pushcfunction(L, H_lua_scoreboard_submit); lua_setfield(L, -2, "submit");
+    lua_pushcfunction(L, H_lua_scoreboard_cancel); lua_setfield(L, -2, "cancel");
+
+    lua_pop(L, 2); // pop H.scoreboard and H
+}
+
+// ----------------------------------------------------------------------------
+// H.package.searcher implementation (Phase 11g)
+// ----------------------------------------------------------------------------
+
+/*
+ * Split a module name on the first '.' into group and script.
+ * Returns true on success and writes heap-allocated copies into
+ * *group_out and *script_out (caller frees). Returns false on
+ * malformed names (no dot, empty group, empty script).
+ */
+static bool split_module_name(const char* name,
+                              char** group_out,
+                              char** script_out) {
+    if (!name || !group_out || !script_out) {
+        return false;
+    }
+    const char* dot = strchr(name, '.');
+    if (!dot || dot == name || dot[1] == '\0') {
+        return false;
+    }
+    size_t group_len = (size_t)(dot - name);
+    char* group = malloc(group_len + 1);
+    if (!group) {
+        return false;
+    }
+    memcpy(group, name, group_len);
+    group[group_len] = '\0';
+
+    const char* script = dot + 1;
+    char* script_copy = strdup(script);
+    if (!script_copy) {
+        free(group);
+        return false;
+    }
+
+    *group_out = group;
+    *script_out = script_copy;
+    return true;
+}
+
+/*
+ * package.searchers entry for DB-backed `require("group.script")`.
+ *
+ * Lua calls this with the module name. On success it returns the
+ * compiled chunk function (which Lua's require then calls to run the
+ * module). On failure it returns a single error string, so Lua
+ * appends the message to its "module not found" diagnostics and
+ * tries the next searcher.
+ *
+ * The source is cached process-wide in scripting_source_cache, so
+ * repeated requires of the same module do not hit the DB.
+ */
+static int H_lua_package_searcher(lua_State* L) {
+    const char* module_name = luaL_checkstring(L, 1);
+
+    char* group = NULL;
+    char* script = NULL;
+    if (!split_module_name(module_name, &group, &script)) {
+        lua_pushfstring(L,
+                        "no module '%s' in scripts table: "
+                        "invalid name (expected group.script)",
+                        module_name);
+        return 1;
+    }
+
+    if (!scripting_source_cache) {
+        lua_pushfstring(L,
+                        "no module '%s' in scripts table: "
+                        "source cache not initialized",
+                        module_name);
+        free(group);
+        free(script);
+        return 1;
+    }
+
+    const char* source = source_cache_get(scripting_source_cache, group, script);
+    char* fetched_source = NULL;
+    if (!source) {
+        if (!app_config || !app_config->scripting.DefaultDatabase ||
+            app_config->scripting.DefaultDatabase[0] == '\0') {
+            lua_pushfstring(L,
+                            "no module '%s' in scripts table: "
+                            "DefaultDatabase not configured",
+                            module_name);
+            free(group);
+            free(script);
+            return 1;
+        }
+        fetched_source = scripting_fetch_script_source(
+            group, script, app_config->scripting.DefaultDatabase, 5);
+        if (!fetched_source) {
+            lua_pushfstring(L,
+                            "no module '%s' in scripts table: "
+                            "row not found or DB unavailable",
+                            module_name);
+            free(group);
+            free(script);
+            return 1;
+        }
+        source_cache_put(scripting_source_cache, group, script, fetched_source);
+        source = fetched_source;
+    }
+
+    size_t source_len = strlen(source);
+    int rc = luaL_loadbufferx(L, source, source_len, module_name, NULL);
+
+    // The temporary copies from the split are no longer needed.
+    free(group);
+    free(script);
+    if (fetched_source) {
+        free(fetched_source);
+    }
+
+    if (rc != LUA_OK) {
+        // luaL_loadbufferx left an error string on the stack.
+        // Return it as the searcher's error message so Lua appends it.
+        return 1;
+    }
+
+    // Return the compiled chunk function. Lua's require will call it.
+    return 1;
+}
+
+/*
+ * Install the DB-backed package searcher at the end of
+ * package.searchers. Gated by app_config->scripting.AllowDBModuleLoad;
+ * if false, the function is a no-op and `require` keeps its default
+ * behavior (preload + file-based searchers only).
+ */
+void H_lua_install_package(lua_State* L) {
+    if (!L) {
+        return;
+    }
+    if (!app_config || !app_config->scripting.AllowDBModuleLoad) {
+        return;
+    }
+
+    lua_getglobal(L, "package");
+    if (!lua_istable(L, -1)) {
+        log_this(SR_LUA, "H_lua_install_package: package table missing",
+                 LOG_LEVEL_ERROR, 0);
+        lua_pop(L, 1);
+        return;
+    }
+    lua_getfield(L, -1, "searchers");
+    if (!lua_istable(L, -1)) {
+        log_this(SR_LUA, "H_lua_install_package: package.searchers not a table",
+                 LOG_LEVEL_ERROR, 0);
+        lua_pop(L, 2);
+        return;
+    }
+
+    lua_pushcfunction(L, H_lua_package_searcher);
+    lua_seti(L, -2, (lua_Integer)lua_rawlen(L, -2) + 1);
+
+    lua_pop(L, 2); // pop package.searchers and package
 }

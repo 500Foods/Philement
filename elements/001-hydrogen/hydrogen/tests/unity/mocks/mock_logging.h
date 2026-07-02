@@ -9,6 +9,7 @@
 #define MOCK_LOGGING_H
 
 #include <stdarg.h>
+#include <stdbool.h>
 
 // Mock function declarations - these will override the real ones when USE_MOCK_LOGGING is defined
 #ifdef USE_MOCK_LOGGING
@@ -41,5 +42,6 @@ const char* mock_logging_get_last_subsystem(void);
 const char* mock_logging_get_last_message(void);
 int mock_logging_get_last_priority(void);
 void mock_logging_set_expected_calls(int count);
+bool mock_logging_message_contains(const char* substring);
 
 #endif // MOCK_LOGGING_H

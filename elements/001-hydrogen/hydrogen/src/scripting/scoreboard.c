@@ -501,13 +501,113 @@ bool scoreboard_is_kill_requested(Scoreboard* sb, const char* job_id, bool* out)
     pthread_mutex_lock(&sb->mutex);
     for (size_t i = 0; i < sb->count; i++) {
         ScoreboardEntry* entry = &sb->entries[i];
-        if (strcmp(entry->job_id, job_id) != 0) {
-            continue;
+        if (strcmp(entry->job_id, job_id) == 0) {
+            *out = entry->kill_requested;
+            found = true;
+            break;
         }
-        *out = entry->kill_requested;
-        found = true;
-        break;
     }
     pthread_mutex_unlock(&sb->mutex);
     return found;
+}
+
+/*
+ * Snapshot all entries into a heap-allocated array of heap-allocated
+ * copies. Phase 11 backs H.scoreboard.list() with this; the
+ * Orchestrator and any future introspection code use it to see the
+ * scoreboard at a point in time without holding the mutex.
+ *
+ * Empty scoreboard: returns true with *out_list = NULL and
+ * *out_count = 0 (a valid snapshot, just empty).
+ */
+bool scoreboard_list(Scoreboard* sb,
+                     ScoreboardEntry*** out_list,
+                     size_t* out_count) {
+    if (!out_list || !out_count) {
+        return false;
+    }
+    *out_list = NULL;
+    *out_count = 0;
+
+    if (!sb) {
+        // A NULL scoreboard is treated as an empty snapshot, not a
+        // failure, so callers can use the same code path during
+        // tests that don't allocate a real scoreboard.
+        return true;
+    }
+
+    ScoreboardEntry** list = NULL;
+    bool ok = false;
+    pthread_mutex_lock(&sb->mutex);
+    if (sb->count == 0) {
+        // Empty: nothing to copy, no allocation needed.
+        pthread_mutex_unlock(&sb->mutex);
+        *out_list = NULL;
+        *out_count = 0;
+        return true;
+    }
+    list = calloc(sb->count, sizeof(ScoreboardEntry*));
+    if (!list) {
+        pthread_mutex_unlock(&sb->mutex);
+        return false;
+    }
+    size_t made = 0;
+    for (size_t i = 0; i < sb->count; i++) {
+        ScoreboardEntry* copy = calloc(1, sizeof(ScoreboardEntry));
+        if (!copy) {
+            // Partial failure: free what we have so far so the
+            // caller doesn't have to track how many were made.
+            for (size_t j = 0; j < made; j++) {
+                scoreboard_entry_free(list[j]);
+            }
+            free(list);
+            pthread_mutex_unlock(&sb->mutex);
+            return false;
+        }
+        *copy = sb->entries[i];
+        // Strdup the owned strings, same as scoreboard_find, so the
+        // caller can free each entry independently with
+        // scoreboard_entry_free.
+        copy->script_name = sb->entries[i].script_name
+            ? strdup(sb->entries[i].script_name) : NULL;
+        copy->params_json = sb->entries[i].params_json
+            ? strdup(sb->entries[i].params_json) : NULL;
+        copy->current_state = sb->entries[i].current_state
+            ? strdup(sb->entries[i].current_state) : NULL;
+        if ((sb->entries[i].script_name && !copy->script_name)
+            || (sb->entries[i].params_json && !copy->params_json)
+            || (sb->entries[i].current_state && !copy->current_state)) {
+            // strdup failure: clean up this entry and everything
+            // before it.
+            scoreboard_entry_free(copy);
+            for (size_t j = 0; j < made; j++) {
+                scoreboard_entry_free(list[j]);
+            }
+            free(list);
+            pthread_mutex_unlock(&sb->mutex);
+            return false;
+        }
+        list[made++] = copy;
+    }
+    pthread_mutex_unlock(&sb->mutex);
+
+    *out_list = list;
+    *out_count = made;
+    ok = true;
+    return ok;
+}
+
+/*
+ * Free an array of heap-allocated entry copies returned by
+ * scoreboard_list. Frees each entry (via scoreboard_entry_free) and
+ * then the array. Safe with NULL list or zero count.
+ */
+void scoreboard_list_free(ScoreboardEntry** list, size_t count) {
+    if (!list) {
+        return;
+    }
+    for (size_t i = 0; i < count; i++) {
+        scoreboard_entry_free(list[i]);
+    }
+    free(list);
 }

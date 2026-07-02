@@ -3,6 +3,7 @@
 -- luacheck: no max line length
 
 -- CHANGELOG
+-- 2.8.0 - 2026-07-02 - Added JSON_INGEST_SCHEMA for storing JSON Schema docs that use $ref/$id/$schema
 -- 2.7.0 - 2026-03-22 - Added VARCHAR_64
 -- 2.6.0 - 2025-12-31 - Added fancy INSERT_ macros to get our new key value returned
 -- 2.5.0 - 2025-12-31 - Added SIZE_ macros
@@ -111,6 +112,14 @@ return {
     JIE = ")",
     JSON_INGEST_START = "${SCHEMA}JSON_INGEST(",
     JSON_INGEST_END = ")",
+
+    -- Schema ingest: for storing JSON Schema documents (Draft-07 etc.) that use
+    -- reserved keys like $ref/$id/$schema. DB2's JSON2BSON treats a nested
+    -- { "$ref": ... } as a BSON DBRef and rejects it, so schema documents must be
+    -- validated with the ISO SQL/JSON parser (JSON_EXISTS ... FORMAT JSON) instead.
+    -- See JSON_INGEST_SCHEMA_FUNCTION below.
+    JSON_INGEST_SCHEMA_START = "${SCHEMA}JSON_INGEST_SCHEMA(",
+    JSON_INGEST_SCHEMA_END = ")",
     JSON_INGEST_FUNCTION = [[
         -- json.ingest for db2 attempt 4
         CREATE OR REPLACE FUNCTION ${SCHEMA}JSON_INGEST(s CLOB)
@@ -165,6 +174,73 @@ return {
 
             -- ensure result is JSON
             IF SYSTOOLS.JSON2BSON(out) IS NULL THEN
+                SIGNAL SQLSTATE '22032' SET MESSAGE_TEXT = 'Invalid JSON after normalization';
+            END IF;
+
+            RETURN out;
+        END
+    ]],
+
+    -- Identical fix-up behavior to JSON_INGEST, but validates with the ISO SQL/JSON
+    -- parser (JSON_EXISTS ... FORMAT JSON) instead of SYSTOOLS.JSON2BSON. This allows
+    -- JSON Schema documents that use reserved keys ($ref, $id, $schema, $defs, ...) to
+    -- be stored intact. JSON2BSON interprets a nested { "$ref": ... } as a BSON DBRef
+    -- and raises SQL0443N; the ISO parser has no such reserved-key semantics.
+    -- The stored value is byte-for-byte the original text (RETURN s on the fast path).
+    JSON_INGEST_SCHEMA_FUNCTION = [[
+        CREATE OR REPLACE FUNCTION ${SCHEMA}JSON_INGEST_SCHEMA(s CLOB)
+        RETURNS CLOB
+        LANGUAGE SQL
+        DETERMINISTIC
+        BEGIN
+            DECLARE i INTEGER DEFAULT 1;
+            DECLARE L INTEGER;
+            DECLARE ch CHAR(1);
+            DECLARE out CLOB(100K) DEFAULT '';
+            DECLARE in_str SMALLINT DEFAULT 0;
+            DECLARE esc SMALLINT DEFAULT 0;
+
+            SET L = LENGTH(s);
+
+            -- fast path: Validate input JSON with the ISO SQL/JSON parser, which
+            -- accepts JSON Schema reserved keys such as $ref/$id/$schema.
+            IF JSON_EXISTS(s FORMAT JSON, '$' FALSE ON ERROR) THEN
+                RETURN s;
+            END IF;
+
+            WHILE i <= L DO
+                SET ch = SUBSTR(s, i, 1);
+
+                IF esc = 1 THEN
+                    SET out = out || ch;
+                    SET esc = 0;
+
+                ELSEIF ch = '\' THEN
+                    SET out = out || ch;
+                    SET esc = 1;
+
+                ELSEIF ch = '"' THEN
+                    SET out = out || ch;
+                    SET in_str = 1 - in_str;
+
+                ELSEIF in_str = 1 AND ch = X'0A' THEN -- \n
+                    SET out = out || '\n';
+
+                ELSEIF in_str = 1 AND ch = X'0D' THEN -- \r
+                    SET out = out || '\r';
+
+                ELSEIF in_str = 1 AND ch = X'09' THEN -- \t
+                    SET out = out || '\t';
+
+                ELSE
+                    SET out = out || ch;
+                END IF;
+
+                SET i = i + 1;
+            END WHILE;
+
+            -- ensure result is JSON
+            IF JSON_EXISTS(out FORMAT JSON, '$' FALSE ON ERROR) = FALSE THEN
                 SIGNAL SQLSTATE '22032' SET MESSAGE_TEXT = 'Invalid JSON after normalization';
             END IF;
 
