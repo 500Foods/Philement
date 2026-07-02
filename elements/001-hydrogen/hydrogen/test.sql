@@ -1,0 +1,31 @@
+REORG TABLE TEST.convo_segs;
+
+-- SUBQUERY DELIMITER
+
+ALTER TABLE TEST.convo_segs
+    DROP COLUMN content_type;
+
+-- SUBQUERY DELIMITER
+
+REORG TABLE TEST.convo_segs;
+
+-- SUBQUERY DELIMITER
+
+ALTER TABLE TEST.convo_segs
+    DROP COLUMN mime_type;
+
+-- SUBQUERY DELIMITER
+
+REORG TABLE TEST.convo_segs;
+
+-- SUBQUERY DELIMITER
+
+ALTER TABLE TEST.convo_segs
+    DROP COLUMN metadata;
+
+-- SUBQUERY DELIMITER
+
+UPDATE TEST.queries 
+  SET query_type_a28 = 1000
+WHERE query_ref = 1172
+  and query_type_a28 = 1003;

@@ -3,6 +3,7 @@
 -- luacheck: no max line length
 
 -- CHANGELOG
+-- 2.8.1 - 2026-07-02 - Added REORG TABLE macro
 -- 2.8.0 - 2026-07-02 - Added JSON_INGEST_SCHEMA (aliases json_ingest; JSON_VALID accepts $ref/$id/$schema)
 -- 2.7.0 - 2026-03-22 - Added VARCHAR_64
 -- 2.6.0 - 2025-12-31 - Added fancy INSERT_ macros to get our new key value returned
@@ -36,6 +37,7 @@ return {
     JRE = "",
     NOW = "CURRENT_TIMESTAMP(3)",
     PRIMARY = "PRIMARY KEY",
+    REORG = "-- REORG TABLE",
     SERIAL = "int auto increment",
     SESSION_SECS = "UNIX_TIMESTAMP(CURRENT_TIMESTAMP) - UNIX_TIMESTAMP(:SESSION_START)",
     SIZE_COLLECTION = "LENGTH(collection)",

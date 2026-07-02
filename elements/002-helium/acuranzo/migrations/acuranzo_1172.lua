@@ -32,8 +32,16 @@ table.insert(queries,{sql=[[
         ${TIMEOUT}                                                          AS query_timeout,
         [=[
             ALTER TABLE ${SCHEMA}${TABLE}
-                ADD COLUMN content_type ${VARCHAR_20} DEFAULT 'text',
-                ADD COLUMN mime_type ${VARCHAR_100},
+                ADD COLUMN content_type ${VARCHAR_20};
+
+            ${SUBQUERY_DELIMITER}
+
+            ALTER TABLE ${SCHEMA}${TABLE}
+                ADD COLUMN mime_type ${VARCHAR_100};
+
+            ${SUBQUERY_DELIMITER}
+
+            ALTER TABLE ${SCHEMA}${TABLE}
                 ADD COLUMN metadata ${JSON} DEFAULT '{}';
 
             ${SUBQUERY_DELIMITER}
@@ -85,10 +93,34 @@ table.insert(queries,{sql=[[
         ${QTC_SLOW}                                                         AS query_queue_a58,
         ${TIMEOUT}                                                          AS query_timeout,
         [=[
+            ${REORG}
+
+            ${SUBQUERY_DELIMITER}
+
             ALTER TABLE ${SCHEMA}${TABLE}
-                DROP COLUMN content_type,
-                DROP COLUMN mime_type,
+                DROP COLUMN content_type;
+
+            ${SUBQUERY_DELIMITER}
+
+            ${REORG}
+
+            ${SUBQUERY_DELIMITER}
+
+            ALTER TABLE ${SCHEMA}${TABLE}
+                DROP COLUMN mime_type;
+
+            ${SUBQUERY_DELIMITER}
+
+            ${REORG}
+
+            ${SUBQUERY_DELIMITER}
+
+            ALTER TABLE ${SCHEMA}${TABLE}
                 DROP COLUMN metadata;
+
+            ${SUBQUERY_DELIMITER}
+
+            ${REORG}
 
             ${SUBQUERY_DELIMITER}
 

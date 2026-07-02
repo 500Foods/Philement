@@ -25,10 +25,22 @@
 static DatabaseHandle test_connection;
 
 // Function prototypes for test functions
+void test_statement_has_executable_sql_null(void);
+void test_statement_has_executable_sql_empty(void);
+void test_statement_has_executable_sql_whitespace_only(void);
+void test_statement_has_executable_sql_line_comment_only(void);
+void test_statement_has_executable_sql_block_comment_only(void);
+void test_statement_has_executable_sql_multiline_block_comment_only(void);
+void test_statement_has_executable_sql_multiple_comments_only(void);
+void test_statement_has_executable_sql_unterminated_block_comment(void);
+void test_statement_has_executable_sql_real_sql(void);
+void test_statement_has_executable_sql_comment_then_sql(void);
+void test_statement_has_executable_sql_sql_with_trailing_comment(void);
 void test_parse_sql_statements_success(void);
 void test_parse_sql_statements_null_input(void);
 void test_parse_sql_statements_empty_input(void);
 void test_parse_sql_statements_empty_statements(void);
+void test_parse_sql_statements_comment_only_statement(void);
 void test_parse_sql_statements_single_no_delimiter(void);
 void test_parse_sql_statements_strdup_failure(void);
 void test_parse_sql_statements_realloc_failure(void);
@@ -77,6 +89,52 @@ void tearDown(void) {
     // Clean up test connection if needed
 }
 
+// Test statement_has_executable_sql function
+void test_statement_has_executable_sql_null(void) {
+    TEST_ASSERT_FALSE(statement_has_executable_sql(NULL));
+}
+
+void test_statement_has_executable_sql_empty(void) {
+    TEST_ASSERT_FALSE(statement_has_executable_sql(""));
+}
+
+void test_statement_has_executable_sql_whitespace_only(void) {
+    TEST_ASSERT_FALSE(statement_has_executable_sql("   \n\t  \r\n  "));
+}
+
+void test_statement_has_executable_sql_line_comment_only(void) {
+    TEST_ASSERT_FALSE(statement_has_executable_sql("-- this is a DB2-only note"));
+}
+
+void test_statement_has_executable_sql_block_comment_only(void) {
+    TEST_ASSERT_FALSE(statement_has_executable_sql("/* block comment */"));
+}
+
+void test_statement_has_executable_sql_multiline_block_comment_only(void) {
+    TEST_ASSERT_FALSE(statement_has_executable_sql("/* line one\n   line two\n   line three */"));
+}
+
+void test_statement_has_executable_sql_multiple_comments_only(void) {
+    TEST_ASSERT_FALSE(statement_has_executable_sql("  -- first\n  /* second */  \n  -- third  "));
+}
+
+void test_statement_has_executable_sql_unterminated_block_comment(void) {
+    // Unterminated block comment consumes to end of string -> no executable SQL
+    TEST_ASSERT_FALSE(statement_has_executable_sql("/* never closed"));
+}
+
+void test_statement_has_executable_sql_real_sql(void) {
+    TEST_ASSERT_TRUE(statement_has_executable_sql("SELECT 1;"));
+}
+
+void test_statement_has_executable_sql_comment_then_sql(void) {
+    TEST_ASSERT_TRUE(statement_has_executable_sql("-- header\nSELECT 1;"));
+}
+
+void test_statement_has_executable_sql_sql_with_trailing_comment(void) {
+    TEST_ASSERT_TRUE(statement_has_executable_sql("SELECT 1; -- trailing"));
+}
+
 // Test parse_sql_statements function
 void test_parse_sql_statements_success(void) {
     const char* sql = "  SELECT 1;  \n-- QUERY DELIMITER\n\n  CREATE TABLE test (id INT);  \n-- QUERY DELIMITER\nINSERT INTO test VALUES (1); \n  ";
@@ -114,6 +172,28 @@ void test_parse_sql_statements_null_input(void) {
 
 void test_parse_sql_statements_empty_statements(void) {
     const char* sql = "SELECT 1;\n-- QUERY DELIMITER\n\n-- QUERY DELIMITER\nCREATE TABLE test (id INT);";
+    char** statements = NULL;
+    size_t statement_count = 0;
+    size_t statements_capacity = 0;
+
+    bool result = parse_sql_statements(sql, strlen(sql), &statements, &statement_count, &statements_capacity, "-- QUERY DELIMITER\n", "test");
+
+    TEST_ASSERT_TRUE(result);
+    TEST_ASSERT_EQUAL(2, statement_count);
+    TEST_ASSERT_NOT_NULL(statements);
+    TEST_ASSERT_EQUAL_STRING("SELECT 1;", statements[0]);
+    TEST_ASSERT_EQUAL_STRING("CREATE TABLE test (id INT);", statements[1]);
+
+    // Cleanup
+    for (size_t i = 0; i < statement_count; i++) {
+        free(statements[i]);
+    }
+    free(statements);
+}
+
+void test_parse_sql_statements_comment_only_statement(void) {
+    // Middle segment is comment-only (the DB2-renders-as-comment scenario for other engines)
+    const char* sql = "SELECT 1;\n-- QUERY DELIMITER\n-- DB2-only command rendered as comment\n-- QUERY DELIMITER\nCREATE TABLE test (id INT);";
     char** statements = NULL;
     size_t statement_count = 0;
     size_t statements_capacity = 0;
@@ -459,11 +539,25 @@ void test_database_migrations_execute_transaction_unsupported_engine(void) {
 int main(void) {
     UNITY_BEGIN();
 
+    // Test statement_has_executable_sql function
+    RUN_TEST(test_statement_has_executable_sql_null);
+    RUN_TEST(test_statement_has_executable_sql_empty);
+    RUN_TEST(test_statement_has_executable_sql_whitespace_only);
+    RUN_TEST(test_statement_has_executable_sql_line_comment_only);
+    RUN_TEST(test_statement_has_executable_sql_block_comment_only);
+    RUN_TEST(test_statement_has_executable_sql_multiline_block_comment_only);
+    RUN_TEST(test_statement_has_executable_sql_multiple_comments_only);
+    RUN_TEST(test_statement_has_executable_sql_unterminated_block_comment);
+    RUN_TEST(test_statement_has_executable_sql_real_sql);
+    RUN_TEST(test_statement_has_executable_sql_comment_then_sql);
+    RUN_TEST(test_statement_has_executable_sql_sql_with_trailing_comment);
+
     // Test parse_sql_statements function
     RUN_TEST(test_parse_sql_statements_success);
     RUN_TEST(test_parse_sql_statements_null_input);
     RUN_TEST(test_parse_sql_statements_empty_input);
     RUN_TEST(test_parse_sql_statements_empty_statements);
+    RUN_TEST(test_parse_sql_statements_comment_only_statement);
     RUN_TEST(test_parse_sql_statements_single_no_delimiter);
 
     // Test execute_db2_migration function
