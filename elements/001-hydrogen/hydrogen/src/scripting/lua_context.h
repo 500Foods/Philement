@@ -127,6 +127,20 @@ typedef struct {
     bool             enforce_limits;       // copy of entry->enforce_limits
     bool             soft_warned;          // one-shot soft-limit warning flag
     uint64_t         local_instruction_count;  // bumped in-hook; flushed to scoreboard on sample ticks
+
+    // Phase 10: per-job runtime cap. Copied from entry->max_runtime_seconds
+    // at submit time. Positive value = enforce; 0 or INT_MAX = "no limit".
+    // The hook checks (now - started_at) >= max_runtime_seconds on every
+    // tick and trips a kill when the deadline is past.
+    int              max_runtime_seconds;
+
+    // Phase 10: snapshot of the job's started_at timestamp. Copied from
+    // the entry in the worker so the hook can compute elapsed time
+    // without re-reading the scoreboard on every tick. CLOCK_MONOTONIC-
+    // style timespec; zero means "not yet started" (the hook skips the
+    // time check in that case to avoid a spurious kill on the first
+    // tick after a fast PENDING->RUNNING transition).
+    struct timespec  started_at;
 } H_lua_job_context;
 
 /*

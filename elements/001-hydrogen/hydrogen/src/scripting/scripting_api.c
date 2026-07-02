@@ -36,6 +36,8 @@
 
 // Local includes
 #include "scripting_api.h"
+#include "lua_context.h"   // H_lua_job_context, H_lua_get_job_context
+#include "scoreboard.h"     // scoreboard_update_current_state
 
 // H.log.* implementations //////////////////////////////////////////////////
 
@@ -285,6 +287,68 @@ static int H_lua_gc_isrunning(lua_State* L) {
     return 1;
 }
 
+// H.set_current_state implementation ///////////////////////////////////////
+
+/*
+ * H.set_current_state(state) - voluntary progress report.
+ *
+ * Lua-side signature: (state: string)
+ * C-side call:        H_lua_set_current_state(L)
+ *
+ * Validates that one string argument is present, then looks up the
+ * per-state job context to find the running job's scoreboard entry
+ * and copies the string out of Lua memory (UAF discipline from
+ * Phase 1) before writing to the scoreboard.
+ *
+ * No-op cases (do not raise, do not log a warning):
+ *   - No job context on the state (e.g. the Orchestrator, or a
+ *     test that built a bare lua_State). The Orchestrator's docstring
+ *     in lua_api.md calls this out explicitly.
+ *   - Empty string (treated as "clear the field"; the C side
+ *     converts it to NULL).
+ *
+ * Failure cases (log at LOG_LEVEL_ERROR, do not raise):
+ *   - No argument or non-string first argument.
+ *   - Unknown job_id (race with scoreboard_destroy; the C side
+ *     frees the strdup'd copy).
+ */
+static int H_lua_set_current_state(lua_State* L) {
+    int nargs = lua_gettop(L);
+    if (nargs < 1) {
+        log_this(SR_SCRIPTING, "H.set_current_state: missing string argument",
+                 LOG_LEVEL_ERROR, 0);
+        return 0;
+    }
+    if (!lua_isstring(L, 1)) {
+        log_this(SR_SCRIPTING, "H.set_current_state: argument must be a string",
+                 LOG_LEVEL_ERROR, 0);
+        return 0;
+    }
+
+    H_lua_job_context* ctx = H_lua_get_job_context(L);
+    if (!ctx || ctx->job_id[0] == '\0' || !ctx->scoreboard) {
+        // No job context: the Orchestrator or a bare test state. This
+        // is a documented no-op (lua_api.md Progress Reporting).
+        return 0;
+    }
+
+    // Copy the string out of Lua memory before the scoreboard write.
+    // UAF discipline from Phase 1: never let the C side hold a
+    // pointer into Lua-owned memory.
+    const char* state = lua_tostring(L, 1);
+    if (!state) {
+        return 0;
+    }
+
+    if (!scoreboard_update_current_state(ctx->scoreboard, ctx->job_id, state)) {
+        log_this(SR_SCRIPTING,
+                 "H.set_current_state: scoreboard update failed for job %s",
+                 LOG_LEVEL_ERROR, 1, ctx->job_id);
+    }
+
+    return 0;
+}
+
 // Install functions ////////////////////////////////////////////////////////
 
 /*
@@ -373,4 +437,30 @@ void H_lua_install_gc(lua_State* L) {
     lua_pushcfunction(L, H_lua_gc_isrunning); lua_setfield(L, -2, "isrunning");
 
     lua_pop(L, 2); // pop H.gc and H
+}
+
+/*
+ * Populate H.set_current_state with the voluntary-progress-report
+ * function. Replaces the Phase 3 placeholder sub-table of the same
+ * name (Lua allows the field to be reassigned from a table to a
+ * function; the sub-table becomes garbage).
+ */
+void H_lua_install_set_current_state(lua_State* L) {
+    if (!L) return;
+
+    lua_getglobal(L, "H");
+    if (!lua_istable(L, -1)) {
+        log_this(SR_LUA, "H_lua_install_set_current_state: H table missing",
+                 LOG_LEVEL_ERROR, 0);
+        lua_pop(L, 1);
+        return;
+    }
+
+    // No sub-table to descend into: H.set_current_state is a
+    // top-level function on H. lua_setfield replaces the Phase 3
+    // placeholder sub-table with the cfunction.
+    lua_pushcfunction(L, H_lua_set_current_state);
+    lua_setfield(L, -2, "set_current_state");
+
+    lua_pop(L, 1); // pop H
 }

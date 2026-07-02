@@ -2,6 +2,10 @@
  * Scripting Subsystem - Scoreboard
  *
  * Phase 5 of the LUA_PLAN. Thread-safe in-memory scoreboard.
+ * Phase 8 added per-job resource limits and progress fields.
+ * Phase 9 added the current_state field for H.set_current_state.
+ * Phase 10 added max_runtime_seconds, kill_requested, and the
+ * scoreboard_request_kill / scoreboard_is_kill_requested C API.
  * See scoreboard.h for the v1 surface and the design rationale
  * (mutex-protected array, copy-on-find, on-demand growth).
  *
@@ -47,6 +51,11 @@ static void entry_clear_owned(ScoreboardEntry* entry) {
     if (entry->params_json) {
         free(entry->params_json);
         entry->params_json = NULL;
+    }
+    // Phase 9: H.set_current_state report, if any.
+    if (entry->current_state) {
+        free(entry->current_state);
+        entry->current_state = NULL;
     }
 }
 
@@ -178,11 +187,13 @@ char* scoreboard_submit_with_limits(Scoreboard* sb,
     size_t soft_kb = 0;
     size_t hard_kb = 0;
     bool   enforce = true;
+    int    max_runtime = 0;
     if (limits) {
         hook_interval = limits->instruction_hook_interval;
         soft_kb = limits->memory_soft_limit_kb;
         hard_kb = limits->memory_hard_limit_kb;
         enforce = limits->enforce_limits;
+        max_runtime = limits->max_runtime_seconds;
     }
     if (app_config) {
         if (hook_interval <= 0) {
@@ -195,11 +206,17 @@ char* scoreboard_submit_with_limits(Scoreboard* sb,
             int cfg_hard = app_config->scripting.MemoryHardLimitKB;
             hard_kb = (cfg_hard > 0) ? (size_t)cfg_hard : SIZE_MAX;
         }
+        if (max_runtime == 0) {
+            int cfg_runtime = app_config->scripting.DefaultMaxRuntime;
+            max_runtime = (cfg_runtime > 0) ? cfg_runtime : INT_MAX;
+        }
     } else {
         // No config: leave zero fields as zero. The hook handles
         // 0 soft / 0 hard by skipping the check (see lua_hook.c).
         // hook_interval was already left at 0 above if the caller
-        // didn't provide a positive value.
+        // didn't provide a positive value. max_runtime stays 0,
+        // which the hook treats as "no limit" (only positive values
+        // are enforced).
     }
 
     pthread_mutex_lock(&sb->mutex);
@@ -238,6 +255,10 @@ char* scoreboard_submit_with_limits(Scoreboard* sb,
     entry->enforce_limits = enforce;
     entry->instruction_count = 0;
     entry->memory_used_kb = 0;
+
+    // Phase 10: per-job runtime cap + initial kill_requested = false.
+    entry->max_runtime_seconds = max_runtime;
+    entry->kill_requested = false;
 
     sb->count++;
 
@@ -285,13 +306,16 @@ ScoreboardEntry* scoreboard_find(Scoreboard* sb, const char* job_id) {
         copy = calloc(1, sizeof(ScoreboardEntry));
         if (copy) {
             *copy = *match;
-            // The match's script_name / params_json point at strings
-            // owned by the scoreboard. The copy must own its own
-            // strings so the caller can free it independently.
+            // The match's script_name / params_json / current_state
+            // point at strings owned by the scoreboard. The copy must
+            // own its own strings so the caller can free it
+            // independently.
             copy->script_name = match->script_name ? strdup(match->script_name) : NULL;
             copy->params_json = match->params_json ? strdup(match->params_json) : NULL;
+            copy->current_state = match->current_state ? strdup(match->current_state) : NULL;
             if ((match->script_name && !copy->script_name)
-                || (match->params_json && !copy->params_json)) {
+                || (match->params_json && !copy->params_json)
+                || (match->current_state && !copy->current_state)) {
                 // strdup failed; abandon the copy.
                 entry_clear_owned(copy);
                 free(copy);
@@ -400,4 +424,90 @@ const char* scoreboard_status_name(ScoreboardJobStatus status) {
         case SCOREBOARD_JOB_KILLED:    return "killed";
         default:                       return "unknown";
     }
+}
+
+bool scoreboard_update_current_state(Scoreboard* sb, const char* job_id, const char* state) {
+    if (!sb || !job_id) {
+        return false;
+    }
+
+    // Allocate the new string OUTSIDE the lock so the mutex critical
+    // section stays short. NULL/empty state clears the field.
+    char* new_state = NULL;
+    if (state && state[0] != '\0') {
+        new_state = strdup(state);
+        if (!new_state) {
+            log_this(SR_LUA, "scoreboard_update_current_state: strdup failed for job %s",
+                     LOG_LEVEL_ERROR, 1, job_id);
+            return false;
+        }
+    }
+
+    bool updated = false;
+    pthread_mutex_lock(&sb->mutex);
+    for (size_t i = 0; i < sb->count; i++) {
+        ScoreboardEntry* entry = &sb->entries[i];
+        if (strcmp(entry->job_id, job_id) != 0) {
+            continue;
+        }
+        // Free any prior value, then install the new one (which may
+        // be NULL to clear). The owned-string pattern is the same as
+        // script_name / params_json: copy in, copy out.
+        if (entry->current_state) {
+            free(entry->current_state);
+        }
+        entry->current_state = new_state;
+        updated = true;
+        break;
+    }
+    pthread_mutex_unlock(&sb->mutex);
+
+    if (!updated) {
+        // The id was unknown; free the string we allocated so it
+        // doesn't leak.
+        free(new_state);
+    }
+    return updated;
+}
+
+bool scoreboard_request_kill(Scoreboard* sb, const char* job_id) {
+    if (!sb || !job_id) {
+        return false;
+    }
+    bool found = false;
+    pthread_mutex_lock(&sb->mutex);
+    for (size_t i = 0; i < sb->count; i++) {
+        ScoreboardEntry* entry = &sb->entries[i];
+        if (strcmp(entry->job_id, job_id) != 0) {
+            continue;
+        }
+        // Idempotent: setting a flag that's already set is a no-op.
+        entry->kill_requested = true;
+        found = true;
+        break;
+    }
+    pthread_mutex_unlock(&sb->mutex);
+    return found;
+}
+
+bool scoreboard_is_kill_requested(Scoreboard* sb, const char* job_id, bool* out) {
+    if (out) {
+        *out = false;
+    }
+    if (!sb || !job_id || !out) {
+        return false;
+    }
+    bool found = false;
+    pthread_mutex_lock(&sb->mutex);
+    for (size_t i = 0; i < sb->count; i++) {
+        ScoreboardEntry* entry = &sb->entries[i];
+        if (strcmp(entry->job_id, job_id) != 0) {
+            continue;
+        }
+        *out = entry->kill_requested;
+        found = true;
+        break;
+    }
+    pthread_mutex_unlock(&sb->mutex);
+    return found;
 }

@@ -75,6 +75,11 @@ void test_lua_create_and_destroy_roundtrip(void) {
 
 // Phase 3 installs an H table with placeholder sub-tables. Validate
 // each of the agreed sub-table names is present.
+//
+// Note: in Phase 9, H.set_current_state is a top-level function on H
+// (it replaces the Phase 3 placeholder sub-table when the install
+// function runs), so it is validated as a function below rather than
+// a table here.
 void test_lua_create_context_installs_H_table(void) {
     lua_State* L = H_lua_create_context();
     TEST_ASSERT_NOT_NULL(L);
@@ -86,7 +91,7 @@ void test_lua_create_context_installs_H_table(void) {
         "log", "system",
         "query", "altquery", "authquery", "wait",
         "http", "llm", "mail", "notify",
-        "sleep", "shutdown_requested", "set_current_state",
+        "sleep", "shutdown_requested",
         "scoreboard",
         NULL
     };
@@ -96,6 +101,13 @@ void test_lua_create_context_installs_H_table(void) {
         TEST_ASSERT_TRUE_MESSAGE(lua_istable(L, -1), subtables[i]);
         lua_pop(L, 1);
     }
+
+    // Phase 9: set_current_state is a top-level function on H, not a
+    // sub-table. The install function replaced the Phase 3 placeholder
+    // sub-table with a cfunction.
+    lua_getfield(L, -1, "set_current_state");
+    TEST_ASSERT_TRUE_MESSAGE(lua_isfunction(L, -1), "H.set_current_state");
+    lua_pop(L, 1);
 
     lua_pop(L, 1); // pop H table
     H_lua_destroy_context(L);

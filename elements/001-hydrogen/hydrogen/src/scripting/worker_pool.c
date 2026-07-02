@@ -2,20 +2,31 @@
  * Scripting Subsystem - Worker Pool
  *
  * Phase 7 of the LUA_PLAN. See worker_pool.h for the design.
+ * Phase 10 added per-job time limits and basic killing:
+ *   - The worker pre-checks kill_requested on the dequeued entry and
+ *     skips Lua execution (marks KILLED) if it was set before the
+ *     worker picked the job up.
+ *   - On lua_pcall non-OK, the worker checks kill_requested on the
+ *     entry copy and the (now, started_at, max_runtime_seconds)
+ *     triple. If either indicates a kill, the job ends KILLED;
+ *     otherwise FAILED. The log line prefix matches.
  *
  * Job lifecycle (per worker, per job):
  *   1. dequeue a job_id (char*) from the job queue
  *   2. scoreboard_update_status(RUNNING) - stamps started_at
  *   3. scoreboard_find - get a heap copy of the entry
- *   4. script_registry_lookup - get the source for script_name
- *   5. H_lua_create_context - fresh lua_State
- *   6. H_lua_run_string - compile + pcall
- *   7. on success: update_status(COMPLETED); on failure:
+ *   4. (Phase 10) if kill_requested, mark KILLED and return
+ *   5. script_registry_lookup - get the source for script_name
+ *   6. H_lua_create_context - fresh lua_State
+ *   7. (Phase 8) H_lua_install_progress_hook with per-job limits
+ *   8. H_lua_run_string - compile + pcall
+ *   9. on success: update_status(COMPLETED); on failure:
  *      copy error string out of Lua (UAF discipline from Phase 1),
- *      lua_pop it, log it, update_status(FAILED)
- *   8. H_lua_destroy_context - close the fresh state
- *   9. free the entry copy and the job_id
- *  10. loop
+ *      lua_pop it, classify as KILLED or FAILED (Phase 10), log it,
+ *      update_status(...)
+ *  10. H_lua_destroy_context - close the fresh state
+ *  11. free the entry copy and the job_id
+ *  12. loop
  *
  * Shutdown: scripting_workers_destroy sets scripting_system_shutdown = 1
  * and waits for the queue to drain. Workers exit their loop when
@@ -25,10 +36,12 @@
  // Project includes
 #include <src/hydrogen.h>
 
-// Standard includes
+ // Standard includes
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <limits.h>   // INT_MAX (Phase 10: "no max runtime" sentinel)
+#include <time.h>     // clock_gettime, struct timespec (Phase 10: elapsed time)
 
 // Third-party includes
 #include <lua.h>
@@ -322,6 +335,12 @@ static void* scripting_worker_thread(void* arg) {
  * registry lookup, NOT the global scripting_workers. The destroy
  * path NULLs scripting_workers before pthread_join, and the workers
  * must continue processing the in-flight jobs through that window.
+ *
+ * Phase 10: on pcall error, the worker re-finds the entry and checks
+ * kill_requested. If true, the job ends KILLED (not FAILED). The
+ * PENDING-skip check below also uses kill_requested so a job that was
+ * cancelled before a worker picked it up is marked KILLED without
+ * burning a lua_State.
  */
 static void scripting_worker_process_one(ScriptingWorkerPool* pool,
                                           const char* job_id) {
@@ -341,6 +360,21 @@ static void scripting_worker_process_one(ScriptingWorkerPool* pool,
         // Lost the race with someone else; mark as FAILED.
         scoreboard_update_status(scripting_scoreboard, job_id,
                                  SCOREBOARD_JOB_FAILED);
+        return;
+    }
+
+    // Phase 10: PENDING-skip kill check. If kill_requested was set
+    // before the worker dequeued this job, skip Lua execution
+    // entirely and mark KILLED. We already transitioned the entry
+    // to RUNNING above (the standard transition); overwrite to
+    // KILLED with finished_at stamped by update_status.
+    if (entry->kill_requested) {
+        log_this(SR_SCRIPTING,
+                 "Worker [%s]: job cancelled before execution; marking KILLED",
+                 LOG_LEVEL_STATE, 1, job_id);
+        scoreboard_update_status(scripting_scoreboard, job_id,
+                                 SCOREBOARD_JOB_KILLED);
+        scoreboard_entry_free(entry);
         return;
     }
 
@@ -374,6 +408,15 @@ static void scripting_worker_process_one(ScriptingWorkerPool* pool,
     // H_lua_install_progress_hook to register the lua_sethook. The
     // hook reads the context on every tick to write progress back
     // to the scoreboard and enforce soft/hard limits.
+    //
+    // Phase 10: also snapshot max_runtime_seconds and a fresh
+    // CLOCK_MONOTONIC started_at for the elapsed-time check. The
+    // scoreboard's entry->started_at is CLOCK_REALTIME (used for
+    // human-readable wall-clock timestamps); CLOCK_MONOTONIC is
+    // used for elapsed-time arithmetic because it is immune to NTP
+    // adjustments and clock skew. We override ctx.started_at here
+    // (overwriting the entry's CLOCK_REALTIME copy) so the hook's
+    // (now - started_at) computation is well-defined.
     H_lua_job_context ctx = {0};
     snprintf(ctx.job_id, sizeof(ctx.job_id), "%s", job_id);
     ctx.scoreboard = scripting_scoreboard;
@@ -383,6 +426,8 @@ static void scripting_worker_process_one(ScriptingWorkerPool* pool,
     ctx.enforce_limits = entry->enforce_limits;
     ctx.soft_warned = false;
     ctx.local_instruction_count = 0;
+    ctx.max_runtime_seconds = entry->max_runtime_seconds;
+    clock_gettime(CLOCK_MONOTONIC, &ctx.started_at);
     H_lua_set_job_context(L, &ctx);
     H_lua_install_progress_hook(L);
 
@@ -405,18 +450,42 @@ static void scripting_worker_process_one(ScriptingWorkerPool* pool,
         // state (UAF discipline from Phase 1).
         const char* lua_err = lua_tostring(L, -1);
         char* err_copy = lua_err ? strdup(lua_err) : NULL;
+
+        // Phase 10: distinguish KILLED from FAILED. The hook is the
+        // single source of truth: it sets scoreboard->kill_requested
+        // via scoreboard_request_kill (for the max-runtime path)
+        // before raising luaL_error. For the external-cancel path,
+        // the flag was already set by the caller. The worker reads
+        // the live flag here.
+        //
+        // A second classifier (time-elapsed) is intentionally not
+        // included: the wall-clock seconds between update_status
+        // and this point can be < 1 (e.g. the hook fired on a tick
+        // where the seconds counter just rolled over, and the worker
+        // reads the same second as the entry's stamp), which would
+        // produce a false negative. The scoreboard flag is
+        // authoritative and not subject to clock granularity.
+        bool live_kill = false;
+        scoreboard_is_kill_requested(scripting_scoreboard, job_id, &live_kill);
+        bool was_killed = live_kill;
+
+        ScoreboardJobStatus terminal = was_killed
+            ? SCOREBOARD_JOB_KILLED
+            : SCOREBOARD_JOB_FAILED;
+
         if (err_copy) {
-            log_this(SR_SCRIPTING, "Worker [%s]: job failed: %s",
-                     LOG_LEVEL_ERROR, 2, job_id, err_copy);
+            const char* prefix = was_killed ? "KILLED" : "FAILED";
+            log_this(SR_SCRIPTING, "Worker [%s]: job %s: %s",
+                     LOG_LEVEL_ERROR, 3, job_id, prefix, err_copy);
             free(err_copy);
         } else {
-            log_this(SR_SCRIPTING, "Worker [%s]: job failed (no message)",
-                     LOG_LEVEL_ERROR, 1, job_id);
+            const char* prefix = was_killed ? "KILLED" : "FAILED";
+            log_this(SR_SCRIPTING, "Worker [%s]: job %s (no message)",
+                     LOG_LEVEL_ERROR, 2, job_id, prefix);
         }
         // Pop the error from the stack (H_lua_run_string leaves it).
         lua_pop(L, 1);
-        scoreboard_update_status(scripting_scoreboard, job_id,
-                                 SCOREBOARD_JOB_FAILED);
+        scoreboard_update_status(scripting_scoreboard, job_id, terminal);
     }
 
     H_lua_destroy_context(L);
