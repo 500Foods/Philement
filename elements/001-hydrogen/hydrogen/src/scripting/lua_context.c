@@ -211,6 +211,11 @@ void H_lua_install_api(lua_State* L) {
     // long-running script that wants to manage its own memory).
     // The progress hook only samples; it never collects.
     H_lua_install_gc(L);
+    // Phase 9: voluntary progress report. Replaces the Phase 3
+    // placeholder sub-table of the same name with a top-level
+    // function on H. The Orchestrator is a no-op caller (no
+    // scoreboard entry); workers call this with their own job_id.
+    H_lua_install_set_current_state(L);
 }
 
 /*

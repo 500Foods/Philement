@@ -6,6 +6,8 @@
  *
  *   H.log.{trace, debug, info, warn, error, fatal}
  *   H.system.{uptime, now, now_iso, instance_id, version}
+ *   H.set_current_state                            (Phase 9)
+ *   H.gc.{collect, step, count, isrunning}         (Phase 8)
  *
  * Each H.* function is a thin wrapper around an existing Hydrogen
  * primitive (log_this, time(NULL), the VERSION macro, etc.). Phase 6
@@ -57,5 +59,28 @@ void H_lua_install_system(lua_State* L);
  * completes. The hook deliberately does not call it.
  */
 void H_lua_install_gc(lua_State* L);
+
+/*
+ * Populate H.set_current_state with the C function backing it.
+ *
+ * Phase 9: voluntary progress report from a Lua script. Updates the
+ * current job's current_state field in the scoreboard. Available
+ * only inside a worker job context (i.e. when the per-state
+ * H_lua_job_context has a non-empty job_id and a scoreboard). The
+ * Orchestrator is a no-op caller: it has no scoreboard entry, and
+ * the function silently returns 0.
+ *
+ * The string is copied into a C-owned buffer (UAF discipline from
+ * Phase 1) before the scoreboard is touched, so the Lua value can
+ * be garbage-collected right after the call.
+ *
+ * Argument validation: takes exactly one string argument. A missing
+ * or non-string argument is logged at LOG_LEVEL_ERROR and does not
+ * raise a Lua error - the host path is a leaf, in keeping with the
+ * Phase 6 rule that the host log path should never crash the host.
+ *
+ * Replaces the Phase 3 placeholder sub-table of the same name.
+ */
+void H_lua_install_set_current_state(lua_State* L);
 
 #endif /* HYDROGEN_SCRIPTING_SCRIPTING_API_H */

@@ -14,10 +14,11 @@
  *   - create / destroy
  *
  * Fields added by later phases (Phase 8: instruction_count, memory;
- * Phase 9: current_state; Phase 10: max_runtime, kill flag;
- * Phase 12: has_waiter, waiter_context, result_ref; Phase 25: result
- * artifacts) are NOT in v1. The struct reserves placeholder comments
- * for them so the growth path is obvious.
+ * Phase 9: current_state - IMPLEMENTED; Phase 10: max_runtime, kill
+ * flag; Phase 12: has_waiter, waiter_context, result_ref; Phase 25:
+ * result artifacts) are NOT in v1 unless called out. The struct
+ * reserves placeholder comments for the not-yet-implemented ones so
+ * the growth path is obvious.
  *
  * Concurrency model:
  *   - One pthread_mutex_t protects the entries array.
@@ -27,6 +28,14 @@
  *     during submit, copying during find, status transitions during
  *     update. Operations that may block (DB, HTTP) are NOT done under
  *     the mutex - those happen against the copy returned by find().
+ *
+ * Phase 10 adds:
+ *   - max_runtime_seconds on the entry (snapshotted at submit, default
+ *     from config->scripting.DefaultMaxRuntime, INT_MAX means no limit).
+ *   - kill_requested on the entry (mutable, defaults false; set via
+ *     scoreboard_request_kill). The progress hook (lua_hook.c) polls
+ *     this on every tick and trips the kill when the job is running.
+ *   - scoreboard_request_kill / scoreboard_is_kill_requested C API.
  *
  * v1 does not have:
  *   - iteration (Phase 11's H.scoreboard.list)
@@ -42,6 +51,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <limits.h>   // INT_MAX (Phase 10: "no max runtime" sentinel)
 #include <time.h>
 
 // Project headers
@@ -71,9 +81,6 @@ typedef enum {
  * scoreboard_destroy). Timestamps with zero tv_sec are "not set".
  *
  * Reserved for later phases (NOT populated by v1):
- *   - instruction_count, memory_used_bytes  (Phase 8 hook)
- *   - current_state                          (Phase 9 H.set_current_state)
- *   - max_runtime_seconds, kill_requested    (Phase 10)
  *   - has_waiter, waiter_context, result_ref (Phase 12)
  *   - result_type, result_location           (Phase 25)
  */
@@ -96,6 +103,26 @@ typedef struct {
 
     uint64_t            instruction_count;         // 0 until first hook tick
     size_t              memory_used_kb;            // 0 until first periodic GC sample
+
+    // Phase 9: voluntary progress report from the Lua script. Set by
+    // H.set_current_state. strdup'd; freed by entry destroy; NULL or
+    // "" means "no progress report". Always safe to overwrite; the
+    // previous value is freed before the new one is installed.
+    char*               current_state;
+
+    // Phase 10: per-job runtime cap. 0 = "use config default"
+    // (config->scripting.DefaultMaxRuntime); INT_MAX = "no limit"
+    // (the Orchestrator and any opt-out job). The hook reads this on
+    // every tick and trips the kill when (now - started_at) >=
+    // max_runtime_seconds.
+    int                 max_runtime_seconds;
+
+    // Phase 10: kill request flag. Set by scoreboard_request_kill;
+    // read by the hook (via scoreboard_is_kill_requested) on every
+    // tick. Once true, the next hook tick raises luaL_error, the
+    // worker's pcall catches it, and the worker marks the job
+    // KILLED (not FAILED). Idempotent: setting twice is a no-op.
+    bool                kill_requested;
 } ScoreboardEntry;
 
 /*
@@ -143,6 +170,7 @@ typedef struct {
     size_t memory_soft_limit_kb;       // 0 = use config default
     size_t memory_hard_limit_kb;       // 0 = use config default; SIZE_MAX explicitly = no limit
     bool   enforce_limits;             // default true
+    int    max_runtime_seconds;        // 0 = use config default; INT_MAX explicitly = no limit
 } ScoreboardJobLimits;
 
 /*
@@ -243,5 +271,73 @@ const char* scoreboard_status_name(ScoreboardJobStatus status);
 bool scoreboard_update_progress(Scoreboard* sb, const char* job_id,
                                 uint64_t instruction_count,
                                 size_t memory_used_kb);
+
+/*
+ * Update the voluntary progress report (current_state). Thread-safe.
+ *
+ *   sb     - the scoreboard
+ *   job_id - the 5-char ID to update
+ *   state  - the new state string (strdup'd by the scoreboard).
+ *           NULL or "" clears the field. The caller may free its own
+ *           copy after the call returns.
+ *
+ * Returns true if a matching entry was found and updated, false if the
+ * ID is unknown or memory could not be allocated.
+ *
+ * Phase 9: this is the backing store for H.set_current_state. Any
+ * prior value of current_state is freed before the new one is set.
+ * The update is data-only: it does NOT change the job's status and
+ * does NOT stamp started_at/finished_at.
+ */
+bool scoreboard_update_current_state(Scoreboard* sb, const char* job_id, const char* state);
+
+/*
+ * Request that a job be killed. Thread-safe.
+ *
+ *   sb     - the scoreboard
+ *   job_id - the 5-char ID to mark for kill
+ *
+ * Returns true if a matching entry was found and its kill_requested
+ * flag was set (or was already set); false if the ID is unknown.
+ *
+ * Idempotent: setting kill_requested=true on an entry that is already
+ * kill_requested is a no-op and still returns true.
+ *
+ * Effect on running jobs: the lua_sethook-driven progress hook polls
+ * scoreboard_is_kill_requested on every tick. When the flag flips to
+ * true, the next tick raises luaL_error, the worker's pcall catches
+ * it, and the worker marks the job KILLED (not FAILED). Kill latency
+ * is therefore bounded by the per-state hook_interval (default 5,000
+ * VM instructions, a few microseconds at typical run rates).
+ *
+ * Effect on PENDING jobs: workers that dequeue a PENDING entry with
+ * kill_requested=true skip the Lua execution entirely and mark the
+ * entry KILLED immediately. This avoids burning a lua_State on a job
+ * nobody wants.
+ *
+ * Effect on terminal jobs: setting kill_requested on a job that has
+ * already reached COMPLETED/FAILED/KILLED is harmless (the hook
+ * only runs while the state is RUNNING). Returns true if the entry
+ * exists, regardless of its current status.
+ *
+ * Phase 10: this is the C API. The Lua-side wrapper H.scoreboard.cancel
+ * is added in Phase 11.
+ */
+bool scoreboard_request_kill(Scoreboard* sb, const char* job_id);
+
+/*
+ * Read the current kill_requested flag for a job. Thread-safe.
+ *
+ *   sb     - the scoreboard
+ *   job_id - the 5-char ID to look up
+ *   out    - non-NULL; *out is set to true if the entry exists and
+ *            has kill_requested=true, false otherwise.
+ *
+ * Returns true if a matching entry was found; false if the ID is
+ * unknown (in which case *out is left as false). The hook calls
+ * this on every tick so the kill flag is always read live from the
+ * scoreboard (no risk of snapshotting a stale value).
+ */
+bool scoreboard_is_kill_requested(Scoreboard* sb, const char* job_id, bool* out);
 
 #endif /* HYDROGEN_SCRIPTING_SCOREBOARD_H */
