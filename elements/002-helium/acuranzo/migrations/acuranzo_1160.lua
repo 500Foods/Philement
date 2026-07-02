@@ -129,8 +129,16 @@ table.insert(queries,{sql=[[
         ${QTC_SLOW}                                                         AS query_queue_a58,
         ${TIMEOUT}                                                          AS query_timeout,
         [=[
+            ${REORG}
+
+            ${SUBQUERY_DELIMITER}
+
             ALTER TABLE ${SCHEMA}${TABLE}
                 DROP COLUMN segment_refs;
+
+            ${SUBQUERY_DELIMITER}
+
+            ${REORG}
 
             ${SUBQUERY_DELIMITER}
 
@@ -139,8 +147,16 @@ table.insert(queries,{sql=[[
 
             ${SUBQUERY_DELIMITER}
 
+            ${REORG}
+
+            ${SUBQUERY_DELIMITER}
+
             ALTER TABLE ${SCHEMA}${TABLE}
                 DROP COLUMN model;
+
+            ${SUBQUERY_DELIMITER}
+
+            ${REORG}
 
             ${SUBQUERY_DELIMITER}
 
@@ -149,8 +165,16 @@ table.insert(queries,{sql=[[
 
             ${SUBQUERY_DELIMITER}
 
+            ${REORG}
+
+            ${SUBQUERY_DELIMITER}
+
             ALTER TABLE ${SCHEMA}${TABLE}
                 DROP COLUMN tokens_completion;
+
+            ${SUBQUERY_DELIMITER}
+
+            ${REORG}
 
             ${SUBQUERY_DELIMITER}
 
@@ -159,8 +183,16 @@ table.insert(queries,{sql=[[
 
             ${SUBQUERY_DELIMITER}
 
+            ${REORG}
+
+            ${SUBQUERY_DELIMITER}
+
             ALTER TABLE ${SCHEMA}${TABLE}
                 DROP COLUMN user_id;
+
+            ${SUBQUERY_DELIMITER}
+
+            ${REORG}
 
             ${SUBQUERY_DELIMITER}
 
@@ -169,8 +201,16 @@ table.insert(queries,{sql=[[
 
             ${SUBQUERY_DELIMITER}
 
+            ${REORG}
+
+            ${SUBQUERY_DELIMITER}
+
             ALTER TABLE ${SCHEMA}${TABLE}
                 DROP COLUMN session_id;
+
+            ${SUBQUERY_DELIMITER}
+
+            ${REORG}
 
             ${SUBQUERY_DELIMITER}
 

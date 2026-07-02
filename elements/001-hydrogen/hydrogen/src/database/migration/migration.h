@@ -79,6 +79,7 @@ bool execute_transaction(DatabaseHandle* connection, const char* sql_result,
                         DatabaseEngine engine_type, const char* dqm_label);
 
 // Internal transaction functions (exposed for unit testing)
+bool statement_has_executable_sql(const char* stmt);
 bool parse_sql_statements(const char* sql_result, size_t sql_length, char*** statements,
                          size_t* statement_count, size_t* statements_capacity,
                          const char* delimiter, const char* dqm_label);

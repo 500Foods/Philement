@@ -3,6 +3,7 @@
 -- luacheck: no max line length
 
 -- CHANGELOG
+-- 2.8.1 - 2026-07-02 - Added REORG TABLE macro
 -- 2.8.0 - 2026-07-02 - Added JSON_INGEST_SCHEMA for storing JSON Schema docs that use $ref/$id/$schema
 -- 2.7.0 - 2026-03-22 - Added VARCHAR_64
 -- 2.6.0 - 2025-12-31 - Added fancy INSERT_ macros to get our new key value returned
@@ -41,6 +42,7 @@ return {
     JRE = " DEFAULT NULL ON ERROR)",
     NOW = "CURRENT TIMESTAMP",
     PRIMARY = "PRIMARY KEY",
+    REORG = "CALL SYSPROC.ADMIN_CMD('REORG TABLE ${SCHEMA}${TABLE}');",
     SERIAL = "INTEGER GENERATED ALWAYS AS IDENTITY",
     SESSION_SECS ="(TIMESTAMPDIFF(2, TIMESTAMP(:SESSION_START) - CURRENT TIMESTAMP) * -1) / 1000000",
     SIZE_COLLECTION = "COALESCE(LENGTH(collection), 0)",

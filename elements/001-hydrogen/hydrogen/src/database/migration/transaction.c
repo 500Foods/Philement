@@ -34,6 +34,65 @@
 #include <src/database/db2/transaction.h>
 
 /*
+ * Determine whether a SQL statement contains any executable content
+ *
+ * Returns true if the statement has at least one non-whitespace, non-comment
+ * character. Returns false for statements that are empty, whitespace-only, or
+ * composed entirely of SQL comments (line comments starting with "--" and/or
+ * block comments delimited by C-style markers).
+ *
+ * This guards the migration path against comment-only statements, which some
+ * engines (e.g. DB2) legitimately produce when an engine-specific command is
+ * rendered as a comment for other engines. Passing such a statement to the
+ * driver's prepare call would otherwise fail the entire migration.
+ *
+ * Note: this deliberately does NOT parse string/identifier literals. Migration
+ * statements are generated, delimiter-separated units, and the goal is only to
+ * detect the presence of executable content, not to strip comments from valid
+ * SQL.
+ */
+bool statement_has_executable_sql(const char* stmt) {
+    if (!stmt) {
+        return false;
+    }
+
+    const char* ptr = stmt;
+    while (*ptr != '\0') {
+        // Skip whitespace
+        if (isspace((unsigned char)*ptr)) {
+            ptr++;
+            continue;
+        }
+
+        // Skip line comments: "--" through end of line
+        if (ptr[0] == '-' && ptr[1] == '-') {
+            ptr += 2;
+            while (*ptr != '\0' && *ptr != '\n') {
+                ptr++;
+            }
+            continue;
+        }
+
+        // Skip block comments: "/* ... */" (may span multiple lines)
+        if (ptr[0] == '/' && ptr[1] == '*') {
+            ptr += 2;
+            while (*ptr != '\0' && !(ptr[0] == '*' && ptr[1] == '/')) {
+                ptr++;
+            }
+            if (*ptr != '\0') {
+                ptr += 2;  // Consume the closing "*/"
+            }
+            continue;
+        }
+
+        // Found a character that is neither whitespace nor a comment marker
+        return true;
+    }
+
+    return false;
+}
+
+/*
  * Parse multi-statement SQL into individual statements
  */
 bool parse_sql_statements(const char* sql_result, size_t sql_length, char*** statements,
@@ -83,8 +142,8 @@ bool parse_sql_statements(const char* sql_result, size_t sql_length, char*** sta
             end--;
         }
 
-        // Skip empty statements
-        if (strlen(stmt) > 0) {
+        // Skip empty, whitespace-only, and comment-only statements
+        if (statement_has_executable_sql(stmt)) {
             // Add to statements array
             if (*statement_count >= *statements_capacity) {
                 *statements_capacity = *statements_capacity == 0 ? 10 : *statements_capacity * 2;

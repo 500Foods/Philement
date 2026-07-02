@@ -207,7 +207,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
                 # successful" line at STATE level, which is captured in the server log.
                 reversed_count=$("${GREP}" -c "REVERSE was successful" "${log_file}" 2>/dev/null || true)
                 reversed_count=${reversed_count:-0}
-                TEST_NAME="${TEST_NAME}  {BLUE}cycle: ${migration_time}s, migrations: ${reversed_count}{RESET}"
+                TEST_NAME="${TEST_NAME}  {BLUE}cyc: ${migration_time}s, mig: ${reversed_count}{RESET}"
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${ENGINE_NAME} migration test completed successfully in ${migration_time}s (${reversed_count} migrations reversed)"
                 PASS_COUNT=$(( PASS_COUNT + 1 ))
 
