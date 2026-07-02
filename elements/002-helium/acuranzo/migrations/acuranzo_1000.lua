@@ -49,6 +49,18 @@ if engine ~= 'sqlite' then table.insert(queries,{sql=[[
 
 ]]}) end
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+-- NOTE: JSON_INGEST_SCHEMA validates JSON Schema documents (which use reserved keys like
+--       $ref/$id/$schema). Only DB2 needs a distinct function object, because its JSON2BSON
+--       validator treats a nested { "$ref": ... } as a BSON DBRef and rejects it. Other
+--       engines alias json_ingest via macros (their parsers have no reserved-key semantics),
+--       so their JSON_INGEST_SCHEMA_FUNCTION is empty and nothing is emitted here.
+if engine == 'db2' then table.insert(queries,{sql=[[
+
+    -- Defined in database_db2.lua as a macro
+    ${JSON_INGEST_SCHEMA_FUNCTION}
+
+]]}) end
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 -- NOTE: DB2 has no built-in Base64 encoding, so here we're adding the UDF pointing at the
 --       UDF we've got in extras/base64_udf_db2 in case it is applied to a different schema
 if engine == 'db2' then table.insert(queries,{sql=[[

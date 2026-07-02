@@ -10,7 +10,7 @@
  // Global includes
 #include <src/hydrogen.h>
 
-// Local includes
+ // Local includes
 #include "landing.h"
 #include <src/landing/landing.h>
 #include <src/utils/utils_logging.h>
@@ -21,6 +21,7 @@
 #include <src/scripting/scripting.h>
 #include <src/scripting/lua_context.h>
 #include <src/scripting/worker_pool.h>
+#include <src/scripting/orchestrator.h>
 
 // External declarations
 extern ServiceThreads scripting_threads;
@@ -98,7 +99,15 @@ int land_scripting_subsystem(void) {
 
     scripting_system_shutdown = 1;
 
-    // Phase 7: stop the worker pool first. This drains the queue,
+    // Phase 11d: stop the Orchestrator BEFORE the worker pool. The
+    // orchestrator's loop sees scripting_system_shutdown = 1 (via
+    // H.shutdown_requested and H.sleep) and exits cleanly; the
+    // pthread is joined here. Once the orchestrator has stopped
+    // submitting new work, the worker pool can drain the remaining
+    // queue without new entries arriving.
+    scripting_orchestrator_destroy();
+
+    // Phase 7: stop the worker pool. This drains the queue,
     // joins worker threads, and frees the pool. The scoreboard must
     // remain alive until the workers have exited (workers update it
     // as they finish each job), so worker pool teardown precedes

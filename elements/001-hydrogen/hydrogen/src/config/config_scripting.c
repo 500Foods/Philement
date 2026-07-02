@@ -53,6 +53,18 @@ bool load_scripting_config(json_t* root, AppConfig* config) {
     success = success && PROCESS_INT(root, scripting, MemoryHardLimitKB, "Scripting.MemoryHardLimitKB", "Scripting");
     success = success && PROCESS_BOOL(root, scripting, AllowDBModuleLoad, "Scripting.AllowDBModuleLoad", "Scripting");
 
+    // Phase 11f: if scripting is enabled and the operator did not
+    // supply a name, default to the seeded Orchestrators.Orchestrator
+    // row (migration 1210). The default makes the default JSON config
+    // "just work" without requiring the operator to know the
+    // `group.name` convention.
+    if (scripting->Enabled && !scripting->Orchestrator) {
+        scripting->Orchestrator = strdup("Orchestrators.Orchestrator");
+        if (!scripting->Orchestrator) {
+            success = false;
+        }
+    }
+
     // Process sandbox subsection
     if (success) {
         success = PROCESS_SECTION(root, "Scripting.Sandbox");

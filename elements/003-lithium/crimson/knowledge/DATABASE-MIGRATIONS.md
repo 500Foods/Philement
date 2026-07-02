@@ -36,7 +36,7 @@ in the migrations themselves so that they get populated in the database directly
 
 | M# | Table | Version | Updated | Stmts | Diagram | Description |
 | ---- | ------- | --------- | --------- | ------- | --------- | ------------- |
-| [1000](/elements/002-helium/acuranzo/migrations/acuranzo_1000.lua) | queries | 5.0.0 | 2026-01-16 | 18 | ✓ | Bootstraps the migration system by creating the queries table and supporting user-defined functions |
+| [1000](/elements/002-helium/acuranzo/migrations/acuranzo_1000.lua) | queries | 5.0.0 | 2026-01-16 | 19 | ✓ | Bootstraps the migration system by creating the queries table and supporting user-defined functions |
 | [1001](/elements/002-helium/acuranzo/migrations/acuranzo_1001.lua) | lookups | 3.1.0 | 2025-11-23 | 6 | ✓ | Creates the lookups table |
 | [1002](/elements/002-helium/acuranzo/migrations/acuranzo_1002.lua) | account_access | 3.1.0 | 2025-11-23 | 6 | ✓ | Creates the account_access table |
 | [1003](/elements/002-helium/acuranzo/migrations/acuranzo_1003.lua) | account_contacts | 3.1.0 | 2025-11-23 | 6 | ✓ | Creates the account_contacts table |
@@ -190,7 +190,7 @@ in the migrations themselves so that they get populated in the database directly
 | [1151](/elements/002-helium/acuranzo/migrations/acuranzo_1151.lua) | queries | 1.3.0 | 2026-01-22 | 6 | ✗ | QueryRef #057 - Query Params Test |
 | [1152](/elements/002-helium/acuranzo/migrations/acuranzo_1152.lua) | lookups | 1.0.1 | 2026-04-11 | 4 | ✗ | Lookup 059 - Table Definitions |
 | [1153](/elements/002-helium/acuranzo/migrations/acuranzo_1153.lua) | lookups | 1.0.2 | 2026-04-19 | 4 | ✗ | LithiumTable Column Types (lookup_id 059, key_idx 0) |
-| [1154](/elements/002-helium/acuranzo/migrations/acuranzo_1154.lua) | lookups | 1.4.0 | 2026-04-19 | 4 | ✗ | LithiumTable JSON Schema (lookup_id 059, key_idx 1) |
+| [1154](/elements/002-helium/acuranzo/migrations/acuranzo_1154.lua) | lookups | 1.5.0 | 2026-07-02 | 4 | ✗ | LithiumTable JSON Schema (lookup_id 059, key_idx 1) |
 | [1155](/elements/002-helium/acuranzo/migrations/acuranzo_1155.lua) | queries | 1.0.0 | 2026-03-15 | 4 | ✗ | QueryRef #060 - Get Tabulator Schemas |
 | [1156](/elements/002-helium/acuranzo/migrations/acuranzo_1156.lua) | lookups | 1.3.0 | 2026-04-12 | 4 | ✗ | LithiumTable style-manager-base-vars (lookup_id 59 key_idx 11) |
 | [1157](/elements/002-helium/acuranzo/migrations/acuranzo_1157.lua) | lookups | 1.0.0 | 2026-03-17 | 4 | ✗ | LithiumTable style-manager-semantic-vars (lookup_id 59 key_idx 12) |
@@ -237,4 +237,14 @@ in the migrations themselves so that they get populated in the database directly
 | [1198](/elements/002-helium/acuranzo/migrations/acuranzo_1198.lua) | queries | 1.0.0 | 2026-06-24 | 4 | ✗ | QueryRef #085 - Insert Course Suggestion (Cap-protected, slow queue) |
 | [1199](/elements/002-helium/acuranzo/migrations/acuranzo_1199.lua) | contact_submissions | 1.0.0 | 2026-06-24 | 8 | ✓ | Creates the contact_submissions table (Cap Phase 2b: Contact Us form) |
 | [1200](/elements/002-helium/acuranzo/migrations/acuranzo_1200.lua) | queries | 1.0.0 | 2026-06-24 | 4 | ✗ | QueryRef #086 - Insert Contact Submission (Cap-protected, slow queue) |
-| **201** | | | | **1038** | **201** | |
+| [1201](/elements/002-helium/acuranzo/migrations/acuranzo_1201.lua) | scripts | 1.0.0 | 2026-07-01 | 6 | ✓ | Creates the scripts table for the Hydrogen Scripting Subsystem (Phase 11a) |
+| [1202](/elements/002-helium/acuranzo/migrations/acuranzo_1202.lua) | lookups | 1.0.0 | 2026-07-01 | 8 | ✗ | Lookup 061 - Script Types for the Hydrogen Scripting Subsystem (Phase 11a) |
+| [1203](/elements/002-helium/acuranzo/migrations/acuranzo_1203.lua) | lookups | 1.0.0 | 2026-07-01 | 7 | ✗ | Lookup 062 - Script Status for the Hydrogen Scripting Subsystem (Phase 11a) |
+| [1204](/elements/002-helium/acuranzo/migrations/acuranzo_1204.lua) | queries | 1.0.0 | 2026-07-01 | 4 | ✗ | QueryRef #087 - Get Script by Group/Name (with code) for the Hydrogen Scripting Subsystem (Phase 11b) |
+| [1205](/elements/002-helium/acuranzo/migrations/acuranzo_1205.lua) | queries | 1.0.0 | 2026-07-01 | 4 | ✗ | QueryRef #088 - List Active Scripts in Schedule Window for the Hydrogen Scripting Subsystem (Phase 11b) |
+| [1206](/elements/002-helium/acuranzo/migrations/acuranzo_1206.lua) | queries | 1.0.0 | 2026-07-01 | 4 | ✗ | QueryRef #089 - List All Scripts (no code) for the Hydrogen Scripting Subsystem (Phase 11b) |
+| [1207](/elements/002-helium/acuranzo/migrations/acuranzo_1207.lua) | queries | 1.0.0 | 2026-07-01 | 4 | ✗ | QueryRef #090 - Search Scripts by Criteria for the Hydrogen Scripting Subsystem (Phase 11b) |
+| [1208](/elements/002-helium/acuranzo/migrations/acuranzo_1208.lua) | queries | 1.0.0 | 2026-07-01 | 4 | ✗ | QueryRef #091 - Update Script last_run_start and next_run for the Hydrogen Scripting Subsystem (Phase 11b) |
+| [1209](/elements/002-helium/acuranzo/migrations/acuranzo_1209.lua) | queries | 1.0.0 | 2026-07-01 | 4 | ✗ | QueryRef #092 - Update Script last_run_end for the Hydrogen Scripting Subsystem (Phase 11b) |
+| [1210](/elements/002-helium/acuranzo/migrations/acuranzo_1210.lua) | scripts | 1.0.0 | 2026-07-01 | 4 | ✗ | Seeds the default Orchestrator row in the scripts table for the Hydrogen Scripting Subsystem (Phase 11c) |
+| **211** | | | | **1088** | **211** | |

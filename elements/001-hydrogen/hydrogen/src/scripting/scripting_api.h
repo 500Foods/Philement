@@ -71,8 +71,8 @@ void H_lua_install_gc(lua_State* L);
  * the function silently returns 0.
  *
  * The string is copied into a C-owned buffer (UAF discipline from
- * Phase 1) before the scoreboard is touched, so the Lua value can
- * be garbage-collected right after the call.
+ * Phase 1) before the scoreboard is touched, so the Lua value can be
+ * garbage-collected right after the call.
  *
  * Argument validation: takes exactly one string argument. A missing
  * or non-string argument is logged at LOG_LEVEL_ERROR and does not
@@ -82,5 +82,89 @@ void H_lua_install_gc(lua_State* L);
  * Replaces the Phase 3 placeholder sub-table of the same name.
  */
 void H_lua_install_set_current_state(lua_State* L);
+
+/*
+ * Populate H.sleep and H.shutdown_requested with the C functions
+ * backing them.
+ *
+ * Phase 11: cooperative shutdown primitives for the Orchestrator
+ * (and any future long-running tier-2 script).
+ *
+ *   H.sleep(milliseconds)
+ *       Blocks the calling Lua state for at most `milliseconds` ms,
+ *       polling the scripting shutdown flag every 100 ms. Returns
+ *       early when the flag is set, so a long H.sleep(60000) call
+ *       wakes up within ~100 ms of landing_scripting_subsystem
+ *       flipping the flag. Returns nothing. Non-positive ms is
+ *       treated as "no sleep" and returns immediately.
+ *
+ *   H.shutdown_requested() -> boolean
+ *       Returns true if the subsystem's shutdown flag is set, false
+ *       otherwise. The Orchestrator's scheduling loop is expected
+ *       to check this on every iteration and exit cleanly.
+ *
+ * Both functions are top-level on H, not sub-tables. The Phase 3
+ * placeholder sub-tables of the same names are replaced.
+ */
+void H_lua_install_sleep_shutdown(lua_State* L);
+
+/*
+ * Populate H.scoreboard with the C functions backing
+ * H.scoreboard.{list, get, submit, cancel}.
+ *
+ * Phase 11: gives the Orchestrator (and any future Lua code with
+ * access to the scoreboard) a way to read and write job entries.
+ *
+ *   H.scoreboard.list() -> table
+ *       Array of all jobs in the scoreboard. Each job is a table
+ *       with at least: job_id, script_name, status (string),
+ *       params_json (or nil), created_at (epoch seconds), started_at
+ *       (or nil), finished_at (or nil), instruction_count,
+ *       memory_used_kb, current_state (or nil), max_runtime_seconds,
+ *       kill_requested. Empty scoreboard returns an empty array.
+ *
+ *   H.scoreboard.get(job_id) -> job | nil
+ *       A single job, in the same shape as list()[i], or nil if the
+ *       id is unknown.
+ *
+ *   H.scoreboard.submit(entry) -> job_id | nil
+ *       Submits a job for a worker to run. `entry` is a Lua table
+ *       with `script_name` (string, required) and optional
+ *       `params_json` (string). Returns the new 5-char job_id, or
+ *       nil on failure (e.g. unknown script_name).
+ *
+ *   H.scoreboard.cancel(job_id) -> boolean
+ *       Requests that a job be killed. Returns true if the id was
+ *       found and the kill flag was set, false otherwise. Idempotent.
+ *
+ * The scoreboard being operated on is the subsystem's scoreboard
+ * (scripting_scoreboard), or the per-state H_lua_job_context's
+ * scoreboard for a worker job. For a bare lua_State (no scoreboard
+ * in scope) the list/get/cancel functions return empty / nil /
+ * false; submit returns nil. This matches the Phase 9
+ * H.set_current_state no-op contract for "no scoreboard context".
+ */
+void H_lua_install_scoreboard(lua_State* L);
+
+/*
+ * Install a DB-backed searcher in `package.searchers` so Lua scripts
+ * can use `require("group.script")` to load source from the `scripts`
+ * table.
+ *
+ * Phase 11g: the searcher looks up `(group_name, script_name)` first
+ * in the process-wide source cache (scripting_source_cache), then on
+ * cache miss fetches the `code` column via QueryRef #087 using
+ * config->scripting.DefaultDatabase. The fetched source is cached for
+ * the process lifetime so repeated requires do not hit the DB.
+ *
+ * Gated by app_config->scripting.AllowDBModuleLoad (default false).
+ * When disabled, this function is a no-op and `require` retains its
+ * default behavior (preload + file-based searchers only).
+ *
+ * The searcher honors Lua's package.searchers contract: on success it
+ * returns the compiled chunk function; on failure it returns an error
+ * string so Lua continues with the next searcher.
+ */
+void H_lua_install_package(lua_State* L);
 
 #endif /* HYDROGEN_SCRIPTING_SCRIPTING_API_H */

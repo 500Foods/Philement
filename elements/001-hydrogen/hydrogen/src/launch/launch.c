@@ -33,6 +33,7 @@
 #include <src/status/status_process.h>
 #include <src/utils/utils_dependency.h>
 #include <src/database/database.h>
+#include <src/scripting/orchestrator.h>
 
 // External declarations
 extern void close_file_logging(void);
@@ -560,6 +561,11 @@ int startup_hydrogen(const char* config_path) {
                 log_this(SR_STARTUP, "READY FOR REQUESTS", LOG_LEVEL_STATE, 0);
                 log_this(SR_STARTUP, "― Databases ready:       %d/%d", LOG_LEVEL_STATE, 2, 0, 0);
                 log_this(SR_STARTUP, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
+                // Phase 11d: with no databases, the launching thread is
+                // the only place where READY FOR REQUESTS is emitted.
+                // Call the orchestrator hook here so deployments without
+                // a DB still get an Orchestrator running.
+                scripting_orchestrator_load_configured();
             }
         } else if (readiness.all_ready) {
             // Edge case: all databases already finished before this point.

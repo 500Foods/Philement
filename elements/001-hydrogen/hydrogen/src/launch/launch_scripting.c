@@ -14,7 +14,7 @@
  // Global includes
 #include <src/hydrogen.h>
 
-// Local includes
+ // Local includes
 #include "launch.h"
 #include <src/scripting/scripting.h>
 #include <src/scripting/worker_pool.h>
@@ -22,6 +22,14 @@
 // External declarations
 extern ServiceThreads scripting_threads;
 extern volatile sig_atomic_t scripting_system_shutdown;
+
+// Registry ID for the Scripting subsystem. Registered in
+// check_scripting_launch_readiness() so the launch loop's
+// get_subsystem_id_by_name() can find it. (Phase 11h: the
+// registry registration was missing, which caused the launch
+// loop to skip Scripting with a "Failed to get subsystem ID"
+// debug message — the Orchestrator never started.)
+static int scripting_subsystem_id = -1;
 
 // Forward declarations of internal helpers
 static void scripting_readiness_messages_add(const char*** messages,
@@ -64,6 +72,13 @@ LaunchReadiness check_scripting_launch_readiness(void) {
     size_t capacity = 0;
 
     scripting_readiness_messages_add(&messages, &count, &capacity, strdup(SR_SCRIPTING));
+
+    // Register with the subsystem registry so the launch loop can find
+    // us via get_subsystem_id_by_name(). Phase 11h: this call was
+    // missing, which is why the Orchestrator never started in test_43.
+    if (scripting_subsystem_id < 0) {
+        scripting_subsystem_id = register_subsystem(SR_SCRIPTING, NULL, NULL, NULL, NULL, NULL);
+    }
 
     if (!app_config) {
         scripting_readiness_messages_add(&messages, &count, &capacity,
@@ -154,6 +169,11 @@ int launch_scripting_subsystem(void) {
                  LOG_LEVEL_ERROR, 0);
         return 0;
     }
+
+    // Phase 11h: mark the subsystem as running in the registry.
+    // Without this, get_subsystem_state() returns INACTIVE and
+    // dependent subsystems can't see Scripting as available.
+    update_subsystem_on_startup(SR_SCRIPTING, true);
 
     log_this(SR_SCRIPTING, "LAUNCH: " SR_SCRIPTING " COMPLETE", LOG_LEVEL_STATE, 0);
 

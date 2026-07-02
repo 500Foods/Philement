@@ -3,6 +3,7 @@
 -- luacheck: no max line length
 
 -- CHANGELOG
+-- 2.8.0 - 2026-07-02 - Added JSON_INGEST_SCHEMA passthrough macros (parity with other engines)
 -- 2.7.0 - 2026-03-22 - Added VARCHAR_64
 -- 2.6.0 - 2025-12-31 - Added fancy INSERT_ macros to get our new key value returned
 -- 2.5.0 - 2025-12-31 - Added SIZE_ macros
@@ -101,5 +102,11 @@ return {
     JIE = ")",
     JSON_INGEST_START = "(",
     JSON_INGEST_END = ")",
-    JSON_INGEST_FUNCTION = ""
+    JSON_INGEST_FUNCTION = "",
+
+    -- Schema ingest: SQLite stores JSON as plain text with no reserved-key semantics,
+    -- so these are passthrough macros matching JSON_INGEST (parity with other engines).
+    JSON_INGEST_SCHEMA_START = "(",
+    JSON_INGEST_SCHEMA_END = ")",
+    JSON_INGEST_SCHEMA_FUNCTION = ""
 }

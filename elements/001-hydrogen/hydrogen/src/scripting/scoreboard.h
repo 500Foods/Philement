@@ -340,4 +340,38 @@ bool scoreboard_request_kill(Scoreboard* sb, const char* job_id);
  */
 bool scoreboard_is_kill_requested(Scoreboard* sb, const char* job_id, bool* out);
 
+/*
+ * Snapshot the scoreboard's entries into a heap-allocated array of
+ * heap-allocated copies. The caller is responsible for freeing the
+ * array with scoreboard_list_free.
+ *
+ *   sb        - the scoreboard
+ *   out_list  - non-NULL; *out_list is set to a heap-allocated array
+ *               of *out_count heap-allocated ScoreboardEntry copies.
+ *               Set to NULL on failure or when the scoreboard is empty.
+ *   out_count - non-NULL; *out_count is set to the number of entries
+ *               in the returned array.
+ *
+ * Returns true on success, false on allocation failure.
+ *
+ * Thread-safety: briefly takes the scoreboard's mutex, copies all
+ * entries, releases. New entries that arrive after the snapshot are
+ * not in the result (this is a snapshot, not a live view).
+ *
+ * Phase 11: backs H.scoreboard.list(). The Orchestrator calls this
+ * each tick to decide what to do next. The returned array is a
+ * plain array, not a live view; iterating it does not block the
+ * scoreboard.
+ */
+bool scoreboard_list(Scoreboard* sb,
+                     ScoreboardEntry*** out_list,
+                     size_t* out_count);
+
+/*
+ * Free an array returned by scoreboard_list. Safe to call with NULL.
+ * Frees each entry via scoreboard_entry_free and then the array
+ * itself; idempotent (NULL list or zero count is a no-op).
+ */
+void scoreboard_list_free(ScoreboardEntry** list, size_t count);
+
 #endif /* HYDROGEN_SCRIPTING_SCOREBOARD_H */

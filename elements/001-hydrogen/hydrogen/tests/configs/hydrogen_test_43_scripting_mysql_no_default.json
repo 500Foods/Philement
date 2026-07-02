@@ -1,0 +1,59 @@
+{
+  "Server": {
+    "ServerName": "hydrogen-test-43-scripting-mysql-no-default",
+    "PayloadKey": "${env.PAYLOAD_KEY}"
+  },
+  "WebServer": {
+    "EnableIPv4": true,
+    "EnableIPv6": false,
+    "Port": 55441
+  },
+  "Databases": {
+    "Connections": [
+      {
+        "Enabled": true,
+        "Name": "Acuranzo",
+        "Engine": "${env.CANVAS_DB_TYPE}",
+        "Host": "${env.CANVAS_DB_HOST}",
+        "Port": "${env.CANVAS_DB_PORT}",
+        "Database": "${env.CANVAS_DB_NAME}",
+        "User": "${env.CANVAS_DB_USER}",
+        "Pass": "${env.CANVAS_DB_PASS}",
+        "StmtCache": 100,
+        "Bootstrap": "SELECT query_id id, query_ref ref, query_status_a27 status, query_type_a28 type, query_dialect_a30 engine, query_queue_a58 queue, query_timeout timeout, name, code query FROM demo.queries WHERE (query_status_a27 = 1) ORDER BY query_type_a28 desc;",
+        "AutoMigration": false,
+        "TestMigration": false,
+        "Parameters": {
+          "LOGINRETRYWINDOW": 15,
+          "IPADDRESS": "10.10.10.10",
+          "LOGINID": "${env.HYDROGEN_DEMO_USER_NAME}"
+        },
+        "Migrations": "PAYLOAD:acuranzo",
+        "Schema": "demo",
+        "Queues": {
+          "Slow": {
+            "start": 2
+          }
+        }
+      }
+    ]
+  },
+  "Scripting": {
+    "Enabled": true,
+    "WorkerCount": 2,
+    "Orchestrator": "Orchestrators.Orchestrator",
+    "DefaultQueryTimeout": 30,
+    "DefaultMaxRuntime": 3600,
+    "InstructionHookInterval": 5000,
+    "MemorySoftLimitKB": 32768,
+    "MemoryHardLimitKB": 65536,
+    "Sandbox": {
+      "AllowOsTime": true,
+      "AllowOsExecute": false,
+      "AllowIo": false,
+      "AllowDebug": false,
+      "AllowLoadlib": false
+    },
+    "AllowDBModuleLoad": true
+  }
+}

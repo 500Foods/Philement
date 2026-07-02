@@ -8,6 +8,7 @@
 # run_migration_test()
 
 # CHANGELOG
+# 1.1.0 - 2026-07-02 - Added migration failure detection (APPLY/REVERSE/transaction errors) and reversed-migration count in summary
 # 1.0.1 - 2025-11-24 - Increased timeout to 90 seconds
 # 1.0.0 - 2025-09-26 - Initial implementation for MariaDB migration testing
 
@@ -18,7 +19,7 @@ TEST_NAME="MariaDB Migration"
 TEST_ABBR="MDB"
 TEST_NUMBER="36"
 TEST_COUNTER=0
-TEST_VERSION="1.0.0"
+TEST_VERSION="1.1.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -201,8 +202,13 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
             # Extract migration time and update test name
             migration_time=$("${GREP}" "MIGRATION_TIME=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
             if [[ -n "${migration_time}" ]]; then
-                TEST_NAME="${TEST_NAME}  {BLUE}cycle: ${migration_time}s{RESET}"
-                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${ENGINE_NAME} migration test completed successfully in ${migration_time}s"
+                # Count how many migrations were reversed during the REVERSE (TestMigration)
+                # phase. Each successful reverse emits a "Migration <id> REVERSE was
+                # successful" line at STATE level, which is captured in the server log.
+                reversed_count=$("${GREP}" -c "REVERSE was successful" "${log_file}" 2>/dev/null || true)
+                reversed_count=${reversed_count:-0}
+                TEST_NAME="${TEST_NAME}  {BLUE}cycle: ${migration_time}s, migrations: ${reversed_count}{RESET}"
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${ENGINE_NAME} migration test completed successfully in ${migration_time}s (${reversed_count} migrations reversed)"
                 PASS_COUNT=$(( PASS_COUNT + 1 ))
 
                 # Extract total running time from log
@@ -239,6 +245,62 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         fi
     else
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Cannot verify migration execution - log file not found"
+        EXIT_CODE=1
+    fi
+
+    # Check for migration failures within the LOAD / APPLY / REVERSE cycle.
+    #
+    # The "Migration test completed in ..." and "Migration test finished ..."
+    # lines are emitted by the server even when an individual migration failed
+    # and the cycle stopped early (the app deliberately continues so the state
+    # can be inspected). Relying on those lines alone produces false positives:
+    # a run that fails at migration 159 of ~200, rolls back, and then reports
+    # "completed" would otherwise be treated as a pass.
+    #
+    # This subtest scans the server log for the concrete failure indicators
+    # emitted by the migration engine (src/database/dbqueue/lead*.c and
+    # src/database/migration/transaction.c) and fails the test if any are found.
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Check for Migration Failures"
+
+    # Known failure signatures from the migration engine. Kept as an
+    # extended-regex so a single grep pass covers APPLY, REVERSE (TestMigration)
+    # and per-transaction failures across all database engines.
+    migration_failure_pattern='Migration APPLY phase failed'
+    migration_failure_pattern+='|Migration process failed'
+    migration_failure_pattern+='|Failed to apply migration [0-9]+ - stopping APPLY phase'
+    migration_failure_pattern+='|applied but APPLY value unchanged'
+    migration_failure_pattern+='|TestMigration process failed'
+    migration_failure_pattern+='|Failed to apply reverse migration [0-9]+ - stopping TestMigration'
+    migration_failure_pattern+='|Migration .* failed - transaction rolled back'
+    migration_failure_pattern+='|Statement [0-9]+ failed'
+    migration_failure_pattern+='|Failed to commit migration'
+    migration_failure_pattern+='|Failed to rollback migration'
+    migration_failure_pattern+='|Failed to acquire connection for TestMigration'
+
+    if [[ -f "${log_file}" ]]; then
+        failure_lines=$("${GREP}" -E "${migration_failure_pattern}" "${log_file}" 2>/dev/null || true)
+        if [[ -n "${failure_lines}" ]]; then
+            # Count and surface failing lines without piping (avoids SC2312).
+            # Iterate the already-captured newline-delimited results, reporting
+            # the first 10 lines so the cause is visible in the test output
+            # without needing to open the full server log.
+            failure_count=0
+            while IFS= read -r failure_line; do
+                [[ -z "${failure_line}" ]] && continue
+                failure_count=$(( failure_count + 1 ))
+                if [[ "${failure_count}" -le 10 ]]; then
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "FAILURE: ${failure_line}"
+                fi
+            done <<< "${failure_lines}"
+
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${ENGINE_NAME} migration cycle reported ${failure_count} failure(s) - see details above"
+            EXIT_CODE=1
+        else
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "No migration failures detected in ${ENGINE_NAME} migration cycle"
+            PASS_COUNT=$(( PASS_COUNT + 1 ))
+        fi
+    else
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Cannot check for migration failures - log file not found"
         EXIT_CODE=1
     fi
 

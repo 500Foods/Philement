@@ -216,6 +216,17 @@ void H_lua_install_api(lua_State* L) {
     // function on H. The Orchestrator is a no-op caller (no
     // scoreboard entry); workers call this with their own job_id.
     H_lua_install_set_current_state(L);
+    // Phase 11: cooperative shutdown primitives and scoreboard
+    // access. Both replace Phase 3 placeholder sub-tables of the
+    // same names (H.sleep and H.shutdown_requested) or populate
+    // the existing H.scoreboard sub-table.
+    H_lua_install_sleep_shutdown(L);
+    H_lua_install_scoreboard(L);
+    // Phase 11g: DB-backed `require` support. Installs a searcher in
+    // package.searchers that resolves `require("group.script")` against
+    // the process-wide source cache and (on miss) the `scripts` table
+    // via QueryRef #087. Gated by config->scripting.AllowDBModuleLoad.
+    H_lua_install_package(L);
 }
 
 /*

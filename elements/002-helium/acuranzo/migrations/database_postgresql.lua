@@ -3,6 +3,7 @@
 -- luacheck: no max line length
 
 -- CHANGELOG
+-- 2.8.0 - 2026-07-02 - Added JSON_INGEST_SCHEMA (aliases json_ingest; jsonb accepts $ref/$id/$schema)
 -- 2.7.0 - 2026-03-22 - Added VARCHAR_64
 -- 2.6.0 - 2025-12-31 - Added fancy INSERT_ macros to get our new key value returned
 -- 2.5.0 - 2025-12-31 - Added SIZE_ macros
@@ -92,6 +93,14 @@ return {
     JIE = ")",
     JSON_INGEST_START = "${SCHEMA}json_ingest (",
     JSON_INGEST_END = ")",
+
+    -- Schema ingest: PostgreSQL's jsonb parser has no reserved-key semantics, so JSON
+    -- Schema documents using $ref/$id/$schema are handled by the normal json_ingest.
+    -- These macros alias json_ingest; no separate function object is required.
+    -- (The DB2 engine needs a distinct function because JSON2BSON rejects nested $ref.)
+    JSON_INGEST_SCHEMA_START = "${SCHEMA}json_ingest (",
+    JSON_INGEST_SCHEMA_END = ")",
+    JSON_INGEST_SCHEMA_FUNCTION = "",
     JSON_INGEST_FUNCTION = [[
       CREATE OR REPLACE FUNCTION ${SCHEMA}json_ingest(s text)
       RETURNS jsonb

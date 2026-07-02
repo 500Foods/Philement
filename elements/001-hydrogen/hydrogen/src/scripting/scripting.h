@@ -44,6 +44,20 @@ extern struct Scoreboard* scripting_scoreboard;
 struct ScriptingWorkerPool;
 extern struct ScriptingWorkerPool* scripting_workers;
 
+// The scripting subsystem's source cache (Phase 11g). Allocated when
+// scripting is enabled and destroyed during landing. Shared across
+// all lua_State instances so DB-backed `require` results are cached
+// for the process lifetime.
+struct SourceCache;
+extern struct SourceCache* scripting_source_cache;
+
+// The scripting subsystem's source cache (Phase 11g). Allocated when
+// scripting is enabled and destroyed during landing. Shared across
+// all lua_State instances so DB-backed `require` results are cached
+// for the process lifetime.
+struct SourceCache;
+extern struct SourceCache* scripting_source_cache;
+
 // Initialize the Scripting subsystem's static state.
 // Called once from launch_scripting_subsystem(). Idempotent.
 void scripting_init_state(void);
