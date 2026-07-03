@@ -123,7 +123,7 @@ table.insert(queries,{sql=[[
         ${TIMEOUT}                                                          AS query_timeout,
         [=[
             -- DROP INDEX ${TABLE}_idx_account;
-            
+
             ${DROP_CHECK};
 
             ${SUBQUERY_DELIMITER}
