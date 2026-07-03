@@ -18,6 +18,9 @@ bool sqlite_disconnect(DatabaseHandle* connection);
 bool sqlite_health_check(DatabaseHandle* connection);
 bool sqlite_reset_connection(DatabaseHandle* connection);
 
+// Watchdog cancel hook - implements engine cancel_inflight
+void sqlite_cancel_inflight(DatabaseHandle* connection);
+
 // Library loading
 bool load_libsqlite_functions(const char* designator);
 

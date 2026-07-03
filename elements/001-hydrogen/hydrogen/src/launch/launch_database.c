@@ -4,6 +4,7 @@
 // Project includes
 #include <src/hydrogen.h>
 #include <src/database/database.h>
+#include <src/database/database_watchdog.h>
 #include <src/database/dbqueue/dbqueue.h>
 #include <src/queue/queue.h>
 
@@ -740,6 +741,22 @@ int launch_database_subsystem(void) {
     log_this(SR_DATABASE, "Initializing " SR_DATABASE " core", LOG_LEVEL_DEBUG, 0);
     if (!database_subsystem_init()) {
         log_this(SR_DATABASE, "Failed to initialize " SR_DATABASE " core", LOG_LEVEL_DEBUG, 0);
+        return 0;
+    }
+
+    // Initialize database query watchdog (detects client-side hangs)
+    // The watchdog reads its clamp bounds from the Database config; if
+    // app_config is unavailable (e.g. minimal configs), the compile-time
+    // defaults in database_watchdog.h apply.
+    log_this(SR_DATABASE, "Initializing " SR_DATABASE " query watchdog", LOG_LEVEL_DEBUG, 0);
+    if (app_config) {
+        database_watchdog_set_bounds(
+            app_config->databases.watchdog_min_seconds,
+            app_config->databases.watchdog_max_seconds,
+            app_config->databases.bootstrap_timeout_seconds);
+    }
+    if (!database_watchdog_init()) {
+        log_this(SR_DATABASE, "Failed to initialize " SR_DATABASE " query watchdog", LOG_LEVEL_ERROR, 0);
         return 0;
     }
 

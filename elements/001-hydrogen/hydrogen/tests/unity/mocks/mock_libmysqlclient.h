@@ -108,6 +108,12 @@ unsigned long long mock_mysql_stmt_affected_rows(void* stmt);
 int mock_mysql_stmt_free_result(void* stmt);
 unsigned int mock_mysql_stmt_field_count(void* stmt);
 
+// Watchdog cancel hooks
+int mock_mysql_kill(void* mysql, unsigned long pid);
+unsigned long mock_mysql_thread_id(void* mysql);
+void mock_libmysqlclient_set_kill_result(int result);
+void mock_libmysqlclient_set_thread_id_result(unsigned long result);
+
 
 #endif // USE_MOCK_LIBMYSQLCLIENT
 

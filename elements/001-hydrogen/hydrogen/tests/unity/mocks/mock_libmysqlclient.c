@@ -48,6 +48,10 @@ unsigned long long mock_mysql_num_rows(void* result);
 unsigned int mock_mysql_num_fields(void* result);
 void* mock_mysql_fetch_fields(void* result);
 void* mock_mysql_fetch_row(void* result);
+int mock_mysql_kill(void* mysql, unsigned long pid);
+unsigned long mock_mysql_thread_id(void* mysql);
+void mock_libmysqlclient_set_kill_result(int result);
+void mock_libmysqlclient_set_thread_id_result(unsigned long result);
 void* mock_mysql_stmt_init(void* mysql);
 int mock_mysql_stmt_prepare(void* stmt, const char* query, unsigned long length);
 int mock_mysql_stmt_execute(void* stmt);
@@ -514,4 +518,24 @@ void mock_libmysqlclient_setup_result_data(size_t num_rows, size_t num_fields, c
             }
         }
     }
+}
+static int mock_kill_result = 0;
+static unsigned long mock_thread_id_result = 1;
+
+int mock_mysql_kill(void* mysql, unsigned long pid) {
+    (void)mysql; (void)pid;
+    return mock_kill_result;
+}
+
+unsigned long mock_mysql_thread_id(void* mysql) {
+    (void)mysql;
+    return mock_thread_id_result;
+}
+
+void mock_libmysqlclient_set_kill_result(int result) {
+    mock_kill_result = result;
+}
+
+void mock_libmysqlclient_set_thread_id_result(unsigned long result) {
+    mock_thread_id_result = result;
 }

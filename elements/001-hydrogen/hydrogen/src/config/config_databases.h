@@ -58,6 +58,29 @@ typedef struct DatabaseConfig {
     DatabaseQueues default_queues;                  // Default queue configuration
     int connection_count;                           // Number of configured connections (auto-calculated)
     DatabaseConnection connections[MAX_DATABASES];  // Array of database connections (max 5)
+    /*
+     * Bootstrap query timeout (seconds). Applied to the bootstrap
+     * query and the orphan-DROP query in database_bootstrap.c.
+     * Default 30s. Clamped to the [watchdog_min_seconds, watchdog_max_seconds]
+     * range at the call site.
+     */
+    int bootstrap_timeout_seconds;
+    /*
+     * Number of times to retry the bootstrap query on transient
+     * failure (transport/timeout errors). Default 3. Retry logic is
+     * added in a later step; the knob is read here so production
+     * configs can be tuned ahead of that work.
+     */
+    int bootstrap_retries;
+    /*
+     * Lower and upper bounds (seconds) for the per-query watchdog
+     * timeout. Per-query timeouts from QueryRequest->timeout_seconds
+     * are clamped to this range before being used. Defaults 30s and
+     * 3600s. The watchdog refuses values where min > max or either
+     * is non-positive.
+     */
+    int watchdog_min_seconds;
+    int watchdog_max_seconds;
 } DatabaseConfig;
 
 // Initialize database configuration with defaults

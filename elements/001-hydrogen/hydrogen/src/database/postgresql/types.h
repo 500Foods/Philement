@@ -28,6 +28,10 @@ typedef void* (*PQprepare_t)(void* conn, const char* stmtName, const char* query
 typedef void* (*PQexecPrepared_t)(void* conn, const char* stmtName, int nParams, const char* const* paramValues, const int* paramLengths, const int* paramFormats, int resultFormat);
 typedef size_t (*PQescapeStringConn_t)(void* conn, char* to, const char* from, size_t length, int* error);
 typedef int (*PQping_t)(const char* conninfo);
+// Cancel functions for the watchdog's cross-thread query cancel
+typedef void* (*PQgetCancel_t)(void* conn);
+typedef int (*PQcancel_t)(void* cancel, char* errbuf, int errbufsize);
+typedef void (*PQfreeCancel_t)(void* cancel);
 
 // Constants (defined since we can't include libpq-fe.h)
 #define CONNECTION_OK 0

@@ -119,6 +119,16 @@ void initialize_config_defaults_database(AppConfig* config) {
         // No default databases configured - all database configuration comes from JSON config files
         config->databases.connection_count = 0;       // No databases configured by default
 
+        // Bootstrap query timeout (seconds) and retry count. These are
+        // applied in database_bootstrap.c; retry is wired in a later step.
+        config->databases.bootstrap_timeout_seconds = 30;
+        config->databases.bootstrap_retries = 3;
+
+        // Watchdog clamp bounds (seconds) for per-query timeouts. The
+        // watchdog uses these at init time; see database_watchdog.c.
+        config->databases.watchdog_min_seconds = 30;
+        config->databases.watchdog_max_seconds = 3600;
+
         // Set default queue scaling configurations
         // Slow queue: conservative scaling
         config->databases.default_queues.slow.start = 1;

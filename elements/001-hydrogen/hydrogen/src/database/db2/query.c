@@ -12,6 +12,7 @@
 
 // Local includes
 #include "types.h"
+#include "connection.h"
 #include "query.h"
 #include "query_helpers.h"
 
@@ -605,7 +606,7 @@ bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryR
 
     log_this(designator, "db2_execute_query: Parameters validated, proceeding", LOG_LEVEL_TRACE, 0);
 
-    const DB2Connection* db2_conn = (const DB2Connection*)connection->connection_handle;
+    DB2Connection* db2_conn = (DB2Connection*)connection->connection_handle;
     if (!db2_conn || !db2_conn->connection) {
         log_this(designator, "DB2 execute_query: Invalid connection handle", LOG_LEVEL_ERROR, 0);
         return false;
@@ -619,6 +620,9 @@ bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryR
         log_this(designator, "DB2 execute_query: Failed to allocate statement handle", LOG_LEVEL_ERROR, 0);
         return false;
     }
+
+    // Register the statement with the watchdog so it can be cancelled
+    db2_active_stmt_set(connection, stmt_handle);
 
     // Start timing before query execution
     struct timespec start_time;
@@ -651,6 +655,7 @@ bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryR
             if (!positional_sql) {
                 log_this(designator, "DB2 execute_query: Failed to convert named to positional parameters", LOG_LEVEL_ERROR, 0);
                 free_parameter_list(param_list);
+                db2_active_stmt_clear(connection, stmt_handle);
                 SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
                 return false;
             }
@@ -665,6 +670,7 @@ bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryR
                 free(positional_sql);
                 free(ordered_params);
                 free_parameter_list(param_list);
+                db2_active_stmt_clear(connection, stmt_handle);
                 SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
                 return false;
             }
@@ -679,6 +685,7 @@ bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryR
                 free(positional_sql);
                 free(ordered_params);
                 free_parameter_list(param_list);
+                db2_active_stmt_clear(connection, stmt_handle);
                 SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
                 return false;
             }
@@ -693,6 +700,7 @@ bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryR
                     free(positional_sql);
                     free(ordered_params);
                     free_parameter_list(param_list);
+                    db2_active_stmt_clear(connection, stmt_handle);
                     SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
                     return false;
                 }
@@ -714,6 +722,7 @@ bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryR
             } else {  // has_params is always true
                 // Parameter parsing failed when parameters were expected - this is an error
                 log_this(designator, "DB2 execute_query: Failed to parse required parameters", LOG_LEVEL_ERROR, 0);
+                db2_active_stmt_clear(connection, stmt_handle);
                 SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
                 return false;
             }
@@ -769,20 +778,22 @@ bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryR
             free(error_message);
         }
 
+        db2_active_stmt_clear(connection, stmt_handle);
         SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
         return false;
     }
 
     // Process query results using helper function
     bool process_result = db2_process_query_results(stmt_handle, designator, start_time, result);
-    
+
     // Clean up statement handle
+    db2_active_stmt_clear(connection, stmt_handle);
     SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
-    
+
     if (process_result) {
         log_this(designator, "DB2 execute_query: Query completed successfully", LOG_LEVEL_DEBUG, 0);
     }
-    
+
     return process_result;
 }
 

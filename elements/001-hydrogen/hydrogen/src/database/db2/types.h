@@ -32,6 +32,7 @@ typedef int (*SQLDriverConnect_t)(void*, void*, unsigned char*, short, unsigned 
 typedef int (*SQLGetDiagRec_t)(short, void*, short, unsigned char*, long*, unsigned char*, short, short*);
 // Transaction control function
 typedef int (*SQLSetConnectAttr_t)(void*, int, long, int);
+typedef int (*SQLCancel_t)(void*);
 
 // DB2 function pointers (loaded dynamically or mocked)
 extern SQLAllocHandle_t SQLAllocHandle_ptr;
@@ -54,6 +55,7 @@ extern SQLDriverConnect_t SQLDriverConnect_ptr;
 extern SQLGetDiagRec_t SQLGetDiagRec_ptr;
 // Transaction control function
 extern SQLSetConnectAttr_t SQLSetConnectAttr_ptr;
+extern SQLCancel_t SQLCancel_ptr;
 
 // Library handle (declared in connection.c)
 
@@ -145,6 +147,8 @@ typedef struct DB2Connection {
     void* environment;  // SQLHENV
     void* connection;   // SQLHDBC
     PreparedStatementCache* prepared_statements;
+    void* active_stmt;   // SQLHSTMT for the currently in-flight query, or NULL
+    pthread_mutex_t active_stmt_lock;  // Protects active_stmt read/write
 } DB2Connection;
 
 #endif // DATABASE_ENGINE_DB2_TYPES_H

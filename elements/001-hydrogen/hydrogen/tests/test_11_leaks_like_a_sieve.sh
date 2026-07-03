@@ -4,7 +4,9 @@
 # Uses Valgrind to detect memory leaks in the Hydrogen application
 
 # CHANGELOG
-# 4,1.0 - 2025-08-08 - Cleaned up log work, added log startup elapsed time
+# 4.3.0 - 2026-07-03 - Tightened scripting leak subtest to assert worker pool landing completes
+# 4.2.0 - 2026-07-02 - Added scripting subsystem init/land ASAN coverage
+# 4.1.0 - 2025-08-08 - Cleaned up log work, added log startup elapsed time
 # 4.0.0 - 2025-07-30 - Overhaul #1
 # 3.0.4 - 2025-07-15 - No more sleep
 # 3.0.3 - 2025-07-14 - Updated to use build/tests directories for test output consistency
@@ -25,7 +27,7 @@ TEST_NAME="Memory Leak Detection"
 TEST_ABBR="SIV"
 TEST_NUMBER="11"
 TEST_COUNTER=0
-TEST_VERSION="4.2.0"
+TEST_VERSION="4.3.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -224,12 +226,14 @@ fi
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Report: ..${LEAK_REPORT}"
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Summary: ..${LEAK_SUMMARY}"
 
-# Scripting-enabled variant (Phase 3b of LUA_PLAN):
+# Scripting-enabled variant (LUA_PLAN Phase 3b, expanded through Phase 11j):
 # Confirms that the Scripting subsystem initializes when Enabled=true and
 # shuts down without leaks, without ever executing a Lua script.
-# The subsystem init/land lifecycle is exercised; no Orchestrator is
-# configured so the long-lived Lua state is never created.
-# Local variable prefix is SUBTEST_ rather than SCRIPTING_ to avoid
+# This now exercises the persistent worker pool too: workers must start,
+# landing readiness must allow land_scripting_subsystem() to run, and workers
+# must be joined before ASAN leak checking. No Orchestrator is configured, so
+# the long-lived Lua state is never created.
+# Local variable prefix is subtest_ rather than SCRIPTING_ to avoid
 # the test_03 env-var scanner picking up local script variables.
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Scripting Subsystem Init/Land Leak Check"
 
@@ -269,17 +273,33 @@ else
         kill -9 "${subtest_pid}" 2>/dev/null || true
         EXIT_CODE=1
     else
-        # Confirm the Scripting subsystem appears as Running in the
-        # startup log (proves the launch path executed).
-        if "${GREP}" -q "Scripting" "${subtest_server_log}"; then
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Scripting subsystem referenced in startup log"
+        # Confirm the Scripting launch path executed and the persistent
+        # worker pool started. Phase 11j specifically fixed the matching
+        # landing path, so both start and stop log lines are required.
+        if "${GREP}" -q "Worker pool started" "${subtest_server_log}"; then
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Scripting worker pool started"
         else
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Scripting subsystem not mentioned in startup log (suspicious but not fatal)"
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Scripting worker pool did not start"
+            EXIT_CODE=1
         fi
 
         # Send SIGTERM and wait
         kill -TERM "${subtest_pid}" 2>/dev/null || true
         wait "${subtest_pid}" 2>/dev/null || true
+
+        if "${GREP}" -q "Worker pool stopped" "${subtest_server_log}"; then
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Scripting worker pool stopped"
+        else
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Scripting worker pool did not stop"
+            EXIT_CODE=1
+        fi
+
+        if "${GREP}" -q "LANDING: Scripting COMPLETE" "${subtest_server_log}"; then
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Scripting landing completed"
+        else
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Scripting landing did not complete"
+            EXIT_CODE=1
+        fi
 
         if "${GREP}" -q "LeakSanitizer" "${subtest_server_log}"; then
             cp "${subtest_server_log}" "${subtest_leak_report}"

@@ -31,6 +31,9 @@ void mock_database_engine_cleanup_result(QueryResult* result);
 void mock_database_engine_cleanup_transaction(Transaction* transaction);
 DatabaseEngineInterface* mock_database_engine_get(DatabaseEngine engine_type);
 bool mock_database_engine_health_check(DatabaseHandle* connection);
+void mock_database_engine_cancel_inflight(DatabaseHandle* connection);
+int mock_database_engine_get_cancel_call_count(void);
+void mock_database_engine_reset_cancel_call_count(void);
 
 // Mock control functions
 void mock_database_engine_reset_all(void);

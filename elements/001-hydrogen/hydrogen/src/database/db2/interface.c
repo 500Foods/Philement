@@ -31,7 +31,8 @@ static DatabaseEngineInterface db2_engine_interface = {
     .unprepare_statement = db2_unprepare_statement,
     .get_connection_string = db2_get_connection_string,
     .validate_connection_string = db2_validate_connection_string,
-    .escape_string = db2_escape_string
+    .escape_string = db2_escape_string,
+    .cancel_inflight = db2_cancel_inflight
 };
 
 DatabaseEngineInterface* db2_get_interface(void) {

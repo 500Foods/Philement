@@ -31,6 +31,9 @@ bool postgresql_disconnect(DatabaseHandle* connection);
 bool postgresql_health_check(DatabaseHandle* connection);
 bool postgresql_reset_connection(DatabaseHandle* connection);
 
+// Watchdog cancel hook - implements engine cancel_inflight
+void postgresql_cancel_inflight(DatabaseHandle* connection);
+
 // Library loading function
 bool load_libpq_functions(const char* designator);
 
