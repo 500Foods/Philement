@@ -103,14 +103,9 @@ table.insert(queries,{sql=[[
         ${QTC_SLOW}                                                         AS query_queue_a58,
         ${TIMEOUT}                                                          AS query_timeout,
         [=[
-            DROP INDEX ${TABLE}_idx_last_accessed;
+            -- DROP INDEX ${TABLE}_idx_last_accessed;
+            -- DROP INDEX ${TABLE}_idx_created_at;
 
-            ${SUBQUERY_DELIMITER}
-
-            DROP INDEX ${TABLE}_idx_created_at;
-
-            ${SUBQUERY_DELIMITER}
-                                               
             ${DROP_CHECK};
 
             ${SUBQUERY_DELIMITER}
