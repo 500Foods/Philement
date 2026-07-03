@@ -62,21 +62,28 @@ LaunchReadiness check_scripting_landing_readiness(void) {
 
     readiness.messages[msg_count++] = strdup("  Go:      Scripting subsystem running");
 
+    /*
+     * The Orchestrator lua_State and the worker threads are the
+     * subsystem's persistent infrastructure - they exist for the whole
+     * running lifetime and are torn down BY landing itself
+     * (land_scripting_subsystem stops the Orchestrator, drains and
+     * joins the worker pool, then re-inits scripting_threads). They are
+     * therefore reported informationally here, never as a No-Go: a
+     * No-Go would deadlock shutdown because the only code that clears
+     * them runs after readiness passes. This differs from Print, whose
+     * thread_count tracks transient jobs rather than a persistent pool.
+     */
     if (scripting_orchestrator_state) {
-        readiness.messages[msg_count++] = strdup("  No-Go:   Orchestrator state still present");
-        readiness.messages[msg_count] = NULL;
-        readiness.ready = false;
-        return readiness;
+        readiness.messages[msg_count++] = strdup("  Go:      Orchestrator state present (will be landed)");
+    } else {
+        readiness.messages[msg_count++] = strdup("  Go:      No Orchestrator state in flight");
     }
-    readiness.messages[msg_count++] = strdup("  Go:      No Orchestrator state in flight");
 
     if (scripting_threads.thread_count > 0) {
-        readiness.messages[msg_count++] = strdup("  No-Go:   Active Scripting worker threads");
-        readiness.messages[msg_count] = NULL;
-        readiness.ready = false;
-        return readiness;
+        readiness.messages[msg_count++] = strdup("  Go:      Scripting worker threads active (will be landed)");
+    } else {
+        readiness.messages[msg_count++] = strdup("  Go:      No active Scripting worker threads");
     }
-    readiness.messages[msg_count++] = strdup("  Go:      No active Scripting worker threads");
 
     readiness.messages[msg_count++] = strdup("  Decide:  Go For Landing of Scripting Subsystem");
     readiness.messages[msg_count] = NULL;

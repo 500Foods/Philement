@@ -46,6 +46,7 @@
 #include <src/database/database.h>
 #include <src/database/dbqueue/dbqueue.h>
 #include <src/database/database_cache.h>
+#include <src/database/database_pending.h>
 #include <src/api/conduit/query/query.h>
 #include <src/utils/utils_logging.h>
 #include <src/config/config.h>
@@ -61,6 +62,18 @@ static char*             orchestrator_source = NULL;
 static char*             orchestrator_chunk_name = NULL;
 static volatile sig_atomic_t orchestrator_shutting_down = 0;
 
+// Deferred loader thread. The Orchestrator's source is fetched from the
+// database via QueryRef #087, which submits a query and blocks on the
+// result. The server_ready hook that starts the Orchestrator runs on the
+// Lead DQM worker thread; if that thread blocked on the fetch it would
+// deadlock against itself whenever the query falls back to the Lead queue
+// (the Lead worker is the only thread that services that queue, and it
+// would be stuck waiting instead of processing). So the blocking load runs
+// on this dedicated loader thread, letting the Lead worker return to its
+// loop and service the fetch. The loader is joined at shutdown.
+static pthread_t         orchestrator_loader_thread;
+static bool              orchestrator_loader_valid = false;
+
 extern ServiceThreads scripting_threads;
 extern volatile sig_atomic_t scripting_system_shutdown;
 extern lua_State* scripting_orchestrator_state;
@@ -68,6 +81,9 @@ extern lua_State* scripting_orchestrator_state;
 // Forward declarations
 static void* orchestrator_thread_main(void* arg);
 static void   orchestrator_set_shutdown_and_join(void);
+static void   orchestrator_load_configured_blocking(void);
+static void*  orchestrator_loader_main(void* arg);
+static const char* orchestrator_resolve_database(void);
 
 // ----------------------------------------------------------------------------
 // Internal: pthread entry point
@@ -154,6 +170,14 @@ static void* orchestrator_thread_main(void* arg) {
 static void orchestrator_set_shutdown_and_join(void) {
     orchestrator_shutting_down = 1;
     scripting_system_shutdown = 1;
+
+    // Join the deferred loader first. It only ever calls the idempotent
+    // start path and observes the shutdown flags, so it returns promptly;
+    // joining here guarantees no loader is mid-fetch when we tear down.
+    if (orchestrator_loader_valid) {
+        pthread_join(orchestrator_loader_thread, NULL);
+        orchestrator_loader_valid = false;
+    }
 
     if (orchestrator_thread_valid) {
         pthread_join(orchestrator_thread, NULL);
@@ -295,17 +319,16 @@ static char* orchestrator_build_params_json(const char* group_name,
 
 /*
  * Extract the `code` column from the first row of a conduit result.
- * The result data is a JSON array-of-objects stored in
- * result_query->query_template (see database_queue_await_result).
+ * The result data is a JSON array-of-objects (QueryResult->data_json).
  * Returns a heap-allocated copy of the code string, or NULL if the
  * result is empty or has no `code` string. Caller frees.
  */
-static char* orchestrator_extract_code_from_result(const DatabaseQuery* result_query) {
-    if (!result_query || !result_query->query_template) {
+static char* orchestrator_extract_code_from_result(const char* data_json) {
+    if (!data_json) {
         return NULL;
     }
     json_error_t err;
-    json_t* root = json_loads(result_query->query_template, 0, &err);
+    json_t* root = json_loads(data_json, 0, &err);
     if (!root) {
         log_this(SR_SCRIPTING,
                  "Orchestrator: failed to parse query result JSON: %s",
@@ -418,45 +441,75 @@ char* scripting_fetch_script_source(const char* group_name,
         return NULL;
     }
 
+    // Register the pending result BEFORE submitting the query. On a fast
+    // backend the worker can dequeue, execute, and signal the result before
+    // the submitting thread would otherwise register a waiter, causing the
+    // result to be discarded ("Query result not found for signaling") and
+    // the caller to time out. Registering first closes that race window and
+    // mirrors the conduit query path (register_pending_result_with_error_handling
+    // then submit_query_with_error_handling).
+    PendingResultManager* pending_mgr = get_pending_result_manager();
+    if (!pending_mgr) {
+        log_this(SR_SCRIPTING,
+                 "Script source fetch: pending result manager unavailable for %s.%s",
+                 LOG_LEVEL_ERROR, 2, group_name, script_name);
+        free(query_id);
+        free(db_query.query_template);
+        free(params_json);
+        return NULL;
+    }
+    PendingQueryResult* pending = pending_result_register(
+        pending_mgr, query_id, timeout_seconds, SR_SCRIPTING);
+    if (!pending) {
+        log_this(SR_SCRIPTING,
+                 "Script source fetch: failed to register pending result for %s.%s",
+                 LOG_LEVEL_ERROR, 2, group_name, script_name);
+        free(query_id);
+        free(db_query.query_template);
+        free(params_json);
+        return NULL;
+    }
+
     bool submit_success = database_queue_submit_query(db_queue, &db_query);
     if (!submit_success) {
         log_this(SR_SCRIPTING,
                  "Script source fetch: failed to submit query for %s.%s",
                  LOG_LEVEL_ERROR, 2, group_name, script_name);
+        pending_result_unregister(pending_mgr, pending, SR_SCRIPTING);
         free(query_id);
         free(db_query.query_template);
         free(params_json);
         return NULL;
     }
 
-    DatabaseQuery* result_query = database_queue_await_result(
-        db_queue, query_id, timeout_seconds);
-    if (!result_query) {
+    // Wait for the worker to signal the (already-registered) pending result.
+    int wait_result = pending_result_wait(pending, SR_SCRIPTING);
+    if (wait_result != 0) {
         log_this(SR_SCRIPTING,
                  "Script source fetch: query timed out for %s.%s",
                  LOG_LEVEL_ERROR, 2, group_name, script_name);
+        pending_result_unregister(pending_mgr, pending, SR_SCRIPTING);
         free(query_id);
         free(db_query.query_template);
         free(params_json);
         return NULL;
     }
 
-    if (result_query->error_message) {
+    QueryResult* query_result = pending_result_get(pending);
+    if (query_result && query_result->error_message) {
         log_this(SR_SCRIPTING,
                  "Script source fetch: query failed for %s.%s: %s",
                  LOG_LEVEL_ERROR, 3, group_name, script_name,
-                 result_query->error_message);
-        free(result_query->query_id);
-        free(result_query->query_template);
-        free(result_query->error_message);
-        free(result_query);
+                 query_result->error_message);
+        pending_result_unregister(pending_mgr, pending, SR_SCRIPTING);
         free(query_id);
         free(db_query.query_template);
         free(params_json);
         return NULL;
     }
 
-    char* code = orchestrator_extract_code_from_result(result_query);
+    char* code = orchestrator_extract_code_from_result(
+        query_result ? query_result->data_json : NULL);
     if (!code) {
         // No row found or malformed result — not necessarily an error.
         log_this(SR_SCRIPTING,
@@ -464,15 +517,54 @@ char* scripting_fetch_script_source(const char* group_name,
                  LOG_LEVEL_STATE, 3, group_name, script_name, database);
     }
 
-    free(result_query->query_id);
-    free(result_query->query_template);
-    free(result_query->error_message);
-    free(result_query);
+    // Frees the pending struct, its query_id, and the contained QueryResult.
+    pending_result_unregister(pending_mgr, pending, SR_SCRIPTING);
     free(query_id);
     free(db_query.query_template);
     free(params_json);
 
     return code;
+}
+
+/*
+ * Resolve the database holding the scripts table.
+ *
+ * DefaultDatabase names it explicitly. If it is not configured, fall
+ * back to the single configured database when exactly one exists: with
+ * only one database the choice is unambiguous, so "with" and "without"
+ * DefaultDatabase behave the same. Only when two or more databases are
+ * configured is an explicit DefaultDatabase required to disambiguate.
+ *
+ * Returns a pointer into app_config (not owned by the caller) or NULL
+ * when the database cannot be resolved. Logs the same messages the
+ * callers and unit tests expect. Shared by the synchronous validation
+ * in scripting_orchestrator_load_configured and the actual start in
+ * scripting_orchestrator_start_from_db so the two never diverge.
+ */
+static const char* orchestrator_resolve_database(void) {
+    if (!app_config) {
+        log_this(SR_SCRIPTING,
+                 "Orchestrator: no DefaultDatabase configured; Orchestrator will not start",
+                 LOG_LEVEL_STATE, 0);
+        return NULL;
+    }
+    const char* database = app_config->scripting.DefaultDatabase;
+    if (database && database[0] != '\0') {
+        return database;
+    }
+    if (app_config->databases.connection_count == 1 &&
+        app_config->databases.connections[0].name &&
+        app_config->databases.connections[0].name[0] != '\0') {
+        database = app_config->databases.connections[0].name;
+        log_this(SR_SCRIPTING,
+                 "Orchestrator: no DefaultDatabase configured; using the single configured database '%s'",
+                 LOG_LEVEL_STATE, 1, database);
+        return database;
+    }
+    log_this(SR_SCRIPTING,
+             "Orchestrator: no DefaultDatabase configured; Orchestrator will not start",
+             LOG_LEVEL_STATE, 0);
+    return NULL;
 }
 
 bool scripting_orchestrator_start_from_db(const char* group_name,
@@ -492,33 +584,9 @@ bool scripting_orchestrator_start_from_db(const char* group_name,
         return true;
     }
 
-    // DefaultDatabase names the DB holding the scripts table. If it is
-    // not configured, fall back to the single configured database when
-    // exactly one exists: with only one database the choice is
-    // unambiguous, so "with" and "without" DefaultDatabase behave the
-    // same. Only when two or more databases are configured is an
-    // explicit DefaultDatabase required to disambiguate.
-    if (!app_config) {
-        log_this(SR_SCRIPTING,
-                 "Orchestrator: no DefaultDatabase configured; Orchestrator will not start",
-                 LOG_LEVEL_STATE, 0);
+    const char* database = orchestrator_resolve_database();
+    if (!database) {
         return false;
-    }
-    const char* database = app_config->scripting.DefaultDatabase;
-    if (!database || database[0] == '\0') {
-        if (app_config->databases.connection_count == 1 &&
-            app_config->databases.connections[0].name &&
-            app_config->databases.connections[0].name[0] != '\0') {
-            database = app_config->databases.connections[0].name;
-            log_this(SR_SCRIPTING,
-                     "Orchestrator: no DefaultDatabase configured; using the single configured database '%s'",
-                     LOG_LEVEL_STATE, 1, database);
-        } else {
-            log_this(SR_SCRIPTING,
-                     "Orchestrator: no DefaultDatabase configured; Orchestrator will not start",
-                     LOG_LEVEL_STATE, 0);
-            return false;
-        }
     }
 
     // Build the full "group.script" name for the chunk name/log context.
@@ -529,7 +597,16 @@ bool scripting_orchestrator_start_from_db(const char* group_name,
     }
     snprintf(full_name, name_len + 1, "%s.%s", group_name, script_name);
 
-    char* code = scripting_fetch_script_source(group_name, script_name, database, 5);
+    // Use the configured query timeout (seconds) rather than a hard-coded
+    // value: the first fetch after startup can queue behind migrations and
+    // the underlying engine query itself may take a few seconds (e.g. DB2),
+    // so a too-short timeout causes the waiter to give up before the row
+    // arrives. Fall back to the built-in 30s default if misconfigured.
+    int fetch_timeout = app_config->scripting.DefaultQueryTimeout;
+    if (fetch_timeout <= 0) {
+        fetch_timeout = 30;
+    }
+    char* code = scripting_fetch_script_source(group_name, script_name, database, fetch_timeout);
     if (!code) {
         log_this(SR_SCRIPTING,
                  "Orchestrator: no script row for %s in database '%s'",
@@ -548,31 +625,25 @@ bool scripting_orchestrator_start_from_db(const char* group_name,
 // Public: load_configured
 // ----------------------------------------------------------------------------
 
-void scripting_orchestrator_load_configured(void) {
-    // app_config is the global AppConfig (declared in hydrogen.h).
-    // If it is not set (e.g. tests that don't initialize the
-    // subsystem), do nothing.
-    if (!app_config) {
-        return;
-    }
-    if (!app_config->scripting.Enabled) {
+/*
+ * The blocking body of the configured-Orchestrator load. Splits the
+ * validated "group.script" name and calls
+ * scripting_orchestrator_start_from_db, which submits QueryRef #087 and
+ * blocks on the result. This runs on the loader thread, never on the
+ * caller's thread. The name has already been validated by
+ * scripting_orchestrator_load_configured (which logs any parse or
+ * DefaultDatabase errors synchronously), so this body only re-splits it.
+ */
+static void orchestrator_load_configured_blocking(void) {
+    if (!app_config || !app_config->scripting.Enabled) {
         return;
     }
     const char* name = app_config->scripting.Orchestrator;
     if (!name || name[0] == '\0') {
-        log_this(SR_SCRIPTING,
-                 "No Orchestrator configured; subsystem will be idle until jobs arrive",
-                 LOG_LEVEL_STATE, 0);
         return;
     }
-    // Split on the first '.'. The config name is conventionally
-    // "group.script" (e.g. "Orchestrators.Orchestrator"), matching
-    // the encoding used by the 11g DB-backed require path.
     const char* dot = strchr(name, '.');
     if (!dot || dot == name || !dot[1]) {
-        log_this(SR_SCRIPTING,
-                 "Invalid Orchestrator name '%s' (expected 'group_name.script_name')",
-                 LOG_LEVEL_ERROR, 1, name);
         return;
     }
     size_t group_len = (size_t)(dot - name);
@@ -591,6 +662,88 @@ void scripting_orchestrator_load_configured(void) {
                  LOG_LEVEL_STATE, 0);
     }
     free(group);
+}
+
+/*
+ * Loader thread entry point. Runs the blocking load, registers itself
+ * with ServiceThreads for visibility, then returns. The thread is
+ * joined by orchestrator_set_shutdown_and_join().
+ */
+static void* orchestrator_loader_main(void* arg) {
+    (void)arg;
+    pthread_t self = pthread_self();
+    add_service_thread_with_description(&scripting_threads, self,
+                                        "orchestrator-loader");
+    orchestrator_load_configured_blocking();
+    remove_service_thread(&scripting_threads, self);
+    return NULL;
+}
+
+void scripting_orchestrator_load_configured(void) {
+    // All cheap, non-blocking validation happens synchronously here so
+    // that callers (and unit tests) observe configuration errors on the
+    // calling thread. Only the blocking DB fetch is deferred to the
+    // loader thread below.
+    //
+    // app_config is the global AppConfig (declared in hydrogen.h). If it
+    // is not set (e.g. tests that don't initialize the subsystem), do
+    // nothing.
+    if (!app_config || !app_config->scripting.Enabled) {
+        return;
+    }
+    const char* name = app_config->scripting.Orchestrator;
+    if (!name || name[0] == '\0') {
+        log_this(SR_SCRIPTING,
+                 "No Orchestrator configured; subsystem will be idle until jobs arrive",
+                 LOG_LEVEL_STATE, 0);
+        return;
+    }
+    // Split on the first '.'. The config name is conventionally
+    // "group.script" (e.g. "Orchestrators.Orchestrator"), matching the
+    // encoding used by the 11g DB-backed require path. Validate it here
+    // so an invalid name is reported synchronously (never on the loader).
+    const char* dot = strchr(name, '.');
+    if (!dot || dot == name || !dot[1]) {
+        log_this(SR_SCRIPTING,
+                 "Invalid Orchestrator name '%s' (expected 'group_name.script_name')",
+                 LOG_LEVEL_ERROR, 1, name);
+        return;
+    }
+    // Resolve the database synchronously so a missing/ambiguous
+    // DefaultDatabase is reported on the calling thread. This mirrors the
+    // resolution done inside scripting_orchestrator_start_from_db; the
+    // loader re-resolves harmlessly, but doing it here keeps the error
+    // reporting synchronous and testable.
+    if (!orchestrator_resolve_database()) {
+        return;
+    }
+
+    // The actual load submits QueryRef #087 and blocks on the result.
+    // The server_ready hook that calls us runs on the Lead DQM worker
+    // thread (see database_signal_ready_if_complete); blocking it would
+    // deadlock the fetch whenever the query falls back to the Lead queue.
+    // Run the blocking load on a dedicated loader thread so the caller
+    // (the Lead worker) returns to its loop and services the query.
+    pthread_mutex_lock(&orchestrator_mutex);
+    bool already = orchestrator_loader_valid || orchestrator_thread_valid ||
+                   (scripting_orchestrator_state != NULL);
+    if (already || orchestrator_shutting_down || scripting_system_shutdown) {
+        pthread_mutex_unlock(&orchestrator_mutex);
+        return;
+    }
+    if (pthread_create(&orchestrator_loader_thread, NULL,
+                        orchestrator_loader_main, NULL) != 0) {
+        pthread_mutex_unlock(&orchestrator_mutex);
+        log_this(SR_SCRIPTING,
+                 "Orchestrator: failed to start loader thread; loading inline",
+                 LOG_LEVEL_ERROR, 0);
+        // Fallback: load inline. This reintroduces the blocking behavior
+        // but only on the rare pthread_create failure path.
+        orchestrator_load_configured_blocking();
+        return;
+    }
+    orchestrator_loader_valid = true;
+    pthread_mutex_unlock(&orchestrator_mutex);
 }
 
 // ----------------------------------------------------------------------------
