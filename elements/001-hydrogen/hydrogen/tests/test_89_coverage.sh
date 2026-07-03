@@ -32,12 +32,6 @@ export SKIP_GCOV_REGEN=0
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "${HYDROGEN_ROOT}/tests/lib/framework.sh"
 setup_test_environment
 
-# Function to format numbers with thousands separators
-format_number() {
-    local num="${1}"
-    env LC_ALL=en_US.UTF_8printf "%'d" "${num}" 2>/dev/null || echo "${num}"
-}
-
 # Function to format duration with leading zero if < 1s
 format_duration() {
     local duration="${1}"
@@ -47,6 +41,30 @@ format_duration() {
         printf "%.3fs" "${duration}"
     else
         printf "%.3fs" "${duration}"
+    fi
+}
+
+# Function to count total Unity tests from the consolidated cache file
+count_tests_from_cache() {
+    local cache_file="${1}"
+    if [[ -f "${cache_file}" ]]; then
+        # shellcheck disable=SC2016 # awk field reference, not shell expansion
+        "${AWK}" -F'|' '{sum += $5} END {print sum}' "${cache_file}" 2>/dev/null || echo "0"
+    else
+        echo "0"
+    fi
+}
+
+# Function to count tests from Test 10 diagnostic files (first summary line per file)
+count_tests_from_diagnostics() {
+    local diag_dir="${1}"
+    if [[ -d "${diag_dir}" ]]; then
+        # shellcheck disable=SC2016 # awk field reference, not shell expansion
+        "${FIND}" "${diag_dir}" -name "*.txt" -type f -print0 2>/dev/null | \
+            "${XARGS}" -0 cat 2>/dev/null | \
+            "${AWK}" '/[0-9]+ Tests [0-9]+ Failures [0-9]+ Ignored/ && !found { sum += $1; found = 1 } FNR == 1 { found = 0 } END { print sum }' 2>/dev/null || echo "0"
+    else
+        echo "0"
     fi
 }
 
@@ -262,19 +280,25 @@ print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Validating Unity Framework uni
 # Add timing to identify performance bottlenecks
 VALIDATION_START_TIME=$(date +%s.%3N)
 
+# Find the most recent Test 10 diagnostic directory once for reuse
+latest_test10_dir=""
+if [[ -d "${BUILD_DIR}/tests/diagnostics" ]]; then
+    latest_test10_dir=$("${FIND}" "${BUILD_DIR}/tests/diagnostics" -name "test_10_*" -type d 2>/dev/null | sort -r | head -1 || true)
+fi
+
 # Phase 1: Individual count reviews with timing
 test10_start=$(date +%s.%3N)
 test10_total_executed=0
-# Read from diagnostic files directly for accurate count instead of relying on cached file
-if [[ -d "${BUILD_DIR}/tests/diagnostics" ]]; then
-    latest_test10_dir=$("${FIND}" "${BUILD_DIR}/tests/diagnostics" -name "test_10_*" -type d 2>/dev/null | sort -r | head -1 || true)
-    if [[ -n "${latest_test10_dir}" ]]; then
-        test10_total_executed=$("${FIND}" "${latest_test10_dir}" -name "*.txt" -type f -exec "${AWK}" "
-        /Tests/ && /Failures/ && /Ignored/ {sum += \$1}
-        ENDFILE {if (!/Tests/ || !/Failures/ || !/Ignored/) sum += 0}
-        END {print sum}
-        " {} + 2>/dev/null || echo "0")
-    fi
+# Test 10 uses a consolidated cache.  When caching is active the diagnostic
+# directory only contains the tests that ran in the current invocation, so the
+# authoritative total is the cache file.  Fall back to diagnostics only when the
+# cache is unavailable.
+UNITY_CACHE_FILE="${BUILD_DIR}/cache/unity_tests.cache"
+cache_test_count=$(count_tests_from_cache "${UNITY_CACHE_FILE}")
+if [[ "${cache_test_count}" -gt 0 ]]; then
+    test10_total_executed="${cache_test_count}"
+else
+    test10_total_executed=$(count_tests_from_diagnostics "${latest_test10_dir}")
 fi
 test10_end=$(date +%s.%3N)
 test10_duration=$(echo "${test10_end} - ${test10_start}" | bc 2>/dev/null || echo "0")
@@ -283,27 +307,8 @@ print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Reviewing Test 10 (executed) c
 
 coverage_start=$(date +%s.%3N)
 
-# Coverage (mapped) should count from diagnostic files using user's awk approach
+# Coverage mapping uses the same authoritative source as the executed count.
 coverage_table_count="${test10_total_executed}"
-if [[ -d "${BUILD_DIR}/tests/diagnostics" ]]; then
-    # Find the most recent Test 10 diagnostic directory
-    latest_test10_dir=$("${FIND}" "${BUILD_DIR}/tests/diagnostics" -name "test_10_*" -type d 2>/dev/null | sort -r | head -1 || true)
-
-    if [[ -n "${latest_test10_dir}" ]]; then
-        # Use user's ultra-efficient awk command to count from diagnostic files
-        # Only count the FIRST occurrence of the summary line per file to handle duplicate outputs
-        coverage_table_count=$("${FIND}" "${latest_test10_dir}" -name "*.txt" -type f -exec "${AWK}" "
-        /Tests/ && /Failures/ && /Ignored/ && !found {sum += \$1; found=1}
-        ENDFILE {found=0}
-        END {print sum}
-        " {} + 2>/dev/null || echo "0")
-    fi
-    # Assuming Test 10 was run in its new cached mode, so no executable tests will exist
-    if [[ "${coverage_table_count}" -eq "0" ]]; then
-        print_warning "${TEST_NUMBER}" "${TEST_COUNTER}" "Assuming Test 10 is using cached results"
-        coverage_table_count="${test10_total_executed}"
-    fi
-fi
 
 coverage_end=$(date +%s.%3N)
 coverage_duration=$(echo "${coverage_end} - ${coverage_start}" | bc 2>/dev/null || echo "0")

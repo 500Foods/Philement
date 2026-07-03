@@ -195,7 +195,7 @@ in the migrations themselves so that they get populated in the database directly
 | [1156](/elements/002-helium/acuranzo/migrations/acuranzo_1156.lua) | lookups | 1.3.0 | 2026-04-12 | 4 | ✗ | LithiumTable style-manager-base-vars (lookup_id 59 key_idx 11) |
 | [1157](/elements/002-helium/acuranzo/migrations/acuranzo_1157.lua) | lookups | 1.0.0 | 2026-03-17 | 4 | ✗ | LithiumTable style-manager-semantic-vars (lookup_id 59 key_idx 12) |
 | [1158](/elements/002-helium/acuranzo/migrations/acuranzo_1158.lua) | queries | 1.0.1 | 2026-03-20 | 4 | ✗ | QueryRef #061 - Internal: Get AI Chat Engines with API Keys |
-| [1159](/elements/002-helium/acuranzo/migrations/acuranzo_1159.lua) | convo_segs | 1.0.0 | 2026-03-22 | 8 | ✓ | Creates the convo_segs table for Phase 6: Conversation History with Content-Addressable Storage + Brotli |
+| [1159](/elements/002-helium/acuranzo/migrations/acuranzo_1159.lua) | convo_segs | 1.0.0 | 2026-03-22 | 10 | ✓ | Creates the convo_segs table for Phase 6: Conversation History with Content-Addressable Storage + Brotli |
 | [1160](/elements/002-helium/acuranzo/migrations/acuranzo_1160.lua) | convos | 1.0.0 | 2026-03-22 | 31 | ✓ | Extend convos table with segment_refs and usage tracking columns for Phase 6 |
 | [1161](/elements/002-helium/acuranzo/migrations/acuranzo_1161.lua) | lookups | 1.0.0 | 2026-03-22 | 4 | ✗ | Additions to Lookup 042 - Modules |
 | [1162](/elements/002-helium/acuranzo/migrations/acuranzo_1162.lua) | queries | 1.0.0 | 2026-03-22 | 4 | ✗ | QueryRef #062: Get Conversation Segments by Hash (batch retrieval) |
@@ -207,7 +207,7 @@ in the migrations themselves so that they get populated in the database directly
 | [1168](/elements/002-helium/acuranzo/migrations/acuranzo_1168.lua) | queries | 1.0.0 | 2026-03-22 | 4 | ✗ | QueryRef #068: Get Chat (reconstruct from hash-based storage) |
 | [1169](/elements/002-helium/acuranzo/migrations/acuranzo_1169.lua) | queries | 1.0.0 | 2026-03-22 | 4 | ✗ | QueryRef #069: Get Chats List (with segment count and storage metrics) |
 | [1170](/elements/002-helium/acuranzo/migrations/acuranzo_1170.lua) | queries | 1.0.0 | 2026-03-23 | 4 | ✗ | QueryRef #070: Get Conversation Segments by Hash (BATCH retrieval) |
-| [1171](/elements/002-helium/acuranzo/migrations/acuranzo_1171.lua) | media_assets | 1.0.0 | 2026-03-23 | 8 | ✓ | Creates the media_assets table for Phase 12: Advanced Multi-modal Features |
+| [1171](/elements/002-helium/acuranzo/migrations/acuranzo_1171.lua) | media_assets | 1.0.0 | 2026-03-23 | 10 | ✓ | Creates the media_assets table for Phase 12: Advanced Multi-modal Features |
 | [1172](/elements/002-helium/acuranzo/migrations/acuranzo_1172.lua) | convo_segs | 1.0.0 | 2026-03-23 | 12 | ✗ | Extend convo_segs table with content_type, mime_type, metadata columns for Phase 12 |
 | [1173](/elements/002-helium/acuranzo/migrations/acuranzo_1173.lua) | queries | 1.0.0 | 2026-03-23 | 4 | ✗ | QueryRef #071: Store Media Asset (with deduplication) |
 | [1174](/elements/002-helium/acuranzo/migrations/acuranzo_1174.lua) | queries | 1.0.0 | 2026-03-23 | 4 | ✗ | QueryRef #072: Retrieve Media Asset by Hash |
@@ -225,7 +225,7 @@ in the migrations themselves so that they get populated in the database directly
 | [1186](/elements/002-helium/acuranzo/migrations/acuranzo_1186.lua) | lookups | 1.0.0 | 2026-04-12 | 4 | ✗ | LithiumTable style-manager-sections (lookup_id 059, key_idx 9) |
 | [1187](/elements/002-helium/acuranzo/migrations/acuranzo_1187.lua) | lookups | 1.0.0 | 2026-03-15 | 4 | ✗ | LithiumTable version-manager (lookup_id 059, key_idx 10) |
 | [1188](/elements/002-helium/acuranzo/migrations/acuranzo_1188.lua) | queries | 1.0.0 | 2026-04-23 | 4 | ✗ | QueryRef #075 - Create Account Settings |
-| [1189](/elements/002-helium/acuranzo/migrations/acuranzo_1189.lua) | account_oidc_identities | 1.0.0 | 2026-05-09 | 7 | ✓ | Creates the account_oidc_identities table (OIDC RP Phase 15) |
+| [1189](/elements/002-helium/acuranzo/migrations/acuranzo_1189.lua) | account_oidc_identities | 1.0.0 | 2026-05-09 | 8 | ✓ | Creates the account_oidc_identities table (OIDC RP Phase 15) |
 | [1190](/elements/002-helium/acuranzo/migrations/acuranzo_1190.lua) | accounts | 1.0.0 | 2026-05-09 | 25 | ✓ | Relax accounts.password_hash to NULL for OIDC-provisioned accounts (OIDC RP Phase 16) |
 | [1191](/elements/002-helium/acuranzo/migrations/acuranzo_1191.lua) | queries | 1.0.0 | 2026-05-09 | 4 | ✗ | QueryRef #080 - OIDC RP: Lookup OIDC Identity (Phase 17) |
 | [1192](/elements/002-helium/acuranzo/migrations/acuranzo_1192.lua) | queries | 1.0.0 | 2026-05-09 | 4 | ✗ | QueryRef #081 - OIDC RP: Link OIDC Identity (Phase 17) |
@@ -233,9 +233,9 @@ in the migrations themselves so that they get populated in the database directly
 | [1194](/elements/002-helium/acuranzo/migrations/acuranzo_1194.lua) | queries | 1.0.0 | 2026-05-09 | 4 | ✗ | QueryRef #083 - OIDC RP: Provision OIDC Account (Phase 17) |
 | [1195](/elements/002-helium/acuranzo/migrations/acuranzo_1195.lua) | queries | 1.0.0 | 2026-05-09 | 4 | ✗ | QueryRef #084 - OIDC RP: Touch OIDC Identity (Phase 17) |
 | [1196](/elements/002-helium/acuranzo/migrations/acuranzo_1196.lua) | lookups | 1.0.0 | 2026-06-24 | 4 | ✗ | Adds key_idx 11 'SQL - Protected' to Lookup 028 - Query Type (Cap Phase 2b) |
-| [1197](/elements/002-helium/acuranzo/migrations/acuranzo_1197.lua) | course_suggestions | 1.0.0 | 2026-06-24 | 8 | ✓ | Creates the course_suggestions table (Cap Phase 2b: Suggest a Course form) |
+| [1197](/elements/002-helium/acuranzo/migrations/acuranzo_1197.lua) | course_suggestions | 1.0.0 | 2026-06-24 | 10 | ✓ | Creates the course_suggestions table (Cap Phase 2b: Suggest a Course form) |
 | [1198](/elements/002-helium/acuranzo/migrations/acuranzo_1198.lua) | queries | 1.0.0 | 2026-06-24 | 4 | ✗ | QueryRef #085 - Insert Course Suggestion (Cap-protected, slow queue) |
-| [1199](/elements/002-helium/acuranzo/migrations/acuranzo_1199.lua) | contact_submissions | 1.0.0 | 2026-06-24 | 8 | ✓ | Creates the contact_submissions table (Cap Phase 2b: Contact Us form) |
+| [1199](/elements/002-helium/acuranzo/migrations/acuranzo_1199.lua) | contact_submissions | 1.0.0 | 2026-06-24 | 10 | ✓ | Creates the contact_submissions table (Cap Phase 2b: Contact Us form) |
 | [1200](/elements/002-helium/acuranzo/migrations/acuranzo_1200.lua) | queries | 1.0.0 | 2026-06-24 | 4 | ✗ | QueryRef #086 - Insert Contact Submission (Cap-protected, slow queue) |
 | [1201](/elements/002-helium/acuranzo/migrations/acuranzo_1201.lua) | scripts | 1.0.0 | 2026-07-01 | 6 | ✓ | Creates the scripts table for the Hydrogen Scripting Subsystem (Phase 11a) |
 | [1202](/elements/002-helium/acuranzo/migrations/acuranzo_1202.lua) | lookups | 1.0.0 | 2026-07-01 | 8 | ✗ | Lookup 061 - Script Types for the Hydrogen Scripting Subsystem (Phase 11a) |
@@ -247,4 +247,4 @@ in the migrations themselves so that they get populated in the database directly
 | [1208](/elements/002-helium/acuranzo/migrations/acuranzo_1208.lua) | queries | 1.0.0 | 2026-07-01 | 4 | ✗ | QueryRef #091 - Update Script last_run_start and next_run for the Hydrogen Scripting Subsystem (Phase 11b) |
 | [1209](/elements/002-helium/acuranzo/migrations/acuranzo_1209.lua) | queries | 1.0.0 | 2026-07-01 | 4 | ✗ | QueryRef #092 - Update Script last_run_end for the Hydrogen Scripting Subsystem (Phase 11b) |
 | [1210](/elements/002-helium/acuranzo/migrations/acuranzo_1210.lua) | scripts | 1.0.0 | 2026-07-01 | 4 | ✗ | Seeds the default Orchestrator row in the scripts table for the Hydrogen Scripting Subsystem (Phase 11c) |
-| **211** | | | | **1122** | **211** | |
+| **211** | | | | **1131** | **211** | |

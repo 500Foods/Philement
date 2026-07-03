@@ -195,7 +195,7 @@ in the migrations themselves so that they get populated in the database directly
 | [1156](/elements/002-helium/acuranzo/migrations/acuranzo_1156.lua) | lookups | 1.3.0 | 2026-04-12 | 4 | ✗ | LithiumTable style-manager-base-vars (lookup_id 59 key_idx 11) |
 | [1157](/elements/002-helium/acuranzo/migrations/acuranzo_1157.lua) | lookups | 1.0.0 | 2026-03-17 | 4 | ✗ | LithiumTable style-manager-semantic-vars (lookup_id 59 key_idx 12) |
 | [1158](/elements/002-helium/acuranzo/migrations/acuranzo_1158.lua) | queries | 1.0.1 | 2026-03-20 | 4 | ✗ | QueryRef #061 - Internal: Get AI Chat Engines with API Keys |
-| [1159](/elements/002-helium/acuranzo/migrations/acuranzo_1159.lua) | convo_segs | 1.0.0 | 2026-03-22 | 8 | ✓ | Creates the convo_segs table for Phase 6: Conversation History with Content-Addressable Storage + Brotli |
+| [1159](/elements/002-helium/acuranzo/migrations/acuranzo_1159.lua) | convo_segs | 1.0.0 | 2026-03-22 | 10 | ✓ | Creates the convo_segs table for Phase 6: Conversation History with Content-Addressable Storage + Brotli |
 | [1160](/elements/002-helium/acuranzo/migrations/acuranzo_1160.lua) | convos | 1.0.0 | 2026-03-22 | 31 | ✓ | Extend convos table with segment_refs and usage tracking columns for Phase 6 |
 | [1161](/elements/002-helium/acuranzo/migrations/acuranzo_1161.lua) | lookups | 1.0.0 | 2026-03-22 | 4 | ✗ | Additions to Lookup 042 - Modules |
 | [1162](/elements/002-helium/acuranzo/migrations/acuranzo_1162.lua) | queries | 1.0.0 | 2026-03-22 | 4 | ✗ | QueryRef #062: Get Conversation Segments by Hash (batch retrieval) |
@@ -247,4 +247,4 @@ in the migrations themselves so that they get populated in the database directly
 | [1208](/elements/002-helium/acuranzo/migrations/acuranzo_1208.lua) | queries | 1.0.0 | 2026-07-01 | 4 | ✗ | QueryRef #091 - Update Script last_run_start and next_run for the Hydrogen Scripting Subsystem (Phase 11b) |
 | [1209](/elements/002-helium/acuranzo/migrations/acuranzo_1209.lua) | queries | 1.0.0 | 2026-07-01 | 4 | ✗ | QueryRef #092 - Update Script last_run_end for the Hydrogen Scripting Subsystem (Phase 11b) |
 | [1210](/elements/002-helium/acuranzo/migrations/acuranzo_1210.lua) | scripts | 1.0.0 | 2026-07-01 | 4 | ✗ | Seeds the default Orchestrator row in the scripts table for the Hydrogen Scripting Subsystem (Phase 11c) |
-| **211** | | | | **1122** | **211** | |
+| **211** | | | | **1124** | **211** | |
