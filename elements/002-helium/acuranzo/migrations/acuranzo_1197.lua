@@ -137,7 +137,7 @@ table.insert(queries,{sql=[[
         [=[
             -- DROP INDEX ${TABLE}_idx_created_at;
             -- DROP INDEX ${TABLE}_idx_review;
-               
+
             ${DROP_CHECK};
 
             ${SUBQUERY_DELIMITER}
