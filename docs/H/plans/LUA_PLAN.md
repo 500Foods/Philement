@@ -2,7 +2,7 @@
 
 Hydrogen Scripting Subsystem (Lua) – Implementation Roadmap
 
-**Status**: Draft – Actively evolving; Phases 1, 2, 2b, 3, 3b, 4, 5, 6, 7, 8, 9, 10, 11f, 11g, 11h, and 11i complete; 12 next
+**Status**: Draft – Actively evolving; Phases 1, 2, 2b, 3, 3b, 4, 5, 6, 7, 8, 9, 10, 11f, 11g, 11h, 11i, and 11j (Test 11 scripting leak fix) complete; 12 next
 **Last Updated**: 2026-07-02
 **Owner**: Andrew + Grok
 
@@ -999,6 +999,32 @@ Three follow-on sub-phases added 2026-07-01 to close out the work that 11d wired
   - **The single-database fallback is the right way to honor "with and without DefaultDatabase behave the same".** With one database the choice is unambiguous, so requiring an explicit `DefaultDatabase` would be pure ceremony. Gating the fallback on `connection_count == 1` keeps the multi-DB case explicit (no accidental "picked the wrong database") while making the common single-DB case just work. The two new Unity tests pin both halves of that invariant.
   - **Reusing `test_40`'s parallel scaffold kept the test small and familiar.** The `SCRIPTING_TEST_CONFIGS` map, the `while (( $(jobs -r | wc -l) >= CORES ))` fan-out, and the result-file marker protocol are all lifted from `test_40_auth.sh`. An operator who knows `test_40` reads `test_43` immediately, and the fail-fast markers slot into the same result-file analysis pass.
   - **Port hygiene matters for parallel DB tests.** The 11h SQLite config's port 5432 silently collided with a system PostgreSQL. Moving every Test 43 port into a dedicated `5543x` / `5544x` block (distinct from `test_40`'s `540x`) removed a whole class of "why did this one instance fail to bind?" flakiness, especially when 14 instances start at once.
+
+#### Phase 11j: Test 11 scripting leak fix — landing readiness must not block on persistent worker threads
+
+- **Goal**: Close the 3-direct-leak failure in Test 11's Scripting Init/Land subtest (11-005) that appeared once the Phase 7 worker pool was wired into launch/landing.
+- **Status**: **Complete 2026-07-02.**
+- **Symptom**: `test_11_leaks_like_a_sieve.sh` subtest 11-005 (`hydrogen_test_11_leaks_scripting.json`, scripting enabled, 2 workers, no Orchestrator, no DB) reported `3 direct, 0 indirect` leaks. The leak count was non-deterministic (3-6 allocations across runs), a classic sign of a thread-exit race. Every leaked allocation traced to `set_current_mutex_op_id` (`src/mutex/mutex.c:64`) on a `scripting_worker_thread` stack (`src/scripting/worker_pool.c:316`), i.e. per-thread mutex-tracking TLS.
+- **Root cause**: `check_scripting_landing_readiness()` (in `src/landing/landing_scripting.c`) returned a **No-Go** when `scripting_threads.thread_count > 0`. But the worker pool is *persistent* infrastructure that runs for the whole subsystem lifetime and is meant to be torn down **by** landing (`land_scripting_subsystem` → `scripting_workers_destroy` joins the workers, then `scripting_cleanup_state` re-inits `scripting_threads`). Because the 2 workers kept `thread_count == 2`, readiness never passed, `land_scripting_subsystem` was never dispatched, the workers were never joined, and `mutex_system_cleanup()` (`landing.c:336`) deleted the mutex TLS keys while the worker threads were still alive — orphaning their TLS `MutexId` allocations. LeakSanitizer's `leak_check_at_exit` then reported them. The confirming log signature: `"Worker pool started"` with **no** matching `"Worker pool stopped"` and no `"LANDING: Scripting"`.
+- **Fix**: In `check_scripting_landing_readiness()`, demote both the `scripting_orchestrator_state` and the `scripting_threads.thread_count > 0` checks from blocking No-Go to informational Go lines (`"... (will be landed)"`). These are the subsystem's own resources that landing itself destroys; a No-Go on either deadlocks shutdown. This is the landing-side analogue of the Phase 11h launch bug (the subsystem was never *registered*, so launch never dispatched it; here the subsystem never passed *landing readiness*, so landing never dispatched it).
+- **Why the copied Print pattern was wrong**: `check_print_landing_readiness()` also gates on `print_threads.thread_count > 0`, but Print's `print_threads` tracks *transient print jobs*, while its persistent queue thread is a separate global (`print_queue_thread`) joined unconditionally in `land_print_subsystem`. Scripting's `scripting_threads` tracks the *persistent worker pool* itself, so the same guard has the opposite meaning. Copying a readiness check verbatim without checking whether the tracked threads are transient-jobs vs persistent-infrastructure is the trap.
+- **Deliverables**:
+  - `src/landing/landing_scripting.c` — readiness check demoted to informational for orchestrator-state and worker-thread presence.
+  - `tests/unity/src/landing/landing_scripting_test_check_scripting_landing_readiness.c` — 2 new tests (`_running_with_workers`, `_running_with_orchestrator`) that pin `ready == true` when the persistent resources are present. Now 4 tests total.
+- **Validation**:
+  - `mkt` (`extras/make-trial.sh`) — **PASS**
+  - `mka` (`extras/make-all.sh` / Test 01) — **PASS**, 18/18
+  - Debug (ASAN) target rebuilt; direct manual repro of subtest 11-005 — **0 direct / 0 indirect leaks** (was 3-6), with `"Worker pool stopped"` and `"LANDING: Scripting COMPLETE"` now present.
+  - `tests/test_11_leaks_like_a_sieve.sh` — **PASS**, 5/5.
+  - `mku landing_scripting_test_check_scripting_landing_readiness` — **PASS**, 4/4.
+  - `mku landing_scripting_test_land_scripting_subsystem` — **PASS**, 4/4 (no regression).
+  - `tests/test_91_cppcheck.sh` — **PASS**, 1,428 files, 0 issues.
+  - `tests/test_16_shutdown.sh` — **PASS**, 5/5.
+  - `tests/test_17_startup_shutdown.sh` — **PASS**, 9/9.
+- **Lessons Learned**:
+  - **A landing readiness check must never block on the subsystem's own teardown-owned resources.** If the only code that clears a condition runs *after* readiness passes, then making that condition a No-Go is an unbreakable deadlock. Persistent worker threads, the Orchestrator `lua_State`, the scoreboard — all are landed by `land_scripting_subsystem`, so readiness reports them informationally, never as a gate.
+  - **The "shutdown is proven early" (Phase 3b) claim held only because Phase 3b had no workers.** Phase 3b's ASAN-clean init/land was real, but it exercised a subsystem with zero worker threads and no Orchestrator — so the readiness `thread_count > 0` guard never fired. The moment Phase 7 added a persistent worker pool, the guard silently blocked landing. The trial/Test-17 validation didn't catch it because those tests check that the *server* starts and stops cleanly (READY is DB/registry-driven, not scripting-driven); only Test 11's ASAN leak check, which is sensitive to threads that never exit, surfaced it — exactly the "leak-check catches lifecycle bugs the lifecycle tests miss" pattern from 11h.
+  - **Non-deterministic leak counts point at a thread race, not a missing `free`.** The 3-vs-6 allocation variance across runs was the tell: the leaked count depended on how many mutex lock/unlock cycles each worker happened to be mid-way through when the process exited, not on a fixed code path. A fixed-size leak usually means a missing free; a variable leak from thread stacks usually means threads that outlive their cleanup.
 
 ---
 

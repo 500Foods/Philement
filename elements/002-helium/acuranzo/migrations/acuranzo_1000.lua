@@ -389,12 +389,12 @@ table.insert(queries,{sql=[[
         ${QTC_SLOW}                                                         AS query_queue_a58,
         ${TIMEOUT}                                                          AS query_timeout,
         [=[
-            DELETE FROM ${SCHEMA}${QUERIES}
-            WHERE query_type_a28 IN (1000, 1001, 1002, 1003);
+            -- DELETE FROM ${SCHEMA}${QUERIES}
+            -- WHERE query_type_a28 IN (1000, 1001, 1002, 1003);
 
             ${SUBQUERY_DELIMITER}
 
-            ${DROP_CHECK};
+            -- ${DROP_CHECK};
 
             ${SUBQUERY_DELIMITER}
 
