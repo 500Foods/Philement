@@ -19,6 +19,9 @@ bool mysql_disconnect(DatabaseHandle* connection);
 bool mysql_health_check(DatabaseHandle* connection);
 bool mysql_reset_connection(DatabaseHandle* connection);
 
+// Watchdog cancel hook - implements engine cancel_inflight
+void mysql_cancel_inflight(DatabaseHandle* connection);
+
 // Library loading
 bool load_libmysql_functions(const char* designator);
 

@@ -50,6 +50,8 @@ mysql_stmt_affected_rows_t mysql_stmt_affected_rows_ptr = mock_mysql_stmt_affect
 mysql_stmt_store_result_t mysql_stmt_store_result_ptr = mock_mysql_stmt_store_result;
 mysql_stmt_free_result_t mysql_stmt_free_result_ptr = mock_mysql_stmt_free_result;
 mysql_stmt_field_count_t mysql_stmt_field_count_ptr = mock_mysql_stmt_field_count;
+mysql_kill_t mysql_kill_ptr = mock_mysql_kill;
+mysql_thread_id_t mysql_thread_id_ptr = mock_mysql_thread_id;
 #else
 mysql_init_t mysql_init_ptr = NULL;
 mysql_real_connect_t mysql_real_connect_ptr = NULL;
@@ -81,9 +83,11 @@ mysql_stmt_affected_rows_t mysql_stmt_affected_rows_ptr = NULL;
 mysql_stmt_store_result_t mysql_stmt_store_result_ptr = NULL;
 mysql_stmt_free_result_t mysql_stmt_free_result_ptr = NULL;
 mysql_stmt_field_count_t mysql_stmt_field_count_ptr = NULL;
+mysql_kill_t mysql_kill_ptr = NULL;
+mysql_thread_id_t mysql_thread_id_ptr = NULL;
 #endif
 
-// Library handle
+// Library handle and mutex (only in non-mock build)
 #ifndef USE_MOCK_LIBMYSQLCLIENT
 static void* libmysql_handle = NULL;
 static pthread_mutex_t libmysql_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -161,6 +165,8 @@ bool load_libmysql_functions(const char* designator __attribute__((unused))) {
     mysql_stmt_store_result_ptr = (mysql_stmt_store_result_t)dlsym(libmysql_handle, "mysql_stmt_store_result");
     mysql_stmt_free_result_ptr = (mysql_stmt_free_result_t)dlsym(libmysql_handle, "mysql_stmt_free_result");
     mysql_stmt_field_count_ptr = (mysql_stmt_field_count_t)dlsym(libmysql_handle, "mysql_stmt_field_count");
+    mysql_kill_ptr = (mysql_kill_t)dlsym(libmysql_handle, "mysql_kill");
+    mysql_thread_id_ptr = (mysql_thread_id_t)dlsym(libmysql_handle, "mysql_thread_id");
 #pragma GCC diagnostic pop
 
     // Check if all required functions were loaded
@@ -187,6 +193,9 @@ bool load_libmysql_functions(const char* designator __attribute__((unused))) {
     }
     if (!mysql_stmt_init_ptr || !mysql_stmt_prepare_ptr || !mysql_stmt_execute_ptr || !mysql_stmt_close_ptr) {
         log_this(log_subsystem, "Prepared statement functions not available - prepared statements will be limited", LOG_LEVEL_TRACE, 0);
+    }
+    if (!mysql_kill_ptr || !mysql_thread_id_ptr) {
+        log_this(log_subsystem, "mysql_kill / mysql_thread_id not available - watchdog cancel will be a no-op for MySQL", LOG_LEVEL_ALERT, 0);
     }
 
     MUTEX_UNLOCK(&libmysql_mutex, log_subsystem);
@@ -457,4 +466,48 @@ bool mysql_reset_connection(DatabaseHandle* connection) {
 
     log_this(SR_DATABASE, "MySQL connection reset successfully", LOG_LEVEL_TRACE, 0);
     return true;
+}
+
+/*
+ * Cancel any in-flight query on this MySQL connection.
+ *
+ * Sends a KILL for the connection's own thread_id. The MySQL server
+ * terminates the running query and the blocked mysql_real_query on
+ * the caller side eventually returns. mysql_kill acquires the
+ * connection's internal mutex (libmysqlclient is thread-safe per
+ * connection), so it is safe to call from a different thread than
+ * the one stuck in the query.
+ *
+ * LIMITATION: if the underlying TCP socket is dead (network
+ * black hole, host unreachable, etc.), mysql_kill will block trying
+ * to write the KILL command. In that case the watchdog thread
+ * itself can become stuck. A future enhancement would open a
+ * separate admin connection for KILL, which avoids the
+ * wedged-socket problem entirely. For now this is best-effort and
+ * works for the common case (server is slow but reachable).
+ */
+void mysql_cancel_inflight(DatabaseHandle* connection) {
+    if (!connection || connection->engine_type != DB_ENGINE_MYSQL) {
+        return;
+    }
+    if (!mysql_kill_ptr || !mysql_thread_id_ptr) {
+        return;
+    }
+
+    MySQLConnection* mysql_conn = (MySQLConnection*)connection->connection_handle;
+    if (!mysql_conn || !mysql_conn->connection) {
+        return;
+    }
+
+    unsigned long thread_id = mysql_thread_id_ptr(mysql_conn->connection);
+    int rc = mysql_kill_ptr(mysql_conn->connection, thread_id);
+    const char* designator = connection->designator ? connection->designator : SR_DATABASE;
+    if (rc != 0) {
+        const char* error_msg = mysql_error_ptr ? mysql_error_ptr(mysql_conn->connection) : NULL;
+        log_this(designator, "MySQL: mysql_kill(thread_id=%lu) failed: %s",
+                 LOG_LEVEL_ERROR, 2, thread_id, error_msg ? error_msg : "unknown");
+    } else {
+        log_this(designator, "MySQL: requested cancel of in-flight query (thread_id=%lu)",
+                 LOG_LEVEL_ALERT, 1, thread_id);
+    }
 }

@@ -32,7 +32,8 @@ static DatabaseEngineInterface postgresql_engine_interface = {
     .unprepare_statement = postgresql_unprepare_statement,
     .get_connection_string = postgresql_get_connection_string,
     .validate_connection_string = postgresql_validate_connection_string,
-    .escape_string = postgresql_escape_string
+    .escape_string = postgresql_escape_string,
+    .cancel_inflight = postgresql_cancel_inflight
 };
 
 DatabaseEngineInterface* postgresql_get_interface(void) {

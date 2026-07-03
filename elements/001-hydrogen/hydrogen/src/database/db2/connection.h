@@ -19,6 +19,17 @@ bool db2_disconnect(DatabaseHandle* connection);
 bool db2_health_check(DatabaseHandle* connection);
 bool db2_reset_connection(DatabaseHandle* connection);
 
+// Watchdog cancel hook - implements engine cancel_inflight
+void db2_cancel_inflight(DatabaseHandle* connection);
+
+// Active-statement tracking for watchdog cancel support. Query
+// execution paths call db2_active_stmt_set immediately after
+// allocating a statement handle and db2_active_stmt_clear
+// immediately before freeing it. The cancel hook reads the value
+// under active_stmt_lock.
+void db2_active_stmt_set(DatabaseHandle* connection, void* stmt_handle);
+void db2_active_stmt_clear(DatabaseHandle* connection, const void* stmt_handle);
+
 // Library loading
 bool load_libdb2_functions(const char* designator);
 

@@ -162,6 +162,25 @@ struct DatabaseEngineInterface {
     char* (*get_connection_string)(const ConnectionConfig* config);
     bool (*validate_connection_string)(const char* connection_string);
     char* (*escape_string)(const DatabaseHandle* connection, const char* input);
+
+    /*
+     * Best-effort cancel of any in-flight query on this connection.
+     * Called by the database watchdog from its timer thread when a
+     * registered query's age exceeds its timeout. May be NULL if the
+     * engine has no supported cancel mechanism.
+     *
+     * Implementations must be safe to call from a different thread
+     * than the one running the query (the watchdog thread). The
+     * intent is to give the server a chance to stop work on the
+     * query so the connection is not left holding a long-running
+     * server-side computation.
+     *
+     * For engines where no reliable cross-thread cancel exists, the
+     * implementation may log that cancel is unsupported and return
+     * without taking action; the watchdog will continue to log the
+     * ALERT heartbeat so the hang is at least visible.
+     */
+    void (*cancel_inflight)(DatabaseHandle* connection);
 };
 
 

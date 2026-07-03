@@ -40,6 +40,8 @@ typedef unsigned long long (*mysql_stmt_affected_rows_t)(void*);
 typedef int (*mysql_stmt_store_result_t)(void*);
 typedef int (*mysql_stmt_free_result_t)(void*);
 typedef unsigned int (*mysql_stmt_field_count_t)(void*);
+typedef int (*mysql_kill_t)(void*, unsigned long);
+typedef unsigned long (*mysql_thread_id_t)(void*);
 
 // MySQL function pointers (loaded dynamically)
 extern mysql_init_t mysql_init_ptr;
@@ -72,6 +74,8 @@ extern mysql_stmt_affected_rows_t mysql_stmt_affected_rows_ptr;
 extern mysql_stmt_store_result_t mysql_stmt_store_result_ptr;
 extern mysql_stmt_free_result_t mysql_stmt_free_result_ptr;
 extern mysql_stmt_field_count_t mysql_stmt_field_count_ptr;
+extern mysql_kill_t mysql_kill_ptr;
+extern mysql_thread_id_t mysql_thread_id_ptr;
 
 // Library handle (declared in connection.c)
 

@@ -42,6 +42,7 @@ sqlite3_extended_result_codes_t sqlite3_extended_result_codes_ptr = mock_sqlite3
 sqlite3_load_extension_t sqlite3_load_extension_ptr = NULL;
 sqlite3_db_config_t sqlite3_db_config_ptr = NULL;
 sqlite3_free_t sqlite3_free_ptr = mock_sqlite3_free;
+sqlite3_interrupt_t sqlite3_interrupt_ptr = NULL;
 #else
 sqlite3_open_t sqlite3_open_ptr = NULL;
 sqlite3_close_t sqlite3_close_ptr = NULL;
@@ -65,6 +66,7 @@ sqlite3_extended_result_codes_t sqlite3_extended_result_codes_ptr = NULL;
 sqlite3_load_extension_t sqlite3_load_extension_ptr = NULL;
 sqlite3_db_config_t sqlite3_db_config_ptr = NULL;
 sqlite3_free_t sqlite3_free_ptr = NULL;
+sqlite3_interrupt_t sqlite3_interrupt_ptr = NULL;
 #endif
 
 // Library handle
@@ -128,6 +130,7 @@ bool load_libsqlite_functions(const char* designator __attribute__((unused))) {
     sqlite3_load_extension_ptr = (sqlite3_load_extension_t)dlsym(libsqlite_handle, "sqlite3_load_extension");
     sqlite3_db_config_ptr = (sqlite3_db_config_t)dlsym(libsqlite_handle, "sqlite3_db_config");
     sqlite3_free_ptr = (sqlite3_free_t)dlsym(libsqlite_handle, "sqlite3_free");
+    sqlite3_interrupt_ptr = (sqlite3_interrupt_t)dlsym(libsqlite_handle, "sqlite3_interrupt");
 #pragma GCC diagnostic pop
 
     // Check if all required functions were loaded
@@ -148,6 +151,9 @@ bool load_libsqlite_functions(const char* designator __attribute__((unused))) {
     }
     if (!sqlite3_changes_ptr) {
         log_this(log_subsystem, "sqlite3_changes function not available - affected rows may not be accurate", LOG_LEVEL_TRACE, 0);
+    }
+    if (!sqlite3_interrupt_ptr) {
+        log_this(log_subsystem, "sqlite3_interrupt function not available - watchdog cancel will be a no-op for SQLite", LOG_LEVEL_ALERT, 0);
     }
 
     MUTEX_UNLOCK(&libsqlite_mutex, log_subsystem);
@@ -639,4 +645,38 @@ bool sqlite_reset_connection(DatabaseHandle* connection) {
 
     log_this(SR_DATABASE, "SQLite connection reset successfully", LOG_LEVEL_TRACE, 0);
     return true;
+}
+
+/*
+ * Cancel any in-flight query on this SQLite connection.
+ *
+ * sqlite3_interrupt is documented as safe to call from any thread.
+ * It sets a flag on the connection struct that the running query
+ * (and any future queries on this connection, until sqlite3_reset is
+ * called) checks periodically. This is the cleanest cross-thread
+ * cancel in the engines Hydrogen supports - no network I/O, no
+ * mutex contention on the connection itself.
+ *
+ * After this returns, the next call into the connection that
+ * checks the interrupt flag (sqlite3_step, sqlite3_exec) will
+ * return SQLITE_INTERRUPT and the blocked call will eventually
+ * unblock.
+ */
+void sqlite_cancel_inflight(DatabaseHandle* connection) {
+    if (!connection || connection->engine_type != DB_ENGINE_SQLITE) {
+        return;
+    }
+    if (!sqlite3_interrupt_ptr) {
+        return;
+    }
+
+    void* sqlite_conn = connection->connection_handle;
+    if (!sqlite_conn) {
+        return;
+    }
+
+    sqlite3_interrupt_ptr(sqlite_conn);
+
+    const char* designator = connection->designator ? connection->designator : SR_DATABASE;
+    log_this(designator, "SQLite: requested cancel of in-flight query", LOG_LEVEL_ALERT, 0);
 }

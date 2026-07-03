@@ -32,6 +32,7 @@ typedef int (*sqlite3_extended_result_codes_t)(void*, int);
 typedef int (*sqlite3_load_extension_t)(void*, const char*, const char*, char**);
 typedef int (*sqlite3_db_config_t)(void*, int, ...);
 typedef void (*sqlite3_free_t)(void*);
+typedef void (*sqlite3_interrupt_t)(void*);
 
 // SQLite function pointers (loaded dynamically)
 // Defined in connection.c

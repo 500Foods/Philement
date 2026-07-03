@@ -36,6 +36,9 @@ typedef void* (*PQprepare_t)(void* conn, const char* stmtName, const char* query
 typedef void* (*PQexecPrepared_t)(void* conn, const char* stmtName, int nParams, const char* const* paramValues, const int* paramLengths, const int* paramFormats, int resultFormat);
 typedef size_t (*PQescapeStringConn_t)(void* conn, char* to, const char* from, size_t length, int* error);
 typedef int (*PQping_t)(const char* conninfo);
+typedef void* (*PQgetCancel_t)(void* conn);
+typedef int (*PQcancel_t)(void* cancel, char* errbuf, int errbufsize);
+typedef void (*PQfreeCancel_t)(void* cancel);
 
 // PostgreSQL function pointers (loaded dynamically or mocked)
 #ifdef USE_MOCK_LIBPQ
@@ -59,6 +62,9 @@ PQprepare_t PQprepare_ptr = mock_PQprepare;
 PQexecPrepared_t PQexecPrepared_ptr = NULL;  // No mock for PQexecPrepared yet
 PQescapeStringConn_t PQescapeStringConn_ptr = mock_PQescapeStringConn;
 PQping_t PQping_ptr = mock_PQping;
+PQgetCancel_t PQgetCancel_ptr = NULL;  // No mock; real libpq is required
+PQcancel_t PQcancel_ptr = NULL;
+PQfreeCancel_t PQfreeCancel_ptr = NULL;
 #else
 PQconnectdb_t PQconnectdb_ptr = NULL;
 PQstatus_t PQstatus_ptr = NULL;
@@ -79,6 +85,9 @@ PQprepare_t PQprepare_ptr = NULL;
 PQexecPrepared_t PQexecPrepared_ptr = NULL;
 PQescapeStringConn_t PQescapeStringConn_ptr = NULL;
 PQping_t PQping_ptr = NULL;
+PQgetCancel_t PQgetCancel_ptr = NULL;
+PQcancel_t PQcancel_ptr = NULL;
+PQfreeCancel_t PQfreeCancel_ptr = NULL;
 #endif
 
 // Library handle
@@ -178,6 +187,9 @@ bool load_libpq_functions(const char* designator __attribute__((unused))) {
     PQexecPrepared_ptr = (PQexecPrepared_t)dlsym(libpq_handle, "PQexecPrepared");
     PQescapeStringConn_ptr = (PQescapeStringConn_t)dlsym(libpq_handle, "PQescapeStringConn");
     PQping_ptr = (PQping_t)dlsym(libpq_handle, "PQping");
+    PQgetCancel_ptr = (PQgetCancel_t)dlsym(libpq_handle, "PQgetCancel");
+    PQcancel_ptr = (PQcancel_t)dlsym(libpq_handle, "PQcancel");
+    PQfreeCancel_ptr = (PQfreeCancel_t)dlsym(libpq_handle, "PQfreeCancel");
 #pragma GCC diagnostic pop
 
     // Check if all functions were loaded
@@ -194,6 +206,12 @@ bool load_libpq_functions(const char* designator __attribute__((unused))) {
     // PQping is optional - log if not available
     if (!PQping_ptr) {
         log_this(log_subsystem, "PQping function not available - health check will use query method only", LOG_LEVEL_TRACE, 0);
+    }
+    // Cancel functions are required for the watchdog to cancel
+    // in-flight queries. Without them, hangs are visible in the log
+    // but the server-side work is not interrupted.
+    if (!PQgetCancel_ptr || !PQcancel_ptr || !PQfreeCancel_ptr) {
+        log_this(log_subsystem, "libpq cancel functions (PQgetCancel/PQcancel/PQfreeCancel) not available - watchdog cancel will be a no-op for PostgreSQL", LOG_LEVEL_ALERT, 0);
     }
 
     MUTEX_UNLOCK(&libpq_mutex, log_subsystem);
@@ -596,4 +614,58 @@ bool postgresql_reset_connection(DatabaseHandle* connection) {
 
     log_this(SR_DATABASE, "PostgreSQL connection reset successfully", LOG_LEVEL_TRACE, 0);
     return true;
+}
+
+/*
+ * Cancel any in-flight query on this PostgreSQL connection.
+ *
+ * libpq's cancel API is explicitly designed for cross-thread use:
+ *   1. PQgetCancel extracts a small token (PGcancel*) from the
+ *      PGconn that carries the backend PID and a few other fields.
+ *      The token is a snapshot - the underlying PGconn can be torn
+ *      down without affecting the token.
+ *   2. PQcancel opens a NEW TCP connection to the same server and
+ *      sends a CancelRequest packet. It does NOT use the original
+ *      socket at all, so it is unaffected by network hangs on the
+ *      main connection.
+ *   3. The server processes the cancel and terminates the running
+ *      query; the original thread's PQexec / PQexecParams /
+ *      PQexecPrepared then returns with PGRES_FATAL_ERROR /
+ *      query_canceled.
+ *
+ * This is the cleanest cross-thread cancel of any engine we
+ * support: no mutex contention on the connection, no blocking on
+ * the original socket, no race with the main thread's call into
+ * libpq. The function may still block briefly while opening the
+ * new TCP connection to send the cancel.
+ */
+void postgresql_cancel_inflight(DatabaseHandle* connection) {
+    if (!connection || connection->engine_type != DB_ENGINE_POSTGRESQL) {
+        return;
+    }
+    if (!PQgetCancel_ptr || !PQcancel_ptr || !PQfreeCancel_ptr) {
+        return;
+    }
+
+    PostgresConnection* pg_conn = (PostgresConnection*)connection->connection_handle;
+    if (!pg_conn || !pg_conn->connection) {
+        return;
+    }
+
+    void* cancel = PQgetCancel_ptr(pg_conn->connection);
+    if (!cancel) {
+        return;
+    }
+
+    char errbuf[256] = {0};
+    int rc = PQcancel_ptr(cancel, errbuf, sizeof(errbuf));
+
+    const char* designator = connection->designator ? connection->designator : SR_DATABASE;
+    if (rc != 1) {
+        log_this(designator, "PostgreSQL: PQcancel failed: %s", LOG_LEVEL_ERROR, 1, errbuf);
+    } else {
+        log_this(designator, "PostgreSQL: requested cancel of in-flight query", LOG_LEVEL_ALERT, 0);
+    }
+
+    PQfreeCancel_ptr(cancel);
 }

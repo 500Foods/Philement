@@ -19,8 +19,10 @@
 #include "database.h"
 #include "database_bootstrap.h"
 #include "database_cache.h"
+#include "database_watchdog.h"
 #include "migration/migration.h"
 #include <src/api/wschat/helpers/engine_cache.h>
+#include <src/config/config.h>
 
 #ifdef USE_MOCK_DATABASE_ENGINE
 #include <unity/mocks/mock_database_engine.h>
@@ -82,7 +84,15 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
         return;
     }
 
-    request->timeout_seconds = 30;
+    /*
+     * Timeout comes from app_config->databases.bootstrap_timeout_seconds
+     * (default 30s). The watchdog's own set_bounds at init time has
+     * already clamped the config value to the [min, max] window so the
+     * raw value here is safe to pass through to register().
+     */
+    request->timeout_seconds = app_config
+                                   ? app_config->databases.bootstrap_timeout_seconds
+                                   : 30;
     request->isolation_level = DB_ISOLATION_READ_COMMITTED;
     request->use_prepared_statement = false;
 
@@ -101,7 +111,16 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
         long long latest_applied_migration = 0;
         bool empty_database = true;
 
+        /*
+         * Register the bootstrap query with the watchdog so a hang is
+         * detected and an ALERT (with 30s heartbeat) is logged. The
+         * handle is always deregistered on the way out, success or
+         * failure.
+         */
+        DatabaseWatchdogHandle* watchdog_handle =
+            database_watchdog_register(db_queue->persistent_connection, request);
         bool query_success = database_engine_execute(db_queue->persistent_connection, request, &result);
+        database_watchdog_deregister(watchdog_handle);
 
         if (query_success && result && result->success) {
             log_this(dqm_label, "Bootstrap query succeeded: %zu rows, %zu columns", LOG_LEVEL_DEBUG, 2, result->row_count, result->column_count);
@@ -148,12 +167,15 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
                             drop_request->query_id = strdup("drop_orphaned_table");
                             drop_request->sql_template = strdup(drop_sql);
                             drop_request->parameters_json = strdup("{}");
-                            drop_request->timeout_seconds = 30;
+                            drop_request->timeout_seconds = request->timeout_seconds;
                             drop_request->isolation_level = DB_ISOLATION_READ_COMMITTED;
                             drop_request->use_prepared_statement = false;
 
                             QueryResult* drop_result = NULL;
+                            DatabaseWatchdogHandle* drop_watchdog =
+                                database_watchdog_register(db_queue->persistent_connection, drop_request);
                             bool drop_success = database_engine_execute(db_queue->persistent_connection, drop_request, &drop_result);
+                            database_watchdog_deregister(drop_watchdog);
 
                             if (drop_success && drop_result && drop_result->success) {
                                 log_this(dqm_label, "Successfully dropped orphaned table: %s", LOG_LEVEL_STATE, 1, table_name);

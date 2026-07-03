@@ -66,6 +66,8 @@ SQLBindParameter_t SQLBindParameter_ptr = NULL;
 SQLSetConnectAttr_t SQLSetConnectAttr_ptr = NULL;
 SQLDriverConnect_t SQLDriverConnect_ptr = NULL;
 SQLGetDiagRec_t SQLGetDiagRec_ptr = NULL;
+// Watchdog cancel hook
+SQLCancel_t SQLCancel_ptr = NULL;
 
 // Library handle
 #ifndef USE_MOCK_LIBDB2
@@ -145,6 +147,7 @@ bool load_libdb2_functions(const char* designator __attribute__((unused))) {
     SQLGetDiagRec_ptr = (SQLGetDiagRec_t)dlsym(libdb2_handle, "SQLGetDiagRec");
     SQLSetConnectAttr_ptr = (SQLSetConnectAttr_t)(void*)dlsym(libdb2_handle, "SQLSetConnectAttr");
     SQLBindParameter_ptr = (SQLBindParameter_t)dlsym(libdb2_handle, "SQLBindParameter");
+    SQLCancel_ptr = (SQLCancel_t)dlsym(libdb2_handle, "SQLCancel");
 #pragma GCC diagnostic pop
 
     // Check if all required functions were loaded
@@ -164,6 +167,9 @@ bool load_libdb2_functions(const char* designator __attribute__((unused))) {
     }
     if (!SQLPrepare_ptr || !SQLExecute_ptr || !SQLFreeStmt_ptr) {
         log_this(log_subsystem, "Prepared statement functions not available - prepared statements will be limited", LOG_LEVEL_TRACE, 0);
+    }
+    if (!SQLCancel_ptr) {
+        log_this(log_subsystem, "SQLCancel function not available - watchdog cancel will be a no-op for DB2", LOG_LEVEL_ALERT, 0);
     }
 
     MUTEX_UNLOCK(&libdb2_mutex, log_subsystem);
@@ -405,7 +411,10 @@ bool db2_connect(ConnectionConfig* config, DatabaseHandle** connection, const ch
     db2_wrapper->environment = env_handle;
     db2_wrapper->connection = conn_handle;
     db2_wrapper->prepared_statements = db2_create_prepared_statement_cache();
+    db2_wrapper->active_stmt = NULL;
+    pthread_mutex_init(&db2_wrapper->active_stmt_lock, NULL);
     if (!db2_wrapper->prepared_statements) {
+        pthread_mutex_destroy(&db2_wrapper->active_stmt_lock);
         free(db2_wrapper);
         free(db_handle);
         SQLFreeHandle_ptr(SQL_HANDLE_DBC, conn_handle);
@@ -457,7 +466,9 @@ bool db2_disconnect(DatabaseHandle* connection) {
             SQLFreeHandle_ptr(SQL_HANDLE_ENV, db2_conn->environment);
             db2_conn->environment = NULL; // Mark as freed
         }
-        
+        pthread_mutex_destroy(&db2_conn->active_stmt_lock);
+        db2_conn->active_stmt = NULL;
+
         // NOTE: Do NOT free db2_conn here - it's needed by database_engine_cleanup_connection()
         // to unprepare statements. The DB2Connection structure will be freed there.
     }
@@ -527,4 +538,86 @@ bool db2_reset_connection(DatabaseHandle* connection) {
     const char* log_subsystem = connection->designator ? connection->designator : SR_DATABASE;
     log_this(log_subsystem, "DB2 connection reset successfully", LOG_LEVEL_TRACE, 0);
     return true;
+}
+
+/*
+ * Cancel any in-flight query on this DB2 connection.
+ *
+ * The DB2 query path stores the active statement handle in
+ * DB2Connection::active_stmt while the query is in flight and
+ * clears it on completion. We read the handle under a small mutex
+ * and call SQLCancel on it, which the ODBC spec documents as
+ * safe to call from a different thread than the one executing
+ * the statement. SQLCancel causes SQLExecDirect / SQLExecute on
+ * the original thread to return SQL_ERROR with a "statement was
+ * cancelled" diagnostic.
+ */
+void db2_cancel_inflight(DatabaseHandle* connection) {
+    if (!connection || connection->engine_type != DB_ENGINE_DB2) {
+        return;
+    }
+    if (!SQLCancel_ptr) {
+        return;
+    }
+
+    DB2Connection* db2_conn = (DB2Connection*)connection->connection_handle;
+    if (!db2_conn) {
+        return;
+    }
+
+    pthread_mutex_lock(&db2_conn->active_stmt_lock);
+    void* active_stmt = db2_conn->active_stmt;
+    pthread_mutex_unlock(&db2_conn->active_stmt_lock);
+
+    if (!active_stmt) {
+        return; // No in-flight query
+    }
+
+    int rc = SQLCancel_ptr(active_stmt);
+    const char* designator = connection->designator ? connection->designator : SR_DATABASE;
+    if (rc != 0 && rc != 1) {  // SQL_SUCCESS=0, SQL_SUCCESS_WITH_INFO=1
+        log_this(designator, "DB2: SQLCancel returned %d", LOG_LEVEL_ERROR, 1, rc);
+    } else {
+        log_this(designator, "DB2: requested cancel of in-flight query", LOG_LEVEL_ALERT, 0);
+    }
+}
+
+/*
+ * Set the in-flight statement handle so the watchdog can find it.
+ * Called by db2_execute_query / db2_execute_prepared after
+ * SQLAllocHandle returns. Holds active_stmt_lock briefly.
+ */
+void db2_active_stmt_set(DatabaseHandle* connection, void* stmt_handle) {
+    if (!connection || connection->engine_type != DB_ENGINE_DB2 || !stmt_handle) {
+        return;
+    }
+    DB2Connection* db2_conn = (DB2Connection*)connection->connection_handle;
+    if (!db2_conn) {
+        return;
+    }
+    pthread_mutex_lock(&db2_conn->active_stmt_lock);
+    db2_conn->active_stmt = stmt_handle;
+    pthread_mutex_unlock(&db2_conn->active_stmt_lock);
+}
+
+/*
+ * Clear the in-flight statement handle. Called by db2_execute_query
+ * / db2_execute_prepared immediately before SQLFreeHandle so the
+ * watchdog does not see a freed handle. Only clears if the
+ * currently stored handle matches the supplied one - protects
+ * against a stale clear from a different query.
+ */
+void db2_active_stmt_clear(DatabaseHandle* connection, const void* stmt_handle) {
+    if (!connection || connection->engine_type != DB_ENGINE_DB2) {
+        return;
+    }
+    DB2Connection* db2_conn = (DB2Connection*)connection->connection_handle;
+    if (!db2_conn) {
+        return;
+    }
+    pthread_mutex_lock(&db2_conn->active_stmt_lock);
+    if (db2_conn->active_stmt == stmt_handle) {
+        db2_conn->active_stmt = NULL;
+    }
+    pthread_mutex_unlock(&db2_conn->active_stmt_lock);
 }

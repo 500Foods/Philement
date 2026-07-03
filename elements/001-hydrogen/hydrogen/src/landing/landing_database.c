@@ -11,6 +11,7 @@
 // Project includes
 #include <src/hydrogen.h>
 #include <src/database/database.h>
+#include <src/database/database_watchdog.h>
 #include <src/database/dbqueue/dbqueue.h>
 #include <src/database/database_pending.h>
 #include <src/threads/threads.h>
@@ -146,6 +147,10 @@ int land_database_subsystem(void) {
     // Clean up global pending result manager
     log_this(SR_DATABASE, "Cleaning up pending result manager", LOG_LEVEL_DEBUG, 0);
     cleanup_global_pending_manager(SR_DATABASE);
+
+    // Shut down the database query watchdog (stops its timer thread)
+    log_this(SR_DATABASE, "Shutting down " SR_DATABASE " query watchdog", LOG_LEVEL_DEBUG, 0);
+    database_watchdog_shutdown();
 
     log_this(SR_DATABASE, "LANDING: " SR_DATABASE " COMPLETE", LOG_LEVEL_DEBUG, 0);
 

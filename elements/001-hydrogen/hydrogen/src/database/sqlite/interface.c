@@ -31,7 +31,8 @@ static DatabaseEngineInterface sqlite_engine_interface = {
     .unprepare_statement = sqlite_unprepare_statement,
     .get_connection_string = sqlite_get_connection_string,
     .validate_connection_string = sqlite_validate_connection_string,
-    .escape_string = sqlite_escape_string
+    .escape_string = sqlite_escape_string,
+    .cancel_inflight = sqlite_cancel_inflight
 };
 
 DatabaseEngineInterface* sqlite_get_interface(void) {

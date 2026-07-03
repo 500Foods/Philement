@@ -132,6 +132,23 @@ bool mock_database_engine_execute(DatabaseHandle* connection, QueryRequest* requ
 
 
 
+// Counter for mock cancel calls (used by watchdog unit tests to
+// verify the cancel_inflight hook fires on first expiry).
+static int mock_cancel_call_count = 0;
+
+void mock_database_engine_cancel_inflight(DatabaseHandle* connection) {
+    (void)connection;
+    mock_cancel_call_count++;
+}
+
+int mock_database_engine_get_cancel_call_count(void) {
+    return mock_cancel_call_count;
+}
+
+void mock_database_engine_reset_cancel_call_count(void) {
+    mock_cancel_call_count = 0;
+}
+
 bool mock_database_engine_health_check(DatabaseHandle* connection) {
     (void)connection;
     return mock_health_check_result;
@@ -244,7 +261,8 @@ DatabaseEngineInterface* mock_database_engine_get(DatabaseEngine engine_type) {
         .begin_transaction = mock_database_engine_begin_transaction,
         .commit_transaction = mock_database_engine_commit_transaction,
         .rollback_transaction = mock_database_engine_rollback_transaction,
-        .execute_query = mock_database_engine_execute
+        .execute_query = mock_database_engine_execute,
+        .cancel_inflight = mock_database_engine_cancel_inflight
     };
     return &mock_engine;
 }
