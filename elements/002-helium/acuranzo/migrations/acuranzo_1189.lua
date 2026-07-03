@@ -122,10 +122,8 @@ table.insert(queries,{sql=[[
         ${QTC_SLOW}                                                         AS query_queue_a58,
         ${TIMEOUT}                                                          AS query_timeout,
         [=[
-            DROP INDEX ${TABLE}_idx_account;
-
-            ${SUBQUERY_DELIMITER}
-
+            -- DROP INDEX ${TABLE}_idx_account;
+            
             ${DROP_CHECK};
 
             ${SUBQUERY_DELIMITER}

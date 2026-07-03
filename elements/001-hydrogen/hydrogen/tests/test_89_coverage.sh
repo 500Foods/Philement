@@ -16,7 +16,6 @@ set -euo pipefail
 # Check for required HYDROGEN_ROOT environment variable
 if [[ -z "${HYDROGEN_ROOT:-}" ]]; then
     echo "❌ Error: HYDROGEN_ROOT environment variable is not set"
-    echo "Please set HYDROGEN_ROOT to the Hydrogen project's root directory"
     exit 1
 fi                         
 
@@ -218,8 +217,7 @@ if [[ -f "${UNITY_COVERAGE_FILE}.detailed" ]] && [[ -f "${BLACKBOX_COVERAGE_FILE
         fi
     done
     
-    # Store detailed combined coverage data for Test 00 to use in README
-    # Format: timestamp,percentage,covered_lines,total_lines,instrumented_files,covered_files
+    # Store detailed combined coverage data for Test 00 to use in README. Format: timestamp,percentage,covered_lines,total_lines,instrumented_files,covered_files
     echo "$("${DATE}" +%Y%m%d_%H%M%S),${combined_coverage},${combined_total_covered},${combined_total_instrumented},${combined_instrumented_files},${combined_covered_files}" > "${COMBINED_COVERAGE_FILE}.detailed" || true
     
     combined_covered_display=$(format_number "${formatted_covered}")
@@ -233,8 +231,7 @@ fi
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Identify Uncovered Source Files"
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Identifying source files not covered by blackbox tests..."
 
-# Use the batch-proces coverage data to be consistent with the earlier calculations
-# This ensures the file counts match between sections
+# Use the batch-proces coverage data to be consistent with the earlier calculations. This ensures the file counts match between sections
 blackbox_covered_files=0
 blackbox_instrumented_files=0
 uncovered_files=()
@@ -289,13 +286,11 @@ fi
 # Phase 1: Individual count reviews with timing
 test10_start=$(date +%s.%3N)
 test10_total_executed=0
-# Test 10 uses a consolidated cache.  When caching is active the diagnostic
-# directory only contains the tests that ran in the current invocation, so the
-# authoritative total is the cache file.  Fall back to diagnostics only when the
-# cache is unavailable.
+# Test 10 uses a consolidated cache.  When caching is active the diagnostic directory only contains the tests that ran in the current invocation, so the
+# authoritative total is the cache file.  Fall back to diagnostics only when the cache is unavailable.
 UNITY_CACHE_FILE="${BUILD_DIR}/cache/unity_tests.cache"
 cache_test_count=$(count_tests_from_cache "${UNITY_CACHE_FILE}")
-if [[ "${cache_test_count}" -gt 0 ]]; then
+if [[ "${cache_test_count}" -gt 0 ]]; then                                                            
     test10_total_executed="${cache_test_count}"
 else
     test10_total_executed=$(count_tests_from_diagnostics "${latest_test10_dir}")
