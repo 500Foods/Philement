@@ -45,5 +45,8 @@ void mock_database_engine_set_execute_query_result(QueryResult* result);
 void mock_database_engine_set_execute_json_data(const char* json_data);
 void mock_database_engine_set_affected_rows(int rows);
 void mock_database_engine_set_health_check_result(bool result);
+void mock_database_engine_set_execute_error_class(DatabaseErrorClass err_class);
+int mock_database_engine_get_execute_call_count(void);
+void mock_database_engine_reset_execute_call_count(void);
 
 #endif // MOCK_DATABASE_ENGINE_H

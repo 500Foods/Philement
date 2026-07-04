@@ -107,10 +107,8 @@ table.insert(queries,{sql=[[
         [=[
             -- DROP INDEX ${TABLE}_idx_last_accessed;
             -- DROP INDEX ${TABLE}_idx_created_at;
-
-            ${DROP_CHECK};
-
-            ${SUBQUERY_DELIMITER}
+            -- ${DROP_CHECK};
+            -- ${SUBQUERY_DELIMITER}
 
             DROP TABLE ${SCHEMA}${TABLE};
 

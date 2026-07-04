@@ -767,6 +767,22 @@ bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryR
         QueryResult* error_result = calloc(1, sizeof(QueryResult));
         if (error_result) {
             error_result->success = false;
+            /*
+             * Classify by SQLSTATE prefix: 08 = connection_exception,
+             * 40 = transaction_rollback (deadlock/serialization),
+             * 57 = operator_intervention (query cancelled or
+             * statement_timeout). These are transient and worth
+             * retrying. Everything else is a real error.
+             */
+            DatabaseErrorClass err_class = DB_ERR_OTHER;
+            if (sql_state[0] == '0' && sql_state[1] == '8') {
+                err_class = DB_ERR_TRANSPORT;
+            } else if (sql_state[0] == '4' && sql_state[1] == '0') {
+                err_class = DB_ERR_TRANSPORT;
+            } else if (sql_state[0] == '5' && sql_state[1] == '7') {
+                err_class = DB_ERR_TIMEOUT;
+            }
+            error_result->error_class = err_class;
             error_result->error_message = error_message;
             error_result->row_count = 0;
             error_result->column_count = 0;

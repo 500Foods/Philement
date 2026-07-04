@@ -75,6 +75,10 @@ void test_register_null_query_id_uses_placeholder(void);
 void test_cancel_inflight_invoked_on_first_expiry(void);
 void test_cancel_inflight_not_invoked_when_not_expired(void);
 void test_cancel_inflight_invoked_only_once_per_entry(void);
+void test_retry_transport_error_succeeds_on_second_attempt(void);
+void test_retry_no_attempt_for_other_error(void);
+void test_retry_zero_when_max_retries_zero(void);
+void test_retry_exhausts_max_retries_on_persistent_transport(void);
 
 void setUp(void) {
     mock_logging_reset_all();

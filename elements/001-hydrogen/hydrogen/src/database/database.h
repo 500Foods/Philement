@@ -51,6 +51,31 @@ typedef enum {
     DB_QUERY_CONNECTION_LOST
 } DatabaseQueryStatus;
 
+/*
+ * Error class for the retry layer in database_engine_execute.
+ * Engines set this on every QueryResult they return so the
+ * abstraction layer can decide whether a failure is worth retrying.
+ *
+ * DB_ERR_NONE          - success or unset; never retry
+ * DB_ERR_TRANSPORT     - network/connection error, may be transient;
+ *                        retryable. Examples: connection reset, broken
+ *                        pipe, server unreachable mid-query, deadlock
+ *                        victim (40xxx in SQLSTATE terms).
+ * DB_ERR_TIMEOUT       - query exceeded its timeout; may be transient
+ *                        if the workload is bursty. Retryable.
+ * DB_ERR_OTHER         - anything else (syntax error, schema mismatch,
+ *                        constraint violation, auth failure, etc.).
+ *                        The retry layer does NOT retry these - if we
+ *                        generated the error on purpose in a test, or
+ *                        if the SQL is bad, retrying just wastes time.
+ */
+typedef enum {
+    DB_ERR_NONE = 0,
+    DB_ERR_TRANSPORT,
+    DB_ERR_TIMEOUT,
+    DB_ERR_OTHER
+} DatabaseErrorClass;
+
 // Transaction isolation levels
 typedef enum {
     DB_ISOLATION_READ_UNCOMMITTED = 0,
@@ -84,6 +109,18 @@ struct QueryRequest {
     DatabaseIsolationLevel isolation_level;
     bool use_prepared_statement;
     char* prepared_statement_name;
+    /*
+     * Number of additional attempts the engine abstraction layer
+     * will make on transport/timeout failures before giving up.
+     * 0 (the default) means no retry. Each retry uses the same
+     * timeout_seconds value as the initial attempt; the backoff
+     * between attempts is 1s, 2s, 4s, ... (capped at 30s).
+     *
+     * The retry layer consults QueryResult.error_class to decide
+     * whether a failure is worth retrying - syntax and constraint
+     * errors are NOT retried, only DB_ERR_TRANSPORT and DB_ERR_TIMEOUT.
+     */
+    int max_retries;
 };
 
 // Query result structure
@@ -96,6 +133,13 @@ struct QueryResult {
     char* error_message;
     time_t execution_time_ms;
     int affected_rows;
+    /*
+     * Coarse classification of the failure (when success is false).
+     * The retry layer in database_engine_execute inspects this to
+     * decide whether to retry. See DatabaseErrorClass for the full
+     * taxonomy. Always DB_ERR_NONE for a successful result.
+     */
+    DatabaseErrorClass error_class;
 };
 
 // Prepared statement structure

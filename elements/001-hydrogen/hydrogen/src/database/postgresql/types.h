@@ -32,6 +32,8 @@ typedef int (*PQping_t)(const char* conninfo);
 typedef void* (*PQgetCancel_t)(void* conn);
 typedef int (*PQcancel_t)(void* cancel, char* errbuf, int errbufsize);
 typedef void (*PQfreeCancel_t)(void* cancel);
+// Extract a field from a PGresult (returns NULL if the field is not present)
+typedef char* (*PQresultErrorField_t)(void* res, int fieldcode);
 
 // Constants (defined since we can't include libpq-fe.h)
 #define CONNECTION_OK 0

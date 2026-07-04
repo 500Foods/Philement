@@ -89,10 +89,19 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
      * (default 30s). The watchdog's own set_bounds at init time has
      * already clamped the config value to the [min, max] window so the
      * raw value here is safe to pass through to register().
+     *
+     * max_retries is read from app_config->databases.bootstrap_retries
+     * (default 3) so a transient network hiccup doesn't fail the
+     * entire bootstrap. The engine abstraction layer's retry path
+     * only retries on DB_ERR_TRANSPORT and DB_ERR_TIMEOUT - schema,
+     * syntax, and constraint errors fail immediately.
      */
     request->timeout_seconds = app_config
                                    ? app_config->databases.bootstrap_timeout_seconds
                                    : 30;
+    request->max_retries = app_config
+                               ? app_config->databases.bootstrap_retries
+                               : 3;
     request->isolation_level = DB_ISOLATION_READ_COMMITTED;
     request->use_prepared_statement = false;
 
@@ -168,6 +177,7 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
                             drop_request->sql_template = strdup(drop_sql);
                             drop_request->parameters_json = strdup("{}");
                             drop_request->timeout_seconds = request->timeout_seconds;
+                            drop_request->max_retries = request->max_retries;
                             drop_request->isolation_level = DB_ISOLATION_READ_COMMITTED;
                             drop_request->use_prepared_statement = false;
 

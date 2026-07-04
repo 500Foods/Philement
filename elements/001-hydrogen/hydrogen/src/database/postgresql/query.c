@@ -31,7 +31,7 @@ extern PQgetvalue_t PQgetvalue_ptr;
 extern PQcmdTuples_t PQcmdTuples_ptr;
 extern PQerrorMessage_t PQerrorMessage_ptr;
 extern PQexecPrepared_t PQexecPrepared_ptr;
-
+extern PQresultErrorField_t PQresultErrorField_ptr;
 // PostgreSQL type OIDs for common types
 #define POSTGRES_INT2OID 21    // smallint
 #define POSTGRES_INT4OID 23    // integer
@@ -278,11 +278,37 @@ bool postgresql_execute_query(DatabaseHandle* connection, QueryRequest* request,
             log_this(designator, "PostgreSQL execute_query: Cleaning up failed query result", LOG_LEVEL_TRACE, 0);
             PQclear_ptr(pg_result);
         }
+        // Build a timeout result so the engine abstraction layer's
+        // retry path can see error_class=DB_ERR_TIMEOUT and retry.
+        QueryResult* timeout_failure = calloc(1, sizeof(QueryResult));
+        if (timeout_failure) {
+            timeout_failure->success = false;
+            timeout_failure->error_class = DB_ERR_TIMEOUT;
+            timeout_failure->error_message = strdup("PostgreSQL query exceeded statement_timeout");
+            timeout_failure->data_json = strdup("[]");
+            *result = timeout_failure;
+        }
         return false;
     }
 
     if (!pg_result) {
         log_this(designator, "PostgreSQL execute_query: PQexec returned NULL", LOG_LEVEL_ERROR, 0);
+        // PQexec returns NULL when the connection is broken mid-query
+        // (e.g. server reset, network drop). Build a transport result
+        // so the retry layer can recover.
+        QueryResult* null_result = calloc(1, sizeof(QueryResult));
+        if (null_result) {
+            null_result->success = false;
+            null_result->error_class = DB_ERR_TRANSPORT;
+            const char* conn_err = (pg_conn->connection && PQerrorMessage_ptr)
+                                       ? PQerrorMessage_ptr(pg_conn->connection)
+                                       : NULL;
+            null_result->error_message = strdup(conn_err && *conn_err
+                                                    ? conn_err
+                                                    : "PostgreSQL PQexec returned NULL (connection broken)");
+            null_result->data_json = strdup("[]");
+            *result = null_result;
+        }
         return false;
     }
 
@@ -300,10 +326,36 @@ bool postgresql_execute_query(DatabaseHandle* connection, QueryRequest* request,
             error_message = strdup("PostgreSQL query execution failed (no error details)");
         }
 
+        /*
+         * Classify the error from the SQLSTATE prefix. Classes 08
+         * (connection_exception), 40 (transaction_rollback, including
+         * serialization_failure and deadlock_detected), and 53
+         * (insufficient_resources) are transient. Class 57 is
+         * operator_intervention (e.g. query_canceled by the admin
+         * or statement_timeout) - we treat it as a timeout-class
+         * transient failure. Everything else is a real error.
+         */
+        const char* sqlstate = PQresultErrorField_ptr
+                                    ? PQresultErrorField_ptr(pg_result, 'C' /* PG_DIAG_SQLSTATE */)
+                                    : NULL;
+        DatabaseErrorClass err_class = DB_ERR_OTHER;
+        if (sqlstate && sqlstate[0] != '\0') {
+            if (sqlstate[0] == '0' && sqlstate[1] == '8') {
+                err_class = DB_ERR_TRANSPORT;
+            } else if (sqlstate[0] == '4' && sqlstate[1] == '0') {
+                err_class = DB_ERR_TRANSPORT; // deadlock / serialization
+            } else if (sqlstate[0] == '5' && sqlstate[1] == '3') {
+                err_class = DB_ERR_TRANSPORT; // insufficient resources
+            } else if (sqlstate[0] == '5' && sqlstate[1] == '7') {
+                err_class = DB_ERR_TIMEOUT;
+            }
+        }
+
         // Create error result
         QueryResult* error_result = calloc(1, sizeof(QueryResult));
         if (error_result) {
             error_result->success = false;
+            error_result->error_class = err_class;
             error_result->error_message = error_message;
             error_result->row_count = 0;
             error_result->column_count = 0;
