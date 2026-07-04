@@ -93,7 +93,6 @@ void test_lua_create_context_installs_H_table(void) {
 
     static const char* subtables[] = {
         "log", "system", "gc",
-        "query", "altquery", "authquery", "wait",
         "http", "llm", "mail", "notify",
         "scoreboard",
         NULL
@@ -120,6 +119,20 @@ void test_lua_create_context_installs_H_table(void) {
     lua_getfield(L, -1, "shutdown_requested");
     TEST_ASSERT_TRUE_MESSAGE(lua_isfunction(L, -1), "H.shutdown_requested");
     lua_pop(L, 1);
+
+    // Phase 13: H.query, H.altquery, H.authquery, H.wait, and the
+    // sync wrappers are top-level functions on H, replacing their
+    // Phase 3 placeholder sub-tables.
+    static const char* query_funcs[] = {
+        "query", "altquery", "authquery", "wait",
+        "query_sync", "altquery_sync", "authquery_sync",
+        NULL
+    };
+    for (int i = 0; query_funcs[i] != NULL; i++) {
+        lua_getfield(L, -1, query_funcs[i]);
+        TEST_ASSERT_TRUE_MESSAGE(lua_isfunction(L, -1), query_funcs[i]);
+        lua_pop(L, 1);
+    }
 
     lua_pop(L, 1); // pop H table
     H_lua_destroy_context(L);

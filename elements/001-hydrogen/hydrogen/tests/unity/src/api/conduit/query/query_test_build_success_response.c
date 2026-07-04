@@ -98,6 +98,11 @@ void test_build_success_response_basic_empty(void) {
     json_t* exec_time = json_object_get(response, "execution_time_ms");
     TEST_ASSERT_EQUAL_INT(100, json_integer_value(exec_time));
 
+    // Verify affected_rows (Phase 14: must be exposed in the response)
+    json_t* affected_rows = json_object_get(response, "affected_rows");
+    TEST_ASSERT_NOT_NULL(affected_rows);
+    TEST_ASSERT_EQUAL_INT(0, json_integer_value(affected_rows));
+
     // Verify queue
     json_t* queue = json_object_get(response, "queue_used");
     TEST_ASSERT_EQUAL_STRING("fast", json_string_value(queue));
@@ -111,7 +116,7 @@ void test_build_success_response_with_data(void) {
     char queue2[] = "medium";
     MockQueryCacheEntry cache_entry = {456, NULL, NULL, queue2, 30, 0, 0};
     char data_json[] = "[{\"id\":1,\"name\":\"test\"}]";
-    MockQueryResult result = {true, data_json, 1, 2, NULL, NULL, 200, 1};
+    MockQueryResult result = {true, data_json, 1, 2, NULL, NULL, 200, 7};
     char queue_type2[] = "medium";
     MockDatabaseQueue selected_queue = { .database_name = NULL, .connection_string = NULL, .engine_type = DB_ENGINE_POSTGRESQL, .queue_type = queue_type2 };
 
@@ -134,6 +139,11 @@ void test_build_success_response_with_data(void) {
     // Description should be empty string if NULL
     json_t* desc = json_object_get(response, "description");
     TEST_ASSERT_EQUAL_STRING("", json_string_value(desc));
+
+    // Verify affected_rows round-trips from QueryResult to response (Phase 14)
+    json_t* affected_rows = json_object_get(response, "affected_rows");
+    TEST_ASSERT_NOT_NULL(affected_rows);
+    TEST_ASSERT_EQUAL_INT(7, json_integer_value(affected_rows));
 
     json_decref(response);
 }

@@ -73,6 +73,36 @@ static void* scripting_worker_thread(void* arg);
 static void scripting_worker_process_one(ScriptingWorkerPool* pool,
                                           const char* job_id);
 static bool scripting_worker_should_exit(ScriptingWorkerPool* pool);
+static void scripting_signal_waiter_if_present(ScoreboardEntry* entry,
+                                                const char* job_id);
+
+/*
+ * Phase 12: if the job has a waiter attached, log a marker.
+ *
+ * The real wake-up (H_Handle signal, condvar broadcast) lands in
+ * Phase 13. For now we only log so the test suite can verify that
+ * the worker actually fires the post-terminal-status hook. The
+ * marker is at LOG_LEVEL_TRACE because it is expected in normal
+ * operation (any job with a waiter will produce one), and the
+ * scoreboard API shape is the unit-tested surface, not the log
+ * line.
+ *
+ * `entry` is the local entry copy that the worker took via
+ * scoreboard_find; its has_waiter / waiter_handle / result_ref
+ * fields are the snapshot we act on. This matches the worker's
+ * general "read the entry copy, act on it" pattern and avoids a
+ * second scoreboard lookup.
+ */
+static void scripting_signal_waiter_if_present(ScoreboardEntry* entry,
+                                                const char* job_id) {
+    if (!entry || !entry->has_waiter) {
+        return;
+    }
+    log_this(SR_SCRIPTING,
+             "Worker [%s]: would signal waiter handle=%p result_ref=%p",
+             LOG_LEVEL_TRACE, 3, job_id,
+             entry->waiter_handle, entry->result_ref);
+}
 
 /*
  * Initialize the worker pool. See worker_pool.h.
@@ -487,6 +517,13 @@ static void scripting_worker_process_one(ScriptingWorkerPool* pool,
         lua_pop(L, 1);
         scoreboard_update_status(scripting_scoreboard, job_id, terminal);
     }
+
+    // Phase 12: signal any attached waiter. The scoreboard entry is
+    // now in a terminal state, so a waiter (e.g. a future H.wait
+    // call) is allowed to see the final result. Phase 13 will
+    // replace the log marker in scripting_signal_waiter_if_present
+    // with a real H_Handle signal.
+    scripting_signal_waiter_if_present(entry, job_id);
 
     H_lua_destroy_context(L);
     scoreboard_entry_free(entry);

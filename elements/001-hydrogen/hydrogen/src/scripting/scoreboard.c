@@ -611,3 +611,123 @@ void scoreboard_list_free(ScoreboardEntry** list, size_t count) {
     }
     free(list);
 }
+
+/*
+ * Phase 12: attach a waiter to a job. See scoreboard.h for the
+ * contract. POD pointers, so the critical section only sets three
+ * fields; no allocations, no strdups.
+ *
+ * Idempotency: a second attach is a no-op (first writer wins). This
+ * matches the submitter's typical pattern ("attach if not already
+ * attached") and prevents a racing attach from clobbering a waiter
+ * that is already in place.
+ */
+bool scoreboard_attach_waiter(Scoreboard* sb,
+                             const char* job_id,
+                             void* waiter_handle,
+                             void* result_ref) {
+    if (!sb || !job_id) {
+        return false;
+    }
+    if (!waiter_handle && !result_ref) {
+        // A "tag only" attach (no handle, no result) is not useful
+        // and would surprise the worker (which would log a
+        // "would signal waiter" marker with a NULL handle). Reject.
+        return false;
+    }
+
+    bool found = false;
+    pthread_mutex_lock(&sb->mutex);
+    for (size_t i = 0; i < sb->count; i++) {
+        ScoreboardEntry* entry = &sb->entries[i];
+        if (strcmp(entry->job_id, job_id) != 0) {
+            continue;
+        }
+        if (!entry->has_waiter) {
+            // First writer wins. We deliberately do not overwrite a
+            // waiter that is already attached, even if the caller
+            // passed different pointers - the submitter that raced
+            // ahead is the authoritative owner of the waiter slot.
+            entry->has_waiter = true;
+            entry->waiter_handle = waiter_handle;
+            entry->result_ref = result_ref;
+        }
+        found = true;
+        break;
+    }
+    pthread_mutex_unlock(&sb->mutex);
+    return found;
+}
+
+/*
+ * Phase 12: read the waiter fields. The scoreboard mutex is held
+ * only long enough to copy three POD fields, so callers can read
+ * the snapshot and then do their own blocking work (e.g. condvar
+ * wait) without holding the scoreboard lock.
+ */
+bool scoreboard_get_waiter(Scoreboard* sb,
+                           const char* job_id,
+                           bool* out_has_waiter,
+                           void** out_handle,
+                           void** out_result) {
+    if (out_has_waiter) {
+        *out_has_waiter = false;
+    }
+    if (out_handle) {
+        *out_handle = NULL;
+    }
+    if (out_result) {
+        *out_result = NULL;
+    }
+    if (!sb || !job_id || !out_has_waiter) {
+        return false;
+    }
+
+    bool found = false;
+    pthread_mutex_lock(&sb->mutex);
+    for (size_t i = 0; i < sb->count; i++) {
+        ScoreboardEntry* entry = &sb->entries[i];
+        if (strcmp(entry->job_id, job_id) != 0) {
+            continue;
+        }
+        *out_has_waiter = entry->has_waiter;
+        if (out_handle) {
+            *out_handle = entry->waiter_handle;
+        }
+        if (out_result) {
+            *out_result = entry->result_ref;
+        }
+        found = true;
+        break;
+    }
+    pthread_mutex_unlock(&sb->mutex);
+    return found;
+}
+
+/*
+ * Phase 12: clear the waiter fields. Use with care; in v1 there
+ * is no caller that needs this (Phase 13's H_Handle lifecycle owns
+ * its own cleanup), but the C API is in place for future REST
+ * cancel-after-wait paths and for Unity tests that want to assert
+ * the "no waiter" state directly.
+ */
+bool scoreboard_clear_waiter(Scoreboard* sb, const char* job_id) {
+    if (!sb || !job_id) {
+        return false;
+    }
+    bool found = false;
+    pthread_mutex_lock(&sb->mutex);
+    for (size_t i = 0; i < sb->count; i++) {
+        ScoreboardEntry* entry = &sb->entries[i];
+        if (strcmp(entry->job_id, job_id) != 0) {
+            continue;
+        }
+        entry->has_waiter = false;
+        entry->waiter_handle = NULL;
+        entry->result_ref = NULL;
+        found = true;
+        break;
+    }
+    pthread_mutex_unlock(&sb->mutex);
+    return found;
+}

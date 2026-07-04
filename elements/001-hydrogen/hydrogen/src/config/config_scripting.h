@@ -41,6 +41,8 @@ typedef struct ScriptingConfig {
     char* DefaultDatabase;                                 // Optional default database name for H.query
     int DefaultQueryTimeout;                               // Default timeout in seconds for query/HTTP/LLM handles and service tokens
     int DefaultMaxRuntime;                                 // Default per-job max runtime in seconds
+    int DefaultHTTPTimeout;                                // Default timeout in seconds for H.http.get/H.http.post (Phase 16)
+    int HTTPWorkerCount;                                   // Number of HTTP worker threads for async H.http fan-out (Phase 17)
     int InstructionHookInterval;                            // Frequency of scoreboard updates in VM instructions
     int MemorySampleEveryNHooks;                           // Sample lua_gc memory every N hook calls (default 20)
     int MemorySoftLimitKB;                                 // Default soft memory limit in KB; warning + GC hint

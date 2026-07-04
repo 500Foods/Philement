@@ -28,20 +28,33 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <time.h>
+#include <math.h>
 
 // Third-party includes
 #include <lua.h>
 #include <lauxlib.h>
 #include <lualib.h>
+#include <jansson.h>
 
 // Local includes
 #include "scripting_api.h"
 #include "lua_context.h"   // H_lua_job_context, H_lua_get_job_context
 #include "scoreboard.h"     // scoreboard_update_current_state
 #include "scripting.h"      // scripting_system_shutdown, scripting_scoreboard
+#include "scripting_handle.h" // H_Handle, H_Handle_new/free/check
 #include "source_cache.h"   // source_cache_get/put
 #include "orchestrator.h"   // scripting_fetch_script_source
 #include "worker_pool.h"    // scripting_submit_job_with_source
+
+// Phase 13 includes
+#include <src/api/conduit/conduit_helpers.h>   // generate_query_id
+#include <src/api/auth/auth_service.h>         // validate_jwt, jwt_claims_t
+
+// Phase 16 includes
+#include <curl/curl.h>                         // curl_slist, curl_slist_append/free_all
+#include "http_client.h"                       // scripting_http_get/_post
+#include "http_pool.h"                         // scripting_http_pool_submit (Phase 17)
+#include "src/api/auth/oidc_rp/oidc_rp_http.h" // OidcRpHttpResponse, oidc_rp_http_response_free
 
 // H.log.* implementations //////////////////////////////////////////////////
 
@@ -978,4 +991,1462 @@ void H_lua_install_package(lua_State* L) {
     lua_seti(L, -2, (lua_Integer)lua_rawlen(L, -2) + 1);
 
     lua_pop(L, 2); // pop package.searchers and package
+}
+
+// ----------------------------------------------------------------------------
+// Phase 13: H.query / H.altquery / H.authquery / H.wait
+// ----------------------------------------------------------------------------
+
+/*
+ * Convert a Lua table at `arg` to Hydrogen's parameter_json format.
+ *
+ * Lua value -> typed JSON mapping:
+ *   integer number -> INTEGER
+ *   non-integer number -> FLOAT
+ *   string -> STRING
+ *   boolean -> BOOLEAN
+ *   nil fields are omitted
+ *   nested tables / functions / userdata are skipped with a log
+ *
+ * Returns a heap-allocated JSON string (caller frees) or NULL on
+ * error. The JSON object has keys INTEGER, STRING, BOOLEAN, FLOAT;
+ * only the type groups that have at least one entry are emitted.
+ *
+ * The "skip and log" behavior for unsupported types is deliberate:
+ * the host log path is a leaf (Phase 6 rule). A bad param value
+ * becomes a partial JSON object (with the bad fields omitted) rather
+ * than a hard failure, so a script with one bad param out of ten
+ * still gets its nine valid params through to the engine.
+ */
+static char* H_lua_params_to_json(lua_State* L, int arg) {
+    if (!lua_istable(L, arg)) {
+        return NULL;
+    }
+
+    json_t* int_obj = json_object();
+    json_t* str_obj = json_object();
+    json_t* bool_obj = json_object();
+    json_t* float_obj = json_object();
+    if (!int_obj || !str_obj || !bool_obj || !float_obj) {
+        if (int_obj) json_decref(int_obj);
+        if (str_obj) json_decref(str_obj);
+        if (bool_obj) json_decref(bool_obj);
+        if (float_obj) json_decref(float_obj);
+        return NULL;
+    }
+
+    int idx = 0;
+    lua_pushnil(L);
+    while (lua_next(L, arg) != 0) {
+        // key at -2, value at -1
+        const char* key = lua_tostring(L, -2);
+        if (!key) {
+            lua_pop(L, 1);
+            continue;
+        }
+        int t = lua_type(L, -1);
+        if (t == LUA_TNUMBER) {
+            double d = lua_tonumber(L, -1);
+            // Use lua_tointegerx for safe integer detection
+            int is_int = 0;
+            lua_Integer li = lua_tointegerx(L, -1, &is_int);
+            if (is_int) {
+                json_object_set_new(int_obj, key, json_integer(li));
+            } else {
+                json_object_set_new(float_obj, key, json_real(d));
+            }
+        } else if (t == LUA_TSTRING) {
+            const char* s = lua_tostring(L, -1);
+            json_object_set_new(str_obj, key, json_string(s ? s : ""));
+        } else if (t == LUA_TBOOLEAN) {
+            json_object_set_new(bool_obj, key, json_boolean(lua_toboolean(L, -1)));
+        } else if (t == LUA_TNIL) {
+            // omit
+        } else {
+            log_this(SR_LUA,
+                     "H.*query: skipping unsupported param type for key '%s'",
+                     LOG_LEVEL_ALERT, 1, key);
+        }
+        lua_pop(L, 1); // pop value, keep key for next iteration
+        idx++;
+        if (idx > 1000) {
+            log_this(SR_LUA, "H.*query: params table too large (>1000 entries)",
+                     LOG_LEVEL_ALERT, 0);
+            break;
+        }
+    }
+
+    json_t* root = json_object();
+    if (json_object_size(int_obj) > 0) {
+        json_object_set_new(root, "INTEGER", int_obj);
+    } else {
+        json_decref(int_obj);
+    }
+    if (json_object_size(str_obj) > 0) {
+        json_object_set_new(root, "STRING", str_obj);
+    } else {
+        json_decref(str_obj);
+    }
+    if (json_object_size(bool_obj) > 0) {
+        json_object_set_new(root, "BOOLEAN", bool_obj);
+    } else {
+        json_decref(bool_obj);
+    }
+    if (json_object_size(float_obj) > 0) {
+        json_object_set_new(root, "FLOAT", float_obj);
+    } else {
+        json_decref(float_obj);
+    }
+
+    char* out = json_dumps(root, JSON_COMPACT);
+    json_decref(root);
+    return out;
+}
+
+/*
+ * Convert a data_json string (JSON array of row objects) to a Lua
+ * table. The pushed table has:
+ *   rows = { row1, row2, ... }  where each row is a Lua table with
+ *          column name keys and the column values.
+ *
+ * NULL values become Lua nil, numbers become Lua numbers, strings
+ * become Lua strings, booleans become Lua booleans. Objects (nested
+ * tables) are pushed as Lua tables recursively (shallow — one level
+ * is sufficient for flat result rows; nested objects are kept as
+ * Lua tables without further recursion into arrays).
+ *
+ * On JSON parse failure, pushes an empty rows table and logs the
+ * error. The caller (H.wait) decides whether to treat the parse
+ * failure as a handle error.
+ */
+static void push_json_value_as_lua(lua_State* L, json_t* val);
+
+static void push_json_object_as_table(lua_State* L, json_t* obj) {
+    if (!json_is_object(obj)) {
+        lua_pushnil(L);
+        return;
+    }
+    lua_newtable(L);
+    const char* key = NULL;
+    json_t* val = NULL;
+    json_object_foreach((json_t*)obj, key, val) {
+        push_json_value_as_lua(L, val);
+        lua_setfield(L, -2, key);
+    }
+}
+
+static void push_json_array_as_table(lua_State* L, json_t* arr) {
+    lua_newtable(L);
+    size_t idx = 0;
+    json_t* val = NULL;
+    size_t i = 1;
+    json_array_foreach((json_t*)arr, i, val) {
+        push_json_value_as_lua(L, val);
+        lua_rawseti(L, -2, (lua_Integer)idx + 1);
+        idx++;
+    }
+}
+
+static void push_json_value_as_lua(lua_State* L, json_t* val) {
+    if (!val) {
+        lua_pushnil(L);
+        return;
+    }
+    switch (json_typeof(val)) {
+    case JSON_NULL:
+        lua_pushnil(L);
+        break;
+    case JSON_TRUE:
+        lua_pushboolean(L, 1);
+        break;
+    case JSON_FALSE:
+        lua_pushboolean(L, 0);
+        break;
+    case JSON_INTEGER:
+        lua_pushinteger(L, (lua_Integer)json_integer_value(val));
+        break;
+    case JSON_REAL:
+        lua_pushnumber(L, (lua_Number)json_real_value(val));
+        break;
+    case JSON_STRING:
+        lua_pushstring(L, json_string_value(val));
+        break;
+    case JSON_ARRAY:
+        push_json_array_as_table(L, val);
+        break;
+    case JSON_OBJECT:
+        push_json_object_as_table(L, val);
+        break;
+    default:
+        lua_pushnil(L);
+        break;
+    }
+}
+
+/*
+ * Parse data_json (a JSON array string) and push a result table onto
+ * the Lua stack. The result table has:
+ *   rows           = { row1, row2, ... }
+ *   affected_rows  = N   (from the engine; 0 for SELECT or empty)
+ *
+ * On parse failure, pushes a table with rows = {} and logs the
+ * error. Returns 1 (number of values pushed).
+ *
+ * Exposed (non-static) so it can be tested directly via Unity. The
+ * project rule "Don't use static functions if possible as we can't
+ * test those" applies.
+ */
+int H_lua_build_result_table(lua_State* L, const char* data_json, int affected_rows) {
+    lua_newtable(L);
+    lua_pushstring(L, "rows");
+    if (data_json && *data_json) {
+        json_error_t err;
+        json_t* arr = json_loads(data_json, 0, &err);
+        if (arr && json_is_array(arr)) {
+            size_t n = json_array_size(arr);
+            lua_newtable(L); // rows
+            for (size_t i = 0; i < n; i++) {
+                push_json_value_as_lua(L, json_array_get(arr, i));
+                lua_rawseti(L, -2, (lua_Integer)(i + 1));
+            }
+            json_decref(arr);
+        } else {
+            log_this(SR_LUA, "H.*query: data_json parse failed: %s",
+                     LOG_LEVEL_ALERT, 1,
+                     arr ? "not a JSON array" : err.text);
+            if (arr) json_decref(arr);
+            lua_newtable(L); // empty rows
+        }
+    } else {
+        lua_newtable(L); // empty rows
+    }
+    lua_settable(L, -3);
+
+    // Phase 14: surface affected_rows from the engine. For write
+    // statements (UPDATE/INSERT/DELETE) this is the engine's reported
+    // count; for SELECTs it is 0. Atomic task-claim recipes rely on
+    // exactly-one-winner-sees-1 semantics, e.g.:
+    //   local res = H.wait(H.query(
+    //     [[ UPDATE tasks SET status='taken'
+    //            WHERE id=:id AND status='open' ]],
+    //     { id = task_id }))
+    //   if res.affected_rows == 1 then -- we own it
+    lua_pushstring(L, "affected_rows");
+    lua_pushinteger(L, (lua_Integer)affected_rows);
+    lua_settable(L, -3);
+
+    return 1;
+}
+
+/*
+ * Resolve the DatabaseQueue for a query. Returns NULL on failure and
+ * pushes an error string (the handle will pick it up as its error).
+ *
+ * For db_name == NULL: uses config->scripting.DefaultDatabase.
+ *   - If DefaultDatabase is set, uses it.
+ *   - If DefaultDatabase is empty and exactly one DB is configured,
+ *     uses that DB (single-DB fallback, matching orchestrator.c).
+ *   - Otherwise returns NULL with "no default database" error.
+ */
+static DatabaseQueue* resolve_db_queue(const char* db_name,
+                                        char** err_out) {
+    if (err_out) *err_out = NULL;
+
+    const char* target = db_name;
+    if (!target || !*target) {
+        if (!app_config) {
+            if (err_out) {
+                *err_out = strdup("H.query: no app_config available");
+            }
+            return NULL;
+        }
+        target = app_config->scripting.DefaultDatabase;
+        if (!target || !*target) {
+            // Single-DB fallback: with one database the choice is
+            // unambiguous (same pattern as orchestrator.c).
+            if (app_config->databases.connection_count == 1 &&
+                app_config->databases.connections[0].name &&
+                app_config->databases.connections[0].name[0] != '\0') {
+                target = app_config->databases.connections[0].name;
+            } else {
+                if (err_out) {
+                    *err_out = strdup("H.query: no database specified and no "
+                                      "scripting.DefaultDatabase configured");
+                }
+                return NULL;
+            }
+        }
+    }
+
+    if (!global_queue_manager) {
+        if (err_out) {
+            *err_out = strdup("H.query: database queue manager not available");
+        }
+        return NULL;
+    }
+
+    DatabaseQueue* dbq = database_queue_manager_get_database(
+        global_queue_manager, target);
+    if (!dbq) {
+        if (err_out) {
+            char buf[256];
+            snprintf(buf, sizeof(buf),
+                     "H.query: database '%s' not found", target);
+            *err_out = strdup(buf);
+        }
+        return NULL;
+    }
+    return dbq;
+}
+
+/*
+ * Submit a raw SQL query to the database queue. Creates a handle,
+ * submits, and pushes the handle userdata onto the Lua stack.
+ *
+ * On any failure (resolution, allocation, submit), pushes a handle
+ * whose `error` field is set, so H.wait will report the error
+ * without touching the queue. Returns 1 on success (one value
+ * pushed: the handle userdata) and 0 if a handle could not be
+ * pushed (caller must handle the empty stack).
+ */
+static int H_lua_submit_query(lua_State* L,
+                               const char* db_name,
+                               const char* sql,
+                               const char* params_json,
+                               int timeout_seconds __attribute__((unused)),
+                               const char* call_label) {
+    if (!L || !sql) {
+        H_Handle* h = H_Handle_new(L, H_HK_QUERY);
+        if (h) {
+            h->error = strdup("H.query: NULL sql argument");
+        }
+        return 1;
+    }
+
+    char* resolve_err = NULL;
+    DatabaseQueue* dbq = resolve_db_queue(db_name, &resolve_err);
+    if (!dbq) {
+        H_Handle* h = H_Handle_new(L, H_HK_QUERY);
+        if (h && resolve_err) {
+            h->error = resolve_err;
+        } else {
+            free(resolve_err);
+        }
+        return 1;
+    }
+
+    char* query_id = generate_query_id();
+    if (!query_id) {
+        H_Handle* h = H_Handle_new(L, H_HK_QUERY);
+        if (h) {
+            h->error = strdup("H.query: failed to generate query_id");
+        }
+        return 1;
+    }
+
+    DatabaseQuery db_query = {
+        .query_id = query_id,
+        .query_template = strdup(sql),
+        .parameter_json = params_json ? strdup(params_json) : NULL,
+        .queue_type_hint = 0,   // route to the default child queue
+        .submitted_at = time(NULL),
+        .processed_at = 0,
+        .retry_count = 0,
+        .error_message = NULL
+    };
+    if (!db_query.query_template) {
+        free(query_id);
+        free(db_query.parameter_json);
+        H_Handle* h = H_Handle_new(L, H_HK_QUERY);
+        if (h) {
+            h->error = strdup("H.query: failed to duplicate SQL");
+        }
+        return 1;
+    }
+
+    if (!database_queue_submit_query(dbq, &db_query)) {
+        free(query_id);
+        free(db_query.query_template);
+        free(db_query.parameter_json);
+        H_Handle* h = H_Handle_new(L, H_HK_QUERY);
+        if (h) {
+            char buf[128];
+            snprintf(buf, sizeof(buf), "%s: database submit failed", call_label);
+            h->error = strdup(buf);
+        }
+        return 1;
+    }
+
+    // Submit succeeded; build the success handle.
+    H_Handle* h = H_Handle_new(L, H_HK_QUERY);
+    if (!h) {
+        // Handle allocation failed after submit. The query is in
+        // flight; let the DQM process it. We leak the query_id
+        // intentionally to avoid a double-free race with the DQM.
+        return 0; // pushed nothing; caller must handle missing handle
+    }
+    h->query_id = query_id;        // takes ownership
+    h->db_queue = dbq;            // not owned
+    // query_template and parameter_json were consumed by the queue
+    // via serialization; do not free them here.
+    return 1;
+}
+
+/*
+ * Get the default query timeout from config. Falls back to 30s when
+ * config is unavailable or the value is non-positive.
+ */
+static int get_default_query_timeout(void) {
+    if (app_config && app_config->scripting.DefaultQueryTimeout > 0) {
+        return app_config->scripting.DefaultQueryTimeout;
+    }
+    return 30;
+}
+
+/*
+ * H.query(sql, params, opts?) -> handle
+ *
+ * Submits `sql` to config->scripting.DefaultDatabase. `params` is
+ * an optional Lua table of named parameters. `opts.timeout` (seconds)
+ * defaults to config->scripting.DefaultQueryTimeout (30s fallback).
+ */
+static int H_lua_query(lua_State* L) {
+    int nargs = lua_gettop(L);
+    if (nargs < 1) {
+        H_Handle* h = H_Handle_new(L, H_HK_QUERY);
+        if (h) h->error = strdup("H.query: missing sql argument");
+        return 1;
+    }
+    const char* sql = luaL_checkstring(L, 1);
+    if (!sql) {
+        H_Handle* h = H_Handle_new(L, H_HK_QUERY);
+        if (h) h->error = strdup("H.query: sql is not a string");
+        return 1;
+    }
+
+    char* params_json = NULL;
+    if (nargs >= 2 && !lua_isnil(L, 2)) {
+        params_json = H_lua_params_to_json(L, 2);
+    }
+
+    int timeout = get_default_query_timeout();
+    if (nargs >= 3 && lua_istable(L, 3)) {
+        lua_getfield(L, 3, "timeout");
+        if (lua_isnumber(L, -1)) {
+            int t = (int)lua_tonumber(L, -1);
+            if (t > 0) timeout = t;
+        }
+        lua_pop(L, 1);
+    }
+
+    int pushed = H_lua_submit_query(L, NULL, sql, params_json, timeout, "H.query");
+    free(params_json);
+    if (pushed == 0) {
+        // H_lua_submit_query could not allocate a handle after
+        // submitting the query. We have nothing to push; the caller
+        // (including the sync wrappers) detects this and returns an
+        // error without touching the queue.
+        return 0;
+    }
+    return pushed;
+}
+
+/*
+ * H.altquery(database_name, sql, params, opts?) -> handle
+ *
+ * Like H.query but the database name is explicit. database_name
+ * must be a non-empty string and must match a configured database.
+ */
+static int H_lua_altquery(lua_State* L) {
+    int nargs = lua_gettop(L);
+    if (nargs < 2) {
+        H_Handle* h = H_Handle_new(L, H_HK_QUERY);
+        if (h) {
+            h->error = strdup("H.altquery: missing database_name or sql argument");
+        }
+        return 1;
+    }
+    const char* db_name = luaL_checkstring(L, 1);
+    const char* sql = luaL_checkstring(L, 2);
+    if (!db_name || !*db_name) {
+        H_Handle* h = H_Handle_new(L, H_HK_QUERY);
+        if (h) h->error = strdup("H.altquery: database_name is empty");
+        return 1;
+    }
+    if (!sql) {
+        H_Handle* h = H_Handle_new(L, H_HK_QUERY);
+        if (h) h->error = strdup("H.altquery: sql is not a string");
+        return 1;
+    }
+
+    char* params_json = NULL;
+    if (nargs >= 3 && !lua_isnil(L, 3)) {
+        params_json = H_lua_params_to_json(L, 3);
+    }
+
+    int timeout = get_default_query_timeout();
+    if (nargs >= 4 && lua_istable(L, 4)) {
+        lua_getfield(L, 4, "timeout");
+        if (lua_isnumber(L, -1)) {
+            int t = (int)lua_tonumber(L, -1);
+            if (t > 0) timeout = t;
+        }
+        lua_pop(L, 1);
+    }
+
+    int pushed = H_lua_submit_query(L, db_name, sql, params_json, timeout, "H.altquery");
+    free(params_json);
+    if (pushed == 0) {
+        return 0;
+    }
+    return pushed;
+}
+
+/*
+ * Validate a JWT and return the database claim, or NULL on failure.
+ *
+ * This wraps the existing auth_service_jwt validator. The token
+ * must be a valid, non-expired, non-revoked JWT signed with
+ * Hydrogen's key. The `database` claim is extracted from the
+ * payload and returned as a strdup'd string (caller frees).
+ *
+ * If validation fails, *err_out is set to a human-readable error.
+ */
+static char* validate_jwt_and_get_db(const char* token, char** err_out) {
+    if (err_out) *err_out = NULL;
+    if (!token || !*token) {
+        if (err_out) *err_out = strdup("H.authquery: empty token");
+        return NULL;
+    }
+
+    jwt_validation_result_t result = validate_jwt(token, NULL);
+    if (!result.valid) {
+        if (err_out) {
+            char buf[256];
+            snprintf(buf, sizeof(buf),
+                     "H.authquery: JWT validation failed (error %d)",
+                     (int)result.error);
+            *err_out = strdup(buf);
+        }
+        if (result.claims) {
+            // free claims if provided
+        }
+        return NULL;
+    }
+    if (!result.claims || !result.claims->database ||
+        !*result.claims->database) {
+        if (err_out) {
+            *err_out = strdup("H.authquery: JWT has no database claim");
+        }
+        return NULL;
+    }
+    char* db = strdup(result.claims->database);
+    return db;
+}
+
+/*
+ * H.authquery(token, sql, params, opts?) -> handle
+ *
+ * Validates the JWT, extracts the database from its claims, and
+ * submits the query to that database. The token is also checked
+ * for revocation.
+ */
+static int H_lua_authquery(lua_State* L) {
+    int nargs = lua_gettop(L);
+    if (nargs < 2) {
+        H_Handle* h = H_Handle_new(L, H_HK_QUERY);
+        if (h) {
+            h->error = strdup("H.authquery: missing token or sql argument");
+        }
+        return 1;
+    }
+    const char* token = luaL_checkstring(L, 1);
+    const char* sql = luaL_checkstring(L, 2);
+    if (!token) {
+        H_Handle* h = H_Handle_new(L, H_HK_QUERY);
+        if (h) h->error = strdup("H.authquery: token is not a string");
+        return 1;
+    }
+    if (!sql) {
+        H_Handle* h = H_Handle_new(L, H_HK_QUERY);
+        if (h) h->error = strdup("H.authquery: sql is not a string");
+        return 1;
+    }
+
+    char* jwt_err = NULL;
+    char* db = validate_jwt_and_get_db(token, &jwt_err);
+    if (!db) {
+        H_Handle* h = H_Handle_new(L, H_HK_QUERY);
+        if (h && jwt_err) {
+            h->error = jwt_err;
+        } else {
+            free(jwt_err);
+        }
+        return 1;
+    }
+
+    char* params_json = NULL;
+    if (nargs >= 3 && !lua_isnil(L, 3)) {
+        params_json = H_lua_params_to_json(L, 3);
+    }
+
+    int timeout = get_default_query_timeout();
+    if (nargs >= 4 && lua_istable(L, 4)) {
+        lua_getfield(L, 4, "timeout");
+        if (lua_isnumber(L, -1)) {
+            int t = (int)lua_tonumber(L, -1);
+            if (t > 0) timeout = t;
+        }
+        lua_pop(L, 1);
+    }
+
+    int pushed = H_lua_submit_query(L, db, sql, params_json, timeout, "H.authquery");
+    free(db);
+    free(params_json);
+    if (pushed == 0) {
+        return 0;
+    }
+    return pushed;
+}
+
+/*
+ * Wait on a single handle and push the result/error pair. Returns 2
+ * (one result + one error). Dispatches on `handle->kind`:
+ *
+ *   H_HK_QUERY -> database_queue_await_result + build result table
+ *   H_HK_HTTP  -> blocking libcurl call + build result table (Phase 16)
+ *
+ * If the handle is in an error state or not yet consumed, pushes
+ * nil + error. The same shape is produced for both kinds so the
+ * caller (H.wait or a *_sync wrapper) can treat the two uniformly.
+ */
+// Forward declaration: H_lua_http_wait_one is defined further down
+// in the file but H_lua_wait_one dispatches on kind.
+static int H_lua_http_wait_one(lua_State* L, H_Handle* h);
+static int H_lua_wait_one(lua_State* L, H_Handle* h) {
+    if (!h) {
+        lua_pushnil(L);
+        lua_pushstring(L, "H.wait: invalid handle");
+        return 2;
+    }
+    if (h->consumed) {
+        lua_pushnil(L);
+        lua_pushstring(L, "H.wait: handle already consumed");
+        return 2;
+    }
+    if (h->error) {
+        lua_pushnil(L);
+        lua_pushstring(L, h->error);
+        h->consumed = true;
+        return 2;
+    }
+    if (h->kind == H_HK_HTTP) {
+        return H_lua_http_wait_one(L, h);
+    }
+    if (!h->query_id || !h->db_queue) {
+        lua_pushnil(L);
+        lua_pushstring(L, "H.wait: handle has no pending query");
+        h->consumed = true;
+        return 2;
+    }
+
+    // Look up the timeout from app_config (default 30s).
+    int timeout = get_default_query_timeout();
+
+    DatabaseQuery* result_q = database_queue_await_result(
+        h->db_queue, h->query_id, timeout);
+    if (!result_q) {
+        char buf[64];
+        snprintf(buf, sizeof(buf), "H.wait: timeout after %ds", timeout);
+        lua_pushnil(L);
+        lua_pushstring(L, buf);
+        h->consumed = true;
+        return 2;
+    }
+
+    h->consumed = true;
+
+    // Check for error_message.
+    if (result_q->error_message) {
+        lua_pushnil(L);
+        lua_pushstring(L, result_q->error_message);
+    } else {
+        // result_q->query_template holds the data_json (see
+        // database_queue_await_result docs). result_q->affected_rows
+        // is propagated from QueryResult.affected_rows by the await
+        // path (Phase 14).
+        H_lua_build_result_table(L, result_q->query_template, result_q->affected_rows);
+        lua_pushnil(L);
+    }
+
+    // Free the heap-allocated DatabaseQuery* from await_result.
+    free(result_q->query_id);
+    free(result_q->query_template);
+    free(result_q->error_message);
+    free(result_q);
+
+    return 2;
+}
+
+/*
+ * H.wait(handle1, handle2, ...) -> r1, r2, ..., rN, e1, e2, ..., eN
+ *
+ * Blocks until every handle is ready. For N handles, returns 2N
+ * values: N results, then N errors. Each result is a table (or nil
+ * on error); each error is a string (or nil on success).
+ *
+ * Handles are consumed after wait; a second wait on the same
+ * handle returns nil + "already consumed".
+ */
+static int H_lua_wait(lua_State* L) {
+    int n = lua_gettop(L);
+    if (n == 0) {
+        return 0;
+    }
+
+    H_Handle** handles = calloc((size_t)n, sizeof(H_Handle*));
+    char** errors = calloc((size_t)n, sizeof(char*));
+    if (!handles || !errors) {
+        free(handles);
+        free(errors);
+        for (int i = 0; i < n; i++) {
+            lua_pushnil(L);
+        }
+        for (int i = 0; i < n; i++) {
+            lua_pushstring(L, "H.wait: allocation failure");
+        }
+        return 2 * n;
+    }
+
+    for (int i = 0; i < n; i++) {
+        handles[i] = H_Handle_check(L, i + 1);
+    }
+
+    // Collect results and errors.
+    for (int i = 0; i < n; i++) {
+        H_Handle* h = handles[i];
+        if (!h) {
+            lua_pushnil(L);
+            errors[i] = strdup("H.wait: argument is not a valid handle");
+            continue;
+        }
+        if (h->consumed) {
+            lua_pushnil(L);
+            errors[i] = strdup("H.wait: handle already consumed");
+            continue;
+        }
+        if (h->error) {
+            lua_pushnil(L);
+            errors[i] = strdup(h->error);
+            h->consumed = true;
+            continue;
+        }
+        if (h->kind == H_HK_HTTP) {
+            // Phase 16: HTTP handles are resolved via
+            // H_lua_http_wait_one, which pushes 2 values (result,
+            // err) onto the stack. To keep the variadic loop's
+            // "one result per handle, errors[] on the side"
+            // invariant, we move the err string to errors[] and pop
+            // it from the stack, leaving the result table where
+            // the QUERY path's result table would be.
+            // H_lua_http_wait_one always returns 2 (it always
+            // pushes result + err). Move the err string to
+            // errors[] and pop it from the stack, leaving the
+            // result table where the QUERY path's result table
+            // would be.
+            (void)H_lua_wait_one(L, h);
+            if (lua_isnil(L, -1)) {
+                errors[i] = NULL;
+            } else if (lua_isstring(L, -1)) {
+                errors[i] = strdup(lua_tostring(L, -1));
+            } else {
+                errors[i] = NULL;
+            }
+            lua_pop(L, 1);
+            h->consumed = true;
+            continue;
+        }
+        if (!h->query_id || !h->db_queue) {
+            lua_pushnil(L);
+            errors[i] = strdup("H.wait: handle has no pending query");
+            h->consumed = true;
+            continue;
+        }
+
+        int timeout = get_default_query_timeout();
+        DatabaseQuery* result_q = database_queue_await_result(
+            h->db_queue, h->query_id, timeout);
+        h->consumed = true;
+        if (!result_q) {
+            char buf[64];
+            snprintf(buf, sizeof(buf), "H.wait: timeout after %ds", timeout);
+            lua_pushnil(L);
+            errors[i] = strdup(buf);
+            continue;
+        }
+        if (result_q->error_message) {
+            lua_pushnil(L);
+            errors[i] = strdup(result_q->error_message);
+        } else {
+            H_lua_build_result_table(L, result_q->query_template, result_q->affected_rows);
+            errors[i] = NULL; // success
+        }
+        free(result_q->query_id);
+        free(result_q->query_template);
+        free(result_q->error_message);
+        free(result_q);
+    }
+
+    // Push the error strings (N values, one per handle).
+    for (int i = 0; i < n; i++) {
+        if (errors[i]) {
+            lua_pushstring(L, errors[i]);
+        } else {
+            lua_pushnil(L);
+        }
+        free(errors[i]);
+    }
+
+    free(handles);
+    free(errors);
+    return 2 * n;
+}
+
+/*
+ * H.query_sync(sql, params, opts?) -> result, err
+ * H.altquery_sync(database_name, sql, params, opts?) -> result, err
+ * H.authquery_sync(token, sql, params, opts?) -> result, err
+ *
+ * Convenience wrappers: submit + wait in one call. Return
+ * (result, err) directly: result is a table on success or nil on
+ * error; err is a string on error or nil on success.
+ */
+static int H_lua_query_sync(lua_State* L) {
+    int n_pushed = H_lua_query(L);
+    // H_lua_query pushed 1 handle. Now wait on it.
+    if (n_pushed == 0) {
+        lua_pushnil(L);
+        lua_pushstring(L, "H.query_sync: handle allocation failed");
+        return 2;
+    }
+    // The handle is at the top of the stack.
+    H_Handle* h = H_Handle_check(L, -1);
+    if (!h) {
+        lua_pop(L, 1); // pop bad handle
+        lua_pushnil(L);
+        lua_pushstring(L, "H.query_sync: handle creation failed");
+        return 2;
+    }
+    int n = H_lua_wait_one(L, h);
+    // H_lua_wait_one pushed 2 values (result, err). The handle is
+    // still on the stack below them. Pop the handle.
+    lua_remove(L, -(n + 1));
+    return n;
+}
+
+static int H_lua_altquery_sync(lua_State* L) {
+    int n_pushed = H_lua_altquery(L);
+    if (n_pushed == 0) {
+        lua_pushnil(L);
+        lua_pushstring(L, "H.altquery_sync: handle allocation failed");
+        return 2;
+    }
+    H_Handle* h = H_Handle_check(L, -1);
+    if (!h) {
+        lua_pop(L, 1);
+        lua_pushnil(L);
+        lua_pushstring(L, "H.altquery_sync: handle creation failed");
+        return 2;
+    }
+    int n = H_lua_wait_one(L, h);
+    lua_remove(L, -(n + 1));
+    return n;
+}
+
+static int H_lua_authquery_sync(lua_State* L) {
+    int n_pushed = H_lua_authquery(L);
+    if (n_pushed == 0) {
+        lua_pushnil(L);
+        lua_pushstring(L, "H.authquery_sync: handle allocation failed");
+        return 2;
+    }
+    H_Handle* h = H_Handle_check(L, -1);
+    if (!h) {
+        lua_pop(L, 1);
+        lua_pushnil(L);
+        lua_pushstring(L, "H.authquery_sync: handle creation failed");
+        return 2;
+    }
+    int n = H_lua_wait_one(L, h);
+    lua_remove(L, -(n + 1));
+    return n;
+}
+
+/*
+ * Convert a Lua headers table (string -> string) into a libcurl
+ * `struct curl_slist*` of "Name: Value" header lines. NULL is
+ * returned when the argument is not a table or when the table is
+ * empty (NULL is a valid slist for libcurl, meaning "no extra
+ * headers beyond libcurl's default Accept").
+ *
+ * Phase 16. The caller is responsible for `curl_slist_free_all` on
+ * the returned slist; the OIDC helper does this on its own
+ * `_with_headers_slist` paths.
+ */
+static struct curl_slist* H_lua_headers_to_slist(lua_State* L, int idx) {
+    if (!lua_istable(L, idx)) {
+        return NULL;
+    }
+    struct curl_slist* list = NULL;
+
+    // Push nil so the first lua_next returns the first key.
+    lua_pushnil(L);
+    while (lua_next(L, idx) != 0) {
+        // Stack: ... key value
+        const char* name = NULL;
+        const char* value = NULL;
+        size_t name_len = 0;
+        size_t value_len = 0;
+
+        if (lua_isstring(L, -2)) {
+            name = lua_tolstring(L, -2, &name_len);
+        }
+        if (lua_isstring(L, -1)) {
+            value = lua_tolstring(L, -1, &value_len);
+        }
+        if (name && value && name_len > 0) {
+            // Build "Name: Value" header. libcurl tolerates long lines
+            // but we cap at 8 KiB to avoid runaway allocations from
+            // hostile scripts.
+            size_t buf_len = name_len + value_len + 4; // ": " + NUL + slack
+            if (buf_len > 8192) {
+                log_this(SR_LUA,
+                         "H_lua_headers_to_slist: header '%s' too long (%zu bytes), skipping",
+                         LOG_LEVEL_ALERT, 2, name, name_len + value_len);
+            } else {
+                char* header = malloc(buf_len);
+                if (header) {
+                    // snprintf: "Name: Value\0"
+                    int n = snprintf(header, buf_len, "%s: %s", name, value);
+                    if (n > 0 && (size_t)n < buf_len) {
+                        list = curl_slist_append(list, header);
+                    }
+                    free(header);
+                }
+            }
+        } else {
+            log_this(SR_LUA,
+                     "H_lua_headers_to_slist: skipping non-string header (key or value)",
+                     LOG_LEVEL_ALERT, 0);
+        }
+        // Pop value, keep key for next iteration.
+        lua_pop(L, 1);
+    }
+    return list;
+}
+
+/*
+ * Extract an integer `opts.timeout` from a Lua opts table at `idx`.
+ * Returns -1 when the opts arg is not a table, missing, or has a
+ * non-number timeout. Caller treats -1 as "use config default".
+ */
+static int H_lua_opts_timeout(lua_State* L, int idx) {
+    if (!lua_istable(L, idx)) {
+        return -1;
+    }
+    lua_getfield(L, idx, "timeout");
+    int result = -1;
+    if (lua_isnumber(L, -1)) {
+        double v = lua_tonumber(L, -1);
+        if (v > 0 && v <= (double)INT_MAX) {
+            result = (int)v;
+        }
+    }
+    lua_pop(L, 1);
+    return result;
+}
+
+/*
+ * H.http.get(url, headers?, opts?) -> handle
+ *
+ * Phase 16: returns an H_Handle of kind H_HK_HTTP. H.wait on the
+ * handle performs the blocking libcurl call and pushes a result
+ * table { status, headers, body, elapsed_ms }.
+ *
+ * url          string, required
+ * headers      table of string->string, optional
+ * opts.timeout number, optional (seconds; default = config)
+ *
+ * The "always return a handle" contract is preserved: any error
+ * before the network call results in a handle whose `error` field
+ * is set, so H.wait returns (nil, error) without crashing.
+ */
+static int H_lua_http_get(lua_State* L) {
+    int nargs = lua_gettop(L);
+    if (nargs < 1) {
+        H_Handle* h = H_Handle_new(L, H_HK_HTTP);
+        if (h) h->error = strdup("H.http.get: missing url argument");
+        return 1;
+    }
+    const char* url = NULL;
+    if (lua_isstring(L, 1)) {
+        url = lua_tostring(L, 1);
+    }
+    if (!url || !*url) {
+        H_Handle* h = H_Handle_new(L, H_HK_HTTP);
+        if (h) h->error = strdup("H.http.get: url is not a non-empty string");
+        return 1;
+    }
+
+    struct curl_slist* headers = NULL;
+    if (nargs >= 2 && !lua_isnil(L, 2)) {
+        headers = H_lua_headers_to_slist(L, 2);
+    }
+
+    int timeout = (nargs >= 3) ? H_lua_opts_timeout(L, 3) : -1;
+
+    H_Handle* h = H_Handle_new(L, H_HK_HTTP);
+    if (!h) {
+        if (headers) curl_slist_free_all(headers);
+        return 0;
+    }
+    h->http_url = strdup(url);
+    h->http_method = strdup("GET");
+    h->http_timeout = timeout;
+    h->http_headers_slist = headers;  // ownership transferred to handle
+    if (!h->http_url || !h->http_method) {
+        h->error = strdup("H.http.get: allocation failed");
+        return 1;
+    }
+    return 1;
+}
+
+/*
+ * H.http.post(url, body?, headers?, opts?) -> handle
+ *
+ * body         string, optional (NULL = empty POST)
+ * headers      table of string->string, optional
+ * opts.timeout number, optional
+ * opts.content_type  string, optional (e.g. "application/json").
+ *                    Default: "application/octet-stream" when body is
+ *                    non-NULL; omitted when body is NULL.
+ */
+static int H_lua_http_post(lua_State* L) {
+    int nargs = lua_gettop(L);
+    if (nargs < 1) {
+        H_Handle* h = H_Handle_new(L, H_HK_HTTP);
+        if (h) h->error = strdup("H.http.post: missing url argument");
+        return 1;
+    }
+    const char* url = NULL;
+    if (lua_isstring(L, 1)) {
+        url = lua_tostring(L, 1);
+    }
+    if (!url || !*url) {
+        H_Handle* h = H_Handle_new(L, H_HK_HTTP);
+        if (h) h->error = strdup("H.http.post: url is not a non-empty string");
+        return 1;
+    }
+
+    const char* body = NULL;
+    int arg_idx = 2;
+    if (nargs >= 2 && lua_isstring(L, 2)) {
+        body = lua_tostring(L, 2);
+        arg_idx = 3;
+    } else if (nargs >= 2 && !lua_isnil(L, 2) && !lua_istable(L, 2)) {
+        // Second arg is neither string nor nil nor table -> error
+        H_Handle* h = H_Handle_new(L, H_HK_HTTP);
+        if (h) h->error = strdup("H.http.post: body must be a string or nil");
+        return 1;
+    }
+
+    struct curl_slist* headers = NULL;
+    if (nargs >= arg_idx && lua_istable(L, arg_idx)) {
+        headers = H_lua_headers_to_slist(L, arg_idx);
+        arg_idx++;
+    } else if (nargs >= arg_idx && !lua_isnil(L, arg_idx)) {
+        H_Handle* h = H_Handle_new(L, H_HK_HTTP);
+        if (h) h->error = strdup("H.http.post: headers must be a table or nil");
+        return 1;
+    } else if (nargs >= arg_idx) {
+        arg_idx++;
+    }
+
+    int timeout = -1;
+    const char* content_type = NULL;
+    if (nargs >= arg_idx && lua_istable(L, arg_idx)) {
+        timeout = H_lua_opts_timeout(L, arg_idx);
+        lua_getfield(L, arg_idx, "content_type");
+        if (lua_isstring(L, -1)) {
+            content_type = lua_tostring(L, -1);
+        }
+        lua_pop(L, 1);
+    }
+
+    H_Handle* h = H_Handle_new(L, H_HK_HTTP);
+    if (!h) {
+        if (headers) curl_slist_free_all(headers);
+        return 0;
+    }
+    h->http_url = strdup(url);
+    h->http_method = strdup("POST");
+    if (body) h->http_body = strdup(body);
+    if (content_type) h->http_content_type = strdup(content_type);
+    h->http_timeout = timeout;
+    h->http_headers_slist = headers;  // ownership transferred to handle
+    if (!h->http_url || !h->http_method) {
+        h->error = strdup("H.http.post: allocation failed");
+        return 1;
+    }
+    return 1;
+}
+
+/*
+ * H_lua_http_wait_one: perform the HTTP call for one handle and
+ * push the result/error pair. Mirrors the structure of
+ * H_lua_wait_one for H_HK_QUERY.
+ *
+ * Phase 16: performed the blocking libcurl call on the calling
+ * thread. Phase 17: submits the handle to the HTTP worker pool
+ * and blocks on the handle's per-handle condvar until a worker
+ * stores the result. This lets multiple H.http.get calls fan out
+ * in parallel.
+ *
+ * Returns 2 (one result + one error).
+ */
+static int H_lua_http_wait_one(lua_State* L, H_Handle* h) {
+    if (!h) {
+        lua_pushnil(L);
+        lua_pushstring(L, "H.wait: invalid handle");
+        return 2;
+    }
+    if (h->consumed) {
+        lua_pushnil(L);
+        lua_pushstring(L, "H.wait: handle already consumed");
+        return 2;
+    }
+    if (h->error) {
+        lua_pushnil(L);
+        lua_pushstring(L, h->error);
+        h->consumed = true;
+        return 2;
+    }
+    if (!h->http_url || !h->http_method) {
+        lua_pushnil(L);
+        lua_pushstring(L, "H.wait: HTTP handle missing url or method");
+        h->consumed = true;
+        return 2;
+    }
+
+    // Phase 17: submit the handle to the HTTP worker pool. The
+    // pool acquires a refcount on the handle so it cannot be freed
+    // while the call is in flight. If the pool is not running
+    // (e.g. scripting is disabled but Lua still holds a handle),
+    // fall back to a synchronous inline call so the handle still
+    // resolves. The fallback matches the Phase 16 behavior.
+    if (!scripting_http_pool_submit(h)) {
+        // Fallback: perform the call inline (Phase 16 path).
+        // This branch is hit when scripting is disabled or the
+        // pool is not initialized. The test seam in http_client.c
+        // is what unit tests use, so the fallback is not exercised
+        // in tests.
+        struct curl_slist* headers = (struct curl_slist*)h->http_headers_slist;
+        h->http_headers_slist = NULL;
+
+        struct timespec start_ts;
+        clock_gettime(CLOCK_MONOTONIC, &start_ts);
+
+        struct OidcRpHttpResponse* resp;
+        if (strcmp(h->http_method, "GET") == 0) {
+            resp = scripting_http_get(h->http_url, headers,
+                                      h->http_timeout, true);
+        } else if (strcmp(h->http_method, "POST") == 0) {
+            resp = scripting_http_post(h->http_url, h->http_body,
+                                       h->http_content_type, headers,
+                                       h->http_timeout, true);
+        } else {
+            if (headers) curl_slist_free_all(headers);
+            lua_pushnil(L);
+            lua_pushstring(L, "H.wait: unknown HTTP method on handle");
+            h->consumed = true;
+            return 2;
+        }
+
+        h->consumed = true;
+
+        if (!resp) {
+            lua_pushnil(L);
+            lua_pushstring(L, "H.wait: HTTP call returned no response");
+            return 2;
+        }
+
+        struct timespec end_ts;
+        clock_gettime(CLOCK_MONOTONIC, &end_ts);
+        long elapsed_ms = (long)(((end_ts.tv_sec - start_ts.tv_sec) * 1000L) +
+                                 ((end_ts.tv_nsec - start_ts.tv_nsec) / 1000000L));
+
+        if (resp->error_message) {
+            char buf[512];
+            snprintf(buf, sizeof(buf), "H.wait: %s", resp->error_message);
+            lua_pushnil(L);
+            lua_pushstring(L, buf);
+            oidc_rp_http_response_free(resp);
+            return 2;
+        }
+
+        lua_createtable(L, 0, 4);
+        lua_pushinteger(L, (lua_Integer)resp->http_status);
+        lua_setfield(L, -2, "status");
+
+        lua_createtable(L, 0, (int)resp->headers_count);
+        for (size_t i = 0; i < resp->headers_count; i++) {
+            const char* name = resp->headers[i].name ? resp->headers[i].name : "";
+            const char* value = resp->headers[i].value ? resp->headers[i].value : "";
+            lua_getfield(L, -1, name);
+            if (lua_isnil(L, -1)) {
+                lua_pop(L, 1);
+                lua_pushstring(L, value);
+                lua_setfield(L, -2, name);
+            } else {
+                size_t existing_len = 0;
+                const char* existing = lua_tolstring(L, -1, &existing_len);
+                size_t total = existing_len + strlen(value) + 3;
+                char* combined = malloc(total);
+                if (combined) {
+                    snprintf(combined, total, "%s, %s", existing, value);
+                    lua_pop(L, 1);
+                    lua_pushstring(L, combined);
+                    lua_setfield(L, -2, name);
+                    free(combined);
+                } else {
+                    lua_pop(L, 1);
+                }
+            }
+        }
+        lua_setfield(L, -2, "headers");
+
+        if (resp->body) {
+            lua_pushstring(L, resp->body);
+        } else {
+            lua_pushliteral(L, "");
+        }
+        lua_setfield(L, -2, "body");
+
+        lua_pushinteger(L, (lua_Integer)elapsed_ms);
+        lua_setfield(L, -2, "elapsed_ms");
+
+        lua_pushnil(L);
+
+        oidc_rp_http_response_free(resp);
+        return 2;
+    }
+
+    // Pool path: block on the handle's condvar until a worker
+    // stores the result.
+    pthread_mutex_lock(&h->http_mutex);
+    while (!h->http_ready) {
+        pthread_cond_wait(&h->http_cond, &h->http_mutex);
+    }
+
+    // Snapshot the result fields under the lock, then unlock
+    // before doing the Lua table building (which may call back
+    // into the runtime).
+    long elapsed_ms = h->http_result_elapsed_ms;
+    int status = h->http_result_status;
+    char* body_copy = h->http_result_body ? strdup(h->http_result_body) : NULL;
+    char* headers_json_copy = h->http_result_headers_json
+        ? strdup(h->http_result_headers_json) : NULL;
+    char* error_copy = h->http_result_error ? strdup(h->http_result_error) : NULL;
+
+    pthread_mutex_unlock(&h->http_mutex);
+
+    h->consumed = true;
+
+    if (error_copy) {
+        char buf[512];
+        snprintf(buf, sizeof(buf), "H.wait: %s", error_copy);
+        lua_pushnil(L);
+        lua_pushstring(L, buf);
+        free(error_copy);
+        free(body_copy);
+        free(headers_json_copy);
+        return 2;
+    }
+
+    lua_createtable(L, 0, 4);
+    lua_pushinteger(L, (lua_Integer)status);
+    lua_setfield(L, -2, "status");
+
+    // Headers table: parse the JSON array of {name, value} pairs
+    // and build a Lua table with case-insensitive insert (RFC 7230
+    // multi-value collapse).
+    lua_createtable(L, 0, 0);
+    if (headers_json_copy) {
+        json_error_t jerr;
+        json_t* arr = json_loads(headers_json_copy, 0, &jerr);
+        if (arr && json_is_array(arr)) {
+            size_t i;
+            json_t* obj;
+            json_array_foreach(arr, i, obj) {
+                const char* name = NULL;
+                const char* value = NULL;
+                json_t* jname = json_object_get(obj, "name");
+                json_t* jval = json_object_get(obj, "value");
+                if (json_is_string(jname)) name = json_string_value(jname);
+                if (json_is_string(jval))  value = json_string_value(jval);
+                if (!name) name = "";
+                if (!value) value = "";
+                lua_getfield(L, -1, name);
+                if (lua_isnil(L, -1)) {
+                    lua_pop(L, 1);
+                    lua_pushstring(L, value);
+                    lua_setfield(L, -2, name);
+                } else {
+                    size_t existing_len = 0;
+                    const char* existing = lua_tolstring(L, -1, &existing_len);
+                    size_t total = existing_len + strlen(value) + 3;
+                    char* combined = malloc(total);
+                    if (combined) {
+                        snprintf(combined, total, "%s, %s", existing, value);
+                        lua_pop(L, 1);
+                        lua_pushstring(L, combined);
+                        lua_setfield(L, -2, name);
+                        free(combined);
+                    } else {
+                        lua_pop(L, 1);
+                    }
+                }
+            }
+        }
+        if (arr) json_decref(arr);
+    }
+    lua_setfield(L, -2, "headers");
+
+    if (body_copy) {
+        lua_pushstring(L, body_copy);
+    } else {
+        lua_pushliteral(L, "");
+    }
+    lua_setfield(L, -2, "body");
+
+    lua_pushinteger(L, (lua_Integer)elapsed_ms);
+    lua_setfield(L, -2, "elapsed_ms");
+
+    lua_pushnil(L);
+
+    free(body_copy);
+    free(headers_json_copy);
+    return 2;
+}
+
+/*
+ * H.http.get_sync(url, headers?, opts?) -> result, err
+ * H.http.post_sync(url, body?, headers?, opts?) -> result, err
+ *
+ * Convenience wrappers: submit + wait in one call. Return
+ * (result, err) directly.
+ */
+static int H_lua_http_get_sync(lua_State* L) {
+    int n_pushed = H_lua_http_get(L);
+    if (n_pushed == 0) {
+        lua_pushnil(L);
+        lua_pushstring(L, "H.http.get_sync: handle allocation failed");
+        return 2;
+    }
+    H_Handle* h = H_Handle_check(L, -1);
+    if (!h) {
+        lua_pop(L, 1);
+        lua_pushnil(L);
+        lua_pushstring(L, "H.http.get_sync: handle creation failed");
+        return 2;
+    }
+    int n = H_lua_http_wait_one(L, h);
+    lua_remove(L, -(n + 1));
+    return n;
+}
+
+static int H_lua_http_post_sync(lua_State* L) {
+    int n_pushed = H_lua_http_post(L);
+    if (n_pushed == 0) {
+        lua_pushnil(L);
+        lua_pushstring(L, "H.http.post_sync: handle allocation failed");
+        return 2;
+    }
+    H_Handle* h = H_Handle_check(L, -1);
+    if (!h) {
+        lua_pop(L, 1);
+        lua_pushnil(L);
+        lua_pushstring(L, "H.http.post_sync: handle creation failed");
+        return 2;
+    }
+    int n = H_lua_http_wait_one(L, h);
+    lua_remove(L, -(n + 1));
+    return n;
+}
+
+/*
+ * Populate H.http with the four H.http functions and add a
+ * sub-table of HTTP-related helpers. Replaces the Phase 3
+ * placeholder sub-table of the same name.
+ */
+void H_lua_install_http(lua_State* L) {
+    if (!L) return;
+
+    // The H.Handle metatable must be installed before any handle
+    // can be created. H_lua_install_query does this; calling
+    // install_query first (or this) is idempotent.
+    H_Handle_install_metatable(L);
+
+    lua_getglobal(L, "H");
+    if (!lua_istable(L, -1)) {
+        log_this(SR_LUA, "H_lua_install_http: H table missing",
+                 LOG_LEVEL_ERROR, 0);
+        lua_pop(L, 1);
+        return;
+    }
+
+    // H.http is a sub-table. Phase 3 left a placeholder sub-table
+    // here; we replace it with a fresh sub-table that holds the
+    // four real functions.
+    lua_newtable(L);
+    lua_pushcfunction(L, H_lua_http_get);        lua_setfield(L, -2, "get");
+    lua_pushcfunction(L, H_lua_http_post);       lua_setfield(L, -2, "post");
+    lua_pushcfunction(L, H_lua_http_get_sync);   lua_setfield(L, -2, "get_sync");
+    lua_pushcfunction(L, H_lua_http_post_sync);  lua_setfield(L, -2, "post_sync");
+    lua_setfield(L, -2, "http");
+
+    lua_pop(L, 1); // pop H
+}
+void H_lua_install_query(lua_State* L) {
+    if (!L) return;
+
+    // Install the H.Handle metatable first (needed for handle creation).
+    H_Handle_install_metatable(L);
+
+    lua_getglobal(L, "H");
+    if (!lua_istable(L, -1)) {
+        log_this(SR_LUA, "H_lua_install_query: H table missing",
+                 LOG_LEVEL_ERROR, 0);
+        lua_pop(L, 1);
+        return;
+    }
+
+    // H.query, H.altquery, H.authquery, H.wait are top-level functions
+    // on H (replacing the Phase 3 placeholder sub-tables of the same names).
+    lua_pushcfunction(L, H_lua_query);        lua_setfield(L, -2, "query");
+    lua_pushcfunction(L, H_lua_altquery);     lua_setfield(L, -2, "altquery");
+    lua_pushcfunction(L, H_lua_authquery);    lua_setfield(L, -2, "authquery");
+    lua_pushcfunction(L, H_lua_wait);         lua_setfield(L, -2, "wait");
+
+    // Sync wrappers as additional top-level functions.
+    lua_pushcfunction(L, H_lua_query_sync);        lua_setfield(L, -2, "query_sync");
+    lua_pushcfunction(L, H_lua_altquery_sync);     lua_setfield(L, -2, "altquery_sync");
+    lua_pushcfunction(L, H_lua_authquery_sync);    lua_setfield(L, -2, "authquery_sync");
+
+    // H.http sub-table (Phase 16). The functions are installed as
+    // a sub-table to leave room for future helpers (e.g. an
+    // async-multiplexer in Phase 17).
+    H_lua_install_http(L);
+
+    lua_pop(L, 1); // pop H
 }

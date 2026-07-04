@@ -143,7 +143,7 @@ If any engine's `cancel_inflight` function pointer is `NULL` (e.g. `dlsym` faile
 
 The first ALERT fires on the transition from healthy to expired. Subsequent ALERTs for the same hung entry fire every 30s so a monitor sees a regular heartbeat instead of either spam (every second) or silence (once and gone). The format is:
 
-```
+```log
 [DQM-YDB-00-SMFC] Database query exceeded watchdog timeout: query_id=bootstrap_query, timeout=30s, elapsed=35s
 ```
 
@@ -178,7 +178,7 @@ All four knobs are read from the `Databases` object in `hydrogen.json` (see [Dat
 
 The watchdog's startup log line shows the effective bounds:
 
-```
+```log
 [SR-DATABASE] Database query watchdog initialized (min=30s, max=3600s, default=30s, heartbeat=30s)
 ```
 
@@ -187,7 +187,6 @@ The watchdog's startup log line shows the effective bounds:
 - A secondary admin MySQL connection for KILL (today's `mysql_kill` on the same connection can block the watchdog thread if the socket is dead).
 - Loading `mysql_errno` for proper numeric classification (today's MySQL classification is substring-based on the error message).
 - Per-query timeout overrides via a config knob (the per-request `timeout_seconds` field on `QueryRequest` is the way to set this today; the bootstrap path is the only caller that does).
-
 
 ## Usage
 

@@ -228,7 +228,7 @@ void test_parse_connection_string_db2_minimal(void) {
 
     TEST_ASSERT_NOT_NULL(config);
     TEST_ASSERT_EQUAL_STRING("localhost", config->host); // Default host
-    TEST_ASSERT_EQUAL(5432, config->port); // Default port
+    TEST_ASSERT_EQUAL(50000, config->port); // Default port
     TEST_ASSERT_EQUAL_STRING("test", config->database);
     TEST_ASSERT_EQUAL_STRING("", config->username); // Empty username
     TEST_ASSERT_EQUAL_STRING("", config->password); // Empty password
@@ -244,7 +244,7 @@ void test_parse_connection_string_db2_quoted_values(void) {
 
     TEST_ASSERT_NOT_NULL(config);
     TEST_ASSERT_EQUAL_STRING("test host", config->host);
-    TEST_ASSERT_EQUAL(5432, config->port); // Default port since PORT not specified
+    TEST_ASSERT_EQUAL(50000, config->port); // Default port since PORT not specified
     TEST_ASSERT_EQUAL_STRING("test database", config->database);
     TEST_ASSERT_EQUAL_STRING("test user", config->username);
     TEST_ASSERT_EQUAL_STRING("test pass", config->password);
@@ -369,7 +369,7 @@ void test_parse_connection_string_db2_no_port(void) {
     TEST_ASSERT_EQUAL_STRING("testdb", config->database);
     TEST_ASSERT_NOT_NULL(config->host);
     TEST_ASSERT_EQUAL_STRING("host", config->host);
-    TEST_ASSERT_EQUAL(5432, config->port);  // No PORT specified, default
+    TEST_ASSERT_EQUAL(50000, config->port);  // No PORT specified, default
     TEST_ASSERT_NOT_NULL(config->username);
     TEST_ASSERT_EQUAL_STRING("user", config->username);
     TEST_ASSERT_NOT_NULL(config->password);

@@ -167,4 +167,97 @@ void H_lua_install_scoreboard(lua_State* L);
  */
 void H_lua_install_package(lua_State* L);
 
+/*
+ * Populate H.query, H.altquery, H.authquery, and H.wait with the
+ * C functions backing them.
+ *
+ * Phase 13: Conduit-equivalent query functions. Async-first: each
+ * query function returns an opaque H_Handle userdata immediately.
+ * H.wait(handle1, handle2, ...) blocks until all handles are ready
+ * and returns the results + errors.
+ *
+ *   H.query(sql, params, opts?) -> handle
+ *       Submits `sql` to the configured scripting.DefaultDatabase.
+ *       `params` is an optional Lua table of named parameters,
+ *       converted to Hydrogen's typed JSON format. `opts.timeout`
+ *       defaults to config->scripting.DefaultQueryTimeout.
+ *
+ *   H.altquery(database_name, sql, params, opts?) -> handle
+ *       Same as H.query but the database name is explicit.
+ *
+ *   H.authquery(token, sql, params, opts?) -> handle
+ *       Validates the JWT, extracts the database from claims, and
+ *       submits the query to that database. The token is also
+ *       checked for revocation.
+ *
+ *   H.query_sync / H.altquery_sync / H.authquery_sync
+ *       Convenience wrappers: submit + wait in one call.
+ *       Return (result, err) directly.
+ *
+ *   H.wait(handle1, handle2, ...) -> r1, r2, ..., rN, e1, e2, ..., eN
+ *       For N handles, returns 2N values: N results (each nil on
+ *       error), then N errors (each nil on success). Handles are
+ *       consumed after wait.
+ *
+ * Result table shape (from data_json + QueryResult):
+ *   {
+ *     rows = { ... },          -- array of row tables, empty if error
+ *     column_names = { ... },  -- array of column name strings (Phase 14)
+ *     affected_rows = 0,       -- from the engine (Phase 14 verifies)
+ *     elapsed_ms = 0,          -- from the engine (Phase 14)
+ *   }
+ */
+void H_lua_install_query(lua_State* L);
+
+/*
+ * Build and push a result table onto the Lua stack.
+ *
+ * data_json      - JSON array string of rows (the data_json from
+ *                  QueryResult / database_queue_await_result). NULL
+ *                  or empty -> empty rows.
+ * affected_rows  - The engine-reported affected-rows count (from
+ *                  QueryResult.affected_rows, propagated through
+ *                  DatabaseQuery.affected_rows by
+ *                  database_queue_await_result). 0 for SELECTs.
+ *
+ * The pushed table has:
+ *   {
+ *     rows = { ... },         -- array of row tables (may be empty)
+ *     affected_rows = N,      -- int (0 for SELECT, N for writes)
+ *   }
+ *
+ * Always pushes exactly 1 value. On JSON parse failure the rows
+ * field is an empty table and a log line is emitted (the host log
+ * path is a leaf per Phase 6).
+ *
+ * Exposed (non-static) so it can be tested directly.
+ */
+int H_lua_build_result_table(lua_State* L, const char* data_json, int affected_rows);
+
+/*
+ * Populate H.http with the C functions backing H.http.get,
+ * H.http.post, H.http.get_sync, and H.http.post_sync.
+ *
+ * Phase 16 of the LUA_PLAN. H.http.get(url, headers?, opts?) and
+ * H.http.post(url, body?, headers?, opts?) return an opaque
+ * H_Handle of kind H_HK_HTTP. H.wait(handle) blocks until the
+ * HTTP call completes and pushes a result table
+ * { status, headers, body, elapsed_ms }.
+ *
+ * The "always return a handle" contract from Phase 13 is
+ * preserved: any error before the network call (missing url, alloc
+ * failure) results in a handle whose `error` field is set, so
+ * H.wait returns (nil, error) without raising.
+ *
+ * The H.http sub-table replaces the Phase 3 placeholder sub-table
+ * of the same name. Future phases (17+) may add more functions
+ * (e.g. H.http.request for fully custom requests, or an
+ * async-multiplexer entry point).
+ *
+ * Called automatically by H_lua_install_query (which is the single
+ * install point that wires every H.* function on a fresh
+ * lua_State).
+ */
+void H_lua_install_http(lua_State* L);
+
 #endif /* HYDROGEN_SCRIPTING_SCRIPTING_API_H */
