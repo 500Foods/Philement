@@ -14,15 +14,15 @@
  *
  * The OIDC helper is the single point of contact with libcurl. The
  * scripting wrapper exists so the H.http host functions in
- * scripting_api.c do not have to depend on the OIDC include path
- * directly, and so the body cap / timeout policy for scripting is
- * visible in one place.
+ * scripting_api_http.c do not have to depend on the OIDC include
+ * path directly, and so the body cap / timeout policy for scripting
+ * is visible in one place.
  *
  * The wrappers take a pre-built `struct curl_slist*` of headers
- * (NULL allowed). The Lua layer in scripting_api.c is responsible
- * for converting a Lua headers table into a slist using jansson +
- * libcurl. The OIDC helper takes ownership of the slist and frees
- * it on return.
+ * (NULL allowed). The Lua layer in scripting_api_http.c is
+ * responsible for converting a Lua headers table into a slist using
+ * jansson + libcurl. The OIDC helper takes ownership of the slist
+ * and frees it on return.
  *
  * Threading: the public functions block the calling thread on the
  * libcurl transfer. The Lua H.wait path calls these from the worker
@@ -39,14 +39,14 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-// Forward-declare the libcurl slist so callers (scripting_api.c)
-// can pass headers built from a Lua table.
+// Forward-declare the libcurl slist so callers
+// (scripting_api_http.c) can pass headers built from a Lua table.
 struct curl_slist;
 
 // Forward-declare the OIDC response so we don't drag the OIDC header
 // into every translation unit. The shape is a thin view, not the
 // struct definition; callers that need the fields include
-// oidc_rp_http.h directly (scripting_api.c does).
+// oidc_rp_http.h directly (scripting_api_http.c does).
 struct OidcRpHttpResponse;
 
 /*
@@ -62,8 +62,8 @@ struct OidcRpHttpResponse;
  *
  * Always blocks the calling thread (the libcurl transfer is
  * synchronous). Returns a heap-allocated OidcRpHttpResponse*; the
- * caller (H_lua_http_wait_one in scripting_api.c) owns the response
- * and frees it with oidc_rp_http_response_free.
+ * caller (H_lua_http_wait_one in scripting_api_http.c) owns the
+ * response and frees it with oidc_rp_http_response_free.
  *
  * @param url              Absolute http(s) URL. Must be non-NULL.
  * @param headers          Pre-built libcurl headers slist. May be NULL
