@@ -121,6 +121,74 @@ Each database gets exactly one **Lead DQM** that:
 - **Connection Reuse** - Persistent connections per queue for optimal performance
 - **Health Monitoring** - 30-second heartbeat intervals with automatic recovery
 
+### Query Watchdog and Transient Failure Recovery
+
+The database subsystem wraps every query (bootstrap, migration, Conduit, health check) with a client-side watchdog and an engine-agnostic retry layer. Together these handle two failure modes that engine-side timeouts cannot:
+
+1. **Client-side network hangs** — a wedged TCP socket, a dropped VPN tunnel, a silent replica failover. Server-side `statement_timeout` cannot fire because the server never receives the query or its reply never makes it back.
+2. **Transient transport errors** — momentary connection drops, lock-wait timeouts, serialization failures. Retrying these inside the same operation is far cheaper than failing the request and forcing the caller to retry.
+
+The watchdog is one process-wide background thread that wakes once per second. It maintains a registry of in-flight queries and, for any entry whose age exceeds its configured timeout, logs an `ALERT` and invokes the engine's `cancel_inflight` hook. The hook is engine-specific and is the only piece that needs the database client library to do something the abstraction layer cannot do alone:
+
+| Engine | Cancel mechanism | Thread-safety | Notes |
+|---|---|---|---|
+| **PostgreSQL** | `PQgetCancel` + `PQcancel` over a fresh TCP connection to the server | Fully cross-thread; uses a separate connection so the wedged socket is never touched | Most reliable of the bunch; designed for exactly this |
+| **SQLite** | `sqlite3_interrupt` (sets a flag on the connection struct) | Fully cross-thread; documented safe | No I/O at all |
+| **MySQL / MariaDB** | `mysql_kill(thread_id)` on the same connection | Cross-thread (libmysqlclient has internal mutexes) | Best-effort. If the socket is dead this can block the watchdog thread — a future enhancement would add a secondary admin connection |
+| **DB2** | `SQLCancel` on the in-flight statement handle (tracked in `DB2Connection::active_stmt` under a mutex) | Cross-thread per ODBC spec | Requires accurate statement tracking; the seven `SQLFreeHandle` sites in `db2/query.c` all call `db2_active_stmt_clear` first |
+
+If any engine's `cancel_inflight` function pointer is `NULL` (e.g. `dlsym` failed to load the cancel symbol at startup), the watchdog silently skips the cancel for that engine and continues logging the ALERT heartbeat. Operators see a one-time `ALERT` at startup naming the missing function.
+
+#### Heartbeat
+
+The first ALERT fires on the transition from healthy to expired. Subsequent ALERTs for the same hung entry fire every 30s so a monitor sees a regular heartbeat instead of either spam (every second) or silence (once and gone). The format is:
+
+```
+[DQM-YDB-00-SMFC] Database query exceeded watchdog timeout: query_id=bootstrap_query, timeout=30s, elapsed=35s
+```
+
+The `elapsed=` value increases with each heartbeat, making it obvious the operation is still wedged.
+
+#### Retry on transport/timeout
+
+The engine abstraction layer (`database_engine_execute`) wraps each engine call in a bounded retry loop controlled by `QueryRequest.max_retries`. Between attempts the thread sleeps with exponential backoff (1s, 2s, 4s, 8s, 16s, capped at 30s). The retry decision is driven by `QueryResult.error_class`:
+
+| `error_class` | Source of classification | Retry? |
+|---|---|---|
+| `DB_ERR_TRANSPORT` | SQLSTATE class `08` (connection_exception), `40` (deadlock/serialization), `53` (insufficient_resources); `mysql_query` "server has gone away", "Lost connection", "Can't connect", "Connection refused" substrings; `pg_result == NULL` path | Yes |
+| `DB_ERR_TIMEOUT` | SQLSTATE class `57` (operator_intervention, includes query_canceled and `statement_timeout`); MySQL "Lock wait timeout", "Query execution was interrupted" substrings; `check_timeout_expired` path | Yes |
+| `DB_ERR_OTHER` | Default; everything that is not transport or timeout (syntax error, schema mismatch, constraint violation, auth failure) | **No** |
+
+This is the safeguard the user requested: "if there's an actual error returned, then that's not really the same kind of thing." A generated-on-purpose failure in a test (e.g. `query has no destination for result`) gets `DB_ERR_OTHER` and fails immediately, without burning time on retries that won't help. A real network hiccup gets `DB_ERR_TRANSPORT` and is retried with backoff.
+
+#### How retries and the watchdog interact
+
+The watchdog registration covers the *entire* retry series, not each individual attempt. `start_time` is set when `database_engine_execute` first enters; the `effective_timeout_seconds` is the total operation budget across all attempts plus backoff. If attempt 1 hangs the full 30s budget, the watchdog fires the cancel and the engine returns. The retry layer classifies the result (typically `DB_ERR_TRANSPORT` or `DB_ERR_TIMEOUT`) and sleeps for 1s before attempt 2. Attempt 2 starts fresh with a fresh engine call, but the watchdog entry is still the same one — so the elapsed time keeps climbing and the cancel-hook-once-per-entry flag prevents repeated cancels on the same registration.
+
+#### Default configuration
+
+All four knobs are read from the `Databases` object in `hydrogen.json` (see [Database Configuration](/docs/H/core/reference/database_configuration.md#query-watchdog-settings)):
+
+| Setting | Default | Meaning |
+|---|---|---|
+| `BootstrapTimeoutSeconds` | 30 | Per-query timeout for the bootstrap query and the orphan-DROP |
+| `BootstrapRetries` | 3 | Number of retry attempts on `DB_ERR_TRANSPORT`/`DB_ERR_TIMEOUT` for those queries |
+| `WatchdogMinSeconds` | 30 | Lower clamp on any `QueryRequest.timeout_seconds` |
+| `WatchdogMaxSeconds` | 3600 | Upper clamp on any `QueryRequest.timeout_seconds` |
+
+The watchdog's startup log line shows the effective bounds:
+
+```
+[SR-DATABASE] Database query watchdog initialized (min=30s, max=3600s, default=30s, heartbeat=30s)
+```
+
+#### What was deliberately left for later
+
+- A secondary admin MySQL connection for KILL (today's `mysql_kill` on the same connection can block the watchdog thread if the socket is dead).
+- Loading `mysql_errno` for proper numeric classification (today's MySQL classification is substring-based on the error message).
+- Per-query timeout overrides via a config knob (the per-request `timeout_seconds` field on `QueryRequest` is the way to set this today; the bootstrap path is the only caller that does).
+
+
 ## Usage
 
 ### Basic Database Configuration

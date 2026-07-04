@@ -48,6 +48,57 @@ Minimal configuration example:
 |---------|-------------|---------|-------|
 | `DefaultWorkers` | Default worker threads for all databases | `1` | Required |
 
+### Query Watchdog Settings
+
+These settings configure the client-side query watchdog and the engine-agnostic retry layer that wraps every `database_engine_execute` call. They live at the top level of the `Databases` object, alongside `DefaultWorkers`. The full architecture is documented under [Query Watchdog and Transient Failure Recovery](/docs/H/core/subsystems/database/database.md#query-watchdog-and-transient-failure-recovery); this section is the config-only reference.
+
+| Setting | Description | Default | Range | Notes |
+|---------|-------------|---------|-------|-------|
+| `BootstrapTimeoutSeconds` | Per-query timeout (seconds) for the bootstrap query and the orphan-DROP. Also used as the watchdog's default when a request's `timeout_seconds` is 0 or negative. | `30` | Clamped to `[WatchdogMinSeconds, WatchdogMaxSeconds]` | A 30s default is the original hard-coded value; production deployments against slow databases should raise this |
+| `BootstrapRetries` | Number of additional attempts the engine abstraction makes on `DB_ERR_TRANSPORT` or `DB_ERR_TIMEOUT` before giving up. Each retry uses the full `BootstrapTimeoutSeconds` as its own budget; backoff between attempts is 1s, 2s, 4s, ... (capped at 30s). | `3` | `0` (no retry) or positive | 3 retries + 7s of backoff is the original motivation: survive a single transient hiccup without making the bootstrap take an unbounded amount of time |
+| `WatchdogMinSeconds` | Lower bound (seconds) for any `QueryRequest.timeout_seconds` the watchdog enforces. Values below this are clamped up. | `30` | positive integer | A misconfigured 1s timeout would cause the watchdog to log ALERTs on every legitimate query; this floor prevents that |
+| `WatchdogMaxSeconds` | Upper bound (seconds) for any `QueryRequest.timeout_seconds`. Values above this are clamped down. | `3600` | positive integer, must be `>= WatchdogMinSeconds` | An hour is the practical ceiling - a hung query held in the registry longer than this is taking up operator attention without anyone being able to act on the ALERTs |
+
+The watchdog's startup log line reports the effective values that will be used for every request, so a misconfiguration in `hydrogen.json` is immediately visible:
+
+```
+[SR-DATABASE] Database query watchdog initialized (min=30s, max=3600s, default=30s, heartbeat=30s)
+```
+
+#### Example: tuning for a slow production database
+
+```json
+{
+    "Databases": {
+        "DefaultWorkers": 2,
+        "BootstrapTimeoutSeconds": 120,
+        "BootstrapRetries": 5,
+        "WatchdogMinSeconds": 60,
+        "WatchdogMaxSeconds": 1800,
+        "Connections": {
+            "Production": {
+                "Enabled": true,
+                "Type": "postgresql",
+                "Host": "${env.PG_HOST}",
+                "Port": 5432,
+                "Database": "${env.PG_DB}",
+                "User": "${env.PG_USER}",
+                "Pass": "${env.PG_PASS}",
+                "Workers": 4
+            }
+        }
+    }
+}
+```
+
+This raises the per-query budget to two minutes, allows up to 5 retries on transient hiccups, and tightens the watchdog floor to one minute (so a long-running legitimate query doesn't accidentally cross the threshold and trigger a cancel).
+
+#### What these knobs do not control
+
+- **Per-query timeouts for normal Conduit / migration / health-check queries** — those still use the value in `QueryRequest.timeout_seconds` (the watchdog clamps it to the configured `[min, max]`). If you need different timeouts for different query types, set them in the request that submits the query.
+- **Server-side timeouts** — engines still issue `SET statement_timeout = N` on the connection, and engines like SQLite honor `sqlite3_busy_timeout`. The watchdog is the *client-side* counterpart; both layers coexist.
+- **The cancel mechanism itself** — that is per-engine and is enabled automatically when the underlying client library is loaded successfully. If `dlsym` fails to find `PQcancel` / `mysql_kill` / `sqlite3_interrupt` / `SQLCancel`, the watchdog logs a one-time `ALERT` at startup naming the missing function.
+
 ### Connection Settings
 
 Each connection in `Connections` supports:

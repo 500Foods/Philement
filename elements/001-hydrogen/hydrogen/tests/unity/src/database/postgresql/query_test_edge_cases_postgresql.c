@@ -417,7 +417,14 @@ void test_postgresql_execute_query_timeout_scenario(void) {
     bool query_result = postgresql_execute_query(&connection, &request, &result);
     
     TEST_ASSERT_FALSE(query_result);
-    TEST_ASSERT_NULL(result);
+    TEST_ASSERT_NOT_NULL(result);
+    TEST_ASSERT_FALSE(result->success);
+    TEST_ASSERT_EQUAL(DB_ERR_TIMEOUT, result->error_class);
+    
+    // Cleanup
+    free(result->error_message);
+    free(result->data_json);
+    free(result);
 }
 
 void test_postgresql_execute_prepared_invalid_connection_handle(void) {

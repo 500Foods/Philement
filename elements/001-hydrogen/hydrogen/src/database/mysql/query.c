@@ -455,9 +455,9 @@ bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
             free(positional_sql);
             free(ordered_params);
             free_parameter_list(param_list);
-            return (error_result != NULL);
+            return false;
         }
-        
+
         // Allocate MYSQL_BIND array and bound values storage
         MYSQL_BIND* bind = calloc(ordered_count, sizeof(MYSQL_BIND));
         void** bound_values = calloc(ordered_count * 2, sizeof(void*));  // *2 for length indicators
@@ -592,7 +592,7 @@ bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
         } else {
             free(error_message);
         }
-        return (error_result != NULL);
+        return false;
     }
 
     // Store result

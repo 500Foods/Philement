@@ -98,6 +98,7 @@ struct ConnectionConfig {
     char* ssl_key_path;
     char* ssl_ca_path;
     int prepared_statement_cache_size; // Size of prepared statement cache (default: 1000)
+    char* schema;             // Optional default schema (e.g., DB2 CurrentSchema)
 };
 
 // Query request structure

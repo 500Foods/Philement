@@ -71,9 +71,13 @@ void test_mysql_execute_query_failure(void) {
     bool success = mysql_execute_query(connection, &request, &result);
     
     TEST_ASSERT_FALSE(success);
-    TEST_ASSERT_NULL(result);
+    TEST_ASSERT_NOT_NULL(result);
+    TEST_ASSERT_FALSE(result->success);
     
     // Cleanup
+    free(result->error_message);
+    free(result->data_json);
+    free(result);
     free(request.sql_template);
     free(connection->designator);
     free(mysql_conn);
@@ -106,9 +110,15 @@ void test_mysql_execute_query_with_error_message(void) {
     bool success = mysql_execute_query(connection, &request, &result);
     
     TEST_ASSERT_FALSE(success);
-    TEST_ASSERT_NULL(result);
+    TEST_ASSERT_NOT_NULL(result);
+    TEST_ASSERT_FALSE(result->success);
+    TEST_ASSERT_NOT_NULL(result->error_message);
+    TEST_ASSERT_NOT_NULL(strstr(result->error_message, "invalid_table"));
     
     // Cleanup
+    free(result->error_message);
+    free(result->data_json);
+    free(result);
     free(request.sql_template);
     free(connection->designator);
     free(mysql_conn);

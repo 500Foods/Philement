@@ -211,10 +211,13 @@ void test_worker_multiple_jobs_each_get_own_limits(void) {
     scoreboard_entry_free(e_loose);
     free(id_loose);
 
-    // The tight one should have FAILED by now (low hard limit trips fast).
-    ScoreboardEntry* e_tight = scoreboard_find(scripting_scoreboard, id_tight);
+    // Wait for the tight one to reach a terminal state as well. Under
+    // heavy parallel load it may still be RUNNING when the loose job
+    // finishes, so poll rather than assuming it has already failed.
+    ScoreboardEntry* e_tight = NULL;
+    ScoreboardJobStatus s_tight = wait_for_terminal(id_tight, &e_tight);
     TEST_ASSERT_NOT_NULL(e_tight);
-    TEST_ASSERT_EQUAL(SCOREBOARD_JOB_FAILED, e_tight->status);
+    TEST_ASSERT_EQUAL(SCOREBOARD_JOB_FAILED, s_tight);
     scoreboard_entry_free(e_tight);
     free(id_tight);
 }
