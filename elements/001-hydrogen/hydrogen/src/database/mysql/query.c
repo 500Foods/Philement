@@ -437,6 +437,7 @@ bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
             QueryResult* error_result = calloc(1, sizeof(QueryResult));
             if (error_result) {
                 error_result->success = false;
+                error_result->error_class = DB_ERR_OTHER;
                 error_result->error_message = error_message;
                 error_result->row_count = 0;
                 error_result->column_count = 0;
@@ -551,13 +552,47 @@ bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
     // Execute query
     if (mysql_query_ptr(mysql_conn->connection, request->sql_template) != 0) {
         log_this(designator, "MySQL query execution failed", LOG_LEVEL_TRACE, 0);
+        char* error_message = NULL;
         if (mysql_error_ptr) {
             const char* error_msg = mysql_error_ptr(mysql_conn->connection);
             if (error_msg && strlen(error_msg) > 0) {
+                error_message = strdup(error_msg);
                 log_this(designator, "MySQL query error: %s", LOG_LEVEL_TRACE, 1, error_msg);
             }
         }
-        return false;
+        if (!error_message) {
+            error_message = strdup("MySQL query execution failed (no error details)");
+        }
+        /*
+         * Classify: common transient MySQL client errors include
+         * CR_SERVER_GONE_ERROR (2006), CR_SERVER_LOST (2013), and
+         * lost-connection variants. Without mysql_errno (not
+         * currently loaded) we do a substring match on the message
+         * - good enough for the common cases; sophisticated mapping
+         * can be added later by loading mysql_errno.
+         */
+        DatabaseErrorClass err_class = DB_ERR_OTHER;
+        if (error_message) {
+            const char* m = error_message;
+            if (strstr(m, "server has gone away") || strstr(m, "Lost connection") ||
+                strstr(m, "MySQL server has gone away") || strstr(m, "Broken pipe") ||
+                strstr(m, "Can't connect") || strstr(m, "Connection refused")) {
+                err_class = DB_ERR_TRANSPORT;
+            } else if (strstr(m, "Lock wait timeout") || strstr(m, "Query execution was interrupted")) {
+                err_class = DB_ERR_TIMEOUT;
+            }
+        }
+        QueryResult* error_result = calloc(1, sizeof(QueryResult));
+        if (error_result) {
+            error_result->success = false;
+            error_result->error_class = err_class;
+            error_result->error_message = error_message;
+            error_result->data_json = strdup("[]");
+            *result = error_result;
+        } else {
+            free(error_message);
+        }
+        return (error_result != NULL);
     }
 
     // Store result

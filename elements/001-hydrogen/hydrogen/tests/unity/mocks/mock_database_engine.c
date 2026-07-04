@@ -26,6 +26,13 @@ static char* mock_execute_json_data = NULL;
 static int mock_affected_rows = 0;
 static Transaction* mock_tx = NULL;
 
+// Retry-test state. When mock_execute_error_class is non-zero, the mock
+// returns false and constructs a result with the configured error_class.
+// The test uses mock_execute_call_count to verify how many times the
+// engine was invoked (i.e. how many retries the abstraction layer did).
+static DatabaseErrorClass mock_execute_error_class = DB_ERR_NONE;
+static int mock_execute_call_count = 0;
+
 
 static bool mock_health_check_result = true;
 
@@ -84,6 +91,24 @@ bool mock_database_engine_rollback_transaction(DatabaseHandle* connection, Trans
 bool mock_database_engine_execute(DatabaseHandle* connection, QueryRequest* request, QueryResult** result) {
     (void)connection;
     (void)request;
+    mock_execute_call_count++;
+
+    // If an error class is configured, the mock always fails with
+    // that class. This is what the retry tests use to verify the
+    // abstraction layer's retry behavior.
+    if (mock_execute_error_class != DB_ERR_NONE) {
+        if (result) {
+            QueryResult* err = calloc(1, sizeof(QueryResult));
+            if (err) {
+                err->success = false;
+                err->error_class = mock_execute_error_class;
+                err->error_message = strdup("mock transport failure");
+                err->data_json = strdup("[]");
+                *result = err;
+            }
+        }
+        return false;
+    }
 
     // Create a fresh result for each call to avoid lifecycle issues
     QueryResult* fresh_result = calloc(1, sizeof(QueryResult));
@@ -194,6 +219,8 @@ void mock_database_engine_reset_all(void) {
     mock_execute_success = true;
     mock_affected_rows = 0;
     mock_health_check_result = true;
+    mock_execute_error_class = DB_ERR_NONE;
+    mock_execute_call_count = 0;
 
     // Note: mock_query_result is no longer static - results are freed by cleanup_result
     mock_query_result = NULL;
@@ -213,6 +240,18 @@ void mock_database_engine_reset_all(void) {
         free(mock_tx);
         mock_tx = NULL;
     }
+}
+
+void mock_database_engine_set_execute_error_class(DatabaseErrorClass err_class) {
+    mock_execute_error_class = err_class;
+}
+
+int mock_database_engine_get_execute_call_count(void) {
+    return mock_execute_call_count;
+}
+
+void mock_database_engine_reset_execute_call_count(void) {
+    mock_execute_call_count = 0;
 }
 
 void mock_database_engine_set_begin_result(bool result) {

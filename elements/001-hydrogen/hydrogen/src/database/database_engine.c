@@ -9,6 +9,7 @@
 #include "database.h"
 #include "database_connstring.h"
 #include "database_params.h"
+#include "database_watchdog.h"
 #include "dbqueue/dbqueue.h"
 
 // Forward declarations for database engines
@@ -491,34 +492,145 @@ bool database_engine_execute(DatabaseHandle* connection, QueryRequest* request, 
 
     // log_this(designator, "database_engine_execute: Calling engine->execute_query", LOG_LEVEL_TRACE, 0);
 
-    // Execute query with timing measurement - no connection lock needed since thread owns connection exclusively
-    struct timespec query_start_time, query_end_time;
-    clock_gettime(CLOCK_MONOTONIC, &query_start_time);
-    
-    // Increment query counter before execution
-    __sync_add_and_fetch(&db_queries_executed_total, 1);
-    __sync_add_and_fetch(&db_queries_direct_executed, 1);
-    
-    bool result_success = engine->execute_query(connection, request, result);
-    
-    if (result_success) {
-        __sync_add_and_fetch(&db_queries_successful, 1);
-    } else {
-        __sync_add_and_fetch(&db_queries_failed, 1);
+    /*
+     * Register the entire operation with the watchdog so a hang on
+     * any engine call (or on the retries between them) is detected
+     * and the engine-specific cancel hook is invoked. One
+     * registration covers the whole retry loop - the watchdog's
+     * effective_timeout_seconds becomes the total operation budget
+     * across all attempts, not per-attempt. The cancel fires once on
+     * the first transition to expired; the entry's cancelled flag
+     * prevents repeated cancels on subsequent attempts, which is
+     * fine - if the retry also hangs, the server-side
+     * statement_timeout will eventually catch it.
+     *
+     * Register is a no-op (returns NULL) if the watchdog subsystem
+     * is not initialized, e.g. in early startup before the database
+     * subsystem brings it up, or in unit tests that don't init it.
+     */
+    DatabaseWatchdogHandle* watchdog_handle =
+        database_watchdog_register(connection, request);
+
+    /*
+     * Retry loop for transient failures. The engine is called up to
+     * (1 + request->max_retries) times. Between attempts the thread
+     * sleeps with exponential backoff (1s, 2s, 4s, ..., capped at
+     * 30s). Each attempt has the full request->timeout_seconds to
+     * complete independently. Only DB_ERR_TRANSPORT and DB_ERR_TIMEOUT
+     * are retried - syntax, schema, constraint, and other "the user
+     * did something wrong" errors fail immediately because retrying
+     * them just wastes time and clutters the log.
+     */
+    int max_retries = (request && request->max_retries > 0) ? request->max_retries : 0;
+    int total_attempts = max_retries + 1;
+    bool result_success = false;
+    QueryResult* attempt_result = NULL;
+
+    for (int attempt = 1; attempt <= total_attempts; attempt++) {
+        // Free any leftover result from a prior attempt before retrying.
+        if (attempt_result) {
+            database_engine_cleanup_result(attempt_result);
+            attempt_result = NULL;
+        }
+        *result = NULL;
+
+        struct timespec query_start_time, query_end_time;
+        clock_gettime(CLOCK_MONOTONIC, &query_start_time);
+
+        __sync_add_and_fetch(&db_queries_executed_total, 1);
+        __sync_add_and_fetch(&db_queries_direct_executed, 1);
+
+        result_success = engine->execute_query(connection, request, &attempt_result);
+
+        if (result_success) {
+            __sync_add_and_fetch(&db_queries_successful, 1);
+        } else {
+            __sync_add_and_fetch(&db_queries_failed, 1);
+        }
+
+        clock_gettime(CLOCK_MONOTONIC, &query_end_time);
+
+        if (result_success && attempt_result) {
+            time_t execution_time_us = (query_end_time.tv_sec - query_start_time.tv_sec) * 1000000 +
+                                       (query_end_time.tv_nsec - query_start_time.tv_nsec) / 1000;
+            attempt_result->execution_time_ms = execution_time_us;
+        }
+
+        if (result_success) {
+            if (attempt > 1) {
+                log_this(designator,
+                         "database_engine_execute: query_id=%s succeeded on attempt %d/%d",
+                         LOG_LEVEL_STATE, 2,
+                         request->query_id ? request->query_id : "?",
+                         attempt, total_attempts);
+            }
+            break;
+        }
+
+        /*
+         * Failure path: inspect the result's error_class to decide
+         * whether to retry. Default to DB_ERR_OTHER if the engine
+         * did not set it (calloc-zeroes the field to DB_ERR_NONE,
+         * which is the wrong default for a failure - bump to OTHER
+         * so we never accidentally retry an unclassified error).
+         */
+        DatabaseErrorClass err_class = (attempt_result ? attempt_result->error_class
+                                                        : DB_ERR_OTHER);
+        if (!attempt_result) {
+            // No result struct was returned at all - treat as transport
+            // (the engine simply bailed before allocating a result).
+            err_class = DB_ERR_TRANSPORT;
+        } else if (err_class == DB_ERR_NONE) {
+            err_class = DB_ERR_OTHER;
+        }
+
+        const char* err_class_name = (err_class == DB_ERR_TRANSPORT) ? "transport"
+                                    : (err_class == DB_ERR_TIMEOUT) ? "timeout"
+                                    : "other";
+        const char* err_msg = (attempt_result && attempt_result->error_message)
+                                  ? attempt_result->error_message
+                                  : "(no error message)";
+
+        bool retryable = (err_class == DB_ERR_TRANSPORT || err_class == DB_ERR_TIMEOUT)
+                         && (attempt < total_attempts);
+
+        if (retryable) {
+            int backoff_seconds = 1 << (attempt - 1); // 1, 2, 4, 8, 16, 32...
+            if (backoff_seconds > 30) {
+                backoff_seconds = 30;
+            }
+            log_this(designator,
+                     "database_engine_execute: query_id=%s attempt %d/%d failed (%s): %s - retrying in %ds",
+                     LOG_LEVEL_ALERT, 4,
+                     request->query_id ? request->query_id : "?",
+                     attempt, total_attempts, err_class_name, err_msg, backoff_seconds);
+            sleep((unsigned int)backoff_seconds);
+            continue;
+        }
+
+        if (attempt < total_attempts) {
+            log_this(designator,
+                     "database_engine_execute: query_id=%s attempt %d/%d failed (%s, not retryable): %s",
+                     LOG_LEVEL_DEBUG, 4,
+                     request->query_id ? request->query_id : "?",
+                     attempt, total_attempts, err_class_name, err_msg);
+        } else {
+            log_this(designator,
+                     "database_engine_execute: query_id=%s failed after %d attempt(s) (%s): %s",
+                     LOG_LEVEL_ERROR, 4,
+                     request->query_id ? request->query_id : "?",
+                     total_attempts, err_class_name, err_msg);
+        }
+        break;
     }
-    
-    clock_gettime(CLOCK_MONOTONIC, &query_end_time);
 
-    // Calculate execution time in microseconds and store in result if successful
-    if (result_success && *result) {
-        time_t execution_time_us = (query_end_time.tv_sec - query_start_time.tv_sec) * 1000000 +
-                                   (query_end_time.tv_nsec - query_start_time.tv_nsec) / 1000;
-        (*result)->execution_time_ms = execution_time_us; // Store microseconds in ms field
+    *result = attempt_result;
 
-        // log_this(designator, "database_engine_execute: Query executed in %ld us", LOG_LEVEL_TRACE, 1, (*result)->execution_time_ms);
-    }
-
-    // log_this(designator, "database_engine_execute: Engine execute_query returned %s", LOG_LEVEL_TRACE, 1, result_success ? "SUCCESS" : "FAILURE");
+    // Always deregister the watchdog entry, even on failure, so the
+    // registry doesn't accumulate stale entries. Deregister is safe
+    // with a NULL handle (no-op) for callers that didn't init the
+    // watchdog.
+    database_watchdog_deregister(watchdog_handle);
 
     return result_success;
 }

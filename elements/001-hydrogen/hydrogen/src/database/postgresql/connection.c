@@ -65,6 +65,7 @@ PQping_t PQping_ptr = mock_PQping;
 PQgetCancel_t PQgetCancel_ptr = NULL;  // No mock; real libpq is required
 PQcancel_t PQcancel_ptr = NULL;
 PQfreeCancel_t PQfreeCancel_ptr = NULL;
+PQresultErrorField_t PQresultErrorField_ptr = NULL;
 #else
 PQconnectdb_t PQconnectdb_ptr = NULL;
 PQstatus_t PQstatus_ptr = NULL;
@@ -88,6 +89,7 @@ PQping_t PQping_ptr = NULL;
 PQgetCancel_t PQgetCancel_ptr = NULL;
 PQcancel_t PQcancel_ptr = NULL;
 PQfreeCancel_t PQfreeCancel_ptr = NULL;
+PQresultErrorField_t PQresultErrorField_ptr = NULL;
 #endif
 
 // Library handle
@@ -190,6 +192,7 @@ bool load_libpq_functions(const char* designator __attribute__((unused))) {
     PQgetCancel_ptr = (PQgetCancel_t)dlsym(libpq_handle, "PQgetCancel");
     PQcancel_ptr = (PQcancel_t)dlsym(libpq_handle, "PQcancel");
     PQfreeCancel_ptr = (PQfreeCancel_t)dlsym(libpq_handle, "PQfreeCancel");
+    PQresultErrorField_ptr = (PQresultErrorField_t)dlsym(libpq_handle, "PQresultErrorField");
 #pragma GCC diagnostic pop
 
     // Check if all functions were loaded
@@ -212,6 +215,9 @@ bool load_libpq_functions(const char* designator __attribute__((unused))) {
     // but the server-side work is not interrupted.
     if (!PQgetCancel_ptr || !PQcancel_ptr || !PQfreeCancel_ptr) {
         log_this(log_subsystem, "libpq cancel functions (PQgetCancel/PQcancel/PQfreeCancel) not available - watchdog cancel will be a no-op for PostgreSQL", LOG_LEVEL_ALERT, 0);
+    }
+    if (!PQresultErrorField_ptr) {
+        log_this(log_subsystem, "PQresultErrorField function not available - PostgreSQL error classification for retry will be coarse (OTHER for SQL errors)", LOG_LEVEL_ALERT, 0);
     }
 
     MUTEX_UNLOCK(&libpq_mutex, log_subsystem);
