@@ -351,10 +351,23 @@ DatabaseQuery* database_queue_await_result(DatabaseQueue* db_queue, const char* 
             db_query->error_message = strdup(query_result->error_message);
         }
 
+        // Phase 14: propagate affected_rows for atomic task claiming.
+        // The engine layer (sqlite/postgres/mysql/db2) populates
+        // QueryResult.affected_rows from the underlying driver
+        // (PQcmdTuples / sqlite3_changes / mysql_affected_rows /
+        // DB2 sqlca.sqlerrd[2]). A conditional UPDATE such as
+        //   UPDATE tasks SET status='taken'
+        //    WHERE id=:id AND status='open'
+        // reports 1 to the winner and 0 to the losers, so the
+        // scripting host and the conduit REST layer can rely on
+        // db_query->affected_rows for exactly-once claim semantics.
+        db_query->affected_rows = query_result->affected_rows;
+
         // Log success with statistics
-        log_this(dqm_label, "Query completed successfully: %s (rows: %zu, columns: %zu, time: %ld ms)",
-                LOG_LEVEL_TRACE, 4, query_id, query_result->row_count,
-                query_result->column_count, query_result->execution_time_ms);
+        log_this(dqm_label, "Query completed successfully: %s (rows: %zu, columns: %zu, affected: %d, time: %ld ms)",
+                LOG_LEVEL_TRACE, 5, query_id, query_result->row_count,
+                query_result->column_count, query_result->affected_rows,
+                query_result->execution_time_ms);
     } else {
         // Query failed - result is NULL
         db_query->error_message = strdup("Query execution failed or timed out");

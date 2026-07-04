@@ -15,10 +15,10 @@
  *
  * Fields added by later phases (Phase 8: instruction_count, memory;
  * Phase 9: current_state - IMPLEMENTED; Phase 10: max_runtime, kill
- * flag; Phase 12: has_waiter, waiter_context, result_ref; Phase 25:
- * result artifacts) are NOT in v1 unless called out. The struct
- * reserves placeholder comments for the not-yet-implemented ones so
- * the growth path is obvious.
+ * flag - IMPLEMENTED; Phase 12: has_waiter, waiter_handle, result_ref
+ * - IMPLEMENTED; Phase 25: result artifacts) are NOT in v1 unless
+ * called out. The struct reserves placeholder comments for the
+ * not-yet-implemented ones so the growth path is obvious.
  *
  * Concurrency model:
  *   - One pthread_mutex_t protects the entries array.
@@ -38,8 +38,10 @@
  *   - scoreboard_request_kill / scoreboard_is_kill_requested C API.
  *
  * v1 does not have:
- *   - iteration (Phase 11's H.scoreboard.list)
- *   - waiting/condition variables (Phase 12)
+ *   - iteration (Phase 11's H.scoreboard.list) - IMPLEMENTED
+ *   - waiting/condition variables (Phase 12) - PARTIALLY IMPLEMENTED
+ *     (the scoreboard-side primitive is in place; the H_Handle / H.wait
+ *     mechanism that consumes it is Phase 13)
  *   - persistence or restart-survival (out of scope for this plan)
  *   - capacity upper bound; the array grows on demand.
  */
@@ -123,6 +125,29 @@ typedef struct {
     // worker's pcall catches it, and the worker marks the job
     // KILLED (not FAILED). Idempotent: setting twice is a no-op.
     bool                kill_requested;
+
+    // Phase 12: completion signaling. POD pointers; the scoreboard
+    // does not own them. The intended (and only v1) consumer is the
+    // H_Handle type that Phase 13 introduces; the worker calls the
+    // H_Handle signal function with waiter_handle and writes the
+    // final result into *result_ref. Until Phase 13 the worker only
+    // logs a "would signal waiter" marker (see worker_pool.c).
+    //
+    //   has_waiter    - true once scoreboard_attach_waiter has run.
+    //   waiter_handle - opaque pointer to a waiter object. NULL when
+    //                   no waiter is attached.
+    //   result_ref    - opaque pointer to a result storage the C side
+    //                   populates on completion. NULL when not in use.
+    //
+    // Concurrency: a waiter is typically attached once, by the
+    // submitter, before the worker dequeues the job. Subsequent
+    // scoreboard_attach_waiter calls are idempotent (first writer
+    // wins) so a misbehaving caller cannot detach an existing waiter
+    // by racing. scoreboard_clear_waiter resets all three to
+    // initial-state values.
+    bool                has_waiter;
+    void*               waiter_handle;
+    void*               result_ref;
 } ScoreboardEntry;
 
 /*
@@ -373,5 +398,87 @@ bool scoreboard_list(Scoreboard* sb,
  * itself; idempotent (NULL list or zero count is a no-op).
  */
 void scoreboard_list_free(ScoreboardEntry** list, size_t count);
+
+/*
+ * Phase 12: attach a waiter to a job.
+ *
+ *   sb            - the scoreboard
+ *   job_id        - the 5-char ID to attach to
+ *   waiter_handle - opaque pointer to a waiter object. In Phase 13
+ *                   this will be an H_Handle* (the C-side object
+ *                   that backs H.wait). For Phase 12 it is just
+ *                   stored verbatim and is not dereferenced by the
+ *                   scoreboard. May be NULL only if result_ref is
+ *                   also NULL (a "tag only" attach is not useful
+ *                   and is rejected).
+ *   result_ref    - opaque pointer to a result storage the C side
+ *                   populates on completion. May be NULL (e.g. a
+ *                   waiter that only cares about completion and not
+ *                   the result).
+ *
+ * Returns true if a matching entry was found and the waiter was
+ * attached (or was already attached). Returns false if the ID is
+ * unknown, if both pointers are NULL, or if memory could not be
+ * allocated.
+ *
+ * Concurrency: thread-safe (briefly takes the scoreboard mutex).
+ * Idempotent: a second attach with the same or different pointers
+ * is a no-op and still returns true; the first attach wins. This
+ * is the right semantic for a submitter that wants to ensure the
+ * waiter is in place even if another thread raced ahead.
+ *
+ * Phase 12 sets only the C-side scoreboard primitive; the actual
+ * wake-up is performed by the worker (worker_pool.c) once the job
+ * reaches a terminal status. Phase 13 plugs the H_Handle signal
+ * into that worker hook.
+ */
+bool scoreboard_attach_waiter(Scoreboard* sb,
+                             const char* job_id,
+                             void* waiter_handle,
+                             void* result_ref);
+
+/*
+ * Read the current waiter fields for a job. Thread-safe.
+ *
+ *   sb            - the scoreboard
+ *   job_id        - the 5-char ID to look up
+ *   out_has_waiter- non-NULL; *out_has_waiter is set to the entry's
+ *                   has_waiter flag.
+ *   out_handle    - may be NULL; if non-NULL, *out_handle is set to
+ *                   the entry's waiter_handle (or NULL if none).
+ *   out_result    - may be NULL; if non-NULL, *out_result is set to
+ *                   the entry's result_ref (or NULL if none).
+ *
+ * Returns true if a matching entry was found; false if the ID is
+ * unknown (in which case *out_has_waiter is left as false and the
+ * out_handle / out_result outputs are left as NULL).
+ *
+ * The returned pointers are owned by the scoreboard; the caller
+ * must not free them. They remain valid until the entry is removed
+ * (which currently never happens - the scoreboard is append-only -
+ * but a future phase may add removal).
+ */
+bool scoreboard_get_waiter(Scoreboard* sb,
+                           const char* job_id,
+                           bool* out_has_waiter,
+                           void** out_handle,
+                           void** out_result);
+
+/*
+ * Clear the waiter fields for a job. Thread-safe.
+ *
+ *   sb     - the scoreboard
+ *   job_id - the 5-char ID to clear
+ *
+ * Returns true if a matching entry was found (the fields are
+ * cleared even if they were already clear). Returns false if the
+ * ID is unknown.
+ *
+ * Effect: sets has_waiter=false, waiter_handle=NULL, result_ref=NULL.
+ * After this call the worker's completion path will see no waiter
+ * to signal. Use with care - a waiter that was expecting a signal
+ * will block until its own timeout.
+ */
+bool scoreboard_clear_waiter(Scoreboard* sb, const char* job_id);
 
 #endif /* HYDROGEN_SCRIPTING_SCOREBOARD_H */

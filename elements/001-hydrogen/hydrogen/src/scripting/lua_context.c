@@ -227,6 +227,10 @@ void H_lua_install_api(lua_State* L) {
     // the process-wide source cache and (on miss) the `scripts` table
     // via QueryRef #087. Gated by config->scripting.AllowDBModuleLoad.
     H_lua_install_package(L);
+    // Phase 13: Conduit-equivalent query functions. H.query,
+    // H.altquery, H.authquery, and H.wait. Also installs the
+    // H.Handle metatable for the opaque async-handle userdata.
+    H_lua_install_query(L);
 }
 
 /*

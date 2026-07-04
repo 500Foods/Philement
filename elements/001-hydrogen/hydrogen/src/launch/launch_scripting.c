@@ -14,10 +14,11 @@
  // Global includes
 #include <src/hydrogen.h>
 
- // Local includes
+  // Local includes
 #include "launch.h"
 #include <src/scripting/scripting.h>
 #include <src/scripting/worker_pool.h>
+#include <src/scripting/http_pool.h>
 
 // External declarations
 extern ServiceThreads scripting_threads;
@@ -168,6 +169,20 @@ int launch_scripting_subsystem(void) {
         log_this(SR_SCRIPTING, "LAUNCH: " SR_SCRIPTING " FAILED (worker pool init)",
                  LOG_LEVEL_ERROR, 0);
         return 0;
+    }
+
+    // Phase 17: bring up the HTTP worker pool. HTTPWorkerCount was
+    // defaulted to 4 in config_defaults; if it's 0 or negative we
+    // treat it as a no-op (the host function falls back to the
+    // inline path).
+    int http_workers = app_config ? app_config->scripting.HTTPWorkerCount : 4;
+    if (http_workers > 0) {
+        if (!scripting_http_pool_init(http_workers)) {
+            log_this(SR_SCRIPTING, "LAUNCH: " SR_SCRIPTING " FAILED (HTTP pool init)",
+                     LOG_LEVEL_ERROR, 0);
+            scripting_workers_destroy();
+            return 0;
+        }
     }
 
     // Phase 11h: mark the subsystem as running in the registry.

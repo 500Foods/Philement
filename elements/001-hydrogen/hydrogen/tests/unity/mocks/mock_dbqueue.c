@@ -14,6 +14,9 @@ static QueryCacheEntry* mock_query_cache_lookup_result = NULL;
 static QueryCacheEntry* mock_query_cache_lookup_by_ref_and_type_result = NULL;
 static bool mock_submit_query_result = true;
 static json_t* mock_get_stats_json_result = NULL;
+static DatabaseQuery mock_await_query = {0};
+static bool mock_await_query_set = false;
+static int mock_await_call_count = 0;
 static DatabaseQuery last_submitted_query;
 static bool mock_submit_query_called = false;
 
@@ -32,12 +35,17 @@ bool mock_database_queue_submit_query(DatabaseQueue* queue, const DatabaseQuery*
 // Mock implementation of database_queue_get_stats_json
 json_t* mock_database_queue_get_stats_json(DatabaseQueue* db_queue);
 
+// Phase 14: Mock implementation of database_queue_await_result
+DatabaseQuery* mock_database_queue_await_result(DatabaseQueue* db_queue, const char* query_id, int timeout_seconds);
+
 // Mock control functions
 void mock_dbqueue_set_get_database_result(DatabaseQueue* result);
 void mock_dbqueue_set_query_cache_lookup_result(QueryCacheEntry* result);
 void mock_dbqueue_set_query_cache_lookup_by_ref_and_type_result(QueryCacheEntry* result);
 void mock_dbqueue_set_submit_query_result(bool result);
 void mock_dbqueue_reset_all(void);
+void mock_dbqueue_set_await_result(const DatabaseQuery* result);
+int mock_dbqueue_get_await_call_count(void);
 
 // Get last submitted query for verification
 const DatabaseQuery* mock_dbqueue_get_last_submitted_query(void);
@@ -90,6 +98,37 @@ QueryCacheEntry* mock_query_cache_lookup_by_ref_and_type(QueryTableCache* cache,
 json_t* mock_database_queue_get_stats_json(DatabaseQueue* db_queue) {
     (void)db_queue;  // Unused parameter
     return mock_get_stats_json_result;
+}
+
+// Phase 14: mock implementation of database_queue_await_result.
+// Returns a deep copy of the pre-set DatabaseQuery (so each test can
+// own its own copy) or NULL if the test did not set one. The mock
+// records how many times it was called so tests can verify
+// per-handle wait behavior.
+DatabaseQuery* mock_database_queue_await_result(DatabaseQueue* db_queue, const char* query_id, int timeout_seconds) {
+    (void)db_queue;
+    (void)query_id;
+    (void)timeout_seconds;
+    mock_await_call_count++;
+    if (!mock_await_query_set) {
+        return NULL;
+    }
+    DatabaseQuery* q = calloc(1, sizeof(DatabaseQuery));
+    if (!q) return NULL;
+    *q = mock_await_query;
+    if (mock_await_query.query_id) {
+        q->query_id = strdup(mock_await_query.query_id);
+    }
+    if (mock_await_query.query_template) {
+        q->query_template = strdup(mock_await_query.query_template);
+    }
+    if (mock_await_query.parameter_json) {
+        q->parameter_json = strdup(mock_await_query.parameter_json);
+    }
+    if (mock_await_query.error_message) {
+        q->error_message = strdup(mock_await_query.error_message);
+    }
+    return q;
 }
 
 // Mock control functions
@@ -168,6 +207,42 @@ void mock_dbqueue_set_get_stats_json_result(json_t* result) {
     mock_get_stats_json_result = result;
 }
 
+// Phase 14: set the DatabaseQuery that mock_database_queue_await_result
+// will return on its next call. The caller passes a pointer to a
+// DatabaseQuery whose strdup'd fields are deep-copied (and freed on
+// the next set or reset).
+void mock_dbqueue_set_await_result(const DatabaseQuery* result) {
+    // Free any previously set fields
+    free((void*)mock_await_query.query_id);
+    free((void*)mock_await_query.query_template);
+    free((void*)mock_await_query.parameter_json);
+    free((void*)mock_await_query.error_message);
+    memset(&mock_await_query, 0, sizeof(DatabaseQuery));
+    if (result) {
+        mock_await_query = *result;
+        if (result->query_id) {
+            mock_await_query.query_id = strdup(result->query_id);
+        }
+        if (result->query_template) {
+            mock_await_query.query_template = strdup(result->query_template);
+        }
+        if (result->parameter_json) {
+            mock_await_query.parameter_json = strdup(result->parameter_json);
+        }
+        if (result->error_message) {
+            mock_await_query.error_message = strdup(result->error_message);
+        }
+        mock_await_query_set = true;
+    } else {
+        mock_await_query_set = false;
+    }
+}
+
+// Get how many times mock_database_queue_await_result was called
+int mock_dbqueue_get_await_call_count(void) {
+    return mock_await_call_count;
+}
+
 // Reset all mock state
 void mock_dbqueue_reset_all(void) {
     mock_get_database_result = NULL;
@@ -178,4 +253,12 @@ void mock_dbqueue_reset_all(void) {
     mock_submit_query_called = false;
     free_query_memory(&last_submitted_query);
     memset(&last_submitted_query, 0, sizeof(DatabaseQuery));
+    // Phase 14: also reset await-result mock state
+    free((void*)mock_await_query.query_id);
+    free((void*)mock_await_query.query_template);
+    free((void*)mock_await_query.parameter_json);
+    free((void*)mock_await_query.error_message);
+    memset(&mock_await_query, 0, sizeof(DatabaseQuery));
+    mock_await_query_set = false;
+    mock_await_call_count = 0;
 }

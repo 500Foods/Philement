@@ -25,6 +25,8 @@ bool load_scripting_config(json_t* root, AppConfig* config) {
     scripting->WorkerCount = 2;
     scripting->DefaultQueryTimeout = 30;
     scripting->DefaultMaxRuntime = 3600;
+    scripting->DefaultHTTPTimeout = 30;
+    scripting->HTTPWorkerCount = 4;
     scripting->InstructionHookInterval = 5000;
     scripting->MemorySampleEveryNHooks = 20;
     scripting->MemorySoftLimitKB = 32768;
@@ -47,6 +49,8 @@ bool load_scripting_config(json_t* root, AppConfig* config) {
     success = success && PROCESS_STRING(root, scripting, DefaultDatabase, "Scripting.DefaultDatabase", "Scripting");
     success = success && PROCESS_INT(root, scripting, DefaultQueryTimeout, "Scripting.DefaultQueryTimeout", "Scripting");
     success = success && PROCESS_INT(root, scripting, DefaultMaxRuntime, "Scripting.DefaultMaxRuntime", "Scripting");
+    success = success && PROCESS_INT(root, scripting, DefaultHTTPTimeout, "Scripting.DefaultHTTPTimeout", "Scripting");
+    success = success && PROCESS_INT(root, scripting, HTTPWorkerCount, "Scripting.HTTPWorkerCount", "Scripting");
     success = success && PROCESS_INT(root, scripting, InstructionHookInterval, "Scripting.InstructionHookInterval", "Scripting");
     success = success && PROCESS_INT(root, scripting, MemorySampleEveryNHooks, "Scripting.MemorySampleEveryNHooks", "Scripting");
     success = success && PROCESS_INT(root, scripting, MemorySoftLimitKB, "Scripting.MemorySoftLimitKB", "Scripting");
@@ -120,6 +124,8 @@ void dump_scripting_config(const ScriptingConfig* config) {
     DUMP_STRING("Default Database", config->DefaultDatabase);
     DUMP_INT("Default Query Timeout", config->DefaultQueryTimeout);
     DUMP_INT("Default Max Runtime", config->DefaultMaxRuntime);
+    DUMP_INT("Default HTTP Timeout", config->DefaultHTTPTimeout);
+    DUMP_INT("HTTP Worker Count", config->HTTPWorkerCount);
     DUMP_INT("Instruction Hook Interval", config->InstructionHookInterval);
     DUMP_INT("Memory Sample Every N Hooks", config->MemorySampleEveryNHooks);
     DUMP_INT("Memory Soft Limit (KB)", config->MemorySoftLimitKB);

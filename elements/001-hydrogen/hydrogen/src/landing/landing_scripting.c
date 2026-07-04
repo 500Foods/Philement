@@ -10,7 +10,7 @@
  // Global includes
 #include <src/hydrogen.h>
 
- // Local includes
+  // Local includes
 #include "landing.h"
 #include <src/landing/landing.h>
 #include <src/utils/utils_logging.h>
@@ -21,6 +21,7 @@
 #include <src/scripting/scripting.h>
 #include <src/scripting/lua_context.h>
 #include <src/scripting/worker_pool.h>
+#include <src/scripting/http_pool.h>
 #include <src/scripting/orchestrator.h>
 
 // External declarations
@@ -120,6 +121,13 @@ int land_scripting_subsystem(void) {
     // as they finish each job), so worker pool teardown precedes
     // scripting_cleanup_state.
     scripting_workers_destroy();
+
+    // Phase 17: stop the HTTP worker pool. HTTP handles in flight
+    // are drained before the pool is freed; in-flight H.wait calls
+    // are unblocked by the per-handle condvar before the scoreboard
+    // (which is not used by HTTP) is torn down. Safe to call when
+    // the pool was never initialized.
+    scripting_http_pool_destroy();
 
     // scripting_cleanup_state destroys any Orchestrator lua_State and
     // the scoreboard, and re-initializes the thread tracking structure.

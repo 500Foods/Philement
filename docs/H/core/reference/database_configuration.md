@@ -61,7 +61,7 @@ These settings configure the client-side query watchdog and the engine-agnostic 
 
 The watchdog's startup log line reports the effective values that will be used for every request, so a misconfiguration in `hydrogen.json` is immediately visible:
 
-```
+```log
 [SR-DATABASE] Database query watchdog initialized (min=30s, max=3600s, default=30s, heartbeat=30s)
 ```
 

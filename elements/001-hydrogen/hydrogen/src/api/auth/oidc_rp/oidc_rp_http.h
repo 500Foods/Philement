@@ -7,8 +7,17 @@
  * wrapper for the token-endpoint exchange. Both share the same test
  * seam, body cap, and TLS discipline.
  *
+ * Phase 16 of the LUA_PLAN added the `_with_cap_and_timeout`
+ * variants and response-header capture so the Lua `H.http` host
+ * functions can use the same libcurl plumbing (with a larger body
+ * cap and a configurable timeout). The original GET/POST signatures
+ * are preserved as thin wrappers that pass the OIDC defaults
+ * (1 MiB cap, 30 s timeout), so existing OIDC callers are
+ * unaffected.
+ *
  * The wrappers exist so that all outbound HTTP from the OIDC RP code
- * has a single, testable point of contact with libcurl.
+ * (and now the Lua scripting subsystem) has a single, testable point
+ * of contact with libcurl.
  *
  * Design notes:
  *
@@ -20,6 +29,11 @@
  *   - Redirect-following is disabled. The two URLs we fetch in
  *     Phase 9 (discovery doc, JWKS) are stable and a redirect would
  *     indicate misconfiguration.
+ *   - Response headers are captured (Phase 16) and returned as a
+ *     NULL-terminated array of `OidcRpHttpHeader` structs. Caller
+ *     frees with `oidc_rp_http_response_free`. On test-fixture
+ *     responses, the headers array is NULL (the test seam does not
+ *     inject headers; this is a documented limitation).
  *   - A test-only injection seam (`oidc_rp_http_test_set_response`)
  *     lets Unity tests substitute a canned response keyed by URL
  *     substring, avoiding the need to mock libcurl symbols. The
@@ -32,7 +46,7 @@
  * cannot corrupt it.
  *
  * @author Hydrogen Framework
- * @date 2026-05-09
+ * @date 2026-05-09 (updated 2026-07-04 for Phase 16)
  */
 
 #ifndef OIDC_RP_HTTP_H
@@ -41,8 +55,27 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+// Forward-declare the libcurl slist type so callers (the Lua
+// scripting layer) can build a headers list without including
+// curl.h themselves. Phase 16.
+struct curl_slist;
+
 /**
- * @brief Result of a synchronous OIDC RP HTTP GET.
+ * @brief A single response header (name + value), both NUL-terminated.
+ *
+ * Phase 16: added so `H.http` can return a Lua table of response
+ * headers. The pair is captured verbatim from libcurl's header
+ * callback (lowercased by libcurl, no whitespace trimming). Multi-
+ * value headers (e.g. `Set-Cookie`) appear as multiple entries with
+ * the same `name`.
+ */
+typedef struct OidcRpHttpHeader {
+    char *name;              // Owned. Lowercased by libcurl.
+    char *value;             // Owned. NUL-terminated, no trailing CRLF.
+} OidcRpHttpHeader;
+
+/**
+ * @brief Result of a synchronous OIDC RP HTTP GET/POST.
  *
  * `body` is heap-allocated on success or on an HTTP failure where
  * the server still sent a payload. On total network failure (no
@@ -52,12 +85,21 @@
  * connect timeout, TLS handshake failure). The `error_message`
  * carries the libcurl text for diagnostics; logging policy in the
  * RP code keeps it at DEBUG/ALERT and never logs URL query strings.
+ *
+ * `headers` (Phase 16) is a heap-allocated, NULL-terminated array
+ * of `OidcRpHttpHeader` structs. `headers_count` is the number of
+ * entries (excluding the terminating NULL). May be NULL with
+ * `headers_count == 0` when the server sent no headers (rare;
+ * libcurl always emits at least the status line) or when a test
+ * fixture was consumed (test fixtures do not carry headers).
  */
 typedef struct OidcRpHttpResponse {
     long  http_status;       // 0 on transport failure, else 100..599
     char *body;              // NUL-terminated; may be NULL
     size_t body_size;        // strlen-equivalent; 0 when body is NULL
     char *error_message;     // Owned. NULL on success.
+    OidcRpHttpHeader *headers;  // Owned NULL-terminated array. NULL when no headers.
+    size_t headers_count;    // Excluding terminating NULL.
 } OidcRpHttpResponse;
 
 /**
@@ -173,6 +215,105 @@ OidcRpHttpResponse *oidc_rp_http_post(const char *url,
 void oidc_rp_http_test_set_response(const char *url_substring,
                                     long http_status,
                                     const char *body);
+
+/**
+ * @brief Synchronous HTTP GET with caller-specified body cap and timeout.
+ *
+ * Phase 16 of the LUA_PLAN: the Lua `H.http.get` host function uses
+ * this variant with a 16 MiB cap and a Lua-supplied timeout. The
+ * Phase 9 `oidc_rp_http_get` is a thin wrapper that calls this with
+ * the OIDC defaults (1 MiB, 30 s).
+ *
+ * Constraints (mirrors `oidc_rp_http_get`):
+ *   - URL scheme MUST be http or https.
+ *   - Redirects are NOT followed.
+ *   - Connect timeout is fixed at 10 s (not configurable here; the
+ *     connect-timeout knob is for connect-establishment only and the
+ *     OIDC's 10 s is a sensible production default for all callers).
+ *   - Response body capped at `max_body_bytes`. Larger bodies are
+ *     truncated and a transport-level error is reported.
+ *
+ * @param url                       Absolute http(s) URL. Must be non-NULL.
+ * @param verify_ssl                When true, libcurl verifies peer + host.
+ * @param accept                    Optional `Accept` header. NULL to omit.
+ * @param max_body_bytes            Maximum response body size in bytes.
+ *                                  Pass 0 to use the OIDC default (1 MiB).
+ * @param request_timeout_seconds   Total request timeout. Pass 0 to use
+ *                                  the OIDC default (30 s).
+ * @return Newly-allocated response; never NULL on caller mistakes
+ *         (returns a struct with `error_message` set instead). Returns
+ *         NULL only on calloc failure for the struct itself.
+ */
+OidcRpHttpResponse *oidc_rp_http_get_with_cap_and_timeout(
+    const char *url,
+    bool verify_ssl,
+    const char *accept,
+    size_t max_body_bytes,
+    long request_timeout_seconds);
+
+/**
+ * @brief Synchronous HTTP POST with caller-specified body cap and timeout.
+ *
+ * Phase 16 of the LUA_PLAN: the Lua `H.http.post` host function uses
+ * this variant with a 16 MiB cap and a Lua-supplied timeout. The
+ * Phase 11 `oidc_rp_http_post` is a thin wrapper that calls this with
+ * the OIDC defaults (1 MiB, 30 s).
+ *
+ * Same constraints as `oidc_rp_http_get_with_cap_and_timeout` and the
+ * same `body` / `content_type` / `accept` / `authorization` semantics
+ * documented on `oidc_rp_http_post`.
+ */
+OidcRpHttpResponse *oidc_rp_http_post_with_cap_and_timeout(
+    const char *url,
+    bool verify_ssl,
+    const char *body,
+    const char *content_type,
+    const char *accept,
+    const char *authorization,
+    size_t max_body_bytes,
+    long request_timeout_seconds);
+
+/**
+ * @brief Synchronous HTTP GET with caller-built headers slist and full
+ *        cap+timeout control.
+ *
+ * Phase 16 of the LUA_PLAN: the Lua `H.http.get` host function needs
+ * to forward arbitrary headers from a Lua table. The scripting layer
+ * converts the Lua table to a `struct curl_slist*` and passes it here.
+ * `headers` may be NULL (no extra headers beyond libcurl's default
+ * `Accept: star-slash-star` which is always present).
+ *
+ * Other semantics mirror `oidc_rp_http_get_with_cap_and_timeout`.
+ * The function takes ownership of `headers` and frees it on return
+ * (the scripting layer can strdup-free its own list after this call).
+ */
+OidcRpHttpResponse *oidc_rp_http_get_with_headers_slist(
+    const char *url,
+    bool verify_ssl,
+    struct curl_slist *headers,
+    size_t max_body_bytes,
+    long request_timeout_seconds);
+
+/**
+ * @brief Synchronous HTTP POST with caller-built headers slist and
+ *        full cap+timeout control.
+ *
+ * Phase 16 sibling of `oidc_rp_http_get_with_headers_slist`. `headers`
+ * is merged with the body/content_type plumbing; if a Content-Type is
+ * both in `headers` AND passed as the `content_type` parameter, the
+ * `content_type` parameter wins (it is appended after the slist).
+ *
+ * `body` may be NULL (empty POST). `content_type` may be NULL (no
+ * Content-Type header). `headers` may be NULL.
+ */
+OidcRpHttpResponse *oidc_rp_http_post_with_headers_slist(
+    const char *url,
+    bool verify_ssl,
+    const char *body,
+    const char *content_type,
+    struct curl_slist *headers,
+    size_t max_body_bytes,
+    long request_timeout_seconds);
 
 /**
  * @brief Test-only: drop every queued fixture.

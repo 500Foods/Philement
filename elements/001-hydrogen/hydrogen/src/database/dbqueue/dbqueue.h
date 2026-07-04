@@ -159,6 +159,11 @@ typedef struct DatabaseQuery {
     time_t processed_at;
     int retry_count;
     char* error_message;
+    int affected_rows;             // Rows affected by write statements (UPDATE/INSERT/DELETE);
+                                   // 0 for SELECTs or before the result is known. Populated
+                                   // by database_queue_await_result from QueryResult.affected_rows.
+                                   // For atomic task claiming via a conditional UPDATE, exactly
+                                   // one claimer sees affected_rows == 1 and the rest see 0.
 } DatabaseQuery;
 
 // Queue type enumeration for consistent indexing

@@ -243,6 +243,7 @@ json_t* build_success_response(int query_ref, const QueryCacheEntry* cache_entry
 
     json_object_set_new(response, "row_count", json_integer((json_int_t)result->row_count));
     json_object_set_new(response, "column_count", json_integer((json_int_t)result->column_count));
+    json_object_set_new(response, "affected_rows", json_integer(result->affected_rows));
     json_object_set_new(response, "execution_time_ms", json_integer(result->execution_time_ms));
     // Use intended queue type if provided, otherwise fall back to selected_queue's type
     json_object_set_new(response, "queue_used", json_string(intended_queue_type ? intended_queue_type : selected_queue->queue_type));

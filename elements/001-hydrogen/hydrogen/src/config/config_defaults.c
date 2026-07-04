@@ -544,6 +544,7 @@ void initialize_config_defaults_scripting(AppConfig* config) {
         config->scripting.WorkerCount = 2;
         config->scripting.DefaultQueryTimeout = 30;
         config->scripting.DefaultMaxRuntime = 3600;
+        config->scripting.DefaultHTTPTimeout = 30;
         config->scripting.InstructionHookInterval = 5000;
         config->scripting.MemorySampleEveryNHooks = 20;
         config->scripting.MemorySoftLimitKB = 32768;
