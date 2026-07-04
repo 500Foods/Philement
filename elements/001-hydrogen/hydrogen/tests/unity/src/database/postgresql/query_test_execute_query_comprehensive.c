@@ -100,7 +100,7 @@ void tearDown(void) {
     // Clean up test fixtures - no cleanup needed for these tests
 }
 
-// Test memory allocation failure for QueryResult
+// Test PQexec returns NULL / transport failure path
 void test_postgresql_execute_query_memory_allocation_failure(void) {
     DatabaseHandle connection = {0};
     connection.engine_type = DB_ENGINE_POSTGRESQL;
@@ -116,13 +116,19 @@ void test_postgresql_execute_query_memory_allocation_failure(void) {
 
     QueryResult* result = NULL;
 
-    // This test would need to simulate calloc failure
-    // For now, test with valid allocation but focus on other error paths
+    // With default mock state PQexec returns NULL, exercising the
+    // transport-error result path added by the watchdog/retry layer.
     bool query_result = postgresql_execute_query(&connection, &request, &result);
 
-    // Should handle gracefully - this tests the connection validation path
     TEST_ASSERT_FALSE(query_result);
-    TEST_ASSERT_NULL(result);
+    TEST_ASSERT_NOT_NULL(result);
+    TEST_ASSERT_FALSE(result->success);
+    TEST_ASSERT_EQUAL(DB_ERR_TRANSPORT, result->error_class);
+
+    // Cleanup
+    free(result->error_message);
+    free(result->data_json);
+    free(result);
 }
 
 // Test timeout scenario

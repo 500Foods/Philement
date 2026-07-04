@@ -31,6 +31,29 @@ char* db2_get_connection_string(const ConnectionConfig* config) {
                  config->password ? config->password : "");
     }
 
+    // Pin unqualified DDL/queries to the configured schema so migrations
+    // (CREATE INDEX, CREATE TABLE, etc.) and ad-hoc SELECTs from a shared
+    // user account don't bleed across schemas. Config::Schema wins over
+    // any CurrentSchema= already present in a provided connection string,
+    // so we strip a pre-existing CurrentSchema= before appending our own.
+    if (config->schema && *config->schema) {
+        char* existing = strstr(conn_str, "CurrentSchema=");
+        if (existing) {
+            char* end = strchr(existing, ';');
+            if (end) {
+                memmove(existing, end + 1, strlen(end + 1) + 1);
+            } else {
+                *existing = '\0';
+            }
+        }
+        size_t used = strlen(conn_str);
+        if (used > 0 && conn_str[used - 1] != ';') {
+            if (used + 1 < 1024) { conn_str[used++] = ';'; conn_str[used] = '\0'; }
+        }
+        snprintf(conn_str + used, (size_t)(1024 - used),
+                 "CurrentSchema=%s;", config->schema);
+    }
+
     return conn_str;
 }
 

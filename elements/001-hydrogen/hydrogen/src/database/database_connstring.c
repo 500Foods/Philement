@@ -497,9 +497,17 @@ ConnectionConfig* parse_connection_string(const char* connection_string) {
 
         // Set defaults for DB2
         if (!config->host) config->host = strdup("localhost");
-        if (config->port == 0) config->port = 5432;
+        if (config->port == 0) config->port = 50000;
         if (!config->username) config->username = strdup("");
         if (!config->password) config->password = strdup("");
+
+        // Pull a CurrentSchema attribute out of the connection string, if present,
+        // so it is available to the engine through ConnectionConfig.schema.
+        char* cs = extract_db2_value(connection_string, "CurrentSchema=");
+        if (cs) {
+            free(config->schema);
+            config->schema = cs;
+        }
     } else {
         // Assume other format - store as-is
         config->database = strdup(connection_string);
@@ -534,7 +542,8 @@ char* database_build_connection_string(const char* engine, const DatabaseConnect
         .ssl_cert_path = NULL,
         .ssl_key_path = NULL,
         .ssl_ca_path = NULL,
-        .prepared_statement_cache_size = conn_config->prepared_statement_cache_size
+        .prepared_statement_cache_size = conn_config->prepared_statement_cache_size,
+        .schema = conn_config->schema ? strdup(conn_config->schema) : NULL
     };
 
     // Use engine to build connection string
@@ -548,6 +557,7 @@ char* database_build_connection_string(const char* engine, const DatabaseConnect
     free(config.ssl_cert_path);
     free(config.ssl_key_path);
     free(config.ssl_ca_path);
+    free(config.schema);
 
     return conn_str;
 }
@@ -566,5 +576,6 @@ void free_connection_config(ConnectionConfig* config) {
     free(config->ssl_cert_path);
     free(config->ssl_key_path);
     free(config->ssl_ca_path);
+    free(config->schema);
     free(config);
 }
