@@ -3,6 +3,7 @@
 -- luacheck: no max line length
 
 -- CHANGELOG
+-- 2.9.0 - 2026-07-04 - Added directional future-time macros TRFS/TRFE (seconds) and TRFMS/TRFME (minutes) for parity with SQLite fix (Test 41 SQLite JWT bug)
 -- 2.8.1 - 2026-07-02 - Added REORG TABLE macro
 -- 2.8.0 - 2026-07-02 - Added JSON_INGEST_SCHEMA for storing JSON Schema docs that use $ref/$id/$schema
 -- 2.7.0 - 2026-03-22 - Added VARCHAR_64
@@ -59,6 +60,10 @@ return {
     TIMESTAMP_TZ = "TIMESTAMP",
     TRMS = "${NOW} - ( ",
     TRME = " ) MINUTES",
+    TRFS = "${NOW} + ( ",
+    TRFE = " ) SECONDS",
+    TRFMS = "${NOW} + ( ",
+    TRFME = " ) MINUTES",
     UNIQUE = "UNIQUE",
 
     -- Date/Time formatting for parameter testing

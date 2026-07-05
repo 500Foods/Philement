@@ -3,6 +3,7 @@
 -- luacheck: no max line length
 
 -- CHANGELOG
+-- 2.9.0 - 2026-07-04 - Added directional future-time macros TRFS/TRFE (seconds) and TRFMS/TRFME (minutes) to avoid the '-1 *' sign trick that produced NULL valid_until on SQLite (Test 41 SQLite JWT bug)
 -- 2.8.1 - 2026-07-02 - Added REORG TABLE macro
 -- 2.8.0 - 2026-07-02 - Added JSON_INGEST_SCHEMA passthrough macros (parity with other engines)
 -- 2.7.0 - 2026-03-22 - Added VARCHAR_64
@@ -56,6 +57,10 @@ return {
     TIMESTAMP_TZ = "text",
     TRMS = "datetime(${NOW}, '-' || ",
     TRME = " || ' minutes')",
+    TRFS = "datetime(${NOW}, '+' || ",
+    TRFE = " || ' seconds')",
+    TRFMS = "datetime(${NOW}, '+' || ",
+    TRFME = " || ' minutes')",
     UNIQUE = "UNIQUE",
     VARCHAR_20 = "varchar(20)",
     VARCHAR_50 = "varchar(50)",

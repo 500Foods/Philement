@@ -4,6 +4,7 @@
 # Collects and analyzes coverage data from Unity and blackbox tests
 
 # CHANGELOG
+# 5.1.0 - 2026-07-04 - Hardened test count parsing: strip newlines/whitespace from cache and diagnostic count values to prevent [[: ... arithmetic syntax error
 # 5.0.0 - 2025-12-05 - Added HYDROGEN_ROOT environment variable check
 # 4.1.0 - 2025-10-10 - Sorted list of uncovered files
 # 4.0.0 - 2025-00-14 - Overhaul #2 - all about the test count stuff at the end
@@ -24,7 +25,7 @@ TEST_NAME="Test Suite Coverage  {BLUE}coverage_table{RESET}"
 TEST_ABBR="COV"
 TEST_NUMBER="89"
 TEST_COUNTER=0
-TEST_VERSION="5.0.0"
+TEST_VERSION="5.1.0"
 
 export SKIP_GCOV_REGEN=0
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
@@ -43,28 +44,49 @@ format_duration() {
     fi
 }
 
+# Function to sanitize a count value: strip whitespace/newlines, keep only the leading integer.
+# Returns 0 if the result is a non-negative integer, otherwise 0.
+# This guards against upstream parsers that occasionally emit "7276\n238" or similar
+# multi-line output which would break bash [[ ... -ne ... ]] comparisons.
+sanitize_count() {
+    local raw="${1:-}"
+    # Take only the first whitespace-separated token, then strip everything but digits.
+    local clean
+    # shellcheck disable=SC2016 # awk field reference, not shell expansion
+    clean=$(printf '%s' "${raw}" | "${AWK}" '{print $1}' 2>/dev/null | tr -cd '0-9' || true)
+    if [[ -z "${clean}" ]]; then
+        echo "0"
+    else
+        echo "${clean}"
+    fi
+}
+
 # Function to count total Unity tests from the consolidated cache file
 count_tests_from_cache() {
     local cache_file="${1}"
+    local raw
     if [[ -f "${cache_file}" ]]; then
         # shellcheck disable=SC2016 # awk field reference, not shell expansion
-        "${AWK}" -F'|' '{sum += $5} END {print sum}' "${cache_file}" 2>/dev/null || echo "0"
+        raw=$("${AWK}" -F'|' '{sum += $5} END {print sum}' "${cache_file}" 2>/dev/null || echo "0")
     else
-        echo "0"
+        raw="0"
     fi
+    sanitize_count "${raw}"
 }
 
 # Function to count tests from Test 10 diagnostic files (first summary line per file)
 count_tests_from_diagnostics() {
     local diag_dir="${1}"
+    local raw
     if [[ -d "${diag_dir}" ]]; then
         # shellcheck disable=SC2016 # awk field reference, not shell expansion
-        "${FIND}" "${diag_dir}" -name "*.txt" -type f -print0 2>/dev/null | \
+        raw=$("${FIND}" "${diag_dir}" -name "*.txt" -type f -print0 2>/dev/null | \
             "${XARGS}" -0 cat 2>/dev/null | \
-            "${AWK}" '/[0-9]+ Tests [0-9]+ Failures [0-9]+ Ignored/ && !found { sum += $1; found = 1 } FNR == 1 { found = 0 } END { print sum }' 2>/dev/null || echo "0"
+            "${AWK}" '/[0-9]+ Tests [0-9]+ Failures [0-9]+ Ignored/ && !found { sum += $1; found = 1 } FNR == 1 { found = 0 } END { print sum }' 2>/dev/null || echo "0")
     else
-        echo "0"
+        raw="0"
     fi
+    sanitize_count "${raw}"
 }
 
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Recall Unity Test Coverage"
@@ -313,7 +335,8 @@ print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Reviewing Coverage (mapped) co
 raw_start=$(date +%s.%3N)
 raw_runtest_count=0
 if [[ -d "tests/unity/src" ]]; then
-    raw_runtest_count=$("${GREP}" -r "RUN_TEST(" "tests/unity/src" --include="*.c" 2>/dev/null | "${GREP}" -v "if (0)" | wc -l || echo "0")
+    # shellcheck disable=SC2312 # Intentional chained pipeline: GREP | GREP | wc -l
+    raw_runtest_count=$(sanitize_count "$("${GREP}" -r "RUN_TEST(" "tests/unity/src" --include="*.c" 2>/dev/null | "${GREP}" -v "if (0)" | wc -l || echo "0")")
 fi
 raw_end=$(date +%s.%3N)
 raw_duration=$(echo "${raw_end} - ${raw_start}" | bc 2>/dev/null || echo "0")
@@ -723,11 +746,13 @@ if [[ "${test10_total_executed}" -ne "${coverage_table_count}" ]] || [[ "${cover
 
         if [[ -n "${latest_test10_dir}" ]]; then
             # Ultra-efficient: single awk pass across all diagnostic files
-            test10_total_executed=$("${FIND}" "${latest_test10_dir}" -name "*.txt" -type f -exec "${AWK}" "
+            # shellcheck disable=SC2312 # Intentional FIND | AWK pipeline
+            test10_total_executed_raw=$("${FIND}" "${latest_test10_dir}" -name "*.txt" -type f -exec "${AWK}" "
             /Tests/ && /Failures/ && /Ignored/ {sum += \$1}
             ENDFILE {if (!/Tests/ || !/Failures/ || !/Ignored/) sum += 0}
             END {print sum}
             " {} + 2>/dev/null || echo "0")
+            test10_total_executed=$(sanitize_count "${test10_total_executed_raw}")
     
             # Ultra-efficient awk-based parsing of diagnostic files
             diag_output=$("${FIND}" "${latest_test10_dir}" -name "*.txt" -type f -exec "${AWK}" "

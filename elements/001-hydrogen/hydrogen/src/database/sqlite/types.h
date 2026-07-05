@@ -46,6 +46,14 @@ typedef void (*sqlite3_interrupt_t)(void*);
 #define SQLITE_NULL 5
 #define SQLITE_DBCONFIG_ENABLE_LOAD_EXTENSION 1005
 
+// Primary result codes used for error classification. SQLite extended
+// result codes carry the primary code in the low 8 bits, so callers
+// mask with 0xFF before comparing. SQLITE_BUSY/SQLITE_LOCKED are the
+// only transient (retryable) failures; everything else is permanent.
+#define SQLITE_PRIMARY_CODE_MASK 0xFF
+#define SQLITE_BUSY 5
+#define SQLITE_LOCKED 6
+
 // Prepared statement cache structure
 typedef struct PreparedStatementCache {
     char** names;

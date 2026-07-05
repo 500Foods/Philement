@@ -189,7 +189,7 @@ int main(void) {
     RUN_TEST(test_handle_check_rejects_wrong_metatable);
     RUN_TEST(test_handle_check_accepts_valid_handle);
     RUN_TEST(test_handle_install_metatable_idempotent);
-    // RUN_TEST(test_handle_gc_frees_handle);  // GC test deferred
+    if (0) RUN_TEST(test_handle_gc_frees_handle);  // GC test deferred
 
     return UNITY_END();
 }
