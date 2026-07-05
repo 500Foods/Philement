@@ -5,6 +5,7 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 1.1.0 - 2026-07-04 - Fixed valid_until: use future-seconds macro TRFS/TRFE instead of the '-1 * :JWTDURATION' minutes trick, which produced NULL valid_until on SQLite (SQLITE_CONSTRAINT_NOTNULL) and a 60x-too-long token lifetime on all engines (JWTDURATION is seconds, not minutes)
 -- 1.0.0 - 2025-12-28 - Initial creation
 
 return function(engine, design_name, schema_name, cfg)
@@ -68,7 +69,7 @@ table.insert(queries,{sql=[[
                         :APPVERSION,
                         :IPADDRESS,
                         ${NOW},
-                        ${TRMS} -1 * :JWTDURATION ${TRME}
+                        ${TRFS} :JWTDURATION ${TRFE}
                     )
                 ]==]                                                                AS code,
                 '${QUERY_NAME}'                                                     AS name,
@@ -101,8 +102,8 @@ table.insert(queries,{sql=[[
 
                     - Ensure that the `TOKENHASH` is securely generated and stored to maintain
                       security best practices.
-                    - The `valid_until` field is calculated based on the current time plus the
-                      provided `JWTDURATION`.
+                    - The `valid_until` field is calculated as the current time plus the
+                      provided `JWTDURATION` in seconds (future time).
 
                 ]==]
                                                                                     AS summary,

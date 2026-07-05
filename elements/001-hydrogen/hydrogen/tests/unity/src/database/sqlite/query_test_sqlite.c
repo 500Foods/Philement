@@ -670,8 +670,20 @@ void test_sqlite_execute_prepared_step_error(void) {
     
     bool query_result = sqlite_execute_prepared(&connection, &stmt, &request, &result);
     
+    // A step failure now returns a populated error result (not NULL) so the
+    // engine retry layer classifies it correctly instead of treating it as a
+    // retryable transport error. SQLITE_ERROR (1) is permanent -> DB_ERR_OTHER.
     TEST_ASSERT_FALSE(query_result);
-    TEST_ASSERT_NULL(result);
+    TEST_ASSERT_NOT_NULL(result);
+    TEST_ASSERT_FALSE(result->success);
+    TEST_ASSERT_EQUAL(DB_ERR_OTHER, result->error_class);
+    TEST_ASSERT_NOT_NULL(result->error_message);
+    TEST_ASSERT_EQUAL_STRING("step failed", result->error_message);
+    
+    // Cleanup
+    free(result->error_message);
+    free(result->data_json);
+    free(result);
 }
 
 void test_sqlite_execute_prepared_multiple_rows_multiple_columns(void) {
@@ -778,11 +790,21 @@ void test_sqlite_execute_prepared_errmsg_ptr_null(void) {
     
     bool query_result = sqlite_execute_prepared(&connection, &stmt, &request, &result);
     
+    // With no errmsg available, the failure still returns a populated error
+    // result carrying a fallback message and the correct (permanent) class.
     TEST_ASSERT_FALSE(query_result);
-    TEST_ASSERT_NULL(result);
+    TEST_ASSERT_NOT_NULL(result);
+    TEST_ASSERT_FALSE(result->success);
+    TEST_ASSERT_EQUAL(DB_ERR_OTHER, result->error_class);
+    TEST_ASSERT_NOT_NULL(result->error_message);
     
     // Restore
     sqlite3_errmsg_ptr = saved_errmsg;
+    
+    // Cleanup
+    free(result->error_message);
+    free(result->data_json);
+    free(result);
 }
 
 int main(void) {

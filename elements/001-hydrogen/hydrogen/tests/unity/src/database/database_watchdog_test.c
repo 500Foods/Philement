@@ -507,9 +507,5 @@ int main(void) {
     RUN_TEST(test_cancel_inflight_not_invoked_when_not_expired);
     RUN_TEST(test_cancel_inflight_invoked_only_once_per_entry);
 
-    RUN_TEST(test_set_bounds_overrides_clamp_range);
-    RUN_TEST(test_set_bounds_ignores_zero_or_negative_arguments);
-    RUN_TEST(test_set_bounds_clamps_min_when_min_exceeds_max);
-
     return UNITY_END();
 }

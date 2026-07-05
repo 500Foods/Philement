@@ -5,6 +5,7 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 1.1.0 - 2026-07-04 - Fixed valid_until: use future-minutes macro TRFMS/TRFME instead of the '-1 * :LOGINBLOCKDURATION' minutes trick, which produced NULL valid_until on SQLite (same root cause as the Test 41 JWT bug)
 -- 1.0.0 - 2025-12-28 - Initial creation
 
 return function(engine, design_name, schema_name, cfg)
@@ -67,7 +68,7 @@ table.insert(queries,{sql=[[
                       :IPADDRESS || '' / '' || :LOGINID,
                       :REASON,
                       ${NOW},
-                      ${TRMS} -1 * :LOGINBLOCKDURATION ${TRME}, -- future time -> multiply by -1
+                      ${TRFMS} :LOGINBLOCKDURATION ${TRFME}, -- future time (minutes)
                       1,
                       :LOGINLOGID,
                       ${NOW},

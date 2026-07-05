@@ -18,6 +18,46 @@
 // Forward declaration for numeric value checking
 bool sqlite_is_numeric_value(const char* value);
 
+/*
+ * Build a populated failure QueryResult so the engine abstraction layer
+ * (database_engine_execute) receives a real error_class and error_message
+ * instead of a NULL result.
+ *
+ * A NULL result was previously misclassified as DB_ERR_TRANSPORT (retryable),
+ * which caused failing SQLite writes - notably the tokens.valid_until NOT NULL
+ * constraint failure - to be treated as transient. That both lost the real
+ * error message ("(no error message)") and could drive the single SQLite
+ * worker thread into retry sleeps under load. See Test 41 SQLite JWT bug.
+ *
+ * Classification: only SQLITE_BUSY / SQLITE_LOCKED are transient
+ * (DB_ERR_TRANSPORT, retryable). Everything else - constraint violations,
+ * syntax errors, etc. - is DB_ERR_OTHER (permanent, not retried).
+ *
+ * Returns a heap-allocated QueryResult (caller owns it via *result), or NULL
+ * only on allocation failure.
+ */
+QueryResult* sqlite_build_error_result(int step_result, const char* error_msg) {
+    QueryResult* error_result = calloc(1, sizeof(QueryResult));
+    if (!error_result) {
+        return NULL;
+    }
+
+    const int primary_code = step_result & SQLITE_PRIMARY_CODE_MASK;
+    error_result->success = false;
+    error_result->error_class = (primary_code == SQLITE_BUSY || primary_code == SQLITE_LOCKED)
+                                    ? DB_ERR_TRANSPORT
+                                    : DB_ERR_OTHER;
+    error_result->error_message = strdup((error_msg && error_msg[0] != '\0')
+                                             ? error_msg
+                                             : "SQLite query execution failed (no error details)");
+    error_result->row_count = 0;
+    error_result->column_count = 0;
+    error_result->data_json = strdup("[]");
+    error_result->execution_time_ms = 0;
+    error_result->affected_rows = 0;
+    return error_result;
+}
+
 // External declarations for libsqlite3 function pointers (defined in connection.c)
 extern sqlite3_exec_t sqlite3_exec_ptr;
 extern sqlite3_prepare_v2_t sqlite3_prepare_v2_ptr;
@@ -477,8 +517,9 @@ bool sqlite_execute_query(DatabaseHandle* connection, QueryRequest* request, Que
     // Check if step failed (other than SQLITE_DONE)
     if (step_result != SQLITE_DONE && step_result != SQLITE_ROW) {
         log_this(designator, "SQLite query execution failed - result: %d", LOG_LEVEL_ERROR, 1, step_result);
+        const char* error_msg = NULL;
         if (sqlite3_errmsg_ptr) {
-            const char* error_msg = sqlite3_errmsg_ptr(sqlite_conn->db);
+            error_msg = sqlite3_errmsg_ptr(sqlite_conn->db);
             if (error_msg) {
                 log_this(designator, "SQLite query error: %s", LOG_LEVEL_ERROR, 1, error_msg);
             }
@@ -492,7 +533,10 @@ bool sqlite_execute_query(DatabaseHandle* connection, QueryRequest* request, Que
         free(positional_sql);
         free(ordered_params);
         free_parameter_list(param_list);
-        *result = NULL;
+        // Return a populated error result so the retry layer classifies the
+        // failure correctly (constraint -> DB_ERR_OTHER, not retryable) and the
+        // real error message reaches the caller instead of a NULL result.
+        *result = sqlite_build_error_result(step_result, error_msg);
         return false;
     }
 
@@ -647,8 +691,9 @@ bool sqlite_execute_prepared(DatabaseHandle* connection, const PreparedStatement
     // Check if step failed (other than SQLITE_DONE)
     if (step_result != SQLITE_DONE && step_result != SQLITE_ROW) {
         log_this(designator, "SQLite prepared statement execution failed - result: %d", LOG_LEVEL_ERROR, 1, step_result);
+        const char* error_msg = NULL;
         if (sqlite3_errmsg_ptr) {
-            const char* error_msg = sqlite3_errmsg_ptr(sqlite_conn->db);
+            error_msg = sqlite3_errmsg_ptr(sqlite_conn->db);
             if (error_msg) {
                 log_this(designator, "SQLite prepared statement error: %s", LOG_LEVEL_ERROR, 1, error_msg);
             }
@@ -657,7 +702,9 @@ bool sqlite_execute_prepared(DatabaseHandle* connection, const PreparedStatement
         sqlite_cleanup_column_names(column_names, column_count);
         free(db_result);
         sqlite3_reset_ptr(stmt_handle);
-        *result = NULL;
+        // Return a populated error result so the retry layer classifies the
+        // failure correctly instead of treating a NULL result as retryable.
+        *result = sqlite_build_error_result(step_result, error_msg);
         return false;
     }
 

@@ -12,7 +12,7 @@ TEST_NAME="Exercise"
 TEST_ABBR="EXE"
 TEST_NUMBER="41"
 TEST_COUNTER=0
-TEST_VERSION="3.9.0"
+TEST_VERSION="3.11.0"
 
 TOTAL_REQUESTS=500
 SNAPSHOT_INTERVAL=50
@@ -20,8 +20,7 @@ METRICS_DELAY=1  # Seconds to wait before scraping metrics
 MIDPOINT_REQUEST=$(( TOTAL_REQUESTS / 2 ))  # For steady-state leak analysis (first run)
 LEAK_THRESHOLD_KB_PER_REQ=1  # Max KB/request growth in second half before flagging as leak
 
-# Prometheus scrape resilience (see scrape_metrics). Under ASAN the endpoint
-# can momentarily fail to respond while under heavy auth load, so we retry.
+# Prometheus scrape resilience (see scrape_metrics). Under ASAN the endpoint can momentarily fail to respond while under heavy auth load, so we retry.
 SCRAPE_MAX_ATTEMPTS=5    # Total curl attempts per scrape before giving up
 SCRAPE_CURL_TIMEOUT=15   # Per-attempt curl --max-time (seconds)
 SCRAPE_RETRY_DELAY=2     # Seconds to wait between scrape attempts
@@ -31,8 +30,7 @@ NATIVE_TOTAL_REQUESTS=5000
 NATIVE_SNAPSHOT_INTERVAL=500
 NATIVE_MIDPOINT_REQUEST=$(( NATIVE_TOTAL_REQUESTS / 2 ))  # Midpoint for native steady-state analysis
 
-# Captured native steady-state growth (bytes/request) from the long native run.
-# Surfaced in the footer title. Empty until the native analysis computes it.
+# Captured native steady-state growth (bytes/request) from the long native run. Surfaced in the footer title. Empty until the native analysis computes it.
 NATIVE_STEADY_BYTES_PER_REQ=""
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
@@ -42,12 +40,9 @@ NATIVE_STEADY_BYTES_PER_REQ=""
 setup_test_environment
 
 # Exercise configuration - uses conduit_utils.sh DATABASE_NAMES map
-# DATABASE_NAMES is defined in conduit_utils.sh:
-#   PostgreSQL=Demo_PG, MySQL=Demo_MY, SQLite=Demo_SQL, DB2=Demo_DB2,
-#   MariaDB=Demo_MR, CockroachDB=Demo_CR, YugabyteDB=Demo_YB
+# DATABASE_NAMES is defined in conduit_utils.sh: PostgreSQL=Demo_PG, MySQL=Demo_MY, SQLite=Demo_SQL, DB2=Demo_DB2, MariaDB=Demo_MR, CockroachDB=Demo_CR, YugabyteDB=Demo_YB
 
 # ── Locate Hydrogen Binary ──────────────────────────────────────────
-
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Locate Hydrogen Binary"
 
 HYDROGEN_BIN=''
@@ -63,26 +58,18 @@ else
 fi
 
 # ── Detect ASAN Debug Build for Thorough Leak Checks ─────────────────
-# test_11 uses debug/ASAN but deliberately avoids DBs. test_41's purpose
-# is DB/auth stress (conduit + 7 engines + 500 logins) + leak detection.
-# When hydrogen_debug (ASAN-enabled) is present we launch the exercise
-# server under it and post-process LeakSanitizer output from its log.
+# test_11 uses debug/ASAN but deliberately avoids DBs. test_41's purpose is DB/auth stress (conduit + 7 engines + 500 logins) + leak detection.
+# When hydrogen_debug (ASAN-enabled) is present we launch the exercise server under it and post-process LeakSanitizer output from its log.
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Detect ASAN Debug Build"
 
 ASAN_MODE=false
 ASAN_HYDROGEN_BIN=""
-# Probe common locations for the debug binary next to the regular one.
-# We *always* resolve to an absolute path (or ./prefixed) here so that when we
-# later do "export HYDROGEN_BIN=..." and conduit_utils does "${HYDROGEN_BIN}" ...
-# in a subshell/background, it can actually exec it. Bare names like "hydrogen_debug"
-# only work by luck in the test script's cwd context; they produce "command not found"
-# in the launch context (exactly what the server log showed).
-# Note on payload: the plain "hydrogen_debug" target (see cmake/CMakeLists-debug.cmake)
-# only adds ASAN flags; it does *not* run the embed_payload.sh step that regular,
-# coverage and release do. If the binary we pick lacks the appended encrypted payload,
-# the server will fail to load PAYLOAD: resources (Swagger, migrations tagged PAYLOAD:acuranzo,
-# terminal, etc.) and never print "STARTUP COMPLETE". We still allow it (with a warning)
-# so that the long-timeout run + guarded ASAN analysis can reveal the real error in the log.
+# Probe common locations for the debug binary next to the regular one. We *always* resolve to an absolute path (or ./prefixed) here so that when we
+# later do "export HYDROGEN_BIN=..." and conduit_utils does "${HYDROGEN_BIN}" ... in a subshell/background, it can actually exec it. Bare names like "hydrogen_debug"
+# only work by luck in the test script's cwd context; they produce "command not found" in the launch context (exactly what the server log showed).
+# Note on payload: the plain "hydrogen_debug" target (see cmake/CMakeLists-debug.cmake) only adds ASAN flags; it does *not* run the embed_payload.sh step that regular,
+# coverage and release do. If the binary we pick lacks the appended encrypted payload, the server will fail to load PAYLOAD: resources (Swagger, migrations tagged PAYLOAD:acuranzo,
+# terminal, etc.) and never print "STARTUP COMPLETE". We still allow it (with a warning) so that the long-timeout run + guarded ASAN analysis can reveal the real error in the log.
 for cand in \
     "${HYDROGEN_BIN_BASE}_debug" \
     "hydrogen_debug" \
@@ -118,12 +105,9 @@ for cand in \
 done
 
     if [[ "${ASAN_MODE}" == true ]]; then
-    # Resolve the candidate to an absolute path. The framework's find_hydrogen_binary
-    # often ends up with bare names (e.g. "hydrogen_coverage") that happen to be resolvable
-    # in the test runner's context. For our explicit override to the debug binary we must
-    # ensure the value we export as HYDROGEN_BIN is directly executable by the shell in
-    # run_conduit_server (which does "${HYDROGEN_BIN}" ...). Bare names fail when . is not
-    # on $PATH (common). Use REALPATH if available (provided by framework).
+    # Resolve the candidate to an absolute path. The framework's find_hydrogen_binary often ends up with bare names (e.g. "hydrogen_coverage") that happen to be resolvable
+    # in the test runner's context. For our explicit override to the debug binary we must ensure the value we export as HYDROGEN_BIN is directly executable by the shell in
+    # run_conduit_server (which does "${HYDROGEN_BIN}" ...). Bare names fail when . is not on $PATH (common). Use REALPATH if available (provided by framework).
     if [[ -n "${REALPATH:-}" ]] && command -v "${REALPATH}" >/dev/null 2>&1; then
         ASAN_HYDROGEN_BIN=$("${REALPATH}" "${ASAN_HYDROGEN_BIN}" 2>/dev/null || echo "${ASAN_HYDROGEN_BIN}")
     else
@@ -142,9 +126,9 @@ else
 fi
 
 # ── Validate Environment ────────────────────────────────────────────
-
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Environment"
 env_vars_valid=true
+
 if [[ -z "${HYDROGEN_DEMO_USER_NAME:-}" ]]; then
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "ERROR: HYDROGEN_DEMO_USER_NAME is not set"
     env_vars_valid=false
@@ -167,7 +151,6 @@ else
 fi
 
 # ── Validate Configuration ──────────────────────────────────────────
-
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Exercise Configuration"
 
 CONFIG_FILE="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_exercise.json"
@@ -191,7 +174,6 @@ else
 fi
 
 # ── Exercise Parameters ─────────────────────────────────────────────
-
 BASE_URL="http://localhost:${SERVER_PORT:-5410}"
 PROMETHEUS_URL="${BASE_URL}${API_PREFIX:-/api}/system/prometheus"
 
@@ -207,12 +189,9 @@ PASS_COUNT=$(( PASS_COUNT + 1 ))
 
 # ── Helper Functions ────────────────────────────────────────────────
 
-# Function to scrape Prometheus metrics from the server
-# Retries a few times because under ASAN (shadow memory + quarantine) the
-# server can be momentarily unresponsive while servicing heavy auth load,
-# producing empty/partial scrapes ("No metrics returned"). We retry with a
-# short backoff and only accept a response that actually contains hydrogen_
-# metrics; on total failure we echo "" so callers can detect the miss.
+# Function to scrape Prometheus metrics from the server Retries a few times because under ASAN (shadow memory + quarantine) the
+# server can be momentarily unresponsive while servicing heavy auth load, producing empty/partial scrapes ("No metrics returned"). We retry with a
+# short backoff and only accept a response that actually contains hydrogen_ metrics; on total failure we echo "" so callers can detect the miss.
 scrape_metrics() {
     local prom_url="$1"
     local attempt response
@@ -234,8 +213,7 @@ scrape_metrics() {
 }
 
 # Function to extract a metric value from Prometheus text format
-# Handles lines like: metric_name 12345
-# Also handles lines with labels like: metric_name{label="value"} 12345
+# Handles lines like: metric_name 1234, Also handles lines with labels like: metric_name{label="value"} 12345
 get_metric() {
     local metrics="$1"
     local name="$2"
@@ -290,16 +268,12 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
 
     true > "${METRICS_LOG}"
 
-    # If ASAN debug build is available, launch the exercise server under it
-    # so we can harvest LeakSanitizer output from its log at shutdown.
-    # We still use the same port/config; we temporarily override HYDROGEN_BIN
-    # for the run_conduit_server call, then restore it.
+    # If ASAN debug build is available, launch the exercise server under it so we can harvest LeakSanitizer output from its log at shutdown.
+    # We still use the same port/config; we temporarily override HYDROGEN_BIN for the run_conduit_server call, then restore it.
     ORIGINAL_HYDROGEN_BIN="${HYDROGEN_BIN}"
     if [[ "${ASAN_MODE}" == true && -n "${ASAN_HYDROGEN_BIN}" ]]; then
-        # Guarantee an absolute (or at worst ./ -prefixed) path for the launch.
-        # The probe above may have left a bare basename. conduit_utils does
-        # "${HYDROGEN_BIN}" ... in a background subshell; bare names fail there
-        # with "command not found" unless . is in $PATH for that context.
+        # Guarantee an absolute (or at worst ./ -prefixed) path for the launch. The probe above may have left a bare basename. conduit_utils does
+        # "${HYDROGEN_BIN}" ... in a background subshell; bare names fail there with "command not found" unless . is in $PATH for that context.
         if [[ "${ASAN_HYDROGEN_BIN}" != /* ]]; then
             if command -v realpath >/dev/null 2>&1; then
                 ASAN_HYDROGEN_BIN=$(realpath "${ASAN_HYDROGEN_BIN}" 2>/dev/null || echo "${ASAN_HYDROGEN_BIN}")
@@ -321,8 +295,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Effective HYDROGEN_BIN for launch: ${HYDROGEN_BIN}"
     fi
 
-    # Use run_conduit_server() from conduit_utils.sh for proven startup,
-    # migration waiting, database readiness, and webserver readiness
+    # Use run_conduit_server() from conduit_utils.sh for proven startup, migration waiting, database readiness, and webserver readiness
     server_info=$(run_conduit_server "${CONFIG_FILE}" "${EXERCISE_LOG_SUFFIX}" "Exercise" "${RESULT_FILE}")
 
     # Check if server startup failed
@@ -458,8 +431,9 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
                     RSS_MB=$(echo "${RSS}" | awk '{printf "%.1f", $1/1024/1024}')
                     RSS_DELTA=$(echo "${RSS} ${INITIAL_RSS}" | awk '{printf "%.1f", ($1-$2)/1024/1024}')
 
-                    # Capture midpoint RSS for steady-state analysis
-                    if [[ "${REQUEST_COUNT}" -eq "${MIDPOINT_REQUEST}" ]]; then
+                    # Capture midpoint RSS for steady-state analysis. Use the first successful snapshot at or past the midpoint (">=" not "==") and
+                    # require a real reading, so one dropped scrape at the exact midpoint request cannot silently disable the steady-state verdict later.
+                    if [[ "${MIDPOINT_RSS}" -eq 0 && "${REQUEST_COUNT}" -ge "${MIDPOINT_REQUEST}" && "${RSS}" -gt 0 ]]; then
                         MIDPOINT_RSS="${RSS}"
                     fi
 
@@ -689,15 +663,10 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     fi
 
     # ── Native Release RSS Measurement ──────────────────────────────
-    # Long native (non-ASAN) memory-growth run using hydrogen_release.
-    # RSS growth numbers here are authoritative for leak detection because
-    # there is no shadow memory / quarantine overhead. Runs after ASAN
-    # shutdown. Separate metrics log for comparison. Always attempt
+    # Long native (non-ASAN) memory-growth run using hydrogen_release. RSS growth numbers here are authoritative for leak detection because
+    # there is no shadow memory / quarantine overhead. Runs after ASAN shutdown. Separate metrics log for comparison. Always attempt
     # (diagnostic); previous EXIT_CODE from ASAN leaks does not block it.
-    #
-    # This is a single subtest following harness norms: one TEST header,
-    # INFO lines for progress/diagnostics, and exactly one terminal
-    # PASS/FAIL per code path.
+    # This is a single subtest following harness norms: one TEST header, INFO lines for progress/diagnostics, and exactly one terminal PASS/FAIL per code path.
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Native RSS Measurement (${NATIVE_TOTAL_REQUESTS} requests)"
 
     # Locate a non-ASAN release binary (hydrogen_release preferred)
@@ -787,6 +756,24 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
             N_CNT=0
             N_MID=0
 
+            # Server-health / measurement-quality tracking. A failed scrape is NOT the
+            # same as "RSS == 0"; get_metric() returns 0 on a miss, which previously
+            # silently corrupted the final growth math (e.g. "Growth: -77.0 MB") and
+            # skipped the verdict ("no midpoint"). We now track the last GOOD snapshot
+            # and count consecutive scrape failures so we can detect a server that has
+            # crashed or hung under load and report that explicitly as a FAILURE.
+            N_LAST_GOOD_RSS=0        # RSS (bytes) from the most recent successful scrape
+            N_LAST_GOOD_CNT=0        # request count at that successful scrape
+            N_SNAPSHOTS_OK=0         # number of successful periodic snapshots
+            N_SNAPSHOTS_FAIL=0       # number of failed periodic snapshots
+            N_CONSEC_FAILS=0         # consecutive failed periodic snapshots (reset on success)
+            N_SERVER_DIED=false      # set true when the server stops responding mid-run
+            # Abort the (long) native loop once the server is clearly unresponsive rather
+            # than hammering a dead/hung process for thousands more requests. Two
+            # consecutive missed snapshots (with SCRAPE_MAX_ATTEMPTS retries each) is a
+            # strong signal the server is gone.
+            N_MAX_CONSEC_FAILS=2
+
             for ((i=1; i<=NATIVE_TOTAL_REQUESTS; i++)); do
                 ndx=$(( (i-1) % N_DB_CNT ))
                 dbn="${NATIVE_DBS[${ndx}]}"
@@ -796,9 +783,16 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
                 if (( N_CNT % NATIVE_SNAPSHOT_INTERVAL == 0 )); then
                     NM=$(scrape_metrics "${PROMETHEUS_URL}")
                     if [[ -n "${NM}" ]] && echo "${NM}" | "${GREP}" -q "hydrogen_" 2>/dev/null; then
+                        N_CONSEC_FAILS=0
+                        N_SNAPSHOTS_OK=$(( N_SNAPSHOTS_OK + 1 ))
                         NR=$(get_metric "${NM}" "hydrogen_process_resident_memory_bytes")
                         NQ=$(get_metric "${NM}" "hydrogen_database_queries_executed_total")
-                        NC=$(get_metric "${NM}" "hydrogen_webserver_connections_current")
+                        # NB: do NOT name this "NC" - that is the framework's global
+                        # No-Color reset escape (\033[0;37m). Reusing it here clobbered
+                        # every subsequent line's color reset with the connections count,
+                        # producing the stray leading/trailing digits and "DATA1"/"INFO2"
+                        # label corruption in the native subtest output.
+                        NCONN=$(get_metric "${NM}" "hydrogen_webserver_connections_current")
                         NRT=$(get_metric "${NM}" "hydrogen_webserver_requests_total")
                         NF=$(get_metric "${NM}" "hydrogen_process_open_fds")
                         NP=$(get_metric "${NM}" "hydrogen_database_prepared_statements_cached")
@@ -813,13 +807,25 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
                         NR_MB=$(echo "${NR}" | awk '{printf "%.1f", $1/1024/1024}')
                         ND=$(echo "${NR} ${N_INIT_RSS}" | awk '{printf "%.1f", ($1-$2)/1024/1024}')
 
-                        if [[ "${N_CNT}" -eq "${NATIVE_MIDPOINT_REQUEST}" ]]; then
+                        # Remember the last successful RSS/count so final growth and
+                        # steady-state analysis can use real measured data even if the
+                        # very last (post-loop) scrape misses.
+                        if [[ "${NR}" -gt 0 ]]; then
+                            N_LAST_GOOD_RSS="${NR}"
+                            N_LAST_GOOD_CNT="${N_CNT}"
+                        fi
+
+                        # Capture the midpoint RSS from the first successful snapshot at or
+                        # past the midpoint request. Keying off ">=" (not exact equality)
+                        # means a single missed midpoint snapshot no longer disables the
+                        # entire steady-state verdict.
+                        if [[ "${N_MID}" -eq 0 && "${N_CNT}" -ge "${NATIVE_MIDPOINT_REQUEST}" && "${NR}" -gt 0 ]]; then
                             N_MID="${NR}"
                         fi
 
                         printf "%-8s  %-10s  %-10s  %-10s  %-8s  %-10s  %-6s  %-8s  %-8s  %-7s  %-6s  %-6s  %-6s  %-7s  %-7s\n" \
                             "[${N_CNT}/${NATIVE_TOTAL_REQUESTS}]" \
-                            "${NR_MB}" "${ND}" "${NQ}" "${NC}" "${NRT}" "${NF}" "${NP}" "${NI}" "${NPE}" "${NAC}" \
+                            "${NR_MB}" "${ND}" "${NQ}" "${NCONN}" "${NRT}" "${NF}" "${NP}" "${NI}" "${NPE}" "${NAC}" \
                             "${NDC}" "${NCL}" "${NPH}" "${NPM}" \
                             >> "${NATIVE_METRICS}"
 
@@ -828,26 +834,63 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
                         # values), letting the framework collect/render it.
                         print_output "${TEST_NUMBER}" "${TEST_COUNTER}" \
                             "[NATIVE ${N_CNT}/${NATIVE_TOTAL_REQUESTS}] RSS: ${NR_MB}MB (Δ${ND}MB) | Queries: ${NQ} | FDs: ${NF} | PrepCache: ${NP} | InFlight: ${NI} | Ctx: ${NAC} | DBConns: ${NDC}/${NCL} | PrepHits/Miss: ${NPH}/${NPM}"
+                    else
+                        # Scrape failed at this snapshot. Under sustained auth load the
+                        # server can hang (observed: SQLite DQM stalling on tokens.valid_until
+                        # errors), after which every scrape returns empty. Track this and
+                        # bail out early instead of firing thousands of requests at a dead
+                        # process and then reporting a bogus negative "growth".
+                        N_SNAPSHOTS_FAIL=$(( N_SNAPSHOTS_FAIL + 1 ))
+                        N_CONSEC_FAILS=$(( N_CONSEC_FAILS + 1 ))
+                        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
+                            "[NATIVE ${N_CNT}/${NATIVE_TOTAL_REQUESTS}] WARNING: metrics scrape failed (consecutive failures: ${N_CONSEC_FAILS})"
+                        {
+                            echo "[${N_CNT}/${NATIVE_TOTAL_REQUESTS}] SCRAPE FAILED (consecutive: ${N_CONSEC_FAILS})"
+                        } >> "${NATIVE_METRICS}"
+                        if [[ "${N_CONSEC_FAILS}" -ge "${N_MAX_CONSEC_FAILS}" ]]; then
+                            N_SERVER_DIED=true
+                            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
+                                "Native server unresponsive after ${N_CNT} requests (${N_CONSEC_FAILS} consecutive failed scrapes) - aborting native measurement"
+                            break
+                        fi
                     fi
                 fi
             done
 
             sleep 2
             NFN=$(scrape_metrics "${PROMETHEUS_URL}")
-            NF_RSS=$(get_metric "${NFN}" "hydrogen_process_resident_memory_bytes")
-            NF_Q=$(get_metric "${NFN}" "hydrogen_database_queries_executed_total")
-            NF_F=$(get_metric "${NFN}" "hydrogen_process_open_fds")
+            if [[ -n "${NFN}" ]] && echo "${NFN}" | "${GREP}" -q "hydrogen_" 2>/dev/null; then
+                NF_RSS=$(get_metric "${NFN}" "hydrogen_process_resident_memory_bytes")
+                NF_Q=$(get_metric "${NFN}" "hydrogen_database_queries_executed_total")
+                NF_F=$(get_metric "${NFN}" "hydrogen_process_open_fds")
+            else
+                # Final scrape missed. Do NOT treat this as RSS=0 (that produced the
+                # infamous "-77.0 MB" growth). Fall back to the last good snapshot if we
+                # have one; otherwise leave RSS at 0 and let the health check below FAIL.
+                NF_RSS="${N_LAST_GOOD_RSS}"
+                NF_Q=0
+                NF_F=0
+                if [[ "${NF_RSS}" -gt 0 ]]; then
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Final native scrape missed; using last good snapshot at request ${N_LAST_GOOD_CNT} for final RSS"
+                fi
+            fi
             NF_MB=$(echo "${NF_RSS}" | awk '{printf "%.1f", $1/1024/1024}')
             NG_MB=$(echo "${NF_RSS} ${N_INIT_RSS}" | awk '{printf "%.1f", ($1-$2)/1024/1024}')
 
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Native final RSS: ${NF_MB} MB | Growth: ${NG_MB} MB over ${N_CNT} requests (target ${NATIVE_TOTAL_REQUESTS})"
 
+            N_RESPONSIVE_NOTE="yes"
+            if [[ "${N_SERVER_DIED}" == true ]]; then
+                N_RESPONSIVE_NOTE="NO (unresponsive after ${N_CNT} requests)"
+            fi
             {
                 echo ""
                 echo "=== NATIVE FINAL ==="
                 echo "Final RSS: ${NF_RSS} bytes (${NF_MB} MB)"
                 echo "Growth: ${NG_MB} MB"
                 echo "Queries: ${NF_Q}  FDs: ${NF_F}"
+                echo "Successful snapshots: ${N_SNAPSHOTS_OK}  Failed snapshots: ${N_SNAPSHOTS_FAIL}"
+                echo "Server responsive throughout: ${N_RESPONSIVE_NOTE}"
             } >> "${NATIVE_METRICS}"
 
             # Stop the native server now so the subtest's terminal PASS/FAIL
@@ -857,9 +900,18 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
             fi
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Native server stopped"
 
-            # Native steady-state analysis (RSS heuristic is authoritative here)
-            # Uses NATIVE_* constants so the extended run (5000) is analyzed correctly.
-            if [[ "${N_MID}" -gt 0 && "${NF_RSS}" -gt 0 ]]; then
+            # Server health is the first-class verdict for this subtest. A server that
+            # stops responding to Prometheus under sustained auth load is a real defect
+            # (not an "inconclusive" measurement), so report it as a FAIL with the point
+            # of failure. This is what surfaced the SQLite tokens.valid_until hang.
+            if [[ "${N_SERVER_DIED}" == true ]]; then
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Server hung/crashed under load; check ${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_${NATIVE_SUFFIX}.log"
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Native server became unresponsive after ${N_CNT} requests (${N_SNAPSHOTS_OK} good / ${N_SNAPSHOTS_FAIL} failed snapshots)"
+                echo "NATIVE_SERVER_DIED=true" >> "${NATIVE_RESULT}"
+                echo "NATIVE_LAST_RESPONSIVE_REQUEST=${N_LAST_GOOD_CNT}" >> "${NATIVE_RESULT}"
+                EXIT_CODE=1
+            # Guard the analysis: require BOTH a captured midpoint and a valid final RSS.
+            elif [[ "${N_MID}" -gt 0 && "${NF_RSS}" -gt 0 ]]; then
                 NSH=$(( NATIVE_TOTAL_REQUESTS - NATIVE_MIDPOINT_REQUEST ))
                 NSG=$(echo "${NF_RSS} ${N_MID}" | awk '{printf "%d", $1 - $2}')
                 NSK=$(echo "${NSG} ${NSH}" | awk '{if ($2>0) printf "%.2f", $1/$2/1024; else print "0"}')
@@ -891,8 +943,14 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
                     PASS_COUNT=$(( PASS_COUNT + 1 ))
                 fi
             else
-                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Native leak analysis skipped (no midpoint)"
-                PASS_COUNT=$(( PASS_COUNT + 1 ))
+                # Server stayed responsive but we still lack usable midpoint/final RSS.
+                # This means the measurement itself did not produce enough data (e.g. too
+                # few successful snapshots), which is a data-quality failure - report it
+                # honestly rather than passing on missing data.
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Insufficient native data for analysis (good snapshots: ${N_SNAPSHOTS_OK}, midpoint RSS: ${N_MID}, final RSS: ${NF_RSS})"
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Native measurement incomplete - could not compute steady-state growth"
+                echo "NATIVE_MEASUREMENT_INCOMPLETE=true" >> "${NATIVE_RESULT}"
+                EXIT_CODE=1
             fi
         fi
 

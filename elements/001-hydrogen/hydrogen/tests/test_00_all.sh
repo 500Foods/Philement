@@ -12,6 +12,7 @@
 # run_all_tests_parallel() 
 
 # CHANGELOG
+# 8.0.2 - 2026-07-04 - Fixed DISCREPANCY calculation: use covered/target_pct formula instead of (Results-Coverage)*1000 approximation; added per-component breakdown
 # 8.0.1 - 2026-01-09 - Enhanced coverage discrepancy error message to show suggested adjustment values
 # 8.0.0 - 2025-12-05 - Added HYDROGEN_ROOT and HELIUM_ROOT environment variables
 # 7.0.1 - 2025-12-01 - Added build number to Test Suite Results title
@@ -805,7 +806,7 @@ if [[ "${results_summary}" != "${coverage_summary}" ]]; then
     echo ""
     
     # Calculate the discrepancy adjustments needed
-    # Parse the percentages: format is "66.186% 54.816% 79.366%"
+    # Parse the percentages: format is "60.949 45.676 72.456" (the % signs have been stripped above)
     # shellcheck disable=SC2206 # We want word splitting here
     results_values=(${results_summary//%/})
     # shellcheck disable=SC2206 # We want word splitting here
@@ -815,21 +816,68 @@ if [[ "${results_summary}" != "${coverage_summary}" ]]; then
     current_unity_disc=$("${GREP}" "^DISCREPANCY_UNITY=" "${SCRIPT_DIR}/lib/coverage.sh" | "${SED}" 's/DISCREPANCY_UNITY=//' || echo "0")
     current_coverage_disc=$("${GREP}" "^DISCREPANCY_COVERAGE=" "${SCRIPT_DIR}/lib/coverage.sh" | "${SED}" 's/DISCREPANCY_COVERAGE=//' || echo "0")
     
-    # Calculate differences (Results - Coverage) * 1000 to get approximate line differences
-    # Unity is first value, Blackbox is second
-    unity_diff=$(echo "(${results_values[0]:-0} - ${coverage_values[0]:-0}) * 1000" | bc 2>/dev/null || echo "0")
-    blackbox_diff=$(echo "(${results_values[1]:-0} - ${coverage_values[1]:-0}) * 1000" | bc 2>/dev/null || echo "0")
+    # Read the actual covered and total lines from the detailed coverage files
+    # Format: timestamp,pct,covered_lines,total_lines,instrumented_files,covered_files
+    # Note: total_lines here already INCLUDES the current DISCREPANCY (it is the denominator used
+    # by coverage.sh to produce results_summary above).
+    unity_covered=0
+    unity_total_with_disc=0
+    blackbox_covered=0
+    blackbox_total_with_disc=0
+    if [[ -f "${RESULTS_DIR}/coverage_unity.txt.detailed" ]]; then
+        IFS=',' read -r _ _ unity_covered unity_total_with_disc _ _ < "${RESULTS_DIR}/coverage_unity.txt.detailed"
+    fi
+    if [[ -f "${RESULTS_DIR}/coverage_blackbox.txt.detailed" ]]; then
+        IFS=',' read -r _ _ blackbox_covered blackbox_total_with_disc _ _ < "${RESULTS_DIR}/coverage_blackbox.txt.detailed"
+    fi
     
-    # Convert to integers and calculate suggested new values
-    # shellcheck disable=SC2016 # Using single quotes on purpose to avoid escaping issues
-    unity_diff_int=$(echo "${unity_diff}" | "${AWK}" '{printf "%.0f", $1}' 2>/dev/null || echo "0")
-    # shellcheck disable=SC2016 # Using single quotes on purpose to avoid escaping issues
-    blackbox_diff_int=$(echo "${blackbox_diff}" | "${AWK}" '{printf "%.0f", $1}' 2>/dev/null || echo "0")
+    # Compute the proper new DISCREPANCY values.
+    #
+    # coverage.sh computes: covered / (gcov_total + DISCREPANCY) = results_pct
+    # We want:              covered / (gcov_total + new_DISCREPANCY) = coverage_pct
+    #
+    # Rearranging:
+    #   gcov_total    = total_with_disc - current_DISCREPANCY
+    #   target_total  = covered / coverage_pct   (the total that would yield coverage_pct)
+    #   new_DISCREPANCY = target_total - gcov_total
+    unity_target_total=0
+    unity_gcov_total=$((unity_total_with_disc - current_unity_disc))
+    blackbox_target_total=0
+    blackbox_gcov_total=$((blackbox_total_with_disc - current_coverage_disc))
+    if [[ "${unity_covered}" -gt 0 ]] && [[ -n "${coverage_values[0]:-}" ]] \
+        && [[ "${coverage_values[0]}" != "0" ]] && [[ "${coverage_values[0]}" != "0.000" ]]; then
+        # shellcheck disable=SC2310,SC2016 # bc failure should not stop the script; awk format is literal
+        unity_target_total=$(echo "scale=6; ${unity_covered} / ${coverage_values[0]}" | bc 2>/dev/null \
+            | "${AWK}" '{printf "%.0f", $1}' || echo "0")
+    fi
+    if [[ "${blackbox_covered}" -gt 0 ]] && [[ -n "${coverage_values[1]:-}" ]] \
+        && [[ "${coverage_values[1]}" != "0" ]] && [[ "${coverage_values[1]}" != "0.000" ]]; then
+        # shellcheck disable=SC2310,SC2016 # bc failure should not stop the script; awk format is literal
+        blackbox_target_total=$(echo "scale=6; ${blackbox_covered} / ${coverage_values[1]}" | bc 2>/dev/null \
+            | "${AWK}" '{printf "%.0f", $1}' || echo "0")
+    fi
+    new_unity_disc=$((unity_target_total - unity_gcov_total))
+    new_coverage_disc=$((blackbox_target_total - blackbox_gcov_total))
     
-    # New discrepancy values = current + diff
-    new_unity_disc=$((current_unity_disc - unity_diff_int))
-    new_coverage_disc=$((current_coverage_disc - blackbox_diff_int))
-    
+    # Show the breakdown of the calculation
+    echo "Breakdown of DISCREPANCY calculation:"
+    echo "  coverage.sh formula:  covered / (gcov_total + DISCREPANCY) = pct"
+    echo "  new_DISCREPANCY      = (covered / target_pct) - gcov_total"
+    echo ""
+    echo "Unity (current: ${current_unity_disc}, recommended: ${new_unity_disc}):"
+    echo "  - Results (coverage.sh output):      ${results_values[0]}% from ${unity_covered} / ${unity_total_with_disc} lines (incl. current discrepancy)"
+    echo "  - Coverage (coverage_table.sh):      ${coverage_values[0]}% from per-file gcov analysis"
+    echo "  - gcov_total (no discrepancy):       ${unity_gcov_total} lines"
+    echo "  - target_total (to match Coverage):  ${unity_target_total} lines"
+    echo "  - new_DISCREPANCY = ${unity_target_total} - ${unity_gcov_total} = ${new_unity_disc}"
+    echo ""
+    echo "Blackbox (current: ${current_coverage_disc}, recommended: ${new_coverage_disc}):"
+    echo "  - Results (coverage.sh output):      ${results_values[1]}% from ${blackbox_covered} / ${blackbox_total_with_disc} lines (incl. current discrepancy)"
+    echo "  - Coverage (coverage_table.sh):      ${coverage_values[1]}% from per-file gcov analysis"
+    echo "  - gcov_total (no discrepancy):       ${blackbox_gcov_total} lines"
+    echo "  - target_total (to match Coverage):  ${blackbox_target_total} lines"
+    echo "  - new_DISCREPANCY = ${blackbox_target_total} - ${blackbox_gcov_total} = ${new_coverage_disc}"
+    echo ""
     echo "Consider updating tests/lib/coverage.sh with these new values:"
     echo "DISCREPANCY_UNITY=${new_unity_disc}"
     echo "DISCREPANCY_COVERAGE=${new_coverage_disc}"

@@ -21,7 +21,7 @@ This complements `test_11_leaks_like_a_sieve.sh`, which performs leak detection 
 - **Test Name**: Exercise
 - **Test Abbreviation**: EXE
 - **Test Number**: 41
-- **Version**: 3.8.0
+- **Version**: 3.11.0
 
 The footer title reports the native steady-state growth rate measured during the long 5,000-request native run, for example `41-EXE | Exercise  Growth: 1,512 B/req` (the growth segment is colorized).
 
@@ -265,6 +265,35 @@ This test runs as part of the full test suite:
 # run_auth_request()
 
 # CHANGELOG
+# 3.11.0 - 2026-07-04 - Fixed native-line output corruption (root cause found):
+#                     - The native snapshot loop assigned the "connections current" metric to a
+#                       variable literally named NC, clobbering the framework's global NC (the
+#                       No-Color reset escape "\033[0;37m"). After the first native snapshot every
+#                       "${NC}" rendered as the connections count instead of a color reset, producing
+#                       the stray leading/trailing digits and "DATA1"/"INFO2"/"PASS3" label
+#                       corruption seen ONLY on the native subtest (41-015). The ASAN/primary loop
+#                       was unaffected because it uses CONNS, not NC.
+#                     - Renamed the native connections variable NC -> NCONN. Verified byte-for-byte:
+#                       NC=<n> reproduced the exact corruption; the rename produces clean output.
+# 3.10.0 - 2026-07-04 - Native measurement accuracy + server-health verdict:
+#                     - A failed Prometheus scrape is no longer treated as "RSS == 0". get_metric()
+#                       still returns 0 on a miss, but the native phase now guards the final scrape
+#                       and, on a miss, falls back to the last good snapshot instead of computing a
+#                       bogus negative growth (this was the source of "Native final RSS: 0.0 MB |
+#                       Growth: -77.0 MB").
+#                     - Midpoint RSS is captured from the first successful snapshot at or past the
+#                       midpoint (">=" instead of "=="), so a single dropped scrape at the exact
+#                       midpoint request no longer disables the entire steady-state verdict
+#                       ("Native leak analysis skipped (no midpoint)"). Same fix applied to the
+#                       primary (ASAN) exercise loop midpoint.
+#                     - The native loop now tracks consecutive failed snapshots and aborts early
+#                       when the server stops responding (observed: hydrogen_release hangs under
+#                       sustained auth load while SQLite DQM stalls on tokens.valid_until NOT NULL
+#                       errors), instead of firing thousands of requests at a dead process.
+#                     - Server unresponsiveness is now an explicit FAIL (not a silent PASS/"skipped"):
+#                       a server that hangs under load is a real defect. Records NATIVE_SERVER_DIED,
+#                       NATIVE_LAST_RESPONSIVE_REQUEST and snapshot success/fail counts in the result
+#                       and native metrics logs.
 # 3.9.0 - 2026-06-22 - Stop hand-rolling output in the native run:
 #                     - Removed the bespoke per-100-request progress block (ETA/rate timing and the
 #                       separate test_41_progress.log side-channel). That custom code was the only
