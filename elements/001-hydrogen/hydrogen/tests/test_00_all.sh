@@ -184,18 +184,15 @@ declare -a TEST_ELAPSED
 # Command line argument parsing
 SKIP_TESTS=false
 SEQUENTIAL_MODE=false
-# Groups 4x and 5x share the same database schemas/SQLite file across multiple
-# conduit/OIDC tests. Running them in parallel causes migration/query collisions
-# (duplicate key errors, locked SQLite, rate-limit exhaustion). Keep them sequential
-# so each test gets a clean shot at the shared databases while still exercising
+# Groups 4x and 5x share the same database schemas/SQLite file across multiple conduit/OIDC tests. Running them in parallel causes migration/query collisions
+# (duplicate key errors, locked SQLite, rate-limit exhaustion). Keep them sequential so each test gets a clean shot at the shared databases while still exercising
 # internal concurrent query handling.
-# NOTE: test_56_cap_query.sh is part of group 5x and now exercises both
-# negative paths (missing/invalid token) and positive protected-query INSERT
+# NOTE: test_56_cap_query.sh is part of group 5x and now exercises both negative paths (missing/invalid token) and positive protected-query INSERT
 # paths using the Cap fallback path. It is wired to full auto-run.
 SEQUENTIAL_GROUPS=(4 5)
 TEST_ARGS=()
 
-# Parse all arguments
+# Parse all arguments                                                  
 for arg in "$@"; do
     case "${arg}" in
         --skip-tests)
@@ -284,7 +281,6 @@ run_single_test() {
     local test_abbrev
     local test_number
     local test_version
-    
     # Extract test number from script filename
     # shellcheck disable=SC2016,SC2154 # Using single quotes on purpose to avoid escaping issues
     {
@@ -298,7 +294,6 @@ run_single_test() {
             /^TEST_NUMBER=/ {gsub(/"/, "", $2); print $2}
             /^TEST_VERSION=/ {gsub(/"/, "", $2); print $2}
         ' "${test_script}" || true)
-
     # Handle skip mode
     if [[ "${SKIP_TESTS}" = true ]]; then
         # Store skipped test results (don't print "Would run" message)
@@ -312,12 +307,10 @@ run_single_test() {
         TEST_ELAPSED+=("0")
         return 0
     fi
-    
     # Source the test script instead of running it as a separate process
     # shellcheck disable=SC1090  # Can't follow non-constant source
     source "${test_script}"
     local exit_code=$?
-    
     # Extract test results from subtest file or use defaults
     local total_subtests=1 
     local passed_subtests=0 
@@ -327,7 +320,6 @@ run_single_test() {
     test_name_for_file="${test_abbrev}"
     # shellcheck disable=SC2154 # RESULTS_DIR defined externally in framework.sh
     latest_subtest_file=$("${FIND}" "${RESULTS_DIR}" -name "test_${test_number}_*.txt" -type f 2>/dev/null | sort -r | head -1 || true)
-    
     if [[ -n "${latest_subtest_file}" ]] && [[ -f "${latest_subtest_file}" ]]; then
         IFS=',' read -r total_subtests passed_subtests test_name file_elapsed_time test_abbrev test_version < "${latest_subtest_file}" 2>/dev/null || {
             passed_subtests=$([[ ${exit_code} -eq 0 ]] && echo 1 || echo 0); test_name="${test_name_for_file}"; file_elapsed_time="0.000"; 
@@ -337,10 +329,8 @@ run_single_test() {
         passed_subtests=$([[ ${exit_code} -eq 0 ]] && echo 1 || echo 0); test_name="${test_name_for_file}"
         [[ -t 1 ]] && echo "Warning: No subtest result file found for test ${test_number}"
     fi
-    
     # Calculate failed subtests
     local failed_subtests=$((total_subtests - passed_subtests))
-    
     # Store results
     TEST_NUMBERS+=("${test_number}")
     TEST_ABBREVS+=("${test_abbrev}")
@@ -350,7 +340,6 @@ run_single_test() {
     TEST_PASSED+=("${passed_subtests}")
     TEST_FAILED+=("${failed_subtests}")
     TEST_ELAPSED+=("${elapsed_formatted}")
-    
     return "${exit_code}"
 }
 
@@ -361,11 +350,9 @@ run_single_test_parallel() {
     local temp_output_file="$3"
     local test_number
     local test_name
-    
     # Extract test number from script filename
     test_number=$(basename "${test_script}" .sh | "${SED}" 's/test_//' | "${SED}" 's/_.*//' || true)
     test_name=""
-    
     # Capture all output from the test
     {
         # Source the test script instead of running it as a separate process
@@ -373,21 +360,16 @@ run_single_test_parallel() {
         source "${test_script}"
     } > "${temp_output_file}" 2>&1
     local exit_code=$?
-    
-    # Don't calculate elapsed time here either - use file's elapsed time for consistency
-    # This ensures parallel execution also uses single source of truth
+    # Don't calculate elapsed time here either - use file's elapsed time for consistency. This ensures parallel execution also uses single source of truth
     local elapsed_formatted="0.000"
-    
     # Look for subtest results file written by the individual test
     local total_subtests=1
     local passed_subtests=0
     local test_name_for_file
     test_name_for_file=$(basename "${test_script}" .sh | "${SED}" 's/test_[0-9]*_//' | tr '_' ' ' | "${SED}" 's/\b\w/\U&/g' || true)
-    
     # Find the most recent subtest file for this test
     local latest_subtest_file
     latest_subtest_file=$("${FIND}" "${RESULTS_DIR}" -name "test_${test_number}_*.txt" -type f 2>/dev/null | sort -r | head -1 || true)
-    
     if [[ -n "${latest_subtest_file}" ]] && [[ -f "${latest_subtest_file}" ]]; then
         # Read subtest results, test name, and elapsed time from the file
         IFS=',' read -r total_subtests passed_subtests test_name file_elapsed_time test_abbrev test_version < "${latest_subtest_file}" 2>/dev/null || {
@@ -396,7 +378,6 @@ run_single_test_parallel() {
             test_name="${test_name_for_file}"
             file_elapsed_time="0.000"
         }
-        
         # Use file elapsed time - SINGLE SOURCE OF TRUTH from log_output.sh
         elapsed_formatted="${file_elapsed_time}"
     else
@@ -406,13 +387,10 @@ run_single_test_parallel() {
         test_name="${test_name_for_file}"
         elapsed_formatted="0.000"
     fi
-    
     # Calculate failed subtests
     local failed_subtests=$((total_subtests - passed_subtests))
-    
     # Write results to temporary file for collection by main process
     echo "${test_number}|${test_name}|${total_subtests}|${passed_subtests}|${failed_subtests}|${elapsed_formatted}|${test_abbrev}|${test_version}|${exit_code}" > "${temp_result_file}"
-    
     return "${exit_code}"
 }
 
