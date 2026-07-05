@@ -44,10 +44,8 @@ format_duration() {
     fi
 }
 
-# Function to sanitize a count value: strip whitespace/newlines, keep only the leading integer.
-# Returns 0 if the result is a non-negative integer, otherwise 0.
-# This guards against upstream parsers that occasionally emit "7276\n238" or similar
-# multi-line output which would break bash [[ ... -ne ... ]] comparisons.
+# Function to sanitize a count value: strip whitespace/newlines, keep only the leading integer. Returns 0 if the result is a non-negative integer, otherwise 0.
+# This guards against upstream parsers that occasionally emit "7276\n238" or similar multi-line output which would break bash [[ ... -ne ... ]] comparisons.
 sanitize_count() {
     local raw="${1:-}"
     # Take only the first whitespace-separated token, then strip everything but digits.
@@ -95,20 +93,17 @@ print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Recalling coverage data from U
 # Read Unity coverage data from Test 11's stored results instead of recalculating
 if [[ -f "${UNITY_COVERAGE_FILE}" ]] && [[ -f "${UNITY_COVERAGE_FILE}.detailed" ]]; then
     unity_coverage_percentage=$(cat "${UNITY_COVERAGE_FILE}" 2>/dev/null || echo "0.000")
-    
     # Parse detailed coverage data to get file counts
     unity_instrumented_files_count=0
     unity_covered_files_count=0
     unity_covered_lines_count=0
     unity_total_lines_count=0
     IFS=',' read -r _ _ unity_covered_lines_count unity_total_lines_count unity_instrumented_files_count unity_covered_files_count < "${UNITY_COVERAGE_FILE}.detailed"
-    
     # Format numbers without commas to avoid JSON parsing issues
     formatted_unity_covered_files=${unity_covered_files_count}
     formatted_unity_instrumented_files=${unity_instrumented_files_count}
     formatted_unity_covered_lines=${unity_covered_lines_count}
     formatted_unity_total_lines=${unity_total_lines_count}
-    
     formatted_unity_covered_files_display=$(format_number "${formatted_unity_covered_files}")
     formatted_unity_instrumented_files_display=$(format_number "${formatted_unity_instrumented_files}")
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Files instrumented: ${formatted_unity_covered_files_display} of ${formatted_unity_instrumented_files_display} source files have coverage"
@@ -128,12 +123,10 @@ print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Collecting coverage data from 
 
 # Check for blackbox coverage data in build/coverage directory only
 BLACKBOX_COVERAGE_DIR="${BUILD_DIR}/coverage"
-
 if [[ -d "${BLACKBOX_COVERAGE_DIR}" ]]; then
     # Collect blackbox coverage data strictly from build/coverage
     coverage_percentage=$(calculate_blackbox_coverage "${BLACKBOX_COVERAGE_DIR}" "${TIMESTAMP}")
     result=$?
-    
     if [[ "${result}" -eq 0 ]]; then
         # Parse detailed coverage data to get file counts
         instrumented_files=0
@@ -143,13 +136,11 @@ if [[ -d "${BLACKBOX_COVERAGE_DIR}" ]]; then
         if [[ -f "${BLACKBOX_COVERAGE_FILE}.detailed" ]]; then
             IFS=',' read -r _ _ covered_lines total_lines instrumented_files covered_files < "${BLACKBOX_COVERAGE_FILE}.detailed"
         fi
-        
         # Format numbers without commas to avoid JSON parsing issues
         formatted_covered_files=${covered_files}
         formatted_instrumented_files=${instrumented_files}
         formatted_covered_lines=${covered_lines}
         formatted_total_lines=${total_lines}
-        
         bb_covered_files_display=$(format_number "${formatted_covered_files}")
         bb_instrumented_files_display=$(format_number "${formatted_instrumented_files}")
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Files instrumented: ${bb_covered_files_display} of ${bb_instrumented_files_display} source files have coverage"
@@ -176,7 +167,6 @@ if [[ -f "${UNITY_COVERAGE_FILE}.detailed" ]] && [[ -f "${BLACKBOX_COVERAGE_FILE
     # Set up the same variables that coverage_table.sh uses
     UNITY_COVS="${BUILD_DIR}/unity/src"
     BLACKBOX_COVS="${BUILD_DIR}/coverage/src"
-    
     # Clear our arrays and repopulate them using the working logic from coverage-common.sh
     unset unity_covered_lines unity_instrumented_lines coverage_covered_lines coverage_instrumented_lines all_files
     # shellcheck disable=SC2034 # These are likeely populated elsewhere
@@ -189,10 +179,8 @@ if [[ -f "${UNITY_COVERAGE_FILE}.detailed" ]] && [[ -f "${BLACKBOX_COVERAGE_FILE
     declare -A coverage_instrumented_lines
     # shellcheck disable=SC2034 # These are likeely populated elsewhere
     declare -A all_files
-
     # Use optimized batch processing for all coverage types
     analyze_all_gcov_coverage_batch "${UNITY_COVS}" "${BLACKBOX_COVS}"
-    
     # Populate all_files array from coverage arrays (already filtered at batch level)
     for file_path in "${!unity_covered_lines[@]}"; do
         all_files["${file_path}"]=1
@@ -200,48 +188,38 @@ if [[ -f "${UNITY_COVERAGE_FILE}.detailed" ]] && [[ -f "${BLACKBOX_COVERAGE_FILE
     for file_path in "${!coverage_covered_lines[@]}"; do
         all_files["${file_path}"]=1
     done
-    
     # Calculate totals for summary using batch-processed arrays
     combined_total_covered=0
     combined_total_instrumented=0
-    
     for file_path in "${!all_files[@]}"; do
         combined_covered=${combined_covered_lines["${file_path}"]:-0}
         combined_instrumented=${combined_instrumented_lines["${file_path}"]:-0}
-        
         combined_total_covered=$((combined_total_covered + combined_covered))
         combined_total_instrumented=$((combined_total_instrumented + combined_instrumented))
     done
-    
     # Calculate combined percentage
     combined_coverage="0.000"
     if [[ "${combined_total_instrumented}" -gt 0 ]]; then
         combined_coverage=$("${AWK}" "BEGIN {printf \"%.3f\", (${combined_total_covered} / ${combined_total_instrumented}) * 100}")
     fi
-    
     # Format numbers without commas to avoid JSON parsing issues
     formatted_covered=${combined_total_covered}
     formatted_total=${combined_total_instrumented}
-    
     # Store the combined coverage value for other scripts to use
     echo "${combined_coverage}" > "${COMBINED_COVERAGE_FILE}"
-    
     # Calculate combined file counts for the detailed file
     combined_covered_files=0
     combined_instrumented_files=0
     for file_path in "${!all_files[@]}"; do
         combined_instrumented=${combined_instrumented_lines["${file_path}"]:-0}
         combined_covered=${combined_covered_lines["${file_path}"]:-0}
-        
         combined_instrumented_files=$(( combined_instrumented_files + 1 ))
         if [[ "${combined_covered}" -gt 0 ]]; then
             combined_covered_files=$(( combined_covered_files + 1 ))
         fi
     done
-    
     # Store detailed combined coverage data for Test 00 to use in README. Format: timestamp,percentage,covered_lines,total_lines,instrumented_files,covered_files
     echo "$("${DATE}" +%Y%m%d_%H%M%S),${combined_coverage},${combined_total_covered},${combined_total_instrumented},${combined_instrumented_files},${combined_covered_files}" > "${COMBINED_COVERAGE_FILE}.detailed" || true
-    
     combined_covered_display=$(format_number "${formatted_covered}")
     combined_total_display=$(format_number "${formatted_total}")
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Combined coverage calculated: ${combined_coverage}% - ${combined_covered_display} of ${combined_total_display} lines covered"
@@ -262,7 +240,6 @@ uncovered_files=()
 for file_path in "${!all_files[@]}"; do
     # Check if this file has any blackbox coverage
     blackbox_covered=${coverage_covered_lines["${file_path}"]:-0}
-    
     blackbox_instrumented_files=$(( blackbox_instrumented_files + 1 ))
     if [[ "${blackbox_covered}" -gt 0 ]]; then
         blackbox_covered_files=$(( blackbox_covered_files + 1 ))
@@ -292,7 +269,6 @@ coverage_files_display=$(format_number "${formatted_covered_files}")
 instrumented_files_display=$(format_number "${formatted_instrumented_files}")
 uncovered_display=$(format_number "${formatted_uncovered_count}")
 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Coverage analysis: ${coverage_files_display} of ${instrumented_files_display} source files covered, ${uncovered_display} uncovered"
-
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Unity Test Counts"
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Validating Unity Framework unit test counts from multiple sources"
 
@@ -471,10 +447,8 @@ else
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "D) Test diagnostic files (${d_fast_duration_display}): ${diag_file_count_display} diagnostic files found"
             print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "  All counts consistent - no detailed comparison needed"
         else
-
             # Only do expensive detailed failure analysis if counts don't match
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "D) Detailed count comparison needed - performing expensive analysis..."
-
             # Use parallel xargs to count RUN_TEST occurrences
             temp_results_file=$(mktemp)
             export GREP
@@ -709,7 +683,6 @@ if [[ "${test10_total_executed}" -ne "${coverage_table_count}" ]] || [[ "${cover
     declare -A test10_executed_counts
     declare -A grep_test_counts
     declare -A unity_test_counts
-
     # Cache filesystem results to avoid repeated expensive operations
     declare -A cached_test_files
     declare -A cached_runtest_counts
@@ -904,7 +877,6 @@ if [[ "${test10_total_executed}" -ne "${coverage_table_count}" ]] || [[ "${cover
     formatted_test10=${test10_total_executed}
     formatted_coverage_table=${coverage_table_count}
     formatted_raw=${raw_runtest_count}
-
     # Check for per-file discrepancies
     per_file_discrepancies=()
     total_discrepancies=0
