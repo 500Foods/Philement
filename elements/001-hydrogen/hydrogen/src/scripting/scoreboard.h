@@ -4,7 +4,7 @@
  * Phase 5 of the LUA_PLAN. Thread-safe in-memory scoreboard that tracks
  * Lua jobs. The scoreboard is the single shared, mutex-protected
  * structure between the worker pool, the Orchestrator, and any REST
- * waiters (see LUA_PLAN.md Risks section).
+ * waiters (see LUA_PLAN_COMPLETE.md Risks section).
  *
  * v1 surface is intentionally minimal:
  *   - submit a job, getting a 5-char Hydrogen ID back

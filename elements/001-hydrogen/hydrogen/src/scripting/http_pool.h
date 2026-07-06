@@ -28,7 +28,7 @@
  * The handle's mutex protects the per-handle result fields; the
  * condvar is signaled by the worker when the result is stored.
  *
- * @see docs/H/plans/LUA_PLAN.md Phase 17
+ * @see docs/H/plans/LUA_PLAN_COMPLETE.md Phase 17
  */
 
 #ifndef HYDROGEN_SCRIPTING_HTTP_POOL_H

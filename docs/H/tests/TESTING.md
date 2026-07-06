@@ -94,6 +94,7 @@ And Test 11 is all about Unity unit tests, where we have custom code written to 
 - **[test_40_auth.sh](/docs/H/tests/test_40_auth.md)**: Authentication endpoints testing (JWT tokens across multiple database engines)
 - **[test_41_exercise.sh](/docs/H/tests/test_41_exercise.md)**: Memory stress test with all 7 databases and leak detection
 - **[test_42_oidc_rp.sh](/docs/H/tests/test_42_oidc_rp.md)**: OIDC Relying Party - complete authentication flow testing
+- **[test_43_scripting.sh](/docs/H/tests/test_43_scripting.md)**: Scripting subsystem end-to-end testing
 - **[test_51_conduit.sh](/docs/H/tests/test_51_conduit_queries.md)**: Conduit endpoints testing (all 4 endpoints with full parameter support across 7 database engines)
 - **[test_52_conduit_auth_query.sh](/docs/H/tests/test_52_conduit_auth_query.md)**: Authenticated conduit query testing
 - **[test_53_conduit_auth_queries.sh](/docs/H/tests/test_53_conduit_auth_queries.md)**: Authenticated conduit batch query testing

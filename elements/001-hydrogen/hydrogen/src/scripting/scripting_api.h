@@ -87,6 +87,33 @@ void H_lua_install_gc(lua_State* L);
 void H_lua_install_set_current_state(lua_State* L);
 
 /*
+ * Populate H.set_result with the C function backing it.
+ *
+ * Phase 26: artifact metadata declaration from a Lua script. Updates
+ * the result_type and result_location fields on the scoreboard entry
+ * for the current job.
+ *
+ *   H.set_result(type, location)
+ *       Sets the artifact metadata for the current job. `type` is a
+ *       label for the artifact kind (e.g. "json", "file", "db-ref").
+ *       `location` is a path, URI, or reference to retrieve the artifact.
+ *       Either may be NULL or empty to clear the field.
+ *
+ * Available only inside a worker job context (i.e. when the per-state
+ * H_lua_job_context has a non-empty job_id and a scoreboard). The
+ * Orchestrator is a no-op caller: it has no scoreboard entry, and
+ * the function silently returns 0.
+ *
+ * Argument validation: takes exactly two string arguments. Missing
+ * or non-string arguments are logged at LOG_LEVEL_ERROR and do not
+ * raise a Lua error - the host path is a leaf, in keeping with the
+ * Phase 6 rule that the host log path should never crash the host.
+ *
+ * Replaces the Phase 3 placeholder sub-table of the same name.
+ */
+void H_lua_install_set_result(lua_State* L);
+
+/*
  * Populate H.sleep and H.shutdown_requested with the C functions
  * backing them.
  *

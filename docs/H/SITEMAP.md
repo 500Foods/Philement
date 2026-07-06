@@ -57,6 +57,8 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 ### Folder: /docs/H/core/subsystems
 
 - [README.md](/docs/H/core/subsystems/README.md): Table of Contents for all Hydrogen subsystems documentation
+- [scripting/README.md](/docs/H/core/subsystems/scripting/README.md): Scripting subsystem overview
+- [scripting/lua_api.md](/docs/H/core/subsystems/scripting/lua_api.md): Lua host API reference
 
 ### Folder: /docs/api/system
 
@@ -91,6 +93,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 
 - [DATABASE_PLAN.md](/docs/H/plans/DATABASE_PLAN.md): Implementation plan for Database feature
 - [TERMINAL_PLAN.md](/docs/H/plans/TERMINAL_PLAN.md): Implementation plan for Terminal feature
+- [LUA_PLAN_COMPLETE.md](/docs/H/plans/LUA_PLAN_COMPLETE.md): Scripting subsystem implementation roadmap
 - [OIDC_E2E_LOG.md](/docs/H/plans/OIDC_E2E_LOG.md): OIDC end-to-end manual test log (Phase 27)
 - [UNITY_ASAN_PLAN.md](/docs/H/plans/UNITY_ASAN_PLAN.md): Plan for a separate ASAN Unity test variant (memory-safety gate)
 
@@ -225,6 +228,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [test_40_auth.md](/docs/H/tests/test_40_auth.md): Authentication endpoints testing (JWT tokens across multiple database engines)
 - [test_41_exercise.md](/docs/H/tests/test_41_exercise.md): Memory exercise stress test (500 auth requests across 7 databases with leak detection)
 - [test_42_oidc_rp.md](/docs/H/tests/test_42_oidc_rp.md): OIDC Relying Party - end-to-end authentication flow testing
+- [test_43_scripting.md](/docs/H/tests/test_43_scripting.md): Scripting subsystem end-to-end testing
 - [test_50_conduit_query.md](/docs/H/tests/test_50_conduit_query.md): Single public query endpoint testing
 - [test_51_conduit_queries.md](/docs/H/tests/test_51_conduit_queries.md): Conduit multiple queries endpoint testing
 - [test_52_conduit_auth_query.md](/docs/H/tests/test_52_conduit_auth_query.md): Authenticated single query endpoint

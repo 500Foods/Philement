@@ -1,6 +1,6 @@
 /*
  * Scripting Subsystem - Host API: H.system, H.gc, H.set_current_state,
- * H.sleep, H.shutdown_requested
+ * H.set_result, H.sleep, H.shutdown_requested
  *
  * C-side implementations of the utility and lifecycle host functions.
  */
@@ -23,6 +23,7 @@
 #include "scripting_api_internal.h"
 #include "lua_context.h"
 #include "scripting.h"
+#include "scoreboard.h"
 
 // H.system.* implementations ///////////////////////////////////////////////
 
@@ -202,6 +203,40 @@ int H_lua_shutdown_requested(lua_State* L) {
     return 1;
 }
 
+int H_lua_set_result(lua_State* L) {
+    int nargs = lua_gettop(L);
+    if (nargs < 2) {
+        log_this(SR_SCRIPTING, "H.set_result: missing string arguments",
+                 LOG_LEVEL_ERROR, 0);
+        return 0;
+    }
+    if (!lua_isstring(L, 1) || !lua_isstring(L, 2)) {
+        log_this(SR_SCRIPTING, "H.set_result: arguments must be strings",
+                 LOG_LEVEL_ERROR, 0);
+        return 0;
+    }
+
+    H_lua_job_context* ctx = H_lua_get_job_context(L);
+    if (!ctx || ctx->job_id[0] == '\0' || !ctx->scoreboard) {
+        return 0;
+    }
+
+    const char* result_type = lua_tostring(L, 1);
+    const char* result_location = lua_tostring(L, 2);
+    if (!result_type || !result_location) {
+        return 0;
+    }
+
+    if (!scoreboard_update_result(ctx->scoreboard, ctx->job_id,
+                                   result_type, result_location)) {
+        log_this(SR_SCRIPTING,
+                 "H.set_result: scoreboard update failed for job %s",
+                 LOG_LEVEL_ERROR, 1, ctx->job_id);
+    }
+
+    return 0;
+}
+
 // Install functions ////////////////////////////////////////////////////////
 
 void H_lua_install_system(lua_State* L) {
@@ -266,6 +301,23 @@ void H_lua_install_set_current_state(lua_State* L) {
 
     lua_pushcfunction(L, H_lua_set_current_state);
     lua_setfield(L, -2, "set_current_state");
+
+    lua_pop(L, 1);
+}
+
+void H_lua_install_set_result(lua_State* L) {
+    if (!L) return;
+
+    lua_getglobal(L, "H");
+    if (!lua_istable(L, -1)) {
+        log_this(SR_LUA, "H_lua_install_set_result: H table missing",
+                 LOG_LEVEL_ERROR, 0);
+        lua_pop(L, 1);
+        return;
+    }
+
+    lua_pushcfunction(L, H_lua_set_result);
+    lua_setfield(L, -2, "set_result");
 
     lua_pop(L, 1);
 }

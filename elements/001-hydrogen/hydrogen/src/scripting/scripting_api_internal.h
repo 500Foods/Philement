@@ -55,6 +55,7 @@ int H_lua_gc_count(lua_State* L);
 int H_lua_gc_isrunning(lua_State* L);
 
 int H_lua_set_current_state(lua_State* L);
+int H_lua_set_result(lua_State* L);
 int H_lua_sleep(lua_State* L);
 int H_lua_shutdown_requested(lua_State* L);
 
