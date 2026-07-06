@@ -129,33 +129,30 @@ void H_lua_install_mail_notify(lua_State* L) {
         return;
     }
 
-    // Install H.mail sub-table
+    // Install H.mail sub-table. If a placeholder table already exists
+    // from H_lua_install_api, populate it in place rather than skipping.
     lua_getfield(L, -1, "mail");
     if (!lua_istable(L, -1)) {
         lua_pop(L, 1);
         lua_newtable(L);
-        lua_pushcfunction(L, H_lua_mail_send);
-        lua_setfield(L, -2, "send");
-        lua_pushcfunction(L, H_lua_mail_send_sync);
-        lua_setfield(L, -2, "send_sync");
-        lua_setfield(L, -3, "mail");
-    } else {
-        lua_pop(L, 1);
     }
+    lua_pushcfunction(L, H_lua_mail_send);
+    lua_setfield(L, -2, "send");
+    lua_pushcfunction(L, H_lua_mail_send_sync);
+    lua_setfield(L, -2, "send_sync");
+    lua_setfield(L, -2, "mail");
 
-    // Install H.notify sub-table
+    // Install H.notify sub-table. Same placeholder-populate behavior.
     lua_getfield(L, -1, "notify");
     if (!lua_istable(L, -1)) {
         lua_pop(L, 1);
         lua_newtable(L);
-        lua_pushcfunction(L, H_lua_notify_send);
-        lua_setfield(L, -2, "send");
-        lua_pushcfunction(L, H_lua_notify_send_sync);
-        lua_setfield(L, -2, "send_sync");
-        lua_setfield(L, -3, "notify");
-    } else {
-        lua_pop(L, 1);
     }
+    lua_pushcfunction(L, H_lua_notify_send);
+    lua_setfield(L, -2, "send");
+    lua_pushcfunction(L, H_lua_notify_send_sync);
+    lua_setfield(L, -2, "send_sync");
+    lua_setfield(L, -2, "notify");
 
     lua_pop(L, 1);
 }

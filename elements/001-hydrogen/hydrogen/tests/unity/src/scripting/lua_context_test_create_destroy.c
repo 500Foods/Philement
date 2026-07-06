@@ -111,6 +111,13 @@ void test_lua_create_context_installs_H_table(void) {
     TEST_ASSERT_TRUE_MESSAGE(lua_isfunction(L, -1), "H.set_current_state");
     lua_pop(L, 1);
 
+    // Phase 26: set_result is a top-level function on H, not a sub-table.
+    // The install function replaced the Phase 3 placeholder sub-table
+    // with a cfunction.
+    lua_getfield(L, -1, "set_result");
+    TEST_ASSERT_TRUE_MESSAGE(lua_isfunction(L, -1), "H.set_result");
+    lua_pop(L, 1);
+
     // Phase 11: H.sleep and H.shutdown_requested are top-level
     // functions on H, replacing their Phase 3 placeholder sub-tables.
     lua_getfield(L, -1, "sleep");

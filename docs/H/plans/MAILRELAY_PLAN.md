@@ -23,8 +23,9 @@ Related repo areas:
 - `/elements/002-helium/acuranzo/migrations` for application database migrations and QueryRefs.
 - `/elements/003-lithium/src/managers/mail-manager` for the future Mail Manager UI.
 - `/elements/003-lithium/src/managers/profile-manager/pages/email` for user profile email settings.
+- `/elements/001-hydrogen/hydrogen/src/scripting` for the existing Lua `H.mail` / `H.notify` stubs that must be backfilled once Mail Relay has a real producer API.
 
-Date of snapshot: 2026-06-29
+Date of snapshot: 2026-07-06 prep review update; original snapshot 2026-06-29
 
 ---
 
@@ -49,6 +50,7 @@ Hydrogen has a Mail Relay subsystem that is a complete config/launch/landing ske
 - Runtime directory `/elements/001-hydrogen/hydrogen/src/mailrelay/` exists but is empty.
 - libcurl is already a Hydrogen dependency. Global init in `launch.c:324` (`curl_global_init`), global cleanup in `state.c:149`. It supports SMTP/SMTPS and is the first outbound transport candidate.
 - OpenSSL, jansson, libmicrohttpd, libwebsockets, Lua, and libcurl are already detected by CMake.
+- Current CMake uses recursive source discovery for `../src/*.c` in `cmake/CMakeLists-init.cmake`, so new `src/mailrelay/*.c` files should be discovered automatically; verify during Phase 2 rather than assuming manual CMake registration is needed.
 
 ### Confirmed defaults discrepancy (must reconcile in Phase 0)
 
@@ -87,6 +89,14 @@ Run any of these with `mku <base name without .c>`, for example: `mku config_mai
 
 - Lithium has a placeholder `MailManager` that renders "under development".
 - Profile email settings are stubbed and do not load/save via API.
+
+### Existing Lua scripting mail/notify pieces (verified 2026-07-06)
+
+- Lua plan status is complete in `/docs/H/plans/LUA_PLAN_COMPLETE.md`; Phase 19 intentionally installed stable `H.mail` / `H.notify` stubs because Mail Relay did not exist yet.
+- Stub implementation: `/elements/001-hydrogen/hydrogen/src/scripting/scripting_api_mail_notify.c`. `H.mail.send`, `H.mail.send_sync`, `H.notify.send`, and `H.notify.send_sync` currently return handles/errors with `"mail: not implemented"` / `"notify: not implemented"`.
+- `H_lua_install_mail_notify(L)` is called from `/elements/001-hydrogen/hydrogen/src/scripting/lua_context.c`, so the Lua API surface already exists and must be backfilled rather than newly designed.
+- Handle support already exists in `/elements/001-hydrogen/hydrogen/src/scripting/scripting_handle.{c,h}` via `H_HK_MAIL`, `H_HK_NOTIFY`, `mail_error`, and `notify_error` fields.
+- Backfill target: once Mail Relay has a stable internal enqueue/producer API, replace `H.mail` stubs with a templated-mail queue producer and make `H.notify` either call Mail Relay through notification rules or remain an explicit compatibility shim until the Notify subsystem is retired.
 
 ### Confirmed test slots and ports (verified)
 
@@ -137,7 +147,7 @@ From `/elements/001-hydrogen/hydrogen/src/threads/threads.h`:
 - `LaunchReadiness` struct (`state_types.h:28`): `{ const char* subsystem; bool ready; const char** messages; }`.
 - `register_subsystem(name, threads, main_thread, shutdown_flag, init_fn, shutdown_fn)` (`registry.h:77`).
 - Helpers (`registry_integration.h`): `add_dependency_from_launch`, `update_subsystem_on_startup`, `update_subsystem_on_shutdown`, `get_subsystem_id_by_name`, `is_subsystem_running_by_name`, `get_subsystem_state`.
-- Limits: `MAX_SUBSYSTEMS 18` (already includes Mail Relay), `MAX_DEPENDENCIES 20` (`globals.h:114-115`).
+- Limits: `MAX_SUBSYSTEMS 19` (already includes Mail Relay and Scripting), `MAX_DEPENDENCIES 20` (`globals.h:117-118` in current tree).
 
 ### API endpoint module
 
@@ -219,11 +229,15 @@ Append discoveries, surprises, and decisions here as we move through phases. Ear
 
 ### Decisions log
 
-- (Phase 0) Notify vs MailRelay SMTP ownership: (TBD)
-- (Phase 0) Durable-mail database target policy: (TBD)
-- (Phase 0) Default enabled/port reconciliation: (TBD)
+- (Phase 0, 2026-07-06) Notify vs MailRelay SMTP ownership: Mail Relay is the only SMTP/mail delivery subsystem. Notify becomes a producer/compatibility layer that calls Mail Relay later; do not build a second active SMTP delivery path in Notify.
+- (Phase 0, 2026-07-06) Durable-mail database target policy: add `MailRelay.Database` as the configured Hydrogen database connection for system mail tables, durable queue state, templates, attempts, events, and OTP rows. API/Lua callers may carry JWT/database context for authorization and audit, but durable mail state is owned by `MailRelay.Database`.
+- (Phase 0, 2026-07-06) Default enabled/port reconciliation: Mail Relay is disabled by default and must not require SMTP environment variables at startup. Outbound servers are required only when outbound sending is enabled. Submission/listen port settings apply only when inbound relay is enabled.
+- (Phase 0, 2026-07-06) Initial API send policy: v1 is template-key send only for external clients. Raw subject/body send is reserved for internal/system test paths or a future explicitly gated admin permission.
+- (Phase 0, 2026-07-06) Lua backfill policy: existing `H.mail` / `H.notify` stubs are a stable surface. After Phase 7, replace `H.mail` stubs with a Mail Relay queue producer and make `H.notify` a compatibility shim that routes through Mail Relay rules or returns a documented deferred error.
+- (Phase 0, 2026-07-06) Initial role policy: service/internal callers and administrators may send/preview/status initially. User-facing sends are template-scoped and permission-scoped; exact JWT claim names are locked during Phase 7 against the auth code that exists then.
+- (Phase 0, 2026-07-06) Initial OTP scope: Phase 8 targets login MFA and email verification first. Password reset can use the same primitives but is not a Phase 8 gate unless the auth owner confirms it before Phase 8 starts.
+- (Phase 0, 2026-07-06) Canvas/inbound workflow: inbound SMTP relay waits until outbound/API/OTP foundations are stable. v1 inbound scope is trusted/internal submission only, never public MX/open-relay behavior.
 - (Phase 5) Template syntax: (TBD)
-- (Phase 7) Raw send vs template-only send permission: (TBD)
 
 ### Surprises / deviations from plan
 
@@ -266,9 +280,14 @@ Entry Gate: none (starting phase). Confirm `mkt` and `mku config_mail_relay_test
   - Deliverable: confirm the file list below in the Subsystem File Map section; adjust if 0.1-0.3 change anything.
   - Verification: this document's Subsystem File Map reflects the agreed final paths.
 
-Exit Gate: defaults/behavior unambiguous; schema knows `MailRelay`; a disabled-by-default Hydrogen starts cleanly with no SMTP env vars required; baseline Unity tests pass. Fill in the Status block below.
+- [ ] 0.6 Lock the Lua backfill contract for existing `H.mail` / `H.notify` stubs.
+  - Files to review: `src/scripting/scripting_api_mail_notify.c`, `src/scripting/scripting_api.h`, `src/scripting/scripting_handle.{c,h}`, `src/scripting/lua_context.c`, and `/docs/H/plans/LUA_PLAN_COMPLETE.md` Phase 19.
+  - Deliverable: confirm that Mail Relay will expose an internal C producer API used by REST, Lua, Notify, and system events, so Lua does not call back through HTTP and does not bypass queue/audit/rate-limit logic.
+  - Verification: Phase 7A exists in this plan with concrete work items and tests.
 
-Phase 0 Status: pending. Date: (TBD). Result: (TBD). Variances: (TBD).
+Exit Gate: defaults/behavior unambiguous; schema knows `MailRelay`; a disabled-by-default Hydrogen starts cleanly with no SMTP env vars required; Lua backfill path is locked; baseline Unity tests pass. Fill in the Status block below.
+
+Phase 0 Status: pending implementation. Date: 2026-07-06 prep review. Result: decisions and Lua backfill path recorded; code/schema/test changes still required. Variances: added Phase 7A to backfill completed Lua stubs through Mail Relay.
 
 ---
 
@@ -315,7 +334,7 @@ Entry Gate: Phase 1 exit gate green.
 
 - [ ] 2.1 Create `src/mailrelay/` module skeleton (currently empty dir).
   - Files: `mailrelay.h`, `mailrelay_internal.h`, `mailrelay_message.{c,h}`, `mailrelay_smtp.{c,h}`, `mailrelay_result.{c,h}`. Add a `mailrelay_test_seams.{c,h}` only if needed to inject a fixed clock / Message-ID for deterministic tests.
-  - Wire new files into `cmake/CMakeLists.txt`.
+  - Build note: current CMake uses recursive source discovery; confirm new files are discovered and only adjust `cmake/` if Unity/exclusion rules require it.
   - Verification: `mkt`.
 
 - [ ] 2.2 Define `MailRelayMessage` and validation helpers.
@@ -371,7 +390,12 @@ Entry Gate: Phase 2 exit gate green.
   - Replace the TODO in `launch_mail_relay_subsystem()` (`launch_mail_relay.c:162`) with real init: `init_service_threads`, spawn workers, `update_subsystem_on_startup`, verify `SUBSYSTEM_RUNNING`. Implement the landing drain loop (mdns pattern) in `land_mail_relay_subsystem()`.
   - Verification: `test_17_startup_shutdown.sh` (or a mail-enabled variant) shows no orphan worker threads and clean landing.
 
-Exit Gate: Mail Relay accepts asynchronous messages, processes them with workers, retries transient failures, debounces bursts, and lands cleanly with no orphan threads. `mkt`, `mkp`, the new `mku` set, and startup/shutdown pass.
+- [ ] 3.7 Define the internal raw enqueue producer API.
+  - File: `src/mailrelay/mailrelay.h`.
+  - Purpose: one C API used by future REST endpoints, Lua `H.mail`, Notify compatibility, and system events. Producers must enqueue through Mail Relay so queue limits, audit metadata, rate limits, idempotency, and redaction are centralized. Lua and Notify must not call SMTP or HTTP endpoints directly.
+  - Verification: `mku mailrelay_queue_test` or a new producer test verifies disabled/error/queued results and structured error codes.
+
+Exit Gate: Mail Relay accepts asynchronous messages through a stable internal producer API, processes them with workers, retries transient failures, debounces bursts, and lands cleanly with no orphan threads. `mkt`, `mkp`, the new `mku` set, and startup/shutdown pass.
 
 Phase 3 Status: pending. Date: (TBD). Result: (TBD). Variances: (TBD).
 
@@ -439,7 +463,12 @@ Entry Gate: Phase 4 exit gate green.
   - Preview returns rendered subject/body and macro diagnostics with no queue/send side effects.
   - Verification: `mku mailrelay_preview_test` verifies preview has no queue side effects.
 
-Exit Gate: template rendering is deterministic, tested, and supports both system events and future API callers. `mkt`, `mkp`, the new `mku` set, and seed-migration checks pass.
+- [ ] 5.6 Define the internal templated-send producer API.
+  - File: `src/mailrelay/mailrelay.h` plus implementation files as needed.
+  - Purpose: common entry point for `mailrelay_enqueue_template(...)` / equivalent used by REST, Lua `H.mail`, Notify, and system events. It resolves templates, validates parameters/recipients, applies policy metadata, and enqueues without sending synchronously.
+  - Verification: `mku mailrelay_template_test` or `mku mailrelay_producer_test` verifies success, missing template, missing macro, invalid recipient, idempotency key, and no body/OTP leakage in logs.
+
+Exit Gate: template rendering is deterministic, tested, and supports system events, REST, Lua, and Notify producers through one internal API. `mkt`, `mkp`, the new `mku` set, and seed-migration checks pass.
 
 Phase 5 Status: pending. Date: (TBD). Result: (TBD). Variances: (TBD).
 
@@ -476,7 +505,7 @@ Phase 6 Status: pending. Date: (TBD). Result: (TBD). Variances: (TBD).
 
 Objective: Expose authenticated mail operations through the Hydrogen API.
 
-Entry Gate: Phase 5 exit gate green (Phase 6 not required, but recommended). Phase 0.2 DB-target and Phase 0 raw-vs-template decision recorded.
+Entry Gate: Phase 5 exit gate green (Phase 6 not required, but recommended). Phase 0.2 DB-target and Phase 0 template-only send decision recorded.
 
 - [ ] 7.1 Add the `src/api/mailrelay/` endpoint module.
   - Layout `src/api/mailrelay/<endpoint>/<endpoint>.c/.h`. Endpoints: `POST /api/mailrelay/send`, `POST /api/mailrelay/preview`, `GET /api/mailrelay/status`, optionally `GET /api/mailrelay/message/{id}`. Register in `src/api/api_service.c` and add dispatch in `handle_api_request`.
@@ -491,11 +520,11 @@ Entry Gate: Phase 5 exit gate green (Phase 6 not required, but recommended). Pha
   - Verification: `mku`/API test rejects missing/invalid JWT and accepts a valid JWT.
 
 - [ ] 7.4 Define the send request contract.
-  - Required: `template_key` (or raw subject/body only if Phase 0 permits and permission allows). Fields: to/cc/bcc, params, idempotency_key, priority, preview flag.
+  - Required for normal external clients: `template_key`. Fields: to/cc/bcc, params, idempotency_key, priority, preview flag. Raw subject/body is internal/admin-test only behind explicit future gating.
   - Verification: the Draft API Contract below matches the implemented behavior and tests.
 
-- [ ] 7.5 Wire API to template engine and queue.
-  - Response returns queued message id and status, not SMTP success (unless an explicit synchronous test flag is enabled).
+- [ ] 7.5 Wire API to the internal templated-send producer API.
+  - Response returns queued message id and status, not SMTP success (unless an explicit synchronous test flag is enabled). The endpoint must not duplicate template, queue, policy, or rate-limit logic that belongs in the internal producer API.
   - Verification: `test_58_mailrelay_api.sh` (ports 5580-5586) sends templated mail to the sink and verifies queued/sent state. Add `tests/configs/hydrogen_test_58_mailrelay_api.json` and `docs/H/tests/test_58_mailrelay_api.md`.
 
 - [ ] 7.6 Add Swagger/OpenAPI documentation.
@@ -534,6 +563,42 @@ Success:
 ```
 
 Errors use Hydrogen's normal API error envelope (`success:false`, `error`, `message`) with stable mail codes: `MAIL_AUTH_REQUIRED`, `MAIL_TEMPLATE_NOT_FOUND`, `MAIL_PARAM_MISSING`, `MAIL_QUEUE_FULL`, `MAIL_RECIPIENT_INVALID`, `MAIL_DISABLED`, `MAIL_RATE_LIMITED`.
+
+---
+
+## Phase 7A - Lua `H.mail` / `H.notify` Backfill
+
+Objective: Replace the completed Lua stub surface with real Mail Relay integration without creating a second mail path.
+
+Entry Gate: Phase 7 exit gate green; Lua Phase 19 stubs verified in `LUA_PLAN_COMPLETE.md`; internal templated-send producer API exists.
+
+- [ ] 7A.1 Audit the existing Lua mail/notify stub implementation.
+  - Files: `src/scripting/scripting_api_mail_notify.c`, `src/scripting/scripting_api.h`, `src/scripting/scripting_handle.{c,h}`, `src/scripting/lua_context.c`, and `docs/H/plans/LUA_PLAN_COMPLETE.md` Phase 19.
+  - Verification: current stub behavior is captured by a focused Unity test before replacing it.
+
+- [ ] 7A.2 Replace `H.mail.send` with a Mail Relay producer wrapper.
+  - Contract: accept the existing Lua message table shape, require `template` / `template_key` for normal sends, map `to`/`cc`/`bcc`/`params`/`idempotency_key`/`priority` to the internal templated-send producer API, and return an async `H_HK_MAIL` handle.
+  - Verification: `mku scripting_api_mail_test` queues a templated message through a mocked Mail Relay producer and verifies handle success/error behavior.
+
+- [ ] 7A.3 Replace `H.mail.send_sync` with wait-based behavior.
+  - Contract: `send_sync` may wait only for queue acceptance/rendering, not SMTP delivery, unless an explicit test-only synchronous mode exists.
+  - Verification: Unity test verifies queued result, invalid template, invalid recipient, disabled Mail Relay, and timeout/error mapping.
+
+- [ ] 7A.4 Define `H.notify` compatibility behavior.
+  - Recommended v1: `H.notify.send` maps to Mail Relay event/rule templates only when a matching notification rule exists; otherwise it returns a stable `notify: deferred to mailrelay rules` error rather than silently dropping notifications.
+  - Verification: Unity tests cover mapped notification, unmapped notification, disabled Mail Relay, and preserved legacy stub error semantics where still deferred.
+
+- [ ] 7A.5 Preserve Lua safety and audit boundaries.
+  - Lua must not call REST endpoints or SMTP directly for mail. It must enqueue through the same internal producer API as REST/system events and inherit the same validation, rate limits, redaction, idempotency, and audit metadata.
+  - Verification: no SMTP credentials, OTP plaintext, JWTs, or message bodies appear in Lua logs/test artifacts; `test_02_secrets.sh` remains clean if run with the Lua mail blackbox slice.
+
+- [ ] 7A.6 Update scripting docs and Lua completion plan cross-reference.
+  - Files: `/docs/H/core/subsystems/scripting/lua_api.md`, `/docs/H/plans/LUA_PLAN_COMPLETE.md`, and this Working Log if implementation deviates.
+  - Verification: `test_04_check_links.sh` and `test_90_markdownlint.sh` pass for touched docs.
+
+Exit Gate: Lua scripts can queue templated mail through Mail Relay using the pre-existing `H.mail` API, `H.notify` has explicit compatibility behavior, and no parallel mail delivery path exists. `mkt`, `mkp`, Lua mail Unity tests, and relevant doc/link lints pass.
+
+Phase 7A Status: pending. Date: (TBD). Result: (TBD). Variances: (TBD).
 
 ---
 
@@ -691,25 +756,25 @@ Phase 12 Status: pending. Date: (TBD). Result: (TBD). Variances: (TBD).
 
 ---
 
-## Phase 13 - Lua and Extension Hooks
+## Phase 13 - Additional Lua and Extension Hooks
 
-Objective: Expose mail functions to extension points only after core security is stable.
+Objective: Add optional mail extension hooks beyond the Phase 7A `H.mail` backfill only after core security is stable.
 
-Entry Gate: Phase 7 and Phase 14 (partial) green.
+Entry Gate: Phase 7A and Phase 14 (partial) green.
 
-- [ ] 13.1 Identify the actual Lua runtime that needs mail access.
-  - Current Lua usage is migration-focused; do not add a Lua mail API unless a non-migration runtime consumer exists.
+- [ ] 13.1 Identify any remaining Lua or extension runtimes that need mail access beyond `H.mail`.
+  - The primary Lua scripting runtime is handled in Phase 7A. Do not add additional mail APIs unless a concrete non-Phase-7A consumer exists.
   - Verification: consumer and lifecycle documented; if none, mark this phase deferred.
 
 - [ ] 13.2 Add a minimal C wrapper if justified.
-  - The API enqueues templated mail only; no raw unrestricted SMTP from scripts.
-  - Verification: a Lua test script queues one templated mail with restricted permissions.
+  - The API enqueues templated mail only through the same internal Mail Relay producer; no raw unrestricted SMTP from scripts or extensions.
+  - Verification: an extension/Lua test queues one templated mail with restricted permissions.
 
 - [ ] 13.3 Add guardrails.
   - Rate limits, allowed templates, allowed recipients, audit records.
   - Verification: security unit tests reject unauthorized template/recipient/script calls.
 
-Exit Gate: Lua mail access exists only if needed and is constrained to audited, rate-limited template sends.
+Exit Gate: any additional extension mail access exists only if needed and is constrained to audited, rate-limited template sends through Mail Relay.
 
 Phase 13 Status: pending. Date: (TBD). Result: (TBD). Variances: (TBD).
 
@@ -799,11 +864,12 @@ New or modified files expected across the implementation. Confirm/adjust during 
 - `mailrelay/mailrelay_result.{c,h}` (structured result type).
 - Modify: `config/config_mail_relay.{c,h}`, `config/config_defaults.c`, `launch/launch_mail_relay.c`, `landing/landing_mail_relay.c`, `state/state.c` (add `mailrelay_threads`), `threads/threads.h`, `status/status_process.c`, `api/api_service.c`, `cmake/CMakeLists.txt`.
 - API: `api/mailrelay/send/`, `api/mailrelay/preview/`, `api/mailrelay/status/` (Phase 7).
+- Lua backfill: modify `scripting/scripting_api_mail_notify.c`, `scripting/scripting_api.h`, `scripting/scripting_handle.{c,h}`, and any wait-dispatch helpers needed to replace `H.mail` / `H.notify` stubs with Mail Relay producer integration (Phase 7A).
 
 ### Unity tests (`/elements/001-hydrogen/hydrogen/tests/unity/src/`)
 
 - Extend: `config/config_mail_relay_test_load_mailrelay_config.c`, `launch/launch_mail_relay_test_comprehensive_coverage.c`, `landing/landing_mail_relay_test_readiness.c`.
-- New: `mailrelay/mailrelay_message_test.c`, `mailrelay_render_test.c`, `mailrelay_queue_test.c`, `mailrelay_workers_test.c`, `mailrelay_retry_test.c`, `mailrelay_debounce_test.c`, `mailrelay_template_test.c`, `mailrelay_preview_test.c`, `mailrelay_repository_test.c`, `mailrelay_otp_generate_test.c`, `mailrelay_otp_verify_test.c`, `mailrelay_route_test.c`, plus API endpoint tests under `api/mailrelay/`.
+- New: `mailrelay/mailrelay_message_test.c`, `mailrelay_render_test.c`, `mailrelay_queue_test.c`, `mailrelay_workers_test.c`, `mailrelay_retry_test.c`, `mailrelay_debounce_test.c`, `mailrelay_template_test.c`, `mailrelay_preview_test.c`, `mailrelay_producer_test.c`, `mailrelay_repository_test.c`, `mailrelay_otp_generate_test.c`, `mailrelay_otp_verify_test.c`, `mailrelay_route_test.c`, plus API endpoint tests under `api/mailrelay/` and Lua backfill tests under `scripting/` such as `scripting_api_mail_test.c`.
 
 ### Blackbox tests (`/elements/001-hydrogen/hydrogen/tests/`)
 
@@ -834,37 +900,39 @@ New or modified files expected across the implementation. Confirm/adjust during 
 | 5 Templates | 4 | reusable system/API messages |
 | 6 System Events | 5 | admin notifications |
 | 7 REST API | 5 | client-triggered mail |
+| 7A Lua Backfill | 7 | Lua `H.mail` / `H.notify` real integration |
 | 8 OTP/MFA | 7 | auth mail workflows |
 | 9 Lithium UI | 7, 10 partial | user/operator UI |
 | 10 Observability | 3, 4 | operations readiness |
 | 11 HA Safety | 4 | multi-instance deployment |
 | 12 Inbound Relay | 2, 3, 14 partial | Canvas-style relay |
-| 13 Lua Hooks | 7, 14 partial | controlled extension support |
+| 13 Additional Lua Hooks | 7A, 14 partial | controlled extension support beyond `H.mail` |
 | 14 Security | all active surfaces | production enablement |
 | 15 Release Gate | all selected phases | final completion |
 
 ---
 
-## Open Questions to Resolve During Phase 0
+## Phase 0 Questions Resolved During Prep Review
 
-1. Should `Notify.SMTP` be removed/deprecated in favor of Mail Relay, or should Notify become a producer that calls Mail Relay?
-2. Which database connection owns system mail tables when multiple `Databases[]` entries exist?
-3. Should raw mail sending through `/api/mailrelay/send` ever be allowed, or only template-key sends?
-4. Which roles may send mail, preview templates, view queue status, and manage templates?
-5. What is the initial required OTP use case: login MFA, email verification, password reset, or all three?
-6. What exact Canvas inbound workflow is required, and can it wait until outbound/API/OTP are complete?
+1. `Notify.SMTP` does not become a second active SMTP delivery path. Notify becomes a producer/compatibility layer that calls Mail Relay when implemented.
+2. `MailRelay.Database` owns system mail tables when multiple `Databases[]` entries exist.
+3. `/api/mailrelay/send` is template-key only for normal external clients. Raw send is internal/admin-test only behind explicit future gating.
+4. Initial permissions: service/internal callers and administrators may send, preview, view status, and manage templates. User-facing send permission is template-scoped and JWT-claim-scoped during Phase 7.
+5. Initial OTP use cases are login MFA and email verification. Password reset is compatible future work, not a Phase 8 gate unless explicitly pulled in.
+6. Canvas/inbound workflow can wait. Phase 12 v1 is trusted/internal submission only, after outbound/API/OTP foundations are stable and anti-open-relay rules are designed.
 
 ---
 
 ## Initial Milestone Recommendation
 
-For first usable value, implement only Phases 0 through 7:
+For first usable value, implement Phases 0 through 7A:
 
 1. Fix/lock config and schema (Phase 0-1).
 2. Send one email to a local SMTP sink via libcurl (Phase 2).
-3. Add in-memory queue/workers/retry (Phase 3).
+3. Add in-memory queue/workers/retry and a common internal producer API (Phase 3).
 4. Add DB persistence and templates (Phase 4-5).
 5. Add admin "Server Started" event mail (Phase 6).
 6. Add authenticated preview/send/status API (Phase 7).
+7. Backfill existing Lua `H.mail` / `H.notify` stubs through the same producer API (Phase 7A).
 
-Defer OTP, HA, inbound relay, Lua hooks, and full Lithium management until the outbound queue + API path is stable.
+Defer OTP, HA, inbound relay, optional Lua extension hooks beyond `H.mail`, and full Lithium management until the outbound queue + API/Lua path is stable.

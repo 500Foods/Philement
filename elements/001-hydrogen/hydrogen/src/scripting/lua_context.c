@@ -189,7 +189,7 @@ void H_lua_install_api(lua_State* L) {
         "log", "system", "gc",
         "query", "altquery", "authquery", "wait",
         "http", "llm", "mail", "notify",
-        "sleep", "shutdown_requested", "set_current_state",
+        "sleep", "shutdown_requested", "set_current_state", "set_result",
         "scoreboard",
         NULL
     };
@@ -216,6 +216,9 @@ void H_lua_install_api(lua_State* L) {
     // function on H. The Orchestrator is a no-op caller (no
     // scoreboard entry); workers call this with their own job_id.
     H_lua_install_set_current_state(L);
+    // Phase 26: artifact metadata declaration. Replaces the Phase 3
+    // placeholder sub-table with a top-level function on H.
+    H_lua_install_set_result(L);
     // Phase 11: cooperative shutdown primitives and scoreboard
     // access. Both replace Phase 3 placeholder sub-tables of the
     // same names (H.sleep and H.shutdown_requested) or populate
@@ -233,6 +236,9 @@ void H_lua_install_api(lua_State* L) {
     H_lua_install_query(L);
     // Phase 18: H.llm call/list functions for LLM invocation.
     H_lua_install_llm(L);
+    // Phase 19: H.mail and H.notify stub implementations. Returns
+    // error handles until the Mail Relay / Notify subsystems land.
+    H_lua_install_mail_notify(L);
 }
 
 /*
