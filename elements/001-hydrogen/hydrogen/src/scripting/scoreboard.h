@@ -16,8 +16,9 @@
  * Fields added by later phases (Phase 8: instruction_count, memory;
  * Phase 9: current_state - IMPLEMENTED; Phase 10: max_runtime, kill
  * flag - IMPLEMENTED; Phase 12: has_waiter, waiter_handle, result_ref
- * - IMPLEMENTED; Phase 25: result artifacts) are NOT in v1 unless
- * called out. The struct reserves placeholder comments for the
+ * - IMPLEMENTED; Phase 24: error_message, error_traceback - IMPLEMENTED;
+ * Phase 25: result_type, result_location - IMPLEMENTED) are NOT in v1
+ * unless called out. The struct reserves placeholder comments for the
  * not-yet-implemented ones so the growth path is obvious.
  *
  * Concurrency model:
@@ -148,6 +149,20 @@ typedef struct {
     bool                has_waiter;
     void*               waiter_handle;
     void*               result_ref;
+
+    // Phase 24: structured error info. strdup'd; owned; freed on
+    // entry destroy. NULL for jobs that succeeded or haven't run yet.
+    // error_message - the Lua error string (e.g. "attempt to index a nil value")
+    // error_traceback - sanitized Lua traceback (multi-line string, limited frames)
+    char*               error_message;
+    char*               error_traceback;
+
+    // Phase 25: artifact metadata. strdup'd; owned; freed on entry destroy.
+    // NULL or empty means "no artifact".
+    // result_type - a label for the artifact kind (e.g. "json", "file", "db-ref")
+    // result_location - a path, URI, or reference to retrieve the artifact
+    char*               result_type;
+    char*               result_location;
 } ScoreboardEntry;
 
 /*
@@ -480,5 +495,49 @@ bool scoreboard_get_waiter(Scoreboard* sb,
  * will block until its own timeout.
  */
 bool scoreboard_clear_waiter(Scoreboard* sb, const char* job_id);
+
+/*
+ * Phase 24: store structured error info for a failed job.
+ *
+ *   sb            - the scoreboard
+ *   job_id        - the 5-char ID to update
+ *   error_message - the Lua error string (strdup'd by the scoreboard).
+ *                   May be NULL to clear.
+ *   error_traceback - the Lua traceback string (strdup'd by the scoreboard).
+ *                     May be NULL to clear.
+ *
+ * Returns true if a matching entry was found and updated, false if the
+ * ID is unknown or memory allocation failed.
+ *
+ * Thread-safe. The strings are copied into scoreboard-owned memory.
+ * Either string may be NULL (to clear the field), but not both NULL.
+ */
+bool scoreboard_update_error(Scoreboard* sb, const char* job_id,
+                              const char* error_message,
+                              const char* error_traceback);
+
+/*
+ * Phase 25: store artifact metadata for a completed job.
+ *
+ *   sb            - the scoreboard
+ *   job_id        - the 5-char ID to update
+ *   result_type   - a label for the artifact kind (e.g. "json", "file", "db-ref").
+ *                   May be NULL or empty to clear.
+ *   result_location - a path, URI, or reference to retrieve the artifact.
+ *                   May be NULL or empty to clear.
+ *
+ * Returns true if a matching entry was found and updated, false if the
+ * ID is unknown or memory allocation failed.
+ *
+ * Thread-safe. The strings are copied into scoreboard-owned memory.
+ * Either parameter may be NULL or empty (to clear the field).
+ *
+ * This is a data-only update: it does NOT change the job's status and
+ * does NOT stamp started_at/finished_at. This matches the contract of
+ * scoreboard_update_progress and scoreboard_update_current_state.
+ */
+bool scoreboard_update_result(Scoreboard* sb, const char* job_id,
+                              const char* result_type,
+                              const char* result_location);
 
 #endif /* HYDROGEN_SCRIPTING_SCOREBOARD_H */

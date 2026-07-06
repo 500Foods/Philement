@@ -157,4 +157,18 @@ void H_lua_set_job_context(lua_State* L, const H_lua_job_context* ctx);
  */
 H_lua_job_context* H_lua_get_job_context(lua_State* L);
 
+/*
+ * Phase 24: Generate a sanitized Lua traceback.
+ *
+ * Collects up to 10 frames from the Lua stack and returns a
+ * malloc'd multi-line string. The caller owns the returned string
+ * and must free it. Returns NULL on allocation failure.
+ *
+ * Sanitization:
+ *   - At most 10 frames are captured
+ *   - Source snippets limited to 80 chars
+ *   - No absolute paths included
+ */
+char* H_lua_build_traceback(lua_State* L);
+
 #endif /* HYDROGEN_SCRIPTING_LUA_CONTEXT_H */

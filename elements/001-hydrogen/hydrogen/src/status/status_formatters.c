@@ -263,6 +263,31 @@ json_t* format_system_status_json(const SystemMetrics *metrics) {
         json_object_set_new(services, "database", database);
     }
 
+    // Scripting service
+    if (metrics->scripting.enabled) {
+        json_t *scripting = json_object();
+        json_object_set_new(scripting, "enabled", json_true());
+        json_t *scripting_status = json_object();
+        json_object_set_new(scripting_status, "workerThreads",
+                          json_integer(metrics->scripting.specific.scripting.worker_threads));
+        json_object_set_new(scripting_status, "httpWorkerThreads",
+                          json_integer(metrics->scripting.specific.scripting.http_worker_threads));
+        json_object_set_new(scripting_status, "totalJobs",
+                          json_integer(metrics->scripting.specific.scripting.total_jobs));
+        json_object_set_new(scripting_status, "pendingJobs",
+                          json_integer(metrics->scripting.specific.scripting.pending_jobs));
+        json_object_set_new(scripting_status, "runningJobs",
+                          json_integer(metrics->scripting.specific.scripting.running_jobs));
+        json_object_set_new(scripting_status, "completedJobs",
+                          json_integer(metrics->scripting.specific.scripting.completed_jobs));
+        json_object_set_new(scripting_status, "failedJobs",
+                          json_integer(metrics->scripting.specific.scripting.failed_jobs));
+        json_object_set_new(scripting_status, "killedJobs",
+                          json_integer(metrics->scripting.specific.scripting.killed_jobs));
+        json_object_set_new(scripting, "status", scripting_status);
+        json_object_set_new(services, "scripting", scripting);
+    }
+
     json_object_set_new(root, "services", services);
     
     return root;

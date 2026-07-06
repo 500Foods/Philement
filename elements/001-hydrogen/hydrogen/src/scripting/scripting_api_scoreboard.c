@@ -220,6 +220,33 @@ int H_lua_scoreboard_cancel(lua_State* L) {
 
 // H.package.searcher implementation (Phase 11g) ////////////////////////////
 
+// Bytecode dump buffer for caching compiled modules
+typedef struct {
+    void*   data;
+    size_t  len;
+    size_t  capacity;
+} BytecodeDumpBuffer;
+
+static int bytecode_dump_writer(lua_State* L, const void* p, size_t sz, void* ud) {
+    (void)L;
+    BytecodeDumpBuffer* buf = (BytecodeDumpBuffer*)ud;
+    if (buf->len + sz > buf->capacity) {
+        size_t new_capacity = buf->capacity ? buf->capacity * 2 : 256;
+        while (new_capacity < buf->len + sz) {
+            new_capacity *= 2;
+        }
+        void* new_data = realloc(buf->data, new_capacity);
+        if (!new_data) {
+            return 1;  // Error: out of memory
+        }
+        buf->data = new_data;
+        buf->capacity = new_capacity;
+    }
+    memcpy((char*)buf->data + buf->len, p, sz);
+    buf->len += sz;
+    return 0;
+}
+
 bool split_module_name(const char* name,
                        char** group_out,
                        char** script_out) {
@@ -273,6 +300,25 @@ int H_lua_package_searcher(lua_State* L) {
         return 1;
     }
 
+    // Phase 21: Check for cached bytecode first
+    size_t bytecode_len = 0;
+    const void* bytecode = source_cache_get_bytecode(
+        scripting_source_cache, group, script, &bytecode_len);
+
+    if (bytecode && bytecode_len > 0) {
+        // Load from cached bytecode (mode "b" = bytecode only)
+        int rc = luaL_loadbufferx(L, bytecode, bytecode_len, module_name, "b");
+
+        free(group);
+        free(script);
+
+        if (rc != LUA_OK) {
+            return 1;
+        }
+        return 1;
+    }
+
+    // No cached bytecode - load from source and compile
     const char* source = source_cache_get(scripting_source_cache, group, script);
     char* fetched_source = NULL;
     if (!source) {
@@ -302,7 +348,19 @@ int H_lua_package_searcher(lua_State* L) {
     }
 
     size_t source_len = strlen(source);
-    int rc = luaL_loadbufferx(L, source, source_len, module_name, NULL);
+    int rc = luaL_loadbufferx(L, source, source_len, module_name, "bt");
+
+    if (rc == LUA_OK) {
+        // Phase 21: Dump compiled bytecode to cache for future use
+        BytecodeDumpBuffer dump = {0, 0, 0};
+        if (lua_dump(L, bytecode_dump_writer, &dump, 0) == 0) {
+            if (dump.data && dump.len > 0) {
+                source_cache_put_bytecode(
+                    scripting_source_cache, group, script, dump.data, dump.len);
+            }
+        }
+        free(dump.data);
+    }
 
     free(group);
     free(script);

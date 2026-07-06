@@ -106,8 +106,14 @@ void test_execute_runtime_error_marks_failed(void) {
         "error('kaboom')\n", NULL);
     TEST_ASSERT_NOT_NULL(id);
 
-    ScoreboardJobStatus s = wait_for_terminal(id, NULL);
+    ScoreboardEntry* e = NULL;
+    ScoreboardJobStatus s = wait_for_terminal(id, &e);
     TEST_ASSERT_EQUAL(SCOREBOARD_JOB_FAILED, s);
+    TEST_ASSERT_NOT_NULL(e);
+    TEST_ASSERT_NOT_NULL(e->error_message);
+    TEST_ASSERT_TRUE(strstr(e->error_message, "kaboom") != NULL);
+    TEST_ASSERT_NOT_NULL(e->error_traceback);
+    scoreboard_entry_free(e);
     free(id);
 }
 
@@ -119,8 +125,15 @@ void test_execute_syntax_error_marks_failed(void) {
         "this is not valid lua (\n", NULL);
     TEST_ASSERT_NOT_NULL(id);
 
-    ScoreboardJobStatus s = wait_for_terminal(id, NULL);
+    ScoreboardEntry* e = NULL;
+    ScoreboardJobStatus s = wait_for_terminal(id, &e);
     TEST_ASSERT_EQUAL(SCOREBOARD_JOB_FAILED, s);
+    TEST_ASSERT_NOT_NULL(e);
+    TEST_ASSERT_NOT_NULL(e->error_message);
+    TEST_ASSERT_TRUE(strstr(e->error_message, "syntax error") != NULL ||
+                     strstr(e->error_message, "'(' expected") != NULL);
+    TEST_ASSERT_NOT_NULL(e->error_traceback);
+    scoreboard_entry_free(e);
     free(id);
 }
 
@@ -131,8 +144,14 @@ void test_execute_unknown_script_marks_failed(void) {
     char* id = scripting_submit_job("never_registered", NULL);
     TEST_ASSERT_NOT_NULL(id);
 
-    ScoreboardJobStatus s = wait_for_terminal(id, NULL);
+    ScoreboardEntry* e = NULL;
+    ScoreboardJobStatus s = wait_for_terminal(id, &e);
     TEST_ASSERT_EQUAL(SCOREBOARD_JOB_FAILED, s);
+    // Unknown script path may or may not populate error fields;
+    // the key invariant is the FAILED status.
+    if (e) {
+        scoreboard_entry_free(e);
+    }
     free(id);
 }
 

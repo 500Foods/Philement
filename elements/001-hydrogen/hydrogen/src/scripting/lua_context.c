@@ -231,6 +231,8 @@ void H_lua_install_api(lua_State* L) {
     // H.altquery, H.authquery, and H.wait. Also installs the
     // H.Handle metatable for the opaque async-handle userdata.
     H_lua_install_query(L);
+    // Phase 18: H.llm call/list functions for LLM invocation.
+    H_lua_install_llm(L);
 }
 
 /*
@@ -345,4 +347,108 @@ H_lua_job_context* H_lua_get_job_context(lua_State* L) {
     }
     H_lua_job_context** slot = (H_lua_job_context**)lua_getextraspace(L);
     return *slot;
+}
+
+/*
+ * Phase 24: Generate a sanitized Lua traceback.
+ *
+ * Collects up to MAX_TRACE_FRAMES frames from the Lua stack. The
+ * traceback is sanitized by limiting the number of frames and
+ * truncating very long source lines. Returns a malloc'd string that
+ * the caller owns and must free. Returns NULL on allocation failure.
+ *
+ * The format is a multi-line string, one line per frame:
+ *   chunk_name:line: function_name (short source snippet)
+ *
+ * Sanitization:
+ *   - At most MAX_TRACE_FRAMES frames are captured (default 10)
+ *   - Source snippets are limited to 80 chars
+ *   - Absolute paths are not included (relative only)
+ */
+#define MAX_TRACE_FRAMES 10
+#define MAX_SOURCE_SNIPPET_LEN 80
+
+char* H_lua_build_traceback(lua_State* L) {
+    if (!L) {
+        return NULL;
+    }
+
+    lua_Debug ar;
+    memset(&ar, 0, sizeof(ar));
+
+    int level = 0;
+    size_t tracebuf_size = 512;
+    char* tracebuf = malloc(tracebuf_size);
+    if (!tracebuf) {
+        return NULL;
+    }
+    tracebuf[0] = '\0';
+    size_t tracebuf_len = 0;
+
+    while (lua_getstack(L, level, &ar) && level < MAX_TRACE_FRAMES) {
+        if (lua_getinfo(L, "nSl", &ar) == 0) {
+            level++;
+            continue;
+        }
+
+        const char* func_name = ar.name ? ar.name : "?";
+        const char* source = ar.short_src;
+
+        char snippet[MAX_SOURCE_SNIPPET_LEN + 3];
+        if (source && source[0] != '\0') {
+            size_t src_len = strlen(source);
+            if (src_len > MAX_SOURCE_SNIPPET_LEN) {
+                strncpy(snippet, source, MAX_SOURCE_SNIPPET_LEN);
+                snippet[MAX_SOURCE_SNIPPET_LEN] = '\0';
+                strncat(snippet, "...", MAX_SOURCE_SNIPPET_LEN - strlen(snippet));
+            } else {
+                strncpy(snippet, source, MAX_SOURCE_SNIPPET_LEN);
+                snippet[src_len] = '\0';
+            }
+        } else {
+            snippet[0] = '\0';
+        }
+
+        char frame_line[1024];
+        int written;
+        if (ar.currentline > 0) {
+            written = snprintf(frame_line, sizeof(frame_line), "  [%d:%s] %s: %s\n",
+                         level, ar.short_src, func_name, snippet);
+        } else {
+            written = snprintf(frame_line, sizeof(frame_line), "  [%d] %s: %s\n",
+                         level, ar.short_src, func_name);
+        }
+        if (written < 0 || written >= (int)sizeof(frame_line)) {
+            // Truncation occurred; write a truncated version
+            if (ar.currentline > 0) {
+                snprintf(frame_line, sizeof(frame_line), "  [%d:%s] TRUNCATED\n", level, ar.short_src);
+            } else {
+                snprintf(frame_line, sizeof(frame_line), "  [%d] TRUNCATED\n", level);
+            }
+        }
+
+        size_t frame_len = strlen(frame_line);
+        size_t needed = tracebuf_len + frame_len + 1;
+        if (needed > tracebuf_size) {
+            size_t new_size = needed * 2;
+            char* new_buf = realloc(tracebuf, new_size);
+            if (!new_buf) {
+                free(tracebuf);
+                return NULL;
+            }
+            tracebuf = new_buf;
+            tracebuf_size = new_size;
+        }
+        strcpy(tracebuf + tracebuf_len, frame_line);
+        tracebuf_len = strlen(tracebuf);
+        level++;
+    }
+
+    if (level == 0) {
+        strcpy(tracebuf, "  (no stack frames)");
+    }
+
+    char* result = strdup(tracebuf);
+    free(tracebuf);
+    return result;
 }

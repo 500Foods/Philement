@@ -116,6 +116,16 @@ int H_lua_http_wait_one(lua_State* L, H_Handle* h);
 int H_lua_http_get_sync(lua_State* L);
 int H_lua_http_post_sync(lua_State* L);
 
+// ----------------------------------------------------------------------------
+// scripting_api_llm.c
+// ----------------------------------------------------------------------------
+
+int H_lua_llm_call(lua_State* L);
+int H_lua_llm_list(lua_State* L);
+int H_lua_llm_wait_one(lua_State* L, H_Handle* h);
+int H_lua_llm_call_sync(lua_State* L);
+int H_lua_llm_list_sync(lua_State* L);
+
 #ifdef __cplusplus
 }
 #endif

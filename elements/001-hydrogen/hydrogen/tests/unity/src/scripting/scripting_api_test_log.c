@@ -56,6 +56,9 @@ void test_log_non_string_first_arg_does_not_crash(void);
 void test_log_called_from_real_lua_chunk(void);
 void test_log_empty_format_string_is_valid(void);
 void test_log_multiple_args(void);
+void test_log_with_job_id_context(void);
+void test_log_with_empty_job_id_context(void);
+void test_log_with_long_job_id_context(void);
 
 void setUp(void) {
     memset(&mock_app_config_storage, 0, sizeof(mock_app_config_storage));
@@ -348,6 +351,84 @@ void test_log_multiple_args(void) {
     H_lua_destroy_context(L);
 }
 
+// H.log.info("message") with a job_id context set via H_lua_set_job_context.
+// The log message should be prefixed with "[job:ABC12] ".
+void test_log_with_job_id_context(void) {
+    lua_State* L = H_lua_create_context();
+    TEST_ASSERT_NOT_NULL(L);
+
+    H_lua_job_context ctx = {0};
+    strncpy(ctx.job_id, "ABC12", sizeof(ctx.job_id) - 1);
+    ctx.job_id[sizeof(ctx.job_id) - 1] = '\0';
+    H_lua_set_job_context(L, &ctx);
+
+    lua_getglobal(L, "H");
+    lua_getfield(L, -1, "log");
+    lua_getfield(L, -1, "info");
+    lua_pushstring(L, "test message from job");
+    int rc = lua_pcall(L, 1, 0, 0);
+    TEST_ASSERT_EQUAL_INT_MESSAGE(LUA_OK, rc, "H.log.info with job context should succeed");
+
+    const char* msg = mock_logging_get_last_message();
+    TEST_ASSERT_NOT_NULL(strstr(msg, "[job:ABC12]"));
+    TEST_ASSERT_NOT_NULL(strstr(msg, "test message from job"));
+
+    H_lua_set_job_context(L, NULL);
+    H_lua_destroy_context(L);
+}
+
+// H.log.info("message") with an empty job_id (context set but job_id is empty).
+// Should NOT prefix the message.
+void test_log_with_empty_job_id_context(void) {
+    lua_State* L = H_lua_create_context();
+    TEST_ASSERT_NOT_NULL(L);
+
+    H_lua_job_context ctx = {0};
+    H_lua_set_job_context(L, &ctx);
+
+    lua_getglobal(L, "H");
+    lua_getfield(L, -1, "log");
+    lua_getfield(L, -1, "info");
+    lua_pushstring(L, "no job context");
+    int rc = lua_pcall(L, 1, 0, 0);
+    TEST_ASSERT_EQUAL_INT_MESSAGE(LUA_OK, rc, "H.log.info with empty job_id should succeed");
+
+    const char* msg = mock_logging_get_last_message();
+    TEST_ASSERT_EQUAL_STRING("no job context", msg);
+    TEST_ASSERT_NULL(strstr(msg, "[job:"));
+
+    H_lua_set_job_context(L, NULL);
+    H_lua_destroy_context(L);
+}
+
+// H.log.info("message") with a job_id at the maximum supported length
+// (ID_LEN characters). Verifies the prefix is emitted correctly at the
+// boundary; IDs longer than ID_LEN are silently truncated by the fixed-size
+// job_id buffer, so the test stays within the supported length.
+void test_log_with_long_job_id_context(void) {
+    lua_State* L = H_lua_create_context();
+    TEST_ASSERT_NOT_NULL(L);
+
+    H_lua_job_context ctx = {0};
+    strncpy(ctx.job_id, "LONGJ", sizeof(ctx.job_id) - 1);
+    ctx.job_id[sizeof(ctx.job_id) - 1] = '\0';
+    H_lua_set_job_context(L, &ctx);
+
+    lua_getglobal(L, "H");
+    lua_getfield(L, -1, "log");
+    lua_getfield(L, -1, "info");
+    lua_pushstring(L, "long job id test");
+    int rc = lua_pcall(L, 1, 0, 0);
+    TEST_ASSERT_EQUAL_INT_MESSAGE(LUA_OK, rc, "H.log.info with max-length job_id should succeed");
+
+    const char* msg = mock_logging_get_last_message();
+    TEST_ASSERT_NOT_NULL(strstr(msg, "[job:LONGJ]"));
+    TEST_ASSERT_NOT_NULL(strstr(msg, "long job id test"));
+
+    H_lua_set_job_context(L, NULL);
+    H_lua_destroy_context(L);
+}
+
 int main(void) {
     UNITY_BEGIN();
 
@@ -365,6 +446,9 @@ int main(void) {
     RUN_TEST(test_log_called_from_real_lua_chunk);
     RUN_TEST(test_log_empty_format_string_is_valid);
     RUN_TEST(test_log_multiple_args);
+    RUN_TEST(test_log_with_job_id_context);
+    RUN_TEST(test_log_with_empty_job_id_context);
+    RUN_TEST(test_log_with_long_job_id_context);
 
     return UNITY_END();
 }

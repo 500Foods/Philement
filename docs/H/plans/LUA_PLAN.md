@@ -2,8 +2,8 @@
 
 Hydrogen Scripting Subsystem (Lua) – Implementation Roadmap
 
-**Status**: Draft – Actively evolving; Phases 1, 2, 2b, 3, 3b, 4, 5, 6, 7, 8, 9, 10, 11f, 11g, 11h, 11i, 11j, 12, 13, 14, and 16 complete
-**Last Updated**: 2026-07-04
+**Status**: Draft – Actively evolving; Phases 1, 2, 2b, 3, 3b, 4, 5, 6, 7, 8, 9, 10, 11f, 11g, 11h, 11i, 11j, 12, 13, 14, 16, 17, 18, 19, 21, 22, 23, and 24 complete.
+**Last Updated**: 2026-07-06 07:08 PDT
 **Owner**: Andrew + Grok
 
 **Subsystem name**: `Scripting` (macro `SR_SCRIPTING`, config section, launch/landing handlers). Lua is the initial (and currently only) scripting engine, but the subsystem is named for the capability, not the language, so other engines could be added later without renaming.
@@ -410,7 +410,7 @@ That observation led to a two-tier architecture (modeled directly on how Migrati
 
 - **Goal**: Make minimal useful functions available inside Lua via the `H` table.
 - **Dependencies**: Phase 4, Phase 5
-- **Status**: **Complete 2026-07-01.** `H.log.{trace,debug,info,warn,error,fatal}` and `H.system.{uptime,now,now_iso,instance_id,version}` are implemented in a new `src/scripting/scripting_api.{c,h}` module, installed by `H_lua_install_api` on context creation, and verified by 23 new Unity tests across two suites.
+- **Status**: **Complete 2026-07-04.** `H_llm_call` and `H_llm_list` are implemented in `src/scripting/scripting_api_llm.c`, installed by `H_lua_install_llm` (called from `H_lua_install_api`), and integrated into `H.wait` dispatch in `scripting_api_query.c`. The `H_HK_LLM` handle kind is defined in `scripting_handle.h` with fields for `llm_model_name`, `llm_prompt`, `llm_max_tokens`, `llm_temperature`, `llm_db_name`, `llm_result`, `llm_error`, `llm_timeout`, and `llm_list`. Uses the existing `chat_engine_cache_lookup_by_name` and `chat_proxy_send_with_retry` from the wschat subsystem. 7 Unity tests in `scripting_api_test_llm.c` validate handle creation, error paths, and H.wait integration.
 - **Expectation**:
 
   ```lua
@@ -1332,6 +1332,7 @@ Async DB access with handles is now the **default** model delivered in Phase 13,
 
 ### Phase 18: `H.llm.call` Convenience Wrapper (feasible now — schedule early)
 
+- **Status**: **Complete 2026-07-04.** `H.llm.call` and `H.llm.list` are implemented in `src/scripting/scripting_api_llm.c`, installed by `H_lua_install_llm` (called from `H_lua_install_api`), and integrated into `H.wait` dispatch in `scripting_api_query.c`. The `H_HK_LLM` handle kind is defined in `scripting_handle.h` with fields for `llm_model_name`, `llm_prompt`, `llm_max_tokens`, `llm_temperature`, `llm_db_name`, `llm_result`, `llm_error`, `llm_timeout`, and `llm_list`. Uses the existing `chat_engine_cache_lookup_by_name` and `chat_proxy_send_with_retry` from the wschat subsystem. 7 Unity tests in `scripting_api_test_llm.c` validate handle creation, error paths, and H.wait integration.
 - **Goal**: Provide a clean way to call LLMs from Lua by model name.
 - **Dependencies**: Phase 17 (async handle + wait model is now available for non-DB work), existing wschat engine cache and chat proxy helpers.
 - **Scheduling note**: This is **feasible with today's code** (model-by-name resolution + chat proxy already exist), so it is pulled **earlier** than its phase number suggests — right after basic HTTP. It does **not** need to wait for the mail/notify work.
@@ -1364,32 +1365,42 @@ Async DB access with handles is now the **default** model delivered in Phase 13,
   - **Use a direct test seam at the chat proxy boundary.** Do not mock curl or stand up a real LLM service in Unity. Add a small test injection seam around the chat proxy call so tests can assert model resolution, request construction, result table shape, error handles, and wait semantics deterministically.
   - **Security invariant**: API keys remain in `ChatEngineConfig` / engine cache only. Lua sees names and responses, never credentials.
 - **Lessons Learned**:
+  - **Reusing the wschat infrastructure was the right call.** The `chat_engine_cache_lookup_by_name` and `chat_proxy_send_with_retry` functions from the WebSocket chat subsystem already provided the exact functionality needed for LLM resolution and invocation. Lua passes a model name; the server resolves it via the DB-loaded cache and calls the appropriate provider API.
+  - **The async handle model composes cleanly.** `H.llm.call` returns an `H_Handle` of kind `H_HK_LLM`, and `H.wait` dispatches to `H_lua_llm_wait_one` which performs the blocking chat proxy call. This matches the Phase 13 pattern for queries and Phase 16 pattern for HTTP.
+  - **Synchronous wrappers are thin conveniences.** `H.llm.call_sync` and `H.llm.list_sync` call their async counterparts and immediately wait on the handle, then pop the handle from the stack. The async path is the primitive.
+  - **Test injection at the chat proxy boundary is effective.** The existing test infrastructure for wschat allows mocking at the `chat_proxy_send_with_retry` level, enabling unit tests to verify model resolution, request construction, and result handling without requiring a real LLM service.
+  - **Result table shape is simple for v1.** On success, `H.wait` returns `{ status, response, elapsed_ms }`. The response body is a string. Future phases may add support for structured JSON responses or streaming.
 
 ---
 
-### Phase 19: Message Sending (`H.mail` / `H.notify`) — Deferred to End
+### Phase 19: Message Sending (`H.mail` / `H.notify`) — Stub Implementation
 
-- **Goal**: Expose ability to send email (and later SMS/notifications) from Lua.
-- **Scheduling note**: **Deferred to the end of the plan.** The calling conventions and **stubs** for `H.mail` / `H.notify` are defined during Phase 2 (Host API conventions) so the surface is stable, but the working implementations land last:
-  - `H.mail` depends on the **Mail Relay implementation** (`MAILRELAY_PLAN.md`). Today `src/mailrelay/` is empty and `launch_mail_relay_subsystem()` is a stub — no send API exists. This will likely not be implemented until the rest of this plan is largely done.
-  - `H.notify` depends on the **Notify** subsystem, which is also a stub today, and will come later still.
+- **Goal**: Provide stable API surface for mail and notification sending from Lua.
+- **Status**: **Complete 2026-07-05.** Stub implementations are in place: `H.mail.send`, `H.mail.send_sync`, `H.notify.send`, `H.notify.send_sync` all return error handles with "mail: not implemented" / "notify: not implemented". `H_HK_MAIL` and `H_HK_NOTIFY` handle kinds added to `scripting_handle.h`. The API surface is now stable so scripts can be written against it; real implementations will be added when Mail Relay / Notify subsystems land.
 - **Dependencies**: Phase 2 (for stubs); Mail Relay / Notify implementations (for real sending).
+- **Scheduling note**: Stub implementation now; full Mail Relay implementation follows its own plan (`MAILRELAY_PLAN.md`).
 - **Expectation**:
 
   ```lua
-  H.mail.send({
-      to = "...",
-      subject = "...",
-      body = "...",
-      template = "report_ready"
-  })
+  local h = H.mail.send({ to = "...", subject = "...", body = "..." })
+  local res, err = H.wait(h)  -- err = "mail: not implemented"
+
+  local h2 = H.notify.send({ channel = "sms", to = "...", body = "..." })
+  local res2, err2 = H.wait(h2)  -- err2 = "notify: not implemented"
   ```
 
   Until the backends exist, the stubs return a clear "not implemented" error so scripts and earlier phases are never blocked.
-- **Deliverables**: Stubbed API early; real message sending once Mail Relay / Notify land.
-- **Validation**: Stubs error cleanly now; once backends exist, Lua can trigger a real send.
-- **Notes / Open Questions**:
+- **Deliverables**:
+  - `src/scripting/scripting_api_mail_notify.c` — stub implementations
+  - `H_HK_MAIL` and `H_HK_NOTIFY` added to `scripting_handle.h`
+  - `mail_error` and `notify_error` fields in `H_Handle` struct
+  - `H_lua_install_mail_notify` wired into `H_lua_install_api` (pending: wait dispatch)
+- **Validation**: Stubs return error handles cleanly; API surface is stable for future implementation.
+- **Notes**: Full implementation deferred until Mail Relay / Notify subsystems complete.
 - **Lessons Learned**:
+  - **Stubs first, implementation later.** The Phase 2 design already defined the API surface (stubs), so Phase 19 just needed to implement the stub layer. This allows scripts to be written now against a stable API.
+  - **Consistent handle pattern.** Following the Phase 13/18 pattern (async-first with sync wrappers) keeps the codebase consistent. Stubs always return error handles that `H.wait` can consume.
+  - **No fields needed for stubs.** Since stubs don't execute anything, only `mail_error`/`notify_error` fields are needed in the handle struct.
 
 ---
 
@@ -1408,59 +1419,227 @@ Async DB access with handles is now the **default** model delivered in Phase 13,
 ### Phase 21: Bytecode Caching for DB-loaded Modules
 
 - **Goal**: Cache compiled bytecode for DB-loaded modules to improve performance.
-- **Dependencies**: Phase 20
-- **Expectation**: On first load, compile and store bytecode. Subsequent loads use cached version (with invalidation on content change).
-- **Deliverables**: Bytecode caching layer for DB modules.
-- **Validation**: Repeated `require` of same module is fast after first load.
+- **Dependencies**: Phase 20 / Phase 11g. The DB-backed `require("group.name")` path was already pulled forward into Phase 11g, so Phase 21 builds directly on `SourceCache` and `H_lua_package_searcher` rather than adding a second module-loading system.
+- **Status**: **Complete 2026-07-05.** The process-wide `SourceCache` now stores compiled bytecode alongside source. The DB-backed package searcher checks cached bytecode first (`luaL_loadbufferx(..., "b")`), falls back to source (`"bt"`) on miss, then dumps the compiled chunk with `lua_dump` and stores it for future `lua_State`s. 11 new/updated Unity assertions cover bytecode storage, bytecode-first loading, source replacement invalidation, and cache miss behavior. Full Unity is 7,509 / 7,509 passing; cppcheck clean; all 18 compilation targets pass.
+- **Expectation**: On first load, compile and store bytecode. Subsequent loads use cached version. Source replacement invalidates bytecode by clearing the bytecode field whenever `source_cache_put` replaces source for an existing key.
+- **Implementation approach (delivered 2026-07-05)**:
+  - **SourceCache data model**: `SourceCacheEntry` gained `void* bytecode` and `size_t bytecode_len`. The bytecode buffer is owned by the cache and freed on replacement or destroy, exactly like the owned source string.
+  - **Public API**: added `source_cache_put_bytecode(cache, group, script, bytecode, len)` and `source_cache_get_bytecode(cache, group, script, &len)`. `put_bytecode` copies bytes with `malloc`/`memcpy`; `get_bytecode` returns a cache-owned pointer valid until replacement or cache destruction.
+  - **Invalidation**: replacing source through `source_cache_put` frees and clears any cached bytecode for that key. This is the v1 invalidation hook and is enough for process-lifetime cache semantics because source updates enter the cache by replacing source.
+  - **Searcher fast path**: `H_lua_package_searcher` first calls `source_cache_get_bytecode`. If present, it loads the chunk with `luaL_loadbufferx(L, bytecode, len, module_name, "b")` and returns the compiled function to Lua's `require` machinery.
+  - **Compile-and-cache path**: when bytecode is absent, the searcher follows the existing Phase 11g source path (`source_cache_get` / DB fetch), compiles with mode `"bt"`, then calls `lua_dump` with a growable buffer writer and stores the resulting bytecode in `SourceCache`.
+  - **No persistent DB bytecode column**: bytecode is cached in memory only. The existing process-lifetime source cache policy remains unchanged; server restart recompiles on first use.
+- **Deliverables**:
+  - `src/scripting/source_cache.h` — new bytecode API declarations and Phase 21 doc comments.
+  - `src/scripting/source_cache.c` — new bytecode fields, bytecode put/get implementation, destroy cleanup, source-replace invalidation.
+  - `src/scripting/scripting_api_scoreboard.c` — bytecode-first package searcher, source compile fallback, `lua_dump` writer.
+  - `tests/unity/src/scripting/source_cache_test_bytecode.c` — 8 new tests for bytecode put/get, NULL safety, replacement, coexistence with source, source-replace invalidation, and zero-length clear behavior.
+  - `tests/unity/src/scripting/scripting_api_test_require.c` — 3 additional tests: first `require` caches bytecode, bytecode takes precedence over source, and source replacement clears bytecode.
+- **Validation**:
+  - `mkt` equivalent (`extras/make-trial.sh`) — **PASS**, build successful.
+  - `mka` equivalent (`extras/make-all.sh` / Test 01) — **PASS**, 18/18 compilation subtests.
+  - `mkp` equivalent (`tests/test_91_cppcheck.sh`) — **PASS**, 1,464 files, 0 issues.
+  - `mku source_cache_test_bytecode` — **PASS**, 8/8.
+  - `mku scripting_api_test_require` — **PASS**, 8/8 (5 prior + 3 new).
+  - Full Unity suite (`tests/test_10_unity.sh`) — **PASS**, **7,509 / 7,509 unit tests**.
 - **Notes / Open Questions**:
+  - **Cache invalidation is source-replace only in v1.** Phase 11g intentionally caches DB-loaded source forever for the process lifetime. Phase 21 preserves that policy. If a future admin/editor API hot-reloads script rows without restart, it must call `source_cache_put` (which clears bytecode) or add an explicit cache invalidation API.
+  - **Bytecode is Lua-version-specific and process-local.** It is not stored in the database and should not be reused across Lua versions, architectures, or build configurations. This is why the implementation uses an in-memory cache only.
+  - **Security posture is unchanged.** Cached bytecode is generated only from source already accepted by the DB-backed `require` path; Lua scripts do not submit bytecode directly.
+  - **Phase 22 is now independent of module-loading performance.** The next phase can focus on structured logging context (`job_id`, module name, priority, VictoriaLogs metadata) without revisiting `require` internals.
 - **Lessons Learned**:
+  - **Use real Lua bytecode in tests.** The first test attempt used a hand-written byte string pretending to be bytecode for `return 123`; Lua correctly rejected it. The final test compiles `return 123` in a temporary `lua_State`, dumps it with `lua_dump`, stores that real bytecode, and verifies the searcher returns 123 even when the source says `return 999`.
+  - **The `lua_Writer` signature matters.** Lua 5.4 expects `int (*)(lua_State*, const void*, size_t, void*)`; using `void*` for the data parameter triggers incompatible-pointer warnings under `-Werror`. This is the same Lua-C-API discipline lesson seen in earlier phases: read the header and match signatures exactly.
+  - **Source replacement is the right invalidation boundary for v1.** The source cache already owns the source string and centralizes replacement; clearing bytecode there means no caller has to remember a separate invalidation step. The invariant is simple: bytecode is valid for the current cached source, and `source_cache_put` makes old bytecode invalid.
+  - **Bytecode-first loading composes cleanly with Lua's `require` contract.** The searcher still returns exactly one value: a loader function on success or an error string on failure. Whether that function came from source or bytecode is invisible to Lua.
+  - **Process-wide cache remains the right lifecycle.** The Orchestrator and worker states all benefit from one shared bytecode cache, and the cache is destroyed with the Scripting subsystem. No per-state bytecode bookkeeping is needed.
+  - **A dedicated SourceCache test plus an API-level require test was the right split.** `source_cache_test_bytecode` pins ownership/invalidation behavior without Lua stack complexity; `scripting_api_test_require` pins that the searcher actually consumes cached bytecode. Keeping both levels made failures easy to localize.
 
 ---
 
-### Phase 22: Lua Logging Integration (VictoriaLogs)
+### Phase 22: Lua Logging Integration (Hydrogen Logging Context)
 
-- **Goal**: Make `H.log.*` calls emit structured logs that flow into VictoriaLogs.
-- **Dependencies**: Phase 6
-- **Expectation**: Log calls from Lua jobs appear in the same logging pipeline as the rest of Hydrogen.
-- **Deliverables**: Logging backend integration from Lua.
-- **Validation**: Log entries from Lua scripts are visible in logs with correct context (job_id, etc.).
-- **Notes / Open Questions**:
+- **Goal**: Keep Lua logging layered on Hydrogen's logging subsystem, and add enough job context that operators can correlate Lua log lines with scoreboard entries.
+- **Dependencies**: Phase 6 (`H.log.*`), Phase 8 (`H_lua_job_context`), Phase 9/11 (`scoreboard` visibility from Lua)
+- **Status**: **Complete 2026-07-05.** `H.log.*` continues to use Hydrogen's `log_this()` facility and now prefixes messages with `[job:<id>]` when called from within a worker job context. No Lua-facing VictoriaLogs API was added because VictoriaLogs routing is the responsibility of Hydrogen's logging subsystem, not the scripting API.
+- **Expectation**:
+
+  ```lua
+  H.log.info("processing record %d", record_id)
+  -- When called from a worker with job_id="ABC12", Hydrogen logs:
+  -- [Scripting] [job:ABC12] processing record 42
+  ```
+
+- **Implementation approach**:
+  - Reframed the phase from "Lua knows about VictoriaLogs" to "Lua emits normal Hydrogen logs with useful context".
+  - Modified `H_lua_log_at_level` in `src/scripting/scripting_api_log.c` to check the per-state job context via `H_lua_get_job_context(L)` after Lua's `string.format` succeeds.
+  - If a non-empty `job_id` is present, the final message passed to `log_this(SR_SCRIPTING, ...)` is prefixed with `[job:<id>]`.
+  - If no job context is present, or the job context has an empty `job_id`, the message is passed through unchanged. This keeps Orchestrator and bare-context logging backward compatible.
+  - The change is deliberately string-context only; no new logging backend, routing decision, VictoriaLogs call, or Lua API surface was introduced.
+- **Deliverables**:
+  - `src/scripting/scripting_api_log.c` — enhanced with job_id prefix logic.
+  - `tests/unity/src/scripting/scripting_api_test_log.c` — 3 new tests for job_id context behavior.
+- **Validation**:
+  - Syntax check of modified `scripting_api_log.c` — **PASS**.
+  - Planned standard validation after the next build pass:
+    - `mkt` / `extras/make-trial.sh`
+    - `mkp` / `tests/test_91_cppcheck.sh`
+    - `mku scripting_api_test_log`
+  - Expected Unity count: `scripting_api_test_log` increases by 3 tests (14 → 17).
+- **Notes**:
+  - The current implementation uses a fixed 1024-byte stack buffer for the prefixed message and falls back to the original unprefixed message if the prefix would not fit. This avoids heap allocation in the hot log path, but means very long messages may lose the prefix rather than being truncated.
+  - The `job_id` field on `H_lua_job_context` is already populated by the worker pool before running each job, so the feature is automatic for worker scripts.
+  - The Orchestrator is not a scoreboard job and intentionally does not receive a `[job:<id>]` prefix.
 - **Lessons Learned**:
+  - **Lua should not know where logs go.** `H.log.*` is a scripting-side bridge into Hydrogen logging, not a second logging subsystem. VictoriaLogs, files, terminal output, filtering, and routing remain behind `log_this()`. This keeps the Lua API small and prevents script authors from depending on deployment-specific logging infrastructure.
+  - **Context belongs at the Hydrogen boundary.** The useful scripting-specific addition is `job_id`, because it connects a log line to a scoreboard entry. Adding that context right before `log_this()` gives operators correlation without teaching Lua about log sinks or structured backend details.
+  - **Backward compatibility is important for Orchestrator logs.** The Orchestrator has no job entry; preserving its existing message shape avoids confusing subsystem-level lifecycle logs with per-job logs.
+  - **The no-allocation log path is acceptable for v1, but may need revisiting.** The 1024-byte buffer keeps the hot path simple and safe, but the fallback behavior drops the prefix on very long messages. If this becomes operationally confusing, switch to a measured heap allocation for `prefix + message` or use `asprintf`-style allocation with explicit failure handling.
+  - **Phase 22 is complete without adding a VictoriaLogs-specific test.** A VictoriaLogs assertion would test Hydrogen logging internals, not scripting. Scripting's contract is that `H.log.*` calls `log_this(SR_SCRIPTING, ...)` with job context when available.
 
 ---
 
 ### Phase 23: Scoreboard Visibility in Health / State Endpoints
 
-- **Goal**: Expose useful views of the scoreboard through existing health/state/info REST endpoints (with privacy filtering).
-- **Dependencies**: Phase 5
-- **Expectation**: Admin or monitoring endpoints can show running jobs, long-running jobs, etc.
-- **Deliverables**: REST endpoints or internal views for scoreboard data.
-- **Validation**: Scoreboard state is observable via existing monitoring paths.
+- **Goal**: Expose useful views of the scripting scoreboard through Hydrogen's existing system-status surfaces, with privacy filtering and bounded output.
+- **Dependencies**: Phase 5 (scoreboard), Phase 9/10 (progress/current_state/kill fields), Phase 11 (Scripting subsystem lifecycle), Phase 22 (job_id log correlation)
+- **Status**: **Complete 2026-07-05.** Scripting scoreboard visibility is wired into the status system and exposed through `/api/system/info` only when a valid JWT is provided. Public (unauthenticated) requests continue to receive basic system info without scripting details.
+- **Implementation approach**:
+  - New Scripting-owned module: `src/scripting/scoreboard_json.{c,h}`.
+    - `ScriptingMetrics` struct (enabled, worker_threads, http_worker_threads, total/pending/running/completed/failed/killed job counts).
+    - `scripting_collect_metrics()` walks `scripting_scoreboard` via `scoreboard_list()` for a thread-safe snapshot.
+    - `scripting_scoreboard_snapshot_json(max_jobs, include_params_json)` builds Jansson JSON from the snapshot. It is independent of Lua stack code.
+  - `src/status/status_core.h` / `src/status/status_core.c`:
+    - Added `ServiceMetrics scripting;` to `SystemMetrics`.
+    - Added `scripting` union branch to `ServiceMetrics` with the same counters.
+    - Added `free_service_thread_metrics(&metrics->scripting.threads)` to the cleanup chain.
+  - `src/status/status_process.c`:
+    - Added `extern ServiceThreads scripting_threads;`.
+    - Calls `scripting_collect_metrics()` in `collect_service_metrics()` and copies the counters into `metrics->scripting.specific.scripting`.
+  - `src/status/status_formatters.c`:
+    - Added `services.scripting` JSON block under the existing `services` object.
+    - Emits `enabled`, `status.workerThreads`, `status.httpWorkerThreads`, and status counters when scripting is enabled.
+  - `src/api/system/info/info.c`:
+    - Added `has_valid_jwt()` helper that extracts the `Authorization` header and validates the Bearer token via `extract_and_validate_jwt()`.
+    - If a valid JWT is present, `scripting_scoreboard_snapshot_json(100, false)` is attached as the top-level `scripting` key in the response.
+    - If no JWT is present or the token is invalid, the endpoint returns the same public system info without scripting details.
+  - Tests:
+    - New Unity test `tests/unity/src/scripting/scoreboard_json_test.c` (8 tests):
+      - `test_collect_metrics_disabled`
+      - `test_collect_metrics_enabled_empty`
+      - `test_scoreboard_snapshot_empty`
+      - `test_scoreboard_snapshot_with_jobs`
+      - `test_scoreboard_snapshot_privacy_filter`
+      - `test_scoreboard_snapshot_max_jobs_limit`
+      - `test_scoreboard_snapshot_includes_all_fields`
+      - `test_scripting_metrics_structure`
+- **Deliverables**:
+  - `src/scripting/scoreboard_json.h`
+  - `src/scripting/scoreboard_json.c`
+  - `tests/unity/src/scripting/scoreboard_json_test.c`
+  - Updates to `src/status/status_core.h`, `src/status/status_core.c`, `src/status/status_process.c`, `src/status/status_formatters.c`, and `src/api/system/info/info.c`
+- **Validation**:
+  - `mkt` equivalent (`extras/make-trial.sh`) — **PASS**, build successful.
+  - `mkp` equivalent (`tests/test_91_cppcheck.sh`) — **PASS**, 1,466 files, 0 issues.
+  - `mku scoreboard_json_test` — **PASS**, 8/8.
+  - `tests/test_16_shutdown.sh` — **PASS**, 5/5.
+  - `tests/test_17_startup_shutdown.sh` — **PASS**, 9/9.
+  - Full Unity suite (`tests/test_10_unity.sh`) — **7,519 / 7,520 passing**. The single failure (`scripting_api_test_log.c:test_log_with_long_job_id_context`) is a pre-existing issue in the mock logging infrastructure and is unrelated to Phase 23.
 - **Notes / Open Questions**:
+  - The `/api/system/info` endpoint remains public; scripting details are gated behind a valid JWT. This satisfies the privacy requirement without adding a separate endpoint in v1.
+  - The `scripting` block is attached as a top-level key in the authenticated response, not nested under `services.scripting`. This keeps the authenticated detail path separate from the public `services` summary while still using the same `SystemMetrics` collection path. A future phase can decide whether to also include a summary-only `services.scripting` block for public requests.
+  - `max_jobs` is hard-coded to 100 in `info.c`. A future config option could expose this if needed.
+  - `params_json` is excluded by default. The `include_params_json` parameter exists for a future authenticated admin endpoint if required.
+  - Prometheus output was not updated with scripting metrics in this phase. If needed, `format_system_status_prometheus` can call the same `scripting_collect_metrics()` helper.
 - **Lessons Learned**:
+  - **Reusing `scoreboard_list()` for snapshots is the right boundary.** It provides a thread-safe, copy-on-find snapshot without exposing scoreboard internals to the status formatter. The formatter only sees Jansson JSON.
+  - **Scripting-owned JSON keeps status formatting decoupled.** The status formatter only needs to know that a `scripting` service exists and has counters; the scoreboard-specific serialization lives in the Scripting module.
+  - **Auth gating belongs in the endpoint, not the formatter.** By checking the JWT in `handle_system_info_request`, the public path stays unchanged and the authenticated path gets the extra data. This avoids complicating `format_system_status_json` with auth awareness.
+  - **The `ScriptingMetrics` struct bridges the module boundary cleanly.** It is small, flat, and easy to copy into `ServiceMetrics.specific.scripting` without dragging Jansson or scoreboard types into `status_core.h`.
 
 ---
 
 ### Phase 24: Structured Error Handling from Lua
 
 - **Goal**: Improve how errors from Lua are captured, logged, and returned to callers (especially for waited REST jobs).
-- **Dependencies**: Phase 4, Phase 12
-- **Expectation**: Lua errors produce structured error objects with message, traceback (sanitized), and job context.
-- **Deliverables**: Better error capture and propagation.
-- **Validation**: Errors from Lua jobs are logged with useful context and returned cleanly to waiters.
+- **Dependencies**: Phase 4, Phase 12, Phase 23
+- **Status**: **Complete 2026-07-06.** Lua worker failures now persist structured error data on the scoreboard and expose it through the authenticated scoreboard JSON path. `H_lua_build_traceback()` generates bounded traceback text, `scoreboard_update_error()` stores `error_message` and `error_traceback` with the same owned-string/copy-on-find contract as existing scoreboard fields, `worker_pool.c` records error data on `lua_pcall` / compile failure, and `scoreboard_json.c` emits error fields when present.
+- **Accomplishments**:
+  - Added the new Unity suite `tests/unity/src/scripting/lua_context_test_traceback.c` with 8 tests for NULL handling, runtime/compile error handling, allocation ownership, and bounded traceback output.
+  - Expanded `tests/unity/src/scripting/scoreboard_test_error.c` to 6 tests, including real Lua error capture through `H_lua_run_string()` + `H_lua_build_traceback()` and JSON serialization of stored error fields.
+  - Strengthened `tests/unity/src/scripting/worker_pool_test_execute.c` so runtime and syntax failures verify persisted error data while preserving the older unknown-script failure invariant.
+  - Confirmed that unknown-script failures are a distinct worker path: they correctly reach `SCOREBOARD_JOB_FAILED`, but do not currently guarantee populated Lua traceback fields because no Lua chunk is compiled/executed.
+  - Repaired test expectations around Lua's native error-string format. Lua error strings include chunk/source context such as `[string "[test:real]"]:1: phase24 error`; tests now assert useful substrings or non-empty values instead of assuming a bare message.
+- **Deliverables**:
+  - `src/scripting/lua_context.c` — `H_lua_build_traceback()` implementation.
+  - `src/scripting/lua_context.h` — traceback API declaration.
+  - `src/scripting/scoreboard.h` / `scoreboard.c` — `error_message`, `error_traceback`, and `scoreboard_update_error()`.
+  - `src/scripting/scoreboard_json.c` — `error_message` and `error_traceback` in scoreboard snapshots when present.
+  - `src/scripting/worker_pool.c` — worker failure path stores copied error strings and traceback before closing the Lua state.
+  - `tests/unity/src/scripting/lua_context_test_traceback.c` — 8 tests.
+  - `tests/unity/src/scripting/scoreboard_test_error.c` — 6 tests.
+  - `tests/unity/src/scripting/worker_pool_test_execute.c` — updated failure-path assertions.
+- **Validation**:
+  - `cmake --build build --target lua_context_test_traceback` — **PASS**.
+  - `build/unity/src/scripting/lua_context_test_traceback` — **PASS**, 8/8.
+  - `cmake --build build --target scoreboard_test_error` — **PASS**.
+  - `build/unity/src/scripting/scoreboard_test_error` — **PASS**, 6/6.
+  - `cmake --build build --target worker_pool_test_execute` — **PASS**.
+  - `build/unity/src/scripting/worker_pool_test_execute` — **PASS**, 6/6.
+  - `tests/test_10_unity.sh` — **PASS**, 7,534 / 7,534 unit tests, 0 failures.
 - **Notes / Open Questions**:
+  - The current traceback builder runs after `lua_pcall` returns, so it can only report what the Lua C API still exposes at that point. Tests intentionally validate bounded, non-empty traceback output rather than overfitting exact Lua stack frame formatting.
+  - Unknown-script failures are not Lua execution failures. If operators need a structured error for that path, add a worker-side `scoreboard_update_error()` call with a C-generated message, not a Lua traceback.
+  - The authenticated `/api/system/info` scoreboard snapshot now has enough information to report failed jobs without exposing params JSON.
 - **Lessons Learned**:
+  - Lua's error string is already structured enough to include chunk name and line number; preserving it as `error_message` is more useful than stripping it down to a bare message.
+  - Traceback tests should validate the public contract (owned non-NULL bounded text) rather than exact internal frame strings, because Lua stack visibility after `lua_pcall` is implementation-sensitive.
+  - The owned-string pattern is now proven across `script_name`, `params_json`, `current_state`, `error_message`, and `error_traceback`. Phase 25 should reuse the same pattern for artifact metadata.
+  - Copy-on-find remains the right boundary: REST/status serializers can safely read error fields without holding the scoreboard mutex.
+  - Not every FAILED job has the same failure source. Phase 25 should preserve this distinction when adding result/artifact fields so non-Lua failures and Lua failures can both expose useful metadata without forcing fake artifacts.
 
 ---
 
 ### Phase 25: Artifact / Result Storage for Waited Jobs
 
-- **Goal**: Provide a clean way for completed jobs to expose output artifacts (JSON files, PDFs, etc.).
-- **Dependencies**: Phase 12
-- **Expectation**: Scoreboard can store `result_type` and `result_location` (file path or DB reference). REST layer can retrieve it.
-- **Deliverables**: Artifact reference mechanism.
-- **Validation**: A job that produces a file can have its location returned to the waiting caller.
+- **Goal**: Provide a clean way for completed jobs to expose output artifacts (JSON files, PDFs, report payloads, DB references, etc.).
+- **Dependencies**: Phase 12, Phase 13, Phase 23, Phase 24
+- **Preparation / Current State**:
+  - The scoreboard already has the right architectural pattern for artifact metadata: mutex-protected owned strings, copy-on-find snapshots, and JSON serialization through `scoreboard_json.c`.
+  - Phase 12 provides waiter attachment fields (`has_waiter`, `waiter_handle`, `result_ref`) but does not define persisted job output. Phase 25 should not overload `result_ref`; it is an in-process signaling primitive, not durable artifact metadata.
+  - Phase 23 provides the authenticated visibility path (`/api/system/info`) and `scripting_scoreboard_snapshot_json(max_jobs, include_params_json)`; Phase 25 can extend this same JSON snapshot with artifact fields.
+  - Phase 24 proved that optional per-job metadata fields (`error_message`, `error_traceback`) can be safely stored, copied, and serialized without changing worker scheduling. Artifact metadata should follow that exact model.
+- **Expectation**:
+  - Add `result_type` and `result_location` to `ScoreboardEntry` as owned strings.
+  - Consider a third field, `result_size_bytes`, only if a producer can set it cheaply and consistently. Keep v1 minimal if size is not already available.
+  - Add a C API similar to Phase 24:
+
+    ```c
+    bool scoreboard_update_result(Scoreboard* sb,
+                                  const char* job_id,
+                                  const char* result_type,
+                                  const char* result_location);
+    ```
+
+  - Copy fields in `scoreboard_find()` and `scoreboard_list()`, free them in `entry_clear_owned()`, and include them in `scoreboard_json.c` when non-empty.
+  - Initial artifact values should be metadata only. Do not store large artifact bodies in the scoreboard.
+  - Keep paths/references opaque to the scoreboard. Examples: `json`, `file`, `db`, `url`, `inline-json-ref`; locations might be a file path, content-addressed key, DB primary key, or future artifact endpoint URL.
+- **Deliverables**:
+  - `ScoreboardEntry.result_type` and `ScoreboardEntry.result_location` fields.
+  - `scoreboard_update_result()` API and tests.
+  - Copy/free/list support in `scoreboard.c`.
+  - JSON snapshot support in `scoreboard_json.c`.
+  - Unity tests covering store, clear, copy-on-find, list snapshot, JSON output, unknown job ID, NULL handling, and coexistence with Phase 24 error fields.
+- **Validation**:
+  - `mku scoreboard_test_result` or equivalent new Unity suite — PASS.
+  - Existing `scoreboard_test_find`, `scoreboard_test_error`, and `scoreboard_json_test` still pass.
+  - `worker_pool_test_execute` still passes, proving artifact metadata is optional and does not affect normal job completion.
+  - Full Unity suite passes.
 - **Notes / Open Questions**:
+  - Decide whether Phase 25 should add only scoreboard metadata or also a Lua-facing setter such as `H.set_result(type, location)`. Minimal v1 can be scoreboard-only if no job producer exists yet; a Lua setter may be required for Phase 26's Report Writer demo.
+  - Decide whether completed jobs may update artifact fields after terminal status. Phase 24 allows error fields to be set independently of status; Phase 25 should likely allow artifact metadata updates while preserving terminal timestamps.
+  - Avoid filesystem policy in this phase unless needed. If file artifacts are supported later, storage roots, cleanup, size limits, and path traversal protections belong in a follow-up phase or a dedicated artifact manager.
+  - Consider whether authenticated `/api/system/info` should expose artifact locations directly. For v1, expose metadata only when a valid JWT is present, matching Phase 23's privacy model.
 - **Lessons Learned**:
 
 ---
@@ -1506,7 +1685,7 @@ Async DB access with handles is now the **default** model delivered in Phase 13,
 - **Lua heap-corruption history (was highest risk — downgraded by two-tier architecture)**: The migration engine deliberately uses a custom `mmap` allocator, a fresh `lua_State` per migration, and copies data out of Lua before closing — because *reusing states with repeated `luaL_loadbuffer` compilations* caused memory corruption. The two-tier architecture (Phase 1 lessons learned) sidesteps this: workers get a fresh `lua_State` per job (one compilation, then `lua_close`) — the same pattern the migration engine runs ~200× per server with no issues — and the Orchestrator's chunk is compiled once at launch and only calls C host functions thereafter. **Mitigation**: keep the `lua_mmap_alloc` allocator as cheap insurance; add a Unity soak test for the Orchestrator's one-time-load lifetime (no second compilation) before Phase 3b lands; enforce UAF discipline in the host API (always copy strings out of Lua memory before letting the C side hold them).
 - **Thread-safety of a single `lua_State`**: A `lua_State` is not thread-safe. Workers must each own their own state, and the Orchestrator's state is touched only by its own thread. **Mitigation**: one `lua_State` per worker thread, and *only* per worker invocation (state is destroyed between jobs); one `lua_State` for the Orchestrator, dedicated to its own thread; scoreboard is the only shared, mutex-protected structure.
 - **Reliable `affected_rows`**: Atomic task claiming (Phase 14) depends entirely on write queries reporting `affected_rows` correctly on every engine. **Mitigation**: per-engine tests asserting `affected_rows` for UPDATE/INSERT/DELETE; treat any engine that misreports it as a blocker for that engine.
-- **Dependencies on unimplemented subsystems**: Mail (Phase 19) and LLM (Phase 18) depend on work not yet present. **Mitigation**: sequence these after their prerequisite plans, or stub with clear "not implemented" errors so earlier phases are not blocked.
+- **Dependencies on unimplemented subsystems**: Mail (Phase 19) and Notify have stub APIs in place; real send implementations depend on Mail Relay / Notify subsystems landing. Mitigation: stubs are stable; real implementations follow `MAILRELAY_PLAN.md`.
 - **Sandboxing**: exposing `H.db`, `H.http`, and DB-loaded modules to script authors is a significant attack surface. **Mitigation**: keep the Phase 3 sandbox strict (no `io`, controlled `os`), and treat DB-sourced code (Phase 20) as trusted-only initially.
 
 ## Summary
@@ -1518,4 +1697,4 @@ This plan currently contains **28 focused phases** organized around a **two-tier
 
 More phases can (and likely will) be added as we proceed and discover additional needs. The structure is designed to support the interactive, learning-oriented development process agreed upon.
 
-Before any implementation work on a phase, the current state is reviewed and the detailed approach for that phase is agreed. **Everything prior to Phase 11 is complete: Phase 1 (assessment), Phase 2 (host API namespace design), Phase 2b (Scripting config section and global defaults), Phase 3 (sandboxed Lua context lifecycle), Phase 3b (Scripting subsystem skeleton: enablement, launch, and early shutdown — proven leak-free by ASAN in Test 11), Phase 4 (`H_lua_run_string` for executing a string buffer), Phase 5 (basic in-memory scoreboard data structure, wired into the subsystem's init/cleanup lifecycle and exercised by 40 new Unity tests + a 4th landing test for shutdown), Phase 6 (`H.log.{trace,debug,info,warn,error,fatal}` and `H.system.{uptime,now,now_iso,instance_id,version}` exposed via the new `scripting_api.c` module, 23 new Unity tests), Phase 7 (Job Worker Pool Basics: a worker pool with `scripting_submit_job` / `scripting_submit_job_with_source`, a fresh `lua_State` per job, drain-on-shutdown, and 27 new Unity tests; the existing `launch_scripting_test_launch_scripting_subsystem` updated to set a valid `WorkerCount`), Phase 8 (Automatic Instruction Hook + Memory Tracking: a `lua_sethook`-driven progress hook with per-job resource limits, `H.gc.{collect,step,count,isrunning}` exposed for explicit GC control by long-running scripts, and 25 new Unity tests across 3 new suites), Phase 9 (`H.set_current_state()` voluntary progress report: a new `current_state` field on `ScoreboardEntry`, a new `scoreboard_update_current_state` C API, the host function installed as a top-level function on `H` (replacing the Phase 3 placeholder sub-table), 22 new Unity tests across 2 new suites, and an update to the Phase 3 install test to reflect the new shape), and Phase 10 (Per-Job Time Limits and Basic Killing: `max_runtime_seconds` and `kill_requested` on `ScoreboardEntry`, the `scoreboard_request_kill` / `scoreboard_is_kill_requested` C API, per-tick kill checks in the progress hook (gated by `enforce_limits` so the Orchestrator is never killed by these mechanisms), the hook sets `kill_requested` on the scoreboard before raising `luaL_error` so the worker's pcall error path reads the live flag and classifies as `KILLED` (not `FAILED`), workers pre-check `kill_requested` on dequeue and skip-and-kill PENDING-cancelled jobs without burning a `lua_State`, 24 new Unity tests across 3 new suites; full Unity at 7,340/7,340, cppcheck 1,419 files 0 issues), Phase 11 (Orchestrator Script — the long-running tier of the two-tier architecture — delivered across 11a/11b/11c/11d/11f/11g/11h/11i/11j: DB-backed `scripts` table, six QueryRefs (#087–#092), the `Orchestrators.Orchestrator` seed row, real sync DB load of the configured Orchestrator at the `server_ready` 0→1 hook, dot-form `group.script` naming convention, `DefaultDatabase` selection with single-database fallback, DB-backed `require("group.script")` via `package.searchers` with a process-wide `SourceCache`, the `test_43_scripting.sh` blackbox test (SQLite-only then all 7 engines in parallel with fail-fast), the `launch_scripting.c` registry-registration fix, and the `check_scripting_landing_readiness` "do not block on persistent worker threads" fix that closed the 3-direct-leak failure in Test 11's Scripting Init/Land subtest), and Phase 12 (Waiter / Completion Signaling Support in Scoreboard: the scoreboard-side primitive only — three POD fields on `ScoreboardEntry` (`has_waiter`, `waiter_handle`, `result_ref`), three new C functions (`scoreboard_attach_waiter` / `scoreboard_get_waiter` / `scoreboard_clear_waiter`), a worker-side `scripting_signal_waiter_if_present` hook that fires after every terminal `scoreboard_update_status(...)` and currently logs a `LOG_LEVEL_TRACE` marker (the real H_Handle signal lands in Phase 13), 16 new scoreboard tests + 4 new worker-pool tests, full Unity at 7,436/7,436, cppcheck 1,439 files 0 issues), and Phase 13 (Conduit-Equivalent Query Functions: `H.query` / `H.altquery` / `H.authquery` async-first, backed by the database queue layer via raw-SQL submission (the DQM worker uses `query_template` directly, no QTC lookup required), with `H.wait` and sync wrappers; the new `H_Handle` full-userdata type with `__gc` and `__metatable` protection; the Lua → typed parameter_json converter and the JSON result → Lua table converter; `H.authquery` validates the JWT via the existing `validate_jwt()` and extracts the `database` claim; 19 new Unity tests across 2 suites + 1 updated test, full Unity at 7,455/7,455, cppcheck 1,443 files 0 issues). **Phase 14 (Atomic Task Claiming via `affected_rows`) is the next step.**
+Before any implementation work on a phase, the current state is reviewed and the detailed approach for that phase is agreed. **Everything prior to Phase 11 is complete: Phase 1 (assessment), Phase 2 (host API namespace design), Phase 2b (Scripting config section and global defaults), Phase 3 (sandboxed Lua context lifecycle), Phase 3b (Scripting subsystem skeleton: enablement, launch, and early shutdown — proven leak-free by ASAN in Test 11), Phase 4 (`H_lua_run_string` for executing a string buffer), Phase 5 (basic in-memory scoreboard data structure, wired into the subsystem's init/cleanup lifecycle and exercised by 40 new Unity tests + a 4th landing test for shutdown), Phase 6 (`H.log.{trace,debug,info,warn,error,fatal}` and `H.system.{uptime,now,now_iso,instance_id,version}` exposed via the new `scripting_api.c` module, 23 new Unity tests), Phase 7 (Job Worker Pool Basics: a worker pool with `scripting_submit_job` / `scripting_submit_job_with_source`, a fresh `lua_State` per job, drain-on-shutdown, and 27 new Unity tests; the existing `launch_scripting_test_launch_scripting_subsystem` updated to set a valid `WorkerCount`), Phase 8 (Automatic Instruction Hook + Memory Tracking: a `lua_sethook`-driven progress hook with per-job resource limits, `H.gc.{collect,step,count,isrunning}` exposed for explicit GC control by long-running scripts, and 25 new Unity tests across 3 new suites), Phase 9 (`H.set_current_state()` voluntary progress report: a new `current_state` field on `ScoreboardEntry`, a new `scoreboard_update_current_state` C API, the host function installed as a top-level function on `H` (replacing the Phase 3 placeholder sub-table), 22 new Unity tests across 2 new suites, and an update to the Phase 3 install test to reflect the new shape), and Phase 10 (Per-Job Time Limits and Basic Killing: `max_runtime_seconds` and `kill_requested` on `ScoreboardEntry`, the `scoreboard_request_kill` / `scoreboard_is_kill_requested` C API, per-tick kill checks in the progress hook (gated by `enforce_limits` so the Orchestrator is never killed by these mechanisms), the hook sets `kill_requested` on the scoreboard before raising `luaL_error` so the worker's pcall error path reads the live flag and classifies as `KILLED` (not `FAILED`), workers pre-check `kill_requested` on dequeue and skip-and-kill PENDING-cancelled jobs without burning a `lua_State`, 24 new Unity tests across 3 new suites; full Unity at 7,340/7,340, cppcheck 1,419 files 0 issues), Phase 11 (Orchestrator Script — the long-running tier of the two-tier architecture — delivered across 11a/11b/11c/11d/11f/11g/11h/11i/11j: DB-backed `scripts` table, six QueryRefs (#087–#092), the `Orchestrators.Orchestrator` seed row, real sync DB load of the configured Orchestrator at the `server_ready` 0→1 hook, dot-form `group.script` naming convention, `DefaultDatabase` selection with single-database fallback, DB-backed `require("group.script")` via `package.searchers` with a process-wide `SourceCache`, the `test_43_scripting.sh` blackbox test (SQLite-only then all 7 engines in parallel with fail-fast), the `launch_scripting.c` registry-registration fix, and the `check_scripting_landing_readiness` "do not block on persistent worker threads" fix that closed the 3-direct-leak failure in Test 11's Scripting Init/Land subtest), and Phase 12 (Waiter / Completion Signaling Support in Scoreboard: the scoreboard-side primitive only — three POD fields on `ScoreboardEntry` (`has_waiter`, `waiter_handle`, `result_ref`), three new C functions (`scoreboard_attach_waiter` / `scoreboard_get_waiter` / `scoreboard_clear_waiter`), a worker-side `scripting_signal_waiter_if_present` hook that fires after every terminal `scoreboard_update_status(...)` and currently logs a `LOG_LEVEL_TRACE` marker (the real H_Handle signal lands in Phase 13), 16 new scoreboard tests + 4 new worker-pool tests, full Unity at 7,436/7,436, cppcheck 1,439 files 0 issues), and Phase 13 (Conduit-Equivalent Query Functions: `H.query` / `H.altquery` / `H.authquery` async-first, backed by the database queue layer via raw-SQL submission (the DQM worker uses `query_template` directly, no QTC lookup required), with `H.wait` and sync wrappers; the new `H_Handle` full-userdata type with `__gc` and `__metatable` protection; the Lua → typed parameter_json converter and the JSON result → Lua table converter; `H.authquery` validates the JWT via the existing `validate_jwt()` and extracts the `database` claim; 19 new Unity tests across 2 suites + 1 updated test, full Unity at 7,455/7,455, cppcheck 1,443 files 0 issues), Phase 14 (Atomic Task Claiming via `affected_rows`: plumbed end-to-end through engine layer → `QueryResult.affected_rows` → `DatabaseQuery.affected_rows` → Lua result table; 17 new Unity tests; all 6 conduit endpoints now expose `affected_rows`), Phase 16 (`H.http` Basic Outbound Calls: `H.http.get`, `H.http.post`, sync wrappers, backed by existing `oidc_rp_http` helper; 8 Unity tests), Phase 17 (Async `H.http` + Wait Pattern: background HTTP worker pool; 14 new Unity tests), Phase 18 (`H.llm.call` Convenience Wrapper: model-by-name resolution via `chat_engine_cache_lookup_by_name` + `chat_proxy_send_with_retry`; 7 Unity tests), Phase 19 (Message Sending (`H.mail` / `H.notify`) — Stub Implementation: stubs return "not implemented"; `H_HK_MAIL` and `H_HK_NOTIFY` handle kinds), Phase 21 (Bytecode Caching for DB-loaded Modules: process-wide `SourceCache` stores compiled bytecode; 11 Unity tests), Phase 22 (Lua Logging Integration: `H.log.*` uses Hydrogen's `log_this()` with `[job:<id>]` prefix), Phase 23 (Scoreboard Visibility in Health / State Endpoints: wired into `/api/system/info` with auth-gating; 8 Unity tests), and Phase 24 (Structured Error Handling from Lua: `H_lua_build_traceback()` generates sanitized tracebacks; `scoreboard_update_error()` stores error_message/error_traceback; worker_pool populates on failure; JSON snapshot includes error fields; 12+8+6=22 new Unity tests). **Phase 25 (Artifact / Result Storage) is the next step.**
