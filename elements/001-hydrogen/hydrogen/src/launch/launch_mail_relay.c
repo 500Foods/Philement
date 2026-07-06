@@ -6,6 +6,7 @@
  * 
  * Dependencies:
  * - Network subsystem must be initialized and ready
+ * - Database subsystem is recommended when persistence is enabled
  * 
  * Note: Shutdown functionality has been moved to landing/landing_mail_relay.c
  */
@@ -16,12 +17,33 @@
 // Local includes
 #include "launch.h"
 
+// External declarations
+extern ServiceThreads mailrelay_threads;
+extern volatile sig_atomic_t mail_relay_system_shutdown;
+
+// Registry ID for the Mail Relay subsystem
+int mailrelay_subsystem_id = -1;
+
+// Helper function to validate and report range errors for size_t values
+static bool validate_int_range(int value, int min, int max, 
+                               const char* field_name, const char*** messages, 
+                               size_t* count, size_t* capacity) {
+    if (value < min || value > max) {
+        char msg[128];
+        snprintf(msg, sizeof(msg), "  No-Go:   Invalid %s %d (must be between %d and %d)",
+                field_name, value, min, max);
+        add_launch_message(messages, count, capacity, strdup(msg));
+        return false;
+    }
+    return true;
+}
+
 // Check if the mail relay subsystem is ready to launch
 LaunchReadiness check_mail_relay_launch_readiness(void) {
     const char** messages = NULL;
     size_t count = 0;
     size_t capacity = 0;
-    bool ready = true;
+    bool is_ready = true;
 
     // First message is subsystem name
     add_launch_message(&messages, &count, &capacity, strdup(SR_MAIL_RELAY));
@@ -46,106 +68,121 @@ LaunchReadiness check_mail_relay_launch_readiness(void) {
     }
 
     // Check basic configuration
-    if (!app_config || !app_config->mail_relay.Enabled) {
-        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Mail relay disabled in configuration"));
+    if (!app_config) {
+        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Configuration not available"));
         finalize_launch_messages(&messages, &count, &capacity);
         return (LaunchReadiness){ .subsystem = SR_MAIL_RELAY, .ready = false, .messages = messages };
+    }
+
+    const MailRelayConfig* config = &app_config->mail_relay;
+
+    if (!config->Enabled) {
+        add_launch_message(&messages, &count, &capacity, strdup("  Go:      Mail relay disabled - clean skip"));
+        add_launch_message(&messages, &count, &capacity, strdup("  Decide:  Skip Launch of Mail Relay Subsystem"));
+        finalize_launch_messages(&messages, &count, &capacity);
+        return (LaunchReadiness){ .subsystem = SR_MAIL_RELAY, .ready = true, .messages = messages };
     }
     add_launch_message(&messages, &count, &capacity, strdup("  Go:      Mail relay enabled in configuration"));
 
-    // Validate configuration values
-    const MailRelayConfig* config = &app_config->mail_relay;
-
     // Validate port range
-    if (config->ListenPort <= 0 || config->ListenPort > 65535) {
-        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Invalid listen port (must be 1-65535)"));
-        finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = SR_MAIL_RELAY, .ready = false, .messages = messages };
+    if (!validate_int_range(config->ListenPort, 1, 65535, "listen port", &messages, &count, &capacity)) {
+        is_ready = false;
+    } else {
+        add_launch_message(&messages, &count, &capacity, strdup("  Go:      Listen port valid"));
     }
-    add_launch_message(&messages, &count, &capacity, strdup("  Go:      Listen port valid"));
+
+    // If inbound enabled, validate listen port is not privileged on restricted systems
+    if (config->InboundEnabled && config->ListenPort < 1024) {
+        char msg[128];
+        snprintf(msg, sizeof(msg), "  No-Go:   Inbound listener on privileged port %d may require root", config->ListenPort);
+        add_launch_message(&messages, &count, &capacity, strdup(msg));
+        is_ready = false;
+    }
 
     // Validate worker count
     if (config->Workers <= 0) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Invalid worker count (must be positive)"));
-        finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = SR_MAIL_RELAY, .ready = false, .messages = messages };
+        is_ready = false;
+    } else {
+        add_launch_message(&messages, &count, &capacity, strdup("  Go:      Worker count valid"));
     }
-    add_launch_message(&messages, &count, &capacity, strdup("  Go:      Worker count valid"));
+
+    // Outbound validation
+    if (config->OutboundEnabled) {
+        if (config->OutboundServerCount <= 0 || config->OutboundServerCount > MAX_OUTBOUND_SERVERS) {
+            add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Outbound enabled but no servers configured"));
+            is_ready = false;
+        } else {
+            bool any_server_valid = false;
+            for (int i = 0; i < config->OutboundServerCount; i++) {
+                if (config->Servers[i].Host && config->Servers[i].Host[0] != '\0' &&
+                    config->Servers[i].Port && config->Servers[i].Port[0] != '\0' &&
+                    config->Servers[i].Username && config->Servers[i].Username[0] != '\0' &&
+                    config->Servers[i].Password && config->Servers[i].Password[0] != '\0') {
+                    any_server_valid = true;
+                    char msg[128];
+                    snprintf(msg, sizeof(msg), "  Go:      Server %d configuration valid", i + 1);
+                    add_launch_message(&messages, &count, &capacity, strdup(msg));
+                } else {
+                    char msg[128];
+                    snprintf(msg, sizeof(msg), "  No-Go:   Server %d missing host, port, username, or password", i + 1);
+                    add_launch_message(&messages, &count, &capacity, strdup(msg));
+                    is_ready = false;
+                }
+            }
+            if (!any_server_valid) {
+                add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   No valid outbound servers available"));
+                is_ready = false;
+            }
+        }
+    } else {
+        add_launch_message(&messages, &count, &capacity, strdup("  Go:      Outbound sending disabled"));
+    }
+
+    // Queue persistence validation
+    if (config->Queue.Persist) {
+        if (!config->Database || !config->Database[0]) {
+            add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Queue persistence enabled but no database configured"));
+            is_ready = false;
+        } else {
+            add_launch_message(&messages, &count, &capacity, strdup("  Go:      Queue persistence has database target"));
+        }
+    }
 
     // Validate queue settings
-    if (config->Queue.MaxQueueSize <= 0) {
-        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Invalid max queue size (must be positive)"));
-        finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = SR_MAIL_RELAY, .ready = false, .messages = messages };
+    if (config->Queue.MaxInMemory <= 0 && config->Queue.MaxQueueSize <= 0) {
+        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Invalid queue size (must be positive)"));
+        is_ready = false;
+    } else {
+        add_launch_message(&messages, &count, &capacity, strdup("  Go:      Queue settings valid"));
     }
-    add_launch_message(&messages, &count, &capacity, strdup("  Go:      Queue size valid"));
 
     if (config->Queue.RetryAttempts < 0) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Invalid retry attempts (must be non-negative)"));
-        finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = SR_MAIL_RELAY, .ready = false, .messages = messages };
+        is_ready = false;
+    } else {
+        add_launch_message(&messages, &count, &capacity, strdup("  Go:      Retry attempts valid"));
     }
-    add_launch_message(&messages, &count, &capacity, strdup("  Go:      Retry attempts valid"));
 
     if (config->Queue.RetryDelaySeconds <= 0) {
         add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Invalid retry delay (must be positive)"));
-        finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = SR_MAIL_RELAY, .ready = false, .messages = messages };
-    }
-    add_launch_message(&messages, &count, &capacity, strdup("  Go:      Retry delay valid"));
-
-    // Must have at least one outbound server
-    if (config->OutboundServerCount <= 0 || config->OutboundServerCount > MAX_OUTBOUND_SERVERS) {
-        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Invalid number of outbound servers"));
-        finalize_launch_messages(&messages, &count, &capacity);
-        return (LaunchReadiness){ .subsystem = SR_MAIL_RELAY, .ready = false, .messages = messages };
-    }
-    add_launch_message(&messages, &count, &capacity, strdup("  Go:      Server count valid"));
-
-    // Validate each configured server
-    for (int i = 0; i < config->OutboundServerCount; i++) {
-        char msg_buffer[256];
-
-        if (!config->Servers[i].Host || !config->Servers[i].Host[0]) {
-            snprintf(msg_buffer, sizeof(msg_buffer), "  No-Go:   Server %d missing host", i + 1);
-            add_launch_message(&messages, &count, &capacity, strdup(msg_buffer));
-            finalize_launch_messages(&messages, &count, &capacity);
-            return (LaunchReadiness){ .subsystem = SR_MAIL_RELAY, .ready = false, .messages = messages };
-        }
-
-        if (!config->Servers[i].Port || !config->Servers[i].Port[0]) {
-            snprintf(msg_buffer, sizeof(msg_buffer), "  No-Go:   Server %d missing port", i + 1);
-            add_launch_message(&messages, &count, &capacity, strdup(msg_buffer));
-            finalize_launch_messages(&messages, &count, &capacity);
-            return (LaunchReadiness){ .subsystem = SR_MAIL_RELAY, .ready = false, .messages = messages };
-        }
-
-        if (!config->Servers[i].Username || !config->Servers[i].Username[0]) {
-            snprintf(msg_buffer, sizeof(msg_buffer), "  No-Go:   Server %d missing username", i + 1);
-            add_launch_message(&messages, &count, &capacity, strdup(msg_buffer));
-            finalize_launch_messages(&messages, &count, &capacity);
-            return (LaunchReadiness){ .subsystem = SR_MAIL_RELAY, .ready = false, .messages = messages };
-        }
-
-        if (!config->Servers[i].Password || !config->Servers[i].Password[0]) {
-            snprintf(msg_buffer, sizeof(msg_buffer), "  No-Go:   Server %d missing password", i + 1);
-            add_launch_message(&messages, &count, &capacity, strdup(msg_buffer));
-            finalize_launch_messages(&messages, &count, &capacity);
-            return (LaunchReadiness){ .subsystem = SR_MAIL_RELAY, .ready = false, .messages = messages };
-        }
-
-        snprintf(msg_buffer, sizeof(msg_buffer), "  Go:      Server %d configuration valid", i + 1);
-        add_launch_message(&messages, &count, &capacity, strdup(msg_buffer));
+        is_ready = false;
+    } else {
+        add_launch_message(&messages, &count, &capacity, strdup("  Go:      Retry delay valid"));
     }
 
-    // All checks passed
-    add_launch_message(&messages, &count, &capacity, strdup("  Decide:  Go For Launch of Mail Relay Subsystem"));
+    // Final decision
+    if (is_ready) {
+        add_launch_message(&messages, &count, &capacity, strdup("  Decide:  Go For Launch of Mail Relay Subsystem"));
+    } else {
+        add_launch_message(&messages, &count, &capacity, strdup("  Decide:  No-Go For Launch of Mail Relay Subsystem"));
+    }
 
     finalize_launch_messages(&messages, &count, &capacity);
 
     return (LaunchReadiness){
         .subsystem = SR_MAIL_RELAY,
-        .ready = ready,
+        .ready = is_ready,
         .messages = messages
     };
 }
@@ -158,7 +195,9 @@ int launch_mail_relay_subsystem(void) {
     log_this(SR_MAIL_RELAY, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
     log_this(SR_MAIL_RELAY, "LAUNCH: " SR_MAIL_RELAY, LOG_LEVEL_STATE, 0);
     
-    // Initialize mail relay system
-    // TODO: Add proper initialization when system is ready
+    // Initialize mail relay thread tracking structure
+    init_service_threads(&mailrelay_threads, SR_MAIL_RELAY);
+    
+    // TODO: Add proper initialization when system is ready (Phase 3: workers, queue)
     return 1;
 }

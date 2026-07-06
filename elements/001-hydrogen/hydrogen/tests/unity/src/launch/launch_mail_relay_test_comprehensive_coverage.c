@@ -106,29 +106,34 @@ static void setup_invalid_config_retry_delay(void) {
 
 static void setup_invalid_config_server_count(void) {
     setup_valid_config();
+    test_config->mail_relay.OutboundEnabled = true;
     test_config->mail_relay.OutboundServerCount = 0; // Invalid server count
 }
 
 static void setup_invalid_config_missing_host(void) {
     setup_valid_config();
+    test_config->mail_relay.OutboundEnabled = true;
     free(test_config->mail_relay.Servers[0].Host);
     test_config->mail_relay.Servers[0].Host = NULL; // Missing host
 }
 
 static void setup_invalid_config_missing_port(void) {
     setup_valid_config();
+    test_config->mail_relay.OutboundEnabled = true;
     free(test_config->mail_relay.Servers[0].Port);
     test_config->mail_relay.Servers[0].Port = NULL; // Missing port
 }
 
 static void setup_invalid_config_missing_username(void) {
     setup_valid_config();
+    test_config->mail_relay.OutboundEnabled = true;
     free(test_config->mail_relay.Servers[0].Username);
     test_config->mail_relay.Servers[0].Username = NULL; // Missing username
 }
 
 static void setup_invalid_config_missing_password(void) {
     setup_valid_config();
+    test_config->mail_relay.OutboundEnabled = true;
     free(test_config->mail_relay.Servers[0].Password);
     test_config->mail_relay.Servers[0].Password = NULL; // Missing password
 }
@@ -196,7 +201,7 @@ void test_check_mail_relay_launch_readiness_null_config(void) {
     TEST_ASSERT_NOT_NULL(result.messages);
 }
 
-// Test: Disabled mail relay should fail
+// Test: Disabled mail relay should be a clean skip (Go)
 void test_check_mail_relay_launch_readiness_disabled(void) {
     setup_disabled_config();
 
@@ -204,8 +209,17 @@ void test_check_mail_relay_launch_readiness_disabled(void) {
 
     TEST_ASSERT_NOT_NULL(result.subsystem);
     TEST_ASSERT_EQUAL_STRING(SR_MAIL_RELAY, result.subsystem);
-    TEST_ASSERT_FALSE(result.ready);
+    TEST_ASSERT_TRUE(result.ready);
     TEST_ASSERT_NOT_NULL(result.messages);
+
+    bool found_skip = false;
+    for (size_t i = 1; result.messages[i] != NULL; i++) {
+        if (strstr(result.messages[i], "disabled - clean skip") != NULL) {
+            found_skip = true;
+            break;
+        }
+    }
+    TEST_ASSERT_TRUE(found_skip);
 }
 
 // Test: Invalid subsystem ID skips dependency checks but continues with config validation

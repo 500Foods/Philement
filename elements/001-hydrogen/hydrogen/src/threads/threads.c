@@ -254,6 +254,9 @@ void report_thread_status(void) {
         // Report mdns server threads
         log_this(SR_THREADS, "  mDNS Server Threads: %d active", LOG_LEVEL_STATE, 1, mdns_server_threads.thread_count);
 
+        // Report mail relay threads
+        log_this(SR_THREADS, "  Mail Relay Threads: %d active", LOG_LEVEL_STATE, 1, mailrelay_threads.thread_count);
+
         // Report print threads
         log_this(SR_THREADS, "  Print Threads: %d active", LOG_LEVEL_STATE, 1, print_threads.thread_count);
 
@@ -265,6 +268,7 @@ void report_thread_status(void) {
                            webserver_threads.thread_count +
                            websocket_threads.thread_count +
                            mdns_server_threads.thread_count +
+                           mailrelay_threads.thread_count +
                            print_threads.thread_count +
                            database_threads.thread_count;
 

@@ -338,26 +338,48 @@
     },
     "MailRelay": {
         "Enabled": true,
+        "OutboundEnabled": true,
+        "InboundEnabled": false,
         "ListenPort": 587,
         "Workers": 2,
-        "QueueSettings": {
-            "MaxQueueSize": 1000,
-            "RetryAttempts": 3,            "RetryDelaySeconds": 300
+        "Queue": {
+            "MaxInMemory": 1000,
+            "Persist": false,
+            "RetryAttempts": 3,
+            "RetryDelaySeconds": 300,
+            "InitialDelaySeconds": 10,
+            "MaxDelaySeconds": 3600,
+            "DebounceSeconds": 5
         },
-        "OutboundServers": [
+        "Templates": {
+            "ReloadIntervalSeconds": 60
+        },
+        "Events": {
+            "Enabled": false,
+            "Rules": {}
+        },
+        "Servers": [
             {
                 "Host": "${env.SMTP_SERVER1_HOST}",
                 "Port": "${env.SMTP_SERVER1_PORT}",
                 "Username": "${env.SMTP_SERVER1_USER}",
                 "Password": "${env.SMTP_SERVER1_PASS}",
-                "UseTLS": true
+                "UseTLS": true,
+                "TLSMode": 1,
+                "CAPath": "",
+                "AuthMode": 1,
+                "TimeoutSeconds": 30
             },
             {
                 "Host": "${env.SMTP_SERVER2_HOST}",
                 "Port": "${env.SMTP_SERVER2_PORT}",
                 "Username": "${env.SMTP_SERVER2_USER}",
                 "Password": "${env.SMTP_SERVER2_PASS}",
-                "UseTLS": true
+                "UseTLS": true,
+                "TLSMode": 1,
+                "CAPath": "",
+                "AuthMode": 1,
+                "TimeoutSeconds": 30
             }
         ]
     },
