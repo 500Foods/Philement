@@ -372,13 +372,38 @@ void initialize_config_defaults_mdns_client(AppConfig* config) {
 void initialize_config_defaults_mail_relay(AppConfig* config) {
     if (config) {
         config->mail_relay.Enabled = false;
+        config->mail_relay.OutboundEnabled = false;
+        config->mail_relay.InboundEnabled = false;
+        config->mail_relay.Database = NULL;
+        config->mail_relay.DefaultFrom = NULL;
+        config->mail_relay.DefaultReplyTo = NULL;
+        config->mail_relay.AdminRecipientCount = 0;
+        for (int i = 0; i < MAX_MAIL_RELAY_ADMIN_RECIPIENTS; i++) {
+            config->mail_relay.AdminRecipients[i] = NULL;
+        }
         config->mail_relay.ListenPort = 25; // Standard SMTP port
         config->mail_relay.Workers = 2;
 
         // Queue configuration
         config->mail_relay.Queue.MaxQueueSize = 1000;
+        config->mail_relay.Queue.MaxInMemory = 1000;
+        config->mail_relay.Queue.Persist = false;
         config->mail_relay.Queue.RetryAttempts = 3;
         config->mail_relay.Queue.RetryDelaySeconds = 300; // 5 minutes
+        config->mail_relay.Queue.InitialDelaySeconds = 10;
+        config->mail_relay.Queue.MaxDelaySeconds = 3600;  // 1 hour
+        config->mail_relay.Queue.DebounceSeconds = 5;
+
+        // Template configuration
+        config->mail_relay.Templates.ReloadIntervalSeconds = 60;
+
+        // Events configuration
+        config->mail_relay.Events.Enabled = false;
+        config->mail_relay.Events.RuleCount = 0;
+        for (int i = 0; i < MAX_MAIL_RELAY_EVENT_RULES; i++) {
+            config->mail_relay.Events.Rules[i].event_key = NULL;
+            config->mail_relay.Events.Rules[i].script_name = NULL;
+        }
 
         config->mail_relay.OutboundServerCount = 0;
         for (int i = 0; i < MAX_OUTBOUND_SERVERS; i++) {

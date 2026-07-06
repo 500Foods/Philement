@@ -29,12 +29,14 @@ void log_this(const char* subsystem, const char* format, int priority, int num_a
 }
 
 // Forward declarations for test functions
-void test_check_mail_relay_landing_readiness_success(void);
+void test_check_mail_relay_landing_readiness_success_when_not_running(void);
+void test_check_mail_relay_landing_readiness_reports_no_dependents(void);
 
 // Test setup and teardown
 void setUp(void) {
     // Reset mock state between tests
     mail_relay_system_shutdown = 0;
+    mailrelay_threads.thread_count = 0;
 }
 
 void tearDown(void) {
@@ -43,8 +45,8 @@ void tearDown(void) {
 
 // ===== BASIC READINESS TESTS =====
 
-void test_check_mail_relay_landing_readiness_success(void) {
-    // Arrange: All conditions met (mocks default to success)
+void test_check_mail_relay_landing_readiness_success_when_not_running(void) {
+    // Arrange: Mail relay not running (registry not initialized in test)
 
     // Act: Call the function
     LaunchReadiness result = check_mail_relay_landing_readiness();
@@ -55,11 +57,33 @@ void test_check_mail_relay_landing_readiness_success(void) {
 
     // Verify messages
     TEST_ASSERT_NOT_NULL(result.messages);
-    TEST_ASSERT_EQUAL_STRING("Mail Relay", result.messages[0]);
-    TEST_ASSERT_EQUAL_STRING("  Go:      System under development", result.messages[1]);
-    TEST_ASSERT_EQUAL_STRING("  Go:      No dependent subsystems", result.messages[2]);
-    TEST_ASSERT_EQUAL_STRING("  Decide:  Go For Landing of Mail Relay", result.messages[3]);
-    TEST_ASSERT_NULL(result.messages[4]);
+    TEST_ASSERT_EQUAL_STRING(SR_MAIL_RELAY, result.messages[0]);
+    TEST_ASSERT_EQUAL_STRING("  Go:      Mail relay not running", result.messages[1]);
+    TEST_ASSERT_EQUAL_STRING("  Go:      No active workers to drain", result.messages[2]);
+    TEST_ASSERT_EQUAL_STRING("  Go:      No dependent subsystems", result.messages[3]);
+    TEST_ASSERT_EQUAL_STRING("  Decide:  Go For Landing of Mail Relay Subsystem", result.messages[4]);
+    TEST_ASSERT_NULL(result.messages[5]);
+
+    // Clean up messages
+    free_readiness_messages(&result);
+}
+
+void test_check_mail_relay_landing_readiness_reports_no_dependents(void) {
+    // Arrange
+    LaunchReadiness result = check_mail_relay_landing_readiness();
+
+    // Assert: Verify no-dependents message appears
+    TEST_ASSERT_TRUE(result.ready);
+    TEST_ASSERT_NOT_NULL(result.messages);
+
+    bool found_no_dependents = false;
+    for (size_t i = 1; result.messages[i] != NULL; i++) {
+        if (strstr(result.messages[i], "No dependent subsystems") != NULL) {
+            found_no_dependents = true;
+            break;
+        }
+    }
+    TEST_ASSERT_TRUE(found_no_dependents);
 
     // Clean up messages
     free_readiness_messages(&result);
@@ -72,7 +96,8 @@ int main(void) {
     UNITY_BEGIN();
 
     // Basic readiness tests
-    RUN_TEST(test_check_mail_relay_landing_readiness_success);
+    RUN_TEST(test_check_mail_relay_landing_readiness_success_when_not_running);
+    RUN_TEST(test_check_mail_relay_landing_readiness_reports_no_dependents);
 
     return UNITY_END();
 }

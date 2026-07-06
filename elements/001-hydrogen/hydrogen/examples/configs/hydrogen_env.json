@@ -278,27 +278,51 @@
     },
     "MailRelay": {
         "Enabled": "${env.MAILRELAY_ENABLED}",
+        "OutboundEnabled": "${env.MAILRELAY_OUTBOUND_ENABLED}",
+        "InboundEnabled": "${env.MAILRELAY_INBOUND_ENABLED}",
+        "Database": "${env.MAILRELAY_DATABASE}",
+        "DefaultFrom": "${env.MAILRELAY_DEFAULT_FROM}",
+        "DefaultReplyTo": "${env.MAILRELAY_DEFAULT_REPLY_TO}",
         "ListenPort": "${env.MAILRELAY_LISTENPORT}",
         "Workers": "${env.MAILRELAY_WORKERS}",
-        "QueueSettings": {
-            "MaxQueueSize": "${env.MAILRELAY_QUEUESETTINGS_MAXQUEUESIZE}",
-            "RetryAttempts": "${env.MAILRELAY_QUEUESETTINGS_RETRYATTEMPTS}",
-            "RetryDelaySeconds": "${env.MAILRELAY_QUEUESETTINGS_RETRYDELAYSECONDS}"
+        "Queue": {
+            "MaxInMemory": "${env.MAILRELAY_QUEUE_MAXINMEMORY}",
+            "Persist": "${env.MAILRELAY_QUEUE_PERSIST}",
+            "RetryAttempts": "${env.MAILRELAY_QUEUE_RETRYATTEMPTS}",
+            "RetryDelaySeconds": "${env.MAILRELAY_QUEUE_RETRYDELAYSECONDS}",
+            "InitialDelaySeconds": "${env.MAILRELAY_QUEUE_INITIALDELAYSECONDS}",
+            "MaxDelaySeconds": "${env.MAILRELAY_QUEUE_MAXDELAYSECONDS}",
+            "DebounceSeconds": "${env.MAILRELAY_QUEUE_DEBOUNCESECONDS}"
         },
-        "OutboundServers": [
+        "Templates": {
+            "ReloadIntervalSeconds": "${env.MAILRELAY_TEMPLATES_RELOADINTERVALSECONDS}"
+        },
+        "Events": {
+            "Enabled": "${env.MAILRELAY_EVENTS_ENABLED}",
+            "Rules": {}
+        },
+        "Servers": [
             {
-                "Host": "${env.MAILRELAY_OUTBOUNDSERVERS_1_HOST}",
-                "Port": "${env.MAILRELAY_OUTBOUNDSERVERS_1_PORT}",
-                "Username": "${env.MAILRELAY_OUTBOUNDSERVERS_1_USERNAME}",
-                "Password": "${env.MAILRELAY_OUTBOUNDSERVERS_1_PASSWORD}",
-                "UseTLS": "${env.MAILRELAY_OUTBOUNDSERVERS_1_USETLS}"
+                "Host": "${env.MAILRELAY_SERVERS_1_HOST}",
+                "Port": "${env.MAILRELAY_SERVERS_1_PORT}",
+                "Username": "${env.MAILRELAY_SERVERS_1_USERNAME}",
+                "Password": "${env.MAILRELAY_SERVERS_1_PASSWORD}",
+                "UseTLS": "${env.MAILRELAY_SERVERS_1_USETLS}",
+                "TLSMode": "${env.MAILRELAY_SERVERS_1_TLSMODE}",
+                "CAPath": "${env.MAILRELAY_SERVERS_1_CAPATH}",
+                "AuthMode": "${env.MAILRELAY_SERVERS_1_AUTHMODE}",
+                "TimeoutSeconds": "${env.MAILRELAY_SERVERS_1_TIMEOUTSECONDS}"
             },
             {
-                "Host": "${env.MAILRELAY_OUTBOUNDSERVERS_2_HOST}",
-                "Port": "${env.MAILRELAY_OUTBOUNDSERVERS_2_PORT}",
-                "Username": "${env.MAILRELAY_OUTBOUNDSERVERS_2_USERNAME}",
-                "Password": "${env.MAILRELAY_OUTBOUNDSERVERS_2_PASSWORD}",
-                "UseTLS": "${env.MAILRELAY_OUTBOUNDSERVERS_2_USETLS}"
+                "Host": "${env.MAILRELAY_SERVERS_2_HOST}",
+                "Port": "${env.MAILRELAY_SERVERS_2_PORT}",
+                "Username": "${env.MAILRELAY_SERVERS_2_USERNAME}",
+                "Password": "${env.MAILRELAY_SERVERS_2_PASSWORD}",
+                "UseTLS": "${env.MAILRELAY_SERVERS_2_USETLS}",
+                "TLSMode": "${env.MAILRELAY_SERVERS_2_TLSMODE}",
+                "CAPath": "${env.MAILRELAY_SERVERS_2_CAPATH}",
+                "AuthMode": "${env.MAILRELAY_SERVERS_2_AUTHMODE}",
+                "TimeoutSeconds": "${env.MAILRELAY_SERVERS_2_TIMEOUTSECONDS}"
             }
         ]
     },

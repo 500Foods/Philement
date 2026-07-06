@@ -237,15 +237,26 @@ Append discoveries, surprises, and decisions here as we move through phases. Ear
 - (Phase 0, 2026-07-06) Initial role policy: service/internal callers and administrators may send/preview/status initially. User-facing sends are template-scoped and permission-scoped; exact JWT claim names are locked during Phase 7 against the auth code that exists then.
 - (Phase 0, 2026-07-06) Initial OTP scope: Phase 8 targets login MFA and email verification first. Password reset can use the same primitives but is not a Phase 8 gate unless the auth owner confirms it before Phase 8 starts.
 - (Phase 0, 2026-07-06) Canvas/inbound workflow: inbound SMTP relay waits until outbound/API/OTP foundations are stable. v1 inbound scope is trusted/internal submission only, never public MX/open-relay behavior.
+- (Phase 0, 2026-07-06) Events config format: `MailRelay.Events.Rules` is a JSON object mapping event keys to Lua script names. The Lua scripts receive event details and determine recipients/behavior; this defers mail recipient routing logic to Lua rather than hardcoding it in C config.
+- (Phase 1, 2026-07-06) Disabled subsystem semantics: disabled Mail Relay returns `ready=true` with a "clean skip" readiness message, not a No-Go. This allows launch planning to proceed without treating disabled subsystems as failures.
+- (Phase 1, 2026-07-06) Server validation gating: outbound server host/port/username/password validation happens only when `OutboundEnabled=true`. Inbound-only configurations don't need SMTP credentials at launch.
+- (Phase 1, 2026-07-06) Database defaulting: `MailRelay.Database` defaults to the single configured database connection name automatically when only one database exists and no explicit MailRelay.Database is set.
 - (Phase 5) Template syntax: (TBD)
 
 ### Surprises / deviations from plan
 
 - (Phase 0, 2026-07-06) `examples/configs/hydrogen_default.json` and `hydrogen_env.json` use legacy `MailRelay.QueueSettings` / `MailRelay.OutboundServers` keys, while the current loader and Phase 0 schema use `MailRelay.Queue` / `MailRelay.Servers`. Reconcile example configs and/or compatibility aliases during Phase 1.
+- (Phase 1, 2026-07-06) Existing launch readiness tests assumed disabled = No-Go; Phase 1 changed this to clean skip and required test updates in `launch_mail_relay_test_comprehensive_coverage.c`. Server validation tests also needed `OutboundEnabled=true` because validation is now gated behind the outbound flag.
+- (Phase 1, 2026-07-06) Landing tests could not mock `is_subsystem_running_by_name`; reduced landing test scope to the realistic not-running path and no-dependents message verification.
 
 ### Reusable snippets / gotchas
 
 - libcurl SMTP requires `CURLOPT_UPLOAD=1L` + `CURLOPT_READFUNCTION` streaming and `CURLOPT_NOSIGNAL=1L` in worker threads. Confirm and record exact option set once Phase 2 works.
+- Launch readiness pattern: for subsections with separate enable flags, validate required fields only when the enabling flag is true. This prevents false No-Go for inbound-only or feature-gated configurations.
+- Landing readiness pattern: `is_subsystem_running_by_name` is not a mockable function in the current Unity setup; landing tests should focus on the not-running early-return path or test worker-drain messages through direct state setup without relying on the registry mock.
+- Config field additions: add to `config_mail_relay.h` struct, `config_mail_relay.c` loader/cleanup/dump, `config_defaults.c`, `hydrogen_config_schema.json`, example configs, and Unity tests in lockstep. Cleanup must free all newly allocated strings/arrays before zeroing the struct.
+- Thread tracking: declare `ServiceThreads mailrelay_threads;` in `src/state/state.c`, extern in `src/threads/threads.h`, report in `threads.c` `report_thread_status()`, and initialize in `launch_mail_relay_subsystem()` via `init_service_threads(&mailrelay_threads, SR_MAIL_RELAY)`.
+- Schema maintenance: `tests/artifacts/hydrogen_config_schema.json` is hand-maintained; update it in the same change as config field changes. Run `tests/test_93_jsonlint.sh` after schema modifications.
 
 ### Phase 1 preparation notes
 
@@ -256,9 +267,12 @@ Append discoveries, surprises, and decisions here as we move through phases. Ear
 - The JSON schema requires a top-level `Server` object for standalone validation, so representative MailRelay schema checks need at least `{ "Server": {}, "MailRelay": { ... } }`.
 - `tests/test_93_jsonlint.sh` schema-validates `tests/configs/hydrogen_test_*.json`, not `examples/configs/*.json`; example config drift can survive JSON lint unless explicitly reviewed.
 - Keep `load_mailrelay_config()`, `initialize_config_defaults_mail_relay()`, Unity expectations, `hydrogen_config_schema.json`, and example configs synchronized whenever Phase 1 changes config field names or defaults.
-- Existing examples use `MailRelay.QueueSettings` / `MailRelay.OutboundServers`, but the loader currently reads `MailRelay.Queue` / `MailRelay.Servers`; Phase 1 should either update examples or intentionally support aliases before marking config work complete.
-- Current launch readiness treats disabled Mail Relay as `No-Go`; Phase 1 must decide and test whether disabled means clean skip rather than launch failure, because this affects startup plan messaging and launch Unity tests.
-- Existing launch readiness tests include broad smoke tests and a comprehensive coverage file. Update both when changing readiness semantics, and avoid relying only on the basic smoke test because it does not assert readiness outcomes.
+- Existing examples used legacy `MailRelay.QueueSettings` / `MailRelay.OutboundServers` keys; Phase 1 updated all three example configs (`hydrogen_default.json`, `hydrogen.json`, `hydrogen_env.json`) to use the current `MailRelay.Queue` / `MailRelay.Servers` schema.
+- Launch readiness now treats disabled Mail Relay as a clean skip (`ready=true`, "disabled - clean skip") rather than a No-Go. Update any downstream scripts or tests that assert disabled subsystems cause launch failure.
+- Server validation in launch readiness is gated behind `OutboundEnabled=true`; inbound-only configurations without outbound servers will not fail readiness checks.
+- Landing readiness in tests cannot mock `is_subsystem_running_by_name`; test the not-running early-return path or setup `mailrelay_threads.thread_count` directly for worker-drain scenarios.
+- When adding new fixed-size string arrays (like `AdminRecipients[]`), define a max constant in `globals.h` (e.g. `MAX_MAIL_RELAY_ADMIN_RECIPIENTS`), use `char*` fixed array + count in the struct, and free each element in cleanup before resetting count.
+- New `ServiceThreads` globals must be: defined in `src/state/state.c`, externed in `src/threads/threads.h`, added to `report_thread_status()` in `src/threads/threads.c`, and initialized in the subsystem launch function.
 
 ---
 
@@ -300,7 +314,7 @@ Entry Gate: none (starting phase). Confirm `mkt` and `mku config_mail_relay_test
 
 Exit Gate: defaults/behavior unambiguous; schema knows `MailRelay`; a disabled-by-default Hydrogen starts cleanly with no SMTP env vars required; Lua backfill path is locked; baseline Unity tests pass. Fill in the Status block below.
 
-Phase 0 Status: complete. Date: 2026-07-06. Result: decisions, Lua backfill path, defaults reconciliation, schema coverage, and subsystem file map are locked; disabled-by-default startup is verified. Variances: added Phase 7A to backfill completed Lua stubs through Mail Relay; example configs still use legacy MailRelay key names and should be reconciled during Phase 1.
+Phase 0 Status: complete. Date: 2026-07-06. Result: decisions, Lua backfill path, defaults reconciliation, schema coverage, and subsystem file map are locked; disabled-by-default startup is verified. Variances: added Phase 7A to backfill completed Lua stubs through Mail Relay; example config key name reconciliation deferred from Phase 0 and completed in Phase 1.
 
 ---
 
@@ -335,7 +349,7 @@ Entry Gate: Phase 0 exit gate green.
 
 Exit Gate: Mail Relay can be disabled or configured outbound-only without startup surprises; readiness messages explain exactly why launch is allowed or blocked. `mkt`, `mkp`, and the three `mku` targets above pass.
 
-Phase 1 Status: pending. Date: (TBD). Result: (TBD). Variances: (TBD).
+Phase 1 Status: complete. Date: 2026-07-06. Result: Mail Relay config is fully expanded with outbound/inbound/enabled flags, database defaulting, template/event settings, and comprehensive launch/landing readiness. Disabled state is a clean skip in launch planning. All Unity config, launch, and landing tests pass. Example configs and JSON schema are synchronized. Variances: none significant; server validation in readiness moved behind OutboundEnabled so inbound-only deployments don't require SMTP servers unless outbound sending is active. Updated tests to reflect clean skip semantics for disabled subsystem.
 
 ---
 

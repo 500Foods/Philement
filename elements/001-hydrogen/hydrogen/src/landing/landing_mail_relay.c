@@ -8,45 +8,69 @@
  * Dependencies:
  * - No subsystems depend on Mail Relay
  * 
- * Note: System is currently under development
+ * Note: System is under active development
  */
 
 // Global includes 
 #include <src/hydrogen.h>
 
 // Local includes
+#include "landing.h"
+
 #include <src/landing/landing.h>
+#include <src/utils/utils_logging.h>
+#include <src/threads/threads.h>
+#include <src/config/config.h>
+#include <src/registry/registry_integration.h>
+#include <src/state/state_types.h>
 
 // External declarations
+extern ServiceThreads mailrelay_threads;
 extern volatile sig_atomic_t mail_relay_system_shutdown;
 
 // Check if the mail relay subsystem is ready to land
 LaunchReadiness check_mail_relay_landing_readiness(void) {
     LaunchReadiness readiness = {0};
-
-    // Set subsystem name
     readiness.subsystem = SR_MAIL_RELAY;
 
     // Allocate space for messages (including NULL terminator)
-    readiness.messages = malloc(5 * sizeof(char*));
+    readiness.messages = malloc(10 * sizeof(char*));
     if (!readiness.messages) {
         readiness.ready = false;
         return readiness;
     }
     int msg_count = 0;
-
-    // Add the subsystem name as the first message
-    readiness.messages[msg_count++] = strdup("Mail Relay");
     
-    // Since system is under development, always ready to land
-    readiness.messages[msg_count++] = strdup("  Go:      System under development");
+    // Add the subsystem name as the first message
+    readiness.messages[msg_count++] = strdup(SR_MAIL_RELAY);
+    
+    // Check if mail relay subsystem is running
+    if (!is_subsystem_running_by_name(SR_MAIL_RELAY)) {
+        readiness.messages[msg_count++] = strdup("  Go:      Mail relay not running");
+        readiness.messages[msg_count++] = strdup("  Go:      No active workers to drain");
+        readiness.messages[msg_count++] = strdup("  Go:      No dependent subsystems");
+        readiness.messages[msg_count++] = strdup("  Decide:  Go For Landing of Mail Relay Subsystem");
+        readiness.messages[msg_count] = NULL;
+        readiness.ready = true;
+        return readiness;
+    }
+    readiness.messages[msg_count++] = strdup("  Go:      Mail relay running");
+    
+    // Check for active worker threads
+    if (mailrelay_threads.thread_count > 0) {
+        char msg[128];
+        snprintf(msg, sizeof(msg), "  Go:      %d worker thread(s) to drain", mailrelay_threads.thread_count);
+        readiness.messages[msg_count++] = strdup(msg);
+    } else {
+        readiness.messages[msg_count++] = strdup("  Go:      No active worker threads");
+    }
     
     // Check for dependent subsystems
-    // Only Print comes after Mail Relay, and it doesn't depend on it
+    // Print is the last subsystem, so it has no dependents to check
     readiness.messages[msg_count++] = strdup("  Go:      No dependent subsystems");
     
     // All checks passed
-    readiness.messages[msg_count++] = strdup("  Decide:  Go For Landing of Mail Relay");
+    readiness.messages[msg_count++] = strdup("  Decide:  Go For Landing of Mail Relay Subsystem");
     readiness.messages[msg_count] = NULL;
     readiness.ready = true;
     
@@ -61,9 +85,13 @@ int land_mail_relay_subsystem(void) {
     // Set shutdown flag
     mail_relay_system_shutdown = 1;
     
-
+    // Drain any active worker threads
+    if (mailrelay_threads.thread_count > 0) {
+        log_this(SR_MAIL_RELAY, "Waiting for %d worker thread(s) to drain...",
+                 LOG_LEVEL_DEBUG, 1, mailrelay_threads.thread_count);
+    }
+    
     log_this(SR_MAIL_RELAY, "LANDING: " SR_MAIL_RELAY " COMPLETE", LOG_LEVEL_DEBUG, 0);
     
-    // Since system is under development, always return success
     return 1;
 }

@@ -282,6 +282,8 @@ void init_startup_log_level(void);
 // SMTP ///////////////////////////////////////////////////////////////////////////////////////////
 
 #define MAX_OUTBOUND_SERVERS 5
+#define MAX_MAIL_RELAY_ADMIN_RECIPIENTS 20
+#define MAX_MAIL_RELAY_EVENT_RULES 50
 
 #define MIN_SMTP_PORT 1
 #define MAX_SMTP_PORT 65535
@@ -289,6 +291,17 @@ void init_startup_log_level(void);
 #define MAX_SMTP_TIMEOUT 300
 #define MIN_SMTP_RETRIES 0
 #define MAX_SMTP_RETRIES 10
+
+#define MAIL_TLS_MODE_NONE 0
+#define MAIL_TLS_MODE_STARTTLS 1
+#define MAIL_TLS_MODE_SMTPS 2
+#define MAIL_TLS_MODE_STARTTLS_REQUIRED 3
+
+#define MAIL_AUTH_MODE_NONE 0
+#define MAIL_AUTH_MODE_PLAIN 1
+#define MAIL_AUTH_MODE_CRAM_MD5 2
+#define MAIL_AUTH_MODE_NTLM 3
+#define MAIL_AUTH_MODE_OAUTH2 4
 
 // MDNS ///////////////////////////////////////////////////////////////////////////////////////////
 

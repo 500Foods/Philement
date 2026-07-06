@@ -68,6 +68,7 @@ ServiceThreads logging_threads;
 ServiceThreads webserver_threads;
 ServiceThreads websocket_threads;
 ServiceThreads mdns_server_threads;
+ServiceThreads mailrelay_threads;
 ServiceThreads print_threads;
 ServiceThreads database_threads;
 ServiceThreads scripting_threads;
