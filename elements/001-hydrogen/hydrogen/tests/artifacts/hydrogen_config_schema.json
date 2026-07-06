@@ -650,6 +650,81 @@
       },
       "additionalProperties": false
     },
+    "MailRelay": {
+      "type": "object",
+      "description": "Mail relay configuration",
+      "properties": {
+        "Enabled": {
+          "type": "boolean",
+          "description": "Enable or disable mail relay"
+        },
+        "ListenPort": {
+          "type": "integer",
+          "description": "SMTP listener port",
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "Workers": {
+          "type": "integer",
+          "description": "Number of mail relay worker threads",
+          "minimum": 1
+        },
+        "Queue": {
+          "type": "object",
+          "description": "Mail relay queue settings",
+          "properties": {
+            "MaxQueueSize": {
+              "type": "integer",
+              "description": "Maximum queued messages",
+              "minimum": 1
+            },
+            "RetryAttempts": {
+              "type": "integer",
+              "description": "Number of retry attempts",
+              "minimum": 0
+            },
+            "RetryDelaySeconds": {
+              "type": "integer",
+              "description": "Delay between retry attempts in seconds",
+              "minimum": 1
+            }
+          },
+          "additionalProperties": false
+        },
+        "Servers": {
+          "type": "array",
+          "description": "Outbound SMTP server configurations",
+          "maxItems": 5,
+          "items": {
+            "type": "object",
+            "properties": {
+              "Host": {
+                "type": "string",
+                "description": "SMTP server hostname"
+              },
+              "Port": {
+                "type": "string",
+                "description": "SMTP server port"
+              },
+              "Username": {
+                "type": "string",
+                "description": "SMTP authentication username"
+              },
+              "Password": {
+                "type": "string",
+                "description": "SMTP authentication password or environment reference"
+              },
+              "UseTLS": {
+                "type": "boolean",
+                "description": "Use TLS for SMTP delivery"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
     "mDNSClient": {
       "type": "object",
       "description": "mDNS client configuration",

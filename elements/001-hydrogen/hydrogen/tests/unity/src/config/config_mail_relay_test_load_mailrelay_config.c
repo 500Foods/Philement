@@ -51,10 +51,10 @@ void test_load_mailrelay_config_null_root(void) {
 
     // Function should initialize defaults and return success even with NULL root
     TEST_ASSERT_TRUE(result);
-    TEST_ASSERT_TRUE(config.mail_relay.Enabled);  // Default is enabled
-    TEST_ASSERT_EQUAL(587, config.mail_relay.ListenPort);  // Default port
-    TEST_ASSERT_EQUAL(2, config.mail_relay.Workers);  // Default workers
-    TEST_ASSERT_EQUAL(2, config.mail_relay.OutboundServerCount);  // Default servers
+    TEST_ASSERT_FALSE(config.mail_relay.Enabled);
+    TEST_ASSERT_EQUAL(25, config.mail_relay.ListenPort);
+    TEST_ASSERT_EQUAL(2, config.mail_relay.Workers);
+    TEST_ASSERT_EQUAL(0, config.mail_relay.OutboundServerCount);
 
     cleanup_mailrelay_config(&config.mail_relay);
 }
@@ -68,10 +68,10 @@ void test_load_mailrelay_config_empty_json(void) {
     bool result = load_mailrelay_config(root, &config);
 
     TEST_ASSERT_TRUE(result);
-    TEST_ASSERT_TRUE(config.mail_relay.Enabled);  // Default is enabled
-    TEST_ASSERT_EQUAL(587, config.mail_relay.ListenPort);  // Default port
-    TEST_ASSERT_EQUAL(2, config.mail_relay.Workers);  // Default workers
-    TEST_ASSERT_EQUAL(2, config.mail_relay.OutboundServerCount);  // Default servers
+    TEST_ASSERT_FALSE(config.mail_relay.Enabled);
+    TEST_ASSERT_EQUAL(25, config.mail_relay.ListenPort);
+    TEST_ASSERT_EQUAL(2, config.mail_relay.Workers);
+    TEST_ASSERT_EQUAL(0, config.mail_relay.OutboundServerCount);
 
     json_decref(root);
     cleanup_mailrelay_config(&config.mail_relay);
@@ -86,7 +86,6 @@ void test_load_mailrelay_config_basic_fields(void) {
     json_t* root = json_object();
     json_t* mail_relay_section = json_object();
 
-    // Set up basic mail relay configuration (without servers to avoid complexity)
     json_object_set(mail_relay_section, "Enabled", json_false());
     json_object_set(mail_relay_section, "ListenPort", json_integer(2525));
     json_object_set(mail_relay_section, "Workers", json_integer(4));
@@ -99,8 +98,7 @@ void test_load_mailrelay_config_basic_fields(void) {
     TEST_ASSERT_FALSE(config.mail_relay.Enabled);
     TEST_ASSERT_EQUAL(2525, config.mail_relay.ListenPort);
     TEST_ASSERT_EQUAL(4, config.mail_relay.Workers);
-    // Should have default servers when none configured
-    TEST_ASSERT_EQUAL(2, config.mail_relay.OutboundServerCount);
+    TEST_ASSERT_EQUAL(0, config.mail_relay.OutboundServerCount);
 
     json_decref(root);
     cleanup_mailrelay_config(&config.mail_relay);

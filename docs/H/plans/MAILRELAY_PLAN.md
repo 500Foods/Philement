@@ -241,11 +241,24 @@ Append discoveries, surprises, and decisions here as we move through phases. Ear
 
 ### Surprises / deviations from plan
 
-- (none yet)
+- (Phase 0, 2026-07-06) `examples/configs/hydrogen_default.json` and `hydrogen_env.json` use legacy `MailRelay.QueueSettings` / `MailRelay.OutboundServers` keys, while the current loader and Phase 0 schema use `MailRelay.Queue` / `MailRelay.Servers`. Reconcile example configs and/or compatibility aliases during Phase 1.
 
 ### Reusable snippets / gotchas
 
 - libcurl SMTP requires `CURLOPT_UPLOAD=1L` + `CURLOPT_READFUNCTION` streaming and `CURLOPT_NOSIGNAL=1L` in worker threads. Confirm and record exact option set once Phase 2 works.
+
+### Phase 1 preparation notes
+
+- Build aliases are defined for interactive shells. In non-interactive automation, run them through `zsh -ic '<alias>'`; direct `mkt` / `mku` shell calls may report `command not found` even though the user environment is correctly configured.
+- If `mku <base>` reports `No rule to make target` after a clean or target-discovery change, run `mkt` first to regenerate/configure Unity targets, then rerun the exact `mku <base>` command.
+- `mkt` is the lowest-cost required gate after each C change; `mka` and `mkp` should be run once the focused `mkt` / `mku` checks are clean.
+- `tests/artifacts/hydrogen_config_schema.json` appears to be maintained directly; no schema generator was found during Phase 0. If Phase 1 adds or renames config fields, update this file in the same change and run `tests/test_93_jsonlint.sh`.
+- The JSON schema requires a top-level `Server` object for standalone validation, so representative MailRelay schema checks need at least `{ "Server": {}, "MailRelay": { ... } }`.
+- `tests/test_93_jsonlint.sh` schema-validates `tests/configs/hydrogen_test_*.json`, not `examples/configs/*.json`; example config drift can survive JSON lint unless explicitly reviewed.
+- Keep `load_mailrelay_config()`, `initialize_config_defaults_mail_relay()`, Unity expectations, `hydrogen_config_schema.json`, and example configs synchronized whenever Phase 1 changes config field names or defaults.
+- Existing examples use `MailRelay.QueueSettings` / `MailRelay.OutboundServers`, but the loader currently reads `MailRelay.Queue` / `MailRelay.Servers`; Phase 1 should either update examples or intentionally support aliases before marking config work complete.
+- Current launch readiness treats disabled Mail Relay as `No-Go`; Phase 1 must decide and test whether disabled means clean skip rather than launch failure, because this affects startup plan messaging and launch Unity tests.
+- Existing launch readiness tests include broad smoke tests and a comprehensive coverage file. Update both when changing readiness semantics, and avoid relying only on the basic smoke test because it does not assert readiness outcomes.
 
 ---
 
@@ -255,39 +268,39 @@ Objective: Turn the existing skeleton into a documented, testable, unambiguous b
 
 Entry Gate: none (starting phase). Confirm `mkt` and `mku config_mail_relay_test_load_mailrelay_config` currently pass on the untouched tree to establish a baseline.
 
-- [ ] 0.1 Audit and reconcile `MailRelay` vs `Notify.SMTP` config intent.
+- [x] 0.1 Audit and reconcile `MailRelay` vs `Notify.SMTP` config intent.
   - Files to review: `src/config/config_mail_relay.{c,h}`, `src/config/config_notify.{c,h}`.
   - Deliverable: decision recorded in the Working Log decisions log.
   - Recommended decision: Mail Relay becomes the SMTP/mail delivery subsystem; `Notify` becomes a producer that calls Mail Relay later rather than owning SMTP delivery.
   - Verification: decision recorded; no ambiguous duplicate active SMTP delivery path remains.
 
-- [ ] 0.2 Decide the initial database target for durable mail state.
+- [x] 0.2 Decide the initial database target for durable mail state.
   - Options: a configured `MailRelay.Database` name, the first configured database marked for mail, or app/auth database from JWT for user-triggered sends.
   - Recommended v1: `MailRelay.Database` names a configured Hydrogen database connection for system queues/templates; API sends may carry JWT database context only for authorization/audit.
   - Verification: chosen policy recorded in the Working Log and reflected in Phase 4 and Phase 7 tasks.
 
-- [ ] 0.3 Reconcile the two divergent default sets.
+- [x] 0.3 Reconcile the two divergent default sets.
   - Files: `src/config/config_defaults.c:361-387` (disabled/port 25/1 server) vs `src/config/config_mail_relay.c:38-118` (enabled/port 587/2 env placeholder servers).
   - Recommended v1: disabled by default; no required SMTP env vars at startup; outbound servers only required when outbound sending is enabled; submission port 587 only when inbound relay is enabled.
   - This will require updating the existing Unity assertions in `config_mail_relay_test_load_mailrelay_config.c` (currently assert enabled/587/2 servers).
   - Verification: `mkt`, then `mku config_mail_relay_test_load_mailrelay_config` passes with the reconciled defaults.
 
-- [ ] 0.4 Add complete `MailRelay` JSON schema coverage.
+- [x] 0.4 Add complete `MailRelay` JSON schema coverage.
   - Files: `tests/artifacts/hydrogen_config_schema.json` (and schema generation source if one exists).
   - Verification: `tests/test_93_jsonlint.sh` passes and a representative MailRelay config validates against the schema.
 
-- [ ] 0.5 Finalize the subsystem file map (lock exact paths before coding).
+- [x] 0.5 Finalize the subsystem file map (lock exact paths before coding).
   - Deliverable: confirm the file list below in the Subsystem File Map section; adjust if 0.1-0.3 change anything.
   - Verification: this document's Subsystem File Map reflects the agreed final paths.
 
-- [ ] 0.6 Lock the Lua backfill contract for existing `H.mail` / `H.notify` stubs.
+- [x] 0.6 Lock the Lua backfill contract for existing `H.mail` / `H.notify` stubs.
   - Files to review: `src/scripting/scripting_api_mail_notify.c`, `src/scripting/scripting_api.h`, `src/scripting/scripting_handle.{c,h}`, `src/scripting/lua_context.c`, and `/docs/H/plans/LUA_PLAN_COMPLETE.md` Phase 19.
   - Deliverable: confirm that Mail Relay will expose an internal C producer API used by REST, Lua, Notify, and system events, so Lua does not call back through HTTP and does not bypass queue/audit/rate-limit logic.
   - Verification: Phase 7A exists in this plan with concrete work items and tests.
 
 Exit Gate: defaults/behavior unambiguous; schema knows `MailRelay`; a disabled-by-default Hydrogen starts cleanly with no SMTP env vars required; Lua backfill path is locked; baseline Unity tests pass. Fill in the Status block below.
 
-Phase 0 Status: pending implementation. Date: 2026-07-06 prep review. Result: decisions and Lua backfill path recorded; code/schema/test changes still required. Variances: added Phase 7A to backfill completed Lua stubs through Mail Relay.
+Phase 0 Status: complete. Date: 2026-07-06. Result: decisions, Lua backfill path, defaults reconciliation, schema coverage, and subsystem file map are locked; disabled-by-default startup is verified. Variances: added Phase 7A to backfill completed Lua stubs through Mail Relay; example configs still use legacy MailRelay key names and should be reconciled during Phase 1.
 
 ---
 
