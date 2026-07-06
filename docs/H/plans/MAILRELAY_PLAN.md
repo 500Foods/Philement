@@ -241,6 +241,10 @@ Append discoveries, surprises, and decisions here as we move through phases. Ear
 - (Phase 1, 2026-07-06) Disabled subsystem semantics: disabled Mail Relay returns `ready=true` with a "clean skip" readiness message, not a No-Go. This allows launch planning to proceed without treating disabled subsystems as failures.
 - (Phase 1, 2026-07-06) Server validation gating: outbound server host/port/username/password validation happens only when `OutboundEnabled=true`. Inbound-only configurations don't need SMTP credentials at launch.
 - (Phase 1, 2026-07-06) Database defaulting: `MailRelay.Database` defaults to the single configured database connection name automatically when only one database exists and no explicit MailRelay.Database is set.
+- (Phase 2, 2026-07-06) No Python in the mail test path. The local mail validator is a C program under `extras/mailval/` (long-term reusable multi-protocol fixture for SMTP/IMAP/JMAP), not a Python script. Built with its own standalone CMakeLists (OpenSSL for TLS); it is not part of Hydrogen's recursive source discovery. TLS (STARTTLS + implicit TLS) is included now, not deferred.
+- (Phase 2, 2026-07-06) Email validation is a dedicated `mailrelay_is_valid_email()` in the mailrelay module (modeled on the auth `is_valid_email` rules but decoupled from `src/api/auth`); mailrelay must not depend on the auth subsystem for validation.
+- (Phase 2, 2026-07-06) Raw send path is seeded as a real internal `mailrelay_send_raw()` API (becomes the Phase 3 producer) and triggered in the blackbox test via a `MailRelay.Test.SendRawOnLaunch` config flag, rather than a throwaway self-test. The sink can be smoke-tested with our own `mailrelay_smtp` helper once 2.4 lands.
+- (Phase 2, 2026-07-06) IMAP and JMAP modules are implemented as full, functional servers in Phase 2 (not scaffolds), backed by a shared in-memory mailbox store that SMTP delivery populates. This avoids rework when inbound (Phase 12) and JMAP access land later.
 - (Phase 5) Template syntax: (TBD)
 
 ### Surprises / deviations from plan
@@ -273,6 +277,16 @@ Append discoveries, surprises, and decisions here as we move through phases. Ear
 - Landing readiness in tests cannot mock `is_subsystem_running_by_name`; test the not-running early-return path or setup `mailrelay_threads.thread_count` directly for worker-drain scenarios.
 - When adding new fixed-size string arrays (like `AdminRecipients[]`), define a max constant in `globals.h` (e.g. `MAX_MAIL_RELAY_ADMIN_RECIPIENTS`), use `char*` fixed array + count in the struct, and free each element in cleanup before resetting count.
 - New `ServiceThreads` globals must be: defined in `src/state/state.c`, externed in `src/threads/threads.h`, added to `report_thread_status()` in `src/threads/threads.c`, and initialized in the subsystem launch function.
+
+### Phase 2 preparation notes
+
+- The mail validator (`extras/mailval/`) is a separate binary built by its own `CMakeLists.txt` (linking OpenSSL); it is intentionally outside Hydrogen's recursive `../src/*.c` discovery so it is not linked into the server. Smoke-test it manually with `./mailval --smtp-port 5570 --tls-cert <pem> --tls-key <pem>` and, after 2.4, send to it with our own `mailrelay_smtp` helper.
+- TLS is in scope now: the `tls.c` layer supports both STARTTLS (upgrade after handshake) and implicit TLS (listen on a TLS socket). Generate a self-signed cert/key in `tests/configs/` or `extras/mailval/` for the blackbox run; never log the private key. The validator must accept both plaintext and TLS so tests can exercise `MAIL_TLS_MODE_*` without external tooling.
+- Design the protocol modules behind a common interface (`accept_connection`, `handle_session`, `free_session`) so IMAP (Phase 12) and JMAP (future) plug in without restructuring the listener. Capture everything to JSON so blackbox assertions stay tool-agnostic.
+- `mailrelay_send_raw()` is the seed of the Phase 3 producer API: keep its signature stable so Phase 3 wraps it with queue/workers/retry rather than rewriting it. Phase 2 leaves the `launch_mail_relay_subsystem()` TODO mostly intact except for the gated `SendRawOnLaunch` call.
+- `MailRelay.Test.SendRawOnLaunch` must be off by default and must not allocate workers, open queues, or require a database; it only renders + sends one canned message so production startup is unaffected.
+- Deterministic render tests need a seam: `mailrelay_test_seams.{c,h}` should expose an injectable `time()`/Message-ID source (function pointers or a settable override) so `mku mailrelay_render_test` and `mku mailrelay_send_raw_test` are stable.
+- Record the verified libcurl `CURLOPT_*` set in the Working Log Reusable snippets once 2.4 works, mirroring the existing libcurl pattern in `src/api/conduit/helpers/cap_verify.c`.
 
 ---
 
@@ -355,35 +369,56 @@ Phase 1 Status: complete. Date: 2026-07-06. Result: Mail Relay config is fully e
 
 ## Phase 2 - Core Outbound SMTP Sender
 
-Objective: Send one RFC 5322-compliant outbound message to a local SMTP sink, with no DB, API, or templates.
+Objective: Send one RFC 5322-compliant outbound message to a local SMTP sink, with no DB, API, or templates, using our own C code end-to-end (no Python in the test path).
 
 Entry Gate: Phase 1 exit gate green.
 
+### Phase 2 reordering note (2026-07-06, resolved with user)
+
+The original plan assumed a Python SMTP sink and a throwaway self-test to satisfy the "send one email" exit gate before the queue/API/producer existed. Per user direction we avoid Python and bootstrap with our own code, so Phase 2 is reordered:
+
+- The local SMTP sink is a small **C program under `extras/mailval/`** (a long-term reusable multi-protocol test fixture, not a Python script), built by its own standalone CMakeLists and not part of Hydrogen's recursive source discovery.
+- The raw send path is introduced as a **real internal `mailrelay_send_raw()` API** (the seed of the Phase 3 producer API) rather than a throwaway self-test hack. The blackbox test drives a real send via a `MailRelay.Test.SendRawOnLaunch` config flag, with no queue/API required yet.
+- Email validation is a **dedicated `mailrelay_is_valid_email()`** in the mailrelay module (modeled on the auth rules but decoupled from the auth subsystem), so mailrelay has no hard dependency on `src/api/auth`.
+- The sink can be smoke-tested with our own `mailrelay_smtp` helper once 2.4 lands, reinforcing the "use our own code to bootstrap" approach.
+
+- [x] 2.0 Build a multi-protocol mail validator tool `extras/mailval/` (our own C code, no Python), TLS-capable, designed to validate SMTP now and IMAP/JMAP later from one fixture.
+  - Architecture: a standalone `CMakeLists.txt` producing a `mailval` binary (kept out of Hydrogen's recursive source discovery). A generic TLS-capable TCP listener (`listener.c`/`tls.c` using OpenSSL, already a Hydrogen dependency) dispatches each accepted connection to a pluggable protocol module. A shared `capture.c` writes per-session transcripts + parsed key fields (envelope, recipients, auth params, capabilities, JSON for JMAP) to the test artifact directory for blackbox assertions.
+  - `proto_smtp.c` (Phase 2, full): `EHLO`/`MAIL FROM`/`RCPT TO`/`DATA`/`QUIT`, `STARTTLS` and implicit `SMTPS` via the TLS layer, capture of AUTH parameters (never store plaintext creds), writes each delivered message (envelope + body) to a file. This is the functional fixture for tests 57/58/59.
+  - `proto_imap.c` and `proto_jmap.c` (Phase 2, full): real, functional servers backed by the shared mailbox store (so an SMTP-delivered message is retrievable via IMAP and JMAP). IMAP implements `CAPABILITY`/`STARTTLS`/`LOGIN`/`SELECT`/`EXAMINE`/`CREATE`/`LIST`/`LSUB`/`STATUS`/`APPEND`/`FETCH`/`STORE`/`SEARCH`/`UID` variants/`IDLE`/`LOGOUT` against the store. JMAP implements HTTPS `/jmap/session`, `/jmap/upload`, `/jmap/download`, `mailbox/get|set`, `messages/get|set|query|search`, and blob access against the same store. Both capture full transcripts to JSON for blackbox assertions.
+  - Verification: manual `./mailval --smtp-port 5570 --tls-cert <pem> --tls-key <pem>` smoke run accepts a TLS and a plaintext SMTP send (via our own `mailrelay_smtp` helper after 2.4) and writes the captured message; IMAP/JMAP ports accept a connection and log the handshake. `mkp` covers the C sources if in cppcheck scope.
+
 - [ ] 2.1 Create `src/mailrelay/` module skeleton (currently empty dir).
-  - Files: `mailrelay.h`, `mailrelay_internal.h`, `mailrelay_message.{c,h}`, `mailrelay_smtp.{c,h}`, `mailrelay_result.{c,h}`. Add a `mailrelay_test_seams.{c,h}` only if needed to inject a fixed clock / Message-ID for deterministic tests.
-  - Build note: current CMake uses recursive source discovery; confirm new files are discovered and only adjust `cmake/` if Unity/exclusion rules require it.
+  - Files: `mailrelay.h`, `mailrelay_internal.h`, `mailrelay_message.{c,h}`, `mailrelay_render.{c,h}`, `mailrelay_smtp.{c,h}`, `mailrelay_result.{c,h}`, `mailrelay_test_seams.{c,h}` (for injecting a fixed clock / Message-ID for deterministic tests).
+  - Note: `mailrelay.c` lifecycle/init is deferred to Phase 3.3 (worker wiring); `mailrelay_queue.*`, `mailrelay_template.*`, `mailrelay_repository.*` are later phases.
+  - Build note: current CMake uses recursive source discovery for `../src/*.c`; confirm new files are discovered and only adjust `cmake/` if Unity/exclusion rules require it.
   - Verification: `mkt`.
 
-- [ ] 2.2 Define `MailRelayMessage` and validation helpers.
+- [ ] 2.2 Define `MailRelayMessage` and a dedicated validation helper.
   - Fields: from, reply-to, to/cc/bcc arrays, subject, text body, HTML body, headers, metadata, priority, idempotency key.
-  - Reuse or extend existing auth email-address validation patterns. Avoid static functions so helpers are testable.
+  - Add `bool mailrelay_is_valid_email(const char* email)` in the mailrelay module (dedicated validator; model the rules on `src/api/auth/auth_service_validation.c:219` `is_valid_email` but keep it local to mailrelay). Avoid static functions so helpers are testable.
   - Verification: `mku mailrelay_message_test` covers valid/invalid addresses, empty recipients, subject/body limits, and BCC handling.
 
 - [ ] 2.3 Implement RFC 5322 message rendering.
-  - Include `Date`, `Message-ID`, MIME multipart/alternative boundaries when both text and HTML are present. Use CRLF line endings.
+  - File: `mailrelay_render.{c,h}`. Include `Date`, `Message-ID`, MIME multipart/alternative boundaries when both text and HTML are present. Use CRLF line endings. Use `mailrelay_test_seams` to inject a fixed clock / Message-ID for deterministic tests.
   - Verification: `mku mailrelay_render_test` verifies deterministic rendering with a fixed clock/test Message-ID seam.
 
 - [ ] 2.4 Implement libcurl SMTP/SMTPS send helper.
-  - File: `mailrelay_smtp.c`. Use `smtp://` + STARTTLS or `smtps://` per config. Set `CURLOPT_NOSIGNAL=1L`, connect/total timeouts, `CURLOPT_MAIL_FROM`, `CURLOPT_MAIL_RCPT`, `CURLOPT_UPLOAD=1L` + `CURLOPT_READFUNCTION`. Do not log credentials or body by default. Return a structured `MailRelayResult` (success flag, SMTP code/text, duration).
+  - File: `mailrelay_smtp.c`. Use `smtp://` + STARTTLS or `smtps://` per the server's `TLSMode` (map legacy `UseTLS` to `MAIL_TLS_MODE_STARTTLS` for backward compat). Set `CURLOPT_NOSIGNAL=1L`, connect/total timeouts, `CURLOPT_MAIL_FROM`, `CURLOPT_MAIL_RCPT`, `CURLOPT_UPLOAD=1L` + `CURLOPT_READFUNCTION`/`CURLOPT_READDATA` to stream the RFC 5322 payload. Do not log credentials or body by default. Return a structured `MailRelayResult` (success flag, SMTP code/text, duration).
   - Verification: `mkt` and a unit-testable seam verifying URL, envelope, credentials, timeout, and payload callback behavior. Record the exact working `CURLOPT_*` set in the Working Log.
 
-- [ ] 2.5 Add local SMTP sink blackbox support.
-  - Add a small Python SMTP sink under `tests/` only (or use a system tool if present). Create `tests/test_57_mailrelay_outbound.sh` (ports 5570-5576) plus `tests/configs/hydrogen_test_57_mailrelay_outbound.json` and `docs/H/tests/test_57_mailrelay_outbound.md`.
-  - Verification: `test_57_mailrelay_outbound.sh` starts Hydrogen with a local sink and captures one message; `test_92_shellcheck.sh` and `test_04_check_links.sh` pass.
+- [ ] 2.5 Define the internal raw send API (`mailrelay_send_raw`) and test trigger.
+  - File: `mailrelay.c` (or `mailrelay_smtp.c` if lifecycle is not yet needed). `mailrelay_send_raw()` takes a `MailRelayMessage` + an `OutboundServer`, renders via `mailrelay_render`, sends via `mailrelay_smtp`, and returns a `MailRelayResult`. This is the seed of the Phase 3 producer API.
+  - Add `MailRelay.Test.SendRawOnLaunch` (bool) + a canned self-test message to `MailRelayConfig` (loaded in `config_mail_relay.c`, synced in schema/example configs). When set, `launch_mail_relay_subsystem()` calls `mailrelay_send_raw()` directly (no queue) using `Servers[0]` and logs the structured result. Gated off by default so production startup is unaffected.
+  - Verification: `mku mailrelay_send_raw_test` covers success, permanent-failure, and disabled/shutdown paths with a mocked `mailrelay_smtp` seam.
 
-Exit Gate: Hydrogen can send one configured raw outbound email to a local SMTP sink, and failures return structured results without leaking secrets. `mkt`, `mkp`, the new `mku` targets, and `test_57` pass.
+- [ ] 2.6 Add local SMTP sink blackbox support.
+  - Create `tests/test_57_mailrelay_outbound.sh` (ports 5570-5576) that starts the C `mailval` SMTP module, starts Hydrogen with `tests/configs/hydrogen_test_57_mailrelay_outbound.json` (`MailRelay.Test.SendRawOnLaunch=true`, `Servers[0]` pointing at the validator), and captures one message file. Add `docs/H/tests/test_57_mailrelay_outbound.md`.
+  - Verification: `test_57_mailrelay_outbound.sh` starts Hydrogen with the C sink and captures one message; `test_92_shellcheck.sh` and `test_04_check_links.sh` pass.
 
-Phase 2 Status: pending. Date: (TBD). Result: (TBD). Variances: (TBD).
+Exit Gate: Hydrogen can send one configured raw outbound email to a local C SMTP sink, and failures return structured results without leaking secrets. `mkt`, `mkp`, the new `mku` targets, and `test_57` pass.
+
+Phase 2 Status: in-progress. Date: 2026-07-06. Result: 2.0 complete — `extras/mailval/` multi-protocol validator (SMTP/IMAP/JMAP over TLS) builds and passes an end-to-end smoke test (SMTP delivers into the shared store; JMAP `messages/get` retrieves it). Remaining: 2.1-2.6 (Hydrogen `mailrelay_*` modules, libcurl sender, `mailrelay_send_raw` + `SendRawOnLaunch` trigger, blackbox `test_57`). Variances: `mailval` required `signal(SIGPIPE, SIG_IGN)` and a recursive store mutex; both are standard server fixtures. `mailval.pem`/`mailval.key` are generated locally by `gen_cert.sh` and must never be committed.
 
 ---
 
@@ -902,8 +937,20 @@ New or modified files expected across the implementation. Confirm/adjust during 
 
 - `test_57_mailrelay_outbound.sh` (+ `configs/hydrogen_test_57_mailrelay_outbound.json`, `docs/H/tests/test_57_mailrelay_outbound.md`).
 - `test_58_mailrelay_api.sh` (+ config + doc).
-- `test_59_mailrelay_inbound.sh` (+ config + doc).
-- Optional local SMTP sink helper under `tests/`.
+  - `test_59_mailrelay_inbound.sh` (+ config + doc).
+  - Optional local SMTP sink helper under `extras/smtp-sink/` (C binary, standalone CMake build).
+
+### Mail validator tool (`/elements/001-hydrogen/hydrogen/extras/mailval/`)
+
+- `CMakeLists.txt` (standalone build, not part of Hydrogen recursive discovery; links OpenSSL for TLS).
+- `mailval.c` (arg parse + per-protocol listener threads).
+- `listener.c/.h` (generic TLS-capable TCP accept loop, dispatches to a protocol module).
+- `tls.c/.h` (OpenSSL context, STARTTLS + implicit TLS support).
+- `capture.c/.h` (per-session transcript + parsed-field JSON writer).
+- `store.c/.h` (shared in-memory mailbox store; SMTP delivery appends messages here, IMAP and JMAP serve from it).
+- `proto_smtp.c/.h` (full SMTP send capture + store delivery; functional for tests 57/58/59).
+- `proto_imap.c/.h` (full IMAP server over the store; handshake + capability negotiation + transcript capture).
+- `proto_jmap.c/.h` (full JMAP server over HTTPS against the store; session/upload/download/get/set/query + transcript capture).
 
 ### Database migrations (`/elements/002-helium/acuranzo/migrations/`)
 
