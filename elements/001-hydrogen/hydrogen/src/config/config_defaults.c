@@ -380,16 +380,8 @@ void initialize_config_defaults_mail_relay(AppConfig* config) {
         config->mail_relay.Queue.RetryAttempts = 3;
         config->mail_relay.Queue.RetryDelaySeconds = 300; // 5 minutes
 
-        // Default outbound server (first one)
-        config->mail_relay.OutboundServerCount = 1;
-        config->mail_relay.Servers[0].Host = strdup("localhost");
-        config->mail_relay.Servers[0].Port = strdup("587");
-        config->mail_relay.Servers[0].Username = NULL;
-        config->mail_relay.Servers[0].Password = NULL;
-        config->mail_relay.Servers[0].UseTLS = true;
-
-        // Initialize remaining servers to NULL state
-        for (int i = 1; i < MAX_OUTBOUND_SERVERS; i++) {
+        config->mail_relay.OutboundServerCount = 0;
+        for (int i = 0; i < MAX_OUTBOUND_SERVERS; i++) {
             memset(&config->mail_relay.Servers[i], 0, sizeof(OutboundServer));
         }
         

@@ -35,8 +35,8 @@ bool load_mailrelay_config(json_t* root, AppConfig* config) {
     MailRelayConfig* mail = &config->mail_relay;
 
     // Initialize with defaults
-    mail->Enabled = true;
-    mail->ListenPort = 587;
+    mail->Enabled = false;
+    mail->ListenPort = 25;
     mail->Workers = 2;
     
     // Queue defaults
@@ -95,27 +95,6 @@ bool load_mailrelay_config(json_t* root, AppConfig* config) {
         }
     }
 
-    // If no servers configured, set up default environment variable placeholders
-    if (mail->OutboundServerCount == 0) {
-        // Primary server defaults
-        mail->Servers[0].Host = strdup("${env.SMTP_SERVER1_HOST}");
-        mail->Servers[0].Port = strdup("${env.SMTP_SERVER1_PORT}");
-        mail->Servers[0].Username = strdup("${env.SMTP_SERVER1_USER}");
-        mail->Servers[0].Password = strdup("${env.SMTP_SERVER1_PASS}");
-        mail->Servers[0].UseTLS = true;
-
-        // Backup server defaults
-        mail->Servers[1].Host = strdup("${env.SMTP_SERVER2_HOST}");
-        mail->Servers[1].Port = strdup("${env.SMTP_SERVER2_PORT}");
-        mail->Servers[1].Username = strdup("${env.SMTP_SERVER2_USER}");
-        mail->Servers[1].Password = strdup("${env.SMTP_SERVER2_PASS}");
-        mail->Servers[1].UseTLS = true;
-
-        mail->OutboundServerCount = 2;
-
-        // Log default server setup
-        log_this(SR_CONFIG, "――― Using default environment variables for SMTP servers (*)", LOG_LEVEL_DEBUG, 0);
-    }
 
     if (!success) {
         cleanup_mailrelay_config(mail);
