@@ -145,6 +145,17 @@ typedef struct {
             unsigned long long connections_closed;
             unsigned long long connection_errors;
         } database;
+        struct {
+            int enabled;
+            int worker_threads;
+            int http_worker_threads;
+            int total_jobs;
+            int pending_jobs;
+            int running_jobs;
+            int completed_jobs;
+            int failed_jobs;
+            int killed_jobs;
+        } scripting;
     } specific;
 } ServiceMetrics;
 
@@ -184,6 +195,7 @@ typedef struct {
     ServiceMetrics mdns;
     ServiceMetrics print;
     ServiceMetrics database;
+    ServiceMetrics scripting;
     
     // Queue metrics
     QueueMetrics log_queue;

@@ -103,6 +103,7 @@ void free_system_metrics(SystemMetrics *metrics) {
     free_service_thread_metrics(&metrics->mdns.threads);
     free_service_thread_metrics(&metrics->print.threads);
     free_service_thread_metrics(&metrics->database.threads);
+    free_service_thread_metrics(&metrics->scripting.threads);
 
     // Finally, free the metrics structure itself
     free(metrics);

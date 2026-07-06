@@ -106,6 +106,15 @@ H_Handle* H_Handle_new(lua_State* L, H_HandleKind kind) {
     h->kind = kind;
     h->consumed = false;
     h->refcount = 1;
+    h->refcount_mutex_initialized = false;
+    if (pthread_mutex_init(&h->refcount_mutex, NULL) != 0) {
+        log_this(SR_LUA, "H_Handle_new: refcount mutex_init failed",
+                 LOG_LEVEL_ERROR, 0);
+        free(h);
+        lua_pop(L, 1);
+        return NULL;
+    }
+    h->refcount_mutex_initialized = true;
     h->query_id = NULL;
     h->db_queue = NULL;
     h->error = NULL;
@@ -123,6 +132,20 @@ H_Handle* H_Handle_new(lua_State* L, H_HandleKind kind) {
     h->http_result_body = NULL;
     h->http_result_error = NULL;
     h->http_result_elapsed_ms = 0;
+    // Phase 18: LLM kind fields
+    h->llm_model_name = NULL;
+    h->llm_prompt = NULL;
+    h->llm_max_tokens = 0;
+    h->llm_temperature = 0.0;
+    h->llm_db_name = NULL;
+    h->llm_result = NULL;
+    h->llm_result_json = NULL;
+    h->llm_error = NULL;
+    h->llm_timeout = 0;
+    h->llm_list = false;
+    // Phase 19: Mail and Notify stub fields
+    h->mail_error = NULL;
+    h->notify_error = NULL;
 
     // Phase 17: initialize the per-handle sync primitive for HTTP
     // kind. The QUERY kind does not need a condvar (it uses the
@@ -179,8 +202,6 @@ void H_Handle_free(H_Handle* h) {
         h->http_content_type = NULL;
     }
     if (h->http_headers_slist) {
-        // Phase 16: free the libcurl headers slist if the handle
-        // is being torn down before H.wait consumed it.
         curl_slist_free_all((struct curl_slist*)h->http_headers_slist);
         h->http_headers_slist = NULL;
     }
@@ -196,6 +217,40 @@ void H_Handle_free(H_Handle* h) {
         free(h->http_result_error);
         h->http_result_error = NULL;
     }
+    // Phase 18: free LLM kind fields
+    if (h->llm_model_name) {
+        free(h->llm_model_name);
+        h->llm_model_name = NULL;
+    }
+    if (h->llm_prompt) {
+        free(h->llm_prompt);
+        h->llm_prompt = NULL;
+    }
+    if (h->llm_db_name) {
+        free(h->llm_db_name);
+        h->llm_db_name = NULL;
+    }
+    if (h->llm_result) {
+        free(h->llm_result);
+        h->llm_result = NULL;
+    }
+    if (h->llm_result_json) {
+        free(h->llm_result_json);
+        h->llm_result_json = NULL;
+    }
+    if (h->llm_error) {
+        free(h->llm_error);
+        h->llm_error = NULL;
+    }
+    // Phase 19: free Mail and Notify stub fields
+    if (h->mail_error) {
+        free(h->mail_error);
+        h->mail_error = NULL;
+    }
+    if (h->notify_error) {
+        free(h->notify_error);
+        h->notify_error = NULL;
+    }
     // Phase 17: destroy the per-handle sync primitive. Only do this
     // for HTTP kind handles (the QUERY kind's http_initialized is
     // false, so the destroy is skipped).
@@ -203,6 +258,10 @@ void H_Handle_free(H_Handle* h) {
         pthread_cond_destroy(&h->http_cond);
         pthread_mutex_destroy(&h->http_mutex);
         h->http_initialized = false;
+    }
+    if (h->refcount_mutex_initialized) {
+        pthread_mutex_destroy(&h->refcount_mutex);
+        h->refcount_mutex_initialized = false;
     }
     // db_queue is not owned by the handle.
     h->db_queue = NULL;
@@ -216,7 +275,14 @@ void H_Handle_free(H_Handle* h) {
  * the worker holds a second ref while it owns the handle.
  */
 void H_Handle_acquire(H_Handle* h) {
-    if (h) {
+    if (!h) {
+        return;
+    }
+    if (h->refcount_mutex_initialized) {
+        pthread_mutex_lock(&h->refcount_mutex);
+        h->refcount++;
+        pthread_mutex_unlock(&h->refcount_mutex);
+    } else {
         h->refcount++;
     }
 }
@@ -230,12 +296,40 @@ void H_Handle_release(H_Handle* h) {
     if (!h) {
         return;
     }
-    if (h->refcount > 0) {
-        h->refcount--;
+    int remaining;
+    if (h->refcount_mutex_initialized) {
+        pthread_mutex_lock(&h->refcount_mutex);
+        if (h->refcount > 0) {
+            h->refcount--;
+        }
+        remaining = h->refcount;
+        pthread_mutex_unlock(&h->refcount_mutex);
+    } else {
+        if (h->refcount > 0) {
+            h->refcount--;
+        }
+        remaining = h->refcount;
     }
-    if (h->refcount == 0) {
+    if (remaining == 0) {
         H_Handle_free(h);
     }
+}
+
+/*
+ * Phase 17: thread-safe read of the current refcount. Useful for
+ * tests that need to observe the in-flight/worker-done boundary.
+ */
+int H_Handle_get_refcount(H_Handle* h) {
+    if (!h) {
+        return 0;
+    }
+    if (h->refcount_mutex_initialized) {
+        pthread_mutex_lock(&h->refcount_mutex);
+        int n = h->refcount;
+        pthread_mutex_unlock(&h->refcount_mutex);
+        return n;
+    }
+    return h->refcount;
 }
 
 H_Handle* H_Handle_check(lua_State* L, int arg) {

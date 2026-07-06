@@ -7,6 +7,9 @@
 // Project includes
 #include <src/hydrogen.h>
 
+// Standard includes
+#include <string.h>
+
 // Third-party includes
 #include <lua.h>
 #include <lauxlib.h>
@@ -15,6 +18,7 @@
 // Local includes
 #include "scripting_api.h"
 #include "scripting_api_internal.h"
+#include "lua_context.h"
 
 // H.log.* implementations //////////////////////////////////////////////////
 
@@ -72,11 +76,25 @@ int H_lua_log_at_level(lua_State* L, int priority) {
     }
 
     const char* msg = lua_tostring(L, -1);
-    if (msg) {
-        log_this(SR_SCRIPTING, msg, priority, 0);
-    } else {
+    if (!msg) {
         log_this(SR_SCRIPTING, "H.log: formatted message is not a string",
                  LOG_LEVEL_ERROR, 0);
+        lua_pop(L, 1);
+        return 0;
+    }
+
+    H_lua_job_context* ctx = H_lua_get_job_context(L);
+    if (ctx && ctx->job_id[0] != '\0') {
+        char prefixed_msg[1024];
+        int written = snprintf(prefixed_msg, sizeof(prefixed_msg),
+                               "[job:%s] %s", ctx->job_id, msg);
+        if (written > 0 && written < (int)sizeof(prefixed_msg)) {
+            log_this(SR_SCRIPTING, prefixed_msg, priority, 0);
+        } else {
+            log_this(SR_SCRIPTING, msg, priority, 0);
+        }
+    } else {
+        log_this(SR_SCRIPTING, msg, priority, 0);
     }
     lua_pop(L, 1);
 

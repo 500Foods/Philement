@@ -481,6 +481,9 @@ static void scripting_worker_process_one(ScriptingWorkerPool* pool,
         const char* lua_err = lua_tostring(L, -1);
         char* err_copy = lua_err ? strdup(lua_err) : NULL;
 
+        // Phase 24: Build a sanitized traceback.
+        char* traceback = H_lua_build_traceback(L);
+
         // Phase 10: distinguish KILLED from FAILED. The hook is the
         // single source of truth: it sets scoreboard->kill_requested
         // via scoreboard_request_kill (for the max-runtime path)
@@ -503,15 +506,26 @@ static void scripting_worker_process_one(ScriptingWorkerPool* pool,
             ? SCOREBOARD_JOB_KILLED
             : SCOREBOARD_JOB_FAILED;
 
+        // Phase 24: Store structured error info in the scoreboard.
+        scoreboard_update_error(scripting_scoreboard, job_id,
+                               err_copy, traceback);
+
         if (err_copy) {
             const char* prefix = was_killed ? "KILLED" : "FAILED";
             log_this(SR_SCRIPTING, "Worker [%s]: job %s: %s",
                      LOG_LEVEL_ERROR, 3, job_id, prefix, err_copy);
+            if (traceback) {
+                log_this(SR_SCRIPTING, "Traceback:\n%s",
+                         LOG_LEVEL_ERROR, 1, traceback);
+            }
             free(err_copy);
         } else {
             const char* prefix = was_killed ? "KILLED" : "FAILED";
             log_this(SR_SCRIPTING, "Worker [%s]: job %s (no message)",
                      LOG_LEVEL_ERROR, 2, job_id, prefix);
+        }
+        if (traceback) {
+            free(traceback);
         }
         // Pop the error from the stack (H_lua_run_string leaves it).
         lua_pop(L, 1);

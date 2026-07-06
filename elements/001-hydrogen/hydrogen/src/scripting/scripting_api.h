@@ -26,6 +26,9 @@
 // Third-party headers
 #include <lua.h>
 
+// Local headers
+#include "scripting_handle.h"
+
 /*
  * Populate H.log with the six C functions that back
  * H.log.{trace, debug, info, warn, error, fatal}.
@@ -259,5 +262,78 @@ int H_lua_build_result_table(lua_State* L, const char* data_json, int affected_r
  * lua_State).
  */
 void H_lua_install_http(lua_State* L);
+
+/*
+ * Populate H.llm with the C functions backing H.llm.call,
+ * H.llm.list, H.llm.call_sync, and H.llm.list_sync.
+ *
+ * Phase 18 of the LUA_PLAN. Provides LLM invocation from Lua scripts.
+ *
+ *   H.llm.call(model, prompt, opts?) -> handle
+ *       Asynchronously invoke an LLM by model name. `model` is the
+ *       engine name from the ChatEngineCache. `prompt` is the user
+ *       prompt string. `opts` is an optional table with:
+ *         max_tokens (int, optional)
+ *         temperature (float, optional)
+ *         database (string, optional - uses DefaultDatabase if not set)
+ *         timeout (int, optional - seconds)
+ *
+ *   H.llm.list() -> handle
+ *       Returns a handle that resolves to a result table:
+ *         { models = { { name, model, provider, is_default }, ... } }
+ *
+ *   H.llm.call_sync / H.llm.list_sync
+ *       Convenience wrappers that submit + wait in one call.
+ *
+ * H.wait on an LLM handle returns:
+ *   On success: { status, response, elapsed_ms }
+ *   On error: nil + error string
+ *
+ * The model name is resolved via the ChatEngineCache in the
+ * configured database. The actual HTTP call is made via the
+ * chat proxy helpers (OpenAI/Anthropic/Ollama compatible APIs).
+ *
+ * Called automatically by H_lua_install_query (which is the single
+ * install point that wires every H.* function on a fresh
+ * lua_State).
+ */
+void H_lua_install_llm(lua_State* L);
+
+int H_lua_llm_wait_one(lua_State* L, H_Handle* h);
+
+/*
+ * Populate H.mail and H.notify with stub implementations.
+ *
+ * Phase 19: Mail and Notify send stubs. Returns handles that
+ * immediately error with "mail: not implemented" or "notify: not
+ * implemented". Real implementations depend on Mail Relay / Notify
+ * subsystems landing later.
+ *
+ * H.mail.send(message, opts?) -> handle
+ * H.mail.send_sync(message, opts?) -> result, err
+ * H.notify.send(message, opts?) -> handle
+ * H.notify.send_sync(message, opts?) -> result, err
+ *
+ * message shape for H.mail.send:
+ *   { to = string|array, subject = string, body = string, template = string? }
+ * message shape for H.notify.send:
+ *   { channel = string, to = string|array, body = string }
+ *
+ * The mail/notify sub-tables replace Phase 3 placeholder tables.
+ * Called automatically by H_lua_install_api.
+ */
+int H_lua_mail_send(lua_State* L);
+int H_lua_mail_send_sync(lua_State* L);
+int H_lua_notify_send(lua_State* L);
+int H_lua_notify_send_sync(lua_State* L);
+void H_lua_install_mail_notify(lua_State* L);
+
+/*
+ * Wait on a MAIL or NOTIFY handle.
+ *
+ * For stubs, always returns nil + "mail: not implemented" or
+ * "notify: not implemented".
+ */
+int H_lua_mail_notify_wait_one(lua_State* L, H_Handle* h);
 
 #endif /* HYDROGEN_SCRIPTING_SCRIPTING_API_H */

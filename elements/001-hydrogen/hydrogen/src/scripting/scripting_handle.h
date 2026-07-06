@@ -61,11 +61,14 @@ extern "C" {
 /*
  * Handle kinds. The kind identifies how H.wait will resolve the
  * handle. Phase 13 added H_HK_QUERY; Phase 16 adds H_HK_HTTP;
- * later phases add H_HK_LLM, H_HK_MAIL, H_HK_NOTIFY.
+ * Phase 18 adds H_HK_LLM; Phase 19 adds H_HK_MAIL, H_HK_NOTIFY.
  */
 typedef enum {
     H_HK_QUERY = 1,
-    H_HK_HTTP  = 2
+    H_HK_HTTP  = 2,
+    H_HK_LLM   = 3,
+    H_HK_MAIL  = 4,
+    H_HK_NOTIFY = 5
 } H_HandleKind;
 
 /* Forward decls for the per-handle sync primitive (Phase 17). */
@@ -77,9 +80,13 @@ struct H_Handle;
  * ref before processing and releases when done, so the handle
  * cannot be freed while the background thread is using it. H_Handle_new
  * initializes refcount to 1.
+ *
+ * The refcount is protected by its own mutex so acquire/release/get are
+ * safe to call from any thread.
  */
 void H_Handle_acquire(struct H_Handle* h);
 void H_Handle_release(struct H_Handle* h);
+int H_Handle_get_refcount(struct H_Handle* h);
 
 /*
  * The C-side handle backing the Lua userdata. Allocated by
@@ -98,15 +105,31 @@ void H_Handle_release(struct H_Handle* h);
  *     http_url      strdup'd, owned (the request URL)
  *     http_method   strdup'd, owned ("GET" or "POST")
  *     http_body     strdup'd, owned (POST body, may be NULL for GET)
- *     http_headers_json  strdup'd, owned (request headers, may be NULL)
- *     query_id,
- *     db_queue      unused (NULL)
- *     error         strdup'd; non-NULL means handle is in an error state
+ *     http_content_type   strdup'd, owned (HTTP) - may be NULL (POST only)
+ *     http_timeout        int, seconds; <=0 means "use config default" (HTTP)
+ *     http_headers_slist    opaque pointer to the curl_slist built from the Lua headers table (HTTP)
+ *     query_id, db_queue, error  unused (NULL)
+*   H_HK_LLM:
+ *     llm_model_name    strdup'd, owned (the model name, e.g. "grok-light")
+ *     llm_prompt        strdup'd, owned (the user prompt, may be NULL for list)
+ *     llm_max_tokens    int (0 = use default)
+ *     llm_temperature   double (0 = use default)
+ *     llm_db_name       strdup'd, owned (the database for model resolution, may be NULL)
+ *     llm_result        strdup'd, owned (the response text)
+ *     llm_error         strdup'd; non-NULL means handle is in an error state (LLM)
+ *     llm_timeout       seconds; 0 = use default (LLM)
+ *     llm_list          true if this is a list operation (LLM)
+ *   H_HK_MAIL:
+ *     mail_error        strdup'd; non-NULL means handle is in an error state (MAIL stub)
+ *   H_HK_NOTIFY:
+ *     notify_error      strdup'd; non-NULL means handle is in an error state (NOTIFY stub)
  */
 typedef struct H_Handle {
     H_HandleKind    kind;
     bool            consumed;     // true after H.wait returns
     int             refcount;     // Phase 17: 1 at creation, ++/-- by acquire/release
+    bool            refcount_mutex_initialized; // true once refcount_mutex is valid
+    pthread_mutex_t refcount_mutex; // protects refcount across threads
     char*           query_id;     // strdup'd; NULL for pre-submit failures (QUERY)
     DatabaseQueue*  db_queue;     // not owned; NULL for pre-submit failures (QUERY)
     char*           error;        // strdup'd; non-NULL means handle is in error state
@@ -116,16 +139,8 @@ typedef struct H_Handle {
     char*           http_body;           // strdup'd; owned (HTTP) - may be NULL
     char*           http_content_type;   // strdup'd; owned (HTTP) - may be NULL (POST only)
     int             http_timeout;        // seconds; <=0 means "use config default" (HTTP)
-    // Phase 16: opaque pointer to the curl_slist built from the Lua
-    // headers table (HTTP kind only). The OIDC helper takes ownership
-    // when the HTTP call is performed; if the handle is GC'd before
-    // wait, __gc frees it via H_Handle_free.
     void*           http_headers_slist;  // struct curl_slist* (HTTP)
-    // Phase 17: per-handle sync primitive (HTTP kind only). The HTTP
-    // worker thread writes the result into the handle and signals
-    // http_cond; H.wait blocks on http_cond. Mutex/cond are initialized
-    // lazily by H_Handle_new for HTTP kind and destroyed by
-    // H_Handle_free.
+    // Phase 17: per-handle sync primitive (HTTP kind only). The HTTP worker thread writes the result into the handle and signals http_cond; H.wait blocks on http_cond. Mutex/cond are initialized lazily by H_Handle_new for HTTP kind and destroyed by H_Handle_free.
     pthread_mutex_t http_mutex;          // protects the fields below (HTTP)
     pthread_cond_t  http_cond;           // signaled when http_ready or http_cancelled is set
     bool            http_ready;          // true once the worker has stored the result
@@ -136,6 +151,20 @@ typedef struct H_Handle {
     char*           http_result_body;    // strdup'd, response body (HTTP)
     char*           http_result_error;   // strdup'd, error string (NULL on success) (HTTP)
     long            http_result_elapsed_ms;     // elapsed time of the HTTP call (HTTP)
+    // Phase 18: LLM kind fields
+    char*           llm_model_name;      // strdup'd; owned (LLM)
+    char*           llm_prompt;          // strdup'd; owned (LLM) - may be NULL for list
+    int             llm_max_tokens;      // int; 0 = use default (LLM)
+    double          llm_temperature;     // double; 0 = use default (LLM)
+    char*           llm_db_name;         // strdup'd; owned (LLM) - database for model resolution
+    char*           llm_result;          // strdup'd; owned (LLM) - response text
+    char*           llm_result_json;     // strdup'd; owned (LLM) - full JSON response (optional)
+    char*           llm_error;           // strdup'd; non-NULL means handle is in error state (LLM)
+    int             llm_timeout;         // seconds; 0 = use default (LLM)
+    bool            llm_list;            // true if this is a list operation (LLM)
+    // Phase 19: Mail and Notify stub fields
+    char*           mail_error;          // strdup'd; non-NULL means handle is in an error state (MAIL stub)
+    char*           notify_error;        // strdup'd; non-NULL means handle is in an error state (NOTIFY stub)
 } H_Handle;
 
 /*

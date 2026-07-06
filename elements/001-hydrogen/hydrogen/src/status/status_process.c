@@ -9,6 +9,7 @@
 #include "status_process.h"
 #include <src/webserver/web_server_core.h>
 #include <src/database/database.h>
+#include <src/scripting/scoreboard_json.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <netinet/in.h>
@@ -20,6 +21,7 @@ extern ServiceThreads websocket_threads;
 extern ServiceThreads mdns_server_threads;
 extern ServiceThreads print_threads;
 extern ServiceThreads database_threads;
+extern ServiceThreads scripting_threads;
 
 // External queue memory structures
 extern QueueMemoryMetrics log_queue_memory;
@@ -420,6 +422,21 @@ bool collect_service_metrics(SystemMetrics *metrics, const WebSocketMetrics *ws_
     metrics->notify_queue.total_allocation = notify_queue_memory.total_allocation;
     metrics->notify_queue.virtual_bytes = notify_queue_memory.metrics.virtual_bytes;
     metrics->notify_queue.resident_bytes = notify_queue_memory.metrics.resident_bytes;
+
+    // Scripting service metrics
+    ScriptingMetrics scripting_metrics;
+    scripting_collect_metrics(&scripting_metrics);
+    metrics->scripting.enabled = scripting_metrics.enabled;
+    metrics->scripting.threads.thread_count = scripting_metrics.worker_threads;
+    metrics->scripting.specific.scripting.enabled = scripting_metrics.enabled;
+    metrics->scripting.specific.scripting.worker_threads = scripting_metrics.worker_threads;
+    metrics->scripting.specific.scripting.http_worker_threads = scripting_metrics.http_worker_threads;
+    metrics->scripting.specific.scripting.total_jobs = scripting_metrics.total_jobs;
+    metrics->scripting.specific.scripting.pending_jobs = scripting_metrics.pending_jobs;
+    metrics->scripting.specific.scripting.running_jobs = scripting_metrics.running_jobs;
+    metrics->scripting.specific.scripting.completed_jobs = scripting_metrics.completed_jobs;
+    metrics->scripting.specific.scripting.failed_jobs = scripting_metrics.failed_jobs;
+    metrics->scripting.specific.scripting.killed_jobs = scripting_metrics.killed_jobs;
 
     return true;
 }

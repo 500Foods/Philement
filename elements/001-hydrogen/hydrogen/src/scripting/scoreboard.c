@@ -57,6 +57,24 @@ static void entry_clear_owned(ScoreboardEntry* entry) {
         free(entry->current_state);
         entry->current_state = NULL;
     }
+    // Phase 24: structured error info.
+    if (entry->error_message) {
+        free(entry->error_message);
+        entry->error_message = NULL;
+    }
+    if (entry->error_traceback) {
+        free(entry->error_traceback);
+        entry->error_traceback = NULL;
+    }
+    // Phase 25: artifact metadata.
+    if (entry->result_type) {
+        free(entry->result_type);
+        entry->result_type = NULL;
+    }
+    if (entry->result_location) {
+        free(entry->result_location);
+        entry->result_location = NULL;
+    }
 }
 
 // Helper: zero a timespec to "not set".
@@ -313,9 +331,17 @@ ScoreboardEntry* scoreboard_find(Scoreboard* sb, const char* job_id) {
             copy->script_name = match->script_name ? strdup(match->script_name) : NULL;
             copy->params_json = match->params_json ? strdup(match->params_json) : NULL;
             copy->current_state = match->current_state ? strdup(match->current_state) : NULL;
+            copy->error_message = match->error_message ? strdup(match->error_message) : NULL;
+            copy->error_traceback = match->error_traceback ? strdup(match->error_traceback) : NULL;
+            copy->result_type = match->result_type ? strdup(match->result_type) : NULL;
+            copy->result_location = match->result_location ? strdup(match->result_location) : NULL;
             if ((match->script_name && !copy->script_name)
                 || (match->params_json && !copy->params_json)
-                || (match->current_state && !copy->current_state)) {
+                || (match->current_state && !copy->current_state)
+                || (match->error_message && !copy->error_message)
+                || (match->error_traceback && !copy->error_traceback)
+                || (match->result_type && !copy->result_type)
+                || (match->result_location && !copy->result_location)) {
                 // strdup failed; abandon the copy.
                 entry_clear_owned(copy);
                 free(copy);
@@ -574,9 +600,21 @@ bool scoreboard_list(Scoreboard* sb,
             ? strdup(sb->entries[i].params_json) : NULL;
         copy->current_state = sb->entries[i].current_state
             ? strdup(sb->entries[i].current_state) : NULL;
+        copy->error_message = sb->entries[i].error_message
+            ? strdup(sb->entries[i].error_message) : NULL;
+        copy->error_traceback = sb->entries[i].error_traceback
+            ? strdup(sb->entries[i].error_traceback) : NULL;
+        copy->result_type = sb->entries[i].result_type
+            ? strdup(sb->entries[i].result_type) : NULL;
+        copy->result_location = sb->entries[i].result_location
+            ? strdup(sb->entries[i].result_location) : NULL;
         if ((sb->entries[i].script_name && !copy->script_name)
             || (sb->entries[i].params_json && !copy->params_json)
-            || (sb->entries[i].current_state && !copy->current_state)) {
+            || (sb->entries[i].current_state && !copy->current_state)
+            || (sb->entries[i].error_message && !copy->error_message)
+            || (sb->entries[i].error_traceback && !copy->error_traceback)
+            || (sb->entries[i].result_type && !copy->result_type)
+            || (sb->entries[i].result_location && !copy->result_location)) {
             // strdup failure: clean up this entry and everything
             // before it.
             scoreboard_entry_free(copy);
@@ -730,4 +768,100 @@ bool scoreboard_clear_waiter(Scoreboard* sb, const char* job_id) {
     }
     pthread_mutex_unlock(&sb->mutex);
     return found;
+}
+
+/*
+ * Phase 24: store structured error info for a failed job.
+ * Thread-safe. Strings are strdup'd into scoreboard-owned memory.
+ */
+bool scoreboard_update_error(Scoreboard* sb, const char* job_id,
+                              const char* error_message,
+                              const char* error_traceback) {
+    if (!sb || !job_id) {
+        return false;
+    }
+
+    pthread_mutex_lock(&sb->mutex);
+    for (size_t i = 0; i < sb->count; i++) {
+        ScoreboardEntry* entry = &sb->entries[i];
+        if (strcmp(entry->job_id, job_id) != 0) {
+            continue;
+        }
+        // Free old strings before assigning new ones.
+        if (entry->error_message) {
+            free(entry->error_message);
+            entry->error_message = NULL;
+        }
+        if (entry->error_traceback) {
+            free(entry->error_traceback);
+            entry->error_traceback = NULL;
+        }
+        // Only set if non-NULL, non-empty.
+        if (error_message && error_message[0] != '\0') {
+            entry->error_message = strdup(error_message);
+            if (!entry->error_message) {
+                pthread_mutex_unlock(&sb->mutex);
+                return false;
+            }
+        }
+        if (error_traceback && error_traceback[0] != '\0') {
+            entry->error_traceback = strdup(error_traceback);
+            if (!entry->error_traceback) {
+                pthread_mutex_unlock(&sb->mutex);
+                return false;
+            }
+        }
+        pthread_mutex_unlock(&sb->mutex);
+        return true;
+    }
+    pthread_mutex_unlock(&sb->mutex);
+    return false;
+}
+
+/*
+ * Phase 25: store artifact metadata for a completed job.
+ * Thread-safe. Strings are strdup'd into scoreboard-owned memory.
+ */
+bool scoreboard_update_result(Scoreboard* sb, const char* job_id,
+                              const char* result_type,
+                              const char* result_location) {
+    if (!sb || !job_id) {
+        return false;
+    }
+
+    pthread_mutex_lock(&sb->mutex);
+    for (size_t i = 0; i < sb->count; i++) {
+        ScoreboardEntry* entry = &sb->entries[i];
+        if (strcmp(entry->job_id, job_id) != 0) {
+            continue;
+        }
+        // Free old strings before assigning new ones.
+        if (entry->result_type) {
+            free(entry->result_type);
+            entry->result_type = NULL;
+        }
+        if (entry->result_location) {
+            free(entry->result_location);
+            entry->result_location = NULL;
+        }
+        // Only set if non-NULL, non-empty.
+        if (result_type && result_type[0] != '\0') {
+            entry->result_type = strdup(result_type);
+            if (!entry->result_type) {
+                pthread_mutex_unlock(&sb->mutex);
+                return false;
+            }
+        }
+        if (result_location && result_location[0] != '\0') {
+            entry->result_location = strdup(result_location);
+            if (!entry->result_location) {
+                pthread_mutex_unlock(&sb->mutex);
+                return false;
+            }
+        }
+        pthread_mutex_unlock(&sb->mutex);
+        return true;
+    }
+    pthread_mutex_unlock(&sb->mutex);
+    return false;
 }

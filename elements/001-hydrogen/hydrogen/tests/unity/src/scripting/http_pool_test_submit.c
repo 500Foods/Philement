@@ -78,6 +78,31 @@ static bool wait_for_ready(H_Handle* h, int timeout_ms) {
     return true;
 }
 
+// Poll the thread-safe refcount until it reaches the expected value
+// or the bounded timeout expires. Returns true on success.
+static bool wait_for_refcount(H_Handle* h, int expected, int timeout_ms) {
+    struct timespec deadline;
+    clock_gettime(CLOCK_REALTIME, &deadline);
+    deadline.tv_sec += timeout_ms / 1000;
+    deadline.tv_nsec += (timeout_ms % 1000) * 1000000L;
+    if (deadline.tv_nsec >= 1000000000L) {
+        deadline.tv_sec++;
+        deadline.tv_nsec -= 1000000000L;
+    }
+
+    struct timespec short_sleep = {0, 1000000L}; // 1 ms
+    while (H_Handle_get_refcount(h) != expected) {
+        struct timespec now;
+        clock_gettime(CLOCK_REALTIME, &now);
+        if (now.tv_sec > deadline.tv_sec ||
+            (now.tv_sec == deadline.tv_sec && now.tv_nsec >= deadline.tv_nsec)) {
+            return false;
+        }
+        nanosleep(&short_sleep, NULL);
+    }
+    return true;
+}
+
 // Submit one handle; the worker picks it up, calls the (injected)
 // HTTP, and stores the result. H.wait sees the result.
 void test_http_pool_submit_stores_result(void) {
@@ -97,15 +122,17 @@ void test_http_pool_submit_stores_result(void) {
     TEST_ASSERT_TRUE(wait_for_ready(h, 5000));
 
     // After the worker is done, the refcount should be back to 1
-    // (the worker released its ref).
-    TEST_ASSERT_EQUAL(1, h->refcount);
+    // (the worker released its ref). Poll briefly because the release
+    // happens after the condvar broadcast.
+    TEST_ASSERT_TRUE(wait_for_refcount(h, 1, 1000));
     TEST_ASSERT_TRUE(h->http_ready);
     TEST_ASSERT_NULL(h->http_result_error);
     TEST_ASSERT_EQUAL(200, h->http_result_status);
     TEST_ASSERT_NOT_NULL(h->http_result_body);
     TEST_ASSERT_EQUAL_STRING("hello", h->http_result_body);
 
-    H_Handle_free(h);
+    // The Lua userdata still holds the remaining ref; let lua_close run
+    // the __gc metamethod to free the handle.
     lua_close(L);
     TEST_ASSERT_EQUAL(1, scripting_http_test_get_consumed_count());
 }
@@ -128,7 +155,7 @@ void test_http_pool_submit_pool_not_running(void) {
     h->http_url = strdup("http://example.com/");
     h->http_method = strdup("GET");
     TEST_ASSERT_FALSE(scripting_http_pool_submit(h));
-    H_Handle_free(h);
+    // Lua userdata holds the only ref; let __gc free the handle.
     lua_close(L);
 }
 
@@ -160,13 +187,12 @@ void test_http_pool_concurrent_submits(void) {
     for (int i = 0; i < 4; i++) {
         bool ready = wait_for_ready(handles[i], 10000);
         TEST_ASSERT_TRUE_MESSAGE(ready, "handle not ready");
+        TEST_ASSERT_TRUE(wait_for_refcount(handles[i], 1, 1000));
         TEST_ASSERT_EQUAL(200 + i, handles[i]->http_result_status);
         TEST_ASSERT_NOT_NULL(handles[i]->http_result_body);
     }
     TEST_ASSERT_EQUAL(4, scripting_http_test_get_consumed_count());
-    for (int i = 0; i < 4; i++) {
-        H_Handle_free(handles[i]);
-    }
+    // Lua userdata still holds the remaining refs; let __gc free them.
     lua_close(L);
 }
 
@@ -181,20 +207,22 @@ void test_http_pool_refcount_during_call(void) {
     H_Handle_install_metatable(L);
     H_Handle* h = H_Handle_new(L, H_HK_HTTP);
     TEST_ASSERT_NOT_NULL(h);
-    TEST_ASSERT_EQUAL(1, h->refcount);
+    TEST_ASSERT_EQUAL(1, H_Handle_get_refcount(h));
     h->http_url = strdup("http://refcount.test/");
     h->http_method = strdup("GET");
     h->http_timeout = 30;
 
     TEST_ASSERT_TRUE(scripting_http_pool_submit(h));
-    // Submit acquired a ref: 1 -> 2.
-    TEST_ASSERT_EQUAL(2, h->refcount);
+    // Submit acquired a ref. With the test injection seam the worker
+    // may finish almost immediately, so we only assert the handle is
+    // still alive here and verify the final refcount after wait.
+    TEST_ASSERT_GREATER_OR_EQUAL(1, H_Handle_get_refcount(h));
 
     TEST_ASSERT_TRUE(wait_for_ready(h, 5000));
-    // Worker released its ref: 2 -> 1.
-    TEST_ASSERT_EQUAL(1, h->refcount);
+    // Worker released its ref: 2 -> 1 (poll briefly for the release).
+    TEST_ASSERT_TRUE(wait_for_refcount(h, 1, 1000));
 
-    H_Handle_free(h);
+    // Lua userdata holds the remaining ref; let __gc free the handle.
     lua_close(L);
 }
 
