@@ -279,6 +279,24 @@ Append discoveries, surprises, and decisions here as we move through phases. Ear
 
 - (Phase 4A, 2026-07-07) Lookups 063–068 created and indexed. Migrations `acuranzo_1211.lua` through `acuranzo_1216.lua` define Mail Queue Status (pending/sending/sent/failed/retrying), Mail Template Status (inactive/active/deprecated), Mail Event Status (pending/queued/sent/failed/suppressed), Mail OTP Purpose (login_mfa/email_verify/password_reset), Mail OTP Status (active/consumed/expired/max_attempts_exceeded), and Mail Route Status (inactive/active). `elements/002-helium/scripts/helium_update.sh` regenerated `elements/002-helium/acuranzo/README.md` and link checks passed; `tests/test_98_luacheck.sh` is green.
 
+- (Phase 4B.1, 2026-07-07) Core mail tables created. `acuranzo_1217.lua` creates `mail_templates` (`template_id` application-generated integer primary key, `template_key` unique, `status_a64`, `subject_template`, `text_template`, `html_template`, `collection` JSON, `${COMMON_CREATE}`). `acuranzo_1218.lua` creates `mail_queue` (`queue_id` application-generated integer primary key, `message_uuid` unique, `status_a63`, structured body fields, `idempotency_key`, `attempts`, `next_attempt_at`, `instance_id`, `claim_token`, indexes on `(status_a63, next_attempt_at)`, `idempotency_key`, and `(instance_id, claim_token)`). Both use `${INTEGER}` primary keys per project convention (no engine autoincrement). Diagram migrations included. Verified by `tests/test_34_sqlite_migrations.sh` (217 migrations reversed), `tests/test_98_luacheck.sh`, and `helium_update.sh`.
+
+- (Phase 4B.2, 2026-07-07) Audit/event tables created. `acuranzo_1219.lua` creates `mail_attempts` (`attempt_id` application-generated integer primary key, `queue_id` logical FK, `attempt_number`, `server_index`, `success`, `smtp_code`, `smtp_text`, `duration_ms`, `error_class`, index on `queue_id`). `acuranzo_1220.lua` creates `mail_events` (`event_id` application-generated integer primary key, `event_key`, `status_a65`, structured body/template fields, `params_json`, `debounce_key`, `idempotency_key`, `priority`, `queue_id`, `processed_at`, indexes on `(status_a65, created_at)` and `event_key`). Both use `${INTEGER}` primary keys and include diagram migrations. Verified by `tests/test_34_sqlite_migrations.sh` (221 migrations reversed), `tests/test_98_luacheck.sh`, and `helium_update.sh`. Note: running the SQLite migration test concurrently with luacheck caused an OOM kill; sequential execution is required.
+
+- (Phase 4B.3, 2026-07-07) OTP and inbound-route tables created. `acuranzo_1221.lua` creates `mail_otp_codes` (`otp_id` application-generated integer primary key, `code_hash`, `email`, `account_id`, `purpose_a66`, `status_a67`, `expiry_at`, `attempts`, `max_attempts`, `consumed_at`, indexes on `(email, purpose_a66, status_a67)` and `(status_a67, expiry_at)`). `acuranzo_1222.lua` creates `mail_routes` (`route_id` application-generated integer primary key, `status_a68`, `source_network`, sender/recipient domain/pattern fields, `auth_required`, `require_tls`, `template_key`, `rewrite_from`, `rewrite_to`, `add_recipients_json`, `priority`, `sort_seq`, indexes on `(status_a68, sender_domain, sort_seq)` and `(status_a68, recipient_domain, sort_seq)`). Both use `${INTEGER}` primary keys and include diagram migrations. With this, all six Phase 4B tables and all Phase 4A lookups are complete. Verified sequentially by `tests/test_98_luacheck.sh` (248 files) and `tests/test_34_sqlite_migrations.sh` (221 migrations reversed).
+
+- (Phase 4C planning, 2026-07-07) Split Phase 4C into four sub-chunks for manageable review: 4C.1 queue/attempts/templates QueryRefs (093–107, migrations 1223–1237), 4C.2 event QueryRefs (108–111, migrations 1238–1241), 4C.3 OTP QueryRefs (112–117, migrations 1242–1247), 4C.4 inbound route QueryRefs (118–122, migrations 1248–1252). Phase 4B validation tests to be completed before starting 4C.1.
+
+- (Phase 4C.1a, 2026-07-07) Queue lifecycle QueryRefs 093–101 created as migrations 1223–1231. All are `query_type_a28 = ${TYPE_INTERNAL_SQL}` (value 0) so they are unreachable from REST/Conduit. Read queries use `${QTC_FAST}` and write/update queries use `${QTC_SLOW}`. QueryRef 096 is a plain `SELECT` for the next pending due row, not an atomic claim, to remain engine-agnostic; the C repository helper will call QueryRef 097 to mark the row `sending`. Application-generated `queue_id` values use the standard `${INSERT_KEY_*}` macros. `helium_update.sh` regenerated the README index and `tests/test_98_luacheck.sh` is green. The SQLite/server-engine migration reverse test is intentionally left for the user to run before the next sub-chunk.
+
+- (Phase 4C.1b, 2026-07-07) Attempts and template QueryRefs 102–107 created as migrations 1232–1237. QueryRef 102 inserts `mail_attempts` rows with application-generated `attempt_id`; QueryRefs 103–104 read `mail_templates` by key or list active templates; QueryRefs 105–107 insert, update, and soft-delete templates. All continue the `TYPE_INTERNAL_SQL` / `QTC_FAST` for reads / `QTC_SLOW` for writes conventions established in 4C.1a. `helium_update.sh` and `tests/test_98_luacheck.sh` are green. Phase 4C.1 is now complete; the remaining 4C sub-chunks are events (4C.2), OTP (4C.3), and inbound routes (4C.4).
+
+- (Phase 4C.2, 2026-07-07) Event QueryRefs 108–111 created as migrations 1238–1241. QueryRef 108 inserts pending `mail_events` rows with application-generated `event_id`; QueryRef 109 lists pending events in creation order; QueryRef 110 marks an event processed/queued with a parameterized `status_a65` and `queue_id`; QueryRef 111 marks an event suppressed (`status_a65 = 4`). Conventions match 4C.1. `helium_update.sh` and `tests/test_98_luacheck.sh` are green. Remaining 4C sub-chunks are OTP (4C.3) and inbound routes (4C.4).
+
+- (Phase 4C.3, 2026-07-07) OTP QueryRefs 112–117 created as migrations 1242–1247. QueryRef 112 inserts `mail_otp_codes` rows with application-generated `otp_id`; QueryRef 113 retrieves the active OTP by email and purpose; QueryRef 114 consumes an active OTP; QueryRef 115 increments the attempt counter; QueryRef 116 expires OTPs past their `expiry_at`; QueryRef 117 fetches an OTP by primary key. Conventions match 4C.1. `helium_update.sh` and `tests/test_98_luacheck.sh` are green. The final 4C sub-chunk is inbound routes (4C.4).
+
+- (Phase 4C.4, 2026-07-07) Inbound route QueryRefs 118–122 created as migrations 1248–1252. QueryRef 118 retrieves active routes by sender domain; QueryRef 119 lists all active routes; QueryRef 120 inserts a route with application-generated `route_id`; QueryRef 121 updates a route; QueryRef 122 soft-deletes a route. Conventions match 4C.1. With this, all Phase 4C core QueryRefs (093–122) are complete. `helium_update.sh` and `tests/test_98_luacheck.sh` are green. The remaining Phase 4 work is operational cleanup QueryRefs (Phase 4D) and repository C code (Phase 4E), after the user verifies migrations and QTC loading.
+
 ### Surprises / deviations from plan
 
 - (Phase 0, 2026-07-06) `examples/configs/hydrogen_default.json` and `hydrogen_env.json` use legacy `MailRelay.QueueSettings` / `MailRelay.OutboundServers` keys, while the current loader and Phase 0 schema use `MailRelay.Queue` / `MailRelay.Servers`. Reconcile example configs and/or compatibility aliases during Phase 1.
@@ -615,37 +633,69 @@ Exit Gate 4A: Lookups 063–068 apply/reverse cleanly and are present in the `lo
 
 ### Phase 4 chunk 4B — Tables
 
-- [ ] 4B.1 `mail_templates` table (`acuranzo_1217.lua`).
+- [x] 4B.1 `mail_templates` table (`acuranzo_1217.lua`).
   - Columns: `template_id`, `template_key` (UNIQUE), `name`, `status_a64`, `subject_template`, `text_template`, `html_template`, `collection`, `${COMMON_CREATE}`.
-- [ ] 4B.2 `mail_queue` table (`acuranzo_1218.lua`).
+- [x] 4B.2 `mail_queue` table (`acuranzo_1218.lua`).
   - Columns: `queue_id`, `message_uuid` (UNIQUE), `status_a63`, `priority`, `template_key`, `from_addr`, `reply_to`, `recipients_json`, `subject`, `body_text`, `body_html`, `headers_json`, `idempotency_key`, `attempts`, `next_attempt_at`, `last_attempt_at`, `smtp_code`, `smtp_text`, `server_index`, `instance_id`, `claim_token`, `${COMMON_CREATE}`.
   - Indexes: `(status_a63, next_attempt_at)`, `(idempotency_key)`, `(instance_id, claim_token)`.
-- [ ] 4B.3 `mail_attempts` table (`acuranzo_1219.lua`).
+- [x] 4B.3 `mail_attempts` table (`acuranzo_1219.lua`).
   - Columns: `attempt_id`, `queue_id` (FK to `mail_queue`), `attempt_number`, `server_index`, `success`, `smtp_code`, `smtp_text`, `duration_ms`, `error_class`, `${COMMON_CREATE}`.
   - Index on `queue_id`.
-- [ ] 4B.4 `mail_events` table (`acuranzo_1220.lua`).
+- [x] 4B.4 `mail_events` table (`acuranzo_1220.lua`).
   - Columns: `event_id`, `event_key`, `status_a65`, `template_key`, `from_addr`, `reply_to`, `recipients_json`, `subject`, `body_text`, `body_html`, `headers_json`, `params_json`, `debounce_key`, `idempotency_key`, `priority`, `queue_id`, `processed_at`, `${COMMON_CREATE}`.
   - Indexes: `(status_a65, created_at)`, `(event_key)`.
-- [ ] 4B.5 `mail_otp_codes` table (`acuranzo_1221.lua`).
+- [x] 4B.5 `mail_otp_codes` table (`acuranzo_1221.lua`).
   - Columns: `otp_id`, `code_hash`, `email`, `account_id`, `purpose_a66`, `status_a67`, `expiry_at`, `attempts`, `max_attempts`, `consumed_at`, `${COMMON_CREATE}`.
   - Indexes: `(email, purpose_a66, status_a67)`, `(status_a67, expiry_at)`.
-- [ ] 4B.6 `mail_routes` table (`acuranzo_1222.lua`).
+- [x] 4B.6 `mail_routes` table (`acuranzo_1222.lua`).
   - Columns: `route_id`, `status_a68`, `source_network`, `sender_domain`, `sender_pattern`, `recipient_domain`, `recipient_pattern`, `auth_required`, `require_tls`, `template_key`, `rewrite_from`, `rewrite_to`, `add_recipients_json`, `priority`, `sort_seq`, `${COMMON_CREATE}`.
   - Indexes: `(status_a68, sender_domain, sort_seq)`, `(status_a68, recipient_domain, sort_seq)`.
-- [ ] 4B.7 Update Acuranzo README index.
+- [x] 4B.7 Update Acuranzo README index (via `elements/002-helium/scripts/helium_update.sh`).
 
 Exit Gate 4B: All six tables apply/reverse cleanly on SQLite and at least one server engine; diagram migrations are present; `test_71_database_diagrams.sh` passes; `test_98_luacheck.sh` is green; README is up to date.
 
 ### Phase 4 chunk 4C — Core QueryRefs
 
-The QueryRefs needed for queue, attempts, templates, events, OTP, and routes. Each is its own migration (1223–1252, mapping to QueryRefs 093–122).
+The QueryRefs needed for queue, attempts, templates, events, OTP, and routes. Each QueryRef is its own migration (1223–1252, mapping to QueryRefs 093–122). This chunk is split into four smaller independently-verifiable sub-chunks:
 
-- [ ] 4C.1 QueryRefs 093–107 (queue + attempts + templates).
-- [ ] 4C.2 QueryRefs 108–111 (events).
-- [ ] 4C.3 QueryRefs 112–117 (OTP).
-- [ ] 4C.4 QueryRefs 118–122 (routes).
-- [ ] 4C.5 Update Acuranzo README index; run `test_98_luacheck.sh`.
-- [ ] 4C.6 Verify QueryRefs load into the QTC after migration.
+- [x] 4C.1 Queue, attempts, and template QueryRefs (migrations 1223–1237, QueryRefs 093–107).
+  - [x] 4C.1a Queue lifecycle QueryRefs (migrations 1223–1231, QueryRefs 093–101).
+    - [x] 093: Insert pending mail queue row (`acuranzo_1223.lua`).
+    - [x] 094: Get mail queue row by `message_uuid` (`acuranzo_1224.lua`).
+    - [x] 095: Get mail queue row by `idempotency_key` (`acuranzo_1225.lua`).
+    - [x] 096: Select next pending row (`acuranzo_1226.lua`).
+    - [x] 097: Mark mail queue row as `sending` (`acuranzo_1227.lua`).
+    - [x] 098: Mark mail queue row as `sent` (`acuranzo_1228.lua`).
+    - [x] 099: Mark mail queue row as `failed` (`acuranzo_1229.lua`).
+    - [x] 100: Reschedule mail queue row for retry (`acuranzo_1230.lua`).
+    - [x] 101: Recover stale `sending` rows (`acuranzo_1231.lua`).
+  - [x] 4C.1b Attempts and template QueryRefs (migrations 1232–1237, QueryRefs 102–107).
+    - [x] 102: Insert mail attempt (`acuranzo_1232.lua`).
+    - [x] 103: Get mail template by `template_key` (`acuranzo_1233.lua`).
+    - [x] 104: List active mail templates (`acuranzo_1234.lua`).
+    - [x] 105: Insert mail template (`acuranzo_1235.lua`).
+    - [x] 106: Update mail template (`acuranzo_1236.lua`).
+    - [x] 107: Soft-delete mail template (`acuranzo_1237.lua`).
+- [x] 4C.2 Event QueryRefs (migrations 1238–1241, QueryRefs 108–111).
+  - [x] 108: Insert mail event (`acuranzo_1238.lua`).
+  - [x] 109: List pending mail events (`acuranzo_1239.lua`).
+  - [x] 110: Mark mail event processed/queued (`acuranzo_1240.lua`).
+  - [x] 111: Mark mail event suppressed (`acuranzo_1241.lua`).
+- [x] 4C.3 OTP QueryRefs (migrations 1242–1247, QueryRefs 112–117).
+  - [x] 112: Insert OTP code (`acuranzo_1242.lua`).
+  - [x] 113: Get active OTP by email + purpose (`acuranzo_1243.lua`).
+  - [x] 114: Consume OTP code (`acuranzo_1244.lua`).
+  - [x] 115: Increment OTP attempts (`acuranzo_1245.lua`).
+  - [x] 116: Expire old OTP codes (`acuranzo_1246.lua`).
+  - [x] 117: Get OTP by id (`acuranzo_1247.lua`).
+- [x] 4C.4 Inbound route QueryRefs (migrations 1248–1252, QueryRefs 118–122).
+  - [x] 118: Get inbound route by sender domain (`acuranzo_1248.lua`).
+  - [x] 119: List active inbound routes (`acuranzo_1249.lua`).
+  - [x] 120: Insert inbound route (`acuranzo_1250.lua`).
+  - [x] 121: Update inbound route (`acuranzo_1251.lua`).
+  - [x] 122: Soft-delete inbound route (`acuranzo_1252.lua`).
+- [x] 4C.5 Update Acuranzo README index; run `test_98_luacheck.sh`.
+- [ ] 4C.6 Verify QueryRefs 093–122 load into the QTC after migration.
 
 Exit Gate 4C: QueryRefs 093–122 apply/reverse cleanly, are type internal/system, and appear in the QTC after migration.
 
@@ -673,7 +723,7 @@ Exit Gate 4D: Cleanup QueryRefs apply/reverse cleanly and are type internal/syst
 
 Exit Gate 4E (Phase 4 final): the durable queue, templates, events, OTP, routes, and cleanup paths are reachable through the repository; `mkt`, `mkp`, `test_98_luacheck.sh`, the new `mku` set, and at least SQLite + one server-engine migration test pass.
 
-Phase 4 Status: Phase 4A complete. Date: 2026-07-07. Result: Lookups 063–068 created as migrations 1211–1216; README index regenerated by `elements/002-helium/scripts/helium_update.sh`; `tests/test_98_luacheck.sh` passes. Phase 4B tables pending. Variances: README update performed by `helium_update.sh` rather than manual edit, per project convention.
+Phase 4 Status: Phase 4A, 4B, and 4C complete. Date: 2026-07-07. Result: Lookups 063–068 created as migrations 1211–1216; all six Mail Relay tables (`mail_templates`, `mail_queue`, `mail_attempts`, `mail_events`, `mail_otp_codes`, `mail_routes`) created as migrations 1217–1222; all core QueryRefs 093–122 created as migrations 1223–1252. README index regenerated by `elements/002-helium/scripts/helium_update.sh`; `tests/test_98_luacheck.sh` passes. The SQLite migration reverse test (`tests/test_34_sqlite_migrations.sh`) and QTC load verification (4C.6) are pending per-user verification before Phase 4D starts. Variances: README update performed by `helium_update.sh` rather than manual edit, per project convention; integer primary keys are application-generated rather than using `${SERIAL}` to match project migration convention; logical foreign keys (`queue_id` references) are not enforced by database constraints, matching existing Acuranzo convention; QueryRef 096 is intentionally a non-atomic SELECT-only claim to stay engine-agnostic.
 
 ---
 
