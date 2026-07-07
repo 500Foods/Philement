@@ -18,6 +18,7 @@
 #include <src/hydrogen.h>
 #include <src/launch/launch.h>
 #include <src/config/config.h>
+#include <src/mailrelay/mailrelay.h>
 
 // Forward declarations for functions being tested
 LaunchReadiness check_mail_relay_launch_readiness(void);
@@ -167,6 +168,7 @@ void setUp(void) {
 
 void tearDown(void) {
     // Clean up test configuration
+    mailrelay_shutdown();
     if (test_config) {
         cleanup_application_config();
         test_config = NULL;
@@ -362,6 +364,7 @@ void test_launch_mail_relay_subsystem_success(void) {
     int result = launch_mail_relay_subsystem();
 
     TEST_ASSERT_EQUAL(1, result);
+    mailrelay_shutdown();
 }
 
 // Test: Launch subsystem should set shutdown flag to 0
@@ -373,6 +376,7 @@ void test_launch_mail_relay_subsystem_sets_shutdown_flag(void) {
 
     TEST_ASSERT_EQUAL(1, result);
     TEST_ASSERT_EQUAL(0, mail_relay_system_shutdown);
+    mailrelay_shutdown();
 }
 
 int main(void) {

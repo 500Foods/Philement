@@ -13,6 +13,7 @@ void mailrelay_result_init(MailRelayResult* r) {
     r->smtp_text[0] = '\0';
     r->duration_ms = 0.0;
     r->error[0] = '\0';
+    r->retryable = false;
 }
 
 void mailrelay_result_free(MailRelayResult* r) {

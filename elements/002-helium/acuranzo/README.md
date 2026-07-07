@@ -247,4 +247,10 @@ in the migrations themselves so that they get populated in the database directly
 | [1208](/elements/002-helium/acuranzo/migrations/acuranzo_1208.lua) | queries | 1.0.0 | 2026-07-01 | 4 | ✗ | QueryRef #091 - Update Script last_run_start and next_run for the Hydrogen Scripting Subsystem (Phase 11b) |
 | [1209](/elements/002-helium/acuranzo/migrations/acuranzo_1209.lua) | queries | 1.0.0 | 2026-07-01 | 4 | ✗ | QueryRef #092 - Update Script last_run_end for the Hydrogen Scripting Subsystem (Phase 11b) |
 | [1210](/elements/002-helium/acuranzo/migrations/acuranzo_1210.lua) | scripts | 1.0.0 | 2026-07-01 | 4 | ✗ | Seeds the default Orchestrator row in the scripts table for the Hydrogen Scripting Subsystem (Phase 11c) |
-| **211** | | | | **1122** | **211** | |
+| [1211](/elements/002-helium/acuranzo/migrations/acuranzo_1211.lua) | lookups | 1.0.0 | 2026-07-07 | 10 | ✗ | Lookup 063 - Mail Queue Status for the Hydrogen Mail Relay Subsystem (Phase 4A) |
+| [1212](/elements/002-helium/acuranzo/migrations/acuranzo_1212.lua) | lookups | 1.0.0 | 2026-07-07 | 8 | ✗ | Lookup 064 - Mail Template Status for the Hydrogen Mail Relay Subsystem (Phase 4A) |
+| [1213](/elements/002-helium/acuranzo/migrations/acuranzo_1213.lua) | lookups | 1.0.0 | 2026-07-07 | 10 | ✗ | Lookup 065 - Mail Event Status for the Hydrogen Mail Relay Subsystem (Phase 4A) |
+| [1214](/elements/002-helium/acuranzo/migrations/acuranzo_1214.lua) | lookups | 1.0.0 | 2026-07-07 | 8 | ✗ | Lookup 066 - Mail OTP Purpose for the Hydrogen Mail Relay Subsystem (Phase 4A) |
+| [1215](/elements/002-helium/acuranzo/migrations/acuranzo_1215.lua) | lookups | 1.0.0 | 2026-07-07 | 9 | ✗ | Lookup 067 - Mail OTP Status for the Hydrogen Mail Relay Subsystem (Phase 4A) |
+| [1216](/elements/002-helium/acuranzo/migrations/acuranzo_1216.lua) | lookups | 1.0.0 | 2026-07-07 | 7 | ✗ | Lookup 068 - Mail Route Status for the Hydrogen Mail Relay Subsystem (Phase 4A) |
+| **217** | | | | **1174** | **217** | |

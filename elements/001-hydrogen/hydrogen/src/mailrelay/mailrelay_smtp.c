@@ -7,6 +7,7 @@
 #include <src/mailrelay/mailrelay_smtp.h>
 #include <src/mailrelay/mailrelay_render.h>
 #include <src/mailrelay/mailrelay_result.h>
+#include <src/mailrelay/mailrelay_retry.h>
 #include <src/mailrelay/mailrelay_message.h>
 
 #include <curl/curl.h>
@@ -235,6 +236,16 @@ static bool mailrelay_smtp_transport_real(const MailRelaySmtpRequest* req, MailR
         out->success = false;
         snprintf(out->error, sizeof(out->error), "MAIL_SMTP_TRANSPORT: %s",
                  curl_easy_strerror(res));
+        out->retryable = (res == CURLE_COULDNT_RESOLVE_HOST ||
+                          res == CURLE_COULDNT_CONNECT ||
+                          res == CURLE_OPERATION_TIMEDOUT ||
+                          res == CURLE_SEND_ERROR ||
+                          res == CURLE_RECV_ERROR ||
+                          res == CURLE_GOT_NOTHING ||
+                          res == CURLE_SSL_CONNECT_ERROR ||
+                          res == CURLE_PARTIAL_FILE ||
+                          res == CURLE_WRITE_ERROR ||
+                          res == CURLE_READ_ERROR);
     } else {
         long code = parse_smtp_code(resp.buf, resp.len, out->smtp_text,
                                     sizeof(out->smtp_text));
@@ -244,6 +255,7 @@ static bool mailrelay_smtp_transport_real(const MailRelaySmtpRequest* req, MailR
             snprintf(out->smtp_text, sizeof(out->smtp_text), "curl=%s",
                      curl_easy_strerror(res));
         }
+        out->retryable = (code >= 400 && code < 500);
     }
 
     if (rcpts) curl_slist_free_all(rcpts);

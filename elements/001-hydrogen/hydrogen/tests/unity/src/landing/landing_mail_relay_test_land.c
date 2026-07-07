@@ -12,15 +12,13 @@
 
 // Include necessary headers for the module being tested
 #include <src/landing/landing.h>
+#include <src/mailrelay/mailrelay.h>
 
 // Include mock header
 #include <unity/mocks/mock_landing.h>
 
 // Forward declarations for functions being tested
 int land_mail_relay_subsystem(void);
-
-// Mock globals - use weak linkage to avoid multiple definitions
-__attribute__((weak)) volatile sig_atomic_t mail_relay_system_shutdown = 0;
 
 // Forward declarations for test functions
 void test_land_mail_relay_subsystem_success(void);
@@ -33,12 +31,14 @@ void setUp(void) {
 
 void tearDown(void) {
     // Clean up after each test
+    mailrelay_shutdown();
 }
 
 // ===== BASIC LANDING TESTS =====
 
 void test_land_mail_relay_subsystem_success(void) {
-    // Arrange: Initial state
+    // Arrange: Initialize runtime so shutdown has a runtime to clean up.
+    TEST_ASSERT_TRUE(mailrelay_init());
     TEST_ASSERT_EQUAL(0, mail_relay_system_shutdown);
 
     // Act: Call the function

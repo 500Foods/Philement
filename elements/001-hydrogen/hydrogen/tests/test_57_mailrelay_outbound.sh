@@ -15,6 +15,7 @@
 # resolved by the config loader, so no credentials live in the committed config.
 
 # CHANGELOG
+# 1.0.2 - 2026-07-07 - Updated SendRawOnLaunch log assertion to match async enqueue message.
 # 1.0.1 - 2026-07-06 - Hardened sink readiness probe and stored-message capture selection.
 # 1.0.0 - 2026-07-06 - Initial MailRelay outbound blackbox test (plaintext + TLS).
 
@@ -25,7 +26,7 @@ TEST_NAME="MailRelay Outbound"
 TEST_ABBR="MRO"
 TEST_NUMBER="57"
 TEST_COUNTER=0
-TEST_VERSION="1.0.1"
+TEST_VERSION="1.0.2"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -176,9 +177,9 @@ run_mailrelay_outbound() {
         return 1
     fi
 
-    # Assert Hydrogen reported a successful SendRawOnLaunch.
-    if ! "${GREP}" -q "SendRawOnLaunch success" "${hydrogen_log}" 2>/dev/null; then
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${label} - Hydrogen log missing 'SendRawOnLaunch success'"
+    # Assert Hydrogen reported a successful SendRawOnLaunch enqueue.
+    if ! "${GREP}" -q "SendRawOnLaunch smoke test enqueued" "${hydrogen_log}" 2>/dev/null; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${label} - Hydrogen log missing 'SendRawOnLaunch smoke test enqueued'"
         kill -INT "${mailval_pid}" 2>/dev/null || true
         return 1
     fi

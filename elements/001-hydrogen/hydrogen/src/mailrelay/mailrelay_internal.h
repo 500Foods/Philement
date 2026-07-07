@@ -1,0 +1,56 @@
+/*
+ * Mail Relay internal runtime state.
+ *
+ * This header is private to the mailrelay module. It exposes the runtime
+ * structure and global pointer so that unit tests can inspect state without
+ * relying on static globals. The public lifecycle API remains in
+ * mailrelay/mailrelay.h.
+ */
+
+#ifndef MAILRELAY_INTERNAL_H
+#define MAILRELAY_INTERNAL_H
+
+// System includes
+#include <stdbool.h>
+#include <stddef.h>
+#include <pthread.h>
+
+// Project includes
+#include <src/mailrelay/mailrelay_debounce.h>
+#include <src/mailrelay/mailrelay_queue.h>
+#include <src/mailrelay/mailrelay_result.h>
+
+/*
+ * Runtime state for the Mail Relay subsystem.
+ *
+ * A single instance is allocated by mailrelay_init() and freed by
+ * mailrelay_shutdown(). All fields are protected by mutex once worker
+ * threads exist; during Phase 3.1 the structure is primarily used for
+ * lifecycle tracking and counters.
+ */
+typedef struct MailRelayRuntime {
+    pthread_mutex_t mutex;        // Guards runtime fields and queue access
+    pthread_cond_t cond;          // Worker sleep/wake signal
+    bool initialized;             // True after successful mailrelay_init()
+    bool shutdown_requested;      // Set true during shutdown to wake workers
+    int worker_count;             // Number of active worker threads
+    size_t queued_count;          // Lifetime queued message count
+    size_t sent_count;            // Lifetime sent message count
+    size_t failed_count;          // Lifetime failed message count
+    size_t retry_count;           // Lifetime retry attempts
+    MailRelayResult last_error;   // Last recorded error (no secrets)
+    MailRelayQueue* queue;        // In-memory queue (populated in Phase 3.2)
+    MailRelayDebounceState* debounce; // Debounce/coalescing state (Phase 3.5)
+} MailRelayRuntime;
+
+// Global runtime instance. Owned by mailrelay_init()/mailrelay_shutdown().
+extern MailRelayRuntime* mailrelay_runtime;
+
+/*
+ * Check whether the runtime instance has been initialized.
+ *
+ * @return true if mailrelay_init() has succeeded and shutdown has not run
+ */
+bool mailrelay_runtime_is_initialized(void);
+
+#endif /* MAILRELAY_INTERNAL_H */

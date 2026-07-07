@@ -24,10 +24,84 @@ void mailrelay_message_free(MailRelayMessage* m) {
     free(m->text_body);
     free(m->html_body);
     free(m->idempotency_key);
+    free(m->debounce_key);
     for (int i = 0; i < m->to_count; i++) free(m->to[i]);
     for (int i = 0; i < m->cc_count; i++) free(m->cc[i]);
     for (int i = 0; i < m->bcc_count; i++) free(m->bcc[i]);
     memset(m, 0, sizeof(*m));
+}
+
+bool mailrelay_message_copy(MailRelayMessage* dst, const MailRelayMessage* src) {
+    if (!dst || !src) return false;
+    mailrelay_message_init(dst);
+
+    if (src->from) {
+        if (!mailrelay_message_set_from(dst, src->from)) {
+            mailrelay_message_free(dst);
+            return false;
+        }
+    }
+    if (src->reply_to) {
+        if (!mailrelay_message_set_reply_to(dst, src->reply_to)) {
+            mailrelay_message_free(dst);
+            return false;
+        }
+    }
+    for (int i = 0; i < src->to_count; i++) {
+        if (!mailrelay_message_add_to(dst, src->to[i])) {
+            mailrelay_message_free(dst);
+            return false;
+        }
+    }
+    for (int i = 0; i < src->cc_count; i++) {
+        if (!mailrelay_message_add_cc(dst, src->cc[i])) {
+            mailrelay_message_free(dst);
+            return false;
+        }
+    }
+    for (int i = 0; i < src->bcc_count; i++) {
+        if (!mailrelay_message_add_bcc(dst, src->bcc[i])) {
+            mailrelay_message_free(dst);
+            return false;
+        }
+    }
+    if (src->subject) {
+        dst->subject = strdup(src->subject);
+        if (!dst->subject) {
+            mailrelay_message_free(dst);
+            return false;
+        }
+    }
+    if (src->text_body) {
+        dst->text_body = strdup(src->text_body);
+        if (!dst->text_body) {
+            mailrelay_message_free(dst);
+            return false;
+        }
+    }
+    if (src->html_body) {
+        dst->html_body = strdup(src->html_body);
+        if (!dst->html_body) {
+            mailrelay_message_free(dst);
+            return false;
+        }
+    }
+    if (src->idempotency_key) {
+        dst->idempotency_key = strdup(src->idempotency_key);
+        if (!dst->idempotency_key) {
+            mailrelay_message_free(dst);
+            return false;
+        }
+    }
+    if (src->debounce_key) {
+        dst->debounce_key = strdup(src->debounce_key);
+        if (!dst->debounce_key) {
+            mailrelay_message_free(dst);
+            return false;
+        }
+    }
+    dst->priority = src->priority;
+    return true;
 }
 
 bool mailrelay_is_valid_email(const char* email) {

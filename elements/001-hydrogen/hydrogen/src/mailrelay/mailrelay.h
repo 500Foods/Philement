@@ -14,6 +14,7 @@
 
 #include <src/config/config_mail_relay.h>
 #include <src/mailrelay/mailrelay_message.h>
+#include <src/mailrelay/mailrelay_queue.h>
 #include <src/mailrelay/mailrelay_result.h>
 #include <src/mailrelay/mailrelay_test_seams.h>
 
@@ -35,10 +36,28 @@ bool mailrelay_send_raw(const MailRelayMessage* msg,
                         MailRelayResult* out);
 
 /*
+ * Enqueue a message for asynchronous delivery by worker threads.
+ *
+ * This is the stable internal producer API used by launch triggers, REST
+ * endpoints, Lua H.mail, Notify compatibility, and system events. It
+ * validates the message, deep-copies it into the queue, and returns a status
+ * code. Callers do not block on SMTP.
+ */
+MailRelayStatus mailrelay_enqueue(const MailRelayMessage* msg, int priority);
+
+/*
  * Minimal lifecycle initializer. Phase 2 only resets seams; Phases 3+ add
  * queue/worker/thread tracking.
  */
 bool mailrelay_init(void);
+
+/*
+ * Shutdown the Mail Relay runtime.
+ *
+ * Signals any worker threads to stop, drains tracked threads with a timeout,
+ * and frees the runtime instance. Safe to call when not initialized.
+ */
+void mailrelay_shutdown(void);
 
 #ifdef __cplusplus
 }
