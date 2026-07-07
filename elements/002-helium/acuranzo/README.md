@@ -253,4 +253,40 @@ in the migrations themselves so that they get populated in the database directly
 | [1214](/elements/002-helium/acuranzo/migrations/acuranzo_1214.lua) | lookups | 1.0.0 | 2026-07-07 | 8 | ✗ | Lookup 066 - Mail OTP Purpose for the Hydrogen Mail Relay Subsystem (Phase 4A) |
 | [1215](/elements/002-helium/acuranzo/migrations/acuranzo_1215.lua) | lookups | 1.0.0 | 2026-07-07 | 9 | ✗ | Lookup 067 - Mail OTP Status for the Hydrogen Mail Relay Subsystem (Phase 4A) |
 | [1216](/elements/002-helium/acuranzo/migrations/acuranzo_1216.lua) | lookups | 1.0.0 | 2026-07-07 | 7 | ✗ | Lookup 068 - Mail Route Status for the Hydrogen Mail Relay Subsystem (Phase 4A) |
-| **217** | | | | **1174** | **217** | |
+| [1217](/elements/002-helium/acuranzo/migrations/acuranzo_1217.lua) | mail_templates | 1.0.0 | 2026-07-07 | 7 | ✓ | Creates the mail_templates table for the Hydrogen Mail Relay Subsystem (Phase 4B) |
+| [1218](/elements/002-helium/acuranzo/migrations/acuranzo_1218.lua) | mail_queue | 1.0.0 | 2026-07-07 | 9 | ✓ | Creates the mail_queue table for the Hydrogen Mail Relay Subsystem (Phase 4B) |
+| [1219](/elements/002-helium/acuranzo/migrations/acuranzo_1219.lua) | mail_attempts | 1.0.0 | 2026-07-07 | 7 | ✓ | Creates the mail_attempts table for the Hydrogen Mail Relay Subsystem (Phase 4B) |
+| [1220](/elements/002-helium/acuranzo/migrations/acuranzo_1220.lua) | mail_events | 1.0.0 | 2026-07-07 | 8 | ✓ | Creates the mail_events table for the Hydrogen Mail Relay Subsystem (Phase 4B) |
+| [1221](/elements/002-helium/acuranzo/migrations/acuranzo_1221.lua) | mail_otp_codes | 1.0.0 | 2026-07-07 | 8 | ✓ | Creates the mail_otp_codes table for the Hydrogen Mail Relay Subsystem (Phase 4B) |
+| [1222](/elements/002-helium/acuranzo/migrations/acuranzo_1222.lua) | mail_routes | 1.0.0 | 2026-07-07 | 8 | ✓ | Creates the mail_routes table for the Hydrogen Mail Relay Subsystem (Phase 4B) |
+| [1223](/elements/002-helium/acuranzo/migrations/acuranzo_1223.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #093 - Insert Pending Mail Queue Row |
+| [1224](/elements/002-helium/acuranzo/migrations/acuranzo_1224.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #094 - Get Mail Queue Row by Message UUID |
+| [1225](/elements/002-helium/acuranzo/migrations/acuranzo_1225.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #095 - Get Mail Queue Row by Idempotency Key |
+| [1226](/elements/002-helium/acuranzo/migrations/acuranzo_1226.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #096 - Select Next Pending Mail Queue Row |
+| [1227](/elements/002-helium/acuranzo/migrations/acuranzo_1227.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #097 - Mark Mail Queue Row as Sending |
+| [1228](/elements/002-helium/acuranzo/migrations/acuranzo_1228.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #098 - Mark Mail Queue Row as Sent |
+| [1229](/elements/002-helium/acuranzo/migrations/acuranzo_1229.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #099 - Mark Mail Queue Row as Failed |
+| [1230](/elements/002-helium/acuranzo/migrations/acuranzo_1230.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #100 - Reschedule Mail Queue Row for Retry |
+| [1231](/elements/002-helium/acuranzo/migrations/acuranzo_1231.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #101 - Recover Stale Sending Mail Queue Rows |
+| [1232](/elements/002-helium/acuranzo/migrations/acuranzo_1232.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #102 - Insert Mail Attempt |
+| [1233](/elements/002-helium/acuranzo/migrations/acuranzo_1233.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #103 - Get Mail Template by Key |
+| [1234](/elements/002-helium/acuranzo/migrations/acuranzo_1234.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #104 - List Active Mail Templates |
+| [1235](/elements/002-helium/acuranzo/migrations/acuranzo_1235.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #105 - Insert Mail Template |
+| [1236](/elements/002-helium/acuranzo/migrations/acuranzo_1236.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #106 - Update Mail Template |
+| [1237](/elements/002-helium/acuranzo/migrations/acuranzo_1237.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #107 - Soft Delete Mail Template |
+| [1238](/elements/002-helium/acuranzo/migrations/acuranzo_1238.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #108 - Insert Mail Event |
+| [1239](/elements/002-helium/acuranzo/migrations/acuranzo_1239.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #109 - List Pending Mail Events |
+| [1240](/elements/002-helium/acuranzo/migrations/acuranzo_1240.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #110 - Mark Mail Event Processed or Queued |
+| [1241](/elements/002-helium/acuranzo/migrations/acuranzo_1241.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #111 - Mark Mail Event Suppressed |
+| [1242](/elements/002-helium/acuranzo/migrations/acuranzo_1242.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #112 - Insert OTP Code |
+| [1243](/elements/002-helium/acuranzo/migrations/acuranzo_1243.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #113 - Get Active OTP by Email and Purpose |
+| [1244](/elements/002-helium/acuranzo/migrations/acuranzo_1244.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #114 - Consume OTP Code |
+| [1245](/elements/002-helium/acuranzo/migrations/acuranzo_1245.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #115 - Increment OTP Attempts |
+| [1246](/elements/002-helium/acuranzo/migrations/acuranzo_1246.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #116 - Expire Old OTP Codes |
+| [1247](/elements/002-helium/acuranzo/migrations/acuranzo_1247.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #117 - Get OTP by ID |
+| [1248](/elements/002-helium/acuranzo/migrations/acuranzo_1248.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #118 - Get Active Inbound Route by Sender Domain |
+| [1249](/elements/002-helium/acuranzo/migrations/acuranzo_1249.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #119 - List Active Inbound Routes |
+| [1250](/elements/002-helium/acuranzo/migrations/acuranzo_1250.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #120 - Insert Inbound Route |
+| [1251](/elements/002-helium/acuranzo/migrations/acuranzo_1251.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #121 - Update Inbound Route |
+| [1252](/elements/002-helium/acuranzo/migrations/acuranzo_1252.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #122 - Soft Delete Inbound Route |
+| **253** | | | | **1341** | **253** | |
