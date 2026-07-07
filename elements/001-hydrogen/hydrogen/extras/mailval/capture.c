@@ -65,14 +65,17 @@ static void mv_capture_line(mv_capture* c, const char* dir, const char* text, co
     pthread_mutex_lock(&c->lock);
     if (!c->first) fprintf(c->fp, ",\n");
     c->first = false;
-    char d[64], t[16384], k[4096], v[16384];
+    char d[64];
     mv_json_escape(dir, d, sizeof(d));
     fprintf(c->fp, "    {\"seq\": %d, \"dir\": %s", c->msg_seq++, d);
     if (text) {
+        char t[16384];
         mv_json_escape(text, t, sizeof(t));
         fprintf(c->fp, ", \"text\": %s", t);
     }
     if (key) {
+        char k[4096];
+        char v[16384];
         mv_json_escape(key, k, sizeof(k));
         mv_json_escape(value ? value : "", v, sizeof(v));
         fprintf(c->fp, ", \"key\": %s, \"value\": %s", k, v);

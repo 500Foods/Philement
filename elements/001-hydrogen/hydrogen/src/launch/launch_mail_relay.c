@@ -17,6 +17,10 @@
 // Local includes
 #include "launch.h"
 
+// Mail relay includes
+#include <src/mailrelay/mailrelay.h>
+#include <src/mailrelay/mailrelay_message.h>
+
 // External declarations
 extern ServiceThreads mailrelay_threads;
 extern volatile sig_atomic_t mail_relay_system_shutdown;
@@ -48,6 +52,13 @@ LaunchReadiness check_mail_relay_launch_readiness(void) {
     // First message is subsystem name
     add_launch_message(&messages, &count, &capacity, strdup(SR_MAIL_RELAY));
 
+    // Register the Mail Relay subsystem so the launch loop can resolve its ID
+    // and dispatch launch_mail_relay_subsystem(). Threads/init/shutdown are
+    // managed by the launch/landing handlers and the lifecycle helpers.
+    if (mailrelay_subsystem_id < 0) {
+        mailrelay_subsystem_id = register_subsystem(SR_MAIL_RELAY, NULL, NULL, NULL, NULL, NULL);
+    }
+
     // Register dependency on Network subsystem
     int relay_id = get_subsystem_id_by_name(SR_MAIL_RELAY);
     if (relay_id >= 0) {
@@ -57,14 +68,6 @@ LaunchReadiness check_mail_relay_launch_readiness(void) {
             return (LaunchReadiness){ .subsystem = SR_MAIL_RELAY, .ready = false, .messages = messages };
         }
         add_launch_message(&messages, &count, &capacity, strdup("  Go:      Network dependency registered"));
-
-        // Verify Network subsystem is running
-        if (!is_subsystem_running_by_name(SR_NETWORK)) {
-            add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Network subsystem not running"));
-            finalize_launch_messages(&messages, &count, &capacity);
-            return (LaunchReadiness){ .subsystem = SR_MAIL_RELAY, .ready = false, .messages = messages };
-        }
-        add_launch_message(&messages, &count, &capacity, strdup("  Go:      Network subsystem running"));
     }
 
     // Check basic configuration
@@ -115,17 +118,26 @@ LaunchReadiness check_mail_relay_launch_readiness(void) {
         } else {
             bool any_server_valid = false;
             for (int i = 0; i < config->OutboundServerCount; i++) {
-                if (config->Servers[i].Host && config->Servers[i].Host[0] != '\0' &&
-                    config->Servers[i].Port && config->Servers[i].Port[0] != '\0' &&
-                    config->Servers[i].Username && config->Servers[i].Username[0] != '\0' &&
-                    config->Servers[i].Password && config->Servers[i].Password[0] != '\0') {
+                bool has_host = config->Servers[i].Host && config->Servers[i].Host[0] != '\0';
+                bool has_port = config->Servers[i].Port && config->Servers[i].Port[0] != '\0';
+                bool has_creds = config->Servers[i].Username && config->Servers[i].Username[0] != '\0' &&
+                                 config->Servers[i].Password && config->Servers[i].Password[0] != '\0';
+                bool needs_auth = config->Servers[i].AuthMode != MAIL_AUTH_MODE_NONE;
+
+                if (has_host && has_port && (!needs_auth || has_creds)) {
                     any_server_valid = true;
                     char msg[128];
                     snprintf(msg, sizeof(msg), "  Go:      Server %d configuration valid", i + 1);
                     add_launch_message(&messages, &count, &capacity, strdup(msg));
                 } else {
-                    char msg[128];
-                    snprintf(msg, sizeof(msg), "  No-Go:   Server %d missing host, port, username, or password", i + 1);
+                    char msg[256];
+                    if (!has_host || !has_port) {
+                        snprintf(msg, sizeof(msg), "  No-Go:   Server %d missing host or port", i + 1);
+                    } else if (needs_auth && !has_creds) {
+                        snprintf(msg, sizeof(msg), "  No-Go:   Server %d missing credentials for AuthMode %d", i + 1, config->Servers[i].AuthMode);
+                    } else {
+                        snprintf(msg, sizeof(msg), "  No-Go:   Server %d configuration invalid", i + 1);
+                    }
                     add_launch_message(&messages, &count, &capacity, strdup(msg));
                     is_ready = false;
                 }
@@ -194,9 +206,53 @@ int launch_mail_relay_subsystem(void) {
     
     log_this(SR_MAIL_RELAY, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
     log_this(SR_MAIL_RELAY, "LAUNCH: " SR_MAIL_RELAY, LOG_LEVEL_STATE, 0);
-    
     // Initialize mail relay thread tracking structure
     init_service_threads(&mailrelay_threads, SR_MAIL_RELAY);
+
+    // SendRawOnLaunch smoke test: fire one message synchronously if configured.
+    // This is test-only and must not allocate workers or open queues.
+    const MailRelayConfig* config = app_config ? &app_config->mail_relay : NULL;
+    if (config && config->Test.SendRawOnLaunch && config->OutboundServerCount > 0) {
+        log_this(SR_MAIL_RELAY,
+                 "TEST: SendRawOnLaunch requested, sending smoke test via server 0",
+                 LOG_LEVEL_STATE, 0);
+
+        MailRelayMessage msg = {0};
+        mailrelay_message_init(&msg);
+        msg.from = config->Test.TestFrom;
+        if (!msg.from) msg.from = config->DefaultFrom;
+        msg.to[0] = config->Test.TestTo;
+        if (msg.to[0]) msg.to_count = 1;
+        msg.subject = config->Test.TestSubject;
+        msg.text_body = config->Test.TestBody;
+
+        MailRelayResult result = {0};
+        mailrelay_result_init(&result);
+        const char* app_name = (app_config && app_config->server.server_name)
+                               ? app_config->server.server_name : "hydrogen";
+
+        bool sent = mailrelay_send_raw(&msg,
+                                       &config->Servers[0],
+                                       config->DefaultFrom,
+                                       app_name,
+                                       &result);
+
+        if (sent) {
+            log_this(SR_MAIL_RELAY,
+                     "TEST: SendRawOnLaunch success code=%d text='%s' duration=%.1fms",
+                     LOG_LEVEL_STATE, 3,
+                     result.smtp_code,
+                     result.smtp_text,
+                     result.duration_ms);
+        } else {
+            log_this(SR_MAIL_RELAY,
+                     "TEST: SendRawOnLaunch failed code=%d error='%s' duration=%.1fms",
+                     LOG_LEVEL_STATE, 3,
+                     result.smtp_code,
+                     result.error[0] ? result.error : result.smtp_text,
+                     result.duration_ms);
+        }
+    }
     
     // TODO: Add proper initialization when system is ready (Phase 3: workers, queue)
     return 1;

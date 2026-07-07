@@ -100,6 +100,7 @@ And Test 11 is all about Unity unit tests, where we have custom code written to 
 - **[test_53_conduit_auth_queries.sh](/docs/H/tests/test_53_conduit_auth_queries.md)**: Authenticated conduit batch query testing
 - **[test_54_conduit_alt_query.sh](/docs/H/tests/test_54_conduit_alt_query.md)**: Alternative conduit query testing
 - **[test_55_conduit_alt_queries.sh](/docs/H/tests/test_55_conduit_alt_queries.md)**: Alternative conduit batch query testing
+- **[test_57_mailrelay_outbound.sh](/docs/H/tests/test_57_mailrelay_outbound.md)**: Mail Relay outbound delivery testing
 - **[test_60_performance.sh](/docs/H/tests/test_60_performance.md)**: Performance benchmarking
 
 ### Deliverables

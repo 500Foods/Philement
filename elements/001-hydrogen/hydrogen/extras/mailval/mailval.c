@@ -101,8 +101,8 @@ int main(int argc, char** argv) {
         pthread_create(&servers[n].tid, NULL, run_listener, &servers[n].spec); n++;
     }
 
-    if (g_cfg.verbose) fprintf(stderr, "mailval: running (smtp=%d imap=%d jmap=%d tls=%s)\n",
-                               g_cfg.smtp_port, g_cfg.imap_port, g_cfg.jmap_port, ctx ? "yes" : "no");
+    if (g_cfg.verbose) fprintf(stderr, "mailval: running (servers=%d smtp=%d imap=%d jmap=%d tls=%s)\n",
+                               n, g_cfg.smtp_port, g_cfg.imap_port, g_cfg.jmap_port, ctx ? "yes" : "no");
 
     /* Run until interrupted. Listeners loop forever; we just wait. */
     while (!g_stop) sleep(1);

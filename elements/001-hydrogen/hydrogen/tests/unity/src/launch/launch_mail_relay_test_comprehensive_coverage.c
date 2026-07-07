@@ -127,6 +127,7 @@ static void setup_invalid_config_missing_port(void) {
 static void setup_invalid_config_missing_username(void) {
     setup_valid_config();
     test_config->mail_relay.OutboundEnabled = true;
+    test_config->mail_relay.Servers[0].AuthMode = MAIL_AUTH_MODE_PLAIN;
     free(test_config->mail_relay.Servers[0].Username);
     test_config->mail_relay.Servers[0].Username = NULL; // Missing username
 }
@@ -134,6 +135,7 @@ static void setup_invalid_config_missing_username(void) {
 static void setup_invalid_config_missing_password(void) {
     setup_valid_config();
     test_config->mail_relay.OutboundEnabled = true;
+    test_config->mail_relay.Servers[0].AuthMode = MAIL_AUTH_MODE_PLAIN;
     free(test_config->mail_relay.Servers[0].Password);
     test_config->mail_relay.Servers[0].Password = NULL; // Missing password
 }

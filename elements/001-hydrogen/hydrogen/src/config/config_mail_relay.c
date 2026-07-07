@@ -34,6 +34,25 @@ void cleanup_server(OutboundServer* server) {
     server->TimeoutSeconds = 0;
 }
 
+// Helper function to cleanup mail relay test configuration
+void cleanup_mail_relay_test(MailRelayTest* test) {
+    if (!test) return;
+
+    free(test->TestFrom);
+    test->TestFrom = NULL;
+
+    free(test->TestTo);
+    test->TestTo = NULL;
+
+    free(test->TestSubject);
+    test->TestSubject = NULL;
+
+    free(test->TestBody);
+    test->TestBody = NULL;
+
+    test->SendRawOnLaunch = false;
+}
+
 // Helper function to cleanup mail relay events configuration
 void cleanup_mail_relay_events(MailRelayEvents* events) {
     if (!events) return;
@@ -93,6 +112,13 @@ bool load_mailrelay_config(json_t* root, AppConfig* config) {
         mail->Events.Rules[i].event_key = NULL;
         mail->Events.Rules[i].script_name = NULL;
     }
+
+    // Test defaults
+    mail->Test.SendRawOnLaunch = false;
+    mail->Test.TestFrom = NULL;
+    mail->Test.TestTo = NULL;
+    mail->Test.TestSubject = NULL;
+    mail->Test.TestBody = NULL;
 
     // Initialize outbound servers array
     mail->OutboundServerCount = 0;
@@ -156,6 +182,51 @@ bool load_mailrelay_config(json_t* root, AppConfig* config) {
         }
     }
 
+    // Process test configuration
+    json_t* test_section = mail_relay_section ? json_object_get(mail_relay_section, "Test") : NULL;
+    if (test_section && json_is_object(test_section)) {
+        json_t* send_raw = json_object_get(test_section, "SendRawOnLaunch");
+        if (send_raw && json_is_boolean(send_raw)) {
+            mail->Test.SendRawOnLaunch = json_boolean_value(send_raw);
+        }
+
+        json_t* test_from = json_object_get(test_section, "TestFrom");
+        if (test_from && json_is_string(test_from)) {
+            const char* v = json_string_value(test_from);
+            if (v && *v) {
+                free(mail->Test.TestFrom);
+                mail->Test.TestFrom = strdup(v);
+            }
+        }
+
+        json_t* test_to = json_object_get(test_section, "TestTo");
+        if (test_to && json_is_string(test_to)) {
+            const char* v = json_string_value(test_to);
+            if (v && *v) {
+                free(mail->Test.TestTo);
+                mail->Test.TestTo = strdup(v);
+            }
+        }
+
+        json_t* test_subject = json_object_get(test_section, "TestSubject");
+        if (test_subject && json_is_string(test_subject)) {
+            const char* v = json_string_value(test_subject);
+            if (v && *v) {
+                free(mail->Test.TestSubject);
+                mail->Test.TestSubject = strdup(v);
+            }
+        }
+
+        json_t* test_body = json_object_get(test_section, "TestBody");
+        if (test_body && json_is_string(test_body)) {
+            const char* v = json_string_value(test_body);
+            if (v && *v) {
+                free(mail->Test.TestBody);
+                mail->Test.TestBody = strdup(v);
+            }
+        }
+    }
+
     // Process admin recipients
     json_t* admin_recipients = mail_relay_section ? json_object_get(mail_relay_section, "AdminRecipients") : NULL;
     if (admin_recipients && json_is_array(admin_recipients)) {
@@ -177,7 +248,10 @@ bool load_mailrelay_config(json_t* root, AppConfig* config) {
         }
     }
 
-    // Process server configurations
+    // Process server configurations.
+    // NOTE: process_config_value() resolves paths by splitting on '.' only, so
+    // array-index syntax like "MailRelay.Servers[0].Host" is not supported. Pass
+    // the per-element JSON object as the root and use relative field paths.
     json_t* servers = mail_relay_section ? json_object_get(mail_relay_section, "Servers") : NULL;
     if (servers && json_is_array(servers)) {
         size_t index;
@@ -188,36 +262,15 @@ bool load_mailrelay_config(json_t* root, AppConfig* config) {
                 break;
             }
 
-            char path_base[64];
-            snprintf(path_base, sizeof(path_base), "MailRelay.Servers[%zu]", index);
-
-            char path[128];
-            snprintf(path, sizeof(path), "%s.Host", path_base);
-            success = success && PROCESS_STRING(root, &mail->Servers[index], Host, path, "MailRelay");
-
-            snprintf(path, sizeof(path), "%s.Port", path_base);
-            success = success && PROCESS_STRING(root, &mail->Servers[index], Port, path, "MailRelay");
-
-            snprintf(path, sizeof(path), "%s.Username", path_base);
-            success = success && PROCESS_STRING(root, &mail->Servers[index], Username, path, "MailRelay");
-
-            snprintf(path, sizeof(path), "%s.Password", path_base);
-            success = success && PROCESS_SENSITIVE(root, &mail->Servers[index], Password, path, "MailRelay");
-
-            snprintf(path, sizeof(path), "%s.UseTLS", path_base);
-            success = success && PROCESS_BOOL(root, &mail->Servers[index], UseTLS, path, "MailRelay");
-
-            snprintf(path, sizeof(path), "%s.TLSMode", path_base);
-            success = success && PROCESS_INT(root, &mail->Servers[index], TLSMode, path, "MailRelay");
-
-            snprintf(path, sizeof(path), "%s.CAPath", path_base);
-            success = success && PROCESS_STRING(root, &mail->Servers[index], CAPath, path, "MailRelay");
-
-            snprintf(path, sizeof(path), "%s.AuthMode", path_base);
-            success = success && PROCESS_INT(root, &mail->Servers[index], AuthMode, path, "MailRelay");
-
-            snprintf(path, sizeof(path), "%s.TimeoutSeconds", path_base);
-            success = success && PROCESS_INT(root, &mail->Servers[index], TimeoutSeconds, path, "MailRelay");
+            success = success && PROCESS_STRING(server, &mail->Servers[index], Host, "Host", "MailRelay");
+            success = success && PROCESS_STRING(server, &mail->Servers[index], Port, "Port", "MailRelay");
+            success = success && PROCESS_STRING(server, &mail->Servers[index], Username, "Username", "MailRelay");
+            success = success && PROCESS_SENSITIVE(server, &mail->Servers[index], Password, "Password", "MailRelay");
+            success = success && PROCESS_BOOL(server, &mail->Servers[index], UseTLS, "UseTLS", "MailRelay");
+            success = success && PROCESS_INT(server, &mail->Servers[index], TLSMode, "TLSMode", "MailRelay");
+            success = success && PROCESS_STRING(server, &mail->Servers[index], CAPath, "CAPath", "MailRelay");
+            success = success && PROCESS_INT(server, &mail->Servers[index], AuthMode, "AuthMode", "MailRelay");
+            success = success && PROCESS_INT(server, &mail->Servers[index], TimeoutSeconds, "TimeoutSeconds", "MailRelay");
 
             if (success) {
                 mail->OutboundServerCount++;
@@ -260,6 +313,7 @@ void cleanup_mailrelay_config(MailRelayConfig* config) {
     config->AdminRecipientCount = 0;
 
     cleanup_mail_relay_events(&config->Events);
+    cleanup_mail_relay_test(&config->Test);
 
     // Free all outbound server configurations
     for (int i = 0; i < config->OutboundServerCount; i++) {
@@ -348,6 +402,27 @@ void dump_mailrelay_config(const MailRelayConfig* config) {
                  i + 1,
                  config->Events.Rules[i].event_key,
                  config->Events.Rules[i].script_name);
+        DUMP_TEXT("――――", buffer);
+    }
+
+    // Dump test settings
+    DUMP_TEXT("――", "Test Settings");
+    snprintf(buffer, sizeof(buffer), "SendRawOnLaunch: %s", config->Test.SendRawOnLaunch ? "true" : "false");
+    DUMP_TEXT("――――", buffer);
+    if (config->Test.TestFrom) {
+        snprintf(buffer, sizeof(buffer), "TestFrom: %s", config->Test.TestFrom);
+        DUMP_TEXT("――――", buffer);
+    }
+    if (config->Test.TestTo) {
+        snprintf(buffer, sizeof(buffer), "TestTo: %s", config->Test.TestTo);
+        DUMP_TEXT("――――", buffer);
+    }
+    if (config->Test.TestSubject) {
+        snprintf(buffer, sizeof(buffer), "TestSubject: %s", config->Test.TestSubject);
+        DUMP_TEXT("――――", buffer);
+    }
+    if (config->Test.TestBody) {
+        snprintf(buffer, sizeof(buffer), "TestBody: %s", config->Test.TestBody);
         DUMP_TEXT("――――", buffer);
     }
 

@@ -405,6 +405,13 @@ void initialize_config_defaults_mail_relay(AppConfig* config) {
             config->mail_relay.Events.Rules[i].script_name = NULL;
         }
 
+        // Test configuration (SendRawOnLaunch smoke test)
+        config->mail_relay.Test.SendRawOnLaunch = false;
+        config->mail_relay.Test.TestFrom = NULL;
+        config->mail_relay.Test.TestTo = NULL;
+        config->mail_relay.Test.TestSubject = NULL;
+        config->mail_relay.Test.TestBody = NULL;
+
         config->mail_relay.OutboundServerCount = 0;
         for (int i = 0; i < MAX_OUTBOUND_SERVERS; i++) {
             memset(&config->mail_relay.Servers[i], 0, sizeof(OutboundServer));
