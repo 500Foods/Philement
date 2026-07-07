@@ -17,16 +17,41 @@
 // Local includes
 #include "launch.h"
 
+// Registry integration
+#include <src/registry/registry_integration.h>
+
 // Mail relay includes
 #include <src/mailrelay/mailrelay.h>
 #include <src/mailrelay/mailrelay_message.h>
+#include <src/mailrelay/mailrelay_workers.h>
 
 // External declarations
 extern ServiceThreads mailrelay_threads;
 extern volatile sig_atomic_t mail_relay_system_shutdown;
 
+// Public lifecycle function from the mailrelay module
+extern bool mailrelay_init(void);
+
+// Landing function referenced when registering with the registry.
+extern int land_mail_relay_subsystem(void);
+
 // Registry ID for the Mail Relay subsystem
 int mailrelay_subsystem_id = -1;
+
+// Register Mail Relay with the subsystem registry for launch/landing dispatch.
+// Matches the mDNS server pattern so the registry knows our threads, shutdown
+// flag, init function, and shutdown function.
+static void register_mail_relay_for_launch(void) {
+    if (mailrelay_subsystem_id < 0) {
+        mailrelay_subsystem_id = register_subsystem_from_launch(
+            SR_MAIL_RELAY,
+            &mailrelay_threads,
+            NULL,
+            &mail_relay_system_shutdown,
+            launch_mail_relay_subsystem,
+            (void (*)(void))land_mail_relay_subsystem);
+    }
+}
 
 // Helper function to validate and report range errors for size_t values
 static bool validate_int_range(int value, int min, int max, 
@@ -55,9 +80,7 @@ LaunchReadiness check_mail_relay_launch_readiness(void) {
     // Register the Mail Relay subsystem so the launch loop can resolve its ID
     // and dispatch launch_mail_relay_subsystem(). Threads/init/shutdown are
     // managed by the launch/landing handlers and the lifecycle helpers.
-    if (mailrelay_subsystem_id < 0) {
-        mailrelay_subsystem_id = register_subsystem(SR_MAIL_RELAY, NULL, NULL, NULL, NULL, NULL);
-    }
+    register_mail_relay_for_launch();
 
     // Register dependency on Network subsystem
     int relay_id = get_subsystem_id_by_name(SR_MAIL_RELAY);
@@ -201,59 +224,96 @@ LaunchReadiness check_mail_relay_launch_readiness(void) {
 
 // Launch the mail relay subsystem
 int launch_mail_relay_subsystem(void) {
-    
+
+    const MailRelayConfig* config = app_config ? &app_config->mail_relay : NULL;
+    if (!config || !config->Enabled) {
+        log_this(SR_MAIL_RELAY, "Mail Relay disabled - skipping launch", LOG_LEVEL_STATE, 0);
+        return 1;
+    }
+
     mail_relay_system_shutdown = 0;
-    
+
     log_this(SR_MAIL_RELAY, LOG_LINE_BREAK, LOG_LEVEL_STATE, 0);
     log_this(SR_MAIL_RELAY, "LAUNCH: " SR_MAIL_RELAY, LOG_LEVEL_STATE, 0);
-    // Initialize mail relay thread tracking structure
-    init_service_threads(&mailrelay_threads, SR_MAIL_RELAY);
 
-    // SendRawOnLaunch smoke test: fire one message synchronously if configured.
-    // This is test-only and must not allocate workers or open queues.
-    const MailRelayConfig* config = app_config ? &app_config->mail_relay : NULL;
-    if (config && config->Test.SendRawOnLaunch && config->OutboundServerCount > 0) {
+    // Ensure the registry knows about Mail Relay before we start threads.
+    register_mail_relay_for_launch();
+    if (mailrelay_subsystem_id < 0) {
+        log_this(SR_MAIL_RELAY, "LAUNCH: " SR_MAIL_RELAY " Failed: registry registration failed",
+                 LOG_LEVEL_STATE, 0);
+        update_subsystem_on_startup(SR_MAIL_RELAY, false);
+        return 0;
+    }
+
+    // Initialize mail relay runtime and thread tracking
+    if (!mailrelay_init()) {
+        log_this(SR_MAIL_RELAY, "LAUNCH: " SR_MAIL_RELAY " Failed: runtime initialization failed",
+                 LOG_LEVEL_STATE, 0);
+        update_subsystem_on_startup(SR_MAIL_RELAY, false);
+        return 0;
+    }
+
+    // Start worker threads for asynchronous queue processing.
+    if (config->Workers > 0) {
+        if (!mailrelay_workers_start(config->Workers)) {
+            log_this(SR_MAIL_RELAY, "LAUNCH: " SR_MAIL_RELAY " Failed: worker start failed",
+                     LOG_LEVEL_STATE, 0);
+            update_subsystem_on_startup(SR_MAIL_RELAY, false);
+            mailrelay_shutdown();
+            return 0;
+        }
+    }
+
+    // SendRawOnLaunch smoke test: enqueue one test message for workers to send.
+    // This exercises the async path and is test-only.
+    if (config->Test.SendRawOnLaunch && config->OutboundServerCount > 0) {
         log_this(SR_MAIL_RELAY,
-                 "TEST: SendRawOnLaunch requested, sending smoke test via server 0",
+                 "TEST: SendRawOnLaunch requested, enqueuing smoke test",
                  LOG_LEVEL_STATE, 0);
 
         MailRelayMessage msg = {0};
         mailrelay_message_init(&msg);
-        msg.from = config->Test.TestFrom;
-        if (!msg.from) msg.from = config->DefaultFrom;
-        msg.to[0] = config->Test.TestTo;
-        if (msg.to[0]) msg.to_count = 1;
-        msg.subject = config->Test.TestSubject;
-        msg.text_body = config->Test.TestBody;
+        if (config->Test.TestFrom && config->Test.TestFrom[0] != '\0') {
+            mailrelay_message_set_from(&msg, config->Test.TestFrom);
+        } else if (config->DefaultFrom && config->DefaultFrom[0] != '\0') {
+            mailrelay_message_set_from(&msg, config->DefaultFrom);
+        }
+        if (config->Test.TestTo && config->Test.TestTo[0] != '\0') {
+            mailrelay_message_add_to(&msg, config->Test.TestTo);
+        }
+        if (config->Test.TestSubject && config->Test.TestSubject[0] != '\0') {
+            msg.subject = strdup(config->Test.TestSubject);
+        }
+        if (config->Test.TestBody && config->Test.TestBody[0] != '\0') {
+            msg.text_body = strdup(config->Test.TestBody);
+        }
 
-        MailRelayResult result = {0};
-        mailrelay_result_init(&result);
-        const char* app_name = (app_config && app_config->server.server_name)
-                               ? app_config->server.server_name : "hydrogen";
-
-        bool sent = mailrelay_send_raw(&msg,
-                                       &config->Servers[0],
-                                       config->DefaultFrom,
-                                       app_name,
-                                       &result);
-
-        if (sent) {
+        MailRelayStatus status = mailrelay_enqueue(&msg, 0);
+        if (status == MAILRELAY_OK) {
             log_this(SR_MAIL_RELAY,
-                     "TEST: SendRawOnLaunch success code=%d text='%s' duration=%.1fms",
-                     LOG_LEVEL_STATE, 3,
-                     result.smtp_code,
-                     result.smtp_text,
-                     result.duration_ms);
+                     "TEST: SendRawOnLaunch smoke test enqueued",
+                     LOG_LEVEL_STATE, 0);
         } else {
             log_this(SR_MAIL_RELAY,
-                     "TEST: SendRawOnLaunch failed code=%d error='%s' duration=%.1fms",
-                     LOG_LEVEL_STATE, 3,
-                     result.smtp_code,
-                     result.error[0] ? result.error : result.smtp_text,
-                     result.duration_ms);
+                     "TEST: SendRawOnLaunch enqueue failed (status=%d)",
+                     LOG_LEVEL_STATE, 1, (int)status);
         }
+
+        mailrelay_message_free(&msg);
     }
-    
-    // TODO: Add proper initialization when system is ready (Phase 3: workers, queue)
+
+    // Update registry and verify the subsystem reached RUNNING.
+    update_subsystem_on_startup(SR_MAIL_RELAY, true);
+    SubsystemState final_state = get_subsystem_state(mailrelay_subsystem_id);
+    if (final_state != SUBSYSTEM_RUNNING) {
+        log_this(SR_MAIL_RELAY,
+                 "LAUNCH: " SR_MAIL_RELAY " Failed: unexpected registry state %s",
+                 LOG_LEVEL_STATE, 1, subsystem_state_to_string(final_state));
+        update_subsystem_on_startup(SR_MAIL_RELAY, false);
+        mailrelay_shutdown();
+        return 0;
+    }
+
+    log_this(SR_MAIL_RELAY, "LAUNCH: " SR_MAIL_RELAY " Success: running", LOG_LEVEL_STATE, 0);
     return 1;
 }

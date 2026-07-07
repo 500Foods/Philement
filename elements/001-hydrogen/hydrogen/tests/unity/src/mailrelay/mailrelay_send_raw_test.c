@@ -94,6 +94,7 @@ void tearDown(void) {
     free(g_payload);
     g_payload = NULL;
     mailrelay_smtp_reset_transport();
+    mailrelay_shutdown();
 }
 
 static void test_mailrelay_init_returns_true(void) {

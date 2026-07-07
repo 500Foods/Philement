@@ -247,3 +247,24 @@ App uses subsystems and a launch/landing system to control them. Details in src/
 - AI Prompt Cache
 - Mail Template Cache
 - Icon Cache
+
+## Resuming a Subsystem Implementation
+
+When returning to a multi-phase subsystem such as Mail Relay, use this quick-start to avoid rediscovering state:
+
+1. Read the subsystem plan, e.g. [`/docs/H/plans/MAILRELAY_PLAN.md`](/docs/H/plans/MAILRELAY_PLAN.md).
+2. Check the current phase status blocks and the Working Log at the bottom of the plan.
+3. Verify the baseline build by running `zsh -ic 'mkt'`.
+4. Run the existing Unity tests for the subsystem:
+   `zsh -ic 'mku mailrelay_message_test && mku mailrelay_render_test && mku mailrelay_smtp_test && mku mailrelay_send_raw_test && mku config_mail_relay_test_load_mailrelay_config'`
+5. Inspect the current source directory: [`/elements/001-hydrogen/hydrogen/src/mailrelay/`](/elements/001-hydrogen/hydrogen/src/mailrelay/).
+6. Inspect the current Unity tests: [`/elements/001-hydrogen/hydrogen/tests/unity/src/mailrelay/`](/elements/001-hydrogen/hydrogen/tests/unity/src/mailrelay/).
+7. Review uncommitted changes with `git status`.
+8. Build aliases are defined in `~/.zshrc`; in non-interactive shells invoke them as `zsh -ic '<alias>'`. The common aliases are:
+   - `mkt` — trial build
+   - `mka` — build all targets
+   - `mku <base>` — build and run a Unity test
+   - `mkp` — C lint (cppcheck)
+   - `mks` — shell script lint (shellcheck)
+
+Use this baseline before asking qualifying questions and presenting the next implementation chunk.

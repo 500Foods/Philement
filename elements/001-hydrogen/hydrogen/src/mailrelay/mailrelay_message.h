@@ -23,6 +23,7 @@ typedef struct MailRelayMessage {
     char* text_body;
     char* html_body;
     char* idempotency_key;
+    char* debounce_key;
     int priority;
 } MailRelayMessage;
 
@@ -31,6 +32,9 @@ void mailrelay_message_init(MailRelayMessage* m);
 
 /* Free all owned strings and reset the message. */
 void mailrelay_message_free(MailRelayMessage* m);
+
+/* Deep-copy a message. Returns false if allocation fails. */
+bool mailrelay_message_copy(MailRelayMessage* dst, const MailRelayMessage* src);
 
 /* Dedicated mailrelay email-address validator (decoupled from auth). */
 bool mailrelay_is_valid_email(const char* email);

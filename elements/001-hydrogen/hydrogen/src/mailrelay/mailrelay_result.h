@@ -14,6 +14,7 @@ typedef struct MailRelayResult {
     char smtp_text[256];    /* last SMTP status text or transport error */
     double duration_ms;     /* total send duration in milliseconds */
     char error[256];        /* internal error detail (never secrets) */
+    bool retryable;         /* true if the failure is worth retrying */
 } MailRelayResult;
 
 /* Reset a result to a clean default state. */

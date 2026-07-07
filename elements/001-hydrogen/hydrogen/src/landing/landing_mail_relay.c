@@ -28,6 +28,9 @@
 extern ServiceThreads mailrelay_threads;
 extern volatile sig_atomic_t mail_relay_system_shutdown;
 
+// Public lifecycle shutdown function from the mailrelay module
+extern void mailrelay_shutdown(void);
+
 // Check if the mail relay subsystem is ready to land
 LaunchReadiness check_mail_relay_landing_readiness(void) {
     LaunchReadiness readiness = {0};
@@ -82,16 +85,17 @@ int land_mail_relay_subsystem(void) {
     log_this(SR_MAIL_RELAY, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
     log_this(SR_MAIL_RELAY, "LANDING: " SR_MAIL_RELAY, LOG_LEVEL_DEBUG, 0);
 
-    // Set shutdown flag
-    mail_relay_system_shutdown = 1;
-    
-    // Drain any active worker threads
-    if (mailrelay_threads.thread_count > 0) {
-        log_this(SR_MAIL_RELAY, "Waiting for %d worker thread(s) to drain...",
-                 LOG_LEVEL_DEBUG, 1, mailrelay_threads.thread_count);
-    }
-    
+    // Mark the subsystem as stopping in the registry before tearing down.
+    update_subsystem_on_shutdown(SR_MAIL_RELAY);
+
+    // Centralized shutdown: sets the shutdown flag, wakes workers, drains
+    // tracked threads, and frees the runtime instance.
+    mailrelay_shutdown();
+
+    // Mark the subsystem as inactive now that workers are drained.
+    update_subsystem_after_shutdown(SR_MAIL_RELAY);
+
     log_this(SR_MAIL_RELAY, "LANDING: " SR_MAIL_RELAY " COMPLETE", LOG_LEVEL_DEBUG, 0);
-    
+
     return 1;
 }

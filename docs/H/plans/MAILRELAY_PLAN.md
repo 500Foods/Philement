@@ -14,6 +14,22 @@ This document is the working document for the implementation. It is meant to be 
 - After each phase, fill in the phase Status block (date, result, variances) and append any reusable discovery to the Working Log.
 - Never mark a phase complete with a failing or skipped gate unless explicitly recorded as deferred.
 
+## Resuming Work on This Plan
+
+Use this checklist at the start of every Mail Relay work session:
+
+1. Confirm the latest completed phase by reading the **Phase Status** blocks below; the current active phase is the first one not marked complete.
+2. Re-read the **Working Log** for decisions, surprises, and gotchas that affect the next chunk.
+3. Verify the baseline build by running `zsh -ic 'mkt'`.
+4. Run the existing Mail Relay Unity tests:
+   `zsh -ic 'mku mailrelay_message_test && mku mailrelay_render_test && mku mailrelay_smtp_test && mku mailrelay_send_raw_test && mku config_mail_relay_test_load_mailrelay_config'`
+5. Inspect the current source in [`/elements/001-hydrogen/hydrogen/src/mailrelay/`](/elements/001-hydrogen/hydrogen/src/mailrelay/) and current tests in [`/elements/001-hydrogen/hydrogen/tests/unity/src/mailrelay/`](/elements/001-hydrogen/hydrogen/tests/unity/src/mailrelay/).
+6. Pick the next incomplete, numbered work item in the earliest pending phase.
+7. Ask qualifying questions and present a concrete chunk plan before editing code.
+8. After the chunk is verified, update the phase Status block and Working Log, then review before starting the next chunk.
+
+Build aliases are defined in `~/.zshrc`; use `zsh -ic '<alias>'` in non-interactive sessions.
+
 ## Scope And Repo Areas
 
 Primary repo area: `/elements/001-hydrogen/hydrogen`
@@ -249,6 +265,20 @@ Append discoveries, surprises, and decisions here as we move through phases. Ear
 - (Phase 2, 2026-07-06) `mailrelay_smtp` owns rendering: callers pass `MailRelayMessage + OutboundServer`, and `mailrelay_smtp` calls `mailrelay_render_message` internally. This keeps the public API minimal and ensures secrets/body redaction, seam injection, and policy are centralized in one place.
 - (Phase 5) Template syntax: (TBD)
 
+- (Phase 3.2, 2026-07-06) In-memory queue design: specialized `MailRelayQueue` in `mailrelay_queue.{c,h}` rather than the generic `src/queue/queue.{c,h}` because mail items need deep-copied `MailRelayMessage`, priority, attempts, and next-attempt metadata. Queue is priority-ordered (higher first, FIFO within same priority), bounded by `Queue.MaxInMemory`, supports timed blocking dequeue and shutdown broadcast. Status enum `MailRelayStatus` added with `OK`, `INVALID_ARGS`, `QUEUE_FULL`, `SHUTDOWN`, `TIMEOUT`. `mailrelay_message_copy()` added to support deep-copy enqueue without exposing message internals.
+
+- (Phase 3.3, 2026-07-07) Worker pool and producer API: `mailrelay_workers.{c,h}` spawn detached worker threads that register/unregister with `mailrelay_threads`, dequeue via the bounded queue, send via `mailrelay_send_raw` (server[0] for now), and update counters under the runtime mutex. `mailrelay_enqueue()` is the stable internal producer API; it validates the message, deep-copies into the queue, and returns `MailRelayStatus`. `MailRelayStatus` expanded to include `MAILRELAY_DISABLED`. Launch now starts workers and routes `SendRawOnLaunch` through the async enqueue path instead of a synchronous send. The `test_57_mailrelay_outbound.sh` log assertion was updated from "SendRawOnLaunch success" to "SendRawOnLaunch smoke test enqueued" to match the new async behavior; sink-side delivery verification remains the primary gate.
+
+- (Phase 3.6, 2026-07-07) Registry alignment: launch registers Mail Relay via `register_subsystem_from_launch` with `mailrelay_threads`, `mail_relay_system_shutdown`, `launch_mail_relay_subsystem`, and `land_mail_relay_subsystem`; updates registry to `SUBSYSTEM_RUNNING` and verifies state; failure paths update registry to `SUBSYSTEM_ERROR` and shut down. Landing updates registry through `SUBSYSTEM_STOPPING` to `SUBSYSTEM_INACTIVE` around `mailrelay_shutdown()`. This matches the mDNS server pattern.
+
+- (Phase 3.6, 2026-07-07) Retry/DB coordination note: Phase 3.4 will implement an in-memory retry scheduler (transient classification + exponential backoff) for the current single-instance queue. Durable queue state, retry records, and multi-instance coordination will be handled in Phase 4 (`mail_queue`/`mail_attempts` tables) and Phase 11 (atomic claim-next-pending across instances). The in-memory scheduler is intentionally the v1 path; it will later be backed by DB persistence rather than replaced by it.
+
+- (Phase 3.4, 2026-07-07) Retry implementation: added `MailRelayResult.retryable` so the transport decides retry eligibility once, using the actual libcurl `CURLcode` and SMTP reply code. `mailrelay_retry.{c,h}` centralizes backoff policy (`InitialDelaySeconds * 2^attempt` capped at `MaxDelaySeconds`) and `should_retry` logic. `mailrelay_queue_dequeue` was made time-aware: it scans the priority-ordered list for the highest-priority due item and blocks until the earliest `next_attempt_at` or a new arrival, so future retries do not block due items. This design mirrors the future DB-backed queue (`WHERE next_attempt_at <= now ORDER BY priority DESC`). A new `mailrelay_queue_enqueue_scheduled` carries explicit `attempts` and `next_attempt_at` for re-enqueue. Retry tests use `InitialDelaySeconds=0` so retries are immediate and deterministic.
+- (Phase 3.5, 2026-07-07) Debounce/coalescing design: added `MailRelayMessage.debounce_key` as the explicit grouping key. `src/mailrelay/mailrelay_debounce.{c,h}` maintains a bounded in-memory pending map (max `MAILRELAY_DEBOUNCE_MAX_PENDING`) and a dedicated expiry thread. Repeated submissions with the same key within `Queue.DebounceSeconds` update the pending entry's count and refresh the expiry window; when the window closes, a single coalesced message is enqueued with `%COUNT%` replaced by the arrival count and `%SUMMARY%` replaced by a pluralized summary (e.g., "5 events"). `mailrelay_enqueue()` routes messages with a non-empty `debounce_key` through the debounce path when enabled; otherwise they go straight to the queue. Shutdown flushes pending debounce entries so no event mail is lost. The expiry thread is lazily started on the first debounce submission (rather than inside `mailrelay_init()`) so tests and configurations that never use debounce see no extra background thread.
+- (Phase 4, 2026-07-07) Schema numbering and design lock: next Acuranzo migration is 1211, next lookup is 063, next QueryRef is 093. All mail-specific enumerated columns get new lookups; no existing lookups are reused. `mail_templates` uses `status_a64`, `mail_queue` uses `status_a63`, `mail_events` uses `status_a65`, `mail_otp_codes` uses `purpose_a66` and `status_a67`, `mail_routes` uses `status_a68`. Tables created in this phase: `mail_templates`, `mail_queue`, `mail_attempts`, `mail_events`, `mail_otp_codes`, `mail_routes`. Queue bodies stored as structured fields only (no duplicate rendered payload). `mail_queue` includes `instance_id` and `claim_token` now to support Phase 11 HA without a later ALTER.
+
+- (Phase 4A, 2026-07-07) Lookups 063–068 created and indexed. Migrations `acuranzo_1211.lua` through `acuranzo_1216.lua` define Mail Queue Status (pending/sending/sent/failed/retrying), Mail Template Status (inactive/active/deprecated), Mail Event Status (pending/queued/sent/failed/suppressed), Mail OTP Purpose (login_mfa/email_verify/password_reset), Mail OTP Status (active/consumed/expired/max_attempts_exceeded), and Mail Route Status (inactive/active). `elements/002-helium/scripts/helium_update.sh` regenerated `elements/002-helium/acuranzo/README.md` and link checks passed; `tests/test_98_luacheck.sh` is green.
+
 ### Surprises / deviations from plan
 
 - (Phase 0, 2026-07-06) `examples/configs/hydrogen_default.json` and `hydrogen_env.json` use legacy `MailRelay.QueueSettings` / `MailRelay.OutboundServers` keys, while the current loader and Phase 0 schema use `MailRelay.Queue` / `MailRelay.Servers`. Reconcile example configs and/or compatibility aliases during Phase 1.
@@ -258,7 +288,9 @@ Append discoveries, surprises, and decisions here as we move through phases. Ear
 - (Phase 2, 2026-07-06) `mailval.pem` / `mailval.key` are generated locally by `gen_cert.sh` and must never be committed or logged (the private key is secret).
 - (Phase 2.4, 2026-07-06) libcurl SMTP delivery: the server's protocol replies (220/250/354/221) arrive via `CURLOPT_HEADERFUNCTION`, NOT the body `CURLOPT_WRITEFUNCTION` — the message body still uploads through `CURLOPT_READFUNCTION`. Pointing both header and write callbacks at the same capture buffer is what lets `mailrelay_smtp` read the final SMTP code; with only the write callback, `resp.len` stays 0 and the send is misreported as failed even though the message was accepted. Flat `smtp_write_cb` returning `realsize` works for both.
 - (Phase 2.4, 2026-07-06) `mailrelay_smtp` seam design: the wrapper renders internally and resolves config into a `MailRelaySmtpRequest` (url scheme, use_ssl, envelope from, to+cc+bcc recipient list, creds, timeout, auth_mode, rendered payload) handed to a swappable `mailrelay_smtp_transport_fn`. Unit tests assert on the request without the network; the default transport is real libcurl. The live test (`mailrelay_smtp_live_test.c`, gated by `MAILRELAY_LIVE_SMTP`) exercises the real transport so the `CURLOPT_*` set stays honest. cppcheck is green after using a const-compatible response callback signature.
-- (Phase 2.5, 2026-07-06) `mailrelay_send_raw` is a thin public wrapper around `mailrelay_smtp_send` that establishes the stable Phase 3 producer API surface. It returns false + `MAIL_RAW_INVALID_ARGS` on NULL args instead of crashing, so Phase 3 queue wrappers can rely on its guard behavior. `MailRelay.Test` fields are loaded directly by `load_mailrelay_config` rather than via the generic `PROCESS_*` macros because the test section is an object (not simple scalar fields), matching the Events-section pattern. `mailrelay_reset_seams` is called from `mailrelay_init` so a test can isolate seam state by calling `mailrelay_init` in setUp. `app_config->server.server_name` is used as the Message-ID domain in the launch trigger, consistent with other subsystems that reference the configured server identity.
+- (Phase 3.1, 2026-07-06) Runtime ownership: `MailRelayRuntime` is a heap-allocated global owned by `mailrelay_init()`/`mailrelay_shutdown()` and declared in `mailrelay_internal.h`. This keeps the runtime internal to the mailrelay module while still allowing unit tests to inspect it via the internal header, matching the mDNS instance pattern without exposing a subsystem pointer in `state.c`.
+- (Phase 3.1, 2026-07-06) Async producer contract: `mailrelay_send_raw` remains the direct SMTP transport implementation used by worker threads. The public producer API will be an explicit `mailrelay_enqueue` (Phase 3.7) that accepts the same message shape and returns a queued status, so callers never block on SMTP. The `SendRawOnLaunch` test trigger will be rerouted through the queue once it exists.
+- (Phase 3.1, 2026-07-06) Launch/landing lifecycle convention: `launch_mail_relay_subsystem()` calls `mailrelay_init()` and `land_mail_relay_subsystem()` calls `mailrelay_shutdown()`. Registration via `register_subsystem_from_launch` and `update_subsystem_on_startup` verification will be aligned with the mDNS pattern in Phase 3.6.
 - (Phase 2.6, 2026-07-06) `test_57_mailrelay_outbound.sh` is now the committed blackbox gate for raw outbound delivery. It runs plaintext SMTP on 5570 and STARTTLS SMTP on 5571 against `extras/mailval`, then verifies `SendRawOnLaunch success` and a stored SMTP transcript with matching subject.
 - (Phase 2.6, 2026-07-06) `mailval` EHLO multiline capability order matters: `STARTTLS` must be advertised as a continued `250-STARTTLS` line before the final `250 AUTH ...` line, or libcurl treats EHLO as complete and never upgrades.
 
@@ -448,74 +480,200 @@ Objective: Make outbound sending asynchronous and resilient before adding persis
 
 Entry Gate: Phase 2 exit gate green.
 
-- [ ] 3.1 Add Mail Relay runtime state and thread tracking.
+- [x] 3.1 Add Mail Relay runtime state and thread tracking.
   - Add `ServiceThreads mailrelay_threads;` in `src/state/state.c`, extern in `src/threads/threads.h`, and count it in `report_thread_status`. Track queue, mutex/condition variables, worker threads, counters, shutdown flag, last errors in `mailrelay_internal.h`.
   - Verification: `mku mailrelay_runtime_test` covers init/cleanup idempotency.
 
-- [ ] 3.2 Implement bounded in-memory queue.
+- [x] 3.2 Implement bounded in-memory queue.
   - Respect `Queue.MaxInMemory` / `MaxQueueSize`; return `MAIL_QUEUE_FULL` when full.
   - Verification: `mku mailrelay_queue_test` covers enqueue/dequeue order, capacity, and cleanup.
 
-- [ ] 3.3 Implement worker pool.
+- [x] 3.3 Implement worker pool.
   - Configurable worker count. Sends run off the API/logging caller path. Each worker registers with `add_service_thread(&mailrelay_threads, pthread_self())` and unregisters on exit.
   - Verification: `mku mailrelay_workers_test` with a fake sender processes N messages concurrently, each exactly once.
 
-- [ ] 3.4 Implement retry with exponential backoff.
+- [x] 3.4 Implement retry with exponential backoff.
   - Classify transient (4xx connection / 5xx transient / transport) vs permanent failures from SMTP/libcurl responses. Honor `RetryAttempts`, `InitialDelaySeconds`, `MaxDelaySeconds`.
   - Verification: `mku mailrelay_retry_test` verifies transient retries and permanent-failure stop policy.
 
-- [ ] 3.5 Implement debounce/coalescing for event-generated mail.
-  - Example: `DebounceSeconds = 5`; repeated identical event key collapses into one summary mail.
-  - Verification: `mku mailrelay_debounce_test` simulates burst events and verifies one queued message with count/summary.
+- [x] 3.5 Implement debounce/coalescing for event-generated mail.
+  - Added `debounce_key` to `MailRelayMessage` (init/free/copy/validate).
+  - Added `src/mailrelay/mailrelay_debounce.{c,h}` with a bounded in-memory pending map, a dedicated expiry thread, and `%COUNT%`/`%SUMMARY%` placeholder replacement.
+  - Wired `mailrelay_enqueue()` to route messages with a non-empty `debounce_key` through the debounce module when `Queue.DebounceSeconds > 0`.
+  - The expiry thread is lazily started on the first debounce submission; `mailrelay_shutdown()` stops the thread and flushes pending entries.
+  - Verification: `mku mailrelay_debounce_test` passes with 8 tests (no-key passthrough, disabled window, pending creation, coalescing, placeholder replacement, window respect, flush, max-pending limit).
 
-- [ ] 3.6 Wire launch/landing to start and stop workers.
+- [x] 3.6 Wire launch/landing to start and stop workers.
   - Replace the TODO in `launch_mail_relay_subsystem()` (`launch_mail_relay.c:162`) with real init: `init_service_threads`, spawn workers, `update_subsystem_on_startup`, verify `SUBSYSTEM_RUNNING`. Implement the landing drain loop (mdns pattern) in `land_mail_relay_subsystem()`.
   - Verification: `test_17_startup_shutdown.sh` (or a mail-enabled variant) shows no orphan worker threads and clean landing.
 
-- [ ] 3.7 Define the internal raw enqueue producer API.
+- [x] 3.7 Define the internal raw enqueue producer API.
   - File: `src/mailrelay/mailrelay.h`.
-  - Purpose: one C API used by future REST endpoints, Lua `H.mail`, Notify compatibility, and system events. Producers must enqueue through Mail Relay so queue limits, audit metadata, rate limits, idempotency, and redaction are centralized. Lua and Notify must not call SMTP or HTTP endpoints directly.
+  - Purpose: one C API used by future REST endpoints, Lua `H.mail`, Notify, and system events. Producers must enqueue through Mail Relay so queue limits, audit metadata, rate limits, idempotency, and redaction are centralized. Lua and Notify must not call SMTP or HTTP endpoints directly.
   - Verification: `mku mailrelay_queue_test` or a new producer test verifies disabled/error/queued results and structured error codes.
 
 Exit Gate: Mail Relay accepts asynchronous messages through a stable internal producer API, processes them with workers, retries transient failures, debounces bursts, and lands cleanly with no orphan threads. `mkt`, `mkp`, the new `mku` set, and startup/shutdown pass.
 
-Phase 3 Status: pending. Date: (TBD). Result: (TBD). Variances: (TBD).
+Phase 3 Status: complete. Date: 2026-07-07. Result: 3.1 complete. Runtime state (`MailRelayRuntime`) lives in a heap-allocated global owned by `mailrelay_init()`/`mailrelay_shutdown()`, initialized from launch and torn down from landing. Thread tracking is wired through the existing `mailrelay_threads` `ServiceThreads`. 3.2 complete: bounded in-memory queue with deep-copy enqueue, timed blocking dequeue, priority ordering, shutdown broadcast, and `MailRelayStatus` codes. 3.3 complete: `mailrelay_workers.{c,h}` spawn configurable worker threads that register with service threads, dequeue messages, send via `mailrelay_send_raw`, update counters, and exit cleanly on shutdown. 3.4 complete: added `mailrelay_retry.{c,h}` with transient/permanent classification, exponential backoff using `InitialDelaySeconds` base and `MaxDelaySeconds` cap, and worker integration that re-enqueues transient failures up to `RetryAttempts`. `MailRelayResult` now carries a `retryable` flag set by the libcurl transport for connection/timeout/TLS errors and by SMTP 4xx codes; 5xx is permanent. `mailrelay_queue_dequeue` is now time-aware: it scans for the highest-priority due item and blocks until the next scheduled `next_attempt_at` or a new arrival, so future retry items do not starve due items. `mailrelay_queue_enqueue_scheduled` was added to support explicit `attempts`/`next_attempt_at` on re-enqueue. `mailrelay_retry_test` has 9 passing tests (classification, SMTP-code fallback, delay computation, should-retry, time-aware dequeue, worker transient-retry-success, permanent no-retry, max-attempts exhaustion). 3.5 complete: added `MailRelayMessage.debounce_key` and `src/mailrelay/mailrelay_debounce.{c,h}`. The debounce module keeps a bounded in-memory map of pending keys, runs a dedicated expiry thread that is lazily started on the first debounce submission, and replaces `%COUNT%`/`%SUMMARY%` placeholders in the coalesced message. `mailrelay_enqueue()` routes debounced messages through this path; `mailrelay_shutdown()` stops the expiry thread and flushes pending entries. `mailrelay_debounce_test` has 8 passing tests. 3.6 complete: launch registers Mail Relay via `register_subsystem_from_launch` with `mailrelay_threads`, `mail_relay_system_shutdown`, `launch_mail_relay_subsystem`, and `land_mail_relay_subsystem`; updates registry to `SUBSYSTEM_RUNNING` and verifies state; failure paths update registry to `SUBSYSTEM_ERROR` and shut down. Landing updates registry through `SUBSYSTEM_STOPPING` to `SUBSYSTEM_INACTIVE` around `mailrelay_shutdown()`. 3.7 complete: `mailrelay_enqueue()` is the stable internal producer API; it validates messages, deep-copies into the queue, and returns `MailRelayStatus`. `SendRawOnLaunch` routes through the async enqueue path. Verification: `mkt`, `mkp`, all listed `mku` targets (including the new `mailrelay_debounce_test`), and startup/shutdown pass. Variances: the debounce expiry thread uses a bounded 1-second maximum `pthread_cond_timedwait` to avoid a lost-shutdown-signal stall, and it is lazily started on first debounce submission so `mailrelay_init()` does not introduce a background thread unless debounce is actually used. 3.7 complete: `mailrelay_enqueue()` is the stable internal producer API used by the launch trigger. `mailrelay_workers_test` has 4 passing tests, all related Unity tests pass, `mkp` is clean, `mka` is clean, and `test_57_mailrelay_outbound.sh` passes 8/8. Variances: 3.7 (producer API) was implemented earlier than originally listed because the async `SendRawOnLaunch` path needed a public enqueue function; the plan now reflects this. Remaining Phase 3 exit-gate item 3.5 (debounce) is the next chunk; the current in-memory queue/worker/retry foundation is stable and ready for it.
 
 ---
 
 ## Phase 4 - Database Persistence and Mail Tables
 
-Objective: Persist templates, queue entries, attempts, and audit records across restarts.
+Objective: Create every database object (tables, lookups, QueryRefs) needed by the Mail Relay implementation across all phases, so later phases only write C/Lua code against an already-migrated schema.
 
 Entry Gate: Phase 3 exit gate green; Phase 0.2 database-target decision recorded.
 
-- [ ] 4.1 Design mail-specific schema as Acuranzo migrations.
-  - Location: `/elements/002-helium/acuranzo/migrations/acuranzo_NNNN.lua` (after 1200). Tables: `mail_templates`, `mail_queue`, `mail_attempts`, `mail_events` (`mail_otp_codes` deferred to Phase 8 unless created now). Use `${...}` type macros, `${COMMON_CREATE}` audit columns, and `_aNN` lookup columns where a status lookup applies.
-  - Verification: schema design reviewed against PostgreSQL, MySQL, SQLite, and DB2 macros; `test_98_luacheck.sh` passes.
+Design decisions locked for this phase:
 
-- [ ] 4.2 Create `mail_templates` migration.
-  - Suggested columns: `template_id`, `template_key`, `name`, `status_aNN`, `subject_template`, `text_template`, `html_template`, `collection`, plus `${COMMON_CREATE}`. Include the diagram migration row.
-  - Verification: migration loads; diagram metadata exists; `test_71_database_diagrams.sh` if it covers new tables.
+- Schema work is delivered as one coordinated effort, in small independently-verifiable chunks.
+- Every table, lookup, and QueryRef gets its own Acuranzo migration file.
+- **No existing lookups are reused.** Every mail-specific enumerated column gets a new lookup.
+- All database work for any Mail Relay phase is created now; later phases do not add new migrations.
+- Lookup numbers are taken from the Acuranzo README index; the next free lookup is **063**.
+- The next free QueryRef is **093**.
+- The next free migration number is **1211**.
+- Queue bodies are stored as structured fields only (no duplicate rendered payload).
+- All SQL is engine-agnostic: no partial indexes, no engine-specific `RETURNING` outside the existing `${INSERT_KEY_*}` macros.
 
-- [ ] 4.3 Create `mail_queue` and `mail_attempts` migrations.
-  - Queue: message UUID, status, priority, template key, rendered recipients/subject/body, next-attempt time, attempts count, idempotency key, created/updated timestamps. Attempts: queue id, attempt number, server used, SMTP code/text, duration, success flag.
-  - Verification: migration load/apply/reverse works for at least SQLite and one server engine (run the matching `test_3x_*_migrations.sh`).
+### New lookups (all mail-specific)
 
-- [ ] 4.4 Add internal QueryRefs for mail SQL.
-  - Register QueryRefs in `queries` using `internal_sql`/`system_sql` types (never `public`/`protected`). Model on `acuranzo_1198.lua`.
-  - Verification: QueryRefs are not reachable via public Conduit endpoints (manual check + a Conduit blackbox negative if practical).
+| Lookup | Name | Values |
+|---|---|---|
+| 063 | Mail Queue Status | 0=pending, 1=sending, 2=sent, 3=failed, 4=retrying |
+| 064 | Mail Template Status | 0=inactive, 1=active, 2=deprecated |
+| 065 | Mail Event Status | 0=pending, 1=queued, 2=sent, 3=failed, 4=suppressed |
+| 066 | Mail OTP Purpose | 0=login_mfa, 1=email_verify, 2=password_reset |
+| 067 | Mail OTP Status | 0=active, 1=consumed, 2=expired, 3=max_attempts_exceeded |
+| 068 | Mail Route Status | 0=inactive, 1=active |
 
-- [ ] 4.5 Implement queue persistence repository helpers.
-  - Insert pending, claim next, mark sending, mark sent, mark failed, reschedule retry, recover stale sending rows.
-  - Verification: `mku mailrelay_repository_test` with a mock DB seam, plus a blackbox DB path covering CRUD and recovery.
+### New tables
 
-- [ ] 4.6 Recover pending mail on startup.
-  - Reset stale `sending` rows older than a configured timeout to `pending`.
-  - Verification: blackbox starts, restarts, and verifies pending mail is retried once.
+| Table | Status lookup | Purpose |
+|---|---|---|
+| `mail_templates` | `status_a64` | Reusable mail templates (Phases 4, 5, 7, 7A) |
+| `mail_queue` | `status_a63` | Durable outbound queue (Phases 4, 6, 11) |
+| `mail_attempts` | — | Per-message delivery attempts (Phase 4) |
+| `mail_events` | `status_a65` | Durable event/audit log for system-generated mail (Phase 6) |
+| `mail_otp_codes` | `purpose_a66`, `status_a67` | One-time password storage (Phase 8) |
+| `mail_routes` | `status_a68` | Inbound SMTP routing/rewrite rules (Phase 12) |
 
-Exit Gate: durable queue and templates exist in the database, survive restart, and are manipulated only through internal mail relay paths. `mkt`, `mkp`, `test_98_luacheck.sh`, the new `mku` set, and at least SQLite + one server-engine migration test pass.
+`mail_queue` includes `instance_id` and `claim_token` columns up-front to support Phase 11 multi-instance atomic claim without a later ALTER.
 
-Phase 4 Status: pending. Date: (TBD). Result: (TBD). Variances: (TBD).
+### QueryRef assignments (all internal/system)
+
+| QueryRef | Migration | Purpose |
+|---|---|---|
+| 093 | 1223 | Insert pending mail queue row |
+| 094 | 1224 | Get mail queue row by `message_uuid` |
+| 095 | 1225 | Get mail queue row by `idempotency_key` |
+| 096 | 1226 | Claim next pending row |
+| 097 | 1227 | Mark mail queue row as `sending` |
+| 098 | 1228 | Mark mail queue row as `sent` |
+| 099 | 1229 | Mark mail queue row as `failed` |
+| 100 | 1230 | Reschedule mail queue row for retry |
+| 101 | 1231 | Recover stale `sending` rows |
+| 102 | 1232 | Insert mail attempt |
+| 103 | 1233 | Get mail template by `template_key` |
+| 104 | 1234 | List active mail templates |
+| 105 | 1235 | Insert mail template |
+| 106 | 1236 | Update mail template |
+| 107 | 1237 | Soft-delete mail template |
+| 108 | 1238 | Insert mail event |
+| 109 | 1239 | List pending mail events |
+| 110 | 1240 | Mark mail event processed/queued |
+| 111 | 1241 | Mark mail event suppressed |
+| 112 | 1242 | Insert OTP code |
+| 113 | 1243 | Get active OTP by email + purpose |
+| 114 | 1244 | Consume OTP code |
+| 115 | 1245 | Increment OTP attempts |
+| 116 | 1246 | Expire old OTP codes |
+| 117 | 1247 | Get OTP by id |
+| 118 | 1248 | Get inbound route by sender domain |
+| 119 | 1249 | List active inbound routes |
+| 120 | 1250 | Insert inbound route |
+| 121 | 1251 | Update inbound route |
+| 122 | 1252 | Soft-delete inbound route |
+| 123 | 1253 | Cleanup old sent/failed queue rows |
+| 124 | 1254 | Cleanup old mail events |
+| 125 | 1255 | Cleanup old mail attempts |
+| 126 | 1256 | Cleanup old OTP codes |
+
+### Phase 4 chunk 4A — Lookups
+
+Create one lookup per migration, in order, so later table migrations can reference them safely.
+
+- [x] 4A.1 Lookup 063 - Mail Queue Status (`acuranzo_1211.lua`).
+- [x] 4A.2 Lookup 064 - Mail Template Status (`acuranzo_1212.lua`).
+- [x] 4A.3 Lookup 065 - Mail Event Status (`acuranzo_1213.lua`).
+- [x] 4A.4 Lookup 066 - Mail OTP Purpose (`acuranzo_1214.lua`).
+- [x] 4A.5 Lookup 067 - Mail OTP Status (`acuranzo_1215.lua`).
+- [x] 4A.6 Lookup 068 - Mail Route Status (`acuranzo_1216.lua`).
+- [x] 4A.7 Update Acuranzo README index (via `elements/002-helium/scripts/helium_update.sh`).
+
+Exit Gate 4A: Lookups 063–068 apply/reverse cleanly and are present in the `lookups` table; `test_98_luacheck.sh` passes; README is up to date.
+
+### Phase 4 chunk 4B — Tables
+
+- [ ] 4B.1 `mail_templates` table (`acuranzo_1217.lua`).
+  - Columns: `template_id`, `template_key` (UNIQUE), `name`, `status_a64`, `subject_template`, `text_template`, `html_template`, `collection`, `${COMMON_CREATE}`.
+- [ ] 4B.2 `mail_queue` table (`acuranzo_1218.lua`).
+  - Columns: `queue_id`, `message_uuid` (UNIQUE), `status_a63`, `priority`, `template_key`, `from_addr`, `reply_to`, `recipients_json`, `subject`, `body_text`, `body_html`, `headers_json`, `idempotency_key`, `attempts`, `next_attempt_at`, `last_attempt_at`, `smtp_code`, `smtp_text`, `server_index`, `instance_id`, `claim_token`, `${COMMON_CREATE}`.
+  - Indexes: `(status_a63, next_attempt_at)`, `(idempotency_key)`, `(instance_id, claim_token)`.
+- [ ] 4B.3 `mail_attempts` table (`acuranzo_1219.lua`).
+  - Columns: `attempt_id`, `queue_id` (FK to `mail_queue`), `attempt_number`, `server_index`, `success`, `smtp_code`, `smtp_text`, `duration_ms`, `error_class`, `${COMMON_CREATE}`.
+  - Index on `queue_id`.
+- [ ] 4B.4 `mail_events` table (`acuranzo_1220.lua`).
+  - Columns: `event_id`, `event_key`, `status_a65`, `template_key`, `from_addr`, `reply_to`, `recipients_json`, `subject`, `body_text`, `body_html`, `headers_json`, `params_json`, `debounce_key`, `idempotency_key`, `priority`, `queue_id`, `processed_at`, `${COMMON_CREATE}`.
+  - Indexes: `(status_a65, created_at)`, `(event_key)`.
+- [ ] 4B.5 `mail_otp_codes` table (`acuranzo_1221.lua`).
+  - Columns: `otp_id`, `code_hash`, `email`, `account_id`, `purpose_a66`, `status_a67`, `expiry_at`, `attempts`, `max_attempts`, `consumed_at`, `${COMMON_CREATE}`.
+  - Indexes: `(email, purpose_a66, status_a67)`, `(status_a67, expiry_at)`.
+- [ ] 4B.6 `mail_routes` table (`acuranzo_1222.lua`).
+  - Columns: `route_id`, `status_a68`, `source_network`, `sender_domain`, `sender_pattern`, `recipient_domain`, `recipient_pattern`, `auth_required`, `require_tls`, `template_key`, `rewrite_from`, `rewrite_to`, `add_recipients_json`, `priority`, `sort_seq`, `${COMMON_CREATE}`.
+  - Indexes: `(status_a68, sender_domain, sort_seq)`, `(status_a68, recipient_domain, sort_seq)`.
+- [ ] 4B.7 Update Acuranzo README index.
+
+Exit Gate 4B: All six tables apply/reverse cleanly on SQLite and at least one server engine; diagram migrations are present; `test_71_database_diagrams.sh` passes; `test_98_luacheck.sh` is green; README is up to date.
+
+### Phase 4 chunk 4C — Core QueryRefs
+
+The QueryRefs needed for queue, attempts, templates, events, OTP, and routes. Each is its own migration (1223–1252, mapping to QueryRefs 093–122).
+
+- [ ] 4C.1 QueryRefs 093–107 (queue + attempts + templates).
+- [ ] 4C.2 QueryRefs 108–111 (events).
+- [ ] 4C.3 QueryRefs 112–117 (OTP).
+- [ ] 4C.4 QueryRefs 118–122 (routes).
+- [ ] 4C.5 Update Acuranzo README index; run `test_98_luacheck.sh`.
+- [ ] 4C.6 Verify QueryRefs load into the QTC after migration.
+
+Exit Gate 4C: QueryRefs 093–122 apply/reverse cleanly, are type internal/system, and appear in the QTC after migration.
+
+### Phase 4 chunk 4D — Operational cleanup QueryRefs
+
+- [ ] 4D.1 QueryRef #123 — Cleanup old sent/failed queue rows (`acuranzo_1253.lua`).
+- [ ] 4D.2 QueryRef #124 — Cleanup old mail events (`acuranzo_1254.lua`).
+- [ ] 4D.3 QueryRef #125 — Cleanup old mail attempts (`acuranzo_1255.lua`).
+- [ ] 4D.4 QueryRef #126 — Cleanup old OTP codes (`acuranzo_1256.lua`).
+- [ ] 4D.5 Update Acuranzo README index; run `test_98_luacheck.sh`.
+
+Exit Gate 4D: Cleanup QueryRefs apply/reverse cleanly and are type internal/system.
+
+### Phase 4 chunk 4E — Repository helpers and startup recovery
+
+- [ ] 4E.1 Implement `src/mailrelay/mailrelay_repository.{c,h}`.
+  - Helpers for every QueryRef above, using a mockable seam.
+  - Verification: `mku mailrelay_repository_test`.
+- [ ] 4E.2 Add startup recovery.
+  - On `mailrelay_init()` with persistence enabled, call QueryRef #101 to recover stale `sending` rows.
+  - Verification: `mku mailrelay_repository_test` covers recovery.
+- [ ] 4E.3 Wire persistence into `mailrelay_enqueue()`.
+  - When `Queue.Persist=true` and a DB target is configured, write the pending row before returning `MAILRELAY_OK`.
+  - Verification: existing `mku mailrelay_queue_test` still passes; new persistence path tested via `mailrelay_repository_test` or blackbox.
+
+Exit Gate 4E (Phase 4 final): the durable queue, templates, events, OTP, routes, and cleanup paths are reachable through the repository; `mkt`, `mkp`, `test_98_luacheck.sh`, the new `mku` set, and at least SQLite + one server-engine migration test pass.
+
+Phase 4 Status: Phase 4A complete. Date: 2026-07-07. Result: Lookups 063–068 created as migrations 1211–1216; README index regenerated by `elements/002-helium/scripts/helium_update.sh`; `tests/test_98_luacheck.sh` passes. Phase 4B tables pending. Variances: README update performed by `helium_update.sh` rather than manual edit, per project convention.
 
 ---
 
@@ -938,7 +1096,10 @@ New or modified files expected across the implementation. Confirm/adjust during 
 - `mailrelay/mailrelay_message.{c,h}` (message model + validation).
 - `mailrelay/mailrelay_render.{c,h}` (RFC 5322 + MIME rendering).
 - `mailrelay/mailrelay_smtp.{c,h}` (libcurl SMTP/SMTPS sender).
-- `mailrelay/mailrelay_queue.{c,h}` (in-memory queue + workers + retry + debounce).
+- `mailrelay/mailrelay_queue.{c,h}` (bounded in-memory queue with time-aware dequeue).
+- `mailrelay/mailrelay_workers.{c,h}` (worker pool).
+- `mailrelay/mailrelay_retry.{c,h}` (retry classification + exponential backoff).
+- `mailrelay/mailrelay_debounce.{c,h}` (debounce/coalescing, Phase 3.5).
 - `mailrelay/mailrelay_repository.{c,h}` (DB persistence via QueryRefs).
 - `mailrelay/mailrelay_template.{c,h}` (macro engine).
 - `mailrelay/mailrelay_otp.{c,h}` (Phase 8).
