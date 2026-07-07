@@ -53,7 +53,7 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2026-07-07 19:11:50 UTC
+Last updated at 2026-07-07 22:08:44 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
@@ -62,8 +62,8 @@ C                             1260          53806          51778         203939
 SVG                            167            327           4581         184318
 JavaScript                     276          29943          43647         181137
 Text                           283            385              0         113261
-Markdown                       706          29055            241          85133
-Lua                            230           5513           4057          37018
+Markdown                       706          29064            241          85241
+Lua                            266           6435           4500          42850
 Bourne Shell                   132           6518          87887          31377
 CSS                            123           2860           1611          14653
 C/C++ Header                   290           3340          12046           9634
@@ -78,7 +78,7 @@ zsh                              2             31             42             97
 Delphi Form                      1              1              0             43
 Pascal                           2             11              2             31
 -------------------------------------------------------------------------------
-SUM:                          3981         132877         206620        2217342
+SUM:                          4017         133808         207063        2223282
 -------------------------------------------------------------------------------
 2968 Files were skipped (duplicate, binary, or without source code):
   gcno: 856
