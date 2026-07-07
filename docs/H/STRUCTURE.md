@@ -572,6 +572,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [tests/test_53_conduit_auth_queries.sh](/elements/001-hydrogen/hydrogen/tests/test_53_conduit_auth_queries.sh) - Conduit authenticated multiple queries endpoint testing (batch authenticated queries across 7 database engines)
 - [tests/test_54_conduit_alt_query.sh](/elements/001-hydrogen/hydrogen/tests/test_54_conduit_alt_query.sh) - Conduit alt single query endpoint testing (cross-database single queries with JWT authentication)
 - [tests/test_55_conduit_alt_queries.sh](/elements/001-hydrogen/hydrogen/tests/test_55_conduit_alt_queries.sh) - Conduit alt multiple queries endpoint testing (cross-database batch queries with JWT authentication)
+- [tests/test_57_mailrelay_outbound.sh](/elements/001-hydrogen/hydrogen/tests/test_57_mailrelay_outbound.sh) - Mail Relay outbound delivery testing with local SMTP sink
 - [tests/test_60_performance.sh](/elements/001-hydrogen/hydrogen/tests/test_60_performance.sh) - Performance benchmarking across databases (5 iterations measuring query response times)
 
 ### Deliverables

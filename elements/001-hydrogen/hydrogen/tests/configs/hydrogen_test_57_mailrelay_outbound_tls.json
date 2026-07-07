@@ -1,0 +1,45 @@
+{
+    "Server": {
+        "ServerName": "hydrogen-test-57-tls"
+    },
+    "WebServer": {
+        "EnableIPv4": false,
+        "EnableIPv6": false
+    },
+    "MailRelay": {
+        "Enabled": true,
+        "OutboundEnabled": true,
+        "InboundEnabled": false,
+        "ListenPort": 25,
+        "Workers": 1,
+        "DefaultFrom": "mailrelay-test@hydrogen.local",
+        "Queue": {
+            "MaxQueueSize": 1000,
+            "MaxInMemory": 1000,
+            "Persist": false,
+            "RetryAttempts": 3,
+            "RetryDelaySeconds": 300,
+            "InitialDelaySeconds": 10,
+            "MaxDelaySeconds": 3600,
+            "DebounceSeconds": 5
+        },
+        "Servers": [
+            {
+                "Host": "127.0.0.1",
+                "Port": "5571",
+                "UseTLS": true,
+                "TLSMode": 1,
+                "AuthMode": 0,
+                "TimeoutSeconds": 15,
+                "CAPath": "${env.MAILRELAY_MAILVAL_CERT}"
+            }
+        ],
+        "Test": {
+            "SendRawOnLaunch": true,
+            "TestFrom": "mailrelay-test@hydrogen.local",
+            "TestTo": "sink@mailval.local",
+            "TestSubject": "MailRelay Outbound Smoke Test (tls)",
+            "TestBody": "This is the Hydrogen MailRelay Phase 2.6 TLS/STARTTLS smoke test body."
+        }
+    }
+}

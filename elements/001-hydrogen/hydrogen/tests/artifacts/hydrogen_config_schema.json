@@ -828,6 +828,33 @@
                         },
                         "additionalProperties": false
                     }
+                },
+                "Test": {
+                    "type": "object",
+                    "description": "Test-only smoke test configuration",
+                    "properties": {
+                        "SendRawOnLaunch": {
+                            "type": "boolean",
+                            "description": "Send one raw test message on launch (test-only)"
+                        },
+                        "TestFrom": {
+                            "type": "string",
+                            "description": "Override From address for test message"
+                        },
+                        "TestTo": {
+                            "type": "string",
+                            "description": "Override To address for test message"
+                        },
+                        "TestSubject": {
+                            "type": "string",
+                            "description": "Override Subject for test message"
+                        },
+                        "TestBody": {
+                            "type": "string",
+                            "description": "Override text body for test message"
+                        }
+                    },
+                    "additionalProperties": false
                 }
             },
             "additionalProperties": false

@@ -117,8 +117,8 @@ static void imap_do_fetch(mv_conn* c, mv_capture* cap, imap_session* s, const ch
         int bo = 0;
         bo += snprintf(body + bo, sizeof(body) - bo, "%d FETCH (", seq);
         if (uidmode) bo += snprintf(body + bo, sizeof(body) - bo, "UID %u ", m->uid);
-        bo += snprintf(body + bo, sizeof(body) - bo, "FLAGS (%s) RFC822.SIZE %ld INTERNALDATE \"%s\"",
-                       imap_flags_str(m->flags), m->raw_len, m->date);
+        snprintf(body + bo, sizeof(body) - (size_t)bo, "FLAGS (%s) RFC822.SIZE %ld INTERNALDATE \"%s\"",
+                 imap_flags_str(m->flags), m->raw_len, m->date);
         imap_untagged(c, "%s", body);
         for (int a = 3; a < argc; a++) {
             const char* item = argv[a];
@@ -247,9 +247,9 @@ void proto_imap_handle(mv_conn* c, const char* peer, mv_capture* cap) {
             if (!s.sel) { imap_tagged(c, tag, "NO", "no mailbox"); }
             else {
                 int idx[1024];
-                int n = imap_expand_set(s.sel, argv[3], idx, 1024);
+                int store_count = imap_expand_set(s.sel, argv[3], idx, 1024);
                 store_lock();
-                for (int k = 0; k < n; k++) s.sel->msgs[idx[k]]->flags |= MV_FLAG_SEEN;
+                for (int k = 0; k < store_count; k++) s.sel->msgs[idx[k]]->flags |= MV_FLAG_SEEN;
                 store_unlock();
                 imap_tagged(c, tag, "OK", "STORE completed");
             }

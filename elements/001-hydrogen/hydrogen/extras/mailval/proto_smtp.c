@@ -136,7 +136,7 @@ void proto_smtp_handle(mv_conn* c, const char* peer, mv_capture* cap) {
         mv_capture_command(cap, line);
         char cmd[64]; char arg[MV_MAX_LINE];
         cmd[0] = arg[0] = '\0';
-        sscanf(line, "%63s %[^\n]", cmd, arg);
+        sscanf(line, "%63s %16383[^\n]", cmd, arg);
 
         if (mv_ieq(cmd, "QUIT")) {
             mv_conn_printf(c, "221 Bye\r\n");
@@ -147,9 +147,8 @@ void proto_smtp_handle(mv_conn* c, const char* peer, mv_capture* cap) {
             mv_conn_printf(c, "250-PIPELINING\r\n");
             mv_conn_printf(c, "250-SIZE 10485760\r\n");
             mv_conn_printf(c, "250-8BITMIME\r\n");
+            if (tls_avail && !c->tls) mv_conn_printf(c, "250-STARTTLS\r\n");
             mv_conn_printf(c, "250 AUTH LOGIN PLAIN\r\n");
-            if (tls_avail) mv_conn_printf(c, "250 STARTTLS\r\n");
-            (void)tls_avail;
         } else if (mv_ieq(cmd, "STARTTLS")) {
             if (!tls_avail || c->tls) {
                 mv_conn_printf(c, "503 STARTTLS unavailable\r\n");

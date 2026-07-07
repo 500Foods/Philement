@@ -235,6 +235,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [test_53_conduit_auth_queries.md](/docs/H/tests/test_53_conduit_auth_queries.md): Authenticated batch query endpoint
 - [test_54_conduit_alt_query.md](/docs/H/tests/test_54_conduit_alt_query.md): Cross-database single query with override
 - [test_55_conduit_alt_queries.md](/docs/H/tests/test_55_conduit_alt_queries.md): Cross-database batch query with override
+- [test_57_mailrelay_outbound.md](/docs/H/tests/test_57_mailrelay_outbound.md): Mail Relay outbound delivery testing
 - [test_60_performance.md](/docs/H/tests/test_60_performance.md): Performance benchmarking across databases
 - OIDC RP Library Documentation:
   - [oidc_rp_helpers.md](/docs/H/tests/oidc_rp_helpers.md)

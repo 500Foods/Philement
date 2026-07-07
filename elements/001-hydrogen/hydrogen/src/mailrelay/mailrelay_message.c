@@ -31,14 +31,14 @@ void mailrelay_message_free(MailRelayMessage* m) {
 }
 
 bool mailrelay_is_valid_email(const char* email) {
-    if (!email || strlen(email) == 0 || strlen(email) > 254) return false;
+    if (!email || strlen(email) == 0) return false;
     const char* at = strchr(email, '@');
     if (!at) return false;
     const char* dot = strchr(at + 1, '.');
     if (!dot) return false;
-    if (at == email) return false;                /* no local part */
-    if (dot == at + 1) return false;             /* no domain part */
-    if (strlen(dot + 1) == 0) return false;      /* no TLD */
+    if (at == email) return false;
+    if (dot == at + 1) return false;
+    if (strlen(dot + 1) == 0) return false;
     for (size_t i = 0; i < strlen(email); i++) {
         char c = email[i];
         if (!(isalnum((unsigned char)c) || c == '@' || c == '.' ||
@@ -53,7 +53,7 @@ static bool add_recipient(char* arr[], int* count, const char* addr) {
     if (!arr || !count || !addr || !*addr) return false;
     if (*count >= MV_MAX_RECIPIENTS) return false;
     if (!mailrelay_is_valid_email(addr)) return false;
-    arr[*count] = mv_xstrdup(addr);
+    arr[*count] = strdup(addr);
     (*count)++;
     return true;
 }
@@ -61,14 +61,14 @@ static bool add_recipient(char* arr[], int* count, const char* addr) {
 bool mailrelay_message_set_from(MailRelayMessage* m, const char* from) {
     if (!m || !from || !mailrelay_is_valid_email(from)) return false;
     free(m->from);
-    m->from = mv_xstrdup(from);
+    m->from = strdup(from);
     return true;
 }
 
 bool mailrelay_message_set_reply_to(MailRelayMessage* m, const char* reply_to) {
     if (!m || !reply_to || !mailrelay_is_valid_email(reply_to)) return false;
     free(m->reply_to);
-    m->reply_to = mv_xstrdup(reply_to);
+    m->reply_to = strdup(reply_to);
     return true;
 }
 

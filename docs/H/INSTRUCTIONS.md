@@ -106,6 +106,7 @@ tests/          Test framework
 - tests/test_53_conduit_auth_queries.sh - Authenticated batch query endpoint
 - tests/test_54_conduit_alt_query.sh - Cross-database single query with override
 - tests/test_55_conduit_alt_queries.sh - Cross-database batch query with override
+- tests/test_57_mailrelay_outbound.sh - Mail Relay outbound delivery testing with local SMTP sink
 - tests/test_60_performance.sh - Performance benchmarking across databases
 - tests/test_70_installer.sh - Standalone installer building test
 - tests/test_71_database_diagrams.sh - Database diagram generation

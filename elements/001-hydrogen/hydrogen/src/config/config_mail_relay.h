@@ -41,6 +41,17 @@ typedef struct {
     int RuleCount;
 } MailRelayEvents;
 
+// Mail relay test-only configuration (gated by SendRawOnLaunch)
+typedef struct {
+    bool SendRawOnLaunch;
+    char* TestFrom;
+    char* TestTo;
+    char* TestSubject;
+    char* TestBody;
+} MailRelayTest;
+
+void cleanup_mail_relay_test(MailRelayTest* test);
+
 // Outbound server configuration
 typedef struct OutboundServer {
     char* Host;                 // SMTP server hostname
@@ -88,6 +99,9 @@ typedef struct MailRelayConfig {
     // Event configuration
     MailRelayEvents Events;
 
+    // Test configuration (SendRawOnLaunch smoke test)
+    MailRelayTest Test;
+
     // Outbound server configuration
     int OutboundServerCount;                            // Number of configured servers
     OutboundServer Servers[MAX_OUTBOUND_SERVERS];       // Array of server configs
@@ -106,6 +120,13 @@ void cleanup_server(OutboundServer* server);
  * @param events Pointer to MailRelayEvents structure to cleanup
  */
 void cleanup_mail_relay_events(MailRelayEvents* events);
+
+/*
+ * Helper function to cleanup mail relay test configuration
+ *
+ * @param test Pointer to MailRelayTest structure to cleanup
+ */
+void cleanup_mail_relay_test(MailRelayTest* test);
 
 /*
  * Load mail relay configuration from JSON
