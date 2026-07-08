@@ -18,6 +18,7 @@ void mailrelay_message_init(MailRelayMessage* m) {
 
 void mailrelay_message_free(MailRelayMessage* m) {
     if (!m) return;
+    free(m->message_id);
     free(m->from);
     free(m->reply_to);
     free(m->subject);
@@ -37,6 +38,13 @@ bool mailrelay_message_copy(MailRelayMessage* dst, const MailRelayMessage* src) 
     if (!dst || !src) return false;
     mailrelay_message_init(dst);
 
+    if (src->message_id) {
+        dst->message_id = strdup(src->message_id);
+        if (!dst->message_id) {
+            mailrelay_message_free(dst);
+            return false;
+        }
+    }
     if (src->from) {
         if (!mailrelay_message_set_from(dst, src->from)) {
             mailrelay_message_free(dst);

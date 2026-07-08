@@ -17,6 +17,7 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 // Worker thread entry point.
 static void* mailrelay_worker_thread(void* arg) {
@@ -40,10 +41,20 @@ static void* mailrelay_worker_thread(void* arg) {
             continue;
         }
 
+        pthread_mutex_lock(&mailrelay_runtime->mutex);
+        if (item.attempts > 0 && mailrelay_runtime->retrying_count > 0) {
+            mailrelay_runtime->retrying_count--;
+        }
+        mailrelay_runtime->sending_count++;
+        pthread_mutex_unlock(&mailrelay_runtime->mutex);
+
         const MailRelayConfig* config = app_config ? &app_config->mail_relay : NULL;
         if (!config || config->OutboundServerCount <= 0) {
             pthread_mutex_lock(&mailrelay_runtime->mutex);
+            mailrelay_runtime->sending_count--;
             mailrelay_runtime->failed_count++;
+            mailrelay_runtime->permanent_failures_count++;
+            mailrelay_runtime->last_failure_at = time(NULL);
             pthread_mutex_unlock(&mailrelay_runtime->mutex);
             mailrelay_message_free(&item.message);
             continue;
@@ -63,7 +74,9 @@ static void* mailrelay_worker_thread(void* arg) {
 
         if (sent) {
             pthread_mutex_lock(&mailrelay_runtime->mutex);
+            mailrelay_runtime->sending_count--;
             mailrelay_runtime->sent_count++;
+            mailrelay_runtime->last_success_at = time(NULL);
             pthread_mutex_unlock(&mailrelay_runtime->mutex);
         } else if (mailrelay_retry_should_retry(&result,
                                                  item.attempts,
@@ -86,9 +99,17 @@ static void* mailrelay_worker_thread(void* arg) {
                 item.attempts + 1,
                 &next);
 
-            if (enq_status != MAILRELAY_OK) {
+            if (enq_status == MAILRELAY_OK) {
                 pthread_mutex_lock(&mailrelay_runtime->mutex);
+                mailrelay_runtime->sending_count--;
+                mailrelay_runtime->retrying_count++;
+                pthread_mutex_unlock(&mailrelay_runtime->mutex);
+            } else {
+                pthread_mutex_lock(&mailrelay_runtime->mutex);
+                mailrelay_runtime->sending_count--;
                 mailrelay_runtime->failed_count++;
+                mailrelay_runtime->permanent_failures_count++;
+                mailrelay_runtime->last_failure_at = time(NULL);
                 mailrelay_runtime->last_error = result;
                 pthread_mutex_unlock(&mailrelay_runtime->mutex);
                 log_this(SR_MAIL_RELAY,
@@ -97,7 +118,10 @@ static void* mailrelay_worker_thread(void* arg) {
             }
         } else {
             pthread_mutex_lock(&mailrelay_runtime->mutex);
+            mailrelay_runtime->sending_count--;
             mailrelay_runtime->failed_count++;
+            mailrelay_runtime->permanent_failures_count++;
+            mailrelay_runtime->last_failure_at = time(NULL);
             mailrelay_runtime->last_error = result;
             pthread_mutex_unlock(&mailrelay_runtime->mutex);
         }

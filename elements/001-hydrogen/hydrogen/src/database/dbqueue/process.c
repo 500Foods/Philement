@@ -9,6 +9,7 @@
 #include <src/hydrogen.h>
 #include <src/database/database.h>
 #include <src/database/database_pending.h>
+#include <src/database/dbqueue/query_result_cache.h>
 
 // Local includes
 #include "dbqueue.h"
@@ -89,20 +90,33 @@ void database_queue_process_single_query(DatabaseQueue* db_queue) {
                        result->row_count,
                        result->execution_time_ms);
 
-               // Record DQM statistics with high-precision total time from submission to completion
-               struct timeval completion_time;
-               gettimeofday(&completion_time, NULL);
-               uint64_t completion_us = (uint64_t)completion_time.tv_sec * 1000000ULL + (uint64_t)completion_time.tv_usec;
-               uint64_t total_execution_time_us = completion_us - query->submitted_at_ns; // Already in microseconds
+                // Record DQM statistics with high-precision total time from submission to completion
+                struct timeval completion_time;
+                gettimeofday(&completion_time, NULL);
+                uint64_t completion_us = (uint64_t)completion_time.tv_sec * 1000000ULL + (uint64_t)completion_time.tv_usec;
+                uint64_t total_execution_time_us = completion_us - query->submitted_at_ns; // Already in microseconds
 
-               int queue_type_index = database_queue_type_from_string(db_queue->queue_type);
-               if (queue_type_index >= 0 && queue_type_index < 4) {
-                   database_queue_record_query_completion(db_queue, queue_type_index, (unsigned long long)total_execution_time_us);
-               } else if (db_queue->is_lead_queue) {
-                   database_queue_record_query_completion(db_queue, 4, (unsigned long long)total_execution_time_us);
-               }
+                int queue_type_index = database_queue_type_from_string(db_queue->queue_type);
+                if (queue_type_index >= 0 && queue_type_index < 4) {
+                    database_queue_record_query_completion(db_queue, queue_type_index, (unsigned long long)total_execution_time_us);
+                } else if (db_queue->is_lead_queue) {
+                    database_queue_record_query_completion(db_queue, 4, (unsigned long long)total_execution_time_us);
+                }
 
-               // Signal pending result if this query was synchronous
+                // Cache successful cache-type queries before signaling so subsequent
+                // requests can be served without hitting the database.
+                if (query->queue_type_hint == DB_QUEUE_CACHE && query->query_id) {
+                    QueryResultCache* cache = query_result_cache_get_global();
+                    if (cache) {
+                        query_result_cache_put(cache, db_queue->database_name, query->query_template,
+                                               query->parameter_json, result->data_json,
+                                               result->row_count, result->column_count,
+                                               result->affected_rows, result->execution_time_ms);
+                    }
+                }
+
+                // Signal pending result if this query was synchronous
+
                if (query->query_id) {
                    PendingResultManager* pending_mgr = get_pending_result_manager();
                    if (pending_mgr) {

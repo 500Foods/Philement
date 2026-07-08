@@ -9,6 +9,7 @@
 #include "database_manage.h"
 #include "database_execute.h"
 #include <src/scripting/orchestrator.h>
+#include <src/mailrelay/mailrelay_events.h>
 /*
  * Database Subsystem Core Implementation
  *
@@ -414,6 +415,10 @@ bool database_signal_ready_if_complete(void) {
         // #087) is gated on READY FOR REQUESTS, so the launch never
         // races the DB subsystem.
         scripting_orchestrator_load_configured();
+
+        // Phase 6: emit the server-started event now that the database
+        // is ready and the orchestrator has had a chance to load.
+        mailrelay_event_emit("system.server_started", NULL);
     }
 
     return true;

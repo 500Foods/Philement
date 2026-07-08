@@ -23,6 +23,7 @@
 #include <src/config/config.h>
 #include <src/registry/registry_integration.h>
 #include <src/state/state_types.h>
+#include <src/mailrelay/mailrelay_events.h>
 
 // External declarations
 extern ServiceThreads mailrelay_threads;
@@ -87,6 +88,10 @@ int land_mail_relay_subsystem(void) {
 
     // Mark the subsystem as stopping in the registry before tearing down.
     update_subsystem_on_shutdown(SR_MAIL_RELAY);
+
+    // Phase 6: emit the server-stopped event while Mail Relay is still
+    // running and able to enqueue mail.
+    mailrelay_event_emit("system.server_stopped", NULL);
 
     // Centralized shutdown: sets the shutdown flag, wakes workers, drains
     // tracked threads, and frees the runtime instance.

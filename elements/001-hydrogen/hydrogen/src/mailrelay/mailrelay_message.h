@@ -11,6 +11,7 @@
 #define MV_ADDR_LEN 256
 
 typedef struct MailRelayMessage {
+    char* message_id;          /**< Stable message identifier (UUID). */
     char* from;
     char* reply_to;
     char* to[MV_MAX_RECIPIENTS];

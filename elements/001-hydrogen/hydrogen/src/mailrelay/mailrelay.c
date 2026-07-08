@@ -102,10 +102,17 @@ bool mailrelay_init(void) {
     runtime->shutdown_requested = false;
     runtime->worker_count = 0;
     runtime->queued_count = 0;
+    runtime->sending_count = 0;
     runtime->sent_count = 0;
     runtime->failed_count = 0;
     runtime->retry_count = 0;
+    runtime->retrying_count = 0;
+    runtime->permanent_failures_count = 0;
+    runtime->last_success_at = 0;
+    runtime->last_failure_at = 0;
     runtime->queue = NULL;
+    runtime->debounce = NULL;
+    runtime->rate_limit_head = NULL;
     mailrelay_result_init(&runtime->last_error);
 
     int capacity = MAILRELAY_QUEUE_DEFAULT_CAPACITY;
@@ -150,6 +157,7 @@ void mailrelay_shutdown(void) {
     mail_relay_system_shutdown = 1;
     mailrelay_workers_stop();
     mailrelay_debounce_stop();
+    mailrelay_event_free_all_rate_limits();
 
     // Drain tracked worker threads with a bounded wait.
     bool drained = false;
@@ -195,6 +203,42 @@ void mailrelay_shutdown(void) {
     init_service_threads(&mailrelay_threads, SR_MAIL_RELAY);
 
     log_this(SR_MAIL_RELAY, "Runtime shutdown complete", LOG_LEVEL_DEBUG, 0);
+}
+
+bool mailrelay_get_status(MailRelayStatusCounters* counters) {
+    if (!counters) {
+        return false;
+    }
+
+    memset(counters, 0, sizeof(MailRelayStatusCounters));
+    if (app_config) {
+        counters->enabled = app_config->mail_relay.Enabled;
+    }
+
+    if (!mailrelay_runtime_is_initialized() || !mailrelay_runtime) {
+        return false;
+    }
+
+    pthread_mutex_lock(&mailrelay_runtime->mutex);
+    counters->initialized = true;
+    counters->queued = mailrelay_runtime->queued_count;
+    counters->sending = mailrelay_runtime->sending_count;
+    counters->sent = mailrelay_runtime->sent_count;
+    counters->failed = mailrelay_runtime->failed_count;
+    counters->retrying = mailrelay_runtime->retrying_count;
+    counters->permanent_failures = mailrelay_runtime->permanent_failures_count;
+    counters->last_success = mailrelay_runtime->last_success_at;
+    counters->last_failure = mailrelay_runtime->last_failure_at;
+    counters->worker_count = mailrelay_runtime->worker_count;
+    if (mailrelay_runtime->queue) {
+        counters->queue_depth = mailrelay_queue_size(mailrelay_runtime->queue);
+    }
+    pthread_mutex_unlock(&mailrelay_runtime->mutex);
+
+    update_service_thread_metrics(&mailrelay_threads);
+    counters->worker_count = mailrelay_threads.thread_count;
+
+    return true;
 }
 
 bool mailrelay_send_raw(const MailRelayMessage* msg,
@@ -249,7 +293,11 @@ static bool mailrelay_persist_message(const MailRelayMessage* msg,
     }
 
     char uuid_str[UUID_STR_LEN];
-    generate_uuid(uuid_str);
+    if (msg->message_id && msg->message_id[0] != '\0') {
+        snprintf(uuid_str, sizeof(uuid_str), "%s", msg->message_id);
+    } else {
+        generate_uuid(uuid_str);
+    }
 
     char* recipients_json = mailrelay_message_recipients_to_json(msg);
     if (!recipients_json) {
