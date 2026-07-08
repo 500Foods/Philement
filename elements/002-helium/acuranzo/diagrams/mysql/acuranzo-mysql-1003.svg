@@ -1,28 +1,28 @@
 <svg   xmlns="http://www.w3.org/2000/svg"
-                                    xmlns:xlink="http://www.w3.org/1999/xlink"
-                                    width="2520"
-                                    height="1980"
-                                    viewBox="0 0 2520 1980">
-                                <!-- Define clipPath for rounded border with 2mm margin -->
-                                <defs>
-                                    <clipPath id="border-clip">
-                                    <rect x="18" y="18" width="2484" height="1944" rx="42.51" ry="42.51"/>
-                                    </clipPath>
-                                </defs>
-                                <!-- Thin black border with 2mm margin -->
-                                <rect x="18" y="18" width="2484" height="1944" fill="none" stroke="black" stroke-width="3" rx="42.51" ry="42.51"/>
-                                <!-- White background within border, clipped to rounded shape -->
-                                <rect x="18" y="18" width="2484" height="1944" fill="white" clip-path="url(#border-clip)"/>
-                                <!-- 1cm (28.3pt) dashed silver grid, offset by 2mm margin -->
-                                <defs>
-                                    <pattern id="grid" width="84.9" height="84.9" patternUnits="userSpaceOnUse" x="18" y="18">
-                                        <path d="M 84.9 0 L 0 0 0 84.9" fill="none" stroke="black" stroke-width="1.5" stroke-dasharray="6,6"/>
-                                    </pattern>
-                                </defs>
-                                <rect x="18" y="18" width="2484" height="1944" fill="url(#grid)" clip-path="url(#border-clip)"/>
-                                <!-- ERD content placeholder -->
-                                <g id="erd-content" transform="translate(0, 0)">
-                                    
+                                            xmlns:xlink="http://www.w3.org/1999/xlink"
+                                            width="2520"
+                                            height="1980"
+                                            viewBox="0 0 2520 1980">
+                                        <!-- Define clipPath for rounded border with 2mm margin -->
+                                        <defs>
+                                            <clipPath id="border-clip">
+                                            <rect x="18" y="18" width="2484" height="1944" rx="42.51" ry="42.51"/>
+                                            </clipPath>
+                                        </defs>
+                                        <!-- Thin black border with 2mm margin -->
+                                        <rect x="18" y="18" width="2484" height="1944" fill="none" stroke="black" stroke-width="3" rx="42.51" ry="42.51"/>
+                                        <!-- White background within border, clipped to rounded shape -->
+                                        <rect x="18" y="18" width="2484" height="1944" fill="white" clip-path="url(#border-clip)"/>
+                                        <!-- 1cm (28.3pt) dashed silver grid, offset by 2mm margin -->
+                                        <defs>
+                                            <pattern id="grid" width="84.9" height="84.9" patternUnits="userSpaceOnUse" x="18" y="18">
+                                                <path d="M 84.9 0 L 0 0 0 84.9" fill="none" stroke="black" stroke-width="1.5" stroke-dasharray="6,6"/>
+                                            </pattern>
+                                        </defs>
+                                        <rect x="18" y="18" width="2484" height="1944" fill="url(#grid)" clip-path="url(#border-clip)"/>
+                                        <!-- ERD content placeholder -->
+                                        <g id="erd-content" transform="translate(0, 0)">
+                                            
 <!-- Layout Region -->
 <defs>
     <clipPath id="layout-region-clip">
@@ -114,12 +114,12 @@
     <text x="486.7959477124183" y="459.96168888888894" font-family="Cairo, Arial, sans-serif" font-size="26.15424836601307" text-anchor="end" fill="black" font-weight="normal">int</text>
     <rect x="1.3077124183006537" y="479.96968888888887" width="556.104705882353" height="58.847058823529416" fill="transparent" stroke="#cccccc" stroke-width="0.9807843137254902"/>
     <use href="#not-null-icon-black" x="506.4116339869281" y="493.70066928104575" width="31.385098039215688" height="31.385098039215688" rx="6.277019607843138" ry="6.277019607843138"/>
-    <text x="71.92418300653594" y="518.8087477124183" font-family="Cairo, Arial, sans-serif" font-size="26.15424836601307" fill="black" font-weight="normal">query_code</text>
+    <text x="71.92418300653594" y="518.8087477124183" font-family="Cairo, Arial, sans-serif" font-size="26.15424836601307" fill="black" font-weight="normal">code</text>
     <text x="486.7959477124183" y="518.8087477124183" font-family="Cairo, Arial, sans-serif" font-size="26.15424836601307" text-anchor="end" fill="black" font-weight="normal">text</text>
     <rect x="1.3077124183006537" y="538.8167477124183" width="556.104705882353" height="58.847058823529416" fill="transparent" stroke="#cccccc" stroke-width="0.9807843137254902"/>
     <use href="#not-null-icon-black" x="506.4116339869281" y="552.5477281045752" width="31.385098039215688" height="31.385098039215688" rx="6.277019607843138" ry="6.277019607843138"/>
     <text x="71.92418300653594" y="577.6558065359477" font-family="Cairo, Arial, sans-serif" font-size="26.15424836601307" fill="black" font-weight="normal">name</text>
-    <text x="486.7959477124183" y="577.6558065359477" font-family="Cairo, Arial, sans-serif" font-size="26.15424836601307" text-anchor="end" fill="black" font-weight="normal">text</text>
+    <text x="486.7959477124183" y="577.6558065359477" font-family="Cairo, Arial, sans-serif" font-size="26.15424836601307" text-anchor="end" fill="black" font-weight="normal">varchar(255)</text>
     <rect x="1.3077124183006537" y="597.6638065359477" width="556.104705882353" height="58.847058823529416" fill="transparent" stroke="#cccccc" stroke-width="0.9807843137254902"/>
     <text x="71.92418300653594" y="636.5028653594771" font-family="Cairo, Arial, sans-serif" font-size="26.15424836601307" fill="black" font-weight="normal">summary</text>
     <text x="486.7959477124183" y="636.5028653594771" font-family="Cairo, Arial, sans-serif" font-size="26.15424836601307" text-anchor="end" fill="black" font-weight="normal">text</text>
@@ -177,7 +177,7 @@
     <text x="486.7959477124183" y="224.57345359477125" font-family="Cairo, Arial, sans-serif" font-size="26.15424836601307" text-anchor="end" fill="maroon" font-weight="normal">int</text>
     <rect x="1.3077124183006537" y="244.58145359477126" width="556.104705882353" height="58.847058823529416" fill="transparent" stroke="#cccccc" stroke-width="0.9807843137254902"/>
     <text x="71.92418300653594" y="283.4205124183007" font-family="Cairo, Arial, sans-serif" font-size="26.15424836601307" fill="black" font-weight="normal">value_txt</text>
-    <text x="486.7959477124183" y="283.4205124183007" font-family="Cairo, Arial, sans-serif" font-size="26.15424836601307" text-anchor="end" fill="black" font-weight="normal">text</text>
+    <text x="486.7959477124183" y="283.4205124183007" font-family="Cairo, Arial, sans-serif" font-size="26.15424836601307" text-anchor="end" fill="black" font-weight="normal">varchar(255)</text>
     <rect x="1.3077124183006537" y="303.42851241830067" width="556.104705882353" height="58.847058823529416" fill="transparent" stroke="#cccccc" stroke-width="0.9807843137254902"/>
     <text x="71.92418300653594" y="342.26757124183007" font-family="Cairo, Arial, sans-serif" font-size="26.15424836601307" fill="black" font-weight="normal">value_int</text>
     <text x="486.7959477124183" y="342.26757124183007" font-family="Cairo, Arial, sans-serif" font-size="26.15424836601307" text-anchor="end" fill="black" font-weight="normal">int</text>
@@ -324,7 +324,7 @@
     <rect x="1.3077124183006537" y="421.12263006535954" width="556.104705882353" height="58.847058823529416" fill="yellow" stroke="#cccccc" stroke-width="0.9807843137254902"/>
     <use href="#not-null-icon-black" x="506.4116339869281" y="434.8536104575164" width="31.385098039215688" height="31.385098039215688" rx="6.277019607843138" ry="6.277019607843138"/>
     <text x="71.92418300653594" y="459.96168888888894" font-family="Cairo, Arial, sans-serif" font-size="26.15424836601307" fill="black" font-weight="normal">contact</text>
-    <text x="486.7959477124183" y="459.96168888888894" font-family="Cairo, Arial, sans-serif" font-size="26.15424836601307" text-anchor="end" fill="black" font-weight="normal">text</text>
+    <text x="486.7959477124183" y="459.96168888888894" font-family="Cairo, Arial, sans-serif" font-size="26.15424836601307" text-anchor="end" fill="black" font-weight="normal">varchar(255)</text>
     <rect x="1.3077124183006537" y="479.96968888888887" width="556.104705882353" height="58.847058823529416" fill="yellow" stroke="#cccccc" stroke-width="0.9807843137254902"/>
     <text x="71.92418300653594" y="518.8087477124183" font-family="Cairo, Arial, sans-serif" font-size="26.15424836601307" fill="black" font-weight="normal">summary</text>
     <text x="486.7959477124183" y="518.8087477124183" font-family="Cairo, Arial, sans-serif" font-size="26.15424836601307" text-anchor="end" fill="black" font-weight="normal">text</text>
@@ -357,5 +357,5 @@
 </g>
 </g>
 
-                                </g>
-                            </svg>
+                                        </g>
+                                    </svg>

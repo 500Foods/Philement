@@ -245,6 +245,8 @@ Append discoveries, surprises, and decisions here as we move through phases. Ear
 
 ### Decisions log
 
+- (Phase 7.1, 2026-07-08) API permission model for Phase 7: any valid JWT with a database claim may access `/api/mailrelay/status`; no role check. Raw subject/body send is rejected outright; `template_key` is required. Full status counters (queued, sending, sent, failed, retrying, permanent_failures, last_success, last_failure, worker_count, queue_depth) are implemented now rather than deferred to Phase 10.
+- (Phase 7.1, 2026-07-08) Status endpoint method validation: `validate_http_method()` only permits POST, so `handle_mailrelay_status_request()` performs its own GET-only check instead of using `handle_method_validation()`.
 - (Phase 6, 2026-07-08) Event rule execution model: `MailRelay.Events.Rules` keeps the existing `event_key → script_name` mapping. Phase 6.1a implements built-in default Lua handlers for `system.server_started` and `system.server_stopped`; custom DB-loaded scripts come in Phase 6.1b. Handlers return a mail-request table (template_key, to/cc/bcc, params, etc.) and C dispatches via `mailrelay_send_template()`.
 - (Phase 6, 2026-07-08) Event rate limiting: per-event-key fixed-window counter with `MaxEventsPerInterval` (default 10) and `EventIntervalSeconds` (default 60). Rate-limit state lives in `MailRelayRuntime` and is freed on shutdown.
 - (Phase 6, 2026-07-08) Startup/shutdown trigger points: `system.server_started` is emitted after the canonical `READY FOR REQUESTS` log in both the async database path (`database_signal_ready_if_complete`) and the no-database path in `launch.c`. `system.server_stopped` is emitted from `land_mail_relay_subsystem()` before `mailrelay_shutdown()` so Mail Relay can still enqueue.
@@ -833,25 +835,25 @@ Objective: Send configured administrative emails for Hydrogen events without blo
 Entry Gate: Phase 5 exit gate green.
 
 - [x] 6.1 Define event rule config.
-   - Kept existing `event_key → script_name` mapping in `MailRelay.Events.Rules`.
-   - Added `MailRelay.Events.MaxEventsPerInterval` and `MailRelay.Events.EventIntervalSeconds` for per-event-key rate limiting.
-   - Verification: `mku config_mail_relay_test_load_mailrelay_config` still passes; `tests/test_93_jsonlint.sh` validates the schema.
+  - Kept existing `event_key → script_name` mapping in `MailRelay.Events.Rules`.
+  - Added `MailRelay.Events.MaxEventsPerInterval` and `MailRelay.Events.EventIntervalSeconds` for per-event-key rate limiting.
+  - Verification: `mku config_mail_relay_test_load_mailrelay_config` still passes; `tests/test_93_jsonlint.sh` validates the schema.
 
 - [x] 6.2 Add a safe in-process event injection API.
-   - Added `mailrelay_event_emit(event_key, params)` in `src/mailrelay/mailrelay_events.{c,h}`.
-   - Events are dispatched to Lua handler scripts that return a mail-request table; C enqueues via `mailrelay_send_template()`.
-   - Verification: `mku mailrelay_events_test` (8 tests) covers disabled state, unknown events, rate limit, and dispatch.
+  - Added `mailrelay_event_emit(event_key, params)` in `src/mailrelay/mailrelay_events.{c,h}`.
+  - Events are dispatched to Lua handler scripts that return a mail-request table; C enqueues via `mailrelay_send_template()`.
+  - Verification: `mku mailrelay_events_test` (8 tests) covers disabled state, unknown events, rate limit, and dispatch.
 
 - [x] 6.3 Implement startup/shutdown admin messages.
-   - Emitted `system.server_started` after `READY FOR REQUESTS` in `src/database/database.c` and the no-DB path in `src/launch/launch.c`.
-   - Emitted `system.server_stopped` before shutdown in `src/landing/landing_mail_relay.c`.
-   - Built-in Lua handlers use the seeded `system.server_started` / `system.server_stopped` templates and `MailRelay.AdminRecipients`.
-   - Verification: `mku mailrelay_events_test`; blackbox extension deferred to Phase 6.1b.
+  - Emitted `system.server_started` after `READY FOR REQUESTS` in `src/database/database.c` and the no-DB path in `src/launch/launch.c`.
+  - Emitted `system.server_stopped` before shutdown in `src/landing/landing_mail_relay.c`.
+  - Built-in Lua handlers use the seeded `system.server_started` / `system.server_stopped` templates and `MailRelay.AdminRecipients`.
+  - Verification: `mku mailrelay_events_test`; blackbox extension deferred to Phase 6.1b.
 
 - [x] 6.4 Add rate limiting for noisy events.
-   - Implemented per-event-key fixed-window rate limiter in `MailRelayRuntime`.
-   - Configurable via `MaxEventsPerInterval` / `EventIntervalSeconds`; defaults 10 / 60 seconds.
-   - Verification: `mku mailrelay_events_test` verifies burst blocking and independent buckets per key.
+  - Implemented per-event-key fixed-window rate limiter in `MailRelayRuntime`.
+  - Configurable via `MaxEventsPerInterval` / `EventIntervalSeconds`; defaults 10 / 60 seconds.
+  - Verification: `mku mailrelay_events_test` verifies burst blocking and independent buckets per key.
 
 Exit Gate: administrative event email works through the queue/templates path, is rate-limited, and does not block startup, logging, or shutdown. `mkt`, `mkp`, `mku mailrelay_events_test`, and `tests/test_93_jsonlint.sh` pass.
 
@@ -865,16 +867,18 @@ Objective: Expose authenticated mail operations through the Hydrogen API.
 
 Entry Gate: Phase 5 exit gate green (Phase 6 not required, but recommended). Phase 0.2 DB-target and Phase 0 template-only send decision recorded.
 
-- [ ] 7.1 Add the `src/api/mailrelay/` endpoint module.
+- [~] 7.1 Add the `src/api/mailrelay/` endpoint module.
   - Layout `src/api/mailrelay/<endpoint>/<endpoint>.c/.h`. Endpoints: `POST /api/mailrelay/send`, `POST /api/mailrelay/preview`, `GET /api/mailrelay/status`, optionally `GET /api/mailrelay/message/{id}`. Register in `src/api/api_service.c` and add dispatch in `handle_api_request`.
-  - Verification: `mkt`; endpoint log list includes the mail endpoints.
+  - Partial: `GET /api/mailrelay/status` implemented and registered; send/preview endpoints remain for chunk 7.2/7.3.
+  - Verification: `mkt`; endpoint log list includes `/api/mailrelay/status`.
 
 - [ ] 7.2 Implement method validation and request buffering with existing API helpers.
   - Use `api_buffer_post_data`, `handle_method_validation`, `api_parse_json_body`.
   - Verification: `mku` endpoint tests reject wrong method, invalid JSON, and oversized body.
 
-- [ ] 7.3 Require authentication for send/preview/status.
+- [~] 7.3 Require authentication for send/preview/status.
   - Reuse `extract_and_validate_jwt` / `api_extract_jwt_claims`.
+  - Partial: `/api/mailrelay/status` validates a Bearer JWT with database claim; send/preview auth pending.
   - Verification: `mku`/API test rejects missing/invalid JWT and accepts a valid JWT.
 
 - [ ] 7.4 Define the send request contract.
@@ -890,7 +894,7 @@ Entry Gate: Phase 5 exit gate green (Phase 6 not required, but recommended). Pha
 
 Exit Gate: authenticated clients can preview and queue templated emails; behavior is documented and tested. `mkt`, `mkp`, the new `mku` set, `test_58`, and `test_22_swagger.sh` pass.
 
-Phase 7 Status: pending. Date: (TBD). Result: (TBD). Variances: (TBD).
+Phase 7 Status: in progress. Date: 2026-07-08. Result: Chunk 7.1 complete. Runtime counters added (queued, sending, sent, failed, retrying, permanent_failures, last_success, last_failure, worker_count, queue_depth); GET /api/mailrelay/status endpoint implemented and registered; Unity test `mailrelay_get_status_test` passes. Send and preview endpoints remain pending. Variances: Full counters were pulled forward from Phase 10.1 into Phase 7.1 per user direction; `validate_http_method` only permits POST so status endpoint performs its own GET-only check instead of using `handle_method_validation`.
 
 ### Draft API Contract
 
@@ -1025,8 +1029,8 @@ Objective: Make Mail Relay observable and supportable.
 
 Entry Gate: Phase 3 and Phase 4 exit gates green.
 
-- [ ] 10.1 Add status counters.
-  - Counters: queued, sending, sent, failed, retrying, permanent failures, last success, last failure, worker count, queue depth. Surface alongside the existing `mail_relay_queue_memory` metrics in `status/status_process.c`.
+- [x] 10.1 Add status counters.
+  - Counters: queued, sending, sent, failed, retrying, permanent failures, last success, last failure, worker count, queue depth. Implemented in Phase 7.1 and surfaced via `GET /api/mailrelay/status`.
   - Verification: `GET /api/mailrelay/status` returns stable JSON.
 
 - [ ] 10.2 Add Prometheus metrics.
@@ -1047,7 +1051,7 @@ Entry Gate: Phase 3 and Phase 4 exit gates green.
 
 Exit Gate: operators can see queue health, diagnose failures, and safely retain/clean mail records. `mkt`, `mkp`, relevant `mku`, and doc/link lints pass.
 
-Phase 10 Status: pending. Date: (TBD). Result: (TBD). Variances: (TBD).
+Phase 10 Status: partial complete. Date: 2026-07-08. Result: 10.1 status counters implemented as part of Phase 7.1 and exposed through `/api/mailrelay/status`. Remaining 10.2–10.5 (Prometheus metrics, structured logging, operational cleanup, docs) pending. Variances: Counters were pulled forward from Phase 10 into Phase 7.1 per user direction.
 
 ---
 
@@ -1230,7 +1234,7 @@ New or modified files expected across the implementation. Confirm/adjust during 
 ### Unity tests (`/elements/001-hydrogen/hydrogen/tests/unity/src/`)
 
 - Extend: `config/config_mail_relay_test_load_mailrelay_config.c`, `launch/launch_mail_relay_test_comprehensive_coverage.c`, `landing/landing_mail_relay_test_readiness.c`.
-- New: `mailrelay/mailrelay_message_test.c`, `mailrelay_render_test.c`, `mailrelay_queue_test.c`, `mailrelay_workers_test.c`, `mailrelay_retry_test.c`, `mailrelay_debounce_test.c`, `mailrelay_template_test.c`, `mailrelay_preview_test.c`, `mailrelay_producer_test.c`, `mailrelay_repository_test.c`, `mailrelay_otp_generate_test.c`, `mailrelay_otp_verify_test.c`, `mailrelay_route_test.c`, plus API endpoint tests under `api/mailrelay/` and Lua backfill tests under `scripting/` such as `scripting_api_mail_test.c`.
+- New: `mailrelay/mailrelay_message_test.c`, `mailrelay_render_test.c`, `mailrelay_queue_test.c`, `mailrelay_workers_test.c`, `mailrelay_retry_test.c`, `mailrelay_debounce_test.c`, `mailrelay_template_test.c`, `mailrelay_preview_test.c`, `mailrelay_producer_test.c`, `mailrelay_repository_test.c`, `mailrelay_otp_generate_test.c`, `mailrelay_otp_verify_test.c`, `mailrelay_route_test.c`, plus API endpoint tests under `api/mailrelay/` (e.g., `api/mailrelay/status/mailrelay_get_status_test.c`) and Lua backfill tests under `scripting/` such as `scripting_api_mail_test.c`.
 
 ### Blackbox tests (`/elements/001-hydrogen/hydrogen/tests/`)
 

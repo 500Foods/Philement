@@ -1,28 +1,28 @@
 <svg   xmlns="http://www.w3.org/2000/svg"
-                                    xmlns:xlink="http://www.w3.org/1999/xlink"
-                                    width="2520"
-                                    height="1980"
-                                    viewBox="0 0 2520 1980">
-                                <!-- Define clipPath for rounded border with 2mm margin -->
-                                <defs>
-                                    <clipPath id="border-clip">
-                                    <rect x="18" y="18" width="2484" height="1944" rx="42.51" ry="42.51"/>
-                                    </clipPath>
-                                </defs>
-                                <!-- Thin black border with 2mm margin -->
-                                <rect x="18" y="18" width="2484" height="1944" fill="none" stroke="black" stroke-width="3" rx="42.51" ry="42.51"/>
-                                <!-- White background within border, clipped to rounded shape -->
-                                <rect x="18" y="18" width="2484" height="1944" fill="white" clip-path="url(#border-clip)"/>
-                                <!-- 1cm (28.3pt) dashed silver grid, offset by 2mm margin -->
-                                <defs>
-                                    <pattern id="grid" width="84.9" height="84.9" patternUnits="userSpaceOnUse" x="18" y="18">
-                                        <path d="M 84.9 0 L 0 0 0 84.9" fill="none" stroke="black" stroke-width="1.5" stroke-dasharray="6,6"/>
-                                    </pattern>
-                                </defs>
-                                <rect x="18" y="18" width="2484" height="1944" fill="url(#grid)" clip-path="url(#border-clip)"/>
-                                <!-- ERD content placeholder -->
-                                <g id="erd-content" transform="translate(0, 0)">
-                                    
+                                            xmlns:xlink="http://www.w3.org/1999/xlink"
+                                            width="2520"
+                                            height="1980"
+                                            viewBox="0 0 2520 1980">
+                                        <!-- Define clipPath for rounded border with 2mm margin -->
+                                        <defs>
+                                            <clipPath id="border-clip">
+                                            <rect x="18" y="18" width="2484" height="1944" rx="42.51" ry="42.51"/>
+                                            </clipPath>
+                                        </defs>
+                                        <!-- Thin black border with 2mm margin -->
+                                        <rect x="18" y="18" width="2484" height="1944" fill="none" stroke="black" stroke-width="3" rx="42.51" ry="42.51"/>
+                                        <!-- White background within border, clipped to rounded shape -->
+                                        <rect x="18" y="18" width="2484" height="1944" fill="white" clip-path="url(#border-clip)"/>
+                                        <!-- 1cm (28.3pt) dashed silver grid, offset by 2mm margin -->
+                                        <defs>
+                                            <pattern id="grid" width="84.9" height="84.9" patternUnits="userSpaceOnUse" x="18" y="18">
+                                                <path d="M 84.9 0 L 0 0 0 84.9" fill="none" stroke="black" stroke-width="1.5" stroke-dasharray="6,6"/>
+                                            </pattern>
+                                        </defs>
+                                        <rect x="18" y="18" width="2484" height="1944" fill="url(#grid)" clip-path="url(#border-clip)"/>
+                                        <!-- ERD content placeholder -->
+                                        <g id="erd-content" transform="translate(0, 0)">
+                                            
 <!-- Layout Region -->
 <defs>
     <clipPath id="layout-region-clip">
@@ -114,12 +114,12 @@
     <text x="275.2775421575422" y="260.10307562947565" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">int</text>
     <rect x="0.7394964194964195" y="271.4173708477708" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
     <use href="#not-null-icon-black" x="286.3699884499885" y="279.1820832524832" width="17.747914067914067" height="17.747914067914067" rx="3.5495828135828136" ry="3.5495828135828136"/>
-    <text x="40.67230307230307" y="293.3804145068145" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="black" font-weight="normal">query_code</text>
+    <text x="40.67230307230307" y="293.3804145068145" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="black" font-weight="normal">code</text>
     <text x="275.2775421575422" y="293.3804145068145" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">text</text>
     <rect x="0.7394964194964195" y="304.6947097251097" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
     <use href="#not-null-icon-black" x="286.3699884499885" y="312.4594221298221" width="17.747914067914067" height="17.747914067914067" rx="3.5495828135828136" ry="3.5495828135828136"/>
     <text x="40.67230307230307" y="326.65775338415335" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="black" font-weight="normal">name</text>
-    <text x="275.2775421575422" y="326.65775338415335" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">text</text>
+    <text x="275.2775421575422" y="326.65775338415335" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">varchar(255)</text>
     <rect x="0.7394964194964195" y="337.9720486024486" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
     <text x="40.67230307230307" y="359.93509226149223" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="black" font-weight="normal">summary</text>
     <text x="275.2775421575422" y="359.93509226149223" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">text</text>
@@ -150,13 +150,13 @@
     <text x="275.2775421575422" y="592.8764644028645" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="forestgreen" font-weight="normal">datetime(3)</text>
     <rect x="0.7394964194964195" y="0.7394964194964195" width="314.47085239085243" height="603.4512632016632" fill="transparent" stroke="silver" stroke-width="1.1092446292446292" rx="9.983201663201664" ry="9.983201663201664"/>
 </g>
-    <!-- table.lookups at (407.27, 199.06) -->
+    <!-- table.lookups at (407.27, 149.15) -->
 <defs>
     <filter id="shadow-lookups" x="-20%" y="-20%" width="140%" height="140%">
         <feDropShadow dx="2" dy="2" stdDeviation="1.5" flood-color="rgba(0,0,0,0.3)"/>
     </filter>
 </defs>
-<g transform="translate(407.2681912681913, 199.06420956340958)" filter="url(#shadow-lookups)">
+<g transform="translate(407.2681912681913, 149.14820124740118)" filter="url(#shadow-lookups)">
     <rect x="0.7394964194964195" y="0.7394964194964195" width="314.47085239085243" height="536.8965854469855" fill="white" stroke="transparent" stroke-width="1.1092446292446292" rx="9.983201663201664" ry="9.983201663201664"/>
     <path d="M 10.722698082698082 0.7394964194964195 L 305.2271471471472 0.7394964194964195 Q 315.2103488103489 0.7394964194964195 315.2103488103489 10.722698082698082 L 315.2103488103489 38.475998706398705 L 0.7394964194964195 38.475998706398705 L 0.7394964194964195 10.722698082698082 Q 0.7394964194964195 0.7394964194964195 10.722698082698082 0.7394964194964195 Z" fill="skyblue" stroke="transparent" stroke-width="2.2184892584892584"/>
     <text x="11.831942711942713" y="23.800692261492262" font-family="Cairo, Arial, sans-serif" font-size="17.747914067914067" font-weight="bold">lookups</text>    <text x="304.11790251790256" y="23.800692261492262" font-family="Cairo, Arial, sans-serif" font-size="13.310935550935552" font-weight="bold" fill="navy" text-anchor="end">1001</text>
@@ -177,7 +177,7 @@
     <text x="275.2775421575422" y="126.99372012012013" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="maroon" font-weight="normal">int</text>
     <rect x="0.7394964194964195" y="138.30801533841534" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
     <text x="40.67230307230307" y="160.271058997459" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="black" font-weight="normal">value_txt</text>
-    <text x="275.2775421575422" y="160.271058997459" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">text</text>
+    <text x="275.2775421575422" y="160.271058997459" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">varchar(255)</text>
     <rect x="0.7394964194964195" y="171.58535421575422" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
     <text x="40.67230307230307" y="193.54839787479787" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="black" font-weight="normal">value_int</text>
     <text x="275.2775421575422" y="193.54839787479787" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">int</text>
@@ -324,7 +324,7 @@
     <rect x="0.7394964194964195" y="238.14003197043198" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
     <use href="#not-null-icon-black" x="286.3699884499885" y="245.9047443751444" width="17.747914067914067" height="17.747914067914067" rx="3.5495828135828136" ry="3.5495828135828136"/>
     <text x="40.67230307230307" y="260.10307562947565" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="black" font-weight="normal">contact</text>
-    <text x="275.2775421575422" y="260.10307562947565" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">text</text>
+    <text x="275.2775421575422" y="260.10307562947565" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">varchar(255)</text>
     <rect x="0.7394964194964195" y="271.4173708477708" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
     <text x="40.67230307230307" y="293.3804145068145" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="black" font-weight="normal">summary</text>
     <text x="275.2775421575422" y="293.3804145068145" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">text</text>
@@ -387,7 +387,7 @@
     <text x="275.2775421575422" y="160.271058997459" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="maroon" font-weight="normal">int</text>
     <rect x="0.7394964194964195" y="171.58535421575422" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
     <text x="40.67230307230307" y="193.54839787479787" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="black" font-weight="normal">name</text>
-    <text x="275.2775421575422" y="193.54839787479787" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">text</text>
+    <text x="275.2775421575422" y="193.54839787479787" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">varchar(255)</text>
     <rect x="0.7394964194964195" y="204.8626930930931" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
     <text x="40.67230307230307" y="226.82573675213675" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="black" font-weight="normal">summary</text>
     <text x="275.2775421575422" y="226.82573675213675" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">text</text>
@@ -447,17 +447,17 @@
     <use href="#unique-icon-gray" x="11.831942711942713" y="146.07272774312776" width="17.747914067914067" height="17.747914067914067" rx="3.5495828135828136" ry="3.5495828135828136"/>
     <use href="#not-null-icon-black" x="286.3699884499885" y="146.07272774312776" width="17.747914067914067" height="17.747914067914067" rx="3.5495828135828136" ry="3.5495828135828136"/>
     <text x="40.67230307230307" y="160.271058997459" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="black" font-weight="normal">name</text>
-    <text x="275.2775421575422" y="160.271058997459" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">text</text>
+    <text x="275.2775421575422" y="160.271058997459" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">varchar(255)</text>
     <rect x="0.7394964194964195" y="171.58535421575422" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
     <text x="40.67230307230307" y="193.54839787479787" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="black" font-weight="normal">first_name</text>
-    <text x="275.2775421575422" y="193.54839787479787" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">text</text>
+    <text x="275.2775421575422" y="193.54839787479787" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">varchar(255)</text>
     <rect x="0.7394964194964195" y="204.8626930930931" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
     <text x="40.67230307230307" y="226.82573675213675" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="black" font-weight="normal">middle_name</text>
-    <text x="275.2775421575422" y="226.82573675213675" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">text</text>
+    <text x="275.2775421575422" y="226.82573675213675" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">varchar(255)</text>
     <rect x="0.7394964194964195" y="238.14003197043198" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
     <use href="#not-null-icon-black" x="286.3699884499885" y="245.9047443751444" width="17.747914067914067" height="17.747914067914067" rx="3.5495828135828136" ry="3.5495828135828136"/>
     <text x="40.67230307230307" y="260.10307562947565" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="black" font-weight="normal">last_name</text>
-    <text x="275.2775421575422" y="260.10307562947565" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">text</text>
+    <text x="275.2775421575422" y="260.10307562947565" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">varchar(255)</text>
     <rect x="0.7394964194964195" y="271.4173708477708" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
     <use href="#not-null-icon-black" x="286.3699884499885" y="279.1820832524832" width="17.747914067914067" height="17.747914067914067" rx="3.5495828135828136" ry="3.5495828135828136"/>
     <text x="40.67230307230307" y="293.3804145068145" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="black" font-weight="normal">password_hash</text>
@@ -582,7 +582,7 @@
     <rect x="0.7394964194964195" y="171.58535421575422" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
     <use href="#not-null-icon-black" x="286.3699884499885" y="179.35006662046663" width="17.747914067914067" height="17.747914067914067" rx="3.5495828135828136" ry="3.5495828135828136"/>
     <text x="40.67230307230307" y="193.54839787479787" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="black" font-weight="normal">name</text>
-    <text x="275.2775421575422" y="193.54839787479787" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">text</text>
+    <text x="275.2775421575422" y="193.54839787479787" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">varchar(255)</text>
     <rect x="0.7394964194964195" y="204.8626930930931" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
     <text x="40.67230307230307" y="226.82573675213675" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="black" font-weight="normal">summary</text>
     <text x="275.2775421575422" y="226.82573675213675" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">text</text>
@@ -613,13 +613,13 @@
     <text x="275.2775421575422" y="459.76710889350886" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="forestgreen" font-weight="normal">datetime(3)</text>
     <rect x="0.7394964194964195" y="0.7394964194964195" width="314.47085239085243" height="470.3419076923077" fill="transparent" stroke="silver" stroke-width="1.1092446292446292" rx="9.983201663201664" ry="9.983201663201664"/>
 </g>
-    <!-- table.convos at (407.27, 754.83) -->
+    <!-- table.convos at (407.27, 704.91) -->
 <defs>
     <filter id="shadow-convos" x="-20%" y="-20%" width="140%" height="140%">
         <feDropShadow dx="2" dy="2" stdDeviation="1.5" flood-color="rgba(0,0,0,0.3)"/>
     </filter>
 </defs>
-<g transform="translate(407.2681912681913, 754.8290461538462)" filter="url(#shadow-convos)">
+<g transform="translate(407.2681912681913, 704.9130378378378)" filter="url(#shadow-convos)">
     <rect x="0.7394964194964195" y="0.7394964194964195" width="314.47085239085243" height="536.8965854469855" fill="white" stroke="transparent" stroke-width="1.1092446292446292" rx="9.983201663201664" ry="9.983201663201664"/>
     <path d="M 10.722698082698082 0.7394964194964195 L 305.2271471471472 0.7394964194964195 Q 315.2103488103489 0.7394964194964195 315.2103488103489 10.722698082698082 L 315.2103488103489 38.475998706398705 L 0.7394964194964195 38.475998706398705 L 0.7394964194964195 10.722698082698082 Q 0.7394964194964195 0.7394964194964195 10.722698082698082 0.7394964194964195 Z" fill="skyblue" stroke="transparent" stroke-width="2.2184892584892584"/>
     <text x="11.831942711942713" y="23.800692261492262" font-family="Cairo, Arial, sans-serif" font-size="17.747914067914067" font-weight="bold">convos</text>    <text x="304.11790251790256" y="23.800692261492262" font-family="Cairo, Arial, sans-serif" font-size="13.310935550935552" font-weight="bold" fill="navy" text-anchor="end">1008</text>
@@ -706,7 +706,7 @@
     <rect x="0.7394964194964195" y="138.30801533841534" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
     <use href="#not-null-icon-black" x="286.3699884499885" y="146.07272774312776" width="17.747914067914067" height="17.747914067914067" rx="3.5495828135828136" ry="3.5495828135828136"/>
     <text x="40.67230307230307" y="160.271058997459" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="black" font-weight="normal">name</text>
-    <text x="275.2775421575422" y="160.271058997459" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">text</text>
+    <text x="275.2775421575422" y="160.271058997459" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">varchar(255)</text>
     <rect x="0.7394964194964195" y="171.58535421575422" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
     <text x="40.67230307230307" y="193.54839787479787" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="black" font-weight="normal">summary</text>
     <text x="275.2775421575422" y="193.54839787479787" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">text</text>
@@ -776,7 +776,7 @@
     <text x="275.2775421575422" y="226.82573675213675" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">text</text>
     <rect x="0.7394964194964195" y="238.14003197043198" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
     <text x="40.67230307230307" y="260.10307562947565" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="black" font-weight="normal">file_name</text>
-    <text x="275.2775421575422" y="260.10307562947565" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">text</text>
+    <text x="275.2775421575422" y="260.10307562947565" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">varchar(255)</text>
     <rect x="0.7394964194964195" y="271.4173708477708" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
     <text x="40.67230307230307" y="293.3804145068145" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="black" font-weight="normal">file_data</text>
     <text x="275.2775421575422" y="293.3804145068145" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">text</text>
@@ -786,7 +786,7 @@
     <rect x="0.7394964194964195" y="337.9720486024486" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
     <use href="#not-null-icon-black" x="286.3699884499885" y="345.73676100716096" width="17.747914067914067" height="17.747914067914067" rx="3.5495828135828136" ry="3.5495828135828136"/>
     <text x="40.67230307230307" y="359.93509226149223" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="black" font-weight="normal">name</text>
-    <text x="275.2775421575422" y="359.93509226149223" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">text</text>
+    <text x="275.2775421575422" y="359.93509226149223" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">varchar(255)</text>
     <rect x="0.7394964194964195" y="371.24938747978746" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
     <text x="40.67230307230307" y="393.2124311388311" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="black" font-weight="normal">summary</text>
     <text x="275.2775421575422" y="393.2124311388311" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">text</text>
@@ -844,7 +844,7 @@
     <rect x="0.7394964194964195" y="138.30801533841534" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
     <use href="#not-null-icon-black" x="286.3699884499885" y="146.07272774312776" width="17.747914067914067" height="17.747914067914067" rx="3.5495828135828136" ry="3.5495828135828136"/>
     <text x="40.67230307230307" y="160.271058997459" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="black" font-weight="normal">name</text>
-    <text x="275.2775421575422" y="160.271058997459" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">text</text>
+    <text x="275.2775421575422" y="160.271058997459" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">varchar(255)</text>
     <rect x="0.7394964194964195" y="171.58535421575422" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
     <text x="40.67230307230307" y="193.54839787479787" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="black" font-weight="normal">summary</text>
     <text x="275.2775421575422" y="193.54839787479787" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">text</text>
@@ -897,7 +897,7 @@
     <text x="275.2775421575422" y="93.71638124278125" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="maroon" font-weight="normal">int</text>
     <rect x="0.7394964194964195" y="105.03067646107647" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
     <text x="40.67230307230307" y="126.99372012012013" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="black" font-weight="normal">app_key</text>
-    <text x="275.2775421575422" y="126.99372012012013" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">text</text>
+    <text x="275.2775421575422" y="126.99372012012013" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">varchar(255)</text>
     <rect x="0.7394964194964195" y="138.30801533841534" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
     <use href="#not-null-icon-black" x="286.3699884499885" y="146.07272774312776" width="17.747914067914067" height="17.747914067914067" rx="3.5495828135828136" ry="3.5495828135828136"/>
     <text x="40.67230307230307" y="160.271058997459" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="black" font-weight="normal">system_id</text>
@@ -905,7 +905,7 @@
     <rect x="0.7394964194964195" y="171.58535421575422" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
     <use href="#not-null-icon-black" x="286.3699884499885" y="179.35006662046663" width="17.747914067914067" height="17.747914067914067" rx="3.5495828135828136" ry="3.5495828135828136"/>
     <text x="40.67230307230307" y="193.54839787479787" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="black" font-weight="normal">name</text>
-    <text x="275.2775421575422" y="193.54839787479787" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">text</text>
+    <text x="275.2775421575422" y="193.54839787479787" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">varchar(255)</text>
     <rect x="0.7394964194964195" y="204.8626930930931" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
     <text x="40.67230307230307" y="226.82573675213675" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="black" font-weight="normal">summary</text>
     <text x="275.2775421575422" y="226.82573675213675" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">text</text>
@@ -962,10 +962,10 @@
     <text x="275.2775421575422" y="126.99372012012013" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="maroon" font-weight="normal">int</text>
     <rect x="0.7394964194964195" y="138.30801533841534" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
     <text x="40.67230307230307" y="160.271058997459" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="black" font-weight="normal">list_value</text>
-    <text x="275.2775421575422" y="160.271058997459" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">text</text>
+    <text x="275.2775421575422" y="160.271058997459" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">varchar(255)</text>
     <rect x="0.7394964194964195" y="171.58535421575422" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
     <text x="40.67230307230307" y="193.54839787479787" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="black" font-weight="normal">list_note</text>
-    <text x="275.2775421575422" y="193.54839787479787" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">text</text>
+    <text x="275.2775421575422" y="193.54839787479787" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">varchar(255)</text>
     <rect x="0.7394964194964195" y="204.8626930930931" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
     <text x="40.67230307230307" y="226.82573675213675" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="black" font-weight="normal">collection</text>
     <text x="275.2775421575422" y="226.82573675213675" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">longtext</text>
@@ -1025,7 +1025,7 @@
     <rect x="0.7394964194964195" y="171.58535421575422" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
     <use href="#not-null-icon-black" x="286.3699884499885" y="179.35006662046663" width="17.747914067914067" height="17.747914067914067" rx="3.5495828135828136" ry="3.5495828135828136"/>
     <text x="40.67230307230307" y="193.54839787479787" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="black" font-weight="normal">name</text>
-    <text x="275.2775421575422" y="193.54839787479787" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">text</text>
+    <text x="275.2775421575422" y="193.54839787479787" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">varchar(255)</text>
     <rect x="0.7394964194964195" y="204.8626930930931" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
     <text x="40.67230307230307" y="226.82573675213675" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="black" font-weight="normal">summary</text>
     <text x="275.2775421575422" y="226.82573675213675" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">text</text>
@@ -1056,14 +1056,14 @@
     <text x="275.2775421575422" y="459.76710889350886" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="forestgreen" font-weight="normal">datetime(3)</text>
     <rect x="0.7394964194964195" y="0.7394964194964195" width="314.47085239085243" height="470.3419076923077" fill="transparent" stroke="silver" stroke-width="1.1092446292446292" rx="9.983201663201664" ry="9.983201663201664"/>
 </g>
-    <!-- table.reports at (407.27, 1310.59) -->
+    <!-- table.reports at (407.27, 1260.68) -->
 <defs>
     <filter id="shadow-reports" x="-20%" y="-20%" width="140%" height="140%">
         <feDropShadow dx="2" dy="2" stdDeviation="1.5" flood-color="rgba(0,0,0,0.3)"/>
     </filter>
 </defs>
-<g transform="translate(407.2681912681913, 1310.5938827442828)" filter="url(#shadow-reports)">
-    <rect x="0.7394964194964195" y="0.7394964194964195" width="314.47085239085243" height="470.3419076923077" fill="white" stroke="transparent" stroke-width="1.1092446292446292" rx="9.983201663201664" ry="9.983201663201664"/>
+<g transform="translate(407.2681912681913, 1260.6778744282744)" filter="url(#shadow-reports)">
+    <rect x="0.7394964194964195" y="0.7394964194964195" width="314.47085239085243" height="570.1739243243243" fill="white" stroke="transparent" stroke-width="1.1092446292446292" rx="9.983201663201664" ry="9.983201663201664"/>
     <path d="M 10.722698082698082 0.7394964194964195 L 305.2271471471472 0.7394964194964195 Q 315.2103488103489 0.7394964194964195 315.2103488103489 10.722698082698082 L 315.2103488103489 38.475998706398705 L 0.7394964194964195 38.475998706398705 L 0.7394964194964195 10.722698082698082 Q 0.7394964194964195 0.7394964194964195 10.722698082698082 0.7394964194964195 Z" fill="skyblue" stroke="transparent" stroke-width="2.2184892584892584"/>
     <text x="11.831942711942713" y="23.800692261492262" font-family="Cairo, Arial, sans-serif" font-size="17.747914067914067" font-weight="bold">reports</text>    <text x="304.11790251790256" y="23.800692261492262" font-family="Cairo, Arial, sans-serif" font-size="13.310935550935552" font-weight="bold" fill="navy" text-anchor="end">1015</text>
     <rect x="0.7394964194964195" y="38.475998706398705" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="transparent" stroke-width="0.5546223146223146"/>
@@ -1085,36 +1085,45 @@
     <rect x="0.7394964194964195" y="171.58535421575422" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
     <use href="#not-null-icon-black" x="286.3699884499885" y="179.35006662046663" width="17.747914067914067" height="17.747914067914067" rx="3.5495828135828136" ry="3.5495828135828136"/>
     <text x="40.67230307230307" y="193.54839787479787" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="black" font-weight="normal">name</text>
-    <text x="275.2775421575422" y="193.54839787479787" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">text</text>
+    <text x="275.2775421575422" y="193.54839787479787" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">varchar(255)</text>
     <rect x="0.7394964194964195" y="204.8626930930931" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
-    <text x="40.67230307230307" y="226.82573675213675" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="black" font-weight="normal">summary</text>
+    <text x="40.67230307230307" y="226.82573675213675" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="black" font-weight="normal">design</text>
     <text x="275.2775421575422" y="226.82573675213675" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">text</text>
     <rect x="0.7394964194964195" y="238.14003197043198" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
-    <text x="40.67230307230307" y="260.10307562947565" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="black" font-weight="normal">collection</text>
-    <text x="275.2775421575422" y="260.10307562947565" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">longtext</text>
+    <text x="40.67230307230307" y="260.10307562947565" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="black" font-weight="normal">scripts</text>
+    <text x="275.2775421575422" y="260.10307562947565" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">text</text>
     <rect x="0.7394964194964195" y="271.4173708477708" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
-    <text x="40.67230307230307" y="293.3804145068145" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="forestgreen" font-weight="normal">valid_after</text>
-    <text x="275.2775421575422" y="293.3804145068145" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="forestgreen" font-weight="normal">datetime(3)</text>
+    <text x="40.67230307230307" y="293.3804145068145" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="black" font-weight="normal">parameters</text>
+    <text x="275.2775421575422" y="293.3804145068145" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">text</text>
     <rect x="0.7394964194964195" y="304.6947097251097" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
-    <text x="40.67230307230307" y="326.65775338415335" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="forestgreen" font-weight="normal">valid_until</text>
-    <text x="275.2775421575422" y="326.65775338415335" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="forestgreen" font-weight="normal">datetime(3)</text>
+    <text x="40.67230307230307" y="326.65775338415335" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="black" font-weight="normal">summary</text>
+    <text x="275.2775421575422" y="326.65775338415335" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">text</text>
     <rect x="0.7394964194964195" y="337.9720486024486" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
-    <use href="#not-null-icon-darkgreen" x="286.3699884499885" y="345.73676100716096" width="17.747914067914067" height="17.747914067914067" rx="3.5495828135828136" ry="3.5495828135828136"/>
-    <text x="40.67230307230307" y="359.93509226149223" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="forestgreen" font-weight="normal">created_id</text>
-    <text x="275.2775421575422" y="359.93509226149223" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="forestgreen" font-weight="normal">int</text>
+    <text x="40.67230307230307" y="359.93509226149223" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="black" font-weight="normal">collection</text>
+    <text x="275.2775421575422" y="359.93509226149223" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">longtext</text>
     <rect x="0.7394964194964195" y="371.24938747978746" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
-    <use href="#not-null-icon-darkgreen" x="286.3699884499885" y="379.01409988449984" width="17.747914067914067" height="17.747914067914067" rx="3.5495828135828136" ry="3.5495828135828136"/>
-    <text x="40.67230307230307" y="393.2124311388311" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="forestgreen" font-weight="normal">created_at</text>
+    <text x="40.67230307230307" y="393.2124311388311" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="forestgreen" font-weight="normal">valid_after</text>
     <text x="275.2775421575422" y="393.2124311388311" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="forestgreen" font-weight="normal">datetime(3)</text>
     <rect x="0.7394964194964195" y="404.52672635712634" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
-    <use href="#not-null-icon-darkgreen" x="286.3699884499885" y="412.2914387618387" width="17.747914067914067" height="17.747914067914067" rx="3.5495828135828136" ry="3.5495828135828136"/>
-    <text x="40.67230307230307" y="426.48977001617" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="forestgreen" font-weight="normal">updated_id</text>
-    <text x="275.2775421575422" y="426.48977001617" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="forestgreen" font-weight="normal">int</text>
-    <rect x="0.7394964194964195" y="437.8040652344652" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="transparent" stroke-width="0.5546223146223146"/>
+    <text x="40.67230307230307" y="426.48977001617" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="forestgreen" font-weight="normal">valid_until</text>
+    <text x="275.2775421575422" y="426.48977001617" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="forestgreen" font-weight="normal">datetime(3)</text>
+    <rect x="0.7394964194964195" y="437.8040652344652" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
     <use href="#not-null-icon-darkgreen" x="286.3699884499885" y="445.5687776391776" width="17.747914067914067" height="17.747914067914067" rx="3.5495828135828136" ry="3.5495828135828136"/>
-    <text x="40.67230307230307" y="459.76710889350886" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="forestgreen" font-weight="normal">updated_at</text>
-    <text x="275.2775421575422" y="459.76710889350886" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="forestgreen" font-weight="normal">datetime(3)</text>
-    <rect x="0.7394964194964195" y="0.7394964194964195" width="314.47085239085243" height="470.3419076923077" fill="transparent" stroke="silver" stroke-width="1.1092446292446292" rx="9.983201663201664" ry="9.983201663201664"/>
+    <text x="40.67230307230307" y="459.76710889350886" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="forestgreen" font-weight="normal">created_id</text>
+    <text x="275.2775421575422" y="459.76710889350886" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="forestgreen" font-weight="normal">int</text>
+    <rect x="0.7394964194964195" y="471.0814041118041" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
+    <use href="#not-null-icon-darkgreen" x="286.3699884499885" y="478.8461165165165" width="17.747914067914067" height="17.747914067914067" rx="3.5495828135828136" ry="3.5495828135828136"/>
+    <text x="40.67230307230307" y="493.04444777084774" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="forestgreen" font-weight="normal">created_at</text>
+    <text x="275.2775421575422" y="493.04444777084774" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="forestgreen" font-weight="normal">datetime(3)</text>
+    <rect x="0.7394964194964195" y="504.35874298914297" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
+    <use href="#not-null-icon-darkgreen" x="286.3699884499885" y="512.1234553938554" width="17.747914067914067" height="17.747914067914067" rx="3.5495828135828136" ry="3.5495828135828136"/>
+    <text x="40.67230307230307" y="526.3217866481866" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="forestgreen" font-weight="normal">updated_id</text>
+    <text x="275.2775421575422" y="526.3217866481866" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="forestgreen" font-weight="normal">int</text>
+    <rect x="0.7394964194964195" y="537.6360818664818" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="transparent" stroke-width="0.5546223146223146"/>
+    <use href="#not-null-icon-darkgreen" x="286.3699884499885" y="545.4007942711943" width="17.747914067914067" height="17.747914067914067" rx="3.5495828135828136" ry="3.5495828135828136"/>
+    <text x="40.67230307230307" y="559.5991255255256" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="forestgreen" font-weight="normal">updated_at</text>
+    <text x="275.2775421575422" y="559.5991255255256" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="forestgreen" font-weight="normal">datetime(3)</text>
+    <rect x="0.7394964194964195" y="0.7394964194964195" width="314.47085239085243" height="570.1739243243243" fill="transparent" stroke="silver" stroke-width="1.1092446292446292" rx="9.983201663201664" ry="9.983201663201664"/>
 </g>
     <!-- table.roles at (755.02, 1227.40) -->
 <defs>
@@ -1149,7 +1158,7 @@
     <rect x="0.7394964194964195" y="171.58535421575422" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
     <use href="#not-null-icon-black" x="286.3699884499885" y="179.35006662046663" width="17.747914067914067" height="17.747914067914067" rx="3.5495828135828136" ry="3.5495828135828136"/>
     <text x="40.67230307230307" y="193.54839787479787" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="black" font-weight="normal">name</text>
-    <text x="275.2775421575422" y="193.54839787479787" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">text</text>
+    <text x="275.2775421575422" y="193.54839787479787" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">varchar(255)</text>
     <rect x="0.7394964194964195" y="204.8626930930931" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
     <text x="40.67230307230307" y="226.82573675213675" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="black" font-weight="normal">summary</text>
     <text x="275.2775421575422" y="226.82573675213675" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">text</text>
@@ -1203,7 +1212,7 @@
     <rect x="0.7394964194964195" y="105.03067646107647" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
     <use href="#not-null-icon-black" x="286.3699884499885" y="112.79538886578888" width="17.747914067914067" height="17.747914067914067" rx="3.5495828135828136" ry="3.5495828135828136"/>
     <text x="40.67230307230307" y="126.99372012012013" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="black" font-weight="normal">name</text>
-    <text x="275.2775421575422" y="126.99372012012013" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">text</text>
+    <text x="275.2775421575422" y="126.99372012012013" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">varchar(255)</text>
     <rect x="0.7394964194964195" y="138.30801533841534" width="314.47085239085243" height="33.27733887733888" fill="transparent" stroke="#cccccc" stroke-width="0.5546223146223146"/>
     <text x="40.67230307230307" y="160.271058997459" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="black" font-weight="normal">summary</text>
     <text x="275.2775421575422" y="160.271058997459" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="black" font-weight="normal">text</text>
@@ -1248,7 +1257,7 @@
     <use href="#key-icon-navy" x="11.831942711942713" y="46.24071111111111" width="17.747914067914067" height="17.747914067914067" rx="3.5495828135828136" ry="3.5495828135828136"/>
     <use href="#not-null-icon-navy" x="286.3699884499885" y="46.24071111111111" width="17.747914067914067" height="17.747914067914067" rx="3.5495828135828136" ry="3.5495828135828136"/>
     <text x="40.67230307230307" y="60.43904236544236" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" fill="navy" font-weight="bold">session_id</text>
-    <text x="275.2775421575422" y="60.43904236544236" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="navy" font-weight="bold">text</text>
+    <text x="275.2775421575422" y="60.43904236544236" font-family="Cairo, Arial, sans-serif" font-size="14.789928389928392" text-anchor="end" fill="navy" font-weight="bold">varchar(255)</text>
     <rect x="0.7394964194964195" y="71.75333758373759" width="314.47085239085243" height="33.27733887733888" fill="yellow" stroke="#cccccc" stroke-width="0.5546223146223146"/>
     <use href="#lookup-icon-maroon" x="11.831942711942713" y="79.51804998845" width="17.747914067914067" height="17.747914067914067" rx="3.5495828135828136" ry="3.5495828135828136"/>
     <use href="#not-null-icon-maroon" x="286.3699884499885" y="79.51804998845" width="17.747914067914067" height="17.747914067914067" rx="3.5495828135828136" ry="3.5495828135828136"/>
@@ -1295,5 +1304,5 @@
 </g>
 </g>
 
-                                </g>
-                            </svg>
+                                        </g>
+                                    </svg>
