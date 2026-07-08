@@ -7,7 +7,7 @@
 # generate_database_diagram()
 
 # CHANGELOG
-# 3.0.0 - 2026-01-01 - Generate SVG diagrams in HELIUM_ROOT/<design>/diagrams directories instead of HYDROGEN_ROOT/images
+# 3.0.0 - 2026-07-08 - Metadata capture updated for compact JSON emitted by get_diagram.sh 3.1.0
 # 2.0.0 - 2025-11-17 - Fixed diagram numbering bug, added before/after highlighting, generates diagrams for ALL migrations (not just latest)
 # 1.2.0 - 2025-11-15 - Fixed filename generation to use last_diagram_migration from metadata
 # 1.1.0 - 2025-09-30 - Added metadata, starting with 'Tables included' to output
@@ -20,7 +20,7 @@ TEST_NAME="Database Diagrams"
 TEST_ABBR="ERD"
 TEST_NUMBER="71"
 TEST_COUNTER=0
-TEST_VERSION="2.0.0"
+TEST_VERSION="3.0.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"

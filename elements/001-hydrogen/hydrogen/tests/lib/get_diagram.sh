@@ -4,6 +4,7 @@
 # Generate SVG database diagram from migration JSON
 
 # CHANGELOG
+# 3.1.0 - 2026-07-08 - Fixed diagram JSON extraction for Brotli/base64-encoded content that folds to a single line; metadata now emitted as compact JSON
 # 3.0.0 - 2025-12-05 - Added HYDROGEN_ROOT and HELIUM_ROOT environment variable checks
 # 2.1.0 - 2025-11-29 - Fixed Brotli decompression support 
 #                       (1) Use direct piping (base64 -d | brotli -d) to capture decompressed text without null byte issues, 
@@ -130,30 +131,33 @@ for MIGRATION_FILE in "${FILTERED_MIGRATION_FILES[@]}"; do
     SQL_OUTPUT=$(LUA_PATH="./?.lua;${DESIGN_DIR}/?.lua" lua "./get_migration.lua" "${ENGINE}" "${DESIGN}" "${PREFIX}" "${migration_num}")
     popd >/dev/null
 
-    # Extract JSON from the diagram migration using DIAGRAM_START and DIAGRAM_END markers
-    RAW_BLOCK=$(echo "${SQL_OUTPUT}" | sed -n '/-- DIAGRAM_START/,/-- DIAGRAM_END/p' | sed '1,2d;$d')
+    # Extract JSON from the diagram migration using DIAGRAM_START and DIAGRAM_END markers.
+    # The content between the markers may be a single line (compressed/encoded) or span
+    # multiple lines, so keep everything strictly inside the markers.
+    RAW_BLOCK=$(echo "${SQL_OUTPUT}" | sed -n '/-- DIAGRAM_START/,/-- DIAGRAM_END/p' | sed '1d;$d')
 
     if [[ ${#RAW_BLOCK} -eq 0 ]]; then
         # No diagram data in this migration - skip it silently
         continue
     fi
 
-    # Clean up the extracted JSON
-    # Step 1: Remove DIAGRAM_START, DIAGRAM_END, and outer single quotes
-    JSON_DATA=$(printf '%s' "${RAW_BLOCK}" | \
-        sed '/DIAGRAM_START/d; /DIAGRAM_END/d; s/^'\''//; s/'\''$//' | head -n -1)
+    # Clean up the extracted block:
+    #   - trim leading/trailing whitespace
+    #   - remove the engine-specific JSON_INGEST wrapper so only the encoded/raw JSON remains
+    JSON_DATA=$(printf '%s' "${RAW_BLOCK}" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
 
-    # Step 2: Remove JSON_INGEST_START and JSON_INGEST_END wrappers if present
     case "${ENGINE}" in
         sqlite)
-            JSON_INGEST_START="("
-            JSON_INGEST_END=")"
+            JSON_INGEST_START='^[[:space:]]*\('
+            JSON_INGEST_END='\)[[:space:]]*$'
             ;;
         postgresql|mysql|db2)
-            # For these engines, JSON_INGEST_START includes schema prefix like "ACURANZOjson_ingest ("
-            # We need to match the pattern dynamically
-            JSON_INGEST_START="json_ingest[ ]*("
-            JSON_INGEST_END=")"
+            # The wrapper looks like "<schema>.json_ingest(...)" or "<schema>.JSON_INGEST(...)".
+            # Strip everything up to and including the wrapper's opening paren, and the
+            # matching trailing closing paren.  The [^()] class ensures we consume the wrapper
+            # function name, not parentheses that may appear inside the encoded content.
+            JSON_INGEST_START='^[[:space:]]*[^()]*\('
+            JSON_INGEST_END='\)[[:space:]]*$'
             ;;
         *)
             JSON_INGEST_START=""
@@ -162,8 +166,11 @@ for MIGRATION_FILE in "${FILTERED_MIGRATION_FILES[@]}"; do
     esac
 
     if [[ -n "${JSON_INGEST_START}" && -n "${JSON_INGEST_END}" ]]; then
-        # Remove the JSON_INGEST wrappers
-        JSON_DATA=$(printf '%s' "${JSON_DATA}" | sed "s/^${JSON_INGEST_START}//; s/${JSON_INGEST_END}$//")
+        # Remove the JSON_INGEST wrappers.  Apply the opening-wrapper removal only
+        # to the first line and the closing-wrapper removal only to the last line so
+        # that parentheses belonging to encoded content on intermediate lines are
+        # left untouched.
+        JSON_DATA=$(printf '%s' "${JSON_DATA}" | sed -E "1s/${JSON_INGEST_START}//; \$s/${JSON_INGEST_END}$//")
     fi
 
     # Step 3: Handle BROTLI_DECOMPRESS and BASE64 wrappers if present
@@ -424,9 +431,9 @@ if [[ -f "${METADATA_TMP}" ]] && [[ -s "${METADATA_TMP}" ]]; then
 
         # Validate that it's valid JSON and add requested_migration
         if jq empty <<< "${METADATA_JSON}" 2>/dev/null; then
-            # Add the requested migration number to the metadata
+            # Add the requested migration number to the metadata (compact so it stays on one line)
             if [[ -n "${MIGRATION}" ]]; then
-                METADATA=$(jq --arg reqmig "${MIGRATION}" '. + {requested_migration: $reqmig}' <<< "${METADATA_JSON}")
+                METADATA=$(jq -c --arg reqmig "${MIGRATION}" '. + {requested_migration: $reqmig}' <<< "${METADATA_JSON}")
             else
                 METADATA="${METADATA_JSON}"
             fi

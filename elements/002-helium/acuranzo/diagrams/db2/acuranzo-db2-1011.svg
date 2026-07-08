@@ -1,28 +1,28 @@
 <svg   xmlns="http://www.w3.org/2000/svg"
-                                    xmlns:xlink="http://www.w3.org/1999/xlink"
-                                    width="2520"
-                                    height="1980"
-                                    viewBox="0 0 2520 1980">
-                                <!-- Define clipPath for rounded border with 2mm margin -->
-                                <defs>
-                                    <clipPath id="border-clip">
-                                    <rect x="18" y="18" width="2484" height="1944" rx="42.51" ry="42.51"/>
-                                    </clipPath>
-                                </defs>
-                                <!-- Thin black border with 2mm margin -->
-                                <rect x="18" y="18" width="2484" height="1944" fill="none" stroke="black" stroke-width="3" rx="42.51" ry="42.51"/>
-                                <!-- White background within border, clipped to rounded shape -->
-                                <rect x="18" y="18" width="2484" height="1944" fill="white" clip-path="url(#border-clip)"/>
-                                <!-- 1cm (28.3pt) dashed silver grid, offset by 2mm margin -->
-                                <defs>
-                                    <pattern id="grid" width="84.9" height="84.9" patternUnits="userSpaceOnUse" x="18" y="18">
-                                        <path d="M 84.9 0 L 0 0 0 84.9" fill="none" stroke="black" stroke-width="1.5" stroke-dasharray="6,6"/>
-                                    </pattern>
-                                </defs>
-                                <rect x="18" y="18" width="2484" height="1944" fill="url(#grid)" clip-path="url(#border-clip)"/>
-                                <!-- ERD content placeholder -->
-                                <g id="erd-content" transform="translate(0, 0)">
-                                    
+                                            xmlns:xlink="http://www.w3.org/1999/xlink"
+                                            width="2520"
+                                            height="1980"
+                                            viewBox="0 0 2520 1980">
+                                        <!-- Define clipPath for rounded border with 2mm margin -->
+                                        <defs>
+                                            <clipPath id="border-clip">
+                                            <rect x="18" y="18" width="2484" height="1944" rx="42.51" ry="42.51"/>
+                                            </clipPath>
+                                        </defs>
+                                        <!-- Thin black border with 2mm margin -->
+                                        <rect x="18" y="18" width="2484" height="1944" fill="none" stroke="black" stroke-width="3" rx="42.51" ry="42.51"/>
+                                        <!-- White background within border, clipped to rounded shape -->
+                                        <rect x="18" y="18" width="2484" height="1944" fill="white" clip-path="url(#border-clip)"/>
+                                        <!-- 1cm (28.3pt) dashed silver grid, offset by 2mm margin -->
+                                        <defs>
+                                            <pattern id="grid" width="84.9" height="84.9" patternUnits="userSpaceOnUse" x="18" y="18">
+                                                <path d="M 84.9 0 L 0 0 0 84.9" fill="none" stroke="black" stroke-width="1.5" stroke-dasharray="6,6"/>
+                                            </pattern>
+                                        </defs>
+                                        <rect x="18" y="18" width="2484" height="1944" fill="url(#grid)" clip-path="url(#border-clip)"/>
+                                        <!-- ERD content placeholder -->
+                                        <g id="erd-content" transform="translate(0, 0)">
+                                            
 <!-- Layout Region -->
 <defs>
     <clipPath id="layout-region-clip">
@@ -114,7 +114,7 @@
     <text x="321.9007239330092" y="304.15618973527825" font-family="Cairo, Arial, sans-serif" font-size="17.294867639113992" text-anchor="end" fill="black" font-weight="normal">INTEGER</text>
     <rect x="0.8647433819556997" y="317.38676347920045" width="367.7321231766613" height="38.91345218800649" fill="transparent" stroke="#cccccc" stroke-width="0.6485575364667747"/>
     <use href="#not-null-icon-black" x="334.8718746623447" y="326.4665689897353" width="20.75384116693679" height="20.75384116693679" rx="4.150768233387359" ry="4.150768233387359"/>
-    <text x="47.56088600756348" y="343.06964192328473" font-family="Cairo, Arial, sans-serif" font-size="17.294867639113992" fill="black" font-weight="normal">QUERY_CODE</text>
+    <text x="47.56088600756348" y="343.06964192328473" font-family="Cairo, Arial, sans-serif" font-size="17.294867639113992" fill="black" font-weight="normal">CODE</text>
     <text x="321.9007239330092" y="343.06964192328473" font-family="Cairo, Arial, sans-serif" font-size="17.294867639113992" text-anchor="end" fill="black" font-weight="normal">CLOB(100K)</text>
     <rect x="0.8647433819556997" y="356.30021566720694" width="367.7321231766613" height="38.91345218800649" fill="transparent" stroke="#cccccc" stroke-width="0.6485575364667747"/>
     <use href="#not-null-icon-black" x="334.8718746623447" y="365.3800211777418" width="20.75384116693679" height="20.75384116693679" rx="4.150768233387359" ry="4.150768233387359"/>
@@ -877,5 +877,5 @@
 </g>
 </g>
 
-                                </g>
-                            </svg>
+                                        </g>
+                                    </svg>
