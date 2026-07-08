@@ -9,9 +9,7 @@
 #include <src/hydrogen.h>
 #include <src/database/database.h>
 #include <src/database/database_pending.h>
-
-// JSON library for proper serialization
-#include <jansson.h>
+#include <src/database/dbqueue/query_result_cache.h>
 
 // Local includes
 #include "dbqueue.h"
@@ -149,6 +147,53 @@ DatabaseQuery* deserialize_query_from_json(const char* json_str) {
  */
 bool database_queue_submit_query(DatabaseQueue* db_queue, DatabaseQuery* query) {
     if (!db_queue || !query || !query->query_template) return false;
+
+    // Check the global query-result cache for cache-type queries.  If we have a
+    // cached result, signal the already-registered pending result and skip the
+    // queue entirely.  This is transparent to all callers.
+    if (query->query_id && query->queue_type_hint == DB_QUEUE_CACHE) {
+        QueryResultCache* cache = query_result_cache_get_global();
+        if (cache) {
+            json_t* cached_data = NULL;
+            size_t row_count = 0;
+            size_t column_count = 0;
+            int affected_rows = 0;
+            time_t execution_time_ms = 0;
+
+            if (query_result_cache_get(cache, db_queue->database_name, query->query_template,
+                                       query->parameter_json, &cached_data, &row_count,
+                                       &column_count, &affected_rows, &execution_time_ms)) {
+                QueryResult* result = calloc(1, sizeof(QueryResult));
+                if (result) {
+                    result->success = true;
+                    result->data_json = json_dumps(cached_data, JSON_COMPACT);
+                    result->row_count = row_count;
+                    result->column_count = column_count;
+                    result->affected_rows = affected_rows;
+                    result->execution_time_ms = execution_time_ms;
+                    result->error_class = DB_ERR_NONE;
+
+                    if (result->data_json) {
+                        PendingResultManager* pending_mgr = get_pending_result_manager();
+                        bool signaled = false;
+                        if (pending_mgr) {
+                            signaled = pending_result_signal_ready(pending_mgr, query->query_id, result, NULL);
+                        }
+
+                        if (!signaled) {
+                            database_engine_cleanup_result(result);
+                        }
+
+                        json_decref(cached_data);
+                        return true;
+                    }
+
+                    free(result);
+                }
+                json_decref(cached_data);
+            }
+        }
+    }
 
     // For Lead queues, route queries to appropriate child queues
     if (db_queue->is_lead_queue) {

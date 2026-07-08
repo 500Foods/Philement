@@ -771,6 +771,16 @@
                             "type": "boolean",
                             "description": "Enable event-generated mail"
                         },
+                        "MaxEventsPerInterval": {
+                            "type": "integer",
+                            "description": "Maximum event emits per event key per interval",
+                            "minimum": 1
+                        },
+                        "EventIntervalSeconds": {
+                            "type": "integer",
+                            "description": "Rate limit interval in seconds",
+                            "minimum": 1
+                        },
                         "Rules": {
                             "type": "object",
                             "description": "Event key to Lua script mapping",

@@ -245,6 +245,10 @@ Append discoveries, surprises, and decisions here as we move through phases. Ear
 
 ### Decisions log
 
+- (Phase 6, 2026-07-08) Event rule execution model: `MailRelay.Events.Rules` keeps the existing `event_key → script_name` mapping. Phase 6.1a implements built-in default Lua handlers for `system.server_started` and `system.server_stopped`; custom DB-loaded scripts come in Phase 6.1b. Handlers return a mail-request table (template_key, to/cc/bcc, params, etc.) and C dispatches via `mailrelay_send_template()`.
+- (Phase 6, 2026-07-08) Event rate limiting: per-event-key fixed-window counter with `MaxEventsPerInterval` (default 10) and `EventIntervalSeconds` (default 60). Rate-limit state lives in `MailRelayRuntime` and is freed on shutdown.
+- (Phase 6, 2026-07-08) Startup/shutdown trigger points: `system.server_started` is emitted after the canonical `READY FOR REQUESTS` log in both the async database path (`database_signal_ready_if_complete`) and the no-database path in `launch.c`. `system.server_stopped` is emitted from `land_mail_relay_subsystem()` before `mailrelay_shutdown()` so Mail Relay can still enqueue.
+- (Phase 6, 2026-07-08) Event persistence: events are not written to `mail_events`; they enqueue directly through the existing producer API, per user direction.
 - (Phase 0, 2026-07-06) Notify vs MailRelay SMTP ownership: Mail Relay is the only SMTP/mail delivery subsystem. Notify becomes a producer/compatibility layer that calls Mail Relay later; do not build a second active SMTP delivery path in Notify.
 - (Phase 0, 2026-07-06) Durable-mail database target policy: add `MailRelay.Database` as the configured Hydrogen database connection for system mail tables, durable queue state, templates, attempts, events, and OTP rows. API/Lua callers may carry JWT/database context for authorization and audit, but durable mail state is owned by `MailRelay.Database`.
 - (Phase 0, 2026-07-06) Default enabled/port reconciliation: Mail Relay is disabled by default and must not require SMTP environment variables at startup. Outbound servers are required only when outbound sending is enabled. Submission/listen port settings apply only when inbound relay is enabled.
@@ -263,7 +267,7 @@ Append discoveries, surprises, and decisions here as we move through phases. Ear
 - (Phase 2, 2026-07-06) IMAP and JMAP modules are implemented as full, functional servers in Phase 2 (not scaffolds), backed by a shared in-memory mailbox store that SMTP delivery populates. This avoids rework when inbound (Phase 12) and JMAP access land later.
 - (Phase 2, 2026-07-06) libcurl SMTP ambiguity: `TLSMode == MAIL_TLS_MODE_NONE` with `UseTLS == true` maps to `smtp://` with STARTTLS (not `smtps://`), because explicit `TLSMode` values take precedence and legacy `UseTLS` is only a backward-compatible hint that defaults to STARTTLS when no explicit mode is set.
 - (Phase 2, 2026-07-06) `mailrelay_smtp` owns rendering: callers pass `MailRelayMessage + OutboundServer`, and `mailrelay_smtp` calls `mailrelay_render_message` internally. This keeps the public API minimal and ensures secrets/body redaction, seam injection, and policy are centralized in one place.
-- (Phase 5) Template syntax: (TBD)
+- (Phase 5, 2026-07-08) Template syntax locked: `%MACRO%` for variables, `%MACRO|default%` for optional defaults, `%%` for a literal percent sign. Built-in macros: `%APP_NAME%`, `%SERVER_NAME%`, `%TIMESTAMP%`, `%USER_EMAIL%`, `%REQUEST_ID%`, `%OTP_CODE%`. No automatic HTML/text escaping: callers/API/Lua must sanitize values before passing them to the engine. Missing required macros cause a hard `MAIL_PARAM_MISSING` error unless a default is provided. `%OTP_CODE%` is rendered as plaintext into the message body; log redaction policy already prevents secret exposure.
 
 - (Phase 3.2, 2026-07-06) In-memory queue design: specialized `MailRelayQueue` in `mailrelay_queue.{c,h}` rather than the generic `src/queue/queue.{c,h}` because mail items need deep-copied `MailRelayMessage`, priority, attempts, and next-attempt metadata. Queue is priority-ordered (higher first, FIFO within same priority), bounded by `Queue.MaxInMemory`, supports timed blocking dequeue and shutdown broadcast. Status enum `MailRelayStatus` added with `OK`, `INVALID_ARGS`, `QUEUE_FULL`, `SHUTDOWN`, `TIMEOUT`. `mailrelay_message_copy()` added to support deep-copy enqueue without exposing message internals.
 
@@ -748,42 +752,77 @@ Exit Gate 4E (Phase 4 final): the durable queue, templates, events, OTP, routes,
 
 Phase 4 Status: complete. Date: 2026-07-07. Result: Phase 4A, 4B, 4C, 4D, and 4E are complete. Lookups 063–068 created as migrations 1211–1216; all six Mail Relay tables (`mail_templates`, `mail_queue`, `mail_attempts`, `mail_events`, `mail_otp_codes`, `mail_routes`) created as migrations 1217–1222; all core QueryRefs 093–122 created as migrations 1223–1252; all cleanup QueryRefs 123–126 created as migrations 1253–1256. `src/mailrelay/mailrelay_repository.{c,h}` created with callback-based helpers for all QueryRefs 093–126 and a mockable execution seam. Startup recovery (`mailrelay_recover_stale_sending_rows`) runs from `mailrelay_init()` when `Queue.Persist=true` and a database target is configured, calling QueryRef 101 with a `STALE_BEFORE` cutoff computed from `Queue.StaleTimeoutSeconds`. Enqueue persistence writes a pending `mail_queue` row via QueryRef 093 before the message enters the in-memory queue; debounced/coalesced messages are also persisted when flushed. `mku mailrelay_repository_test` (12 tests), `mku mailrelay_persistence_test` (6 tests), `mku mailrelay_queue_test`, `mku mailrelay_debounce_test`, `mku mailrelay_message_test`, `mku config_mail_relay_test_load_mailrelay_config`, `mkt`, `mkp`, and `tests/test_93_jsonlint.sh` all pass. README index regenerated by `elements/002-helium/scripts/helium_update.sh`; `tests/test_98_luacheck.sh` passes. The QTC load verification (4C.6) remains pending per-user verification; the live DB persistence path has been validated only through the mock executor so far. Variances: README update performed by `helium_update.sh` rather than manual edit, per project convention; integer primary keys are application-generated rather than using `${SERIAL}` to match project migration convention; logical foreign keys (`queue_id` references) are not enforced by database constraints, matching existing Acuranzo convention; QueryRef 096 is intentionally a non-atomic SELECT-only claim to stay engine-agnostic; cleanup QueryRefs use a `:CUTOFF_AT` timestamp parameter rather than `:RETENTION_DAYS` because engine-agnostic date arithmetic is not available in the existing macro set; the repository API is callback-based but the default executor waits synchronously for the database result before invoking the callback, because the existing database infrastructure (pending result manager) is synchronous from the caller's perspective; `Queue.StaleTimeoutSeconds` is new and defaults to 300 seconds; the recovery QueryRef parameter was renamed from `STALE_CUTOFF_AT` to `STALE_BEFORE` to match migration 1231.
 
+## Phase 4F - Generic Query Result Cache
+
+Objective: Add a server-lifetime, global, query-result cache for any QueryRef whose `query_queue_a58` (Lookup 58) is `cached` (value 3). This is a cross-cutting prerequisite for the Phase 5 macro engine so that lookup-driven macros (e.g., QueryRef 034/035 for Lookup 046) do not hit the database on every render.
+
+Entry Gate: Phase 4 exit gate green.
+
+Design decisions locked for this chunk (2026-07-07):
+
+- Cache is global, keyed by `database_name:sql_template_hash:param_hash`. The SQL template hash makes the cache transparent and database-agnostic; no existing code needs to know about the cache.
+- Parameter hash is SHA256 of normalized parameter JSON.
+- Only successful query results are cached; failures are re-executed.
+- Cache hooks live in the database queue layer (`database_queue_submit_query` and `database_queue_process_single_query`) so both Conduit REST and Mail Relay repository queries benefit transparently.
+
+- [x] 4F.1 Add query-result cache data structure.
+  - Files: `src/database/dbqueue/query_result_cache.{c,h}`.
+  - Thread-safe hash table storing `data_json`, `row_count`, `column_count`, `affected_rows`, `execution_time_ms`, and `success`.
+  - Key includes a SHA256 hash of the SQL template plus a SHA256 hash of the normalized parameter JSON.
+  - Verification: `mku query_result_cache_test` passes.
+
+- [x] 4F.2 Hook cache into database queue submission and result processing.
+  - In `database_queue_submit_query`: when `queue_type_hint == DB_QUEUE_CACHE` and a cache entry exists for the query template + parameters, signal the already-registered pending result with the cached `QueryResult` and skip the queue.
+  - In `database_queue_process_single_query`: after a successful cache-type query, store the result in the cache before signaling the pending result.
+  - No changes to existing callers; the cache is transparent.
+  - Verification: `mkt` and existing `mku` database/Conduit tests pass.
+
+- [x] 4F.3 Verify end-to-end with a cached query.
+  - Rather than modifying a live migration, a new integration test (`query_result_cache_integration_test`) pre-populates the global cache and verifies that `database_queue_submit_query` returns a cache hit without enqueuing and signals the pending result.
+  - Verification: `mku query_result_cache_integration_test` passes; `mku` database/Conduit/Mail Relay tests still pass.
+
+Exit Gate: cache hit/miss is verified, no regressions in database/Conduit/Mail Relay unit tests, `mkt` and `mkp` are green.
+
+Phase 4F Status: complete. Date: 2026-07-07. Result: Implemented a global, server-lifetime, query-result cache keyed by `database_name:sql_template_hash:param_hash`. The cache is transparent to all existing callers: cache hits are served in `database_queue_submit_query` and successful cache-type results are stored in `database_queue_process_single_query`. New files: `src/database/dbqueue/query_result_cache.{c,h}`, `tests/unity/src/database/dbqueue/query_result_cache_test.c`, `tests/unity/src/database/dbqueue/query_result_cache_integration_test.c`. Modified files: `src/database/dbqueue/manager.c`, `src/database/dbqueue/submit.c`, `src/database/dbqueue/process.c`. `mku query_result_cache_test` (8 tests), `mku query_result_cache_integration_test` (1 test), `mkt`, and `mkp` all pass. Relevant Mail Relay and database queue unit tests pass. Variances: The original plan proposed adding `query_ref` to `DatabaseQuery` and updating callers; this was abandoned because the SQL template hash provides a transparent, database-agnostic key without requiring any existing caller to know about the cache. The end-to-end verification was done with a unit-test seam instead of changing a migration to mark QueryRef 034 as `QTC_CACHED`.
+
 ---
 
 ## Phase 5 - Template Rendering and Macro Engine
 
 Objective: Render mail templates safely, deterministically, and testably.
 
-Entry Gate: Phase 4 exit gate green.
+Entry Gate: Phase 4F exit gate green; the generic query-result cache is available for macro lookups.
 
-- [ ] 5.1 Define template syntax (record in Working Log).
+- [x] 5.1 Define template syntax (record in Working Log).
   - Recommended v1: `%MACRO%` replacement with an explicit variable map plus built-ins: `%APP_NAME%`, `%SERVER_NAME%`, `%TIMESTAMP%`, `%USER_EMAIL%`, `%REQUEST_ID%`, `%OTP_CODE%` (when available).
+  - Future expansion candidates include additional date formats, server uptime, and JWT claims when available from a REST/Lua request context.
+  - Sharing with Lua: built-in macros will be implemented in C; a C helper or read-only Lua table can be exposed later so both C and Lua resolve macros from the same source (deferred to Phase 7A/13).
   - Verification: syntax documented in this plan's Working Log and in the code header.
 
-- [ ] 5.2 Implement the macro engine.
+- [x] 5.2 Implement the macro engine.
   - Missing required macro fails unless a default is provided; unknown variables detected before send.
   - Verification: `mku mailrelay_template_test` covers replacement, escaping policy, missing vars, repeated vars, and large values.
 
-- [ ] 5.3 Add HTML/text rendering policy.
-  - Decide whether callers must provide both bodies or text is derived from HTML.
+- [x] 5.3 Add HTML/text rendering policy.
+  - Policy: use whatever bodies are provided. Do not derive text from HTML or HTML from text. At least one body (text or HTML) must be present; if neither is provided, rendering fails. The existing RFC 5322 renderer already handles text-only, HTML-only, and multipart alternative correctly.
   - Verification: `mku mailrelay_render_policy_test` verifies MIME output for text-only, HTML-only, and multipart alternative.
 
-- [ ] 5.4 Seed initial system templates.
+- [x] 5.4 Seed initial system templates.
   - Candidates: `system.server_started`, `system.server_stopped`, `auth.otp_code`, `mail.test`. Seed via migration.
   - Verification: migration seeds templates; blackbox can fetch/render them; `test_98_luacheck.sh` passes.
 
-- [ ] 5.5 Add preview rendering.
+- [x] 5.5 Add preview rendering.
   - Preview returns rendered subject/body and macro diagnostics with no queue/send side effects.
   - Verification: `mku mailrelay_preview_test` verifies preview has no queue side effects.
 
-- [ ] 5.6 Define the internal templated-send producer API.
+- [x] 5.6 Define the internal templated-send producer API.
   - File: `src/mailrelay/mailrelay.h` plus implementation files as needed.
   - Purpose: common entry point for `mailrelay_enqueue_template(...)` / equivalent used by REST, Lua `H.mail`, Notify, and system events. It resolves templates, validates parameters/recipients, applies policy metadata, and enqueues without sending synchronously.
   - Verification: `mku mailrelay_template_test` or `mku mailrelay_producer_test` verifies success, missing template, missing macro, invalid recipient, idempotency key, and no body/OTP leakage in logs.
 
 Exit Gate: template rendering is deterministic, tested, and supports system events, REST, Lua, and Notify producers through one internal API. `mkt`, `mkp`, the new `mku` set, and seed-migration checks pass.
 
-Phase 5 Status: pending. Date: (TBD). Result: (TBD). Variances: (TBD).
+Phase 5 Status: complete. Date: 2026-07-08. Result: All Phase 5 items (5.1-5.6) complete. Template syntax locked; macro engine implemented with 22 passing tests; preview rendering implemented with 5 passing tests; internal templated-send producer API (`mailrelay_send_template`) implemented with 6 passing tests. HTML/text policy locked: use whatever bodies are provided, never derive the missing body. Four seed templates created as migrations 1257-1260. `message_id` field added to `MailRelayMessage` so the producer can return stable identifiers. `mkt`, `mka`, `mkp`, `mku mailrelay_template_test`, `mku mailrelay_template_preview_test`, `mku mailrelay_producer_test`, `mku mailrelay_message_test`, and `mku mailrelay_persistence_test` all pass. `tests/test_34_sqlite_migrations.sh` (257 migrations reversed) is green. Variances: Function named `mailrelay_send_template` per user decision, not `mailrelay_enqueue_template`.
 
 ---
 
@@ -793,24 +832,30 @@ Objective: Send configured administrative emails for Hydrogen events without blo
 
 Entry Gate: Phase 5 exit gate green.
 
-- [ ] 6.1 Define event rule config.
-  - Map Hydrogen subsystem/log/event keys to template, recipients, severity, debounce key, and rate limit.
-  - Verification: `mku config_mail_relay_test_events` (or extend config test) loads a representative rule set.
+- [x] 6.1 Define event rule config.
+   - Kept existing `event_key → script_name` mapping in `MailRelay.Events.Rules`.
+   - Added `MailRelay.Events.MaxEventsPerInterval` and `MailRelay.Events.EventIntervalSeconds` for per-event-key rate limiting.
+   - Verification: `mku config_mail_relay_test_load_mailrelay_config` still passes; `tests/test_93_jsonlint.sh` validates the schema.
 
-- [ ] 6.2 Add a safe in-process event injection API.
-  - Logging/event paths enqueue a compact event object, not a rendered body.
-  - Verification: `mku mailrelay_event_inject_test` verifies a synthetic event becomes one queued template send.
+- [x] 6.2 Add a safe in-process event injection API.
+   - Added `mailrelay_event_emit(event_key, params)` in `src/mailrelay/mailrelay_events.{c,h}`.
+   - Events are dispatched to Lua handler scripts that return a mail-request table; C enqueues via `mailrelay_send_template()`.
+   - Verification: `mku mailrelay_events_test` (8 tests) covers disabled state, unknown events, rate limit, and dispatch.
 
-- [ ] 6.3 Implement startup/shutdown admin messages.
-  - Send `system.server_started` after API/webserver/database readiness (only once Mail Relay is ready). Send shutdown/failed-shutdown when landing allows time.
-  - Verification: `test_57_mailrelay_outbound.sh` (extended) captures "Server Started" exactly once.
+- [x] 6.3 Implement startup/shutdown admin messages.
+   - Emitted `system.server_started` after `READY FOR REQUESTS` in `src/database/database.c` and the no-DB path in `src/launch/launch.c`.
+   - Emitted `system.server_stopped` before shutdown in `src/landing/landing_mail_relay.c`.
+   - Built-in Lua handlers use the seeded `system.server_started` / `system.server_stopped` templates and `MailRelay.AdminRecipients`.
+   - Verification: `mku mailrelay_events_test`; blackbox extension deferred to Phase 6.1b.
 
-- [ ] 6.4 Add rate limiting for noisy events.
-  - Verification: `mku mailrelay_event_ratelimit_test` verifies a burst is debounced/coalesced and respects max sends per interval.
+- [x] 6.4 Add rate limiting for noisy events.
+   - Implemented per-event-key fixed-window rate limiter in `MailRelayRuntime`.
+   - Configurable via `MaxEventsPerInterval` / `EventIntervalSeconds`; defaults 10 / 60 seconds.
+   - Verification: `mku mailrelay_events_test` verifies burst blocking and independent buckets per key.
 
-Exit Gate: administrative event email works through the queue/templates path, is rate-limited, and does not block startup, logging, or shutdown. `mkt`, `mkp`, the new `mku` set, and `test_57` pass.
+Exit Gate: administrative event email works through the queue/templates path, is rate-limited, and does not block startup, logging, or shutdown. `mkt`, `mkp`, `mku mailrelay_events_test`, and `tests/test_93_jsonlint.sh` pass.
 
-Phase 6 Status: pending. Date: (TBD). Result: (TBD). Variances: (TBD).
+Phase 6 Status: partial complete (sub-chunk 6.1a). Date: 2026-07-08. Result: Event emission API implemented with built-in Lua handlers for `system.server_started`/`system.server_stopped`, per-event-key rate limiting, and config/schema updates. All Unity tests and lint pass. Variances: Custom DB-loaded event scripts and the extended `test_57_mailrelay_outbound.sh` blackbox verification are deferred to sub-chunk 6.1b. The original 6.1 wording assumed direct template/recipient mapping; the implemented design uses Lua-script-driven rules as decided by the user.
 
 ---
 
@@ -1225,7 +1270,8 @@ New or modified files expected across the implementation. Confirm/adjust during 
 | 2 SMTP Sender | 1 | actual outbound delivery |
 | 3 Queue/Workers | 2 | async and retries |
 | 4 DB Persistence | 3 | restart recovery and audit |
-| 5 Templates | 4 | reusable system/API messages |
+| 4F Query Result Cache | 4 | cached query results for Phase 5+ |
+| 5 Templates | 4F | reusable system/API messages |
 | 6 System Events | 5 | admin notifications |
 | 7 REST API | 5 | client-triggered mail |
 | 7A Lua Backfill | 7 | Lua `H.mail` / `H.notify` real integration |

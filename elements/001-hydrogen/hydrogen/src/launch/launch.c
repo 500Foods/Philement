@@ -34,6 +34,7 @@
 #include <src/utils/utils_dependency.h>
 #include <src/database/database.h>
 #include <src/scripting/orchestrator.h>
+#include <src/mailrelay/mailrelay_events.h>
 
 // External declarations
 extern void close_file_logging(void);
@@ -566,6 +567,10 @@ int startup_hydrogen(const char* config_path) {
                 // Call the orchestrator hook here so deployments without
                 // a DB still get an Orchestrator running.
                 scripting_orchestrator_load_configured();
+
+                // Phase 6: emit the server-started event now that the
+                // server is ready for requests.
+                mailrelay_event_emit("system.server_started", NULL);
             }
         } else if (readiness.all_ready) {
             // Edge case: all databases already finished before this point.

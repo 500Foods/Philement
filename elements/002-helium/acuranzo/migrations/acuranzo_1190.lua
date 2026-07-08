@@ -500,8 +500,7 @@ table.insert(queries,{sql=[[
 
             ## Diagram Tables: ${SCHEMA}${TABLE}
 
-            Updates the ${TABLE} diagram to reflect that password_hash is
-            now nullable (relaxed in this migration's forward query).
+            This is the first JSON Diagram code for the ${TABLE} table.
         ]=]
                                                                             AS summary,
                                                                             -- DIAGRAM_START
@@ -515,12 +514,79 @@ table.insert(queries,{sql=[[
                         "object_ref": "${MIGRATION}",
                         "table": [
                             {
+                                "name": "account_id",
+                                "datatype": "${INTEGER}",
+                                "nullable": false,
+                                "primary_key": true,
+                                "unique": true
+                            },
+                            {
+                                "name": "status_a16",
+                                "datatype": "${INTEGER}",
+                                "nullable": false,
+                                "primary_key": false,
+                                "unique": false,
+                                "lookup": true
+                            },
+                            {
+                                "name": "iana_timezone_a17",
+                                "datatype": "${INTEGER}",
+                                "nullable": false,
+                                "primary_key": false,
+                                "unique": false,
+                                "lookup": true
+                            },
+                            {
+                                "name": "name",
+                                "datatype": "${TEXT}",
+                                "nullable": false,
+                                "primary_key": false,
+                                "unique": true
+                            },
+                            {
+                                "name": "first_name",
+                                "datatype": "${TEXT}",
+                                "nullable": true,
+                                "primary_key": false,
+                                "unique": false
+                            },
+                            {
+                                "name": "middle_name",
+                                "datatype": "${TEXT}",
+                                "nullable": true,
+                                "primary_key": false,
+                                "unique": false
+                            },
+                            {
+                                "name": "last_name",
+                                "datatype": "${TEXT}",
+                                "nullable": false,
+                                "primary_key": false,
+                                "unique": false
+                            },
+                            {
                                 "name": "password_hash",
                                 "datatype": "${CHAR_128}",
                                 "nullable": true,
                                 "primary_key": false,
                                 "unique": false
-                            }
+                            },
+                            {
+                                "name": "summary",
+                                "datatype": "${TEXT_BIG}",
+                                "nullable": true,
+                                "primary_key": false,
+                                "unique": false
+                            },
+                            {
+                                "name": "collection",
+                                "datatype": "${JSON}",
+                                "nullable": true,
+                                "primary_key": false,
+                                "unique": false,
+                                "standard": false
+                            },
+                            ${COMMON_DIAGRAM}
                         ]
                     }
                 ]

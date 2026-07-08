@@ -108,6 +108,8 @@ bool load_mailrelay_config(json_t* root, AppConfig* config) {
 
     // Events defaults
     mail->Events.Enabled = false;
+    mail->Events.MaxEventsPerInterval = 10;
+    mail->Events.EventIntervalSeconds = 60;
     mail->Events.RuleCount = 0;
     for (int i = 0; i < MAX_MAIL_RELAY_EVENT_RULES; i++) {
         mail->Events.Rules[i].event_key = NULL;
@@ -159,6 +161,16 @@ bool load_mailrelay_config(json_t* root, AppConfig* config) {
         json_t* enabled = json_object_get(events_section, "Enabled");
         if (enabled && json_is_boolean(enabled)) {
             mail->Events.Enabled = json_boolean_value(enabled);
+        }
+
+        json_t* max_events = json_object_get(events_section, "MaxEventsPerInterval");
+        if (max_events && json_is_integer(max_events)) {
+            mail->Events.MaxEventsPerInterval = (int)json_integer_value(max_events);
+        }
+
+        json_t* interval_seconds = json_object_get(events_section, "EventIntervalSeconds");
+        if (interval_seconds && json_is_integer(interval_seconds)) {
+            mail->Events.EventIntervalSeconds = (int)json_integer_value(interval_seconds);
         }
 
         json_t* rules = json_object_get(events_section, "Rules");
@@ -398,6 +410,10 @@ void dump_mailrelay_config(const MailRelayConfig* config) {
     // Dump events settings
     DUMP_TEXT("――", "Events Settings");
     snprintf(buffer, sizeof(buffer), "Enabled: %s", config->Events.Enabled ? "true" : "false");
+    DUMP_TEXT("――――", buffer);
+    snprintf(buffer, sizeof(buffer), "Max Events Per Interval: %d", config->Events.MaxEventsPerInterval);
+    DUMP_TEXT("――――", buffer);
+    snprintf(buffer, sizeof(buffer), "Event Interval Seconds: %d", config->Events.EventIntervalSeconds);
     DUMP_TEXT("――――", buffer);
     snprintf(buffer, sizeof(buffer), "Rule Count: %d", config->Events.RuleCount);
     DUMP_TEXT("――――", buffer);

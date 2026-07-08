@@ -37,6 +37,8 @@ typedef struct {
 // Mail relay events configuration
 typedef struct {
     bool Enabled;
+    int MaxEventsPerInterval;  // Token-bucket capacity per event key
+    int EventIntervalSeconds;  // Token-bucket refill interval
     MailEventRule Rules[MAX_MAIL_RELAY_EVENT_RULES];
     int RuleCount;
 } MailRelayEvents;

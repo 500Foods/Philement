@@ -400,6 +400,8 @@ void initialize_config_defaults_mail_relay(AppConfig* config) {
 
         // Events configuration
         config->mail_relay.Events.Enabled = false;
+        config->mail_relay.Events.MaxEventsPerInterval = 10;
+        config->mail_relay.Events.EventIntervalSeconds = 60;
         config->mail_relay.Events.RuleCount = 0;
         for (int i = 0; i < MAX_MAIL_RELAY_EVENT_RULES; i++) {
             config->mail_relay.Events.Rules[i].event_key = NULL;

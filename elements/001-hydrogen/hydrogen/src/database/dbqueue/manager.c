@@ -12,6 +12,7 @@
 
 // Local includes
 #include "dbqueue.h"
+#include "query_result_cache.h"
 
 // Global queue manager instance
 DatabaseQueueManager* global_queue_manager = NULL;
@@ -69,7 +70,18 @@ bool database_queue_system_init(void) {
     }
 
     global_queue_manager = database_queue_manager_create(10);  // Default max 10 databases
-    return global_queue_manager != NULL;
+    if (!global_queue_manager) {
+        return false;
+    }
+
+    if (!query_result_cache_global_init()) {
+        database_queue_manager_destroy(global_queue_manager);
+        global_queue_manager = NULL;
+        log_this(SR_DATABASE, "Failed to initialize query result cache", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
+
+    return true;
 }
 
 /*
@@ -80,6 +92,7 @@ void database_queue_system_destroy(void) {
         database_queue_manager_destroy(global_queue_manager);
         global_queue_manager = NULL;
     }
+    query_result_cache_global_destroy();
 }
 
 /*
