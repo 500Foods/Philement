@@ -742,6 +742,11 @@
                             "type": "integer",
                             "description": "Debounce window for event-generated mail in seconds",
                             "minimum": 0
+                        },
+                        "StaleTimeoutSeconds": {
+                            "type": "integer",
+                            "description": "How long a sending row may remain before recovery in seconds",
+                            "minimum": 1
                         }
                     },
                     "additionalProperties": false

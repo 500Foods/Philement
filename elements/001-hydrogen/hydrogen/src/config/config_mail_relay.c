@@ -101,6 +101,7 @@ bool load_mailrelay_config(json_t* root, AppConfig* config) {
     mail->Queue.InitialDelaySeconds = 10;
     mail->Queue.MaxDelaySeconds = 3600;
     mail->Queue.DebounceSeconds = 5;
+    mail->Queue.StaleTimeoutSeconds = 300;
 
     // Template defaults
     mail->Templates.ReloadIntervalSeconds = 60;
@@ -146,6 +147,7 @@ bool load_mailrelay_config(json_t* root, AppConfig* config) {
     success = success && PROCESS_INT(root, &mail->Queue, InitialDelaySeconds, "MailRelay.Queue.InitialDelaySeconds", "MailRelay");
     success = success && PROCESS_INT(root, &mail->Queue, MaxDelaySeconds, "MailRelay.Queue.MaxDelaySeconds", "MailRelay");
     success = success && PROCESS_INT(root, &mail->Queue, DebounceSeconds, "MailRelay.Queue.DebounceSeconds", "MailRelay");
+    success = success && PROCESS_INT(root, &mail->Queue, StaleTimeoutSeconds, "MailRelay.Queue.StaleTimeoutSeconds", "MailRelay");
 
     // Process template settings
     success = success && PROCESS_INT(root, &mail->Templates, ReloadIntervalSeconds, "MailRelay.Templates.ReloadIntervalSeconds", "MailRelay");
@@ -384,6 +386,8 @@ void dump_mailrelay_config(const MailRelayConfig* config) {
     snprintf(buffer, sizeof(buffer), "Max Delay: %d seconds", config->Queue.MaxDelaySeconds);
     DUMP_TEXT("――――", buffer);
     snprintf(buffer, sizeof(buffer), "Debounce: %d seconds", config->Queue.DebounceSeconds);
+    DUMP_TEXT("――――", buffer);
+    snprintf(buffer, sizeof(buffer), "Stale Timeout: %d seconds", config->Queue.StaleTimeoutSeconds);
     DUMP_TEXT("――――", buffer);
 
     // Dump template settings

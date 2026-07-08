@@ -31,11 +31,7 @@ static struct timespec shutdown_end_time = {0, 0};   // When shutdown completes
 static struct timespec startup_complete_time = {0, 0}; // When startup is fully complete
 static struct timespec shutdown_initiate_time = {0, 0}; // When shutdown is initiated
 
-// Private function declarations
-void format_iso_time(time_t t, char *buffer, size_t buflen);
-double calc_elapsed_time(const struct timespec *end, const struct timespec *start);
-
-// Format time as ISO 8601 UTC timestamp
+// Time formatting
 void format_iso_time(time_t t, char *buffer, size_t buflen) {
     const struct tm *tm = gmtime(&t);
     strftime(buffer, buflen, "%Y-%m-%dT%H:%M:%SZ", tm);

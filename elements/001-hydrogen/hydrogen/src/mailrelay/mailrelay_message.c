@@ -23,6 +23,8 @@ void mailrelay_message_free(MailRelayMessage* m) {
     free(m->subject);
     free(m->text_body);
     free(m->html_body);
+    free(m->template_key);
+    free(m->headers);
     free(m->idempotency_key);
     free(m->debounce_key);
     for (int i = 0; i < m->to_count; i++) free(m->to[i]);
@@ -82,6 +84,20 @@ bool mailrelay_message_copy(MailRelayMessage* dst, const MailRelayMessage* src) 
     if (src->html_body) {
         dst->html_body = strdup(src->html_body);
         if (!dst->html_body) {
+            mailrelay_message_free(dst);
+            return false;
+        }
+    }
+    if (src->template_key) {
+        dst->template_key = strdup(src->template_key);
+        if (!dst->template_key) {
+            mailrelay_message_free(dst);
+            return false;
+        }
+    }
+    if (src->headers) {
+        dst->headers = strdup(src->headers);
+        if (!dst->headers) {
             mailrelay_message_free(dst);
             return false;
         }
@@ -161,6 +177,26 @@ bool mailrelay_message_add_bcc(MailRelayMessage* m, const char* addr) {
 int mailrelay_message_recipient_count(const MailRelayMessage* m) {
     if (!m) return 0;
     return m->to_count + m->cc_count + m->bcc_count;
+}
+
+char* mailrelay_message_recipients_to_json(const MailRelayMessage* m) {
+    if (!m) return NULL;
+    json_t* arr = json_array();
+    if (!arr) return NULL;
+
+    for (int i = 0; i < m->to_count; i++) {
+        if (m->to[i]) json_array_append_new(arr, json_string(m->to[i]));
+    }
+    for (int i = 0; i < m->cc_count; i++) {
+        if (m->cc[i]) json_array_append_new(arr, json_string(m->cc[i]));
+    }
+    for (int i = 0; i < m->bcc_count; i++) {
+        if (m->bcc[i]) json_array_append_new(arr, json_string(m->bcc[i]));
+    }
+
+    char* result = json_dumps(arr, JSON_COMPACT);
+    json_decref(arr);
+    return result;
 }
 
 bool mailrelay_validate_message(const MailRelayMessage* m, char* err, size_t err_cap) {

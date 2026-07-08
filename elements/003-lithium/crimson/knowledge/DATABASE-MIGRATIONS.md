@@ -278,4 +278,19 @@ in the migrations themselves so that they get populated in the database directly
 | [1239](/elements/002-helium/acuranzo/migrations/acuranzo_1239.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #109 - List Pending Mail Events |
 | [1240](/elements/002-helium/acuranzo/migrations/acuranzo_1240.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #110 - Mark Mail Event Processed or Queued |
 | [1241](/elements/002-helium/acuranzo/migrations/acuranzo_1241.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #111 - Mark Mail Event Suppressed |
-| **242** | | | | **1297** | **242** | |
+| [1242](/elements/002-helium/acuranzo/migrations/acuranzo_1242.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #112 - Insert OTP Code |
+| [1243](/elements/002-helium/acuranzo/migrations/acuranzo_1243.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #113 - Get Active OTP by Email and Purpose |
+| [1244](/elements/002-helium/acuranzo/migrations/acuranzo_1244.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #114 - Consume OTP Code |
+| [1245](/elements/002-helium/acuranzo/migrations/acuranzo_1245.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #115 - Increment OTP Attempts |
+| [1246](/elements/002-helium/acuranzo/migrations/acuranzo_1246.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #116 - Expire Old OTP Codes |
+| [1247](/elements/002-helium/acuranzo/migrations/acuranzo_1247.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #117 - Get OTP by ID |
+| [1248](/elements/002-helium/acuranzo/migrations/acuranzo_1248.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #118 - Get Active Inbound Route by Sender Domain |
+| [1249](/elements/002-helium/acuranzo/migrations/acuranzo_1249.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #119 - List Active Inbound Routes |
+| [1250](/elements/002-helium/acuranzo/migrations/acuranzo_1250.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #120 - Insert Inbound Route |
+| [1251](/elements/002-helium/acuranzo/migrations/acuranzo_1251.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #121 - Update Inbound Route |
+| [1252](/elements/002-helium/acuranzo/migrations/acuranzo_1252.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #122 - Soft Delete Inbound Route |
+| [1253](/elements/002-helium/acuranzo/migrations/acuranzo_1253.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #123 - Cleanup Old Sent/Failed Mail Queue Rows |
+| [1254](/elements/002-helium/acuranzo/migrations/acuranzo_1254.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #124 - Cleanup Old Mail Events |
+| [1255](/elements/002-helium/acuranzo/migrations/acuranzo_1255.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #125 - Cleanup Old Mail Attempts |
+| [1256](/elements/002-helium/acuranzo/migrations/acuranzo_1256.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #126 - Cleanup Old OTP Codes |
+| **257** | | | | **1357** | **257** | |

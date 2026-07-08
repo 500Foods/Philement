@@ -28,6 +28,7 @@
 #include "utils_dependency.h"  // Local include since we're in utils/
 #include "utils_hash.h"     // Local include since we're in utils/
 #include "utils_compression.h"  // Local include since we're in utils/
+#include "utils_uuid.h"       // Local include since we're in utils/
 
 /**
  * @brief Format a number with thousands separators

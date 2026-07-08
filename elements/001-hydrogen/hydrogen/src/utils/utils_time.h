@@ -26,6 +26,7 @@ double calculate_shutdown_time(void);
 
 // Time formatting
 void format_duration(time_t seconds, char *buffer, size_t buflen);
+void format_iso_time(time_t t, char *buffer, size_t buflen);
 
 // Startup timing helpers
 const char* get_system_start_time_string(void);
