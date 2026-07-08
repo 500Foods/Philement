@@ -75,6 +75,7 @@ typedef struct QueueSettings {
     int InitialDelaySeconds;    // Delay before first attempt
     int MaxDelaySeconds;        // Maximum delay between retries
     int DebounceSeconds;        // Debounce window for event-generated mail
+    int StaleTimeoutSeconds;    // How long a 'sending' row may remain before recovery
 } QueueSettings;
 
 // Main mail relay configuration structure

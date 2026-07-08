@@ -367,7 +367,7 @@ static void enqueue_coalesced(MailRelayDebounceEntry* entry,
         return;
     }
 
-    MailRelayStatus status = mailrelay_queue_enqueue(queue, &coalesced, entry->priority);
+    MailRelayStatus status = mailrelay_enqueue_to_queue(&coalesced, entry->priority, queue);
     if (status != MAILRELAY_OK) {
         log_this(SR_MAIL_RELAY,
                  "Failed to enqueue coalesced debounce message for key '%s': status=%d",

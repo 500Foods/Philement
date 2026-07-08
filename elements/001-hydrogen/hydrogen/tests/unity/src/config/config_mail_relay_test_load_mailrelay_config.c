@@ -64,6 +64,7 @@ void test_load_mailrelay_config_null_root(void) {
     TEST_ASSERT_EQUAL(0, config.mail_relay.AdminRecipientCount);
     TEST_ASSERT_FALSE(config.mail_relay.Events.Enabled);
     TEST_ASSERT_EQUAL(0, config.mail_relay.Events.RuleCount);
+    TEST_ASSERT_EQUAL(300, config.mail_relay.Queue.StaleTimeoutSeconds);
 
     cleanup_mailrelay_config(&config.mail_relay);
 }
@@ -85,6 +86,7 @@ void test_load_mailrelay_config_empty_json(void) {
     TEST_ASSERT_EQUAL(0, config.mail_relay.OutboundServerCount);
     TEST_ASSERT_EQUAL(0, config.mail_relay.AdminRecipientCount);
     TEST_ASSERT_EQUAL(0, config.mail_relay.Events.RuleCount);
+    TEST_ASSERT_EQUAL(300, config.mail_relay.Queue.StaleTimeoutSeconds);
 
     json_decref(root);
     cleanup_mailrelay_config(&config.mail_relay);
@@ -137,6 +139,7 @@ void test_load_mailrelay_config_queue_settings(void) {
     json_object_set(queue_section, "InitialDelaySeconds", json_integer(15));
     json_object_set(queue_section, "MaxDelaySeconds", json_integer(1800));
     json_object_set(queue_section, "DebounceSeconds", json_integer(10));
+    json_object_set(queue_section, "StaleTimeoutSeconds", json_integer(600));
 
     json_object_set(mail_relay_section, "Queue", queue_section);
     json_object_set(root, "MailRelay", mail_relay_section);
@@ -151,6 +154,7 @@ void test_load_mailrelay_config_queue_settings(void) {
     TEST_ASSERT_EQUAL(15, config.mail_relay.Queue.InitialDelaySeconds);
     TEST_ASSERT_EQUAL(1800, config.mail_relay.Queue.MaxDelaySeconds);
     TEST_ASSERT_EQUAL(10, config.mail_relay.Queue.DebounceSeconds);
+    TEST_ASSERT_EQUAL(600, config.mail_relay.Queue.StaleTimeoutSeconds);
 
     json_decref(root);
     cleanup_mailrelay_config(&config.mail_relay);
@@ -330,6 +334,7 @@ void test_dump_mailrelay_config_basic(void) {
     config.Queue.InitialDelaySeconds = 10;
     config.Queue.MaxDelaySeconds = 3600;
     config.Queue.DebounceSeconds = 5;
+    config.Queue.StaleTimeoutSeconds = 300;
     config.Templates.ReloadIntervalSeconds = 60;
     config.OutboundServerCount = 1;
     config.Servers[0].Host = strdup("smtp.example.com");

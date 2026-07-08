@@ -289,4 +289,8 @@ in the migrations themselves so that they get populated in the database directly
 | [1250](/elements/002-helium/acuranzo/migrations/acuranzo_1250.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #120 - Insert Inbound Route |
 | [1251](/elements/002-helium/acuranzo/migrations/acuranzo_1251.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #121 - Update Inbound Route |
 | [1252](/elements/002-helium/acuranzo/migrations/acuranzo_1252.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #122 - Soft Delete Inbound Route |
-| **253** | | | | **1341** | **253** | |
+| [1253](/elements/002-helium/acuranzo/migrations/acuranzo_1253.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #123 - Cleanup Old Sent/Failed Mail Queue Rows |
+| [1254](/elements/002-helium/acuranzo/migrations/acuranzo_1254.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #124 - Cleanup Old Mail Events |
+| [1255](/elements/002-helium/acuranzo/migrations/acuranzo_1255.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #125 - Cleanup Old Mail Attempts |
+| [1256](/elements/002-helium/acuranzo/migrations/acuranzo_1256.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #126 - Cleanup Old OTP Codes |
+| **257** | | | | **1357** | **257** | |

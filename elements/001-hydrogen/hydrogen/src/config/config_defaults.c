@@ -393,6 +393,7 @@ void initialize_config_defaults_mail_relay(AppConfig* config) {
         config->mail_relay.Queue.InitialDelaySeconds = 10;
         config->mail_relay.Queue.MaxDelaySeconds = 3600;  // 1 hour
         config->mail_relay.Queue.DebounceSeconds = 5;
+        config->mail_relay.Queue.StaleTimeoutSeconds = 300; // 5 minutes
 
         // Template configuration
         config->mail_relay.Templates.ReloadIntervalSeconds = 60;

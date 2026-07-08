@@ -22,6 +22,8 @@ typedef struct MailRelayMessage {
     char* subject;
     char* text_body;
     char* html_body;
+    char* template_key;        /**< Template used to render subject/body. */
+    char* headers;             /**< Optional JSON string of extra headers. */
     char* idempotency_key;
     char* debounce_key;
     int priority;
@@ -55,5 +57,8 @@ bool mailrelay_validate_message(const MailRelayMessage* m, char* err, size_t err
 
 /* Count of all envelope recipients (to + cc + bcc). */
 int mailrelay_message_recipient_count(const MailRelayMessage* m);
+
+/* Build a JSON array string containing all envelope recipients. Caller frees. */
+char* mailrelay_message_recipients_to_json(const MailRelayMessage* m);
 
 #endif /* MAILRELAY_MESSAGE_H */

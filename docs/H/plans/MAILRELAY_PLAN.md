@@ -297,6 +297,13 @@ Append discoveries, surprises, and decisions here as we move through phases. Ear
 
 - (Phase 4C.4, 2026-07-07) Inbound route QueryRefs 118–122 created as migrations 1248–1252. QueryRef 118 retrieves active routes by sender domain; QueryRef 119 lists all active routes; QueryRef 120 inserts a route with application-generated `route_id`; QueryRef 121 updates a route; QueryRef 122 soft-deletes a route. Conventions match 4C.1. With this, all Phase 4C core QueryRefs (093–122) are complete. `helium_update.sh` and `tests/test_98_luacheck.sh` are green. The remaining Phase 4 work is operational cleanup QueryRefs (Phase 4D) and repository C code (Phase 4E), after the user verifies migrations and QTC loading.
 
+- (Phase 4D, 2026-07-07) Operational cleanup QueryRefs 123–126 created as migrations 1253–1256. QueryRef 123 deletes terminal-status (`sent`/`failed`) `mail_queue` rows older than `:CUTOFF_AT`; QueryRef 124 deletes terminal-status (`sent`/`failed`/`suppressed`) `mail_events` rows older than `:CUTOFF_AT`; QueryRef 125 deletes `mail_attempts` rows older than `:CUTOFF_AT`; QueryRef 126 deletes terminal-status (`consumed`/`expired`/`max_attempts_exceeded`) `mail_otp_codes` rows older than `:CUTOFF_AT`. All are `query_type_a28 = ${TYPE_INTERNAL_SQL}` and `QTC_SLOW`. Using `:CUTOFF_AT` instead of `:RETENTION_DAYS` keeps the SQL engine-agnostic because the existing macro set does not provide portable date-interval arithmetic; the C repository layer will compute the cutoff timestamp from the configured retention period. `helium_update.sh` regenerated the README index; `tests/test_98_luacheck.sh` (282 files) and `tests/test_34_sqlite_migrations.sh` (253 migrations reversed) are green.
+
+- (Phase 4E.1, 2026-07-07) Implemented `src/mailrelay/mailrelay_repository.{c,h}` with callback-based helpers for all QueryRefs 093–126. The default executor resolves the Mail Relay database (explicit `MailRelay.Database` or single-configured database fallback), looks up the QueryRef in the QTC via `query_cache_lookup` (internal queries are not blocked), submits the query through the database queue, waits synchronously on the pending result manager, and invokes the caller's callback. The API is callback-based (callers provide a `mailrelay_repo_callback_fn`), but the default executor is synchronous because the existing database infrastructure is synchronous from the caller's perspective; this satisfies the async-callback API requirement while remaining compatible with the current DQM. A swappable `mailrelay_repo_execute_fn` seam lets unit tests mock execution without a live database. `mku mailrelay_repository_test` has 11 passing tests covering the seam, representative helper parameter JSON, and NULL-argument rejection. `mkt` and `mkp` are green. The next chunks are 4E.2 (startup recovery) and 4E.3 (enqueue persistence).
+- (Phase 4E.2, 2026-07-07) Startup recovery implemented in `src/mailrelay/mailrelay.c`. `mailrelay_recover_stale_sending_rows()` runs from `mailrelay_init()` when `Queue.Persist=true` and a database target is configured, calling QueryRef 101 with a `:STALE_BEFORE` cutoff computed as `now - Queue.StaleTimeoutSeconds`. A new `MailRelay.Queue.StaleTimeoutSeconds` config field was added with a default of 300 seconds. The repo helper parameter was renamed from `STALE_CUTOFF_AT` to `STALE_BEFORE` to match migration `acuranzo_1231.lua`. Verified by `mku mailrelay_persistence_test`.
+- (Phase 4E.3, 2026-07-07) Enqueue persistence implemented. `mailrelay_enqueue()` writes a pending `mail_queue` row via QueryRef 093 before placing the message in the in-memory queue. An internal `mailrelay_enqueue_to_queue()` helper is used by both the direct enqueue path and the debounce flush path so coalesced messages are also persisted. `MailRelayMessage` was extended with `template_key` and `headers` fields to support future template sends. If persistence fails, the function returns `MAILRELAY_PERSIST_FAILED` and the message is not enqueued. Verified by `mku mailrelay_persistence_test` (6 tests) and existing queue/debounce tests.
+- (Phase 4E utility cleanup, 2026-07-07) Moved `generate_uuid()` from `src/webserver/web_server_upload.{c,h}` to a new common utility `src/utils/utils_uuid.{c,h}` so Mail Relay and other subsystems can use it without depending on webserver internals. Exposed `format_iso_time()` in `src/utils/utils_time.h` for ISO 8601 timestamp generation in the repository and recovery code. All existing callers were updated and the build/tests remain green.
+
 ### Surprises / deviations from plan
 
 - (Phase 0, 2026-07-06) `examples/configs/hydrogen_default.json` and `hydrogen_env.json` use legacy `MailRelay.QueueSettings` / `MailRelay.OutboundServers` keys, while the current loader and Phase 0 schema use `MailRelay.Queue` / `MailRelay.Servers`. Reconcile example configs and/or compatibility aliases during Phase 1.
@@ -333,6 +340,17 @@ Append discoveries, surprises, and decisions here as we move through phases. Ear
 - `tests/test_93_jsonlint.sh` schema-validates `tests/configs/hydrogen_test_*.json`, not `examples/configs/*.json`; example config drift can survive JSON lint unless explicitly reviewed.
 - Keep `load_mailrelay_config()`, `initialize_config_defaults_mail_relay()`, Unity expectations, `hydrogen_config_schema.json`, and example configs synchronized whenever Phase 1 changes config field names or defaults.
 - Existing examples used legacy `MailRelay.QueueSettings` / `MailRelay.OutboundServers` keys; Phase 1 updated all three example configs (`hydrogen_default.json`, `hydrogen.json`, `hydrogen_env.json`) to use the current `MailRelay.Queue` / `MailRelay.Servers` schema.
+
+### Phase 5 preparation notes
+
+- `MailRelayMessage` now carries `template_key` and `headers`. The macro engine should render templates into `subject`, `text_body`, and `html_body`, set `template_key` to the resolved template key, and then call `mailrelay_enqueue()` (or the future `mailrelay_enqueue_template` wrapper) so persistence records the template association.
+- Repository helpers for templates are already available: `mailrelay_repo_template_get_by_key` (QueryRef 103) and `mailrelay_repo_template_list_active` (QueryRef 104). The producer API should resolve templates through these before rendering.
+- The internal persistence path is `mailrelay_enqueue()` -> `mailrelay_enqueue_to_queue()`. The templated-send producer should validate, render, and then call `mailrelay_enqueue()`; it should not bypass validation or debounce by talking directly to the queue.
+- Preview must be side-effect free: render the template into a transient message and return the rendered subject/body without calling `mailrelay_enqueue()` or touching the database queue.
+- Seed templates should use the same keys that the API and Lua will reference (e.g., `mail.test`, `system.server_started`, `auth.otp_code`). A migration can insert them via QueryRef 105 or direct SQL; the repository helper is the preferred C path.
+- The macro engine should detect unknown/missing macros before rendering and return a stable error that the API maps to `MAIL_PARAM_MISSING`. The API error codes from the draft contract are `MAIL_AUTH_REQUIRED`, `MAIL_TEMPLATE_NOT_FOUND`, `MAIL_PARAM_MISSING`, `MAIL_QUEUE_FULL`, `MAIL_RECIPIENT_INVALID`, `MAIL_DISABLED`, and `MAIL_RATE_LIMITED`.
+- Because `mailrelay_enqueue()` is now fail-fast on persistence errors, the templated-send producer must handle `MAILRELAY_PERSIST_FAILED` and return a suitable API error (`MAIL_QUEUE_FULL` or a generic internal error) without leaking database details.
+- The live database persistence path has been verified only through the mock executor; a future blackbox test with `MailRelay.Queue.Persist=true` against a real SQLite/server engine database will be needed before claiming full production readiness.
 - Launch readiness now treats disabled Mail Relay as a clean skip (`ready=true`, "disabled - clean skip") rather than a No-Go. Update any downstream scripts or tests that assert disabled subsystems cause launch failure.
 - Server validation in launch readiness is gated behind `OutboundEnabled=true`; inbound-only configurations without outbound servers will not fail readiness checks.
 - Landing readiness in tests cannot mock `is_subsystem_running_by_name`; test the not-running early-return path or setup `mailrelay_threads.thread_count` directly for worker-drain scenarios.
@@ -701,29 +719,34 @@ Exit Gate 4C: QueryRefs 093–122 apply/reverse cleanly, are type internal/syste
 
 ### Phase 4 chunk 4D — Operational cleanup QueryRefs
 
-- [ ] 4D.1 QueryRef #123 — Cleanup old sent/failed queue rows (`acuranzo_1253.lua`).
-- [ ] 4D.2 QueryRef #124 — Cleanup old mail events (`acuranzo_1254.lua`).
-- [ ] 4D.3 QueryRef #125 — Cleanup old mail attempts (`acuranzo_1255.lua`).
-- [ ] 4D.4 QueryRef #126 — Cleanup old OTP codes (`acuranzo_1256.lua`).
-- [ ] 4D.5 Update Acuranzo README index; run `test_98_luacheck.sh`.
+- [x] 4D.1 QueryRef #123 — Cleanup old sent/failed queue rows (`acuranzo_1253.lua`).
+- [x] 4D.2 QueryRef #124 — Cleanup old mail events (`acuranzo_1254.lua`).
+- [x] 4D.3 QueryRef #125 — Cleanup old mail attempts (`acuranzo_1255.lua`).
+- [x] 4D.4 QueryRef #126 — Cleanup old OTP codes (`acuranzo_1256.lua`).
+- [x] 4D.5 Update Acuranzo README index; run `test_98_luacheck.sh`.
 
 Exit Gate 4D: Cleanup QueryRefs apply/reverse cleanly and are type internal/system.
 
 ### Phase 4 chunk 4E — Repository helpers and startup recovery
 
-- [ ] 4E.1 Implement `src/mailrelay/mailrelay_repository.{c,h}`.
+- [x] 4E.1 Implement `src/mailrelay/mailrelay_repository.{c,h}`.
   - Helpers for every QueryRef above, using a mockable seam.
   - Verification: `mku mailrelay_repository_test`.
-- [ ] 4E.2 Add startup recovery.
+- [x] 4E.2 Add startup recovery.
   - On `mailrelay_init()` with persistence enabled, call QueryRef #101 to recover stale `sending` rows.
-  - Verification: `mku mailrelay_repository_test` covers recovery.
-- [ ] 4E.3 Wire persistence into `mailrelay_enqueue()`.
-  - When `Queue.Persist=true` and a DB target is configured, write the pending row before returning `MAILRELAY_OK`.
-  - Verification: existing `mku mailrelay_queue_test` still passes; new persistence path tested via `mailrelay_repository_test` or blackbox.
+  - Added `MailRelay.Queue.StaleTimeoutSeconds` (default 300 s) to configure the recovery cutoff.
+  - Fixed a parameter mismatch: the repo helper now binds `:STALE_BEFORE` (not `:STALE_CUTOFF_AT`) to match migration `acuranzo_1231.lua`.
+  - Verification: `mku mailrelay_persistence_test` covers disabled skip, enabled recovery, and affected-row logging.
+- [x] 4E.3 Wire persistence into `mailrelay_enqueue()`.
+  - When `Queue.Persist=true` and a DB target is configured, `mailrelay_enqueue()` writes the pending `mail_queue` row before returning `MAILRELAY_OK`.
+  - Added `template_key` and `headers` to `MailRelayMessage` so persisted rows can carry them.
+  - Added `mailrelay_enqueue_to_queue()` internal helper so the debounce flush path also persists coalesced messages.
+  - Persistence failures are fail-fast: `mailrelay_enqueue` returns `MAILRELAY_PERSIST_FAILED` and does not place the message in memory.
+  - Verification: `mku mailrelay_persistence_test` (6 tests) and `mku mailrelay_queue_test` both pass.
 
 Exit Gate 4E (Phase 4 final): the durable queue, templates, events, OTP, routes, and cleanup paths are reachable through the repository; `mkt`, `mkp`, `test_98_luacheck.sh`, the new `mku` set, and at least SQLite + one server-engine migration test pass.
 
-Phase 4 Status: Phase 4A, 4B, and 4C complete. Date: 2026-07-07. Result: Lookups 063–068 created as migrations 1211–1216; all six Mail Relay tables (`mail_templates`, `mail_queue`, `mail_attempts`, `mail_events`, `mail_otp_codes`, `mail_routes`) created as migrations 1217–1222; all core QueryRefs 093–122 created as migrations 1223–1252. README index regenerated by `elements/002-helium/scripts/helium_update.sh`; `tests/test_98_luacheck.sh` passes. The SQLite migration reverse test (`tests/test_34_sqlite_migrations.sh`) and QTC load verification (4C.6) are pending per-user verification before Phase 4D starts. Variances: README update performed by `helium_update.sh` rather than manual edit, per project convention; integer primary keys are application-generated rather than using `${SERIAL}` to match project migration convention; logical foreign keys (`queue_id` references) are not enforced by database constraints, matching existing Acuranzo convention; QueryRef 096 is intentionally a non-atomic SELECT-only claim to stay engine-agnostic.
+Phase 4 Status: complete. Date: 2026-07-07. Result: Phase 4A, 4B, 4C, 4D, and 4E are complete. Lookups 063–068 created as migrations 1211–1216; all six Mail Relay tables (`mail_templates`, `mail_queue`, `mail_attempts`, `mail_events`, `mail_otp_codes`, `mail_routes`) created as migrations 1217–1222; all core QueryRefs 093–122 created as migrations 1223–1252; all cleanup QueryRefs 123–126 created as migrations 1253–1256. `src/mailrelay/mailrelay_repository.{c,h}` created with callback-based helpers for all QueryRefs 093–126 and a mockable execution seam. Startup recovery (`mailrelay_recover_stale_sending_rows`) runs from `mailrelay_init()` when `Queue.Persist=true` and a database target is configured, calling QueryRef 101 with a `STALE_BEFORE` cutoff computed from `Queue.StaleTimeoutSeconds`. Enqueue persistence writes a pending `mail_queue` row via QueryRef 093 before the message enters the in-memory queue; debounced/coalesced messages are also persisted when flushed. `mku mailrelay_repository_test` (12 tests), `mku mailrelay_persistence_test` (6 tests), `mku mailrelay_queue_test`, `mku mailrelay_debounce_test`, `mku mailrelay_message_test`, `mku config_mail_relay_test_load_mailrelay_config`, `mkt`, `mkp`, and `tests/test_93_jsonlint.sh` all pass. README index regenerated by `elements/002-helium/scripts/helium_update.sh`; `tests/test_98_luacheck.sh` passes. The QTC load verification (4C.6) remains pending per-user verification; the live DB persistence path has been validated only through the mock executor so far. Variances: README update performed by `helium_update.sh` rather than manual edit, per project convention; integer primary keys are application-generated rather than using `${SERIAL}` to match project migration convention; logical foreign keys (`queue_id` references) are not enforced by database constraints, matching existing Acuranzo convention; QueryRef 096 is intentionally a non-atomic SELECT-only claim to stay engine-agnostic; cleanup QueryRefs use a `:CUTOFF_AT` timestamp parameter rather than `:RETENTION_DAYS` because engine-agnostic date arithmetic is not available in the existing macro set; the repository API is callback-based but the default executor waits synchronously for the database result before invoking the callback, because the existing database infrastructure (pending result manager) is synchronous from the caller's perspective; `Queue.StaleTimeoutSeconds` is new and defaults to 300 seconds; the recovery QueryRef parameter was renamed from `STALE_CUTOFF_AT` to `STALE_BEFORE` to match migration 1231.
 
 ---
 

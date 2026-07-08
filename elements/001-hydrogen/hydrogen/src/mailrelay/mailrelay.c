@@ -7,17 +7,69 @@
 #include <src/mailrelay/mailrelay.h>
 #include <src/mailrelay/mailrelay_debounce.h>
 #include <src/mailrelay/mailrelay_internal.h>
+#include <src/mailrelay/mailrelay_repository.h>
 #include <src/mailrelay/mailrelay_smtp.h>
 #include <src/mailrelay/mailrelay_test_seams.h>
 #include <src/mailrelay/mailrelay_workers.h>
 
 #include <src/threads/threads.h>
+#include <src/utils/utils_time.h>
+#include <src/utils/utils_uuid.h>
 
 // Global runtime instance. Owned by mailrelay_init()/mailrelay_shutdown().
 MailRelayRuntime* mailrelay_runtime = NULL;
 
 bool mailrelay_runtime_is_initialized(void) {
     return mailrelay_runtime != NULL && mailrelay_runtime->initialized;
+}
+
+static void recovery_callback(MailRelayRepoResult* result, void* user_data) {
+    (void)user_data;
+    if (!result) {
+        return;
+    }
+    if (result->status == MAILRELAY_REPO_OK) {
+        log_this(SR_MAIL_RELAY,
+                 "Recovered %d stale sending mail queue row(s)",
+                 LOG_LEVEL_STATE, 1, result->affected_rows);
+    } else {
+        log_this(SR_MAIL_RELAY,
+                 "Mail Relay startup recovery failed: %s",
+                 LOG_LEVEL_ERROR, 1,
+                 result->error_message ? result->error_message : "unknown");
+    }
+}
+
+bool mailrelay_recover_stale_sending_rows(void) {
+    if (!app_config) {
+        return false;
+    }
+
+    const MailRelayConfig* config = &app_config->mail_relay;
+    if (!config->Queue.Persist) {
+        return true;
+    }
+    if (!config->Database || config->Database[0] == '\0') {
+        log_this(SR_MAIL_RELAY,
+                 "Queue persistence enabled but no database target; skipping stale recovery",
+                 LOG_LEVEL_ALERT, 0);
+        return false;
+    }
+
+    int stale_seconds = config->Queue.StaleTimeoutSeconds;
+    if (stale_seconds <= 0) {
+        stale_seconds = 300;
+    }
+
+    time_t now = time(NULL);
+    time_t stale_before = now - (time_t)stale_seconds;
+    char iso_time[32];
+    format_iso_time(stale_before, iso_time, sizeof(iso_time));
+
+    MailRelayRepoQueueRecoverStale params = {
+        .stale_before = iso_time
+    };
+    return mailrelay_repo_queue_recover_stale(&params, recovery_callback, NULL);
 }
 
 bool mailrelay_init(void) {
@@ -80,6 +132,9 @@ bool mailrelay_init(void) {
     }
 
     mailrelay_runtime = runtime;
+
+    // Recover any mail queue rows left in 'sending' by a previous instance.
+    mailrelay_recover_stale_sending_rows();
 
     init_service_threads(&mailrelay_threads, SR_MAIL_RELAY);
 
@@ -157,6 +212,113 @@ bool mailrelay_send_raw(const MailRelayMessage* msg,
     return mailrelay_smtp_send(msg, server, default_from, app_name, out);
 }
 
+/* Context used to capture the result of a queue insert callback. */
+typedef struct {
+    MailRelayRepoStatus status;
+    long long queue_id;
+} MailRelayInsertContext;
+
+static void insert_callback(MailRelayRepoResult* result, void* user_data) {
+    MailRelayInsertContext* ctx = (MailRelayInsertContext*)user_data;
+    if (!result || !ctx) {
+        return;
+    }
+    ctx->status = result->status;
+    if (result->status == MAILRELAY_REPO_OK && result->data && json_is_object(result->data)) {
+        json_t* qid = json_object_get(result->data, "queue_id");
+        if (qid && json_is_integer(qid)) {
+            ctx->queue_id = json_integer_value(qid);
+        }
+    }
+}
+
+static bool mailrelay_persist_message(const MailRelayMessage* msg,
+                                      int priority,
+                                      long long* out_queue_id) {
+    if (!msg) {
+        return false;
+    }
+    if (!app_config || !app_config->mail_relay.Queue.Persist) {
+        return true;
+    }
+    if (!app_config->mail_relay.Database || app_config->mail_relay.Database[0] == '\0') {
+        log_this(SR_MAIL_RELAY,
+                 "Queue persistence enabled but no database target configured",
+                 LOG_LEVEL_ERROR, 0);
+        return false;
+    }
+
+    char uuid_str[UUID_STR_LEN];
+    generate_uuid(uuid_str);
+
+    char* recipients_json = mailrelay_message_recipients_to_json(msg);
+    if (!recipients_json) {
+        log_this(SR_MAIL_RELAY, "Failed to serialize recipients for persistence", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
+
+    time_t now = time(NULL);
+    char next_attempt_at[32];
+    format_iso_time(now, next_attempt_at, sizeof(next_attempt_at));
+
+    MailRelayInsertContext ctx = {
+        .status = MAILRELAY_REPO_OK,
+        .queue_id = 0
+    };
+
+    MailRelayRepoQueueInsert params = {
+        .message_uuid = uuid_str,
+        .priority = priority,
+        .template_key = msg->template_key,
+        .from_addr = msg->from,
+        .reply_to = msg->reply_to,
+        .recipients_json = recipients_json,
+        .subject = msg->subject,
+        .body_text = msg->text_body,
+        .body_html = msg->html_body,
+        .headers_json = msg->headers,
+        .idempotency_key = msg->idempotency_key,
+        .next_attempt_at = next_attempt_at
+    };
+
+    bool submitted = mailrelay_repo_queue_insert(&params, insert_callback, &ctx);
+    free(recipients_json);
+
+    if (!submitted || ctx.status != MAILRELAY_REPO_OK) {
+        log_this(SR_MAIL_RELAY,
+                 "Failed to persist mail queue row (status=%d)",
+                 LOG_LEVEL_ERROR, 1, (int)ctx.status);
+        return false;
+    }
+
+    if (out_queue_id) {
+        *out_queue_id = ctx.queue_id;
+    }
+    return true;
+}
+
+MailRelayStatus mailrelay_enqueue_to_queue(const MailRelayMessage* msg,
+                                           int priority,
+                                           MailRelayQueue* queue) {
+    if (!msg || !queue) {
+        return MAILRELAY_INVALID_ARGS;
+    }
+
+    if (!mailrelay_persist_message(msg, priority, NULL)) {
+        return MAILRELAY_PERSIST_FAILED;
+    }
+
+    MailRelayStatus status = mailrelay_queue_enqueue(queue, msg, priority);
+    if (status == MAILRELAY_OK) {
+        if (mailrelay_runtime) {
+            pthread_mutex_lock(&mailrelay_runtime->mutex);
+            mailrelay_runtime->queued_count++;
+            pthread_mutex_unlock(&mailrelay_runtime->mutex);
+        }
+    }
+    return status;
+}
+
 MailRelayStatus mailrelay_enqueue(const MailRelayMessage* msg, int priority) {
     if (!msg) {
         return MAILRELAY_INVALID_ARGS;
@@ -196,11 +358,5 @@ MailRelayStatus mailrelay_enqueue(const MailRelayMessage* msg, int priority) {
         }
     }
 
-    MailRelayStatus status = mailrelay_queue_enqueue(mailrelay_runtime->queue, msg, priority);
-    if (status == MAILRELAY_OK) {
-        pthread_mutex_lock(&mailrelay_runtime->mutex);
-        mailrelay_runtime->queued_count++;
-        pthread_mutex_unlock(&mailrelay_runtime->mutex);
-    }
-    return status;
+    return mailrelay_enqueue_to_queue(msg, priority, mailrelay_runtime->queue);
 }

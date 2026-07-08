@@ -53,4 +53,22 @@ extern MailRelayRuntime* mailrelay_runtime;
  */
 bool mailrelay_runtime_is_initialized(void);
 
+/*
+ * Recover outbound mail queue rows stuck in 'sending' from a previous
+ * instance. No-op unless Queue.Persist is enabled and a database target is
+ * configured.
+ */
+bool mailrelay_recover_stale_sending_rows(void);
+
+/*
+ * Persist (if enabled) and enqueue a message onto a specific queue.
+ *
+ * Used by the public mailrelay_enqueue() path and by the debounce flush path
+ * so that debounced/coalesced messages are also persisted when persistence is
+ * enabled. Does not apply debounce logic.
+ */
+MailRelayStatus mailrelay_enqueue_to_queue(const MailRelayMessage* msg,
+                                           int priority,
+                                           MailRelayQueue* queue);
+
 #endif /* MAILRELAY_INTERNAL_H */

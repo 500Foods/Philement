@@ -1,11 +1,10 @@
 /*
  * Web Server File Upload Handling
- * 
+ *
  * Provides file upload functionality:
  * - Upload request processing
  * - File streaming
  * - Progress tracking
- * - UUID generation
  */
 
 #ifndef WEB_SERVER_UPLOAD_H
@@ -14,8 +13,6 @@
 #include <src/globals.h>
 #include <microhttpd.h>
 #include "web_server_core.h"
-
-void generate_uuid(char *uuid_str);
 
 // Upload data processing
 enum MHD_Result handle_upload_data(void *coninfo_cls, enum MHD_ValueKind kind,
