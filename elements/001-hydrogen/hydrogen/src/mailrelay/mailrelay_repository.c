@@ -950,3 +950,21 @@ bool mailrelay_repo_cleanup_otp(const MailRelayRepoCleanupOtp* params,
     repo_add_string(p, "CUTOFF_AT", params->cutoff_at);
     return repo_execute_json(MAILRELAY_QREF_CLEANUP_OTP, p, callback, user_data);
 }
+
+/* --------------------------------------------------------------------------
+ * Role QueryRefs
+ * -------------------------------------------------------------------------- */
+
+bool mailrelay_repo_role_get_by_name(const char* name,
+                                     mailrelay_repo_callback_fn callback,
+                                     void* user_data) {
+    if (!name || !callback) {
+        return false;
+    }
+    json_t* p = repo_params_new();
+    if (!p) {
+        return false;
+    }
+    repo_add_string(p, "ROLENAME", name);
+    return repo_execute_json(MAILRELAY_QREF_ROLE_GET_BY_NAME, p, callback, user_data);
+}

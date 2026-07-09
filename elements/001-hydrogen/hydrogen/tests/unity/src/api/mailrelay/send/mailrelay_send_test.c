@@ -46,6 +46,17 @@ static AppConfig* g_saved_app_config = NULL;
 static mailrelay_repo_execute_fn g_original_executor = NULL;
 static json_t* g_template_result = NULL;
 static json_t* g_idempotency_result = NULL;
+static json_t* g_role_result = NULL;
+
+static void set_role_result(int role_id) {
+    if (g_role_result) {
+        json_decref(g_role_result);
+    }
+    g_role_result = json_array();
+    json_t* row = json_object();
+    json_object_set_new(row, "role_id", json_integer(role_id));
+    json_array_append_new(g_role_result, row);
+}
 
 static void set_template_result(const char* subject, const char* text, const char* html) {
     if (g_template_result) {
@@ -89,6 +100,12 @@ static bool mock_executor(int query_ref,
 
     if (query_ref == MAILRELAY_QREF_QUEUE_GET_BY_IDEMPOTENCY) {
         result.data = g_idempotency_result;
+        callback(&result, user_data);
+        return true;
+    }
+
+    if (query_ref == MAILRELAY_QREF_ROLE_GET_BY_NAME) {
+        result.data = g_role_result;
         callback(&result, user_data);
         return true;
     }
@@ -167,6 +184,7 @@ void setUp(void) {
 
     set_template_result("Hello %NAME%", "Text: %NAME%", NULL);
     set_idempotency_not_found();
+    set_role_result(1);
 
     TEST_ASSERT_TRUE(mailrelay_init());
 
@@ -195,6 +213,10 @@ void tearDown(void) {
     if (g_idempotency_result) {
         json_decref(g_idempotency_result);
         g_idempotency_result = NULL;
+    }
+    if (g_role_result) {
+        json_decref(g_role_result);
+        g_role_result = NULL;
     }
 }
 
@@ -234,7 +256,7 @@ void test_send_missing_role(void) {
 
 void test_send_missing_template_key(void) {
     struct MHD_Connection* mock_connection = (struct MHD_Connection*)0x123;
-    setup_valid_jwt("mail_send");
+    setup_valid_jwt("1");
 
     enum MHD_Result result = call_send_handler(mock_connection, "POST",
                                                "{\"idempotency_key\":\"key-1\",\"to\":[\"to@example.com\"]}");
@@ -244,7 +266,7 @@ void test_send_missing_template_key(void) {
 
 void test_send_missing_idempotency_key(void) {
     struct MHD_Connection* mock_connection = (struct MHD_Connection*)0x123;
-    setup_valid_jwt("mail_send");
+    setup_valid_jwt("1");
 
     enum MHD_Result result = call_send_handler(mock_connection, "POST",
                                                "{\"template_key\":\"mail.test\",\"to\":[\"to@example.com\"]}");
@@ -254,7 +276,7 @@ void test_send_missing_idempotency_key(void) {
 
 void test_send_missing_recipients(void) {
     struct MHD_Connection* mock_connection = (struct MHD_Connection*)0x123;
-    setup_valid_jwt("mail_send");
+    setup_valid_jwt("1");
 
     enum MHD_Result result = call_send_handler(mock_connection, "POST",
                                                "{\"template_key\":\"mail.test\",\"idempotency_key\":\"key-1\"}");
@@ -264,7 +286,7 @@ void test_send_missing_recipients(void) {
 
 void test_send_invalid_recipient(void) {
     struct MHD_Connection* mock_connection = (struct MHD_Connection*)0x123;
-    setup_valid_jwt("mail_send");
+    setup_valid_jwt("1");
 
     enum MHD_Result result = call_send_handler(mock_connection, "POST",
                                                "{\"template_key\":\"mail.test\",\"idempotency_key\":\"key-1\",\"to\":[\"not-an-email\"]}");
@@ -274,7 +296,7 @@ void test_send_invalid_recipient(void) {
 
 void test_send_success(void) {
     struct MHD_Connection* mock_connection = (struct MHD_Connection*)0x123;
-    setup_valid_jwt("mail_send");
+    setup_valid_jwt("1");
 
     const char* body = "{\"template_key\":\"mail.test\",\"idempotency_key\":\"key-1\",\"to\":[\"to@example.com\"],\"params\":{\"NAME\":\"World\"}}";
     enum MHD_Result result = call_send_handler(mock_connection, "POST", body);

@@ -8,7 +8,7 @@ Validates the Hydrogen Mail Relay REST API (`/api/mailrelay/status`, `/api/mailr
 
 1. Starts the `mailval` SMTP sink (prebuilt binary) listening on `127.0.0.1`.
 2. Starts Hydrogen with a config that enables Mail Relay and points outbound delivery at the sink.
-3. Waits for HTTP readiness and database migrations.
+3. Waits for HTTP readiness and the canonical `READY FOR REQUESTS` signal.
 4. Authenticates as the `mailadmin` account (which has the `mail_send` role) and obtains a JWT.
 5. Calls `GET /api/mailrelay/status` and verifies a successful response.
 6. Calls `POST /api/mailrelay/preview` with the seeded `mail.test` template and verifies rendered subject, body, and `macros_used`.
@@ -80,8 +80,7 @@ bash tests/test_58_mailrelay_api.sh
 
 ## Assertions
 
-- Hydrogen reaches `STARTUP COMPLETE` for every engine variant.
-- Database migrations complete before API calls are issued.
+- Hydrogen reaches `READY FOR REQUESTS` for every engine variant.
 - Unauthenticated `GET /api/mailrelay/status` returns `401`.
 - Authenticated `mailadmin` status, preview, and send requests return `200` with `success:true`.
 - Preview returns a rendered subject containing the supplied `%NAME%` value and a `macros_used` array containing `NAME`.

@@ -15,6 +15,8 @@
  *   - scoreboard_clear_waiter resets to initial state.
  *   - scoreboard_find copy-on-find preserves the waiter fields.
  *   - scoreboard_list copy preserves the waiter fields.
+ *   - scoreboard_claim_waiter is one-shot: first claim succeeds and
+ *     sets waiter_signaled; second claim returns false.
  *
  * Phase 12 is the scoreboard primitive only. The actual wake-up
  * (H_Handle signal, condvar broadcast) lands in Phase 13; the
@@ -50,6 +52,10 @@ void test_waiter_clear_unknown_id_returns_false(void);
 void test_waiter_clear_idempotent(void);
 void test_waiter_find_preserves_fields(void);
 void test_waiter_list_preserves_fields(void);
+void test_waiter_claim_succeeds_once(void);
+void test_waiter_claim_without_attach_returns_false(void);
+void test_waiter_claim_unknown_id_returns_false(void);
+void test_waiter_clear_allows_reclaim(void);
 
 void setUp(void) {
 }
@@ -71,6 +77,7 @@ void test_waiter_initial_values_are_default(void) {
     TEST_ASSERT_FALSE(e->has_waiter);
     TEST_ASSERT_NULL(e->waiter_handle);
     TEST_ASSERT_NULL(e->result_ref);
+    TEST_ASSERT_FALSE(e->waiter_signaled);
     scoreboard_entry_free(e);
     free(id);
     scoreboard_destroy(sb);
@@ -360,6 +367,85 @@ void test_waiter_list_preserves_fields(void) {
     scoreboard_destroy(sb);
 }
 
+// claim succeeds once: returns handle/result and sets waiter_signaled.
+// A second claim is a no-op (false) so completion cannot double-signal.
+void test_waiter_claim_succeeds_once(void) {
+    Scoreboard* sb = scoreboard_create();
+    char* id = scoreboard_submit(sb, "s", NULL);
+
+    int sentinel_a = 0;
+    int sentinel_b = 0;
+    TEST_ASSERT_TRUE(scoreboard_attach_waiter(sb, id,
+                                              &sentinel_a, &sentinel_b));
+
+    void* handle = NULL;
+    void* result = NULL;
+    TEST_ASSERT_TRUE(scoreboard_claim_waiter(sb, id, &handle, &result));
+    TEST_ASSERT_EQUAL_PTR(&sentinel_a, handle);
+    TEST_ASSERT_EQUAL_PTR(&sentinel_b, result);
+
+    ScoreboardEntry* e = scoreboard_find(sb, id);
+    TEST_ASSERT_NOT_NULL(e);
+    TEST_ASSERT_TRUE(e->has_waiter);
+    TEST_ASSERT_TRUE(e->waiter_signaled);
+    scoreboard_entry_free(e);
+
+    handle = (void*)0x1;
+    result = (void*)0x2;
+    TEST_ASSERT_FALSE(scoreboard_claim_waiter(sb, id, &handle, &result));
+    TEST_ASSERT_EQUAL_PTR((void*)0x1, handle);
+    TEST_ASSERT_EQUAL_PTR((void*)0x2, result);
+
+    free(id);
+    scoreboard_destroy(sb);
+}
+
+// claim with no waiter attached returns false.
+void test_waiter_claim_without_attach_returns_false(void) {
+    Scoreboard* sb = scoreboard_create();
+    char* id = scoreboard_submit(sb, "s", NULL);
+
+    void* handle = NULL;
+    void* result = NULL;
+    TEST_ASSERT_FALSE(scoreboard_claim_waiter(sb, id, &handle, &result));
+    TEST_ASSERT_NULL(handle);
+    TEST_ASSERT_NULL(result);
+
+    free(id);
+    scoreboard_destroy(sb);
+}
+
+// Unknown id returns false.
+void test_waiter_claim_unknown_id_returns_false(void) {
+    Scoreboard* sb = scoreboard_create();
+    void* handle = (void*)0xDEADBEEF;
+    void* result = (void*)0xCAFEBABE;
+    TEST_ASSERT_FALSE(scoreboard_claim_waiter(sb, "ZZZZZ",
+                                              &handle, &result));
+    TEST_ASSERT_EQUAL_PTR((void*)0xDEADBEEF, handle);
+    TEST_ASSERT_EQUAL_PTR((void*)0xCAFEBABE, result);
+    scoreboard_destroy(sb);
+}
+
+// clear resets waiter_signaled so a later attach/claim cycle works.
+void test_waiter_clear_allows_reclaim(void) {
+    Scoreboard* sb = scoreboard_create();
+    char* id = scoreboard_submit(sb, "s", NULL);
+
+    int sentinel = 0;
+    TEST_ASSERT_TRUE(scoreboard_attach_waiter(sb, id, &sentinel, NULL));
+    TEST_ASSERT_TRUE(scoreboard_claim_waiter(sb, id, NULL, NULL));
+    TEST_ASSERT_TRUE(scoreboard_clear_waiter(sb, id));
+    TEST_ASSERT_TRUE(scoreboard_attach_waiter(sb, id, &sentinel, NULL));
+
+    void* handle = NULL;
+    TEST_ASSERT_TRUE(scoreboard_claim_waiter(sb, id, &handle, NULL));
+    TEST_ASSERT_EQUAL_PTR(&sentinel, handle);
+
+    free(id);
+    scoreboard_destroy(sb);
+}
+
 int main(void) {
     UNITY_BEGIN();
 
@@ -379,6 +465,10 @@ int main(void) {
     RUN_TEST(test_waiter_clear_idempotent);
     RUN_TEST(test_waiter_find_preserves_fields);
     RUN_TEST(test_waiter_list_preserves_fields);
+    RUN_TEST(test_waiter_claim_succeeds_once);
+    RUN_TEST(test_waiter_claim_without_attach_returns_false);
+    RUN_TEST(test_waiter_claim_unknown_id_returns_false);
+    RUN_TEST(test_waiter_clear_allows_reclaim);
 
     return UNITY_END();
 }

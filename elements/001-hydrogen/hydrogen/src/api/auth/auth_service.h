@@ -146,6 +146,11 @@ bool handle_rate_limiting(const char* client_ip, int failed_count,
 // Account management functions
 account_info_t* lookup_account(const char* login_id, const char* database);
 
+// Load account roles from the database (QueryRef #017) as a comma-separated
+// list of role_id integers. Returns a heap-allocated string, or NULL on a
+// transport/query failure. Caller must free via free_account_info().
+char* auth_roles_from_database(int account_id, const char* database);
+
 // New secure verification: password + status in one database query
 bool verify_password_and_status(const char* password, int account_id, const char* database, account_info_t* account);
 

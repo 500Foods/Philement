@@ -91,7 +91,8 @@ enum MHD_Result handle_mailrelay_status_request(
         if (jwt_result.claims) {
             free_jwt_claims(jwt_result.claims);
         }
-        return send_jwt_error_response(connection, error_msg, MHD_HTTP_UNAUTHORIZED);
+        (void)send_jwt_error_response(connection, error_msg, MHD_HTTP_UNAUTHORIZED);
+        return MHD_YES; // Error response already queued
     }
 
     if (!validate_jwt_claims(&jwt_result, connection)) {

@@ -46,6 +46,17 @@ static AppConfig g_test_config = {0};
 static AppConfig* g_saved_app_config = NULL;
 static mailrelay_repo_execute_fn g_original_executor = NULL;
 static json_t* g_template_result = NULL;
+static json_t* g_role_result = NULL;
+
+static void set_role_result(int role_id) {
+    if (g_role_result) {
+        json_decref(g_role_result);
+    }
+    g_role_result = json_array();
+    json_t* row = json_object();
+    json_object_set_new(row, "role_id", json_integer(role_id));
+    json_array_append_new(g_role_result, row);
+}
 
 static void set_template_result(const char* subject, const char* text, const char* html) {
     if (g_template_result) {
@@ -76,6 +87,12 @@ static bool mock_executor(int query_ref,
 
     if (query_ref == MAILRELAY_QREF_TEMPLATE_GET_BY_KEY) {
         result.data = g_template_result;
+        callback(&result, user_data);
+        return true;
+    }
+
+    if (query_ref == MAILRELAY_QREF_ROLE_GET_BY_NAME) {
+        result.data = g_role_result;
         callback(&result, user_data);
         return true;
     }
@@ -152,6 +169,7 @@ void setUp(void) {
     mailrelay_repo_set_executor(mock_executor);
 
     set_template_result("Hello %NAME% from %APP_NAME%", "Text: %NAME%", "<p>HTML: %NAME%</p>");
+    set_role_result(1);
 
     TEST_ASSERT_TRUE(mailrelay_init());
 
@@ -177,6 +195,10 @@ void tearDown(void) {
     if (g_template_result) {
         json_decref(g_template_result);
         g_template_result = NULL;
+    }
+    if (g_role_result) {
+        json_decref(g_role_result);
+        g_role_result = NULL;
     }
 }
 
@@ -216,7 +238,7 @@ void test_preview_missing_role(void) {
 
 void test_preview_invalid_json(void) {
     struct MHD_Connection* mock_connection = (struct MHD_Connection*)0x123;
-    setup_valid_jwt("mail_send");
+    setup_valid_jwt("1");
 
     enum MHD_Result result = call_preview_handler(mock_connection, "not-json");
 
@@ -225,7 +247,7 @@ void test_preview_invalid_json(void) {
 
 void test_preview_missing_template_key(void) {
     struct MHD_Connection* mock_connection = (struct MHD_Connection*)0x123;
-    setup_valid_jwt("mail_send");
+    setup_valid_jwt("1");
 
     enum MHD_Result result = call_preview_handler(mock_connection, "{\"params\":{}}");
 
@@ -234,7 +256,7 @@ void test_preview_missing_template_key(void) {
 
 void test_preview_template_not_found(void) {
     struct MHD_Connection* mock_connection = (struct MHD_Connection*)0x123;
-    setup_valid_jwt("mail_send");
+    setup_valid_jwt("1");
 
     if (g_template_result) {
         json_decref(g_template_result);
@@ -249,7 +271,7 @@ void test_preview_template_not_found(void) {
 
 void test_preview_missing_macro(void) {
     struct MHD_Connection* mock_connection = (struct MHD_Connection*)0x123;
-    setup_valid_jwt("mail_send");
+    setup_valid_jwt("1");
 
     set_template_result("Hello %MISSING%", NULL, NULL);
 
@@ -261,7 +283,7 @@ void test_preview_missing_macro(void) {
 
 void test_preview_disabled(void) {
     struct MHD_Connection* mock_connection = (struct MHD_Connection*)0x123;
-    setup_valid_jwt("mail_send");
+    setup_valid_jwt("1");
     g_test_config.mail_relay.Enabled = false;
 
     enum MHD_Result result = call_preview_handler(mock_connection,
@@ -272,7 +294,7 @@ void test_preview_disabled(void) {
 
 void test_preview_success(void) {
     struct MHD_Connection* mock_connection = (struct MHD_Connection*)0x123;
-    setup_valid_jwt("mail_send");
+    setup_valid_jwt("1");
 
     const char* body = "{\"template_key\":\"mail.test\",\"params\":{\"NAME\":\"World\"}}";
     enum MHD_Result result = call_preview_handler(mock_connection, body);

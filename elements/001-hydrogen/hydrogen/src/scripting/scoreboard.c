@@ -689,6 +689,7 @@ bool scoreboard_attach_waiter(Scoreboard* sb,
             entry->has_waiter = true;
             entry->waiter_handle = waiter_handle;
             entry->result_ref = result_ref;
+            entry->waiter_signaled = false;
         }
         found = true;
         break;
@@ -743,6 +744,42 @@ bool scoreboard_get_waiter(Scoreboard* sb,
 }
 
 /*
+ * Phase 12: claim the waiter for a one-shot completion signal.
+ * Live scoreboard state is authoritative; workers must not rely on
+ * an early scoreboard_find snapshot of has_waiter.
+ */
+bool scoreboard_claim_waiter(Scoreboard* sb,
+                             const char* job_id,
+                             void** out_handle,
+                             void** out_result) {
+    if (!sb || !job_id) {
+        return false;
+    }
+
+    bool claimed = false;
+    pthread_mutex_lock(&sb->mutex);
+    for (size_t i = 0; i < sb->count; i++) {
+        ScoreboardEntry* entry = &sb->entries[i];
+        if (strcmp(entry->job_id, job_id) != 0) {
+            continue;
+        }
+        if (entry->has_waiter && !entry->waiter_signaled) {
+            entry->waiter_signaled = true;
+            if (out_handle) {
+                *out_handle = entry->waiter_handle;
+            }
+            if (out_result) {
+                *out_result = entry->result_ref;
+            }
+            claimed = true;
+        }
+        break;
+    }
+    pthread_mutex_unlock(&sb->mutex);
+    return claimed;
+}
+
+/*
  * Phase 12: clear the waiter fields. Use with care; in v1 there
  * is no caller that needs this (Phase 13's H_Handle lifecycle owns
  * its own cleanup), but the C API is in place for future REST
@@ -763,6 +800,7 @@ bool scoreboard_clear_waiter(Scoreboard* sb, const char* job_id) {
         entry->has_waiter = false;
         entry->waiter_handle = NULL;
         entry->result_ref = NULL;
+        entry->waiter_signaled = false;
         found = true;
         break;
     }

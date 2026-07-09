@@ -5,6 +5,7 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 1.1.0 - 2026-07-09 - Use <=/>= for valid_after/valid_until so same-second rows match on SQLite second-resolution timestamps
 -- 1.0.0 - 2025-12-28 - Initial creation
 
 return function(engine, design_name, schema_name, cfg)
@@ -57,11 +58,11 @@ table.insert(queries,{sql=[[
                         (account_id = :ACCOUNTID)
                         AND (
                             (valid_after IS NULL)
-                            OR (valid_after < ${NOW})
+                            OR (valid_after <= ${NOW})
                         )
                         AND (
                             (valid_until IS NULL)
-                            OR (valid_until > ${NOW})
+                            OR (valid_until >= ${NOW})
                         );
                 ]==]                                                                AS code,
                 '${QUERY_NAME}'                                                     AS name,

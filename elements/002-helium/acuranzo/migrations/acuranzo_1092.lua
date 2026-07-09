@@ -5,6 +5,7 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 1.1.0 - 2026-07-09 - Use <=/>= for valid_after/valid_until so same-second rows match on SQLite second-resolution timestamps
 -- 1.0.0 - 2025-12-28 - Initial creation
 
 -- Note: Migrations populating the query table are more than a little bit confusing!
@@ -66,8 +67,8 @@ table.insert(queries,{sql=[[
                         ${SCHEMA}licenses
                     WHERE
                         LOWER(app_key) = LOWER(:APIKEY)
-                        AND (valid_after < CURRENT_TIMESTAMP)
-                        AND (valid_until > CURRENT_TIMESTAMP);
+                        AND (valid_after <= CURRENT_TIMESTAMP)
+                        AND (valid_until >= CURRENT_TIMESTAMP);
                 ]==]                                                                AS code,
                 '${QUERY_NAME}'                                                     AS name,
                 [==[

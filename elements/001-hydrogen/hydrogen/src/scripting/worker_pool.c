@@ -73,8 +73,7 @@ static void* scripting_worker_thread(void* arg);
 static void scripting_worker_process_one(ScriptingWorkerPool* pool,
                                           const char* job_id);
 static bool scripting_worker_should_exit(ScriptingWorkerPool* pool);
-static void scripting_signal_waiter_if_present(ScoreboardEntry* entry,
-                                                const char* job_id);
+static void scripting_signal_waiter_if_present(const char* job_id);
 
 /*
  * Phase 12: if the job has a waiter attached, log a marker.
@@ -87,21 +86,26 @@ static void scripting_signal_waiter_if_present(ScoreboardEntry* entry,
  * scoreboard API shape is the unit-tested surface, not the log
  * line.
  *
- * `entry` is the local entry copy that the worker took via
- * scoreboard_find; its has_waiter / waiter_handle / result_ref
- * fields are the snapshot we act on. This matches the worker's
- * general "read the entry copy, act on it" pattern and avoids a
- * second scoreboard lookup.
+ * Waiter fields are claimed live from the scoreboard at terminal
+ * status via scoreboard_claim_waiter. An early scoreboard_find
+ * snapshot taken at job start can miss a waiter attached after
+ * dequeue; claim is one-shot so double-signal is impossible.
+ * Callers that attach after claim must check terminal status
+ * themselves (Phase 13 H.wait).
  */
-static void scripting_signal_waiter_if_present(ScoreboardEntry* entry,
-                                                const char* job_id) {
-    if (!entry || !entry->has_waiter) {
+static void scripting_signal_waiter_if_present(const char* job_id) {
+    if (!job_id || !scripting_scoreboard) {
+        return;
+    }
+    void* handle = NULL;
+    void* result_ref = NULL;
+    if (!scoreboard_claim_waiter(scripting_scoreboard, job_id,
+                                 &handle, &result_ref)) {
         return;
     }
     log_this(SR_SCRIPTING,
              "Worker [%s]: would signal waiter handle=%p result_ref=%p",
-             LOG_LEVEL_TRACE, 3, job_id,
-             entry->waiter_handle, entry->result_ref);
+             LOG_LEVEL_TRACE, 3, job_id, handle, result_ref);
 }
 
 /*
@@ -532,12 +536,12 @@ static void scripting_worker_process_one(ScriptingWorkerPool* pool,
         scoreboard_update_status(scripting_scoreboard, job_id, terminal);
     }
 
-    // Phase 12: signal any attached waiter. The scoreboard entry is
-    // now in a terminal state, so a waiter (e.g. a future H.wait
-    // call) is allowed to see the final result. Phase 13 will
-    // replace the log marker in scripting_signal_waiter_if_present
-    // with a real H_Handle signal.
-    scripting_signal_waiter_if_present(entry, job_id);
+    // Phase 12: signal any attached waiter using live scoreboard
+    // state (not the start-of-job entry snapshot). The entry is now
+    // terminal, so a waiter (e.g. a future H.wait call) may observe
+    // the final result. Phase 13 replaces the log marker with a real
+    // H_Handle signal.
+    scripting_signal_waiter_if_present(job_id);
 
     H_lua_destroy_context(L);
     scoreboard_entry_free(entry);

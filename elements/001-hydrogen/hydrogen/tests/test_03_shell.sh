@@ -184,6 +184,9 @@ declare -a ENV_WHITELIST=(
     # First found in tests/test_57_mailrelay_outbound.sh
     "CONFIG_PLAIN" "CONFIG_TLS" "MAILRELAY_MAILVAL_CERT" "MAILVAL_BIN" "MAILVAL_CERT" "MAILVAL_DIR" "MAILVAL_KEY"
     "PLAINTEXT_PORT" "TLS_PORT"
+    # First found in tests/test_58_mailrelay_api.sh
+    "BASELINE_SQLITE" "CAPTURE_TIMEOUT" "GLOBAL_RESULT_FILE" "HTTP_READY_TIMEOUT" 
+    "HYDROGEN_MAILADMIN_NAME" "HYDROGEN_MAILADMIN_PASS" "MAILVAL_READY_TIMEOUT" "READY_TIMEOUT"
     # First found in tests/test_60_performance.sh
     "PERF_CONFIG_FILE" "PERF_DESCRIPTION" "PERF_ITERATIONS" "PERF_LOG_SUFFIX"
     # First found in tests/test_91_cppcheck.sh
