@@ -328,7 +328,16 @@ enum MHD_Result handle_auth_login_request(
     }
     
     log_this(SR_AUTH, "Password and status verified for account_id=%d", LOG_LEVEL_DEBUG, 1, account->id);
-    
+
+    // Step 15a: Load account roles from the database so the JWT receives the
+    // canonical comma-separated role_id list (e.g. "1,3"). On failure fall
+    // back to an empty roles claim rather than blocking login.
+    free(account->roles);
+    account->roles = auth_roles_from_database(account->id, database);
+    if (!account->roles) {
+        account->roles = strdup("");
+    }
+
     // Step 16: Generate JWT token
     time_t issued_at = time(NULL);
     char* jwt_token = generate_jwt(account, &sys_info, client_ip, tz, database, issued_at);

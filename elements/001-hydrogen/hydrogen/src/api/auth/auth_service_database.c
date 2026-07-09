@@ -22,6 +22,7 @@
 #include <src/database/dbqueue/dbqueue.h>
 #include <src/database/database_cache.h>
 #include <src/database/database_params.h>
+#include <src/database/database_pending.h>
 #include <src/api/conduit/query/query.h>
 #include <jansson.h>
 #include <src/config/config_databases.h>
@@ -48,6 +49,10 @@ void free_query_result(QueryResult* result) {
 /**
  * Execute a database query using the conduit system
  * Returns QueryResult or NULL on error
+ *
+ * Register the pending result BEFORE submit so a fast worker cannot signal
+ * completion before the waiter is visible (avoids "Query result not found
+ * for signaling" and the subsequent free of an orphaned result).
  */
 QueryResult* execute_auth_query(int query_ref, const char* database, json_t* params) {
     if (!database || query_ref <= 0) {
@@ -100,10 +105,45 @@ QueryResult* execute_auth_query(int query_ref, const char* database, json_t* par
         return NULL;
     }
 
-    // Create and submit database query
+    char* query_template = strdup(cache_entry->sql_template);
+    if (!query_template) {
+        free(query_id);
+        free(params_json);
+        if (merged_params != params) {
+            json_decref(merged_params);
+        }
+        log_this("AUTH", "Failed to duplicate query template", LOG_LEVEL_ERROR, 0);
+        return NULL;
+    }
+
+    PendingResultManager* pending_mgr = get_pending_result_manager();
+    if (!pending_mgr) {
+        log_this("AUTH", "Pending result manager not initialized", LOG_LEVEL_ERROR, 0);
+        free(query_id);
+        free(query_template);
+        free(params_json);
+        if (merged_params != params) {
+            json_decref(merged_params);
+        }
+        return NULL;
+    }
+
+    // Must register before submit so the worker can always find the waiter.
+    PendingQueryResult* pending = pending_result_register(pending_mgr, query_id, 30, SR_AUTH);
+    if (!pending) {
+        log_this("AUTH", "Failed to register pending result for query: %s", LOG_LEVEL_ERROR, 1, query_id);
+        free(query_id);
+        free(query_template);
+        free(params_json);
+        if (merged_params != params) {
+            json_decref(merged_params);
+        }
+        return NULL;
+    }
+
     DatabaseQuery db_query = {
         .query_id = query_id,
-        .query_template = strdup(cache_entry->sql_template),
+        .query_template = query_template,
         .parameter_json = params_json,
         .queue_type_hint = database_queue_type_from_string(cache_entry->queue_type),
         .submitted_at = time(NULL),
@@ -115,8 +155,9 @@ QueryResult* execute_auth_query(int query_ref, const char* database, json_t* par
     bool submit_success = database_queue_submit_query(db_queue, &db_query);
     if (!submit_success) {
         log_this("AUTH", "Failed to submit query to database queue", LOG_LEVEL_ERROR, 0);
+        pending_result_unregister(pending_mgr, pending, SR_AUTH);
         free(query_id);
-        free(db_query.query_template);
+        free(query_template);
         free(params_json);
         if (merged_params != params) {
             json_decref(merged_params);
@@ -124,12 +165,12 @@ QueryResult* execute_auth_query(int query_ref, const char* database, json_t* par
         return NULL;
     }
 
-    // Wait for query result (returns heap-allocated DatabaseQuery, caller must free)
-    DatabaseQuery* result_query = database_queue_await_result(db_queue, query_id, 30); // 30 second timeout
-    if (!result_query) {
+    int wait_result = pending_result_wait(pending, SR_AUTH);
+    if (wait_result != 0) {
         log_this("AUTH", "Query execution timed out or failed: %s", LOG_LEVEL_ERROR, 1, query_id);
+        pending_result_unregister(pending_mgr, pending, SR_AUTH);
         free(query_id);
-        free(db_query.query_template);
+        free(query_template);
         free(params_json);
         if (merged_params != params) {
             json_decref(merged_params);
@@ -137,17 +178,13 @@ QueryResult* execute_auth_query(int query_ref, const char* database, json_t* par
         return NULL;
     }
 
-    // Parse the result
+    QueryResult* pending_result = pending_result_get(pending);
     QueryResult* result = calloc(1, sizeof(QueryResult));
     if (!result) {
         log_this("AUTH", "Failed to allocate memory for query result", LOG_LEVEL_ERROR, 0);
-        // Clean up result_query from database_queue_await_result
-        free(result_query->query_id);
-        free(result_query->query_template);
-        free(result_query->error_message);
-        free(result_query);
+        pending_result_unregister(pending_mgr, pending, SR_AUTH);
         free(query_id);
-        free(db_query.query_template);
+        free(query_template);
         free(params_json);
         if (merged_params != params) {
             json_decref(merged_params);
@@ -155,26 +192,38 @@ QueryResult* execute_auth_query(int query_ref, const char* database, json_t* par
         return NULL;
     }
 
-    if (result_query->error_message) {
+    if (!pending_result) {
         result->success = false;
-        result->error_message = strdup(result_query->error_message);
+        result->error_message = strdup("Query execution failed or timed out");
+        log_this("AUTH", "Query execution error: %s", LOG_LEVEL_ERROR, 1, result->error_message);
+    } else if (pending_result->error_message) {
+        result->success = false;
+        result->error_message = strdup(pending_result->error_message);
         log_this("AUTH", "Query execution error: %s", LOG_LEVEL_ERROR, 1, result->error_message);
     } else {
         result->success = true;
-        // Note: await_result stores data_json in query_template (see submit.c line 298)
-        result->data_json = result_query->query_template ? strdup(result_query->query_template) : NULL;
-        result->execution_time_ms = time(NULL) - result_query->submitted_at;
+        result->data_json = pending_result->data_json ? strdup(pending_result->data_json) : NULL;
+        result->row_count = pending_result->row_count;
+        result->column_count = pending_result->column_count;
+        result->affected_rows = pending_result->affected_rows;
+        result->execution_time_ms = pending_result->execution_time_ms;
+
+        // Some engine paths return only data_json; derive row_count for callers
+        // that rely on it (e.g. is_token_revoked / QueryRef #018).
+        if (result->row_count == 0 && result->data_json && result->data_json[0] != '\0') {
+            json_error_t err;
+            json_t* arr = json_loads(result->data_json, 0, &err);
+            if (arr && json_is_array(arr)) {
+                result->row_count = json_array_size(arr);
+            }
+            json_decref(arr);
+        }
     }
 
-    // Cleanup result_query from database_queue_await_result (heap-allocated with strdup'd fields)
-    free(result_query->query_id);
-    free(result_query->query_template);
-    free(result_query->error_message);
-    free(result_query);
-
-    // Cleanup local allocations
+    // Ownership of pending_result stays with the pending entry; unregister frees it.
+    pending_result_unregister(pending_mgr, pending, SR_AUTH);
     free(query_id);
-    free(db_query.query_template);
+    free(query_template);
     free(params_json);
     if (merged_params != params) {
         json_decref(merged_params);
@@ -584,6 +633,10 @@ void delete_jwt_from_storage(const char* jwt_hash, const char* database) {
 
 /**
  * Check if token is revoked (database lookup)
+ *
+ * QueryRef #018 "Validate JWT" returns a row when the token hash is still
+ * present and valid. A matching row means the token is active; no row means
+ * it has been deleted/revoked (or never stored).
  */
 bool is_token_revoked(const char* token_hash, const char* ip_address, const char* database) {
     if (!token_hash || !database) return true; // Assume revoked if invalid
@@ -607,12 +660,29 @@ bool is_token_revoked(const char* token_hash, const char* ip_address, const char
         return true; // Fail-safe: assume revoked
     }
 
-    bool revoked = result->success && result->row_count > 0;
+    if (!result->success) {
+        log_this("AUTH", "Token validation query failed: %s", LOG_LEVEL_ERROR, 1,
+                 result->error_message ? result->error_message : "Unknown error");
+        free_query_result(result);
+        return true; // Fail-safe: assume revoked
+    }
 
-    // Cleanup
+    // Prefer row_count when the engine populates it; fall back to JSON array
+    // size for paths that only return data_json.
+    bool has_valid_row = result->row_count > 0;
+    if (!has_valid_row && result->data_json && result->data_json[0] != '\0') {
+        json_error_t err;
+        json_t* arr = json_loads(result->data_json, 0, &err);
+        if (arr && json_is_array(arr)) {
+            has_valid_row = json_array_size(arr) > 0;
+        }
+        json_decref(arr);
+    }
+
     free_query_result(result);
 
-    return revoked;
+    // No matching row => token is not in the active token store => revoked.
+    return !has_valid_row;
 }
 
 /**

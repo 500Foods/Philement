@@ -128,24 +128,24 @@ in the migrations themselves so that they get populated in the database directly
 | [1089](/elements/002-helium/acuranzo/migrations/acuranzo_1089.lua) | lookups | 1.0.1 | 2026-03-18 | 6 | ✗ | Defaults for Lookup 056 - Acuranzo Systems |
 | [1090](/elements/002-helium/acuranzo/migrations/acuranzo_1090.lua) | lookups | 1.0.0 | 2025-12-26 | 6 | ✗ | Defaults for Lookup 057 - Report Page Sizes |
 | [1091](/elements/002-helium/acuranzo/migrations/acuranzo_1091.lua) | lookups | 1.0.0 | 2025-12-26 | 6 | ✗ | Defaults for Lookup 058 - Query Queues |
-| [1092](/elements/002-helium/acuranzo/migrations/acuranzo_1092.lua) | queries | 1.0.0 | 2025-12-28 | 4 | ✗ | QueryRef #001 - Get System Information |
-| [1093](/elements/002-helium/acuranzo/migrations/acuranzo_1093.lua) | queries | 1.0.0 | 2025-12-28 | 4 | ✗ | QueryRef #002 - Get IP Whitelist |
-| [1094](/elements/002-helium/acuranzo/migrations/acuranzo_1094.lua) | queries | 1.0.0 | 2025-12-28 | 4 | ✗ | QueryRef #003 - Get IP Blacklist |
+| [1092](/elements/002-helium/acuranzo/migrations/acuranzo_1092.lua) | queries | 1.1.0 | 2026-07-09 | 4 | ✗ | QueryRef #001 - Get System Information |
+| [1093](/elements/002-helium/acuranzo/migrations/acuranzo_1093.lua) | queries | 1.1.0 | 2026-07-09 | 4 | ✗ | QueryRef #002 - Get IP Whitelist |
+| [1094](/elements/002-helium/acuranzo/migrations/acuranzo_1094.lua) | queries | 1.1.0 | 2026-07-09 | 4 | ✗ | QueryRef #003 - Get IP Blacklist |
 | [1095](/elements/002-helium/acuranzo/migrations/acuranzo_1095.lua) | queries | 1.0.0 | 2025-12-28 | 4 | ✗ | QueryRef #004 - Log Login Attempt |
 | [1096](/elements/002-helium/acuranzo/migrations/acuranzo_1096.lua) | queries | 1.0.0 | 2025-12-28 | 4 | ✗ | QueryRef #005 - Get Login Attempt Count |
 | [1097](/elements/002-helium/acuranzo/migrations/acuranzo_1097.lua) | queries | 1.0.0 | 2025-12-28 | 4 | ✗ | QueryRef #006 - Mark Repeated Login Failures |
 | [1098](/elements/002-helium/acuranzo/migrations/acuranzo_1098.lua) | queries | 1.1.0 | 2026-07-04 | 4 | ✗ | QueryRef #007 - Block IP Address Temporarily |
-| [1099](/elements/002-helium/acuranzo/migrations/acuranzo_1099.lua) | queries | 1.0.0 | 2025-12-28 | 4 | ✗ | QueryRef #008 - Get Account ID |
-| [1100](/elements/002-helium/acuranzo/migrations/acuranzo_1100.lua) | queries | 1.0.0 | 2025-12-28 | 4 | ✗ | QueryRef #009 - Check Login Authorization |
+| [1099](/elements/002-helium/acuranzo/migrations/acuranzo_1099.lua) | queries | 1.1.0 | 2026-07-09 | 4 | ✗ | QueryRef #008 - Get Account ID |
+| [1100](/elements/002-helium/acuranzo/migrations/acuranzo_1100.lua) | queries | 1.1.0 | 2026-07-09 | 4 | ✗ | QueryRef #009 - Check Login Authorization |
 | [1101](/elements/002-helium/acuranzo/migrations/acuranzo_1101.lua) | queries | 1.0.0 | 2025-12-28 | 4 | ✗ | QueryRef #010 - Check Account Authorization |
-| [1102](/elements/002-helium/acuranzo/migrations/acuranzo_1102.lua) | queries | 1.0.0 | 2025-12-28 | 4 | ✗ | QueryRef #011 - Get Login E-Mail |
+| [1102](/elements/002-helium/acuranzo/migrations/acuranzo_1102.lua) | queries | 1.1.0 | 2026-07-09 | 4 | ✗ | QueryRef #011 - Get Login E-Mail |
 | [1103](/elements/002-helium/acuranzo/migrations/acuranzo_1103.lua) | queries | 1.0.0 | 2025-12-28 | 4 | ✗ | QueryRef #012 - Check Passwoord |
 | [1104](/elements/002-helium/acuranzo/migrations/acuranzo_1104.lua) | queries | 1.1.0 | 2026-07-04 | 4 | ✗ | QueryRef #013 - Store JWT |
 | [1105](/elements/002-helium/acuranzo/migrations/acuranzo_1105.lua) | queries | 1.0.0 | 2025-12-28 | 4 | ✗ | QueryRef #014 - Log the Login |
 | [1106](/elements/002-helium/acuranzo/migrations/acuranzo_1106.lua) | queries | 1.0.0 | 2025-12-28 | 4 | ✗ | QueryRef #015 - Cleanup Login Records |
 | [1107](/elements/002-helium/acuranzo/migrations/acuranzo_1107.lua) | queries | 1.0.0 | 2025-12-28 | 4 | ✗ | QueryRef #016 - Log Endpoint Access |
-| [1108](/elements/002-helium/acuranzo/migrations/acuranzo_1108.lua) | queries | 1.0.0 | 2025-12-28 | 4 | ✗ | QueryRef #017 - Get User Roles |
-| [1109](/elements/002-helium/acuranzo/migrations/acuranzo_1109.lua) | queries | 1.0.0 | 2025-12-28 | 4 | ✗ | QueryRef #018 - Validate JWT |
+| [1108](/elements/002-helium/acuranzo/migrations/acuranzo_1108.lua) | queries | 1.1.0 | 2026-07-09 | 4 | ✗ | QueryRef #017 - Get User Roles |
+| [1109](/elements/002-helium/acuranzo/migrations/acuranzo_1109.lua) | queries | 1.1.0 | 2026-07-09 | 4 | ✗ | QueryRef #018 - Validate JWT |
 | [1110](/elements/002-helium/acuranzo/migrations/acuranzo_1110.lua) | queries | 1.0.0 | 2025-12-29 | 4 | ✗ | QueryRef #019 - Delete JWT |
 | [1111](/elements/002-helium/acuranzo/migrations/acuranzo_1111.lua) | queries | 1.0.0 | 2025-12-29 | 4 | ✗ | QueryRef #020 - Delete Account JWTs |
 | [1112](/elements/002-helium/acuranzo/migrations/acuranzo_1112.lua) | queries | 1.0.0 | 2025-12-29 | 4 | ✗ | QueryRef #021 - Store Session Log |
@@ -229,7 +229,7 @@ in the migrations themselves so that they get populated in the database directly
 | [1190](/elements/002-helium/acuranzo/migrations/acuranzo_1190.lua) | accounts | 1.0.0 | 2026-05-09 | 25 | ✓ | Relax accounts.password_hash to NULL for OIDC-provisioned accounts (OIDC RP Phase 16) |
 | [1191](/elements/002-helium/acuranzo/migrations/acuranzo_1191.lua) | queries | 1.0.0 | 2026-05-09 | 4 | ✗ | QueryRef #080 - OIDC RP: Lookup OIDC Identity (Phase 17) |
 | [1192](/elements/002-helium/acuranzo/migrations/acuranzo_1192.lua) | queries | 1.0.0 | 2026-05-09 | 4 | ✗ | QueryRef #081 - OIDC RP: Link OIDC Identity (Phase 17) |
-| [1193](/elements/002-helium/acuranzo/migrations/acuranzo_1193.lua) | queries | 1.0.0 | 2026-05-09 | 4 | ✗ | QueryRef #082 - OIDC RP: Lookup Account by Email (Phase 17) |
+| [1193](/elements/002-helium/acuranzo/migrations/acuranzo_1193.lua) | queries | 1.1.0 | 2026-07-09 | 4 | ✗ | QueryRef #082 - OIDC RP: Lookup Account by Email (Phase 17) |
 | [1194](/elements/002-helium/acuranzo/migrations/acuranzo_1194.lua) | queries | 1.0.0 | 2026-05-09 | 4 | ✗ | QueryRef #083 - OIDC RP: Provision OIDC Account (Phase 17) |
 | [1195](/elements/002-helium/acuranzo/migrations/acuranzo_1195.lua) | queries | 1.0.0 | 2026-05-09 | 4 | ✗ | QueryRef #084 - OIDC RP: Touch OIDC Identity (Phase 17) |
 | [1196](/elements/002-helium/acuranzo/migrations/acuranzo_1196.lua) | lookups | 1.0.0 | 2026-06-24 | 4 | ✗ | Adds key_idx 11 'SQL - Protected' to Lookup 028 - Query Type (Cap Phase 2b) |
@@ -296,4 +296,5 @@ in the migrations themselves so that they get populated in the database directly
 | [1257](/elements/002-helium/acuranzo/migrations/acuranzo_1257.lua) | roles | 1.0.0 | 2026-07-08 | 4 | ✗ | Create Mail Relay send role |
 | [1258](/elements/002-helium/acuranzo/migrations/acuranzo_1258.lua) | accounts | 1.0.0 | 2026-07-08 | 9 | ✗ | Create Mail Relay mailadmin user with mail_send role |
 | [1259](/elements/002-helium/acuranzo/migrations/acuranzo_1259.lua) | mail_templates | 1.0.0 | 2026-07-08 | 4 | ✗ | Seed the mail.test template |
-| **260** | | | | **1374** | **260** | |
+| [1260](/elements/002-helium/acuranzo/migrations/acuranzo_1260.lua) | queries | 1.0.0 | 2026-07-08 | 4 | ✗ | QueryRef #127 - Get Role By Name |
+| **261** | | | | **1378** | **261** | |

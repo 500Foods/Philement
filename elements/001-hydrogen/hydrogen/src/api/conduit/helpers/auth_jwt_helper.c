@@ -107,7 +107,9 @@ enum MHD_Result send_jwt_error_response(struct MHD_Connection *connection, const
     MHD_add_response_header(response, "Content-Type", "application/json");
     MHD_queue_response(connection, http_status, response);
     MHD_destroy_response(response);
-    return MHD_YES;
+    // Intermediate helpers treat MHD_NO as "stop; error already queued".
+    // Top-level handlers must return MHD_YES to MHD after calling this.
+    return MHD_NO;
 }
 
 enum MHD_Result send_missing_authorization_response(struct MHD_Connection *connection) {

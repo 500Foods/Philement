@@ -16,19 +16,25 @@ This document is the working document for the implementation. It is meant to be 
 
 ## Resuming Work on This Plan
 
-Use this checklist at the start of every Mail Relay work session:
+CURRENT PAUSE POINT (as of 2026-07-09): **Phase 7 is green through 7.5b.** Next incomplete item is **7.6 Swagger/OpenAPI** for the mailrelay endpoints. After 7.6, Phase 7 exit gate is complete and Phase 7A (Lua `H.mail` / `H.notify` backfill) is the next major phase.
 
-1. Confirm the latest completed phase by reading the **Phase Status** blocks below; the current active phase is the first one not marked complete.
-2. Re-read the **Working Log** for decisions, surprises, and gotchas that affect the next chunk.
-3. Verify the baseline build by running `zsh -ic 'mkt'`.
-4. Run the existing Mail Relay Unity tests:
-   `zsh -ic 'mku mailrelay_message_test && mku mailrelay_render_test && mku mailrelay_smtp_test && mku mailrelay_send_raw_test && mku config_mail_relay_test_load_mailrelay_config'`
-5. Inspect the current source in [`/elements/001-hydrogen/hydrogen/src/mailrelay/`](/elements/001-hydrogen/hydrogen/src/mailrelay/) and current tests in [`/elements/001-hydrogen/hydrogen/tests/unity/src/mailrelay/`](/elements/001-hydrogen/hydrogen/tests/unity/src/mailrelay/).
-6. Pick the next incomplete, numbered work item in the earliest pending phase.
-7. Ask qualifying questions and present a concrete chunk plan before editing code.
-8. After the chunk is verified, update the phase Status block and Working Log, then review before starting the next chunk.
+### Resume here next session
 
-Build aliases are defined in `~/.zshrc`; use `zsh -ic '<alias>'` in non-interactive sessions.
+1. Read this pause point + Working Log entries dated 2026-07-09 (auth recovery, SQLite same-second validity, test_58 fail-soft).
+2. Baseline: `zsh -ic 'mkt'` then a short mailrelay Unity slice:
+   `zsh -ic 'mku mailrelay_send_test && mku mailrelay_preview_test && mku mailrelay_template_preview_test'`
+3. Confirm blackbox still green if you want a safety check: `test_40_auth.sh`, `test_57_mailrelay_outbound.sh`, `test_58_mailrelay_api.sh`.
+4. Implement **7.6** only: document `POST /api/mailrelay/send`, `POST /api/mailrelay/preview`, `GET /api/mailrelay/status` in the embedded Swagger payload (auth, role, request/response, error codes). Verify with `test_22_swagger.sh`.
+5. On green 7.6: mark 7.6 `[x]`, fill Phase 7 Status complete, then present a Phase 7A chunk plan before coding.
+
+### Session checklist (every Mail Relay return)
+
+1. Confirm the latest completed phase via **Phase Status** blocks; active phase = first not complete.
+2. Re-read **Working Log** decisions/surprises that affect the next chunk.
+3. `zsh -ic 'mkt'`; relevant `mku` targets; inspect `src/mailrelay/` and `tests/unity/src/mailrelay/`.
+4. One small chunk: ask qualifying questions → present plan → implement → verify → update this plan → stop for review.
+
+Build aliases: `zsh -ic '<alias>'` (`mkt`, `mka`, `mku <base>`, `mkp`, `mks`).
 
 ## Scope And Repo Areas
 
@@ -245,6 +251,17 @@ Append discoveries, surprises, and decisions here as we move through phases. Ear
 
 ### Decisions log
 
+- (Phase 7.5b, 2026-07-08, PAUSE) Role authorization design locked before the break. (1) The JWT `roles` claim stays canonical: a comma-separated list of **role_id integers** (not role names). (2) The mailrelay API authorizes by the `mail_send` **role_id**, resolved at request time via a **new QueryRef #127 "Get Role By Name"** (migration `acuranzo_1260.lua`) — NOT a hardcoded `"1"` constant. (3) The QueryRef #017 loader (`roles_from_database` in `oidc_rp_roles.c`) becomes a **non-static shared** function reused by the password login path. (4) Work split: Chunk 1 = auth roles fix; Chunk 2 = `test_58` hang hardening; then 7.6 Swagger. NONE of this is coded yet — see the "Phase 7.5b resume plan" under Phase 7.
+- (Phase 7.5b Chunk 1, 2026-07-08) Chunk 1 implementation completed. `auth_roles_from_database()` is declared in `auth_service.h` and defined in `oidc_rp_roles.c`; the existing OIDC test seam continues to cover it. The mailrelay role check is implemented in a new shared file `src/api/mailrelay/mailrelay_api_auth.{c,h}` and resolves the role name through the Mail Relay repository seam (QueryRef #127) so endpoint unit tests stay DB-free. Password login now loads roles before JWT generation, matching OIDC semantics.
+- (Phase 7.5b Chunk 2 follow-up, 2026-07-09) `test_58_mailrelay_api.sh` hang hardening implemented: replaced migration-completion wait with canonical `READY FOR REQUESTS`, reduced `STARTUP_TIMEOUT` to 15s, added 30s `READY_TIMEOUT`. Lint/link checks pass. However, running the matrix exposes a Hydrogen crash during `/api/auth/login` when multiple engine variants run in parallel. The crash signature is `Query result not found for signaling` immediately followed by `free(): invalid pointer` and a SIGABRT/SIGSEGV in the crash handler. A single Hydrogen instance started manually with the same config logs in successfully and returns a JWT with the correct `roles: "1"` claim, so the crash is concurrency-related (likely in the database pending-result manager or query-result cache) rather than a simple logic bug in `auth_roles_from_database()`. `test_40_auth.sh` shows the same class of segfaults when run in its normal 7-engine parallel mode, confirming the issue is not specific to `test_58`. This crash is the new blocker before 7.5b can be marked `[x]`.
+- (Phase 7.5b auth recovery, 2026-07-09) Fixed three auth regressions that blocked Test 40 / Test 58:
+  1. **Unity JWT helper contract:** `send_jwt_error_response()` was flipped to `MHD_YES` in commit `8fa9d81f5`. Intermediate helpers treat `MHD_NO` as "stop; error already queued"; top-level handlers return `MHD_YES` to MHD. Reverted helper to `MHD_NO`; mailrelay `send`/`preview`/`status` now call the helper then `return MHD_YES`. All five previously failing Unity suites pass.
+  2. **Pending-result race in `execute_auth_query`:** submitted before registering the waiter (unlike conduit/mailrelay/scripting). Fast workers signaled "Query result not found for signaling" and freed orphan results (`free(): invalid pointer`). Fixed to register → submit → wait, matching `mailrelay_repository`.
+  3. **`is_token_revoked` polarity:** QueryRef #018 returns a row when the token is *valid*. The old path never set `row_count` so revocation was always false. After copying `row_count`, polarity was inverted and every renew/logout failed with "Token has been revoked". Fixed to `revoked = !has_valid_row` with JSON-array fallback for engines that only return `data_json`.
+  4. **`test_40` logout token:** renew deletes the old token; logout must use the renewed JWT. Script now writes `JWT_RENEWED_TOKEN=` and logout uses it.
+- (Phase 7.5b CLOSED green, 2026-07-09) User confirmed after schema regen: `test_40`, `test_57`, `test_58` all pass; Unity, shellcheck, cppcheck, Test 90, Test 99 pass. Phase 7.5b is complete. Next item: 7.6 Swagger.
+- (Phase 7.5b test_58 fail-soft, 2026-07-09) `test_58_mailrelay_api.sh` v2.2.0: parallel jobs no longer abort the suite under `set -e`. Root cause of "abrupt stop with no console messages" was `run_engine_test` returning 1 on variant failure, then `wait "${pid}"` (and `wait -n` in the job limiter) inheriting that status and exiting the parent before `analyze_engine_results` / `print_test_completion`. Fix: early failure paths in `run_mailrelay_variant` write `VARIANT_*_FAIL` and return 0; `run_engine_test` always returns 0 after writing `ENGINE_TEST_COMPLETE` or `ENGINE_TEST_FAILED`; `wait -n` / `wait pid` use `|| true`. Failures still set `EXIT_CODE=1` via analysis.
+- (Phase 7.5b SQLite same-second validity, 2026-07-09) Root cause of remaining SQLite Test 40 renew/logout and Test 58 SQLite-STARTTLS failures: QueryRefs used `valid_after < ${NOW}` / `valid_until > ${NOW}`. SQLite `CURRENT_TIMESTAMP` is second-resolution text, so a token stored and validated in the same second fails the strict `<` check (0 rows → treated as revoked). Confirmed with an in-memory repro (`strict_lt=0`, `lte=1`). Server engines pass because higher-resolution timestamps or extra latency avoid the same tick. **Not a macro/`TRFS` issue** — `${NOW}` only expands the clock expression; the comparison operator is written in each QueryRef. Later migrations (1117/1135/1158) already used `<=`/`>=`. Fix: patch original migration sources (greenfield). Files: `acuranzo_1092` (#001), `1093` (#002), `1094` (#003), `1099` (#008), `1100` (#009), `1102` (#011), `1108` (#017), `1109` (#018 Validate JWT), `1193` (#082). All now use `valid_after <=` / `valid_until >=`. Schema regen required so applied `queries.code` rows pick up the change.
 - (Phase 7.2, 2026-07-08) `POST /api/mailrelay/send` auth policy: requires a valid JWT with a database claim AND the `mail_send` role. `GET /api/mailrelay/status` continues to require only a valid JWT with a database claim. This prevents arbitrary JWT holders from using the server as a mail gateway.
 - (Phase 7.1, 2026-07-08) API permission model for Phase 7: any valid JWT with a database claim may access `/api/mailrelay/status`; no role check. Raw subject/body send is rejected outright; `template_key` is required. Full status counters (queued, sending, sent, failed, retrying, permanent_failures, last_success, last_failure, worker_count, queue_depth) are implemented now rather than deferred to Phase 10.
 - (Phase 7.1, 2026-07-08) Status endpoint method validation: `validate_http_method()` only permits POST, so `handle_mailrelay_status_request()` performs its own GET-only check instead of using `handle_method_validation()`.
@@ -319,6 +336,19 @@ Append discoveries, surprises, and decisions here as we move through phases. Ear
 
 ### Surprises / deviations from plan
 
+- (Phase 7.5b closeout, 2026-07-09) Lessons learned while making Test 40/58 fully green (carry these forward for Phase 7A/8/12 and any future JWT-gated API):
+  1. **JWT `roles` claim is role_id integers** (e.g. `"1,3"`), NOT role names. Gate by resolving name → `role_id` (QueryRef #127) then matching the id. Same trap will hit Lithium role UI, OTP endpoints, inbound relay auth if they compare names.
+  2. **Password login ≠ OIDC login for claims.** OIDC loads roles via QueryRef #017 before `generate_jwt()`; password login did not until Chunk 1. Always test auth-dependent features through the real login path the blackbox uses, not only OIDC or hand-crafted Unity JWTs.
+  3. **Unity fixtures must mirror production claim format.** Fixtures with `"mail_send"` as a role string passed while e2e failed. Prefer role_id strings and mock QueryRef #127.
+  4. **Sync DB helpers: register-pending → submit → wait.** `execute_auth_query` submitted first; under parallel multi-engine load, workers signaled "Query result not found for signaling" and freed orphans (`free(): invalid pointer`). Match `mailrelay_repository` / conduit order.
+  5. **MHD return polarity is layered.** Intermediate JWT helpers return `MHD_NO` ("stop; error already queued"); top-level handlers return `MHD_YES` so MHD delivers the response. Flipping the helper to `MHD_YES` broke five Unity suites and made callers continue with NULL JWT state.
+  6. **QueryRef #018 polarity:** a returned row means the token is *valid* (present, not expired). After fixing `row_count` propagation, inverted logic made every renew/logout look revoked. Rule: `revoked = !has_valid_row` (with `data_json` array fallback when engines omit `row_count`).
+  7. **Renew deletes the old token.** Logout (and any follow-on call) must use the *renewed* JWT. Blackbox scripts must capture `JWT_RENEWED_TOKEN` from renew response, not reuse the login token.
+  8. **SQLite second-resolution timestamps + strict `<`/`>` on `valid_after`/`valid_until`.** Same-second store+validate returns 0 rows → "revoked". Prefer `<=` / `>=` (already used in later migrations). **Macros (`${NOW}`, `TRFS`) do not fix operators** — they only expand the clock expression. Applied QueryRefs store pre-expanded SQL; greenfield can patch original migrations; production would need a rewrite migration.
+  9. **Parallel blackbox under `set -e`:** background jobs that `return 1` make `wait` / `wait -n` kill the parent mid-suite with little console output. Encode pass/fail in result files and always `return 0` from parallel workers; analyze results in the parent. Use `wait … || true`.
+  10. **Readiness wait:** prefer canonical log line `READY FOR REQUESTS` over long migration-completion polls; keep per-variant timeouts short so missing engines fail fast.
+  11. **Migration numbering:** always re-derive next-free migration/QueryRef from disk (`ls migrations`, Acuranzo README), not from plan prose. As of 7.5b close: highest migration used for mail/auth work is **1260** (QueryRef #127); next free is **1261** / next free QueryRef depends on README after any later inserts.
+  12. **SQLite isolation:** copy baseline DB + WAL/SHM sidecars into a per-variant temp path; never share one SQLite file across parallel Hydrogen instances.
 - (Phase 0, 2026-07-06) `examples/configs/hydrogen_default.json` and `hydrogen_env.json` use legacy `MailRelay.QueueSettings` / `MailRelay.OutboundServers` keys, while the current loader and Phase 0 schema use `MailRelay.Queue` / `MailRelay.Servers`. Reconcile example configs and/or compatibility aliases during Phase 1.
 - (Phase 1, 2026-07-06) Existing launch readiness tests assumed disabled = No-Go; Phase 1 changed this to clean skip and required test updates in `launch_mail_relay_test_comprehensive_coverage.c`. Server validation tests also needed `OutboundEnabled=true` because validation is now gated behind the outbound flag.
 - (Phase 1, 2026-07-06) Landing tests could not mock `is_subsystem_running_by_name`; reduced landing test scope to the realistic not-running path and no-dependents message verification.
@@ -334,6 +364,14 @@ Append discoveries, surprises, and decisions here as we move through phases. Ear
 
 ### Reusable snippets / gotchas
 
+- **Auth / JWT (Phase 7.5b):**
+  - Role gates: resolve name → role_id (QueryRef #127 / repository seam), then match id in JWT `roles` claim (`"1,3"` style).
+  - Password login must call `auth_roles_from_database()` before `generate_jwt()` (same as OIDC).
+  - Sync query pattern: `pending_result_register` → `database_queue_submit_query` → wait (never submit-first).
+  - `is_token_revoked`: QueryRef #018 row present ⇒ valid; `revoked = !has_valid_row`.
+  - Temporal validity SQL: `valid_after <= ${NOW}` and `valid_until >= ${NOW}` (not strict inequalities).
+  - MHD: helpers return `MHD_NO` on queued errors; top-level handlers return `MHD_YES`.
+- **Parallel blackbox scripts:** workers write PASS/FAIL to result files and return 0; parent `wait … || true` then analyzes; use `READY FOR REQUESTS` for readiness.
 - A standalone C test tool (like `mailval`) builds cleanly with its own `CMakeLists.txt` (OpenSSL + jansson + pthreads) and is exercised by: (1) build it, (2) `bash gen_cert.sh`, (3) run it in the background on test ports, (4) drive a real client, (5) assert on the per-session JSON transcripts it writes. This avoids Python in the committed path while still giving deterministic, inspectable validation.
 - libcurl SMTP requires `CURLOPT_UPLOAD=1L` + `CURLOPT_READFUNCTION` streaming and `CURLOPT_NOSIGNAL=1L` in worker threads. Confirm and record exact option set once Phase 2 works.
 - Verified libcurl `CURLOPT_*` set for `mailrelay_smtp` (Phase 2.4, against `mailval` plaintext → code 250): `CURLOPT_URL` = `smtp://host:port` (or `smtps://` for `MAIL_TLS_MODE_SMTPS`); `CURLOPT_MAIL_FROM`; `CURLOPT_MAIL_RCPT` (curl_slist of to+cc+bcc); `CURLOPT_USERNAME`/`CURLOPT_PASSWORD` when set; `CURLOPT_LOGIN_OPTIONS` = `CRAM-MD5`/`PLAIN`/`NTLM`/`XOAUTH2` per `AuthMode`; `CURLOPT_USE_SSL` = `CURLUSESSL_TRY` (STARTTLS) or `CURLUSESSL_ALL` (STARTTLS_REQUIRED); `CURLOPT_CAINFO` when `CAPath` set; `CURLOPT_READFUNCTION`+`CURLOPT_READDATA`+`CURLOPT_UPLOAD=1L`+`CURLOPT_INFILESIZE` streaming the rendered RFC 5322 payload; `CURLOPT_CONNECTTIMEOUT`/`CURLOPT_TIMEOUT` = `TimeoutSeconds`; `CURLOPT_NOSIGNAL=1L`; and BOTH `CURLOPT_HEADERFUNCTION`+`CURLOPT_HEADERDATA` and `CURLOPT_WRITEFUNCTION`+`CURLOPT_WRITEDATA` pointed at the same response-capture buffer. The SMTP reply code is parsed from the captured server responses (last `3xx`/`2xx` line).
@@ -353,6 +391,18 @@ Append discoveries, surprises, and decisions here as we move through phases. Ear
 - `tests/test_93_jsonlint.sh` schema-validates `tests/configs/hydrogen_test_*.json`, not `examples/configs/*.json`; example config drift can survive JSON lint unless explicitly reviewed.
 - Keep `load_mailrelay_config()`, `initialize_config_defaults_mail_relay()`, Unity expectations, `hydrogen_config_schema.json`, and example configs synchronized whenever Phase 1 changes config field names or defaults.
 - Existing examples used legacy `MailRelay.QueueSettings` / `MailRelay.OutboundServers` keys; Phase 1 updated all three example configs (`hydrogen_default.json`, `hydrogen.json`, `hydrogen_env.json`) to use the current `MailRelay.Queue` / `MailRelay.Servers` schema.
+
+### Phase 7.6 / 7A preparation notes (for next session)
+
+- **7.6 Swagger only** until that item is green; do not start Phase 7A in the same chunk.
+- Swagger should document the locked API contracts from 7.1–7.5a:
+  - `GET /api/mailrelay/status` — any valid JWT with database claim; full counter payload.
+  - `POST /api/mailrelay/preview` — JWT + `mail_send` role; `template_key` + optional `params`; returns rendered bodies + `macros_used`; no queue/SMTP side effects.
+  - `POST /api/mailrelay/send` — JWT + `mail_send` role; `template_key` + `idempotency_key` + recipients; no raw subject/body; returns `message_id` + `status:"queued"`.
+- Error codes already used by handlers: keep the list stable in OpenAPI so clients and Lithium do not drift.
+- After 7.6: Phase 7A replaces `H.mail` / `H.notify` stubs in `scripting_api_mail_notify.c` by calling the same internal producer APIs as REST (`mailrelay_send_template` / enqueue). Do not call HTTP from Lua. Notify remains a compatibility shim per Phase 0 decisions.
+- Blackbox already proves multi-engine auth+preview+send; 7A verification is primarily Unity + a focused scripting blackbox if one exists, not a re-run of the entire 14-variant matrix unless Lua paths change delivery behavior.
+- Next free Acuranzo migration number after 1260 is **1261** if Phase 7A/8 needs new QueryRefs (re-check disk before allocating).
 
 ### Phase 5 preparation notes
 
@@ -899,16 +949,88 @@ Entry Gate: Phase 5 exit gate green (Phase 6 not required, but recommended). Pha
   - Macro tracking is implemented by extending the template engine: `MailRelayMacroList`, `mailrelay_template_render_with_macros()`, and `mailrelay_template_preview_with_macros()` record deduplicated macro names during rendering. The original `mailrelay_template_render()` and `mailrelay_template_preview()` remain unchanged wrappers.
   - Verification: `mku mailrelay_preview_test` passes (9/9); `mku mailrelay_template_preview_test` passes (8/8).
 
-- [~] 7.5b Add blackbox `test_58_mailrelay_api.sh`.
-  - Script created, expanded, and reviewed. It now covers the full 7-engine × plaintext/STARTTLS matrix, uses unique result-file suffixes per variant to avoid the parallel race condition, copies SQLite WAL/SHM sidecars for consistent fixtures, and uses unique ports per variant. Documentation added at `docs/H/tests/test_58_mailrelay_api.md` and linked from `SITEMAP.md`, `TESTING.md`, and `STRUCTURE.md`. All 7 config files have the `LOGINID` parameter removed so the request body's `login_id` is honored.
-  - Verification: `test_92_shellcheck.sh` passes, `test_93_jsonlint.sh` passes, `test_90_markdownlint.sh` passes, `test_04_check_links.sh` passes, and `mkt` builds. The test currently reaches the authenticated `mailadmin` login and `GET /api/mailrelay/status` successfully on all engines, but then fails at preview/send because the password-login JWT does not populate the `roles` claim (`roles":""`). The `mail_send` role is correctly assigned in the database (account_id=5 ↔ role_id=1), so the remaining blocker is an auth subsystem issue: password login must populate `account->roles` from `account_roles`/`roles` for the JWT. Once that is fixed, `test_58_mailrelay_api.sh` should pass.
+- [x] 7.5b Add blackbox `test_58_mailrelay_api.sh`.
+  - Full 7-engine × plaintext/STARTTLS matrix; unique result-file suffixes; SQLite WAL/SHM copies; unique ports; docs in `docs/H/tests/test_58_mailrelay_api.md`.
+  - Chunk 1 (roles): password login loads roles; mailrelay authorizes by `mail_send` **role_id** via QueryRef #127; Unity fixtures use role_id claims.
+  - Chunk 2 (readiness): `READY FOR REQUESTS`, shorter timeouts.
+  - Auth recovery: pending-result register-before-submit; JWT MHD contract; revoke polarity; test_40 logout uses renewed token.
+  - SQLite same-second validity: nine original QueryRefs use `valid_after <=` / `valid_until >=`.
+  - Fail-soft harness (v2.2.0): parallel workers always return 0; pass/fail in result files; suite always reaches analysis/summary.
+  - Verification (user, 2026-07-09): `test_40`, `test_57`, `test_58` green; Unity, shellcheck, cppcheck, Test 90, Test 99 green.
 
 - [ ] 7.6 Add Swagger/OpenAPI documentation.
-  - Verification: `test_22_swagger.sh` passes.
+  - Document `POST /api/mailrelay/send`, `POST /api/mailrelay/preview`, `GET /api/mailrelay/status`: Bearer JWT, database claim, `mail_send` role where required, request/response shapes, stable error codes (`MAIL_AUTH_REQUIRED`, `MAIL_TEMPLATE_NOT_FOUND`, `MAIL_PARAM_MISSING`, `MAIL_QUEUE_FULL`, `MAIL_RECIPIENT_INVALID`, `MAIL_DISABLED`, `MAIL_RATE_LIMITED`).
+  - Match existing Swagger embedding patterns used by conduit/auth endpoints (payload sources under `payloads/` / swagger generation path already used by `test_22_swagger.sh`).
+  - Verification: `test_22_swagger.sh` passes; manual Swagger UI smoke optional.
 
 Exit Gate: authenticated clients can preview and queue templated emails; behavior is documented and tested. `mkt`, `mkp`, the new `mku` set, `test_58`, and `test_22_swagger.sh` pass.
 
-Phase 7 Status: in progress. Date: 2026-07-08. Result: 7.1 endpoint module complete. 7.2 method validation/buffering complete. 7.3 auth complete for status/send/preview, with `mail_send` role required. 7.4 send contract locked. 7.5 send endpoint wired and unit-tested (`mku mailrelay_send_test` 8/8). 7.5a preview endpoint implemented with `macros_used` (`mku mailrelay_preview_test` 9/9; `mku mailrelay_template_preview_test` 8/8). 7.5b blackbox script `test_58_mailrelay_api.sh` is written and reviewed: full 7-engine × plaintext/STARTTLS matrix, unique per-variant result-file suffixes (race condition fixed), SQLite WAL/SHM sidecar copy, unique ports per variant, and `LOGINID` removed from all 7 configs so the request body's `login_id` is honored. Doc added at `docs/H/tests/test_58_mailrelay_api.md` and linked from sitemap/TESTING/STRUCTURE. `mkt`, `test_92_shellcheck.sh`, `test_93_jsonlint.sh`, `test_90_markdownlint.sh`, and `test_04_check_links.sh` pass. The test reaches authenticated `mailadmin` login and `GET /api/mailrelay/status` on all engines, but fails at preview/send because password-login JWTs do not populate the `roles` claim (`roles":""`). The database assignment is correct (account_id=5 ↔ role_id=1 `mail_send`), so the remaining blocker is in the auth subsystem: password login must populate `account->roles` from `account_roles`/`roles` for the JWT. Remaining: fix auth JWT role population, then 7.6 Swagger docs. Variances: Full counters were pulled forward from Phase 10.1 into Phase 7.1 per user direction; `validate_http_method` only permits POST so status endpoint performs its own GET-only check; `from`/`reply_to` client overrides are rejected in v1; `idempotency_key` is required for send; `mail_send` role is required for send and preview; preview request does not require recipients or idempotency key.
+Phase 7 Status: in progress (7.5b complete, 2026-07-09). Date: 2026-07-09. Result: 7.1–7.5b complete and verified green (`test_40`/`test_57`/`test_58`, Unity, lint). Remaining Phase 7 item: **7.6 Swagger**. After 7.6, Phase 7 exit gate closes and Phase 7A (Lua backfill) is next.
+
+### Phase 7.5b diagnosis (2026-07-08) — RESOLVED 2026-07-09
+
+Historical diagnosis kept for context. All defects below are fixed; 7.5b is `[x]`.
+
+`test_58_mailrelay_api.sh` reached `mailadmin` login + `GET /api/mailrelay/status` on all engines, then failed at `preview`/`send`. Root cause was TWO distinct defects (both fixed), plus later auth/SQLite/harness issues also fixed.
+
+Defect 1 — Password login never loads roles (JWT `"roles":""`):
+
+- `lookup_account()` sets `account->roles = NULL` (`src/api/auth/auth_service_database.c:258`); its comment claims roles are populated during password verification, but that never happens.
+- `verify_password_and_status()` fills only `account->username`, never roles (`src/api/auth/auth_service_database.c:321-329`).
+- `generate_jwt()` serializes `account->roles ? account->roles : ""` (`src/api/auth/auth_service_jwt.c:143`), so a NULL becomes `"roles":""`.
+- The OIDC path does it correctly: `oidc_rp_roles_apply()` (QueryRef #017) is called before `generate_jwt()` (`src/api/auth/oidc_rp/oidc_rp_callback.c:481`). The password path has NO equivalent role-loading call between `verify_password_and_status()` and `generate_jwt()` (`src/api/auth/login/login.c:319-334`).
+
+Defect 2 — Format mismatch between the roles claim and the mailrelay role check (this is the part the earlier note missed):
+
+- The canonical JWT `roles` claim is a comma-separated list of **role_id integers**, e.g. `"1,3"` (documented in `src/api/auth/oidc_rp/oidc_rp_roles.c:8-40`; QueryRef #017 returns `role_id` integers, one per row, from `account_roles`).
+- `mail_send` is `role_id = 1`, `name = 'mail_send'` (migration `acuranzo_1257.lua`).
+- But the mailrelay API's `has_role(roles, "mail_send")` in `src/api/mailrelay/send/send.c:68`/`:428` and `src/api/mailrelay/preview/preview.c:57`/`:310` searches the claim for the literal **name** `"mail_send"`, which will never appear in a role_id-based claim. So even after Defect 1 is fixed, the OIDC-shaped claim contains `"1"` and `has_role(..., "mail_send")` still fails.
+
+Concern 3 — `test_58` apparent hang (separate from auth; Chunk 2):
+
+- The `set -x` trace the user shared actually shows the SQLite-plaintext variant COMPLETING (it wrote `VARIANT_plaintext_FAIL` and returned 0 from `run_engine_test`, then `grep -q VARIANT_plaintext_PASS` returned 1). So that variant did not hang.
+- The 14-variant matrix (7 engines × plaintext/STARTTLS) is launched in parallel; `CORES` = `nproc*2` (24 on this box, `tests/lib/framework.sh:139-141`), so all 14 launch at once with no throttle. Variants for engines not running locally (e.g. DB2/CockroachDB/YugabyteDB) or STARTTLS variants likely stall in `wait_for_migrations` (180 s `MIGRATION_TIMEOUT`) or `start_hydrogen_with_pid` (25 s), making the overall run look hung for minutes before `wait "${pid}"` collects them.
+- Chunk 2 will make the matrix fail-fast / skip unreachable engines and/or reduce timeouts, mirroring how `test_30`/`test_40` gate engine availability.
+
+### Phase 7.5b resume plan (Chunk 1 / Chunk 2)
+
+Locked decisions (from user, 2026-07-08):
+
+1. Authorization keeps the canonical role_id-based JWT claim; the mailrelay API authorizes by the `mail_send` **role_id**, not the name string.
+2. The role-id for `mail_send` is resolved at request time via a **new QueryRef** (name → role_id), NOT a hardcoded `"1"` constant. (User explicitly chose the QueryRef resolver over a magic-number constant.)
+3. The QueryRef #017 database role loader (currently `static` in `oidc_rp_roles.c`) is promoted to a **non-static, testable** shared function reused by the password login path.
+4. Work is chunked: Chunk 1 = auth roles fix (unblock preview/send); Chunk 2 (separate) = `test_58` multi-engine hang hardening. 7.6 Swagger comes after.
+
+Chunk 1 — Auth roles fix (COMPLETE). Concrete steps:
+
+- Part A — New QueryRef **#127 "Get Role By Name"**, migration **`acuranzo_1260.lua`** (next free migration is 1260; next free QueryRef is #127 — highest existing is #126). Returns `role_id` from `roles` for a bound `:ROLENAME` where the role is active (`status_a34 = 1`). Type internal/system (NOT `public`/`protected`). Model exactly on QueryRef #017 migration `acuranzo_1108.lua`. The `roles` table has `role_id` and `name` columns (`acuranzo_1016.lua:40,44`). Verified by `elements/002-helium/scripts/helium_update.sh`, `tests/test_98_luacheck.sh`, and `tests/test_34_sqlite_migrations.sh` (260 migrations reversed).
+- Part B — Promoted `roles_from_database()` in `src/api/auth/oidc_rp/oidc_rp_roles.c:160` to non-static `auth_roles_from_database()`, declared it in `src/api/auth/auth_service.h`, and updated the three OIDC call sites in `oidc_rp_roles.c`.
+- Part C — In `src/api/auth/login/login.c`, after `verify_password_and_status()` succeeds and before `generate_jwt()`, `account->roles` is loaded via `auth_roles_from_database(account->id, database)` with `strdup("")` fallback on transport failure.
+- Part D — Added shared `src/api/mailrelay/mailrelay_api_auth.{c,h}` with `mailrelay_api_has_role()`. It resolves the `mail_send` role_id via QueryRef #127 through the Mail Relay repository seam, then checks the JWT `roles` claim for that integer id. Both `send.c` and `preview.c` now call this helper and no longer duplicate the static `has_role` logic.
+- Test updates: `mku mailrelay_send_test` and `mku mailrelay_preview_test` fixtures now use role-id claim `"1"` and mock `MAILRELAY_QREF_ROLE_GET_BY_NAME` to return `role_id=1`. New focused Unity test `oidc_rp_roles_test_auth_roles_from_database` covers null args, no rows, single/multiple roles, query failure, malformed JSON, and uppercase `ROLE_ID`.
+- Chunk 1 verification: `mkt` → `mkp` → `mku mailrelay_send_test && mku mailrelay_preview_test && mku mailrelay_template_preview_test && mku oidc_rp_roles_test_auth_roles_from_database && mku oidc_rp_roles_test_apply` → `mka`; plus `tests/test_98_luacheck.sh` and `tests/test_34_sqlite_migrations.sh`. All green. The full 14-variant `test_58` is intentionally left for Chunk 2.
+
+Chunk 2 — `test_58` hang hardening (IMPLEMENTED, 2026-07-09):
+
+- Replaced `wait_for_migrations()` with `wait_for_ready_for_requests()` keyed off the canonical `READY FOR REQUESTS` log line.
+- Reduced `STARTUP_TIMEOUT` from 25s to 15s and replaced the 180s `MIGRATION_TIMEOUT` with a 30s `READY_TIMEOUT` for faster failure on unreachable engines.
+- Updated `docs/H/tests/test_58_mailrelay_api.md` to describe the new readiness behavior.
+- Verified `test_92_shellcheck.sh`, `test_90_markdownlint.sh`, and `test_04_check_links.sh` are green.
+- Running `test_58` now exposes a new blocker: Hydrogen crashes during `/api/auth/login` when multiple engine variants run in parallel. See the Working Log entry "Phase 7.5b Chunk 2 follow-up (2026-07-09)".
+
+Chunk 2 alone did not mark 7.5b complete (login crash + SQLite validity + fail-soft still open then). All three follow-ups are now done; 7.5b is `[x]` as of 2026-07-09 closeout.
+
+Files touched map for Chunk 1 (for quick orientation on resume):
+
+- `elements/002-helium/acuranzo/migrations/acuranzo_1260.lua` (new; QueryRef #127).
+- `src/api/auth/auth_service.h` — declare `auth_roles_from_database()`.
+- `src/api/auth/oidc_rp/oidc_rp_roles.c` (+ its header) — de-static + rename the loader; update 3 call sites.
+- `src/api/auth/login/login.c` — call the loader before `generate_jwt`.
+- `src/mailrelay/mailrelay_repository.{c,h}` — add `MAILRELAY_QREF_ROLE_GET_BY_NAME` and `mailrelay_repo_role_get_by_name()`.
+- `src/api/mailrelay/mailrelay_api_auth.{c,h}` (new) — shared `mailrelay_api_has_role()` helper.
+- `src/api/mailrelay/send/send.c`, `src/api/mailrelay/preview/preview.c` — use shared helper; remove duplicated static `has_role`.
+- `tests/unity/src/api/mailrelay/send/mailrelay_send_test.c`, `tests/unity/src/api/mailrelay/preview/mailrelay_preview_test.c` — update role claim format to role_id and mock QueryRef #127.
+- `tests/unity/src/api/auth/oidc_rp/oidc_rp_roles_test_auth_roles_from_database.c` (new) — focused tests for the promoted loader.
 
 ### Phase 7.5b blackbox test builder notes
 

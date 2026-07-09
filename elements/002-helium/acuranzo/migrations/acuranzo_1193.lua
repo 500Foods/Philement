@@ -5,6 +5,7 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 1.1.0 - 2026-07-09 - Use <=/>= for valid_after/valid_until so same-second rows match on SQLite second-resolution timestamps
 -- 1.0.0 - 2026-05-09 - Initial creation for OIDC Phase 17
 
 return function(engine, design_name, schema_name, cfg)
@@ -58,11 +59,11 @@ table.insert(queries,{sql=[[
                         AND (ac.contact_type_a18 = 0)
                         AND (
                             (ac.valid_after IS NULL)
-                            OR (ac.valid_after < ${NOW})
+                            OR (ac.valid_after <= ${NOW})
                         )
                         AND (
                             (ac.valid_until IS NULL)
-                            OR (ac.valid_until > ${NOW})
+                            OR (ac.valid_until >= ${NOW})
                         )
                 ]==]                                                                AS code,
                 '${QUERY_NAME}'                                                     AS name,

@@ -157,7 +157,7 @@ static void roles_buf_free(RolesBuf *rb) {
  * Returns "" (heap-allocated empty string) when the account has no roles.
  * -------------------------------------------------------------------------
  */
-static char *roles_from_database(int account_id, const char *database) {
+char *auth_roles_from_database(int account_id, const char *database) {
     json_t *params         = json_object();
     json_t *integer_params = json_object();
     if (!params || !integer_params) {
@@ -391,7 +391,7 @@ void oidc_rp_roles_apply(const OIDCRPProviderConfig *provider,
 
     switch (source) {
         case OIDC_RP_ROLE_SRC_DATABASE: {
-            new_roles = roles_from_database(account->id, database);
+            new_roles = auth_roles_from_database(account->id, database);
             if (!new_roles) {
                 log_this(SR_AUTH,
                          "OIDC RP roles: database query failed for account_id=%d; "
@@ -425,7 +425,7 @@ void oidc_rp_roles_apply(const OIDCRPProviderConfig *provider,
         }
 
         case OIDC_RP_ROLE_SRC_MERGE: {
-            char *db_roles  = roles_from_database(account->id, database);
+            char *db_roles  = auth_roles_from_database(account->id, database);
             char *idp_roles = roles_from_idp(claims, prefix);
 
             if (!db_roles || !idp_roles) {
@@ -474,7 +474,7 @@ void oidc_rp_roles_apply(const OIDCRPProviderConfig *provider,
                      "OIDC RP roles: unknown RoleMapping.Source=%d for "
                      "account_id=%d; defaulting to database",
                      LOG_LEVEL_ALERT, 2, (int)source, account->id);
-            new_roles = roles_from_database(account->id, database);
+            new_roles = auth_roles_from_database(account->id, database);
             if (!new_roles) return;
             break;
     }

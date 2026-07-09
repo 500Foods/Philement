@@ -64,6 +64,7 @@ extern "C" {
 #define MAILRELAY_QREF_CLEANUP_EVENTS        124
 #define MAILRELAY_QREF_CLEANUP_ATTEMPTS      125
 #define MAILRELAY_QREF_CLEANUP_OTP           126
+#define MAILRELAY_QREF_ROLE_GET_BY_NAME      127
 
 /* --------------------------------------------------------------------------
  * Result type
@@ -447,6 +448,14 @@ typedef struct {
 bool mailrelay_repo_cleanup_otp(const MailRelayRepoCleanupOtp* params,
                               mailrelay_repo_callback_fn callback,
                               void* user_data);
+
+/* --------------------------------------------------------------------------
+ * Role QueryRefs
+ * -------------------------------------------------------------------------- */
+
+bool mailrelay_repo_role_get_by_name(const char* name,
+                                     mailrelay_repo_callback_fn callback,
+                                     void* user_data);
 
 #ifdef __cplusplus
 }

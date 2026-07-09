@@ -17,7 +17,7 @@
 # api_request()
 # extract_jwt()
 # wait_for_http_ready()
-# wait_for_migrations()
+# wait_for_ready_for_requests()
 # start_mailval()
 # stop_mailval()
 # poll_mailval_capture()
@@ -26,6 +26,8 @@
 # analyze_engine_results()
 
 # CHANGELOG
+# 2.2.0 - 2026-07-09 - Parallel fail-soft: variant/engine helpers always return 0 after writing PASS/FAIL so set -e wait does not abort the suite mid-run; wait -n/wait pid tolerate non-zero children.
+# 2.1.0 - 2026-07-09 - Replaced migration completion wait with canonical "READY FOR REQUESTS" signal; reduced STARTUP_TIMEOUT to 15s and migration wait to 30s READY_TIMEOUT for faster failure on unreachable engines.
 # 2.0.0 - 2026-07-08 - Expanded to full 7-engine × plaintext/STARTTLS matrix; fixed parallel result-file race.
 # 1.0.0 - 2026-07-08 - Initial SQLite-only API blackbox implementation.
 
@@ -36,7 +38,7 @@ TEST_NAME="MailRelay API"
 TEST_ABBR="MRA"
 TEST_NUMBER="58"
 TEST_COUNTER=0
-TEST_VERSION="2.0.0"
+TEST_VERSION="2.2.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -67,11 +69,11 @@ MAILRELAY_API_CONFIGS=(
 )
 
 # Timeouts (seconds)
-STARTUP_TIMEOUT=25
+STARTUP_TIMEOUT=15
 SHUTDOWN_TIMEOUT=30
 SHUTDOWN_ACTIVITY_TIMEOUT=5
 HTTP_READY_TIMEOUT=15
-MIGRATION_TIMEOUT=180
+READY_TIMEOUT=30
 MAILVAL_READY_TIMEOUT=5
 CAPTURE_TIMEOUT=15
 
@@ -185,20 +187,19 @@ wait_for_http_ready() {
 }
 
 # -----------------------------------------------------------------------------
-# Wait for database migrations to complete before issuing API calls.
+# Wait for the canonical "READY FOR REQUESTS" signal.
 # -----------------------------------------------------------------------------
-wait_for_migrations() {
+wait_for_ready_for_requests() {
     local log_file="$1"
-    local timeout="${2:-${MIGRATION_TIMEOUT}}"
+    local timeout="${2:-${READY_TIMEOUT}}"
     local start_time
     start_time=${SECONDS}
 
     while [[ $((SECONDS - start_time)) -lt "${timeout}" ]]; do
-        if "${GREP}" -q "Migration completed in" "${log_file}" 2>/dev/null || \
-           "${GREP}" -q "Migration Current:" "${log_file}" 2>/dev/null; then
+        if "${GREP}" -q "READY FOR REQUESTS" "${log_file}" 2>/dev/null; then
             return 0
         fi
-        sleep 0.5
+        sleep 0.1
     done
 
     return 1
@@ -355,7 +356,8 @@ run_mailrelay_variant() {
         if ! cp "${BASELINE_SQLITE}" "${sqlite_temp_file}" 2>/dev/null; then
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Failed to copy baseline SQLite database"
             echo "VARIANT_${variant_label}_FAIL" >> "${result_file}"
-            return 1
+            # Always return 0 so parallel set -e wait does not abort the suite.
+            return 0
         fi
         # Copy WAL-mode sidecar files if present; without them the database may
         # appear empty because the baseline may have uncheckpointed WAL data.
@@ -370,7 +372,7 @@ run_mailrelay_variant() {
                 "${config_file}" > "${sqlite_temp_config}" 2>/dev/null; then
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Failed to patch SQLite config"
             echo "VARIANT_${variant_label}_FAIL" >> "${result_file}"
-            return 1
+            return 0
         fi
         actual_config_file="${sqlite_temp_config}"
     fi
@@ -398,7 +400,7 @@ run_mailrelay_variant() {
     if [[ -z "${jq_patch}" ]]; then
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Failed to patch MailRelay server config"
         echo "VARIANT_${variant_label}_FAIL" >> "${result_file}"
-        return 1
+        return 0
     fi
     echo "${jq_patch}" > "${temp_config}"
 
@@ -415,7 +417,7 @@ run_mailrelay_variant() {
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: mailval failed to start on port ${mailval_port}"
         echo "VARIANT_${variant_label}_FAIL" >> "${result_file}"
         rm -f "${temp_config}" "${sqlite_temp_file}" "${sqlite_temp_config}" "${sqlite_temp_file}-wal" "${sqlite_temp_file}-shm" 2>/dev/null || true
-        return 1
+        return 0
     }
 
     # Start Hydrogen and wait for startup.
@@ -428,7 +430,7 @@ run_mailrelay_variant() {
         stop_mailval "${mailval_pid}"
         echo "VARIANT_${variant_label}_FAIL" >> "${result_file}"
         rm -f "${temp_config}" "${sqlite_temp_file}" "${sqlite_temp_config}" "${sqlite_temp_file}-wal" "${sqlite_temp_file}-shm" 2>/dev/null || true
-        return 1
+        return 0
     fi
     hydrogen_pid=$(eval "echo \${${hydrogen_pid_var}}")
     if [[ -z "${hydrogen_pid}" ]]; then
@@ -436,11 +438,11 @@ run_mailrelay_variant() {
         stop_mailval "${mailval_pid}"
         echo "VARIANT_${variant_label}_FAIL" >> "${result_file}"
         rm -f "${temp_config}" "${sqlite_temp_file}" "${sqlite_temp_config}" "${sqlite_temp_file}-wal" "${sqlite_temp_file}-shm" 2>/dev/null || true
-        return 1
+        return 0
     fi
     HYDROGEN_PIDS+=("${hydrogen_pid}")
 
-    # Wait for HTTP readiness and migrations.
+    # Wait for HTTP readiness and the canonical READY FOR REQUESTS signal.
     variant_failed=false
     # shellcheck disable=SC2310 # Continue even if HTTP readiness check fails
     if ! wait_for_http_ready "${base_url}" "${HTTP_READY_TIMEOUT}"; then
@@ -449,9 +451,9 @@ run_mailrelay_variant() {
     fi
 
     if [[ "${variant_failed}" = false ]]; then
-        # shellcheck disable=SC2310 # Continue even if migration wait fails
-        if ! wait_for_migrations "${hydrogen_log}" "${MIGRATION_TIMEOUT}"; then
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Migration wait timed out"
+        # shellcheck disable=SC2310 # Continue even if readiness check fails
+        if ! wait_for_ready_for_requests "${hydrogen_log}" "${READY_TIMEOUT}"; then
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: READY FOR REQUESTS signal not observed"
             variant_failed=true
         fi
     fi
@@ -643,12 +645,17 @@ run_engine_test() {
     run_mailrelay_variant "${engine_name}" "${description}" "${config_file}" \
         "${web_port}" "${mailval_port}" "${use_tls}" "${result_file}"
 
+    # Always return 0: pass/fail is encoded in the result file so parallel
+    # set -e wait does not abort the parent before analyze_engine_results runs.
     if "${GREP}" -q "VARIANT_${variant_label}_PASS" "${result_file}" 2>/dev/null; then
         echo "ENGINE_TEST_COMPLETE" >> "${result_file}"
-        return 0
     else
-        return 1
+        if ! "${GREP}" -q "VARIANT_${variant_label}_FAIL" "${result_file}" 2>/dev/null; then
+            echo "VARIANT_${variant_label}_FAIL" >> "${result_file}"
+        fi
+        echo "ENGINE_TEST_FAILED" >> "${result_file}"
     fi
+    return 0
 }
 
 # -----------------------------------------------------------------------------
@@ -674,10 +681,16 @@ analyze_engine_results() {
         echo "MAILRELAY_API_${test_name}_PASS" >> "${GLOBAL_RESULT_FILE:-${DIAG_TEST_DIR}/mailrelay_api_results.result}"
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description}: API test passed"
         return 0
-    else
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description}: API test failed"
-        return 1
     fi
+
+    # Prefer an explicit FAIL marker; fall back to missing COMPLETE.
+    if "${GREP}" -q "ENGINE_TEST_FAILED" "${result_file}" 2>/dev/null \
+        || "${GREP}" -q "VARIANT_.*_FAIL" "${result_file}" 2>/dev/null; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description}: API test failed"
+    else
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description}: API test failed (incomplete result file)"
+    fi
+    return 1
 }
 
 # -----------------------------------------------------------------------------
@@ -781,26 +794,28 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Running MailRelay API tests in parallel"
 
     # Start all engine tests in parallel with job limiting
-for test_config in "${!MAILRELAY_API_CONFIGS[@]}"; do
-    # shellcheck disable=SC2312 # Job control with wc -l is standard practice
-    while (( $(jobs -r | wc -l) >= CORES )); do
-        wait -n
+    for test_config in "${!MAILRELAY_API_CONFIGS[@]}"; do
+        # shellcheck disable=SC2312 # Job control with wc -l is standard practice
+        while (( $(jobs -r | wc -l) >= CORES )); do
+            # shellcheck disable=SC2310 # Non-zero child exit must not abort the suite
+            wait -n || true
+        done
+
+        IFS=':' read -r result_suffix engine_name web_port mailval_port use_tls <<< "${MAILRELAY_API_CONFIGS[${test_config}]}"
+        config_file="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_${engine_name}.json"
+
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Starting parallel test: ${test_config} (web=${web_port}, mailval=${mailval_port}, tls=${use_tls})"
+
+        run_engine_test "${test_config}" "${config_file}" "${result_suffix}" \
+            "${engine_name}" "${test_config} Engine" "${web_port}" "${mailval_port}" "${use_tls}" &
+        PARALLEL_PIDS+=($!)
     done
-
-    IFS=':' read -r result_suffix engine_name web_port mailval_port use_tls <<< "${MAILRELAY_API_CONFIGS[${test_config}]}"
-    config_file="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_${engine_name}.json"
-
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Starting parallel test: ${test_config} (web=${web_port}, mailval=${mailval_port}, tls=${use_tls})"
-
-    run_engine_test "${test_config}" "${config_file}" "${result_suffix}" \
-        "${engine_name}" "${test_config} Engine" "${web_port}" "${mailval_port}" "${use_tls}" &
-    PARALLEL_PIDS+=($!)
-done
 
     # Wait for all parallel tests to complete
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Waiting for ${#MAILRELAY_API_CONFIGS[@]} parallel MailRelay API tests to complete"
     for pid in "${PARALLEL_PIDS[@]}"; do
-        wait "${pid}"
+        # shellcheck disable=SC2310 # Pass/fail is in result files; do not abort on child status
+        wait "${pid}" || true
     done
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "All parallel tests completed"
 

@@ -134,21 +134,27 @@ typedef struct {
     // final result into *result_ref. Until Phase 13 the worker only
     // logs a "would signal waiter" marker (see worker_pool.c).
     //
-    //   has_waiter    - true once scoreboard_attach_waiter has run.
-    //   waiter_handle - opaque pointer to a waiter object. NULL when
-    //                   no waiter is attached.
-    //   result_ref    - opaque pointer to a result storage the C side
-    //                   populates on completion. NULL when not in use.
+    //   has_waiter      - true once scoreboard_attach_waiter has run.
+    //   waiter_handle   - opaque pointer to a waiter object. NULL when
+    //                     no waiter is attached.
+    //   result_ref      - opaque pointer to a result storage the C side
+    //                     populates on completion. NULL when not in use.
+    //   waiter_signaled - true once scoreboard_claim_waiter has handed
+    //                     the waiter fields to a completion path. Prevents
+    //                     double-signal if claim is invoked more than once.
     //
-    // Concurrency: a waiter is typically attached once, by the
-    // submitter, before the worker dequeues the job. Subsequent
-    // scoreboard_attach_waiter calls are idempotent (first writer
-    // wins) so a misbehaving caller cannot detach an existing waiter
-    // by racing. scoreboard_clear_waiter resets all three to
-    // initial-state values.
+    // Concurrency: attach may race with the worker. The worker MUST
+    // re-read waiter fields at terminal status via scoreboard_claim_waiter
+    // (live scoreboard state), not from an early scoreboard_find snapshot
+    // taken at job start. Callers that attach after the job is already
+    // terminal will not receive a completion signal; they must check
+    // status after attach and treat terminal as done (Phase 13 H.wait).
+    // Subsequent scoreboard_attach_waiter calls are idempotent (first
+    // writer wins). scoreboard_clear_waiter resets all waiter fields.
     bool                has_waiter;
     void*               waiter_handle;
     void*               result_ref;
+    bool                waiter_signaled;
 
     // Phase 24: structured error info. strdup'd; owned; freed on
     // entry destroy. NULL for jobs that succeeded or haven't run yet.
@@ -480,6 +486,32 @@ bool scoreboard_get_waiter(Scoreboard* sb,
                            void** out_result);
 
 /*
+ * Atomically claim an attached waiter for completion signaling.
+ * Thread-safe.
+ *
+ *   sb         - the scoreboard
+ *   job_id     - the 5-char ID to look up
+ *   out_handle - may be NULL; if non-NULL and claim succeeds, set to
+ *                the entry's waiter_handle (may itself be NULL).
+ *   out_result - may be NULL; if non-NULL and claim succeeds, set to
+ *                the entry's result_ref (may itself be NULL).
+ *
+ * Returns true exactly once per attach lifecycle when has_waiter is
+ * true and the waiter has not already been claimed. Returns false if
+ * the ID is unknown, no waiter is attached, or the waiter was already
+ * claimed. On false, out_handle / out_result are left unchanged when
+ * non-NULL (callers should initialize them).
+ *
+ * The worker calls this after marking a job terminal so a waiter
+ * attached after job start (but before claim) is still observed.
+ * Phase 13 will use the claimed pointers for the real H_Handle signal.
+ */
+bool scoreboard_claim_waiter(Scoreboard* sb,
+                             const char* job_id,
+                             void** out_handle,
+                             void** out_result);
+
+/*
  * Clear the waiter fields for a job. Thread-safe.
  *
  *   sb     - the scoreboard
@@ -489,10 +521,10 @@ bool scoreboard_get_waiter(Scoreboard* sb,
  * cleared even if they were already clear). Returns false if the
  * ID is unknown.
  *
- * Effect: sets has_waiter=false, waiter_handle=NULL, result_ref=NULL.
- * After this call the worker's completion path will see no waiter
- * to signal. Use with care - a waiter that was expecting a signal
- * will block until its own timeout.
+ * Effect: sets has_waiter=false, waiter_handle=NULL, result_ref=NULL,
+ * waiter_signaled=false. After this call the worker's completion path
+ * will see no waiter to signal. Use with care - a waiter that was
+ * expecting a signal will block until its own timeout.
  */
 bool scoreboard_clear_waiter(Scoreboard* sb, const char* job_id);
 

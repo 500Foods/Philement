@@ -14,6 +14,7 @@
 #include <src/hydrogen.h>
 #include <src/api/api_utils.h>
 #include <src/api/conduit/helpers/auth_jwt_helper.h>
+#include <src/api/mailrelay/mailrelay_api_auth.h>
 #include <src/mailrelay/mailrelay.h>
 #include <src/utils/utils_time.h>
 
@@ -39,7 +40,6 @@
 #define MAILRELAY_SEND_MAX_ERROR_MESSAGE_LEN 512
 
 // Forward declarations for internal helpers
-static bool has_role(const char* roles, const char* role);
 static bool parse_string_array(json_t* arr, const char* field_name,
                                 const char* const** out_items, int* out_count,
                                 char* err, size_t err_cap);
@@ -60,43 +60,6 @@ static enum MHD_Result send_mailrelay_error(struct MHD_Connection* connection,
                                              const char* code,
                                              const char* message,
                                              unsigned int http_status);
-
-/*
- * Check whether a comma-separated role list contains a specific role.
- * Whitespace around roles is ignored. Roles are matched case-sensitively.
- */
-static bool has_role(const char* roles, const char* role) {
-    if (!roles || !role || role[0] == '\0') {
-        return false;
-    }
-
-    size_t role_len = strlen(role);
-    const char* p = roles;
-
-    while (*p != '\0') {
-        // Skip leading whitespace
-        while (*p == ' ' || *p == '\t') {
-            p++;
-        }
-
-        if (strncmp(p, role, role_len) == 0) {
-            char next = p[role_len];
-            if (next == '\0' || next == ',' || next == ' ' || next == '\t') {
-                return true;
-            }
-        }
-
-        // Advance to the next comma
-        while (*p != '\0' && *p != ',') {
-            p++;
-        }
-        if (*p == ',') {
-            p++;
-        }
-    }
-
-    return false;
-}
 
 /*
  * Parse a JSON array of strings into a const char* array. The returned pointers
@@ -413,7 +376,8 @@ enum MHD_Result handle_mailrelay_send_request(
             free_jwt_claims(jwt_result.claims);
             jwt_result.claims = NULL;
         }
-        return send_jwt_error_response(connection, error_msg, MHD_HTTP_UNAUTHORIZED);
+        (void)send_jwt_error_response(connection, error_msg, MHD_HTTP_UNAUTHORIZED);
+        return MHD_YES;  // Error response already queued
     }
 
     if (!validate_jwt_claims(&jwt_result, connection)) {
@@ -425,7 +389,7 @@ enum MHD_Result handle_mailrelay_send_request(
     }
 
     // Require mail_send role
-    if (!has_role(jwt_result.claims ? jwt_result.claims->roles : NULL, "mail_send")) {
+    if (!mailrelay_api_has_role(jwt_result.claims, "mail_send")) {
         free_jwt_claims(jwt_result.claims);
         jwt_result.claims = NULL;
         return send_mailrelay_error(connection, "MAIL_AUTH_REQUIRED",

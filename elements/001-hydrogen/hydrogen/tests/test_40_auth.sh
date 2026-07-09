@@ -22,6 +22,9 @@
 # analyze_auth_test_results()
 
 # CHANGELOG
+# 1.7.0 - 2026-07-09 - Logout now uses the renewed JWT when renew succeeds
+#                    - Renew replaces the prior token in storage; logout must not
+#                      present the pre-renew token (would correctly return "already revoked")
 # 1.6.0 - 2026-06-17 - Added HTTP readiness check before auth requests to avoid races during server startup
 #                    - Added retry logic to auth requests for transient failures (HTTP 000/5xx/408/429)
 #                    - Added per-run SQLite database isolation to avoid shared-state issues across runs
@@ -54,7 +57,7 @@ TEST_NAME="Auth"
 TEST_ABBR="JWT"
 TEST_NUMBER="40"
 TEST_COUNTER=0
-TEST_VERSION="1.6.0"
+TEST_VERSION="1.7.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -212,6 +215,8 @@ EOF
 }
 
 # Function to test token renewal
+# On success, writes JWT_RENEWED_TOKEN=<token> to result_file so logout can
+# use the active token (renew deletes the previous token from storage).
 test_auth_renew() {
     local base_url="$1"
     local jwt_token="$2"
@@ -228,6 +233,11 @@ test_auth_renew() {
     # shellcheck disable=SC2310 # We want to continue even if the test fails
     if validate_auth_request "${base_url}/api/auth/renew" "POST" "${renew_data}" "200" "${response_file}" "${jwt_token}"; then
         echo "RENEW_SUCCESS" >> "${result_file}"
+        local renewed_token
+        renewed_token=$(jq -r '.token // empty' "${response_file}" 2>/dev/null || echo "")
+        if [[ -n "${renewed_token}" ]] && [[ "${renewed_token}" != "null" ]]; then
+            echo "JWT_RENEWED_TOKEN=${renewed_token}" >> "${result_file}"
+        fi
     else
         echo "RENEW_FAILED" >> "${result_file}"
     fi
@@ -423,8 +433,15 @@ run_auth_test_parallel() {
             local jwt_token="${jwt_line#JWT_TOKEN=}"
 
             test_auth_login_invalid "${base_url}" "${result_file}"
+            # Renew replaces the prior token; logout must use the renewed JWT.
             test_auth_renew "${base_url}" "${jwt_token}" "${result_file}"
-            test_auth_logout "${base_url}" "${jwt_token}" "${result_file}"
+            local logout_token="${jwt_token}"
+            local renew_line
+            renew_line=$("${GREP}" "^JWT_RENEWED_TOKEN=" "${result_file}" 2>/dev/null || echo "")
+            if [[ -n "${renew_line}" ]]; then
+                logout_token="${renew_line#JWT_RENEWED_TOKEN=}"
+            fi
+            test_auth_logout "${base_url}" "${logout_token}" "${result_file}"
             test_auth_register "${base_url}" "${result_file}"
 
             echo "AUTH_TEST_COMPLETE" >> "${result_file}"

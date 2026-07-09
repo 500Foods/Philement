@@ -1,21 +1,22 @@
--- Migration: acuranzo_1102.lua
--- QueryRef #011 - Get Login E-Mail
+-- Migration: acuranzo_1260.lua
+-- QueryRef #127 - Get Role By Name
 
 -- luacheck: no max line length
 -- luacheck: no unused args
 
 -- CHANGELOG
--- 1.1.0 - 2026-07-09 - Use <=/>= for valid_after/valid_until so same-second rows match on SQLite second-resolution timestamps
--- 1.0.0 - 2025-12-28 - Initial creation
+-- 1.0.0 - 2026-07-08 - Initial creation for MAILRELAY_PLAN Phase 7.5b Chunk 1
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
 
 cfg.TABLE = "queries"
-cfg.MIGRATION = "1102"
-cfg.QUERY_REF = "011"
-cfg.QUERY_NAME = "Get Login E-Mail"
--- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+cfg.MIGRATION = "1260"
+cfg.QUERY_REF = "127"
+cfg.QUERY_NAME = "Get Role By Name"
+-- ----------------------------------------------------------------------------
+-- Forward: Populate QueryRef #127 - Get Role By Name
+-- ----------------------------------------------------------------------------
 table.insert(queries,{sql=[[
 
     INSERT INTO ${SCHEMA}${QUERIES} (
@@ -31,7 +32,7 @@ table.insert(queries,{sql=[[
         ${STATUS_ACTIVE}                                                    AS query_status_a27,
         ${TYPE_FORWARD_MIGRATION}                                           AS query_type_a28,
         ${DIALECT}                                                          AS query_dialect_a30,
-        ${QTC_SLOW}                                                         AS query_queue_a58,
+        ${QTC_FAST}                                                         AS query_queue_a58,
         ${TIMEOUT}                                                          AS query_timeout,
         [=[
             INSERT INTO ${SCHEMA}${QUERIES} (
@@ -45,49 +46,43 @@ table.insert(queries,{sql=[[
                 new_query_id                                                        AS query_id,
                 ${QUERY_REF}                                                        AS query_ref,
                 ${STATUS_ACTIVE}                                                    AS query_status_a27,
-                ${TYPE_SQL}                                                         AS query_type_a28,
+                ${TYPE_INTERNAL_SQL}                                                AS query_type_a28,
                 ${DIALECT}                                                          AS query_dialect_a30,
-                ${QTC_MEDIUM}                                                       AS query_queue_a58,
+                ${QTC_FAST}                                                         AS query_queue_a58,
                 ${TIMEOUT}                                                          AS query_timeout,
                 [==[
                     SELECT
-                        contact
+                        role_id
                     FROM
-                        ${SCHEMA}account_contacts
+                        ${SCHEMA}roles
                     WHERE
-                        (account_id = :ACCOUNTID)
-                        AND (contact_type_a18 = 0)
-                        AND (
-                            (valid_after IS NULL)
-                            OR (valid_after <= ${NOW})
-                        )
-                        AND (
-                            (valid_until IS NULL)
-                            OR (valid_until >= ${NOW})
-                        )
-                    ORDER BY
-                        contact_seq,
-                        contact
+                        (name = :ROLENAME)
+                        AND (status_a34 = 1)
                 ]==]                                                                AS code,
                 '${QUERY_NAME}'                                                     AS name,
                 [==[
-                    #  QueryRef #${QUERY_REF} - ${QUERY_NAME}
+                    # QueryRef #${QUERY_REF} - ${QUERY_NAME}
 
-                    This query retrieves the primary e-mail contact for a given account ID
-                    from the `account_contacts` table.
+                    Retrieves the active `role_id` for a role by its human-readable
+                    `name`.
 
                     ## Parameters
 
-                    - `ACCOUNTID` (integer): The account ID for which to retrieve the primary e-mail contact.
+                    - `ROLENAME` (string, required): The role name to resolve
+                      (e.g. `mail_send`).
 
                     ## Returns
 
-                    - `contact` (string): The primary e-mail contact associated with the provided account ID.
+                    - `role_id` (integer): The ID of the matching active role.
 
                     ## Tables
 
-                    - `${SCHEMA}account_contacts`: The table containing account contact information.
+                    - `${SCHEMA}roles` (migration 1016).
 
+                    ## Security Notes
+
+                    - `query_type_a28` is `${TYPE_INTERNAL_SQL}` (0) so this query
+                      is not reachable via the REST API.
                 ]==]
                                                                                     AS summary,
                 '{}'                                                                AS collection,
@@ -104,9 +99,10 @@ table.insert(queries,{sql=[[
                                                                             AS code,
         'Populate QueryRef #${QUERY_REF} - ${QUERY_NAME}'                   AS name,
         [=[
-            # Forward Migration ${MIGRATION}: Poulate QueryRef #${QUERY_REF} - ${QUERY_NAME}
+            # Forward Migration ${MIGRATION}: Populate QueryRef #${QUERY_REF} - ${QUERY_NAME}
 
-            This migration creates the query for QueryRef #${QUERY_REF} - ${QUERY_NAME}
+            This migration creates the internal SELECT query for resolving a
+            role name to its `role_id` (QueryRef #${QUERY_REF}).
         ]=]
                                                                             AS summary,
         '{}'                                                                AS collection,
@@ -114,7 +110,10 @@ table.insert(queries,{sql=[[
     FROM next_query_id;
 
 ]]})
--- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+
+-- ----------------------------------------------------------------------------
+-- Reverse: Remove QueryRef #127 - Get Role By Name
+-- ----------------------------------------------------------------------------
 table.insert(queries,{sql=[[
 
     INSERT INTO ${SCHEMA}${QUERIES} (
@@ -148,8 +147,7 @@ table.insert(queries,{sql=[[
         [=[
             # Reverse Migration ${MIGRATION}: Remove QueryRef #${QUERY_REF} - ${QUERY_NAME}
 
-            This is provided for completeness when testing the migration system
-            to ensure that forward and reverse migrations are complete.
+            This is provided for completeness when testing the migration system.
         ]=]
                                                                             AS summary,
         '{}'                                                                AS collection,
@@ -157,5 +155,5 @@ table.insert(queries,{sql=[[
     FROM next_query_id;
 
 ]]})
--- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+
 return queries end
