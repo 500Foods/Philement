@@ -4,6 +4,7 @@
 // Converts JSON table definition into SVG database diagram
 
 // CHANGELOG
+// 2.1.0 - 2026-07-08 - removeDuplicateObjects now keeps the last occurrence so later diagram migrations replace earlier ones
 // 2.0.0 - 2025-11-17 - Implemented before/after comparison with automatic highlighting
 // 1.1.0 - 2025-09-30 - Added metadata, starting with 'Tables included' to output
 // 1.0.0 - 2025-09-28 - Initial creation for database diagram generation
@@ -33,19 +34,17 @@ const FONTS = {
 // ============================================================================
 
 /**
- * Remove duplicate objects from JSON data based on object_id
+ * Remove duplicate objects from JSON data based on object_id,
+ * keeping the last occurrence so later diagram migrations replace earlier ones.
  * @param {Array} objects - Array of objects to deduplicate
- * @returns {Array} - Array with duplicates removed
+ * @returns {Array} - Array with duplicates removed, last occurrence retained
  */
 function removeDuplicateObjects(objects) {
-    const seen = new Set();
-    return objects.filter(obj => {
-        if (seen.has(obj.object_id)) {
-            return false;
-        }
-        seen.add(obj.object_id);
-        return true;
+    const unique = new Map();
+    objects.forEach(obj => {
+        unique.set(obj.object_id, obj);
     });
+    return Array.from(unique.values());
 }
 
 /**

@@ -28,6 +28,7 @@
  #include "conduit/alt_queries/alt_queries.h"
  #include "conduit/status/status.h"
 #include "mailrelay/status/status.h"
+#include "mailrelay/send/send.h"
 #include "api/wschat/auth_chat/auth_chat.h"
 #include "api/wschat/auth_chats/auth_chats.h"
 #include "auth/login/login.h"
@@ -209,6 +210,7 @@ bool register_api_endpoints(void) {
         log_this(SR_API, "― %s/conduit/auth_chats", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/conduit/status", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/mailrelay/status", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
+        log_this(SR_API, "― %s/mailrelay/send", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
     log_group_end();
     
     return true;
@@ -752,6 +754,10 @@ enum MHD_Result handle_api_request(struct MHD_Connection *connection,
     else if (strcmp(path, "mailrelay/status") == 0) {
         return handle_mailrelay_status_request(connection, url, method, upload_data,
                                                upload_data_size, con_cls);
+    }
+    else if (strcmp(path, "mailrelay/send") == 0) {
+        return handle_mailrelay_send_request(connection, url, method, upload_data,
+                                              upload_data_size, con_cls);
     }
 
     // Endpoint not found
