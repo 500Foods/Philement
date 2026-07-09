@@ -24,6 +24,9 @@ void test_mailrelay_template_preview_html_only(void);
 void test_mailrelay_template_preview_not_found(void);
 void test_mailrelay_template_preview_missing_macro(void);
 void test_mailrelay_template_preview_repository_failure(void);
+void test_mailrelay_template_preview_macros_used_basic(void);
+void test_mailrelay_template_preview_macros_used_dedup(void);
+void test_mailrelay_template_preview_macros_used_builtins(void);
 
 static mailrelay_repo_execute_fn g_original_executor = NULL;
 static json_t* g_mock_result = NULL;
@@ -84,6 +87,9 @@ int main(void) {
     RUN_TEST(test_mailrelay_template_preview_not_found);
     RUN_TEST(test_mailrelay_template_preview_missing_macro);
     RUN_TEST(test_mailrelay_template_preview_repository_failure);
+    RUN_TEST(test_mailrelay_template_preview_macros_used_basic);
+    RUN_TEST(test_mailrelay_template_preview_macros_used_dedup);
+    RUN_TEST(test_mailrelay_template_preview_macros_used_builtins);
 
     return UNITY_END();
 }
@@ -196,4 +202,102 @@ void test_mailrelay_template_preview_repository_failure(void) {
     TEST_ASSERT_NULL(subject);
     TEST_ASSERT_NULL(text);
     TEST_ASSERT_NULL(html);
+}
+
+static bool macro_list_contains(const MailRelayMacroList* list, const char* name) {
+    if (!list || !name) {
+        return false;
+    }
+    for (int i = 0; i < list->count; i++) {
+        if (strcmp(list->names[i], name) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void test_mailrelay_template_preview_macros_used_basic(void) {
+    set_mock_result("Hello %NAME% from %APP_NAME%", "Text: %NAME%", NULL);
+
+    MailRelayTemplateParams params;
+    mailrelay_template_params_init(&params);
+    TEST_ASSERT_TRUE(mailrelay_template_params_add(&params, "NAME", "World"));
+
+    char err[256] = { 0 };
+    char* subject = NULL;
+    char* text = NULL;
+    char* html = NULL;
+    MailRelayMacroList macros = { 0 };
+    mailrelay_macro_list_init(&macros);
+
+    TEST_ASSERT_TRUE(mailrelay_template_preview_with_macros("mail.test", &params,
+                                                            "Hydrogen", "srv1", NULL,
+                                                            NULL, NULL, NULL,
+                                                            &subject, &text, &html, &macros,
+                                                            err, sizeof(err)));
+    TEST_ASSERT_EQUAL(2, macros.count);
+    TEST_ASSERT_TRUE(macro_list_contains(&macros, "NAME"));
+    TEST_ASSERT_TRUE(macro_list_contains(&macros, "APP_NAME"));
+    TEST_ASSERT_FALSE(macro_list_contains(&macros, "MISSING"));
+
+    free(subject);
+    free(text);
+    free(html);
+    mailrelay_macro_list_free(&macros);
+    mailrelay_template_params_free(&params);
+}
+
+void test_mailrelay_template_preview_macros_used_dedup(void) {
+    set_mock_result("%NAME% %NAME% from %APP_NAME%", NULL, NULL);
+
+    MailRelayTemplateParams params;
+    mailrelay_template_params_init(&params);
+    TEST_ASSERT_TRUE(mailrelay_template_params_add(&params, "NAME", "World"));
+
+    char err[256] = { 0 };
+    char* subject = NULL;
+    char* text = NULL;
+    char* html = NULL;
+    MailRelayMacroList macros = { 0 };
+    mailrelay_macro_list_init(&macros);
+
+    TEST_ASSERT_TRUE(mailrelay_template_preview_with_macros("mail.test", &params,
+                                                            "Hydrogen", NULL, NULL,
+                                                            NULL, NULL, NULL,
+                                                            &subject, &text, &html, &macros,
+                                                            err, sizeof(err)));
+    TEST_ASSERT_EQUAL(2, macros.count);
+    TEST_ASSERT_TRUE(macro_list_contains(&macros, "NAME"));
+    TEST_ASSERT_TRUE(macro_list_contains(&macros, "APP_NAME"));
+
+    free(subject);
+    free(text);
+    free(html);
+    mailrelay_macro_list_free(&macros);
+    mailrelay_template_params_free(&params);
+}
+
+void test_mailrelay_template_preview_macros_used_builtins(void) {
+    set_mock_result("Server %SERVER_NAME% at %TIMESTAMP%", NULL, NULL);
+
+    char err[256] = { 0 };
+    char* subject = NULL;
+    char* text = NULL;
+    char* html = NULL;
+    MailRelayMacroList macros = { 0 };
+    mailrelay_macro_list_init(&macros);
+
+    TEST_ASSERT_TRUE(mailrelay_template_preview_with_macros("system.server_started", NULL,
+                                                            NULL, "test-server", "2026-07-08T12:00:00Z",
+                                                            NULL, NULL, NULL,
+                                                            &subject, &text, &html, &macros,
+                                                            err, sizeof(err)));
+    TEST_ASSERT_EQUAL(2, macros.count);
+    TEST_ASSERT_TRUE(macro_list_contains(&macros, "SERVER_NAME"));
+    TEST_ASSERT_TRUE(macro_list_contains(&macros, "TIMESTAMP"));
+
+    free(subject);
+    free(text);
+    free(html);
+    mailrelay_macro_list_free(&macros);
 }

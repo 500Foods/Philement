@@ -99,6 +99,32 @@ const char* mailrelay_template_params_get(const MailRelayTemplateParams* params,
                                           const char* key);
 
 /*
+ * A list of macro names used during template rendering.
+ *
+ * The list deduplicates names as they are added and is owned by the caller.
+ */
+typedef struct MailRelayMacroList {
+    char** names;  /**< Macro names (heap-allocated). */
+    int count;     /**< Number of names in the list. */
+    int capacity;  /**< Allocated capacity. */
+} MailRelayMacroList;
+
+/* Initialize an empty macro list. */
+void mailrelay_macro_list_init(MailRelayMacroList* list);
+
+/* Free all owned names and reset the macro list. */
+void mailrelay_macro_list_free(MailRelayMacroList* list);
+
+/*
+ * Add a macro name to the list if it is not already present.
+ *
+ * @param list Macro list.
+ * @param name Macro name.
+ * @return true on success, false on allocation failure or invalid input.
+ */
+bool mailrelay_macro_list_add(MailRelayMacroList* list, const char* name);
+
+/*
  * Render a template using the provided parameters and built-in macros.
  *
  * @param template    Input template string.
@@ -126,6 +152,26 @@ bool mailrelay_template_render(const char* template_text,
                                char** out,
                                char* err,
                                size_t err_cap);
+
+/*
+ * Render a template while recording the macros that are resolved.
+ *
+ * This is identical to mailrelay_template_render except that any built-in or
+ * user macro that is successfully resolved is added to @a macros_used. Pass
+ * NULL for @a macros_used if the list is not needed.
+ */
+bool mailrelay_template_render_with_macros(const char* template_text,
+                                           const MailRelayTemplateParams* params,
+                                           const char* app_name,
+                                           const char* server_name,
+                                           const char* timestamp,
+                                           const char* request_id,
+                                           const char* user_email,
+                                           const char* otp_code,
+                                           MailRelayMacroList* macros_used,
+                                           char** out,
+                                           char* err,
+                                           size_t err_cap);
 
 /*
  * Preview a configured template by key.
@@ -166,6 +212,28 @@ bool mailrelay_template_preview(const char* template_key,
                                 char** html_body_out,
                                 char* err,
                                 size_t err_cap);
+
+/*
+ * Preview a configured template by key while recording the macros used.
+ *
+ * This is identical to mailrelay_template_preview except that any built-in or
+ * user macro resolved during rendering is added to @a macros_used. Pass NULL
+ * for @a macros_used if the list is not needed.
+ */
+bool mailrelay_template_preview_with_macros(const char* template_key,
+                                            const MailRelayTemplateParams* params,
+                                            const char* app_name,
+                                            const char* server_name,
+                                            const char* timestamp,
+                                            const char* request_id,
+                                            const char* user_email,
+                                            const char* otp_code,
+                                            char** subject_out,
+                                            char** text_body_out,
+                                            char** html_body_out,
+                                            MailRelayMacroList* macros_used,
+                                            char* err,
+                                            size_t err_cap);
 
 #ifdef __cplusplus
 }
