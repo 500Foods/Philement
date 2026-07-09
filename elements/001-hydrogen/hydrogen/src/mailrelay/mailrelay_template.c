@@ -63,6 +63,7 @@ typedef struct PreviewRenderContext {
     const char* request_id;
     const char* user_email;
     const char* otp_code;
+    MailRelayMacroList* macros_used;
     char* subject;
     char* text_body;
     char* html_body;
@@ -330,17 +331,72 @@ const char* mailrelay_template_params_get(const MailRelayTemplateParams* params,
     return NULL;
 }
 
-bool mailrelay_template_render(const char* template_text,
-                               const MailRelayTemplateParams* params,
-                               const char* app_name,
-                               const char* server_name,
-                               const char* timestamp,
-                               const char* request_id,
-                               const char* user_email,
-                               const char* otp_code,
-                               char** out,
-                               char* err,
-                               size_t err_cap) {
+void mailrelay_macro_list_init(MailRelayMacroList* list) {
+    if (!list) {
+        return;
+    }
+    list->names = NULL;
+    list->count = 0;
+    list->capacity = 0;
+}
+
+void mailrelay_macro_list_free(MailRelayMacroList* list) {
+    if (!list) {
+        return;
+    }
+    for (int i = 0; i < list->count; i++) {
+        free(list->names[i]);
+    }
+    free(list->names);
+    list->names = NULL;
+    list->count = 0;
+    list->capacity = 0;
+}
+
+bool mailrelay_macro_list_add(MailRelayMacroList* list, const char* name) {
+    if (!list || !name || name[0] == '\0') {
+        return false;
+    }
+
+    for (int i = 0; i < list->count; i++) {
+        if (strcmp(list->names[i], name) == 0) {
+            return true;
+        }
+    }
+
+    if (list->count >= list->capacity) {
+        int new_capacity = list->capacity ? list->capacity * 2 : MAILRELAY_TEMPLATE_INITIAL_CAPACITY;
+        if (new_capacity > MAILRELAY_TEMPLATE_MAX_PARAMS) {
+            new_capacity = MAILRELAY_TEMPLATE_MAX_PARAMS;
+        }
+        char** new_names = realloc(list->names, (size_t)new_capacity * sizeof(char*));
+        if (!new_names) {
+            return false;
+        }
+        list->names = new_names;
+        list->capacity = new_capacity;
+    }
+
+    list->names[list->count] = strdup(name);
+    if (!list->names[list->count]) {
+        return false;
+    }
+    list->count++;
+    return true;
+}
+
+bool mailrelay_template_render_with_macros(const char* template_text,
+                                           const MailRelayTemplateParams* params,
+                                           const char* app_name,
+                                           const char* server_name,
+                                           const char* timestamp,
+                                           const char* request_id,
+                                           const char* user_email,
+                                           const char* otp_code,
+                                           MailRelayMacroList* macros_used,
+                                           char** out,
+                                           char* err,
+                                           size_t err_cap) {
     if (!template_text || !out || !err || err_cap == 0) {
         if (err && err_cap > 0) {
             snprintf(err, err_cap, "invalid arguments");
@@ -396,6 +452,14 @@ bool mailrelay_template_render(const char* template_text,
                 }
             }
 
+            if (macros_used) {
+                if (!mailrelay_macro_list_add(macros_used, name)) {
+                    snprintf(err, err_cap, "memory allocation failed");
+                    output_free(&output);
+                    return false;
+                }
+            }
+
             if (!output_append(&output, value, strlen(value), err, err_cap)) {
                 output_free(&output);
                 return false;
@@ -420,6 +484,23 @@ bool mailrelay_template_render(const char* template_text,
 
     *out = output.data;
     return true;
+}
+
+bool mailrelay_template_render(const char* template_text,
+                               const MailRelayTemplateParams* params,
+                               const char* app_name,
+                               const char* server_name,
+                               const char* timestamp,
+                               const char* request_id,
+                               const char* user_email,
+                               const char* otp_code,
+                               char** out,
+                               char* err,
+                               size_t err_cap) {
+    return mailrelay_template_render_with_macros(template_text, params, app_name,
+                                                  server_name, timestamp, request_id,
+                                                  user_email, otp_code, NULL,
+                                                  out, err, err_cap);
 }
 
 /*
@@ -467,16 +548,18 @@ static void preview_render_callback(MailRelayRepoResult* result, void* user_data
         return;
     }
 
-    if (!mailrelay_template_render(subject_template, ctx->params, ctx->app_name, ctx->server_name,
-                                   ctx->timestamp, ctx->request_id, ctx->user_email, ctx->otp_code,
-                                   &ctx->subject, ctx->error, sizeof(ctx->error))) {
+    if (!mailrelay_template_render_with_macros(subject_template, ctx->params, ctx->app_name, ctx->server_name,
+                                                ctx->timestamp, ctx->request_id, ctx->user_email, ctx->otp_code,
+                                                ctx->macros_used,
+                                                &ctx->subject, ctx->error, sizeof(ctx->error))) {
         return;
     }
 
     if (text_template) {
-        if (!mailrelay_template_render(text_template, ctx->params, ctx->app_name, ctx->server_name,
-                                       ctx->timestamp, ctx->request_id, ctx->user_email, ctx->otp_code,
-                                       &ctx->text_body, ctx->error, sizeof(ctx->error))) {
+        if (!mailrelay_template_render_with_macros(text_template, ctx->params, ctx->app_name, ctx->server_name,
+                                                    ctx->timestamp, ctx->request_id, ctx->user_email, ctx->otp_code,
+                                                    ctx->macros_used,
+                                                    &ctx->text_body, ctx->error, sizeof(ctx->error))) {
             free(ctx->subject);
             ctx->subject = NULL;
             return;
@@ -484,9 +567,10 @@ static void preview_render_callback(MailRelayRepoResult* result, void* user_data
     }
 
     if (html_template) {
-        if (!mailrelay_template_render(html_template, ctx->params, ctx->app_name, ctx->server_name,
-                                       ctx->timestamp, ctx->request_id, ctx->user_email, ctx->otp_code,
-                                       &ctx->html_body, ctx->error, sizeof(ctx->error))) {
+        if (!mailrelay_template_render_with_macros(html_template, ctx->params, ctx->app_name, ctx->server_name,
+                                                    ctx->timestamp, ctx->request_id, ctx->user_email, ctx->otp_code,
+                                                    ctx->macros_used,
+                                                    &ctx->html_body, ctx->error, sizeof(ctx->error))) {
             free(ctx->subject);
             free(ctx->text_body);
             ctx->subject = NULL;
@@ -499,19 +583,20 @@ static void preview_render_callback(MailRelayRepoResult* result, void* user_data
     ctx->error[0] = '\0';
 }
 
-bool mailrelay_template_preview(const char* template_key,
-                                const MailRelayTemplateParams* params,
-                                const char* app_name,
-                                const char* server_name,
-                                const char* timestamp,
-                                const char* request_id,
-                                const char* user_email,
-                                const char* otp_code,
-                                char** subject_out,
-                                char** text_body_out,
-                                char** html_body_out,
-                                char* err,
-                                size_t err_cap) {
+bool mailrelay_template_preview_with_macros(const char* template_key,
+                                            const MailRelayTemplateParams* params,
+                                            const char* app_name,
+                                            const char* server_name,
+                                            const char* timestamp,
+                                            const char* request_id,
+                                            const char* user_email,
+                                            const char* otp_code,
+                                            char** subject_out,
+                                            char** text_body_out,
+                                            char** html_body_out,
+                                            MailRelayMacroList* macros_used,
+                                            char* err,
+                                            size_t err_cap) {
     if (!template_key || !subject_out || !text_body_out || !html_body_out || !err || err_cap == 0) {
         if (err && err_cap > 0) {
             snprintf(err, err_cap, "invalid arguments");
@@ -533,6 +618,7 @@ bool mailrelay_template_preview(const char* template_key,
     ctx.request_id = request_id;
     ctx.user_email = user_email;
     ctx.otp_code = otp_code;
+    ctx.macros_used = macros_used;
 
     if (!mailrelay_repo_template_get_by_key(&req, preview_render_callback, &ctx)) {
         snprintf(err, err_cap, "repository lookup failed");
@@ -548,4 +634,23 @@ bool mailrelay_template_preview(const char* template_key,
     *text_body_out = ctx.text_body;
     *html_body_out = ctx.html_body;
     return true;
+}
+
+bool mailrelay_template_preview(const char* template_key,
+                                const MailRelayTemplateParams* params,
+                                const char* app_name,
+                                const char* server_name,
+                                const char* timestamp,
+                                const char* request_id,
+                                const char* user_email,
+                                const char* otp_code,
+                                char** subject_out,
+                                char** text_body_out,
+                                char** html_body_out,
+                                char* err,
+                                size_t err_cap) {
+    return mailrelay_template_preview_with_macros(template_key, params, app_name, server_name,
+                                                   timestamp, request_id, user_email, otp_code,
+                                                   subject_out, text_body_out, html_body_out,
+                                                   NULL, err, err_cap);
 }

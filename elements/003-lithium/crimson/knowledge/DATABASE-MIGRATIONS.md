@@ -293,4 +293,7 @@ in the migrations themselves so that they get populated in the database directly
 | [1254](/elements/002-helium/acuranzo/migrations/acuranzo_1254.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #124 - Cleanup Old Mail Events |
 | [1255](/elements/002-helium/acuranzo/migrations/acuranzo_1255.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #125 - Cleanup Old Mail Attempts |
 | [1256](/elements/002-helium/acuranzo/migrations/acuranzo_1256.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #126 - Cleanup Old OTP Codes |
-| **257** | | | | **1357** | **257** | |
+| [1257](/elements/002-helium/acuranzo/migrations/acuranzo_1257.lua) | roles | 1.0.0 | 2026-07-08 | 4 | ✗ | Create Mail Relay send role |
+| [1258](/elements/002-helium/acuranzo/migrations/acuranzo_1258.lua) | accounts | 1.0.0 | 2026-07-08 | 9 | ✗ | Create Mail Relay mailadmin user with mail_send role |
+| [1259](/elements/002-helium/acuranzo/migrations/acuranzo_1259.lua) | mail_templates | 1.0.0 | 2026-07-08 | 4 | ✗ | Seed the mail.test template |
+| **260** | | | | **1374** | **260** | |

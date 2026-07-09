@@ -1,0 +1,86 @@
+{
+    "Server": {
+        "ServerName": "hydrogen-test-58-sqlite",
+        "PayloadKey": "${env.PAYLOAD_KEY}"
+    },
+    "WebServer": {
+        "EnableIPv4": true,
+        "EnableIPv6": false,
+        "Port": 55806
+    },
+    "API": {
+        "Enabled": true,
+        "Prefix": "/api",
+        "JWTSecret": "${env.HYDROGEN_DEMO_JWT_KEY}"
+    },
+    "Swagger": {
+        "Enabled": true,
+        "Prefix": "/swagger",
+        "UIOptions": {
+            "TryItEnabled": true,
+            "AlwaysExpanded": true,
+            "DisplayOperationId": true,
+            "DefaultModelsExpandDepth": 1,
+            "DefaultModelExpandDepth": 1,
+            "ShowExtensions": false,
+            "ShowCommonExtensions": true,
+            "DocExpansion": "list",
+            "SyntaxHighlightTheme": "agate"
+        }
+    },
+    "Databases": {
+        "Connections": [
+            {
+                "Name": "Acuranzo",
+                "Engine": "sqlite",
+                "Enabled": true,
+                "Database": "tests/artifacts/database/sqlite/hydrodemo.sqlite",
+                "StmtCache": 100,
+                "Bootstrap": "SELECT query_id id, query_ref ref, query_status_a27 status, query_type_a28 type, query_dialect_a30 engine, query_queue_a58 queue, query_timeout timeout, name, code query FROM queries WHERE (query_status_a27 = 1) ORDER BY query_type_a28 desc;",
+                "AutoMigration": true,
+                "TestMigration": false,
+                "Parameters": {
+                    "LOGINRETRYWINDOW": 15,
+                    "IPADDRESS": "10.10.10.10"
+                },
+                "Schema": "",
+                "Migrations": "PAYLOAD:acuranzo",
+                "Queues": {
+                    "Slow": {
+                        "start": 2
+                    }
+                }
+            }
+        ]
+    },
+    "MailRelay": {
+        "Enabled": true,
+        "OutboundEnabled": true,
+        "InboundEnabled": false,
+        "ListenPort": 25,
+        "Workers": 1,
+        "DefaultFrom": "mailrelay-test@hydrogen.local",
+        "DefaultReplyTo": "mailrelay-test@hydrogen.local",
+        "Queue": {
+            "MaxQueueSize": 1000,
+            "MaxInMemory": 1000,
+            "Persist": false,
+            "RetryAttempts": 3,
+            "RetryDelaySeconds": 300,
+            "InitialDelaySeconds": 1,
+            "MaxDelaySeconds": 3600,
+            "DebounceSeconds": 5,
+            "StaleTimeoutSeconds": 300
+        },
+        "Servers": [
+            {
+                "Host": "127.0.0.1",
+                "Port": "55807",
+                "UseTLS": false,
+                "TLSMode": 0,
+                "AuthMode": 0,
+                "TimeoutSeconds": 15
+            }
+        ]
+    }
+}
