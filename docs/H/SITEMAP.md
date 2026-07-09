@@ -226,7 +226,8 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [test_37_cockroachdb_migrations.md](/docs/H/tests/test_37_cockroachdb_migrations.md): CockroachDB migration performance test
 - [test_38_yugabytedb_migrations.md](/docs/H/tests/test_38_yugabytedb_migrations.md): YugabyteDB migration performance test
 - [test_40_auth.md](/docs/H/tests/test_40_auth.md): Authentication endpoints testing (JWT tokens across multiple database engines)
-- [test_41_exercise.md](/docs/H/tests/test_41_exercise.md): Memory exercise stress test (500 auth requests across 7 databases with leak detection)
+- [test_41_exercise.md](/docs/H/tests/test_41_exercise.md): Memory exercise ASAN (500 concurrent auths, 6 DBs + LSAN; YugabyteDB disabled)
+- [test_44_exercise_native.md](/docs/H/tests/test_44_exercise_native.md): Memory exercise native RSS (5000 concurrent auths, 6 DBs; suite-parallel with test 41)
 - [test_42_oidc_rp.md](/docs/H/tests/test_42_oidc_rp.md): OIDC Relying Party - end-to-end authentication flow testing
 - [test_43_scripting.md](/docs/H/tests/test_43_scripting.md): Scripting subsystem end-to-end testing
 - [test_50_conduit_query.md](/docs/H/tests/test_50_conduit_query.md): Single public query endpoint testing

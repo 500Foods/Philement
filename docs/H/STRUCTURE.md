@@ -564,7 +564,8 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [tests/test_37_cockroachdb_migrations.sh](/elements/001-hydrogen/hydrogen/tests/test_37_cockroachdb_migrations.sh) - CockroachDB migration performance test
 - [tests/test_38_yugabytedb_migrations.sh](/elements/001-hydrogen/hydrogen/tests/test_38_yugabytedb_migrations.sh) - YugabyteDB migration performance test
 - [tests/test_40_auth.sh](/elements/001-hydrogen/hydrogen/tests/test_40_auth.sh) - Authentication endpoints testing (JWT tokens across multiple database engines)
-- [tests/test_41_exercise.sh](/elements/001-hydrogen/hydrogen/tests/test_41_exercise.sh) - Memory stress test (500 auth requests across 7 databases with leak detection)
+- [tests/test_41_exercise_asan.sh](/elements/001-hydrogen/hydrogen/tests/test_41_exercise_asan.sh) - Memory exercise ASAN (500 concurrent auths, 6 DBs + LSAN; YugabyteDB disabled)
+- [tests/test_44_exercise_native.sh](/elements/001-hydrogen/hydrogen/tests/test_44_exercise_native.sh) - Memory exercise native RSS (5000 concurrent auths, 6 DBs; port 5444)
 - [tests/test_42_oidc_rp.sh](/elements/001-hydrogen/hydrogen/tests/test_42_oidc_rp.sh) - OIDC Relying Party - complete authentication flow testing
 - [tests/test_50_conduit_query.sh](/elements/001-hydrogen/hydrogen/tests/test_50_conduit_query.sh) - Conduit single query endpoint testing (public queries across 7 database engines)
 - [tests/test_51_conduit_queries.sh](/elements/001-hydrogen/hydrogen/tests/test_51_conduit_queries.sh) - Conduit multiple queries endpoint testing (batch queries across 7 database engines)

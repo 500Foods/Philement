@@ -183,7 +183,7 @@
                 }
             },
             {
-                "Enabled": true,
+                "Enabled": false,
                 "Name": "Demo_YB",
                 "Engine": "${env.YUGABYTE_DB_TYPE}",
                 "Host": "${env.YUGABYTE_DB_HOST}",

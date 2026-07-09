@@ -24,9 +24,9 @@ a hard failure.
   only starts the server, hits `/api/system/health` three times, then sends
   SIGTERM. It is a startup/shutdown leak check and exercises almost no request
   handlers.
-- Test 41 (`test_41_exercise.sh`) runs `hydrogen_debug` (ASAN) with 500 auth
-  requests across 7 database engines plus post-shutdown LeakSanitizer analysis.
-  Strong, but only on auth + DB-queue happy paths.
+- Test 41 (`test_41_exercise_asan.sh`) runs `hydrogen_debug` (ASAN) with 500 auth
+  requests across 6 database engines plus post-shutdown LeakSanitizer analysis.
+  Strong, but only on auth + DB-queue happy paths. Native RSS is test 44.
 - Test 42 (`test_42_oidc_rp.sh`) is broad on OIDC RP logic but selects its
   binary via `find_hydrogen_binary()`; with coverage/release present it does
   not run under ASAN. It is a functional/coverage test, not an ASAN gate.

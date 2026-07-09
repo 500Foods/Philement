@@ -13,8 +13,9 @@
 // Forward declaration to avoid circular header dependency
 void database_engine_cleanup_result(QueryResult* result);
 
-// Global pending result manager instance
+// Global pending result manager instance (lazy-created; guarded against concurrent first use)
 static PendingResultManager* g_pending_manager = NULL;
+static pthread_mutex_t g_pending_manager_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /**
  * @brief Initialize the pending result manager
@@ -373,13 +374,19 @@ size_t pending_result_cleanup_expired(PendingResultManager* manager, const char*
 
 /**
  * @brief Get the global pending result manager instance
+ *
+ * Lazy-creates the singleton under a mutex so concurrent first callers
+ * (e.g. parallel auth requests under test_41) cannot each allocate a
+ * manager and leak the losers (LSAN: pending_result_manager_create).
  */
 PendingResultManager* get_pending_result_manager(void) {
+    pthread_mutex_lock(&g_pending_manager_lock);
     if (!g_pending_manager) {
-        // Initialize global manager on first access
         g_pending_manager = pending_result_manager_create(NULL);
     }
-    return g_pending_manager;
+    PendingResultManager* manager = g_pending_manager;
+    pthread_mutex_unlock(&g_pending_manager_lock);
+    return manager;
 }
 
 /**
@@ -429,8 +436,10 @@ int pending_result_wait_multiple(PendingQueryResult **pendings, size_t count,
  * Should be called during database subsystem shutdown
  */
 void cleanup_global_pending_manager(const char* dqm_label) {
+    pthread_mutex_lock(&g_pending_manager_lock);
     if (g_pending_manager) {
         pending_result_manager_destroy(g_pending_manager, dqm_label);
         g_pending_manager = NULL;
     }
+    pthread_mutex_unlock(&g_pending_manager_lock);
 }
