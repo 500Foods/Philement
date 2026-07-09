@@ -97,9 +97,10 @@ tests/          Test framework
 - tests/test_37_cockroachdb_migrations.sh - CockroachDB migration performance test
 - tests/test_38_yugabytedb_migrations.sh - YugabyteDB migration performance test
 - tests/test_40_auth.sh - Authentication endpoints testing (JWT tokens across multiple database engines)
-- tests/test_41_exercise.sh - Memory exercise stress test (500 auth requests across 7 databases with leak detection)
+- tests/test_41_exercise_asan.sh - Memory exercise ASAN (500 concurrent auth requests across 6 DBs + LeakSanitizer; YugabyteDB disabled)
 - tests/test_42_oidc_rp.sh - OIDC Relying Party - complete authentication flow testing through Role Mapping
 - tests/test_43_scripting.sh - Scripting subsystem Orchestrator lifecycle across all 7 database engines in parallel (with/without DefaultDatabase, fail-fast)
+- tests/test_44_exercise_native.sh - Memory exercise native RSS (5000 concurrent auth requests across 6 DBs; port 5444; suite-parallel with test 41)
 - tests/test_50_conduit_query.sh - Single public query endpoint testing
 - tests/test_51_conduit_queries.sh - Conduit multiple queries endpoint testing
 - tests/test_52_conduit_auth_query.sh - Authenticated single query endpoint

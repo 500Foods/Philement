@@ -51,7 +51,7 @@ Uses `hydrogen_test_11_leaks.json` with:
 - Minimal subsystems to reduce noise
 - No databases (pure infrastructure test)
 
-This differs from `test_41_exercise.sh` which tests database-heavy paths.
+This differs from `test_41_exercise_asan.sh` / `test_44_exercise_native.sh` which test database-heavy paths.
 
 ## Test Flow
 
@@ -142,5 +142,6 @@ This test runs as part of the full test suite:
 
 ## Related Documentation
 
-- [test_41_exercise.md](/docs/H/tests/test_41_exercise.md) - Database-heavy stress test with RSS leak detection
+- [test_41_exercise.md](/docs/H/tests/test_41_exercise.md) - Database-heavy ASAN/LSAN exercise
+- [test_44_exercise_native.md](/docs/H/tests/test_44_exercise_native.md) - Database-heavy native RSS exercise
 - [lib/framework.md](/docs/H/tests/framework.md) - Test framework utilities
