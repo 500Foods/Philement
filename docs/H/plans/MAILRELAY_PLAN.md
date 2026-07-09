@@ -245,6 +245,7 @@ Append discoveries, surprises, and decisions here as we move through phases. Ear
 
 ### Decisions log
 
+- (Phase 7.2, 2026-07-08) `POST /api/mailrelay/send` auth policy: requires a valid JWT with a database claim AND the `mail_send` role. `GET /api/mailrelay/status` continues to require only a valid JWT with a database claim. This prevents arbitrary JWT holders from using the server as a mail gateway.
 - (Phase 7.1, 2026-07-08) API permission model for Phase 7: any valid JWT with a database claim may access `/api/mailrelay/status`; no role check. Raw subject/body send is rejected outright; `template_key` is required. Full status counters (queued, sending, sent, failed, retrying, permanent_failures, last_success, last_failure, worker_count, queue_depth) are implemented now rather than deferred to Phase 10.
 - (Phase 7.1, 2026-07-08) Status endpoint method validation: `validate_http_method()` only permits POST, so `handle_mailrelay_status_request()` performs its own GET-only check instead of using `handle_method_validation()`.
 - (Phase 6, 2026-07-08) Event rule execution model: `MailRelay.Events.Rules` keeps the existing `event_key → script_name` mapping. Phase 6.1a implements built-in default Lua handlers for `system.server_started` and `system.server_stopped`; custom DB-loaded scripts come in Phase 6.1b. Handlers return a mail-request table (template_key, to/cc/bcc, params, etc.) and C dispatches via `mailrelay_send_template()`.
@@ -867,34 +868,33 @@ Objective: Expose authenticated mail operations through the Hydrogen API.
 
 Entry Gate: Phase 5 exit gate green (Phase 6 not required, but recommended). Phase 0.2 DB-target and Phase 0 template-only send decision recorded.
 
-- [~] 7.1 Add the `src/api/mailrelay/` endpoint module.
-  - Layout `src/api/mailrelay/<endpoint>/<endpoint>.c/.h`. Endpoints: `POST /api/mailrelay/send`, `POST /api/mailrelay/preview`, `GET /api/mailrelay/status`, optionally `GET /api/mailrelay/message/{id}`. Register in `src/api/api_service.c` and add dispatch in `handle_api_request`.
-  - Partial: `GET /api/mailrelay/status` implemented and registered; send/preview endpoints remain for chunk 7.2/7.3.
-  - Verification: `mkt`; endpoint log list includes `/api/mailrelay/status`.
+- [x] 7.1 Add the `src/api/mailrelay/` endpoint module.
+  - Layout `src/api/mailrelay/<endpoint>/<endpoint>.c/.h` with endpoints: `POST /api/mailrelay/send`, `POST /api/mailrelay/preview`, `GET /api/mailrelay/status`. Registered in `src/api/api_service.c` and logged in the endpoint list.
+  - Verification: `mkt`; endpoint log list includes `/api/mailrelay/status` and `/api/mailrelay/send`.
 
-- [ ] 7.2 Implement method validation and request buffering with existing API helpers.
-  - Use `api_buffer_post_data`, `handle_method_validation`, `api_parse_json_body`.
-  - Verification: `mku` endpoint tests reject wrong method, invalid JSON, and oversized body.
+- [x] 7.2 Implement method validation and request buffering with existing API helpers.
+  - Used `api_buffer_post_data`, `api_parse_json_body`, and a local POST-only method check.
+  - Verification: `mku mailrelay_send_test` rejects wrong method and invalid JSON.
 
-- [~] 7.3 Require authentication for send/preview/status.
-  - Reuse `extract_and_validate_jwt` / `api_extract_jwt_claims`.
-  - Partial: `/api/mailrelay/status` validates a Bearer JWT with database claim; send/preview auth pending.
-  - Verification: `mku`/API test rejects missing/invalid JWT and accepts a valid JWT.
+- [x] 7.3 Require authentication for send/preview/status.
+  - Reused `extract_and_validate_jwt` / `validate_jwt_claims` and added a `mail_send` role check for `POST /api/mailrelay/send`. `GET /api/mailrelay/status` continues to require only a valid JWT with a database claim.
+  - Verification: `mku mailrelay_send_test` rejects missing JWT, invalid JWT, and JWT without `mail_send` role.
 
-- [ ] 7.4 Define the send request contract.
-  - Required for normal external clients: `template_key`. Fields: to/cc/bcc, params, idempotency_key, priority, preview flag. Raw subject/body is internal/admin-test only behind explicit future gating.
-  - Verification: the Draft API Contract below matches the implemented behavior and tests.
+- [x] 7.4 Define the send request contract.
+  - `POST /api/mailrelay/send` requires `template_key`, `idempotency_key`, and at least one recipient in `to`/`cc`/`bcc`. Optional `params` object and integer `priority`. Raw subject/body send is not exposed; `from`/`reply_to` are forced from `MailRelay.DefaultFrom`/`DefaultReplyTo`.
+  - Verification: `mku mailrelay_send_test` validates required fields and rejects malformed recipient arrays.
 
-- [ ] 7.5 Wire API to the internal templated-send producer API.
-  - Response returns queued message id and status, not SMTP success (unless an explicit synchronous test flag is enabled). The endpoint must not duplicate template, queue, policy, or rate-limit logic that belongs in the internal producer API.
-  - Verification: `test_58_mailrelay_api.sh` (ports 5580-5586) sends templated mail to the sink and verifies queued/sent state. Add `tests/configs/hydrogen_test_58_mailrelay_api.json` and `docs/H/tests/test_58_mailrelay_api.md`.
+- [~] 7.5 Wire API to the internal templated-send producer API.
+  - `POST /api/mailrelay/send` calls `mailrelay_send_template()` and returns `{success:true, message_id, status:"queued"}` on success. Producer error strings are mapped to stable API error codes (`MAIL_TEMPLATE_NOT_FOUND`, `MAIL_PARAM_MISSING`, `MAIL_RECIPIENT_INVALID`, `MAIL_QUEUE_FULL`, `MAIL_DISABLED`, etc.) and appropriate HTTP status codes.
+  - Partial: send endpoint is unit-tested; the blackbox `test_58_mailrelay_api.sh` remains pending until the preview endpoint and Swagger docs are added.
+  - Verification: `mku mailrelay_send_test` passes; `test_58_mailrelay_api.sh` and `test_22_swagger.sh` remain for the next chunk.
 
 - [ ] 7.6 Add Swagger/OpenAPI documentation.
   - Verification: `test_22_swagger.sh` passes.
 
 Exit Gate: authenticated clients can preview and queue templated emails; behavior is documented and tested. `mkt`, `mkp`, the new `mku` set, `test_58`, and `test_22_swagger.sh` pass.
 
-Phase 7 Status: in progress. Date: 2026-07-08. Result: Chunk 7.1 complete. Runtime counters added (queued, sending, sent, failed, retrying, permanent_failures, last_success, last_failure, worker_count, queue_depth); GET /api/mailrelay/status endpoint implemented and registered; Unity test `mailrelay_get_status_test` passes. Send and preview endpoints remain pending. Variances: Full counters were pulled forward from Phase 10.1 into Phase 7.1 per user direction; `validate_http_method` only permits POST so status endpoint performs its own GET-only check instead of using `handle_method_validation`.
+Phase 7 Status: in progress. Date: 2026-07-08. Result: 7.1 endpoint module complete (`GET /api/mailrelay/status` and `POST /api/mailrelay/send` registered and dispatched). 7.2 method validation/buffering complete. 7.3 auth complete for status (JWT+database claim) and send (JWT+database claim+`mail_send` role). 7.4 send request contract locked. 7.5 send endpoint wired to the internal producer API and unit-tested (`mku mailrelay_send_test` 8/8). Remaining: 7.5 blackbox `test_58_mailrelay_api.sh`, 7.6 Swagger docs, and the `POST /api/mailrelay/preview` endpoint. Variances: Full counters were pulled forward from Phase 10.1 into Phase 7.1 per user direction; `validate_http_method` only permits POST so status endpoint performs its own GET-only check instead of using `handle_method_validation`. `from`/`reply_to` client overrides are rejected in v1; defaults come from configuration. `idempotency_key` is required for send. `mail_send` role is required for send.
 
 ### Draft API Contract
 

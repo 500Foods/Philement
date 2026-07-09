@@ -181,6 +181,9 @@ declare -a ENV_WHITELIST=(
     "SCRIPTING_FAIL_MARKERS" "SCRIPTING_TEST_CONFIGS" "TICK_SETTLE_SECONDS"
     # First found in tests/test_51_conduit.sh
     "CONDUIT_CONFIG_FILE" "CONDUIT_DESCRIPTION" "CONDUIT_ENGINE_NAME" "CONDUIT_LOG_SUFFIX"
+    # First found in tests/test_57_mailrelay_outbound.sh
+    "CONFIG_PLAIN" "CONFIG_TLS" "MAILRELAY_MAILVAL_CERT" "MAILVAL_BIN" "MAILVAL_CERT" "MAILVAL_DIR" "MAILVAL_KEY"
+    "PLAINTEXT_PORT" "TLS_PORT"
     # First found in tests/test_60_performance.sh
     "PERF_CONFIG_FILE" "PERF_DESCRIPTION" "PERF_ITERATIONS" "PERF_LOG_SUFFIX"
     # First found in tests/test_91_cppcheck.sh
@@ -239,6 +242,8 @@ declare -a ENV_WHITELIST=(
     "ARTIFACTS_DIR" "XTERMJS_DIR" "XTERMJS_VERSION_FILE" "XTERM_ATTACH_VERSION" "XTERM_FIT_VERSION" "XTERM_JS_VERSION" 
     # First found in extras/hm_browser.sh
     "DEFAULT_CONFIG" "DEFAULT_OUTPUT" "OUTPUT_DIR"
+    # first found in extras/mailval/gen_sert.sh
+    "CERT" "HERE" "KEY" 
 
 )
 
