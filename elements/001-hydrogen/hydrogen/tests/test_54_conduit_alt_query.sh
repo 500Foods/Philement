@@ -134,16 +134,16 @@ test_conduit_alt_single_query() {
             # Even with JWT, public queries should work (and private queries too)
             local query_ref
             if [[ $(( source_idx % 2 )) -eq 0 ]]; then
-                query_ref=30  # Private query: Get Lookups List (requires auth)
+                query_ref=30  # Public TYPE_PUBLIC query: Get Lookups List
             else
-                query_ref=53  # Public query: Get Themes (works with or without auth)
+                query_ref=53  # Public query: Get Themes
             fi
             
             local query_type_desc
             if [[ ${query_ref} -eq 30 ]]; then
-                query_type_desc="Private"
+                query_type_desc="Lookups"
             else
-                query_type_desc="Public"
+                query_type_desc="Themes"
             fi
             local test_desc="${source_db}→${target_db} Cross-DB ${query_type_desc} Query (ref:${query_ref})"
             

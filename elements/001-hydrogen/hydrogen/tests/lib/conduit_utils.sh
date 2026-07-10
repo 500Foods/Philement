@@ -12,6 +12,7 @@
 # test_conduit_multiple_queries_endpoint()
 
 # CHANGELOG
+# 1.7.1 - 2026-07-09 - QueryRef #30 is TYPE_PUBLIC (acuranzo_1121); keep #45 as non-public auth-only sample
 # 1.7.0 - 2026-06-20 - Switched run_conduit_server() readiness to the canonical "READY FOR REQUESTS" signal
 #                    - Replaced hardcoded expected_databases=7 + per-engine migration-string polling +
 #                      fixed sleep with a single grep for "READY FOR REQUESTS" (emitted once all DBs are ready)
@@ -77,15 +78,16 @@ DATABASE_NAMES=(
 # Format: "query_ref:description:requires_auth:params_json"
 declare -A PUBLIC_QUERY_REFS
 PUBLIC_QUERY_REFS=(
+    ["30"]="Get Lookups List:false:{}"
     ["53"]="Get Themes:false:{}"
     ["54"]="Get Icons:false:{}"
     ["55"]="Get Number Range:false:{\"INTEGER\":{\"START\":500,\"FINISH\":600}}"
 )
 
+# Auth-only system SQL (query_type_a28 != 10). Public /query must reject these.
 declare -A NON_PUBLIC_QUERY_REFS
 NON_PUBLIC_QUERY_REFS=(
-    ["30"]="Get Lookups List:true"
-    ["45"]="Get Lookup:true"
+    ["45"]="Get Version History:true"
 )
 
 # Protected Cap query references for conduit cap_query testing

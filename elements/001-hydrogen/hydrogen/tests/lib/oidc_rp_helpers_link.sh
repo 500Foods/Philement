@@ -32,6 +32,13 @@
 #   - test_oidc_link_provision_only_blocked: domain not on allow-list → provision_disallowed_email
 #
 # CHANGELOG
+# 1.4.2 - 2026-07-09 - Fix _oidc_sqlite_exec: pass .timeout via -cmd so stdin SQL actually runs
+#                      (positional SQL args replace stdin and left seed/unseed as no-ops).
+# 1.4.1 - 2026-07-09 - Suppress PRAGMA busy_timeout result rows (sqlite prints "5000" to stdout);
+#                      use .timeout for read verify so COUNT is a single integer.
+# 1.4.0 - 2026-07-09 - Shared-demo-DB contention: sqlite3 writes use busy_timeout + retries;
+#                      seed_email_contact verifies the row exists after insert (fixes suite-flake
+#                      when Hydrogen holds a write lock during Phase 19 seed).
 # 1.3.0 - 2026-06-20 - Parallel-safety fix for intermittent failures under the shared demo DB:
 #                      added delete_provisioned_account (delete by linker-reported user_id, not MAX),
 #                      added unseed_email_contact_everywhere and used it to scrub orphaned mock-email
@@ -43,6 +50,42 @@
 # ---------------------------------------------------------------------------
 # SQLite helpers
 # ---------------------------------------------------------------------------
+
+# Run SQL against the shared demo fixture with busy_timeout + retries.
+# Live Hydrogen instances (this test + suite siblings) hold write locks on
+# hydrodemo.sqlite; bare sqlite3 then fails with SQLITE_BUSY and callers
+# treat any non-zero exit as a hard seed failure.
+#
+# Args:
+#   $1  sqlite_db  path to the SQLite database file
+#   $2  sql        SQL text (may be multi-statement)
+# Returns 0 on success, 1 after all retries fail.
+_oidc_sqlite_exec() {
+    local sqlite_db="$1"
+    local sql="$2"
+    local attempt=1
+    local max_attempts=8
+    local rc=1
+
+    if ! command -v sqlite3 >/dev/null 2>&1; then
+        return 1
+    fi
+
+    while [[ ${attempt} -le ${max_attempts} ]]; do
+        # -cmd runs before stdin SQL. Do not pass SQL as a positional arg: that
+        # replaces stdin and would make the real statements a no-op.
+        # .timeout avoids PRAGMA busy_timeout's "5000" result row on stdout.
+        if printf '%s\n' "${sql}" \
+            | sqlite3 -batch -cmd ".timeout 5000" "${sqlite_db}" >/dev/null 2>&1; then
+            return 0
+        fi
+        rc=$?
+        # Backoff: 0.05s, 0.1s, 0.15s, ...
+        sleep "0.$(( attempt * 5 ))" 2>/dev/null || sleep 0.1
+        attempt=$(( attempt + 1 ))
+    done
+    return "${rc}"
+}
 
 # Insert a row into account_oidc_identities using the demo SQLite fixture.
 # Args:
@@ -66,7 +109,7 @@ seed_oidc_identity() {
     # inline with the same columns. CREATE TABLE IF NOT EXISTS is a
     # no-op when the table already exists, so this is safe to run
     # against any version of the fixture.
-    sqlite3 2> /dev/null "${sqlite_db}" <<'ENSURE_TABLE'
+    _oidc_sqlite_exec "${sqlite_db}" "
 CREATE TABLE IF NOT EXISTS account_oidc_identities (
     identity_id   INTEGER PRIMARY KEY,
     account_id    INTEGER NOT NULL,
@@ -85,7 +128,7 @@ CREATE TABLE IF NOT EXISTS account_oidc_identities (
 );
 CREATE INDEX IF NOT EXISTS account_oidc_identities_idx_account
     ON account_oidc_identities(account_id);
-ENSURE_TABLE
+" || return 1
 
     # Ensure QueryRef #080 (lookup by issuer+subject) and #084 (touch)
     # exist in the queries table. The demo SQLite fixture was built before
@@ -100,7 +143,7 @@ ENSURE_TABLE
     #   query_dialect_a30 = 2 (SQLite — matches the demo DB engine)
     #   query_queue_a58  = 1  (medium/slow queue — same as other auth queries)
     #   query_timeout    = 5000 (5 s — same as existing auth queries)
-    sqlite3 2> /dev/null "${sqlite_db}" <<'ENSURE_QUERYREFS'
+    _oidc_sqlite_exec "${sqlite_db}" "
 INSERT OR IGNORE INTO queries (
     query_id, query_ref,
     query_status_a27, query_type_a28, query_dialect_a30,
@@ -134,9 +177,9 @@ SELECT
     '{}',
     datetime('now'), datetime('now', '+10 years'), 1, datetime('now'), 1, datetime('now')
 WHERE NOT EXISTS (SELECT 1 FROM queries WHERE query_ref = 84 AND query_type_a28 = 1);
-ENSURE_QUERYREFS
+" || return 1
 
-    sqlite3 2> /dev/null "${sqlite_db}" <<EOF
+    _oidc_sqlite_exec "${sqlite_db}" "
 INSERT OR REPLACE INTO account_oidc_identities (
     identity_id,
     account_id,
@@ -167,7 +210,7 @@ SELECT
     1,
     1
 FROM account_oidc_identities;
-EOF
+"
 }
 
 # Delete all identity rows matching (issuer, subject) from the demo DB.
@@ -184,7 +227,7 @@ unseed_oidc_identity() {
         return 1
     fi
 
-    sqlite3 2> /dev/null "${sqlite_db}" \
+    _oidc_sqlite_exec "${sqlite_db}" \
         "DELETE FROM account_oidc_identities WHERE issuer='${issuer}' AND subject='${subject}';"
 }
 
@@ -200,6 +243,7 @@ seed_email_contact() {
     local sqlite_db="$1"
     local account_id="$2"
     local email="$3"
+    local count
 
     if ! command -v sqlite3 >/dev/null 2>&1; then
         return 1
@@ -208,7 +252,8 @@ seed_email_contact() {
     # contact_type_a18 = 0 means email (per QueryRef #082 / #011 contract).
     # contact_seq=0, authenticate_a19=1, status_a20=1 match existing email rows.
     # INSERT OR IGNORE: idempotent; won't fail if the row already exists.
-    sqlite3 2> /dev/null "${sqlite_db}" <<EOF
+    # Use busy_timeout + retries: suite-parallel Hydrogen holds this DB open.
+    if ! _oidc_sqlite_exec "${sqlite_db}" "
 INSERT OR IGNORE INTO account_contacts (
     contact_id,
     account_id,
@@ -245,7 +290,20 @@ WHERE NOT EXISTS (
       AND contact = '${email}'
       AND contact_type_a18 = 0
 );
-EOF
+"; then
+        return 1
+    fi
+
+    # Verify the row is visible (guards against silent SQLITE_BUSY with exit 0
+    # edge cases and ensures the linker will see the seed).
+    # -cmd .timeout: wait on locks without printing PRAGMA result rows.
+    count=$(sqlite3 -batch -cmd ".timeout 5000" "${sqlite_db}" \
+        "SELECT COUNT(*) FROM account_contacts WHERE account_id=${account_id} AND contact='${email}' AND contact_type_a18=0;" \
+        2>/dev/null | tr -d '[:space:]' || true)
+    if [[ -z "${count}" || "${count}" -lt 1 ]]; then
+        return 1
+    fi
+    return 0
 }
 
 # Delete the seeded email contact row for the given account/email.
@@ -262,7 +320,7 @@ unseed_email_contact() {
         return 1
     fi
 
-    sqlite3 2> /dev/null "${sqlite_db}" \
+    _oidc_sqlite_exec "${sqlite_db}" \
         "DELETE FROM account_contacts WHERE account_id=${account_id} AND contact='${email}' AND contact_type_a18=0;"
 }
 
@@ -283,7 +341,7 @@ unseed_email_contact_everywhere() {
         return 1
     fi
 
-    sqlite3 2> /dev/null "${sqlite_db}" \
+    _oidc_sqlite_exec "${sqlite_db}" \
         "DELETE FROM account_contacts WHERE LOWER(contact)=LOWER('${email}') AND contact_type_a18=0;"
 }
 
@@ -315,7 +373,7 @@ seed_email_queryrefs() {
         return 1
     fi
 
-    sqlite3 2> /dev/null "${sqlite_db}" <<'ENSURE_EMAIL_QUERYREFS'
+    _oidc_sqlite_exec "${sqlite_db}" "
 INSERT OR IGNORE INTO queries (
     query_id, query_ref,
     query_status_a27, query_type_a28, query_dialect_a30,
@@ -349,7 +407,7 @@ SELECT
     '{}',
     datetime('now'), datetime('now', '+10 years'), 1, datetime('now'), 1, datetime('now')
 WHERE NOT EXISTS (SELECT 1 FROM queries WHERE query_ref = 82 AND query_type_a28 = 1);
-ENSURE_EMAIL_QUERYREFS
+"
 }
 
 # Ensure QueryRef #083 (provision new accounts row) is registered in the
@@ -936,9 +994,23 @@ test_oidc_link_match_email_only_ambiguous() {
     # Ensure no prior identity link.
     unseed_oidc_identity "${sqlite_db}" "${issuer}" "${subject}" || true
 
-    # Seed the email for both account_id=1 and account_id=2.
-    seed_email_contact "${sqlite_db}" 1 "${email}" || true
-    seed_ambiguous_email_contact "${sqlite_db}" "${email}" || true
+    # Scrub first so we start from a known-empty contact set, then seed both.
+    unseed_email_contact_everywhere "${sqlite_db}" "${email}" || true
+
+    # Seed the email for both account_id=1 and account_id=2 (must both succeed).
+    if ! seed_email_contact "${sqlite_db}" 1 "${email}"; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 \
+            "Failed to seed email contact for account 1 into ${sqlite_db}"
+        EXIT_CODE=1
+        return
+    fi
+    if ! seed_ambiguous_email_contact "${sqlite_db}" "${email}"; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 \
+            "Failed to seed email contact for account 2 into ${sqlite_db}"
+        unseed_email_contact "${sqlite_db}" 1 "${email}" || true
+        EXIT_CODE=1
+        return
+    fi
 
     # Ensure QueryRefs are present.
     seed_email_queryrefs "${sqlite_db}" || true
@@ -947,8 +1019,7 @@ test_oidc_link_match_email_only_ambiguous() {
     _drive_oidc_chain "${base_url}" "${headers_file}"
 
     # Cleanup.
-    unseed_email_contact "${sqlite_db}" 1 "${email}" || true
-    unseed_ambiguous_email_contact "${sqlite_db}" "${email}" || true
+    unseed_email_contact_everywhere "${sqlite_db}" "${email}" || true
 
     if [[ "${OIDC_CHAIN_ERROR}" != "email_ambiguous" ]]; then
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 \

@@ -10,6 +10,7 @@
 # run_conduit_test_unified()
 
 # CHANGELOG
+# 1.8.1 - 2026-07-09 - QueryRef #30 (Get Lookups List) is TYPE_PUBLIC in acuranzo_1121; expect success on public /query
 # 1.8.0 - 2026-01-24 - Added Conduit status endpoint testing after database startup confirmation
 #                    - Verifies /api/conduit/status reports same databases as ready that were confirmed via log monitoring
 #                    - Status test inserted before individual database tests as additional test block
@@ -38,7 +39,7 @@ TEST_NAME="Conduit Query"
 TEST_ABBR="CQ1"
 TEST_NUMBER="50"
 TEST_COUNTER=0
-TEST_VERSION="1.8.0"
+TEST_VERSION="1.8.1"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -340,7 +341,8 @@ EOF
             tests_passed=$(( tests_passed + 1 ))
         fi
 
-        # Test auth-required query #30 on public endpoint - should fail
+        # Query #30 (Get Lookups List) is TYPE_PUBLIC (query_type_a28=10) via
+        # acuranzo_1121 — public /query must accept it (not treat as auth-only).
         local payload30_public
         payload30_public=$(cat <<EOF
 {
@@ -354,7 +356,7 @@ EOF
         total_tests=$(( total_tests + 1 ))
 
         # shellcheck disable=SC2310 # We want to continue even if the test fails
-        if validate_conduit_request "${base_url}/api/conduit/query" "POST" "${payload30_public}" "200" "${response_file30_public}" "" "${db_engine} Query #30 (public)" "\"fail\""; then
+        if validate_conduit_request "${base_url}/api/conduit/query" "POST" "${payload30_public}" "200" "${response_file30_public}" "" "${db_engine} Query #30 (public)" "true"; then
             tests_passed=$(( tests_passed + 1 ))
         fi
 
