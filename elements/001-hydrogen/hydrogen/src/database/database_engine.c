@@ -359,7 +359,7 @@ bool database_engine_execute(DatabaseHandle* connection, QueryRequest* request, 
             if (attempt > 1) {
                 log_this(designator,
                          "database_engine_execute: query_id=%s succeeded on attempt %d/%d",
-                         LOG_LEVEL_STATE, 2,
+                         LOG_LEVEL_STATE, 3,
                          request->query_id ? request->query_id : "?",
                          attempt, total_attempts);
             }
@@ -400,7 +400,7 @@ bool database_engine_execute(DatabaseHandle* connection, QueryRequest* request, 
             }
             log_this(designator,
                      "database_engine_execute: query_id=%s attempt %d/%d failed (%s): %s - retrying in %ds",
-                     LOG_LEVEL_ALERT, 4,
+                     LOG_LEVEL_ALERT, 6,
                      request->query_id ? request->query_id : "?",
                      attempt, total_attempts, err_class_name, err_msg, backoff_seconds);
             sleep((unsigned int)backoff_seconds);
@@ -410,7 +410,7 @@ bool database_engine_execute(DatabaseHandle* connection, QueryRequest* request, 
         if (attempt < total_attempts) {
             log_this(designator,
                      "database_engine_execute: query_id=%s attempt %d/%d failed (%s, not retryable): %s",
-                     LOG_LEVEL_DEBUG, 4,
+                     LOG_LEVEL_DEBUG, 5,
                      request->query_id ? request->query_id : "?",
                      attempt, total_attempts, err_class_name, err_msg);
         } else {
