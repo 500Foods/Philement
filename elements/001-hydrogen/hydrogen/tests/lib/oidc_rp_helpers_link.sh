@@ -11,8 +11,7 @@
 #   Phase 19: match_email_only (QueryRefs #080, #082, #081, #084)
 #   Phase 20: provision_only   (QueryRefs #080, #083, #081, #084)
 #
-# Requires the SQLite-backed Hydrogen instance plus the demo Acuranzo
-# database at tests/artifacts/database/sqlite/hydrodemo.sqlite.
+# Requires the SQLite-backed Hydrogen instance plus the demo Acuranzo database at tests/artifacts/database/sqlite/hydrodemo.sqlite.
 #
 # Provides:
 #   - seed_oidc_identity:       insert a row into account_oidc_identities
@@ -32,17 +31,13 @@
 #   - test_oidc_link_provision_only_blocked: domain not on allow-list → provision_disallowed_email
 #
 # CHANGELOG
-# 1.4.2 - 2026-07-09 - Fix _oidc_sqlite_exec: pass .timeout via -cmd so stdin SQL actually runs
-#                      (positional SQL args replace stdin and left seed/unseed as no-ops).
-# 1.4.1 - 2026-07-09 - Suppress PRAGMA busy_timeout result rows (sqlite prints "5000" to stdout);
-#                      use .timeout for read verify so COUNT is a single integer.
-# 1.4.0 - 2026-07-09 - Shared-demo-DB contention: sqlite3 writes use busy_timeout + retries;
-#                      seed_email_contact verifies the row exists after insert (fixes suite-flake
+# 1.4.2 - 2026-07-09 - Fix _oidc_sqlite_exec: pass .timeout via -cmd so stdin SQL actually runs (positional SQL args replace stdin and left seed/unseed as no-ops).
+# 1.4.1 - 2026-07-09 - Suppress PRAGMA busy_timeout result rows (sqlite prints "5000" to stdout); use .timeout for read verify so COUNT is a single integer.
+# 1.4.0 - 2026-07-09 - Shared-demo-DB contention: sqlite3 writes use busy_timeout + retries; seed_email_contact verifies the row exists after insert (fixes suite-flake
 #                      when Hydrogen holds a write lock during Phase 19 seed).
 # 1.3.0 - 2026-06-20 - Parallel-safety fix for intermittent failures under the shared demo DB:
 #                      added delete_provisioned_account (delete by linker-reported user_id, not MAX),
-#                      added unseed_email_contact_everywhere and used it to scrub orphaned mock-email
-#                      contacts in the match_email_only hit/miss paths.
+#                      added unseed_email_contact_everywhere and used it to scrub orphaned mock-email contacts in the match_email_only hit/miss paths.
 # 1.2.0 - 2026-05-09 - Phase 20: provision_only helpers + sub-tests.
 # 1.1.0 - 2026-05-09 - Phase 19: match_email_only helpers.
 # 1.0.0 - 2026-05-09 - Initial creation for Phase 18 account linker.
@@ -51,10 +46,8 @@
 # SQLite helpers
 # ---------------------------------------------------------------------------
 
-# Run SQL against the shared demo fixture with busy_timeout + retries.
-# Live Hydrogen instances (this test + suite siblings) hold write locks on
-# hydrodemo.sqlite; bare sqlite3 then fails with SQLITE_BUSY and callers
-# treat any non-zero exit as a hard seed failure.
+# Run SQL against the shared demo fixture with busy_timeout + retries. Live Hydrogen instances (this test + suite siblings) hold write locks on
+# hydrodemo.sqlite; bare sqlite3 then fails with SQLITE_BUSY and callers treat any non-zero exit as a hard seed failure.
 #
 # Args:
 #   $1  sqlite_db  path to the SQLite database file
@@ -66,11 +59,9 @@ _oidc_sqlite_exec() {
     local attempt=1
     local max_attempts=8
     local rc=1
-
     if ! command -v sqlite3 >/dev/null 2>&1; then
         return 1
     fi
-
     while [[ ${attempt} -le ${max_attempts} ]]; do
         # -cmd runs before stdin SQL. Do not pass SQL as a positional arg: that
         # replaces stdin and would make the real statements a no-op.
@@ -98,17 +89,12 @@ seed_oidc_identity() {
     local account_id="$2"
     local issuer="$3"
     local subject="$4"
-
     if ! command -v sqlite3 >/dev/null 2>&1; then
         return 1
     fi
-
-    # Ensure the table exists before inserting. The production schema
-    # is created by acuranzo_1189.lua; for the test SQLite fixture
-    # (which may not have had all migrations applied) we create it
-    # inline with the same columns. CREATE TABLE IF NOT EXISTS is a
-    # no-op when the table already exists, so this is safe to run
-    # against any version of the fixture.
+    # Ensure the table exists before inserting. The production schema is created by acuranzo_1189.lua; for the test SQLite fixture
+    # (which may not have had all migrations applied) we create it inline with the same columns. CREATE TABLE IF NOT EXISTS is a
+    # no-op when the table already exists, so this is safe to run against any version of the fixture.
     _oidc_sqlite_exec "${sqlite_db}" "
 CREATE TABLE IF NOT EXISTS account_oidc_identities (
     identity_id   INTEGER PRIMARY KEY,
@@ -130,12 +116,9 @@ CREATE INDEX IF NOT EXISTS account_oidc_identities_idx_account
     ON account_oidc_identities(account_id);
 " || return 1
 
-    # Ensure QueryRef #080 (lookup by issuer+subject) and #084 (touch)
-    # exist in the queries table. The demo SQLite fixture was built before
-    # Phase 17 migrations; Phase 18's linker needs these two QueryRefs
-    # registered so execute_auth_query(80, ...) and execute_auth_query(84, ...)
-    # succeed at runtime. We insert them with INSERT OR IGNORE so this
-    # is idempotent whether or not AutoMigration has already applied them.
+    # Ensure QueryRef #080 (lookup by issuer+subject) and #084 (touch) exist in the queries table. The demo SQLite fixture was built before
+    # Phase 17 migrations; Phase 18's linker needs these two QueryRefs registered so execute_auth_query(80, ...) and execute_auth_query(84, ...)
+    # succeed at runtime. We insert them with INSERT OR IGNORE so this is idempotent whether or not AutoMigration has already applied them.
     #
     # Column semantics (from the queries schema):
     #   query_status_a27 = 1  (active)
@@ -232,9 +215,7 @@ unseed_oidc_identity() {
 }
 
 # Insert a mock email address into account_contacts for the given account_id.
-# The mock IdP sends email='mockuser@example.com'; seeding this contact lets
-# the match_email_only strategy resolve the email to the account.
-#
+# The mock IdP sends email='mockuser@example.com'; seeding this contact lets the match_email_only strategy resolve the email to the account.
 # Args:
 #   $1  sqlite_db  path to the SQLite database file
 #   $2  account_id integer
@@ -249,10 +230,8 @@ seed_email_contact() {
         return 1
     fi
 
-    # contact_type_a18 = 0 means email (per QueryRef #082 / #011 contract).
-    # contact_seq=0, authenticate_a19=1, status_a20=1 match existing email rows.
-    # INSERT OR IGNORE: idempotent; won't fail if the row already exists.
-    # Use busy_timeout + retries: suite-parallel Hydrogen holds this DB open.
+    # contact_type_a18 = 0 means email (per QueryRef #082 / #011 contract). contact_seq=0, authenticate_a19=1, status_a20=1 match existing email rows.
+    # INSERT OR IGNORE: idempotent; won't fail if the row already exists. Use busy_timeout + retries: suite-parallel Hydrogen holds this DB open.
     if ! _oidc_sqlite_exec "${sqlite_db}" "
 INSERT OR IGNORE INTO account_contacts (
     contact_id,
@@ -294,8 +273,7 @@ WHERE NOT EXISTS (
         return 1
     fi
 
-    # Verify the row is visible (guards against silent SQLITE_BUSY with exit 0
-    # edge cases and ensures the linker will see the seed).
+    # Verify the row is visible (guards against silent SQLITE_BUSY with exit 0 edge cases and ensures the linker will see the seed).
     # -cmd .timeout: wait on locks without printing PRAGMA result rows.
     count=$(sqlite3 -batch -cmd ".timeout 5000" "${sqlite_db}" \
         "SELECT COUNT(*) FROM account_contacts WHERE account_id=${account_id} AND contact='${email}' AND contact_type_a18=0;" \
@@ -324,12 +302,9 @@ unseed_email_contact() {
         "DELETE FROM account_contacts WHERE account_id=${account_id} AND contact='${email}' AND contact_type_a18=0;"
 }
 
-# Delete the mock email contact from EVERY account, regardless of which
-# account it is attached to. Used to scrub any orphaned contact left by a
-# crashed prior run (or by a provisioned account a sibling test/this test
-# failed to clean up). Without this, a single stray contact for the mock
-# email makes the #082 lookup return >1 row and turns the match_email_only
-# HIT path into a spurious email_ambiguous failure.
+# Delete the mock email contact from EVERY account, regardless of which account it is attached to. Used to scrub any orphaned contact left by a
+# crashed prior run (or by a provisioned account a sibling test/this test failed to clean up). Without this, a single stray contact for the mock
+# email makes the #082 lookup return >1 row and turns the match_email_only HIT path into a spurious email_ambiguous failure.
 # Args:
 #   $1  sqlite_db  path to the SQLite database file
 #   $2  email      string (case-insensitive match)
@@ -345,8 +320,7 @@ unseed_email_contact_everywhere() {
         "DELETE FROM account_contacts WHERE LOWER(contact)=LOWER('${email}') AND contact_type_a18=0;"
 }
 
-# Seed a second account with the same email to trigger email_ambiguous.
-# We use account_id=2 which exists in the demo DB as 'demouser'.
+# Seed a second account with the same email to trigger email_ambiguous. We use account_id=2 which exists in the demo DB as 'demouser'.
 seed_ambiguous_email_contact() {
     local sqlite_db="$1"
     local email="$2"
@@ -361,9 +335,7 @@ unseed_ambiguous_email_contact() {
     unseed_email_contact "${sqlite_db}" 2 "${email}"
 }
 
-# Ensure QueryRefs #081 and #082 are registered in the queries table.
-# Phase 19's match_email_only linker calls both; the demo fixture may not
-# have them if AutoMigration has not run.
+# Ensure QueryRefs #081 and #082 are registered in the queries table. Phase 19's match_email_only linker calls both; the demo fixture may not have them if AutoMigration has not run.
 # Args:
 #   $1  sqlite_db  path to the SQLite database file
 seed_email_queryrefs() {
@@ -410,22 +382,15 @@ WHERE NOT EXISTS (SELECT 1 FROM queries WHERE query_ref = 82 AND query_type_a28 
 "
 }
 
-# Ensure QueryRef #083 (provision new accounts row) is registered in the
-# queries table. Phase 20's provision_only linker calls #083 before #081.
-# The demo SQLite fixture was built before Phase 17 migrations, so Phase 20
-# tests need this seed to make the linker succeed.
+# Ensure QueryRef #083 (provision new accounts row) is registered in the queries table. Phase 20's provision_only linker calls #083 before #081.
+# The demo SQLite fixture was built before Phase 17 migrations, so Phase 20 tests need this seed to make the linker succeed.
 #
-# The query inserts a new row into accounts with password_hash=NULL,
-# status_a16=1 (active), iana_timezone_a17=1 (UTC), and reasonable defaults
-# for the validity window. It returns the new account_id from the
-# RETURNING clause, which the linker then passes to #081.
+# The query inserts a new row into accounts with password_hash=NULL, status_a16=1 (active), iana_timezone_a17=1 (UTC), and reasonable defaults
+# for the validity window. It returns the new account_id from the RETURNING clause, which the linker then passes to #081.
 #
-# This helper also relaxes the NOT NULL constraint on accounts.password_hash
-# in the demo SQLite fixture (Phase 16's migration normally does this, but
-# AutoMigration is disabled for these tests). The relaxation uses SQLite's
-# writable_schema PRAGMA to edit the stored CREATE TABLE statement in
-# place — no row data is touched. This is idempotent: running it twice is
-# a no-op once the column is nullable.
+# This helper also relaxes the NOT NULL constraint on accounts.password_hash in the demo SQLite fixture (Phase 16's migration normally does this, but
+# AutoMigration is disabled for these tests). The relaxation uses SQLite's writable_schema PRAGMA to edit the stored CREATE TABLE statement in
+# place — no row data is touched. This is idempotent: running it twice is a no-op once the column is nullable.
 #
 # Args:
 #   $1  sqlite_db  path to the SQLite database file
@@ -436,8 +401,7 @@ seed_provision_queryrefs() {
         return 1
     fi
 
-    # Check whether password_hash is currently NOT NULL; only then run
-    # the table recreation.
+    # Check whether password_hash is currently NOT NULL; only then run the table recreation.
     local password_notnull
     password_notnull=$(sqlite3 "${sqlite_db}" \
         "SELECT \"notnull\" FROM pragma_table_info('accounts') WHERE name='password_hash';" 2>/dev/null || echo "1")
@@ -504,8 +468,7 @@ WHERE NOT EXISTS (SELECT 1 FROM queries WHERE query_ref = 83 AND query_type_a28 
 ENSURE_PROVISION_QUERYREFS
 }
 
-# Capture the current MAX(account_id) so the test can detect a newly
-# provisioned account afterwards. Echoes the value to stdout.
+# Capture the current MAX(account_id) so the test can detect a newly provisioned account afterwards. Echoes the value to stdout.
 # Args:
 #   $1  sqlite_db
 get_max_account_id() {
@@ -519,9 +482,7 @@ get_max_account_id() {
     sqlite3 2> /dev/null "${sqlite_db}" "SELECT COALESCE(MAX(account_id), 0) FROM accounts;"
 }
 
-# Delete a provisioned accounts row plus any rows in account_oidc_identities
-# referencing it. Used as cleanup after Phase 20 sub-tests so the demo DB
-# is left in its original state.
+# Delete a provisioned accounts row plus any rows in account_oidc_identities referencing it. Used as cleanup after Phase 20 sub-tests so the demo DB is left in its original state.
 # Args:
 #   $1  sqlite_db
 #   $2  account_id  the account_id to remove
@@ -539,12 +500,9 @@ DELETE FROM accounts WHERE account_id = ${account_id};
 EOF
 }
 
-# Parallel-safe cleanup for a provisioned account. Deletes the EXACT
-# account_id the linker reported in the JWT envelope (.user_id), but only
-# when that id is newer than the pre-flight max — guarding against ever
-# deleting a pre-existing demo account (ids 1..before_max) if the linker
-# resolved to one instead of provisioning. This avoids the MAX(account_id)
-# race where a sibling test (40/41) inserting into the same shared demo DB
+# Parallel-safe cleanup for a provisioned account. Deletes the EXACT account_id the linker reported in the JWT envelope (.user_id), but only
+# when that id is newer than the pre-flight max — guarding against ever deleting a pre-existing demo account (ids 1..before_max) if the linker
+# resolved to one instead of provisioning. This avoids the MAX(account_id) race where a sibling test (40/41) inserting into the same shared demo DB
 # could otherwise misdirect the delete to the wrong row.
 # Args:
 #   $1  sqlite_db
@@ -559,8 +517,7 @@ delete_provisioned_account() {
         return 1
     fi
 
-    # Only delete genuinely-new rows. A non-numeric or pre-existing id is
-    # left untouched so we never clobber demo fixtures or a sibling test.
+    # Only delete genuinely-new rows. A non-numeric or pre-existing id is left untouched so we never clobber demo fixtures or a sibling test.
     if [[ ! "${account_id}" =~ ^[0-9]+$ ]] || [[ ! "${before_max}" =~ ^[0-9]+$ ]]; then
         return 0
     fi
@@ -575,10 +532,7 @@ delete_provisioned_account() {
 # Phase 18 sub-tests
 # ---------------------------------------------------------------------------
 
-# Sub-test: with a pre-seeded identity row, the match_sub_only strategy
-# resolves to an account and the full /start->callback->handoff chain
-# returns a valid JWT envelope.
-#
+# Sub-test: with a pre-seeded identity row, the match_sub_only strategy resolves to an account and the full /start->callback->handoff chain returns a valid JWT envelope.
 # Args:
 #   $1  base_url    Hydrogen base URL (the sub-config instance)
 #   $2  sqlite_db   path to the SQLite database
