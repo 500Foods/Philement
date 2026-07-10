@@ -53,7 +53,7 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2026-07-10 01:18:49 UTC
+Last updated at 2026-07-10 01:58:52 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
@@ -62,9 +62,9 @@ SVG                            206            405           6388         267091
 C                             1282          54869          52333         210080
 JavaScript                     276          29943          43649         181134
 Text                           285            387              0         114285
-Markdown                       706          29046            241          84946
+Markdown                       707          29148            241          85195
 Lua                            274           6618           4611          43905
-Bourne Shell                   136           6660          88742          32405
+Bourne Shell                   136           6656          88700          32405
 CSS                            123           2860           1611          14653
 C/C++ Header                   299           3506          12474          10265
 CMake                           22            197            356           3233
@@ -78,7 +78,7 @@ zsh                              2             31             42             97
 Delphi Form                      1              1              0             43
 Pascal                           2             11              2             31
 -------------------------------------------------------------------------------
-SUM:                          4111         135426         210821        2328806
+SUM:                          4112         135524         210779        2329055
 -------------------------------------------------------------------------------
 3129 Files were skipped (duplicate, binary, or without source code):
   svg: 866
