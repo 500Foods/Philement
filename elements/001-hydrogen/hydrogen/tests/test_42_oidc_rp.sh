@@ -29,6 +29,7 @@
 # (Helper functions live in tests/lib/oidc_rp_helpers.sh)
 
 # CHANGELOG
+# 2.2.1 - 2026-07-09 - Phase 19 seed flake: rely on oidc_rp_helpers_link busy_timeout/retry + verified seed_email_contact; ambiguous path scrubs then requires both seeds
 # 2.2.0 - 2026-06-20 - Speed-up: replace per-phase migration-wait loops (broken tail-offset against the per-instance-truncated shared log; timed out ~30s each, ~250s total) with wait_for_migration_ready keyed off the canonical "READY FOR REQUESTS" signal
 # 2.1.1 - 2026-06-20 - Fix intermittent failures under parallel execution (shared demo DB with Tests 40/41): provision cleanup/assertions now key off the linker-reported user_id instead of MAX(account_id); match_email_only paths scrub orphaned mock-email contacts
 # 2.1.0 - 2026-05-09 - Phase 22: role-mapping database/idp_realm_roles/merge sub-tests; mock emits realm_access.roles
@@ -51,7 +52,7 @@ TEST_NAME="OIDC Relying Party"
 TEST_ABBR="ORP"
 TEST_NUMBER="42"
 TEST_COUNTER=0
-TEST_VERSION="2.2.0"
+TEST_VERSION="2.2.1"
 
 # Phase 9: mock Keycloak port. Picked outside the typical Hydrogen
 # port range (5000s) and the test config's WebServer port (5242). If
@@ -77,18 +78,19 @@ CONFIG_PATH_ROLES_IDP="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_oidc_r
 CONFIG_PATH_ROLES_MERGE="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_oidc_rp_roles_merge.json"
 MOCK_KC_SCRIPT="${SCRIPT_DIR}/lib/mock_keycloak/server.js"
 
+# setup_test_environment pushd's to PROJECT_DIR; use SCRIPT_DIR (absolute) for sources.
 # shellcheck source=tests/lib/oidc_rp_helpers.sh # Phase 13 split for code-size cap
-source "$(dirname "${BASH_SOURCE[0]}")/lib/oidc_rp_helpers.sh"
+source "${SCRIPT_DIR}/lib/oidc_rp_helpers.sh"
 # shellcheck source=tests/lib/oidc_rp_helpers_callback.sh # Phase 14 callback helpers
-source "$(dirname "${BASH_SOURCE[0]}")/lib/oidc_rp_helpers_callback.sh"
+source "${SCRIPT_DIR}/lib/oidc_rp_helpers_callback.sh"
 # shellcheck source=tests/lib/oidc_rp_helpers_link.sh # Phase 18 account-linker helpers
-source "$(dirname "${BASH_SOURCE[0]}")/lib/oidc_rp_helpers_link.sh"
+source "${SCRIPT_DIR}/lib/oidc_rp_helpers_link.sh"
 # shellcheck source=tests/lib/oidc_rp_helpers_provision.sh # Phase 20 provision_only sub-tests
-source "$(dirname "${BASH_SOURCE[0]}")/lib/oidc_rp_helpers_provision.sh"
+source "${SCRIPT_DIR}/lib/oidc_rp_helpers_provision.sh"
 # shellcheck source=tests/lib/oidc_rp_helpers_default.sh # Phase 21 match_email_then_provision sub-tests
-source "$(dirname "${BASH_SOURCE[0]}")/lib/oidc_rp_helpers_default.sh"
+source "${SCRIPT_DIR}/lib/oidc_rp_helpers_default.sh"
 # shellcheck source=tests/lib/oidc_rp_helpers_roles.sh # Phase 22 role-mapping sub-tests
-source "$(dirname "${BASH_SOURCE[0]}")/lib/oidc_rp_helpers_roles.sh"
+source "${SCRIPT_DIR}/lib/oidc_rp_helpers_roles.sh"
 
 # Trap to make sure we do not leak a node process if the test script
 # fails between mock start and stop. The functions live in

@@ -23,7 +23,7 @@ This script validates the complete OIDC authentication lifecycle including:
 - **Test Name**: OIDC Relying Party
 - **Test Abbreviation**: ORP
 - **Test Number**: 42
-- **Version**: 2.1.0
+- **Version**: 2.2.1
 
 ## Test Architecture
 

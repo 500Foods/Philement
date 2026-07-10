@@ -19,7 +19,7 @@ This test validates:
 - **Test Name**: Conduit Query
 - **Test Abbreviation**: CQ1
 - **Test Number**: 50
-- **Version**: 1.8.0
+- **Version**: 1.8.1
 
 ## Key Features
 
@@ -43,8 +43,8 @@ Tests all 9 supported parameter types via QueryRef #56, #57:
 
 | QueryRef | Description | Auth Required |
 |----------|-------------|---------------|
-| 30 | Get Lookups List | No |
-| 45 | Get Lookup | No |
+| 30 | Get Lookups List (`TYPE_PUBLIC`) | No |
+| 45 | Get Version History (system SQL; used as non-public negative sample elsewhere) | Yes |
 | 53 | Get Themes | No |
 | 54 | Get Icons | No |
 | 55 | Get Number Range | No |
