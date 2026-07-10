@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 
 # Coverage Percentage Reconciliation
-# Compares Results (coverage.sh) vs Coverage (coverage_table.sh) percentages
-# and advises on DISCREPANCY_UNITY / DISCREPANCY_COVERAGE updates.
+# Compares Results (coverage.sh global counts) vs Coverage table (per-file sums)
+# using underlying line counts, not reverse-engineered percentages.
 
 # CHANGELOG
+# 1.2.0 - 2026-07-10 - Count-based reconciliation; show covered/instrumented for both sides
 # 1.1.1 - 2026-07-09 - Shellcheck clean: justified directives, avoid SC2312 pipelines
 # 1.1.0 - 2026-07-09 - Robust ANSI-safe percent extraction; fixed target_pct /100 bug
 # 1.0.0 - 2026-07-09 - Extracted from test_00_all.sh
@@ -13,35 +14,105 @@
 [[ -n "${COVERAGE_RECONCILE_GUARD:-}" ]] && return 0
 export COVERAGE_RECONCILE_GUARD="true"
 
-# Extract "Unity% Blackbox% Combined%" from a table title line (ANSI-safe).
-# Usage: _extract_coverage_triplet <file> <title_substring>
-_extract_coverage_triplet() {
-    local file="$1"
-    local title="$2"
-    local raw_line stripped_line grepcmd sedcmd
-    # shellcheck disable=SC2154 # GREP assigned by framework.sh
-    grepcmd="${GREP}"
-    # shellcheck disable=SC2154 # SED assigned by framework.sh
-    sedcmd="${SED}"
+# Format covered/total as X.XXX% (matches coverage.sh / coverage_table.sh)
+# Usage: _coverage_pct <covered> <total>
+_coverage_pct() {
+    local covered="$1"
+    local total="$2"
+    local awkcmd="${3:-awk}"
+    if [[ "${total}" -le 0 ]]; then
+        echo "0.000"
+        return 0
+    fi
+    # shellcheck disable=SC2016 # AWK program uses single quotes intentionally
+    "${awkcmd}" -v c="${covered}" -v t="${total}" 'BEGIN {printf "%.3f", (c / t) * 100}'
+}
 
-    raw_line=$("${grepcmd}" "${title}" "${file}" || true)
-    raw_line=$(echo "${raw_line}" | head -1 || true)
-    if [[ -z "${raw_line}" ]]; then
-        echo ""
+# Sum coverage_data.json totals: covered_u,inst_u,covered_bb,inst_bb,covered_comb,inst_comb
+# Usage: _table_coverage_totals <coverage_data.json>
+_table_coverage_totals() {
+    local json_file="$1"
+    if [[ ! -f "${json_file}" ]]; then
+        echo "0,0,0,0,0,0"
+        return 0
+    fi
+    # Prefer python for reliable JSON; fall back to zeros
+    python3 - "${json_file}" <<'PY' 2>/dev/null || echo "0,0,0,0,0,0"
+import json, sys
+path = sys.argv[1]
+with open(path, encoding="utf-8") as fh:
+    data = json.load(fh)
+uu = ui = bc = bi = cc = ci = 0
+for row in data:
+    if not isinstance(row, dict):
+        continue
+    if "unity_instrumented" not in row and "coverage_instrumented" not in row:
+        continue
+    uu += int(row.get("unity_covered") or 0)
+    ui += int(row.get("unity_instrumented") or 0)
+    bc += int(row.get("coverage_covered") or 0)
+    bi += int(row.get("coverage_instrumented") or 0)
+    cc += int(row.get("combined_covered") or 0)
+    ci += int(row.get("combined_instrumented") or 0)
+print(f"{uu},{ui},{bc},{bi},{cc},{ci}")
+PY
+}
+
+# Find DISCREPANCY so covered/(gcov+D) rounds to the same 3dp % as table_covered/table_inst.
+# Prefer the D closest to (table_inst - gcov) among matches.
+# Usage: _find_discrepancy <results_covered> <gcov_raw> <table_covered> <table_inst>
+_find_discrepancy() {
+    local results_covered="$1"
+    local gcov_raw="$2"
+    local table_covered="$3"
+    local table_inst="$4"
+    local awkcmd="${5:-awk}"
+
+    if [[ "${results_covered}" -le 0 || "${table_covered}" -le 0 || "${table_inst}" -le 0 ]]; then
+        echo "0"
         return 0
     fi
 
-    # Strip ANSI CSI sequences, then pull the three X.XXX% values in order
-    stripped_line=$(echo "${raw_line}" | "${sedcmd}" 's/\x1b\[[0-9;]*m//g' || true)
-    echo "${stripped_line}" | "${grepcmd}" -oE '[0-9]+\.[0-9]+%' | head -3 | tr '\n' ' ' | "${sedcmd}" 's/[[:space:]]*$//' || true
+    # shellcheck disable=SC2016 # AWK program uses single quotes intentionally
+    "${awkcmd}" -v rc="${results_covered}" -v gcov="${gcov_raw}" -v tc="${table_covered}" -v ti="${table_inst}" '
+    BEGIN {
+        target = sprintf("%.3f", (tc / ti) * 100)
+        preferred = ti - gcov
+        # Ratio-based center, then search a window for exact 3dp match
+        center = int((rc * ti / tc) + 0.5) - gcov
+        best_d = center
+        best_score = 1e18
+        found = 0
+        for (d = center - 50; d <= center + 50; d++) {
+            total = gcov + d
+            if (total <= 0) continue
+            pct = sprintf("%.3f", (rc / total) * 100)
+            if (pct == target) {
+                score = (d > preferred) ? (d - preferred) : (preferred - d)
+                if (!found || score < best_score) {
+                    best_score = score
+                    best_d = d
+                    found = 1
+                }
+            }
+        }
+        if (!found) {
+            # Fall back to instrumented alignment
+            best_d = preferred
+        }
+        print best_d
+    }'
 }
 
-# Compare Results table coverage % with Coverage table coverage %.
-# On mismatch, print short advice with new DISCREPANCY values and recent src files.
+# Compare Results (coverage.sh counts) with Coverage table (per-file counts).
+# On mismatch, print count breakdown and recommended DISCREPANCY values.
 # Usage: reconcile_coverage_percentages <results_table_file> <coverage_table_file>
+# Table file args kept for call-site compatibility; counts come from RESULTS_DIR files.
 # Relies on: RESULTS_DIR, SCRIPT_DIR, PROJECT_DIR (or HYDROGEN_ROOT), GREP, SED, AWK
 reconcile_coverage_percentages() {
+    # shellcheck disable=SC2034 # retained for call-site compatibility with test_00_all.sh
     local results_table_file="$1"
+    # shellcheck disable=SC2034 # retained for call-site compatibility with test_00_all.sh
     local coverage_table_file="$2"
     local project_dir="${PROJECT_DIR:-${HYDROGEN_ROOT}}"
     local script_dir="${SCRIPT_DIR:-${project_dir}/tests}"
@@ -55,23 +126,56 @@ reconcile_coverage_percentages() {
     # shellcheck disable=SC2154 # AWK assigned by framework.sh
     awkcmd="${AWK}"
 
-    local results_summary coverage_summary
-    results_summary=$(_extract_coverage_triplet "${results_table_file}" "Test Suite Results")
-    coverage_summary=$(_extract_coverage_triplet "${coverage_table_file}" "Test Suite Coverage")
+    # --- Results side: coverage.sh detailed files (totals already include current DISCREPANCY) ---
+    local unity_covered=0 unity_total=0
+    local blackbox_covered=0 blackbox_total=0
+    if [[ -f "${results_dir}/coverage_unity.txt.detailed" ]]; then
+        IFS=',' read -r _ _ unity_covered unity_total _ _ < "${results_dir}/coverage_unity.txt.detailed"
+    fi
+    if [[ -f "${results_dir}/coverage_blackbox.txt.detailed" ]]; then
+        IFS=',' read -r _ _ blackbox_covered blackbox_total _ _ < "${results_dir}/coverage_blackbox.txt.detailed"
+    fi
+    unity_covered=${unity_covered:-0}
+    unity_total=${unity_total:-0}
+    blackbox_covered=${blackbox_covered:-0}
+    blackbox_total=${blackbox_total:-0}
 
-    if [[ -z "${results_summary}" || -z "${coverage_summary}" ]]; then
+    # --- Coverage table side: per-file gcov sums from coverage_data.json ---
+    local table_totals
+    table_totals=$(_table_coverage_totals "${results_dir}/coverage_data.json")
+    local table_u_cov table_u_inst table_b_cov table_b_inst table_c_cov table_c_inst
+    IFS=',' read -r table_u_cov table_u_inst table_b_cov table_b_inst table_c_cov table_c_inst <<< "${table_totals}"
+    table_u_cov=${table_u_cov:-0}
+    table_u_inst=${table_u_inst:-0}
+    table_b_cov=${table_b_cov:-0}
+    table_b_inst=${table_b_inst:-0}
+    table_c_cov=${table_c_cov:-0}
+    table_c_inst=${table_c_inst:-0}
+
+    if [[ "${unity_total}" -le 0 && "${blackbox_total}" -le 0 ]]; then
         return 0
     fi
-    if [[ "${results_summary}" == "${coverage_summary}" ]]; then
+    if [[ "${table_u_inst}" -le 0 && "${table_b_inst}" -le 0 ]]; then
         return 0
     fi
 
-    # Parse Unity/Blackbox percents without relying on word-splitting quirks
-    local cov_unity_pct cov_blackbox_pct
-    # shellcheck disable=SC2016 # AWK program uses single quotes intentionally
-    cov_unity_pct=$(echo "${coverage_summary}" | "${awkcmd}" '{gsub(/%/,""); print $1}')
-    # shellcheck disable=SC2016 # AWK program uses single quotes intentionally
-    cov_blackbox_pct=$(echo "${coverage_summary}" | "${awkcmd}" '{gsub(/%/,""); print $2}')
+    local results_u_pct results_b_pct results_c_pct
+    local table_u_pct table_b_pct table_c_pct
+    results_u_pct=$(_coverage_pct "${unity_covered}" "${unity_total}" "${awkcmd}")
+    results_b_pct=$(_coverage_pct "${blackbox_covered}" "${blackbox_total}" "${awkcmd}")
+    # Combined comes from coverage_combined.txt when present
+    local combined_pct="0.000"
+    if [[ -f "${results_dir}/coverage_combined.txt" ]]; then
+        combined_pct=$(cat "${results_dir}/coverage_combined.txt" 2>/dev/null || echo "0.000")
+    fi
+    results_c_pct="${combined_pct}"
+    table_u_pct=$(_coverage_pct "${table_u_cov}" "${table_u_inst}" "${awkcmd}")
+    table_b_pct=$(_coverage_pct "${table_b_cov}" "${table_b_inst}" "${awkcmd}")
+    table_c_pct=$(_coverage_pct "${table_c_cov}" "${table_c_inst}" "${awkcmd}")
+
+    if [[ "${results_u_pct}" == "${table_u_pct}" && "${results_b_pct}" == "${table_b_pct}" ]]; then
+        return 0
+    fi
 
     local current_unity_disc current_coverage_disc
     current_unity_disc=$("${grepcmd}" "^DISCREPANCY_UNITY=" "${coverage_sh}" || true)
@@ -81,55 +185,34 @@ reconcile_coverage_percentages() {
     current_unity_disc=${current_unity_disc:-0}
     current_coverage_disc=${current_coverage_disc:-0}
 
-    # detailed format: timestamp,pct,covered,total_with_disc,instrumented_files,covered_files
-    local unity_covered=0 unity_total_with_disc=0
-    local blackbox_covered=0 blackbox_total_with_disc=0
-    if [[ -f "${results_dir}/coverage_unity.txt.detailed" ]]; then
-        IFS=',' read -r _ _ unity_covered unity_total_with_disc _ _ < "${results_dir}/coverage_unity.txt.detailed"
-    fi
-    if [[ -f "${results_dir}/coverage_blackbox.txt.detailed" ]]; then
-        IFS=',' read -r _ _ blackbox_covered blackbox_total_with_disc _ _ < "${results_dir}/coverage_blackbox.txt.detailed"
-    fi
+    local unity_gcov=$((unity_total - current_unity_disc))
+    local blackbox_gcov=$((blackbox_total - current_coverage_disc))
 
-    # coverage.sh: covered / (gcov_total + DISCREPANCY) = results_pct
-    # target:     covered / (gcov_total + new_DISCREPANCY) = coverage_pct
-    # new_DISCREPANCY = (covered / (coverage_pct/100)) - gcov_total
-    local unity_gcov_total=$((unity_total_with_disc - current_unity_disc))
-    local blackbox_gcov_total=$((blackbox_total_with_disc - current_coverage_disc))
-    local unity_target_total=0 blackbox_target_total=0
-    local bc_result
+    local new_unity_disc new_coverage_disc
+    new_unity_disc=$(_find_discrepancy "${unity_covered}" "${unity_gcov}" "${table_u_cov}" "${table_u_inst}" "${awkcmd}")
+    new_coverage_disc=$(_find_discrepancy "${blackbox_covered}" "${blackbox_gcov}" "${table_b_cov}" "${table_b_inst}" "${awkcmd}")
 
-    if [[ "${unity_covered}" -gt 0 ]] && [[ -n "${cov_unity_pct}" ]] \
-        && [[ "${cov_unity_pct}" != "0" ]] && [[ "${cov_unity_pct}" != "0.000" ]]; then
-        # shellcheck disable=SC2310 # bc failure should not stop the script
-        bc_result=$(echo "scale=6; ${unity_covered} / (${cov_unity_pct} / 100)" | bc 2>/dev/null || true)
-        # shellcheck disable=SC2016 # AWK program uses single quotes intentionally
-        unity_target_total=$("${awkcmd}" '{printf "%.0f", $1}' <<< "${bc_result}" || echo "0")
-    fi
-    if [[ "${blackbox_covered}" -gt 0 ]] && [[ -n "${cov_blackbox_pct}" ]] \
-        && [[ "${cov_blackbox_pct}" != "0" ]] && [[ "${cov_blackbox_pct}" != "0.000" ]]; then
-        # shellcheck disable=SC2310 # bc failure should not stop the script
-        bc_result=$(echo "scale=6; ${blackbox_covered} / (${cov_blackbox_pct} / 100)" | bc 2>/dev/null || true)
-        # shellcheck disable=SC2016 # AWK program uses single quotes intentionally
-        blackbox_target_total=$("${awkcmd}" '{printf "%.0f", $1}' <<< "${bc_result}" || echo "0")
-    fi
+    local unity_new_total=$((unity_gcov + new_unity_disc))
+    local blackbox_new_total=$((blackbox_gcov + new_coverage_disc))
+    local unity_new_pct blackbox_new_pct
+    unity_new_pct=$(_coverage_pct "${unity_covered}" "${unity_new_total}" "${awkcmd}")
+    blackbox_new_pct=$(_coverage_pct "${blackbox_covered}" "${blackbox_new_total}" "${awkcmd}")
 
-    local new_unity_disc=$((unity_target_total - unity_gcov_total))
-    local new_coverage_disc=$((blackbox_target_total - blackbox_gcov_total))
+    echo "Coverage count mismatch — Results (coverage.sh) vs Coverage table (per-file):"
+    echo "  Unity:    Results ${unity_covered}/${unity_total} = ${results_u_pct}%   Table ${table_u_cov}/${table_u_inst} = ${table_u_pct}%   gcov_raw=${unity_gcov}"
+    echo "  Blackbox: Results ${blackbox_covered}/${blackbox_total} = ${results_b_pct}%   Table ${table_b_cov}/${table_b_inst} = ${table_b_pct}%   gcov_raw=${blackbox_gcov}"
+    echo "  Combined: Results ${results_c_pct}%   Table ${table_c_cov}/${table_c_inst} = ${table_c_pct}%"
+    echo "Update tests/lib/coverage.sh so Results % matches Table %:"
+    echo "  DISCREPANCY_UNITY=${new_unity_disc}  (was ${current_unity_disc})  → ${unity_covered}/${unity_new_total} = ${unity_new_pct}%"
+    echo "  DISCREPANCY_COVERAGE=${new_coverage_disc}  (was ${current_coverage_disc})  → ${blackbox_covered}/${blackbox_new_total} = ${blackbox_new_pct}%"
 
-    echo "Coverage % mismatch — Results: ${results_summary}  Coverage: ${coverage_summary}"
-    echo "Update tests/lib/coverage.sh:"
-    echo "  DISCREPANCY_UNITY=${new_unity_disc}  (was ${current_unity_disc})"
-    echo "  DISCREPANCY_COVERAGE=${new_coverage_disc}  (was ${current_coverage_disc})"
-
-    # Recent src files that may have shifted instrumented line counts
     local recent_files=""
     if command -v git >/dev/null 2>&1; then
         recent_files=$(git -C "${project_dir}" log --since='7 days ago' --name-only --pretty=format: -- 'src/**/*.c' 2>/dev/null || true)
         recent_files=$(echo "${recent_files}" | sed '/^$/d' | sort -u | head -12 || true)
     fi
     if [[ -n "${recent_files}" ]]; then
-        echo "Recent src files (7d) that may affect the discrepancy:"
+        echo "Recent src files (7d) that may affect instrumented/covered counts:"
         while IFS= read -r f; do
             [[ -z "${f}" ]] && continue
             echo "  ${f#*/src/}"
