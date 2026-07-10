@@ -23,6 +23,7 @@
 # print_test_completion()
 
 # CHANGELOG
+# 4.5.0 - 2026-07-09 - Completion cleanup only kills this test's stable owned PID list
 # 4.4.0 - 2026-07-09 - Test completion kills only owned hydrogen PIDs, not all hydrogen_test_
 # 4.3.0 - 2026-06-22 - dump_collected_output() sort key widened to match the new 4-digit
 #                     elapsed-time field (SSSS.ZZZ) from framework.sh get_elapsed_time().

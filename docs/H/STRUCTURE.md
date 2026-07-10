@@ -24,6 +24,9 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [INSTRUCTIONS.md](/docs/H/INSTRUCTIONS.md) - Development requirements and coding standards
 - [PROMPTS.md](/docs/H/PROMPTS.md) - More about prompts
 - [CURIOSITIES.md](/docs/H/CURIOSITIES.md) - More about the project
+- [LUA_GUIDE.md](/docs/H/LUA_GUIDE.md) - Intro to Lua and writing Hydrogen host-API scripts
+- [LUA_FEATURES.md](/docs/H/LUA_FEATURES.md) - Pure Lua language features and standard library recipes
+- [MAIL_GUIDE.md](/docs/H/MAIL_GUIDE.md) - Mail Relay, templates, rewrites, and Lua mail handling
 - [SETUP.md](/docs/H/SETUP.md) - Installation and setup instructions
 - [DEPLOYMENT.md](/docs/H/DEPLOYMENT.md) - Standalone VPS and Kubernetes/DOKS deployment guide
 - [SECRETS.md](/docs/H/SECRETS.md) - Security configuration guide
@@ -406,6 +409,11 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 <summary><b>Subsystem Documentation</b></summary>
 
 - [Subsystems Documentation](/docs/H/core/subsystems/README.md) - Table of contents for all subsystem documentation
+- [docs/scripting/README.md](/docs/H/core/subsystems/scripting/README.md) - Scripting subsystem overview
+- [docs/scripting/lua_api.md](/docs/H/core/subsystems/scripting/lua_api.md) - Lua host API reference
+- [LUA_GUIDE.md](/docs/H/LUA_GUIDE.md) - Intro to Lua and practical Hydrogen scripting guide
+- [LUA_FEATURES.md](/docs/H/LUA_FEATURES.md) - Pure Lua language features and standard library recipes
+- [MAIL_GUIDE.md](/docs/H/MAIL_GUIDE.md) - Mail Relay, templates, rewrites, and Lua mail handling
 
 - [docs/ai_integration.md](/docs/H/core/ai_integration.md) - AI integration documentation
 - [docs/mdns_server.md](/docs/H/core/subsystems/mdnsserver/mdnsserver.md) - mDNS server documentation

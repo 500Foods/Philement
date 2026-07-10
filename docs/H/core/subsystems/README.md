@@ -19,6 +19,7 @@ The Database subsystem is a key component of the Hydrogen project that handles a
 The MailRelay subsystem is the email communication system that handles sending notifications, reports, and alerts via email to keep users and administrators informed about system activities. It acts as a reliable email relay service that receives messages from the system and forwards them through configured SMTP servers to ensure timely delivery.
 
 - [README.md](/docs/H/core/subsystems/mailrelay/README.md)
+- [MAIL_GUIDE.md](/docs/H/MAIL_GUIDE.md) - Templates, rewrites, events, Lua mail, inbound routing
 
 ## Logging
 
@@ -96,6 +97,8 @@ The Scripting subsystem embeds a Lua 5.4 runtime inside Hydrogen and exposes a c
 
 - [README.md](/docs/H/core/subsystems/scripting/README.md)
 - [lua_api.md](/docs/H/core/subsystems/scripting/lua_api.md)
+- [LUA_GUIDE.md](/docs/H/LUA_GUIDE.md) - Intro to Lua and practical Hydrogen scripting
+- [LUA_FEATURES.md](/docs/H/LUA_FEATURES.md) - Pure Lua language features and standard library recipes
 
 ## Swagger
 

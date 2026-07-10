@@ -603,8 +603,12 @@ else
 fi
 
 # Suite boundary: nuclear straggler sweep after every test has finished.
-# Individual tests only kill PIDs they registered via lifecycle.sh.
-pkill -9 -f hydrogen_test_ || true
+# Individual tests only kill PIDs in their own ownership file.
+if declare -f kill_all_test_hydrogens >/dev/null 2>&1; then
+    kill_all_test_hydrogens
+else
+    pkill -9 -f hydrogen_test_ || true
+fi
 
 # Clean up any remaining core files
 rm -rf "${PROJECT_DIR}"/*.core.* 2>/dev/null || true

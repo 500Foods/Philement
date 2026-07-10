@@ -31,6 +31,9 @@ Hydrogen is currently designed for technical users who:
 ### Getting Started
 
 - [**Curiosities**](/docs/H/CURIOSITIES.md) - Conventions and Curiosities worth noting before proceeding
+- [**Lua Guide**](/docs/H/LUA_GUIDE.md) - Intro to Lua and writing Hydrogen host-API scripts
+- [**Lua Features**](/docs/H/LUA_FEATURES.md) - Pure Lua language features and standard library recipes
+- [**Mail Guide**](/docs/H/MAIL_GUIDE.md) - Mail Relay, templates, rewrites, and Lua mail handling
 - [**Databases**](/docs/H/DATABASES.md) - Considerations around using PostgreSQL, MySQL/MariaDB, SQLite, and DB2
 - [**AI Instructions**](/docs/H/INSTRUCTIONS.md) - Development guide optimized for AI assistance
 - [**AI Prompts**](/docs/H/PROMPTS.md) - Development guide optimized for AI assistance
@@ -56,6 +59,10 @@ Hydrogen is currently designed for technical users who:
 - [**Chat System**](/docs/H/core/CHAT_SYSTEM.md) - AI chat streaming architecture
 - [**Database Abstraction**](/docs/H/core/DATABASE_ABSTRACTION.md) - Multi-engine database layer
 - [**Subsystems Documentation**](/docs/H/core/subsystems/README.md) - Overview of all Hydrogen subsystems
+- [**Scripting / Lua API**](/docs/H/core/subsystems/scripting/README.md) - In-server Lua scripting subsystem
+- [**Lua Guide**](/docs/H/LUA_GUIDE.md) - Human-oriented intro to Lua and the `H` host API
+- [**Lua Features**](/docs/H/LUA_FEATURES.md) - Pure Lua language features (strings, tables, numbers, dates)
+- [**Mail Guide**](/docs/H/MAIL_GUIDE.md) - Mail Relay pipeline, rewrites, events, and Lua `H.mail`
 - [**Developer Onboarding**](/docs/H/core/developer_onboarding.md) - Visual architecture overview and code navigation
 - [**Quick Start Guide**](/docs/H/core/guides/quick-start.md) - Get up and running quickly
 - [**AI Integration**](/docs/H/core/ai_integration.md) - AI capabilities and implementations

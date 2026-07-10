@@ -19,6 +19,8 @@
 # evaluate_test_result_silent()
 
 # CHANGELOG
+# 3.3.0 - 2026-07-09 - Standalone tests no longer global-pkill; reset_owned_hydrogens
+#                     at test start reaps only this test's prior PID list
 # 3.2.0 - 2026-07-09 - Export ORCHESTRATION; suite-boundary global kill only;
 #                     per-test cleanup uses owned PID registry from lifecycle.sh
 # 3.1.0 - 2026-06-22 - get_elapsed_time() now uses a 4-digit seconds field (SSSS.ZZZ).
@@ -274,8 +276,12 @@ setup_orchestration_environment() {
     TIMESTAMP=$("${DATE}" +%Y%m%d_%H%M%S)
 
     # Suite boundary only: clear any leftover test hydrogen processes before the run.
-    # Individual tests must not do this — they only kill PIDs they registered.
-    pkill -9 -f hydrogen_test_ || true
+    # Individual tests never do this — they only kill PIDs in their own ownership file.
+    if declare -f kill_all_test_hydrogens >/dev/null 2>&1; then
+        kill_all_test_hydrogens
+    else
+        pkill -9 -f hydrogen_test_ || true
+    fi
 
     # Array for collecting output messages (for performance optimization and progressive feedback)
     # Output is cached and dumped each time a new TEST starts, providing progressive feedback
@@ -372,11 +378,7 @@ setup_test_environment() {
 
     if [[ -z "${ORCHESTRATION:-}" ]]; then
 
-        # Standalone run only: clear leftover test hydrogens so a solo test starts clean.
-        # Under orchestration this must never run — sibling tests own other instances.
-        pkill -9 -f hydrogen_test_ || true
-
-        # Starting point
+        # Starting point (no global pkill — only this test's owned PID list is reaped)
         TIMESTAMP=$("${DATE}" +%Y%m%d_%H%M%S)
 
         # Global folder variables
@@ -413,9 +415,6 @@ setup_test_environment() {
     # shellcheck disable=SC2153,SC2154 # TEST_NUMBER defined by caller
     DIAG_TEST_DIR="${DIAGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}"
     mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOGS_DIR}" "${DIAG_TEST_DIR}"
-
-    # Fresh ownership registry for this test (file-backed for parallel subshells)
-    : > "${DIAG_TEST_DIR}/owned_hydrogen_pids"
 
     # Common files
     # shellcheck disable=SC2154,SC2153 # TEST_NUMBER defined externally in framework.sh
@@ -459,6 +458,21 @@ setup_test_environment() {
         # shellcheck source=tests/lib/file_utils.sh # Resolve path statically
         [[ -n "${FILE_UTILS_GUARD:-}" ]] || source "${LIB_DIR}/file_utils.sh"
 
+    fi
+
+    # Reap PIDs left by a prior (possibly aborted) run of THIS test only,
+    # then open a fresh ownership list. Never touches sibling tests.
+    if declare -f reset_owned_hydrogens >/dev/null 2>&1; then
+        reset_owned_hydrogens
+    fi
+    # Ensure abort still kills what this run started. Chain any existing EXIT trap.
+    local existing_exit_trap=""
+    existing_exit_trap=$(trap -p EXIT 2>/dev/null | sed -n "s/^trap -- '\\(.*\\)' EXIT$/\\1/p" || true)
+    if [[ -n "${existing_exit_trap}" ]]; then
+        # shellcheck disable=SC2064 # intentional expand of existing trap body at set time
+        trap "${existing_exit_trap}; _hydrogen_owned_exit_trap" EXIT
+    else
+        trap '_hydrogen_owned_exit_trap' EXIT
     fi
 
     dump_collected_output
