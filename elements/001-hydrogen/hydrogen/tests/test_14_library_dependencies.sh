@@ -120,6 +120,9 @@ start_hydrogen_no_config() {
     # Launch Hydrogen without config file (disown to prevent job control messages)
     "${hydrogen_bin}" > "${log_file}" 2>&1 &
     hydrogen_pid=$!
+    if declare -f register_hydrogen_pid >/dev/null 2>&1; then
+        register_hydrogen_pid "${hydrogen_pid}"
+    fi
     disown "${hydrogen_pid}" 2>/dev/null || true
 
     # Display the PID for tracking

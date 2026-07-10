@@ -19,6 +19,8 @@
 # evaluate_test_result_silent()
 
 # CHANGELOG
+# 3.2.0 - 2026-07-09 - Export ORCHESTRATION; suite-boundary global kill only;
+#                     per-test cleanup uses owned PID registry from lifecycle.sh
 # 3.1.0 - 2026-06-22 - get_elapsed_time() now uses a 4-digit seconds field (SSSS.ZZZ).
 #                     The previous 3-digit (%03d) format overflowed for tests running
 #                     longer than 999.999s (e.g. test_41 at ~20m), shifting the fixed
@@ -264,14 +266,15 @@ setup_orchestration_environment() {
     # Get start time
     START_TIME=$("${DATE}" +%s.%N 2>/dev/null)
 
-    # Naturally we're orchestrating
+    # Naturally we're orchestrating — export so subshells/background tests inherit it
     ORCHESTRATION=true
+    export ORCHESTRATION
 
     # Starting point
     TIMESTAMP=$("${DATE}" +%Y%m%d_%H%M%S)
 
-    # All tests that run hydrogen run with a config that starts with hydrogen_test so we can
-    # ensure nothing else is running by killing those processes at the start and at the end
+    # Suite boundary only: clear any leftover test hydrogen processes before the run.
+    # Individual tests must not do this — they only kill PIDs they registered.
     pkill -9 -f hydrogen_test_ || true
 
     # Array for collecting output messages (for performance optimization and progressive feedback)
@@ -369,9 +372,8 @@ setup_test_environment() {
 
     if [[ -z "${ORCHESTRATION:-}" ]]; then
 
-        # All tests that run hydrogen run with a config that starts with hydrogen_test so we can
-        # ensure nothing else is running by killing those processes at the start and at the end
-        # We only do this for single tests if it isn't running under orchestration
+        # Standalone run only: clear leftover test hydrogens so a solo test starts clean.
+        # Under orchestration this must never run — sibling tests own other instances.
         pkill -9 -f hydrogen_test_ || true
 
         # Starting point
@@ -411,6 +413,9 @@ setup_test_environment() {
     # shellcheck disable=SC2153,SC2154 # TEST_NUMBER defined by caller
     DIAG_TEST_DIR="${DIAGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}"
     mkdir -p "${BUILD_DIR}" "${TESTS_DIR}" "${RESULTS_DIR}" "${DIAGS_DIR}" "${LOGS_DIR}" "${DIAG_TEST_DIR}"
+
+    # Fresh ownership registry for this test (file-backed for parallel subshells)
+    : > "${DIAG_TEST_DIR}/owned_hydrogen_pids"
 
     # Common files
     # shellcheck disable=SC2154,SC2153 # TEST_NUMBER defined externally in framework.sh

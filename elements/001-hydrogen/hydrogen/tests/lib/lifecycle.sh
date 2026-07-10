@@ -5,6 +5,10 @@
 
 # LIBRARY FUNCTIONS
 # find_hydrogen_binary()
+# register_hydrogen_pid()
+# unregister_hydrogen_pid()
+# kill_owned_hydrogens()
+# kill_all_test_hydrogens()
 # start_hydrogen_with_pid()
 # wait_for_startup() 
 # stop_hydrogen() 
@@ -16,6 +20,7 @@
 # capture_process_diagnostics() {
 
 # CHANGELOG
+# 2.1.0 - 2026-07-09 - PID ownership registry: tests only kill hydrogen instances they started
 # 2.0.0 - 2025-12-05 - Added HYDROGEN_ROOT and HELIUM_ROOT environment variable checks
 # 1.7.0 - 2025-09-07 - Find hydrogen updated to include 'hydrogen' so it doesn't find the installer :-(
 # 1.6.1 - 2025-08-08 - Removed validate_config_filees() - useed only oncee
@@ -54,9 +59,101 @@ export LIFECYCLE_GUARD="true"
 
 # Library metadata
 LIFECYCLE_NAME="Lifecycle Management Library"
-LIFECYCLE_VERSION="2.0.0"
+LIFECYCLE_VERSION="2.1.0"
 # shellcheck disable=SC2154 # TEST_NUMBER and TEST_COUNTER defined by caller
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${LIFECYCLE_NAME} ${LIFECYCLE_VERSION}" "info"
+
+# File-backed ownership registry of hydrogen PIDs started by this test.
+# File-based so parallel subshells within a test (e.g. multi-engine auth)
+# share the same list; sibling tests use a different DIAG_TEST_DIR / TEST_NUMBER.
+# Usage of path: ${DIAG_TEST_DIR}/owned_hydrogen_pids or fallback /tmp.
+
+# Resolve the owned-PID file for the current test context.
+# Usage: _hydrogen_owned_pids_file  -> prints path
+_hydrogen_owned_pids_file() {
+    if [[ -n "${HYDROGEN_OWNED_PIDS_FILE:-}" ]]; then
+        printf '%s\n' "${HYDROGEN_OWNED_PIDS_FILE}"
+        return 0
+    fi
+    if [[ -n "${DIAG_TEST_DIR:-}" ]]; then
+        mkdir -p "${DIAG_TEST_DIR}" 2>/dev/null || true
+        printf '%s\n' "${DIAG_TEST_DIR}/owned_hydrogen_pids"
+        return 0
+    fi
+    # Fallback when diagnostics dir is not set yet
+    printf '%s\n' "/tmp/hydrogen_owned_pids_${TEST_NUMBER:-x}_$$"
+}
+
+# Register a hydrogen PID started by the current test process.
+# Usage: register_hydrogen_pid <pid>
+register_hydrogen_pid() {
+    local pid="${1:-}"
+    [[ -n "${pid}" ]] || return 0
+    local pid_file
+    pid_file=$(_hydrogen_owned_pids_file)
+    # Avoid duplicates
+    if [[ -f "${pid_file}" ]] && grep -qx "${pid}" "${pid_file}" 2>/dev/null; then
+        return 0
+    fi
+    printf '%s\n' "${pid}" >> "${pid_file}"
+}
+
+# Remove a PID from the ownership registry (after clean stop or kill).
+# Usage: unregister_hydrogen_pid <pid>
+unregister_hydrogen_pid() {
+    local pid="${1:-}"
+    [[ -n "${pid}" ]] || return 0
+    local pid_file
+    pid_file=$(_hydrogen_owned_pids_file)
+    if [[ ! -f "${pid_file}" ]]; then
+        return 0
+    fi
+    local tmp_file="${pid_file}.tmp.$$"
+    # shellcheck disable=SC2154 # GREP may be defined; fall back to grep
+    if command -v grep >/dev/null 2>&1; then
+        grep -vx "${pid}" "${pid_file}" > "${tmp_file}" 2>/dev/null || true
+        mv -f "${tmp_file}" "${pid_file}" 2>/dev/null || true
+    fi
+}
+
+# Kill only hydrogen processes this test registered.
+# Prefer graceful SIGINT, then SIGKILL for stragglers.
+# Usage: kill_owned_hydrogens
+kill_owned_hydrogens() {
+    local pid_file
+    pid_file=$(_hydrogen_owned_pids_file)
+    if [[ ! -f "${pid_file}" ]]; then
+        return 0
+    fi
+    local -a snapshot=()
+    local pid
+    while IFS= read -r pid; do
+        [[ -n "${pid}" ]] && snapshot+=("${pid}")
+    done < "${pid_file}"
+
+    for pid in "${snapshot[@]+"${snapshot[@]}"}"; do
+        if kill -0 "${pid}" 2>/dev/null; then
+            kill -SIGINT "${pid}" 2>/dev/null || true
+        fi
+    done
+    if [[ ${#snapshot[@]} -gt 0 ]]; then
+        sleep 0.2
+    fi
+    for pid in "${snapshot[@]+"${snapshot[@]}"}"; do
+        if kill -0 "${pid}" 2>/dev/null; then
+            kill -9 "${pid}" 2>/dev/null || true
+        fi
+    done
+    # Clear registry after cleanup
+    : > "${pid_file}"
+}
+
+# Nuclear option: kill every process whose command line references a test config.
+# Suite start/end only — never call from a mid-suite individual test.
+# Usage: kill_all_test_hydrogens
+kill_all_test_hydrogens() {
+    pkill -9 -f hydrogen_test_ || true
+}
 
 # Function to find and validate Hydrogen binary
 # Usage: find_hydrogen_binary <hydrogen_dir> <result_var_name>
@@ -161,42 +258,10 @@ start_hydrogen_with_pid() {
     "${hydrogen_bin}" "${config_file}" > "${log_file}" 2>&1 &
     hydrogen_pid=$!
     disown "${hydrogen_pid}" 2>/dev/null || true
+    register_hydrogen_pid "${hydrogen_pid}"
     
     # Display the PID for tracking
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Hydrogen process started with PID: ${hydrogen_pid}"
-    
-    # Verify process started with multiple attempts for robustness
-#     local check_attempt=1
-#     local max_attempts=100
-#     local process_running=false
-    
-#     while [[ ${check_attempt} -le ${max_attempts} ]]; do
-#         if [[ ${check_attempt} -eq 1 ]]; then
-#             sleep 0.05  # Initial check after brief delay
-#         else
-#             sleep 0.05  # Short delay between subsequent checks
-#         fi
-        
-# #        if ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
-#             process_running=true
-#             break
-# #        fi
-        
-#         ((check_attempt++))
-#     done
-    
-    # if [[ "${process_running}" = false ]]; then
-    #     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to start Hydrogen - process did not start or crashed immediately (checked ${max_attempts} times)"
-    #     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Check log file for possible errors: ${log_file}"
-    #     if [[ -s "${log_file}" ]]; then
-    #         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Last few lines of log file:"
-    #         # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
-    #         while IFS= read -r line; do
-    #             print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${line}"
-    #         done < <(tail -n 5 "${log_file}" || true)
-    #     fi
-    #     return 1
-    # fi
     
     # Wait for startup
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Waiting for startup (max ${timeout}s)..."
@@ -208,6 +273,7 @@ start_hydrogen_with_pid() {
     else
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Hydrogen startup timed out"
         kill -9 "${hydrogen_pid}" 2>/dev/null || true
+        unregister_hydrogen_pid "${hydrogen_pid}"
         return 1
     fi
 }
@@ -272,6 +338,7 @@ stop_hydrogen() {
     if monitor_shutdown "${pid}" "${log_file}" "${timeout}" "${activity_timeout}" "${diag_dir}"; then
         shutdown_end_ms=$("${DATE}" +%s%3N)
         shutdown_duration_ms=$((shutdown_end_ms - shutdown_start_ms))
+        unregister_hydrogen_pid "${pid}"
         
         # Extract shutdown time from log if available
         local log_shutdown_time
@@ -289,6 +356,7 @@ stop_hydrogen() {
         
         return 0
     else
+        unregister_hydrogen_pid "${pid}"
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Shutdown failed or timed out"
         return 1
     fi
@@ -325,6 +393,7 @@ monitor_shutdown() {
             get_process_threads "${pid}" "${diag_dir}/stuck_threads.txt"
             lsof -p "${pid}" >> "${diag_dir}/stuck_open_files.txt" 2>/dev/null || true
             kill -9 "${pid}" 2>/dev/null || true
+            unregister_hydrogen_pid "${pid}"
             return 1
         fi
         

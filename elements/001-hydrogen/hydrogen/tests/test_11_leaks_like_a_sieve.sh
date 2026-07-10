@@ -84,6 +84,9 @@ print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "ASAN_OPTIONS=\"detect_leaks=1:
 
 ASAN_OPTIONS="detect_leaks=1:leak_check_at_exit=1:verbosity=1:log_threads=1:print_stats=1" ./"${DEBUG_BUILD}" "${CONFIG_PATH}" > "${SERVER_LOG}" 2>&1 &
 HYDROGEN_PID=$!
+if declare -f register_hydrogen_pid >/dev/null 2>&1; then
+    register_hydrogen_pid "${HYDROGEN_PID}"
+fi
 
 # Wait for startup with timeout
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Waiting for startup..."
@@ -250,6 +253,9 @@ else
     ASAN_OPTIONS="detect_leaks=1:leak_check_at_exit=1:verbosity=1:log_threads=1:print_stats=1" \
         ./"${DEBUG_BUILD}" "${subtest_config_file}" > "${subtest_server_log}" 2>&1 &
     subtest_pid=$!
+    if declare -f register_hydrogen_pid >/dev/null 2>&1; then
+        register_hydrogen_pid "${subtest_pid}"
+    fi
 
     # Wait for startup
     subtest_startup_start=$("${DATE}" +%s)

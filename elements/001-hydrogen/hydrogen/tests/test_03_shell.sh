@@ -69,7 +69,7 @@ declare -a ENV_WHITELIST=(
     # First found in tests/lib/get_vars.sh
     "ALL_VARS" "SEARCH_JSON" "SEARCH_SHELL" "TARGET_PATH" "VARIABLE" 
     # First found in tests/lib/lifecycle.sh
-    "LIFECYCLE_NAME" "LIFECYCLE_VERSION" "LOG_PREFIX"   
+    "LIFECYCLE_NAME" "LIFECYCLE_VERSION" "LOG_PREFIX" "HYDROGEN_OWNED_PIDS_FILE"
     # First found in tests/lib/cloc.sh
     "CLOC" "CLOC_NAME" "CLOC_VERSION" "DATE" "FRAMEWORK_GUARD"  
     "TIMESTAMP_DISPLAY" 

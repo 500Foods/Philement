@@ -53,6 +53,9 @@ run_migration_test() {
     # Start hydrogen server
     "${HYDROGEN_BIN}" "${config_file}" > "${log_file}" 2>&1 &
     local hydrogen_pid=$!
+    if declare -f register_hydrogen_pid >/dev/null 2>&1; then
+        register_hydrogen_pid "${hydrogen_pid}"
+    fi
 
     # Store PID for later reference
     echo "PID=${hydrogen_pid}" >> "${result_file}"
