@@ -129,6 +129,10 @@ tests/          Test framework
 - /RELEASES.md - release history and update instructions
 - /docs/H/SITEMAP.md - links to all markdown docs
 - /docs/H/STRUCTURE.md - links to all files
+- /docs/H/LUA_GUIDE.md - intro to Lua and writing Hydrogen host-API scripts
+- /docs/H/LUA_FEATURES.md - pure Lua language features and standard library recipes
+- /docs/H/MAIL_GUIDE.md - Mail Relay, templates, rewrites, and Lua mail handling
+- /docs/H/core/subsystems/scripting/lua_api.md - Lua `H.*` host API reference
 - /docs/H/tests/TESTING.md - blackbox/integration tests tests
 - /docs/H/tests/TESTING_UNITY.md - Unity unit tests
 

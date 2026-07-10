@@ -98,6 +98,9 @@ cleanup_background_processes() {
     for p in "${MAILVAL_PIDS[@]:-}"; do
         kill -INT "${p}" 2>/dev/null || true
     done
+    if declare -f _hydrogen_owned_exit_trap >/dev/null 2>&1; then
+        _hydrogen_owned_exit_trap
+    fi
 }
 trap cleanup_background_processes EXIT
 

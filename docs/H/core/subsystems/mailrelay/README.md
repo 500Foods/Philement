@@ -15,3 +15,8 @@ The MailRelay subsystem serves as the primary communication channel for email-ba
 - **Provide reliable delivery** - Ensure messages reach their destinations even with network issues or server problems
 
 This subsystem transforms Hydrogen into a communicative platform that can proactively inform stakeholders about system status and activities, supporting effective monitoring, maintenance, and user engagement through email channels.
+
+## Operator and developer guide
+
+- [MAIL_GUIDE.md](/docs/H/MAIL_GUIDE.md) — full pipeline: templates, rewrites, debounce, events, Lua `H.mail`, inbound routes, OTP, and security
+- [MAILRELAY_PLAN.md](/docs/H/plans/MAILRELAY_PLAN.md) — implementation plan and working log

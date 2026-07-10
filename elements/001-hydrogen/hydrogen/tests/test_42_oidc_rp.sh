@@ -96,7 +96,7 @@ source "${SCRIPT_DIR}/lib/oidc_rp_helpers_roles.sh"
 # fails between mock start and stop. The functions live in
 # lib/oidc_rp_helpers.sh; the trap is registered in this file because
 # bash traps belong to the script not the sourced library.
-trap 'stop_mock_keycloak || true' EXIT
+trap 'stop_mock_keycloak || true; _hydrogen_owned_exit_trap 2>/dev/null || true' EXIT
 
 
 # ---------------------------------------------------------------------------

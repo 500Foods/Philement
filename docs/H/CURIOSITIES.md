@@ -329,3 +329,10 @@ local table_name = "${DATABASE_TABLE}"
 - **[Test 98: Luacheck](/docs/H/tests/test_98_luacheck.md)** validates Lua syntax and coding standards
 - Migration test mode runs forward and reverse operations to ensure reliability
 - Automatic diagram generation from JSON metadata in migrations
+
+### Learning Path
+
+- **[Lua Guide](/docs/H/LUA_GUIDE.md)** — intro to Lua, multiline strings, and the Hydrogen `H` host API for scripts
+- **[Lua Features](/docs/H/LUA_FEATURES.md)** — pure Lua language features (strings, tables, numbers, dates, patterns)
+- **[Host API reference](/docs/H/core/subsystems/scripting/lua_api.md)** — full `H.*` contract
+- **[Helium Lua intro](/docs/He/LUA_INTRO.md)** — migration-focused Lua basics

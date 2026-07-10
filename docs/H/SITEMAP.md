@@ -8,6 +8,9 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [LICENSE.md](/docs/H/LICENSE.md): Standard MIT License
 - [LICENSE.md](/elements/001-hydrogen/hydrogen/LICENSE.md): Standard MIT License (duplicate)
 - [INSTRUCTIONS.md](/docs/H/INSTRUCTIONS.md): "Recipe For Success" targetting AI models (or humans!) that are working on the project
+- [LUA_GUIDE.md](/docs/H/LUA_GUIDE.md): Intro to Lua and writing scripts against the Hydrogen `H` host API
+- [LUA_FEATURES.md](/docs/H/LUA_FEATURES.md): Pure Lua language features and standard library recipes
+- [MAIL_GUIDE.md](/docs/H/MAIL_GUIDE.md): Mail Relay, templates, rewrites, and Lua mail handling
 - [RELEASES.md](/RELEASES.md): Version history index and instructions
 - [DEPLOYMENT.md](/docs/H/DEPLOYMENT.md): Standalone VPS and Kubernetes/DOKS deployment strategies, health checks, with and without databases
 - [SECRETS.md](/docs/H/SECRETS.md): Outlines how secrets are managed in the project
@@ -59,6 +62,8 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [README.md](/docs/H/core/subsystems/README.md): Table of Contents for all Hydrogen subsystems documentation
 - [scripting/README.md](/docs/H/core/subsystems/scripting/README.md): Scripting subsystem overview
 - [scripting/lua_api.md](/docs/H/core/subsystems/scripting/lua_api.md): Lua host API reference
+- [LUA_GUIDE.md](/docs/H/LUA_GUIDE.md): Intro to Lua and practical Hydrogen scripting guide
+- [LUA_FEATURES.md](/docs/H/LUA_FEATURES.md): Pure Lua language features and standard library recipes
 
 ### Folder: /docs/api/system
 
