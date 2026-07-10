@@ -389,6 +389,9 @@ run_crash_test_parallel() {
         "${binary}" "${TEST_CONFIG}" > "${log_file}" 2>&1 &
     fi
     local hydrogen_pid=$!
+    if declare -f register_hydrogen_pid >/dev/null 2>&1; then
+        register_hydrogen_pid "${hydrogen_pid}"
+    fi
     echo "Starting ${binary} ${TEST_CONFIG} with PID ${hydrogen_pid}" > "${result_file}"
 
     # Wait for startup with active log monitoring

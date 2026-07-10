@@ -333,6 +333,9 @@ run_signal_test_parallel() {
     # Start hydrogen server directly
     HYDROGEN_LOG_LEVEL="DEBUG" "${HYDROGEN_BIN}" "${TEST_CONFIG}" > "${log_file}" 2>&1 &
     local hydrogen_pid=$!
+    if declare -f register_hydrogen_pid >/dev/null 2>&1; then
+        register_hydrogen_pid "${hydrogen_pid}"
+    fi
     
     # Wait for startup
     local startup_success=false

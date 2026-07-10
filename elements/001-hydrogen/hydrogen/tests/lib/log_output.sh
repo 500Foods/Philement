@@ -23,6 +23,7 @@
 # print_test_completion()
 
 # CHANGELOG
+# 4.4.0 - 2026-07-09 - Test completion kills only owned hydrogen PIDs, not all hydrogen_test_
 # 4.3.0 - 2026-06-22 - dump_collected_output() sort key widened to match the new 4-digit
 #                     elapsed-time field (SSSS.ZZZ) from framework.sh get_elapsed_time().
 #                     Fixes mis-ordered/mis-rendered collected output for tests exceeding
@@ -704,9 +705,10 @@ EOF
     # Let's end up here so the next script doesn't have a fit
     popd >/dev/null 2>&1 || return
 
-    # Let's kill any stragglers that didn't exit cleanly
-    if [[ -z "${ORCHESTRATION:-}" ]]; then
-        pkill -9 -f hydrogen_test_ || true
+    # Kill only hydrogen instances this test registered — never all hydrogen_test_
+    # processes (that would murder siblings under parallel suite runs).
+    if declare -f kill_owned_hydrogens >/dev/null 2>&1; then
+        kill_owned_hydrogens
     fi
 
 }

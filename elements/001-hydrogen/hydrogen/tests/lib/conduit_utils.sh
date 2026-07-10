@@ -532,6 +532,9 @@ run_conduit_server() {
     # shellcheck disable=SC2154 # HYDORGEN_BIN defined in framework.sh
     "${HYDROGEN_BIN}" "${config_file}" > "${log_file}" 2>&1 &
     local hydrogen_pid=$!
+    if declare -f register_hydrogen_pid >/dev/null 2>&1; then
+        register_hydrogen_pid "${hydrogen_pid}"
+    fi
 
     # Store PID for later reference
     echo "PID=${hydrogen_pid}" >> "${result_file}"
@@ -631,6 +634,9 @@ run_conduit_server() {
             fi
             echo "STARTUP_FAILED" >> "${result_file}"
             kill -9 "${hydrogen_pid}" 2>/dev/null || true
+            if declare -f unregister_hydrogen_pid >/dev/null 2>&1; then
+                unregister_hydrogen_pid "${hydrogen_pid}"
+            fi
             echo "FAILED:0"
             return 1
         fi
@@ -640,6 +646,9 @@ run_conduit_server() {
     else
         echo "STARTUP_FAILED" >> "${result_file}"
         kill -9 "${hydrogen_pid}" 2>/dev/null || true
+        if declare -f unregister_hydrogen_pid >/dev/null 2>&1; then
+            unregister_hydrogen_pid "${hydrogen_pid}"
+        fi
         echo "FAILED:0"
     fi
 }
@@ -663,6 +672,9 @@ shutdown_conduit_server() {
             fi
             sleep 0.1
         done
+    fi
+    if declare -f unregister_hydrogen_pid >/dev/null 2>&1; then
+        unregister_hydrogen_pid "${hydrogen_pid}"
     fi
 }
 

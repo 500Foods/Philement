@@ -80,12 +80,18 @@ scripting_start_instance() {
     "${hydrogen_bin}" "${config_file}" > "${log_file}" 2>&1 &
     hydrogen_pid=$!
     disown "${hydrogen_pid}" 2>/dev/null || true
+    if declare -f register_hydrogen_pid >/dev/null 2>&1; then
+        register_hydrogen_pid "${hydrogen_pid}"
+    fi
 
     # Brief settle so an immediate crash shows up before we return
     sleep 0.5
 
     if ! kill -0 "${hydrogen_pid}" 2>/dev/null; then
         print_error "${TEST_NUMBER}" "${TEST_COUNTER}" "Hydrogen exited immediately (PID ${hydrogen_pid})"
+        if declare -f unregister_hydrogen_pid >/dev/null 2>&1; then
+            unregister_hydrogen_pid "${hydrogen_pid}"
+        fi
         return 1
     fi
 
@@ -250,11 +256,17 @@ scripting_run_engine_parallel() {
     "${hydrogen_bin}" "${config_file}" > "${log_file}" 2>&1 &
     hydrogen_pid=$!
     disown "${hydrogen_pid}" 2>/dev/null || true
+    if declare -f register_hydrogen_pid >/dev/null 2>&1; then
+        register_hydrogen_pid "${hydrogen_pid}"
+    fi
     echo "PID=${hydrogen_pid}" >> "${result_file}"
 
     sleep 0.5
     if ! kill -0 "${hydrogen_pid}" 2>/dev/null; then
         echo "STARTUP_FAILED" >> "${result_file}"
+        if declare -f unregister_hydrogen_pid >/dev/null 2>&1; then
+            unregister_hydrogen_pid "${hydrogen_pid}"
+        fi
         return 0
     fi
     echo "STARTUP_SUCCESS" >> "${result_file}"

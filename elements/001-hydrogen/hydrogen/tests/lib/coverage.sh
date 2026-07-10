@@ -15,6 +15,7 @@
 # calculate_blackbox_coverage()
 
 # CHANGELOG
+# 4.2.0 - 2026-07-09 - Updated DISCREPANCY values; simplified update notes (Test 00 prints recommended values)
 # 4.1.0 - 2026-01-13 - Fixed crypto filter that was excluding utils_crypto.c from coverage
 # 4.0.0 - 2025-12-05 - Added HYDROGEN_ROOT and HELIUM_ROOT environment variable checks
 # 3.5.0 - 2025-12-05 - Updated timestamp checks to use nanosecond precision to prevent regeneration when timestamps are equal
@@ -47,25 +48,15 @@ set -euo pipefail
 [[ -n "${COVERAGE_GUARD:-}" ]] && return 0
 export COVERAGE_GUARD="true"
 
-# This refers to the difference between the number of instrumented lines, in total,
-# between the Unity build and the Coverage build. These arise out of having #ifdef
-# sections that change the number of lines of instrumented code. Some effort has 
-# been made to limit these, but the nature of unit testing has made it difficult.
-#
-# UPDATING THESE VALUES
-# - Run mkt && mkb
-# - Check the line count at the end of coverage_tables.sh
-# - Check the counts in mkx for Unity and Coverage, relative to that count
-# - Update these to reflect any discrepancies
-# - EG: if coverage shows 19977, and unity = 19973 and blackbox = 19975,
-#       then we'd need to add 4 to unity and 2 to coverage below to fix
-#
-DISCREPANCY_UNITY=516
-DISCREPANCY_COVERAGE=206
+# Adjustment so coverage.sh overall % matches coverage_table.sh per-file totals.
+# Different #ifdef paths (Unity vs blackbox builds) change instrumented line counts.
+# When Test 00 reports a mismatch, set these to the recommended values it prints.
+DISCREPANCY_UNITY=364
+DISCREPANCY_COVERAGE=286
   
 # Library metadata
 COVERAGE_NAME="Coverage Library"
-COVERAGE_VERSION="4.1.0"
+COVERAGE_VERSION="4.2.0"
 # shellcheck disable=SC2154 # TEST_NUMBER and TEST_COUNTER defined by caller
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${COVERAGE_NAME} ${COVERAGE_VERSION}" "info" 2> /dev/null || true
 

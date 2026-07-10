@@ -12,6 +12,7 @@
 # run_all_tests_parallel() 
 
 # CHANGELOG
+# 8.1.0 - 2026-07-09 - Extracted coverage reconcile to lib/coverage_reconcile.sh; fixed /100 bug in DISCREPANCY advice
 # 8.0.2 - 2026-07-04 - Fixed DISCREPANCY calculation: use covered/target_pct formula instead of (Results-Coverage)*1000 approximation; added per-component breakdown
 # 8.0.1 - 2026-01-09 - Enhanced coverage discrepancy error message to show suggested adjustment values
 # 8.0.0 - 2025-12-05 - Added HYDROGEN_ROOT and HELIUM_ROOT environment variables
@@ -59,11 +60,13 @@ TEST_NAME="Test Suite Orchestration"
 TEST_ABBR="ORC"
 TEST_NUMBER="00"
 TEST_COUNTER=0
-TEST_VERSION="8.0.1"
+TEST_VERSION="8.1.0"
 export TEST_NAME TEST_ABBR TEST_NUMBER TEST_VERSION
  
 # shellcheck disable=SC1091 # Resolve path statically
 source "${HYDROGEN_ROOT}/tests/lib/framework.sh"
+# shellcheck disable=SC1091 # Resolve path statically
+source "${HYDROGEN_ROOT}/tests/lib/coverage_reconcile.sh"
 setup_orchestration_environment
 
 # Commands used throughout the build system
@@ -189,7 +192,7 @@ SEQUENTIAL_MODE=false
 # internal concurrent query handling.
 # NOTE: test_56_cap_query.sh is part of group 5x and now exercises both negative paths (missing/invalid token) and positive protected-query INSERT
 # paths using the Cap fallback path. It is wired to full auto-run.
-SEQUENTIAL_GROUPS=(4 5)
+SEQUENTIAL_GROUPS=( 5 )
 TEST_ARGS=()
 
 # Parse all arguments                                                  
@@ -599,7 +602,8 @@ else
     done
 fi
 
-# Let's kill any stragglers that didn't exit cleanly
+# Suite boundary: nuclear straggler sweep after every test has finished.
+# Individual tests only kill PIDs they registered via lifecycle.sh.
 pkill -9 -f hydrogen_test_ || true
 
 # Clean up any remaining core files
@@ -772,96 +776,8 @@ results_table_file="${RESULTS_DIR}/results_table.txt"
 # shellcheck disable=SC2154 # TABLES defined externally in framework.sh
 "${TABLES}" "${layout_json}" "${data_json}" 2>/dev/null | tee "${results_table_file}" || true
 
-# Compare coverage data between 'Test Suite Results' and 'Test Suite Coverage' to ensure they are the same
-# shellcheck disable=SC2016 # Using single quotes on purpose to avoid escaping issues
-results_summary=$("${GREP}" 'Test Suite Results' "${results_table_file}" | "${AWK}" -F'———' '{print $2,$3,$4}' | "${AWK}" '{print $2,$5,$8}' || true)
-# shellcheck disable=SC2016 # Using single quotes on purpose to avoid escaping issues
-coverage_summary=$("${GREP}" 'Test Suite Coverage' "${coverage_table_file}" | "${AWK}" -F'———' '{print $2,$3,$4}' | "${AWK}" '{print $2,$5,$8}' || true)
-if [[ "${results_summary}" != "${coverage_summary}" ]]; then
-    echo "The coverage percentage values differ:"
-    echo "Results:  ${results_summary}"
-    echo "Coverage: ${coverage_summary}"
-    echo ""
-    
-    # Calculate the discrepancy adjustments needed
-    # Parse the percentages: format is "60.949 45.676 72.456" (the % signs have been stripped above)
-    # shellcheck disable=SC2206 # We want word splitting here
-    results_values=(${results_summary//%/})
-    # shellcheck disable=SC2206 # We want word splitting here
-    coverage_values=(${coverage_summary//%/})
-    
-    # Read current discrepancy values from coverage.sh
-    current_unity_disc=$("${GREP}" "^DISCREPANCY_UNITY=" "${SCRIPT_DIR}/lib/coverage.sh" | "${SED}" 's/DISCREPANCY_UNITY=//' || echo "0")
-    current_coverage_disc=$("${GREP}" "^DISCREPANCY_COVERAGE=" "${SCRIPT_DIR}/lib/coverage.sh" | "${SED}" 's/DISCREPANCY_COVERAGE=//' || echo "0")
-    
-    # Read the actual covered and total lines from the detailed coverage files
-    # Format: timestamp,pct,covered_lines,total_lines,instrumented_files,covered_files
-    # Note: total_lines here already INCLUDES the current DISCREPANCY (it is the denominator used
-    # by coverage.sh to produce results_summary above).
-    unity_covered=0
-    unity_total_with_disc=0
-    blackbox_covered=0
-    blackbox_total_with_disc=0
-    if [[ -f "${RESULTS_DIR}/coverage_unity.txt.detailed" ]]; then
-        IFS=',' read -r _ _ unity_covered unity_total_with_disc _ _ < "${RESULTS_DIR}/coverage_unity.txt.detailed"
-    fi
-    if [[ -f "${RESULTS_DIR}/coverage_blackbox.txt.detailed" ]]; then
-        IFS=',' read -r _ _ blackbox_covered blackbox_total_with_disc _ _ < "${RESULTS_DIR}/coverage_blackbox.txt.detailed"
-    fi
-    
-    # Compute the proper new DISCREPANCY values.
-    #
-    # coverage.sh computes: covered / (gcov_total + DISCREPANCY) = results_pct
-    # We want:              covered / (gcov_total + new_DISCREPANCY) = coverage_pct
-    #
-    # Rearranging:
-    #   gcov_total    = total_with_disc - current_DISCREPANCY
-    #   target_total  = covered / coverage_pct   (the total that would yield coverage_pct)
-    #   new_DISCREPANCY = target_total - gcov_total
-    unity_target_total=0
-    unity_gcov_total=$((unity_total_with_disc - current_unity_disc))
-    blackbox_target_total=0
-    blackbox_gcov_total=$((blackbox_total_with_disc - current_coverage_disc))
-    if [[ "${unity_covered}" -gt 0 ]] && [[ -n "${coverage_values[0]:-}" ]] \
-        && [[ "${coverage_values[0]}" != "0" ]] && [[ "${coverage_values[0]}" != "0.000" ]]; then
-        # shellcheck disable=SC2310,SC2016 # bc failure should not stop the script; awk format is literal
-        unity_target_total=$(echo "scale=6; ${unity_covered} / ${coverage_values[0]}" | bc 2>/dev/null \
-            | "${AWK}" '{printf "%.0f", $1}' || echo "0")
-    fi
-    if [[ "${blackbox_covered}" -gt 0 ]] && [[ -n "${coverage_values[1]:-}" ]] \
-        && [[ "${coverage_values[1]}" != "0" ]] && [[ "${coverage_values[1]}" != "0.000" ]]; then
-        # shellcheck disable=SC2310,SC2016 # bc failure should not stop the script; awk format is literal
-        blackbox_target_total=$(echo "scale=6; ${blackbox_covered} / ${coverage_values[1]}" | bc 2>/dev/null \
-            | "${AWK}" '{printf "%.0f", $1}' || echo "0")
-    fi
-    new_unity_disc=$((unity_target_total - unity_gcov_total))
-    new_coverage_disc=$((blackbox_target_total - blackbox_gcov_total))
-    
-    # Show the breakdown of the calculation
-    echo "Breakdown of DISCREPANCY calculation:"
-    echo "  coverage.sh formula:  covered / (gcov_total + DISCREPANCY) = pct"
-    echo "  new_DISCREPANCY      = (covered / target_pct) - gcov_total"
-    echo ""
-    echo "Unity (current: ${current_unity_disc}, recommended: ${new_unity_disc}):"
-    echo "  - Results (coverage.sh output):      ${results_values[0]}% from ${unity_covered} / ${unity_total_with_disc} lines (incl. current discrepancy)"
-    echo "  - Coverage (coverage_table.sh):      ${coverage_values[0]}% from per-file gcov analysis"
-    echo "  - gcov_total (no discrepancy):       ${unity_gcov_total} lines"
-    echo "  - target_total (to match Coverage):  ${unity_target_total} lines"
-    echo "  - new_DISCREPANCY = ${unity_target_total} - ${unity_gcov_total} = ${new_unity_disc}"
-    echo ""
-    echo "Blackbox (current: ${current_coverage_disc}, recommended: ${new_coverage_disc}):"
-    echo "  - Results (coverage.sh output):      ${results_values[1]}% from ${blackbox_covered} / ${blackbox_total_with_disc} lines (incl. current discrepancy)"
-    echo "  - Coverage (coverage_table.sh):      ${coverage_values[1]}% from per-file gcov analysis"
-    echo "  - gcov_total (no discrepancy):       ${blackbox_gcov_total} lines"
-    echo "  - target_total (to match Coverage):  ${blackbox_target_total} lines"
-    echo "  - new_DISCREPANCY = ${blackbox_target_total} - ${blackbox_gcov_total} = ${new_coverage_disc}"
-    echo ""
-    echo "Consider updating tests/lib/coverage.sh with these new values:"
-    echo "DISCREPANCY_UNITY=${new_unity_disc}"
-    echo "DISCREPANCY_COVERAGE=${new_coverage_disc}"
-    echo ""
-    echo "Current values: DISCREPANCY_UNITY=${current_unity_disc}, DISCREPANCY_COVERAGE=${current_coverage_disc}"
-fi
+# Compare Results vs Coverage table percentages; advise DISCREPANCY updates if they differ
+reconcile_coverage_percentages "${results_table_file}" "${coverage_table_file}"
 
 # Check for Unity test failures and display them if any exist
 UNITY_FAILURES_FILE="${RESULTS_DIR}/unity_failures.txt"
