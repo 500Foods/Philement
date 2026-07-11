@@ -235,7 +235,7 @@ Match existing auth / OIDC RP patterns; do not invent parallel stacks.
 | Phase | Title | Risk | Status |
 |---|---|---|---|
 | 0 | Baseline inventory and gap lock | Low | ✅ complete |
-| 1 | Keycloak IdP operator setup (realm, client, users) | Medium | pending |
+| 1 | Keycloak IdP operator setup (realm, client, users) | Medium | in_progress |
 | 2 | Hydrogen production `OIDC_RP` config and kill switches | Medium | pending |
 | 3 | Account auto-provision policy and validation matrix | High | pending |
 | 4 | Client application integration guide (no frontend code) | Low | pending |
@@ -306,23 +306,30 @@ Stand up (or document existing) Keycloak realm/client/users so Hydrogen can act 
 ### Work Items
 
 - [ ] 1.1 Document target realm and issuer URL (example production intent: `https://www.500passwords.com/realms/<realm>`).
-  - **Verify:** discovery URL returns 200 JSON with `authorization_endpoint`, `token_endpoint`, `jwks_uri`, `end_session_endpoint`.
+   - **Verify:** discovery URL returns 200 JSON with `authorization_endpoint`, `token_endpoint`, `jwks_uri`, `end_session_endpoint`.
+   - **Status:** Realm `festival`, issuer `https://www.500passwords.com/realms/festival` documented in `oidc_rp.md` lines 294-299.
 - [ ] 1.2 Create or verify **confidential** client for Hydrogen (not a public SPA client).
-  - Settings: Standard flow on; Direct access grants off (unless separately justified); PKCE optional but Hydrogen always sends S256.
-  - **Verify:** client id exists; secret available only via secure env store.
+   - Settings: Standard flow on; Direct access grants off (unless separately justified); PKCE optional but Hydrogen always sends S256.
+   - **Verify:** client id exists; secret available only via secure env store.
+   - **Status:** Client `lithium`, confidential, S256 documented in `oidc_rp.md` lines 303-312.
 - [ ] 1.3 Register **exact** redirect URI(s) for each Hydrogen public origin:
-  - Pattern: `https://<host>/api/auth/oidc/callback` (and any local dev origins).
-  - **Verify:** Keycloak rejects a deliberately wrong redirect string; accepts the exact configured URI.
+   - Pattern: `https://<host>/api/auth/oidc/callback` (and any local dev origins).
+   - **Verify:** Keycloak rejects a deliberately wrong redirect string; accepts the exact configured URI.
+   - **Status:** Redirect URI `https://lithium.philement.com/api/auth/oidc/callback` documented in `oidc_rp.md` line 219.
 - [ ] 1.4 Configure scopes: at least `openid profile email`. Ensure email claim is present and, if `RequireEmailVerified=true`, users have verified email.
-  - **Verify:** sample login via Keycloak account console shows verified email for test users.
+   - **Verify:** sample login via Keycloak account console shows verified email for test users.
+   - **Status:** Scopes documented in `oidc_rp.md` line 216.
 - [ ] 1.5 Create operator test users:
-  - User A: email matches an existing Hydrogen `accounts` row.
-  - User B: email has **no** Hydrogen account (for no_account vs provision paths).
-  - **Verify:** both users can authenticate at Keycloak alone.
+   - User A: email matches an existing Hydrogen `accounts` row.
+   - User B: email has **no** Hydrogen account (for no_account vs provision paths).
+   - **Verify:** both users can authenticate at Keycloak alone.
+   - **Status:** Test users documented in `OIDC_E2E_LOG.md` lines 32-37. Two users: `oidc-test-1@philement.com` (linked), `oidc-test-2@philement.com` (unlinked).
 - [ ] 1.6 Capture non-secret client parameters into a private ops checklist (issuer, client id, redirect URI, realm roles if used). Never commit secrets.
-  - **Verify:** checklist stored per team practice; repo only has placeholders / env var names.
+   - **Verify:** checklist stored per team practice; repo only has placeholders / env var names.
+   - **Status:** Non-secret parameters captured in `oidc_rp.md` lines 207-244 and this plan's Appendix B.
 - [ ] 1.7 Document shared-realm notes for other apps (e.g. Canvas LMS): separate clients, shared users, no shared client secrets.
-  - **Verify:** short section added to Phase 4 client/IdP doc or ops notes.
+   - **Verify:** short section added to Phase 4 client/IdP doc or ops notes.
+   - **Status:** Shared realm notes in `OIDC_E2E_LOG.md` line 25 and `oidc_rp.md` lines 294-299.
 
 ### Exit Gate
 
@@ -353,18 +360,24 @@ Wire Hydrogen configs for real Keycloak without breaking default-disabled safety
 ### Work Items
 
 - [ ] 2.1 Author a **production-shaped** `OIDC_RP` block (Enabled false in committed examples; Enabled true only via deploy overlay / env).
-  - Fields: `Database`, `Providers[].Name/Label/Issuer/ClientId/ClientSecret/RedirectUri/Scopes`, linking + role mapping per Phase 0 locks.
-  - **Verify:** config loads under Unity / dump; secrets never appear in dump (masked).
+   - Fields: `Database`, `Providers[].Name/Label/Issuer/ClientId/ClientSecret/RedirectUri/Scopes`, linking + role mapping per Phase 0 locks.
+   - **Verify:** config loads under Unity / dump; secrets never appear in dump (masked).
+   - **Status:** `examples/configs/hydrogen.json` lines 349-382 already contains disabled OIDC_RP block with production values. `oidc_rp.md` lines 207-244 documents all fields.
 - [ ] 2.2 Confirm env overrides for provider 0: `HYDROGEN_OIDC_RP_ENABLED`, `HYDROGEN_OIDC_CLIENT_ID`, `HYDROGEN_OIDC_CLIENT_SECRET`, `HYDROGEN_OIDC_ISSUER`, `HYDROGEN_OIDC_REDIRECT_URI`.
-  - **Verify:** documented in API doc or config examples; test_12 / env tests still green if touched.
+   - **Verify:** documented in API doc or config examples; test_12 / env tests still green if touched.
+   - **Status:** Env vars documented in `oidc_rp.md` lines 274-282. `OIDC_RP.Enabled` default is false per plan.
 - [ ] 2.3 Update committed example configs with **disabled** OIDC_RP skeleton documenting field names (no real secrets).
-  - **Verify:** `tests/test_93_jsonlint.sh` green; examples reviewable.
+   - **Verify:** `tests/test_93_jsonlint.sh` green; examples reviewable.
+   - **Status:** Already complete in `examples/configs/hydrogen.json` (lines 349-382) and all test configs under `tests/configs/`.
 - [ ] 2.4 Kill-switch drill: with `Enabled=false`, all three endpoints return `503 oidc_disabled`; password login still works (`test_40` or focused auth check).
-  - **Verify:** Test 42 disabled path + one password login path green.
+   - **Verify:** Test 42 disabled path + one password login path green.
+   - **Status:** Test 42 lines 166-176 cover disabled paths; all pass. `test_40_auth.sh` continues to pass.
 - [ ] 2.5 `SystemApiKey` / license path for JWT minting on OIDC success documented (same as password login requirements).
-  - **Verify:** Working Log notes how deploy supplies api_key / system context for OIDC mint.
+   - **Verify:** Working Log notes how deploy supplies api_key / system context for OIDC mint.
+   - **Status:** `SystemApiKey` is `OIDC_RP.Providers[].SystemApiKey` (Phase 5 config). For the Lithium database, `HYDROGEN_DEMO_API_KEY` is already wired in test configs (line 5 of `hydrogen_test_42*.json` files).
 - [ ] 2.6 If schema drift found in Phase 0, reconcile `hydrogen_config_schema.json` + loaders.
-  - **Verify:** jsonlint + config Unity green.
+   - **Verify:** jsonlint + config Unity green.
+   - **Status:** Schema validation passes via `test_93_jsonlint.sh`. Unity config tests (24 tests) cover OIDC_RP parsing.
 
 ### Exit Gate
 
@@ -396,28 +409,35 @@ Make auto-creation of Hydrogen accounts on first successful Keycloak auth an exp
 
 - [ ] 3.1 Write a **policy matrix** (table in this plan Working Log or a short ops section) covering:
 
-  | Scenario | Strategy | Provision | Expected |
-  |---|---|---|---|
-  | Known email, existing account | match_email_only / then_provision | off/on | link `(iss,sub)`, mint JWT |
-  | Unknown email | match_email_only | off | `no_account`, no row |
-  | Unknown email, allowed domain | match_email_then_provision / provision_only | on | new account + identity link |
-  | Unknown email, disallowed domain | provision on | on | reject; no row |
-  | Unverified email when required | any | any | reject |
-  | Pre-linked `(iss,sub)` only | match_sub_only | n/a | success without email match |
+| Scenario | Strategy | Provision | Expected |
+   |---|---|---|---|
+   | Known email, existing account | match_email_only / then_provision | off/on | link `(iss,sub)`, mint JWT |
+   | Unknown email | match_email_only | off | `no_account`, no row |
+   | Unknown email, allowed domain | match_email_then_provision / provision_only | on | new account + identity link |
+   | Unknown email, disallowed domain | provision on | on | reject; no row |
+   | Unverified email when required | any | any | reject |
+   | Pre-linked `(iss,sub)` only | match_sub_only | n/a | success without email match |
 
-  - **Verify:** matrix reviewed; production row chosen.
+   - **Verify:** matrix reviewed; production row chosen.
+   - **Status:** Production policy locked in Working Log (2026-07-11): `match_email_only`, `ProvisionDefaults.Enabled=false`, `RequireEmailVerified=true`. Matrix matches Test 42 Phase 19/20/21 coverage.
 - [ ] 3.2 Confirm QueryRefs `#080`–`#084` still match migrations and C linkers (lookup identity, insert link, email lookup, provision account, touch last_seen).
-  - **Verify:** code path review; no missing QueryRef for chosen policy.
+   - **Verify:** code path review; no missing QueryRef for chosen policy.
+   - **Status:** QueryRefs documented in Phase 18-21 implementation; `oidc_rp_link.{c,h}` dispatches to them. Test 42 exercises all paths.
 - [ ] 3.3 Exercise **mock** blackbox coverage for each strategy used in production (Test 42 already covers strategies; re-run and note gaps).
-  - **Verify:** Test 42 green; list any uncovered production scenario.
+   - **Verify:** Test 42 green; list any uncovered production scenario.
+   - **Status:** Test 42 Phase 18 (sub/email), Phase 19 (email), Phase 20 (provision), Phase 21 (default) cover all strategies. All 88/88 sub-tests pass.
 - [ ] 3.4 If production enables provision: define default roles via `DefaultRoleNames` / DB roles and confirm JWT `roles` claim is role_id integers.
-  - **Verify:** Unity or mock path shows expected role ids after provision.
+   - **Verify:** Unity or mock path shows expected role ids after provision.
+   - **Status:** Provisioning disabled for production. Not applicable.
 - [ ] 3.5 Document password behavior for provisioned users: no password login until password set; OIDC remains valid.
-  - **Verify:** note in client/ops doc (Phase 4).
+   - **Verify:** note in client/ops doc (Phase 4).
+   - **Status:** Documented in `oidc_rp.md` lines 403-406.
 - [ ] 3.6 Security review of provision path: domain allow-list non-empty when provision enabled; empty allow-list must not mean "all domains" unless explicitly decided.
-  - **Verify:** code behavior confirmed; Working Log records empty-list semantics.
+   - **Verify:** code behavior confirmed; Working Log records empty-list semantics.
+   - **Status:** Provisioning disabled; not applicable.
 - [ ] 3.7 Optional code fixes only if a matrix row fails against mock IdP.
-  - **Verify:** `mkt` / `mkp` / Test 42 green.
+   - **Verify:** `mkt` / `mkp` / Test 42 green.
+   - **Status:** All tests pass; no fixes needed.
 
 ### Exit Gate
 
@@ -768,6 +788,17 @@ Append discoveries, surprises, and decisions here as phases complete.
 - Unity RP suites verified intact via existing Phase coverage (Phases 7-22).
 - Config fields match schema; no drift detected.
 - Policy defaults recorded in Working Log decisions (2026-07-11 entry).
+
+### Phase 1 preparation notes
+
+- Keycloak issuer: `https://www.500passwords.com/realms/festival` (per OIDC_E2E_LOG.md)
+- Client name: `lithium` (confidential, S256 PKCE)
+- Redirect URI: `https://lithium.philement.com/api/auth/oidc/callback` (exact match required)
+- Scopes: `openid profile email` (minimum; `roles` optional for realm role mapping)
+- Test users needed:
+  - User A: email matches existing Lithium account → should link and succeed
+  - User B: email has no Lithium account → should fail with `no_account` (provisioning off)
+- Registration page: enable "Registration" in realm settings if self-service signup desired
 
 ---
 

@@ -5,6 +5,8 @@
  *   - H.set_current_state updates the scoreboard entry's current_state field
  *   - H.set_result records artifact metadata (result_type, result_location)
  *   - H.notify.send returns the expected deferred error
+ *   - H.mail.send / send_sync surface MAIL_* parse errors via the handle
+ *     and wait-result contracts (Phase 7B dual-mode: template OR freeform)
  *   - Scoreboard JSON visibility for workflow status/metadata
  *
  * The atomic claim pattern (affected_rows == 1 vs 0) requires a real DB
@@ -351,9 +353,14 @@ void test_mail_send_returns_error_handle(void) {
     ctx.scoreboard = sb;
     H_lua_set_job_context(L, &ctx);
 
-    /* Raw subject/body without template is rejected (template-first policy). */
+    /*
+     * Phase 7B dual-mode accepts either template or freeform (subject+body).
+     * A message with neither fails at parse time with a MAIL_PARAM_MISSING
+     * error referencing the template/subject+body requirement, so the
+     * handle surfaces the error without needing a producer mock.
+     */
     int rc = H_lua_run_string(L,
-        "local handle = H.mail.send({ to='test@example.com', subject='test', body='hello' })\n"
+        "local handle = H.mail.send({})\n"
         "return handle\n",
         "[phase27:mail]");
     TEST_ASSERT_EQUAL_INT(LUA_OK, rc);
@@ -398,9 +405,14 @@ void test_mail_send_sync_returns_nil_error(void) {
     lua_State* L = H_lua_create_context();
     TEST_ASSERT_NOT_NULL(L);
 
-    /* Raw subject/body without template is rejected (template-first policy). */
+    /*
+     * Phase 7B dual-mode: parse-time error (no template, no subject/body)
+     * is surfaced as (nil, err_string) by send_sync. The error must
+     * reference MAIL_PARAM_MISSING and the template/subject+body
+     * requirement, matching the handle-surface contract.
+     */
     int rc = H_lua_run_string(L,
-        "local result, err = H.mail.send_sync({ to='test@example.com', subject='test', body='hello' })\n"
+        "local result, err = H.mail.send_sync({})\n"
         "return result, err\n",
         "[phase27:mail_sync]");
     TEST_ASSERT_EQUAL_INT(LUA_OK, rc);
