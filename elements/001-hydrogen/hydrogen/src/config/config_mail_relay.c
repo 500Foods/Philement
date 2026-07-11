@@ -106,6 +106,11 @@ bool load_mailrelay_config(json_t* root, AppConfig* config) {
     // Template defaults
     mail->Templates.ReloadIntervalSeconds = 60;
 
+    // OTP defaults
+    mail->Otp.Digits = 6;
+    mail->Otp.ExpirySeconds = 300;
+    mail->Otp.MaxAttempts = 5;
+
     // Events defaults
     mail->Events.Enabled = false;
     mail->Events.MaxEventsPerInterval = 10;
@@ -153,6 +158,11 @@ bool load_mailrelay_config(json_t* root, AppConfig* config) {
 
     // Process template settings
     success = success && PROCESS_INT(root, &mail->Templates, ReloadIntervalSeconds, "MailRelay.Templates.ReloadIntervalSeconds", "MailRelay");
+
+    // Process OTP settings
+    success = success && PROCESS_INT(root, &mail->Otp, Digits, "MailRelay.Otp.Digits", "MailRelay");
+    success = success && PROCESS_INT(root, &mail->Otp, ExpirySeconds, "MailRelay.Otp.ExpirySeconds", "MailRelay");
+    success = success && PROCESS_INT(root, &mail->Otp, MaxAttempts, "MailRelay.Otp.MaxAttempts", "MailRelay");
 
     // Process events section
     json_t* mail_relay_section = json_object_get(root, "MailRelay");
@@ -405,6 +415,15 @@ void dump_mailrelay_config(const MailRelayConfig* config) {
     // Dump template settings
     DUMP_TEXT("――", "Template Settings");
     snprintf(buffer, sizeof(buffer), "Reload Interval: %d seconds", config->Templates.ReloadIntervalSeconds);
+    DUMP_TEXT("――――", buffer);
+
+    // Dump OTP settings
+    DUMP_TEXT("――", "OTP Settings");
+    snprintf(buffer, sizeof(buffer), "Digits: %d", config->Otp.Digits);
+    DUMP_TEXT("――――", buffer);
+    snprintf(buffer, sizeof(buffer), "Expiry: %d seconds", config->Otp.ExpirySeconds);
+    DUMP_TEXT("――――", buffer);
+    snprintf(buffer, sizeof(buffer), "Max Attempts: %d", config->Otp.MaxAttempts);
     DUMP_TEXT("――――", buffer);
 
     // Dump events settings

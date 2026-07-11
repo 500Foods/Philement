@@ -120,7 +120,9 @@ int H_Handle_get_refcount(struct H_Handle* h);
  *     llm_timeout       seconds; 0 = use default (LLM)
  *     llm_list          true if this is a list operation (LLM)
  *   H_HK_MAIL:
- *     mail_error        strdup'd; non-NULL means handle is in an error state (MAIL stub)
+ *     mail_error        strdup'd; non-NULL means handle is in an error state
+ *     mail_message_id   strdup'd; set on successful queue accept
+ *     mail_status       strdup'd; set on success (e.g. "queued")
  *   H_HK_NOTIFY:
  *     notify_error      strdup'd; non-NULL means handle is in an error state (NOTIFY stub)
  */
@@ -162,8 +164,10 @@ typedef struct H_Handle {
     char*           llm_error;           // strdup'd; non-NULL means handle is in error state (LLM)
     int             llm_timeout;         // seconds; 0 = use default (LLM)
     bool            llm_list;            // true if this is a list operation (LLM)
-    // Phase 19: Mail and Notify stub fields
-    char*           mail_error;          // strdup'd; non-NULL means handle is in an error state (MAIL stub)
+    // Phase 19 / 7A: Mail and Notify fields
+    char*           mail_error;          // strdup'd; non-NULL means handle is in an error state
+    char*           mail_message_id;     // strdup'd; set on successful queue accept
+    char*           mail_status;         // strdup'd; set on success (e.g. "queued")
     char*           notify_error;        // strdup'd; non-NULL means handle is in an error state (NOTIFY stub)
 } H_Handle;
 

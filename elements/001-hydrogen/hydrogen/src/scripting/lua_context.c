@@ -236,8 +236,8 @@ void H_lua_install_api(lua_State* L) {
     H_lua_install_query(L);
     // Phase 18: H.llm call/list functions for LLM invocation.
     H_lua_install_llm(L);
-    // Phase 19: H.mail and H.notify stub implementations. Returns
-    // error handles until the Mail Relay / Notify subsystems land.
+    // Phase 7A: H.mail queues templated mail via mailrelay_send_template;
+    // H.notify returns a stable deferred error (no channel map yet).
     H_lua_install_mail_notify(L);
 }
 

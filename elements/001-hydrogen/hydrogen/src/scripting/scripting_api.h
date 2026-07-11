@@ -329,24 +329,22 @@ void H_lua_install_llm(lua_State* L);
 int H_lua_llm_wait_one(lua_State* L, H_Handle* h);
 
 /*
- * Populate H.mail and H.notify with stub implementations.
+ * Populate H.mail and H.notify host functions.
  *
- * Phase 19: Mail and Notify send stubs. Returns handles that
- * immediately error with "mail: not implemented" or "notify: not
- * implemented". Real implementations depend on Mail Relay / Notify
- * subsystems landing later.
+ * Phase 7A: H.mail.send queues templated mail via mailrelay_send_template.
+ * H.notify returns a stable deferred error (no channel→template map yet).
  *
  * H.mail.send(message, opts?) -> handle
  * H.mail.send_sync(message, opts?) -> result, err
  * H.notify.send(message, opts?) -> handle
  * H.notify.send_sync(message, opts?) -> result, err
  *
- * message shape for H.mail.send:
- *   { to = string|array, subject = string, body = string, template = string? }
+ * message shape for H.mail.send (template-first):
+ *   { template|template_key = string, to = string|array, cc?, bcc?,
+ *     params = { [string] = string }?, idempotency_key?, priority? }
  * message shape for H.notify.send:
  *   { channel = string, to = string|array, body = string }
  *
- * The mail/notify sub-tables replace Phase 3 placeholder tables.
  * Called automatically by H_lua_install_api.
  */
 int H_lua_mail_send(lua_State* L);
@@ -358,8 +356,8 @@ void H_lua_install_mail_notify(lua_State* L);
 /*
  * Wait on a MAIL or NOTIFY handle.
  *
- * For stubs, always returns nil + "mail: not implemented" or
- * "notify: not implemented".
+ * MAIL success: { message_id, status = "queued" }, nil
+ * MAIL/NOTIFY error: nil, error_string
  */
 int H_lua_mail_notify_wait_one(lua_State* L, H_Handle* h);
 

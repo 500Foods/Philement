@@ -25,6 +25,7 @@ void test_load_mailrelay_config_null_root(void);
 void test_load_mailrelay_config_empty_json(void);
 void test_load_mailrelay_config_basic_fields(void);
 void test_load_mailrelay_config_queue_settings(void);
+void test_load_mailrelay_config_otp_settings(void);
 void test_load_mailrelay_config_events_rules(void);
 void test_load_mailrelay_config_admin_recipients(void);
 void test_load_mailrelay_config_database_default(void);
@@ -65,6 +66,9 @@ void test_load_mailrelay_config_null_root(void) {
     TEST_ASSERT_FALSE(config.mail_relay.Events.Enabled);
     TEST_ASSERT_EQUAL(0, config.mail_relay.Events.RuleCount);
     TEST_ASSERT_EQUAL(300, config.mail_relay.Queue.StaleTimeoutSeconds);
+    TEST_ASSERT_EQUAL(6, config.mail_relay.Otp.Digits);
+    TEST_ASSERT_EQUAL(300, config.mail_relay.Otp.ExpirySeconds);
+    TEST_ASSERT_EQUAL(5, config.mail_relay.Otp.MaxAttempts);
 
     cleanup_mailrelay_config(&config.mail_relay);
 }
@@ -87,6 +91,9 @@ void test_load_mailrelay_config_empty_json(void) {
     TEST_ASSERT_EQUAL(0, config.mail_relay.AdminRecipientCount);
     TEST_ASSERT_EQUAL(0, config.mail_relay.Events.RuleCount);
     TEST_ASSERT_EQUAL(300, config.mail_relay.Queue.StaleTimeoutSeconds);
+    TEST_ASSERT_EQUAL(6, config.mail_relay.Otp.Digits);
+    TEST_ASSERT_EQUAL(300, config.mail_relay.Otp.ExpirySeconds);
+    TEST_ASSERT_EQUAL(5, config.mail_relay.Otp.MaxAttempts);
 
     json_decref(root);
     cleanup_mailrelay_config(&config.mail_relay);
@@ -155,6 +162,32 @@ void test_load_mailrelay_config_queue_settings(void) {
     TEST_ASSERT_EQUAL(1800, config.mail_relay.Queue.MaxDelaySeconds);
     TEST_ASSERT_EQUAL(10, config.mail_relay.Queue.DebounceSeconds);
     TEST_ASSERT_EQUAL(600, config.mail_relay.Queue.StaleTimeoutSeconds);
+
+    json_decref(root);
+    cleanup_mailrelay_config(&config.mail_relay);
+}
+
+void test_load_mailrelay_config_otp_settings(void) {
+    AppConfig config = {0};
+    initialize_config_defaults(&config);
+
+    json_t* root = json_object();
+    json_t* mail_relay_section = json_object();
+    json_t* otp_section = json_object();
+
+    json_object_set(otp_section, "Digits", json_integer(8));
+    json_object_set(otp_section, "ExpirySeconds", json_integer(600));
+    json_object_set(otp_section, "MaxAttempts", json_integer(3));
+
+    json_object_set(mail_relay_section, "Otp", otp_section);
+    json_object_set(root, "MailRelay", mail_relay_section);
+
+    bool result = load_mailrelay_config(root, &config);
+
+    TEST_ASSERT_TRUE(result);
+    TEST_ASSERT_EQUAL(8, config.mail_relay.Otp.Digits);
+    TEST_ASSERT_EQUAL(600, config.mail_relay.Otp.ExpirySeconds);
+    TEST_ASSERT_EQUAL(3, config.mail_relay.Otp.MaxAttempts);
 
     json_decref(root);
     cleanup_mailrelay_config(&config.mail_relay);
@@ -385,6 +418,7 @@ int main(void) {
     // Basic field tests
     RUN_TEST(test_load_mailrelay_config_basic_fields);
     RUN_TEST(test_load_mailrelay_config_queue_settings);
+    RUN_TEST(test_load_mailrelay_config_otp_settings);
     RUN_TEST(test_load_mailrelay_config_events_rules);
     RUN_TEST(test_load_mailrelay_config_admin_recipients);
     RUN_TEST(test_load_mailrelay_config_database_default);

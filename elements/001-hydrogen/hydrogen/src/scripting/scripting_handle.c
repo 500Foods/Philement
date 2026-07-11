@@ -143,8 +143,10 @@ H_Handle* H_Handle_new(lua_State* L, H_HandleKind kind) {
     h->llm_error = NULL;
     h->llm_timeout = 0;
     h->llm_list = false;
-    // Phase 19: Mail and Notify stub fields
+    // Phase 19 / 7A: Mail and Notify fields
     h->mail_error = NULL;
+    h->mail_message_id = NULL;
+    h->mail_status = NULL;
     h->notify_error = NULL;
 
     // Phase 17: initialize the per-handle sync primitive for HTTP
@@ -242,10 +244,18 @@ void H_Handle_free(H_Handle* h) {
         free(h->llm_error);
         h->llm_error = NULL;
     }
-    // Phase 19: free Mail and Notify stub fields
+    // Phase 19 / 7A: free Mail and Notify fields
     if (h->mail_error) {
         free(h->mail_error);
         h->mail_error = NULL;
+    }
+    if (h->mail_message_id) {
+        free(h->mail_message_id);
+        h->mail_message_id = NULL;
+    }
+    if (h->mail_status) {
+        free(h->mail_status);
+        h->mail_status = NULL;
     }
     if (h->notify_error) {
         free(h->notify_error);

@@ -763,6 +763,31 @@
                     },
                     "additionalProperties": false
                 },
+                "Otp": {
+                    "type": "object",
+                    "description": "One-time password generation and verification settings",
+                    "properties": {
+                        "Digits": {
+                            "type": "integer",
+                            "description": "Numeric OTP code length",
+                            "minimum": 4,
+                            "maximum": 10
+                        },
+                        "ExpirySeconds": {
+                            "type": "integer",
+                            "description": "OTP code lifetime in seconds",
+                            "minimum": 30,
+                            "maximum": 3600
+                        },
+                        "MaxAttempts": {
+                            "type": "integer",
+                            "description": "Maximum verification attempts before lockout",
+                            "minimum": 1,
+                            "maximum": 20
+                        }
+                    },
+                    "additionalProperties": false
+                },
                 "Events": {
                     "type": "object",
                     "description": "Mail event rules",

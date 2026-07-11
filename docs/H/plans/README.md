@@ -42,6 +42,10 @@ The Chat Service Implementation Plan describes the 13-phase approach for buildin
 
 Implementation of SMTP mail relay functionality.
 
+## [KEYCLOAK PLAN](/docs/H/plans/KEYCLOAK_PLAN.md)
+
+Gated plan for Keycloak SSO with Hydrogen as OIDC Relying Party: IdP setup, production `OIDC_RP` config, account auto-provision policy, client integration docs (no frontend coding early), real-Keycloak E2E, multi-provider hardening, and post-MVP logout/health work. Builds on the shipped RP implementation documented historically in [`/docs/OIDC-PLAN.md`](/docs/OIDC-PLAN.md).
+
 ## [LUA PLAN](/docs/H/plans/LUA_PLAN_COMPLETE.md)
 
 Implementation of LUA general scripting functionality.

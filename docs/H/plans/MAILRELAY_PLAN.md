@@ -16,16 +16,16 @@ This document is the working document for the implementation. It is meant to be 
 
 ## Resuming Work on This Plan
 
-CURRENT PAUSE POINT (as of 2026-07-10): **Phase 7 complete.** Next work is **Phase 7A** (Lua `H.mail` / `H.notify` backfill). **First chunk locked: 7A.1 + 7A.2 together** — implement when resuming (decisions already reviewed; no re-plan required unless you change them).
+CURRENT PAUSE POINT (as of 2026-07-10): **Phase 7B Lua freeform complete (L.1–L.3).** `H.mail` supports template + freeform body. Next candidates: system template seeds (`system.server_started` migration **1263**), Phase 9 Lithium UI, Phase 10 ops remainder, or auth MFA wiring.
 
 ### Resume here next session
 
-1. Read this pause point + **Phase 7A implementation vector** (below) + Working Log decisions dated 2026-07-10 (7A contract).
-2. Baseline if touching C: `zsh -ic 'mkt'` then optional
-   `zsh -ic 'mku mailrelay_send_test && mku mailrelay_preview_test'`.
-3. Implement **7A.1 + 7A.2 only** (contract, `H.wait` MAIL/NOTIFY wiring, real `H.mail.send` via `mailrelay_send_template`). Do **not** start 7A.3–7A.6 in the same chunk.
-4. Verify with `mkt` + focused Unity (`scripting_api_mail_test` or similar). Update this plan Status/checkboxes. Stop for review.
-5. Swagger already done (tag **"Mail Service"**; `/mailrelay/*` in `payloads/swagger.json`).
+1. Confirm Phase 7B freeform Status **complete**; baseline
+   `zsh -ic 'mku mailrelay_producer_test && mku scripting_api_test_mail'`.
+2. Next free migration: **1263** (re-check disk) — still needed for `system.server_started` / `system.server_stopped` seeds if startup admin mail is the goal.
+3. Next free QueryRef: **129**.
+4. Present next-phase plan (small chunks; qualifying questions first) before coding.
+5. REST send remains template-only; freeform is Lua-only via `mailrelay_send_direct`.
 
 ### Session checklist (every Mail Relay return)
 
@@ -45,7 +45,7 @@ Related repo areas:
 - `/elements/002-helium/acuranzo/migrations` for application database migrations and QueryRefs.
 - `/elements/003-lithium/src/managers/mail-manager` for the future Mail Manager UI.
 - `/elements/003-lithium/src/managers/profile-manager/pages/email` for user profile email settings.
-- `/elements/001-hydrogen/hydrogen/src/scripting` for the existing Lua `H.mail` / `H.notify` stubs that must be backfilled once Mail Relay has a real producer API.
+- `/elements/001-hydrogen/hydrogen/src/scripting` for Lua `H.mail` / `H.notify` (Phase 7A backfilled: real templated `H.mail`; `H.notify` deferred-error shim).
 
 Date of snapshot: 2026-07-06 prep review update; original snapshot 2026-06-29
 
@@ -251,7 +251,50 @@ Append discoveries, surprises, and decisions here as we move through phases. Ear
 
 ### Decisions log
 
-- (Phase 7A contract, 2026-07-10, LOCKED — not coded yet) First chunk is **7A.1 + 7A.2 together**. (1) Lua `idempotency_key` is **optional**; auto-generate UUID when omitted (REST still requires it). (2) `H.notify` v1 returns a **stable deferred error** (no silent drop, no channel→template map in 7A). (3) `H.mail` is template-first (`template` or `template_key`); reject raw subject/body-only. (4) Success wait result: `{ message_id, status = "queued" }`. (5) Wire `H.wait` for `H_HK_MAIL`/`H_HK_NOTIFY` in the same chunk as real `H.mail.send`. Full vector under "Phase 7A implementation vector".
+- (Phase 7B complete, 2026-07-10) **Lua freeform mail (L.1–L.3).**
+  1. Policy: Lua may send **template** *or* **freeform** (exactly one mode). REST stays template-only.
+  2. Freeform fields: `subject` + (`text_body` and/or `html_body`); `body` aliases `text_body`. Literal bodies — no macro expansion.
+  3. C API: `mailrelay_send_direct` + `MailRelaySendDirectRequest` + `mailrelay_send_direct_set_fn` seam; shared response type with template producer.
+  4. Shared producer helpers: runtime gate, idempotency, from/reply defaults, recipient arrays, enqueue.
+  5. Unity: producer 12/12 (6 template + 6 direct); scripting mail 18/18. `mkt`/`mkp` green.
+  6. Docs: `lua_api.md`, `MAIL_GUIDE.md`. No migration.
+- (Phase 8.5 complete, 2026-07-10) **OTP verify helper.**
+  1. `mailrelay_otp_verify`: get active (113) → C `expiry_at` check → hash/compare → consume (114) or increment (115) / mark max (128).
+  2. Success returns `otp_id` + `account_id`; never plaintext. Errors: `MAIL_OTP_NOT_FOUND` / `EXPIRED` / `MAX_ATTEMPTS` / `INVALID`.
+  3. Repo: `MAILRELAY_QREF_OTP_MARK_MAX_ATTEMPTS` (128) + `mailrelay_repo_otp_mark_max_attempts`.
+  4. Unity `mailrelay_otp_verify_test` 10/10; generate 10 + send 6 + repo 12; `mkt`/`mkp` green.
+  5. Log: purpose only (`OTP verified purpose=%d`).
+- (Phase 8.5a migration, 2026-07-10) **QueryRef 128 for max-attempts lockout.**
+  1. Migration `acuranzo_1262.lua` / QueryRef **128**: status_a67=3 + attempts+1 where still active.
+  2. User applied schema before 8.5b C work.
+- (Phase 8.4 complete, 2026-07-10) **OTP generate_and_send + template seed.**
+  1. `mailrelay_otp_generate_and_send`: resolve digits/expiry/max from request or `MailRelay.Otp` → generate → SHA-256 hex → QueryRef 112 insert → `mailrelay_send_template(auth.otp_code, otp_code=plaintext)` → wipe plaintext + hash.
+  2. Response: `otp_id` (when repo returns it), `message_id`, `status` — never plaintext.
+  3. Migration `acuranzo_1261.lua` seeds `auth.otp_code` (template_id 2) with `%OTP_CODE%` + built-ins.
+  4. Unity `mailrelay_otp_send_test` 6/6: success, bad email/purpose, disabled, insert fail, template fail; asserts hash-only insert params and no code in `err`.
+  5. Log line: purpose only (`OTP queued for delivery purpose=%d`) — no email/code.
+- (Phase 8.1–8.3 complete, 2026-07-10) **OTP design locked and generator landed.** Decisions:
+  1. **Ownership:** Internal C API only (`src/mailrelay/mailrelay_otp.*`). No public REST in Phase 8. Auth/OIDC will call later.
+  2. **API shape:** Single `mailrelay_otp_generate_and_send` (8.4) — generate → hash → insert → template send → wipe plaintext. Callers never see plaintext except test seams.
+  3. **Code format:** 6-digit numeric (configurable via `MailRelay.Otp.Digits` 4–10); store `SHA-256(code)` lowercase hex (64 chars), no salt/pepper.
+  4. **Config:** `MailRelay.Otp` with `Digits` (default 6), `ExpirySeconds` (300), `MaxAttempts` (5). Schema + examples + dump + Unity load tests.
+  5. **Schema:** `mail_otp_codes` + QueryRefs 112–117 verified sufficient; **no new migration** in 8.3.
+  6. **Purpose/status enums:** `MAIL_OTP_PURPOSE_*` / `MAIL_OTP_STATUS_*` in `mailrelay_otp.h` match lookups 066/067.
+  7. **Seams:** `mailrelay_otp_set_random_fn` for Unity; hash via OpenSSL `SHA256`; compare via `CRYPTO_memcmp`; wipe via `OPENSSL_cleanse`.
+  8. **Deliverables 8.3:** `mailrelay_otp.{c,h}`, `mailrelay_otp_generate_test` (10/10), config Otp block, `mkt`/`mkp` green.
+- (Phase 7A complete summary, 2026-07-10) **Lua backfill shipped end-to-end.** All producers (REST, events, Lua `H.mail`) share `mailrelay_send_template`. Deliverables:
+  1. **`H.mail.send` / `send_sync`:** template-first Lua table → producer; optional `idempotency_key` (auto UUID); success `{ message_id, status = "queued" }`; errors as `MAIL_*: ...`.
+  2. **`H.wait`:** `H_HK_MAIL` / `H_HK_NOTIFY` dispatched from `H_lua_wait_one` and multi-handle `H.wait` (was a hard gap: declared wait helper never wired).
+  3. **Handle fields:** `mail_message_id`, `mail_status` (plus existing `mail_error` / `notify_error`).
+  4. **Producer seam:** `mailrelay_send_template_set_fn()` — default impl extracted; tests inject mock (no SMTP/DB).
+  5. **`H.notify`:** stable `"notify: deferred to mailrelay rules"`; no enqueue; no channel→template map.
+  6. **Unity:** `scripting_api_test_mail` 14/14; `workflow_test_competing_jobs` 12/12 (legacy stub assertions updated).
+  7. **Docs:** `lua_api.md`, `LUA_PLAN_COMPLETE.md` Phase 19, `MAIL_GUIDE.md` notify text, `lua_context.c` comment.
+  8. **Files:** `scripting_api_mail_notify.c`, `scripting_handle.{c,h}`, `scripting_api_query.c`, `scripting_api.h`, `mailrelay_producer.c`, `mailrelay.h`, `tests/unity/src/scripting/scripting_api_test_mail.c`, workflow test updates.
+- (Phase 7A complete, 2026-07-10) 7A.5 safety audit: Lua mail path only calls `mailrelay_send_template` (no REST/SMTP/curl); no body/OTP/JWT logging. 7A.6 docs updated as above.
+- (Phase 7A.4 complete, 2026-07-10) `H.notify` deferred error string locked and coded.
+- (Phase 7A.1+7A.2 complete, 2026-07-10) Real `H.mail` + wait wiring + minimal `send_sync` + producer seam.
+- (Phase 7A contract, 2026-07-10, LOCKED and shipped) (1) Lua `idempotency_key` optional / auto UUID (REST still requires it). (2) `H.notify` deferred error only. (3) Template-first; reject raw subject/body. (4) Success wait `{ message_id, status = "queued" }`. (5) Wait wired with send. See "Phase 7A as shipped" below.
 - (Phase 7.6, 2026-07-10) Swagger public tag is **"Mail Service"** (not "Mail Relay Service"); internal subsystem name/paths remain `mailrelay` / `SR_MAIL_RELAY`. Annotations live on `send.h` / `preview.h` / `status.h` plus `mailrelay_service.h` for the tag description. Document-as-implemented with full stable `MAIL_*` error codes. Regenerated swagger + payload; `test_22_swagger.sh` green.
 - (Phase 7.5b, 2026-07-08, PAUSE) Role authorization design locked before the break. (1) The JWT `roles` claim stays canonical: a comma-separated list of **role_id integers** (not role names). (2) The mailrelay API authorizes by the `mail_send` **role_id**, resolved at request time via a **new QueryRef #127 "Get Role By Name"** (migration `acuranzo_1260.lua`) — NOT a hardcoded `"1"` constant. (3) The QueryRef #017 loader (`roles_from_database` in `oidc_rp_roles.c`) becomes a **non-static shared** function reused by the password login path. (4) Work split: Chunk 1 = auth roles fix; Chunk 2 = `test_58` hang hardening; then 7.6 Swagger. NONE of this is coded yet — see the "Phase 7.5b resume plan" under Phase 7.
 - (Phase 7.5b Chunk 1, 2026-07-08) Chunk 1 implementation completed. `auth_roles_from_database()` is declared in `auth_service.h` and defined in `oidc_rp_roles.c`; the existing OIDC test seam continues to cover it. The mailrelay role check is implemented in a new shared file `src/api/mailrelay/mailrelay_api_auth.{c,h}` and resolves the role name through the Mail Relay repository seam (QueryRef #127) so endpoint unit tests stay DB-free. Password login now loads roles before JWT generation, matching OIDC semantics.
@@ -338,7 +381,49 @@ Append discoveries, surprises, and decisions here as we move through phases. Ear
 
 ### Surprises / deviations from plan
 
-- (Phase 7.5b closeout, 2026-07-09) Lessons learned while making Test 40/58 fully green (carry these forward for Phase 7A/8/12 and any future JWT-gated API):
+- (Phase 8.5, 2026-07-10) Lessons from OTP verify (carry to auth MFA / any future OTP consumer):
+  1. **QueryRef 115 does not lock out.** It only does `attempts = attempts + 1`. Status 3 (`max_attempts_exceeded`) required a **new** QueryRef **128** (migration 1262) that increments **and** sets status in one UPDATE. Always re-read the SQL before assuming “increment” implies terminal state.
+  2. **QueryRef 113 does not filter expiry.** Active = `status_a67 = 0` only. Expiry is a **C-side** `expiry_at` parse vs `time(NULL)`. Expired rows can still be returned as “active” until bulk expire (116) or cleanup runs — verify must fail closed with `MAIL_OTP_EXPIRED` without requiring a write.
+  3. **Split migration vs C when user must deploy.** 8.5a (SQL only) → user migrate → 8.5b (C) avoided shipping verify against a missing QueryRef. Pattern: schema gap → migration chunk → pause → C chunk.
+  4. **ISO expiry parse matches `format_iso_time`:** `%Y-%m-%dT%H:%M:%SZ` via `sscanf` + `timegm` (also accepts space separator). Do not use local `mktime` for UTC Z timestamps.
+  5. **Logical OTP failures use `MAILRELAY_INVALID_ARGS` + `MAIL_OTP_*` in `err`.** Only real DB/write failures use `MAILRELAY_PERSIST_FAILED`. Callers (auth later) should branch on `err` prefix, not invent a new status enum unless needed.
+  6. **Max-attempts paths are two:** (a) row already at cap → fail without write; (b) this wrong code would hit cap → QRef 128 then `MAIL_OTP_MAX_ATTEMPTS`. Wrong code under cap → QRef 115 + `MAIL_OTP_INVALID`.
+  7. **Unity mock must dispatch all QRefs the path may hit** (113/114/115/128); unexpected ref → `TEST_FAIL`. Parse `INTEGER.OTP_ID` the same nested-param way as send tests.
+  8. **New Unity file needs a full `mkt`** before first `mku` so CMake discovers the target (`No rule to make target` otherwise).
+  9. **Wipe stored hash from the get-active context** after compare (match and mismatch paths) so the stack does not retain `code_hash` longer than needed.
+  10. **Auth integration still out of scope.** `mailrelay_otp_verify` is the C seam; login MFA / OIDC / REST must not be assumed complete because Phase 8 is green.
+- (Phase 8.1–8.3, 2026-07-10) Lessons from OTP generator + Otp config (carry to 8.4/8.5):
+  1. **Schema was ready; C was not.** Table + QueryRefs 112–117 + repo helpers existed from Phase 4; 8.2 was verify-only. Always re-read migrations before writing ALTER/seed migrations.
+  2. **Config in the same chunk as the first consumer is cheap.** `MailRelay.Otp` (Digits/Expiry/MaxAttempts) landed with 8.3 so 8.4 does not invent constants. Pattern: new policy knobs → struct + loader defaults + dump + schema + examples + one Unity load test in one pass.
+  3. **Hash encoding is not free via `utils_sha256_hash`.** That helper returns base64url; OTP storage needs lowercase hex for `VARCHAR_128` / QueryRef contracts. Local `SHA256` + hex loop is fine; do not force crypto utils into the wrong encoding.
+  4. **Random seam mirrors producer seams.** `mailrelay_otp_set_random_fn(NULL)` restores default — same NULL-restore pattern as `mailrelay_send_template_set_fn`. Keep OTP insert/send seams the same style in 8.4.
+  5. **Never assert or log plaintext OTP in Unity.** Tests use fixed random fill (`777777`) and known SHA-256 hex vectors; failure messages must not print live codes.
+  6. **`CRYPTO_memcmp` + equal lengths** for hash compare; reject empty strings (length-0 is not a useful equal). Prep for 8.5 verify path.
+  7. **Dump tests with hand-built `MailRelayConfig` zero-init** show Digits=0 until fields are set — pre-existing pattern for Queue/Events; not a loader bug. Prefer load_mailrelay_config fixtures for policy fields.
+  8. **At 8.3 time next free migration was 1261** for `auth.otp_code` seed; only `mail.test` (template_id 1) existed then. **After 8.4: 1261 used; next free is 1262. After 8.5: 1262 used; next free is 1263.**
+- (Phase 8.4, 2026-07-10) Lessons from generate_and_send (carry to 8.5):
+  1. **Repo executor params are nested:** `{"STRING":{"CODE_HASH":...},"INTEGER":{...}}` — not flat keys. Unity mocks that parse params must use `json_object_get(p, "STRING")` then field names (see `mailrelay_persistence_test` / `mailrelay_otp_send_test` / `mailrelay_otp_verify_test`).
+  2. **Seam names:** `mailrelay_repo_set_executor` / `get_executor` (not set_execute_fn). `mailrelay_send_template_set_fn` for mail path.
+  3. **Wipe both plaintext and hash buffers** on every exit path after use; insert failure must not leave secrets in stack buffers.
+  4. **Insert-then-send order:** if send fails after insert, a row may remain active without mail — acceptable for v1; ops cleanup (QueryRef 126) / expire path handles orphans. Do not invent compensating delete without a design decision.
+  5. **template_id 2** for `auth.otp_code` (mail.test is 1). Re-check disk if other seeds land first.
+  6. **Purpose logged as integer only** — never email or code in `log_this`.
+  7. **Stable MAIL_* on every failure path** (same as 7A producer lesson): disabled → `MAIL_DISABLED`; bad email → `MAIL_RECIPIENT_INVALID`; bad purpose/digits → `MAIL_PARAM_MISSING`; insert fail → `MAIL_PERSIST_FAILED`; template fail passes through producer error string.
+  8. **Policy resolution order:** request field > `app_config->mail_relay.Otp.*` > `MAIL_OTP_DEFAULT_*` constants.
+- (Phase 7A complete, 2026-07-10) Lessons learned while backfilling Lua `H.mail` / `H.notify` (carry forward to Phase 8 OTP, Phase 13 hooks, any future scripting host API):
+  1. **Stub-era Unity tests break when stubs become real.** `workflow_test_competing_jobs` asserted exact `"mail: not implemented"` / `"notify: not implemented"` for raw subject/body shapes. After 7A, raw-only mail correctly returns `MAIL_PARAM_MISSING` (template required) and notify returns the deferred string. **Before changing a public stub API, `rg` for the old error string across tests/docs** and update in the same chunk.
+  2. **Declared wait helpers that are never dispatched are silent bugs.** `H_lua_mail_notify_wait_one` existed in the header but `H_lua_wait_one` only branched HTTP/LLM then fell through to query await — MAIL/NOTIFY handles misbehaved under `H.wait`. Wire **both** single-handle and multi-handle wait paths when adding a handle kind.
+  3. **Producer dispatcher seam > link-time override for Unity.** `mailrelay_send_template_set_fn(fn)` (NULL restores default) matches `mailrelay_event_set_dispatcher` and keeps scripting tests DB/SMTP-free. Prefer this pattern for OTP generate/send/verify seams in Phase 8.
+  4. **Default implementation must fill `err` on every non-OK path.** Early `MAILRELAY_DISABLED` / `MAILRELAY_SHUTDOWN` returns left `err` empty; Lua then had to map status codes. After 7A, default producer writes `MAIL_DISABLED: ...` on those paths too so all callers get stable `MAIL_*` strings.
+  5. **`send_sync` is not a second code path.** LLM pattern: `send` + `wait_one` + `lua_remove` handle. When making async real, fix `send_sync` in the same chunk or success returns `nil, nil` (broken stub behavior).
+  6. **Lua string lifetimes:** copy template/idempotency/recipients with `strdup` while values are still on the Lua stack; do not hold `lua_tostring` pointers after `lua_pop`.
+  7. **Template-first is shared policy.** REST and Lua both reject raw subject/body. OTP mail must use `auth.otp_code` (or similar) template + params (`%OTP_CODE%`), never raw body APIs.
+  8. **No JWT in Lua host context.** Built-in macros come from `app_config->server.server_name` / clock; scripting is trusted. REST still requires JWT + `mail_send` role. OTP **endpoints** will need auth ownership decisions (Phase 8.1) separate from in-process Lua.
+  9. **Docs lag is real debt.** `lua_api.md` still had `{to, subject, body, template?}` until 7A.6. When shipping a contract change, schedule the doc chunk or update docs in the same PR as the API.
+  10. **`-Wswitch-enum` and const qualifiers.** Exhaustive `MailRelayStatus` switches required; `AppConfig` string fields need non-const buffers in Unity fixtures (`static char buf[] = "..."`).
+  11. **Minimal `send_sync` was enough for 7A.3.** No separate polish pass needed once wait wrapper existed; mark complete when Unity covers success + error mapping.
+  12. **Notify deferred > silent no-op.** Returning a clear error prevents scripts assuming delivery. Same rule for any incomplete OTP/notify surface: fail closed with a stable string.
+- (Phase 7.5b closeout, 2026-07-09) Lessons learned while making Test 40/58 fully green (carry these forward for Phase 8/12 and any future JWT-gated API):
   1. **JWT `roles` claim is role_id integers** (e.g. `"1,3"`), NOT role names. Gate by resolving name → `role_id` (QueryRef #127) then matching the id. Same trap will hit Lithium role UI, OTP endpoints, inbound relay auth if they compare names.
   2. **Password login ≠ OIDC login for claims.** OIDC loads roles via QueryRef #017 before `generate_jwt()`; password login did not until Chunk 1. Always test auth-dependent features through the real login path the blackbox uses, not only OIDC or hand-crafted Unity JWTs.
   3. **Unity fixtures must mirror production claim format.** Fixtures with `"mail_send"` as a role string passed while e2e failed. Prefer role_id strings and mock QueryRef #127.
@@ -349,7 +434,7 @@ Append discoveries, surprises, and decisions here as we move through phases. Ear
   8. **SQLite second-resolution timestamps + strict `<`/`>` on `valid_after`/`valid_until`.** Same-second store+validate returns 0 rows → "revoked". Prefer `<=` / `>=` (already used in later migrations). **Macros (`${NOW}`, `TRFS`) do not fix operators** — they only expand the clock expression. Applied QueryRefs store pre-expanded SQL; greenfield can patch original migrations; production would need a rewrite migration.
   9. **Parallel blackbox under `set -e`:** background jobs that `return 1` make `wait` / `wait -n` kill the parent mid-suite with little console output. Encode pass/fail in result files and always `return 0` from parallel workers; analyze results in the parent. Use `wait … || true`.
   10. **Readiness wait:** prefer canonical log line `READY FOR REQUESTS` over long migration-completion polls; keep per-variant timeouts short so missing engines fail fast.
-  11. **Migration numbering:** always re-derive next-free migration/QueryRef from disk (`ls migrations`, Acuranzo README), not from plan prose. As of 7.5b close: highest migration used for mail/auth work is **1260** (QueryRef #127); next free is **1261** / next free QueryRef depends on README after any later inserts.
+  11. **Migration numbering:** always re-derive next-free migration/QueryRef from disk (`ls migrations`, Acuranzo README), not from plan prose. As of Phase 8.4: highest mail seed is **1261** (`auth.otp_code`); next free is **1262**. QueryRef #127 remains Get Role By Name (migration 1260).
   12. **SQLite isolation:** copy baseline DB + WAL/SHM sidecars into a per-variant temp path; never share one SQLite file across parallel Hydrogen instances.
 - (Phase 0, 2026-07-06) `examples/configs/hydrogen_default.json` and `hydrogen_env.json` use legacy `MailRelay.QueueSettings` / `MailRelay.OutboundServers` keys, while the current loader and Phase 0 schema use `MailRelay.Queue` / `MailRelay.Servers`. Reconcile example configs and/or compatibility aliases during Phase 1.
 - (Phase 1, 2026-07-06) Existing launch readiness tests assumed disabled = No-Go; Phase 1 changed this to clean skip and required test updates in `launch_mail_relay_test_comprehensive_coverage.c`. Server validation tests also needed `OutboundEnabled=true` because validation is now gated behind the outbound flag.
@@ -366,6 +451,19 @@ Append discoveries, surprises, and decisions here as we move through phases. Ear
 
 ### Reusable snippets / gotchas
 
+- **OTP (Phase 8):**
+  - Generate/send: `mailrelay_otp_generate_and_send` → QRef 112 + `auth.otp_code` template; wipe plaintext/hash always.
+  - Verify: `mailrelay_otp_verify` → 113 → C expiry → 114 or 115/128; return `otp_id`/`account_id` only.
+  - Test with `mailrelay_repo_set_executor(mock)` + known hash of fixed code; never put code in `err` assertions as expected text beyond absence checks.
+  - Nested params: `STRING` / `INTEGER` objects under params JSON.
+  - New Unity test file: run `mkt` once before first `mku` for CMake discovery.
+  - Next free after 8.5: migration **1263**, QueryRef **129** (re-check disk).
+- **Lua mail / scripting (Phase 7A):**
+  - Producer: only `mailrelay_send_template` from Lua; test with `mailrelay_send_template_set_fn(mock)`.
+  - Wait: branch new `H_HandleKind` values in **both** `H_lua_wait_one` and multi-handle `H.wait`.
+  - `send_sync` = async submit + wait + remove handle (copy LLM helpers).
+  - Deferred incomplete features: stable error string, never silent success.
+  - `rg 'not implemented'|old error strings` when replacing stubs.
 - **Auth / JWT (Phase 7.5b):**
   - Role gates: resolve name → role_id (QueryRef #127 / repository seam), then match id in JWT `roles` claim (`"1,3"` style).
   - Password login must call `auth_roles_from_database()` before `generate_jwt()` (same as OIDC).
@@ -394,62 +492,132 @@ Append discoveries, surprises, and decisions here as we move through phases. Ear
 - Keep `load_mailrelay_config()`, `initialize_config_defaults_mail_relay()`, Unity expectations, `hydrogen_config_schema.json`, and example configs synchronized whenever Phase 1 changes config field names or defaults.
 - Existing examples used legacy `MailRelay.QueueSettings` / `MailRelay.OutboundServers` keys; Phase 1 updated all three example configs (`hydrogen_default.json`, `hydrogen.json`, `hydrogen_env.json`) to use the current `MailRelay.Queue` / `MailRelay.Servers` schema.
 
-### Phase 7A implementation vector (locked 2026-07-10 — resume and code)
+### Phase 7A as shipped (complete 2026-07-10)
 
-**Entry:** Phase 7 green. Producer: `mailrelay_send_template()`. Stubs: `src/scripting/scripting_api_mail_notify.c`.
+**Status:** Done. Historical vector retained for contract reference; do not re-implement.
 
-**Decisions locked with user (do not re-ask unless changing them):**
+**Decisions shipped:**
 
-| Topic | Choice |
+| Topic | Shipped |
 |---|---|
-| First ship | **7A.1 + 7A.2 together** (contract + wait wiring + real `H.mail.send`) |
-| `idempotency_key` | **Auto-generate UUID if Lua omits it** (REST still requires explicit key) |
-| `H.notify` v1 | **Stable deferred error** (e.g. `notify: deferred to mailrelay rules`); no silent success; no channel→template map in 7A |
-| Delivery | Lua → **internal** `mailrelay_send_template` only (never HTTP/SMTP from scripts) |
-| `send_sync` | Wait for **queue accept only**, not SMTP (7A.3; out of first chunk) |
+| Chunking | 7A.1+7A.2 together; minimal `send_sync` included; 7A.4 notify; 7A.5 audit; 7A.6 docs |
+| `idempotency_key` | Auto UUID if Lua omits; REST still requires explicit key |
+| `H.notify` | `"notify: deferred to mailrelay rules"`; no enqueue; no channel map |
+| Delivery | Lua → `mailrelay_send_template` only |
+| `send_sync` | Queue accept only (LLM-style wait wrapper) |
+| Seam | `mailrelay_send_template_set_fn` |
 
-**Lua `H.mail.send` contract (template-first; align MAIL_GUIDE, not legacy subject/body docs):**
+**Lua contract (canonical; also in `lua_api.md` / `MAIL_GUIDE.md`):**
 
 ```lua
 H.mail.send({
-  template = "mail.test",   -- or template_key (either accepted)
+  template = "mail.test",   -- or template_key
   to = "a@x.com" | { "a@x.com" },
-  cc = ..., bcc = ...,      -- at least one of to/cc/bcc required
+  cc = ..., bcc = ...,
   params = { NAME = "Ada" },
-  idempotency_key = "...",  -- optional; auto UUID if omitted
-  priority = 0,             -- optional
+  idempotency_key = "...",  -- optional; auto UUID
+  priority = 0,
 }, opts?) -> handle
 
--- H.wait(handle) success: { message_id = "...", status = "queued" }, nil
--- H.wait(handle) error:   nil, "MAIL_...: ..."  (or mail_error string)
+-- success: { message_id = "...", status = "queued" }, nil
+-- error:   nil, "MAIL_...: ..."
 ```
 
-- Reject raw-only `{ subject, body }` without `template` / `template_key` (same policy as REST v1).
-- Built-in macros (`APP_NAME`, `SERVER_NAME`, `TIMESTAMP`, etc.) filled from app/server context where available; no JWT required for in-process Lua (scripting is trusted host context).
+**Key code locations:**
 
-**Code gaps to fix in first chunk:**
+| Piece | Location |
+|---|---|
+| Lua parse/send/wait | `src/scripting/scripting_api_mail_notify.c` |
+| Handle success fields | `scripting_handle.h` (`mail_message_id`, `mail_status`) |
+| Wait dispatch | `scripting_api_query.c` (`H_HK_MAIL` / `H_HK_NOTIFY`) |
+| Producer + seam | `mailrelay_producer.c`, `mailrelay.h` |
+| Unity | `tests/unity/src/scripting/scripting_api_test_mail.c` (14 tests) |
+| Legacy stub updates | `workflow_test_competing_jobs.c` |
 
-1. Stubs always set `mail_error` / `notify_error` to `"mail: not implemented"` / `"notify: not implemented"`.
-2. `H_lua_mail_notify_wait_one` is declared in `scripting_api.h` but **not** dispatched from `H_lua_wait_one` in `scripting_api_query.c` — `H_HK_MAIL` / `H_HK_NOTIFY` currently fall through and mis-handle.
-3. `H_Handle` only has `mail_error` / `notify_error` for mail/notify; success needs **message_id + status** (extend handle or free after packing into wait result).
-4. `lua_api.md` still documents legacy `{to, subject, body, template?}` — update in **7A.6**, not first chunk.
-
-**First chunk (7A.1 + 7A.2) — implement next:**
-
-1. **7A.1** Contract + wait: parse/validation helpers; wire `H.wait` for MAIL/NOTIFY (`mail_error` / success payload); extend handle fields if needed.
-2. **7A.2** Real `H.mail.send`: Lua table → `MailRelaySendTemplateRequest` → `mailrelay_send_template()`; auto UUID; success/error handle; **Unity with mocked producer seam** (no live SMTP/DB).
-
-**Files (expected):** `scripting_api_mail_notify.c`, `scripting_api.h`, `scripting_handle.{c,h}`, `scripting_api_query.c` (`H_lua_wait_one`), optional producer test seam, `tests/unity/src/scripting/...` mail API test.
-
-**Out of first chunk:** 7A.3 `send_sync` polish, 7A.4 notify deferred string (stubs may remain `"notify: not implemented"` until 7A.4), 7A.5 safety audit, 7A.6 docs.
-
-**Later chunks:** 7A.3 → 7A.4 (deferred error text) → 7A.5 → 7A.6 (`lua_api.md`, LUA plan cross-ref).
-
-**Verification (first chunk):** `mkt`; `mku` for new mail scripting test; no full `test_58` unless delivery behavior changes.
-
-**Next free migration** after 1260 is **1261** if 7A/8 needs QueryRefs (re-check disk). No migration expected for 7A.1–7A.2.
+**No migration** was required for 7A. Next free after 1260 remains **1261** (re-check disk for Phase 8).
 
 **Process note:** for future public REST (OTP, inbound), prefer OpenAPI/contract before wiring when design-first docs are wanted.
+
+### Phase 7B as shipped (Lua freeform L.1–L.3 complete 2026-07-10)
+
+**Status:** Done. Historical vector; do not re-implement.
+
+**Decisions shipped:**
+
+| Topic | Shipped |
+|---|---|
+| Surfaces | Freeform on Lua `H.mail` only; REST template-only |
+| Modes | Exactly one of template or freeform; mixed rejected |
+| Body | `subject` + `text_body`/`html_body`; `body` → `text_body` |
+| Macros | Freeform literal; templates unchanged |
+| Producer | `mailrelay_send_direct` → `mailrelay_enqueue` |
+| Seam | `mailrelay_send_direct_set_fn` (NULL restores default) |
+| Caps | Subject 998; body 1 MiB per field (Lua parse) |
+
+**Key code locations:**
+
+| Piece | Location |
+|---|---|
+| Direct API | `mailrelay.h`, `mailrelay_producer.c` |
+| Lua parse/send | `scripting_api_mail_notify.c` |
+| Unity producer | `mailrelay_producer_test` (12) |
+| Unity Lua | `scripting_api_test_mail` (18) |
+| Docs | `lua_api.md`, `MAIL_GUIDE.md` |
+
+**No migration.** Next free remains **1263** / QueryRef **129** (re-check disk).
+
+### Phase 8 as shipped (8.1–8.5 complete 2026-07-10)
+
+**Status:** Done. Historical vector; do not re-implement.
+
+**Decisions shipped:**
+
+| Topic | Shipped |
+|---|---|
+| Ownership | Internal C only (`mailrelay_otp_*`); no public REST |
+| Code format | 6-digit default; `MailRelay.Otp` config (Digits 4–10, ExpirySeconds, MaxAttempts) |
+| Hash | SHA-256 lowercase hex, no salt/pepper |
+| Send path | Single `mailrelay_otp_generate_and_send` |
+| Verify path | `mailrelay_otp_verify` (email+purpose); C expiry; 114/115/128 |
+| Template | `auth.otp_code` (migration 1261, template_id 2) |
+| Max attempts | QueryRef 128 mark status 3 + increment |
+| Scope | login_mfa + email_verify first; password_reset enum only |
+
+**Key code locations:**
+
+| Piece | Location |
+|---|---|
+| OTP API | `src/mailrelay/mailrelay_otp.{c,h}` |
+| Config | `MailRelayOtpSettings` in `config_mail_relay.{c,h}`, defaults, schema, examples |
+| Repo OTP | QueryRefs 112–117, 128 via `mailrelay_repository.*` |
+| Mail | `mailrelay_send_template` + `MAIL_OTP_TEMPLATE_KEY` |
+| Seeds | migrations 1261 (`auth.otp_code`), 1262 (QRef 128) |
+| Unity generate | `mailrelay_otp_generate_test` (10) |
+| Unity send | `mailrelay_otp_send_test` (6) |
+| Unity verify | `mailrelay_otp_verify_test` (10) |
+| Unity config | `config_mail_relay_test_load_mailrelay_config` (incl. Otp) |
+
+**Next free migration after 8.5:** **1263** (re-check disk). Next free QueryRef: **129**.
+
+### Phase 8.5 as shipped / notes (historical; done 2026-07-10)
+
+- **QueryRefs used:** 113 get active (status=0 only, **no expiry filter**); 114 consume; 115 increment only; **128** mark max-attempts (status=3 + attempts+1). 116/117 not used in verify path.
+- **Shipped flow:** get active (113) → C `expiry_at` check → attempts-at-cap short-circuit → hash + constant-time equal → match: consume (114); mismatch at cap: 128; else: 115.
+- **Success:** `otp_id`, `account_id`. **Errors:** `MAIL_OTP_NOT_FOUND` / `EXPIRED` / `MAX_ATTEMPTS` / `INVALID` (+ MAIL_PARAM_MISSING / MAIL_RECIPIENT_INVALID / MAIL_DISABLED / MAIL_PERSIST_FAILED).
+- **Unity:** `mailrelay_otp_verify_test` 10/10 (mock executor; no live DB/SMTP).
+- **Out of Phase 8:** REST, blackbox, auth/OIDC MFA wiring.
+
+### Phase 8 preparation notes (from Phase 7A + earlier; historical)
+
+- **OTP is mail + auth, not a second SMTP path.** Generate/hash/store in mail tables (QueryRefs 112–117); send only via `mailrelay_send_template` with template `auth.otp_code` and `%OTP_CODE%`. Never log or return plaintext OTP after enqueue. **(Done in 8.4.)**
+- **Reuse producer seam pattern** for unit tests: repo executor + send_template seams keep Unity DB/SMTP-free. **(Done.)**
+- **Tables already exist:** `mail_otp_codes` (1221), lookups 066/067, QueryRefs 112–117. **(Verified 8.2.)**
+- **Auth ownership locked (8.1):** internal C; auth/OIDC call later; no REST in Phase 8.
+- **Redaction is non-negotiable for OTP:** no OTP plaintext in `log_this`, config dumps, Unity failure messages, or blackbox artifacts.
+- **C-side generate+send** so plaintext never crosses untrusted Lua. **(Done.)**
+- **Stub/string grep when changing errors:** any new stable OTP error codes should be grepped into tests/docs in the same chunk.
+- **Blackbox slot:** free ports 557x used by 57/58; OTP blackbox deferred.
+- **Entry gate for Phase 8** treats Phase 7 **and** Phase 7A as green.
 
 ### Phase 5 preparation notes
 
@@ -1137,36 +1305,54 @@ Entry Gate: Phase 7 exit gate green; Lua Phase 19 stubs verified in `LUA_PLAN_CO
 
 **Chunking (locked 2026-07-10):** ship **7A.1 + 7A.2** first as one reviewable chunk; then 7A.3, 7A.4, 7A.5, 7A.6 separately. Full contract and file list: Working Log → "Phase 7A implementation vector".
 
-- [ ] 7A.1 Audit stubs + lock contract + wire `H.wait` for MAIL/NOTIFY.
-  - Files: `scripting_api_mail_notify.c`, `scripting_api.h`, `scripting_handle.{c,h}`, `scripting_api_query.c` (`H_lua_wait_one`), `lua_context.c` as needed.
+- [x] 7A.1 Audit stubs + lock contract + wire `H.wait` for MAIL/NOTIFY.
+  - Files: `scripting_api_mail_notify.c`, `scripting_api.h`, `scripting_handle.{c,h}`, `scripting_api_query.c` (`H_lua_wait_one`).
   - Contract: template-first table (`template` or `template_key`); at least one recipient; optional `params` / `priority` / `idempotency_key` (auto UUID if omitted); reject raw subject/body-only; success wait result `{ message_id, status = "queued" }`.
-  - Fix: dispatch `H_HK_MAIL` / `H_HK_NOTIFY` in `H_lua_wait_one` (declared `H_lua_mail_notify_wait_one` is not wired today).
-  - Verification: Unity covers wait error/success paths for mail handles (with 7A.2).
+  - Fix: dispatch `H_HK_MAIL` / `H_HK_NOTIFY` in `H_lua_wait_one` and multi-handle `H.wait`.
+  - Handle: `mail_message_id` / `mail_status` success fields; `H_lua_mail_notify_wait_one` implemented.
+  - Verification: `mku scripting_api_test_mail` covers wait error/success (with 7A.2).
 
-- [ ] 7A.2 Replace `H.mail.send` with Mail Relay producer wrapper (**same chunk as 7A.1**).
+- [x] 7A.2 Replace `H.mail.send` with Mail Relay producer wrapper (**same chunk as 7A.1**).
   - Map Lua table → `MailRelaySendTemplateRequest` → `mailrelay_send_template()`; return `H_HK_MAIL` handle with success fields or `mail_error` (`MAIL_*`).
-  - Unity with **mocked producer seam** (no live SMTP/DB).
-  - Verification: `mku scripting_api_mail_test` (or equivalent) for queued success, missing template, invalid recipients, disabled Mail Relay, auto idempotency key.
+  - Producer seam: `mailrelay_send_template_set_fn()` in `mailrelay_producer.c` / `mailrelay.h`.
+  - Minimal `send_sync`: send + wait for queue accept (covers most of 7A.3).
+  - Verification: `mku scripting_api_test_mail` (grew to 14/14 after 7A.4 notify tests) — queued success, missing template, raw-only reject, invalid recipients, disabled, template not found, auto/explicit idempotency, send_sync, consumed wait; notify deferred covered in 7A.4.
 
-- [ ] 7A.3 Replace `H.mail.send_sync` with wait-based behavior (after 7A.1–2).
-  - Contract: wait only for **queue acceptance**, not SMTP delivery.
-  - Verification: Unity for queued result, invalid template/recipient, disabled, error mapping.
+- [x] 7A.3 Replace `H.mail.send_sync` with wait-based behavior (after 7A.1–2).
+  - Shipped with 7A.1–2 as minimal wait wrapper (queue accept only, not SMTP). Mark polished here; no further 7A.3 work unless review finds gaps.
+  - Verification: `test_mail_send_sync_success` in `scripting_api_test_mail`.
 
-- [ ] 7A.4 Define `H.notify` compatibility behavior (after 7A.3).
-  - **Locked v1:** stable deferred error (`notify: deferred to mailrelay rules` or equivalent); **no** silent success; **no** channel→template mapping in 7A. Real rule mapping deferred.
-  - Verification: Unity for deferred error on send/send_sync/wait; no accidental enqueue.
+- [x] 7A.4 Define `H.notify` compatibility behavior (after 7A.3).
+  - **Locked v1:** stable deferred error `"notify: deferred to mailrelay rules"`; **no** silent success; **no** channel→template mapping in 7A. Real rule mapping deferred.
+  - Verification: `scripting_api_test_mail` notify deferred/send_sync/no-enqueue tests; `workflow_test_competing_jobs` notify assertions updated.
 
-- [ ] 7A.5 Preserve Lua safety and audit boundaries.
-  - Lua must not call REST or SMTP for mail; same producer as REST/events (validation, rate limits, redaction, idempotency, audit).
-  - Verification: no secrets/OTP/JWT/body in normal logs/artifacts.
+- [x] 7A.5 Preserve Lua safety and audit boundaries.
+  - Audit: `scripting_api_mail_notify.c` only calls `mailrelay_send_template` (no curl/SMTP/REST). Single `log_this` is install failure only (no message body). Notify never enqueues.
+  - Verification: code review + existing Unity (notify no-enqueue, mail producer seam).
 
-- [ ] 7A.6 Update scripting docs and Lua completion plan cross-reference.
-  - Files: `/docs/H/core/subsystems/scripting/lua_api.md` (replace legacy subject/body shape), `/docs/H/plans/LUA_PLAN_COMPLETE.md`, Working Log if needed.
-  - Verification: `test_04_check_links.sh` and `test_90_markdownlint.sh` for touched docs.
+- [x] 7A.6 Update scripting docs and Lua completion plan cross-reference.
+  - Files: `lua_api.md` (template-first contract), `LUA_PLAN_COMPLETE.md` Phase 19 backfill note, `MAIL_GUIDE.md` H.notify deferred, `lua_context.c` comment.
+  - Verification: docs aligned with implementation; markdown lint when convenient.
 
-Exit Gate: Lua scripts can queue templated mail through Mail Relay via `H.mail`; `H.notify` has explicit deferred compatibility behavior; no parallel mail path. `mkt`, `mkp`, Lua mail Unity tests, and relevant doc/link lints pass.
+Exit Gate: Lua scripts can queue templated mail through Mail Relay via `H.mail`; `H.notify` has explicit deferred compatibility behavior; no parallel mail path. **Met 2026-07-10.**
 
-Phase 7A Status: pending (contract locked 2026-07-10; **not coded**). Date: (TBD). Result: (TBD). Variances: first chunk is 7A.1+7A.2 together; notify is deferred-error only (stricter than optional rule mapping).
+Phase 7A Status: **complete**. Date: 2026-07-10. Result: `H.mail` real producer path; `H.notify` deferred error; Unity mail 14/14, workflow 12/12; docs updated; lessons recorded for Phase 8. Variances: minimal `send_sync` in first chunk; notify deferred-error only (no rule mapping).
+
+---
+
+## Phase 7B - Lua Freeform Mail Body
+
+Objective: Allow trusted Lua scripts to supply subject and body directly via `H.mail`, without requiring a DB template, while keeping REST template-only.
+
+Entry Gate: Phase 7A complete.
+
+- [x] L.1 `mailrelay_send_direct` producer + Unity (`mailrelay_producer_test` 12/12).
+- [x] L.2 `H.mail` dual-mode parse/dispatch + Unity (`scripting_api_test_mail` 18/18).
+- [x] L.3 Docs (`lua_api.md`, `MAIL_GUIDE.md`) + this plan Working Log.
+
+Exit Gate: met. Freeform Lua path enqueues through workers; mixed mode rejected; REST unchanged.
+
+Phase 7B Status: **complete**. Date: 2026-07-10. Result: freeform + template dual mode for Lua; seams and docs updated. Variances: none significant.
 
 ---
 
@@ -1174,31 +1360,37 @@ Phase 7A Status: pending (contract locked 2026-07-10; **not coded**). Date: (TBD
 
 Objective: Add one-time password generation, storage, sending, and verification for authentication workflows.
 
-Entry Gate: Phase 7 exit gate green.
+Entry Gate: Phase 7 **and** Phase 7A exit gates green (templated producer + Lua path stable). Read Working Log **Phase 8 preparation notes** and Phase 0 OTP scope (login MFA + email verify first; password reset optional).
 
-- [ ] 8.1 Decide OTP relationship to existing auth/OIDC flows (record in Working Log).
+- [x] 8.1 Decide OTP relationship to existing auth/OIDC flows (record in Working Log).
   - OTP is a mail feature consumed by auth, not an auth bypass.
-  - Verification: decision recorded with exact endpoint and auth ownership.
+  - Locked: internal C only; no public REST in Phase 8; single `generate_and_send` (8.4); C-side generate so plaintext never enters untrusted Lua.
+  - Verification: decisions recorded 2026-07-10 (Working Log Phase 8.1–8.3).
 
-- [ ] 8.2 Create the `mail_otp_codes` table (Acuranzo migration).
-  - Store hashed code, user/account reference, email, purpose, expiry, attempts, consumed timestamp, audit columns. Never store plaintext OTP after send.
-  - Verification: migration applies/reverses; `test_98_luacheck.sh` passes; schema docs exist.
+- [x] 8.2 Create or **verify** the `mail_otp_codes` table (Acuranzo migration).
+  - Verified: table (1221) + QueryRefs 112–117 match needs (hash, email, account, purpose, status, expiry, attempts, max_attempts, consumed, audit). No schema gap; no new migration in 8.3.
+  - Never store plaintext OTP after send.
+  - Verification: read-only audit against migrations 1221 / 1242–1247; repo helpers already present.
 
-- [ ] 8.3 Implement OTP generator.
-  - Use existing OpenSSL/random utility patterns. Configurable digits/length and expiry.
-  - Verification: `mku mailrelay_otp_generate_test` covers randomness seam, length, expiry, hashing, max attempts.
+- [x] 8.3 Implement OTP generator + `MailRelay.Otp` config.
+  - Files: `src/mailrelay/mailrelay_otp.{c,h}`; config `MailRelayOtpSettings` (`Digits`/`ExpirySeconds`/`MaxAttempts`); schema + examples; Unity `mailrelay_otp_generate_test` + config load test.
+  - Generate (numeric, seam-injectable random), SHA-256 hex hash, constant-time equal, wipe. No DB/send yet.
+  - Verification: `mkt`; `mku mailrelay_otp_generate_test` 10/10; `mku config_mail_relay_test_load_mailrelay_config` 14/14; `mkp` green.
 
-- [ ] 8.4 Implement the OTP send path.
-  - Uses `auth.otp_code` template and the Mail Relay queue.
-  - Verification: blackbox sends an OTP mail to the sink; DB stores only the hashed code.
+- [x] 8.4 Implement the OTP send path.
+  - `mailrelay_otp_generate_and_send` in `mailrelay_otp.c`: generate → hash → QueryRef 112 → `mailrelay_send_template("auth.otp_code")` → wipe.
+  - Seed `auth.otp_code` via `acuranzo_1261.lua` (template_id 2). Unity uses repo + send_template seams.
+  - Verification: `mku mailrelay_otp_send_test` 6/6; `mku mailrelay_otp_generate_test` 10/10; `mkt`; `mkp`; `test_98_luacheck.sh`.
 
-- [ ] 8.5 Implement the verification endpoint/helper.
-  - Validate code, expiry, attempts, consumed state, purpose.
-  - Verification: `mku mailrelay_otp_verify_test` full generate/send/verify/consume roundtrip and negative cases.
+- [x] 8.5 Implement the verification helper (no public REST).
+  - [x] 8.5a Migration `acuranzo_1262.lua` QueryRef **128** mark max-attempts (status 3 + increment). User applied.
+  - [x] 8.5b C: `mailrelay_repo_otp_mark_max_attempts` + `mailrelay_otp_verify` + Unity.
+  - Flow: 113 → C expiry → hash/compare → 114 or 115/128. Success: `otp_id` + `account_id`.
+  - Verification: `mku mailrelay_otp_verify_test` 10/10; generate 10 + send 6; `mkt`/`mkp` green.
 
-Exit Gate: OTP codes can be generated, mailed, verified once, expire correctly, and never expose plaintext in storage or logs. `mkt`, `mkp`, the new `mku` set, migration checks, and `test_02_secrets.sh` pass.
+Exit Gate: met. OTP generate/store/send/verify once; max-attempts lockout; no plaintext in storage/logs/errors.
 
-Phase 8 Status: pending. Date: (TBD). Result: (TBD). Variances: (TBD).
+Phase 8 Status: **complete**. Date: 2026-07-10. Result: full OTP primitive stack (config, generate, send, verify) internal C only. Unity generate 10 + send 6 + verify 10. Migrations 1261–1262. Variances: QRef 128 for status 3 (115 is increment-only); C-only expiry check (no 116 in verify); no REST/blackbox/auth MFA wiring. Lessons: see Working Log Phase 8.5 surprises. **Paused** — next session presents Phase 9 (or other) plan before coding.
 
 ---
 

@@ -100,6 +100,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [TERMINAL_PLAN.md](/docs/H/plans/TERMINAL_PLAN.md): Implementation plan for Terminal feature
 - [LUA_PLAN_COMPLETE.md](/docs/H/plans/LUA_PLAN_COMPLETE.md): Scripting subsystem implementation roadmap
 - [OIDC_E2E_LOG.md](/docs/H/plans/OIDC_E2E_LOG.md): OIDC end-to-end manual test log (Phase 27)
+- [KEYCLOAK_PLAN.md](/docs/H/plans/KEYCLOAK_PLAN.md): Keycloak SSO plan (Hydrogen as OIDC RP; provision, client docs, E2E, post-MVP)
 - [UNITY_ASAN_PLAN.md](/docs/H/plans/UNITY_ASAN_PLAN.md): Plan for a separate ASAN Unity test variant (memory-safety gate)
 
 ### Folder: /docs/reference

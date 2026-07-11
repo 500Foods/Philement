@@ -34,6 +34,13 @@ typedef struct {
     int ReloadIntervalSeconds;
 } MailRelayTemplateSettings;
 
+// Mail relay OTP / MFA settings
+typedef struct {
+    int Digits;            // Numeric code length (default 6)
+    int ExpirySeconds;     // Code lifetime in seconds (default 300)
+    int MaxAttempts;       // Verify attempts before lockout (default 5)
+} MailRelayOtpSettings;
+
 // Mail relay events configuration
 typedef struct {
     bool Enabled;
@@ -98,6 +105,9 @@ typedef struct MailRelayConfig {
 
     // Template configuration
     MailRelayTemplateSettings Templates;
+
+    // OTP / MFA configuration
+    MailRelayOtpSettings Otp;
 
     // Event configuration
     MailRelayEvents Events;
