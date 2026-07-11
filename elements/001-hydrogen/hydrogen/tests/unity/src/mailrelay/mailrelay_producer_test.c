@@ -28,6 +28,12 @@ void test_mailrelay_send_template_not_found(void);
 void test_mailrelay_send_template_missing_recipient(void);
 void test_mailrelay_send_template_missing_from(void);
 void test_mailrelay_send_template_disabled(void);
+void test_mailrelay_send_direct_success(void);
+void test_mailrelay_send_direct_html_only(void);
+void test_mailrelay_send_direct_missing_subject(void);
+void test_mailrelay_send_direct_missing_body(void);
+void test_mailrelay_send_direct_missing_recipient(void);
+void test_mailrelay_send_direct_disabled(void);
 
 static AppConfig g_test_config = {0};
 static AppConfig* g_saved_app_config = NULL;
@@ -143,6 +149,12 @@ int main(void) {
     RUN_TEST(test_mailrelay_send_template_missing_recipient);
     RUN_TEST(test_mailrelay_send_template_missing_from);
     RUN_TEST(test_mailrelay_send_template_disabled);
+    RUN_TEST(test_mailrelay_send_direct_success);
+    RUN_TEST(test_mailrelay_send_direct_html_only);
+    RUN_TEST(test_mailrelay_send_direct_missing_subject);
+    RUN_TEST(test_mailrelay_send_direct_missing_body);
+    RUN_TEST(test_mailrelay_send_direct_missing_recipient);
+    RUN_TEST(test_mailrelay_send_direct_disabled);
 
     return UNITY_END();
 }
@@ -276,5 +288,101 @@ void test_mailrelay_send_template_disabled(void) {
     MailRelaySendTemplateResponse resp = { 0 };
     char err[256] = { 0 };
     MailRelayStatus status = mailrelay_send_template(&req, &resp, err, sizeof(err));
+    TEST_ASSERT_EQUAL_INT(MAILRELAY_DISABLED, status);
+}
+
+void test_mailrelay_send_direct_success(void) {
+    const char* to[] = { "to@example.com" };
+    MailRelaySendDirectRequest req = { 0 };
+    req.to = to;
+    req.to_count = 1;
+    req.subject = "Direct subject";
+    req.text_body = "Literal body from caller";
+    req.priority = 3;
+    req.idempotency_key = "direct-idem-1";
+
+    MailRelaySendTemplateResponse resp = { 0 };
+    char err[256] = { 0 };
+    MailRelayStatus status = mailrelay_send_direct(&req, &resp, err, sizeof(err));
+    TEST_ASSERT_EQUAL_INT(MAILRELAY_OK, status);
+    TEST_ASSERT_NOT_NULL(resp.message_id);
+    TEST_ASSERT_EQUAL_STRING("queued", resp.status);
+    TEST_ASSERT_TRUE(strlen(resp.message_id) > 0);
+    TEST_ASSERT_EQUAL_INT(1, g_idempotency_lookup_count);
+
+    mailrelay_send_template_response_free(&resp);
+}
+
+void test_mailrelay_send_direct_html_only(void) {
+    const char* to[] = { "to@example.com" };
+    MailRelaySendDirectRequest req = { 0 };
+    req.to = to;
+    req.to_count = 1;
+    req.subject = "HTML only";
+    req.html_body = "<p>Hello</p>";
+
+    MailRelaySendTemplateResponse resp = { 0 };
+    char err[256] = { 0 };
+    MailRelayStatus status = mailrelay_send_direct(&req, &resp, err, sizeof(err));
+    TEST_ASSERT_EQUAL_INT(MAILRELAY_OK, status);
+    TEST_ASSERT_NOT_NULL(resp.message_id);
+    mailrelay_send_template_response_free(&resp);
+}
+
+void test_mailrelay_send_direct_missing_subject(void) {
+    const char* to[] = { "to@example.com" };
+    MailRelaySendDirectRequest req = { 0 };
+    req.to = to;
+    req.to_count = 1;
+    req.text_body = "body only";
+
+    MailRelaySendTemplateResponse resp = { 0 };
+    char err[256] = { 0 };
+    MailRelayStatus status = mailrelay_send_direct(&req, &resp, err, sizeof(err));
+    TEST_ASSERT_EQUAL_INT(MAILRELAY_INVALID_ARGS, status);
+    TEST_ASSERT_NOT_NULL(strstr(err, "MAIL_PARAM_MISSING"));
+    TEST_ASSERT_NOT_NULL(strstr(err, "subject"));
+}
+
+void test_mailrelay_send_direct_missing_body(void) {
+    const char* to[] = { "to@example.com" };
+    MailRelaySendDirectRequest req = { 0 };
+    req.to = to;
+    req.to_count = 1;
+    req.subject = "No body";
+
+    MailRelaySendTemplateResponse resp = { 0 };
+    char err[256] = { 0 };
+    MailRelayStatus status = mailrelay_send_direct(&req, &resp, err, sizeof(err));
+    TEST_ASSERT_EQUAL_INT(MAILRELAY_INVALID_ARGS, status);
+    TEST_ASSERT_NOT_NULL(strstr(err, "MAIL_PARAM_MISSING"));
+    TEST_ASSERT_NOT_NULL(strstr(err, "text_body"));
+}
+
+void test_mailrelay_send_direct_missing_recipient(void) {
+    MailRelaySendDirectRequest req = { 0 };
+    req.subject = "x";
+    req.text_body = "y";
+
+    MailRelaySendTemplateResponse resp = { 0 };
+    char err[256] = { 0 };
+    MailRelayStatus status = mailrelay_send_direct(&req, &resp, err, sizeof(err));
+    TEST_ASSERT_EQUAL_INT(MAILRELAY_INVALID_ARGS, status);
+    TEST_ASSERT_NOT_NULL(strstr(err, "MAIL_RECIPIENT_INVALID"));
+}
+
+void test_mailrelay_send_direct_disabled(void) {
+    g_test_config.mail_relay.Enabled = false;
+
+    const char* to[] = { "to@example.com" };
+    MailRelaySendDirectRequest req = { 0 };
+    req.to = to;
+    req.to_count = 1;
+    req.subject = "x";
+    req.text_body = "y";
+
+    MailRelaySendTemplateResponse resp = { 0 };
+    char err[256] = { 0 };
+    MailRelayStatus status = mailrelay_send_direct(&req, &resp, err, sizeof(err));
     TEST_ASSERT_EQUAL_INT(MAILRELAY_DISABLED, status);
 }

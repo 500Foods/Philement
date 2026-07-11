@@ -338,7 +338,7 @@ See [scripting README](/docs/H/core/subsystems/scripting/README.md) for every op
 - No native `package.loadlib`
 - Prefer `H.system.now()` over raw `os.time` when writing portable scripts
 
-Use `H.http`, `H.query`, `H.log`, and (when implemented) `H.mail` instead of shelling out.
+Use `H.http`, `H.query`, `H.log`, and `H.mail` instead of shelling out.
 
 ### Async-first handles
 
@@ -511,20 +511,34 @@ local list, err2 = H.llm.list_sync()
 
 You pass a **model name only**; keys and endpoints stay on the server.
 
-### Mail and notify (stubs today)
+### Mail and notify
+
+`H.mail` queues through Mail Relay. Use **exactly one** mode:
+
+- **Template** — `template` / `template_key` + optional `params`
+- **Freeform** — `subject` + `text_body` / `html_body` / `body` (literal)
 
 ```lua
+-- Template mode
 local h = H.mail.send({
+    template = "mail.test",
     to = "alice@example.com",
-    subject = "Daily report",
-    body = body_text,
-    template = "report_ready",  -- optional
+    params = { NAME = "Ada" },
 })
 local res, err = H.wait(h)
--- until Mail Relay lands: err == "mail: not implemented"
+-- success: res = { message_id = "...", status = "queued" }
+
+-- Freeform mode (body authored in the script)
+local h2 = H.mail.send({
+    to = "alice@example.com",
+    subject = "Daily report",
+    body = body_text,   -- alias for text_body
+})
 ```
 
-Calling convention is stable; Mail Relay Phase 7A will backfill the same surface. Prefer writing scripts against `H.mail.send` now rather than inventing a parallel path.
+`H.notify` returns a stable deferred error (`"notify: deferred to mailrelay rules"`).
+Prefer `H.mail` or system events. Full contract: [lua_api.md](/docs/H/core/subsystems/scripting/lua_api.md)
+and [MAIL_GUIDE.md](/docs/H/MAIL_GUIDE.md).
 
 ### Scoreboard (jobs)
 
@@ -753,14 +767,13 @@ for _, row in ipairs(res.rows) do
 end
 local body = table.concat(lines, "\n")
 
--- Mail is stubbed until Mail Relay Phase 7A; shape is correct already.
 local _, mail_err = H.mail.send_sync({
     to = "ops@example.com",
     subject = "Daily report 2026-07-01",
     body = body,
 })
 if mail_err then
-    H.log.warn("mail not sent yet: %s", mail_err)
+    H.log.warn("mail failed: %s", mail_err)
     H.set_result("text", body)   -- still useful as job artifact metadata
 end
 return 0
@@ -957,7 +970,7 @@ Run `tests/test_98_luacheck.sh` after editing `.lua` files.
 | `H.http` / `H.mail` | `os.execute("curl ...")` |
 | `H.log.*` | `print` for production diagnostics |
 | `H.sleep` in loops | Busy-wait |
-| Treat `H.mail` stubs as real API | Invent a second mail path |
+| Use `H.mail` (template or freeform) | Invent a second mail path / open SMTP |
 
 ### Config checklist before first run
 

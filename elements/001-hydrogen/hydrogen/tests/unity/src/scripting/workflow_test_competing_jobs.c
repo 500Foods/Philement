@@ -4,7 +4,7 @@
  * Phase 27 of the LUA_PLAN. Tests the workflow stage pattern:
  *   - H.set_current_state updates the scoreboard entry's current_state field
  *   - H.set_result records artifact metadata (result_type, result_location)
- *   - H.notify.send returns the expected "not implemented" error
+ *   - H.notify.send returns the expected deferred error
  *   - Scoreboard JSON visibility for workflow status/metadata
  *
  * The atomic claim pattern (affected_rows == 1 vs 0) requires a real DB
@@ -329,7 +329,7 @@ void test_notify_send_returns_error_handle(void) {
     TEST_ASSERT_NOT_NULL(h);
     TEST_ASSERT_EQUAL_INT(H_HK_NOTIFY, h->kind);
     TEST_ASSERT_NOT_NULL(h->notify_error);
-    TEST_ASSERT_EQUAL_STRING("notify: not implemented", h->notify_error);
+    TEST_ASSERT_EQUAL_STRING("notify: deferred to mailrelay rules", h->notify_error);
 
     lua_pop(L, 1);
 
@@ -351,6 +351,7 @@ void test_mail_send_returns_error_handle(void) {
     ctx.scoreboard = sb;
     H_lua_set_job_context(L, &ctx);
 
+    /* Raw subject/body without template is rejected (template-first policy). */
     int rc = H_lua_run_string(L,
         "local handle = H.mail.send({ to='test@example.com', subject='test', body='hello' })\n"
         "return handle\n",
@@ -362,7 +363,8 @@ void test_mail_send_returns_error_handle(void) {
     TEST_ASSERT_NOT_NULL(h);
     TEST_ASSERT_EQUAL_INT(H_HK_MAIL, h->kind);
     TEST_ASSERT_NOT_NULL(h->mail_error);
-    TEST_ASSERT_EQUAL_STRING("mail: not implemented", h->mail_error);
+    TEST_ASSERT_NOT_NULL(strstr(h->mail_error, "MAIL_PARAM_MISSING"));
+    TEST_ASSERT_NOT_NULL(strstr(h->mail_error, "template"));
 
     lua_pop(L, 1);
 
@@ -386,7 +388,7 @@ void test_notify_send_sync_returns_nil_error(void) {
     TEST_ASSERT_EQUAL_INT(LUA_TSTRING, lua_type(L, -1));
     const char* err = lua_tostring(L, -1);
     TEST_ASSERT_NOT_NULL(err);
-    TEST_ASSERT_EQUAL_STRING("notify: not implemented", err);
+    TEST_ASSERT_EQUAL_STRING("notify: deferred to mailrelay rules", err);
 
     lua_pop(L, 2);
     H_lua_destroy_context(L);
@@ -396,6 +398,7 @@ void test_mail_send_sync_returns_nil_error(void) {
     lua_State* L = H_lua_create_context();
     TEST_ASSERT_NOT_NULL(L);
 
+    /* Raw subject/body without template is rejected (template-first policy). */
     int rc = H_lua_run_string(L,
         "local result, err = H.mail.send_sync({ to='test@example.com', subject='test', body='hello' })\n"
         "return result, err\n",
@@ -406,7 +409,8 @@ void test_mail_send_sync_returns_nil_error(void) {
     TEST_ASSERT_EQUAL_INT(LUA_TSTRING, lua_type(L, -1));
     const char* err = lua_tostring(L, -1);
     TEST_ASSERT_NOT_NULL(err);
-    TEST_ASSERT_EQUAL_STRING("mail: not implemented", err);
+    TEST_ASSERT_NOT_NULL(strstr(err, "MAIL_PARAM_MISSING"));
+    TEST_ASSERT_NOT_NULL(strstr(err, "template"));
 
     lua_pop(L, 2);
     H_lua_destroy_context(L);

@@ -297,4 +297,6 @@ in the migrations themselves so that they get populated in the database directly
 | [1258](/elements/002-helium/acuranzo/migrations/acuranzo_1258.lua) | accounts | 1.0.0 | 2026-07-08 | 9 | ✗ | Create Mail Relay mailadmin user with mail_send role |
 | [1259](/elements/002-helium/acuranzo/migrations/acuranzo_1259.lua) | mail_templates | 1.0.0 | 2026-07-08 | 4 | ✗ | Seed the mail.test template |
 | [1260](/elements/002-helium/acuranzo/migrations/acuranzo_1260.lua) | queries | 1.0.0 | 2026-07-08 | 4 | ✗ | QueryRef #127 - Get Role By Name |
-| **261** | | | | **1378** | **261** | |
+| [1261](/elements/002-helium/acuranzo/migrations/acuranzo_1261.lua) | mail_templates | 1.0.0 | 2026-07-10 | 4 | ✗ | Seed the auth.otp_code template |
+| [1262](/elements/002-helium/acuranzo/migrations/acuranzo_1262.lua) | queries | 1.0.0 | 2026-07-10 | 4 | ✗ | QueryRef #128 - Mark OTP Max Attempts Exceeded |
+| **263** | | | | **1386** | **263** | |

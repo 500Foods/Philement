@@ -297,6 +297,11 @@
         "Templates": {
             "ReloadIntervalSeconds": "${env.MAILRELAY_TEMPLATES_RELOADINTERVALSECONDS}"
         },
+        "Otp": {
+            "Digits": "${env.MAILRELAY_OTP_DIGITS}",
+            "ExpirySeconds": "${env.MAILRELAY_OTP_EXPIRYSECONDS}",
+            "MaxAttempts": "${env.MAILRELAY_OTP_MAXATTEMPTS}"
+        },
         "Events": {
             "Enabled": "${env.MAILRELAY_EVENTS_ENABLED}",
             "Rules": {}

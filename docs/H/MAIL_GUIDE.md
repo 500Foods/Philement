@@ -35,12 +35,12 @@ Subsystem overview: [mailrelay/README.md](/docs/H/core/subsystems/mailrelay/READ
 Mail Relay is **not** “open SMTP and hope.” It is a **controlled mail pipeline**:
 
 1. A **producer** (REST, Lua `H.mail`, Notify, system event, inbound route) builds a **mail request**.
-2. Requests are almost always **template-keyed** (`template_key` + params), not free-form subject/body from external clients.
+2. External/REST requests are **template-keyed** (`template_key` + params). Trusted **Lua** may also send **freeform** subject/body via `mailrelay_send_direct`.
 3. The request is **validated**, optionally **rewritten** (routes, debounce, headers, recipients), then **enqueued**.
 4. **Workers** claim queue items, render to **RFC 5322**, and deliver via **libcurl SMTP/SMTPS**.
 5. Outcomes are recorded (attempts, status, metrics). Secrets and OTP plaintext never appear in normal logs.
 
-**One delivery path.** REST, Lua, Notify, and events all call the same internal producer (`mailrelay_send_template` / `mailrelay_enqueue`). Scripts must not open SMTP sockets or call REST just to send mail.
+**One delivery path.** REST, Lua, Notify, and events all enqueue through Mail Relay (`mailrelay_send_template`, `mailrelay_send_direct`, or `mailrelay_enqueue`). Scripts must not open SMTP sockets or call REST just to send mail.
 
 **Rewrite is first-class.** You can change From/To/Cc, inject BCC watchers, swap templates, coalesce bursts, and reshape inbound submission into outbound templated mail—without callers knowing the SMTP topology.
 
@@ -60,15 +60,16 @@ Mail Relay is **not** “open SMTP and hope.” It is a **controlled mail pipeli
               +--------------------+---------------------+
                                    |
                                    v
-              +------------------------------------------+
-              |  Template resolve + macro render         |
-              |  (or inbound route rewrite → template)   |
-              +--------------------+---------------------+
+               +------------------------------------------+
+               |  Template resolve + macro render         |
+               |  OR freeform subject/body (Lua only)     |
+               |  (or inbound route rewrite → template)   |
+               +--------------------+---------------------+
                                    |
                                    v
-              +------------------------------------------+
-              |  Optional debounce (debounce_key)        |
-              +--------------------+---------------------+
+               +------------------------------------------+
+               |  Optional debounce (debounce_key)        |
+               +--------------------+---------------------+
                                    |
                                    v
               +------------------------------------------+
@@ -87,8 +88,8 @@ Mail Relay is **not** “open SMTP and hope.” It is a **controlled mail pipeli
 
 | Layer | Responsibility |
 |-------|----------------|
-| **Producer API** | `mailrelay_send_template`, `mailrelay_enqueue`, raw internal test paths |
-| **Template engine** | `%MACRO%` expansion into subject/text/html |
+| **Producer API** | `mailrelay_send_template`, `mailrelay_send_direct` (Lua freeform), `mailrelay_enqueue`, raw internal test paths |
+| **Template engine** | `%MACRO%` expansion into subject/text/html (template mode only) |
 | **Rewrite / routes** | Inbound and policy transforms (`rewrite_from`, `rewrite_to`, extra recipients, template swap) |
 | **Debounce** | Collapse repeated keys into one mail with `%COUNT%` / `%SUMMARY%` |
 | **Queue** | Priority, scheduling, optional durable `mail_queue` rows |
@@ -99,7 +100,7 @@ Mail Relay is **not** “open SMTP and hope.” It is a **controlled mail pipeli
 ### What is *not* rewritten by default
 
 - Template **bodies** after successful render (unless a later extension hook rewrites them).
-- Arbitrary caller subject/body on the public REST path (v1 **requires** `template_key`).
+- Arbitrary caller subject/body on the public REST path (v1 **requires** `template_key`). Lua freeform is allowed separately via `H.mail`.
 - SMTP credentials (never exposed to Lua or REST clients).
 
 ---
@@ -297,7 +298,15 @@ Raw subject/body is **rejected** on this endpoint. Use templates.
 
 ### Lua: `H.mail`
 
-Scripts use the host API (async-first, same conventions as queries/HTTP):
+Scripts use the host API (async-first, same conventions as queries/HTTP).
+Exactly one mode per call:
+
+- **Template** — `template` / `template_key` + optional `params` (macro expansion).
+- **Freeform** — `subject` + `text_body` / `html_body` / `body` (literal; no macros).
+
+REST send remains template-only. Freeform is available only via Lua.
+
+Template mode:
 
 ```lua
 local h = H.mail.send({
@@ -309,8 +318,8 @@ local h = H.mail.send({
         NAME = "Ada",
         CUSTOM_NOTE = "Your report is ready",
     },
-    idempotency_key = "report-2026-07-09",
-    priority = "normal",
+    idempotency_key = "report-2026-07-09",  -- optional; auto UUID if omitted
+    priority = 0,                           -- optional integer
 })
 
 local res, err = H.wait(h)
@@ -322,15 +331,19 @@ H.log.info("queued message_id=%s status=%s",
     tostring(res.message_id), tostring(res.status))
 ```
 
-Sync convenience:
+Freeform mode (body authored in the script):
 
 ```lua
+local detail = "Job failed: " .. tostring(err_msg)
 local res, err = H.mail.send_sync({
-    template = "mail.test",
-    to = { "a@example.com", "b@example.com" },
-    params = { NAME = "Team" },
+    to = "ops@example.com",
+    subject = "Job failure",
+    text_body = detail,              -- or body = detail
+    -- html_body = "<p>" .. detail .. "</p>",
 })
 ```
+
+Mixing template and freeform fields is rejected (`MAIL_PARAM_MISSING`).
 
 **Semantics of “sync”:** wait for **queue acceptance / render validation**, not for SMTP delivery (unless a test-only mode is enabled). Delivery is always worker-driven.
 
@@ -338,19 +351,22 @@ local res, err = H.mail.send_sync({
 
 ### Lua: `H.notify`
 
-Notify is a **compatibility shim**. Prefer explicit event emission or `H.mail` with a known template.
+Notify is a **compatibility shim**. v1 always returns a stable deferred error
+(`"notify: deferred to mailrelay rules"`) — no silent success, no channel→template
+map yet. Prefer explicit event emission or `H.mail` (template or freeform).
 
 ```lua
 local h = H.notify.send({
-    channel = "email",           -- mapped through rules when possible
+    channel = "email",
     to = "ops@example.com",
-    body = "deprecated shape",   -- may map to a rule template
+    body = "deprecated shape",
 })
 local res, err = H.wait(h)
--- either queued via a matching rule, or a stable deferred error
+-- res == nil, err == "notify: deferred to mailrelay rules"
 ```
 
-Recommended practice: emit a named event or call `H.mail` with a template key your org owns.
+Recommended practice: emit a named event or call `H.mail` with a template key
+or freeform subject/body your org owns.
 
 ### Multiline bodies in Lua (templates stored as SQL)
 
@@ -968,8 +984,8 @@ Enabled + outbound? Launch Go? DB migrated + templates? Preview works? SMTP reac
 
 ### Design principles (recap)
 
-1. **One producer path** for REST, Lua, Notify, events, and inbound-after-rewrite.  
-2. **Templates first** for external clients; raw bodies are internal/test only.  
+1. **One enqueue path** for REST, Lua, Notify, events, and inbound-after-rewrite.  
+2. **Templates first** for external/REST clients; trusted Lua may also send freeform subject/body.  
 3. **Rewrite is policy**: routes, event handlers, debounce, and defaults—not ad-hoc SMTP hacks.  
 4. **Lua decides intent**; C owns queue, SMTP, secrets, and audit.  
 5. **Fail closed** on open-relay, missing templates, and rate limits.  

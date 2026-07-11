@@ -32,6 +32,10 @@
       "description": "Provides database query execution by reference with support for multiple database engines."
     },
     {
+      "name": "Mail Service",
+      "description": "Authenticated templated mail send, preview, and status operations."
+    },
+    {
       "name": "OIDC Service",
       "description": "Provides OpenID Connect protocol endpoints and authentication services"
     },
@@ -2226,6 +2230,835 @@
                       "type": "string",
                       "description": "Additional error details",
                       "example": "Failed to access database manager"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/mailrelay/preview": {
+      "post": {
+        "summary": "Preview a rendered mail template",
+        "description": "Renders a mail template without enqueueing or sending. Requires a valid JWT Bearer token with a database claim and the mail_send role (JWT roles claim is a comma-separated list of role_id integers). Returns rendered subject and bodies, resolved from/reply_to from MailRelay defaults, and a deduplicated macros_used array. No queue or SMTP side effects.",
+        "operationId": "mailrelayPreviewPost",
+        "tags": [
+          "Mail Service"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "template_key",
+                    "subject",
+                    "macros_used"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "template_key": {
+                      "type": "string",
+                      "example": "mail.test"
+                    },
+                    "from": {
+                      "type": "string",
+                      "format": "email",
+                      "description": "Resolved DefaultFrom when configured",
+                      "example": "noreply@example.com"
+                    },
+                    "reply_to": {
+                      "type": "string",
+                      "format": "email",
+                      "description": "Resolved DefaultReplyTo when configured"
+                    },
+                    "subject": {
+                      "type": "string",
+                      "example": "Hello Ada"
+                    },
+                    "text_body": {
+                      "type": "string",
+                      "description": "Rendered text body when the template defines one"
+                    },
+                    "html_body": {
+                      "type": "string",
+                      "description": "Rendered HTML body when the template defines one"
+                    },
+                    "macros_used": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Deduplicated macro names resolved during render",
+                      "example": [
+                        "NAME",
+                        "APP_NAME",
+                        "SERVER_NAME",
+                        "TIMESTAMP"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "Stable error code",
+                      "enum": [
+                        "MAIL_PARAM_MISSING",
+                        "MAIL_INVALID_JSON",
+                        "MAIL_METHOD_NOT_ALLOWED"
+                      ],
+                      "example": "MAIL_PARAM_MISSING"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "template_key is required"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "MAIL_AUTH_REQUIRED"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Valid JWT with database claim and mail_send role required"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "MAIL_AUTH_REQUIRED"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Missing mail_send role",
+                      "example": "mail_send role required"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "MAIL_TEMPLATE_NOT_FOUND"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Template not found or inactive"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "MAIL_RATE_LIMITED"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Rate limit exceeded"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "MAIL_DISABLED"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Mail Relay is disabled"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "MAIL_INTERNAL_ERROR"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Internal server error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "template_key"
+                ],
+                "properties": {
+                  "template_key": {
+                    "type": "string",
+                    "description": "Active mail template key",
+                    "example": "mail.test"
+                  },
+                  "params": {
+                    "type": "object",
+                    "description": "Template macro substitutions as string key-value pairs",
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "example": {
+                      "NAME": "Ada"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/mailrelay/send": {
+      "post": {
+        "summary": "Queue a templated outbound email",
+        "description": "Submits a template-keyed mail request to the Mail Relay queue. Requires a valid JWT Bearer token with a database claim and the mail_send role (JWT roles claim is a comma-separated list of role_id integers). Raw subject/body is not accepted. from and reply_to are taken from MailRelay.DefaultFrom and DefaultReplyTo; client overrides are ignored. On success the message is queued asynchronously (status queued).",
+        "operationId": "mailrelaySendPost",
+        "tags": [
+          "Mail Service"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "message_id",
+                    "status"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message_id": {
+                      "type": "string",
+                      "description": "Queued message UUID",
+                      "example": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                    },
+                    "status": {
+                      "type": "string",
+                      "description": "Queue status after accept",
+                      "example": "queued"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "Stable error code",
+                      "enum": [
+                        "MAIL_PARAM_MISSING",
+                        "MAIL_RECIPIENT_INVALID",
+                        "MAIL_INVALID_JSON",
+                        "MAIL_METHOD_NOT_ALLOWED"
+                      ],
+                      "example": "MAIL_PARAM_MISSING"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "template_key is required"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "MAIL_AUTH_REQUIRED"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Valid JWT with database claim and mail_send role required"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "MAIL_AUTH_REQUIRED"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Missing mail_send role",
+                      "example": "mail_send role required"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "MAIL_TEMPLATE_NOT_FOUND"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Template not found or inactive"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "MAIL_RATE_LIMITED"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Rate limit exceeded"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "Service unavailable codes",
+                      "enum": [
+                        "MAIL_DISABLED",
+                        "MAIL_QUEUE_FULL"
+                      ],
+                      "example": "MAIL_DISABLED"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Mail Relay is disabled"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "MAIL_INTERNAL_ERROR"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Internal server error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "template_key",
+                  "idempotency_key"
+                ],
+                "properties": {
+                  "template_key": {
+                    "type": "string",
+                    "description": "Active mail template key",
+                    "example": "mail.test"
+                  },
+                  "idempotency_key": {
+                    "type": "string",
+                    "description": "Caller-supplied unique key for deduplication",
+                    "example": "send-2026-07-10-001"
+                  },
+                  "to": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "email"
+                    },
+                    "description": "Primary recipients (at least one of to/cc/bcc required)",
+                    "example": [
+                      "user@example.com"
+                    ]
+                  },
+                  "cc": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "email"
+                    },
+                    "description": "CC recipients"
+                  },
+                  "bcc": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "email"
+                    },
+                    "description": "BCC recipients"
+                  },
+                  "params": {
+                    "type": "object",
+                    "description": "Template macro substitutions as string key-value pairs",
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "example": {
+                      "NAME": "Ada"
+                    }
+                  },
+                  "priority": {
+                    "type": "integer",
+                    "description": "Queue priority (higher first; default 0)",
+                    "example": 0
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/mailrelay/status": {
+      "get": {
+        "summary": "Get Mail Relay status counters",
+        "description": "Returns a snapshot of Mail Relay queue and delivery counters. Requires a valid JWT Bearer token with a database claim. Does not require the mail_send role. last_success and last_failure are Unix epoch seconds (0 when never set).",
+        "operationId": "mailrelayStatusGet",
+        "tags": [
+          "Mail Service"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "enabled",
+                    "initialized",
+                    "queued",
+                    "sending",
+                    "sent",
+                    "failed",
+                    "retrying",
+                    "permanent_failures",
+                    "last_success",
+                    "last_failure",
+                    "worker_count",
+                    "queue_depth"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "enabled": {
+                      "type": "boolean",
+                      "description": "Whether Mail Relay is enabled in config",
+                      "example": true
+                    },
+                    "initialized": {
+                      "type": "boolean",
+                      "description": "Whether the runtime has been initialized",
+                      "example": true
+                    },
+                    "queued": {
+                      "type": "integer",
+                      "description": "Messages accepted into the queue",
+                      "example": 12
+                    },
+                    "sending": {
+                      "type": "integer",
+                      "description": "Messages currently being sent",
+                      "example": 1
+                    },
+                    "sent": {
+                      "type": "integer",
+                      "description": "Successfully delivered messages",
+                      "example": 10
+                    },
+                    "failed": {
+                      "type": "integer",
+                      "description": "Failed deliveries (including permanent)",
+                      "example": 1
+                    },
+                    "retrying": {
+                      "type": "integer",
+                      "description": "Messages scheduled for retry",
+                      "example": 0
+                    },
+                    "permanent_failures": {
+                      "type": "integer",
+                      "description": "Non-retryable failures",
+                      "example": 1
+                    },
+                    "last_success": {
+                      "type": "integer",
+                      "description": "Unix epoch of last successful delivery (0 if none)",
+                      "example": 1720612800
+                    },
+                    "last_failure": {
+                      "type": "integer",
+                      "description": "Unix epoch of last failure (0 if none)",
+                      "example": 0
+                    },
+                    "worker_count": {
+                      "type": "integer",
+                      "description": "Configured worker threads",
+                      "example": 2
+                    },
+                    "queue_depth": {
+                      "type": "integer",
+                      "description": "Current in-memory queue depth",
+                      "example": 0
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "JWT validation failure",
+                      "example": "Invalid or expired JWT token"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Method not allowed"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Only GET requests are supported"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Failed to build status response"
                     }
                   }
                 }

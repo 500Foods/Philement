@@ -1,10 +1,10 @@
 /*
- * Mail Relay templated-send producer implementation.
+ * Mail Relay producer implementation.
  *
- * This is the common internal producer API used by REST endpoints, Lua H.mail,
- * Notify compatibility, and system events. It resolves a template, renders
- * subject and bodies, validates recipients, and enqueues the message without
- * performing synchronous SMTP delivery.
+ * Templated send (mailrelay_send_template) and freeform send
+ * (mailrelay_send_direct) share enqueue/idempotency/default-from handling.
+ * Used by REST (template only), Lua H.mail (template or freeform), Notify
+ * compatibility, and system events. No synchronous SMTP delivery.
  */
 
 #include <src/hydrogen.h>
@@ -109,40 +109,42 @@ static void idempotency_callback(MailRelayRepoResult* result, void* user_data) {
     ctx->found = true;
 }
 
-/* Add To/Cc/Bcc recipients from the request to the message, validating emails. */
-static bool add_recipients(MailRelayMessage* msg,
-                           const MailRelaySendTemplateRequest* req,
-                           char* err,
-                           size_t err_cap) {
-    for (int i = 0; i < req->to_count; i++) {
-        if (!mailrelay_is_valid_email(req->to[i])) {
-            snprintf(err, err_cap, "MAIL_RECIPIENT_INVALID: invalid To address '%s'", req->to[i]);
+/* Add To/Cc/Bcc recipient arrays to the message, validating emails. */
+static bool add_recipients_arrays(MailRelayMessage* msg,
+                                  const char* const* to, int to_count,
+                                  const char* const* cc, int cc_count,
+                                  const char* const* bcc, int bcc_count,
+                                  char* err,
+                                  size_t err_cap) {
+    for (int i = 0; i < to_count; i++) {
+        if (!mailrelay_is_valid_email(to[i])) {
+            snprintf(err, err_cap, "MAIL_RECIPIENT_INVALID: invalid To address '%s'", to[i]);
             return false;
         }
-        if (!mailrelay_message_add_to(msg, req->to[i])) {
-            snprintf(err, err_cap, "MAIL_RECIPIENT_INVALID: failed to add To address '%s'", req->to[i]);
-            return false;
-        }
-    }
-
-    for (int i = 0; i < req->cc_count; i++) {
-        if (!mailrelay_is_valid_email(req->cc[i])) {
-            snprintf(err, err_cap, "MAIL_RECIPIENT_INVALID: invalid Cc address '%s'", req->cc[i]);
-            return false;
-        }
-        if (!mailrelay_message_add_cc(msg, req->cc[i])) {
-            snprintf(err, err_cap, "MAIL_RECIPIENT_INVALID: failed to add Cc address '%s'", req->cc[i]);
+        if (!mailrelay_message_add_to(msg, to[i])) {
+            snprintf(err, err_cap, "MAIL_RECIPIENT_INVALID: failed to add To address '%s'", to[i]);
             return false;
         }
     }
 
-    for (int i = 0; i < req->bcc_count; i++) {
-        if (!mailrelay_is_valid_email(req->bcc[i])) {
-            snprintf(err, err_cap, "MAIL_RECIPIENT_INVALID: invalid Bcc address '%s'", req->bcc[i]);
+    for (int i = 0; i < cc_count; i++) {
+        if (!mailrelay_is_valid_email(cc[i])) {
+            snprintf(err, err_cap, "MAIL_RECIPIENT_INVALID: invalid Cc address '%s'", cc[i]);
             return false;
         }
-        if (!mailrelay_message_add_bcc(msg, req->bcc[i])) {
-            snprintf(err, err_cap, "MAIL_RECIPIENT_INVALID: failed to add Bcc address '%s'", req->bcc[i]);
+        if (!mailrelay_message_add_cc(msg, cc[i])) {
+            snprintf(err, err_cap, "MAIL_RECIPIENT_INVALID: failed to add Cc address '%s'", cc[i]);
+            return false;
+        }
+    }
+
+    for (int i = 0; i < bcc_count; i++) {
+        if (!mailrelay_is_valid_email(bcc[i])) {
+            snprintf(err, err_cap, "MAIL_RECIPIENT_INVALID: invalid Bcc address '%s'", bcc[i]);
+            return false;
+        }
+        if (!mailrelay_message_add_bcc(msg, bcc[i])) {
+            snprintf(err, err_cap, "MAIL_RECIPIENT_INVALID: failed to add Bcc address '%s'", bcc[i]);
             return false;
         }
     }
@@ -150,10 +152,128 @@ static bool add_recipients(MailRelayMessage* msg,
     return true;
 }
 
-MailRelayStatus mailrelay_send_template(const MailRelaySendTemplateRequest* req,
-                                        MailRelaySendTemplateResponse* resp,
+/* Shared runtime/enabled gate for producers. */
+static MailRelayStatus producer_check_runtime(char* err, size_t err_cap) {
+    if (!mailrelay_runtime_is_initialized() ||
+        (mailrelay_runtime && mailrelay_runtime->shutdown_requested)) {
+        snprintf(err, err_cap, "MAIL_DISABLED: mail relay is not running");
+        return MAILRELAY_SHUTDOWN;
+    }
+    if (app_config && !app_config->mail_relay.Enabled) {
+        snprintf(err, err_cap, "MAIL_DISABLED: mail relay is disabled");
+        return MAILRELAY_DISABLED;
+    }
+    return MAILRELAY_OK;
+}
+
+/* Shared idempotency short-circuit. Returns true if handled (found or error). */
+static bool producer_try_idempotency(const char* idempotency_key,
+                                     MailRelaySendTemplateResponse* resp,
+                                     char* err,
+                                     size_t err_cap,
+                                     MailRelayStatus* out_status) {
+    if (!idempotency_key || idempotency_key[0] == '\0') {
+        return false;
+    }
+
+    IdempotencyContext idem_ctx = { 0 };
+    MailRelayRepoQueueGetByIdempotency idem_req = { idempotency_key };
+    if (!mailrelay_repo_queue_get_by_idempotency(&idem_req, idempotency_callback, &idem_ctx)) {
+        snprintf(err, err_cap, "idempotency lookup failed");
+        *out_status = MAILRELAY_INVALID_ARGS;
+        return true;
+    }
+    if (idem_ctx.error[0] != '\0') {
+        snprintf(err, err_cap, "%s", idem_ctx.error);
+        *out_status = MAILRELAY_INVALID_ARGS;
+        return true;
+    }
+    if (idem_ctx.found) {
+        resp->message_id = idem_ctx.message_id;
+        resp->status = idem_ctx.status;
+        *out_status = MAILRELAY_OK;
+        return true;
+    }
+    return false;
+}
+
+/* Resolve From / Reply-To with config defaults. */
+static bool producer_resolve_from_reply(const char* req_from,
+                                        const char* req_reply_to,
+                                        const char** out_from,
+                                        const char** out_reply_to,
                                         char* err,
                                         size_t err_cap) {
+    const char* from = req_from;
+    if (!from || from[0] == '\0') {
+        if (app_config && app_config->mail_relay.DefaultFrom &&
+            app_config->mail_relay.DefaultFrom[0] != '\0') {
+            from = app_config->mail_relay.DefaultFrom;
+        }
+    }
+    if (!from || from[0] == '\0') {
+        snprintf(err, err_cap, "MAIL_PARAM_MISSING: from address is required");
+        return false;
+    }
+    *out_from = from;
+
+    const char* reply_to = req_reply_to;
+    if (!reply_to || reply_to[0] == '\0') {
+        if (app_config && app_config->mail_relay.DefaultReplyTo &&
+            app_config->mail_relay.DefaultReplyTo[0] != '\0') {
+            reply_to = app_config->mail_relay.DefaultReplyTo;
+        }
+    }
+    *out_reply_to = reply_to;
+    return true;
+}
+
+/* Enqueue a fully built message and fill the response. */
+static MailRelayStatus producer_enqueue_message(MailRelayMessage* msg,
+                                                int priority,
+                                                MailRelaySendTemplateResponse* resp,
+                                                char* err,
+                                                size_t err_cap) {
+    char validate_err[256];
+    if (!mailrelay_validate_message(msg, validate_err, sizeof(validate_err))) {
+        mailrelay_message_free(msg);
+        snprintf(err, err_cap, "MAIL_INVALID: %s", validate_err);
+        return MAILRELAY_INVALID_ARGS;
+    }
+
+    MailRelayStatus status = mailrelay_enqueue(msg, priority);
+    if (status != MAILRELAY_OK) {
+        mailrelay_message_free(msg);
+        if (status == MAILRELAY_QUEUE_FULL) {
+            snprintf(err, err_cap, "MAIL_QUEUE_FULL: queue is at capacity");
+        } else if (status == MAILRELAY_DISABLED) {
+            snprintf(err, err_cap, "MAIL_DISABLED: mail relay is disabled");
+        } else {
+            snprintf(err, err_cap, "MAIL_QUEUE_ERROR: enqueue failed (status=%d)", (int)status);
+        }
+        return status;
+    }
+
+    resp->message_id = msg->message_id;
+    msg->message_id = NULL;
+    resp->status = strdup("queued");
+    if (!resp->status) {
+        free(resp->message_id);
+        resp->message_id = NULL;
+        mailrelay_message_free(msg);
+        snprintf(err, err_cap, "memory allocation failed");
+        return MAILRELAY_INVALID_ARGS;
+    }
+
+    mailrelay_message_free(msg);
+    return MAILRELAY_OK;
+}
+
+/* Default producer implementation (bypasses the test seam). */
+static MailRelayStatus mailrelay_send_template_default(const MailRelaySendTemplateRequest* req,
+                                                       MailRelaySendTemplateResponse* resp,
+                                                       char* err,
+                                                       size_t err_cap) {
     if (!req || !resp || !err || err_cap == 0) {
         if (err && err_cap > 0) {
             snprintf(err, err_cap, "invalid arguments");
@@ -176,30 +296,14 @@ MailRelayStatus mailrelay_send_template(const MailRelaySendTemplateRequest* req,
         return MAILRELAY_INVALID_ARGS;
     }
 
-    if (!mailrelay_runtime_is_initialized() ||
-        (mailrelay_runtime && mailrelay_runtime->shutdown_requested)) {
-        return MAILRELAY_SHUTDOWN;
-    }
-    if (app_config && !app_config->mail_relay.Enabled) {
-        return MAILRELAY_DISABLED;
+    MailRelayStatus runtime_status = producer_check_runtime(err, err_cap);
+    if (runtime_status != MAILRELAY_OK) {
+        return runtime_status;
     }
 
-    if (req->idempotency_key && req->idempotency_key[0] != '\0') {
-        IdempotencyContext idem_ctx = { 0 };
-        MailRelayRepoQueueGetByIdempotency idem_req = { req->idempotency_key };
-        if (!mailrelay_repo_queue_get_by_idempotency(&idem_req, idempotency_callback, &idem_ctx)) {
-            snprintf(err, err_cap, "idempotency lookup failed");
-            return MAILRELAY_INVALID_ARGS;
-        }
-        if (idem_ctx.error[0] != '\0') {
-            snprintf(err, err_cap, "%s", idem_ctx.error);
-            return MAILRELAY_INVALID_ARGS;
-        }
-        if (idem_ctx.found) {
-            resp->message_id = idem_ctx.message_id;
-            resp->status = idem_ctx.status;
-            return MAILRELAY_OK;
-        }
+    MailRelayStatus idem_status = MAILRELAY_OK;
+    if (producer_try_idempotency(req->idempotency_key, resp, err, err_cap, &idem_status)) {
+        return idem_status;
     }
 
     char* subject = NULL;
@@ -212,25 +316,13 @@ MailRelayStatus mailrelay_send_template(const MailRelaySendTemplateRequest* req,
         return MAILRELAY_INVALID_ARGS;
     }
 
-    const char* from = req->from;
-    if (!from || from[0] == '\0') {
-        if (app_config && app_config->mail_relay.DefaultFrom && app_config->mail_relay.DefaultFrom[0] != '\0') {
-            from = app_config->mail_relay.DefaultFrom;
-        }
-    }
-    if (!from || from[0] == '\0') {
+    const char* from = NULL;
+    const char* reply_to = NULL;
+    if (!producer_resolve_from_reply(req->from, req->reply_to, &from, &reply_to, err, err_cap)) {
         free(subject);
         free(text_body);
         free(html_body);
-        snprintf(err, err_cap, "MAIL_PARAM_MISSING: from address is required");
         return MAILRELAY_INVALID_ARGS;
-    }
-
-    const char* reply_to = req->reply_to;
-    if (!reply_to || reply_to[0] == '\0') {
-        if (app_config && app_config->mail_relay.DefaultReplyTo && app_config->mail_relay.DefaultReplyTo[0] != '\0') {
-            reply_to = app_config->mail_relay.DefaultReplyTo;
-        }
     }
 
     MailRelayMessage msg;
@@ -268,42 +360,143 @@ MailRelayStatus mailrelay_send_template(const MailRelaySendTemplateRequest* req,
         }
     }
 
-    if (!add_recipients(&msg, req, err, err_cap)) {
+    if (!add_recipients_arrays(&msg, req->to, req->to_count, req->cc, req->cc_count,
+                               req->bcc, req->bcc_count, err, err_cap)) {
         mailrelay_message_free(&msg);
         return MAILRELAY_INVALID_ARGS;
     }
 
-    char validate_err[256];
-    if (!mailrelay_validate_message(&msg, validate_err, sizeof(validate_err))) {
-        mailrelay_message_free(&msg);
-        snprintf(err, err_cap, "MAIL_INVALID: %s", validate_err);
-        return MAILRELAY_INVALID_ARGS;
-    }
+    return producer_enqueue_message(&msg, req->priority, resp, err, err_cap);
+}
 
-    MailRelayStatus status = mailrelay_enqueue(&msg, req->priority);
-    if (status != MAILRELAY_OK) {
-        mailrelay_message_free(&msg);
-        if (status == MAILRELAY_QUEUE_FULL) {
-            snprintf(err, err_cap, "MAIL_QUEUE_FULL: queue is at capacity");
-        } else if (status == MAILRELAY_DISABLED) {
-            snprintf(err, err_cap, "MAIL_DISABLED: mail relay is disabled");
-        } else {
-            snprintf(err, err_cap, "MAIL_QUEUE_ERROR: enqueue failed (status=%d)", (int)status);
+static mailrelay_send_template_fn send_template_override = NULL;
+static mailrelay_send_direct_fn send_direct_override = NULL;
+
+void mailrelay_send_template_set_fn(mailrelay_send_template_fn fn) {
+    send_template_override = fn;
+}
+
+MailRelayStatus mailrelay_send_template(const MailRelaySendTemplateRequest* req,
+                                        MailRelaySendTemplateResponse* resp,
+                                        char* err,
+                                        size_t err_cap) {
+    mailrelay_send_template_fn fn = send_template_override;
+    if (!fn) {
+        fn = mailrelay_send_template_default;
+    }
+    return fn(req, resp, err, err_cap);
+}
+
+/* Default freeform producer implementation (bypasses the test seam). */
+static MailRelayStatus mailrelay_send_direct_default(const MailRelaySendDirectRequest* req,
+                                                     MailRelaySendTemplateResponse* resp,
+                                                     char* err,
+                                                     size_t err_cap) {
+    if (!req || !resp || !err || err_cap == 0) {
+        if (err && err_cap > 0) {
+            snprintf(err, err_cap, "invalid arguments");
         }
-        return status;
+        return MAILRELAY_INVALID_ARGS;
+    }
+    mailrelay_send_template_response_init(resp);
+    err[0] = '\0';
+
+    bool has_recipient = (req->to_count > 0 && req->to) ||
+                         (req->cc_count > 0 && req->cc) ||
+                         (req->bcc_count > 0 && req->bcc);
+    if (!has_recipient) {
+        snprintf(err, err_cap, "MAIL_RECIPIENT_INVALID: at least one recipient is required");
+        return MAILRELAY_INVALID_ARGS;
     }
 
-    resp->message_id = msg.message_id;
-    msg.message_id = NULL;
-    resp->status = strdup("queued");
-    if (!resp->status) {
-        free(resp->message_id);
-        resp->message_id = NULL;
+    if (!req->subject || req->subject[0] == '\0') {
+        snprintf(err, err_cap, "MAIL_PARAM_MISSING: subject is required");
+        return MAILRELAY_INVALID_ARGS;
+    }
+
+    bool has_text = (req->text_body && req->text_body[0] != '\0');
+    bool has_html = (req->html_body && req->html_body[0] != '\0');
+    if (!has_text && !has_html) {
+        snprintf(err, err_cap, "MAIL_PARAM_MISSING: text_body or html_body is required");
+        return MAILRELAY_INVALID_ARGS;
+    }
+
+    MailRelayStatus runtime_status = producer_check_runtime(err, err_cap);
+    if (runtime_status != MAILRELAY_OK) {
+        return runtime_status;
+    }
+
+    MailRelayStatus idem_status = MAILRELAY_OK;
+    if (producer_try_idempotency(req->idempotency_key, resp, err, err_cap, &idem_status)) {
+        return idem_status;
+    }
+
+    const char* from = NULL;
+    const char* reply_to = NULL;
+    if (!producer_resolve_from_reply(req->from, req->reply_to, &from, &reply_to, err, err_cap)) {
+        return MAILRELAY_INVALID_ARGS;
+    }
+
+    MailRelayMessage msg;
+    mailrelay_message_init(&msg);
+
+    char uuid_str[UUID_STR_LEN];
+    generate_uuid(uuid_str);
+    msg.message_id = strdup(uuid_str);
+    msg.subject = strdup(req->subject);
+    if (has_text) {
+        msg.text_body = strdup(req->text_body);
+    }
+    if (has_html) {
+        msg.html_body = strdup(req->html_body);
+    }
+    if (req->idempotency_key && req->idempotency_key[0] != '\0') {
+        msg.idempotency_key = strdup(req->idempotency_key);
+    }
+    msg.priority = req->priority;
+
+    if (!msg.message_id || !msg.subject ||
+        (has_text && !msg.text_body) ||
+        (has_html && !msg.html_body)) {
         mailrelay_message_free(&msg);
         snprintf(err, err_cap, "memory allocation failed");
         return MAILRELAY_INVALID_ARGS;
     }
 
-    mailrelay_message_free(&msg);
-    return MAILRELAY_OK;
+    if (!mailrelay_message_set_from(&msg, from)) {
+        mailrelay_message_free(&msg);
+        snprintf(err, err_cap, "MAIL_RECIPIENT_INVALID: from address is invalid");
+        return MAILRELAY_INVALID_ARGS;
+    }
+
+    if (reply_to && reply_to[0] != '\0') {
+        if (!mailrelay_message_set_reply_to(&msg, reply_to)) {
+            mailrelay_message_free(&msg);
+            snprintf(err, err_cap, "MAIL_RECIPIENT_INVALID: reply_to address is invalid");
+            return MAILRELAY_INVALID_ARGS;
+        }
+    }
+
+    if (!add_recipients_arrays(&msg, req->to, req->to_count, req->cc, req->cc_count,
+                               req->bcc, req->bcc_count, err, err_cap)) {
+        mailrelay_message_free(&msg);
+        return MAILRELAY_INVALID_ARGS;
+    }
+
+    return producer_enqueue_message(&msg, req->priority, resp, err, err_cap);
+}
+
+void mailrelay_send_direct_set_fn(mailrelay_send_direct_fn fn) {
+    send_direct_override = fn;
+}
+
+MailRelayStatus mailrelay_send_direct(const MailRelaySendDirectRequest* req,
+                                      MailRelaySendTemplateResponse* resp,
+                                      char* err,
+                                      size_t err_cap) {
+    mailrelay_send_direct_fn fn = send_direct_override;
+    if (!fn) {
+        fn = mailrelay_send_direct_default;
+    }
+    return fn(req, resp, err, err_cap);
 }

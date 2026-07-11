@@ -398,6 +398,11 @@ void initialize_config_defaults_mail_relay(AppConfig* config) {
         // Template configuration
         config->mail_relay.Templates.ReloadIntervalSeconds = 60;
 
+        // OTP configuration
+        config->mail_relay.Otp.Digits = 6;
+        config->mail_relay.Otp.ExpirySeconds = 300;
+        config->mail_relay.Otp.MaxAttempts = 5;
+
         // Events configuration
         config->mail_relay.Events.Enabled = false;
         config->mail_relay.Events.MaxEventsPerInterval = 10;

@@ -398,6 +398,11 @@
         "Templates": {
             "ReloadIntervalSeconds": 60
         },
+        "Otp": {
+            "Digits": 6,
+            "ExpirySeconds": 300,
+            "MaxAttempts": 5
+        },
         "Events": {
             "Enabled": false,
             "Rules": {}

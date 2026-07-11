@@ -1376,31 +1376,44 @@ Async DB access with handles is now the **default** model delivered in Phase 13,
 ### Phase 19: Message Sending (`H.mail` / `H.notify`) — Stub Implementation
 
 - **Goal**: Provide stable API surface for mail and notification sending from Lua.
-- **Status**: **Complete 2026-07-05.** Stub implementations are in place: `H.mail.send`, `H.mail.send_sync`, `H.notify.send`, `H.notify.send_sync` all return error handles with "mail: not implemented" / "notify: not implemented". `H_HK_MAIL` and `H_HK_NOTIFY` handle kinds added to `scripting_handle.h`. The API surface is now stable so scripts can be written against it; real implementations will be added when Mail Relay / Notify subsystems land.
-- **Dependencies**: Phase 2 (for stubs); Mail Relay / Notify implementations (for real sending).
-- **Scheduling note**: Stub implementation now; full Mail Relay implementation follows its own plan (`MAILRELAY_PLAN.md`).
-- **Expectation**:
+- **Status**: **Complete 2026-07-05 (stubs).** **Backfill complete 2026-07-10** via Mail Relay Phase 7A (`MAILRELAY_PLAN.md`): real `H.mail.send` / `send_sync` through `mailrelay_send_template`. **Freeform complete 2026-07-10** via Phase 7B: Lua may also send literal `subject` + body via `mailrelay_send_direct`. `H.notify` returns stable deferred error `"notify: deferred to mailrelay rules"`.
+- **Dependencies**: Phase 2 (for stubs); Mail Relay Phase 7A (template) + 7B (freeform).
+- **Scheduling note**: Stubs landed first; full `H.mail` followed `MAILRELAY_PLAN.md` Phases 7A then 7B.
+- **Expectation (current, post-7A/7B)**:
 
   ```lua
-  local h = H.mail.send({ to = "...", subject = "...", body = "..." })
-  local res, err = H.wait(h)  -- err = "mail: not implemented"
+  -- Template mode
+  local h = H.mail.send({
+      template = "mail.test",
+      to = "a@x.com",
+      params = { NAME = "Ada" },
+  })
+  local res, err = H.wait(h)
+  -- success: res = { message_id = "...", status = "queued" }, err = nil
 
-  local h2 = H.notify.send({ channel = "sms", to = "...", body = "..." })
-  local res2, err2 = H.wait(h2)  -- err2 = "notify: not implemented"
+  -- Freeform mode (Lua only; REST stays template-only)
+  local h2 = H.mail.send({
+      to = "a@x.com",
+      subject = "Alert",
+      body = "Literal body from script",
+  })
+
+  local h3 = H.notify.send({ channel = "sms", to = "...", body = "..." })
+  local res3, err3 = H.wait(h3)
+  -- err3 = "notify: deferred to mailrelay rules"
   ```
 
-  Until the backends exist, the stubs return a clear "not implemented" error so scripts and earlier phases are never blocked.
 - **Deliverables**:
-  - `src/scripting/scripting_api_mail_notify.c` — stub implementations
-  - `H_HK_MAIL` and `H_HK_NOTIFY` added to `scripting_handle.h`
-  - `mail_error` and `notify_error` fields in `H_Handle` struct
-  - `H_lua_install_mail_notify` wired into `H_lua_install_api` (pending: wait dispatch)
-- **Validation**: Stubs return error handles cleanly; API surface is stable for future implementation.
-- **Notes**: Full implementation deferred until Mail Relay / Notify subsystems complete.
+  - `src/scripting/scripting_api_mail_notify.c` — dual-mode `H.mail` + deferred `H.notify`
+  - `H_HK_MAIL` / `H_HK_NOTIFY` in `scripting_handle.h` with `mail_message_id` / `mail_status`
+  - `H_lua_mail_notify_wait_one` wired from `H_lua_wait_one`
+  - Producer seams `mailrelay_send_template_set_fn` / `mailrelay_send_direct_set_fn`
+- **Validation**: `mku scripting_api_test_mail`; `mku mailrelay_producer_test`; `mku workflow_test_competing_jobs`.
+- **Notes**: Channel→template notify mapping remains deferred. See `MAIL_GUIDE.md` and `lua_api.md`.
 - **Lessons Learned**:
   - **Stubs first, implementation later.** The Phase 2 design already defined the API surface (stubs), so Phase 19 just needed to implement the stub layer. This allows scripts to be written now against a stable API.
-  - **Consistent handle pattern.** Following the Phase 13/18 pattern (async-first with sync wrappers) keeps the codebase consistent. Stubs always return error handles that `H.wait` can consume.
-  - **No fields needed for stubs.** Since stubs don't execute anything, only `mail_error`/`notify_error` fields are needed in the handle struct.
+  - **Consistent handle pattern.** Following the Phase 13/18 pattern (async-first with sync wrappers) keeps the codebase consistent.
+  - **Template-first then freeform.** Phase 7A matched REST (template-only). Phase 7B re-opened freeform for **trusted Lua only**, keeping REST template-only.
 
 ---
 

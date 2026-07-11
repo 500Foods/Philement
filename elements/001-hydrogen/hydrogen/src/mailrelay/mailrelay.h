@@ -144,6 +144,58 @@ MailRelayStatus mailrelay_send_template(const MailRelaySendTemplateRequest* req,
                                         char* err,
                                         size_t err_cap);
 
+/*
+ * Test seam: override mailrelay_send_template. Pass NULL to restore the
+ * default implementation. Used by Unity tests (e.g. Lua H.mail) so they
+ * never touch SMTP or the database.
+ */
+typedef MailRelayStatus (*mailrelay_send_template_fn)(const MailRelaySendTemplateRequest* req,
+                                                      MailRelaySendTemplateResponse* resp,
+                                                      char* err,
+                                                      size_t err_cap);
+
+void mailrelay_send_template_set_fn(mailrelay_send_template_fn fn);
+
+/*
+ * Request to send a freeform (non-template) email through the queue.
+ * Bodies are taken literally; no macro expansion is performed.
+ */
+typedef struct MailRelaySendDirectRequest {
+    const char* const* to;                /**< Array of To recipient addresses. */
+    int to_count;                         /**< Number of To addresses. */
+    const char* const* cc;                /**< Array of Cc recipient addresses. */
+    int cc_count;                         /**< Number of Cc addresses. */
+    const char* const* bcc;               /**< Array of Bcc recipient addresses. */
+    int bcc_count;                        /**< Number of Bcc addresses. */
+    const char* from;                     /**< Override From; NULL uses MailRelay.DefaultFrom. */
+    const char* reply_to;                 /**< Override Reply-To; NULL uses MailRelay.DefaultReplyTo. */
+    const char* subject;                  /**< Required subject line. */
+    const char* text_body;                /**< Plain text body (optional if html_body set). */
+    const char* html_body;                /**< HTML body (optional if text_body set). */
+    const char* idempotency_key;          /**< Optional idempotency key. */
+    int priority;                         /**< Queue priority (higher dequeues first). */
+} MailRelaySendDirectRequest;
+
+/*
+ * Build a freeform message from subject/body and enqueue it for asynchronous
+ * delivery. Used by trusted Lua H.mail freeform mode. Does not perform macro
+ * expansion. Response type is shared with the templated producer.
+ */
+MailRelayStatus mailrelay_send_direct(const MailRelaySendDirectRequest* req,
+                                      MailRelaySendTemplateResponse* resp,
+                                      char* err,
+                                      size_t err_cap);
+
+/*
+ * Test seam: override mailrelay_send_direct. Pass NULL to restore the default.
+ */
+typedef MailRelayStatus (*mailrelay_send_direct_fn)(const MailRelaySendDirectRequest* req,
+                                                    MailRelaySendTemplateResponse* resp,
+                                                    char* err,
+                                                    size_t err_cap);
+
+void mailrelay_send_direct_set_fn(mailrelay_send_direct_fn fn);
+
 #ifdef __cplusplus
 }
 #endif

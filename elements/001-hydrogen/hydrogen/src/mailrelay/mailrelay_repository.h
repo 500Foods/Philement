@@ -65,6 +65,7 @@ extern "C" {
 #define MAILRELAY_QREF_CLEANUP_ATTEMPTS      125
 #define MAILRELAY_QREF_CLEANUP_OTP           126
 #define MAILRELAY_QREF_ROLE_GET_BY_NAME      127
+#define MAILRELAY_QREF_OTP_MARK_MAX_ATTEMPTS 128
 
 /* --------------------------------------------------------------------------
  * Result type
@@ -353,6 +354,14 @@ typedef struct {
 bool mailrelay_repo_otp_get_by_id(const MailRelayRepoOtpGetById* params,
                                   mailrelay_repo_callback_fn callback,
                                   void* user_data);
+
+typedef struct {
+    long long otp_id;
+} MailRelayRepoOtpMarkMaxAttempts;
+
+bool mailrelay_repo_otp_mark_max_attempts(const MailRelayRepoOtpMarkMaxAttempts* params,
+                                          mailrelay_repo_callback_fn callback,
+                                          void* user_data);
 
 typedef struct {
     const char* sender_domain;

@@ -795,6 +795,20 @@ bool mailrelay_repo_otp_get_by_id(const MailRelayRepoOtpGetById* params,
     return repo_execute_json(MAILRELAY_QREF_OTP_GET_BY_ID, p, callback, user_data);
 }
 
+bool mailrelay_repo_otp_mark_max_attempts(const MailRelayRepoOtpMarkMaxAttempts* params,
+                                          mailrelay_repo_callback_fn callback,
+                                          void* user_data) {
+    if (!params || !callback) {
+        return false;
+    }
+    json_t* p = repo_params_new();
+    if (!p) {
+        return false;
+    }
+    repo_add_int64(p, "OTP_ID", params->otp_id);
+    return repo_execute_json(MAILRELAY_QREF_OTP_MARK_MAX_ATTEMPTS, p, callback, user_data);
+}
+
 /* --------------------------------------------------------------------------
  * Route QueryRefs
  * -------------------------------------------------------------------------- */
