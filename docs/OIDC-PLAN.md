@@ -1007,6 +1007,7 @@ Every phase block contains the same fields, in the same order:
   - [x] `login.js` line count down by 157 lines (1,623 → 1,466).
 
 **Lessons learned:**
+
 1. **The `show()` / `hide()` split is cleaner than `init()` alone.** The original plan sketched `init(container, onLocaleSelect)` / `destroy()` / `focusFilter()` / `getCurrentLocale()`. In practice, the language panel needs asymmetric lifecycle: `show()` must both initialize the table (if first time) *and* attach the document-level keyboard listener; `hide()` must reset the filter *and* detach that listener. This mirrors `PasswordManager.show()` / `hide()` and keeps `LoginManager._onBeforePanelSwitch()` a simple coordinator.
 2. **Import ownership moved cleanly.** All `../../shared/languages.js` imports (`getBestGuessLocale`, `getLanguageData`, `getCountryCode`, `saveLocalePreference`, `getSavedLocale`, `supportedLocales`) and the `Flags` import moved out of `login.js` entirely. `getSavedLocale` was verified unused and removed from `login.js` imports during Phase 3 cleanup.
 3. **Line-count reduction was 156, not ≥200.** The pattern continues: extracted module ≈ 560 lines, reduction in parent ≈ 156 lines. Future phases should expect similar ratios (extracted module ≈ 200–600 lines, reduction in parent ≈ 100–200 lines). The gate to ≤1,000 will require Phases 3 + 4 combined.
@@ -1014,6 +1015,7 @@ Every phase block contains the same fields, in the same order:
 5. **Event delegation vs. callback:** `LanguagePanel` emits `LOCALE_CHANGED` via `eventBus` (global) *and* calls `onLocaleSelected` (local callback). The local callback gives `LoginManager` a hook if it ever needs to react to locale changes without subscribing to the global bus. Both paths are tested.
 
 **Setup for Phase 4:**
+
 - `login.js` now has three subsystems following the same lifecycle: `_loginPanels`, `_passwordManager`, `_languagePanel`. Phase 4's `LogsPanel` and `HelpPanel` should follow the same pattern.
 - `_onBeforePanelSwitch()` now delegates to three subsystems. Phase 4 will add two more (`_logsPanel?.show()` / `hide()` and `_helpPanel?.show()` / `hide()`).
 - The `_onAfterPanelSwitch()` callback remains simple (focus management only). If Phase 4 panels need post-transition work, consider adding an `onAfterShow()` callback to those panel classes rather than expanding `_onAfterPanelSwitch()`.
@@ -1187,6 +1189,7 @@ Every phase block contains the same fields, in the same order:
         *(Pending — recommend running before Phase 5 starts.)*
 
 **Setup notes (from Phase 3 review):**
+
 - `login.js` is at **1,466 lines** after Phase 3. Phase 4 must remove
   **≥466 lines** to hit the ≤1,000 gate. Inventory above shows
   ~820 lines of removable/extractable code, more than 75% margin.
@@ -1213,6 +1216,7 @@ Every phase block contains the same fields, in the same order:
   should all be out of `login.js`.
 
 **Risk factors specific to Phase 4:**
+
 - **Risk: hidden coupling between extracted modules.** `LoginForm`'s
   `setLoading()` disables `languageBtn`/`themeBtn`/`logsBtn` —
   buttons owned conceptually by the panel switcher. Mitigation:
@@ -1442,8 +1446,6 @@ Every phase block contains the same fields, in the same order:
 - The dispatcher branches in `api_service.c:597-609` are stable — Phase 14 will not need to change them when wiring real logic, only the handler bodies.
 - Phase 6 leaves a `503 oidc_not_implemented` path in each handler for the case where `oidc_rp.enabled = true` but the real flow isn't built yet. Phases 7–14 will progressively replace these `oidc_not_implemented` returns with real logic. The disabled-505 path remains the production default until Phase 27 (e2e against real Keycloak).
 
-
-
 ---
 
 ### Phase 7 — Hydrogen: in-memory state store ✅ COMPLETE
@@ -1506,8 +1508,6 @@ Every phase block contains the same fields, in the same order:
 - `OIDC_RP_STATE_BUCKETS = 64` is plenty for in-flight session counts dominated by single-digit tens. If telemetry ever shows higher concurrency, the only change is the constant.
 - `oidc_rp_state_init()` is called with `default_ttl_seconds`. Phase 14 will pass `app_config->oidc_rp.providers[0].state_ttl_seconds` here; multi-provider deployments would need per-call TTLs (which `oidc_rp_state_put` already supports via its `ttl_seconds` parameter).
 - `record_free_fields()` and the `scrub_free()` helper are internal but the pattern is reusable for Phase 13's handoff store. If Phase 13 chooses to share infrastructure rather than duplicate, those helpers are the right starting point — promote them to a shared `oidc_rp_internal.h` header at that time.
-
-
 
 ---
 
@@ -2185,7 +2185,7 @@ Every phase block contains the same fields, in the same order:
       back; enum parser/name helpers cover known + unknown values.
   - Black-box `tests/test_42_oidc_rp.sh` (3 new sub-tests, all
     green): mock Keycloak `/token` happy path returns 200 + id_token
-    + access_token + Bearer; unknown code → 400 `invalid_grant`;
+    - access_token + Bearer; unknown code → 400 `invalid_grant`;
     wrong grant_type (`client_credentials`) → 400
     `unsupported_grant_type`. The C-side `oidc_rp_exchange_code` is
     deliberately NOT exercised end-to-end here — it goes through
@@ -2363,8 +2363,6 @@ Every phase block contains the same fields, in the same order:
   still applies. Phase 12's validator does not own any new
   init/shutdown surface; it operates on already-initialised
   discovery + JWKS caches.
-
-
 
 ---
 
@@ -2983,7 +2981,7 @@ Every phase block contains the same fields, in the same order:
   - Touched: `src/api/api_service.c` — `cleanup_api_endpoints()`
     now calls `oidc_rp_runtime_shutdown()`. One new `#include`.
   - Touched: `tests/lib/mock_keycloak/server.js` — `/auth` endpoint
-    + `issuedCodes` per-code map (221 → 282 lines).
+    - `issuedCodes` per-code map (221 → 282 lines).
   - Created: `tests/configs/hydrogen_test_42_oidc_rp_full.json`
     (74 lines) — SQLite-backed Acuranzo + OIDC_RP enabled, used
     only for the Phase 14 happy-path sub-test. The existing
@@ -4071,7 +4069,7 @@ Every phase block contains the same fields, in the same order:
   - Touched: `src/api/auth/oidc_rp/oidc_rp_link.c` (672 → 902 lines)
   - Touched: `src/api/auth/oidc_rp/oidc_rp_link.h` (170 → 203 lines)
   - Touched: `src/api/auth/oidc_rp/oidc_rp_callback.c` (Phase 20 dispatch
-    + provision_disallowed_email error mapping)
+    - provision_disallowed_email error mapping)
   - Created: `tests/unity/src/api/auth/oidc_rp/oidc_rp_link_test_provision.c`
     (536 lines, 12 tests). Phase 20 was split into its own Unity test
     binary because the combined Phase 18+19+20 file would exceed the
@@ -4503,7 +4501,7 @@ Every phase block contains the same fields, in the same order:
     - DATABASE (6): single role_id, multiple role_ids, no rows, transport
       failure → unchanged, DB error → unchanged, correct QueryRef (#017).
     - IDP_REALM_ROLES (6): single + multiple + with prefix + no claims empty
-      + no prefix + no DB query.
+      - no prefix + no DB query.
     - IDP_CLIENT_ROLES (1): behaves like IDP_REALM_ROLES in Phase 22.
     - MERGE (6): no overlap, dedup exact match, DB empty + IdP, DB + IdP
       empty, DB failure → IdP only, no prefix IdP.
@@ -5248,6 +5246,7 @@ parentheses.
   give it everything it needs from `LoginManager` without coupling.
 - **Final size distribution under `src/managers/login/` is healthy.**
   No file exceeds 600 lines:
+
   | File | Lines |
   |---|---|
   | `login.js` | 576 |
@@ -5258,6 +5257,7 @@ parentheses.
   | `login-password-manager.js` | 147 |
   | `login-help-panel.js` | 143 |
   | `login-logs-panel.js` | 126 |
+
 - **Pattern fully reusable.** Future OIDC additions (Phases 23–24:
   `oidc-login.js`) will follow the exact same shape: an ES6 class
   with `init()`/`destroy()`, optional `show()`/`hide()`, constructor
@@ -5305,38 +5305,39 @@ parentheses.
 
 ---
 
-**Last updated:** 2026-05-10
+**Last updated:** 2026-07-11
 **Owner:** Philement engineering
-**Status:** Phases 1–26 complete. Phase 27 (end-to-end integration
-against real Keycloak) is in progress. All implementation code on
-both Hydrogen and Lithium is shipped; the remaining work is operator
-configuration of the real Keycloak instance plus the seven-item manual
-test checklist captured in `docs/H/plans/OIDC_E2E_LOG.md`.
+**Status:** Phases 1–26 complete. Phase 27 (end-to-end integration against real Keycloak) is **in progress**. Production config has been deployed and the automated pre-flight checks against the real Keycloak instance are green. The full manual sign-in checklist is blocked because the available Keycloak test user (`andrew@500foods.com`) requires MFA/OTP after the password step. A user without OTP (or a current OTP code/TOTP secret) is needed to complete the checklist.
 
 Phase 27 documentation deliverables shipped:
 
-- `docs/H/api/auth/oidc_rp.md` — Hydrogen RP endpoint reference (operator-facing).
-- `docs/Li/LITHIUM-OIDC.md` — Lithium-side OIDC user/operator reference.
+- `docs/H/api/auth/oidc_rp.md` — Hydrogen RP endpoint reference (operator-facing); updated to include live `token_*` error codes.
+- `docs/Li/LITHIUM-OIDC.md` — Lithium-side OIDC user/operator reference; updated to include live `token_*` error codes.
 - `docs/Li/LITHIUM-KEYCLOAK.md` — implementer recipe for new Hydrogen client SPAs.
-- `docs/H/plans/OIDC_E2E_LOG.md` — manual test checklist log.
+- `docs/H/plans/OIDC_E2E_LOG.md` — manual test checklist log, now populated with pre-flight verification and the OTP blocker.
+- `docs/H/plans/KEYCLOAK_PLAN.md` — operational phase plan, with Phases 1–4 complete and Phase 5 in progress.
 - Example `hydrogen.json` updated with `Lithium` DB stub and `OIDC_RP`
   block (default `Enabled: false`).
 
-Phase 27 production configuration (out-of-repo, deploy environment only):
+Phase 27 production configuration (deployed 2026-07-11):
 
 - Keycloak realm: `festival` at `https://www.500passwords.com`
 - Keycloak client: `lithium` (confidential, S256 PKCE)
-- `HYDROGEN_OIDC_CLIENT_ID` and `HYDROGEN_OIDC_CLIENT_SECRET` env vars set
+- Hydrogen CephFS config: `/tnt/hydrogen/hydrogen-lithium.json` updated with `OIDC_RP` env placeholders
+- Kubernetes secret: `t-philement-oidc-secrets` in namespace `t-philement`
+- Deployment env vars: `HYDROGEN_OIDC_RP_ENABLED`, `HYDROGEN_OIDC_CLIENT_ID`, `HYDROGEN_OIDC_CLIENT_SECRET`, `HYDROGEN_OIDC_ISSUER`, `HYDROGEN_OIDC_REDIRECT_URI`, `HYDROGEN_DEMO_API_KEY`
 - `OIDC_RP.Database`: `Lithium`
 - `OIDC_RP.Providers[0].Issuer`: `https://www.500passwords.com/realms/festival`
 - `OIDC_RP.Providers[0].RedirectUri`: `https://lithium.philement.com/api/auth/oidc/callback`
 - `AccountLinking.Strategy`: `match_email_only` (no auto-provisioning)
+- Lithium CephFS config: `/tnt/lithium/config/lithium.json` updated with `auth.oidc_providers`
 
 Hydrogen: Unity 7,034/7,030 passing. Black-box: `test_42_oidc_rp.sh` 88/88.
-`test_40_auth.sh` 46/46. All Hydrogen quality gates unchanged from Phase 22.
+`test_40_auth.sh` 46/46. `test_04_check_links.sh` and `test_90_markdownlint.sh` green.
 
-Lithium: Vitest 887/887 passing as of Phase 25, with Phase 26 additions.
-`npm run lint` clean. `npm run build` clean.
+Lithium: Vitest 906/906 passing. `npm run lint` clean. `npm run build` clean. The
+Open Code Review quality scan at the end of `npm test` fails its threshold due
+to pre-existing offline-mode findings, but the Vitest suite itself is green.
 
 Post-MVP work (Phases 28–30): OIDC RP health check, backchannel logout,
 RP-initiated logout. To be planned in detail after Phase 27 is in

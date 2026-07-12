@@ -120,13 +120,18 @@ part of the IdP redirect; it does **not** carry a Hydrogen JWT.
   Error codes:
   - `state_invalid` — state missing or expired
   - `idp_error` — IdP returned `error` in query
-  - `token_exchange_failed` — `/token` POST to IdP failed
+  - `token_invalid_grant` — the IdP rejected the authorization code (already used, expired, or mismatched redirect URI)
+  - `token_invalid_client` — the IdP rejected the client credentials
+  - `token_server_error` — the IdP token endpoint returned a 5xx
   - `id_token_invalid` — signature, issuer, audience, nonce, or expiry check failed
   - `account_not_found` — user resolved to no account (`match_email_only` with no match)
+  - `email_ambiguous` — the IdP email matches more than one `accounts` row
   - `account_disabled` — account exists but `enabled = false`
   - `provisioning_blocked` — provisioning required but `ProvisionDefaults.Enabled = false`
+  - `provision_disallowed_email` — provisioning is enabled but the email domain is not in `AllowedEmailDomains`
   - `email_not_verified` — `RequireEmailVerified` is true but IdP says otherwise
-  - `internal_error` — unexpected server-side failure (logged with detail)
+  - `no_api_key` — the provider has no `SystemApiKey` configured or it was rejected
+  - `server_error` / `internal_error` — unexpected server-side failure (logged with detail)
 
 #### Callback — side effects
 

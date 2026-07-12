@@ -230,7 +230,7 @@ seed_email_contact() {
         return 1
     fi
 
-    # contact_type_a18 = 0 means email (per QueryRef #082 / #011 contract). contact_seq=0, authenticate_a19=1, status_a20=1 match existing email rows.
+    # contact_type_a18 = 1 means email (per lookup_id 18 / QueryRef #082 contract). contact_seq=0, authenticate_a19=1, status_a20=1 match existing email rows.
     # INSERT OR IGNORE: idempotent; won't fail if the row already exists. Use busy_timeout + retries: suite-parallel Hydrogen holds this DB open.
     if ! _oidc_sqlite_exec "${sqlite_db}" "
 INSERT OR IGNORE INTO account_contacts (
@@ -252,7 +252,7 @@ SELECT
     COALESCE(MAX(contact_id), 0) + 1,
     ${account_id},
     0,
-    0,
+    1,
     1,
     1,
     '${email}',
@@ -267,7 +267,7 @@ WHERE NOT EXISTS (
     SELECT 1 FROM account_contacts
     WHERE account_id = ${account_id}
       AND contact = '${email}'
-      AND contact_type_a18 = 0
+      AND contact_type_a18 = 1
 );
 "; then
         return 1
@@ -276,7 +276,7 @@ WHERE NOT EXISTS (
     # Verify the row is visible (guards against silent SQLITE_BUSY with exit 0 edge cases and ensures the linker will see the seed).
     # -cmd .timeout: wait on locks without printing PRAGMA result rows.
     count=$(sqlite3 -batch -cmd ".timeout 5000" "${sqlite_db}" \
-        "SELECT COUNT(*) FROM account_contacts WHERE account_id=${account_id} AND contact='${email}' AND contact_type_a18=0;" \
+        "SELECT COUNT(*) FROM account_contacts WHERE account_id=${account_id} AND contact='${email}' AND contact_type_a18=1;" \
         2>/dev/null | tr -d '[:space:]' || true)
     if [[ -z "${count}" || "${count}" -lt 1 ]]; then
         return 1
@@ -299,7 +299,7 @@ unseed_email_contact() {
     fi
 
     _oidc_sqlite_exec "${sqlite_db}" \
-        "DELETE FROM account_contacts WHERE account_id=${account_id} AND contact='${email}' AND contact_type_a18=0;"
+        "DELETE FROM account_contacts WHERE account_id=${account_id} AND contact='${email}' AND contact_type_a18=1;"
 }
 
 # Delete the mock email contact from EVERY account, regardless of which account it is attached to. Used to scrub any orphaned contact left by a
@@ -317,7 +317,7 @@ unseed_email_contact_everywhere() {
     fi
 
     _oidc_sqlite_exec "${sqlite_db}" \
-        "DELETE FROM account_contacts WHERE LOWER(contact)=LOWER('${email}') AND contact_type_a18=0;"
+        "DELETE FROM account_contacts WHERE LOWER(contact)=LOWER('${email}') AND contact_type_a18=1;"
 }
 
 # Seed a second account with the same email to trigger email_ambiguous. We use account_id=2 which exists in the demo DB as 'demouser'.
@@ -373,7 +373,7 @@ INSERT OR IGNORE INTO queries (
 SELECT
     (SELECT COALESCE(MAX(query_id), 0) + 1 FROM queries),
     82, 1, 1, 2, 1, 5000,
-    'SELECT DISTINCT ac.account_id FROM account_contacts ac WHERE (LOWER(ac.contact) = LOWER(:EMAIL)) AND (ac.contact_type_a18 = 0) AND ((ac.valid_after IS NULL) OR (ac.valid_after < datetime(''now''))) AND ((ac.valid_until IS NULL) OR (ac.valid_until > datetime(''now'')))',
+    'SELECT DISTINCT ac.account_id FROM account_contacts ac WHERE (LOWER(ac.contact) = LOWER(:EMAIL)) AND (ac.contact_type_a18 = 1) AND ((ac.valid_after IS NULL) OR (ac.valid_after < datetime(''now''))) AND ((ac.valid_until IS NULL) OR (ac.valid_until > datetime(''now'')))',
     'OIDC RP: Lookup Account by Email',
     'Phase 19 seed: lookup account_id by email (account_contacts)',
     '{}',

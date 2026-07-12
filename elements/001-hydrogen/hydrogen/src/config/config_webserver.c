@@ -112,6 +112,7 @@ bool load_webserver_config(json_t* root, AppConfig* config) {
 
     // Process paths
     success = success && PROCESS_STRING(root, webserver, web_root, "WebServer.WebRoot", "WebServer");
+    success = success && PROCESS_BOOL(root, webserver, spa_fallback, "WebServer.SpaFallback", "WebServer");
     success = success && PROCESS_STRING(root, webserver, upload_path, "WebServer.UploadPath", "WebServer");
     success = success && PROCESS_STRING(root, webserver, upload_dir, "WebServer.UploadDir", "WebServer");
     success = success && PROCESS_SIZE(root, webserver, max_upload_size, "WebServer.MaxUploadSize", "WebServer");
@@ -167,6 +168,7 @@ void dump_webserver_config(const WebServerConfig* config) {
   
     // Paths
     DUMP_STRING("―― Web Root", config->web_root);
+    DUMP_BOOL("―― SPA Fallback", config->spa_fallback);
     DUMP_STRING("―― Upload Path", config->upload_path);
     DUMP_STRING("―― Upload Directory", config->upload_dir);
     DUMP_SIZE("―― Max Upload Size", config->max_upload_size);

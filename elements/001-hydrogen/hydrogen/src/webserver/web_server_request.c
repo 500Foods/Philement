@@ -58,6 +58,15 @@ static volatile size_t http_static_file_requests = 0;
 static volatile size_t http_api_requests = 0;
 static volatile size_t http_post_requests = 0;
 
+// Helper to decide whether a URL path looks like a file request.
+// A path is treated as a file if it has a dot after the last slash.
+static bool url_looks_like_file(const char *url) {
+    if (!url) return false;
+    const char *last_slash = strrchr(url, '/');
+    const char *last_dot = strrchr(url, '.');
+    return last_dot && (!last_slash || last_dot > last_slash);
+}
+
 bool resolve_static_file_path(const char *url, char *resolved_path, size_t resolved_path_size) {
     struct stat path_stat;
     size_t url_len;
@@ -523,6 +532,25 @@ enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
             log_this(SR_WEBSERVER, "Served File: %s", LOG_LEVEL_DEBUG, 1, file_path);
             __sync_add_and_fetch(&http_static_file_requests, 1);
             return serve_file_for_method(connection, file_path, method);
+        }
+
+        // NEW: Single-page application fallback. When SpaFallback is enabled and the
+        // request does not look like a static asset, serve index.html so the SPA's
+        // client-side router can handle the path (e.g. /login?oidc=1...).
+        if (app_config && app_config->webserver.spa_fallback &&
+            strncmp(url, "/api/", 5) != 0 &&
+            strncmp(url, "/swagger", 8) != 0 &&
+            !url_looks_like_file(url)) {
+            char spa_index[PATH_MAX];
+            if (snprintf(spa_index, sizeof(spa_index), "%s/index.html",
+                         app_config->webserver.web_root) < (int)sizeof(spa_index)) {
+                struct stat idx_stat;
+                if (stat(spa_index, &idx_stat) == 0 && S_ISREG(idx_stat.st_mode)) {
+                    log_this(SR_WEBSERVER, "SPA fallback: %s -> %s", LOG_LEVEL_DEBUG, 2, url, spa_index);
+                    __sync_add_and_fetch(&http_static_file_requests, 1);
+                    return serve_file_for_method(connection, spa_index, method);
+                }
+            }
         }
 
         // If file not found, return 404
