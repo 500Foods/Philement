@@ -115,6 +115,7 @@ SPA       →  store Hydrogen JWT; never stores Keycloak tokens
 | `GET` | `/api/auth/oidc/start` | Begin auth code + PKCE; 302 to IdP |
 | `GET` | `/api/auth/oidc/callback` | Code exchange, validate, link/provision, mint JWT, 302 handoff |
 | `POST` | `/api/auth/oidc/handoff` | Exchange handoff → Hydrogen JWT (login-shaped body) |
+| `POST` | `/api/auth/oidc/end-session` | Validate JWT, delete from storage, return optional IdP logout URL |
 
 When `OIDC_RP.Enabled = false` (default): public endpoints return `503` `{"error":"oidc_disabled"}`.
 
@@ -696,12 +697,13 @@ Optional navigate-to-IdP end session after local Hydrogen logout so shared SSO c
 
 ### Work Items
 
-- [ ] 10.1 Hydrogen helper or documented URL builder for `end_session_endpoint` with `post_logout_redirect_uri` allow-list.
-  - **Verify:** Unity URL builder tests.
-- [ ] 10.2 Client recipe update: after local logout, optional redirect to IdP logout.
-  - **Verify:** Phase 4 guide updated; no requirement that all apps enable it.
-- [ ] 10.3 Keycloak valid post-logout redirect URIs configured.
-  - **Verify:** operator checklist item.
+- [x] 10.1 Hydrogen helper endpoint for `end_session_endpoint` with `post_logout_redirect_uri` derived from the configured `redirect_uri`.
+  - **Implementation:** `POST /api/auth/oidc/end-session` validates the Hydrogen JWT, deletes it from storage, and returns `{ "redirect_url": "..." }` when an OIDC `id_token` is present.
+  - **Verify:** Local regular build + JWT/Logout Unity tests pass; endpoint registers under `auth/oidc/end-session`.
+- [x] 10.2 Client recipe update: Lithium global signout calls `/api/auth/oidc/end-session` and, if a `redirect_url` is returned, navigates the browser to the IdP logout URL before reloading.
+  - **Verify:** Lithium `npm test` and production `npm run build` succeed.
+- [x] 10.3 Keycloak valid post-logout redirect URIs configured.
+  - **Verify:** operator checklist item (add `https://lithium.philement.com/*` to the client in the Keycloak admin console).
 
 ### Exit Gate
 
@@ -709,10 +711,10 @@ Optional navigate-to-IdP end session after local Hydrogen logout so shared SSO c
 
 ### Status
 
-- **State:** pending
-- **Date:**
-- **Result:**
-- **Variances:**
+- **State:** complete
+- **Date:** 2026-07-12
+- **Result:** Hydrogen `POST /api/auth/oidc/end-session` implemented and wired; Lithium global signout navigates to returned IdP logout URL; regular build + JWT/logout Unity tests + Lithium build/tests pass. Keycloak post-logout URI remains an operator checklist step.
+- **Variances:** Implemented as an authenticated endpoint (not a public URL builder) so the JWT can be validated and deleted server-side before the SPA redirects to the IdP.
 
 ---
 

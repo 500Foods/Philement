@@ -65,6 +65,7 @@ on arrival.
         "id": "500passwords",
         "label": "Sign in with 500 Passwords",
         "icon": "fa-key",
+        "image": "/assets/images/login_500passwords.svg",
         "start_url": "/api/auth/oidc/start"
       }
     ]
@@ -75,15 +76,16 @@ on arrival.
 | Field | Required | Description |
 |---|---|---|
 | `id` | yes | Stable identifier. Must match `OIDC_RP.Providers[].Name` on the Hydrogen side (the `?provider=` query param sent to `/oidc/start`). |
-| `label` | yes | Button text. |
-| `icon` | optional | Font Awesome icon name (e.g. `fa-key`, `fa-google`, `fa-microsoft`). |
+| `label` | yes | Tooltip/aria-label text for the button. |
+| `image` | preferred | Image icon URL (e.g. `/assets/images/login_500passwords.svg`). Rendered as a 75×75 image button in the partner row. |
+| `icon` | optional | Font Awesome icon name fallback (e.g. `fa-key`, `fa-google`, `fa-microsoft`). Only used when `image` is absent. |
 | `start_url` | optional | Override the default `/api/auth/oidc/start` path. Useful in tests. |
 
 If `auth.oidc_providers` is absent or empty, **no OIDC button is rendered**.
 Per LITHIUM-INS.md rule #1, we never show a greyed-out fallback.
 
-Multiple providers are supported. Each entry produces one button stacked
-vertically in the login panel.
+Multiple providers are supported. Each entry produces one icon button
+in the same horizontal row as the Didit/Apple/Google/Microsoft partner buttons.
 
 ---
 

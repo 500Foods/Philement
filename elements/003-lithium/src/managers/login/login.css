@@ -392,92 +392,40 @@
   object-fit: contain;
 }
 
-/* ── OIDC provider divider ──────────────────────────────────────────────── */
+/* ── OIDC provider buttons in the alt row ───────────────────────────────── */
 
-/* Horizontal rule with a centred "or" pill. Only shown when at least one
-   provider is configured; hidden via inline style="display:none" otherwise. */
-.login-divider {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: 0 var(--space-5);
-  margin-bottom: var(--space-4);
-  color: var(--text-muted);
-  font-size: var(--font-size-sm);
+/* OIDC providers are rendered as image buttons in .login-alt-btn-group.
+   They share the partner-button layout and add the .login-btn-oidc class
+   so the per-provider accent and "recently used" highlight can apply. */
+.login-alt-btn.login-btn-oidc {
+  /* Inherits sizing and transparent background from .login-alt-btn. */
 }
 
-.login-divider::before,
-.login-divider::after {
-  content: '';
-  flex: 1;
-  border-top: 1px solid var(--border-color, rgb(255 255 255 / 12%));
-}
-
-.login-divider span {
-  padding: 0 var(--space-2);
-  white-space: nowrap;
-}
-
-/* ── OIDC provider buttons ──────────────────────────────────────────────── */
-
-/* Container for all provider buttons. Matches the form's horizontal padding. */
-.login-providers {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  padding: 0 var(--space-5) var(--space-5);
-}
-
-/* Individual "Sign in with X" button.
-   Same height and border-radius as .login-btn-primary, full width. */
-.login-btn-oidc {
+/* Make sure SVG and image icons behave like the partner PNGs. */
+.login-alt-btn.login-btn-oidc img,
+.login-alt-btn.login-btn-oidc svg {
   width: 100%;
-  padding: var(--space-3) var(--space-4);
-  background: var(--bg-tertiary);
-  border: var(--border-standard);
-  border-radius: var(--border-radius-md);
-  color: var(--text-primary);
-  font-size: var(--font-size-base);
-  font-weight: 500;
-  cursor: pointer;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0px 0px 1px black) drop-shadow(0px 0px 10px silver);
+}
+
+/* Font Awesome fallback when no image is provided. */
+.login-alt-btn.login-btn-oidc .login-btn-oidc__icon {
+  width: 55px;
+  height: 55px;
+  font-size: 2rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-2);
-  transition: background-color var(--transition-fast), border-color var(--transition-fast),
-              transform var(--transition-fast);
+  filter: drop-shadow(0px 0px 1px black) drop-shadow(0px 0px 10px silver);
 }
 
-.login-btn-oidc:hover {
-  background: var(--bg-hover, var(--bg-secondary));
-  border-color: var(--accent-primary);
-}
-
-.login-btn-oidc:active {
-  transform: translateY(1px);
-}
-
-.login-btn-oidc:disabled {
-  background: var(--bg-tertiary);
-  color: var(--text-muted);
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-/* Provider icon — 1.25 rem matches the plan specification */
-.login-btn-oidc__icon {
-  width: 1.25rem;
-  height: 1.25rem;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Per-provider brand accent (optional — operators can extend via CSS vars).
-   500passwords uses the accent-primary brand colour by default. */
+/* Per-provider brand accent (optional — operators can extend via CSS vars). */
 .login-btn-oidc[data-provider="500passwords"] {
-  border-color: var(--accent-primary);
+  outline: 1px solid var(--accent-primary);
+  outline-offset: -4px;
+  border-radius: var(--border-radius-md);
 }
 
 .login-btn-oidc[data-provider="500passwords"]:hover {
@@ -485,12 +433,10 @@
 }
 
 /* Subtle "recently used" highlight — added by login.js when
-   auth.last_method matches this login method (Phase 26).
-   The same class is applied to both the OIDC provider button and
-   the password submit button to indicate which path was used last. */
+   auth.last_method matches this login method (Phase 26). */
 .login-btn-oidc.is-recent {
-  border-color: var(--accent-primary);
-  box-shadow: 0 0 0 1px var(--accent-primary);
+  box-shadow: 0 0 0 2px var(--accent-primary);
+  border-radius: var(--border-radius-md);
 }
 
 #login-submit.is-recent {

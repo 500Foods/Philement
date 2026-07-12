@@ -15,6 +15,7 @@
         "id": "500passwords",
         "label": "Sign in with 500 Passwords",
         "icon": "fa-key",
+        "image": "/assets/images/login_500passwords.svg",
         "start_url": "/api/auth/oidc/start"
       }
     ]
