@@ -635,6 +635,13 @@ For this to work, the Keycloak client must have a valid post-logout redirect
 URI that matches the configured `OIDC_RP.Providers[].RedirectUri` (typically
 its origin, e.g., `https://app.example.com/*`).
 
+### Deployment and verification notes
+
+- The Hydrogen C app must be rebuilt and restarted for `POST /api/auth/oidc/end-session` to exist. Until then, Lithium gracefully falls back to local logout only.
+- Any Hydrogen JWT that was issued **before** the C app was rebuilt will **not** contain the `id_token` claim, so it cannot drive Keycloak logout. Users must log in again after the C app is rebuilt to get a fresh JWT.
+- In the Keycloak admin console, add the origin of the configured `RedirectUri` to the client's **Valid post-logout redirect URIs** (e.g., `https://app.example.com/*`).
+- If the user still auto-logs in after global signout, the Keycloak session cookie was not cleared. Verify the post-logout redirect URI is configured and that the logout request URL includes a valid `id_token_hint` and `client_id`.
+
 ---
 
 ## Verification checklist

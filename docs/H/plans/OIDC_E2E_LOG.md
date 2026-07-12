@@ -197,6 +197,40 @@ operator, and any observations.
 
 ---
 
+## RP-Initiated Logout Checklist (Phase 10)
+
+Run these checks after Hydrogen has been rebuilt with the Phase 10 code and the Keycloak `lithium` client has a valid post-logout redirect URI (e.g., `https://lithium.philement.com/*`).
+
+### Prerequisites
+
+- [ ] Hydrogen C app rebuilt/restarted with `POST /api/auth/oidc/end-session` wired.
+- [ ] Keycloak client `lithium` → **Valid post-logout redirect URIs** includes `https://lithium.philement.com/*`.
+- [ ] Browser dev tools are open to capture network requests and cookies.
+
+### Checks
+
+| # | Step | Expected Result | Actual Result |
+|---|---|---|---|
+| 1 | Log in via 500 Passwords (OIDC) | SPA receives Hydrogen JWT and renders main UI. | |
+| 2 | In dev tools, confirm the Hydrogen JWT payload contains `id_token` and `idp_provider` claims | JWT payload includes `"id_token": "eyJ..."` and `"idp_provider": "500passwords"`. | |
+| 3 | Click **Global signout** | Browser navigates to a Keycloak URL like `https://www.500passwords.com/realms/festival/protocol/openid-connect/logout?id_token_hint=...&post_logout_redirect_uri=...&client_id=...`, then returns to the Lithium login screen. | |
+| 4 | In dev tools, inspect Keycloak cookies (`KEYCLOAK_IDENTITY`, `KEYCLOAK_SESSION`, `KEYCLOAK_REMEMBER_ME`, etc.) | The Keycloak session cookies are removed or invalidated after the logout redirect. | |
+| 5 | Click **500 Passwords** again | Browser is redirected to the Keycloak login page (not auto-authenticated). | |
+| 6 | Log in again with the same credentials | Flow completes normally and a new Hydrogen JWT is minted. | |
+| 7 | For a password-only user, click **Global signout** | SPA performs local logout and reloads; no Keycloak redirect occurs. | |
+
+### Troubleshooting
+
+If step 5 still auto-logs the user in:
+
+1. Confirm the Hydrogen binary was actually rebuilt and restarted. A missing endpoint causes silent fallback to local logout.
+2. Verify the logout request URL contains a non-empty `id_token_hint`. If it is missing, the Hydrogen JWT was likely minted before the Phase 10 code was deployed; log in again to get a fresh JWT.
+3. Verify the logout request URL contains `post_logout_redirect_uri=https%3A%2F%2Flithium.philement.com` (or similar). If Keycloak rejects this URI, it may not destroy the session.
+4. Check Hydrogen pod logs for `OIDC RP /end-session` messages.
+5. Capture the exact Keycloak response headers and set-cookie behavior for further analysis.
+
+---
+
 ## Independent Reviewer Pass
 
 Per Phase 27 Definition of Done, a second reviewer must run through the
