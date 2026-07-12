@@ -42,6 +42,8 @@ jwt_validation_result_t mock_validate_jwt(const char* token, const char* databas
             result.claims->tz = mock_claims->tz ? strdup(mock_claims->tz) : NULL;
             result.claims->tzoffset = mock_claims->tzoffset;
             result.claims->database = mock_claims->database ? strdup(mock_claims->database) : NULL;
+            result.claims->id_token = mock_claims->id_token ? strdup(mock_claims->id_token) : NULL;
+            result.claims->idp_provider = mock_claims->idp_provider ? strdup(mock_claims->idp_provider) : NULL;
         }
     }
 
@@ -65,6 +67,8 @@ void mock_free_jwt_validation_result(jwt_validation_result_t* result) {
         free(result->claims->ip);
         free(result->claims->tz);
         free(result->claims->database);
+        free(result->claims->id_token);
+        free(result->claims->idp_provider);
         free(result->claims);
         result->claims = NULL;
     }
@@ -121,6 +125,8 @@ void mock_auth_service_jwt_set_validation_result(jwt_validation_result_t result)
             dst->tz = src->tz ? strdup(src->tz) : NULL;
             dst->tzoffset = src->tzoffset;
             dst->database = src->database ? strdup(src->database) : NULL;
+            dst->id_token = src->id_token ? strdup(src->id_token) : NULL;
+            dst->idp_provider = src->idp_provider ? strdup(src->idp_provider) : NULL;
         }
     }
 }

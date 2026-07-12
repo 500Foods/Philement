@@ -232,6 +232,7 @@ export default class LoginManager {
       languageCurrentCode: this.container.querySelector('#language-current-code'),
       oidcDivider: this.container.querySelector('#login-oidc-divider'),
       oidcProviders: this.container.querySelector('#login-providers'),
+      altButtonGroup: this.container.querySelector('#login-alt-btn-group'),
     };
 
     // Initialize PasswordManager
@@ -388,17 +389,17 @@ export default class LoginManager {
   }
 
   /**
-   * Render zero-or-more OIDC provider buttons beneath the login form.
+   * Render zero-or-more OIDC provider buttons in the alt login row.
    *
    * Reads `auth.oidc_providers` from the Lithium config. If the array is
-   * absent or empty, neither the divider nor the providers container is shown.
+   * absent or empty, nothing is rendered.
    * Per LITHIUM-INS.md rule #1 (no fallback path), there is no greyed-out
    * placeholder — the UI simply does not render when OIDC is disabled.
    *
    * Each button:
-   *   - Has class `login-btn-oidc` and `data-provider="<id>"`.
-   *   - Displays a Font Awesome icon (from `provider.icon`) followed by the
-   *     `provider.label` text.
+   *   - Has class `login-alt-btn login-btn-oidc` and `data-provider="<id>"`.
+   *   - Displays an image icon from `provider.image` if available, otherwise
+   *     falls back to the Font Awesome icon from `provider.icon`.
    *   - On click: records `auth.last_method` as `'oidc:<id>'` in
    *     `lithiumSettings` (before navigation away), then calls
    *     `startOidc(provider.id, window.location.pathname)`.
@@ -422,13 +423,12 @@ export default class LoginManager {
 
     const providers = gcv('auth.oidc_providers', []);
 
-    // Nothing to render — leave divider and container hidden.
+    // Nothing to render.
     if (!Array.isArray(providers) || providers.length === 0) return;
 
-    const container = this.elements.oidcProviders;
-    const divider   = this.elements.oidcDivider;
+    const container = this.elements.altButtonGroup;
 
-    if (!container || !divider) return;
+    if (!container) return;
 
     // Read the stored last-used login method for the `.is-recent` highlight.
     const lastMethod = settings?.get('auth.last_method') ?? null;
@@ -440,22 +440,25 @@ export default class LoginManager {
 
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = 'login-btn-oidc';
+      btn.className = 'login-alt-btn login-btn-oidc';
       btn.setAttribute('data-provider', provider.id);
+      btn.setAttribute('data-tooltip', provider.label);
+      btn.setAttribute('data-tip-placement', 'top');
       btn.setAttribute('aria-label', provider.label);
 
-      // Icon (Font Awesome class, e.g. "fa-key").
-      if (provider.icon) {
+      // Image icon (preferred) or Font Awesome fallback.
+      if (provider.image) {
+        const imgEl = document.createElement('img');
+        imgEl.src = provider.image;
+        imgEl.alt = provider.label;
+        imgEl.className = 'login-alt-icon';
+        btn.appendChild(imgEl);
+      } else if (provider.icon) {
         const iconEl = document.createElement('span');
         iconEl.className = `login-btn-oidc__icon fa-duotone fa-thin ${provider.icon}`;
         iconEl.setAttribute('aria-hidden', 'true');
         btn.appendChild(iconEl);
       }
-
-      // Label text.
-      const labelEl = document.createElement('span');
-      labelEl.textContent = provider.label;
-      btn.appendChild(labelEl);
 
       // Subtle highlight if this provider was the last login method used.
       // Matches 'oidc:<id>' (written pre-navigation) or plain 'oidc'
@@ -484,11 +487,6 @@ export default class LoginManager {
       container.appendChild(btn);
       rendered++;
     });
-
-    // Show the divider and the container only if at least one button was rendered.
-    if (rendered === 0) return;
-    divider.style.display = '';
-    container.style.display = '';
 
     log(LOGIN, Status.INFO, `OIDC: rendered ${rendered} provider button(s)`);
   }

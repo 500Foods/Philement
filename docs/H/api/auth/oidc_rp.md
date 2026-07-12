@@ -202,6 +202,54 @@ a replay attempt both consume the record at most once.
 
 ---
 
+### `POST /api/auth/oidc/end-session`
+
+Performs local logout and, when the current session was established via
+OIDC, returns a URL that the client can navigate to in order to sign the
+user out of the upstream IdP as well.
+
+**Authentication:** required via `Authorization: Bearer <Hydrogen JWT>`
+header. The endpoint validates the JWT, optionally accepts expired tokens
+(so a user can sign out even after the session has expired), and deletes
+the JWT from storage. If the token's OIDC context claims (`id_token` and
+`idp_provider`) are present and the provider's discovery document exposes
+`end_session_endpoint`, the endpoint constructs the IdP logout URL.
+
+**Request:**
+
+```http
+POST /api/auth/oidc/end-session HTTP/1.1
+Authorization: Bearer <hydrogen_jwt>
+Content-Type: application/json
+
+{}
+```
+
+The body is reserved for future use (e.g., a requested `post_logout_redirect_uri`)
+and may be empty.
+
+**Success response:**
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{ "redirect_url": "https://www.500passwords.com/realms/festival/protocol/openid-connect/logout?id_token_hint=...&post_logout_redirect_uri=...&client_id=..." }
+```
+
+If the session is not OIDC-backed, or the provider does not advertise an
+end-session endpoint, `redirect_url` is `null` and the client should fall
+back to normal local logout.
+
+#### End Session Failure
+
+| Status | Body | Cause |
+|---|---|---|
+| 401 | `{"error":"..."}` | Missing, malformed, or invalid `Authorization` header. |
+| 503 | `{"error":"oidc_disabled"}` | `OIDC_RP.Enabled = false`. |
+
+---
+
 ## Configuration
 
 The `OIDC_RP` block lives at the top level of `hydrogen.json`. The full

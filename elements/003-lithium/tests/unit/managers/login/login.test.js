@@ -126,27 +126,19 @@ import LoginManager from '../../../../src/managers/login/login.js';
 
 /**
  * Build a minimal DOM environment for renderOidcProviders.
- * Returns an `elements` object matching what LoginManager.render() caches,
- * plus the two new Phase 25 elements.
+ * Returns an `elements` object matching what LoginManager.render() caches.
  */
 function makeDomElements() {
   // Minimal elements shape — only the ones renderOidcProviders reads.
-  const divider = document.createElement('div');
-  divider.id = 'login-oidc-divider';
-  divider.style.display = 'none';
-
-  const providersContainer = document.createElement('div');
-  providersContainer.id = 'login-providers';
-  providersContainer.style.display = 'none';
+  const altButtonGroup = document.createElement('div');
+  altButtonGroup.id = 'login-alt-btn-group';
 
   // Append to body so querySelector works in tests (not strictly required
   // since we pass them by reference, but good practice).
-  document.body.appendChild(divider);
-  document.body.appendChild(providersContainer);
+  document.body.appendChild(altButtonGroup);
 
   return {
-    oidcDivider: divider,
-    oidcProviders: providersContainer,
+    altButtonGroup,
   };
 }
 
@@ -170,6 +162,7 @@ function oneProviderConfig(overrides = {}) {
       id:        '500passwords',
       label:     'Sign in with 500 Passwords',
       icon:      'fa-key',
+      image:     '/assets/images/login_500passwords.svg',
       start_url: '/api/auth/oidc/start',
       ...overrides,
     },
@@ -195,43 +188,28 @@ describe('renderOidcProviders — empty config', () => {
     document.body.innerHTML = '';
   });
 
-  it('does not show divider when oidc_providers is absent', () => {
+  it('does not render any buttons when oidc_providers is absent', () => {
     const lm   = makeSubject();
     const deps = { getConfigValue: () => undefined, startOidc: vi.fn(), window: null };
     lm.renderOidcProviders(deps);
-    expect(lm.elements.oidcDivider.style.display).toBe('none');
+    expect(lm.elements.altButtonGroup.querySelectorAll('.login-btn-oidc').length).toBe(0);
   });
 
-  it('does not show divider when oidc_providers is an empty array', () => {
+  it('does not render any buttons when oidc_providers is an empty array', () => {
     const lm   = makeSubject();
     const deps = makeProviderDeps([]);
     lm.renderOidcProviders(deps);
-    expect(lm.elements.oidcDivider.style.display).toBe('none');
-  });
-
-  it('does not render any buttons when oidc_providers is empty', () => {
-    const lm   = makeSubject();
-    const deps = makeProviderDeps([]);
-    lm.renderOidcProviders(deps);
-    expect(lm.elements.oidcProviders.querySelectorAll('.login-btn-oidc').length).toBe(0);
-  });
-
-  it('does not show providers container when array is empty', () => {
-    const lm   = makeSubject();
-    const deps = makeProviderDeps([]);
-    lm.renderOidcProviders(deps);
-    expect(lm.elements.oidcProviders.style.display).toBe('none');
+    expect(lm.elements.altButtonGroup.querySelectorAll('.login-btn-oidc').length).toBe(0);
   });
 
   it('skips entries that are missing id or label', () => {
     const lm   = makeSubject();
     const deps = makeProviderDeps([
-      { id: '', label: 'No ID' },
-      { id: 'ok', label: '' },
+      { id: '', label: 'No ID', image: '/x.svg' },
+      { id: 'ok', label: '', image: '/x.svg' },
     ]);
     lm.renderOidcProviders(deps);
-    expect(lm.elements.oidcProviders.querySelectorAll('.login-btn-oidc').length).toBe(0);
-    expect(lm.elements.oidcDivider.style.display).toBe('none');
+    expect(lm.elements.altButtonGroup.querySelectorAll('.login-btn-oidc').length).toBe(0);
   });
 });
 
@@ -248,36 +226,23 @@ describe('renderOidcProviders — one provider', () => {
     const lm   = makeSubject();
     const deps = makeProviderDeps();
     lm.renderOidcProviders(deps);
-    expect(lm.elements.oidcProviders.querySelectorAll('.login-btn-oidc').length).toBe(1);
+    expect(lm.elements.altButtonGroup.querySelectorAll('.login-btn-oidc').length).toBe(1);
   });
 
-  it('shows the divider when a provider is present', () => {
+  it('button uses both login-alt-btn and login-btn-oidc classes', () => {
     const lm   = makeSubject();
     const deps = makeProviderDeps();
     lm.renderOidcProviders(deps);
-    expect(lm.elements.oidcDivider.style.display).not.toBe('none');
-  });
-
-  it('shows the providers container when a provider is present', () => {
-    const lm   = makeSubject();
-    const deps = makeProviderDeps();
-    lm.renderOidcProviders(deps);
-    expect(lm.elements.oidcProviders.style.display).not.toBe('none');
-  });
-
-  it('button has the correct label text', () => {
-    const lm   = makeSubject();
-    const deps = makeProviderDeps();
-    lm.renderOidcProviders(deps);
-    const btn = lm.elements.oidcProviders.querySelector('.login-btn-oidc');
-    expect(btn.textContent).toContain('Sign in with 500 Passwords');
+    const btn = lm.elements.altButtonGroup.querySelector('.login-btn-oidc');
+    expect(btn.classList.contains('login-alt-btn')).toBe(true);
+    expect(btn.classList.contains('login-btn-oidc')).toBe(true);
   });
 
   it('button has data-provider attribute matching provider id', () => {
     const lm   = makeSubject();
     const deps = makeProviderDeps();
     lm.renderOidcProviders(deps);
-    const btn = lm.elements.oidcProviders.querySelector('.login-btn-oidc');
+    const btn = lm.elements.altButtonGroup.querySelector('.login-btn-oidc');
     expect(btn.getAttribute('data-provider')).toBe('500passwords');
   });
 
@@ -285,24 +250,34 @@ describe('renderOidcProviders — one provider', () => {
     const lm   = makeSubject();
     const deps = makeProviderDeps();
     lm.renderOidcProviders(deps);
-    const btn = lm.elements.oidcProviders.querySelector('.login-btn-oidc');
+    const btn = lm.elements.altButtonGroup.querySelector('.login-btn-oidc');
     expect(btn.getAttribute('aria-label')).toBe('Sign in with 500 Passwords');
   });
 
-  it('button renders an icon element when icon is provided', () => {
+  it('button renders an image when provider.image is set', () => {
     const lm   = makeSubject();
     const deps = makeProviderDeps();
     lm.renderOidcProviders(deps);
-    const iconEl = lm.elements.oidcProviders.querySelector('.login-btn-oidc__icon');
+    const img = lm.elements.altButtonGroup.querySelector('.login-btn-oidc img');
+    expect(img).not.toBeNull();
+    expect(img.src).toContain('/assets/images/login_500passwords.svg');
+    expect(img.classList.contains('login-alt-icon')).toBe(true);
+  });
+
+  it('button falls back to a Font Awesome icon when image is absent', () => {
+    const lm   = makeSubject();
+    const deps = makeProviderDeps(oneProviderConfig({ image: undefined }));
+    lm.renderOidcProviders(deps);
+    const iconEl = lm.elements.altButtonGroup.querySelector('.login-btn-oidc__icon');
     expect(iconEl).not.toBeNull();
     expect(iconEl.className).toContain('fa-key');
   });
 
-  it('button does not render an icon span when icon is absent', () => {
+  it('button does not render an icon span when image is provided', () => {
     const lm   = makeSubject();
-    const deps = makeProviderDeps(oneProviderConfig({ icon: undefined }));
+    const deps = makeProviderDeps();
     lm.renderOidcProviders(deps);
-    const iconEl = lm.elements.oidcProviders.querySelector('.login-btn-oidc__icon');
+    const iconEl = lm.elements.altButtonGroup.querySelector('.login-btn-oidc__icon');
     expect(iconEl).toBeNull();
   });
 
@@ -310,7 +285,7 @@ describe('renderOidcProviders — one provider', () => {
     const lm   = makeSubject();
     const deps = makeProviderDeps();
     lm.renderOidcProviders(deps);
-    const btn = lm.elements.oidcProviders.querySelector('.login-btn-oidc');
+    const btn = lm.elements.altButtonGroup.querySelector('.login-btn-oidc');
     expect(btn.type).toBe('button');
   });
 });
@@ -329,7 +304,7 @@ describe('renderOidcProviders — click handler', () => {
     const startFn  = vi.fn();
     const deps     = makeProviderDeps(oneProviderConfig(), { startOidc: startFn });
     lm.renderOidcProviders(deps);
-    const btn = lm.elements.oidcProviders.querySelector('.login-btn-oidc');
+    const btn = lm.elements.altButtonGroup.querySelector('.login-btn-oidc');
     btn.click();
     expect(startFn).toHaveBeenCalledOnce();
     expect(startFn.mock.calls[0][0]).toBe('500passwords');
@@ -341,7 +316,7 @@ describe('renderOidcProviders — click handler', () => {
     const win     = { location: { pathname: '/queries', href: '' } };
     const deps    = makeProviderDeps(oneProviderConfig(), { startOidc: startFn, window: win });
     lm.renderOidcProviders(deps);
-    const btn = lm.elements.oidcProviders.querySelector('.login-btn-oidc');
+    const btn = lm.elements.altButtonGroup.querySelector('.login-btn-oidc');
     btn.click();
     expect(startFn.mock.calls[0][1]).toBe('/queries');
   });
@@ -350,12 +325,12 @@ describe('renderOidcProviders — click handler', () => {
     const lm      = makeSubject();
     const startFn = vi.fn();
     const providers = [
-      { id: 'alpha', label: 'Alpha', icon: 'fa-a' },
-      { id: 'beta',  label: 'Beta',  icon: 'fa-b' },
+      { id: 'alpha', label: 'Alpha', icon: 'fa-a', image: '/a.svg' },
+      { id: 'beta',  label: 'Beta',  icon: 'fa-b', image: '/b.svg' },
     ];
     const deps = makeProviderDeps(providers, { startOidc: startFn });
     lm.renderOidcProviders(deps);
-    const buttons = lm.elements.oidcProviders.querySelectorAll('.login-btn-oidc');
+    const buttons = lm.elements.altButtonGroup.querySelectorAll('.login-btn-oidc');
     // Click the second button.
     buttons[1].click();
     expect(startFn.mock.calls[0][0]).toBe('beta');
@@ -366,7 +341,7 @@ describe('renderOidcProviders — click handler', () => {
     const startFn = vi.fn().mockImplementation(() => { throw new Error('config missing'); });
     const deps    = makeProviderDeps(oneProviderConfig(), { startOidc: startFn });
     lm.renderOidcProviders(deps);
-    const btn = lm.elements.oidcProviders.querySelector('.login-btn-oidc');
+    const btn = lm.elements.altButtonGroup.querySelector('.login-btn-oidc');
     btn.click();
     expect(lm._loginForm.showError).toHaveBeenCalledOnce();
     expect(lm._loginForm.showError.mock.calls[0][0]).toMatch(/could not start/i);
@@ -385,22 +360,12 @@ describe('renderOidcProviders — multiple providers', () => {
   it('renders one button per provider entry', () => {
     const lm   = makeSubject();
     const deps = makeProviderDeps([
-      { id: 'alpha', label: 'Alpha', icon: 'fa-a' },
-      { id: 'beta',  label: 'Beta',  icon: 'fa-b' },
-      { id: 'gamma', label: 'Gamma', icon: 'fa-g' },
+      { id: 'alpha', label: 'Alpha', icon: 'fa-a', image: '/a.svg' },
+      { id: 'beta',  label: 'Beta',  icon: 'fa-b', image: '/b.svg' },
+      { id: 'gamma', label: 'Gamma', icon: 'fa-g', image: '/g.svg' },
     ]);
     lm.renderOidcProviders(deps);
-    expect(lm.elements.oidcProviders.querySelectorAll('.login-btn-oidc').length).toBe(3);
-  });
-
-  it('shows the divider with multiple providers', () => {
-    const lm   = makeSubject();
-    const deps = makeProviderDeps([
-      { id: 'a', label: 'A', icon: 'fa-a' },
-      { id: 'b', label: 'B', icon: 'fa-b' },
-    ]);
-    lm.renderOidcProviders(deps);
-    expect(lm.elements.oidcDivider.style.display).not.toBe('none');
+    expect(lm.elements.altButtonGroup.querySelectorAll('.login-btn-oidc').length).toBe(3);
   });
 });
 
@@ -437,7 +402,7 @@ describe('renderOidcProviders — is-recent highlight (Phase 26)', () => {
     const settings = { get: vi.fn((key) => key === 'auth.last_method' ? 'oidc:500passwords' : null), set: vi.fn() };
     const deps     = { ...makeProviderDeps(), lithiumSettings: settings };
     lm.renderOidcProviders(deps);
-    const btn = lm.elements.oidcProviders.querySelector('.login-btn-oidc');
+    const btn = lm.elements.altButtonGroup.querySelector('.login-btn-oidc');
     expect(btn.classList.contains('is-recent')).toBe(true);
   });
 
@@ -446,7 +411,7 @@ describe('renderOidcProviders — is-recent highlight (Phase 26)', () => {
     const settings = { get: vi.fn((key) => key === 'auth.last_method' ? 'oidc' : null), set: vi.fn() };
     const deps     = { ...makeProviderDeps(), lithiumSettings: settings };
     lm.renderOidcProviders(deps);
-    const btn = lm.elements.oidcProviders.querySelector('.login-btn-oidc');
+    const btn = lm.elements.altButtonGroup.querySelector('.login-btn-oidc');
     expect(btn.classList.contains('is-recent')).toBe(true);
   });
 
@@ -455,7 +420,7 @@ describe('renderOidcProviders — is-recent highlight (Phase 26)', () => {
     const settings = { get: vi.fn((key) => key === 'auth.last_method' ? 'password' : null), set: vi.fn() };
     const deps     = { ...makeProviderDeps(), lithiumSettings: settings };
     lm.renderOidcProviders(deps);
-    const btn = lm.elements.oidcProviders.querySelector('.login-btn-oidc');
+    const btn = lm.elements.altButtonGroup.querySelector('.login-btn-oidc');
     expect(btn.classList.contains('is-recent')).toBe(false);
   });
 
@@ -464,7 +429,7 @@ describe('renderOidcProviders — is-recent highlight (Phase 26)', () => {
     const settings = { get: vi.fn(() => null), set: vi.fn() };
     const deps     = { ...makeProviderDeps(), lithiumSettings: settings };
     lm.renderOidcProviders(deps);
-    const btn = lm.elements.oidcProviders.querySelector('.login-btn-oidc');
+    const btn = lm.elements.altButtonGroup.querySelector('.login-btn-oidc');
     expect(btn.classList.contains('is-recent')).toBe(false);
   });
 
@@ -473,7 +438,7 @@ describe('renderOidcProviders — is-recent highlight (Phase 26)', () => {
     const settings = { get: vi.fn((key) => key === 'auth.last_method' ? 'oidc:other-provider' : null), set: vi.fn() };
     const deps     = { ...makeProviderDeps(), lithiumSettings: settings };
     lm.renderOidcProviders(deps);
-    const btn = lm.elements.oidcProviders.querySelector('.login-btn-oidc');
+    const btn = lm.elements.altButtonGroup.querySelector('.login-btn-oidc');
     expect(btn.classList.contains('is-recent')).toBe(false);
   });
 
@@ -483,7 +448,7 @@ describe('renderOidcProviders — is-recent highlight (Phase 26)', () => {
     const startFn  = vi.fn();
     const deps     = { ...makeProviderDeps(oneProviderConfig(), { startOidc: startFn }), lithiumSettings: settings };
     lm.renderOidcProviders(deps);
-    const btn = lm.elements.oidcProviders.querySelector('.login-btn-oidc');
+    const btn = lm.elements.altButtonGroup.querySelector('.login-btn-oidc');
     btn.click();
     expect(settings.set).toHaveBeenCalledWith('auth.last_method', 'oidc:500passwords');
   });

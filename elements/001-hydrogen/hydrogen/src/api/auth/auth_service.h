@@ -78,6 +78,8 @@ typedef struct {
     char* tz;                  // Client timezone
     int tzoffset;              // Timezone offset from UTC in minutes (e.g., -480 for PST, +60 for CET)
     char* database;            // Database name (for routing authenticated queries)
+    char* id_token;            // IdP OIDC id_token (for RP-initiated logout; only present for OIDC logins)
+    char* idp_provider;          // Name of the OIDC IdP provider (e.g. "500passwords")
 } jwt_claims_t;
 
 /*

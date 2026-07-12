@@ -27,6 +27,7 @@
 #include <src/hydrogen.h>
 #include <src/api/api_utils.h>
 #include <src/api/auth/auth_service.h>
+#include <src/api/auth/auth_service_jwt.h>
 
 // Local includes
 #include "oidc_rp_callback.h"
@@ -418,11 +419,25 @@ enum MHD_Result handle_get_auth_oidc_callback(
         return ret;
     }
 
+    // Keep the validated id_token for the Hydrogen JWT so the client can
+    // request RP-initiated logout later. Dup it now so we can free the
+    // token response aggressively; the copy is freed after minting.
+    char *id_token_copy = token_response->id_token ? strdup(token_response->id_token) : NULL;
+
     // The token bundle is no longer needed once claims are extracted.
     // Free aggressively so the access/id token strings are scrubbed
     // from memory at the earliest opportunity.
     oidc_rp_token_response_free(token_response);
     token_response = NULL;
+
+    if (!id_token_copy) {
+        log_this(SR_AUTH,
+                 "OIDC RP /callback: id_token missing from token response",
+                 LOG_LEVEL_ERROR, 0);
+        oidc_rp_state_record_free(state_record);
+        oidc_rp_idtoken_claims_free(claims);
+        return redirect_with_error(connection, provider, "server_error", return_to);
+    }
 
     // ---- Resolve the OIDC identity to a Hydrogen account ----
     // Database resolution precedence: state record → top-level OIDC_RP.Database
@@ -519,12 +534,14 @@ enum MHD_Result handle_get_auth_oidc_callback(
         ? strdup(state_record->client_ip)
         : api_get_client_ip(connection);
 
-    char *jwt_token = generate_jwt(account, &sys_info, client_ip, tz,
-                                   database, issued_at);
+    char *jwt_token = generate_jwt_with_oidc(account, &sys_info, client_ip, tz,
+                                             database, issued_at,
+                                             id_token_copy, provider->name);
     if (!jwt_token) {
         log_this(SR_AUTH,
                  "OIDC RP /callback: generate_jwt failed for account_id=%d",
                  LOG_LEVEL_ERROR, 1, account->id);
+        free(id_token_copy);
         free(client_ip);
         free_account_info(account);
         oidc_rp_idtoken_claims_free(claims);
@@ -536,6 +553,7 @@ enum MHD_Result handle_get_auth_oidc_callback(
     char *jwt_hash = compute_token_hash(jwt_token);
     if (!jwt_hash) {
         scrub_free(jwt_token);
+        free(id_token_copy);
         free(client_ip);
         free_account_info(account);
         oidc_rp_idtoken_claims_free(claims);
@@ -553,6 +571,7 @@ enum MHD_Result handle_get_auth_oidc_callback(
     char *handoff_code = oidc_rp_make_random_hex(32);
     if (!handoff_code) {
         scrub_free(jwt_token);
+        free(id_token_copy);
         free(client_ip);
         free_account_info(account);
         oidc_rp_idtoken_claims_free(claims);
@@ -576,6 +595,8 @@ enum MHD_Result handle_get_auth_oidc_callback(
     // others are routine.
     scrub_free(jwt_token);
     jwt_token = NULL;
+    free(id_token_copy);
+    id_token_copy = NULL;
 
     if (!put_ok) {
         log_this(SR_AUTH,

@@ -88,10 +88,14 @@ jwt_config_t* get_jwt_config(void) {
 }
 
 /**
- * Generate a JWT token
+ * Generate a JWT token with optional OIDC id_token and provider claims.
+ * The id_token and idp_provider are only included in the payload when both
+ * are non-NULL; this lets the JWT carry just enough context for RP-initiated
+ * logout without affecting password-login tokens.
  */
-char* generate_jwt(account_info_t* account, system_info_t* system,
-                   const char* client_ip, const char* tz, const char* database, time_t issued_at) {
+char* generate_jwt_with_oidc(account_info_t* account, system_info_t* system,
+                             const char* client_ip, const char* tz, const char* database,
+                             time_t issued_at, const char* id_token, const char* idp_provider) {
     if (!account || !system || !client_ip || !tz || !database) {
         log_this(SR_AUTH, "Invalid parameters for JWT generation", LOG_LEVEL_ERROR, 0);
         return NULL;
@@ -132,16 +136,28 @@ char* generate_jwt(account_info_t* account, system_info_t* system,
 
     // Calculate timezone offset
     int tzoffset = calculate_timezone_offset(tz);
-    
+
     char* payload_json = NULL;
-    ret = asprintf(&payload_json,
-                   "{\"iss\":\"hydrogen-auth\",\"sub\":\"%d\",\"aud\":\"%d\",\"exp\":%ld,\"iat\":%ld,\"nbf\":%ld,\"jti\":\"%s\",\"user_id\":%d,\"system_id\":%d,\"app_id\":%d,\"username\":\"%s\",\"email\":\"%s\",\"roles\":\"%s\",\"ip\":\"%s\",\"tz\":\"%s\",\"tzoffset\":%d,\"database\":\"%s\"}",
-                   account->id, system->app_id, exp, now, now, jti,
-                   account->id, system->system_id, system->app_id,
-                   account->username ? account->username : "",
-                   account->email ? account->email : "",
-                   account->roles ? account->roles : "",
-                   client_ip, tz, tzoffset, database);
+    if (id_token && idp_provider) {
+        ret = asprintf(&payload_json,
+                       "{\"iss\":\"hydrogen-auth\",\"sub\":\"%d\",\"aud\":\"%d\",\"exp\":%ld,\"iat\":%ld,\"nbf\":%ld,\"jti\":\"%s\",\"user_id\":%d,\"system_id\":%d,\"app_id\":%d,\"username\":\"%s\",\"email\":\"%s\",\"roles\":\"%s\",\"ip\":\"%s\",\"tz\":\"%s\",\"tzoffset\":%d,\"database\":\"%s\",\"id_token\":\"%s\",\"idp_provider\":\"%s\"}",
+                       account->id, system->app_id, exp, now, now, jti,
+                       account->id, system->system_id, system->app_id,
+                       account->username ? account->username : "",
+                       account->email ? account->email : "",
+                       account->roles ? account->roles : "",
+                       client_ip, tz, tzoffset, database,
+                       id_token, idp_provider);
+    } else {
+        ret = asprintf(&payload_json,
+                       "{\"iss\":\"hydrogen-auth\",\"sub\":\"%d\",\"aud\":\"%d\",\"exp\":%ld,\"iat\":%ld,\"nbf\":%ld,\"jti\":\"%s\",\"user_id\":%d,\"system_id\":%d,\"app_id\":%d,\"username\":\"%s\",\"email\":\"%s\",\"roles\":\"%s\",\"ip\":\"%s\",\"tz\":\"%s\",\"tzoffset\":%d,\"database\":\"%s\"}",
+                       account->id, system->app_id, exp, now, now, jti,
+                       account->id, system->system_id, system->app_id,
+                       account->username ? account->username : "",
+                       account->email ? account->email : "",
+                       account->roles ? account->roles : "",
+                       client_ip, tz, tzoffset, database);
+    }
 
     free(jti);
 
@@ -220,6 +236,14 @@ char* generate_jwt(account_info_t* account, system_info_t* system,
 
     log_this("AUTH", "Generated JWT for user %s", LOG_LEVEL_DEBUG, 1, account->username);
     return jwt;
+}
+
+/**
+ * Generate a JWT token (backward-compatible wrapper without OIDC claims).
+ */
+char* generate_jwt(account_info_t* account, system_info_t* system,
+                   const char* client_ip, const char* tz, const char* database, time_t issued_at) {
+    return generate_jwt_with_oidc(account, system, client_ip, tz, database, issued_at, NULL, NULL);
 }
 
 /**
@@ -478,6 +502,17 @@ jwt_validation_result_t validate_jwt(const char* token, const char* database) {
         result.claims->database = strdup(json_string_value(database_json));
     }
 
+    // Extract OIDC RP logout context (optional — only present for OIDC logins)
+    json_t* id_token_json = json_object_get(payload_json, "id_token");
+    if (id_token_json && json_is_string(id_token_json)) {
+        result.claims->id_token = strdup(json_string_value(id_token_json));
+    }
+
+    json_t* idp_provider_json = json_object_get(payload_json, "idp_provider");
+    if (idp_provider_json && json_is_string(idp_provider_json)) {
+        result.claims->idp_provider = strdup(json_string_value(idp_provider_json));
+    }
+
     json_decref(payload_json);
     free(token_copy);
 
@@ -531,17 +566,33 @@ char* generate_new_jwt(jwt_claims_t* old_claims) {
 
     // Create JWT payload preserving original claims but with new timestamps
     char* payload_json = NULL;
-    ret = asprintf(&payload_json,
-                   "{\"iss\":\"hydrogen-auth\",\"sub\":\"%d\",\"aud\":\"%d\",\"exp\":%ld,\"iat\":%ld,\"nbf\":%ld,\"jti\":\"%s\",\"user_id\":%d,\"system_id\":%d,\"app_id\":%d,\"username\":\"%s\",\"email\":\"%s\",\"roles\":\"%s\",\"ip\":\"%s\",\"tz\":\"%s\",\"tzoffset\":%d,\"database\":\"%s\"}",
-                   old_claims->user_id, old_claims->app_id, exp, now, now, jti,
-                   old_claims->user_id, old_claims->system_id, old_claims->app_id,
-                   old_claims->username ? old_claims->username : "",
-                   old_claims->email ? old_claims->email : "",
-                   old_claims->roles ? old_claims->roles : "",
-                   old_claims->ip ? old_claims->ip : "",
-                   old_claims->tz ? old_claims->tz : "",
-                   old_claims->tzoffset,
-                   old_claims->database ? old_claims->database : "");
+    if (old_claims->id_token && old_claims->idp_provider) {
+        ret = asprintf(&payload_json,
+                       "{\"iss\":\"hydrogen-auth\",\"sub\":\"%d\",\"aud\":\"%d\",\"exp\":%ld,\"iat\":%ld,\"nbf\":%ld,\"jti\":\"%s\",\"user_id\":%d,\"system_id\":%d,\"app_id\":%d,\"username\":\"%s\",\"email\":\"%s\",\"roles\":\"%s\",\"ip\":\"%s\",\"tz\":\"%s\",\"tzoffset\":%d,\"database\":\"%s\",\"id_token\":\"%s\",\"idp_provider\":\"%s\"}",
+                       old_claims->user_id, old_claims->app_id, exp, now, now, jti,
+                       old_claims->user_id, old_claims->system_id, old_claims->app_id,
+                       old_claims->username ? old_claims->username : "",
+                       old_claims->email ? old_claims->email : "",
+                       old_claims->roles ? old_claims->roles : "",
+                       old_claims->ip ? old_claims->ip : "",
+                       old_claims->tz ? old_claims->tz : "",
+                       old_claims->tzoffset,
+                       old_claims->database ? old_claims->database : "",
+                       old_claims->id_token,
+                       old_claims->idp_provider);
+    } else {
+        ret = asprintf(&payload_json,
+                       "{\"iss\":\"hydrogen-auth\",\"sub\":\"%d\",\"aud\":\"%d\",\"exp\":%ld,\"iat\":%ld,\"nbf\":%ld,\"jti\":\"%s\",\"user_id\":%d,\"system_id\":%d,\"app_id\":%d,\"username\":\"%s\",\"email\":\"%s\",\"roles\":\"%s\",\"ip\":\"%s\",\"tz\":\"%s\",\"tzoffset\":%d,\"database\":\"%s\"}",
+                       old_claims->user_id, old_claims->app_id, exp, now, now, jti,
+                       old_claims->user_id, old_claims->system_id, old_claims->app_id,
+                       old_claims->username ? old_claims->username : "",
+                       old_claims->email ? old_claims->email : "",
+                       old_claims->roles ? old_claims->roles : "",
+                       old_claims->ip ? old_claims->ip : "",
+                       old_claims->tz ? old_claims->tz : "",
+                       old_claims->tzoffset,
+                       old_claims->database ? old_claims->database : "");
+    }
 
     free(jti);
 
@@ -672,6 +723,8 @@ void free_jwt_claims(jwt_claims_t* claims) {
         free(claims->ip);
         free(claims->tz);
         free(claims->database);
+        free(claims->id_token);
+        free(claims->idp_provider);
         free(claims);
     }
 }

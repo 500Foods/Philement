@@ -301,8 +301,30 @@ export class AuthManager {
      logAuth(Status.INFO, 'Performing global logout cleanup');
      // Fade out main UI (using the same fadeout as regular logout, but without logout panel)
      await this._fadeOutForLogout();
+
+     // Ask Hydrogen to invalidate the current session and, if the user logged in
+     // via OIDC, return the upstream IdP logout URL so we can sign out of
+     // Keycloak as well. The API client pulls the JWT from localStorage automatically.
+     let idpRedirectUrl = null;
+     try {
+       const endSessionResponse = await this.app.api.post('auth/oidc/end-session', {});
+       if (endSessionResponse && endSessionResponse.redirect_url) {
+         idpRedirectUrl = endSessionResponse.redirect_url;
+         logAuth(Status.INFO, 'OIDC end-session URL received; redirecting to IdP logout');
+       } else {
+         logAuth(Status.INFO, 'No OIDC end-session URL; local logout only');
+       }
+     } catch (error) {
+       logAuth(Status.WARN, `OIDC end-session request failed: ${error.message}`);
+     }
+
      await this.performLogoutActions('global');
-     window.location.reload(true);
+
+     if (idpRedirectUrl) {
+       window.location.href = idpRedirectUrl;
+     } else {
+       window.location.reload(true);
+     }
    }
 
    async handleAuthExpired() {

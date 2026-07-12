@@ -392,6 +392,57 @@
   object-fit: contain;
 }
 
+/* ── OIDC provider buttons in the alt row ───────────────────────────────── */
+
+/* OIDC providers are rendered as image buttons in .login-alt-btn-group.
+   They share the partner-button layout and add the .login-btn-oidc class
+   so the per-provider accent and "recently used" highlight can apply. */
+.login-alt-btn.login-btn-oidc {
+  /* Inherits sizing and transparent background from .login-alt-btn. */
+}
+
+/* Make sure SVG and image icons behave like the partner PNGs. */
+.login-alt-btn.login-btn-oidc img,
+.login-alt-btn.login-btn-oidc svg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0px 0px 1px black) drop-shadow(0px 0px 10px silver);
+}
+
+/* Font Awesome fallback when no image is provided. */
+.login-alt-btn.login-btn-oidc .login-btn-oidc__icon {
+  width: 55px;
+  height: 55px;
+  font-size: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0px 0px 1px black) drop-shadow(0px 0px 10px silver);
+}
+
+/* Per-provider brand accent (optional — operators can extend via CSS vars). */
+.login-btn-oidc[data-provider="500passwords"] {
+  outline: 1px solid var(--accent-primary);
+  outline-offset: -4px;
+  border-radius: var(--border-radius-md);
+}
+
+.login-btn-oidc[data-provider="500passwords"]:hover {
+  background: rgb(92 107 192 / 12%);
+}
+
+/* Subtle "recently used" highlight — added by login.js when
+   auth.last_method matches this login method (Phase 26). */
+.login-btn-oidc.is-recent {
+  box-shadow: 0 0 0 2px var(--accent-primary);
+  border-radius: var(--border-radius-md);
+}
+
+#login-submit.is-recent {
+  box-shadow: 0 0 0 1px var(--accent-primary);
+}
+
 } /* end @layer managers — login-specific styles above */
 
 @layer vendor-fixes {

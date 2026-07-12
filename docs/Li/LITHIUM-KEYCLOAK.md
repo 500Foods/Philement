@@ -602,6 +602,41 @@ JWT-storage / renewal / logout code. No changes to any other manager.
 
 ---
 
+## Global signout and RP-initiated logout
+
+For OIDC-signed-in users, the regular `POST /api/auth/logout` endpoint still
+invalidates the Hydrogen JWT but does not clear the Keycloak SSO session
+cookie. To also sign the user out of Keycloak (so other realm apps such as
+Canvas stop recognizing the session), use the optional RP-initiated logout
+path:
+
+1. The client keeps its normal JWT storage logic.
+2. When the user chooses **global signout**, call:
+
+   ```js
+   const response = await api.post('auth/oidc/end-session', {});
+   // response.redirect_url is either a Keycloak logout URL or null
+   ```
+
+3. On success, clear local state and caches exactly as for normal logout.
+4. If `response.redirect_url` is present, navigate the browser to it. That
+   URL carries the Keycloak `id_token_hint` and `post_logout_redirect_uri`
+   parameters and will end the Keycloak session before redirecting back to
+   the SPA.
+5. If `response.redirect_url` is null (e.g., the user logged in with a
+   password, or the IdP does not advertise `end_session_endpoint`), fall back
+   to the normal local logout flow (reload the app).
+
+No manual URL construction or `id_token` handling is required in the client;
+Hydrogen builds the IdP logout URL from the JWT claims and provider
+configuration.
+
+For this to work, the Keycloak client must have a valid post-logout redirect
+URI that matches the configured `OIDC_RP.Providers[].RedirectUri` (typically
+its origin, e.g., `https://app.example.com/*`).
+
+---
+
 ## Verification checklist
 
 Before declaring done, verify:
@@ -615,6 +650,10 @@ Before declaring done, verify:
 - [ ] On return error, a user-friendly message is shown.
 - [ ] After OIDC sign-in, every other API call works (renew, logout,
       role-gated UI).
+- [ ] Global signout for an OIDC user redirects the browser to Keycloak
+      logout and then back to the app.
+- [ ] Global signout for a password-only user performs a normal local logout
+      (no Keycloak redirect).
 - [ ] Refreshing the page after sign-in does not trigger a duplicate
       handoff exchange (URL was cleaned).
 - [ ] A spent / expired handoff returns a clean error.

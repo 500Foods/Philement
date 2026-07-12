@@ -24,8 +24,10 @@
       </div>
     </div>
             
-    <!-- Alternative login buttons row -->
-    <div class="login-alt-btn-group">
+    <!-- Alternative login buttons row.
+         OIDC providers configured in auth.oidc_providers are rendered here
+         at runtime as image buttons alongside the built-in partner buttons. -->
+    <div class="login-alt-btn-group" id="login-alt-btn-group">
       <button type="button" class="login-alt-btn" id="didit-btn" data-tooltip="Sign in with Didit" data-tip-placement="top">
         <img height=50 src="/assets/images/login_didit.png" alt="Didit" class="login-alt-icon">
       </button>
@@ -101,17 +103,6 @@
       </div>
 
     </form>
-
-    <!-- OIDC provider buttons — rendered at runtime from auth.oidc_providers config.
-         The divider and providers container are hidden by default; login.js shows them
-         only when at least one provider is configured. Per LITHIUM-INS.md rule #1
-         (no fallback path), nothing renders if the array is empty or absent. -->
-    <div class="login-divider" id="login-oidc-divider" style="display: none;">
-      <span>or</span>
-    </div>
-    <div class="login-providers" id="login-providers" style="display: none;">
-      <!-- Provider buttons are injected here by login.js renderOidcProviders() -->
-    </div>
 
   </div>
 

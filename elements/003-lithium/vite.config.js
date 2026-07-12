@@ -12,7 +12,10 @@ export default defineConfig(({ mode }) => {
     root: lithiumRoot,
 
     // Base public path when served in production
-    base: './',
+    // Use absolute paths so the SPA works correctly from any route
+    // (e.g., /login). Relative paths would resolve assets under /login/assets
+    // which does not exist on the server.
+    base: '/',
 
       // Build options - Optimized for production
       build: {

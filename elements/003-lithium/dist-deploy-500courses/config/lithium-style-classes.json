@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS class selectors/names used across the Lithium codebase",
-    "generated": "2026-06-15T17:57:30.948Z",
+    "generated": "2026-07-12T16:16:37.304Z",
     "sources": {
       "css": "103 files in src/**/*.css",
       "js": "216 files in src/**/*.js",
       "html": "54 files in src/**/*.html + index.html"
     },
-    "total_selectors": 2156,
-    "total_occurrences": 34872
+    "total_selectors": 2150,
+    "total_occurrences": 34904
   },
   "selectors": [
     {
@@ -20735,14 +20735,15 @@
     {
       "selector": ".login-alt-btn",
       "css": 1,
-      "js": 5,
+      "js": 6,
       "html": 5,
-      "total": 11,
+      "total": 12,
       "files": {
         "css": [
           "src/managers/login/login.css"
         ],
         "js": [
+          "src/managers/login/login.js",
           "src/managers/style-manager/style-manager.js"
         ],
         "html": [
@@ -20753,14 +20754,15 @@
     {
       "selector": ".login-alt-btn img",
       "css": 1,
-      "js": 5,
+      "js": 6,
       "html": 5,
-      "total": 11,
+      "total": 12,
       "files": {
         "css": [
           "src/managers/login/login.css"
         ],
         "js": [
+          "src/managers/login/login.js",
           "src/managers/style-manager/style-manager.js"
         ],
         "html": [
@@ -20771,14 +20773,15 @@
     {
       "selector": ".login-alt-btn-group",
       "css": 1,
-      "js": 6,
+      "js": 7,
       "html": 6,
-      "total": 13,
+      "total": 14,
       "files": {
         "css": [
           "src/managers/login/login.css"
         ],
         "js": [
+          "src/managers/login/login.js",
           "src/managers/style-manager/style-manager.js"
         ],
         "html": [
@@ -20789,14 +20792,15 @@
     {
       "selector": ".login-alt-btn:active",
       "css": 1,
-      "js": 5,
+      "js": 6,
       "html": 5,
-      "total": 11,
+      "total": 12,
       "files": {
         "css": [
           "src/managers/login/login.css"
         ],
         "js": [
+          "src/managers/login/login.js",
           "src/managers/style-manager/style-manager.js"
         ],
         "html": [
@@ -20807,14 +20811,72 @@
     {
       "selector": ".login-alt-btn:hover",
       "css": 1,
-      "js": 5,
+      "js": 6,
       "html": 5,
-      "total": 11,
+      "total": 12,
       "files": {
         "css": [
           "src/managers/login/login.css"
         ],
         "js": [
+          "src/managers/login/login.js",
+          "src/managers/style-manager/style-manager.js"
+        ],
+        "html": [
+          "src/managers/login/login.html"
+        ]
+      }
+    },
+    {
+      "selector": ".login-alt-btn.login-btn-oidc",
+      "css": 1,
+      "js": 7,
+      "html": 5,
+      "total": 13,
+      "files": {
+        "css": [
+          "src/managers/login/login.css"
+        ],
+        "js": [
+          "src/managers/login/login.js",
+          "src/managers/style-manager/style-manager.js"
+        ],
+        "html": [
+          "src/managers/login/login.html"
+        ]
+      }
+    },
+    {
+      "selector": ".login-alt-btn.login-btn-oidc .login-btn-oidc__icon",
+      "css": 1,
+      "js": 8,
+      "html": 5,
+      "total": 14,
+      "files": {
+        "css": [
+          "src/managers/login/login.css"
+        ],
+        "js": [
+          "src/managers/login/login.js",
+          "src/managers/style-manager/style-manager.js"
+        ],
+        "html": [
+          "src/managers/login/login.html"
+        ]
+      }
+    },
+    {
+      "selector": ".login-alt-btn.login-btn-oidc svg",
+      "css": 1,
+      "js": 7,
+      "html": 5,
+      "total": 13,
+      "files": {
+        "css": [
+          "src/managers/login/login.css"
+        ],
+        "js": [
+          "src/managers/login/login.js",
           "src/managers/style-manager/style-manager.js"
         ],
         "html": [
@@ -20825,14 +20887,15 @@
     {
       "selector": ".login-alt-icon",
       "css": 1,
-      "js": 4,
+      "js": 5,
       "html": 4,
-      "total": 9,
+      "total": 10,
       "files": {
         "css": [
           "src/managers/login/login.css"
         ],
         "js": [
+          "src/managers/login/login.js",
           "src/managers/style-manager/style-manager.js"
         ],
         "html": [
@@ -21005,86 +21068,6 @@
         "html": [
           "src/managers/login/login.html"
         ]
-      }
-    },
-    {
-      "selector": ".login-btn-oidc",
-      "css": 1,
-      "js": 1,
-      "html": 0,
-      "total": 2,
-      "files": {
-        "css": [
-          "src/managers/login/login.css"
-        ],
-        "js": [
-          "src/managers/login/login.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".login-btn-oidc__icon",
-      "css": 1,
-      "js": 2,
-      "html": 0,
-      "total": 3,
-      "files": {
-        "css": [
-          "src/managers/login/login.css"
-        ],
-        "js": [
-          "src/managers/login/login.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".login-btn-oidc:active",
-      "css": 1,
-      "js": 1,
-      "html": 0,
-      "total": 2,
-      "files": {
-        "css": [
-          "src/managers/login/login.css"
-        ],
-        "js": [
-          "src/managers/login/login.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".login-btn-oidc:disabled",
-      "css": 1,
-      "js": 1,
-      "html": 0,
-      "total": 2,
-      "files": {
-        "css": [
-          "src/managers/login/login.css"
-        ],
-        "js": [
-          "src/managers/login/login.js"
-        ],
-        "html": []
-      }
-    },
-    {
-      "selector": ".login-btn-oidc:hover",
-      "css": 1,
-      "js": 1,
-      "html": 0,
-      "total": 2,
-      "files": {
-        "css": [
-          "src/managers/login/login.css"
-        ],
-        "js": [
-          "src/managers/login/login.js"
-        ],
-        "html": []
       }
     },
     {
@@ -21318,54 +21301,6 @@
           "src/tables/popups/popup-manager.js",
           "src/tables/popups/template-popup.js"
         ],
-        "html": [
-          "src/managers/login/login.html"
-        ]
-      }
-    },
-    {
-      "selector": ".login-divider",
-      "css": 1,
-      "js": 0,
-      "html": 1,
-      "total": 2,
-      "files": {
-        "css": [
-          "src/managers/login/login.css"
-        ],
-        "js": [],
-        "html": [
-          "src/managers/login/login.html"
-        ]
-      }
-    },
-    {
-      "selector": ".login-divider span",
-      "css": 1,
-      "js": 0,
-      "html": 1,
-      "total": 2,
-      "files": {
-        "css": [
-          "src/managers/login/login.css"
-        ],
-        "js": [],
-        "html": [
-          "src/managers/login/login.html"
-        ]
-      }
-    },
-    {
-      "selector": ".login-divider::after",
-      "css": 1,
-      "js": 0,
-      "html": 1,
-      "total": 2,
-      "files": {
-        "css": [
-          "src/managers/login/login.css"
-        ],
-        "js": [],
         "html": [
           "src/managers/login/login.html"
         ]
@@ -21857,14 +21792,15 @@
     {
       "selector": ".login-mockup .login-alt-btn",
       "css": 1,
-      "js": 6,
+      "js": 7,
       "html": 5,
-      "total": 12,
+      "total": 13,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
         ],
         "js": [
+          "src/managers/login/login.js",
           "src/managers/style-manager/style-manager.js"
         ],
         "html": [
@@ -21875,14 +21811,15 @@
     {
       "selector": ".login-mockup .login-alt-btn-group",
       "css": 1,
-      "js": 7,
+      "js": 8,
       "html": 6,
-      "total": 14,
+      "total": 15,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
         ],
         "js": [
+          "src/managers/login/login.js",
           "src/managers/style-manager/style-manager.js"
         ],
         "html": [
@@ -21893,14 +21830,15 @@
     {
       "selector": ".login-mockup .login-alt-btn:active",
       "css": 1,
-      "js": 6,
+      "js": 7,
       "html": 5,
-      "total": 12,
+      "total": 13,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
         ],
         "js": [
+          "src/managers/login/login.js",
           "src/managers/style-manager/style-manager.js"
         ],
         "html": [
@@ -21911,14 +21849,15 @@
     {
       "selector": ".login-mockup .login-alt-btn:hover",
       "css": 1,
-      "js": 6,
+      "js": 7,
       "html": 5,
-      "total": 12,
+      "total": 13,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
         ],
         "js": [
+          "src/managers/login/login.js",
           "src/managers/style-manager/style-manager.js"
         ],
         "html": [
@@ -21929,14 +21868,15 @@
     {
       "selector": ".login-mockup .login-alt-icon",
       "css": 1,
-      "js": 5,
+      "js": 6,
       "html": 4,
-      "total": 10,
+      "total": 11,
       "files": {
         "css": [
           "src/managers/style-manager/style-manager.css"
         ],
         "js": [
+          "src/managers/login/login.js",
           "src/managers/style-manager/style-manager.js"
         ],
         "html": [
@@ -22359,22 +22299,6 @@
         "js": [
           "src/managers/style-manager/style-manager.js"
         ],
-        "html": [
-          "src/managers/login/login.html"
-        ]
-      }
-    },
-    {
-      "selector": ".login-providers",
-      "css": 1,
-      "js": 0,
-      "html": 1,
-      "total": 2,
-      "files": {
-        "css": [
-          "src/managers/login/login.css"
-        ],
-        "js": [],
         "html": [
           "src/managers/login/login.html"
         ]

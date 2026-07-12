@@ -39,10 +39,9 @@
 #include "auth/oidc_rp/oidc_rp_start.h"
 #include "auth/oidc_rp/oidc_rp_callback.h"
 #include "auth/oidc_rp/oidc_rp_handoff.h"
+#include "auth/oidc_rp/oidc_rp_end_session.h"
 #include "auth/oidc_rp/oidc_rp_service.h"
-#ifndef NDEBUG
 #include "auth/oidc_rp/oidc_rp_debug_inject.h"
-#endif
 
 // Simple hardcoded endpoint validator and handler for /api/version
 bool is_exact_api_version_endpoint(const char *url) {
@@ -669,6 +668,10 @@ enum MHD_Result handle_api_request(struct MHD_Connection *connection,
     else if (strcmp(path, "auth/oidc/handoff") == 0) {
         return handle_post_auth_oidc_handoff(connection, url, method, version, upload_data,
                                              upload_data_size, con_cls);
+    }
+    else if (strcmp(path, "auth/oidc/end-session") == 0) {
+        return handle_post_auth_oidc_end_session(connection, url, method, version, upload_data,
+                                                 upload_data_size, con_cls);
     }
 #ifndef NDEBUG
     // Phase 13 debug injector. Compiled out of release builds.
