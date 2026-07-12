@@ -770,11 +770,14 @@ Append discoveries, surprises, and decisions here as phases complete.
   - Role source: **`database`** (QueryRef #017 join, no IdP role merge)
   - Shared realm expectations: Canvas LMS uses same `festival` realm with separate client; no shared client secrets.
 - (Phase 1–5 setup, 2026-07-11) **Production OIDC_RP configuration deployed and pre-flight verified.** The Hydrogen CephFS config `/tnt/hydrogen/hydrogen-lithium.json` now contains an `OIDC_RP` block with env-var placeholders. Kubernetes secret `t-philement-oidc-secrets` and deployment env vars were added to `t-philement-lithium-deployment.yaml`. The deployed Lithium config `/tnt/lithium/config/lithium.json` was updated with `auth.oidc_providers`. Pre-flight checks against the real Keycloak instance succeeded: `/api/auth/oidc/start` returns 302 to Keycloak with PKCE/state/nonce; `/api/auth/oidc/handoff` returns 401 for invalid codes; `/api/auth/oidc/callback` returns 302 to the SPA with typed `oidc_error` for invalid state/code/token errors.
+- (Phase 10, 2026-07-12) **RP-initiated logout implemented.** Chosen approach: carry the Keycloak `id_token` and provider name as optional Hydrogen JWT claims (only for OIDC logins), expose an authenticated `POST /api/auth/oidc/end-session` endpoint that validates the JWT, deletes it from storage, and returns a Keycloak `end_session_endpoint` URL built with `id_token_hint`, `post_logout_redirect_uri`, and `client_id`. Lithium global signout calls this endpoint and navigates to the returned URL. This avoids a separate server-side session store and survives JWT renewal because `generate_new_jwt` copies the claims. It keeps the Hydrogen JWT shape identical for password logins.
 
 ### Surprises / deviations
 
 - (2026-07-11) The Keycloak admin credentials recorded in `tenants/t-500passwords/README.md` are **outdated**; `kcadm.sh` login with those credentials fails. The `t-500passwords-secrets` values also fail. No admin changes to the Keycloak client were needed, but this prevents verifying or editing client settings from the pod.
 - (2026-07-11) The available Keycloak test user (`andrew` / `andrew@500foods.com`) accepts the documented password, but the realm then presents an **MFA/OTP challenge**. Without the current OTP code or a user without OTP, the full manual E2E sign-in cannot be completed.
+- (2026-07-12) **Keycloak session can persist after a `POST /api/auth/oidc/end-session` redirect.** The endpoint returns the Keycloak logout URL and the browser redirects, but clicking 500 Passwords again may still auto-login because the Keycloak SSO cookie is still present. Root causes under investigation: (a) Hydrogen C app not yet rebuilt with the endpoint, (b) Keycloak client missing `Valid post-logout redirect URIs`, or (c) the existing Hydrogen JWT was minted before the `id_token` claim was added and therefore cannot drive the IdP logout. See remaining work below.
+- (2026-07-12) **cppcheck flagged a dead condition** in the new handler (`!token` after pointer arithmetic is always false). Fixed by checking `strlen(token) == 0` only.
 
 ### Reusable snippets / gotchas
 
@@ -786,6 +789,12 @@ Append discoveries, surprises, and decisions here as phases complete.
 - Test 42 uses **mock** Keycloak (`tests/lib/mock_keycloak/server.js`); real IdP is manual Phase 5 only unless a future live test is added carefully (secrets, flakiness).
 - Empty `AllowedEmailDomains` with provisioning enabled: confirm code semantics before production (Phase 3.6).
 - To verify the live flow from the command line, port-forward the Hydrogen pod and use `curl -H 'Host: lithium.philement.com'` against `http://localhost:7000`; the real Keycloak IdP is HTTPS, but the callback redirect can be manually pointed back to the local port-forward by rewriting the returned `Location` host.
+- **RP-initiated logout gotchas:**
+  - The `id_token` must be carried in the Hydrogen JWT at login time; tokens minted before the feature is deployed cannot drive IdP logout.
+  - The `post_logout_redirect_uri` sent to Keycloak is the **origin** of `OIDC_RP.Providers[].RedirectUri` (e.g., `https://lithium.philement.com`). The Keycloak client must allow it, typically via wildcard `https://lithium.philement.com/*`.
+  - Include `client_id` in the logout URL alongside `id_token_hint`; Keycloak uses it when validating the post-logout redirect URI.
+  - Endpoints must still perform **method discrimination** (`POST` only) even when using `api_buffer_post_data`, because that helper accepts `GET` as a valid method.
+  - Run `tests/test_91_cppcheck.sh` after any C change; it is now part of the required verification for Phase 10.
 
 ### Phase 0 completed notes
 
@@ -811,6 +820,28 @@ Append discoveries, surprises, and decisions here as phases complete.
 - **Blocker for full manual sign-off:** the known test user requires MFA/OTP. Provide a user without OTP or a current OTP code to complete the checklist.
 - Registration page: enable "Registration" in realm settings if self-service signup desired
 
+### Phase 10 completed notes
+
+- Implementation merged into `src/api/auth/oidc_rp/oidc_rp_end_session.{c,h}` and wired into `api_service.c`.
+- Hydrogen JWT carries `id_token` and `idp_provider` only for OIDC logins; `generate_jwt` remains backward-compatible for password logins.
+- Lithium global signout calls `POST /api/auth/oidc/end-session` and navigates to the returned `redirect_url`.
+- `tests/test_91_cppcheck.sh` passes with 0 issues in 1,559 files after fixing the `!token` dead-condition warning.
+- Hydrogen regular build succeeds; JWT/logout Unity tests pass; Lithium `npm test` and `npm run build` pass.
+- Lithium production deploy completed: version **1.1.3410** synchronized to `/fvl/tnt/t-500courses/lithium/` (2026-07-12).
+
+### Phase 10 remaining work / open verification
+
+The code is deployed but the live Keycloak sign-out behavior has not been confirmed end-to-end. Before marking Phase 10 fully closed, verify the following in order:
+
+1. **Rebuild and restart Hydrogen** so `POST /api/auth/oidc/end-session` exists in the production binary. Without this, global signout falls back to local logout only.
+2. **Add a valid post-logout redirect URI to the Keycloak client.** In the Keycloak admin console for the `lithium` client, add `https://lithium.philement.com/*` to **Valid post-logout redirect URIs**. Without this, Keycloak may reject or ignore the logout request.
+3. **Use a fresh OIDC login.** Any existing Hydrogen JWT that was minted before the C app was rebuilt will **not** contain the `id_token` claim, so it cannot drive IdP logout. After restarting Hydrogen, log in with 500 Passwords again to obtain a fresh JWT.
+4. **Run the manual RP-initiated logout checklist.** See `docs/H/plans/OIDC_E2E_LOG.md` (new Phase 10 section) for the exact steps and expected results.
+5. **If auto-login still occurs after the above**, capture the browser network log for the global-signout flow and the Hydrogen pod logs. The most likely remaining causes are:
+   - Keycloak `id_token_hint` rejected (signature/expiration/session mismatch).
+   - Wrong `post_logout_redirect_uri` being sent (check the URL in the browser network tab).
+   - Keycloak session not bound to the `id_token` `sid` claim (unusual, but possible with non-standard client settings).
+
 ---
 
 ## Appendix A — Minimal Client Sequence (reference)
@@ -832,11 +863,13 @@ Append discoveries, surprises, and decisions here as phases complete.
 - [ ] Confidential client; secret in env only
 - [ ] Standard flow enabled
 - [ ] Valid redirect URI = exact Hydrogen callback URL(s)
-- [ ] Optional: valid post-logout redirect URIs (Phase 10)
+- [x] RP-initiated logout endpoint implemented in Hydrogen (Phase 10 code)
+- [ ] Valid post-logout redirect URI configured in Keycloak for Phase 10
 - [ ] Optional: backchannel logout URL (Phase 9)
 - [ ] Scopes include openid profile email
 - [ ] Test users: linked email + unlinked email
 - [ ] Email verified flags match `RequireEmailVerified` policy
+- [ ] Manual RP-initiated logout verified against real Keycloak (Phase 10 E2E)
 
 ## Appendix C — Minimal Hydrogen Config Shape (disabled example)
 
