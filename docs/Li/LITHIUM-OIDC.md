@@ -190,15 +190,20 @@ login methods.
 
 | `oidc_error` | Lithium message |
 |---|---|
-| `state_invalid` | "Sign-in session expired. Please try again." |
-| `idp_error` | "Sign-in was cancelled at the identity provider." |
-| `token_exchange_failed` | "Sign-in failed. Please try again." |
+| `state_invalid` | "Sign-in session expired or was tampered with. Please try again." |
+| `idp_error` | "The identity provider reported an error. Please try again." |
+| `token_invalid_grant` | "Sign-in failed. Please try again." |
+| `token_invalid_client` | "Sign-in failed. Please try again." |
+| `token_server_error` | "Sign-in failed. Please try again." |
 | `id_token_invalid` | "Sign-in failed. Please try again." |
 | `account_not_found` | "No account is linked to this identity." |
+| `email_ambiguous` | "Multiple accounts share this email. Contact your administrator." |
 | `account_disabled` | "Your account has been disabled. Contact an administrator." |
 | `provisioning_blocked` | "Account creation is not enabled. Contact an administrator." |
+| `provision_disallowed_email` | "Your email domain is not allowed. Contact your administrator." |
 | `email_not_verified` | "Please verify your email at the identity provider first." |
-| `internal_error` | "Sign-in failed. Please try again." |
+| `no_api_key` | "Server configuration error. Contact your administrator." |
+| `server_error` / `internal_error` | "Sign-in failed. Please try again." |
 
 ---
 

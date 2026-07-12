@@ -53,6 +53,10 @@ typedef struct WebServerConfig {
     HeaderRule* headers;           // Array of custom header rules
     size_t headers_count;          // Number of header rules
 
+    // NEW: SPA fallback for single-page applications
+    bool spa_fallback;             // If true, serve index.html for non-API,
+                                   // non-file paths that don't match a static file
+
     // Reference to subsystem configurations
     SwaggerConfig swagger;  // G. Swagger configuration
     APIConfig api;         // F. API configuration

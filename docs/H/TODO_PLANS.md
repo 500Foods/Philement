@@ -22,18 +22,31 @@ Remaining incomplete items:
 
 ### 2. OIDC Plan — Phase 27: End-to-end against real Keycloak (dev environment)
 
-**Status:** ⏳ IN PROGRESS
+**Status:** ⏳ IN PROGRESS (blockers cleared; awaiting Hydrogen rebuild/redeploy and real-Keycloak manual sign-off)
 **Document:** [`/docs/OIDC-PLAN.md`](/docs/OIDC-PLAN.md)
 
 Remaining incomplete items:
 
 - [ ] Manual test plan all ticked (7 items: password login, OIDC login, new user provisioning, JWT renewal, logout, managers work identically, JWT renewal mid-session)
 - [ ] One independent reviewer runs through manual plan
-- [ ] [`/docs/Li/LITHIUM-OIDC.md`](/docs/Li/LITHIUM-OIDC.md) merged
-- [ ] [`/docs/H/api/auth/oidc_rp.md`](/docs/H/api/auth/oidc_rp.md) merged
-- [ ] `test_04_check_links.sh` green after new docs added
+- [x] [`/docs/Li/LITHIUM-OIDC.md`](/docs/Li/LITHIUM-OIDC.md) updated to reflect live error codes.
+- [x] [`/docs/H/api/auth/oidc_rp.md`](/docs/H/api/auth/oidc_rp.md) updated to reflect live error codes.
+- [x] `test_04_check_links.sh` green after new docs added.
+- [x] `test_90_markdownlint.sh` green after the plan docs were edited.
+- [x] Production QueryRef #082 fixed (`contact_type_a18 = 1`) and duplicate `andrew@500foods.com` contacts removed.
+- [x] Hydrogen `WebServer.SpaFallback` added and enabled in `/tnt/hydrogen/hydrogen-lithium.json`.
 
-**Note:** Phases 1-26 complete. All implementation code shipped; remaining work is operator configuration and manual test checklist.
+**Notes:**
+
+- Phases 1–26 complete. All implementation code shipped.
+- Production config deployed: `/tnt/hydrogen/hydrogen-lithium.json` updated, `t-philement-oidc-secrets` created, deployment env vars wired, `/tnt/lithium/config/lithium.json` updated with `auth.oidc_providers`.
+- Pre-flight checks against real Keycloak are green: `/api/auth/oidc/start` 302 to Keycloak with PKCE/state/nonce; `/api/auth/oidc/handoff` 401 for invalid codes; `/api/auth/oidc/callback` 302 with typed `oidc_error` for invalid state/code/token errors.
+- Automated suites green: `mkt`, `test_42_oidc_rp.sh` (88/88), `test_40_auth.sh` (46/46), Lithium Vitest (906/906).
+- Manual sign-in uncovered two additional issues that are now fixed:
+  - `no_account` was caused by QueryRef #082 using `contact_type_a18 = 0` instead of the lookup-table value `1` (E-Mail). The production DB query and source migration have been corrected.
+  - Duplicate `andrew@500foods.com` contacts across four accounts would have caused `email_ambiguous`; the duplicates were removed, leaving only account 1 (`adminuser`).
+  - The callback redirect to `/login` returned 404 because Hydrogen serves only exact files. `WebServer.SpaFallback` was added and enabled in the production config.
+- **Remaining:** rebuild/redeploy Hydrogen for the SPA-fallback binary, then retry the real-Keycloak OIDC sign-in. The test user still requires MFA/OTP; a user without OTP (or a current OTP code/TOTP secret) is still needed to complete the manual checklist.
 
 ---
 

@@ -56,7 +56,7 @@ table.insert(queries,{sql=[[
                         ${SCHEMA}account_contacts ac
                     WHERE
                         (LOWER(ac.contact) = LOWER(:EMAIL))
-                        AND (ac.contact_type_a18 = 0)
+                        AND (ac.contact_type_a18 = 1)
                         AND (
                             (ac.valid_after IS NULL)
                             OR (ac.valid_after <= ${NOW})

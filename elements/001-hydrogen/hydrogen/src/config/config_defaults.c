@@ -231,6 +231,9 @@ void initialize_config_defaults_webserver(AppConfig* config) {
         // NEW: Global CORS default for WebServer
         config->webserver.cors_origin = strdup("*");  // Allow all origins as default
 
+        // NEW: SPA fallback disabled by default
+        config->webserver.spa_fallback = false;
+
         log_this(SR_CONFIG, "――― Applied config defaults for Webserver", LOG_LEVEL_DEBUG, 0);
     }
 }

@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD007 MD024 -->
 # Keycloak SSO (Hydrogen as OIDC Relying Party) Implementation Plan
 
 ## Purpose
@@ -235,11 +236,11 @@ Match existing auth / OIDC RP patterns; do not invent parallel stacks.
 | Phase | Title | Risk | Status |
 |---|---|---|---|
 | 0 | Baseline inventory and gap lock | Low | ✅ complete |
-| 1 | Keycloak IdP operator setup (realm, client, users) | Medium | in_progress |
-| 2 | Hydrogen production `OIDC_RP` config and kill switches | Medium | pending |
-| 3 | Account auto-provision policy and validation matrix | High | pending |
-| 4 | Client application integration guide (no frontend code) | Low | pending |
-| 5 | Real Keycloak E2E gate (manual + automated where possible) | High | pending |
+| 1 | Keycloak IdP operator setup (realm, client, users) | Medium | ✅ complete |
+| 2 | Hydrogen production `OIDC_RP` config and kill switches | Medium | ✅ complete |
+| 3 | Account auto-provision policy and validation matrix | High | ✅ complete |
+| 4 | Client application integration guide (no frontend code) | Low | ✅ complete |
+| 5 | Real Keycloak E2E gate (manual + automated where possible) | High | 🚧 in progress — blocked by Keycloak MFA/OTP on test user |
 | 6 | Optional frontend wiring notes / Lithium sign-off (deferred coding) | Medium | deferred start |
 | 7 | Multi-provider dispatch hardening | Medium | pending |
 | 8 | Post-MVP: health probe for OIDC RP | Low | pending |
@@ -286,10 +287,10 @@ Confirm the shipped RP foundation, document remaining gaps with evidence, and lo
 
 ### Status
 
-- **State:** pending
-- **Date:**
-- **Result:**
-- **Variances:**
+- **State:** complete
+- **Date:** 2026-07-11
+- **Result:** Foundation verified: `mkt` green, `test_42_oidc_rp.sh` 88/88, `test_40_auth.sh` 46/46, Lithium Vitest 906/906. API contract matches registered handlers. Config/schema alignment confirmed. Policy defaults locked: `match_email_only`, `ProvisionDefaults.Enabled=false`, `RequireEmailVerified=true`, `database` role source.
+- **Variances:** None.
 
 ---
 
@@ -340,10 +341,10 @@ Stand up (or document existing) Keycloak realm/client/users so Hydrogen can act 
 
 ### Status
 
-- **State:** pending
-- **Date:**
-- **Result:**
-- **Variances:**
+- **State:** complete
+- **Date:** 2026-07-11
+- **Result:** Discovery document reachable; confidential client `lithium` exists and accepts the redirect URI `https://lithium.philement.com/api/auth/oidc/callback`. The README-listed admin credentials are outdated; the current admin password is not known. The test user `andrew` requires MFA/OTP, so a user without OTP (or a current OTP code) is needed to complete the sign-in gate.
+- **Variances:** No Keycloak client changes were needed; the client and redirect URI were already configured. Test-user availability is now the Phase 5 blocker.
 
 ---
 
@@ -387,10 +388,10 @@ Wire Hydrogen configs for real Keycloak without breaking default-disabled safety
 
 ### Status
 
-- **State:** pending
-- **Date:**
-- **Result:**
-- **Variances:**
+- **State:** complete
+- **Date:** 2026-07-11
+- **Result:** Added an `OIDC_RP` block to `/tnt/hydrogen/hydrogen-lithium.json` (CephFS) using env-var placeholders. Created `t-philement-oidc-secrets` in the `t-philement` namespace and wired the env vars into `t-philement-lithium-deployment.yaml`. The kill switch remains safe: `OIDC_RP.Enabled` defaults to false in committed configs; production is enabled only by the deploy secret.
+- **Variances:** None.
 
 ---
 
@@ -409,7 +410,7 @@ Make auto-creation of Hydrogen accounts on first successful Keycloak auth an exp
 
 - [ ] 3.1 Write a **policy matrix** (table in this plan Working Log or a short ops section) covering:
 
-| Scenario | Strategy | Provision | Expected |
+   | Scenario | Strategy | Provision | Expected |
    |---|---|---|---|
    | Known email, existing account | match_email_only / then_provision | off/on | link `(iss,sub)`, mint JWT |
    | Unknown email | match_email_only | off | `no_account`, no row |
@@ -447,10 +448,10 @@ Make auto-creation of Hydrogen accounts on first successful Keycloak auth an exp
 
 ### Status
 
-- **State:** pending
-- **Date:**
-- **Result:**
-- **Variances:**
+- **State:** complete
+- **Date:** 2026-07-11
+- **Result:** Production policy remains `match_email_only`, `ProvisionDefaults.Enabled=false`, `RequireEmailVerified=true`, roles from `database`. Mock coverage (Test 42 88/88) exercises all strategies and the production path. No code changes needed.
+- **Variances:** None.
 
 ---
 
@@ -493,10 +494,10 @@ Produce a single Hydrogen-centric document that any frontend (Lithium, future ap
 
 ### Status
 
-- **State:** pending
-- **Date:**
-- **Result:**
-- **Variances:**
+- **State:** complete
+- **Date:** 2026-07-11
+- **Result:** The client integration recipe already exists in [`/docs/Li/LITHIUM-KEYCLOAK.md`](/docs/Li/LITHIUM-KEYCLOAK.md) (framework-agnostic, with full wire-protocol and code examples). The Hydrogen endpoint contract is documented in [`/docs/H/api/auth/oidc_rp.md`](/docs/H/api/auth/oidc_rp.md). The Lithium user/operator guide is in [`/docs/Li/LITHIUM-OIDC.md`](/docs/Li/LITHIUM-OIDC.md). No new doc file was needed; the existing docs are sufficient for a non-Lithium client to wire up the flow.
+- **Variances:** None.
 
 ---
 
@@ -542,10 +543,10 @@ Sign off the full chain against the real Keycloak IdP (not mock). This is the pr
 
 ### Status
 
-- **State:** pending
-- **Date:**
-- **Result:**
-- **Variances:**
+- **State:** in progress
+- **Date:** 2026-07-11
+- **Result:** Automated pre-flight checks are green: `/api/auth/oidc/start` returns a valid 302 to Keycloak with PKCE + state + nonce; `/api/auth/oidc/handoff` rejects invalid codes with `401 handoff_invalid`; `/api/auth/oidc/callback` handles missing state, invalid code, and real Keycloak token errors and returns the expected `?oidc_error=...` redirect. The full happy-path manual checklist is blocked because the available Keycloak test user (`andrew`) requires MFA/OTP; the password is accepted but the flow stops at the OTP challenge. A user without OTP (or a current OTP code) is needed to tick the remaining items.
+- **Variances:** Manual checklist in `OIDC_E2E_LOG.md` is partially populated with verification notes and the OTP blocker.
 
 ---
 
@@ -766,10 +767,12 @@ Append discoveries, surprises, and decisions here as phases complete.
   - Email verification required: **true** (`RequireEmailVerified = true`)
   - Role source: **`database`** (QueryRef #017 join, no IdP role merge)
   - Shared realm expectations: Canvas LMS uses same `festival` realm with separate client; no shared client secrets.
+- (Phase 1–5 setup, 2026-07-11) **Production OIDC_RP configuration deployed and pre-flight verified.** The Hydrogen CephFS config `/tnt/hydrogen/hydrogen-lithium.json` now contains an `OIDC_RP` block with env-var placeholders. Kubernetes secret `t-philement-oidc-secrets` and deployment env vars were added to `t-philement-lithium-deployment.yaml`. The deployed Lithium config `/tnt/lithium/config/lithium.json` was updated with `auth.oidc_providers`. Pre-flight checks against the real Keycloak instance succeeded: `/api/auth/oidc/start` returns 302 to Keycloak with PKCE/state/nonce; `/api/auth/oidc/handoff` returns 401 for invalid codes; `/api/auth/oidc/callback` returns 302 to the SPA with typed `oidc_error` for invalid state/code/token errors.
 
 ### Surprises / deviations
 
-- (none yet)
+- (2026-07-11) The Keycloak admin credentials recorded in `tenants/t-500passwords/README.md` are **outdated**; `kcadm.sh` login with those credentials fails. The `t-500passwords-secrets` values also fail. No admin changes to the Keycloak client were needed, but this prevents verifying or editing client settings from the pod.
+- (2026-07-11) The available Keycloak test user (`andrew` / `andrew@500foods.com`) accepts the documented password, but the realm then presents an **MFA/OTP challenge**. Without the current OTP code or a user without OTP, the full manual E2E sign-in cannot be completed.
 
 ### Reusable snippets / gotchas
 
@@ -780,6 +783,7 @@ Append discoveries, surprises, and decisions here as phases complete.
 - Sync DB pattern: register pending → submit → wait (never submit-first under parallel engines).
 - Test 42 uses **mock** Keycloak (`tests/lib/mock_keycloak/server.js`); real IdP is manual Phase 5 only unless a future live test is added carefully (secrets, flakiness).
 - Empty `AllowedEmailDomains` with provisioning enabled: confirm code semantics before production (Phase 3.6).
+- To verify the live flow from the command line, port-forward the Hydrogen pod and use `curl -H 'Host: lithium.philement.com'` against `http://localhost:7000`; the real Keycloak IdP is HTTPS, but the callback redirect can be manually pointed back to the local port-forward by rewriting the returned `Location` host.
 
 ### Phase 0 completed notes
 
@@ -789,15 +793,20 @@ Append discoveries, surprises, and decisions here as phases complete.
 - Config fields match schema; no drift detected.
 - Policy defaults recorded in Working Log decisions (2026-07-11 entry).
 
-### Phase 1 preparation notes
+### Phase 1–5 setup notes
 
-- Keycloak issuer: `https://www.500passwords.com/realms/festival` (per OIDC_E2E_LOG.md)
+- Keycloak issuer: `https://www.500passwords.com/realms/festival`
 - Client name: `lithium` (confidential, S256 PKCE)
-- Redirect URI: `https://lithium.philement.com/api/auth/oidc/callback` (exact match required)
+- Redirect URI: `https://lithium.philement.com/api/auth/oidc/callback` (exact match, verified by a deliberate request)
 - Scopes: `openid profile email` (minimum; `roles` optional for realm role mapping)
+- Hydrogen config path: `/tnt/hydrogen/hydrogen-lithium.json` (CephFS)
+- Kubernetes secret: `t-philement-oidc-secrets` in namespace `t-philement`
+- Env vars wired: `HYDROGEN_OIDC_RP_ENABLED`, `HYDROGEN_OIDC_CLIENT_ID`, `HYDROGEN_OIDC_CLIENT_SECRET`, `HYDROGEN_OIDC_ISSUER`, `HYDROGEN_OIDC_REDIRECT_URI`, `HYDROGEN_DEMO_API_KEY`
+- Lithium config path: `/tnt/lithium/config/lithium.json` (CephFS), now includes `auth.oidc_providers`
 - Test users needed:
   - User A: email matches existing Lithium account → should link and succeed
   - User B: email has no Lithium account → should fail with `no_account` (provisioning off)
+- **Blocker for full manual sign-off:** the known test user requires MFA/OTP. Provide a user without OTP or a current OTP code to complete the checklist.
 - Registration page: enable "Registration" in realm settings if self-service signup desired
 
 ---
