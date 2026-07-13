@@ -1,0 +1,178 @@
+/*
+ * Unity Test File: OIDC RP end-session helpers
+ *
+ * Covers the URL-building helpers in src/api/auth/oidc_rp/oidc_rp_end_session.c:
+ *   - oidc_rp_end_session_extract_origin()
+ *   - oidc_rp_end_session_build_idp_logout_url()
+ *
+ * These were previously file-static and therefore uncovered by both the
+ * blackbox and Unity suites. They are now exposed as public, prefixed
+ * APIs so they can be exercised directly in isolation.
+ */
+
+#include <src/hydrogen.h>
+#include <unity.h>
+
+#include <src/api/auth/oidc_rp/oidc_rp_end_session.h>
+
+#include <stdlib.h>
+#include <string.h>
+
+void test_extract_origin_null(void);
+void test_extract_origin_empty(void);
+void test_extract_origin_no_scheme(void);
+void test_extract_origin_with_path(void);
+void test_extract_origin_no_path(void);
+void test_extract_origin_with_query_and_fragment(void);
+void test_build_logout_url_null_endpoint(void);
+void test_build_logout_url_null_id_token(void);
+void test_build_logout_url_full(void);
+void test_build_logout_url_without_client_id_null(void);
+void test_build_logout_url_without_client_id_empty(void);
+void test_build_logout_url_with_null_redirect(void);
+
+void setUp(void) {
+    // No shared fixture needed.
+}
+
+void tearDown(void) {
+    // Freeing is performed per-test.
+}
+
+// ---------------------------------------------------------------------------
+// oidc_rp_end_session_extract_origin
+// ---------------------------------------------------------------------------
+
+void test_extract_origin_null(void) {
+    char *origin = oidc_rp_end_session_extract_origin(NULL);
+    TEST_ASSERT_NULL(origin);
+}
+
+void test_extract_origin_empty(void) {
+    char *origin = oidc_rp_end_session_extract_origin("");
+    TEST_ASSERT_NULL(origin);
+}
+
+void test_extract_origin_no_scheme(void) {
+    // No "://" separator -> cannot determine origin.
+    char *origin = oidc_rp_end_session_extract_origin("nocolonhere");
+    TEST_ASSERT_NULL(origin);
+}
+
+void test_extract_origin_with_path(void) {
+    char *origin = oidc_rp_end_session_extract_origin(
+        "https://lithium.philement.com/api/auth/oidc/callback");
+    TEST_ASSERT_NOT_NULL(origin);
+    TEST_ASSERT_EQUAL_STRING("https://lithium.philement.com", origin);
+    free(origin);
+}
+
+void test_extract_origin_no_path(void) {
+    // Bare origin with no path component.
+    char *origin = oidc_rp_end_session_extract_origin("https://example.com");
+    TEST_ASSERT_NOT_NULL(origin);
+    TEST_ASSERT_EQUAL_STRING("https://example.com", origin);
+    free(origin);
+}
+
+void test_extract_origin_with_query_and_fragment(void) {
+    char *origin = oidc_rp_end_session_extract_origin(
+        "http://idp.example.com/realms/foo/end-session?foo=bar#frag");
+    TEST_ASSERT_NOT_NULL(origin);
+    TEST_ASSERT_EQUAL_STRING("http://idp.example.com", origin);
+    free(origin);
+}
+
+// ---------------------------------------------------------------------------
+// oidc_rp_end_session_build_idp_logout_url
+// ---------------------------------------------------------------------------
+
+void test_build_logout_url_null_endpoint(void) {
+    char *url = oidc_rp_end_session_build_idp_logout_url(
+        NULL, "tok", "https://example.com", "client");
+    TEST_ASSERT_NULL(url);
+}
+
+void test_build_logout_url_null_id_token(void) {
+    char *url = oidc_rp_end_session_build_idp_logout_url(
+        "https://idp.example.com/end", NULL, "https://example.com", "client");
+    TEST_ASSERT_NULL(url);
+}
+
+void test_build_logout_url_full(void) {
+    char *url = oidc_rp_end_session_build_idp_logout_url(
+        "https://idp.example.com/realms/foo/protocol/openid-connect/logout",
+        "idtokendata",
+        "https://app.example.com",
+        "my-client");
+    TEST_ASSERT_NOT_NULL(url);
+    // Endpoint prefix must be intact.
+    TEST_ASSERT_TRUE(strncmp(
+        url,
+        "https://idp.example.com/realms/foo/protocol/openid-connect/logout?",
+        strlen("https://idp.example.com/realms/foo/protocol/openid-connect/logout?")) == 0);
+    TEST_ASSERT_NOT_NULL(strstr(url, "id_token_hint=idtokendata"));
+    TEST_ASSERT_NOT_NULL(strstr(url, "post_logout_redirect_uri="));
+    TEST_ASSERT_NOT_NULL(strstr(url, "client_id=my-client"));
+    free(url);
+}
+
+void test_build_logout_url_without_client_id_null(void) {
+    char *url = oidc_rp_end_session_build_idp_logout_url(
+        "https://idp.example.com/logout",
+        "idtokendata",
+        "https://app.example.com",
+        NULL);
+    TEST_ASSERT_NOT_NULL(url);
+    TEST_ASSERT_NOT_NULL(strstr(url, "id_token_hint=idtokendata"));
+    TEST_ASSERT_NOT_NULL(strstr(url, "post_logout_redirect_uri="));
+    // No client_id parameter when client_id is NULL.
+    TEST_ASSERT_NULL(strstr(url, "client_id="));
+    free(url);
+}
+
+void test_build_logout_url_without_client_id_empty(void) {
+    char *url = oidc_rp_end_session_build_idp_logout_url(
+        "https://idp.example.com/logout",
+        "idtokendata",
+        "https://app.example.com",
+        "");
+    TEST_ASSERT_NOT_NULL(url);
+    TEST_ASSERT_NOT_NULL(strstr(url, "id_token_hint=idtokendata"));
+    TEST_ASSERT_NOT_NULL(strstr(url, "post_logout_redirect_uri="));
+    // Empty client_id (after encoding) suppresses the client_id parameter.
+    TEST_ASSERT_NULL(strstr(url, "client_id="));
+    free(url);
+}
+
+void test_build_logout_url_with_null_redirect(void) {
+    char *url = oidc_rp_end_session_build_idp_logout_url(
+        "https://idp.example.com/logout",
+        "idtokendata",
+        NULL,
+        "my-client");
+    TEST_ASSERT_NOT_NULL(url);
+    TEST_ASSERT_NOT_NULL(strstr(url, "id_token_hint=idtokendata"));
+    // NULL redirect_uri is encoded as the empty string, so the parameter
+    // is still present (just empty).
+    TEST_ASSERT_NOT_NULL(strstr(url, "post_logout_redirect_uri="));
+    TEST_ASSERT_NOT_NULL(strstr(url, "client_id=my-client"));
+    free(url);
+}
+
+int main(void) {
+    UNITY_BEGIN();
+    RUN_TEST(test_extract_origin_null);
+    RUN_TEST(test_extract_origin_empty);
+    RUN_TEST(test_extract_origin_no_scheme);
+    RUN_TEST(test_extract_origin_with_path);
+    RUN_TEST(test_extract_origin_no_path);
+    RUN_TEST(test_extract_origin_with_query_and_fragment);
+    RUN_TEST(test_build_logout_url_null_endpoint);
+    RUN_TEST(test_build_logout_url_null_id_token);
+    RUN_TEST(test_build_logout_url_full);
+    RUN_TEST(test_build_logout_url_without_client_id_null);
+    RUN_TEST(test_build_logout_url_without_client_id_empty);
+    RUN_TEST(test_build_logout_url_with_null_redirect);
+    return UNITY_END();
+}

@@ -22,6 +22,7 @@
 # the failure-path tests run against the no-DB enabled config.
 #
 # CHANGELOG
+# 1.1.0 - 2026-07-13 - Phase 22: test_oidc_end_session_happy_path drives /end-session with the happy-path OIDC JWT; happy-path stashes token in OIDC_RP_LAST_JWT
 # 1.0.0 - 2026-05-09 - Initial extraction during Phase 14 to keep
 #                      oidc_rp_helpers.sh below the 1,000-line cap.
 
@@ -282,6 +283,10 @@ test_oidc_callback_happy_path_end_to_end() {
     username=$(jq -r '.username // empty' "${exchange_file}" 2>/dev/null || echo "")
     success=$(jq -r '.success // empty' "${exchange_file}" 2>/dev/null || echo "")
 
+    # Stash the freshly-minted JWT so the RP-initiated logout step
+    # (test_oidc_end_session_happy_path) can drive /end-session with it.
+    OIDC_RP_LAST_JWT="${token}"
+
     # The JWT is opaque — assert it has the JWS three-segment shape
     # (header.payload.signature) without trying to decode it.
     if [[ "${success}" != "true" ]] \
@@ -311,8 +316,92 @@ test_oidc_callback_happy_path_end_to_end() {
          return
      fi
 
-     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 \
-         "Full chain OK: JWT envelope user_id=${user_id} username=${username} (real linker, sub fast-path)"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 \
+        "Full chain OK: JWT envelope user_id=${user_id} username=${username} (real linker, sub fast-path)"
+    PASS_COUNT=$(( PASS_COUNT + 1 ))
+}
+
+# RP-initiated logout (Phase 22): POST the JWT obtained during the
+# happy-path login to /api/auth/oidc/end-session. The endpoint validates
+# the Hydrogen JWT, deletes it from storage, and — because the JWT carries
+# OIDC context (id_token + idp_provider) and the active provider's
+# discovery doc advertises an end_session_endpoint — returns a
+# redirect_url that points at the IdP's logout endpoint. This exercises
+# the previously-uncovered handler in src/api/auth/oidc_rp/oidc_rp_end_session.c.
+#
+# Relies on OIDC_RP_LAST_JWT being populated by
+# test_oidc_callback_happy_path_end_to_end (same server / login session).
+test_oidc_end_session_happy_path() {
+    local base_url="$1"
+    local es_file="${LOG_PREFIX}${TIMESTAMP}_end_session.json"
+
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" \
+        "Phase 22: RP-initiated logout /end-session with OIDC JWT"
+
+    if ! command -v jq >/dev/null 2>&1; then
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
+            "jq missing — end-session coverage requires it"
+        return
+    fi
+
+    if [[ -z "${OIDC_RP_LAST_JWT:-}" ]]; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 \
+            "No JWT captured from happy-path login (OIDC_RP_LAST_JWT empty)"
+        EXIT_CODE=1
+        return
+    fi
+
+    # Method check: /end-session is POST-only. A GET must be rejected
+    # with 405 without consuming the body.
+    local get_status
+    get_status=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 \
+        "${base_url}/api/auth/oidc/end-session" 2>/dev/null || echo "000")
+    if [[ "${get_status}" != "405" ]]; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 \
+            "/end-session GET returned ${get_status} (expected 405)"
+        EXIT_CODE=1
+        return
+    fi
+
+    # Happy path: POST the Bearer JWT. Expect 200 + JSON body whose
+    # redirect_url is a non-empty IdP logout URL.
+    local es_status
+    es_status=$(curl -s -X POST \
+        -H "Authorization: Bearer ${OIDC_RP_LAST_JWT}" \
+        -w '%{http_code}' -o "${es_file}" \
+        --max-time 10 \
+        "${base_url}/api/auth/oidc/end-session" 2>/dev/null || echo "000")
+
+    if [[ "${es_status}" != "200" ]]; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 \
+            "/end-session POST returned ${es_status} (expected 200)"
+        EXIT_CODE=1
+        return
+    fi
+
+    local redirect_url
+    redirect_url=$(jq -r '.redirect_url // empty' "${es_file}" 2>/dev/null || echo "")
+
+    if [[ -z "${redirect_url}" ]]; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 \
+            "/end-session returned empty redirect_url (expected IdP logout URL)"
+        EXIT_CODE=1
+        return
+    fi
+
+    # The URL must be the IdP's end_session_endpoint with the
+    # id_token_hint + post_logout_redirect_uri + client_id query params.
+    if [[ "${redirect_url}" != *"id_token_hint="* ]] \
+        || [[ "${redirect_url}" != *"post_logout_redirect_uri="* ]] \
+        || [[ "${redirect_url}" != *"client_id="* ]]; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 \
+            "/end-session redirect_url missing expected params: ${redirect_url:0:200}"
+        EXIT_CODE=1
+        return
+    fi
+
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 \
+        "RP-initiated logout OK: redirect_url present (${redirect_url:0:96}...)"
     PASS_COUNT=$(( PASS_COUNT + 1 ))
 }
 

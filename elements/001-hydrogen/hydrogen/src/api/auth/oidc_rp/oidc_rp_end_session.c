@@ -29,7 +29,7 @@
 
 // Extract scheme://authority from a URL, e.g.
 // "https://lithium.philement.com/api/auth/oidc/callback" -> "https://lithium.philement.com"
-static char *extract_origin(const char *url) {
+char *oidc_rp_end_session_extract_origin(const char *url) {
     if (!url || !*url) return NULL;
 
     const char *scheme_end = strstr(url, "://");
@@ -48,10 +48,10 @@ static char *extract_origin(const char *url) {
 
 // Build the IdP end_session URL with id_token_hint, post_logout_redirect_uri
 // and client_id. Returns NULL on allocation or missing-endpoint failure.
-static char *build_idp_logout_url(const char *end_session_endpoint,
-                                 const char *id_token,
-                                 const char *post_logout_redirect_uri,
-                                 const char *client_id) {
+char *oidc_rp_end_session_build_idp_logout_url(const char *end_session_endpoint,
+                                  const char *id_token,
+                                  const char *post_logout_redirect_uri,
+                                  const char *client_id) {
     if (!end_session_endpoint || !id_token) return NULL;
 
     char *enc_id_token = api_url_encode(id_token);
@@ -210,9 +210,9 @@ enum MHD_Result handle_post_auth_oidc_end_session(
                 provider->verify_ssl,
                 provider->discovery_cache_seconds);
             if (doc && doc->end_session_endpoint) {
-                char *post_logout_redirect_uri = extract_origin(provider->redirect_uri);
+                char *post_logout_redirect_uri = oidc_rp_end_session_extract_origin(provider->redirect_uri);
                 if (post_logout_redirect_uri) {
-                    redirect_url = build_idp_logout_url(
+                    redirect_url = oidc_rp_end_session_build_idp_logout_url(
                         doc->end_session_endpoint,
                         validation.claims->id_token,
                         post_logout_redirect_uri,
