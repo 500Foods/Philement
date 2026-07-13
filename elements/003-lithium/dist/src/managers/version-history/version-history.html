@@ -1,1 +1,35 @@
-<div class="manager-panels version-manager-container"><div data-panel="left" id="version-left-panel"><div class="table-container lithium-table-container" id="version-table-container"></div><div class="navigator-container lithium-navigator-container" id="version-navigator"></div></div><div class="lithium-splitter" data-splitter="left" id="version-splitter"></div><div data-panel="right" id="version-right-panel"><div class="lithium-toolbar" id="version-toolbar"><button type="button" class="lithium-toolbar-btn lithium-collapse-btn" id="version-collapse-btn" data-collapse-target="left" title="Toggle Version List"><fa fa-angles-left class="lithium-collapse-icon"></fa></button> <span class="lithium-toolbar-title">Version Summary</span><div class="lithium-toolbar-placeholder"></div></div><div class="version-preview-container" id="version-preview-content"><p class="version-preview-placeholder">Select a version to preview its summary</p></div></div></div>
+<div class="manager-panels version-manager-container">
+  <!-- Left Panel: Version List (Lookup 45) -->
+  <div data-panel="left" id="version-left-panel">
+    <div class="table-container lithium-table-container" id="version-table-container">
+      <!-- Tabulator table will be injected here -->
+    </div>
+    <div class="navigator-container lithium-navigator-container" id="version-navigator">
+      <!-- Navigator block will be injected here -->
+    </div>
+  </div>
+
+  <!-- Splitter between panels -->
+  <div class="lithium-splitter" data-splitter="left" id="version-splitter"></div>
+
+  <!-- Right Panel: Markdown Preview -->
+  <div data-panel="right" id="version-right-panel">
+    <!-- Header -->
+    <div class="lithium-toolbar" id="version-toolbar">
+      <!-- Collapse button -->
+      <button type="button" class="lithium-toolbar-btn lithium-collapse-btn" id="version-collapse-btn" data-collapse-target="left" title="Toggle Version List">
+        <fa fa-angles-left class="lithium-collapse-icon"></fa>
+      </button>
+      <!-- Title -->
+      <span class="lithium-toolbar-title">Version Summary</span>
+      <!-- Placeholder fills available space -->
+      <div class="lithium-toolbar-placeholder"></div>
+      <!-- Right buttons can be added here later -->
+    </div>
+
+    <!-- Preview Content -->
+    <div class="version-preview-container" id="version-preview-content">
+      <p class="version-preview-placeholder">Select a version to preview its summary</p>
+    </div>
+  </div>
+</div>

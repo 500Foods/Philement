@@ -41,6 +41,7 @@ export class ManagerLoader {
       30: { id: 30, name: 'Sync Manager' },
       31: { id: 31, name: 'Camera Manager' },
       32: { id: 32, name: 'Terminal' },
+      33: { id: 33, name: 'Scripting Manager' },
     };
 
     this.transitionOverlay = null;
@@ -110,6 +111,7 @@ export class ManagerLoader {
       case 30: return import('../managers/sync-manager/sync-manager.js');
       case 31: return import('../managers/camera-manager/camera-manager.js');
       case 32: return import('../managers/terminal/terminal.js');
+      case 33: return import('../managers/scripting/scripting.js');
       case 1: return import('../managers/login/login.js');
       case 2: return import('../managers/server-sessions/server-sessions.js');
       case 3: return import('../managers/version-history/version-history.js');

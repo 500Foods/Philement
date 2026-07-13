@@ -89,6 +89,7 @@
     "029.Query Manager": true,
     "030.Sync Manager": true,
     "031.Camera Manager": true,
-    "032.Terminal": true
+    "032.Terminal": true,
+    "033.Scripting Manager": true
   }
 }
