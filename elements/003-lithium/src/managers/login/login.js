@@ -20,6 +20,7 @@ import { LoginShortcuts } from './login-shortcuts.js';
 import { processOidcReturn } from './oidc-login.js';
 import { startOidc } from '../../core/oidc-client.js';
 import { getConfigValue } from '../../core/config.js';
+import { retrieveJWT } from '../../core/jwt.js';
 import './login.css';
 
 // Convenience alias for this module's subsystem
@@ -67,7 +68,6 @@ export default class LoginManager {
       // On an error return, showError() was called and the form needs to be
       // shown so the user can retry; fall through to the show() call below.
       // We check whether the JWT was stored to decide which case we are in.
-      const { retrieveJWT } = await import('../../core/jwt.js');
       if (retrieveJWT()) return;
     }
 

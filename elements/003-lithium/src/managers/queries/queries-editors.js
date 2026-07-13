@@ -7,6 +7,7 @@
  */
 
 import { log, Subsystems, Status } from '../../core/log.js';
+import { toast } from '../../shared/toast.js';
 import {
   EditorState,
   EditorView,
@@ -590,7 +591,6 @@ export class EditorManager {
       log(Subsystems.CONDUIT, Status.INFO, 'SQL formatted successfully');
     } catch (error) {
       console.error('[QueriesManager] SQL format error:', error);
-      const { toast } = await import('../../shared/toast.js');
       toast.error('SQL Format Failed', {
         description: error.message || 'Unknown formatting error',
         subsystem: 'Query',

@@ -46,12 +46,26 @@ npm run validate:tabulator
 # Run tests and CSS linting in parallel
 echo "[2/8] Running tests with coverage..."
 npm run test:coverage &
+TEST_PID=$!
 
 echo "[3/8] Linting CSS..."
 npm run lint:css &
+LINT_PID=$!
 
-# Wait for both parallel tasks to complete
-wait
+# Wait for both parallel tasks to complete, capturing their exit codes.
+# (A bare `wait` would NOT fail the deploy: backgrounded jobs' exit statuses
+# are not caught by `set -e`, which is why a broken test previously shipped.)
+wait "$TEST_PID"; TEST_RC=$?
+wait "$LINT_PID"; LINT_RC=$?
+
+if [ "$TEST_RC" -ne 0 ]; then
+  echo "ERROR: Tests failed (exit $TEST_RC). Aborting deploy." >&2
+  exit 1
+fi
+if [ "$LINT_RC" -ne 0 ]; then
+  echo "ERROR: CSS lint failed (exit $LINT_RC). Aborting deploy." >&2
+  exit 1
+fi
 
 echo "[4/8] Copying coverage..."
 npm run coverage:copy

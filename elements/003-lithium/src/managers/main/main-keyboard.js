@@ -7,6 +7,7 @@ import { eventBus, Events } from '../../core/event-bus.js';
 import { registerShortcut } from '../../core/manager-ui.js';
 import { canAccessManager } from '../../core/permissions.js';
 import { log, Subsystems, Status } from '../../core/log.js';
+import { toggleZoomPopup } from '../../core/zoom-control.js';
 
 /**
  * Methods to be mixed into MainManager prototype
@@ -205,11 +206,9 @@ export const keyboardMethods = {
    */
   _handleZoomShortcut() {
     const zoomBtn = document.querySelector('.manager-ui-zoom-btn');
-    if (zoomBtn) {
-      import('../../core/zoom-control.js').then(({ toggleZoomPopup }) => {
+      if (zoomBtn) {
         toggleZoomPopup(zoomBtn);
-      });
-    }
+      }
   },
 
   /**
