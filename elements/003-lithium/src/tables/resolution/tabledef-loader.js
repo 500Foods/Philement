@@ -270,6 +270,7 @@ export function clearTableDefCache() {
 export function clearLookup59Cache() {
   const lookup59Paths = [
     'queries/query-manager',
+    'scripts/script-manager',
     'lookups/lookups-list',
     'lookups/lookup-values',
     'lookups-manager-list',

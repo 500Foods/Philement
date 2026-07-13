@@ -299,4 +299,7 @@ in the migrations themselves so that they get populated in the database directly
 | [1260](/elements/002-helium/acuranzo/migrations/acuranzo_1260.lua) | queries | 1.0.0 | 2026-07-08 | 4 | ✗ | QueryRef #127 - Get Role By Name |
 | [1261](/elements/002-helium/acuranzo/migrations/acuranzo_1261.lua) | mail_templates | 1.0.0 | 2026-07-10 | 4 | ✗ | Seed the auth.otp_code template |
 | [1262](/elements/002-helium/acuranzo/migrations/acuranzo_1262.lua) | queries | 1.0.0 | 2026-07-10 | 4 | ✗ | QueryRef #128 - Mark OTP Max Attempts Exceeded |
-| **263** | | | | **1386** | **263** | |
+| [1263](/elements/002-helium/acuranzo/migrations/acuranzo_1263.lua) | queries | 1.0.0 | 2026-07-13 | 3 | ✗ | QueryRef #129 - Insert Script for the Hydrogen Scripting Subsystem (Scripting Manager CRUD) |
+| [1264](/elements/002-helium/acuranzo/migrations/acuranzo_1264.lua) | queries | 1.0.0 | 2026-07-13 | 4 | ✗ | QueryRef #130 - Update Script for the Hydrogen Scripting Subsystem (Scripting Manager CRUD) |
+| [1265](/elements/002-helium/acuranzo/migrations/acuranzo_1265.lua) | queries | 1.0.0 | 2026-07-13 | 4 | ✗ | QueryRef #131 - Delete Script for the Hydrogen Scripting Subsystem (Scripting Manager CRUD) |
+| **266** | | | | **1397** | **266** | |

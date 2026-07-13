@@ -71,7 +71,7 @@ export function getPermittedManagers(punchcard = null) {
   if (!punchcard) {
     // Return default manager IDs from lithium.json (007-032)
     // Excludes Group 0: System (001-006) which are hidden from main menu
-    return [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32];
+    return [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33];
   }
 
   return punchcard.managers || [];

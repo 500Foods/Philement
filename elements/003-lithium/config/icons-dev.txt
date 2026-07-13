@@ -48,6 +48,7 @@
 <fa fa-chevrons-right></fa>
 <fa fa-circle-question></fa>
 <fa fa-clock></fa>
+<fa fa-code></fa>
 <fa fa-cog></fa>
 <fa fa-command></fa>
 <fa fa-comment></fa>
