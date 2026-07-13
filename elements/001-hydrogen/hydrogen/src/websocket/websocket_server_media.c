@@ -30,10 +30,8 @@ extern DatabaseQueueManager* global_queue_manager;
 // Logging source for WebSocket media
 static const char* SR_WEBSOCKET_MEDIA = "WEBSOCKET_MEDIA";
 
-// Forward declarations
-static void send_media_upload_error(struct lws *wsi, const char* error_message, const char* request_id);
-static void send_media_upload_success(struct lws *wsi, const char* request_id, const char* media_hash, 
-                                      size_t media_size, const char* mime_type);
+// Forward declarations (prototypes in websocket_server_media.h; non-static so
+// they can be exercised directly by unit tests)
 
 int handle_media_upload_message(struct lws *wsi, WebSocketSessionData *session, json_t *request_json) {
     if (!wsi || !request_json) {
@@ -167,7 +165,7 @@ void media_session_cleanup(WebSocketSessionData *session) {
 }
 
 // Helper functions
-static void send_media_upload_error(struct lws *wsi, const char* error_message, const char* request_id) {
+void send_media_upload_error(struct lws *wsi, const char* error_message, const char* request_id) {
     json_t* response = json_object();
     json_object_set_new(response, "type", json_string("media_upload_error"));
     if (request_id) {
@@ -179,8 +177,8 @@ static void send_media_upload_error(struct lws *wsi, const char* error_message, 
     json_decref(response);
 }
 
-static void send_media_upload_success(struct lws *wsi, const char* request_id, const char* media_hash, 
-                                      size_t media_size, const char* mime_type) {
+void send_media_upload_success(struct lws *wsi, const char* request_id, const char* media_hash, 
+                               size_t media_size, const char* mime_type) {
     json_t* response = json_object();
     json_object_set_new(response, "type", json_string("media_upload_success"));
     if (request_id) {

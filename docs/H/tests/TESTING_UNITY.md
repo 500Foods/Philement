@@ -9,7 +9,7 @@ IMPORTANT: The main purpose of the Unity Framework Testing in this project is to
 
 A frequent task we preform involves ipmroving coverage for a single source file. When performing this specific task, we've got some things we can do to improve coverage. Normally, we'll start by reviewing existing coverage across both Unity unit tests and our blackbox tests by using the add_coverage.sh script to show us what intrumented lines are reporting no coverage. Sometimes this is the entire source file. From here, we have some things we can do.
 
-1) Write tests to cover larger functions that have no coverage currently 
+1) Write tests to cover larger functions that have no coverage currently
 2) Refactor larger functions to use helpers that are more easily tested
 3) Refactor larger source code files into smaller files that can be reused or made small enough to fall under a lower threshold if fewer than 100 lines
 4) Check that all functions are not static as we can't test static functions.

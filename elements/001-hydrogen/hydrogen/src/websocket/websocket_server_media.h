@@ -47,4 +47,23 @@ void media_subsystem_cleanup(void);
  */
 void media_session_cleanup(WebSocketSessionData *session);
 
+/**
+ * Send a media upload error response to the client
+ * @param wsi WebSocket connection instance
+ * @param error_message Error message (NULL is tolerated -> "Unknown error")
+ * @param request_id Optional request identifier to echo back (may be NULL)
+ */
+void send_media_upload_error(struct lws *wsi, const char* error_message, const char* request_id);
+
+/**
+ * Send a media upload success response to the client
+ * @param wsi WebSocket connection instance
+ * @param request_id Optional request identifier to echo back (may be NULL)
+ * @param media_hash SHA-256 hash of the stored media
+ * @param media_size Size of the stored media in bytes
+ * @param mime_type Optional MIME type (may be NULL)
+ */
+void send_media_upload_success(struct lws *wsi, const char* request_id, const char* media_hash,
+                               size_t media_size, const char* mime_type);
+
 #endif // WEBSOCKET_SERVER_MEDIA_H
