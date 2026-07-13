@@ -20,6 +20,8 @@
 #     path (Phase 21).
 #   - Role mapping: database (QueryRef #017), idp_realm_roles, merge
 #     (Phase 22).
+#   - RP-initiated logout: POST /api/auth/oidc/end-session with the
+#     OIDC JWT -> 200 + IdP redirect_url; GET -> 405 (Phase 22).
 #
 # The endpoint helper functions, mock-Keycloak lifecycle, and per-
 # phase sub-test functions live in tests/lib/oidc_rp_helpers.sh; this
@@ -29,6 +31,7 @@
 # (Helper functions live in tests/lib/oidc_rp_helpers.sh)
 
 # CHANGELOG
+# 2.3.0 - 2026-07-13 - Phase 22: RP-initiated logout /end-session sub-test; POST the OIDC JWT -> 200 + IdP redirect_url (id_token_hint + post_logout_redirect_uri + client_id), GET -> 405
 # 2.2.1 - 2026-07-09 - Phase 19 seed flake: rely on oidc_rp_helpers_link busy_timeout/retry + verified seed_email_contact; ambiguous path scrubs then requires both seeds
 # 2.2.0 - 2026-06-20 - Speed-up: replace per-phase migration-wait loops (broken tail-offset against the per-instance-truncated shared log; timed out ~30s each, ~250s total) with wait_for_migration_ready keyed off the canonical "READY FOR REQUESTS" signal
 # 2.1.1 - 2026-06-20 - Fix intermittent failures under parallel execution (shared demo DB with Tests 40/41): provision cleanup/assertions now key off the linker-reported user_id instead of MAX(account_id); match_email_only paths scrub orphaned mock-email contacts
@@ -52,7 +55,7 @@ TEST_NAME="OIDC Relying Party"
 TEST_ABBR="ORP"
 TEST_NUMBER="42"
 TEST_COUNTER=0
-TEST_VERSION="2.2.1"
+TEST_VERSION="2.3.0"
 
 # Phase 9: mock Keycloak port. Picked outside the typical Hydrogen
 # port range (5000s) and the test config's WebServer port (5242). If
@@ -397,6 +400,13 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
                  # (pre-seeded identity) and returns the Hydrogen JWT for
                  # account_id=1 (adminuser).
                  test_oidc_callback_happy_path_end_to_end "${FULL_BASE_URL}"
+
+                 # Phase 22: RP-initiated logout. Drives the previously
+                 # uncovered /api/auth/oidc/end-session handler with the
+                 # JWT minted above (which carries OIDC id_token +
+                 # idp_provider context), exercising local logout +
+                 # IdP redirect URL construction.
+                 test_oidc_end_session_happy_path "${FULL_BASE_URL}"
 
                  # Cleanup: remove the pre-seeded identity row so subsequent
                  # test runs start clean. (The row was inserted with

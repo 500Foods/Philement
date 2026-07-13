@@ -34,4 +34,27 @@ enum MHD_Result handle_post_auth_oidc_end_session(
     size_t *upload_data_size,
     void **con_cls);
 
+/**
+ * Extract scheme://authority from a URL.
+ *
+ * "https://lithium.philement.com/api/auth/oidc/callback"
+ *   -> "https://lithium.philement.com"
+ *
+ * Returns a newly-allocated string (caller frees) or NULL when url is
+ * NULL/empty or has no "://" scheme separator.
+ */
+char *oidc_rp_end_session_extract_origin(const char *url);
+
+/**
+ * Build the IdP end_session URL from its endpoint, an id_token_hint, an
+ * optional post_logout_redirect_uri and an optional client_id.
+ *
+ * Returns a newly-allocated string (caller frees) or NULL on allocation
+ * failure or when end_session_endpoint / id_token is NULL.
+ */
+char *oidc_rp_end_session_build_idp_logout_url(const char *end_session_endpoint,
+                                               const char *id_token,
+                                               const char *post_logout_redirect_uri,
+                                               const char *client_id);
+
 #endif // OIDC_RP_END_SESSION_H
