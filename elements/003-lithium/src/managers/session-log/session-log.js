@@ -16,6 +16,15 @@ import { formatLogText } from '../../shared/log-formatter.js';
 import { createFontPopup, initToolbars, LithiumEditorFooter } from '../../core/manager-ui.js';
 import { processIcons } from '../../core/icons.js';
 import { scrollbarManager } from '../../core/scrollbar-manager.js';
+import { EditorState, EditorView } from '../../core/codemirror.js';
+import {
+  buildEditorExtensions,
+  createReadOnlyCompartment,
+  createWordWrapCompartment,
+  createBracketMatchCompartment,
+  createSelectionHighlightCompartment,
+  createCommentContinuationCompartment,
+} from '../../core/codemirror-setup.js';
 import './session-log.css';
 
 // Convenience alias for this module's subsystem
@@ -242,9 +251,6 @@ export default class SessionLogManager {
 
     // Initialize CodeMirror
     try {
-      const { EditorState, EditorView } = await import('../../core/codemirror.js');
-      const { buildEditorExtensions, createReadOnlyCompartment, createWordWrapCompartment, createBracketMatchCompartment, createSelectionHighlightCompartment, createCommentContinuationCompartment } = await import('../../core/codemirror-setup.js');
-
       const roCompartment = createReadOnlyCompartment();
       const wordWrapCompartment = createWordWrapCompartment();
       const bracketMatchCompartment = createBracketMatchCompartment();

@@ -60,12 +60,14 @@ export default defineConfig(({ mode }) => {
               return 'vendor-utils';
             }
 
-            // Group all manager components together (reduces file count)
-            if (id.includes('/managers/') || id.includes('manager')) {
-              return 'managers';
-            }
-
-            // Everything else stays in the main bundle
+            // NOTE: Do NOT force manager code into a single chunk here.
+            // Each manager is already dynamically imported (see
+            // src/app/manager-loader.js) so it becomes its own lazy chunk.
+            // A greedy `id.includes('manager')` rule previously collapsed all
+            // ~27 managers (plus any file with "manager" in the name, e.g.
+            // core/manager-ui.css) into one 2.6 MB chunk and one 359 KB CSS
+            // file, defeating the intended code-splitting and causing global
+            // CSS to override manager CSS at load time.
           }
         },
         // Suppress warnings from node_modules (external dependencies we cannot control)
@@ -76,6 +78,13 @@ export default defineConfig(({ mode }) => {
           // Treat CSS syntax errors as fatal build failures
           if (warning.code === 'CSS_SYNTAX_ERROR') {
             throw new Error(`CSS Syntax Error: ${warning.message}`);
+          }
+          // conduit.js is intentionally dynamically imported (e.g. from
+          // shared/lookups.js and core/global-settings-service.js) to break a
+          // circular dependency at module-eval time. That dynamic import is
+          // expected to be "ineffective" for code-splitting, so silence it.
+          if (warning.code === 'INEFFECTIVE_DYNAMIC_IMPORT' && /conduit\.js/.test(warning.id || '')) {
+            return;
           }
           warn(warning);
         }

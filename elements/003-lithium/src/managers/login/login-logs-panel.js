@@ -10,6 +10,8 @@
 import { getRawLog } from '../../core/log.js';
 import { formatLogText } from '../../shared/log-formatter.js';
 import { scrollbarManager } from '../../core/scrollbar-manager.js';
+import * as codemirrorModule from '../../core/codemirror.js';
+import * as codemirrorSetupModule from '../../core/codemirror-setup.js';
 
 /**
  * LogsPanel class
@@ -26,8 +28,8 @@ export class LogsPanel {
    * @param {Object} options
    * @param {Object} options.elements - DOM element references; must contain `logViewer`
    * @param {Object} [options.imports] - Optional import overrides for testing.
-   *   `imports.codemirror` and `imports.codemirrorSetup` may be supplied as
-   *   pre-resolved modules; otherwise they are dynamically imported on first
+ *   `imports.codemirror` and `imports.codemirrorSetup` may be supplied as
+ *   pre-resolved modules; otherwise the statically imported CodeMirror modules are used.
    *   `show()`.
    */
   constructor({ elements, imports } = {}) {
@@ -59,14 +61,11 @@ export class LogsPanel {
       return;
     }
 
-    // First-time init: try CodeMirror, fall back to <pre> on import failure.
+    // First-time init: try CodeMirror, fall back to <pre> on failure.
+    // CodeMirror is imported statically; tests may override via `imports`.
     try {
-      const cm = this._imports?.codemirror
-        ? this._imports.codemirror
-        : await import('../../core/codemirror.js');
-      const cmSetup = this._imports?.codemirrorSetup
-        ? this._imports.codemirrorSetup
-        : await import('../../core/codemirror-setup.js');
+      const cm = this._imports?.codemirror || codemirrorModule;
+      const cmSetup = this._imports?.codemirrorSetup || codemirrorSetupModule;
 
       const { EditorState, EditorView } = cm;
       const { buildEditorExtensions, createReadOnlyCompartment } = cmSetup;
