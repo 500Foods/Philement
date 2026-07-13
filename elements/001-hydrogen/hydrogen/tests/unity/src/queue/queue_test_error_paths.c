@@ -51,9 +51,10 @@ void test_queue_create_malloc_failure(void) {
 
 // Test queue_create with strdup failure for queue name
 void test_queue_create_strdup_failure(void) {
-    // Mock strdup to fail (this is called after successful malloc)
-    // Since strdup uses malloc internally, we can use malloc failure
-    mock_system_set_malloc_failure(1);  // Fail on strdup's malloc
+    // The Queue-structure malloc happens first (call 1), then strdup for the
+    // name (call 2, which uses malloc internally). Failing the second call
+    // exercises the strdup-failure cleanup path (free(queue); return NULL).
+    mock_system_set_malloc_failure(2);  // Fail on strdup's malloc
 
     QueueAttributes attrs = {0};
     Queue* result = queue_create("strdup_fail_test", &attrs);
@@ -79,9 +80,11 @@ void test_queue_enqueue_malloc_failures(void) {
     bool result = queue_enqueue(queue, "test_data", 9, 1);
     TEST_ASSERT_FALSE(result);  // Should fail due to malloc failure
 
-    // Reset and test malloc failure for element data
+    // Reset and test malloc failure for the element data buffer.
+    // The first malloc (QueueElement) succeeds; the second malloc (data
+    // buffer) fails, exercising the data-allocation cleanup path.
     mock_system_reset_all();
-    mock_system_set_malloc_failure(1);  // Fail on first malloc again
+    mock_system_set_malloc_failure(2);  // Fail on the second malloc (data buffer)
 
     result = queue_enqueue(queue, "test_data", 9, 1);
     TEST_ASSERT_FALSE(result);  // Should fail due to data malloc failure
