@@ -5,6 +5,19 @@ any code at all to our release build that has any kind of intsrumentation in it,
 
 IMPORTANT: The main purpose of the Unity Framework Testing in this project is to improve overall code quality. This means sometimes that when adding new tests in particular, bugs or shortcomings in the codebase will be uncovered and need to be addressed. This is an expected and normal outcome of building tests. Sometimes the tests themselves make incorrect assumptions or aggressive assumptions that don't match the code and will need to be adjusted. In other instances they make perfectly valid assumptions and the code is just not dealing with it the way it should so the code will neeed to be adjusted.
 
+## IMPROVING COVERAGE TASK
+
+A frequent task we preform involves ipmroving coverage for a single source file. When performing this specific task, we've got some things we can do to improve coverage. Normally, we'll start by reviewing existing coverage across both Unity unit tests and our blackbox tests by using the add_coverage.sh script to show us what intrumented lines are reporting no coverage. Sometimes this is the entire source file. From here, we have some things we can do.
+
+1) Write tests to cover larger functions that have no coverage currently 
+2) Refactor larger functions to use helpers that are more easily tested
+3) Refactor larger source code files into smaller files that can be reused or made small enough to fall under a lower threshold if fewer than 100 lines
+4) Check that all functions are not static as we can't test static functions.
+
+When performing this task, we're primarily concerned with improving coverage for instrumented lines that have no coverage currently, regardless of whether existing coverage is from unit or blackbox tests. New tests can be added to existing test sources, or new source tests created. If adding a new source test, we have to run `mkt` first to ensure that the new code compiles properly and without any errors or warnings. If the source test file exists already, and we're just making corrections, we can run `mku <testname>` to onfirm that all the tests pass. Run this from a zsh that references .zshrc to get these commands.
+
+Once the tests are passing, stop the task and ask for confirmation of the new coverage result as well as an updated list of source lines if the coverage target is not yet achieved.
+
 ## MOCKS
 
 A separate document specifically about the Mocks available and how to use them can be found in [unity/mocks/README.md](/elements/001-hydrogen/hydrogen/tests/unity/mocks/README.md).

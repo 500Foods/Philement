@@ -263,12 +263,30 @@ void test_send_terminal_websocket_output_validation_logic(void) {
 
 void test_start_terminal_websocket_bridge_thread_creation(void) {
     // This test will attempt thread creation but may fail in test environment
-    // The important part is that it exercises the thread creation code path
+    // The important part is that it exercises the thread creation code path.
+    //
+    // start_terminal_websocket_bridge() launches a DETACHED background thread
+    // that continuously references test_connection/test_session. If tearDown()
+    // frees those structures while the thread is still running, the thread
+    // dereferences freed memory and the process segfaults. To avoid this
+    // use-after-free race we signal the bridge thread to exit and give it time
+    // to observe the signal and return before the fixtures are torn down.
     bool result = start_terminal_websocket_bridge(test_connection);
 
     // Result may be true or false depending on system capabilities
     // The key is that the function doesn't crash and exercises the code
-    (void)result; // Suppress unused variable warning
+    if (result && test_connection) {
+        // Signal the detached bridge thread to stop: should_continue_io_bridge()
+        // returns false as soon as the connection is inactive.
+        test_connection->active = false;
+        if (test_connection->session) {
+            test_connection->session->active = false;
+            test_connection->session->connected = false;
+        }
+        // Give the thread time to observe the flags and exit its loop before
+        // tearDown() frees the connection and session.
+        usleep(200000); // 200ms
+    }
     TEST_PASS();
 }
 
