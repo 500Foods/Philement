@@ -26,7 +26,7 @@ static bool build_request(const MailRelayMessage* msg,
 static size_t smtp_read_cb(void* ptr, size_t size, size_t nmemb, void* userp);
 static size_t smtp_write_cb(const void* ptr, size_t size, size_t nmemb, void* userp);
 static long parse_smtp_code(const char* buf, size_t len, char* text_out, size_t text_cap);
-static bool mailrelay_smtp_transport_real(const MailRelaySmtpRequest* req, MailRelayResult* out);
+bool mailrelay_smtp_transport_real(const MailRelaySmtpRequest* req, MailRelayResult* out);
 
 /* Active transport (swappable in tests). */
 static mailrelay_smtp_transport_fn mailrelay_smtp_transport = mailrelay_smtp_transport_real;
@@ -157,7 +157,7 @@ static long parse_smtp_code(const char* buf, size_t len, char* text_out, size_t 
     return code;
 }
 
-static bool mailrelay_smtp_transport_real(const MailRelaySmtpRequest* req, MailRelayResult* out) {
+bool mailrelay_smtp_transport_real(const MailRelaySmtpRequest* req, MailRelayResult* out) {
     if (!req || !out) return false;
     mailrelay_result_init(out);
 

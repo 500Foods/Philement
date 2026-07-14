@@ -67,6 +67,10 @@ void mailrelay_smtp_set_transport(mailrelay_smtp_transport_fn fn);
 /* Restore the libcurl transport. */
 void mailrelay_smtp_reset_transport(void);
 
+/* The real libcurl transport (also the default). Exposed so launch-time test
+ * seams can perform the genuine send on a final, successful attempt. */
+bool mailrelay_smtp_transport_real(const MailRelaySmtpRequest* req, MailRelayResult* out);
+
 #ifdef __cplusplus
 }
 #endif

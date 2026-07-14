@@ -15,6 +15,7 @@
 # resolved by the config loader, so no credentials live in the committed config.
 
 # CHANGELOG
+# 1.1.0 - 2026-07-14 - Added launch transient-failure retry variant (FailNextSendOnLaunch) asserting MAILRELAY_LAUNCH_SEND_RETRY + MAILRELAY_LAUNCH_SEND_OK and eventual sink delivery.
 # 1.0.2 - 2026-07-07 - Updated SendRawOnLaunch log assertion to match async enqueue message.
 # 1.0.1 - 2026-07-06 - Hardened sink readiness probe and stored-message capture selection.
 # 1.0.0 - 2026-07-06 - Initial MailRelay outbound blackbox test (plaintext + TLS).
@@ -26,7 +27,7 @@ TEST_NAME="MailRelay Outbound"
 TEST_ABBR="MRO"
 TEST_NUMBER="57"
 TEST_COUNTER=0
-TEST_VERSION="1.0.2"
+TEST_VERSION="1.1.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -41,6 +42,7 @@ MAILVAL_KEY="${MAILVAL_DIR}/mailval.key"
 # SMTP sink ports (dedicated 557x range from the plan).
 PLAINTEXT_PORT=5570
 TLS_PORT=5571
+RETRY_PORT=5572
 
 # Timeouts
 STARTUP_TIMEOUT=25
@@ -90,8 +92,9 @@ fi
 # Validate both configuration files.
 CONFIG_PLAIN="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_mailrelay_outbound.json"
 CONFIG_TLS="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_mailrelay_outbound_tls.json"
+CONFIG_RETRY="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_mailrelay_outbound_retry.json"
 
-for cfg in "${CONFIG_PLAIN}" "${CONFIG_TLS}"; do
+for cfg in "${CONFIG_PLAIN}" "${CONFIG_TLS}" "${CONFIG_RETRY}"; do
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Configuration File: $(basename "${cfg}")"
     # shellcheck disable=SC2310 # We want to continue even if the test fails
     if validate_config_file "${cfg}"; then
@@ -232,12 +235,163 @@ run_mailrelay_outbound() {
     return 0
 }
 
+# Wait for a log marker to appear within a timeout window.
+# Arguments: <marker> <log_file> <timeout_seconds>
+wait_for_log_marker() {
+    local marker="$1"
+    local log_file="$2"
+    local timeout="$3"
+    local start_time
+    start_time=${SECONDS}
+    while [[ $((SECONDS - start_time)) -lt "${timeout}" ]]; do
+        if "${GREP}" -q "${marker}" "${log_file}" 2>/dev/null; then
+            return 0
+        fi
+        sleep 0.2
+    done
+    return 1
+}
+
+# Run the launch-time transient-failure retry variant.
+#
+# Hydrogen is started with MailRelay.Test.FailNextSendOnLaunch enabled, which
+# installs a launch-scoped transport that fails once with a retryable error and
+# then succeeds. This drives the worker retry path in mailrelay_workers.c /
+# mailrelay_retry.c during startup. We must observe the retry + eventual success
+# BEFORE stopping Hydrogen, otherwise the scheduled retry is dropped on shutdown.
+run_mailrelay_retry() {
+    local label="$1"
+    local config_file="$2"
+    local port="$3"
+    local subject_marker="$4"
+
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${label}"
+
+    local maildata_dir="${DIAG_TEST_DIR}/mailval_${port}"
+    mkdir -p "${maildata_dir}"
+    local mailval_log="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_mailval_${port}.log"
+    local hydrogen_log="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_hydrogen_${port}.log"
+    true > "${mailval_log}"
+
+    export MAILRELAY_TEST_PASSWORD="${MAILRELAY_TEST_PASSWORD:-mailrelay-local-test-only}"
+
+    # Start the SMTP sink.
+    local mailval_args=( "--smtp-port" "${port}" "--data-dir" "${maildata_dir}" )
+    print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "$(basename "${MAILVAL_BIN}") ${mailval_args[*]}"
+    "${MAILVAL_BIN}" "${mailval_args[@]}" > "${mailval_log}" 2>&1 &
+    local mailval_pid=$!
+    MAILVAL_PIDS+=("${mailval_pid}")
+
+    local ready=false
+    for ((i = 0; i < 100; i++)); do
+        if "${TIMEOUT}" 1 bash -c "</dev/tcp/127.0.0.1/${port}" 2>/dev/null; then
+            ready=true
+            break
+        fi
+        sleep 0.05
+    done
+    if [[ "${ready}" = false ]]; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${label} - mailval did not start listening on ${port}"
+        kill -INT "${mailval_pid}" 2>/dev/null || true
+        return 1
+    fi
+
+    # Start Hydrogen; SendRawOnLaunch fires during launch through the failing transport.
+    local hydrogen_pid_var="MAILRELAY_HYDROGEN_PID_${port}"
+    local hydrogen_pid=""
+    eval "${hydrogen_pid_var}=''"
+    # shellcheck disable=SC2310 # We want to continue even if the test fails
+    if ! start_hydrogen_with_pid "${config_file}" "${hydrogen_log}" "${STARTUP_TIMEOUT}" "${HYDROGEN_BIN}" "${hydrogen_pid_var}"; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${label} - Hydrogen failed to start"
+        kill -INT "${mailval_pid}" 2>/dev/null || true
+        return 1
+    fi
+    hydrogen_pid=$(eval "echo \${${hydrogen_pid_var}}")
+    if [[ -z "${hydrogen_pid}" ]]; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${label} - Hydrogen PID was not captured"
+        kill -INT "${mailval_pid}" 2>/dev/null || true
+        return 1
+    fi
+    HYDROGEN_PIDS+=("${hydrogen_pid}")
+
+    # The raw send must have been enqueued.
+    if ! "${GREP}" -q "SendRawOnLaunch smoke test enqueued" "${hydrogen_log}" 2>/dev/null; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${label} - Hydrogen log missing 'SendRawOnLaunch smoke test enqueued'"
+        kill -INT "${mailval_pid}" 2>/dev/null || true
+        return 1
+    fi
+
+    # The failing transport must trigger at least one retry.
+    # shellcheck disable=SC2310 # We want to continue even if the wait times out
+    if ! wait_for_log_marker "MAILRELAY_LAUNCH_SEND_RETRY" "${hydrogen_log}" 20; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${label} - log missing 'MAILRELAY_LAUNCH_SEND_RETRY'"
+        kill -INT "${mailval_pid}" 2>/dev/null || true
+        return 1
+    fi
+
+    # The transport must eventually succeed.
+    # shellcheck disable=SC2310 # We want to continue even if the wait times out
+    if ! wait_for_log_marker "MAILRELAY_LAUNCH_SEND_OK" "${hydrogen_log}" 20; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${label} - log missing 'MAILRELAY_LAUNCH_SEND_OK'"
+        kill -INT "${mailval_pid}" 2>/dev/null || true
+        return 1
+    fi
+
+    # The outbound message must ultimately be delivered and captured by the sink.
+    local capture_file=""
+    local candidate=""
+    local stored=""
+    local subject=""
+    for ((i = 0; i < 80; i++)); do
+        for candidate in "${maildata_dir}"/mailval_smtp_*.json; do
+            [[ -f "${candidate}" ]] || continue
+            stored=$(jq -r '[.commands[]? | select(.dir=="meta" and .key=="stored_uid")] | .[0].value // empty' "${candidate}")
+            subject=$(jq -r '[.commands[]? | select(.dir=="meta" and .key=="subject")] | .[0].value // empty' "${candidate}")
+            if [[ "${stored}" = "yes" ]]; then
+                capture_file="${candidate}"
+                break
+            fi
+        done
+        if [[ -n "${capture_file}" ]]; then
+            break
+        fi
+        sleep 0.1
+    done
+    if [[ -z "${capture_file}" ]]; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${label} - no stored SMTP capture transcript written by sink"
+        kill -INT "${mailval_pid}" 2>/dev/null || true
+        return 1
+    fi
+    if [[ "${subject}" != *"${subject_marker}"* ]]; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${label} - subject mismatch ('${subject}')"
+        kill -INT "${mailval_pid}" 2>/dev/null || true
+        return 1
+    fi
+
+    # Stop Hydrogen cleanly now that the retry path has fully exercised.
+    # shellcheck disable=SC2310 # We want to continue even if the test fails
+    if ! stop_hydrogen "${hydrogen_pid}" "${hydrogen_log}" "${SHUTDOWN_TIMEOUT}" "${SHUTDOWN_ACTIVITY_TIMEOUT}" "${DIAG_TEST_DIR}"; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${label} - Hydrogen shutdown failed"
+        kill -INT "${mailval_pid}" 2>/dev/null || true
+        return 1
+    fi
+
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${label} - captured: stored_uid=${stored} subject='${subject}'"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${label} - transient failure retried and delivered (RETRY+OK markers, sink captured)"
+    PASS_COUNT=$(( PASS_COUNT + 1 ))
+
+    kill -INT "${mailval_pid}" 2>/dev/null || true
+    return 0
+}
+
 # Only proceed if prerequisites are present.
 if [[ "${EXIT_CODE}" -eq 0 ]]; then
     # shellcheck disable=SC2310 # We want to continue even if the test fails
     run_mailrelay_outbound "MailRelay Outbound (plaintext SMTP)" "${CONFIG_PLAIN}" "${PLAINTEXT_PORT}" 0 "(plaintext)" || EXIT_CODE=1
     # shellcheck disable=SC2310 # We want to continue even if the test fails
     run_mailrelay_outbound "MailRelay Outbound (STARTTLS SMTP)" "${CONFIG_TLS}" "${TLS_PORT}" 1 "(tls)" || EXIT_CODE=1
+    # shellcheck disable=SC2310 # We want to continue even if the test fails
+    run_mailrelay_retry "MailRelay Outbound (launch transient-failure retry)" "${CONFIG_RETRY}" "${RETRY_PORT}" "Retry" || EXIT_CODE=1
 else
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Skipping MailRelay outbound runs due to prerequisite failures"
 fi

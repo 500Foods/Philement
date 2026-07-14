@@ -27,6 +27,18 @@ CURRENT PAUSE POINT (as of 2026-07-10): **Phase 7B Lua freeform complete (L.1–
 4. Present next-phase plan (small chunks; qualifying questions first) before coding.
 5. REST send remains template-only; freeform is Lua-only via `mailrelay_send_direct`.
 
+### Blackbox coverage work (separate track — not part of Phase 7B+)
+- **Detailed plan:** `docs/H/plans/MAILRELAY_BLACKBOX_PLAN.md` — launch-time
+  test seams (`SendOtpOnLaunch`, `FailNextSendOnLaunch`) to add blackbox coverage
+  for `mailrelay_otp.c` (Test 58) and `mailrelay_retry.c` (Test 57).
+- **Status (as of 2026-07-14):** Plan Steps 1–4 implemented and verified
+  (`mkt`/`mka`/`mkp` green; mailrelay Unity suites green). Seams land in
+  `config_mail_relay.{h,c}`, `config_defaults.c`, `mailrelay_otp.{h,c}`
+  (deterministic `mailrelay_otp_set_fixed_code`), and `launch_mail_relay.c`
+  (Seam A OTP send+verify, Seam B failing-then-succeeding transport). Both flags
+  default OFF — no production behavior change. The Test 57/58 **script edits**
+  (Step 5) and coverage validation (Step 6) remain deferred to a separate task.
+
 ### Session checklist (every Mail Relay return)
 
 1. Confirm the latest completed phase via **Phase Status** blocks; active phase = first not complete.
@@ -262,7 +274,7 @@ Append discoveries, surprises, and decisions here as we move through phases. Ear
   1. `mailrelay_otp_verify`: get active (113) → C `expiry_at` check → hash/compare → consume (114) or increment (115) / mark max (128).
   2. Success returns `otp_id` + `account_id`; never plaintext. Errors: `MAIL_OTP_NOT_FOUND` / `EXPIRED` / `MAX_ATTEMPTS` / `INVALID`.
   3. Repo: `MAILRELAY_QREF_OTP_MARK_MAX_ATTEMPTS` (128) + `mailrelay_repo_otp_mark_max_attempts`.
-  4. Unity `mailrelay_otp_verify_test` 10/10; generate 10 + send 6 + repo 12; `mkt`/`mkp` green.
+  4. Unity `mailrelay_otp_test_verify` 10/10; generate 10 + send 6 + repo 12; `mkt`/`mkp` green.
   5. Log: purpose only (`OTP verified purpose=%d`).
 - (Phase 8.5a migration, 2026-07-10) **QueryRef 128 for max-attempts lockout.**
   1. Migration `acuranzo_1262.lua` / QueryRef **128**: status_a67=3 + attempts+1 where still active.
@@ -271,7 +283,7 @@ Append discoveries, surprises, and decisions here as we move through phases. Ear
   1. `mailrelay_otp_generate_and_send`: resolve digits/expiry/max from request or `MailRelay.Otp` → generate → SHA-256 hex → QueryRef 112 insert → `mailrelay_send_template(auth.otp_code, otp_code=plaintext)` → wipe plaintext + hash.
   2. Response: `otp_id` (when repo returns it), `message_id`, `status` — never plaintext.
   3. Migration `acuranzo_1261.lua` seeds `auth.otp_code` (template_id 2) with `%OTP_CODE%` + built-ins.
-  4. Unity `mailrelay_otp_send_test` 6/6: success, bad email/purpose, disabled, insert fail, template fail; asserts hash-only insert params and no code in `err`.
+  4. Unity `mailrelay_otp_test_send` 6/6: success, bad email/purpose, disabled, insert fail, template fail; asserts hash-only insert params and no code in `err`.
   5. Log line: purpose only (`OTP queued for delivery purpose=%d`) — no email/code.
 - (Phase 8.1–8.3 complete, 2026-07-10) **OTP design locked and generator landed.** Decisions:
   1. **Ownership:** Internal C API only (`src/mailrelay/mailrelay_otp.*`). No public REST in Phase 8. Auth/OIDC will call later.
@@ -281,7 +293,7 @@ Append discoveries, surprises, and decisions here as we move through phases. Ear
   5. **Schema:** `mail_otp_codes` + QueryRefs 112–117 verified sufficient; **no new migration** in 8.3.
   6. **Purpose/status enums:** `MAIL_OTP_PURPOSE_*` / `MAIL_OTP_STATUS_*` in `mailrelay_otp.h` match lookups 066/067.
   7. **Seams:** `mailrelay_otp_set_random_fn` for Unity; hash via OpenSSL `SHA256`; compare via `CRYPTO_memcmp`; wipe via `OPENSSL_cleanse`.
-  8. **Deliverables 8.3:** `mailrelay_otp.{c,h}`, `mailrelay_otp_generate_test` (10/10), config Otp block, `mkt`/`mkp` green.
+  8. **Deliverables 8.3:** `mailrelay_otp.{c,h}`, `mailrelay_otp_test_generate` (10/10), config Otp block, `mkt`/`mkp` green.
 - (Phase 7A complete summary, 2026-07-10) **Lua backfill shipped end-to-end.** All producers (REST, events, Lua `H.mail`) share `mailrelay_send_template`. Deliverables:
   1. **`H.mail.send` / `send_sync`:** template-first Lua table → producer; optional `idempotency_key` (auto UUID); success `{ message_id, status = "queued" }`; errors as `MAIL_*: ...`.
   2. **`H.wait`:** `H_HK_MAIL` / `H_HK_NOTIFY` dispatched from `H_lua_wait_one` and multi-handle `H.wait` (was a hard gap: declared wait helper never wired).
@@ -402,7 +414,7 @@ Append discoveries, surprises, and decisions here as we move through phases. Ear
   7. **Dump tests with hand-built `MailRelayConfig` zero-init** show Digits=0 until fields are set — pre-existing pattern for Queue/Events; not a loader bug. Prefer load_mailrelay_config fixtures for policy fields.
   8. **At 8.3 time next free migration was 1261** for `auth.otp_code` seed; only `mail.test` (template_id 1) existed then. **After 8.4: 1261 used; next free is 1262. After 8.5: 1262 used; next free is 1263.**
 - (Phase 8.4, 2026-07-10) Lessons from generate_and_send (carry to 8.5):
-  1. **Repo executor params are nested:** `{"STRING":{"CODE_HASH":...},"INTEGER":{...}}` — not flat keys. Unity mocks that parse params must use `json_object_get(p, "STRING")` then field names (see `mailrelay_persistence_test` / `mailrelay_otp_send_test` / `mailrelay_otp_verify_test`).
+  1. **Repo executor params are nested:** `{"STRING":{"CODE_HASH":...},"INTEGER":{...}}` — not flat keys. Unity mocks that parse params must use `json_object_get(p, "STRING")` then field names (see `mailrelay_persistence_test` / `mailrelay_otp_test_send` / `mailrelay_otp_test_verify`).
   2. **Seam names:** `mailrelay_repo_set_executor` / `get_executor` (not set_execute_fn). `mailrelay_send_template_set_fn` for mail path.
   3. **Wipe both plaintext and hash buffers** on every exit path after use; insert failure must not leave secrets in stack buffers.
   4. **Insert-then-send order:** if send fails after insert, a row may remain active without mail — acceptable for v1; ops cleanup (QueryRef 126) / expire path handles orphans. Do not invent compensating delete without a design decision.
@@ -592,9 +604,9 @@ H.mail.send({
 | Repo OTP | QueryRefs 112–117, 128 via `mailrelay_repository.*` |
 | Mail | `mailrelay_send_template` + `MAIL_OTP_TEMPLATE_KEY` |
 | Seeds | migrations 1261 (`auth.otp_code`), 1262 (QRef 128) |
-| Unity generate | `mailrelay_otp_generate_test` (10) |
-| Unity send | `mailrelay_otp_send_test` (6) |
-| Unity verify | `mailrelay_otp_verify_test` (10) |
+| Unity generate | `mailrelay_otp_test_generate` (10) |
+| Unity send | `mailrelay_otp_test_send` (6) |
+| Unity verify | `mailrelay_otp_test_verify` (10) |
 | Unity config | `config_mail_relay_test_load_mailrelay_config` (incl. Otp) |
 
 **Next free migration after 8.5:** **1263** (re-check disk). Next free QueryRef: **129**.
@@ -604,7 +616,7 @@ H.mail.send({
 - **QueryRefs used:** 113 get active (status=0 only, **no expiry filter**); 114 consume; 115 increment only; **128** mark max-attempts (status=3 + attempts+1). 116/117 not used in verify path.
 - **Shipped flow:** get active (113) → C `expiry_at` check → attempts-at-cap short-circuit → hash + constant-time equal → match: consume (114); mismatch at cap: 128; else: 115.
 - **Success:** `otp_id`, `account_id`. **Errors:** `MAIL_OTP_NOT_FOUND` / `EXPIRED` / `MAX_ATTEMPTS` / `INVALID` (+ MAIL_PARAM_MISSING / MAIL_RECIPIENT_INVALID / MAIL_DISABLED / MAIL_PERSIST_FAILED).
-- **Unity:** `mailrelay_otp_verify_test` 10/10 (mock executor; no live DB/SMTP).
+- **Unity:** `mailrelay_otp_test_verify` 10/10 (mock executor; no live DB/SMTP).
 - **Out of Phase 8:** REST, blackbox, auth/OIDC MFA wiring.
 
 ### Phase 8 preparation notes (from Phase 7A + earlier; historical)
@@ -1373,20 +1385,20 @@ Entry Gate: Phase 7 **and** Phase 7A exit gates green (templated producer + Lua 
   - Verification: read-only audit against migrations 1221 / 1242–1247; repo helpers already present.
 
 - [x] 8.3 Implement OTP generator + `MailRelay.Otp` config.
-  - Files: `src/mailrelay/mailrelay_otp.{c,h}`; config `MailRelayOtpSettings` (`Digits`/`ExpirySeconds`/`MaxAttempts`); schema + examples; Unity `mailrelay_otp_generate_test` + config load test.
+  - Files: `src/mailrelay/mailrelay_otp.{c,h}`; config `MailRelayOtpSettings` (`Digits`/`ExpirySeconds`/`MaxAttempts`); schema + examples; Unity `mailrelay_otp_test_generate` + config load test.
   - Generate (numeric, seam-injectable random), SHA-256 hex hash, constant-time equal, wipe. No DB/send yet.
-  - Verification: `mkt`; `mku mailrelay_otp_generate_test` 10/10; `mku config_mail_relay_test_load_mailrelay_config` 14/14; `mkp` green.
+  - Verification: `mkt`; `mku mailrelay_otp_test_generate` 10/10; `mku config_mail_relay_test_load_mailrelay_config` 14/14; `mkp` green.
 
 - [x] 8.4 Implement the OTP send path.
   - `mailrelay_otp_generate_and_send` in `mailrelay_otp.c`: generate → hash → QueryRef 112 → `mailrelay_send_template("auth.otp_code")` → wipe.
   - Seed `auth.otp_code` via `acuranzo_1261.lua` (template_id 2). Unity uses repo + send_template seams.
-  - Verification: `mku mailrelay_otp_send_test` 6/6; `mku mailrelay_otp_generate_test` 10/10; `mkt`; `mkp`; `test_98_luacheck.sh`.
+  - Verification: `mku mailrelay_otp_test_send` 6/6; `mku mailrelay_otp_test_generate` 10/10; `mkt`; `mkp`; `test_98_luacheck.sh`.
 
 - [x] 8.5 Implement the verification helper (no public REST).
   - [x] 8.5a Migration `acuranzo_1262.lua` QueryRef **128** mark max-attempts (status 3 + increment). User applied.
   - [x] 8.5b C: `mailrelay_repo_otp_mark_max_attempts` + `mailrelay_otp_verify` + Unity.
   - Flow: 113 → C expiry → hash/compare → 114 or 115/128. Success: `otp_id` + `account_id`.
-  - Verification: `mku mailrelay_otp_verify_test` 10/10; generate 10 + send 6; `mkt`/`mkp` green.
+  - Verification: `mku mailrelay_otp_test_verify` 10/10; generate 10 + send 6; `mkt`/`mkp` green.
 
 Exit Gate: met. OTP generate/store/send/verify once; max-attempts lockout; no plaintext in storage/logs/errors.
 
@@ -1632,7 +1644,7 @@ New or modified files expected across the implementation. Confirm/adjust during 
 ### Unity tests (`/elements/001-hydrogen/hydrogen/tests/unity/src/`)
 
 - Extend: `config/config_mail_relay_test_load_mailrelay_config.c`, `launch/launch_mail_relay_test_comprehensive_coverage.c`, `landing/landing_mail_relay_test_readiness.c`.
-- New: `mailrelay/mailrelay_message_test.c`, `mailrelay_render_test.c`, `mailrelay_queue_test.c`, `mailrelay_workers_test.c`, `mailrelay_retry_test.c`, `mailrelay_debounce_test.c`, `mailrelay_template_test.c`, `mailrelay_preview_test.c`, `mailrelay_producer_test.c`, `mailrelay_repository_test.c`, `mailrelay_otp_generate_test.c`, `mailrelay_otp_verify_test.c`, `mailrelay_route_test.c`, plus API endpoint tests under `api/mailrelay/` (e.g., `api/mailrelay/status/mailrelay_get_status_test.c`) and Lua backfill tests under `scripting/` such as `scripting_api_mail_test.c`.
+- New: `mailrelay/mailrelay_message_test.c`, `mailrelay_render_test.c`, `mailrelay_queue_test.c`, `mailrelay_workers_test.c`, `mailrelay_retry_test.c`, `mailrelay_debounce_test.c`, `mailrelay_template_test.c`, `mailrelay_preview_test.c`, `mailrelay_producer_test.c`, `mailrelay_repository_test.c`, `mailrelay_otp_test_generate.c`, `mailrelay_otp_test_verify.c`, `mailrelay_route_test.c`, plus API endpoint tests under `api/mailrelay/` (e.g., `api/mailrelay/status/mailrelay_get_status_test.c`) and Lua backfill tests under `scripting/` such as `scripting_api_mail_test.c`.
 
 ### Blackbox tests (`/elements/001-hydrogen/hydrogen/tests/`)
 

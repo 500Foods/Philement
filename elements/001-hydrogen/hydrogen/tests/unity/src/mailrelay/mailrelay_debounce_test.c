@@ -516,6 +516,7 @@ void test_debounce_submit_starts_expiry_thread(void) {
     MailRelayDebounceState* state = mailrelay_debounce_create();
 
     MailRelayRuntime* rt = calloc(1, sizeof(MailRelayRuntime));
+    TEST_ASSERT_NOT_NULL(rt); // cppcheck-suppress nullPointerOutOfMemory
     rt->initialized = true;
     rt->queue = queue;
     rt->debounce = state;

@@ -14,6 +14,11 @@
 // Global includes 
 #include <src/hydrogen.h>
 
+// System headers
+#include <pthread.h>
+#include <string.h>
+#include <time.h>
+
 // Local includes
 #include "launch.h"
 
@@ -23,7 +28,15 @@
 // Mail relay includes
 #include <src/mailrelay/mailrelay.h>
 #include <src/mailrelay/mailrelay_message.h>
+#include <src/mailrelay/mailrelay_otp.h>
+#include <src/mailrelay/mailrelay_smtp.h>
 #include <src/mailrelay/mailrelay_workers.h>
+#include <src/mailrelay/mailrelay_repository.h>
+
+// Database includes (to wait for the query cache to be populated before the
+// synchronous OTP launch seam runs).
+#include <src/database/dbqueue/dbqueue.h>
+#include <src/database/database_cache.h>
 
 // External declarations
 extern ServiceThreads mailrelay_threads;
@@ -222,6 +235,93 @@ LaunchReadiness check_mail_relay_launch_readiness(void) {
     };
 }
 
+/*
+ * Launch-time failing transport seam (gated by Test.FailNextSendOnLaunch).
+ * Fails its first g_launch_fail_remaining attempts with a retryable error,
+ * then succeeds. Mirrors the unit-test mock_transport contract. On the first
+ * success it restores the default (real) transport so runtime sending is
+ * unaffected. Only installed in the launch seam; inert otherwise.
+ */
+static pthread_mutex_t g_launch_transport_mutex = PTHREAD_MUTEX_INITIALIZER;
+static int g_launch_fail_remaining = 0;
+
+static bool launch_fail_transport(const MailRelaySmtpRequest* req, MailRelayResult* out) {
+    (void)req;
+    bool fail = false;
+    pthread_mutex_lock(&g_launch_transport_mutex);
+    if (g_launch_fail_remaining > 0) {
+        g_launch_fail_remaining--;
+        fail = true;
+    }
+    pthread_mutex_unlock(&g_launch_transport_mutex);
+
+    mailrelay_result_init(out);
+    if (fail) {
+        out->success = false;
+        out->retryable = true;
+        out->smtp_code = 421;
+        snprintf(out->error, sizeof(out->error), "MAILRELAY_LAUNCH_INJECTED_FAILURE");
+        log_this(SR_MAIL_RELAY,
+                 "MAILRELAY_LAUNCH_SEND_RETRY: injected transient SMTP failure (remaining=%d)",
+                 LOG_LEVEL_STATE, 1, g_launch_fail_remaining);
+        return false;
+    }
+
+    // Final attempt: perform the genuine send so the message is actually
+    // delivered (and the retry path ends with a real success).
+    bool ok = mailrelay_smtp_transport_real(req, out);
+    log_this(SR_MAIL_RELAY, "MAILRELAY_LAUNCH_SEND_OK", LOG_LEVEL_STATE, 0);
+    mailrelay_smtp_reset_transport();
+    return ok;
+}
+
+/* Recipient/purpose used by the OTP launch seam (Seam A). */
+#define MAILRELAY_OTP_LAUNCH_RECIPIENT "mailrelay-otp-launch@hydrogen.local"
+#define MAILRELAY_OTP_LAUNCH_CODE      "123456"
+
+/*
+ * Wait until the Mail Relay database's query cache contains the OTP insert
+ * QueryRef (112). The OTP launch seam issues synchronous OTP queries that
+ * require cached QueryRefs, but the database bootstrap that populates the cache
+ * runs asynchronously and may still be in flight when this subsystem launches
+ * (the cache object itself may not even exist yet). Block briefly (polling)
+ * until the cache exists and holds the OTP insert QueryRef, or time out.
+ *
+ * Returns true once the cache holds the OTP insert QueryRef.
+ */
+static bool launch_wait_for_mailrelay_otp_cache(unsigned int timeout_ms) {
+    if (!app_config) {
+        return false;
+    }
+
+    const char* db = app_config->mail_relay.Database;
+    if (db == NULL || db[0] == '\0') {
+        if (app_config->databases.connection_count == 1 &&
+            app_config->databases.connections[0].name &&
+            app_config->databases.connections[0].name[0] != '\0') {
+            db = app_config->databases.connections[0].name;
+        }
+    }
+    if (db == NULL || db[0] == '\0') {
+        return false;
+    }
+
+    unsigned int waited = 0;
+    const unsigned int step_ms = 25;
+    while (waited < timeout_ms) {
+        DatabaseQueue* q = database_queue_manager_get_database(global_queue_manager, db);
+        if (q != NULL && q->query_cache != NULL &&
+            query_cache_lookup(q->query_cache, MAILRELAY_QREF_OTP_INSERT,
+                               SR_MAIL_RELAY) != NULL) {
+            return true;
+        }
+        struct timespec ts = {0, (long)step_ms * 1000000L};
+        nanosleep(&ts, NULL);
+        waited += step_ms;
+    }
+    return false;
+}
+
 // Launch the mail relay subsystem
 int launch_mail_relay_subsystem(void) {
 
@@ -264,6 +364,21 @@ int launch_mail_relay_subsystem(void) {
         }
     }
 
+    // Seam B — forced transient SMTP failure (drives Test 57 retry coverage).
+    // Install a launch-scoped transport that fails once with a retryable error
+    // and then succeeds, so the worker retry path in mailrelay_workers.c /
+    // mailrelay_retry.c runs during startup. Only active when explicitly set.
+    if (config->Test.FailNextSendOnLaunch && config->Workers > 0
+        && config->OutboundServerCount > 0) {
+        pthread_mutex_lock(&g_launch_transport_mutex);
+        g_launch_fail_remaining = 1;
+        pthread_mutex_unlock(&g_launch_transport_mutex);
+        mailrelay_smtp_set_transport(launch_fail_transport);
+        log_this(SR_MAIL_RELAY,
+                 "TEST: FailNextSendOnLaunch requested, installing transient-failure transport",
+                 LOG_LEVEL_STATE, 0);
+    }
+
     // SendRawOnLaunch smoke test: enqueue one test message for workers to send.
     // This exercises the async path and is test-only.
     if (config->Test.SendRawOnLaunch && config->OutboundServerCount > 0) {
@@ -300,6 +415,81 @@ int launch_mail_relay_subsystem(void) {
         }
 
         mailrelay_message_free(&msg);
+    }
+
+    // Seam A — OTP send + self-verify (drives Test 58 coverage).
+    // Generate a fixed, known OTP, send it through the real templated worker
+    // path, then immediately verify it against the same recipient/purpose.
+    // Test-only: inert unless Test.SendOtpOnLaunch is set. Restores the default
+    // transport first so this send is never caught by Seam B's failing transport.
+    if (config->Test.SendOtpOnLaunch) {
+        mailrelay_smtp_reset_transport();
+
+        // The synchronous OTP queries below require the database query cache to
+        // be populated. That cache is filled by the asynchronous database
+        // bootstrap, which can still be in flight when this subsystem launches,
+        // so wait for it before issuing the OTP queries.
+        if (!launch_wait_for_mailrelay_otp_cache(15000)) {
+            log_this(SR_MAIL_RELAY,
+                     "TEST: SendOtpOnLaunch skipped - Mail Relay database query cache not ready",
+                     LOG_LEVEL_STATE, 0);
+        } else {
+        mailrelay_otp_set_fixed_code(MAILRELAY_OTP_LAUNCH_CODE);
+
+        MailRelayOtpSendRequest send_req;
+        memset(&send_req, 0, sizeof(send_req));
+        send_req.email = MAILRELAY_OTP_LAUNCH_RECIPIENT;
+        send_req.account_id = 0;
+        send_req.purpose_a66 = MAIL_OTP_PURPOSE_EMAIL_VERIFY;
+        send_req.digits = (int)strlen(MAILRELAY_OTP_LAUNCH_CODE);
+        send_req.expiry_seconds = 300;
+        send_req.max_attempts = 5;
+        send_req.priority = 0;
+        send_req.app_name = "Hydrogen";
+
+        MailRelayOtpSendResponse send_resp;
+        mailrelay_otp_send_response_init(&send_resp);
+        char otp_err[256];
+        otp_err[0] = '\0';
+        MailRelayStatus otp_status =
+            mailrelay_otp_generate_and_send(&send_req, &send_resp, otp_err, sizeof(otp_err));
+
+        if (otp_status == MAILRELAY_OK) {
+            log_this(SR_MAIL_RELAY,
+                     "MAILRELAY_OTP_LAUNCH_SENT recipient=" MAILRELAY_OTP_LAUNCH_RECIPIENT,
+                     LOG_LEVEL_STATE, 0);
+        } else {
+            log_this(SR_MAIL_RELAY,
+                     "MAILRELAY_OTP_LAUNCH_SEND_FAILED status=%d %s",
+                     LOG_LEVEL_STATE, 2, (int)otp_status, otp_err);
+        }
+
+        MailRelayOtpVerifyRequest verify_req;
+        memset(&verify_req, 0, sizeof(verify_req));
+        verify_req.email = MAILRELAY_OTP_LAUNCH_RECIPIENT;
+        verify_req.purpose_a66 = MAIL_OTP_PURPOSE_EMAIL_VERIFY;
+        verify_req.code = MAILRELAY_OTP_LAUNCH_CODE;
+
+        MailRelayOtpVerifyResponse verify_resp;
+        mailrelay_otp_verify_response_init(&verify_resp);
+        char verify_err[256];
+        verify_err[0] = '\0';
+        MailRelayStatus verify_status =
+            mailrelay_otp_verify(&verify_req, &verify_resp, verify_err, sizeof(verify_err));
+
+        if (verify_status == MAILRELAY_OK) {
+            log_this(SR_MAIL_RELAY,
+                     "MAILRELAY_OTP_LAUNCH_VERIFIED recipient=" MAILRELAY_OTP_LAUNCH_RECIPIENT,
+                     LOG_LEVEL_STATE, 0);
+        } else {
+            log_this(SR_MAIL_RELAY,
+                     "MAILRELAY_OTP_LAUNCH_VERIFY_FAILED status=%d %s",
+                     LOG_LEVEL_STATE, 2, (int)verify_status, verify_err);
+        }
+
+        mailrelay_otp_clear_fixed_code();
+        mailrelay_otp_send_response_free(&send_resp);
+        }
     }
 
     // Update registry and verify the subsystem reached RUNNING.

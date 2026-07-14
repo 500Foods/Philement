@@ -1,5 +1,5 @@
 /*
- * Unity Test File: mailrelay_otp_generate_test.c
+ * Unity Test File: mailrelay_otp_test_generate.c
  *
  * Phase 8.3: OTP generate, hash, constant-time equal, wipe.
  * Does not exercise DB insert or template send.
@@ -17,6 +17,7 @@ void test_generate_code_custom_digits(void);
 void test_generate_code_rejects_bad_digits(void);
 void test_generate_code_rejects_small_buffer(void);
 void test_generate_code_uses_random_seam(void);
+void test_generate_code_default_random_source(void);
 void test_hash_code_stable(void);
 void test_hash_code_rejects_null_empty(void);
 void test_hash_code_rejects_small_buffer(void);
@@ -58,6 +59,7 @@ int main(void) {
     RUN_TEST(test_generate_code_rejects_bad_digits);
     RUN_TEST(test_generate_code_rejects_small_buffer);
     RUN_TEST(test_generate_code_uses_random_seam);
+    RUN_TEST(test_generate_code_default_random_source);
     RUN_TEST(test_hash_code_stable);
     RUN_TEST(test_hash_code_rejects_null_empty);
     RUN_TEST(test_hash_code_rejects_small_buffer);
@@ -112,6 +114,19 @@ void test_generate_code_uses_random_seam(void) {
     g_fake_random_fill = 42;
     TEST_ASSERT_TRUE(mailrelay_otp_generate_code(4, code, sizeof(code)));
     TEST_ASSERT_EQUAL_STRING("2222", code);
+}
+
+void test_generate_code_default_random_source(void) {
+    /* No seam installed -> falls back to utils_random_bytes. */
+    char code[MAIL_OTP_MAX_DIGITS + 1];
+    memset(code, 0, sizeof(code));
+
+    mailrelay_otp_set_random_fn(NULL);
+    TEST_ASSERT_TRUE(mailrelay_otp_generate_code(MAIL_OTP_DEFAULT_DIGITS, code, sizeof(code)));
+    TEST_ASSERT_EQUAL(MAIL_OTP_DEFAULT_DIGITS, (int)strlen(code));
+    for (int i = 0; i < MAIL_OTP_DEFAULT_DIGITS; i++) {
+        TEST_ASSERT_TRUE(code[i] >= '0' && code[i] <= '9');
+    }
 }
 
 void test_hash_code_stable(void) {

@@ -53,6 +53,8 @@ typedef struct {
 // Mail relay test-only configuration (gated by SendRawOnLaunch)
 typedef struct {
     bool SendRawOnLaunch;
+    bool SendOtpOnLaunch;       // Launch-time OTP send + self-verify (blackbox coverage seam)
+    bool FailNextSendOnLaunch;  // Launch-time forced transient SMTP failure (coverage seam)
     char* TestFrom;
     char* TestTo;
     char* TestSubject;

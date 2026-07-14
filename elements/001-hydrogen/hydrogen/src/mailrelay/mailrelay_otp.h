@@ -51,6 +51,16 @@ typedef bool (*mailrelay_otp_random_fn)(unsigned char* buffer, size_t length);
 void mailrelay_otp_set_random_fn(mailrelay_otp_random_fn fn);
 
 /**
+ * Force a known OTP code (deterministic). Used by the launch-time test seam so
+ * a blackbox run can self-verify without depending on RNG. Pass NULL or "" to
+ * clear. Inert in production (never set outside the test seam).
+ */
+void mailrelay_otp_set_fixed_code(const char* code);
+
+/** Clear any previously set fixed code, restoring random generation. */
+void mailrelay_otp_clear_fixed_code(void);
+
+/**
  * Generate a numeric OTP code of the given length.
  *
  * @param digits  Code length (MAIL_OTP_MIN_DIGITS..MAIL_OTP_MAX_DIGITS).

@@ -418,6 +418,8 @@ void initialize_config_defaults_mail_relay(AppConfig* config) {
 
         // Test configuration (SendRawOnLaunch smoke test)
         config->mail_relay.Test.SendRawOnLaunch = false;
+        config->mail_relay.Test.SendOtpOnLaunch = false;
+        config->mail_relay.Test.FailNextSendOnLaunch = false;
         config->mail_relay.Test.TestFrom = NULL;
         config->mail_relay.Test.TestTo = NULL;
         config->mail_relay.Test.TestSubject = NULL;
