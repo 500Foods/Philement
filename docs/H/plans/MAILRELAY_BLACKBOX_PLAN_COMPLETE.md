@@ -27,6 +27,7 @@ this plan defines exactly what that task must do.
 ## Current State (as of 2026-07-14)
 
 ### Done (context, not in scope here)
+
 - OTP unit tests renamed to convention and extended: `mailrelay_otp_test_generate.c`,
   `mailrelay_otp_test_send.c`, `mailrelay_otp_test_verify.c` (11 / 14 / 23 cases,
   all green). Unity coverage of `mailrelay_otp.c`: **95.50% lines / 97.04% branches**
@@ -37,6 +38,7 @@ this plan defines exactly what that task must do.
   worker-path confidence.
 
 ### Gaps this plan closes
+
 | Source | Caller today | Blackbox path today | After this plan |
 |---|---|---|---|
 | `mailrelay_otp.c` (`generate_and_send`, `verify`) | none | none | launched by `SendOtpOnLaunch` seam → Test 58 |
@@ -44,6 +46,7 @@ this plan defines exactly what that task must do.
 | `mailrelay_workers.c` retry wrapper (lines ~81–118) | production | never exercised by Test 57 | exercised via forced failure |
 
 ### Relevant infrastructure already present (verified)
+
 - OTP table + `auth.otp_code` template exist in Helium/Acuranzo migrations:
   - `HELIUM_ROOT=/mnt/extra/Projects/Philement/elements/002-helium`
   - QTC query IDs: `MAILRELAY_QREF_OTP_INSERT=112`, `_GET_ACTIVE=113`, `_CONSUME=114`.
@@ -65,8 +68,10 @@ this plan defines exactly what that task must do.
 ## Seam Design
 
 ### Seam A — OTP send + self-verify (drives Test 58)
+
 **Config flag:** `config->mail_relay.Test.SendOtpOnLaunch` (bool).
 **Behavior at launch** (guarded, default OFF):
+
 1. Build an OTP request for a fixed test recipient + a deterministic test purpose.
 2. Call `mailrelay_otp_generate_and_send(...)` → sends via the templated path
    (`auth.otp_code`) through the real worker/sink.
@@ -83,8 +88,10 @@ this plan defines exactly what that task must do.
    launch-only flag) makes the verify step hermetic regardless of RNG.
 
 ### Seam B — forced transient SMTP failure (drives Test 57)
+
 **Config flag:** `config->mail_relay.Test.FailNextSendOnLaunch` (bool).
 **Behavior at launch** (guarded, default OFF):
+
 1. Before the existing `SendRawOnLaunch` send, install a launch-scoped transport
    that fails its first N attempts with `retryable=true`, then succeeds
    (mirrors the unit-test `mock_transport` contract via `mailrelay_smtp_set_transport`).
@@ -104,6 +111,7 @@ this plan defines exactly what that task must do.
 ## Implementation Steps
 
 ### Step 1 — Config struct + defaults (no behavior change)
+
 - `elements/001-hydrogen/hydrogen/src/config/config_mail_relay.h`: extend `MailRelayTest` struct with
   `bool SendOtpOnLaunch;` and `bool FailNextSendOnLaunch;` (place next to the
   existing `SendRawOnLaunch` member, ~line 53).
@@ -116,6 +124,7 @@ this plan defines exactly what that task must do.
 - **Verify:** `mkt`, `mkp`.
 
 ### Step 2 — OTP deterministic-code helper (hermetic verify)
+
 - In `elements/001-hydrogen/hydrogen/src/mailrelay/mailrelay_otp.c` / `.h`: add `mailrelay_otp_set_fixed_code(const char* code)`
   and a `mailrelay_otp_clear_fixed_code()`. When set, `generate_and_send` uses the
   fixed code instead of RNG (all-zero-bytes random still maps to `"000000"`, but
@@ -125,6 +134,7 @@ this plan defines exactly what that task must do.
   one case for the fixed-code path (separate task / optional).
 
 ### Step 3 — Launch wiring
+
 - `elements/001-hydrogen/hydrogen/src/launch/launch_mail_relay.c`, near the existing `SendRawOnLaunch` block
   (~lines 267–298):
   - If `FailNextSendOnLaunch`: install the failing-then-succeeding transport via
@@ -140,6 +150,7 @@ this plan defines exactly what that task must do.
 - **Verify:** `mkt`, `mkp`.
 
 ### Step 4 — Test config JSON (per test)
+
 - Test 58 config: set `mail_relay.Test.SendOtpOnLaunch=true`; real DB + sink +
   `auth.otp_code` template present (already the case per Test 58 harness).
 - Test 57 config: set `mail_relay.Test.FailNextSendOnLaunch=true` and small retry
@@ -147,7 +158,9 @@ this plan defines exactly what that task must do.
 - **Verify:** `mkt`, `mkp`.
 
 ### Step 5 — Test scripts (DEFERRED to separate task — specified here)
+
 **Test 58 (`tests/test_58_mailrelay_api.sh`):**
+
 - Add a variant (or new case) that launches with `SendOtpOnLaunch=true`.
 - Assert log contains `MAILRELAY_OTP_LAUNCH_SENT` and `MAILRELAY_OTP_LAUNCH_VERIFIED`.
 - Assert DB row for the test recipient/purpose consumed (`_CONSUME` path) — via
@@ -155,6 +168,7 @@ this plan defines exactly what that task must do.
 - Update `docs/H/tests/test_58_mailrelay_api.md` with the new case + assertions.
 
 **Test 57 (`tests/test_57_mailrelay_outbound.sh`):**
+
 - Add a variant that launches with `FailNextSendOnLaunch=true` (and small retry
   delays).
 - Assert log contains `MAILRELAY_LAUNCH_SEND_RETRY` (≥1) AND
@@ -163,6 +177,7 @@ this plan defines exactly what that task must do.
 - Update `docs/H/tests/test_57_mailrelay_outbound.md` with the new case + assertions.
 
 ### Step 6 — Coverage validation
+
 - `extras/add_coverage.sh` lives at
   `elements/001-hydrogen/hydrogen/extras/add_coverage.sh` and takes a **path
   relative to that hydrogen dir** (e.g. `src/mailrelay/mailrelay_otp.c`). It
@@ -183,6 +198,7 @@ this plan defines exactly what that task must do.
 - **Verify:** `mkt`, `mka`, `mkp`, both blackbox tests green.
 
 ### Step 7 — Docs / changelog
+
 - Update `docs/H/plans/MAILRELAY_PLAN.md` "Resume here" block to point at this
   plan once seams land.
 - If the repo keeps a CHANGELOG, add an entry for the two new test seams
@@ -193,6 +209,7 @@ this plan defines exactly what that task must do.
 ---
 
 ## Log Markers (single source of truth)
+
 | Marker | Seam | Meaning |
 |---|---|---|
 | `MAILRELAY_OTP_LAUNCH_SENT` | A | OTP generated + sent via real worker/sink |
@@ -203,6 +220,7 @@ this plan defines exactly what that task must do.
 | `MAILRELAY_LAUNCH_SEND_OK` | B | Injected transport eventually succeeded |
 
 ## Critical Constraints
+
 - Both seam flags default OFF; no runtime behavior change when unset.
 - No production caller is added for OTP beyond the launch seam (consistent with
   "prep for keycloak" intent).
@@ -213,6 +231,7 @@ this plan defines exactly what that task must do.
   already matches both `<source>_test.c` and `<source>_test_<fn>.c`).
 
 ## Exit Gate
+
 - `mkt`, `mka`, `mkp` green.
 - Test 57 + Test 58 pass with the new variants and all listed log/DB assertions.
 - `extras/add_coverage.sh` shows gcov entries for both `mailrelay_otp.c` and
@@ -221,6 +240,7 @@ this plan defines exactly what that task must do.
 - Docs + (optional) CHANGELOG updated; plan linked from `MAILRELAY_PLAN.md`.
 
 ## Deferred to separate task
+
 - All edits to `tests/test_57_mailrelay_outbound.sh`,
   `tests/test_58_mailrelay_api.sh`, and their `.md` docs (Step 5).
 - Optional: unit case for the fixed-code OTP path (Step 2 extension).

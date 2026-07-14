@@ -111,9 +111,7 @@ cleanup_background_processes() {
 }
 trap cleanup_background_processes EXIT
 
-# -----------------------------------------------------------------------------
 # Generic HTTP request helper. Prints HTTP status code to stdout.
-# -----------------------------------------------------------------------------
 api_request() {
     local method="$1"
     local url="$2"
@@ -163,10 +161,7 @@ api_request() {
     echo "000"
 }
 
-
-# -----------------------------------------------------------------------------
 # Extract the JWT token from a login response file.
-# -----------------------------------------------------------------------------
 extract_jwt() {
     local response_file="$1"
     if [[ -f "${response_file}" ]]; then
@@ -174,9 +169,7 @@ extract_jwt() {
     fi
 }
 
-# -----------------------------------------------------------------------------
 # Wait for the Hydrogen web server to respond to /api/version.
-# -----------------------------------------------------------------------------
 wait_for_http_ready() {
     local base_url="$1"
     local timeout="${2:-${HTTP_READY_TIMEOUT}}"
@@ -196,9 +189,7 @@ wait_for_http_ready() {
     return 1
 }
 
-# -----------------------------------------------------------------------------
 # Wait for the canonical "READY FOR REQUESTS" signal.
-# -----------------------------------------------------------------------------
 wait_for_ready_for_requests() {
     local log_file="$1"
     local timeout="${2:-${READY_TIMEOUT}}"
@@ -215,9 +206,7 @@ wait_for_ready_for_requests() {
     return 1
 }
 
-# -----------------------------------------------------------------------------
 # Start the C mail validator on a dedicated port.
-# -----------------------------------------------------------------------------
 start_mailval() {
     local port="$1"
     local use_tls="$2"
@@ -257,18 +246,14 @@ start_mailval() {
     return 0
 }
 
-# -----------------------------------------------------------------------------
 # Stop a mailval instance by PID.
-# -----------------------------------------------------------------------------
 stop_mailval() {
     local pid="$1"
     kill -INT "${pid}" 2>/dev/null || true
 }
 
-# -----------------------------------------------------------------------------
 # Poll the mailval capture directory for a stored message matching a subject
 # marker. Prints the capture file path to stdout.
-# -----------------------------------------------------------------------------
 poll_mailval_capture() {
     local maildata_dir="$1"
     local subject_marker="$2"
@@ -295,9 +280,7 @@ poll_mailval_capture() {
     return 1
 }
 
-# -----------------------------------------------------------------------------
 # Run one plaintext or STARTTLS API subtest for a single engine.
-# -----------------------------------------------------------------------------
 run_mailrelay_variant() {
     local engine_name="$1"
     local description="$2"
@@ -628,9 +611,7 @@ run_mailrelay_variant() {
     return 0
 }
 
-# -----------------------------------------------------------------------------
 # Run one plaintext or STARTTLS subtest for a single database engine.
-# -----------------------------------------------------------------------------
 run_engine_test() {
     local test_name="$1"
     local config_file="$2"
@@ -668,9 +649,7 @@ run_engine_test() {
     return 0
 }
 
-# -----------------------------------------------------------------------------
 # Analyze results for one engine variant and print subtest output.
-# -----------------------------------------------------------------------------
 analyze_engine_results() {
     local test_name="$1"
     local result_suffix="$2"
@@ -703,16 +682,10 @@ analyze_engine_results() {
     return 1
 }
 
-# -----------------------------------------------------------------------------
 # Run the launch-time OTP send + self-verify coverage subtest (Seam A).
-#
-# Starts Hydrogen with MailRelay.Test.SendOtpOnLaunch enabled, which fires a
-# deterministic OTP send through the real templated worker path during launch
-# and then verifies it. Asserts the MAILRELAY_OTP_LAUNCH_SENT and
-# MAILRELAY_OTP_LAUNCH_VERIFIED log markers and that the OTP row was consumed
-# in the database (mail_otp_codes.status_a67 = 1). Uses an isolated SQLite copy
-# so the baseline database is not mutated.
-# -----------------------------------------------------------------------------
+# Starts Hydrogen with MailRelay.Test.SendOtpOnLaunch enabled, which fires a deterministic OTP send through the real templated worker path during launch
+# and then verifies it. Asserts the MAILRELAY_OTP_LAUNCH_SENT and MAILRELAY_OTP_LAUNCH_VERIFIED log markers and that the OTP row was consumed
+# in the database (mail_otp_codes.status_a67 = 1). Uses an isolated SQLite copy so the baseline database is not mutated.
 run_mailrelay_otp_launch() {
     local label="$1"
     local config_file="$2"
@@ -840,9 +813,7 @@ run_mailrelay_otp_launch() {
     return 1
 }
 
-# -----------------------------------------------------------------------------
 # Main test flow
-# -----------------------------------------------------------------------------
 
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Locate Hydrogen Binary"
 
