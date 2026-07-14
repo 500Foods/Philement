@@ -66,6 +66,71 @@ char* serialize_query_to_json(DatabaseQuery* query) {
 }
 
 /*
+ * Build a DatabaseQuery from a completed QueryResult
+ *
+ * Converts a worker-produced QueryResult into the DatabaseQuery that
+ * database_queue_await_result returns to its synchronous caller. On the
+ * success path it copies query_template (from data_json), error_message,
+ * and affected_rows. When query_result is NULL (the query completed but
+ * produced no result) it synthesizes an error message. The caller owns the
+ * returned DatabaseQuery and is responsible for freeing query_id,
+ * query_template, and error_message.
+ *
+ * Returns: Allocated DatabaseQuery (caller must free fields and struct), or
+ *          NULL on allocation failure.
+ */
+DatabaseQuery* database_query_build_from_result(const char* query_id, QueryResult* query_result, const char* dqm_label) {
+    if (!query_id) return NULL;
+
+    DatabaseQuery* db_query = malloc(sizeof(DatabaseQuery));
+    if (!db_query) {
+        log_this(dqm_label ? dqm_label : SR_DATABASE, "Memory allocation failed for DatabaseQuery", LOG_LEVEL_ERROR, 0);
+        return NULL;
+    }
+
+    memset(db_query, 0, sizeof(DatabaseQuery));
+    db_query->query_id = strdup(query_id);
+    db_query->processed_at = time(NULL);
+
+    if (query_result) {
+        // Store the JSON result data as the query template (for backward compatibility)
+        // In a real implementation, we'd have a proper result field in DatabaseQuery
+        if (query_result->data_json) {
+            db_query->query_template = strdup(query_result->data_json);
+        }
+
+        // Store error message if present
+        if (query_result->error_message) {
+            db_query->error_message = strdup(query_result->error_message);
+        }
+
+        // Phase 14: propagate affected_rows for atomic task claiming.
+        // The engine layer (sqlite/postgres/mysql/db2) populates
+        // QueryResult.affected_rows from the underlying driver
+        // (PQcmdTuples / sqlite3_changes / mysql_affected_rows /
+        // DB2 sqlca.sqlerrd[2]). A conditional UPDATE such as
+        //   UPDATE tasks SET status='taken'
+        //    WHERE id=:id AND status='open'
+        // reports 1 to the winner and 0 to the losers, so the
+        // scripting host and the conduit REST layer can rely on
+        // db_query->affected_rows for exactly-once claim semantics.
+        db_query->affected_rows = query_result->affected_rows;
+
+        // Log success with statistics
+        log_this(dqm_label, "Query completed successfully: %s (rows: %zu, columns: %zu, affected: %d, time: %ld ms)",
+                LOG_LEVEL_TRACE, 5, query_id, query_result->row_count,
+                query_result->column_count, query_result->affected_rows,
+                query_result->execution_time_ms);
+    } else {
+        // Query failed - result is NULL
+        db_query->error_message = strdup("Query execution failed or timed out");
+        log_this(dqm_label, "Query completed with NULL result: %s", LOG_LEVEL_ALERT, 1, query_id);
+    }
+
+    return db_query;
+}
+
+/*
  * Deserialize a JSON string back to a DatabaseQuery structure
  *
  * Parses JSON and extracts:
@@ -367,56 +432,16 @@ DatabaseQuery* database_queue_await_result(DatabaseQueue* db_queue, const char* 
 
     // Get the result (pointer into pending->result, not a copy)
     QueryResult* query_result = pending_result_get(pending);
-    
-    // Create DatabaseQuery to return
-    DatabaseQuery* db_query = malloc(sizeof(DatabaseQuery));
+
+    // Convert the QueryResult into the DatabaseQuery we return. This is
+    // split out into a separate helper so it can be unit-tested directly
+    // without the synchronous wait machinery.
+    DatabaseQuery* db_query = database_query_build_from_result(query_id, query_result, dqm_label);
     if (!db_query) {
-        log_this(dqm_label, "Memory allocation failed for DatabaseQuery", LOG_LEVEL_ERROR, 0);
         // Clean up the pending entry even on allocation failure
         pending_result_unregister(pending_mgr, pending, dqm_label);
         free(dqm_label);
         return NULL;
-    }
-
-    // Initialize the structure
-    memset(db_query, 0, sizeof(DatabaseQuery));
-    db_query->query_id = strdup(query_id);
-    db_query->processed_at = time(NULL);
-
-    // Convert QueryResult to DatabaseQuery format
-    if (query_result) {
-        // Store the JSON result data as the query template (for backward compatibility)
-        // In a real implementation, we'd have a proper result field in DatabaseQuery
-        if (query_result->data_json) {
-            db_query->query_template = strdup(query_result->data_json);
-        }
-
-        // Store error message if present
-        if (query_result->error_message) {
-            db_query->error_message = strdup(query_result->error_message);
-        }
-
-        // Phase 14: propagate affected_rows for atomic task claiming.
-        // The engine layer (sqlite/postgres/mysql/db2) populates
-        // QueryResult.affected_rows from the underlying driver
-        // (PQcmdTuples / sqlite3_changes / mysql_affected_rows /
-        // DB2 sqlca.sqlerrd[2]). A conditional UPDATE such as
-        //   UPDATE tasks SET status='taken'
-        //    WHERE id=:id AND status='open'
-        // reports 1 to the winner and 0 to the losers, so the
-        // scripting host and the conduit REST layer can rely on
-        // db_query->affected_rows for exactly-once claim semantics.
-        db_query->affected_rows = query_result->affected_rows;
-
-        // Log success with statistics
-        log_this(dqm_label, "Query completed successfully: %s (rows: %zu, columns: %zu, affected: %d, time: %ld ms)",
-                LOG_LEVEL_TRACE, 5, query_id, query_result->row_count,
-                query_result->column_count, query_result->affected_rows,
-                query_result->execution_time_ms);
-    } else {
-        // Query failed - result is NULL
-        db_query->error_message = strdup("Query execution failed or timed out");
-        log_this(dqm_label, "Query completed with NULL result: %s", LOG_LEVEL_ALERT, 1, query_id);
     }
 
     // Clean up the pending entry (frees pending struct, query_id, QueryResult, sync primitives)
