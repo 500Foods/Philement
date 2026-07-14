@@ -51,8 +51,8 @@ export COVERAGE_GUARD="true"
 # Adjustment so coverage.sh overall % matches coverage_table.sh per-file totals.
 # Different #ifdef paths (Unity vs blackbox builds) change instrumented line counts.
 # When Test 00 reports a mismatch, set these to the recommended values it prints.
-DISCREPANCY_UNITY=368
-DISCREPANCY_COVERAGE=283
+DISCREPANCY_UNITY=369
+DISCREPANCY_COVERAGE=284
   
 # Library metadata
 COVERAGE_NAME="Coverage Library"

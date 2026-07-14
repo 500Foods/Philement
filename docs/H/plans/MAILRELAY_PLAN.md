@@ -28,7 +28,8 @@ CURRENT PAUSE POINT (as of 2026-07-10): **Phase 7B Lua freeform complete (L.1–
 5. REST send remains template-only; freeform is Lua-only via `mailrelay_send_direct`.
 
 ### Blackbox coverage work (separate track — not part of Phase 7B+)
-- **Detailed plan:** `docs/H/plans/MAILRELAY_BLACKBOX_PLAN.md` — launch-time
+
+- **Detailed plan:** [Blackbox Improvements](/docs/H/plans/MAILRELAY_BLACKBOX_PLAN_COMPLETE.md) — launch-time
   test seams (`SendOtpOnLaunch`, `FailNextSendOnLaunch`) to add blackbox coverage
   for `mailrelay_otp.c` (Test 58) and `mailrelay_retry.c` (Test 57).
 - **Status (as of 2026-07-14):** Plan Steps 1–4 implemented and verified
