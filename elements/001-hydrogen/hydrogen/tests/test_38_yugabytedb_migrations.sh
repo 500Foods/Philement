@@ -32,7 +32,7 @@ CONFIG_FILE="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_${ENGINE_REF}.js
 LOG_LINE_PATTERN="Migration test completed in"
 
 # Test timeouts
-TIMEOUT=12000
+TIMEOUT=1800 # 30 minutes
 STARTUP_TIMEOUT=15
 SHUTDOWN_TIMEOUT=15
 
