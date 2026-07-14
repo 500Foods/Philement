@@ -14,6 +14,10 @@
 #include <unity.h>
 
 #include <src/api/auth/oidc_rp/oidc_rp_end_session.h>
+#include <src/config/config.h>
+
+#define USE_MOCK_LIBMICROHTTPD
+#include <unity/mocks/mock_libmicrohttpd.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -30,13 +34,25 @@ void test_build_logout_url_full(void);
 void test_build_logout_url_without_client_id_null(void);
 void test_build_logout_url_without_client_id_empty(void);
 void test_build_logout_url_with_null_redirect(void);
+void test_handle_end_session_disabled(void);
+void test_handle_end_session_missing_auth(void);
+void test_handle_end_session_invalid_auth_format(void);
+void test_handle_end_session_empty_token(void);
+
+extern AppConfig *app_config;
 
 void setUp(void) {
-    // No shared fixture needed.
+    // Start each test with no config so the feature gate is closed
+    // unless a specific test installs one.
+    app_config = NULL;
 }
 
 void tearDown(void) {
-    // Freeing is performed per-test.
+    // Free any config a test may have installed.
+    if (app_config) {
+        free(app_config);
+        app_config = NULL;
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -160,6 +176,100 @@ void test_build_logout_url_with_null_redirect(void) {
     free(url);
 }
 
+void test_handle_end_session_disabled(void) {
+    struct MHD_Connection *conn = (struct MHD_Connection *)0x123;
+    void *con_cls = NULL;
+    size_t upload_data_size = 0;
+
+    // Phase 1: allocate + buffer the (empty) POST body.
+    enum MHD_Result r1 = handle_post_auth_oidc_end_session(
+        conn, "/api/auth/oidc/end-session", "POST", "HTTP/1.1",
+        NULL, &upload_data_size, &con_cls);
+    TEST_ASSERT_EQUAL_INT(MHD_YES, r1);
+    TEST_ASSERT_NOT_NULL(con_cls);
+
+    // Phase 2: finalize buffering -> feature gate fires (disabled).
+    enum MHD_Result r2 = handle_post_auth_oidc_end_session(
+        conn, "/api/auth/oidc/end-session", "POST", "HTTP/1.1",
+        NULL, &upload_data_size, &con_cls);
+    // The disabled response frees the POST buffer, so con_cls is cleared.
+    TEST_ASSERT_NULL(con_cls);
+    (void)r2;
+}
+
+// ---------------------------------------------------------------------------
+// handle_post_auth_oidc_end_session — enabled-mode auth/JWT error branches
+//
+// With a minimal `app_config` where OIDC RP is enabled and no providers
+// are configured, the feature gate opens and lazy runtime init runs. We
+// then drive the Authorization-header and JWT-validation failure paths by
+// controlling the (mocked) MHD_lookup_connection_value result. Each branch
+// frees the POST buffer, so we re-run the two-phase buffering per case.
+// ---------------------------------------------------------------------------
+
+// Bring up a minimal enabled config and a buffered POST request pair.
+// Returns the handler's result from the final (COMPLETE) call; `con_cls`
+// is left pointing at whatever the handler set.
+static enum MHD_Result drive_end_session(const char *auth_header,
+                                         void **con_cls,
+                                         size_t *upload_data_size) {
+    struct MHD_Connection *conn = (struct MHD_Connection *)0x123;
+    mock_mhd_reset_all();
+    mock_mhd_set_lookup_result(auth_header);
+
+    enum MHD_Result r1 = handle_post_auth_oidc_end_session(
+        conn, "/api/auth/oidc/end-session", "POST", "HTTP/1.1",
+        NULL, upload_data_size, con_cls);
+    TEST_ASSERT_EQUAL_INT(MHD_YES, r1);
+
+    return handle_post_auth_oidc_end_session(
+        conn, "/api/auth/oidc/end_session", "POST", "HTTP/1.1",
+        NULL, upload_data_size, con_cls);
+}
+
+static void install_enabled_config(void) {
+    app_config = calloc(1, sizeof(AppConfig));
+    TEST_ASSERT_NOT_NULL(app_config);
+    app_config->oidc_rp.enabled = true;
+    app_config->oidc_rp.provider_count = 0;
+}
+
+void test_handle_end_session_missing_auth(void) {
+    install_enabled_config();
+
+    void *con_cls = NULL;
+    size_t upload_data_size = 0;
+    enum MHD_Result r = drive_end_session(NULL, &con_cls, &upload_data_size);
+
+    // Missing Authorization header -> 401, POST buffer freed.
+    TEST_ASSERT_NULL(con_cls);
+    (void)r;
+}
+
+void test_handle_end_session_invalid_auth_format(void) {
+    install_enabled_config();
+
+    void *con_cls = NULL;
+    size_t upload_data_size = 0;
+    enum MHD_Result r = drive_end_session("NotBearer xyz", &con_cls, &upload_data_size);
+
+    // Malformed Authorization header -> 401, POST buffer freed.
+    TEST_ASSERT_NULL(con_cls);
+    (void)r;
+}
+
+void test_handle_end_session_empty_token(void) {
+    install_enabled_config();
+
+    void *con_cls = NULL;
+    size_t upload_data_size = 0;
+    enum MHD_Result r = drive_end_session("Bearer ", &con_cls, &upload_data_size);
+
+    // "Bearer " with empty token -> 401, POST buffer freed.
+    TEST_ASSERT_NULL(con_cls);
+    (void)r;
+}
+
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_extract_origin_null);
@@ -174,5 +284,9 @@ int main(void) {
     RUN_TEST(test_build_logout_url_without_client_id_null);
     RUN_TEST(test_build_logout_url_without_client_id_empty);
     RUN_TEST(test_build_logout_url_with_null_redirect);
+    RUN_TEST(test_handle_end_session_disabled);
+    RUN_TEST(test_handle_end_session_missing_auth);
+    RUN_TEST(test_handle_end_session_invalid_auth_format);
+    RUN_TEST(test_handle_end_session_empty_token);
     return UNITY_END();
 }
