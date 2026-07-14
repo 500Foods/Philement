@@ -26,6 +26,7 @@
 # analyze_engine_results()
 
 # CHANGELOG
+# 2.3.0 - 2026-07-14 - Added launch-time OTP send + self-verify coverage subtest (Seam A, SendOtpOnLaunch) asserting MAILRELAY_OTP_LAUNCH_SENT/VERIFIED markers and DB row consumption.
 # 2.2.0 - 2026-07-09 - Parallel fail-soft: variant/engine helpers always return 0 after writing PASS/FAIL so set -e wait does not abort the suite mid-run; wait -n/wait pid tolerate non-zero children.
 # 2.1.0 - 2026-07-09 - Replaced migration completion wait with canonical "READY FOR REQUESTS" signal; reduced STARTUP_TIMEOUT to 15s and migration wait to 30s READY_TIMEOUT for faster failure on unreachable engines.
 # 2.0.0 - 2026-07-08 - Expanded to full 7-engine × plaintext/STARTTLS matrix; fixed parallel result-file race.
@@ -38,7 +39,7 @@ TEST_NAME="MailRelay API"
 TEST_ABBR="MRA"
 TEST_NUMBER="58"
 TEST_COUNTER=0
-TEST_VERSION="2.2.0"
+TEST_VERSION="2.3.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -76,6 +77,12 @@ HTTP_READY_TIMEOUT=15
 READY_TIMEOUT=30
 MAILVAL_READY_TIMEOUT=5
 CAPTURE_TIMEOUT=15
+
+# OTP launch coverage (Seam A) — isolated SQLite variant on dedicated ports.
+OTP_WEB_PORT=55830
+OTP_MAILVAL_PORT=55831
+OTP_RECIPIENT="mailrelay-otp-launch@hydrogen.local"
+OTP_PURPOSE=1
 
 # Mail validator paths
 MAILVAL_DIR="${PROJECT_DIR}/extras/mailval"
@@ -697,6 +704,143 @@ analyze_engine_results() {
 }
 
 # -----------------------------------------------------------------------------
+# Run the launch-time OTP send + self-verify coverage subtest (Seam A).
+#
+# Starts Hydrogen with MailRelay.Test.SendOtpOnLaunch enabled, which fires a
+# deterministic OTP send through the real templated worker path during launch
+# and then verifies it. Asserts the MAILRELAY_OTP_LAUNCH_SENT and
+# MAILRELAY_OTP_LAUNCH_VERIFIED log markers and that the OTP row was consumed
+# in the database (mail_otp_codes.status_a67 = 1). Uses an isolated SQLite copy
+# so the baseline database is not mutated.
+# -----------------------------------------------------------------------------
+run_mailrelay_otp_launch() {
+    local label="$1"
+    local config_file="$2"
+    local web_port="$3"
+    local mailval_port="$4"
+    local recipient="$5"
+
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${label}"
+
+    local variant_tag="otp_launch_${TIMESTAMP}"
+    local maildata_dir="${DIAG_TEST_DIR}/mailval_${variant_tag}"
+    local mailval_log="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_mailval_otp.log"
+    local hydrogen_log="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_hydrogen_otp.log"
+    true > "${mailval_log}"
+
+    mkdir -p "${maildata_dir}"
+
+    # Isolated SQLite DB copy so we do not mutate the baseline.
+    local sqlite_temp_file="${DIAG_TEST_DIR}/hydrodemo_${variant_tag}.sqlite"
+    local sqlite_temp_config="${DIAG_TEST_DIR}/hydrogen_test_${TEST_NUMBER}_otp_${TIMESTAMP}.json"
+    if ! cp "${BASELINE_SQLITE}" "${sqlite_temp_file}" 2>/dev/null; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${label}: Failed to copy baseline SQLite database"
+        return 1
+    fi
+    if [[ -f "${BASELINE_SQLITE}-wal" ]]; then
+        cp "${BASELINE_SQLITE}-wal" "${sqlite_temp_file}-wal" 2>/dev/null || true
+    fi
+    if [[ -f "${BASELINE_SQLITE}-shm" ]]; then
+        cp "${BASELINE_SQLITE}-shm" "${sqlite_temp_file}-shm" 2>/dev/null || true
+    fi
+
+    # Patch config: web port, mailval port, isolated DB, SendOtpOnLaunch.
+    local jq_patch
+    jq_patch=$(jq --arg web_port "${web_port}" \
+                   --arg port "${mailval_port}" \
+                   --arg db "${sqlite_temp_file}" \
+                   '.WebServer.Port = ($web_port | tonumber) |
+                    .MailRelay.Servers[0].Port = $port |
+                    .MailRelay.Servers[0].UseTLS = false |
+                    .MailRelay.Servers[0].TLSMode = 0 |
+                    .MailRelay.Servers[0].CAPath = "" |
+                    .Databases.Connections[0].Database = $db |
+                    .MailRelay.Test.SendOtpOnLaunch = true' \
+                   "${config_file}" 2>/dev/null) || true
+    if [[ -z "${jq_patch}" ]]; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${label}: Failed to patch OTP launch config"
+        rm -f "${sqlite_temp_config}" "${sqlite_temp_file}" "${sqlite_temp_file}-wal" "${sqlite_temp_file}-shm" 2>/dev/null || true
+        return 1
+    fi
+    echo "${jq_patch}" > "${sqlite_temp_config}"
+
+    # Start the SMTP sink so the OTP email send has a destination.
+    local mailval_pid
+    # shellcheck disable=SC2310 # Continue even if mailval startup fails
+    mailval_pid=$(start_mailval "${mailval_port}" 0 "${maildata_dir}" "${mailval_log}") || {
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${label}: mailval failed to start on port ${mailval_port}"
+        rm -f "${sqlite_temp_config}" "${sqlite_temp_file}" "${sqlite_temp_file}-wal" "${sqlite_temp_file}-shm" 2>/dev/null || true
+        return 1
+    }
+
+    # Start Hydrogen; the OTP seam runs during launch (before READY FOR REQUESTS).
+    local hydrogen_pid_var="MAILRELAY_HYDROGEN_PID_otp"
+    local hydrogen_pid=""
+    eval "${hydrogen_pid_var}=''"
+    # shellcheck disable=SC2310 # Continue even if startup fails
+    if ! start_hydrogen_with_pid "${sqlite_temp_config}" "${hydrogen_log}" "${STARTUP_TIMEOUT}" "${HYDROGEN_BIN}" "${hydrogen_pid_var}"; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${label}: Hydrogen failed to start"
+        stop_mailval "${mailval_pid}"
+        rm -f "${sqlite_temp_config}" "${sqlite_temp_file}" "${sqlite_temp_file}-wal" "${sqlite_temp_file}-shm" 2>/dev/null || true
+        return 1
+    fi
+    hydrogen_pid=$(eval "echo \${${hydrogen_pid_var}}")
+    if [[ -z "${hydrogen_pid}" ]]; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${label}: Hydrogen PID was not captured"
+        stop_mailval "${mailval_pid}"
+        rm -f "${sqlite_temp_config}" "${sqlite_temp_file}" "${sqlite_temp_file}-wal" "${sqlite_temp_file}-shm" 2>/dev/null || true
+        return 1
+    fi
+    HYDROGEN_PIDS+=("${hydrogen_pid}")
+
+    local failed=false
+
+    # Launch must complete (READY FOR REQUESTS implies the OTP seam ran).
+    # shellcheck disable=SC2310 # Continue even if readiness check fails
+    if ! wait_for_ready_for_requests "${hydrogen_log}" "${READY_TIMEOUT}"; then
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${label}: READY FOR REQUESTS signal not observed"
+        failed=true
+    fi
+
+    if [[ "${failed}" = false ]]; then
+        if ! "${GREP}" -q "MAILRELAY_OTP_LAUNCH_SENT" "${hydrogen_log}" 2>/dev/null; then
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${label}: log missing MAILRELAY_OTP_LAUNCH_SENT"
+            failed=true
+        fi
+        if ! "${GREP}" -q "MAILRELAY_OTP_LAUNCH_VERIFIED" "${hydrogen_log}" 2>/dev/null; then
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${label}: log missing MAILRELAY_OTP_LAUNCH_VERIFIED"
+            failed=true
+        fi
+    fi
+
+    # DB consumed check: the launched OTP row must be marked consumed (status_a67 = 1).
+    if [[ "${failed}" = false ]] && command -v sqlite3 >/dev/null 2>&1; then
+        local consumed
+        consumed=$(sqlite3 "${sqlite_temp_file}" "SELECT COUNT(*) FROM mail_otp_codes WHERE email='${recipient}' AND purpose_a66=${OTP_PURPOSE} AND status_a67=1;" 2>/dev/null || echo "0")
+        if [[ -z "${consumed}" ]] || [[ "${consumed}" = "0" ]]; then
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${label}: OTP row not consumed in DB (count=${consumed})"
+            failed=true
+        fi
+    elif [[ "${failed}" = false ]]; then
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${label}: sqlite3 unavailable; relying on MAILRELAY_OTP_LAUNCH_VERIFIED marker for consume assertion"
+    fi
+
+    # Stop Hydrogen and the sink.
+    # shellcheck disable=SC2310 # Continue even if shutdown fails
+    stop_hydrogen "${hydrogen_pid}" "${hydrogen_log}" "${SHUTDOWN_TIMEOUT}" "${SHUTDOWN_ACTIVITY_TIMEOUT}" "${DIAG_TEST_DIR}"
+    stop_mailval "${mailval_pid}"
+    rm -f "${sqlite_temp_config}" "${sqlite_temp_file}" "${sqlite_temp_file}-wal" "${sqlite_temp_file}-shm" 2>/dev/null || true
+
+    if [[ "${failed}" = false ]]; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${label}: OTP sent + self-verified (SENT + VERIFIED markers, DB row consumed)"
+        PASS_COUNT=$(( PASS_COUNT + 1 ))
+        return 0
+    fi
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${label}: OTP launch coverage failed"
+    return 1
+}
+
+# -----------------------------------------------------------------------------
 # Main test flow
 # -----------------------------------------------------------------------------
 
@@ -833,6 +977,14 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
             EXIT_CODE=1
         fi
     done
+
+    # OTP launch coverage subtest (Seam A) — isolated SQLite variant.
+    # shellcheck disable=SC2310 # Continue even if the OTP subtest fails
+    if ! run_mailrelay_otp_launch "MailRelay OTP Launch (send + self-verify)" \
+            "${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_sqlite.json" \
+            "${OTP_WEB_PORT}" "${OTP_MAILVAL_PORT}" "${OTP_RECIPIENT}"; then
+        EXIT_CODE=1
+    fi
 
     # Print summary
     successful_engines=0

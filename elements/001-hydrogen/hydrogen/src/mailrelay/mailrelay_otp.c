@@ -20,8 +20,27 @@
 
 static mailrelay_otp_random_fn g_otp_random_fn = NULL;
 
+/* Optional deterministic code override (launch-time test seam only). */
+static char g_otp_fixed_code[MAIL_OTP_MAX_DIGITS + 1] = {0};
+static bool g_otp_fixed_set = false;
+
 void mailrelay_otp_set_random_fn(mailrelay_otp_random_fn fn) {
     g_otp_random_fn = fn;
+}
+
+void mailrelay_otp_set_fixed_code(const char* code) {
+    if (code != NULL && code[0] != '\0') {
+        memset(g_otp_fixed_code, 0, sizeof(g_otp_fixed_code));
+        strncpy(g_otp_fixed_code, code, sizeof(g_otp_fixed_code) - 1);
+        g_otp_fixed_set = true;
+    } else {
+        mailrelay_otp_clear_fixed_code();
+    }
+}
+
+void mailrelay_otp_clear_fixed_code(void) {
+    memset(g_otp_fixed_code, 0, sizeof(g_otp_fixed_code));
+    g_otp_fixed_set = false;
 }
 
 void mailrelay_otp_wipe(void* buf, size_t len) {
@@ -238,7 +257,10 @@ MailRelayStatus mailrelay_otp_generate_and_send(const MailRelayOtpSendRequest* r
 
     char plaintext[MAIL_OTP_MAX_DIGITS + 1];
     memset(plaintext, 0, sizeof(plaintext));
-    if (!mailrelay_otp_generate_code(digits, plaintext, sizeof(plaintext))) {
+    if (g_otp_fixed_set) {
+        /* Deterministic launch-time test seam: use the known code verbatim. */
+        snprintf(plaintext, sizeof(plaintext), "%s", g_otp_fixed_code);
+    } else if (!mailrelay_otp_generate_code(digits, plaintext, sizeof(plaintext))) {
         if (err != NULL && err_cap > 0U) {
             snprintf(err, err_cap, "MAIL_INTERNAL: OTP generation failed");
         }

@@ -877,6 +877,14 @@
                             "type": "boolean",
                             "description": "Send one raw test message on launch (test-only)"
                         },
+                        "SendOtpOnLaunch": {
+                            "type": "boolean",
+                            "description": "Send and self-verify one OTP on launch (test-only coverage seam)"
+                        },
+                        "FailNextSendOnLaunch": {
+                            "type": "boolean",
+                            "description": "Force one transient SMTP failure on launch send (test-only coverage seam)"
+                        },
                         "TestFrom": {
                             "type": "string",
                             "description": "Override From address for test message"

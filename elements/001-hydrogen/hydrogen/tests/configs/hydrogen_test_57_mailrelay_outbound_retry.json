@@ -1,0 +1,45 @@
+{
+    "Server": {
+        "ServerName": "hydrogen-test-57-retry"
+    },
+    "WebServer": {
+        "EnableIPv4": false,
+        "EnableIPv6": false
+    },
+    "MailRelay": {
+        "Enabled": true,
+        "OutboundEnabled": true,
+        "InboundEnabled": false,
+        "ListenPort": 25,
+        "Workers": 1,
+        "DefaultFrom": "mailrelay-test@hydrogen.local",
+        "Queue": {
+            "MaxQueueSize": 1000,
+            "MaxInMemory": 1000,
+            "Persist": false,
+            "RetryAttempts": 3,
+            "RetryDelaySeconds": 300,
+            "InitialDelaySeconds": 1,
+            "MaxDelaySeconds": 2,
+            "DebounceSeconds": 5
+        },
+        "Servers": [
+            {
+                "Host": "127.0.0.1",
+                "Port": "5572",
+                "UseTLS": false,
+                "TLSMode": 0,
+                "AuthMode": 0,
+                "TimeoutSeconds": 15
+            }
+        ],
+        "Test": {
+            "SendRawOnLaunch": true,
+            "FailNextSendOnLaunch": true,
+            "TestFrom": "mailrelay-test@hydrogen.local",
+            "TestTo": "sink@mailval.local",
+            "TestSubject": "MailRelay Outbound Retry Smoke Test",
+            "TestBody": "Hydrogen MailRelay launch-time transient-failure retry smoke test body."
+        }
+    }
+}

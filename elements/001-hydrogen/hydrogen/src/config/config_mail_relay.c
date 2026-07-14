@@ -51,6 +51,8 @@ void cleanup_mail_relay_test(MailRelayTest* test) {
     test->TestBody = NULL;
 
     test->SendRawOnLaunch = false;
+    test->SendOtpOnLaunch = false;
+    test->FailNextSendOnLaunch = false;
 }
 
 // Helper function to cleanup mail relay events configuration
@@ -123,6 +125,8 @@ bool load_mailrelay_config(json_t* root, AppConfig* config) {
 
     // Test defaults
     mail->Test.SendRawOnLaunch = false;
+    mail->Test.SendOtpOnLaunch = false;
+    mail->Test.FailNextSendOnLaunch = false;
     mail->Test.TestFrom = NULL;
     mail->Test.TestTo = NULL;
     mail->Test.TestSubject = NULL;
@@ -212,6 +216,16 @@ bool load_mailrelay_config(json_t* root, AppConfig* config) {
         json_t* send_raw = json_object_get(test_section, "SendRawOnLaunch");
         if (send_raw && json_is_boolean(send_raw)) {
             mail->Test.SendRawOnLaunch = json_boolean_value(send_raw);
+        }
+
+        json_t* send_otp = json_object_get(test_section, "SendOtpOnLaunch");
+        if (send_otp && json_is_boolean(send_otp)) {
+            mail->Test.SendOtpOnLaunch = json_boolean_value(send_otp);
+        }
+
+        json_t* fail_next = json_object_get(test_section, "FailNextSendOnLaunch");
+        if (fail_next && json_is_boolean(fail_next)) {
+            mail->Test.FailNextSendOnLaunch = json_boolean_value(fail_next);
         }
 
         json_t* test_from = json_object_get(test_section, "TestFrom");
@@ -447,6 +461,10 @@ void dump_mailrelay_config(const MailRelayConfig* config) {
     // Dump test settings
     DUMP_TEXT("――", "Test Settings");
     snprintf(buffer, sizeof(buffer), "SendRawOnLaunch: %s", config->Test.SendRawOnLaunch ? "true" : "false");
+    DUMP_TEXT("――――", buffer);
+    snprintf(buffer, sizeof(buffer), "SendOtpOnLaunch: %s", config->Test.SendOtpOnLaunch ? "true" : "false");
+    DUMP_TEXT("――――", buffer);
+    snprintf(buffer, sizeof(buffer), "FailNextSendOnLaunch: %s", config->Test.FailNextSendOnLaunch ? "true" : "false");
     DUMP_TEXT("――――", buffer);
     if (config->Test.TestFrom) {
         snprintf(buffer, sizeof(buffer), "TestFrom: %s", config->Test.TestFrom);
