@@ -129,6 +129,23 @@ int mailrelay_debounce_process_expired(MailRelayDebounceState* state,
  */
 void mailrelay_debounce_flush(MailRelayDebounceState* state, MailRelayQueue* queue);
 
+/*
+ * The following helpers are exposed (non-static) primarily so the Unity test
+ * suite can exercise their NULL-guard and edge-case branches directly. They are
+ * not part of the stable public API.
+ */
+void mailrelay_debounce_free_entry(MailRelayDebounceEntry* entry);
+MailRelayDebounceEntry* mailrelay_debounce_find_entry(MailRelayDebounceState* state,
+                                                     const char* key);
+bool mailrelay_debounce_replace_all(const char* src,
+                                   const char* placeholder,
+                                   const char* value,
+                                   char** out);
+bool mailrelay_debounce_build_coalesced_message(const MailRelayDebounceEntry* entry,
+                                               MailRelayMessage* out);
+void mailrelay_debounce_enqueue_coalesced(MailRelayDebounceEntry* entry,
+                                         MailRelayQueue* queue);
+
 #ifdef __cplusplus
 }
 #endif
