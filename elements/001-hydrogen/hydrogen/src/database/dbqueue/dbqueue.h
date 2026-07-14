@@ -19,6 +19,7 @@ typedef struct DatabaseHandle DatabaseHandle;
 typedef struct DatabaseEngineInterface DatabaseEngineInterface;
 typedef struct ConnectionConfig ConnectionConfig;
 typedef struct ChatEngineCache ChatEngineCache;
+typedef struct QueryResult QueryResult;
 
 // Queue types per database connection for different priority levels
 #define QUEUE_TYPE_SLOW    "slow"
@@ -254,6 +255,10 @@ bool database_queue_lead_execute_migration_process(DatabaseQueue* lead_queue, ch
 // Query serialization functions (formerly static in submit.c)
 char* serialize_query_to_json(DatabaseQuery* query);
 DatabaseQuery* deserialize_query_from_json(const char* json);
+
+// Convert a completed QueryResult into the DatabaseQuery returned by
+// database_queue_await_result. Exposed for direct unit testing.
+DatabaseQuery* database_query_build_from_result(const char* query_id, QueryResult* query_result, const char* dqm_label);
 
 // Connection management helper functions (formerly static in heartbeat.c)
 bool database_queue_handle_connection_success(DatabaseQueue* db_queue, DatabaseHandle* db_handle);

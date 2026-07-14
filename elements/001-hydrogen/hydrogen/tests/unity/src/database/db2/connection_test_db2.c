@@ -17,6 +17,7 @@
 // Forward declarations for functions being tested
 PreparedStatementCache* db2_create_prepared_statement_cache(void);
 void db2_destroy_prepared_statement_cache(PreparedStatementCache* cache);
+bool db2_check_timeout_expired(time_t start_time, int timeout_seconds);
 
 // Function prototypes for test functions
 void test_db2_create_prepared_statement_cache_success(void);
@@ -25,6 +26,9 @@ void test_db2_create_prepared_statement_cache_malloc_failure_names(void);
 void test_db2_destroy_prepared_statement_cache_null(void);
 void test_db2_destroy_prepared_statement_cache_valid(void);
 void test_db2_destroy_prepared_statement_cache_with_entries(void);
+void test_db2_check_timeout_expired_far_past_expired(void);
+void test_db2_check_timeout_expired_recent_past_not_expired(void);
+void test_db2_check_timeout_expired_zero_timeout(void);
 
 void setUp(void) {
     // Reset all mocks to default state
@@ -109,6 +113,28 @@ void test_db2_destroy_prepared_statement_cache_with_entries(void) {
     TEST_PASS();
 }
 
+// Test db2_check_timeout_expired with a start time far in the past
+void test_db2_check_timeout_expired_far_past_expired(void) {
+    // Epoch start time means elapsed time is enormous, so any positive
+    // timeout should be considered expired.
+    TEST_ASSERT_TRUE(db2_check_timeout_expired((time_t)0, 1));
+    TEST_ASSERT_TRUE(db2_check_timeout_expired((time_t)0, 3600));
+}
+
+// Test db2_check_timeout_expired with a start time of "now" and a large timeout
+void test_db2_check_timeout_expired_recent_past_not_expired(void) {
+    // The elapsed time is effectively zero, so a large timeout is not reached.
+    time_t now = time(NULL);
+    TEST_ASSERT_FALSE(db2_check_timeout_expired(now, 1000));
+}
+
+// Test db2_check_timeout_expired with a zero timeout
+void test_db2_check_timeout_expired_zero_timeout(void) {
+    // Elapsed time is >= 0, so a zero timeout is always considered expired.
+    time_t now = time(NULL);
+    TEST_ASSERT_TRUE(db2_check_timeout_expired(now, 0));
+}
+
 int main(void) {
     UNITY_BEGIN();
 
@@ -121,6 +147,11 @@ int main(void) {
     RUN_TEST(test_db2_destroy_prepared_statement_cache_null);
     RUN_TEST(test_db2_destroy_prepared_statement_cache_valid);
     RUN_TEST(test_db2_destroy_prepared_statement_cache_with_entries);
+
+    // Test db2_check_timeout_expired
+    RUN_TEST(test_db2_check_timeout_expired_far_past_expired);
+    RUN_TEST(test_db2_check_timeout_expired_recent_past_not_expired);
+    RUN_TEST(test_db2_check_timeout_expired_zero_timeout);
 
     return UNITY_END();
 }
