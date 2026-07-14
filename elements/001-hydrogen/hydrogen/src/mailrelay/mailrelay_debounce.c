@@ -19,19 +19,19 @@
 #include <stdio.h>
 
 // Forward declarations (private helpers)
-static void free_entry(MailRelayDebounceEntry* entry);
-static MailRelayDebounceEntry* find_entry(MailRelayDebounceState* state,
+void mailrelay_debounce_free_entry(MailRelayDebounceEntry* entry);
+MailRelayDebounceEntry* mailrelay_debounce_find_entry(MailRelayDebounceState* state,
                                           const char* key);
 static MailRelayDebounceEntry* create_entry(const MailRelayMessage* msg,
                                             int priority,
                                             int debounce_seconds);
-static bool replace_all(const char* src,
+bool mailrelay_debounce_replace_all(const char* src,
                         const char* placeholder,
                         const char* value,
                         char** out);
-static bool build_coalesced_message(const MailRelayDebounceEntry* entry,
+bool mailrelay_debounce_build_coalesced_message(const MailRelayDebounceEntry* entry,
                                     MailRelayMessage* out);
-static void enqueue_coalesced(MailRelayDebounceEntry* entry,
+void mailrelay_debounce_enqueue_coalesced(MailRelayDebounceEntry* entry,
                               MailRelayQueue* queue);
 
 MailRelayDebounceState* mailrelay_debounce_create(void) {
@@ -58,7 +58,7 @@ MailRelayDebounceState* mailrelay_debounce_create(void) {
     return state;
 }
 
-static void free_entry(MailRelayDebounceEntry* entry) {
+void mailrelay_debounce_free_entry(MailRelayDebounceEntry* entry) {
     if (!entry) {
         return;
     }
@@ -75,7 +75,7 @@ void mailrelay_debounce_destroy(MailRelayDebounceState* state) {
     MailRelayDebounceEntry* current = state->entries;
     while (current) {
         MailRelayDebounceEntry* next = current->next;
-        free_entry(current);
+        mailrelay_debounce_free_entry(current);
         current = next;
     }
     state->entries = NULL;
@@ -86,7 +86,7 @@ void mailrelay_debounce_destroy(MailRelayDebounceState* state) {
     free(state);
 }
 
-static MailRelayDebounceEntry* find_entry(MailRelayDebounceState* state,
+MailRelayDebounceEntry* mailrelay_debounce_find_entry(MailRelayDebounceState* state,
                                           const char* key) {
     if (!state || !key) {
         return NULL;
@@ -161,7 +161,7 @@ bool mailrelay_debounce_submit(MailRelayDebounceState* state,
 
     pthread_mutex_lock(&state->mutex);
 
-    MailRelayDebounceEntry* existing = find_entry(state, msg->debounce_key);
+    MailRelayDebounceEntry* existing = mailrelay_debounce_find_entry(state, msg->debounce_key);
     if (existing) {
         existing->count++;
         time_t now = mailrelay_seam_time ? mailrelay_seam_time() : time(NULL);
@@ -211,7 +211,7 @@ bool mailrelay_debounce_submit(MailRelayDebounceState* state,
  * *out. If placeholder is not found, *out is a copy of src. Returns false on
  * allocation failure or if src is NULL (in which case *out is set to NULL).
  */
-static bool replace_all(const char* src,
+bool mailrelay_debounce_replace_all(const char* src,
                         const char* placeholder,
                         const char* value,
                         char** out) {
@@ -263,7 +263,7 @@ static bool replace_all(const char* src,
     return true;
 }
 
-static bool build_coalesced_message(const MailRelayDebounceEntry* entry,
+bool mailrelay_debounce_build_coalesced_message(const MailRelayDebounceEntry* entry,
                                     MailRelayMessage* out) {
     if (!entry || !out) {
         return false;
@@ -284,16 +284,16 @@ static bool build_coalesced_message(const MailRelayDebounceEntry* entry,
     char* new_text = NULL;
     char* new_html = NULL;
 
-    if (!replace_all(out->subject, "%COUNT%", count_str, &new_subject)) {
+    if (!mailrelay_debounce_replace_all(out->subject, "%COUNT%", count_str, &new_subject)) {
         mailrelay_message_free(out);
         return false;
     }
-    if (!replace_all(out->text_body, "%COUNT%", count_str, &new_text)) {
+    if (!mailrelay_debounce_replace_all(out->text_body, "%COUNT%", count_str, &new_text)) {
         free(new_subject);
         mailrelay_message_free(out);
         return false;
     }
-    if (!replace_all(out->html_body, "%COUNT%", count_str, &new_html)) {
+    if (!mailrelay_debounce_replace_all(out->html_body, "%COUNT%", count_str, &new_html)) {
         free(new_subject);
         free(new_text);
         mailrelay_message_free(out);
@@ -304,7 +304,7 @@ static bool build_coalesced_message(const MailRelayDebounceEntry* entry,
     char* new_text2 = NULL;
     char* new_html2 = NULL;
 
-    if (!replace_all(new_subject ? new_subject : out->subject,
+    if (!mailrelay_debounce_replace_all(new_subject ? new_subject : out->subject,
                      "%SUMMARY%", summary, &new_subject2)) {
         free(new_subject);
         free(new_text);
@@ -312,7 +312,7 @@ static bool build_coalesced_message(const MailRelayDebounceEntry* entry,
         mailrelay_message_free(out);
         return false;
     }
-    if (!replace_all(new_text ? new_text : out->text_body,
+    if (!mailrelay_debounce_replace_all(new_text ? new_text : out->text_body,
                      "%SUMMARY%", summary, &new_text2)) {
         free(new_subject);
         free(new_text);
@@ -321,7 +321,7 @@ static bool build_coalesced_message(const MailRelayDebounceEntry* entry,
         mailrelay_message_free(out);
         return false;
     }
-    if (!replace_all(new_html ? new_html : out->html_body,
+    if (!mailrelay_debounce_replace_all(new_html ? new_html : out->html_body,
                      "%SUMMARY%", summary, &new_html2)) {
         free(new_subject);
         free(new_text);
@@ -352,7 +352,7 @@ static bool build_coalesced_message(const MailRelayDebounceEntry* entry,
     return true;
 }
 
-static void enqueue_coalesced(MailRelayDebounceEntry* entry,
+void mailrelay_debounce_enqueue_coalesced(MailRelayDebounceEntry* entry,
                               MailRelayQueue* queue) {
     if (!entry || !queue) {
         return;
@@ -360,7 +360,7 @@ static void enqueue_coalesced(MailRelayDebounceEntry* entry,
 
     MailRelayMessage coalesced;
     mailrelay_message_init(&coalesced);
-    if (!build_coalesced_message(entry, &coalesced)) {
+    if (!mailrelay_debounce_build_coalesced_message(entry, &coalesced)) {
         log_this(SR_MAIL_RELAY,
                  "Failed to build coalesced debounce message for key '%s'",
                  LOG_LEVEL_ERROR, 1, entry->key ? entry->key : "(null)");
@@ -403,8 +403,8 @@ int mailrelay_debounce_process_expired(MailRelayDebounceState* state,
             state->count--;
 
             pthread_mutex_unlock(&state->mutex);
-            enqueue_coalesced(expired, queue);
-            free_entry(expired);
+            mailrelay_debounce_enqueue_coalesced(expired, queue);
+            mailrelay_debounce_free_entry(expired);
             pthread_mutex_lock(&state->mutex);
             continue;
         }
@@ -448,8 +448,8 @@ void mailrelay_debounce_flush(MailRelayDebounceState* state, MailRelayQueue* que
 
     while (current) {
         MailRelayDebounceEntry* next = current->next;
-        enqueue_coalesced(current, queue);
-        free_entry(current);
+        mailrelay_debounce_enqueue_coalesced(current, queue);
+        mailrelay_debounce_free_entry(current);
         current = next;
     }
 }
