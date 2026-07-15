@@ -11,6 +11,7 @@
 # analyze_conduit_results()
 
 # CHANGELOG
+# 1.1.2 - 2026-07-15 - Use database-keyed JWT lookup when engines are skipped
 # 1.1.1 - 2026-03-03 - Fixed SC2129: Use grouped redirects instead of individual redirects
 # 1.1.0 - 2026-02-18 - Implemented 7x2 cross-database testing matrix
 #                    - Each of 7 databases' JWT tokens used to query 2 different databases
@@ -27,7 +28,7 @@ TEST_NAME="Conduit Alt Query"
 TEST_ABBR="CF1"
 TEST_NUMBER="54"
 TEST_COUNTER=0
-TEST_VERSION="1.1.1"
+TEST_VERSION="1.1.2"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -81,18 +82,9 @@ test_conduit_alt_single_query() {
         fi
         
         # Get JWT token for this database from global variable
-        local global_var_name="JWT_TOKENS_RESULT_${TEST_NUMBER}"
+        local token_map_name="JWT_TOKENS_BY_DATABASE_${TEST_NUMBER}"
         local jwt_token=""
-        # Extract token for this specific database engine from the global array
-        # The global array is indexed in the same order as DATABASE_NAMES iteration
-        local token_idx=0
-        for check_db in "${!DATABASE_NAMES[@]}"; do
-            if [[ "${check_db}" == "${db_engine}" ]]; then
-                eval "jwt_token=\${${global_var_name}[${token_idx}]:-}"
-                break
-            fi
-            token_idx=$((token_idx + 1))
-        done
+        eval "jwt_token=\${${token_map_name}[\"${db_engine}\"]:-}"
         
         if [[ -n "${jwt_token}" ]]; then
             ready_databases+=("${db_engine}")
@@ -206,17 +198,13 @@ run_conduit_test_unified() {
     # Count JWT acquisition results
     local jwt_tests_passed=0
     local jwt_tests_total=0
-    local global_var_name="JWT_TOKENS_RESULT_${TEST_NUMBER}"
+    local token_map_name="JWT_TOKENS_BY_DATABASE_${TEST_NUMBER}"
     for db_engine in "${!DATABASE_NAMES[@]}"; do
+        if ! "${GREP}" -q "DATABASE_READY_${db_engine}=true" "${result_file}" 2>/dev/null; then
+            continue
+        fi
         local jwt_token=""
-        local token_idx=0
-        for check_db in "${!DATABASE_NAMES[@]}"; do
-            if [[ "${check_db}" == "${db_engine}" ]]; then
-                eval "jwt_token=\${${global_var_name}[${token_idx}]:-}"
-                break
-            fi
-            token_idx=$((token_idx + 1))
-        done
+        eval "jwt_token=\${${token_map_name}[\"${db_engine}\"]:-}"
         if [[ -n "${jwt_token}" ]]; then
             jwt_tests_passed=$(( jwt_tests_passed + 1 ))
         fi

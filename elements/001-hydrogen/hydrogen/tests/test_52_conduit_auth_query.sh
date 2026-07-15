@@ -11,6 +11,7 @@
 # analyze_conduit_results()
 
 # CHANGELOG
+# 1.1.1 - 2026-07-15 - Use database-keyed JWT lookup when engines are skipped
 # 1.1.0 - 2026-01-27 - Updated to follow Test 50 structure
 #                    - Added comprehensive status endpoint testing
 #                    - Added print_box separators for better readability
@@ -29,7 +30,7 @@ TEST_NAME="Conduit Auth Query"
 TEST_ABBR="CA1"
 TEST_NUMBER="52"
 TEST_COUNTER=0
-TEST_VERSION="1.1.0"
+TEST_VERSION="1.1.1"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -260,20 +261,17 @@ test_conduit_auth_query_comprehensive() {
     local total_tests=0
 
     # Test each database that is ready
-    local jwt_index=0
     for db_engine in "${!DATABASE_NAMES[@]}"; do
         # Check if database is ready
         if ! "${GREP}" -q "DATABASE_READY_${db_engine}=true" "${result_file}" 2>/dev/null; then
-            jwt_index=$(( jwt_index + 1 ))
             continue
         fi
 
         local db_name="${DATABASE_NAMES[${db_engine}]}"
         # Access the global JWT tokens array for this test
-        local global_var_name="JWT_TOKENS_RESULT_${TEST_NUMBER}"
-        local jwt_tokens=()
-        eval "jwt_tokens=(\${${global_var_name}[@]})"
-        local jwt_token="${jwt_tokens[${jwt_index}]:-}"
+        local token_map_name="JWT_TOKENS_BY_DATABASE_${TEST_NUMBER}"
+        local jwt_token=""
+        eval "jwt_token=\${${token_map_name}[\"${db_engine}\"]:-}"
 
         if [[ -z "${jwt_token}" ]]; then
             print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Auth Query Comprehensive (${db_engine})"
@@ -432,7 +430,6 @@ EOF
         fi
         total_tests=$(( total_tests + 1 ))
 
-        jwt_index=$(( jwt_index + 1 ))
     done
 
     echo "AUTH_QUERY_COMPREHENSIVE_TESTS_PASSED=${tests_passed}" >> "${result_file}"

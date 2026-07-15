@@ -12,6 +12,11 @@
 # test_conduit_multiple_queries_endpoint()
 
 # CHANGELOG
+# 1.7.4 - 2026-07-15 - Store acquired JWTs by database engine instead of position
+#                    - Keeps tokens aligned when a non-ready database is skipped
+# 1.7.3 - 2026-07-15 - Use the conduit status endpoint for per-database readiness
+#                    - Prevents failed migrations with a completion timer from being
+#                      treated as ready and exercised by downstream conduit tests
 # 1.7.2 - 2026-07-15 - Keep shared query maps global when sourced by the suite runner
 #                    - Prevents the exported guard from outliving function-local maps
 # 1.7.1 - 2026-07-09 - QueryRef #30 is TYPE_PUBLIC (acuranzo_1121); keep #45 as non-public auth-only sample
@@ -241,25 +246,27 @@ validate_conduit_request() {
 
 # Function to check which databases are ready for testing
 check_database_readiness() {
-    local log_file="$1"
+    local base_url="$1"
     local result_file="$2"
 
-    # Check each database for migration completion
+    local status_file="${result_file}.status_readiness.json"
+    local status_http_code
+    status_http_code=$(curl -s -X GET "${base_url}/api/conduit/status" \
+        -w "%{http_code}" -o "${status_file}" 2>/dev/null)
+
+    # The status endpoint reflects whether each database can actually serve conduit
+    # queries. A migration timer line alone is insufficient because it is emitted
+    # after both successful and failed migrations.
     for db_engine in "${!DATABASE_NAMES[@]}"; do
         local db_name="${DATABASE_NAMES[${db_engine}]}"
         local db_ready=false
-        
-        # YugabyteDB is quite a bit slower, so let's give it a moment
-        if [[ "${db_name}" == "Demo_YB" ]]; then
-            sleep 5
+        local status_ready=false
+
+        if [[ "${status_http_code}" == "200" ]]; then
+            status_ready=$(jq -r --arg database "${db_name}" '.databases[$database].ready // false' "${status_file}" 2>/dev/null || true)
         fi
 
-        # Check for successful migration completion. Match either completion marker the
-        # server can emit per database: "Migration completed [in ...]" or
-        # "Migration process completed ... QTC populated from bootstrap queries".
-        if "${GREP}" -q "${db_name}.*Migration completed" "${log_file}" 2>/dev/null; then
-            db_ready=true
-        elif "${GREP}" -q "${db_name}.*Migration process completed.*QTC populated from bootstrap queries" "${log_file}" 2>/dev/null; then
+        if [[ "${status_ready}" == "true" ]]; then
             db_ready=true
         fi
 
@@ -278,6 +285,8 @@ acquire_jwt_tokens() {
     local base_url="$1"
     local result_file="$2"
     local jwt_tokens=()
+    local token_map_name="JWT_TOKENS_BY_DATABASE_${TEST_NUMBER}"
+    eval "declare -gA ${token_map_name}=()"
 
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Starting JWT acquisition for ${#DATABASE_NAMES[@]} databases"
 
@@ -288,8 +297,6 @@ acquire_jwt_tokens() {
         # Check if database is ready before attempting login
         if ! "${GREP}" -q "DATABASE_READY_${db_engine}=true" "${result_file}" 2>/dev/null; then
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${db_engine} not ready, skipping JWT acquisition"
-            #print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "JWT Acquisition (${db_engine})"
-            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "JWT Acquisition (${db_engine}) - Database not ready, skipping"
             jwt_tokens+=("")  # Add empty token to maintain array alignment
             continue
         fi
@@ -327,6 +334,7 @@ EOF
             jwt_token=$(jq -r '.token' "${login_response_file}" 2>/dev/null || echo "")
             if [[ -n "${jwt_token}" ]] && [[ "${jwt_token}" != "null" ]]; then
                 jwt_tokens+=("${jwt_token}")
+                eval "${token_map_name}[\"${db_engine}\"]=\"${jwt_token}\""
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "JWT Acquisition (${db_engine}) - Successfully obtained JWT"
             else
                 jwt_tokens+=("")  # Add empty token to maintain array alignment
@@ -603,10 +611,6 @@ run_conduit_server() {
             sleep 0.1
         done
 
-        # Check which databases are ready for testing (per-database flags are still needed
-        # so cross-database tests can skip engines that failed to come up).
-        check_database_readiness "${log_file}" "${result_file}"
-
         # Confirm the webserver is serving requests by polling the authoritative readiness
         # endpoint. It returns HTTP 200 only once the server is Ready For Requests, and 503
         # while still starting. Support override for slow starts (ASAN debug builds + multi-DB).
@@ -644,6 +648,10 @@ run_conduit_server() {
             echo "FAILED:0"
             return 1
         fi
+
+        # Record per-database readiness only after HTTP readiness is confirmed. The
+        # conduit status endpoint excludes databases whose migration/query setup failed.
+        check_database_readiness "${base_url}" "${result_file}"
 
         # Return server info for caller to use
         echo "${base_url}:${hydrogen_pid}"
