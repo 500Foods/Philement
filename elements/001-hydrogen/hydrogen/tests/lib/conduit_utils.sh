@@ -12,6 +12,8 @@
 # test_conduit_multiple_queries_endpoint()
 
 # CHANGELOG
+# 1.7.2 - 2026-07-15 - Keep shared query maps global when sourced by the suite runner
+#                    - Prevents the exported guard from outliving function-local maps
 # 1.7.1 - 2026-07-09 - QueryRef #30 is TYPE_PUBLIC (acuranzo_1121); keep #45 as non-public auth-only sample
 # 1.7.0 - 2026-06-20 - Switched run_conduit_server() readiness to the canonical "READY FOR REQUESTS" signal
 #                    - Replaced hardcoded expected_databases=7 + per-engine migration-string polling +
@@ -61,7 +63,7 @@ export CONDUIT_UTILS_GUARD="true"
 
 # Database names mapping for conduit testing
 # Used in unified single-server configuration
-declare -A DATABASE_NAMES
+declare -gA DATABASE_NAMES
 DATABASE_NAMES=(
     ["PostgreSQL"]="Demo_PG"
     ["MySQL"]="Demo_MY"
@@ -76,7 +78,7 @@ DATABASE_NAMES=(
 # Format: "query_ref:description:requires_auth:params_json"
 # Query references for conduit testing
 # Format: "query_ref:description:requires_auth:params_json"
-declare -A PUBLIC_QUERY_REFS
+declare -gA PUBLIC_QUERY_REFS
 PUBLIC_QUERY_REFS=(
     ["30"]="Get Lookups List:false:{}"
     ["53"]="Get Themes:false:{}"
@@ -85,7 +87,7 @@ PUBLIC_QUERY_REFS=(
 )
 
 # Auth-only system SQL (query_type_a28 != 10). Public /query must reject these.
-declare -A NON_PUBLIC_QUERY_REFS
+declare -gA NON_PUBLIC_QUERY_REFS
 NON_PUBLIC_QUERY_REFS=(
     ["45"]="Get Version History:true"
 )
@@ -93,7 +95,7 @@ NON_PUBLIC_QUERY_REFS=(
 # Protected Cap query references for conduit cap_query testing
 # Format: "query_ref:description:params_json"
 # Populated with real QueryRefs once Helium Phase 2b registers the protected INSERT queries.
-declare -A PROTECTED_CAP_QUERY_REFS
+declare -gA PROTECTED_CAP_QUERY_REFS
 PROTECTED_CAP_QUERY_REFS=(
     # These require Helium migrations 1196-1200 to be applied to the target database.
     # The test environment sets CHACHA_SERVER to an unreachable URL to force the
