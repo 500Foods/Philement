@@ -12,6 +12,7 @@
 # run_cloc_with_stats()
 
 # CHANGELOG
+# 6.5.1 - 2026-07-15 - Updated coverage target thresholds in extended statistics table to 65/75/85
 # 7.3.0 - 2025-12-30 - Fixed thousands separators by adding LC_ALL=en_US.UTF_8 to printf commands using '%'d 
 # 7.2.0 - 2025-12-27 - Updated Totals row with label and C/C % to main cloc table
 # 7.1.0 - 2025-12-07 - Added HYDROGEN_DOCS_ROOT support for documentation folder inclusion
@@ -797,15 +798,15 @@ EOF
      },
      {
          "section": "coverage_lines",
-         "metric": "Instrumented Unity",
-         "value": "${format_instrumented_unity}",
-         "description": "Lines of instrumented code - Unity"
-     },
-     {
-         "section": "coverage_lines",
          "metric": "Instrumented Blackbox",
          "value": "${format_instrumented_black}",
          "description": "Lines of instrumented code - Blackbox"
+     },
+     {
+         "section": "coverage_lines",
+         "metric": "Instrumented Unity",
+         "value": "${format_instrumented_unity}",
+         "description": "Lines of instrumented code - Unity"
      },
      {
          "section": "coverage_lines",
@@ -815,15 +816,15 @@ EOF
      },
      {
          "section": "coverage_lines",
-         "metric": "Coverage Unity",
-         "value": "${format_covered_unity}",
-         "description": "Lines of covered code - Unity"
-     },
-     {
-         "section": "coverage_lines",
          "metric": "Coverage Blackbox",
          "value": "${format_covered_black}",
          "description": "Lines of covered code - Blackbox"
+     },
+     {
+         "section": "coverage_lines",
+         "metric": "Coverage Unity",
+         "value": "${format_covered_unity}",
+         "description": "Lines of covered code - Unity"
      },
      {
          "section": "coverage_lines",
@@ -833,21 +834,21 @@ EOF
      },
      {
          "section": "coverage_percentages",
-         "metric": "Coverage Unity %",
-         "value": "${coverage_unity_fmt} %",
-         "description": "Unity test coverage                  ${coverage_unity_color}Target: 70 %{RESET}"
+         "metric": "Coverage Blackbox %",
+         "value": "${coverage_black_fmt} %",
+         "description": "Blackbox test coverage               ${coverage_black_color}Target: 65 %{RESET}"
      },
      {
          "section": "coverage_percentages",
-         "metric": "Coverage Blackbox %",
-         "value": "${coverage_black_fmt} %",
-         "description": "Blackbox test coverage               ${coverage_black_color}Target: 75 %{RESET}"
+         "metric": "Coverage Unity %",
+         "value": "${coverage_unity_fmt} %",
+         "description": "Unity test coverage                  ${coverage_unity_color}Target: 75 %{RESET}"
      },
      {
          "section": "coverage_percentages",
          "metric": "Coverage Combined %",
          "value": "${coverage_combined_fmt} %",
-         "description": "Combined test coverage               ${coverage_combined_color}Target: 80 %{RESET}"
+         "description": "Combined test coverage               ${coverage_combined_color}Target: 85 %{RESET}"
      },
      {
          "section": "coverage_percentages",
