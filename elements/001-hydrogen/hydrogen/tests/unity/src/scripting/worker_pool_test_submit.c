@@ -52,10 +52,13 @@ void tearDown(void) {
     scripting_orchestrator_state = NULL;
 }
 
-// A successful submit creates a PENDING entry on the scoreboard.
+// A successful submit creates an entry on the scoreboard. A live worker may
+// advance it before the submitter can inspect it.
 void test_submit_job_creates_scoreboard_entry(void) {
     TEST_ASSERT_TRUE(scripting_workers_init(1));
     TEST_ASSERT_NOT_NULL(scripting_scoreboard);
+    TEST_ASSERT_TRUE(script_registry_register(scripting_workers->registry,
+                                              "greet", "return 42"));
 
     char* id = scripting_submit_job("greet", "{\"name\":\"world\"}");
     TEST_ASSERT_NOT_NULL(id);
@@ -65,7 +68,9 @@ void test_submit_job_creates_scoreboard_entry(void) {
     TEST_ASSERT_NOT_NULL(e);
     TEST_ASSERT_EQUAL_STRING("greet", e->script_name);
     TEST_ASSERT_EQUAL_STRING("{\"name\":\"world\"}", e->params_json);
-    TEST_ASSERT_EQUAL(SCOREBOARD_JOB_PENDING, e->status);
+    TEST_ASSERT_TRUE(e->status == SCOREBOARD_JOB_PENDING
+                     || e->status == SCOREBOARD_JOB_RUNNING
+                     || e->status == SCOREBOARD_JOB_COMPLETED);
     scoreboard_entry_free(e);
     free(id);
 }
