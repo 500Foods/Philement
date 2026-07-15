@@ -192,7 +192,7 @@ SEQUENTIAL_MODE=false
 # internal concurrent query handling.
 # NOTE: test_56_cap_query.sh is part of group 5x and now exercises both negative paths (missing/invalid token) and positive protected-query INSERT
 # paths using the Cap fallback path. It is wired to full auto-run.
-SEQUENTIAL_GROUPS=( 5 )
+SEQUENTIAL_GROUPS=( )
 TEST_ARGS=()
 
 # Parse all arguments                                                  
