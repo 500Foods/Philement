@@ -1,14 +1,14 @@
 {
   "_meta": {
     "description": "CSS custom properties (variables) used across the Lithium codebase",
-    "generated": "2026-07-12T16:16:32.390Z",
+    "generated": "2026-07-15T18:54:40.625Z",
     "sources": {
-      "css": "103 files in src/**/*.css",
-      "js": "216 files in src/**/*.js",
-      "html": "54 files in src/**/*.html + index.html"
+      "css": "104 files in src/**/*.css",
+      "js": "218 files in src/**/*.js",
+      "html": "55 files in src/**/*.html + index.html"
     },
     "total_variables": 261,
-    "total_occurrences": 3912
+    "total_occurrences": 3925
   },
   "variables": [
     {
@@ -223,10 +223,10 @@
     },
     {
       "name": "--bg-primary",
-      "css": 66,
+      "css": 67,
       "js": 0,
       "html": 1,
-      "total": 67
+      "total": 68
     },
     {
       "name": "--bg-primary-rgb",
@@ -258,10 +258,10 @@
     },
     {
       "name": "--bg-secondary",
-      "css": 101,
+      "css": 104,
       "js": 2,
       "html": 1,
-      "total": 104
+      "total": 107
     },
     {
       "name": "--bg-tertiary",
@@ -272,10 +272,10 @@
     },
     {
       "name": "--border-color",
-      "css": 73,
+      "css": 77,
       "js": 1,
       "html": 0,
-      "total": 74
+      "total": 78
     },
     {
       "name": "--border-color-focus",
@@ -538,10 +538,10 @@
     },
     {
       "name": "--font-mono",
-      "css": 40,
-      "js": 12,
+      "css": 41,
+      "js": 15,
       "html": 0,
-      "total": 52
+      "total": 56
     },
     {
       "name": "--font-sans",
@@ -1343,10 +1343,10 @@
     },
     {
       "name": "--text-primary",
-      "css": 160,
+      "css": 161,
       "js": 5,
       "html": 1,
-      "total": 166
+      "total": 167
     },
     {
       "name": "--text-secondary",

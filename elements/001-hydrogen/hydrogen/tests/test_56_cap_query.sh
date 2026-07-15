@@ -7,6 +7,7 @@
 # required in CI.
 
 # CHANGELOG
+# 1.3.0 - 2026-07-15 - Use dedicated config (hydrogen_test_56_cap_query.json) on port 5560 to avoid colliding with test 50/51 on port 5500 in the 5x parallel batch
 # 1.2.0 - 2026-06-28 - Added queue_used == "slow" assertion for protected INSERT success cases
 # 1.1.0 - 2026-06-24 - Added positive fallback-path tests for QueryRefs #085 and #086
 # 1.0.0 - 2026-06-22 - Initial negative-path tests for cap_query
@@ -18,7 +19,7 @@ TEST_NAME="Conduit Cap Query"
 TEST_ABBR="CCQ"
 TEST_NUMBER="56"
 TEST_COUNTER=0
-TEST_VERSION="1.2.0"
+TEST_VERSION="1.3.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -26,8 +27,10 @@ TEST_VERSION="1.2.0"
 [[ -n "${CONDUIT_UTILS_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/conduit_utils.sh"
 setup_test_environment
 
-# Reuse the unified 7-engine config from test_50; it already includes ChaCha fields.
-CONDUIT_CONFIG_FILE="${SCRIPT_DIR}/configs/hydrogen_test_50_conduit_query.json"
+# Use a dedicated config on port 5560 (per the 5x port scheme) so this test
+# does not collide with test 50/51 which both bind port 5500 in the same 5x
+# parallel batch. The config mirrors test_50's but only the WebServer.Port differs.
+CONDUIT_CONFIG_FILE="${SCRIPT_DIR}/configs/hydrogen_test_56_cap_query.json"
 CONDUIT_LOG_SUFFIX="cap_query"
 CONDUIT_DESCRIPTION="CCQ"
 

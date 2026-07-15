@@ -1,0 +1,90 @@
+/**
+ * Scripting Manager - Styles
+ */
+
+.scripting-manager-container {
+  display: flex;
+  height: 100%;
+  width: 100%;
+}
+
+.scripting-left-panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 157px;
+  background: var(--bg-secondary, #1E1E2E);
+  border-right: 1px solid var(--border-color, #313244);
+}
+
+.scripting-table-container {
+  flex: 1;
+  overflow: hidden;
+}
+
+.scripting-navigator-container {
+  flex-shrink: 0;
+  border-top: 1px solid var(--border-color, #313244);
+}
+
+.scripting-right-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--bg-primary, #11111B);
+}
+
+.scripting-tabs-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: var(--bg-secondary, #1E1E2E);
+  border-bottom: 1px solid var(--border-color, #313244);
+}
+
+.scripting-tabs-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.scripting-tab-pane {
+  display: none;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.scripting-tab-pane.active {
+  display: flex;
+}
+
+.editor-wrapper {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+.scripting-lua-editor {
+  flex: 1;
+  overflow: hidden;
+}
+
+.scripting-preview-content {
+  margin: 16px;
+  padding: 16px;
+  background: var(--bg-secondary, #1E1E2E);
+  border: 1px solid var(--border-color, #313244);
+  border-radius: 8px;
+  font-family: var(--font-mono, monospace);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-primary, #CDD6F4);
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow: auto;
+  flex: 1;
+}
