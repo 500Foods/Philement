@@ -22,6 +22,7 @@
 # CHANGELOG
 # 2.2.0 - 2026-07-09 - Stable per-test PID file (survives abort); start/exit kill only that list;
 #                     global pkill reserved for suite boundaries only
+# 2.3.0 - 2026-07-15 - Serialized PID ownership registry updates so parallel test workers cannot lose tracked Hydrogen PIDs.
 # 2.1.0 - 2026-07-09 - PID ownership registry: tests only kill hydrogen instances they started
 # 2.0.0 - 2025-12-05 - Added HYDROGEN_ROOT and HELIUM_ROOT environment variable checks
 # 1.7.0 - 2025-09-07 - Find hydrogen updated to include 'hydrogen' so it doesn't find the installer :-(
@@ -61,7 +62,7 @@ export LIFECYCLE_GUARD="true"
 
 # Library metadata
 LIFECYCLE_NAME="Lifecycle Management Library"
-LIFECYCLE_VERSION="2.2.0"
+LIFECYCLE_VERSION="2.3.0"
 # shellcheck disable=SC2154 # TEST_NUMBER and TEST_COUNTER defined by caller
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${LIFECYCLE_NAME} ${LIFECYCLE_VERSION}" "info"
 
@@ -104,10 +105,12 @@ register_hydrogen_pid() {
     [[ -n "${pid}" ]] || return 0
     local pid_file
     pid_file=$(_hydrogen_owned_pids_file)
-    if [[ -f "${pid_file}" ]] && grep -qx "${pid}" "${pid_file}" 2>/dev/null; then
-        return 0
-    fi
-    printf '%s\n' "${pid}" >> "${pid_file}"
+    {
+        flock -x 9
+        if ! grep -qx "${pid}" "${pid_file}" 2>/dev/null; then
+            printf '%s\n' "${pid}" >> "${pid_file}"
+        fi
+    } 9> "${pid_file}.lock"
 }
 
 # Remove a PID from the ownership registry (after clean stop).
@@ -120,9 +123,12 @@ unregister_hydrogen_pid() {
     if [[ ! -f "${pid_file}" ]]; then
         return 0
     fi
-    local tmp_file="${pid_file}.tmp.$$"
-    grep -vx "${pid}" "${pid_file}" > "${tmp_file}" 2>/dev/null || true
-    mv -f "${tmp_file}" "${pid_file}" 2>/dev/null || true
+    {
+        flock -x 9
+        local tmp_file="${pid_file}.tmp.${BASHPID}"
+        grep -vx "${pid}" "${pid_file}" > "${tmp_file}" 2>/dev/null || true
+        mv -f "${tmp_file}" "${pid_file}" 2>/dev/null || true
+    } 9> "${pid_file}.lock"
 }
 
 # Kill only PIDs listed in this test's ownership file, then clear the file.
@@ -136,9 +142,13 @@ kill_owned_hydrogens() {
     fi
     local -a snapshot=()
     local pid
-    while IFS= read -r pid; do
-        [[ -n "${pid}" ]] && snapshot+=("${pid}")
-    done < "${pid_file}"
+    {
+        flock -x 9
+        while IFS= read -r pid; do
+            [[ -n "${pid}" ]] && snapshot+=("${pid}")
+        done < "${pid_file}"
+        : > "${pid_file}"
+    } 9> "${pid_file}.lock"
 
     for pid in "${snapshot[@]+"${snapshot[@]}"}"; do
         if kill -0 "${pid}" 2>/dev/null; then
@@ -153,7 +163,6 @@ kill_owned_hydrogens() {
             kill -9 "${pid}" 2>/dev/null || true
         fi
     done
-    : > "${pid_file}"
 }
 
 # Called at test start: reap leftovers from a prior (possibly aborted) run
@@ -163,7 +172,10 @@ reset_owned_hydrogens() {
     kill_owned_hydrogens
     local pid_file
     pid_file=$(_hydrogen_owned_pids_file)
-    : > "${pid_file}"
+    {
+        flock -x 9
+        : > "${pid_file}"
+    } 9> "${pid_file}.lock"
 }
 
 # Nuclear option: kill every process whose command line references a test config.
