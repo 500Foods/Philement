@@ -11,6 +11,9 @@
 # print_performance_summary()
 
 # CHANGELOG
+# 1.0.2 - 2026-07-15 - Preserve conduit database mappings across sourced suite tests
+#                    - Shared maps are now global instead of disappearing after the
+#                      first run_single_test() function returns
 # 1.0.1 - 2026-07-15 - Fix result tracking when no database is actually measured
 #                    - An unmeasured (skipped) database no longer wins with a fake 0.000s
 #                    - When zero timings are captured the test fails loudly instead of
@@ -28,7 +31,7 @@ TEST_NAME="Performance Test"
 TEST_ABBR="PRF"
 TEST_NUMBER="60"
 TEST_COUNTER=0
-TEST_VERSION="1.0.1"
+TEST_VERSION="1.0.2"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
