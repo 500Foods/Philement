@@ -11,6 +11,10 @@
 # print_performance_summary()
 
 # CHANGELOG
+# 1.0.1 - 2026-07-15 - Fix result tracking when no database is actually measured
+#                    - An unmeasured (skipped) database no longer wins with a fake 0.000s
+#                    - When zero timings are captured the test fails loudly instead of
+#                      emitting a bogus "winner:  with 999999.999s" and falsely passing
 # 1.0.0 - 2026-01-29 - Initial implementation
 #                    - Tests API performance across 7 database engines
 #                    - Runs 5 iterations to measure caching effectiveness
@@ -24,7 +28,7 @@ TEST_NAME="Performance Test"
 TEST_ABBR="PRF"
 TEST_NUMBER="60"
 TEST_COUNTER=0
-TEST_VERSION="1.0.0"
+TEST_VERSION="1.0.1"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -44,6 +48,11 @@ PERF_ITERATIONS=5
 declare -A PERF_TIMINGS
 declare -A PERF_DATA_TRANSFERRED
 declare -A PERF_ERROR_COUNTS
+
+# Count of database/iteration combinations that were actually measured. Used to
+# detect the case where every database was skipped (not ready / not reachable) so
+# the test can fail honestly instead of reporting a bogus winner.
+PERF_MEASURED_COUNT=0
 
 # Demo credentials from environment variables
 # shellcheck disable=SC2034 # Variables used in heredocs for JSON payloads
@@ -379,6 +388,7 @@ run_performance_iteration() {
         PERF_TIMINGS["${db_engine}_${iteration}"]="${total_time}"
         PERF_DATA_TRANSFERRED["${db_engine}_${iteration}"]="${total_data}"
         PERF_ERROR_COUNTS["${db_engine}_${iteration}"]="${total_errors}"
+        PERF_MEASURED_COUNT=$((PERF_MEASURED_COUNT + 1))
 
         # Convert to seconds for display with leading zero
         local total_time_sec
@@ -423,17 +433,29 @@ print_performance_summary() {
     # Track overall winner
     local best_overall_db=""
     local best_overall_time=999999999
+    local measured_count=0
 
     # Print results for each database
     for db_engine in "${!DATABASE_NAMES[@]}"; do
         local db_name="${DATABASE_NAMES[${db_engine}]}"
         local timings=()
         local min_time=999999999
+        local db_measured=false
 
         # Collect timings for this database
         for ((i=1; i<=PERF_ITERATIONS; i++)); do
             local timing_key="${db_engine}_${i}"
-            local timing_ms="${PERF_TIMINGS[${timing_key}]:-0}"
+            # Only treat a database as measured if a real timing was captured for
+            # this iteration. Databases that were skipped (not ready / JWT failed)
+            # leave the key unset; defaulting those to 0 via ":-0" would let an
+            # UNMEASURED database "win" with a fake 0.000s time.
+            local timing_ms="${PERF_TIMINGS[${timing_key}]:-}"
+            if [[ -z "${timing_ms}" ]]; then
+                timings+=("n/a")
+                continue
+            fi
+
+            db_measured=true
             timings+=("${timing_ms}")
 
             # Track minimum for this database
@@ -442,10 +464,13 @@ print_performance_summary() {
             fi
         done
 
-        # Track overall best
-        if [[ ${min_time} -lt ${best_overall_time} ]]; then
-            best_overall_time=${min_time}
-            best_overall_db="${db_name}"
+        # Only consider databases that were actually measured for the overall winner
+        if [[ "${db_measured}" = true ]]; then
+            measured_count=$((measured_count + 1))
+            if [[ ${min_time} -lt ${best_overall_time} ]]; then
+                best_overall_time=${min_time}
+                best_overall_db="${db_name}"
+            fi
         fi
 
         # Build output line
@@ -454,23 +479,37 @@ print_performance_summary() {
 
         # Print all timings with proper seconds formatting
         for timing_ms in "${timings[@]}"; do
-            local timing_sec
-            timing_sec=$(printf "%d.%03d" $((timing_ms / 1000)) $((timing_ms % 1000)))
-            timing_output+="$(printf " %9ss" "${timing_sec}")"
+            if [[ "${timing_ms}" == "n/a" ]]; then
+                timing_output+="$(printf " %9ss" "n/a")"
+            else
+                local timing_sec
+                timing_sec=$(printf "%d.%03d" $((timing_ms / 1000)) $((timing_ms % 1000)))
+                timing_output+="$(printf " %9ss" "${timing_sec}")"
+            fi
         done
 
         # Print best time with proper seconds formatting
-        local min_sec
-        min_sec=$(printf "%d.%03d" $((min_time / 1000)) $((min_time % 1000)))
-        timing_output+="$(printf " %9ss" "${min_sec}")"
+        if [[ "${db_measured}" = true ]]; then
+            local min_sec
+            min_sec=$(printf "%d.%03d" $((min_time / 1000)) $((min_time % 1000)))
+            timing_output+="$(printf " %9ss" "${min_sec}")"
+        else
+            timing_output+="$(printf " %9ss" "n/a")"
+        fi
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${timing_output}"
     done
 
-    # Announce the winner
+    # Announce the winner (or report that nothing was measured)
     local best_overall_sec
     best_overall_sec=$(printf "%d.%03d" $((best_overall_time / 1000)) $((best_overall_time % 1000)))
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Winner: ${best_overall_db} with ${best_overall_sec}s"
-    TEST_NAME=$(echo "Performance Test  {BLUE}winner:  ${best_overall_db} with ${best_overall_sec}s{RESET}" || true)
+    if [[ -z "${best_overall_db}" ]]; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Winner: NONE - no database timings were captured (databases not ready / not reachable)"
+        TEST_NAME=$(echo "Performance Test  {BLUE}winner: NONE - no timings captured{RESET}" || true)
+        EXIT_CODE=1
+    else
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Winner: ${best_overall_db} with ${best_overall_sec}s (${measured_count} database/iteration measurements)"
+        TEST_NAME=$(echo "Performance Test  {BLUE}winner:  ${best_overall_db} with ${best_overall_sec}s{RESET}" || true)
+    fi
 
     # Print data transferred summary
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Data Transferred (bytes)"
@@ -608,6 +647,14 @@ run_performance_tests() {
 
     # Print summary
     print_performance_summary
+
+    # If no database was actually measured (e.g. none became ready in the suite),
+    # the run is not a success even if no explicit per-query errors were counted.
+    if [[ "${PERF_MEASURED_COUNT}" -eq 0 ]]; then
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "No database timings were captured - performance test cannot report results"
+        shutdown_conduit_server "${hydrogen_pid}" "${result_file}"
+        return 1
+    fi
 
     # Shutdown the server
     shutdown_conduit_server "${hydrogen_pid}" "${result_file}"
