@@ -23,7 +23,7 @@ bool mailrelay_runtime_is_initialized(void) {
     return mailrelay_runtime != NULL && mailrelay_runtime->initialized;
 }
 
-static void recovery_callback(MailRelayRepoResult* result, void* user_data) {
+void recovery_callback(MailRelayRepoResult* result, void* user_data) {
     (void)user_data;
     if (!result) {
         return;
@@ -262,7 +262,7 @@ typedef struct {
     long long queue_id;
 } MailRelayInsertContext;
 
-static void insert_callback(MailRelayRepoResult* result, void* user_data) {
+void insert_callback(MailRelayRepoResult* result, void* user_data) {
     MailRelayInsertContext* ctx = (MailRelayInsertContext*)user_data;
     if (!result || !ctx) {
         return;
@@ -276,9 +276,9 @@ static void insert_callback(MailRelayRepoResult* result, void* user_data) {
     }
 }
 
-static bool mailrelay_persist_message(const MailRelayMessage* msg,
-                                      int priority,
-                                      long long* out_queue_id) {
+bool mailrelay_persist_message(const MailRelayMessage* msg,
+                                int priority,
+                                long long* out_queue_id) {
     if (!msg) {
         return false;
     }

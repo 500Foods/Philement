@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 # CHANGELOG
+# 2026-07-15: Report build error counts and ensure non-zero exit propagates to callers (e.g. mkt && mka chains)
 # 2025-12-05: Added dependency check to prevent .c file includes in Unity tests and mocks, resolving gcov regeneration issue
 # 2025-09-24: Added QUICK parameter to skip cleaning and cmake configuration
 # 2025-07-15: Added Unity test compilation to catch errors in test code during trial builds
@@ -152,6 +153,8 @@ BUILD_OUTPUT=$(cmake --build ../build --target hydrogen 2>&1)
 ERRORS=$(echo "${BUILD_OUTPUT}" | grep -B 2 -E "error:|warning:|undefined reference|collect2:|ld returned" || true)
 if [[ -n "${ERRORS}" ]]; then
     echo "${ERRORS}"
+    ERROR_COUNT=$(echo "${BUILD_OUTPUT}" | grep -c -E "error:" || true)
+    echo "❌ Default build failed with ${ERROR_COUNT} error(s)"
     exit 1
 fi
 
@@ -162,6 +165,8 @@ UNITY_BUILD_OUTPUT=$(cmake --build ../build --target unity_tests 2>&1)
 UNITY_ERRORS=$(echo "${UNITY_BUILD_OUTPUT}" | grep -B 2 -E "error:|warning:|undefined reference|collect2:|ld returned" || true)
 if [[ -n "${UNITY_ERRORS}" ]]; then
     echo "${UNITY_ERRORS}"
+    UNITY_ERROR_COUNT=$(echo "${UNITY_BUILD_OUTPUT}" | grep -c -E "error:" || true)
+    echo "❌ Unity build failed with ${UNITY_ERROR_COUNT} error(s)"
     exit 1
 fi
 
@@ -176,7 +181,7 @@ if (echo "${UNITY_BUILD_OUTPUT}" | grep -q "completed successfully" || echo "${U
     echo "$(date +%H:%M:%S.%3N || true) - Build Successful"
 
     # Return to project root for final checks
-    popd >/dev/null 2>&1 || exit 1
+    popd >/dev/null 2>&1 || true
 
     # Binary is already created in root directory by hydrogen target
 
@@ -239,5 +244,9 @@ if (echo "${UNITY_BUILD_OUTPUT}" | grep -q "completed successfully" || echo "${U
     echo "$(date +%H:%M:%S.%3N || true) - Trial Build Complete"
 else
     echo "❌ Build failed"
+    FINAL_ERROR_COUNT=$( (echo "${BUILD_OUTPUT}"; echo "${UNITY_BUILD_OUTPUT}") | grep -c -E "error:" || true)
+    if [[ "${FINAL_ERROR_COUNT}" -gt 0 ]]; then
+        echo "❌ Build failed with ${FINAL_ERROR_COUNT} error(s)"
+    fi
     exit 1
 fi

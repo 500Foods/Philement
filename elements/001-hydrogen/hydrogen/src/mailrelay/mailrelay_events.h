@@ -57,6 +57,45 @@ typedef MailRelayStatus (*mailrelay_event_dispatcher_fn)(const MailRelaySendTemp
                                                           size_t err_cap);
 void mailrelay_event_set_dispatcher(mailrelay_event_dispatcher_fn fn);
 
+/* Forward declaration so the test-only helper prototypes below need not pull
+ * the Lua headers into this public header. */
+typedef struct lua_State lua_State;
+
+/*
+ * The following helpers are exposed (non-static) primarily so the Unity test
+ * suite can exercise rate limiting, the Lua table/param marshalling, handler
+ * dispatch, and rule resolution directly. They are not part of the stable
+ * public API.
+ */
+bool mailrelay_event_check_rate_limit(const char* event_key,
+                                       int max_per_interval,
+                                       int interval_seconds);
+void mailrelay_event_free_rate_limits(void);
+void mailrelay_event_push_event_table(lua_State* L,
+                                      const char* event_key,
+                                      const MailRelayTemplateParams* params);
+char** mailrelay_event_read_string_array(lua_State* L,
+                                         const char* field_name,
+                                         int* out_count);
+char* mailrelay_event_read_string(lua_State* L, const char* field_name);
+int mailrelay_event_read_int(lua_State* L,
+                             const char* field_name,
+                             int default_value);
+bool mailrelay_event_read_params(lua_State* L,
+                                 const char* field_name,
+                                 MailRelayTemplateParams* out_params);
+void mailrelay_event_free_string_array(char** arr, int count);
+bool mailrelay_event_dispatch_request(lua_State* L, char* err, size_t err_cap);
+bool mailrelay_event_run_handler(const char* source,
+                                 const char* chunk_name,
+                                 const char* event_key,
+                                 const MailRelayTemplateParams* params,
+                                 char* err,
+                                 size_t err_cap);
+const MailEventRule* mailrelay_event_find_rule(const char* event_key);
+const char* mailrelay_event_resolve_source(const char* event_key,
+                                           const MailEventRule* rule);
+
 #ifdef __cplusplus
 }
 #endif

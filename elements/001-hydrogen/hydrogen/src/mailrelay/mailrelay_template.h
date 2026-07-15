@@ -31,6 +31,9 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+// Project includes
+#include <src/mailrelay/mailrelay_repository.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -238,5 +241,43 @@ bool mailrelay_template_preview_with_macros(const char* template_key,
 #ifdef __cplusplus
 }
 #endif
+
+/*
+ * The following helpers are exposed (non-static) primarily so the Unity test
+ * suite can exercise the template macro engine (name validation, output buffer
+ * growth, macro parsing, and built-in resolution) and the preview repository
+ * callback directly. They are not part of the stable public API.
+ */
+typedef struct MailRelayTemplateOutput MailRelayTemplateOutput;
+
+bool is_macro_name_char(char c);
+bool output_append(MailRelayTemplateOutput* out,
+                   const char* s,
+                   size_t s_len,
+                   char* err,
+                   size_t err_cap);
+bool output_append_char(MailRelayTemplateOutput* out,
+                        char c,
+                        char* err,
+                        size_t err_cap);
+void output_free(MailRelayTemplateOutput* out);
+const char* resolve_builtin(const char* name,
+                             const char* app_name,
+                             const char* server_name,
+                             const char* timestamp,
+                             const char* request_id,
+                             const char* user_email,
+                             const char* otp_code);
+bool parse_macro(const char* template_text,
+                 size_t* pos,
+                 char* name,
+                 size_t name_cap,
+                 char* default_value,
+                 size_t default_cap,
+                 bool* has_default,
+                 char* err,
+                 size_t err_cap);
+bool is_valid_macro_name(const char* name, char* err, size_t err_cap);
+void preview_render_callback(MailRelayRepoResult* result, void* user_data);
 
 #endif /* MAILRELAY_TEMPLATE_H */

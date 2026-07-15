@@ -153,6 +153,17 @@ int mailrelay_queue_size(MailRelayQueue* queue);
  */
 int mailrelay_queue_capacity(MailRelayQueue* queue);
 
+/*
+ * The following helpers are exposed (non-static) primarily so the Unity test
+ * suite can exercise their ordering and list-management branches directly.
+ * They are not part of the stable public API.
+ */
+int timespec_compare(const struct timespec* a, const struct timespec* b);
+bool item_is_due(const MailRelayQueueItem* item, const struct timespec* now);
+MailRelayQueueItem* find_first_due(MailRelayQueue* queue, const struct timespec* now);
+MailRelayQueueItem* find_earliest(MailRelayQueue* queue);
+void remove_item(MailRelayQueue* queue, MailRelayQueueItem* target);
+
 #ifdef __cplusplus
 }
 #endif

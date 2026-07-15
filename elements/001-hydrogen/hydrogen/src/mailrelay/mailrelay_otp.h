@@ -11,6 +11,7 @@
 #include <stddef.h>
 
 #include <src/mailrelay/mailrelay_queue.h>
+#include <src/mailrelay/mailrelay_repository.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -164,9 +165,27 @@ void mailrelay_otp_verify_response_init(MailRelayOtpVerifyResponse* resp);
  *         failures (MAIL_OTP_* in err); MAILRELAY_PERSIST_FAILED on DB errors.
  */
 MailRelayStatus mailrelay_otp_verify(const MailRelayOtpVerifyRequest* req,
-                                     MailRelayOtpVerifyResponse* resp,
-                                     char* err,
-                                     size_t err_cap);
+                                      MailRelayOtpVerifyResponse* resp,
+                                      char* err,
+                                      size_t err_cap);
+
+/*
+ * The following helpers are exposed (non-static) primarily so the Unity test
+ * suite can exercise OTP parameter resolution, JSON parsing, ISO time parsing,
+ * and the repository callbacks directly. They are not part of the stable public
+ * API.
+ */
+void otp_insert_callback(MailRelayRepoResult* result, void* user_data);
+int otp_resolve_digits(const MailRelayOtpSendRequest* req);
+int otp_resolve_expiry(const MailRelayOtpSendRequest* req);
+int otp_resolve_max_attempts(const MailRelayOtpSendRequest* req);
+bool otp_purpose_valid(int purpose);
+long long otp_json_int64(json_t* obj, const char* key);
+void otp_json_copy_string(json_t* obj, const char* key, char* out, size_t out_size);
+void otp_get_active_callback(MailRelayRepoResult* result, void* user_data);
+void otp_write_callback(MailRelayRepoResult* result, void* user_data);
+bool otp_parse_iso_time(const char* s, time_t* out);
+void otp_set_err(char* err, size_t err_cap, const char* msg);
 
 #ifdef __cplusplus
 }

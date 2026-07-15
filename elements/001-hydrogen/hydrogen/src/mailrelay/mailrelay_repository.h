@@ -463,8 +463,36 @@ bool mailrelay_repo_cleanup_otp(const MailRelayRepoCleanupOtp* params,
  * -------------------------------------------------------------------------- */
 
 bool mailrelay_repo_role_get_by_name(const char* name,
-                                     mailrelay_repo_callback_fn callback,
-                                     void* user_data);
+                                      mailrelay_repo_callback_fn callback,
+                                      void* user_data);
+
+/*
+ * The following helpers are exposed (non-static) primarily so the Unity test
+ * suite can exercise database resolution, the default executor, result
+ * construction, and JSON parameter building directly. They are not part of the
+ * stable public API.
+ */
+const char* mailrelay_repo_resolve_database(void);
+void mailrelay_repo_invoke_callback(mailrelay_repo_callback_fn callback,
+                                    void* user_data,
+                                    MailRelayRepoStatus status,
+                                    const char* error_message,
+                                    json_t* data,
+                                    int affected_rows);
+bool mailrelay_repo_default_execute(int query_ref,
+                                    const char* params_json,
+                                    mailrelay_repo_callback_fn callback,
+                                    void* user_data);
+json_t* repo_params_new(void);
+bool repo_add_string(json_t* root, const char* name, const char* value);
+bool repo_add_int(json_t* root, const char* name, int value);
+bool repo_add_int64(json_t* root, const char* name, long long value);
+bool repo_execute_json(int query_ref, json_t* params,
+                       mailrelay_repo_callback_fn callback,
+                       void* user_data);
+bool repo_execute_empty(int query_ref,
+                        mailrelay_repo_callback_fn callback,
+                        void* user_data);
 
 #ifdef __cplusplus
 }

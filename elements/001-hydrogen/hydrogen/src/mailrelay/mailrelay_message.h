@@ -59,6 +59,11 @@ bool mailrelay_validate_message(const MailRelayMessage* m, char* err, size_t err
 /* Count of all envelope recipients (to + cc + bcc). */
 int mailrelay_message_recipient_count(const MailRelayMessage* m);
 
+/* Append a recipient to the given envelope array. Exposed (non-static) so the
+ * Unity test suite can exercise the shared recipient-append logic directly.
+ * Not part of the stable public API. */
+bool add_recipient(char* arr[], int* count, const char* addr);
+
 /* Build a JSON array string containing all envelope recipients. Caller frees. */
 char* mailrelay_message_recipients_to_json(const MailRelayMessage* m);
 

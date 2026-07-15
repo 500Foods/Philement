@@ -71,6 +71,21 @@ void mailrelay_smtp_reset_transport(void);
  * seams can perform the genuine send on a final, successful attempt. */
 bool mailrelay_smtp_transport_real(const MailRelaySmtpRequest* req, MailRelayResult* out);
 
+/*
+ * The following helpers are exposed (non-static) primarily so the Unity test
+ * suite can exercise request resolution, the curl read/write callbacks, and
+ * SMTP reply-code parsing directly. They are not part of the stable public API.
+ */
+int resolve_tls_mode(const OutboundServer* server);
+bool build_request(const MailRelayMessage* msg,
+                   const OutboundServer* server,
+                   const char* default_from,
+                   const char* rendered,
+                   MailRelaySmtpRequest* req);
+size_t smtp_read_cb(void* ptr, size_t size, size_t nmemb, void* userp);
+size_t smtp_write_cb(const void* ptr, size_t size, size_t nmemb, void* userp);
+long parse_smtp_code(const char* buf, size_t len, char* text_out, size_t text_cap);
+
 #ifdef __cplusplus
 }
 #endif

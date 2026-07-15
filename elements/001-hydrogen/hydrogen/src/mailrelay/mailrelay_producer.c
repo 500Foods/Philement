@@ -45,10 +45,10 @@ typedef struct IdempotencyContext {
 } IdempotencyContext;
 
 /* Forward declaration for the idempotency callback. */
-static void idempotency_callback(MailRelayRepoResult* result, void* user_data);
+void idempotency_callback(MailRelayRepoResult* result, void* user_data);
 
 /* Map a status_a63 value to a stable status string for callers. */
-static const char* status_from_a63(int status_a63) {
+const char* status_from_a63(int status_a63) {
     switch (status_a63) {
         case 2:
             return "sent";
@@ -63,7 +63,7 @@ static const char* status_from_a63(int status_a63) {
 }
 
 /* Repository callback: capture an existing message for an idempotency key. */
-static void idempotency_callback(MailRelayRepoResult* result, void* user_data) {
+void idempotency_callback(MailRelayRepoResult* result, void* user_data) {
     IdempotencyContext* ctx = (IdempotencyContext*)user_data;
     ctx->found = false;
     ctx->message_id = NULL;
@@ -110,7 +110,7 @@ static void idempotency_callback(MailRelayRepoResult* result, void* user_data) {
 }
 
 /* Add To/Cc/Bcc recipient arrays to the message, validating emails. */
-static bool add_recipients_arrays(MailRelayMessage* msg,
+bool add_recipients_arrays(MailRelayMessage* msg,
                                   const char* const* to, int to_count,
                                   const char* const* cc, int cc_count,
                                   const char* const* bcc, int bcc_count,
@@ -153,7 +153,7 @@ static bool add_recipients_arrays(MailRelayMessage* msg,
 }
 
 /* Shared runtime/enabled gate for producers. */
-static MailRelayStatus producer_check_runtime(char* err, size_t err_cap) {
+MailRelayStatus producer_check_runtime(char* err, size_t err_cap) {
     if (!mailrelay_runtime_is_initialized() ||
         (mailrelay_runtime && mailrelay_runtime->shutdown_requested)) {
         snprintf(err, err_cap, "MAIL_DISABLED: mail relay is not running");
@@ -167,7 +167,7 @@ static MailRelayStatus producer_check_runtime(char* err, size_t err_cap) {
 }
 
 /* Shared idempotency short-circuit. Returns true if handled (found or error). */
-static bool producer_try_idempotency(const char* idempotency_key,
+bool producer_try_idempotency(const char* idempotency_key,
                                      MailRelaySendTemplateResponse* resp,
                                      char* err,
                                      size_t err_cap,
@@ -198,7 +198,7 @@ static bool producer_try_idempotency(const char* idempotency_key,
 }
 
 /* Resolve From / Reply-To with config defaults. */
-static bool producer_resolve_from_reply(const char* req_from,
+bool producer_resolve_from_reply(const char* req_from,
                                         const char* req_reply_to,
                                         const char** out_from,
                                         const char** out_reply_to,
@@ -229,7 +229,7 @@ static bool producer_resolve_from_reply(const char* req_from,
 }
 
 /* Enqueue a fully built message and fill the response. */
-static MailRelayStatus producer_enqueue_message(MailRelayMessage* msg,
+MailRelayStatus producer_enqueue_message(MailRelayMessage* msg,
                                                 int priority,
                                                 MailRelaySendTemplateResponse* resp,
                                                 char* err,
@@ -270,7 +270,7 @@ static MailRelayStatus producer_enqueue_message(MailRelayMessage* msg,
 }
 
 /* Default producer implementation (bypasses the test seam). */
-static MailRelayStatus mailrelay_send_template_default(const MailRelaySendTemplateRequest* req,
+MailRelayStatus mailrelay_send_template_default(const MailRelaySendTemplateRequest* req,
                                                        MailRelaySendTemplateResponse* resp,
                                                        char* err,
                                                        size_t err_cap) {
@@ -388,7 +388,7 @@ MailRelayStatus mailrelay_send_template(const MailRelaySendTemplateRequest* req,
 }
 
 /* Default freeform producer implementation (bypasses the test seam). */
-static MailRelayStatus mailrelay_send_direct_default(const MailRelaySendDirectRequest* req,
+MailRelayStatus mailrelay_send_direct_default(const MailRelaySendDirectRequest* req,
                                                      MailRelaySendTemplateResponse* resp,
                                                      char* err,
                                                      size_t err_cap) {

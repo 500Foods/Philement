@@ -147,7 +147,7 @@ bool mailrelay_is_valid_email(const char* email) {
     return true;
 }
 
-static bool add_recipient(char* arr[], int* count, const char* addr) {
+bool add_recipient(char* arr[], int* count, const char* addr) {
     if (!arr || !count || !addr || !*addr) return false;
     if (*count >= MV_MAX_RECIPIENTS) return false;
     if (!mailrelay_is_valid_email(addr)) return false;

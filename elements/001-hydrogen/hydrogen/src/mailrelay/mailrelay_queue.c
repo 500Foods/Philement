@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-static int timespec_compare(const struct timespec* a, const struct timespec* b) {
+int timespec_compare(const struct timespec* a, const struct timespec* b) {
     if (a->tv_sec < b->tv_sec) return -1;
     if (a->tv_sec > b->tv_sec) return 1;
     if (a->tv_nsec < b->tv_nsec) return -1;
@@ -17,13 +17,13 @@ static int timespec_compare(const struct timespec* a, const struct timespec* b) 
     return 0;
 }
 
-static bool item_is_due(const MailRelayQueueItem* item, const struct timespec* now) {
+bool item_is_due(const MailRelayQueueItem* item, const struct timespec* now) {
     return timespec_compare(&item->next_attempt_at, now) <= 0;
 }
 
 /* List is sorted by priority descending, so the first due item is the
  * highest-priority item that is ready to send. */
-static MailRelayQueueItem* find_first_due(MailRelayQueue* queue, const struct timespec* now) {
+MailRelayQueueItem* find_first_due(MailRelayQueue* queue, const struct timespec* now) {
     MailRelayQueueItem* current = queue->head;
     while (current) {
         if (item_is_due(current, now)) {
@@ -34,7 +34,7 @@ static MailRelayQueueItem* find_first_due(MailRelayQueue* queue, const struct ti
     return NULL;
 }
 
-static MailRelayQueueItem* find_earliest(MailRelayQueue* queue) {
+MailRelayQueueItem* find_earliest(MailRelayQueue* queue) {
     MailRelayQueueItem* earliest = NULL;
     MailRelayQueueItem* current = queue->head;
     while (current) {
@@ -46,7 +46,7 @@ static MailRelayQueueItem* find_earliest(MailRelayQueue* queue) {
     return earliest;
 }
 
-static void remove_item(MailRelayQueue* queue, MailRelayQueueItem* target) {
+void remove_item(MailRelayQueue* queue, MailRelayQueueItem* target) {
     if (!queue || !target) {
         return;
     }
