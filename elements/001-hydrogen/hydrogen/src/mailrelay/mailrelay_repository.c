@@ -37,7 +37,7 @@
 static mailrelay_repo_execute_fn g_executor = NULL;
 
 // Forward declaration of the default executor.
-static bool mailrelay_repo_default_execute(int query_ref,
+bool mailrelay_repo_default_execute(int query_ref,
                                            const char* params_json,
                                            mailrelay_repo_callback_fn callback,
                                            void* user_data);
@@ -48,7 +48,7 @@ static bool mailrelay_repo_default_execute(int query_ref,
  * is exactly one configured database connection, that connection's name is
  * returned. Otherwise returns NULL.
  */
-static const char* mailrelay_repo_resolve_database(void) {
+const char* mailrelay_repo_resolve_database(void) {
     if (!app_config) {
         return NULL;
     }
@@ -74,7 +74,7 @@ static const char* mailrelay_repo_resolve_database(void) {
 /*
  * Build the result object for a callback invocation.
  */
-static void mailrelay_repo_invoke_callback(mailrelay_repo_callback_fn callback,
+void mailrelay_repo_invoke_callback(mailrelay_repo_callback_fn callback,
                                              void* user_data,
                                              MailRelayRepoStatus status,
                                              const char* error_message,
@@ -95,7 +95,7 @@ static void mailrelay_repo_invoke_callback(mailrelay_repo_callback_fn callback,
 /*
  * Default executor: resolve database, lookup QTC, submit query, wait, callback.
  */
-static bool mailrelay_repo_default_execute(int query_ref,
+bool mailrelay_repo_default_execute(int query_ref,
                                            const char* params_json,
                                            mailrelay_repo_callback_fn callback,
                                            void* user_data) {
@@ -285,7 +285,7 @@ mailrelay_repo_execute_fn mailrelay_repo_get_executor(void) {
  * JSON parameter building helpers
  * -------------------------------------------------------------------------- */
 
-static json_t* repo_params_new(void) {
+json_t* repo_params_new(void) {
     json_t* root = json_object();
     if (!root) {
         return NULL;
@@ -306,7 +306,7 @@ static json_t* repo_params_new(void) {
     return root;
 }
 
-static bool repo_add_string(json_t* root, const char* name, const char* value) {
+bool repo_add_string(json_t* root, const char* name, const char* value) {
     if (!root || !name) {
         return false;
     }
@@ -320,7 +320,7 @@ static bool repo_add_string(json_t* root, const char* name, const char* value) {
     return json_object_set_new(string_obj, name, json_null()) == 0;
 }
 
-static bool repo_add_int(json_t* root, const char* name, int value) {
+bool repo_add_int(json_t* root, const char* name, int value) {
     if (!root || !name) {
         return false;
     }
@@ -331,7 +331,7 @@ static bool repo_add_int(json_t* root, const char* name, int value) {
     return json_object_set_new(integer_obj, name, json_integer(value)) == 0;
 }
 
-static bool repo_add_int64(json_t* root, const char* name, long long value) {
+bool repo_add_int64(json_t* root, const char* name, long long value) {
     if (!root || !name) {
         return false;
     }
@@ -346,7 +346,7 @@ static bool repo_add_int64(json_t* root, const char* name, long long value) {
  * Execute a query ref with the given JSON parameter object. The parameter
  * object is consumed (decref'd) regardless of success or failure.
  */
-static bool repo_execute_json(int query_ref, json_t* params,
+bool repo_execute_json(int query_ref, json_t* params,
                               mailrelay_repo_callback_fn callback,
                               void* user_data) {
     if (!params) {
@@ -375,7 +375,7 @@ static bool repo_execute_json(int query_ref, json_t* params,
 /*
  * Helper for parameter-less queries. Builds an empty JSON parameter object.
  */
-static bool repo_execute_empty(int query_ref,
+bool repo_execute_empty(int query_ref,
                                mailrelay_repo_callback_fn callback,
                                void* user_data) {
     json_t* params = repo_params_new();

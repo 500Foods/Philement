@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-static void render_grow(char** buf, const size_t* len, size_t* cap, size_t extra) {
+void render_grow(char** buf, const size_t* len, size_t* cap, size_t extra) {
     if (*len + extra + 1 <= *cap) return;
     size_t new_cap = *cap;
     while (new_cap < *len + extra + 1) {
@@ -27,18 +27,18 @@ static void render_grow(char** buf, const size_t* len, size_t* cap, size_t extra
     *cap = new_cap;
 }
 
-static void render_mem(char** buf, size_t* len, size_t* cap, const char* data, size_t data_len) {
+void render_mem(char** buf, size_t* len, size_t* cap, const char* data, size_t data_len) {
     render_grow(buf, len, cap, data_len);
     memcpy(*buf + *len, data, data_len);
     *len += data_len;
     (*buf)[*len] = '\0';
 }
 
-static void render_str(char** buf, size_t* len, size_t* cap, const char* s) {
+void render_str(char** buf, size_t* len, size_t* cap, const char* s) {
     render_mem(buf, len, cap, s, strlen(s));
 }
 
-static void render_header(char** buf, size_t* len, size_t* cap, const char* name, const char* value) {
+void render_header(char** buf, size_t* len, size_t* cap, const char* name, const char* value) {
     if (!value || !value[0]) return;
     size_t nlen = strlen(name);
     size_t vlen = strlen(value);
@@ -54,7 +54,7 @@ static void render_header(char** buf, size_t* len, size_t* cap, const char* name
     (*buf)[*len] = '\0';
 }
 
-static void render_header_list(char** buf, size_t* len, size_t* cap, const char* name, char* const* arr, int count) {
+void render_header_list(char** buf, size_t* len, size_t* cap, const char* name, char* const* arr, int count) {
     if (!arr || count <= 0) return;
     size_t total = 0;
     int items = 0;
@@ -80,7 +80,7 @@ static void render_header_list(char** buf, size_t* len, size_t* cap, const char*
     free(list);
 }
 
-static char* render_boundary(const char* message_id) {
+char* render_boundary(const char* message_id) {
     size_t id_len = strlen(message_id);
     size_t bound_len = 2;
     for (size_t i = 0; i < id_len; i++) {
@@ -102,7 +102,7 @@ static char* render_boundary(const char* message_id) {
     return b;
 }
 
-static void render_mime_part(char** buf, size_t* len, size_t* cap, const char* boundary, const char* part_type, const char* body) {
+void render_mime_part(char** buf, size_t* len, size_t* cap, const char* boundary, const char* part_type, const char* body) {
     size_t prefix = 2 + strlen(boundary) + 64;
     char* tmp = malloc(prefix + 1);
     if (!tmp) return;
@@ -112,7 +112,7 @@ static void render_mime_part(char** buf, size_t* len, size_t* cap, const char* b
     free(tmp);
 }
 
-static void render_rfc822_date(char* buf, size_t cap, time_t t) {
+void render_rfc822_date(char* buf, size_t cap, time_t t) {
     struct tm tm_buf;
     gmtime_r(&t, &tm_buf);
     strftime(buf, cap, "%a, %d %b %Y %H:%M:%S +0000", &tm_buf);

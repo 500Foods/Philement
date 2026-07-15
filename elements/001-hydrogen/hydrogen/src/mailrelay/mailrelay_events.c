@@ -72,7 +72,7 @@ static const char* MAILRELAY_EVENT_STOPPED_SCRIPT =
  * Returns true if the emit is allowed, false if rate limited.
  * Caller must hold mailrelay_runtime->mutex.
  */
-static bool mailrelay_event_check_rate_limit(const char* event_key,
+bool mailrelay_event_check_rate_limit(const char* event_key,
                                               int max_per_interval,
                                               int interval_seconds) {
     if (!mailrelay_runtime || !event_key || max_per_interval <= 0 || interval_seconds <= 0) {
@@ -113,7 +113,7 @@ static bool mailrelay_event_check_rate_limit(const char* event_key,
  * Free all rate limit entries. Called during shutdown.
  * Caller must hold mailrelay_runtime->mutex.
  */
-static void mailrelay_event_free_rate_limits(void) {
+void mailrelay_event_free_rate_limits(void) {
     if (!mailrelay_runtime) {
         return;
     }
@@ -132,7 +132,7 @@ static void mailrelay_event_free_rate_limits(void) {
  * The table contains: event_key, timestamp, server_name, app_name,
  * admin_recipients (array), params (table).
  */
-static void mailrelay_event_push_event_table(lua_State* L,
+void mailrelay_event_push_event_table(lua_State* L,
                                               const char* event_key,
                                               const MailRelayTemplateParams* params) {
     lua_newtable(L);
@@ -185,7 +185,7 @@ static void mailrelay_event_push_event_table(lua_State* L,
  * array of heap-allocated strings and sets *out_count. Returns NULL if
  * the field is missing, empty, or not a table.
  */
-static char** mailrelay_event_read_string_array(lua_State* L,
+char** mailrelay_event_read_string_array(lua_State* L,
                                                  const char* field_name,
                                                  int* out_count) {
     *out_count = 0;
@@ -233,7 +233,7 @@ static char** mailrelay_event_read_string_array(lua_State* L,
  * Read an optional string field from a Lua table.
  * Returns a newly allocated string or NULL.
  */
-static char* mailrelay_event_read_string(lua_State* L, const char* field_name) {
+char* mailrelay_event_read_string(lua_State* L, const char* field_name) {
     lua_getfield(L, -1, field_name);
     const char* s = lua_tostring(L, -1);
     char* result = (s && s[0] != '\0') ? strdup(s) : NULL;
@@ -245,7 +245,7 @@ static char* mailrelay_event_read_string(lua_State* L, const char* field_name) {
  * Read an optional integer field from a Lua table.
  * Returns the integer if present and valid, otherwise default_value.
  */
-static int mailrelay_event_read_int(lua_State* L,
+int mailrelay_event_read_int(lua_State* L,
                                      const char* field_name,
                                      int default_value) {
     lua_getfield(L, -1, field_name);
@@ -264,7 +264,7 @@ static int mailrelay_event_read_int(lua_State* L,
  * MailRelayTemplateParams structure. Caller must free with
  * mailrelay_template_params_free().
  */
-static bool mailrelay_event_read_params(lua_State* L,
+bool mailrelay_event_read_params(lua_State* L,
                                          const char* field_name,
                                          MailRelayTemplateParams* out_params) {
     mailrelay_template_params_init(out_params);
@@ -294,7 +294,7 @@ static bool mailrelay_event_read_params(lua_State* L,
 /*
  * Free a string array returned by mailrelay_event_read_string_array.
  */
-static void mailrelay_event_free_string_array(char** arr, int count) {
+void mailrelay_event_free_string_array(char** arr, int count) {
     if (!arr) {
         return;
     }
@@ -315,7 +315,7 @@ void mailrelay_event_set_dispatcher(mailrelay_event_dispatcher_fn fn) {
  * Convert the handler's returned mail-request table into a
  * MailRelaySendTemplateRequest and enqueue it.
  */
-static bool mailrelay_event_dispatch_request(lua_State* L, char* err, size_t err_cap) {
+bool mailrelay_event_dispatch_request(lua_State* L, char* err, size_t err_cap) {
     if (!lua_istable(L, -1)) {
         snprintf(err, err_cap, "handler did not return a table");
         return false;
@@ -403,7 +403,7 @@ static bool mailrelay_event_dispatch_request(lua_State* L, char* err, size_t err
  * Returns true if a mail was successfully dispatched or the handler chose
  * not to send (returned nil/empty). Returns false on Lua/runtime/error.
  */
-static bool mailrelay_event_run_handler(const char* source,
+bool mailrelay_event_run_handler(const char* source,
                                          const char* chunk_name,
                                          const char* event_key,
                                          const MailRelayTemplateParams* params,
@@ -467,7 +467,7 @@ static bool mailrelay_event_run_handler(const char* source,
  * Find the configured event rule for event_key.
  * Returns a pointer to the rule or NULL if not found.
  */
-static const MailEventRule* mailrelay_event_find_rule(const char* event_key) {
+const MailEventRule* mailrelay_event_find_rule(const char* event_key) {
     if (!app_config || !event_key) {
         return NULL;
     }
@@ -486,7 +486,7 @@ static const MailEventRule* mailrelay_event_find_rule(const char* event_key) {
  * Phase 6.1a only supports built-in default handlers for the well-known
  * system events. Phase 6.1b will add DB-loaded custom scripts.
  */
-static const char* mailrelay_event_resolve_source(const char* event_key,
+const char* mailrelay_event_resolve_source(const char* event_key,
                                                    const MailEventRule* rule) {
     (void)rule; // Reserved for DB script lookup in Phase 6.1b.
 

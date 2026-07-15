@@ -1,273 +1,248 @@
-# Static functions report: hydrogen/src (mailrelay + scripting)
+# Static functions cleanup — hydrogen/src (mailrelay + scripting)
 
 Scope: `elements/001-hydrogen/hydrogen/src/mailrelay` and `.../src/scripting`.
 Excludes `examples/` and the benign `static` in `hydrogen.h`.
 
-## Summary
+This doc tracks the work to remove `static` from internal helper functions so
+they can be called directly from Unity Framework unit tests. The goal is
+**testability**, not just removing the keyword: every converted function must
+also get a visible declaration in a header.
 
-- **146** `static` function declarations (some files declare a prototype + define it -> see below).
-- **86** unique function names; **116** unique (name,file) pairs.
-- **0 true cross-file collisions** within scope: all 30 repeated names are prototype+definition pairs in the *same* `.c` file.
-- **0 collisions** with the rest of `hydrogen/src` — safe to un-`static` from a linker standpoint.
-- Caveat: removing `static` alone does not make a function callable from Unity tests; it also needs a visible declaration (header).
+---
 
-## Per-file listing
+## Status
 
-### `http_client.c`
+| Module group | `static` functions | Status |
+|--------------|-------------------|--------|
+| **mailrelay** (`src/mailrelay`) | 146 (in 12 files) | ✅ **COMPLETE** |
+| **scripting** (`src/scripting`) | 85 (in ~16 files) | ⏳ NEXT BATCH (see below) |
 
-- L129: `static long resolve_timeout(int requested) {`
-- L99: `static struct OidcRpHttpResponse* try_test_injection(const char* url) {`
+The mailrelay conversion is done and builds clean under the `Unity`,
+`Regular`, and `Coverage` build configs, and all existing mailrelay Unity
+tests pass.
 
-### `http_pool.c`
+---
 
-- L110: `static void scripting_http_worker_process_one(ScriptingHttpPool* pool,`
-- L175: `static bool scripting_http_worker_should_exit(ScriptingHttpPool* pool) {`
-- L38: `static void* scripting_http_worker_thread(void* arg);`
-- L39: `static void scripting_http_worker_process_one(ScriptingHttpPool* pool,`
-- L41: `static bool scripting_http_worker_should_exit(ScriptingHttpPool* pool);`
-- L59: `static char* serialize_headers(const OidcRpHttpResponse* resp) {`
-- L84: `static void* scripting_http_worker_thread(void* arg) {`
+## mailrelay — COMPLETE
 
-### `lua_context.c`
+### What was done
 
-- L156: `static int H_lua_panic(lua_State* L) {`
-- L33: `static void H_lua_open_sandboxed_libraries(lua_State* L);`
-- L34: `static int H_lua_panic(lua_State* L);`
-- L93: `static void H_lua_open_sandboxed_libraries(lua_State* L) {`
+- All 146 `static` function declarations across the 12 mailrelay `.c` files
+  were converted to non-`static`.
+- A matching declaration was added to the appropriate header for each
+  function (see mapping below), marked with a "not part of the stable public
+  API / exposed for Unity tests" comment block.
+- Remaining `static` in `src/mailrelay` is **intentional and correct**:
+  - `mailrelay_test_seams.c` — the two `static` callbacks are already behind
+    the seam pattern and are not called by tests.
+  - File-scope globals / string literals (test-seam state vars, the
+    `MAILRELAY_EVENT_*_SCRIPT` built-in Lua sources, etc.) — module-private
+    by design.
+- **No functions were renamed.** There were 0 true cross-file name collisions
+  (every repeated name was a same-file prototype+definition pair; see
+  Collision detail at the bottom).
 
-### `lua_hook.c`
+### Header → function mapping (where the declarations went)
 
-- L77: `static void H_lua_progress_hook_fn(lua_State* L, lua_Debug* ar) {`
+| Header | Functions exposed |
+|--------|-------------------|
+| `mailrelay_internal.h` | `recovery_callback`, `insert_callback`, `mailrelay_persist_message` |
+| `mailrelay_debounce.h` | `create_entry`, `mailrelay_debounce_thread` |
+| `mailrelay_events.h` | `mailrelay_event_check_rate_limit`, `mailrelay_event_free_rate_limits`, `mailrelay_event_push_event_table`, `mailrelay_event_read_string_array`, `mailrelay_event_read_string`, `mailrelay_event_read_int`, `mailrelay_event_read_params`, `mailrelay_event_free_string_array`, `mailrelay_event_dispatch_request`, `mailrelay_event_run_handler`, `mailrelay_event_find_rule`, `mailrelay_event_resolve_source` |
+| `mailrelay_message.h` | `add_recipient` |
+| `mailrelay_otp.h` | `otp_insert_callback`, `otp_resolve_digits`, `otp_resolve_expiry`, `otp_resolve_max_attempts`, `otp_purpose_valid`, `otp_json_int64`, `otp_json_copy_string`, `otp_get_active_callback`, `otp_write_callback`, `otp_parse_iso_time`, `otp_set_err` |
+| `mailrelay.h` (no dedicated producer header) | `idempotency_callback`, `status_from_a63`, `add_recipients_arrays`, `producer_check_runtime`, `producer_try_idempotency`, `producer_resolve_from_reply`, `producer_enqueue_message`, `mailrelay_send_template_default`, `mailrelay_send_direct_default` |
+| `mailrelay_queue.h` | `timespec_compare`, `item_is_due`, `find_first_due`, `find_earliest`, `remove_item` |
+| `mailrelay_render.h` | `render_grow`, `render_mem`, `render_str`, `render_header`, `render_header_list`, `render_boundary`, `render_mime_part`, `render_rfc822_date` |
+| `mailrelay_repository.h` | `mailrelay_repo_resolve_database`, `mailrelay_repo_invoke_callback`, `mailrelay_repo_default_execute`, `repo_params_new`, `repo_add_string`, `repo_add_int`, `repo_add_int64`, `repo_execute_json`, `repo_execute_empty` |
+| `mailrelay_smtp.h` | `resolve_tls_mode`, `build_request`, `smtp_read_cb`, `smtp_write_cb`, `parse_smtp_code` |
+| `mailrelay_template.h` | `is_macro_name_char`, `output_append`, `output_append_char`, `output_free`, `resolve_builtin`, `parse_macro`, `is_valid_macro_name`, `preview_render_callback` |
+| `mailrelay_workers.h` | `mailrelay_worker_thread` |
 
-### `mailrelay.c`
+### Header include fixes required (CAREFUL — caused the Coverage build to break)
 
-- L265: `static void insert_callback(MailRelayRepoResult* result, void* user_data) {`
-- L26: `static void recovery_callback(MailRelayRepoResult* result, void* user_data) {`
-- L279: `static bool mailrelay_persist_message(const MailRelayMessage* msg,`
+When you add a function prototype that references a type not already visible
+in that header, **the header must include the header that defines the type**,
+otherwise a test that includes only this header (under a different build
+config) fails to compile.
 
-### `mailrelay_debounce.c`
+- `mailrelay_otp.h` was edited to add
+  `#include <src/mailrelay/mailrelay_repository.h>` (for `MailRelayRepoResult`,
+  `json_t`).
+- `mailrelay_internal.h` adds `mailrelay_repository.h` (for `MailRelayRepoResult`).
+- `mailrelay_template.h` adds `mailrelay_repository.h` (needed for
+  `MailRelayRepoResult` in `preview_render_callback`).
 
-- L102: `static MailRelayDebounceEntry* create_entry(const MailRelayMessage* msg,`
-- L25: `static MailRelayDebounceEntry* create_entry(const MailRelayMessage* msg,`
-- L458: `static void* mailrelay_debounce_thread(void* arg) {`
+### Lessons learned (apply to scripting and every future batch)
 
-### `mailrelay_events.c`
+1. **Remove `static` AND add a header declaration — two steps, both required.**
+   Removing `static` alone makes the symbol linkable but a test TU still can't
+   *see* it without a declaration. Tests do `#include <src/mailrelay/...>`.
+2. **Make every touched header self-contained.** Before moving on, a header
+   that declares a function using type `T` must itself `#include` (directly or
+   transitively) the header defining `T`. The build configs are NOT identical:
+   `mkt` runs `Unity`, `Regular`, AND `Coverage` (`-DBUILD_TYPE='"Coverage"'`),
+   and the Coverage config flags/`-I` path exposed a missing include that the
+   Unity build masked via transitive includes. **A header compiling in one
+   config does not guarantee it compiles standalone.**
+3. **Check for same-file prototype+definition pairs first.** Many "duplicate"
+   names are just `static foo(...);` forward-decl followed by `static foo(...) {...}`
+   in the same `.c`. These are not real collisions — don't rename them. The
+   reliable way to detect TRUE collisions is: count distinct *files* per name;
+   a name in ≥2 different `.c` files is a real linker collision.
+4. **Don't rename unless there's a real cross-file collision.** Within a
+   module, function names are typically unique across files, so no renaming is
+   needed. (Confirmed: mailrelay needed 0 renames.)
+5. **Verify against ALL build configs, not just one.** Minimum bar:
+   - `cmake --build build --target hydrogen_unity` (library)
+   - `cmake --build build --target unity_tests` (full test suite, 906/1117 targets)
+   - `cmake --build build --target hydrogen` (regular daemon)
+   - `cmake --build build --target hydrogen_coverage` + `coverage` (Coverage config)
+   The `Unity` library build passing is NOT sufficient proof — the header
+   include bug only surfaced in `Coverage`.
+6. **Run a sample of the affected tests** after editing, to confirm runtime
+   behavior is unchanged (mailrelay: queue 7, template 22, otp 23/33, producer
+   33, repository 40 — all 0 failures).
+7. **Keep genuinely module-private `static`.** Test-seam callbacks, file-scope
+   globals, and string literals stay `static` — removing them buys nothing and
+   risks exposing internal state.
+8. **Prefer `python3` in-place replace for many occurrences** of `static` →
+   non-static in one file (e.g. 10–16 replacements per file); it's faster and
+   less error-prone than many individual `edit` calls. Always re-read the file
+   after to confirm counts.
+9. **Watch for EDIT pitfalls:** the `edit` tool requires exact whitespace;
+   when a header's tail has blank lines / `#endif` patterns, match the *exact*
+   surrounding lines (use `sed -n 'Np' | cat -A` to see exact bytes). Also note
+   `mailrelay_template.h` ends with `MAILRELAY_TEMPLATE_H` (not `MAILRELAY_RENDER_H`),
+   and `mailrelay.h` has no separate producer header — producer internals go in
+   `mailrelay.h`.
+10. **No CMake changes are needed.** Sources are collected via
+    `file(GLOB_RECURSE HYDROGEN_SOURCES "../src/*.c")` in
+    `cmake/CMakeLists-init.cmake`, so adding/removing `static` and editing
+    headers does not require touching build files.
 
-- L116: `static void mailrelay_event_free_rate_limits(void) {`
-- L135: `static void mailrelay_event_push_event_table(lua_State* L,`
-- L188: `static char** mailrelay_event_read_string_array(lua_State* L,`
-- L236: `static char* mailrelay_event_read_string(lua_State* L, const char* field_name) {`
-- L248: `static int mailrelay_event_read_int(lua_State* L,`
-- L267: `static bool mailrelay_event_read_params(lua_State* L,`
-- L297: `static void mailrelay_event_free_string_array(char** arr, int count) {`
-- L318: `static bool mailrelay_event_dispatch_request(lua_State* L, char* err, size_t err_cap) {`
-- L406: `static bool mailrelay_event_run_handler(const char* source,`
-- L470: `static const MailEventRule* mailrelay_event_find_rule(const char* event_key) {`
-- L489: `static const char* mailrelay_event_resolve_source(const char* event_key,`
-- L75: `static bool mailrelay_event_check_rate_limit(const char* event_key,`
+---
 
-### `mailrelay_message.c`
+## scripting — NEXT BATCH (playbook to start fresh)
 
-- L150: `static bool add_recipient(char* arr[], int* count, const char* addr) {`
+Scope: `elements/001-hydrogen/hydrogen/src/scripting`. ~85 `static` functions
+across roughly these files (re-derive exact line numbers with the command in
+"Reproduce the scan" before starting — they shift as code changes):
 
-### `mailrelay_otp.c`
+- `orchestrator.c` (12)
+- `worker_pool.c` (8)
+- `scoreboard.c` (6)
+- `scripting_api_mail_notify.c` (7)
+- `http_pool.c` (7)
+- `lua_context.c` (4)
+- `scripting_api_llm.c` (3)
+- `scripting_handle.c` (1)
+- `scripting_api_scoreboard.c` (1)
+- `script_registry.c` (1)
+- `source_cache.c` (1)
+- `http_client.c` (2)
+- `lua_hook.c` (1)
 
-- L142: `static void otp_insert_callback(MailRelayRepoResult* result, void* user_data) {`
-- L168: `static int otp_resolve_digits(const MailRelayOtpSendRequest* req) {`
-- L178: `static int otp_resolve_expiry(const MailRelayOtpSendRequest* req) {`
-- L188: `static int otp_resolve_max_attempts(const MailRelayOtpSendRequest* req) {`
-- L198: `static bool otp_purpose_valid(int purpose) {`
-- L391: `static long long otp_json_int64(json_t* obj, const char* key) {`
-- L405: `static void otp_json_copy_string(json_t* obj, const char* key, char* out, size_t out_size) {`
-- L419: `static void otp_get_active_callback(MailRelayRepoResult* result, void* user_data) {`
-- L463: `static void otp_write_callback(MailRelayRepoResult* result, void* user_data) {`
-- L479: `static bool otp_parse_iso_time(const char* s, time_t* out) {`
-- L513: `static void otp_set_err(char* err, size_t err_cap, const char* msg) {`
+(NOTE: a couple of scripting functions are Java/other-language namespaced and
+may need care — `bytecode_dump_writer`, etc. Verify they're real C functions
+in `.c` files first.)
 
-### `mailrelay_producer.c`
+### Step-by-step
 
-- L113: `static bool add_recipients_arrays(MailRelayMessage* msg,`
-- L156: `static MailRelayStatus producer_check_runtime(char* err, size_t err_cap) {`
-- L170: `static bool producer_try_idempotency(const char* idempotency_key,`
-- L201: `static bool producer_resolve_from_reply(const char* req_from,`
-- L232: `static MailRelayStatus producer_enqueue_message(MailRelayMessage* msg,`
-- L273: `static MailRelayStatus mailrelay_send_template_default(const MailRelaySendTemplateRequest* req,`
-- L391: `static MailRelayStatus mailrelay_send_direct_default(const MailRelaySendDirectRequest* req,`
-- L48: `static void idempotency_callback(MailRelayRepoResult* result, void* user_data);`
-- L51: `static const char* status_from_a63(int status_a63) {`
-- L66: `static void idempotency_callback(MailRelayRepoResult* result, void* user_data) {`
+1. **Reproduce the scan** to get the exact current list (line numbers move):
 
-### `mailrelay_queue.c`
+   ```bash
+   rg -N --no-heading -n '^\s*static\b.*\w+\s*\(' -g '*.c' -g '*.h' \
+     elements/001-hydrogen/hydrogen/src/scripting
+   ```
 
-- L12: `static int timespec_compare(const struct timespec* a, const struct timespec* b) {`
-- L20: `static bool item_is_due(const MailRelayQueueItem* item, const struct timespec* now) {`
-- L26: `static MailRelayQueueItem* find_first_due(MailRelayQueue* queue, const struct timespec* now) {`
-- L37: `static MailRelayQueueItem* find_earliest(MailRelayQueue* queue) {`
-- L49: `static void remove_item(MailRelayQueue* queue, MailRelayQueueItem* target) {`
+   To detect TRUE cross-file collisions only:
 
-### `mailrelay_render.c`
+   ```bash
+   rg -N --no-heading -n '^\s*static\b.*\w+\s*\(' -g '*.c' -g '*.h' \
+     elements/001-hydrogen/hydrogen/src/scripting \
+   | rg -o 'static\s+[\w\s\*]*?(\w+)\s*\(' -r '$1' \
+   | sort | uniq -d      # these "duplicates" are prototype+def pairs — verify they're same-file
+   ```
 
-- L105: `static void render_mime_part(char** buf, size_t* len, size_t* cap, const char* boundary, const char* part_type, const char* body) {`
-- L115: `static void render_rfc822_date(char* buf, size_t cap, time_t t) {`
-- L16: `static void render_grow(char** buf, const size_t* len, size_t* cap, size_t extra) {`
-- L30: `static void render_mem(char** buf, size_t* len, size_t* cap, const char* data, size_t data_len) {`
-- L37: `static void render_str(char** buf, size_t* len, size_t* cap, const char* s) {`
-- L41: `static void render_header(char** buf, size_t* len, size_t* cap, const char* name, const char* value) {`
-- L57: `static void render_header_list(char** buf, size_t* len, size_t* cap, const char* name, char* const* arr, int count) {`
-- L83: `static char* render_boundary(const char* message_id) {`
+   Then confirm none collide with the rest of `hydrogen/src` (reuse the
+   comm-style check from mailrelay).
+2. **For each `.c`, strip `static`** from every function definition (and any
+   same-file forward declaration). Use `python3` in-place replace per file;
+   re-read to confirm counts.
+3. **Add a declaration to the right header for each.** Mapping guidance:
+   - Most scripting files already have a matching `*.h` — put the declaration
+     there.
+   - `lua_context.c` → `lua_context.h`; `worker_pool.c` → `worker_pool.h`;
+     `scoreboard.c` → `scoreboard.h`; `orchestrator.c` → `orchestrator.h`;
+     `http_pool.c`/`http_client.c` → their http headers;
+     `scripting_api_*.c` → the matching api header;
+     `script_registry.c`/`source_cache.c`/`scripting_handle.c`/`lua_hook.c` →
+     their headers. If a file has no header, create one or place the decl in
+     the nearest module header (mirror the `mailrelay.h` producer-internals
+     approach).
+   - For functions touching Lua (`lua_State*`), **forward-declare
+     `typedef struct lua_State lua_State;`** in the header instead of pulling
+     the Lua headers into a public header (this is what `mailrelay_events.h`
+     did).
+4. **Make every touched header self-contained** (Lesson #2). scripting headers
+   reference types like `ScriptingWorkerPool`, `ScriptingHttpPool`,
+   `Scoreboard`, `MailRelayTemplateParams`, `OutboundServer`, `json_t`, etc. —
+   each must be available via include. When in doubt, add the specific include
+   (e.g. a header declaring `MailRelayTemplateParams` needs
+   `mailrelay_template.h`).
+5. **Build & verify ALL configs** (Lesson #5):
+   `hydrogen_unity`, `unity_tests`, `hydrogen`, `hydrogen_coverage`, `coverage`.
+   Pay special attention to `Coverage` — it's where include gaps surface.
+6. **Run a sample of scripting tests** (e.g. scoreboard, worker_pool,
+   orchestrator) to confirm no behavior change.
+7. **Update this doc**: mark scripting COMPLETE with its header→function
+   mapping, and append any new lessons.
 
-### `mailrelay_repository.c`
+### Reusable scan/verify one-liner set (run from repo root)
 
-- L288: `static json_t* repo_params_new(void) {`
-- L309: `static bool repo_add_string(json_t* root, const char* name, const char* value) {`
-- L323: `static bool repo_add_int(json_t* root, const char* name, int value) {`
-- L334: `static bool repo_add_int64(json_t* root, const char* name, long long value) {`
-- L349: `static bool repo_execute_json(int query_ref, json_t* params,`
-- L378: `static bool repo_execute_empty(int query_ref,`
-- L40: `static bool mailrelay_repo_default_execute(int query_ref,`
-- L51: `static const char* mailrelay_repo_resolve_database(void) {`
-- L77: `static void mailrelay_repo_invoke_callback(mailrelay_repo_callback_fn callback,`
-- L98: `static bool mailrelay_repo_default_execute(int query_ref,`
+```bash
+# 1. count static fns in a module
+rg -N --no-heading -c '^\s*static\b.*\w+\s*\(' -g '*.c' -g '*.h' \
+  elements/001-hydrogen/hydrogen/src/scripting | grep -v ':0$'
+# 2. confirm none left after conversion (expect only test-seam globals)
+rg -n '^\s*static\b' elements/001-hydrogen/hydrogen/src/scripting/*.c
+```
 
-### `mailrelay_smtp.c`
+---
 
-- L102: `static size_t smtp_read_cb(void* ptr, size_t size, size_t nmemb, void* userp) {`
-- L120: `static size_t smtp_write_cb(const void* ptr, size_t size, size_t nmemb, void* userp) {`
-- L133: `static long parse_smtp_code(const char* buf, size_t len, char* text_out, size_t text_cap) {`
-- L20: `static int resolve_tls_mode(const OutboundServer* server);`
-- L21: `static bool build_request(const MailRelayMessage* msg,`
-- L26: `static size_t smtp_read_cb(void* ptr, size_t size, size_t nmemb, void* userp);`
-- L27: `static size_t smtp_write_cb(const void* ptr, size_t size, size_t nmemb, void* userp);`
-- L28: `static long parse_smtp_code(const char* buf, size_t len, char* text_out, size_t text_cap);`
-- L34: `static int resolve_tls_mode(const OutboundServer* server) {`
-- L44: `static bool build_request(const MailRelayMessage* msg,`
+## Collision detail (reference — mailrelay, all safe)
 
-### `mailrelay_template.c`
+Names declared as both prototype and definition in the same file (NOT real
+collisions — safe to un-`static`):
 
-- L122: `static bool output_append_char(MailRelayTemplateOutput* out,`
-- L130: `static void output_free(MailRelayTemplateOutput* out) {`
-- L143: `static const char* resolve_builtin(const char* name,`
-- L176: `static bool parse_macro(const char* template_text,`
-- L240: `static bool is_valid_macro_name(const char* name, char* err, size_t err_cap) {`
-- L28: `static bool is_macro_name_char(char c);`
-- L29: `static bool output_append(MailRelayTemplateOutput* out,`
-- L34: `static bool output_append_char(MailRelayTemplateOutput* out,`
-- L38: `static void output_free(MailRelayTemplateOutput* out);`
-- L39: `static const char* resolve_builtin(const char* name,`
-- L46: `static bool parse_macro(const char* template_text,`
-- L510: `static void preview_render_callback(MailRelayRepoResult* result, void* user_data) {`
-- L55: `static bool is_valid_macro_name(const char* name, char* err, size_t err_cap);`
-- L74: `static void preview_render_callback(MailRelayRepoResult* result, void* user_data);`
-- L77: `static bool is_macro_name_char(char c) {`
-- L83: `static bool output_append(MailRelayTemplateOutput* out,`
-
-### `mailrelay_test_seams.c`
-
-- L10: `static time_t default_seam_time(void) {`
-- L14: `static void default_seam_message_id(char* buffer, size_t buflen, const char* app_name) {`
-
-### `mailrelay_workers.c`
-
-- L23: `static void* mailrelay_worker_thread(void* arg) {`
-
-### `orchestrator.c`
-
-- L103: `static void* orchestrator_thread_main(void* arg) {`
-- L170: `static void orchestrator_set_shutdown_and_join(void) {`
-- L293: `static char* orchestrator_build_params_json(const char* group_name,`
-- L326: `static char* orchestrator_extract_code_from_result(const char* data_json) {`
-- L544: `static const char* orchestrator_resolve_database(void) {`
-- L637: `static void orchestrator_load_configured_blocking(void) {`
-- L672: `static void* orchestrator_loader_main(void* arg) {`
-- L82: `static void* orchestrator_thread_main(void* arg);`
-- L83: `static void   orchestrator_set_shutdown_and_join(void);`
-- L84: `static void   orchestrator_load_configured_blocking(void);`
-- L85: `static void*  orchestrator_loader_main(void* arg);`
-- L86: `static const char* orchestrator_resolve_database(void);`
-
-### `scoreboard.c`
-
-- L121: `static bool generate_unique_id(const Scoreboard* sb, char out[ID_LEN + 1]) {`
-- L35: `static bool is_terminal_status(ScoreboardJobStatus status) {`
-- L43: `static void entry_clear_owned(ScoreboardEntry* entry) {`
-- L81: `static void timespec_clear(struct timespec* ts) {`
-- L89: `static void timespec_now(struct timespec* ts) {`
-- L99: `static bool entries_grow_if_needed(Scoreboard* sb) {`
-
-### `scripting_api_llm.c`
-
-- L35: `static DatabaseQueue* resolve_llm_db_queue(const char* db_name, char** err_out) {`
-- L83: `static ChatEngineConfig* resolve_llm_engine(const char* model_name, const char* db_name) {`
-- L96: `static char* build_llm_request_json(const char* prompt, int max_tokens, double temperature) {`
-
-### `scripting_api_mail_notify.c`
-
-- L107: `static void mail_parse_init(MailLuaParse* p) {`
-- L113: `static bool parse_recipient_field(lua_State* L, int table_idx, const char* field,`
-- L210: `static bool parse_params_table(lua_State* L, int table_idx, MailRelayTemplateParams* params,`
-- L242: `static bool parse_optional_string_field(lua_State* L, int table_idx, const char* field,`
-- L284: `static bool parse_mail_message(lua_State* L, MailLuaParse* p) {`
-- L439: `static void status_to_mail_error(MailRelayStatus status, const char* producer_err,`
-- L57: `static void free_mail_parse(MailLuaParse* p) {`
-
-### `scripting_api_scoreboard.c`
-
-- L230: `static int bytecode_dump_writer(lua_State* L, const void* p, size_t sz, void* ud) {`
-
-### `scripting_handle.c`
-
-- L44: `static int H_Handle_gc(lua_State* L) {`
-
-### `script_registry.c`
-
-- L69: `static bool registry_grow_if_needed(ScriptRegistry* reg) {`
-
-### `source_cache.c`
-
-- L79: `static bool source_cache_grow_if_needed(SourceCache* cache) {`
-
-### `worker_pool.c`
-
-- L330: `static bool scripting_worker_should_exit(ScriptingWorkerPool* pool) {`
-- L344: `static void* scripting_worker_thread(void* arg) {`
-- L379: `static void scripting_worker_process_one(ScriptingWorkerPool* pool,`
-- L72: `static void* scripting_worker_thread(void* arg);`
-- L73: `static void scripting_worker_process_one(ScriptingWorkerPool* pool,`
-- L75: `static bool scripting_worker_should_exit(ScriptingWorkerPool* pool);`
-- L76: `static void scripting_signal_waiter_if_present(const char* job_id);`
-- L96: `static void scripting_signal_waiter_if_present(const char* job_id) {`
-
-## Collision detail
-
-Names declared as both prototype and definition in the same file (NOT real collisions — safe to un-`static`):
-
-- `build_request`  (2 occurrences: prototype + definition in same file)
-- `create_entry`  (2 occurrences: prototype + definition in same file)
-- `H_lua_open_sandboxed_libraries`  (2 occurrences: prototype + definition in same file)
-- `H_lua_panic`  (2 occurrences: prototype + definition in same file)
-- `idempotency_callback`  (2 occurrences: prototype + definition in same file)
-- `is_macro_name_char`  (2 occurrences: prototype + definition in same file)
-- `is_valid_macro_name`  (2 occurrences: prototype + definition in same file)
-- `mailrelay_repo_default_execute`  (2 occurrences: prototype + definition in same file)
-- `orchestrator_load_configured_blocking`  (2 occurrences: prototype + definition in same file)
-- `orchestrator_loader_main`  (2 occurrences: prototype + definition in same file)
-- `orchestrator_resolve_database`  (2 occurrences: prototype + definition in same file)
-- `orchestrator_set_shutdown_and_join`  (2 occurrences: prototype + definition in same file)
-- `orchestrator_thread_main`  (2 occurrences: prototype + definition in same file)
-- `output_append`  (2 occurrences: prototype + definition in same file)
-- `output_append_char`  (2 occurrences: prototype + definition in same file)
-- `output_free`  (2 occurrences: prototype + definition in same file)
-- `parse_macro`  (2 occurrences: prototype + definition in same file)
-- `parse_smtp_code`  (2 occurrences: prototype + definition in same file)
-- `preview_render_callback`  (2 occurrences: prototype + definition in same file)
-- `resolve_builtin`  (2 occurrences: prototype + definition in same file)
-- `resolve_tls_mode`  (2 occurrences: prototype + definition in same file)
-- `scripting_http_worker_process_one`  (2 occurrences: prototype + definition in same file)
-- `scripting_http_worker_should_exit`  (2 occurrences: prototype + definition in same file)
-- `scripting_http_worker_thread`  (2 occurrences: prototype + definition in same file)
-- `scripting_signal_waiter_if_present`  (2 occurrences: prototype + definition in same file)
-- `scripting_worker_process_one`  (2 occurrences: prototype + definition in same file)
-- `scripting_worker_should_exit`  (2 occurrences: prototype + definition in same file)
-- `scripting_worker_thread`  (2 occurrences: prototype + definition in same file)
-- `smtp_read_cb`  (2 occurrences: prototype + definition in same file)
-- `smtp_write_cb`  (2 occurrences: prototype + definition in same file)
+- `build_request`
+- `create_entry`
+- `H_lua_open_sandboxed_libraries`
+- `H_lua_panic`
+- `idempotency_callback`
+- `is_macro_name_char`
+- `is_valid_macro_name`
+- `mailrelay_repo_default_execute`
+- `orchestrator_load_configured_blocking`
+- `orchestrator_loader_main`
+- `orchestrator_resolve_database`
+- `orchestrator_set_shutdown_and_join`
+- `orchestrator_thread_main`
+- `output_append`
+- `output_append_char`
+- `output_free`
+- `parse_macro`
+- `parse_smtp_code`
+- `preview_render_callback`
+- `resolve_builtin`
+- `resolve_tls_mode`
+- `scripting_http_worker_process_one`
+- `scripting_http_worker_should_exit`
+- `scripting_http_worker_thread`
+- `scripting_signal_waiter_if_present`
+- `scripting_worker_process_one`
+- `scripting_worker_should_exit`
+- `scripting_worker_thread`
+- `smtp_read_cb`
+- `smtp_write_cb`

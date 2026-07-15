@@ -144,7 +144,14 @@ bool mailrelay_debounce_replace_all(const char* src,
 bool mailrelay_debounce_build_coalesced_message(const MailRelayDebounceEntry* entry,
                                                MailRelayMessage* out);
 void mailrelay_debounce_enqueue_coalesced(MailRelayDebounceEntry* entry,
-                                         MailRelayQueue* queue);
+                                          MailRelayQueue* queue);
+
+/* Internal helpers exposed (non-static) for the Unity test suite. Not part of
+ * the stable public API. */
+MailRelayDebounceEntry* create_entry(const MailRelayMessage* msg,
+                                     int priority,
+                                     int debounce_seconds);
+void* mailrelay_debounce_thread(void* arg);
 
 #ifdef __cplusplus
 }

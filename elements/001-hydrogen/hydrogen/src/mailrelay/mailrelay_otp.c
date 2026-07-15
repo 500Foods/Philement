@@ -139,7 +139,7 @@ typedef struct OtpInsertCtx {
     char error[256];
 } OtpInsertCtx;
 
-static void otp_insert_callback(MailRelayRepoResult* result, void* user_data) {
+void otp_insert_callback(MailRelayRepoResult* result, void* user_data) {
     OtpInsertCtx* ctx = (OtpInsertCtx*)user_data;
     ctx->ok = false;
     ctx->otp_id = 0;
@@ -165,7 +165,7 @@ static void otp_insert_callback(MailRelayRepoResult* result, void* user_data) {
     }
 }
 
-static int otp_resolve_digits(const MailRelayOtpSendRequest* req) {
+int otp_resolve_digits(const MailRelayOtpSendRequest* req) {
     if (req->digits > 0) {
         return req->digits;
     }
@@ -175,7 +175,7 @@ static int otp_resolve_digits(const MailRelayOtpSendRequest* req) {
     return MAIL_OTP_DEFAULT_DIGITS;
 }
 
-static int otp_resolve_expiry(const MailRelayOtpSendRequest* req) {
+int otp_resolve_expiry(const MailRelayOtpSendRequest* req) {
     if (req->expiry_seconds > 0) {
         return req->expiry_seconds;
     }
@@ -185,7 +185,7 @@ static int otp_resolve_expiry(const MailRelayOtpSendRequest* req) {
     return MAIL_OTP_DEFAULT_EXPIRY_SECONDS;
 }
 
-static int otp_resolve_max_attempts(const MailRelayOtpSendRequest* req) {
+int otp_resolve_max_attempts(const MailRelayOtpSendRequest* req) {
     if (req->max_attempts > 0) {
         return req->max_attempts;
     }
@@ -195,7 +195,7 @@ static int otp_resolve_max_attempts(const MailRelayOtpSendRequest* req) {
     return MAIL_OTP_DEFAULT_MAX_ATTEMPTS;
 }
 
-static bool otp_purpose_valid(int purpose) {
+bool otp_purpose_valid(int purpose) {
     return purpose == MAIL_OTP_PURPOSE_LOGIN_MFA
         || purpose == MAIL_OTP_PURPOSE_EMAIL_VERIFY
         || purpose == MAIL_OTP_PURPOSE_PASSWORD_RESET;
@@ -388,7 +388,7 @@ typedef struct OtpGetActiveCtx {
     char error[256];
 } OtpGetActiveCtx;
 
-static long long otp_json_int64(json_t* obj, const char* key) {
+long long otp_json_int64(json_t* obj, const char* key) {
     if (obj == NULL || key == NULL) {
         return 0;
     }
@@ -402,7 +402,7 @@ static long long otp_json_int64(json_t* obj, const char* key) {
     return 0;
 }
 
-static void otp_json_copy_string(json_t* obj, const char* key, char* out, size_t out_size) {
+void otp_json_copy_string(json_t* obj, const char* key, char* out, size_t out_size) {
     if (out == NULL || out_size == 0U) {
         return;
     }
@@ -416,7 +416,7 @@ static void otp_json_copy_string(json_t* obj, const char* key, char* out, size_t
     }
 }
 
-static void otp_get_active_callback(MailRelayRepoResult* result, void* user_data) {
+void otp_get_active_callback(MailRelayRepoResult* result, void* user_data) {
     OtpGetActiveCtx* ctx = (OtpGetActiveCtx*)user_data;
     ctx->ok = false;
     ctx->found = false;
@@ -460,7 +460,7 @@ typedef struct OtpWriteCtx {
     char error[256];
 } OtpWriteCtx;
 
-static void otp_write_callback(MailRelayRepoResult* result, void* user_data) {
+void otp_write_callback(MailRelayRepoResult* result, void* user_data) {
     OtpWriteCtx* ctx = (OtpWriteCtx*)user_data;
     ctx->ok = false;
     ctx->error[0] = '\0';
@@ -476,7 +476,7 @@ static void otp_write_callback(MailRelayRepoResult* result, void* user_data) {
 }
 
 /* Parse ISO-like timestamps written by format_iso_time (%Y-%m-%dT%H:%M:%SZ). */
-static bool otp_parse_iso_time(const char* s, time_t* out) {
+bool otp_parse_iso_time(const char* s, time_t* out) {
     if (s == NULL || *s == '\0' || out == NULL) {
         return false;
     }
@@ -510,7 +510,7 @@ static bool otp_parse_iso_time(const char* s, time_t* out) {
     return true;
 }
 
-static void otp_set_err(char* err, size_t err_cap, const char* msg) {
+void otp_set_err(char* err, size_t err_cap, const char* msg) {
     if (err != NULL && err_cap > 0U && msg != NULL) {
         snprintf(err, err_cap, "%s", msg);
     }

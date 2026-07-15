@@ -18,6 +18,7 @@
 // Project includes
 #include <src/mailrelay/mailrelay_debounce.h>
 #include <src/mailrelay/mailrelay_queue.h>
+#include <src/mailrelay/mailrelay_repository.h>
 #include <src/mailrelay/mailrelay_result.h>
 
 /*
@@ -93,5 +94,16 @@ MailRelayStatus mailrelay_enqueue_to_queue(const MailRelayMessage* msg,
  * Called from mailrelay_shutdown().
  */
 void mailrelay_event_free_all_rate_limits(void);
+
+/*
+ * The following helpers are exposed (non-static) primarily so the Unity test
+ * suite can exercise enqueue/persistence and recovery callbacks directly. They
+ * are not part of the stable public API.
+ */
+void recovery_callback(MailRelayRepoResult* result, void* user_data);
+void insert_callback(MailRelayRepoResult* result, void* user_data);
+bool mailrelay_persist_message(const MailRelayMessage* msg,
+                               int priority,
+                               long long* out_queue_id);
 
 #endif /* MAILRELAY_INTERNAL_H */

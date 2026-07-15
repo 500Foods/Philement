@@ -22,9 +22,9 @@
 void mailrelay_debounce_free_entry(MailRelayDebounceEntry* entry);
 MailRelayDebounceEntry* mailrelay_debounce_find_entry(MailRelayDebounceState* state,
                                           const char* key);
-static MailRelayDebounceEntry* create_entry(const MailRelayMessage* msg,
-                                            int priority,
-                                            int debounce_seconds);
+MailRelayDebounceEntry* create_entry(const MailRelayMessage* msg,
+                                     int priority,
+                                     int debounce_seconds);
 bool mailrelay_debounce_replace_all(const char* src,
                         const char* placeholder,
                         const char* value,
@@ -99,9 +99,9 @@ MailRelayDebounceEntry* mailrelay_debounce_find_entry(MailRelayDebounceState* st
     return NULL;
 }
 
-static MailRelayDebounceEntry* create_entry(const MailRelayMessage* msg,
-                                            int priority,
-                                            int debounce_seconds) {
+MailRelayDebounceEntry* create_entry(const MailRelayMessage* msg,
+                                     int priority,
+                                     int debounce_seconds) {
     MailRelayDebounceEntry* entry = calloc(1, sizeof(MailRelayDebounceEntry));
     if (!entry) {
         return NULL;
@@ -455,7 +455,7 @@ void mailrelay_debounce_flush(MailRelayDebounceState* state, MailRelayQueue* que
 }
 
 // Debounce expiry thread entry point.
-static void* mailrelay_debounce_thread(void* arg) {
+void* mailrelay_debounce_thread(void* arg) {
     (void)arg;
 
     add_service_thread(&mailrelay_threads, pthread_self());

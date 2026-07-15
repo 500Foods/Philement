@@ -196,6 +196,46 @@ typedef MailRelayStatus (*mailrelay_send_direct_fn)(const MailRelaySendDirectReq
 
 void mailrelay_send_direct_set_fn(mailrelay_send_direct_fn fn);
 
+/*
+ * The following producer helpers are exposed (non-static) primarily so the
+ * Unity test suite can exercise parameter resolution, idempotency, recipient
+ * building, and the default producer paths directly. They are not part of the
+ * stable public API.
+ */
+void idempotency_callback(MailRelayRepoResult* result, void* user_data);
+const char* status_from_a63(int status_a63);
+bool add_recipients_arrays(MailRelayMessage* msg,
+                           const char* const* to, int to_count,
+                           const char* const* cc, int cc_count,
+                           const char* const* bcc, int bcc_count,
+                           char* err,
+                           size_t err_cap);
+MailRelayStatus producer_check_runtime(char* err, size_t err_cap);
+bool producer_try_idempotency(const char* idempotency_key,
+                              MailRelaySendTemplateResponse* resp,
+                              char* err,
+                              size_t err_cap,
+                              MailRelayStatus* out_status);
+bool producer_resolve_from_reply(const char* req_from,
+                                 const char* req_reply_to,
+                                 const char** out_from,
+                                 const char** out_reply_to,
+                                 char* err,
+                                 size_t err_cap);
+MailRelayStatus producer_enqueue_message(MailRelayMessage* msg,
+                                         int priority,
+                                         MailRelaySendTemplateResponse* resp,
+                                         char* err,
+                                         size_t err_cap);
+MailRelayStatus mailrelay_send_template_default(const MailRelaySendTemplateRequest* req,
+                                                MailRelaySendTemplateResponse* resp,
+                                                char* err,
+                                                size_t err_cap);
+MailRelayStatus mailrelay_send_direct_default(const MailRelaySendDirectRequest* req,
+                                              MailRelaySendTemplateResponse* resp,
+                                              char* err,
+                                              size_t err_cap);
+
 #ifdef __cplusplus
 }
 #endif

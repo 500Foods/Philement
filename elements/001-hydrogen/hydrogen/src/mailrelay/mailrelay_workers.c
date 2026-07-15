@@ -20,7 +20,7 @@
 #include <time.h>
 
 // Worker thread entry point.
-static void* mailrelay_worker_thread(void* arg) {
+void* mailrelay_worker_thread(void* arg) {
     (void)arg;
 
     add_service_thread(&mailrelay_threads, pthread_self());

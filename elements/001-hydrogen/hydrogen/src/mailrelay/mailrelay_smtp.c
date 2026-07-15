@@ -17,21 +17,21 @@
 #include <time.h>
 
 /* Forward declarations (cppcheck: every function has a prototype). */
-static int resolve_tls_mode(const OutboundServer* server);
-static bool build_request(const MailRelayMessage* msg,
+int resolve_tls_mode(const OutboundServer* server);
+bool build_request(const MailRelayMessage* msg,
                           const OutboundServer* server,
                           const char* default_from,
                           const char* rendered,
                           MailRelaySmtpRequest* req);
-static size_t smtp_read_cb(void* ptr, size_t size, size_t nmemb, void* userp);
-static size_t smtp_write_cb(const void* ptr, size_t size, size_t nmemb, void* userp);
-static long parse_smtp_code(const char* buf, size_t len, char* text_out, size_t text_cap);
+size_t smtp_read_cb(void* ptr, size_t size, size_t nmemb, void* userp);
+size_t smtp_write_cb(const void* ptr, size_t size, size_t nmemb, void* userp);
+long parse_smtp_code(const char* buf, size_t len, char* text_out, size_t text_cap);
 bool mailrelay_smtp_transport_real(const MailRelaySmtpRequest* req, MailRelayResult* out);
 
 /* Active transport (swappable in tests). */
 static mailrelay_smtp_transport_fn mailrelay_smtp_transport = mailrelay_smtp_transport_real;
 
-static int resolve_tls_mode(const OutboundServer* server) {
+int resolve_tls_mode(const OutboundServer* server) {
     int mode = server->TLSMode;
     /* Legacy UseTLS boolean is only a backward-compatible hint: NONE + UseTLS
      * means "try STARTTLS", never implicit TLS. */
@@ -41,7 +41,7 @@ static int resolve_tls_mode(const OutboundServer* server) {
     return mode;
 }
 
-static bool build_request(const MailRelayMessage* msg,
+bool build_request(const MailRelayMessage* msg,
                           const OutboundServer* server,
                           const char* default_from,
                           const char* rendered,
@@ -99,7 +99,7 @@ typedef struct {
     size_t pos;
 } smtp_payload;
 
-static size_t smtp_read_cb(void* ptr, size_t size, size_t nmemb, void* userp) {
+size_t smtp_read_cb(void* ptr, size_t size, size_t nmemb, void* userp) {
     smtp_payload* p = (smtp_payload*)userp;
     size_t max = size * nmemb;
     if (p->pos >= p->len || max == 0) {
@@ -117,7 +117,7 @@ typedef struct {
     size_t len;
 } smtp_resp;
 
-static size_t smtp_write_cb(const void* ptr, size_t size, size_t nmemb, void* userp) {
+size_t smtp_write_cb(const void* ptr, size_t size, size_t nmemb, void* userp) {
     smtp_resp* r = (smtp_resp*)userp;
     size_t realsize = size * nmemb;
     if (r->len + realsize < sizeof(r->buf)) {
@@ -130,7 +130,7 @@ static size_t smtp_write_cb(const void* ptr, size_t size, size_t nmemb, void* us
 
 /* Find the last SMTP reply code (3 digits at the start of a line) and copy the
  * remainder of that line into text_out. Returns 0 if none found. */
-static long parse_smtp_code(const char* buf, size_t len, char* text_out, size_t text_cap) {
+long parse_smtp_code(const char* buf, size_t len, char* text_out, size_t text_cap) {
     long code = 0;
     const char* line_start = buf;
     for (size_t i = 0; i <= len; i++) {

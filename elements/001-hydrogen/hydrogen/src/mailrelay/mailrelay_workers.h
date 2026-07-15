@@ -31,6 +31,12 @@ bool mailrelay_workers_start(int count);
  */
 void mailrelay_workers_stop(void);
 
+/*
+ * Worker thread entry point. Exposed (non-static) so the Unity test suite can
+ * drive a worker directly. Not part of the stable public API.
+ */
+void* mailrelay_worker_thread(void* arg);
+
 #ifdef __cplusplus
 }
 #endif

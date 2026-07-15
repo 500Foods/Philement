@@ -25,25 +25,25 @@ typedef struct MailRelayTemplateOutput {
 } MailRelayTemplateOutput;
 
 /* Forward declarations for internal helpers. */
-static bool is_macro_name_char(char c);
-static bool output_append(MailRelayTemplateOutput* out,
+bool is_macro_name_char(char c);
+bool output_append(MailRelayTemplateOutput* out,
                           const char* s,
                           size_t s_len,
                           char* err,
                           size_t err_cap);
-static bool output_append_char(MailRelayTemplateOutput* out,
+bool output_append_char(MailRelayTemplateOutput* out,
                                char c,
                                char* err,
                                size_t err_cap);
-static void output_free(MailRelayTemplateOutput* out);
-static const char* resolve_builtin(const char* name,
+void output_free(MailRelayTemplateOutput* out);
+const char* resolve_builtin(const char* name,
                                    const char* app_name,
                                    const char* server_name,
                                    const char* timestamp,
                                    const char* request_id,
                                    const char* user_email,
                                    const char* otp_code);
-static bool parse_macro(const char* template_text,
+bool parse_macro(const char* template_text,
                         size_t* pos,
                         char* name,
                         size_t name_cap,
@@ -52,7 +52,7 @@ static bool parse_macro(const char* template_text,
                         bool* has_default,
                         char* err,
                         size_t err_cap);
-static bool is_valid_macro_name(const char* name, char* err, size_t err_cap);
+bool is_valid_macro_name(const char* name, char* err, size_t err_cap);
 
 /* Context shared between mailrelay_template_preview and its callback. */
 typedef struct PreviewRenderContext {
@@ -71,16 +71,16 @@ typedef struct PreviewRenderContext {
     char error[256];
 } PreviewRenderContext;
 
-static void preview_render_callback(MailRelayRepoResult* result, void* user_data);
+void preview_render_callback(MailRelayRepoResult* result, void* user_data);
 
 /* Return true if the character is valid inside a macro name. */
-static bool is_macro_name_char(char c) {
+bool is_macro_name_char(char c) {
     return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
            (c >= '0' && c <= '9') || c == '_' || c == '.';
 }
 
 /* Append a string of a given length to the output buffer. */
-static bool output_append(MailRelayTemplateOutput* out,
+bool output_append(MailRelayTemplateOutput* out,
                           const char* s,
                           size_t s_len,
                           char* err,
@@ -119,7 +119,7 @@ static bool output_append(MailRelayTemplateOutput* out,
 }
 
 /* Append a single character to the output buffer. */
-static bool output_append_char(MailRelayTemplateOutput* out,
+bool output_append_char(MailRelayTemplateOutput* out,
                                char c,
                                char* err,
                                size_t err_cap) {
@@ -127,7 +127,7 @@ static bool output_append_char(MailRelayTemplateOutput* out,
 }
 
 /* Free the output buffer's owned data. */
-static void output_free(MailRelayTemplateOutput* out) {
+void output_free(MailRelayTemplateOutput* out) {
     if (!out) {
         return;
     }
@@ -140,7 +140,7 @@ static void output_free(MailRelayTemplateOutput* out) {
 }
 
 /* Resolve a built-in macro name to its caller-provided value. */
-static const char* resolve_builtin(const char* name,
+const char* resolve_builtin(const char* name,
                                    const char* app_name,
                                    const char* server_name,
                                    const char* timestamp,
@@ -173,7 +173,7 @@ static const char* resolve_builtin(const char* name,
  * has already been verified. On success, name and default_value are filled,
  * *pos is advanced past the closing '%', and has_default is set.
  */
-static bool parse_macro(const char* template_text,
+bool parse_macro(const char* template_text,
                         size_t* pos,
                         char* name,
                         size_t name_cap,
@@ -237,7 +237,7 @@ static bool parse_macro(const char* template_text,
 }
 
 /* Validate that a macro name contains only allowed characters. */
-static bool is_valid_macro_name(const char* name, char* err, size_t err_cap) {
+bool is_valid_macro_name(const char* name, char* err, size_t err_cap) {
     for (size_t i = 0; name[i] != '\0'; i++) {
         if (!is_macro_name_char(name[i])) {
             snprintf(err, err_cap, "invalid macro name '%s'", name);
@@ -507,7 +507,7 @@ bool mailrelay_template_render(const char* template_text,
  * Repository callback for mailrelay_template_preview. Renders the subject and
  * body templates retrieved from the database into the preview context.
  */
-static void preview_render_callback(MailRelayRepoResult* result, void* user_data) {
+void preview_render_callback(MailRelayRepoResult* result, void* user_data) {
     PreviewRenderContext* ctx = (PreviewRenderContext*)user_data;
     ctx->success = false;
     ctx->subject = NULL;
