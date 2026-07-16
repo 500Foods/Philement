@@ -53,7 +53,7 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2026-07-16 19:22:07 UTC
+Last updated at 2026-07-16 21:43:45 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
@@ -64,7 +64,7 @@ Text                           293            394              0         117928
 Markdown                       713          30307            242          89472
 JavaScript                     274          10488          13561          51470
 Lua                            279           6734           4674          44533
-Bourne Shell                   136           6711          91842          32864
+Bourne Shell                   136           6728          91957          33036
 CSS                            124           2769           1563          14045
 C/C++ Header                   308           3678          13063          10928
 CMake                           22            197            356           3287
@@ -78,7 +78,7 @@ zsh                              2             31             42             97
 Delphi Form                      1              1              0             43
 Pascal                           2             11              2             31
 -------------------------------------------------------------------------------
-SUM:                          4177         118740         185252        2260396
+SUM:                          4177         118757         185367        2260568
 -------------------------------------------------------------------------------
 3134 Files were skipped (duplicate, binary, or without source code):
   svg: 887
