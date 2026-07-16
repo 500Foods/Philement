@@ -6,7 +6,7 @@
     "WebServer": {
         "EnableIPv4": true,
         "EnableIPv6": false,
-        "Port": 55431
+        "Port": 15431
     },
     "Databases": {
         "Connections": [

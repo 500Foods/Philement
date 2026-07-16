@@ -49,6 +49,8 @@ The test runs in parallel against all configured engines:
 
 The script overrides the web port, mailval port, and TLS settings in each config at runtime, so a single config file per engine supports both plaintext and STARTTLS variants. Secrets and database connection parameters are injected via `${env.*}` variables resolved by the config loader.
 
+Test 58 uses the dedicated `15800-15831` listener range. These ports are below Linux's default ephemeral client-port range (`32768-60999`), preventing unrelated outbound connections in the full test suite from temporarily occupying a Test 58 listener port.
+
 ## Prerequisites
 
 - A built Hydrogen binary (`hydrogen`, `hydrogen_debug`, `hydrogen_release`, or `hydrogen_coverage`) under the project root.

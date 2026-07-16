@@ -6,7 +6,7 @@
     "WebServer": {
         "EnableIPv4": true,
         "EnableIPv6": false,
-        "Port": 55812
+        "Port": 15816
     },
     "API": {
         "Enabled": true,
@@ -79,7 +79,7 @@
         "Servers": [
             {
                 "Host": "127.0.0.1",
-                "Port": "55813",
+                "Port": "15817",
                 "UseTLS": false,
                 "TLSMode": 0,
                 "AuthMode": 0,

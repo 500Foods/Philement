@@ -36,6 +36,7 @@
 # (Helper functions live in tests/lib/scripting_helpers.sh)
 
 # CHANGELOG
+# 2.1.0 - 2026-07-15 - Moved WebServer listeners from Linux ephemeral range 55430-55446 to dedicated 15430-15446 ports.
 # 2.0.0 - 2026-07-02 - Phase 11i: run all 7 database engines in parallel (like test_40),
 #                      one config per engine, with and without DefaultDatabase, and
 #                      fail-fast when the scripting migrations are unavailable.
@@ -48,7 +49,7 @@ TEST_NAME="Scripting  {BLUE}engines: 7{RESET}"
 TEST_ABBR="SCR"
 TEST_NUMBER="43"
 TEST_COUNTER=0
-TEST_VERSION="2.0.0"
+TEST_VERSION="2.1.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
