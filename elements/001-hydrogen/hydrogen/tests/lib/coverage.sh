@@ -15,6 +15,10 @@
 # calculate_blackbox_coverage()
 
 # CHANGELOG
+# 4.3.0 - 2026-07-16 - Scoped the system-library basename skips (json/uuid/etc.)
+#                       to files outside src/ so project sources like
+#                       scripting/scoreboard_json.c and utils/utils_uuid.c are no
+#                       longer dropped (that mismatch was a permanent discrepancy)
 # 4.2.0 - 2026-07-09 - Updated DISCREPANCY values; simplified update notes (Test 00 prints recommended values)
 # 4.1.0 - 2026-01-13 - Fixed crypto filter that was excluding utils_crypto.c from coverage
 # 4.0.0 - 2025-12-05 - Added HYDROGEN_ROOT and HELIUM_ROOT environment variable checks
@@ -51,8 +55,8 @@ export COVERAGE_GUARD="true"
 # Adjustment so coverage.sh overall % matches coverage_table.sh per-file totals.
 # Different #ifdef paths (Unity vs blackbox builds) change instrumented line counts.
 # When Test 00 reports a mismatch, set these to the recommended values it prints.
-DISCREPANCY_UNITY=370
-DISCREPANCY_COVERAGE=287
+DISCREPANCY_UNITY=346
+DISCREPANCY_COVERAGE=77
   
 # Library metadata
 COVERAGE_NAME="Coverage Library"
@@ -326,19 +330,24 @@ calculate_coverage_generic() {
                 continue
             fi
             
-            # Skip system libraries and external dependencies
-            # Note: We no longer skip "crypto" as we have our own utils_crypto.c
-            # External crypto libs (like libcrypto.so) would show as /usr/lib paths
-            if [[ "${basename_file}" == *"jansson"* ]] || \
-               [[ "${basename_file}" == *"mock"* ]] || \
-               [[ "${basename_file}" == *"json"* ]] || \
-               [[ "${basename_file}" == *"curl"* ]] || \
-               [[ "${basename_file}" == *"ssl"* ]] || \
-               [[ "${basename_file}" == *"pthread"* ]] || \
-               [[ "${basename_file}" == *"uuid"* ]] || \
-               [[ "${basename_file}" == *"zlib"* ]] || \
-               [[ "${basename_file}" == *"pcre"* ]]; then
-                continue
+            # Skip system libraries and external dependencies.
+            # These only ever appear outside our src/ tree (caught by the /usr/
+            # path check above); the basename match is scoped to non-src paths so
+            # project source files whose names contain these substrings
+            # (e.g. scripting/scoreboard_json.c, utils/utils_uuid.c) are NOT
+            # dropped — dropping them is what caused a permanent coverage mismatch.
+            if [[ "${gcov_file}" != *"/src/"* ]]; then
+                if [[ "${basename_file}" == *"jansson"* ]] || \
+                   [[ "${basename_file}" == *"mock"* ]] || \
+                   [[ "${basename_file}" == *"json"* ]] || \
+                   [[ "${basename_file}" == *"curl"* ]] || \
+                   [[ "${basename_file}" == *"ssl"* ]] || \
+                   [[ "${basename_file}" == *"pthread"* ]] || \
+                   [[ "${basename_file}" == *"uuid"* ]] || \
+                   [[ "${basename_file}" == *"zlib"* ]] || \
+                   [[ "${basename_file}" == *"pcre"* ]]; then
+                    continue
+                fi
             fi
             
             # Extra filters (unity-specific, optional)

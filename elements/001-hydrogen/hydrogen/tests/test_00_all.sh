@@ -12,6 +12,9 @@
 # run_all_tests_parallel() 
 
 # CHANGELOG
+# 8.2.0 - 2026-07-16 - Added --redisplay to re-show the saved final results table and
+#                       re-run coverage reconciliation/per-file discrepancy from persisted
+#                       RESULTS_DIR artifacts without executing any tests
 # 8.1.0 - 2026-07-09 - Extracted coverage reconcile to lib/coverage_reconcile.sh; fixed /100 bug in DISCREPANCY advice
 # 8.0.2 - 2026-07-04 - Fixed DISCREPANCY calculation: use covered/target_pct formula instead of (Results-Coverage)*1000 approximation; added per-component breakdown
 # 8.0.1 - 2026-01-09 - Enhanced coverage discrepancy error message to show suggested adjustment values
@@ -60,7 +63,7 @@ TEST_NAME="Test Suite Orchestration"
 TEST_ABBR="ORC"
 TEST_NUMBER="00"
 TEST_COUNTER=0
-TEST_VERSION="8.1.0"
+TEST_VERSION="8.2.0"
 export TEST_NAME TEST_ABBR TEST_NUMBER TEST_VERSION
  
 # shellcheck disable=SC1091 # Resolve path statically
@@ -217,6 +220,9 @@ for arg in "$@"; do
                 fi
             done
             ;;
+        --redisplay)
+            REDISPLAY=true
+            ;;
         --help|-h)
             # Help will be handled later
             ;;
@@ -227,13 +233,15 @@ for arg in "$@"; do
 done
 
 show_help() {
-    echo "Usage: $0 [test_name1 test_name2 ...] [--skip-tests] [--sequential] [--sequential-groups=M,N] [--help]"
+    echo "Usage: $0 [test_name1 test_name2 ...] [--skip-tests] [--redisplay] [--sequential] [--sequential-groups=M,N] [--help]"
     echo ""
     echo "Arguments:"
     echo "  test_name    Run specific tests (e.g., 01_compilation, 98_check_links)"
     echo ""
     echo "Options:"
     echo "  --skip-tests             Skip actual test execution, just show what tests would run"
+    echo "  --redisplay              Skip test execution; re-show the saved final results table"
+    echo "                           and re-run the coverage reconciliation/per-file discrepancy analysis"
     echo "  --sequential             Run tests sequentially instead of in parallel batches (default: parallel)"
     echo "  --sequential-groups=M,N  Run specific groups sequentially while others run in parallel"
     echo "  --help                   Show this help message"
@@ -253,6 +261,7 @@ show_help() {
     echo "  $0 --sequential                # Run all tests sequentially"
     echo "  $0 --sequential-groups=3       # Run group 3x (30-39) sequentially, others in parallel"
     echo "  $0 --sequential-groups=3,4     # Run groups 3x and 4x sequentially, others in parallel"
+    echo "  $0 --redisplay                 # Re-show final table + coverage analysis from last run (no re-run)"
     echo ""
     exit 0
 }
@@ -575,6 +584,28 @@ run_all_tests() {
 
 # Execute tests based on command line arguments
 OVERALL_EXIT_CODE=0
+
+# Redisplay mode: skip all test execution and the (in-memory) results-table
+# rebuild. The final results table and coverage reconciliation read only from
+# artifacts already persisted in RESULTS_DIR by the previous full run, so this
+# re-shows them without re-running any tests.
+if [[ "${REDISPLAY:-false}" = true ]]; then
+    local_results_table_file="${RESULTS_DIR}/results_table.txt"
+    local_coverage_table_file="${RESULTS_DIR}/coverage_table.txt"
+    echo ""
+    echo "═════════════════════════════════════════════════════════════════════════════════════════════════════════"
+    echo "RE-DISPLAY MODE — final results table + coverage reconciliation (no re-run)"
+    echo "═════════════════════════════════════════════════════════════════════════════════════════════════════════"
+    echo ""
+    if [[ -f "${local_results_table_file}" ]]; then
+        cat "${local_results_table_file}"
+    else
+        echo "No saved results table found at ${local_results_table_file}"
+    fi
+    echo ""
+    reconcile_coverage_percentages "${local_results_table_file}" "${local_coverage_table_file}"
+    exit 0
+fi
 
 # If no specific tests provided, run all tests
 if [[ ${#TEST_ARGS[@]} -eq 0 ]]; then
