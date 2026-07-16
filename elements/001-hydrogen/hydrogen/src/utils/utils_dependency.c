@@ -433,7 +433,7 @@ void save_cache(const char *db_name, const char *version) {
                  void *func_ptr = dlsym(handle, *func_name);
                  const char *err = dlerror();
                  if (err || !func_ptr) {
-                     log_this(SR_DEPCHECK, "― %s. dlsym(%s) failed: %s", LOG_LEVEL_TRACE, 2, config->name, *func_name, err ? err : "NULL");
+                     log_this(SR_DEPCHECK, "― %s. dlsym(%s) failed: %s", LOG_LEVEL_TRACE, 3, config->name, *func_name, err ? err : "NULL");
                      continue;
                  }
  
