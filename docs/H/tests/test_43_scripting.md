@@ -19,7 +19,7 @@ This script validates:
 - **Test Name**: Scripting End-to-End
 - **Test Abbreviation**: SCR
 - **Test Number**: 43
-- **Version**: 2.0.0
+- **Version**: 2.1.0
 
 ## Test Architecture
 
@@ -49,17 +49,17 @@ The test uses 14 configuration files, two per engine (with/without `DefaultDatab
 
 ### Port Assignment
 
-All test configs use ports in the `5543x` / `5544x` range to avoid conflicts:
+All test configs use dedicated ports in the `1543x` / `1544x` range. These ports are below Linux's default ephemeral client-port range (`32768-60999`), preventing unrelated full-suite connections from temporarily occupying a Test 43 listener port.
 
 | Engine | With DefaultDB | Without DefaultDB |
 |--------|----------------|-------------------|
-| PostgreSQL | 55430 | 55440 |
-| MySQL | 55431 | 55441 |
-| SQLite | 55432 | 55442 |
-| DB2 | 55433 | 55443 |
-| MariaDB | 55434 | 55444 |
-| CockroachDB | 55435 | 55445 |
-| YugabyteDB | 55436 | 55446 |
+| PostgreSQL | 15430 | 15440 |
+| MySQL | 15431 | 15441 |
+| SQLite | 15432 | 15442 |
+| DB2 | 15433 | 15443 |
+| MariaDB | 15434 | 15444 |
+| CockroachDB | 15435 | 15445 |
+| YugabyteDB | 15436 | 15446 |
 
 ## Test Subtests
 

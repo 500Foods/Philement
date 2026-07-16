@@ -26,6 +26,7 @@
 # analyze_engine_results()
 
 # CHANGELOG
+# 2.4.0 - 2026-07-15 - Moved listeners from Linux ephemeral range 55800-55831 to dedicated 15800-15831 ports to prevent full-suite client connection collisions.
 # 2.3.0 - 2026-07-14 - Added launch-time OTP send + self-verify coverage subtest (Seam A, SendOtpOnLaunch) asserting MAILRELAY_OTP_LAUNCH_SENT/VERIFIED markers and DB row consumption.
 # 2.2.0 - 2026-07-09 - Parallel fail-soft: variant/engine helpers always return 0 after writing PASS/FAIL so set -e wait does not abort the suite mid-run; wait -n/wait pid tolerate non-zero children.
 # 2.1.0 - 2026-07-09 - Replaced migration completion wait with canonical "READY FOR REQUESTS" signal; reduced STARTUP_TIMEOUT to 15s and migration wait to 30s READY_TIMEOUT for faster failure on unreachable engines.
@@ -39,7 +40,7 @@ TEST_NAME="MailRelay API"
 TEST_ABBR="MRA"
 TEST_NUMBER="58"
 TEST_COUNTER=0
-TEST_VERSION="2.3.0"
+TEST_VERSION="2.4.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -53,20 +54,20 @@ declare -A MAILRELAY_API_CONFIGS
 # Each variant gets a unique result_suffix so parallel plaintext/STARTTLS runs
 # for the same engine do not overwrite the same result file.
 MAILRELAY_API_CONFIGS=(
-    ["PostgreSQL-plaintext"]="postgres-plaintext:postgres:55800:55801:0"
-    ["PostgreSQL-STARTTLS"]="postgres-starttls:postgres:55802:55803:1"
-    ["MySQL-plaintext"]="mysql-plaintext:mysql:55804:55805:0"
-    ["MySQL-STARTTLS"]="mysql-starttls:mysql:55806:55807:1"
-    ["SQLite-plaintext"]="sqlite-plaintext:sqlite:55808:55809:0"
-    ["SQLite-STARTTLS"]="sqlite-starttls:sqlite:55810:55811:1"
-    ["DB2-plaintext"]="db2-plaintext:db2:55812:55813:0"
-    ["DB2-STARTTLS"]="db2-starttls:db2:55814:55815:1"
-    ["MariaDB-plaintext"]="mariadb-plaintext:mariadb:55816:55817:0"
-    ["MariaDB-STARTTLS"]="mariadb-starttls:mariadb:55818:55819:1"
-    ["CockroachDB-plaintext"]="cockroachdb-plaintext:cockroachdb:55820:55821:0"
-    ["CockroachDB-STARTTLS"]="cockroachdb-starttls:cockroachdb:55822:55823:1"
-    ["YugabyteDB-plaintext"]="yugabytedb-plaintext:yugabytedb:55824:55825:0"
-    ["YugabyteDB-STARTTLS"]="yugabytedb-starttls:yugabytedb:55826:55827:1"
+    ["PostgreSQL-plaintext"]="postgres-plaintext:postgres:15800:15801:0"
+    ["PostgreSQL-STARTTLS"]="postgres-starttls:postgres:15802:15803:1"
+    ["MySQL-plaintext"]="mysql-plaintext:mysql:15804:15805:0"
+    ["MySQL-STARTTLS"]="mysql-starttls:mysql:15806:15807:1"
+    ["SQLite-plaintext"]="sqlite-plaintext:sqlite:15808:15809:0"
+    ["SQLite-STARTTLS"]="sqlite-starttls:sqlite:15810:15811:1"
+    ["DB2-plaintext"]="db2-plaintext:db2:15812:15813:0"
+    ["DB2-STARTTLS"]="db2-starttls:db2:15814:15815:1"
+    ["MariaDB-plaintext"]="mariadb-plaintext:mariadb:15816:15817:0"
+    ["MariaDB-STARTTLS"]="mariadb-starttls:mariadb:15818:15819:1"
+    ["CockroachDB-plaintext"]="cockroachdb-plaintext:cockroachdb:15820:15821:0"
+    ["CockroachDB-STARTTLS"]="cockroachdb-starttls:cockroachdb:15822:15823:1"
+    ["YugabyteDB-plaintext"]="yugabytedb-plaintext:yugabytedb:15824:15825:0"
+    ["YugabyteDB-STARTTLS"]="yugabytedb-starttls:yugabytedb:15826:15827:1"
 )
 
 # Timeouts (seconds)
@@ -79,8 +80,8 @@ MAILVAL_READY_TIMEOUT=5
 CAPTURE_TIMEOUT=15
 
 # OTP launch coverage (Seam A) — isolated SQLite variant on dedicated ports.
-OTP_WEB_PORT=55830
-OTP_MAILVAL_PORT=55831
+OTP_WEB_PORT=15830
+OTP_MAILVAL_PORT=15831
 OTP_RECIPIENT="mailrelay-otp-launch@hydrogen.local"
 OTP_PURPOSE=1
 
