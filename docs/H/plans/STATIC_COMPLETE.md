@@ -138,7 +138,7 @@ config) fails to compile.
 
 ## scripting — COMPLETE
 
-### What was done
+### What was done with scripting
 
 - All 54 `static` function definitions across 13 scripting `.c` files were
   converted to non-`static`. (The original estimate of ~85 was high; the
@@ -164,7 +164,7 @@ config) fails to compile.
   bottom); there were 0 true cross-file name collisions, and 0 collisions
   with the rest of `hydrogen/src`.
 
-### Header → function mapping (where the declarations went)
+### Header → function mapping (where the declarations went) - scripting
 
 | Header | Functions exposed |
 |--------|-------------------|
@@ -269,7 +269,7 @@ compile. For scripting these were:
 
 ## oidc_rp — COMPLETE
 
-### What was done
+### What was done - OIDC RP
 
 - All 96 `static` function definitions across 15 `src/api/auth/oidc_rp/*.c`
   files were converted to non-`static`.
@@ -291,7 +291,7 @@ compile. For scripting these were:
   test-seam fn pointer (`g_roles_query_fn`), `hex_digits[]`, and the
   service `pthread_once_t` init guards.
 
-### Header → function mapping (where the declarations went)
+### Header → function mapping (where the declarations went) - OIDC RP
 
 | Header | Functions exposed |
 |--------|-------------------|
@@ -368,7 +368,7 @@ the header's opaque forward declaration.
    baseline comparison (`comm -23`) never flags it. Renamed-then-de-static
    functions become non-static and are likewise never flagged. No baseline
    regeneration was needed.
- 5. **`static` file-scope state is the ONLY intentional `static` here.**
+5. **`static` file-scope state is the ONLY intentional `static` here.**
     Cache singletons, test-seam flags, the HTTP fixture queue, the roles
     test-seam fn pointer, and `pthread_once_t`/`hex_digits[]` all stay
     `static` — they are module-private *state*, not callable helpers.
@@ -377,7 +377,7 @@ the header's opaque forward declaration.
 
 ## wschat/helpers — COMPLETE
 
-### What was done
+### What was done - wschat
 
 - All 28 `static` function definitions across 9 `src/api/wschat/helpers/*.c`
   files were converted to non-`static`.
@@ -409,7 +409,7 @@ the header's opaque forward declaration.
 - Remaining `static` in `src/api/wschat/helpers` is now **zero** (no
   module-private state needed conversion here).
 
-### Header → function mapping (where the declarations went)
+### Header → function mapping (where the declarations went) - wschat
 
 | Header | Functions exposed |
 |--------|-------------------|
@@ -453,7 +453,7 @@ the header's opaque forward declaration.
 
 ## utils + logging — COMPLETE
 
-### What was done
+### What was done - utils
 
 - **utils** (`src/utils/utils_dependency.c`): 10 `static` function definitions
   were converted to non-`static`. The module-init `init_utils` (marked
@@ -541,7 +541,7 @@ the header's opaque forward declaration.
 
 ## database — COMPLETE
 
-### What was done
+### What was done - database
 
 - All 26 `static` function definitions across 13 `src/database/**/*.c` files
   were converted to non-`static`.
@@ -572,7 +572,7 @@ the header's opaque forward declaration.
   confirms the standing rule: every header declaring a function using type `T`
   must itself `#include` (directly or transitively) the header defining `T`.
 
-### Header → function mapping
+### Header → function mapping - database
 
 | Header | Functions exposed |
 |--------|-------------------|
@@ -607,7 +607,7 @@ the header's opaque forward declaration.
 
 ## config — COMPLETE
 
-### What was done
+### What was done - config
 
 - All 6 `static` function definitions in `src/config/config_oidc_rp.c` were
   converted to non-`static`.
@@ -623,7 +623,7 @@ the header's opaque forward declaration.
 - `OIDCRPProviderConfig` is fully defined in `config_oidc_rp.h` and `json_t`
   (jansson) is available, so no extra include was required.
 
-### Header → function mapping
+### Header → function mapping - config
 
 | Header | Functions exposed |
 |--------|-------------------|
@@ -646,7 +646,7 @@ the header's opaque forward declaration.
 
 ## status — COMPLETE
 
-### What was done
+### What was done - status
 
 - All 5 `static` function definitions across 2 `src/status/*.c` files were
   converted to non-`static`.
@@ -661,7 +661,7 @@ the header's opaque forward declaration.
   defined in `status_core.h`, which `status_process.h` already includes, so no
   extra include was required.
 
-### Header → function mapping
+### Header → function mapping - status
 
 | Header | Functions exposed |
 |--------|-------------------|
@@ -686,7 +686,7 @@ the header's opaque forward declaration.
 
 ## launch — COMPLETE
 
-### What was done
+### What was done - launch
 
 - All 4 `static` function definitions across 2 `src/launch/*.c` files were
   converted to non-`static`.
@@ -703,7 +703,7 @@ the header's opaque forward declaration.
   transitively visible in the `.c` but are now explicit for self-containment.
 - No true definition collisions existed (only one definition each).
 
-### Header → function mapping
+### Header → function mapping - launch
 
 | Header | Functions exposed |
 |--------|-------------------|
@@ -728,7 +728,7 @@ the header's opaque forward declaration.
 
 ## api — COMPLETE
 
-### What was done
+### What was done - api
 
 - All 16 `static` function definitions across 8 `src/api/**/*.c` files were
   converted to non-`static`.
@@ -749,7 +749,7 @@ the header's opaque forward declaration.
   `conduit_dbops_skip_sql_whitespace_and_comments`,
   `cap_verify_is_valid_http_url/_hard_fail/_fallback`.
 
-### Header → function mapping
+### Header → function mapping - api
 
 | Header | Functions exposed |
 |--------|-------------------|
@@ -790,7 +790,7 @@ the header's opaque forward declaration.
 
 ## handlers — COMPLETE
 
-### What was done
+### What was done - handlers
 
 - All 3 `static` function definitions in `src/handlers/handlers.c` were
   converted to non-`static`.
@@ -805,7 +805,7 @@ the header's opaque forward declaration.
   forward-declared opaque in `handlers.h`. This mirrors the oidc_rp/scripting
   pattern for file-private structs passed by pointer.
 
-### Header → function mapping
+### Header → function mapping - handlers
 
 | Header | Functions exposed |
 |--------|-------------------|
@@ -824,7 +824,7 @@ the header's opaque forward declaration.
 
 ## terminal / websocket / webserver — COMPLETE (final batch)
 
-### What was done
+### What was done - terminal
 
 - The last 3 `static` function definitions were converted to non-`static`:
   - `src/terminal/terminal_websocket.c` → `terminal_io_bridge_thread`
