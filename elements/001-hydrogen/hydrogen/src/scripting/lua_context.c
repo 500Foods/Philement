@@ -30,8 +30,8 @@
 extern void* lua_mmap_alloc(void* ud, void* ptr, size_t osize, size_t nsize);
 
 // Forward declarations for the limited sandbox policy applied here.
-static void H_lua_open_sandboxed_libraries(lua_State* L);
-static int H_lua_panic(lua_State* L);
+void H_lua_open_sandboxed_libraries(lua_State* L);
+int H_lua_panic(lua_State* L);
 
 /*
  * Create a sandboxed Lua state.
@@ -90,7 +90,7 @@ void H_lua_destroy_context(lua_State* L) {
  * default" for the loadlib and io families, since both are common
  * attack vectors and a missing config implies no consent.
  */
-static void H_lua_open_sandboxed_libraries(lua_State* L) {
+void H_lua_open_sandboxed_libraries(lua_State* L) {
     bool allow_io = false;
     bool allow_debug = false;
     bool allow_loadlib = false;
@@ -153,7 +153,7 @@ static void H_lua_open_sandboxed_libraries(lua_State* L) {
  * migration engine's implicit policy: a Lua panic indicates the state
  * is unrecoverable, so propagating further is unsafe.
  */
-static int H_lua_panic(lua_State* L) {
+int H_lua_panic(lua_State* L) {
     const char* msg = lua_tostring(L, -1);
     log_this(SR_LUA, "Lua panic: %s", LOG_LEVEL_FATAL, 1, msg ? msg : "(no message)");
     return 0;

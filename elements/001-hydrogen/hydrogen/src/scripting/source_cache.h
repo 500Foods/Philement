@@ -54,4 +54,7 @@ const void* source_cache_get_bytecode(SourceCache* cache,
 // Count entries.
 size_t source_cache_count(SourceCache* cache);
 
+// Exposed for Unity tests (NOT part of the stable public API).
+bool source_cache_grow_if_needed(SourceCache* cache);
+
 #endif // SOURCE_CACHE_H

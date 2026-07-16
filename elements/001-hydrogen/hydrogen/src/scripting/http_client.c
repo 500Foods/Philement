@@ -96,7 +96,7 @@ int scripting_http_test_get_consumed_count(void) {
  * the response via oidc_rp_http_response_free. Returns NULL if
  * no fixture matches.
  */
-static struct OidcRpHttpResponse* try_test_injection(const char* url) {
+struct OidcRpHttpResponse* try_test_injection(const char* url) {
     if (!url) {
         return NULL;
     }
@@ -126,7 +126,7 @@ static struct OidcRpHttpResponse* try_test_injection(const char* url) {
 // config->scripting.DefaultHTTPTimeout. A non-positive caller value
 // is a "use the default" signal (mirroring the OIDC helper's
 // `0 => default` convention).
-static long resolve_timeout(int requested) {
+long resolve_timeout(int requested) {
     if (requested > 0) {
         return (long)requested;
     }

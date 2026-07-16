@@ -41,7 +41,7 @@
  * ref while the call is in flight, so the handle is only freed after
  * both the Lua userdata and the worker are done with it.
  */
-static int H_Handle_gc(lua_State* L) {
+int H_Handle_gc(lua_State* L) {
     H_Handle** ud = (H_Handle**)lua_touserdata(L, 1);
     if (ud && *ud) {
         H_Handle_release(*ud);

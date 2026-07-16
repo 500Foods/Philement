@@ -35,10 +35,10 @@ ScriptingHttpPool* scripting_http_pool = NULL;
 #define HTTP_POOL_POLL_USEC 1000
 
 // Forward declarations.
-static void* scripting_http_worker_thread(void* arg);
-static void scripting_http_worker_process_one(ScriptingHttpPool* pool,
-                                               H_Handle* h);
-static bool scripting_http_worker_should_exit(ScriptingHttpPool* pool);
+void* scripting_http_worker_thread(void* arg);
+void scripting_http_worker_process_one(ScriptingHttpPool* pool,
+                                       H_Handle* h);
+bool scripting_http_worker_should_exit(ScriptingHttpPool* pool);
 
 /*
  * The pool's queue holds opaque pointers. We wrap each H_Handle*
@@ -56,7 +56,7 @@ typedef struct HttpPoolItem {
  * string for storage on the handle. Returns a strdup'd string or
  * NULL on failure / no headers.
  */
-static char* serialize_headers(const OidcRpHttpResponse* resp) {
+char* serialize_headers(const OidcRpHttpResponse* resp) {
     if (!resp || resp->headers_count == 0) {
         return NULL;
     }
@@ -81,7 +81,7 @@ static char* serialize_headers(const OidcRpHttpResponse* resp) {
  * Worker thread main loop. Each worker is independent; no worker
  * shares a handle with any other.
  */
-static void* scripting_http_worker_thread(void* arg) {
+void* scripting_http_worker_thread(void* arg) {
     ScriptingHttpPool* pool = (ScriptingHttpPool*)arg;
 
     while (1) {
@@ -107,8 +107,8 @@ static void* scripting_http_worker_thread(void* arg) {
  * per-handle fields and signals the condvar. Releases the ref
  * acquired by scripting_http_pool_submit when done.
  */
-static void scripting_http_worker_process_one(ScriptingHttpPool* pool,
-                                               H_Handle* h) {
+void scripting_http_worker_process_one(ScriptingHttpPool* pool,
+                                        H_Handle* h) {
     (void)pool;
 
     if (!h) {
@@ -172,7 +172,7 @@ static void scripting_http_worker_process_one(ScriptingHttpPool* pool,
     H_Handle_release(h);
 }
 
-static bool scripting_http_worker_should_exit(ScriptingHttpPool* pool) {
+bool scripting_http_worker_should_exit(ScriptingHttpPool* pool) {
     if (!scripting_system_shutdown) {
         return false;
     }

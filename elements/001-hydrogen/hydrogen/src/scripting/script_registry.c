@@ -66,7 +66,7 @@ void script_registry_destroy(ScriptRegistry* reg) {
  * Grow the entries array on demand, doubling capacity. Returns
  * false on allocation failure; the registry remains valid.
  */
-static bool registry_grow_if_needed(ScriptRegistry* reg) {
+bool registry_grow_if_needed(ScriptRegistry* reg) {
     if (reg->count < reg->capacity) {
         return true;
     }

@@ -42,6 +42,7 @@
 #include <pthread.h>
 #include <src/queue/queue.h>
 #include "scripting_handle.h"   // H_Handle
+#include <src/api/auth/oidc_rp/oidc_rp_http.h>   // OidcRpHttpResponse
 
 #define SCRIPTING_HTTP_QUEUE_NAME "scripting_http"
 
@@ -95,5 +96,14 @@ void scripting_http_pool_destroy(void);
  * the enqueue failed.
  */
 bool scripting_http_pool_submit(H_Handle* h);
+
+/*
+ * Exposed for Unity tests (NOT part of the stable public API).
+ */
+char* serialize_headers(const OidcRpHttpResponse* resp);
+void* scripting_http_worker_thread(void* arg);
+void scripting_http_worker_process_one(ScriptingHttpPool* pool,
+                                      H_Handle* h);
+bool scripting_http_worker_should_exit(ScriptingHttpPool* pool);
 
 #endif /* HYDROGEN_SCRIPTING_HTTP_POOL_H */

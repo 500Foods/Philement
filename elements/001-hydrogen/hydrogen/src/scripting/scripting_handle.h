@@ -208,6 +208,8 @@ void H_Handle_install_metatable(lua_State* L);
  */
 H_Handle* H_Handle_check(lua_State* L, int arg);
 
+int H_Handle_gc(lua_State* L);
+
 #ifdef __cplusplus
 }
 #endif
