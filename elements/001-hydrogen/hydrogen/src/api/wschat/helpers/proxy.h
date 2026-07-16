@@ -131,4 +131,14 @@ ChatProxyConfig chat_proxy_get_streaming_config(void);
 // Get the global multi-stream manager instance
 MultiStreamManager* chat_proxy_get_multi_manager(void);
 
+/* ----------------------------------------------------------------------------
+ * The following helpers are NOT part of the stable public API. They are exposed
+ * (non-static) solely so the Unity test framework can call them directly.
+ * -------------------------------------------------------------------------- */
+size_t chat_proxy_write_callback(const void* contents, size_t size, size_t nmemb, void* userp);
+size_t chat_proxy_stream_write_callback(const void* contents, size_t size, size_t nmemb, void* userp);
+int chat_proxy_stream_debug_callback(CURL* handle, curl_infotype type, char* data, size_t size, void* userptr);
+void* chat_proxy_stream_worker_thread(void* arg);
+void chat_proxy_cleanup_completed_streams(void);
+
 #endif // PROXY_H

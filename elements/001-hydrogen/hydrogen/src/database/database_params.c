@@ -193,7 +193,7 @@ ParameterList* parse_typed_parameters(const char* json_params, const char* dqm_l
 
 // Helper function: Check if a position in SQL is inside a single-quoted string literal
 // This prevents converting :paramName when it appears inside '...:paramName...'
-static bool is_inside_string_literal(const char* sql, const char* position) {
+ bool database_params_is_inside_string_literal(const char* sql, const char* position) {
     if (!sql || !position || position < sql) {
         return false;
     }
@@ -295,7 +295,7 @@ char* convert_named_to_positional(
         const char* pos = strstr(result, named_param);
         while (pos) {
             // Check if this occurrence is inside a string literal
-            if (is_inside_string_literal(result, pos)) {
+            if (database_params_is_inside_string_literal(result, pos)) {
                 // Skip this occurrence - don't convert params inside string literals
                 // Move past this match and continue searching
                 pos = strstr(pos + 1, named_param);
@@ -401,7 +401,7 @@ bool build_parameter_array(
         }
         
         // Check if match is inside a string literal (e.g., '...:param...')
-        bool is_in_string = is_inside_string_literal(sql_template, match_start);
+        bool is_in_string = database_params_is_inside_string_literal(sql_template, match_start);
         
         if (!is_inside_macro && !is_in_string) {
             // Check if this is a PostgreSQL type cast (::pattern)
@@ -504,7 +504,7 @@ bool build_parameter_array(
         }
         
         // Check if match is inside a string literal (e.g., '...:param...')
-        bool is_in_string = is_inside_string_literal(sql_template, match_start);
+        bool is_in_string = database_params_is_inside_string_literal(sql_template, match_start);
         
         if (!is_inside_macro && !is_in_string) {
             // Check if this is a PostgreSQL type cast (::pattern)

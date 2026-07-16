@@ -60,7 +60,7 @@ static volatile size_t http_post_requests = 0;
 
 // Helper to decide whether a URL path looks like a file request.
 // A path is treated as a file if it has a dot after the last slash.
-static bool url_looks_like_file(const char *url) {
+ bool web_server_url_looks_like_file(const char *url) {
     if (!url) return false;
     const char *last_slash = strrchr(url, '/');
     const char *last_dot = strrchr(url, '.');
@@ -540,7 +540,7 @@ enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
         if (app_config && app_config->webserver.spa_fallback &&
             strncmp(url, "/api/", 5) != 0 &&
             strncmp(url, "/swagger", 8) != 0 &&
-            !url_looks_like_file(url)) {
+            !web_server_url_looks_like_file(url)) {
             char spa_index[PATH_MAX];
             if (snprintf(spa_index, sizeof(spa_index), "%s/index.html",
                          app_config->webserver.web_root) < (int)sizeof(spa_index)) {

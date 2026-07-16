@@ -116,7 +116,7 @@ bool oidc_rp_safe_return_to(const char *return_to) {
 // Helper: append "&key=encoded(value)" to a string buffer that we
 // realloc as needed. Returns true on success; on failure the buffer
 // may be partially written and is released by the caller.
-static bool append_param(char **buf, size_t *len, size_t *cap,
+bool append_param(char **buf, size_t *len, size_t *cap,
                          const char *prefix, const char *key,
                          const char *value) {
     if (!buf || !*buf || !key || !value) {
@@ -235,7 +235,7 @@ enum MHD_Result oidc_rp_send_redirect(struct MHD_Connection *connection,
 static pthread_once_t   oidc_rp_init_once  = PTHREAD_ONCE_INIT;
 static bool             oidc_rp_init_ok    = false;
 
-static void oidc_rp_runtime_init_impl(void) {
+void oidc_rp_runtime_init_impl(void) {
     int state_ttl = 600;                       // Plan default — 10 minutes
     int handoff_ttl = 60;                      // Plan default — 60 seconds
     if (app_config && app_config->oidc_rp.provider_count > 0) {

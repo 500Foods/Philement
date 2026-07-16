@@ -187,4 +187,21 @@ bool chat_lru_cache_clear(ChatLRUCache* cache);
  */
 char* chat_lru_cache_get_dir(const char* database);
 
+/* ----------------------------------------------------------------------------
+ * The following helpers are NOT part of the stable public API. They are exposed
+ * (non-static) solely so the Unity test framework can call them directly.
+ * -------------------------------------------------------------------------- */
+const char* chat_lru_cache_get_base_dir(void);
+size_t chat_lru_cache_hash_string(const char* str);
+bool chat_lru_cache_ensure_directory_exists(const char* path);
+char* chat_lru_cache_get_segment_path(const char* cache_dir, const char* hash);
+char* chat_lru_cache_get_metadata_path(const char* cache_dir);
+void chat_lru_cache_free_entry(ChatLRUCacheEntry* entry);
+void chat_lru_cache_remove_entry(ChatLRUCache* cache, ChatLRUCacheEntry* entry);
+void chat_lru_cache_add_front(ChatLRUCache* cache, ChatLRUCacheEntry* entry);
+bool chat_lru_cache_evict_lru_entries(ChatLRUCache* cache, size_t needed_bytes);
+bool chat_lru_cache_save_metadata(ChatLRUCache* cache);
+bool chat_lru_cache_load_metadata(ChatLRUCache* cache);
+void* chat_lru_cache_sync_thread_func(void* arg);
+
 #endif /* LRU_CACHE_H */

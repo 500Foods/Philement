@@ -31,4 +31,10 @@ char* chat_storage_binary_to_hex(const uint8_t* data, size_t len);
  */
 bool chat_storage_hex_to_binary(const char* hex, uint8_t** data, size_t* len);
 
+/* ----------------------------------------------------------------------------
+ * The following helper is NOT part of the stable public API. It is exposed
+ * (non-static) solely so the Unity test framework can call it directly.
+ * -------------------------------------------------------------------------- */
+int chat_storage_is_hex_digit(char c);
+
 #endif // STORAGE_HEX_H

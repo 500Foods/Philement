@@ -23,7 +23,7 @@ extern const char *jansson_version_str(void);
 #include <stdlib.h>
 
 // Database dependency configuration
-typedef struct {
+typedef struct DatabaseDependencyConfig {
     const char *name;
     const char *command;
     const char *expected;
@@ -38,7 +38,7 @@ typedef struct {
     LibraryStatus status;
 } ThreadData;
 
- typedef struct {
+ typedef struct LibConfig {
      const char *name;
      const char **paths;
      const char **version_funcs;
@@ -59,7 +59,7 @@ typedef struct {
  static const char *libcurl_paths[] = {"libcurl.so", "/lib64/libcurl.so.4", "/usr/lib/libcurl.so", "/usr/lib/x86_64-linux-gnu/libcurl.so.4", NULL};
  
  static const char *jansson_funcs[] = {"jansson_version_str", NULL};
- static const char *microhttpd_funcs[] = {"MHD_get_version", NULL};
+ static const char *microhttpd_funcs[] = {"MHD_utils_dependency_get_version", NULL};
  static const char *libwebsockets_funcs[] = {"lws_get_library_version", NULL};
  static const char *openssl_funcs[] = {"OpenSSL_version", "SSLeay_version", NULL};
  static const char *brotli_funcs[] = {"BrotliDecoderVersion", NULL};
@@ -193,7 +193,7 @@ void save_cache(const char *db_name, const char *version) {
      {"libcurl", libcurl_paths, libcurl_funcs, "8.15.0", false, true}
  };
  
- static const char *get_status_string(LibraryStatus status) {
+  const char *utils_dependency_get_status_string(LibraryStatus status) {
      switch (status) {
          case LIB_STATUS_GOOD: return "Good";
          case LIB_STATUS_WARNING: return "Less Good";
@@ -203,14 +203,14 @@ void save_cache(const char *db_name, const char *version) {
      return "Unknown";
  }
  
- static LibraryStatus determine_status(const char *expected, const char *found, bool required) {
+  LibraryStatus utils_dependency_determine_status(const char *expected, const char *found, bool required) {
      if (!found || !strcmp(found, "None")) return required ? LIB_STATUS_CRITICAL : LIB_STATUS_WARNING;
      if (!strcmp(found, "NoVersionFound")) return required ? LIB_STATUS_WARNING : LIB_STATUS_GOOD;
      if (!expected || strstr(found, expected) != NULL) return LIB_STATUS_GOOD;
      return LIB_STATUS_WARNING;
  }
  
- static void log_status(const char *name, const char *expected, const char *found, const char *method, LibraryStatus status) {
+  void utils_dependency_log_status(const char *name, const char *expected, const char *found, const char *method, LibraryStatus status) {
      int level = (status == LIB_STATUS_GOOD) ? LOG_LEVEL_DEBUG :
                  (status == LIB_STATUS_WARNING) ? LOG_LEVEL_DEBUG :
                  (status == LIB_STATUS_CRITICAL) ? LOG_LEVEL_FATAL : LOG_LEVEL_ERROR;
@@ -219,10 +219,10 @@ void save_cache(const char *db_name, const char *version) {
         expected ? expected : "(default)", 
         found ? found : "None",
         method, 
-        get_status_string(status));
+        utils_dependency_get_status_string(status));
  }
  
- static const char *parse_db2_version(const char *output, char *buffer, size_t size) {
+  const char *utils_dependency_parse_db2_version(const char *output, char *buffer, size_t size) {
      // Parse DB2 output: Look for pattern in "DB2 v12.1.3.0"
      char *version_start = (char *)strstr(output, "DB2 v");
      if (version_start) {
@@ -246,7 +246,7 @@ void save_cache(const char *db_name, const char *version) {
      return "None";
  }
 
- static const char *parse_postgresql_version(const char *output, char *buffer, size_t size) {
+  const char *utils_dependency_parse_postgresql_version(const char *output, char *buffer, size_t size) {
      // Parse PostgreSQL output: "PostgreSQL 17.6"
      char *version_start = (char *)strstr(output, "PostgreSQL ");
      if (version_start) {
@@ -263,7 +263,7 @@ void save_cache(const char *db_name, const char *version) {
      return "None";
  }
 
- static const char *parse_mysql_version(const char *output, char *buffer, size_t size) {
+  const char *utils_dependency_parse_mysql_version(const char *output, char *buffer, size_t size) {
      // Parse MySQL output: "8.0.42"
      // MySQL output is just the version number, no prefix
      size_t i = 0;
@@ -276,7 +276,7 @@ void save_cache(const char *db_name, const char *version) {
      return buffer;
  }
 
- static const char *parse_sqlite_version(const char *output, char *buffer, size_t size) {
+  const char *utils_dependency_parse_sqlite_version(const char *output, char *buffer, size_t size) {
      // Parse SQLite output: "3.46.1 2024-08-13 09:16:08..."
      // Take only the version number before the first space
      size_t i = 0;
@@ -289,7 +289,7 @@ void save_cache(const char *db_name, const char *version) {
      return buffer;
  }
 
- static const char *get_database_version(const DatabaseDependencyConfig *config, char *buffer, size_t size) {
+  const char *utils_dependency_get_database_version(const DatabaseDependencyConfig *config, char *buffer, size_t size) {
      if (!config || !buffer || !size) return "None";
 
      // Check for environment variable to disable cache (for testing)
@@ -334,13 +334,13 @@ void save_cache(const char *db_name, const char *version) {
      // Parse based on database type
      const char *result;
      if (strcmp(config->name, "DB2") == 0) {
-         result = parse_db2_version(output, buffer, size);
+         result = utils_dependency_parse_db2_version(output, buffer, size);
      } else if (strcmp(config->name, "PostgreSQL") == 0) {
-         result = parse_postgresql_version(output, buffer, size);
+         result = utils_dependency_parse_postgresql_version(output, buffer, size);
      } else if (strcmp(config->name, "MySQL") == 0) {
-         result = parse_mysql_version(output, buffer, size);
+         result = utils_dependency_parse_mysql_version(output, buffer, size);
      } else if (strcmp(config->name, "SQLite") == 0) {
-         result = parse_sqlite_version(output, buffer, size);
+         result = utils_dependency_parse_sqlite_version(output, buffer, size);
      } else {
          return "None";
      }
@@ -354,14 +354,14 @@ void save_cache(const char *db_name, const char *version) {
  }
 
  // Thread function for parallel database version checking
- static void *check_database_thread(void *arg) {
+  void *utils_dependency_check_database_thread(void *arg) {
      ThreadData *data = (ThreadData *)arg;
-     data->found = get_database_version(data->config, data->buffer, sizeof(data->buffer));
-     data->status = determine_status(data->config->expected, data->found, data->config->required);
+     data->found = utils_dependency_get_database_version(data->config, data->buffer, sizeof(data->buffer));
+     data->status = utils_dependency_determine_status(data->config->expected, data->found, data->config->required);
      return NULL;
  }
 
- static const char *get_version(const LibConfig *config, char *buffer, size_t size, const char **method) {
+  const char *utils_dependency_get_version(const LibConfig *config, char *buffer, size_t size, const char **method) {
      if (!config || !buffer || !size || !method) return "None";
      buffer[0] = '\0';
      *method = "N/A";
@@ -544,13 +544,13 @@ void save_cache(const char *db_name, const char *version) {
          if (strcmp(lib_configs[i].name, name)) continue;
          char buffer[256];
          const char *method;
-         const char *found = get_version(&lib_configs[i], buffer, sizeof(buffer), &method);
+         const char *found = utils_dependency_get_version(&lib_configs[i], buffer, sizeof(buffer), &method);
          LibraryStatus status = lib_configs[i].is_core ? LIB_STATUS_GOOD :
-                                determine_status(expected, found, is_required);
-         log_status(name, expected, found, method, status);
+                                utils_dependency_determine_status(expected, found, is_required);
+         utils_dependency_log_status(name, expected, found, method, status);
          return;
      }
-     log_status(name, expected, "None", "N/A", is_required ? LIB_STATUS_CRITICAL : LIB_STATUS_WARNING);
+     utils_dependency_log_status(name, expected, "None", "N/A", is_required ? LIB_STATUS_CRITICAL : LIB_STATUS_WARNING);
  }
  
  int check_library_dependencies(const AppConfig *config) {
@@ -578,9 +578,9 @@ void save_cache(const char *db_name, const char *version) {
  
          char buffer[256];
          const char *method;
-         const char *found = get_version(&lib, buffer, sizeof(buffer), &method);
-         LibraryStatus status = lib.is_core ? LIB_STATUS_GOOD : determine_status(lib.expected, found, lib.required);
-         log_status(lib.name, lib.expected, found, method, status);
+         const char *found = utils_dependency_get_version(&lib, buffer, sizeof(buffer), &method);
+         LibraryStatus status = lib.is_core ? LIB_STATUS_GOOD : utils_dependency_determine_status(lib.expected, found, lib.required);
+         utils_dependency_log_status(lib.name, lib.expected, found, method, status);
          if (status == LIB_STATUS_CRITICAL && lib.required) critical_count++;
      }
 
@@ -599,10 +599,10 @@ void save_cache(const char *db_name, const char *version) {
          thread_data[i].buffer[0] = '\0';
          thread_data[i].found = NULL;
          thread_data[i].status = LIB_STATUS_UNKNOWN;
-         if (pthread_create(&threads[i], NULL, check_database_thread, &thread_data[i]) != 0) {
+         if (pthread_create(&threads[i], NULL, utils_dependency_check_database_thread, &thread_data[i]) != 0) {
              // Fallback to sequential if thread creation fails
-             thread_data[i].found = get_database_version(thread_data[i].config, thread_data[i].buffer, sizeof(thread_data[i].buffer));
-             thread_data[i].status = determine_status(thread_data[i].config->expected, thread_data[i].found, thread_data[i].config->required);
+             thread_data[i].found = utils_dependency_get_database_version(thread_data[i].config, thread_data[i].buffer, sizeof(thread_data[i].buffer));
+             thread_data[i].status = utils_dependency_determine_status(thread_data[i].config->expected, thread_data[i].found, thread_data[i].config->required);
          }
      }
 
@@ -613,7 +613,7 @@ void save_cache(const char *db_name, const char *version) {
          } else {
              // If join fails, data might already be set from fallback
          }
-         log_status(thread_data[i].config->name, thread_data[i].config->expected, thread_data[i].found, "CMD", thread_data[i].status);
+         utils_dependency_log_status(thread_data[i].config->name, thread_data[i].config->expected, thread_data[i].found, "CMD", thread_data[i].status);
          if (thread_data[i].status == LIB_STATUS_CRITICAL && thread_data[i].config->required) critical_count++;
      }
 

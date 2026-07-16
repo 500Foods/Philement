@@ -15,6 +15,7 @@
 #include "websocket_server_internal.h"
 #include "websocket_server_message.h"
 #include "websocket_server_chat.h"
+#include "websocket_server_pty.h"
 #include <src/queue/queue.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,14 +31,6 @@
 
 // External reference to the server context
 extern WebSocketServerContext *ws_context;
-
-// PTY I/O bridge for terminal sessions
-typedef struct PtyBridgeContext {
-    struct lws *wsi;              /**< WebSocket connection instance */
-    TerminalSession *session;     /**< Associated terminal session */
-    bool active;                  /**< Whether bridge is active */
-    bool connection_closed;       /**< Whether WebSocket connection is closed */
-} PtyBridgeContext;
 
 void *pty_output_bridge_thread(void *arg);
 __attribute__((unused)) void start_pty_bridge_thread(struct lws *wsi, TerminalSession *session);
@@ -84,7 +77,7 @@ int setup_pty_select(int master_fd, fd_set *readfds, struct timeval *timeout)
 }
 
 // PTY bridge iteration - read from PTY and send to WebSocket
-static int pty_bridge_iteration(PtyBridgeContext *bridge)
+ int pty_bridge_iteration(PtyBridgeContext *bridge)
 {
     fd_set readfds;
     struct timeval timeout;

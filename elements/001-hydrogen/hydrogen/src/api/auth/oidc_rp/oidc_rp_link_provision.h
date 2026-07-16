@@ -33,4 +33,12 @@ OidcRpLinkResult oidc_rp_link_provision_only(const OIDCRPProviderConfig *provide
                                               const char *database,
                                               account_info_t **out_account);
 
+/* ---------------------------------------------------------------------------
+ * Internal helpers — NOT part of the stable public API. Exposed non-static
+ * so Unity tests can call them directly.
+ * ------------------------------------------------------------------------- */
+bool domains_equal_ci(const char *a, const char *b);
+const char *email_domain(const char *email);
+bool email_domain_allowed(const OIDCRPAccountLinking *linking, const char *email);
+
 #endif /* OIDC_RP_LINK_PROVISION_H */

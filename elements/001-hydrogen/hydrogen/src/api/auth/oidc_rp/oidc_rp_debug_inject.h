@@ -89,6 +89,12 @@ enum MHD_Result handle_post_auth_oidc_debug_inject(
     void **con_cls
 );
 
+// ---------------------------------------------------------------------------
+// Internal helper — NOT part of the stable public API. Exposed non-static
+// so Unity tests can call it directly.
+// ---------------------------------------------------------------------------
+enum MHD_Result send_bad_request(struct MHD_Connection *connection, void **con_cls, const char *reason);
+
 #endif // NDEBUG
 
 #endif // OIDC_RP_DEBUG_INJECT_H

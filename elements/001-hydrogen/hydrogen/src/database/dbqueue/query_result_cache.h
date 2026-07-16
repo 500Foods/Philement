@@ -129,4 +129,17 @@ bool query_result_cache_global_init(void);
  */
 void query_result_cache_global_destroy(void);
 
+/* ----------------------------------------------------------------------------
+ * The following helpers are NOT part of the stable public API. They are
+ * exposed (non-static) solely so the Unity test framework can call them
+ * directly.
+ * -------------------------------------------------------------------------- */
+unsigned long query_result_cache_hash_string(const char* str);
+int query_result_cache_compare_string_pointers(const void* a, const void* b);
+json_t* query_result_cache_normalize_json(const json_t* value);
+char* query_result_cache_compute_template_hash(const char* sql_template);
+char* query_result_cache_compute_param_hash(const char* params_json);
+char* query_result_cache_build_key(const char* database_name, const char* template_hash, const char* param_hash);
+size_t query_result_cache_bucket_index(const QueryResultCache* cache, const char* key);
+
 #endif /* QUERY_RESULT_CACHE_H */

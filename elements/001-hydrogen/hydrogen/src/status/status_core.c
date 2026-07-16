@@ -32,7 +32,7 @@ void status_core_cleanup(void) {
 }
 
 // Free dynamically allocated memory in CPU metrics
-static void free_cpu_metrics(CpuMetrics *cpu) {
+ void status_free_cpu_metrics(CpuMetrics *cpu) {
     if (cpu) {
         if (cpu->per_core_usage) {
             for (int i = 0; i < cpu->core_count; i++) {
@@ -46,7 +46,7 @@ static void free_cpu_metrics(CpuMetrics *cpu) {
 }
 
 // Free dynamically allocated memory in network metrics
-static void free_network_metrics(NetworkMetrics *network) {
+ void status_free_network_metrics(NetworkMetrics *network) {
     if (network && network->interfaces) {
         for (int i = 0; i < network->interface_count; i++) {
             NetworkInterfaceMetrics *iface = &network->interfaces[i];
@@ -64,7 +64,7 @@ static void free_network_metrics(NetworkMetrics *network) {
 }
 
 // Free dynamically allocated memory in service thread metrics
-static void free_service_thread_metrics(ServiceThreadMetrics *metrics) {
+ void status_free_service_thread_metrics(ServiceThreadMetrics *metrics) {
     if (metrics) {
         free(metrics->thread_tids);
         metrics->thread_tids = NULL;
@@ -77,10 +77,10 @@ void free_system_metrics(SystemMetrics *metrics) {
     if (!metrics) return;
 
     // Free CPU metrics
-    free_cpu_metrics(&metrics->cpu);
+    status_free_cpu_metrics(&metrics->cpu);
 
     // Free network metrics
-    free_network_metrics(&metrics->network);
+    status_free_network_metrics(&metrics->network);
 
     // Free filesystem metrics
     if (metrics->filesystems) {
@@ -97,13 +97,13 @@ void free_system_metrics(SystemMetrics *metrics) {
     }
 
     // Free service thread metrics
-    free_service_thread_metrics(&metrics->logging.threads);
-    free_service_thread_metrics(&metrics->webserver.threads);
-    free_service_thread_metrics(&metrics->websocket.threads);
-    free_service_thread_metrics(&metrics->mdns.threads);
-    free_service_thread_metrics(&metrics->print.threads);
-    free_service_thread_metrics(&metrics->database.threads);
-    free_service_thread_metrics(&metrics->scripting.threads);
+    status_free_service_thread_metrics(&metrics->logging.threads);
+    status_free_service_thread_metrics(&metrics->webserver.threads);
+    status_free_service_thread_metrics(&metrics->websocket.threads);
+    status_free_service_thread_metrics(&metrics->mdns.threads);
+    status_free_service_thread_metrics(&metrics->print.threads);
+    status_free_service_thread_metrics(&metrics->database.threads);
+    status_free_service_thread_metrics(&metrics->scripting.threads);
 
     // Finally, free the metrics structure itself
     free(metrics);
@@ -115,7 +115,7 @@ pthread_mutex_t* get_status_mutex(void) {
 }
 
 // Allocate and initialize a new SystemMetrics structure
-static SystemMetrics* allocate_system_metrics(void) {
+ SystemMetrics* status_allocate_system_metrics(void) {
     SystemMetrics *metrics = calloc(1, sizeof(SystemMetrics));
     if (!metrics) {
         log_this(SR_STATUS, "Failed to allocate SystemMetrics structure", LOG_LEVEL_ERROR, 0);
@@ -128,7 +128,7 @@ static SystemMetrics* allocate_system_metrics(void) {
 SystemMetrics* collect_system_metrics(const WebSocketMetrics *ws_metrics) {
     pthread_mutex_lock(&status_mutex);
     
-    SystemMetrics *metrics = allocate_system_metrics();
+    SystemMetrics *metrics = status_allocate_system_metrics();
     if (!metrics) {
         pthread_mutex_unlock(&status_mutex);
         return NULL;

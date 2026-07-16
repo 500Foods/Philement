@@ -34,7 +34,7 @@ static enum MHD_Result send_sse_error_response(struct MHD_Connection *connection
                                                const char *error_message,
                                                unsigned int status_code);
 
-static enum MHD_Result send_sse_response_headers(struct MHD_Connection *connection);
+ enum MHD_Result auth_stream_send_sse_response_headers(struct MHD_Connection *connection);
 
 static enum MHD_Result stream_chat_response(struct MHD_Connection *connection,
                                             const ChatEngineConfig *engine,
@@ -205,7 +205,7 @@ enum MHD_Result handle_auth_chat_stream_request(struct MHD_Connection *connectio
     }
 
     // Send SSE headers
-    enum MHD_Result ret = send_sse_response_headers(connection);
+    enum MHD_Result ret = auth_stream_send_sse_response_headers(connection);
     if (ret != MHD_YES) {
         free(request_json_str);
         free(engine_name);
@@ -266,7 +266,7 @@ static enum MHD_Result send_sse_error_response(struct MHD_Connection *connection
     return ret;
 }
 
-static enum MHD_Result send_sse_response_headers(struct MHD_Connection *connection) {
+ enum MHD_Result auth_stream_send_sse_response_headers(struct MHD_Connection *connection) {
     struct MHD_Response *response = MHD_create_response_from_buffer(0, NULL, MHD_RESPMEM_PERSISTENT);
     if (!response) {
         return MHD_NO;

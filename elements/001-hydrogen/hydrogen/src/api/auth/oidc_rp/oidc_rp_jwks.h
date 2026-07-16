@@ -30,6 +30,8 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <time.h>
+#include <jansson.h>
 
 /**
  * @brief A single JWK extracted from the IdP's `keys[]` array.
@@ -141,5 +143,21 @@ OidcRpJwk *oidc_rp_jwks_parse(const char *json_text, size_t *out_count);
  * NULL-safe. Frees every owned string and the array itself.
  */
 void oidc_rp_jwks_keys_free(OidcRpJwk *keys, size_t count);
+
+// ---------------------------------------------------------------------------
+// Internal helpers — NOT part of the stable public API. Exposed non-static
+// so Unity tests can call them directly. `JwksEntry` is the cache's private
+// slot type (defined in oidc_rp_jwks.c); forward-declared here as opaque.
+// ---------------------------------------------------------------------------
+typedef struct JwksEntry JwksEntry;
+
+void jwk_clear_fields(OidcRpJwk *k);
+void slot_clear_locked(JwksEntry *s);
+void copy_optional_string(json_t *obj, const char *key, char **out);
+bool copy_required_string(json_t *obj, const char *key, char **out);
+JwksEntry *jwks_find_slot_locked(const char *name);
+JwksEntry *jwks_find_empty_slot_locked(void);
+bool jwks_entry_expired(const JwksEntry *entry, time_t now);
+const OidcRpJwk *find_kid_in_slot_locked(const JwksEntry *slot, const char *kid);
 
 #endif // OIDC_RP_JWKS_H

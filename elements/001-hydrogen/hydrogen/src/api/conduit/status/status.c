@@ -29,7 +29,7 @@
  * - Bootstrap has completed
  * - Query cache is populated
  */
-static bool check_database_readiness(const DatabaseQueue* db_queue) {
+ bool conduit_status_check_database_readiness(const DatabaseQueue* db_queue) {
     if (!db_queue) {
         return false;
     }
@@ -50,7 +50,7 @@ static bool check_database_readiness(const DatabaseQueue* db_queue) {
 /**
  * Get migration status string based on database queue state.
  */
-static const char* get_migration_status(const DatabaseQueue* db_queue) {
+ const char* conduit_status_get_migration_status(const DatabaseQueue* db_queue) {
     if (!db_queue) {
         return "not_found";
     }
@@ -68,37 +68,37 @@ static const char* get_migration_status(const DatabaseQueue* db_queue) {
  * Check if a valid JWT token is present in the request.
  * Returns true if a valid JWT is found, false otherwise.
  */
-static bool has_valid_jwt(struct MHD_Connection *connection) {
+ bool conduit_status_has_valid_jwt(struct MHD_Connection *connection) {
     // Get the Authorization header
     const char *auth_header = MHD_lookup_connection_value(connection, MHD_HEADER_KIND, "Authorization");
 
     if (!auth_header) {
-        log_this(SR_API, "has_valid_jwt: No Authorization header found", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_API, "conduit_status_has_valid_jwt: No Authorization header found", LOG_LEVEL_DEBUG, 0);
         return false; // No auth header
     }
 
-    log_this(SR_API, "has_valid_jwt: Found Authorization header: %s", LOG_LEVEL_DEBUG, 1, auth_header);
+    log_this(SR_API, "conduit_status_has_valid_jwt: Found Authorization header: %s", LOG_LEVEL_DEBUG, 1, auth_header);
 
     // Check for "Bearer " prefix
     if (strncmp(auth_header, "Bearer ", 7) != 0) {
-        log_this(SR_API, "has_valid_jwt: Authorization header doesn't start with 'Bearer '", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_API, "conduit_status_has_valid_jwt: Authorization header doesn't start with 'Bearer '", LOG_LEVEL_DEBUG, 0);
         return false; // Invalid format
     }
 
     // Extract token (skip "Bearer " prefix)
     const char *token = auth_header + 7;
     if (strlen(token) == 0) {
-        log_this(SR_API, "has_valid_jwt: Empty token after 'Bearer '", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_API, "conduit_status_has_valid_jwt: Empty token after 'Bearer '", LOG_LEVEL_DEBUG, 0);
         return false; // Empty token
     }
 
-    log_this(SR_API, "has_valid_jwt: Extracted token (first 20 chars): %.20s...", LOG_LEVEL_DEBUG, 1, token);
+    log_this(SR_API, "conduit_status_has_valid_jwt: Extracted token (first 20 chars): %.20s...", LOG_LEVEL_DEBUG, 1, token);
 
     // Validate JWT token
     jwt_validation_result_t result = validate_jwt(token, NULL);
     bool is_valid = result.valid && result.claims;
 
-    log_this(SR_API, "has_valid_jwt: JWT validation result - valid: %s, has_claims: %s, error: %d",
+    log_this(SR_API, "conduit_status_has_valid_jwt: JWT validation result - valid: %s, has_claims: %s, error: %d",
              LOG_LEVEL_DEBUG, 3,
              result.valid ? "true" : "false",
              result.claims ? "true" : "false",
@@ -106,7 +106,7 @@ static bool has_valid_jwt(struct MHD_Connection *connection) {
 
     free_jwt_validation_result(&result);
 
-    log_this(SR_API, "has_valid_jwt: Returning %s", LOG_LEVEL_DEBUG, 1, is_valid ? "true" : "false");
+    log_this(SR_API, "conduit_status_has_valid_jwt: Returning %s", LOG_LEVEL_DEBUG, 1, is_valid ? "true" : "false");
 
     return is_valid;
 }
@@ -156,7 +156,7 @@ enum MHD_Result handle_conduit_status_request(
     }
 
     // Check for valid JWT authentication
-    bool has_jwt = has_valid_jwt(connection);
+    bool has_jwt = conduit_status_has_valid_jwt(connection);
 
     // Build response
     json_t* response = json_object();
@@ -175,7 +175,7 @@ enum MHD_Result handle_conduit_status_request(
         }
 
         const char* db_name = db_queue->database_name;
-        bool ready = check_database_readiness(db_queue);
+        bool ready = conduit_status_check_database_readiness(db_queue);
 
         json_t* db_status = json_object();
         json_object_set_new(db_status, "ready", json_boolean(ready));
@@ -183,7 +183,7 @@ enum MHD_Result handle_conduit_status_request(
 
         // Include additional details only if authenticated
         if (has_jwt) {
-            const char* migration_status = get_migration_status(db_queue);
+            const char* migration_status = conduit_status_get_migration_status(db_queue);
             size_t query_cache_entries = db_queue->query_cache ? db_queue->query_cache->entry_count : 0;
 
             json_object_set_new(db_status, "migration_status", json_string(migration_status));

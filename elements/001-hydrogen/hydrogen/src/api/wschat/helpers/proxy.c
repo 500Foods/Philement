@@ -48,7 +48,7 @@ typedef struct {
 #define MAX_RESPONSE_SIZE (8 * 1024 * 1024)
 
 // CURL write callback for collecting response data
-static size_t chat_proxy_write_callback(const void* contents, size_t size, size_t nmemb, void* userp) {
+ size_t chat_proxy_write_callback(const void* contents, size_t size, size_t nmemb, void* userp) {
     size_t realsize = size * nmemb;
     ChatResponseBuffer* buffer = (ChatResponseBuffer*)userp;
 
@@ -670,7 +670,7 @@ typedef struct {
 } StreamContext;
 
 // Write callback for streaming: processes lines and calls chunk callback
-static size_t stream_write_callback(const void* contents, size_t size, size_t nmemb, void* userp) {
+ size_t chat_proxy_stream_write_callback(const void* contents, size_t size, size_t nmemb, void* userp) {
     size_t realsize = size * nmemb;
     StreamContext* ctx = (StreamContext*)userp;
     
@@ -735,7 +735,7 @@ static size_t stream_write_callback(const void* contents, size_t size, size_t nm
 
 // CURL debug function for connection diagnostics
 // cppcheck-suppress constParameterCallback - CURL callback signature is fixed
-static int stream_debug_callback(CURL* handle, curl_infotype type, char* data, size_t size, void* userptr) {
+ int chat_proxy_stream_debug_callback(CURL* handle, curl_infotype type, char* data, size_t size, void* userptr) {
     (void)handle;
     (void)userptr;
     
@@ -771,7 +771,7 @@ static int stream_debug_callback(CURL* handle, curl_infotype type, char* data, s
 }
 
 // Worker thread function for streaming - runs in background thread
-static void* stream_worker_thread(void* arg) {
+ void* chat_proxy_stream_worker_thread(void* arg) {
     StreamThreadContext* thread_ctx = (StreamThreadContext*)arg;
     
     // Initialize stream context
@@ -822,7 +822,7 @@ static void* stream_worker_thread(void* arg) {
     curl_easy_setopt(curl, CURLOPT_URL, engine->api_url);
     curl_easy_setopt(curl, CURLOPT_POSTFIELDS, thread_ctx->request_json);
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, stream_write_callback);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, chat_proxy_stream_write_callback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&ctx);
     curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, (long)config->connect_timeout_seconds);
     curl_easy_setopt(curl, CURLOPT_TIMEOUT, (long)config->request_timeout_seconds);
@@ -834,7 +834,7 @@ static void* stream_worker_thread(void* arg) {
     curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);  // Thread-safe: don't use signals
     
     // Enable debug callback for connection diagnostics
-    curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, stream_debug_callback);
+    curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, chat_proxy_stream_debug_callback);
     curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);  // Enable verbose output for debug callback
     
     // Perform request
@@ -897,7 +897,7 @@ static StreamRequest* active_streams = NULL;
 static pthread_mutex_t active_streams_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 // Cleanup completed streams (call periodically or after spawn)
-static void cleanup_completed_streams(void) {
+ void chat_proxy_cleanup_completed_streams(void) {
     pthread_mutex_lock(&active_streams_mutex);
     
     StreamRequest** pp = &active_streams;
@@ -926,7 +926,7 @@ bool chat_proxy_send_stream(const ChatEngineConfig* engine,
     }
     
     // Cleanup any completed streams before starting new one
-    cleanup_completed_streams();
+    chat_proxy_cleanup_completed_streams();
     
     // Allocate stream request on heap (survives beyond function return)
     StreamRequest* req = (StreamRequest*)calloc(1, sizeof(StreamRequest));
@@ -953,7 +953,7 @@ bool chat_proxy_send_stream(const ChatEngineConfig* engine,
     pthread_attr_init(&worker_attr);
     pthread_attr_setdetachstate(&worker_attr, PTHREAD_CREATE_DETACHED);
     
-    int create_result = pthread_create(&req->worker_tid, &worker_attr, stream_worker_thread, &req->thread_ctx);
+    int create_result = pthread_create(&req->worker_tid, &worker_attr, chat_proxy_stream_worker_thread, &req->thread_ctx);
     pthread_attr_destroy(&worker_attr);
     
     if (create_result != 0) {

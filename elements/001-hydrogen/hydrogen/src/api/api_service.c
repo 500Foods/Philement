@@ -333,7 +333,7 @@ bool is_api_request(const char *url) {
  * Check if an endpoint path requires JWT authentication.
  * Returns true if the endpoint requires authentication, false otherwise.
  */
-static bool endpoint_requires_auth(const char *path) {
+ bool api_service_endpoint_requires_auth(const char *path) {
     // List of endpoints that require JWT authentication
     // NOTE: Do NOT include login or register - those are used to GET a JWT
     static const char *protected_endpoints[] = {
@@ -361,7 +361,7 @@ static bool endpoint_requires_auth(const char *path) {
  * Check if an endpoint path expects JSON in the request body.
  * Returns true if the endpoint expects JSON, false otherwise.
  */
-static bool endpoint_expects_json(const char *path) {
+ bool api_service_endpoint_expects_json(const char *path) {
     // List of endpoints that expect JSON in POST body
     static const char *json_endpoints[] = {
         "auth/login",
@@ -416,7 +416,7 @@ static enum MHD_Result check_jwt_auth(struct MHD_Connection *connection,
                                       const char *path,
                                       json_t **response_out) {
     // Check if this endpoint requires authentication
-    if (!endpoint_requires_auth(path)) {
+    if (!api_service_endpoint_requires_auth(path)) {
         return MHD_YES;  // No auth required, continue
     }
     
@@ -573,7 +573,7 @@ enum MHD_Result handle_api_request(struct MHD_Connection *connection,
     // For endpoints that expect JSON in the request body, validate that the
     // POST data is valid JSON before routing to the endpoint handler.
     // ========================================================================
-    if (endpoint_expects_json(path) && strcmp(method, "POST") == 0) {
+    if (api_service_endpoint_expects_json(path) && strcmp(method, "POST") == 0) {
         // Use common POST body buffering for JSON validation
         ApiPostBuffer *buffer = NULL;
         ApiBufferResult buf_result = api_buffer_post_data(method, upload_data, upload_data_size, con_cls, &buffer);

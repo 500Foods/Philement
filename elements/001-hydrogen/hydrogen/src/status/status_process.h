@@ -32,4 +32,10 @@ void convert_thread_metrics(const ServiceThreads *src, ServiceThreadMetrics *des
 // Service metrics functions
 bool collect_service_metrics(SystemMetrics *metrics, const WebSocketMetrics *ws_metrics);
 
+/* ----------------------------------------------------------------------------
+ * The following helper is NOT part of the stable public API. It is exposed
+ * (non-static) solely so the Unity test framework can call it directly.
+ * -------------------------------------------------------------------------- */
+bool status_collect_process_memory(size_t *vmsize, size_t *vmrss, size_t *vmswap);
+
 #endif /* STATUS_PROCESS_H */

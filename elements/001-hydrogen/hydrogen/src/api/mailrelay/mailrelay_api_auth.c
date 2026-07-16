@@ -20,7 +20,7 @@ typedef struct {
     int  role_id;
 } RoleLookupContext;
 
-static void role_lookup_callback(MailRelayRepoResult* result, void* user_data) {
+ void mailrelay_api_role_lookup_callback(MailRelayRepoResult* result, void* user_data) {
     RoleLookupContext* ctx = (RoleLookupContext*)user_data;
     if (!result || !ctx) {
         return;
@@ -50,7 +50,7 @@ static void role_lookup_callback(MailRelayRepoResult* result, void* user_data) {
     }
 }
 
-static bool has_role_id(const char* roles, const char* role_id_str) {
+ bool mailrelay_api_has_role_id(const char* roles, const char* role_id_str) {
     if (!roles || !role_id_str || role_id_str[0] == '\0') {
         return false;
     }
@@ -87,7 +87,7 @@ bool mailrelay_api_has_role(const jwt_claims_t* claims, const char* role_name) {
     }
 
     RoleLookupContext ctx = {0};
-    if (!mailrelay_repo_role_get_by_name(role_name, role_lookup_callback, &ctx)) {
+    if (!mailrelay_repo_role_get_by_name(role_name, mailrelay_api_role_lookup_callback, &ctx)) {
         return false;
     }
     if (!ctx.found) {
@@ -97,5 +97,5 @@ bool mailrelay_api_has_role(const jwt_claims_t* claims, const char* role_name) {
     char role_id_str[32];
     snprintf(role_id_str, sizeof(role_id_str), "%d", ctx.role_id);
 
-    return has_role_id(claims->roles, role_id_str);
+    return mailrelay_api_has_role_id(claims->roles, role_id_str);
 }

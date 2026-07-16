@@ -57,4 +57,12 @@ ChatHealthStatus chat_health_get_engine_status(ChatEngineConfig* engine);
 // Update engine stats after each request
 void chat_health_update_stats(ChatEngineConfig* engine, bool success, double response_time_ms, int tokens_used);
 
+/* ----------------------------------------------------------------------------
+ * The following helpers are NOT part of the stable public API. They are exposed
+ * (non-static) solely so the Unity test framework can call them directly.
+ * -------------------------------------------------------------------------- */
+bool chat_health_check_openai(const ChatEngineConfig* engine);
+bool chat_health_check_anthropic(const ChatEngineConfig* engine);
+bool chat_health_check_ollama(const ChatEngineConfig* engine);
+
 #endif // HEALTH_H

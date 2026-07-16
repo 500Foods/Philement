@@ -78,4 +78,13 @@ void cap_verify_test_set_post_fn(
  */
 void cap_verify_test_clear_post_fn(void);
 
+/* ----------------------------------------------------------------------------
+ * The following helpers are NOT part of the stable public API. They are
+ * exposed (non-static) solely so the Unity test framework can call them
+ * directly.
+ * -------------------------------------------------------------------------- */
+bool cap_verify_is_valid_http_url(const char* url);
+cap_verify_result_t cap_verify_hard_fail(const char* msg, char* error_out, size_t error_sz);
+cap_verify_result_t cap_verify_fallback(const char* msg, char* error_out, size_t error_sz);
+
 #endif // CAP_VERIFY_H

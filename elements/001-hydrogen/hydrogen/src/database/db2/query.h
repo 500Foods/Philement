@@ -23,4 +23,14 @@ void db2_cleanup_column_names(char** column_names, int column_count);
 bool db2_bind_single_parameter(void* stmt_handle, unsigned short param_index, TypedParameter* param,
                                void** bound_values, long* str_len_indicators, const char* designator);
 
+/* ----------------------------------------------------------------------------
+ * The following helpers are NOT part of the stable public API. They are
+ * exposed (non-static) solely so the Unity test framework can call them
+ * directly.
+ * -------------------------------------------------------------------------- */
+char* db2_trim_trailing_whitespace(char* str);
+char* db2_format_datetime_string(char* str);
+char* db2_format_timestamp_string(char* str);
+void db2_cleanup_bound_values(void** bound_values, size_t count);
+
 #endif // DATABASE_ENGINE_DB2_QUERY_H

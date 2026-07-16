@@ -34,7 +34,7 @@ extern QueueMemoryMetrics mail_relay_queue_memory;
 extern QueueMemoryMetrics notify_queue_memory;
 
 // Forward declarations
-static bool collect_process_memory(size_t *vmsize, size_t *vmrss, size_t *vmswap);
+ bool status_collect_process_memory(size_t *vmsize, size_t *vmrss, size_t *vmswap);
 
 // Helper function to safely truncate strings
 // Exposed for testing - was previously static
@@ -47,7 +47,7 @@ char* safe_truncate(char* dest, size_t dest_size, const char* src) {
 }
 
 // Collect process memory metrics from /proc/self/status
-static bool collect_process_memory(size_t *vmsize, size_t *vmrss, size_t *vmswap) {
+ bool status_collect_process_memory(size_t *vmsize, size_t *vmrss, size_t *vmswap) {
     *vmsize = 0;
     *vmrss = 0;
     *vmswap = 0;
@@ -78,7 +78,7 @@ static bool collect_process_memory(size_t *vmsize, size_t *vmrss, size_t *vmswap
 
 // Get process memory metrics from /proc/self/status
 bool get_process_memory(size_t *vmsize, size_t *vmrss, size_t *vmswap) {
-    return collect_process_memory(vmsize, vmrss, vmswap);
+    return status_collect_process_memory(vmsize, vmrss, vmswap);
 }
 
 // Get socket information from /proc/net files

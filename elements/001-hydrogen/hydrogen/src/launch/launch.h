@@ -203,4 +203,10 @@ char* get_uppercase_name(const char* name);
 // Launch approved subsystems in registry order
 bool launch_approved_subsystems(ReadinessResults* results);
 
+/* ----------------------------------------------------------------------------
+ * The following helper is NOT part of the stable public API. It is exposed
+ * (non-static) solely so the Unity test framework can call it directly.
+ * -------------------------------------------------------------------------- */
+void launch_register_payload(void);
+
 #endif /* LAUNCH_H */

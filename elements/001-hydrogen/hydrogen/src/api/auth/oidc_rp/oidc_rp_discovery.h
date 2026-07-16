@@ -34,6 +34,8 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <time.h>
+#include <jansson.h>
 
 /**
  * @brief Parsed contents of an OIDC `.well-known/openid-configuration`
@@ -158,5 +160,22 @@ OidcRpDiscoveryDoc *oidc_rp_discovery_parse(const char *json_text,
  * `oidc_rp_discovery_get` — those are owned by the cache.
  */
 void oidc_rp_discovery_doc_free(OidcRpDiscoveryDoc *doc);
+
+// ---------------------------------------------------------------------------
+// Internal helpers — NOT part of the stable public API. Exposed non-static
+// so Unity tests can call them directly. `DiscoveryEntry` is the cache's
+// private slot type (defined in oidc_rp_discovery.c); it is forward-declared
+// here as an opaque type for the pointer-taking helpers.
+// ---------------------------------------------------------------------------
+typedef struct DiscoveryEntry DiscoveryEntry;
+
+void doc_clear_fields(OidcRpDiscoveryDoc *d);
+bool build_discovery_url(const char *issuer, char *out, size_t out_size);
+bool extract_required_string(json_t *obj, const char *key, char **out);
+void extract_optional_string(json_t *obj, const char *key, char **out);
+DiscoveryEntry *discovery_find_slot_locked(const char *name);
+DiscoveryEntry *discovery_find_empty_slot_locked(void);
+bool discovery_entry_expired(const DiscoveryEntry *entry, time_t now);
+void replace_slot_locked(DiscoveryEntry *slot, const char *name, OidcRpDiscoveryDoc *new_doc);
 
 #endif // OIDC_RP_DISCOVERY_H

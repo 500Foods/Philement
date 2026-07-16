@@ -80,4 +80,11 @@ enum MHD_Result handle_get_auth_oidc_start(
     void **con_cls
 );
 
+// ---------------------------------------------------------------------------
+// Internal helpers — NOT part of the stable public API. Exposed non-static
+// so Unity tests can call them directly.
+// ---------------------------------------------------------------------------
+enum MHD_Result send_internal_error(struct MHD_Connection *connection, const char *cause);
+void start_truncated_state(const char *state, char out[16]);
+
 #endif // OIDC_RP_START_H

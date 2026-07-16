@@ -43,7 +43,7 @@
 
 // Scrub-and-free for a single string field on the token response.
 // `s` may be NULL.
-static void scrub_free(char **s) {
+void token_scrub_free(char **s) {
     if (!s || !*s) return;
     volatile char *p = (volatile char *)*s;
     size_t n = strlen(*s);
@@ -59,7 +59,7 @@ static void scrub_free(char **s) {
 // The buffer pointer is updated in place; capacity is doubled as
 // needed. Designed for building the small (< 1 KiB) form bodies
 // the OAuth2 token endpoint expects.
-static char *append_form_param(char *buffer, size_t *out_len, size_t *out_cap,
+char *append_form_param(char *buffer, size_t *out_len, size_t *out_cap,
                                const char *key, const char *value) {
     if (!key || !value) {
         free(buffer);
@@ -120,7 +120,7 @@ static char *append_form_param(char *buffer, size_t *out_len, size_t *out_cap,
 //   client_secret=...
 //
 // All values are URL-encoded.
-static char *build_token_body(const OIDCRPProviderConfig *provider,
+char *build_token_body(const OIDCRPProviderConfig *provider,
                               const char *code,
                               const char *redirect_uri,
                               const char *code_verifier) {
@@ -154,7 +154,7 @@ static char *build_token_body(const OIDCRPProviderConfig *provider,
 //
 // Returns a heap-allocated string ("Basic <base64>") or NULL on
 // allocation failure / NULL input.
-static char *build_basic_auth_header(const char *client_id,
+char *build_basic_auth_header(const char *client_id,
                                      const char *client_secret) {
     if (!client_id || !client_secret) return NULL;
 
@@ -218,7 +218,7 @@ static char *build_basic_auth_header(const char *client_id,
 
 // Map a 4xx response with an `error` JSON field (RFC 6749 §5.2) to
 // the typed error code Hydrogen exposes upstream.
-static OidcRpTokenError map_oauth_error_code(const char *error) {
+OidcRpTokenError map_oauth_error_code(const char *error) {
     if (!error) return OIDC_RP_TOKEN_ERR_OTHER;
     if (strcmp(error, "invalid_grant") == 0)        return OIDC_RP_TOKEN_ERR_INVALID_GRANT;
     if (strcmp(error, "invalid_request") == 0)      return OIDC_RP_TOKEN_ERR_INVALID_GRANT;
@@ -231,7 +231,7 @@ static OidcRpTokenError map_oauth_error_code(const char *error) {
 
 // Best-effort parse of a 4xx JSON body for the OAuth2 `error` field.
 // Returns the mapped typed error, or OTHER on any parse failure.
-static OidcRpTokenError parse_error_body(const char *body) {
+OidcRpTokenError parse_error_body(const char *body) {
     if (!body || !*body) return OIDC_RP_TOKEN_ERR_OTHER;
     json_error_t jerr;
     json_t *root = json_loads(body, JSON_REJECT_DUPLICATES, &jerr);
@@ -250,7 +250,7 @@ static OidcRpTokenError parse_error_body(const char *body) {
 // Parse a 2xx JSON body into a token response. Returns NULL on any
 // failure (malformed JSON, missing id_token, allocation). The
 // caller logs the typed error.
-static OidcRpTokenResponse *parse_success_body(const char *body) {
+OidcRpTokenResponse *parse_success_body(const char *body) {
     if (!body || !*body) return NULL;
 
     json_error_t jerr;
@@ -301,9 +301,9 @@ out:
 
 void oidc_rp_token_response_free(OidcRpTokenResponse *response) {
     if (!response) return;
-    scrub_free(&response->id_token);
-    scrub_free(&response->access_token);
-    scrub_free(&response->token_type);
+    token_scrub_free(&response->id_token);
+    token_scrub_free(&response->access_token);
+    token_scrub_free(&response->token_type);
     response->expires_in = 0;
     free(response);
 }

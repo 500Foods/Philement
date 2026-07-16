@@ -43,10 +43,16 @@
  * }
  */
 enum MHD_Result handle_auth_chats_request(struct MHD_Connection *connection,
-                                           const char *url,
-                                           const char *method,
-                                           const char *upload_data,
-                                           size_t *upload_data_size,
-                                           void **con_cls);
+                                            const char *url,
+                                            const char *method,
+                                            const char *upload_data,
+                                            size_t *upload_data_size,
+                                            void **con_cls);
+
+/* ----------------------------------------------------------------------------
+ * The following helper is NOT part of the stable public API. It is exposed
+ * (non-static) solely so the Unity test framework can call it directly.
+ * -------------------------------------------------------------------------- */
+void auth_chats_generate_broadcast_id(char *buffer, size_t buffer_size);
 
 #endif // AUTH_CHATS_H

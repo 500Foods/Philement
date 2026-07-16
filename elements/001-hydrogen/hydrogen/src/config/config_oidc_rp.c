@@ -93,7 +93,7 @@ const char* oidc_rp_auth_method_name(OIDCRPAuthMethod method) {
 // Resolve a JSON string value (with ${env.X} substitution) into a freshly
 // allocated heap string. Returns NULL if the JSON node is missing or not a
 // string. The caller owns the returned pointer.
-static char* take_string_or_null(json_t* obj, const char* key) {
+ char* config_oidc_rp_take_string_or_null(json_t* obj, const char* key) {
     if (!obj || !json_is_object(obj)) return NULL;
     json_t* node = json_object_get(obj, key);
     if (!node || !json_is_string(node)) return NULL;
@@ -105,7 +105,7 @@ static char* take_string_or_null(json_t* obj, const char* key) {
 }
 
 // Read a boolean field with a default if missing or wrong type.
-static bool take_bool_or_default(json_t* obj, const char* key, bool default_value) {
+ bool config_oidc_rp_take_bool_or_default(json_t* obj, const char* key, bool default_value) {
     if (!obj || !json_is_object(obj)) return default_value;
     json_t* node = json_object_get(obj, key);
     if (!node || !json_is_boolean(node)) return default_value;
@@ -113,7 +113,7 @@ static bool take_bool_or_default(json_t* obj, const char* key, bool default_valu
 }
 
 // Read an integer field with a default if missing or wrong type.
-static int take_int_or_default(json_t* obj, const char* key, int default_value) {
+ int config_oidc_rp_take_int_or_default(json_t* obj, const char* key, int default_value) {
     if (!obj || !json_is_object(obj)) return default_value;
     json_t* node = json_object_get(obj, key);
     if (!node || !json_is_integer(node)) return default_value;
@@ -148,7 +148,7 @@ static size_t take_string_array(json_t* obj, const char* key,
 }
 
 // Apply default scalar values to a provider before JSON overrides.
-static void provider_apply_defaults(OIDCRPProviderConfig* p) {
+ void config_oidc_rp_provider_apply_defaults(OIDCRPProviderConfig* p) {
     p->scopes = strdup("openid profile email");
     p->verify_ssl = true;
     p->auth_method = OIDC_RP_AUTH_METHOD_CLIENT_SECRET_BASIC;
@@ -179,7 +179,7 @@ static void provider_apply_defaults(OIDCRPProviderConfig* p) {
 }
 
 // Free everything inside a single provider. Does not touch the slot itself.
-static void provider_cleanup(OIDCRPProviderConfig* p) {
+ void config_oidc_rp_provider_cleanup(OIDCRPProviderConfig* p) {
     if (!p) return;
     free(p->name);
     free(p->label);
@@ -213,53 +213,53 @@ static void provider_cleanup(OIDCRPProviderConfig* p) {
 
 // Load a single provider from its JSON object into slot `p`.
 // `p` must already be zeroed by the caller (memset).
-static void provider_load_from_json(OIDCRPProviderConfig* p, json_t* obj) {
-    provider_apply_defaults(p);
+ void config_oidc_rp_provider_load_from_json(OIDCRPProviderConfig* p, json_t* obj) {
+    config_oidc_rp_provider_apply_defaults(p);
 
     if (!obj || !json_is_object(obj)) return;
 
     // --- Identifiers ---
     char* v;
-    if ((v = take_string_or_null(obj, "Name"))) {
+    if ((v = config_oidc_rp_take_string_or_null(obj, "Name"))) {
         free(p->name); p->name = v;
     }
-    if ((v = take_string_or_null(obj, "Label"))) {
+    if ((v = config_oidc_rp_take_string_or_null(obj, "Label"))) {
         free(p->label); p->label = v;
     }
-    if ((v = take_string_or_null(obj, "Issuer"))) {
+    if ((v = config_oidc_rp_take_string_or_null(obj, "Issuer"))) {
         free(p->issuer); p->issuer = v;
     }
-    if ((v = take_string_or_null(obj, "ClientId"))) {
+    if ((v = config_oidc_rp_take_string_or_null(obj, "ClientId"))) {
         free(p->client_id); p->client_id = v;
     }
-    if ((v = take_string_or_null(obj, "ClientSecret"))) {
+    if ((v = config_oidc_rp_take_string_or_null(obj, "ClientSecret"))) {
         free(p->client_secret); p->client_secret = v;
     }
-    if ((v = take_string_or_null(obj, "RedirectUri"))) {
+    if ((v = config_oidc_rp_take_string_or_null(obj, "RedirectUri"))) {
         free(p->redirect_uri); p->redirect_uri = v;
     }
-    if ((v = take_string_or_null(obj, "SystemApiKey"))) {
+    if ((v = config_oidc_rp_take_string_or_null(obj, "SystemApiKey"))) {
         free(p->system_api_key); p->system_api_key = v;
     }
 
     // --- Scalars with defaults ---
-    if ((v = take_string_or_null(obj, "Scopes"))) {
+    if ((v = config_oidc_rp_take_string_or_null(obj, "Scopes"))) {
         free(p->scopes); p->scopes = v;
     }
-    p->verify_ssl = take_bool_or_default(obj, "VerifySsl", p->verify_ssl);
+    p->verify_ssl = config_oidc_rp_take_bool_or_default(obj, "VerifySsl", p->verify_ssl);
 
     // AuthMethod: optional. Default is client_secret_basic.
-    char* am_str = take_string_or_null(obj, "AuthMethod");
+    char* am_str = config_oidc_rp_take_string_or_null(obj, "AuthMethod");
     if (am_str) {
         p->auth_method = oidc_rp_parse_auth_method(am_str);
         free(am_str);
     }
 
-    p->discovery_cache_seconds = take_int_or_default(obj, "DiscoveryCacheSeconds", p->discovery_cache_seconds);
-    p->jwks_cache_seconds = take_int_or_default(obj, "JwksCacheSeconds", p->jwks_cache_seconds);
-    p->state_ttl_seconds = take_int_or_default(obj, "StateTtlSeconds", p->state_ttl_seconds);
-    p->handoff_ttl_seconds = take_int_or_default(obj, "HandoffTtlSeconds", p->handoff_ttl_seconds);
-    p->bind_handoff_to_ip = take_bool_or_default(obj, "BindHandoffToIp", p->bind_handoff_to_ip);
+    p->discovery_cache_seconds = config_oidc_rp_take_int_or_default(obj, "DiscoveryCacheSeconds", p->discovery_cache_seconds);
+    p->jwks_cache_seconds = config_oidc_rp_take_int_or_default(obj, "JwksCacheSeconds", p->jwks_cache_seconds);
+    p->state_ttl_seconds = config_oidc_rp_take_int_or_default(obj, "StateTtlSeconds", p->state_ttl_seconds);
+    p->handoff_ttl_seconds = config_oidc_rp_take_int_or_default(obj, "HandoffTtlSeconds", p->handoff_ttl_seconds);
+    p->bind_handoff_to_ip = config_oidc_rp_take_bool_or_default(obj, "BindHandoffToIp", p->bind_handoff_to_ip);
 
     // --- Allowed algorithms (replace defaults if specified) ---
     json_t* algos = json_object_get(obj, "AllowedAlgorithms");
@@ -286,19 +286,19 @@ static void provider_load_from_json(OIDCRPProviderConfig* p, json_t* obj) {
     // --- AccountLinking ---
     json_t* linking = json_object_get(obj, "AccountLinking");
     if (linking && json_is_object(linking)) {
-        char* strat_str = take_string_or_null(linking, "Strategy");
+        char* strat_str = config_oidc_rp_take_string_or_null(linking, "Strategy");
         if (strat_str) {
             p->account_linking.strategy = oidc_rp_parse_link_strategy(strat_str);
             free(strat_str);
         }
-        p->account_linking.require_email_verified = take_bool_or_default(
+        p->account_linking.require_email_verified = config_oidc_rp_take_bool_or_default(
             linking, "RequireEmailVerified", p->account_linking.require_email_verified);
 
         json_t* prov = json_object_get(linking, "ProvisionDefaults");
         if (prov && json_is_object(prov)) {
-            p->account_linking.provision_defaults.enabled = take_bool_or_default(
+            p->account_linking.provision_defaults.enabled = config_oidc_rp_take_bool_or_default(
                 prov, "Enabled", p->account_linking.provision_defaults.enabled);
-            p->account_linking.provision_defaults.authorized = take_bool_or_default(
+            p->account_linking.provision_defaults.authorized = config_oidc_rp_take_bool_or_default(
                 prov, "Authorized", p->account_linking.provision_defaults.authorized);
 
             // Free any pre-existing role names before reading new ones.
@@ -328,12 +328,12 @@ static void provider_load_from_json(OIDCRPProviderConfig* p, json_t* obj) {
     // --- RoleMapping ---
     json_t* roles = json_object_get(obj, "RoleMapping");
     if (roles && json_is_object(roles)) {
-        char* src_str = take_string_or_null(roles, "Source");
+        char* src_str = config_oidc_rp_take_string_or_null(roles, "Source");
         if (src_str) {
             p->role_mapping.source = oidc_rp_parse_role_source(src_str);
             free(src_str);
         }
-        if ((v = take_string_or_null(roles, "IdpRoleClaim"))) {
+        if ((v = config_oidc_rp_take_string_or_null(roles, "IdpRoleClaim"))) {
             free(p->role_mapping.idp_role_claim);
             p->role_mapping.idp_role_claim = v;
         }
@@ -380,9 +380,9 @@ bool load_oidc_rp_config(json_t* root, AppConfig* config) {
     // Tell the section header logger about us, like the other loaders do.
     PROCESS_SECTION(root, "OIDC_RP");
 
-    rp->enabled = take_bool_or_default(section, "Enabled", false);
+    rp->enabled = config_oidc_rp_take_bool_or_default(section, "Enabled", false);
 
-    char* db = take_string_or_null(section, "Database");
+    char* db = config_oidc_rp_take_string_or_null(section, "Database");
     if (db) {
         free(rp->database);
         rp->database = db;
@@ -400,7 +400,7 @@ bool load_oidc_rp_config(json_t* root, AppConfig* config) {
 
         // Free any previously-loaded providers (rare: e.g. config reload).
         for (size_t i = 0; i < rp->provider_count; i++) {
-            provider_cleanup(&rp->providers[i]);
+            config_oidc_rp_provider_cleanup(&rp->providers[i]);
         }
         rp->provider_count = 0;
 
@@ -409,7 +409,7 @@ bool load_oidc_rp_config(json_t* root, AppConfig* config) {
             if (!pobj || !json_is_object(pobj)) continue;
             memset(&rp->providers[rp->provider_count], 0,
                    sizeof(rp->providers[0]));
-            provider_load_from_json(&rp->providers[rp->provider_count], pobj);
+            config_oidc_rp_provider_load_from_json(&rp->providers[rp->provider_count], pobj);
             rp->provider_count++;
         }
     }
@@ -421,7 +421,7 @@ void cleanup_oidc_rp_config(OIDCRelyingPartyConfig* config) {
     if (!config) return;
 
     for (size_t i = 0; i < config->provider_count; i++) {
-        provider_cleanup(&config->providers[i]);
+        config_oidc_rp_provider_cleanup(&config->providers[i]);
     }
     config->provider_count = 0;
 

@@ -100,4 +100,22 @@ void oidc_rp_roles_test_set_query_fn(OidcRpRolesQueryFn fn);
  */
 void oidc_rp_roles_test_clear_query_fn(void);
 
+/* ---------------------------------------------------------------------------
+ * Internal helpers — NOT part of the stable public API. Exposed non-static
+ * so Unity tests can call them directly. `RolesBuf` is the module's private
+ * growable string builder (defined in oidc_rp_roles.c); forward-declared
+ * here as opaque.
+ * ------------------------------------------------------------------------- */
+typedef struct RolesBuf RolesBuf;
+
+QueryResult *run_query(int query_ref, const char *database, json_t *params);
+bool roles_buf_init(RolesBuf *rb);
+bool roles_buf_append(RolesBuf *rb, const char *role);
+char *roles_buf_steal(RolesBuf *rb);
+void roles_buf_free(RolesBuf *rb);
+char *roles_from_idp(const OidcRpIdTokenClaims *claims, const char *prefix);
+char **split_roles(const char *roles_str, size_t *out_count);
+void free_roles_array(char **arr, size_t count);
+char *roles_merge(const char *db_roles, const char *idp_roles);
+
 #endif /* OIDC_RP_ROLES_H */

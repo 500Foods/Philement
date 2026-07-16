@@ -47,7 +47,7 @@ static int cache_count = 0;
 static pthread_mutex_t cache_manager_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* Find or create cache for a database */
-static ChatLRUCache* get_or_create_cache(const char* database) {
+ ChatLRUCache* chat_storage_get_or_create_cache(const char* database) {
     if (!database) {
         return NULL;
     }
@@ -141,7 +141,7 @@ char* chat_storage_store_segment(const char* database, const char* message, size
     }
 
     /* Phase 9: Store in LRU cache immediately (marked as dirty) */
-    ChatLRUCache* cache = get_or_create_cache(database);
+    ChatLRUCache* cache = chat_storage_get_or_create_cache(database);
     if (cache) {
         chat_lru_cache_put(cache, hash, message, message_len, true);
     }
@@ -214,7 +214,7 @@ char* chat_storage_retrieve_segment(const char* database, const char* segment_ha
     }
 
     /* Phase 9: Check LRU cache first */
-    ChatLRUCache* cache = get_or_create_cache(database);
+    ChatLRUCache* cache = chat_storage_get_or_create_cache(database);
     if (cache) {
         char* cached_content = chat_lru_cache_get(cache, segment_hash);
         if (cached_content) {
@@ -318,7 +318,7 @@ bool chat_storage_segment_exists(const char* database, const char* segment_hash)
     }
 
     /* Phase 9: Check LRU cache first */
-    ChatLRUCache* cache = get_or_create_cache(database);
+    ChatLRUCache* cache = chat_storage_get_or_create_cache(database);
     if (cache && chat_lru_cache_contains(cache, segment_hash)) {
         log_this(SR_CHAT_STORAGE, "Segment exists (cache hit): %s",
                  LOG_LEVEL_DEBUG, 1, segment_hash);
@@ -396,7 +396,7 @@ json_t* chat_storage_retrieve_segments_batch(const char* database,
         return NULL;
     }
 
-    ChatLRUCache* cache = get_or_create_cache(database);
+    ChatLRUCache* cache = chat_storage_get_or_create_cache(database);
     json_t* results = json_array();
 
     /* Collect hashes that need database fetch */
@@ -530,7 +530,7 @@ bool chat_storage_prefetch_segment(const char* database, const char* segment_has
      * This ensures the segment is in cache for quick access
      * Full conversation-aware pre-fetching would require conversation context */
 
-    ChatLRUCache* cache = get_or_create_cache(database);
+    ChatLRUCache* cache = chat_storage_get_or_create_cache(database);
     if (!cache) {
         return false;
     }
@@ -774,9 +774,9 @@ bool chat_storage_cache_init(const char* database, size_t max_size_bytes) {
         return false;
     }
 
-    (void)max_size_bytes;  /* Used internally via get_or_create_cache */
+    (void)max_size_bytes;  /* Used internally via chat_storage_get_or_create_cache */
 
-    const ChatLRUCache* cache = get_or_create_cache(database);
+    const ChatLRUCache* cache = chat_storage_get_or_create_cache(database);
     return cache != NULL;
 }
 

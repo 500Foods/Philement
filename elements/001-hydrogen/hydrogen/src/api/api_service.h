@@ -192,4 +192,12 @@ enum MHD_Result api_handler(void *cls, struct MHD_Connection *connection,
                           const char *version, const char *upload_data,
                           size_t *upload_data_size, void **con_cls);
 
+/* ----------------------------------------------------------------------------
+ * The following helpers are NOT part of the stable public API. They are
+ * exposed (non-static) solely so the Unity test framework can call them
+ * directly.
+ * -------------------------------------------------------------------------- */
+bool api_service_endpoint_requires_auth(const char *path);
+bool api_service_endpoint_expects_json(const char *path);
+
 #endif /* HYDROGEN_API_SERVICE_H */

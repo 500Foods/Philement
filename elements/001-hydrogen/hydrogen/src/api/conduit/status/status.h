@@ -56,4 +56,13 @@ enum MHD_Result handle_conduit_status_request(
     void **con_cls
 );
 
+/* ----------------------------------------------------------------------------
+ * The following helpers are NOT part of the stable public API. They are
+ * exposed (non-static) solely so the Unity test framework can call them
+ * directly.
+ * -------------------------------------------------------------------------- */
+bool conduit_status_check_database_readiness(const DatabaseQueue* db_queue);
+const char* conduit_status_get_migration_status(const DatabaseQueue* db_queue);
+bool conduit_status_has_valid_jwt(struct MHD_Connection *connection);
+
 #endif /* HYDROGEN_CONDUIT_STATUS_H */

@@ -14,7 +14,7 @@ static pthread_mutex_t global_pool_manager_lock = PTHREAD_MUTEX_INITIALIZER;
 /*
  * Helper function to extract DB2 parameter value and strip quotes
  */
-static char* extract_db2_value(const char* connection_string, const char* key) {
+ char* database_connstring_extract_db2_value(const char* connection_string, const char* key) {
     char* pos = strstr(connection_string, key);
     if (!pos) return NULL;
 
@@ -485,15 +485,15 @@ ConnectionConfig* parse_connection_string(const char* connection_string) {
         // Store the entire connection string as-is for DB2
         config->connection_string = strdup(connection_string);
         // Parse key components for convenience
-        config->database = extract_db2_value(connection_string, "DATABASE=");
-        config->host = extract_db2_value(connection_string, "HOSTNAME=");
-        char* port_str = extract_db2_value(connection_string, "PORT=");
+        config->database = database_connstring_extract_db2_value(connection_string, "DATABASE=");
+        config->host = database_connstring_extract_db2_value(connection_string, "HOSTNAME=");
+        char* port_str = database_connstring_extract_db2_value(connection_string, "PORT=");
         if (port_str) {
             config->port = atoi(port_str);
             free(port_str);
         }
-        config->username = extract_db2_value(connection_string, "UID=");
-        config->password = extract_db2_value(connection_string, "PWD=");
+        config->username = database_connstring_extract_db2_value(connection_string, "UID=");
+        config->password = database_connstring_extract_db2_value(connection_string, "PWD=");
 
         // Set defaults for DB2
         if (!config->host) config->host = strdup("localhost");
@@ -503,7 +503,7 @@ ConnectionConfig* parse_connection_string(const char* connection_string) {
 
         // Pull a CurrentSchema attribute out of the connection string, if present,
         // so it is available to the engine through ConnectionConfig.schema.
-        char* cs = extract_db2_value(connection_string, "CurrentSchema=");
+        char* cs = database_connstring_extract_db2_value(connection_string, "CurrentSchema=");
         if (cs) {
             free(config->schema);
             config->schema = cs;

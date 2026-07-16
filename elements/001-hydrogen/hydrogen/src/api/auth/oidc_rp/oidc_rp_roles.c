@@ -79,7 +79,7 @@ void oidc_rp_roles_test_clear_query_fn(void) {
     g_roles_query_fn = NULL;
 }
 
-static QueryResult *run_query(int query_ref,
+QueryResult *run_query(int query_ref,
                                const char *database,
                                json_t *params) {
     if (g_roles_query_fn) {
@@ -94,13 +94,13 @@ static QueryResult *run_query(int query_ref,
  * A small realloc-on-demand buffer. Roles are appended as
  * "role1,role2,role3". The buffer is always NUL-terminated.
  */
-typedef struct {
+typedef struct RolesBuf {
     char   *buf;
     size_t  len;   /* used bytes, excluding NUL */
     size_t  cap;   /* allocated bytes, including NUL */
 } RolesBuf;
 
-static bool roles_buf_init(RolesBuf *rb) {
+bool roles_buf_init(RolesBuf *rb) {
     rb->buf = malloc(64);
     if (!rb->buf) return false;
     rb->buf[0] = '\0';
@@ -109,7 +109,7 @@ static bool roles_buf_init(RolesBuf *rb) {
     return true;
 }
 
-static bool roles_buf_append(RolesBuf *rb, const char *role) {
+bool roles_buf_append(RolesBuf *rb, const char *role) {
     if (!role || !*role) return true;
 
     size_t role_len = strlen(role);
@@ -136,7 +136,7 @@ static bool roles_buf_append(RolesBuf *rb, const char *role) {
 }
 
 /* Steal the built string. The RolesBuf is invalid after this call. */
-static char *roles_buf_steal(RolesBuf *rb) {
+char *roles_buf_steal(RolesBuf *rb) {
     char *result = rb->buf;
     rb->buf = NULL;
     rb->len = 0;
@@ -144,7 +144,7 @@ static char *roles_buf_steal(RolesBuf *rb) {
     return result;
 }
 
-static void roles_buf_free(RolesBuf *rb) {
+void roles_buf_free(RolesBuf *rb) {
     free(rb->buf);
     rb->buf = NULL;
 }
@@ -239,7 +239,7 @@ char *auth_roles_from_database(int account_id, const char *database) {
  * Returns NULL on OOM; returns "" when claims->role_count == 0.
  * -------------------------------------------------------------------------
  */
-static char *roles_from_idp(const OidcRpIdTokenClaims *claims,
+char *roles_from_idp(const OidcRpIdTokenClaims *claims,
                               const char *prefix) {
     if (!claims) return strdup("");
 
@@ -287,7 +287,7 @@ static char *roles_from_idp(const OidcRpIdTokenClaims *claims,
  */
 
 /* Split a comma-separated string into tokens (caller owns array + each str). */
-static char **split_roles(const char *roles_str, size_t *out_count) {
+char **split_roles(const char *roles_str, size_t *out_count) {
     *out_count = 0;
     if (!roles_str || !*roles_str) return NULL;
 
@@ -317,13 +317,13 @@ static char **split_roles(const char *roles_str, size_t *out_count) {
     return arr;
 }
 
-static void free_roles_array(char **arr, size_t count) {
+void free_roles_array(char **arr, size_t count) {
     if (!arr) return;
     for (size_t i = 0; i < count; i++) free(arr[i]);
     free(arr);
 }
 
-static char *roles_merge(const char *db_roles, const char *idp_roles) {
+char *roles_merge(const char *db_roles, const char *idp_roles) {
     size_t  db_count  = 0;
     size_t  idp_count = 0;
     char  **db_arr    = split_roles(db_roles,  &db_count);

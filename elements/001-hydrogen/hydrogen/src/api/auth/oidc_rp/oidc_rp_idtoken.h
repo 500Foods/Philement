@@ -51,6 +51,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <time.h>
+#include <jansson.h>
 
 #include <src/config/config_oidc_rp.h>
 
@@ -186,5 +187,20 @@ OidcRpIdTokenError oidc_rp_validate_id_token(const OIDCRPProviderConfig* provide
  * for ±60 s; this is the constant.
  */
 #define OIDC_RP_IDTOKEN_DEFAULT_SKEW_SECONDS 60
+
+// ---------------------------------------------------------------------------
+// Internal helpers — NOT part of the stable public API. Exposed non-static
+// so Unity tests can call them directly.
+// ---------------------------------------------------------------------------
+void scrub_and_free(char* p);
+void scrub_bytes_and_free(unsigned char* p, size_t n);
+bool split_jws(const char* id_token, char** out_buf, char** header_b64, char** payload_b64, char** sig_b64, size_t* signing_input_len);
+OidcRpIdTokenError parse_header(const char* header_b64, char** out_alg, char** out_kid);
+bool alg_is_allowed(const OIDCRPProviderConfig* provider, const char* alg);
+OidcRpIdTokenError verify_signature(const OIDCRPProviderConfig* provider, const char* jwks_uri, const char* kid, const unsigned char* signing_input, size_t signing_input_len, const unsigned char* signature, size_t sig_len);
+bool copy_string_field(json_t* root, const char* key, char** out);
+bool aud_contains(json_t* root, const char* expected, char** out_match);
+void copy_realm_roles(json_t* root, OidcRpIdTokenClaims* claims);
+OidcRpIdTokenError parse_payload_and_check(const char* payload_b64, const OIDCRPProviderConfig* provider, const char* expected_nonce, time_t now, OidcRpIdTokenClaims** out_claims);
 
 #endif // OIDC_RP_IDTOKEN_H

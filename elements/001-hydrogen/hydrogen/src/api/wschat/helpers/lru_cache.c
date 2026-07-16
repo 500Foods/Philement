@@ -25,13 +25,13 @@
 static const char* SR_CHAT_LRU = "CHAT_LRU_CACHE";
 
 /* Get cache base directory from env var or default */
-static const char* get_cache_base_dir(void) {
+ const char* chat_lru_cache_get_base_dir(void) {
     const char* env_dir = getenv(CHAT_CACHE_DIR_ENV_VAR);
     return env_dir ? env_dir : LRU_CACHE_DIR_NAME;
 }
 
 /* Hash function for hash table (DJB2) */
-static size_t hash_string(const char* str) {
+ size_t chat_lru_cache_hash_string(const char* str) {
     size_t hash = 5381;
     int c;
     while ((c = *str++)) {
@@ -46,7 +46,7 @@ char* chat_lru_cache_get_dir(const char* database) {
         return NULL;
     }
     /* database parameter is currently unused due to no topology awareness */
-    const char* base_dir = get_cache_base_dir();
+    const char* base_dir = chat_lru_cache_get_base_dir();
     size_t path_len = strlen(base_dir) + 2;
 
     char* path = calloc(path_len, 1);
@@ -60,7 +60,7 @@ char* chat_lru_cache_get_dir(const char* database) {
 }
 
 /* Ensure directory exists */
-static bool ensure_directory_exists(const char* path) {
+ bool chat_lru_cache_ensure_directory_exists(const char* path) {
     if (!path) {
         return false;
     }
@@ -105,7 +105,7 @@ static bool ensure_directory_exists(const char* path) {
 }
 
 /* Get path to segment file */
-static char* get_segment_path(const char* cache_dir, const char* hash) {
+ char* chat_lru_cache_get_segment_path(const char* cache_dir, const char* hash) {
     if (!cache_dir || !hash || strlen(hash) < LRU_CACHE_PREFIX_LEN) {
         return NULL;
     }
@@ -126,7 +126,7 @@ static char* get_segment_path(const char* cache_dir, const char* hash) {
 }
 
 /* Get path to metadata file */
-static char* get_metadata_path(const char* cache_dir) {
+ char* chat_lru_cache_get_metadata_path(const char* cache_dir) {
     if (!cache_dir) {
         return NULL;
     }
@@ -142,7 +142,7 @@ static char* get_metadata_path(const char* cache_dir) {
 }
 
 /* Free a cache entry */
-static void free_cache_entry(ChatLRUCacheEntry* entry) {
+ void chat_lru_cache_free_entry(ChatLRUCacheEntry* entry) {
     if (entry) {
         free(entry->content);
         free(entry);
@@ -150,7 +150,7 @@ static void free_cache_entry(ChatLRUCacheEntry* entry) {
 }
 
 /* Remove entry from LRU list */
-static void lru_remove(ChatLRUCache* cache, ChatLRUCacheEntry* entry) {
+ void chat_lru_cache_remove_entry(ChatLRUCache* cache, ChatLRUCacheEntry* entry) {
     if (!cache || !entry) {
         return;
     }
@@ -172,7 +172,7 @@ static void lru_remove(ChatLRUCache* cache, ChatLRUCacheEntry* entry) {
 }
 
 /* Add entry to front of LRU list (most recently used) */
-static void lru_add_front(ChatLRUCache* cache, ChatLRUCacheEntry* entry) {
+ void chat_lru_cache_add_front(ChatLRUCache* cache, ChatLRUCacheEntry* entry) {
     if (!cache || !entry) {
         return;
     }
@@ -191,7 +191,7 @@ static void lru_add_front(ChatLRUCache* cache, ChatLRUCacheEntry* entry) {
 }
 
 /* Evict least recently used entries until under size limit */
-static bool evict_lru_entries(ChatLRUCache* cache, size_t needed_bytes) {
+ bool chat_lru_cache_evict_lru_entries(ChatLRUCache* cache, size_t needed_bytes) {
     if (!cache) {
         return false;
     }
@@ -204,7 +204,7 @@ static bool evict_lru_entries(ChatLRUCache* cache, size_t needed_bytes) {
                  LOG_LEVEL_DEBUG, 2, victim->hash, victim->content_size);
 
         /* Remove from hash table */
-        size_t bucket = hash_string(victim->hash);
+        size_t bucket = chat_lru_cache_hash_string(victim->hash);
         ChatLRUCacheEntry** pp = &cache->hash_table[bucket];
         while (*pp) {
             if (*pp == victim) {
@@ -215,38 +215,38 @@ static bool evict_lru_entries(ChatLRUCache* cache, size_t needed_bytes) {
         }
 
         /* Remove from LRU list */
-        lru_remove(cache, victim);
+        chat_lru_cache_remove_entry(cache, victim);
 
         /* Update stats */
         cache->current_size_bytes -= victim->content_size;
         cache->stats.evictions++;
 
         /* Remove file from disk */
-        char* path = get_segment_path(cache->cache_dir, victim->hash);
+        char* path = chat_lru_cache_get_segment_path(cache->cache_dir, victim->hash);
         if (path) {
             unlink(path);
             free(path);
         }
 
-        free_cache_entry(victim);
+        chat_lru_cache_free_entry(victim);
     }
 
     return cache->current_size_bytes + needed_bytes <= cache->max_size_bytes;
 }
 
 /* Save metadata to disk */
-static bool save_metadata(ChatLRUCache* cache) {
+ bool chat_lru_cache_save_metadata(ChatLRUCache* cache) {
     if (!cache || !cache->cache_dir) {
         return false;
     }
 
-    char* meta_path = get_metadata_path(cache->cache_dir);
+    char* meta_path = chat_lru_cache_get_metadata_path(cache->cache_dir);
     if (!meta_path) {
         return false;
     }
 
     /* Ensure directory exists */
-    ensure_directory_exists(cache->cache_dir);
+    chat_lru_cache_ensure_directory_exists(cache->cache_dir);
 
     json_t* root = json_object();
     json_object_set_new(root, "database", json_string(cache->database));
@@ -286,12 +286,12 @@ static bool save_metadata(ChatLRUCache* cache) {
 }
 
 /* Load metadata from disk */
-static bool load_metadata(ChatLRUCache* cache) {
+ bool chat_lru_cache_load_metadata(ChatLRUCache* cache) {
     if (!cache || !cache->cache_dir) {
         return false;
     }
 
-    char* meta_path = get_metadata_path(cache->cache_dir);
+    char* meta_path = chat_lru_cache_get_metadata_path(cache->cache_dir);
     if (!meta_path) {
         return false;
     }
@@ -349,7 +349,7 @@ static bool load_metadata(ChatLRUCache* cache) {
 }
 
 /* Background sync thread */
-static void* sync_thread_func(void* arg) {
+ void* chat_lru_cache_sync_thread_func(void* arg) {
     ChatLRUCache* cache = (ChatLRUCache*)arg;
     if (!cache) {
         return NULL;
@@ -382,7 +382,7 @@ static void* sync_thread_func(void* arg) {
         }
 
         /* Save metadata periodically */
-        save_metadata(cache);
+        chat_lru_cache_save_metadata(cache);
 
         /* Wait for next sync or shutdown */
         pthread_mutex_lock(&cache->cache_mutex);
@@ -443,7 +443,7 @@ ChatLRUCache* chat_lru_cache_init(const char* database, size_t max_size_bytes) {
         return NULL;
     }
 
-    if (!ensure_directory_exists(cache->cache_dir)) {
+    if (!chat_lru_cache_ensure_directory_exists(cache->cache_dir)) {
         log_this(SR_CHAT_LRU, "Failed to create cache directory: %s",
                  LOG_LEVEL_ERROR, 1, cache->cache_dir);
         free(cache->cache_dir);
@@ -457,7 +457,7 @@ ChatLRUCache* chat_lru_cache_init(const char* database, size_t max_size_bytes) {
     for (int i = 0; i < 256; i++) {
         char prefix_dir[256];
         snprintf(prefix_dir, sizeof(prefix_dir), "%s/%02x", cache->cache_dir, i);
-        ensure_directory_exists(prefix_dir);
+        chat_lru_cache_ensure_directory_exists(prefix_dir);
     }
 
     /* Initialize mutex */
@@ -472,12 +472,12 @@ ChatLRUCache* chat_lru_cache_init(const char* database, size_t max_size_bytes) {
     cache->mutex_initialized = true;
 
     /* Load existing metadata */
-    load_metadata(cache);
+    chat_lru_cache_load_metadata(cache);
 
     /* Start background sync thread */
     cache->sync_running = true;
     cache->sync_requested = false;
-    if (pthread_create(&cache->sync_thread, NULL, sync_thread_func, cache) != 0) {
+    if (pthread_create(&cache->sync_thread, NULL, chat_lru_cache_sync_thread_func, cache) != 0) {
         log_this(SR_CHAT_LRU, "Failed to start sync thread", LOG_LEVEL_ALERT, 0);
         /* Non-fatal - continue without background sync */
         cache->sync_running = false;
@@ -508,13 +508,13 @@ void chat_lru_cache_shutdown(ChatLRUCache* cache) {
     chat_lru_cache_flush(cache);
 
     /* Save metadata */
-    save_metadata(cache);
+    chat_lru_cache_save_metadata(cache);
 
     /* Free all entries */
     ChatLRUCacheEntry* entry = cache->lru_head;
     while (entry) {
         ChatLRUCacheEntry* next = entry->lru_next;
-        free_cache_entry(entry);
+        chat_lru_cache_free_entry(entry);
         entry = next;
     }
 
@@ -537,7 +537,7 @@ bool chat_lru_cache_contains(ChatLRUCache* cache, const char* segment_hash) {
 
     pthread_mutex_lock(&cache->cache_mutex);
 
-    size_t bucket = hash_string(segment_hash);
+    size_t bucket = chat_lru_cache_hash_string(segment_hash);
     const ChatLRUCacheEntry* entry = cache->hash_table[bucket];
 
     bool found = false;
@@ -561,14 +561,14 @@ char* chat_lru_cache_get(ChatLRUCache* cache, const char* segment_hash) {
 
     pthread_mutex_lock(&cache->cache_mutex);
 
-    size_t bucket = hash_string(segment_hash);
+    size_t bucket = chat_lru_cache_hash_string(segment_hash);
     ChatLRUCacheEntry* entry = cache->hash_table[bucket];
 
     while (entry) {
         if (strcmp(entry->hash, segment_hash) == 0) {
             /* Cache hit - update LRU position */
-            lru_remove(cache, entry);
-            lru_add_front(cache, entry);
+            chat_lru_cache_remove_entry(cache, entry);
+            chat_lru_cache_add_front(cache, entry);
 
             entry->last_accessed = time(NULL);
             entry->access_count++;
@@ -612,7 +612,7 @@ bool chat_lru_cache_put(ChatLRUCache* cache, const char* segment_hash,
     pthread_mutex_lock(&cache->cache_mutex);
 
     /* Check if already exists */
-    size_t bucket = hash_string(segment_hash);
+    size_t bucket = chat_lru_cache_hash_string(segment_hash);
     ChatLRUCacheEntry* entry = cache->hash_table[bucket];
 
     while (entry) {
@@ -621,7 +621,7 @@ bool chat_lru_cache_put(ChatLRUCache* cache, const char* segment_hash,
             if (entry->content_size < content_size) {
                 /* Need to grow - check eviction */
                 size_t needed = content_size - entry->content_size;
-                if (!evict_lru_entries(cache, needed)) {
+                if (!chat_lru_cache_evict_lru_entries(cache, needed)) {
                     pthread_mutex_unlock(&cache->cache_mutex);
                     return false;
                 }
@@ -638,8 +638,8 @@ bool chat_lru_cache_put(ChatLRUCache* cache, const char* segment_hash,
             cache->current_size_bytes += content_size;
 
             /* Move to front of LRU */
-            lru_remove(cache, entry);
-            lru_add_front(cache, entry);
+            chat_lru_cache_remove_entry(cache, entry);
+            chat_lru_cache_add_front(cache, entry);
 
             pthread_mutex_unlock(&cache->cache_mutex);
             return true;
@@ -648,7 +648,7 @@ bool chat_lru_cache_put(ChatLRUCache* cache, const char* segment_hash,
     }
 
     /* Check if we have space (evict if needed) */
-    if (!evict_lru_entries(cache, content_size)) {
+    if (!chat_lru_cache_evict_lru_entries(cache, content_size)) {
         pthread_mutex_unlock(&cache->cache_mutex);
         log_this(SR_CHAT_LRU, "Failed to evict enough space for: %s",
                  LOG_LEVEL_ALERT, 1, segment_hash);
@@ -675,7 +675,7 @@ bool chat_lru_cache_put(ChatLRUCache* cache, const char* segment_hash,
     cache->hash_table[bucket] = entry;
 
     /* Add to front of LRU */
-    lru_add_front(cache, entry);
+    chat_lru_cache_add_front(cache, entry);
 
     /* Update stats */
     cache->current_size_bytes += content_size;
@@ -703,7 +703,7 @@ bool chat_lru_cache_remove(ChatLRUCache* cache, const char* segment_hash) {
 
     pthread_mutex_lock(&cache->cache_mutex);
 
-    size_t bucket = hash_string(segment_hash);
+    size_t bucket = chat_lru_cache_hash_string(segment_hash);
     ChatLRUCacheEntry** pp = &cache->hash_table[bucket];
 
     while (*pp) {
@@ -713,7 +713,7 @@ bool chat_lru_cache_remove(ChatLRUCache* cache, const char* segment_hash) {
             *pp = entry->hash_next;
 
             /* Remove from LRU list */
-            lru_remove(cache, entry);
+            chat_lru_cache_remove_entry(cache, entry);
 
             /* Update stats */
             cache->current_size_bytes -= entry->content_size;
@@ -723,13 +723,13 @@ bool chat_lru_cache_remove(ChatLRUCache* cache, const char* segment_hash) {
             pthread_mutex_unlock(&cache->cache_mutex);
 
             /* Remove file from disk */
-            char* path = get_segment_path(cache->cache_dir, segment_hash);
+            char* path = chat_lru_cache_get_segment_path(cache->cache_dir, segment_hash);
             if (path) {
                 unlink(path);
                 free(path);
             }
 
-            free_cache_entry(entry);
+            chat_lru_cache_free_entry(entry);
             return true;
         }
         pp = &(*pp)->hash_next;
@@ -809,7 +809,7 @@ bool chat_lru_cache_clear(ChatLRUCache* cache) {
     ChatLRUCacheEntry* entry = cache->lru_head;
     while (entry) {
         ChatLRUCacheEntry* next = entry->lru_next;
-        free_cache_entry(entry);
+        chat_lru_cache_free_entry(entry);
         entry = next;
     }
 
@@ -836,7 +836,7 @@ bool chat_lru_cache_clear(ChatLRUCache* cache) {
     for (int i = 0; i < 256; i++) {
         char prefix_dir[256];
         snprintf(prefix_dir, sizeof(prefix_dir), "%s/%02x", cache->cache_dir, i);
-        ensure_directory_exists(prefix_dir);
+        chat_lru_cache_ensure_directory_exists(prefix_dir);
     }
 
     log_this(SR_CHAT_LRU, "Cache cleared for: %s", LOG_LEVEL_STATE, 1, cache->database);

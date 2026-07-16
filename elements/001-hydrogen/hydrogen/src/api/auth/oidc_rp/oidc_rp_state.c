@@ -74,7 +74,7 @@ static bool g_test_disable_sweeper = false;
 // ---------------------------------------------------------------------------
 
 // FNV-1a, 64-bit. Plenty for our bucket count.
-static uint64_t fnv1a_hash(const char *s) {
+uint64_t fnv1a_hash(const char *s) {
     uint64_t h = 0xcbf29ce484222325ULL;
     while (*s) {
         h ^= (unsigned char)(*s++);
@@ -83,18 +83,18 @@ static uint64_t fnv1a_hash(const char *s) {
     return h;
 }
 
-static size_t bucket_for(const char *key) {
+size_t bucket_for(const char *key) {
     return (size_t)(fnv1a_hash(key) % OIDC_RP_STATE_BUCKETS);
 }
 
 // strdup that returns NULL when src is NULL (instead of aborting).
-static char *opt_strdup(const char *src) {
+char *opt_strdup(const char *src) {
     if (!src) return NULL;
     return strdup(src);
 }
 
 // Scrub a heap string in place (zero its bytes) and free it.
-static void scrub_free(char *s) {
+void state_scrub_free(char *s) {
     if (!s) return;
     size_t n = strlen(s);
     // Use volatile pointer dance to defeat over-eager dead-store elimination.
@@ -106,11 +106,11 @@ static void scrub_free(char *s) {
 // Free the heap-owned strings of a record without freeing the record
 // itself. Sensitive fields are scrubbed; non-sensitive fields use
 // plain free.
-static void record_free_fields(OidcRpStateRecord *r) {
+void record_free_fields(OidcRpStateRecord *r) {
     if (!r) return;
     free(r->state);          r->state = NULL;
-    scrub_free(r->nonce);    r->nonce = NULL;
-    scrub_free(r->code_verifier); r->code_verifier = NULL;
+    state_scrub_free(r->nonce);    r->nonce = NULL;
+    state_scrub_free(r->code_verifier); r->code_verifier = NULL;
     free(r->database);       r->database = NULL;
     free(r->return_to);      r->return_to = NULL;
     free(r->client_ip);      r->client_ip = NULL;
@@ -121,14 +121,14 @@ static void record_free_fields(OidcRpStateRecord *r) {
 // ---------------------------------------------------------------------------
 
 // Returns true if `entry` has aged past its TTL relative to `now`.
-static bool entry_expired(const StateEntry *entry, time_t now) {
+bool state_entry_expired(const StateEntry *entry, time_t now) {
     if (entry->record.ttl_seconds <= 0) return false;
     return (now - entry->record.created_at) >= entry->record.ttl_seconds;
 }
 
 // Detach `entry` from its bucket chain. `prev` is NULL when `entry`
 // is the head. Caller must hold `g_store->lock`.
-static void detach_entry(size_t bucket_idx, StateEntry *prev, StateEntry *entry) {
+void detach_entry(size_t bucket_idx, StateEntry *prev, StateEntry *entry) {
     if (prev) {
         prev->next = entry->next;
     } else {
@@ -138,7 +138,7 @@ static void detach_entry(size_t bucket_idx, StateEntry *prev, StateEntry *entry)
 }
 
 // Free an entry (record fields + entry itself).
-static void free_entry(StateEntry *entry) {
+void free_entry(StateEntry *entry) {
     if (!entry) return;
     record_free_fields(&entry->record);
     free(entry);
@@ -146,7 +146,7 @@ static void free_entry(StateEntry *entry) {
 
 // Remove and free any entry matching `state`. Caller holds the lock.
 // Returns true if something was removed.
-static bool remove_locked(const char *state) {
+bool remove_locked(const char *state) {
     size_t b = bucket_for(state);
     StateEntry *prev = NULL;
     for (StateEntry *cur = g_store->buckets[b]; cur; prev = cur, cur = cur->next) {
@@ -161,14 +161,14 @@ static bool remove_locked(const char *state) {
 
 // Walk the table once, removing every expired entry. Returns the
 // number removed. Caller holds the lock.
-static size_t sweep_expired_locked(time_t now) {
+size_t sweep_expired_locked(time_t now) {
     size_t removed = 0;
     for (size_t b = 0; b < OIDC_RP_STATE_BUCKETS; b++) {
         StateEntry *prev = NULL;
         StateEntry *cur  = g_store->buckets[b];
         while (cur) {
             StateEntry *next = cur->next;
-            if (entry_expired(cur, now)) {
+            if (state_entry_expired(cur, now)) {
                 detach_entry(b, prev, cur);
                 free_entry(cur);
                 removed++;
@@ -185,7 +185,7 @@ static size_t sweep_expired_locked(time_t now) {
 // Cheap inline sweep: walks at most OIDC_RP_STATE_INLINE_SWEEP_MAX
 // entries (across buckets) and removes any that are expired. Bounded
 // work so callers' latency stays predictable. Caller holds the lock.
-static void inline_sweep_locked(time_t now) {
+void inline_sweep_locked(time_t now) {
     size_t visited = 0;
     for (size_t b = 0; b < OIDC_RP_STATE_BUCKETS; b++) {
         StateEntry *prev = NULL;
@@ -193,7 +193,7 @@ static void inline_sweep_locked(time_t now) {
         while (cur && visited < OIDC_RP_STATE_INLINE_SWEEP_MAX) {
             StateEntry *next = cur->next;
             visited++;
-            if (entry_expired(cur, now)) {
+            if (state_entry_expired(cur, now)) {
                 detach_entry(b, prev, cur);
                 free_entry(cur);
             } else {
@@ -209,7 +209,7 @@ static void inline_sweep_locked(time_t now) {
 // Sweeper thread
 // ---------------------------------------------------------------------------
 
-static void *sweeper_loop(void *arg) {
+void *sweeper_loop(void *arg) {
     (void)arg;
     log_this(SR_AUTH, "OIDC RP state-store sweeper started", LOG_LEVEL_DEBUG, 0);
 
@@ -428,7 +428,7 @@ OidcRpStateRecord *oidc_rp_state_take(const char *state) {
             // Treat expired-on-take as a miss: free the record and
             // return NULL. The caller cannot tell expired-vs-unknown
             // apart, which matches the plan's "state_invalid" semantics.
-            if (entry_expired(cur, time(NULL))) {
+            if (state_entry_expired(cur, time(NULL))) {
                 free_entry(cur);
                 return NULL;
             }

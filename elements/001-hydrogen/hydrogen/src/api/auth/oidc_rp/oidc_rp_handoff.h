@@ -76,4 +76,10 @@ enum MHD_Result handle_post_auth_oidc_handoff(
     void **con_cls
 );
 
+// ---------------------------------------------------------------------------
+// Internal helper — NOT part of the stable public API. Exposed non-static
+// so Unity tests can call it directly.
+// ---------------------------------------------------------------------------
+enum MHD_Result send_handoff_invalid(struct MHD_Connection *connection, void **con_cls, const char *reason_for_log);
+
 #endif // OIDC_RP_HANDOFF_H

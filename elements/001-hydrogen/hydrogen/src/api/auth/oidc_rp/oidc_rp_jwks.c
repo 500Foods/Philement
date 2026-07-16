@@ -47,7 +47,7 @@ static JwksCache *g_cache = NULL;
 // JWK helpers
 // ---------------------------------------------------------------------------
 
-static void jwk_clear_fields(OidcRpJwk *k) {
+void jwk_clear_fields(OidcRpJwk *k) {
     if (!k) return;
     free(k->kid);       k->kid = NULL;
     free(k->kty);       k->kty = NULL;
@@ -62,7 +62,7 @@ void oidc_rp_jwks_keys_free(OidcRpJwk *keys, size_t count) {
     free(keys);
 }
 
-static void slot_clear_locked(JwksEntry *s) {
+void slot_clear_locked(JwksEntry *s) {
     free(s->provider_name);
     s->provider_name = NULL;
     oidc_rp_jwks_keys_free(s->keys, s->key_count);
@@ -73,7 +73,7 @@ static void slot_clear_locked(JwksEntry *s) {
 }
 
 // Optional string copy; leaves *out NULL on absent or non-string.
-static void copy_optional_string(json_t *obj, const char *key, char **out) {
+void copy_optional_string(json_t *obj, const char *key, char **out) {
     json_t *v = json_object_get(obj, key);
     if (v && json_is_string(v)) {
         char *dup = strdup(json_string_value(v));
@@ -82,7 +82,7 @@ static void copy_optional_string(json_t *obj, const char *key, char **out) {
 }
 
 // Required string copy; returns false if missing or non-string.
-static bool copy_required_string(json_t *obj, const char *key, char **out) {
+bool copy_required_string(json_t *obj, const char *key, char **out) {
     json_t *v = json_object_get(obj, key);
     if (!v || !json_is_string(v)) return false;
     *out = strdup(json_string_value(v));
@@ -203,7 +203,7 @@ OidcRpJwk *oidc_rp_jwks_parse(const char *json_text, size_t *out_count) {
 // Cache primitives (caller holds g_cache->lock)
 // ---------------------------------------------------------------------------
 
-static JwksEntry *find_slot_locked(const char *name) {
+JwksEntry *jwks_find_slot_locked(const char *name) {
     if (!g_cache || !name) return NULL;
     for (size_t i = 0; i < OIDC_RP_MAX_PROVIDERS; i++) {
         if (g_cache->slots[i].provider_name &&
@@ -214,7 +214,7 @@ static JwksEntry *find_slot_locked(const char *name) {
     return NULL;
 }
 
-static JwksEntry *find_empty_slot_locked(void) {
+JwksEntry *jwks_find_empty_slot_locked(void) {
     if (!g_cache) return NULL;
     for (size_t i = 0; i < OIDC_RP_MAX_PROVIDERS; i++) {
         if (!g_cache->slots[i].provider_name) return &g_cache->slots[i];
@@ -222,12 +222,12 @@ static JwksEntry *find_empty_slot_locked(void) {
     return NULL;
 }
 
-static bool entry_expired(const JwksEntry *entry, time_t now) {
+bool jwks_entry_expired(const JwksEntry *entry, time_t now) {
     if (entry->ttl_seconds <= 0) return false;
     return (now - entry->cached_at) >= entry->ttl_seconds;
 }
 
-static const OidcRpJwk *find_kid_in_slot_locked(const JwksEntry *slot,
+const OidcRpJwk *find_kid_in_slot_locked(const JwksEntry *slot,
                                                 const char *kid) {
     for (size_t i = 0; i < slot->key_count; i++) {
         if (slot->keys[i].kid && strcmp(slot->keys[i].kid, kid) == 0) {
@@ -296,8 +296,8 @@ const OidcRpJwk *oidc_rp_jwks_find(const char *provider_name,
 
     // First pass: cache hit?
     pthread_mutex_lock(&g_cache->lock);
-    JwksEntry *slot = find_slot_locked(provider_name);
-    if (slot && !entry_expired(slot, time(NULL))) {
+    JwksEntry *slot = jwks_find_slot_locked(provider_name);
+    if (slot && !jwks_entry_expired(slot, time(NULL))) {
         const OidcRpJwk *match = find_kid_in_slot_locked(slot, kid);
         pthread_mutex_unlock(&g_cache->lock);
         return match; // may be NULL; caller decides whether to invalidate+retry
@@ -323,8 +323,8 @@ const OidcRpJwk *oidc_rp_jwks_find(const char *provider_name,
 
     // Install in the cache.
     pthread_mutex_lock(&g_cache->lock);
-    JwksEntry *target = find_slot_locked(provider_name);
-    if (!target) target = find_empty_slot_locked();
+    JwksEntry *target = jwks_find_slot_locked(provider_name);
+    if (!target) target = jwks_find_empty_slot_locked();
     if (!target) {
         pthread_mutex_unlock(&g_cache->lock);
         log_this(SR_AUTH,
@@ -355,7 +355,7 @@ const OidcRpJwk *oidc_rp_jwks_find(const char *provider_name,
 void oidc_rp_jwks_invalidate(const char *provider_name) {
     if (!g_cache || !provider_name) return;
     pthread_mutex_lock(&g_cache->lock);
-    JwksEntry *slot = find_slot_locked(provider_name);
+    JwksEntry *slot = jwks_find_slot_locked(provider_name);
     if (slot) slot_clear_locked(slot);
     pthread_mutex_unlock(&g_cache->lock);
 }
@@ -375,7 +375,7 @@ size_t oidc_rp_jwks_key_count(const char *provider_name) {
     if (!g_cache || !provider_name) return 0;
     size_t n = 0;
     pthread_mutex_lock(&g_cache->lock);
-    JwksEntry *slot = find_slot_locked(provider_name);
+    JwksEntry *slot = jwks_find_slot_locked(provider_name);
     if (slot) n = slot->key_count;
     pthread_mutex_unlock(&g_cache->lock);
     return n;

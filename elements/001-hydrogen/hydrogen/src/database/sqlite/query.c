@@ -76,7 +76,7 @@ extern sqlite3_bind_null_t sqlite3_bind_null_ptr;
 extern sqlite3_errmsg_t sqlite3_errmsg_ptr;
 
 // Helper function to trim trailing whitespace from strings (SQLite-specific, for consistency across engines)
-static char* sqlite_trim_trailing_whitespace(char* str) {
+ char* sqlite_query_trim_trailing_whitespace(char* str) {
     if (!str) return NULL;
 
     // Find the end of the string
@@ -96,7 +96,7 @@ static char* sqlite_trim_trailing_whitespace(char* str) {
  */
 
 // Helper function to bind a single parameter
-static bool sqlite_bind_single_parameter(void* stmt, int param_index, TypedParameter* param, const char* designator) {
+ bool sqlite_bind_single_parameter(void* stmt, int param_index, TypedParameter* param, const char* designator) {
     if (!stmt || !param) {
         log_this(designator, "sqlite_bind_single_parameter: invalid parameters", LOG_LEVEL_ERROR, 0);
         return false;
@@ -281,7 +281,7 @@ int sqlite_exec_callback(void* data, int argc, char** argv, char** col_names) {
                     // Duplicate and trim the value since we can't modify the original
                     char* trimmed_value = strdup(value);
                     if (trimmed_value) {
-                        sqlite_trim_trailing_whitespace(trimmed_value);
+                        sqlite_query_trim_trailing_whitespace(trimmed_value);
                     }
                     
                     sprintf(append_pos, "\"%s\":\"", col_name);

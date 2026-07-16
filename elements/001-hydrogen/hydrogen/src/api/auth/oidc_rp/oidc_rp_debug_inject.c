@@ -28,7 +28,7 @@
 #include "oidc_rp_service.h"
 
 // Build a 400 envelope explaining the bad request. Free the buffer.
-static enum MHD_Result send_bad_request(struct MHD_Connection *connection,
+enum MHD_Result send_bad_request(struct MHD_Connection *connection,
                                         void **con_cls,
                                         const char *reason) {
     log_this(SR_AUTH,

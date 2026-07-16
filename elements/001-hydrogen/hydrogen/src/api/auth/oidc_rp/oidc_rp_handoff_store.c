@@ -85,7 +85,7 @@ static bool g_handoff_test_disable_sweeper = false;
 
 // FNV-1a, 64-bit. Same hashing as the state store; the small fixed
 // bucket count makes both choices equivalent in practice.
-static uint64_t handoff_fnv1a_hash(const char *s) {
+uint64_t handoff_fnv1a_hash(const char *s) {
     uint64_t h = 0xcbf29ce484222325ULL;
     while (*s) {
         h ^= (unsigned char)(*s++);
@@ -94,12 +94,12 @@ static uint64_t handoff_fnv1a_hash(const char *s) {
     return h;
 }
 
-static size_t handoff_bucket_for(const char *key) {
+size_t handoff_bucket_for(const char *key) {
     return (size_t)(handoff_fnv1a_hash(key) % OIDC_RP_HANDOFF_BUCKETS);
 }
 
 // strdup that returns NULL when src is NULL (instead of aborting).
-static char *handoff_opt_strdup(const char *src) {
+char *handoff_opt_strdup(const char *src) {
     if (!src) return NULL;
     return strdup(src);
 }
@@ -107,7 +107,7 @@ static char *handoff_opt_strdup(const char *src) {
 // Scrub a heap string in place (zero its bytes) and free it.
 // Used for the JWT, which is the only sensitive field in a handoff
 // record (per the plan's deny-list at line 765).
-static void handoff_scrub_free(char *s) {
+void handoff_scrub_free(char *s) {
     if (!s) return;
     size_t n = strlen(s);
     // Use volatile pointer dance to defeat over-eager dead-store elimination.
@@ -118,7 +118,7 @@ static void handoff_scrub_free(char *s) {
 
 // Free the heap-owned strings of a record without freeing the record
 // itself. The `jwt` field is scrubbed; the others use plain free.
-static void handoff_record_free_fields(OidcRpHandoffRecord *r) {
+void handoff_record_free_fields(OidcRpHandoffRecord *r) {
     if (!r) return;
     free(r->handoff);                    r->handoff   = NULL;
     handoff_scrub_free(r->jwt);          r->jwt       = NULL;
@@ -132,14 +132,14 @@ static void handoff_record_free_fields(OidcRpHandoffRecord *r) {
 // ---------------------------------------------------------------------------
 
 // Returns true if `entry` has aged past its TTL relative to `now`.
-static bool handoff_entry_expired(const HandoffEntry *entry, time_t now) {
+bool handoff_entry_expired(const HandoffEntry *entry, time_t now) {
     if (entry->record.ttl_seconds <= 0) return false;
     return (now - entry->record.created_at) >= entry->record.ttl_seconds;
 }
 
 // Detach `entry` from its bucket chain. `prev` is NULL when `entry`
 // is the head. Caller must hold `g_handoff_store->lock`.
-static void handoff_detach_entry(size_t bucket_idx,
+void handoff_detach_entry(size_t bucket_idx,
                                  HandoffEntry *prev,
                                  HandoffEntry *entry) {
     if (prev) {
@@ -151,7 +151,7 @@ static void handoff_detach_entry(size_t bucket_idx,
 }
 
 // Free an entry (record fields + entry itself).
-static void handoff_free_entry(HandoffEntry *entry) {
+void handoff_free_entry(HandoffEntry *entry) {
     if (!entry) return;
     handoff_record_free_fields(&entry->record);
     free(entry);
@@ -159,7 +159,7 @@ static void handoff_free_entry(HandoffEntry *entry) {
 
 // Remove and free any entry matching `handoff`. Caller holds the lock.
 // Returns true if something was removed.
-static bool handoff_remove_locked(const char *handoff) {
+bool handoff_remove_locked(const char *handoff) {
     size_t b = handoff_bucket_for(handoff);
     HandoffEntry *prev = NULL;
     for (HandoffEntry *cur = g_handoff_store->buckets[b];
@@ -177,7 +177,7 @@ static bool handoff_remove_locked(const char *handoff) {
 
 // Walk the table once, removing every expired entry. Returns the
 // number removed. Caller holds the lock.
-static size_t handoff_sweep_expired_locked(time_t now) {
+size_t handoff_sweep_expired_locked(time_t now) {
     size_t removed = 0;
     for (size_t b = 0; b < OIDC_RP_HANDOFF_BUCKETS; b++) {
         HandoffEntry *prev = NULL;
@@ -201,7 +201,7 @@ static size_t handoff_sweep_expired_locked(time_t now) {
 // Cheap inline sweep: walks at most OIDC_RP_HANDOFF_INLINE_SWEEP_MAX
 // entries (across buckets) and removes any that are expired. Bounded
 // work so callers' latency stays predictable. Caller holds the lock.
-static void handoff_inline_sweep_locked(time_t now) {
+void handoff_inline_sweep_locked(time_t now) {
     size_t visited = 0;
     for (size_t b = 0; b < OIDC_RP_HANDOFF_BUCKETS; b++) {
         HandoffEntry *prev = NULL;
@@ -225,7 +225,7 @@ static void handoff_inline_sweep_locked(time_t now) {
 // Sweeper thread
 // ---------------------------------------------------------------------------
 
-static void *handoff_sweeper_loop(void *arg) {
+void *handoff_sweeper_loop(void *arg) {
     (void)arg;
     log_this(SR_AUTH, "OIDC RP handoff-store sweeper started",
              LOG_LEVEL_DEBUG, 0);

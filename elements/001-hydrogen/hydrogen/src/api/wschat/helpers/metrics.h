@@ -55,4 +55,11 @@ void chat_metrics_update_from_engine(const char* database, ChatEngineConfig* eng
 // Writes metrics to buffer, returns number of bytes written (or needed if buffer too small)
 size_t chat_metrics_generate_prometheus(char* buffer, size_t buffer_size);
 
+/* ----------------------------------------------------------------------------
+ * The following helper is NOT part of the stable public API. It is exposed
+ * (non-static) solely so the Unity test framework can call it directly.
+ * -------------------------------------------------------------------------- */
+typedef struct ChatMetricEntry ChatMetricEntry;  /* opaque: defined privately in metrics.c */
+ChatMetricEntry* chat_metrics_get_metric_entry(const char* database, const char* engine);
+
 #endif // METRICS_H

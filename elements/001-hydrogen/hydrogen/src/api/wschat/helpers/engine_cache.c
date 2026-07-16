@@ -231,7 +231,7 @@ void chat_engine_config_clear_key(ChatEngineConfig* engine) {
 }
 
 // Add entry to cache (assumes write lock is held)
-static bool chat_engine_cache_add_engine_locked(ChatEngineCache* cache, ChatEngineConfig* engine) {
+bool chat_engine_cache_add_engine_locked(ChatEngineCache* cache, ChatEngineConfig* engine) {
     // Check if we need to resize
     if (cache->engine_count >= cache->capacity) {
         size_t new_capacity = cache->capacity * 2;

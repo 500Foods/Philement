@@ -43,7 +43,7 @@ static pthread_mutex_t metrics_mutex = PTHREAD_MUTEX_INITIALIZER;
 static bool metrics_initialized = false;
 
 // Find or create metric entry
-static ChatMetricEntry* get_metric_entry(const char* database, const char* engine) {
+ ChatMetricEntry* chat_metrics_get_metric_entry(const char* database, const char* engine) {
     if (!database || !engine) return NULL;
     
     pthread_mutex_lock(&metrics_mutex);
@@ -111,7 +111,7 @@ void chat_metrics_cleanup(void) {
 // Engine health gauge
 void chat_metrics_engine_health(const char* database, const char* engine,
                                 const char* provider, bool healthy) {
-    ChatMetricEntry* entry = get_metric_entry(database, engine);
+    ChatMetricEntry* entry = chat_metrics_get_metric_entry(database, engine);
     if (!entry) return;
     
     pthread_mutex_lock(&metrics_mutex);
@@ -127,7 +127,7 @@ void chat_metrics_engine_health(const char* database, const char* engine,
 // Response time gauge
 void chat_metrics_response_time(const char* database, const char* engine,
                                 double response_time_ms) {
-    ChatMetricEntry* entry = get_metric_entry(database, engine);
+    ChatMetricEntry* entry = chat_metrics_get_metric_entry(database, engine);
     if (!entry) return;
     
     pthread_mutex_lock(&metrics_mutex);
@@ -138,7 +138,7 @@ void chat_metrics_response_time(const char* database, const char* engine,
 
 // Conversation counter
 void chat_metrics_conversation(const char* database, const char* engine) {
-    ChatMetricEntry* entry = get_metric_entry(database, engine);
+    ChatMetricEntry* entry = chat_metrics_get_metric_entry(database, engine);
     if (!entry) return;
     
     pthread_mutex_lock(&metrics_mutex);
@@ -150,7 +150,7 @@ void chat_metrics_conversation(const char* database, const char* engine) {
 // Token counter
 void chat_metrics_tokens(const char* database, const char* engine,
                          const char* token_type, int token_count) {
-    ChatMetricEntry* entry = get_metric_entry(database, engine);
+    ChatMetricEntry* entry = chat_metrics_get_metric_entry(database, engine);
     if (!entry) return;
     
     pthread_mutex_lock(&metrics_mutex);
@@ -171,7 +171,7 @@ void chat_metrics_error(const char* database, const char* engine,
                         const char* error_type) {
     (void)error_type;  // Could be used for error type breakdown in future
     
-    ChatMetricEntry* entry = get_metric_entry(database, engine);
+    ChatMetricEntry* entry = chat_metrics_get_metric_entry(database, engine);
     if (!entry) return;
     
     pthread_mutex_lock(&metrics_mutex);
@@ -208,7 +208,7 @@ void chat_metrics_update_from_engine(const char* database, ChatEngineConfig* eng
     unsigned long long tokens = engine->tokens_24h;
     pthread_mutex_unlock(&engine->health_mutex);
     
-    ChatMetricEntry* entry = get_metric_entry(database, engine->name);
+    ChatMetricEntry* entry = chat_metrics_get_metric_entry(database, engine->name);
     if (!entry) return;
     
     pthread_mutex_lock(&metrics_mutex);

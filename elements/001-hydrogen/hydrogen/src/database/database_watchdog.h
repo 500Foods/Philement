@@ -193,4 +193,12 @@ size_t database_watchdog_active_count(void);
  */
 void database_watchdog_check_expirations(void);
 
+/* ----------------------------------------------------------------------------
+ * The following helpers are NOT part of the stable public API. They are
+ * exposed (non-static) solely so the Unity test framework can call them
+ * directly.
+ * -------------------------------------------------------------------------- */
+int database_watchdog_effective_timeout(int requested);
+void database_watchdog_entry_free(DatabaseWatchdogHandle* entry);
+
 #endif // DATABASE_WATCHDOG_H

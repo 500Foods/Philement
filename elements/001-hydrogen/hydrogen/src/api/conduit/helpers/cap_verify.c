@@ -133,21 +133,21 @@ static char* cap_verify_post_impl(const char* url,
     return response.data;
 }
 
-static bool is_valid_http_url(const char* url) {
+ bool cap_verify_is_valid_http_url(const char* url) {
     if (!url || !*url) {
         return false;
     }
     return (strncmp(url, "http://", 7) == 0 || strncmp(url, "https://", 8) == 0);
 }
 
-static cap_verify_result_t hard_fail(const char* msg, char* error_out, size_t error_sz) {
+ cap_verify_result_t cap_verify_hard_fail(const char* msg, char* error_out, size_t error_sz) {
     if (error_out && error_sz > 0) {
         snprintf(error_out, error_sz, "%s", msg ? msg : "CAP_VERIFY_FAILED");
     }
     return CAP_VERIFY_HARD_FAIL;
 }
 
-static cap_verify_result_t fallback(const char* msg, char* error_out, size_t error_sz) {
+ cap_verify_result_t cap_verify_fallback(const char* msg, char* error_out, size_t error_sz) {
     if (error_out && error_sz > 0) {
         snprintf(error_out, error_sz, "%s", msg ? msg : "CAP_VERIFY_FAILED");
     }
@@ -156,7 +156,7 @@ static cap_verify_result_t fallback(const char* msg, char* error_out, size_t err
 
 // Classify an HTTP status code from the siteverify endpoint.
 // 2xx (specifically 200) is processed further by the caller.
-// 5xx is a transient server-side failure -> fallback.
+// 5xx is a transient server-side failure -> cap_verify_fallback.
 // 4xx and other status codes are treated as hard failures (bad token / client error).
 static cap_verify_result_t classify_http_failure(long http_status,
                                                  char* error_out,
@@ -164,9 +164,9 @@ static cap_verify_result_t classify_http_failure(long http_status,
     char msg[128];
     snprintf(msg, sizeof(msg), "CAP_VERIFY_FAILED: HTTP %ld", http_status);
     if (http_status >= 500 && http_status < 600) {
-        return fallback(msg, error_out, error_sz);
+        return cap_verify_fallback(msg, error_out, error_sz);
     }
-    return hard_fail(msg, error_out, error_sz);
+    return cap_verify_hard_fail(msg, error_out, error_sz);
 }
 
 cap_verify_result_t cap_verify_token(const char* token,
@@ -179,24 +179,24 @@ cap_verify_result_t cap_verify_token(const char* token,
     error_out[0] = '\0';
 
     if (!token || !*token) {
-        return hard_fail("CAP_TOKEN_MISSING", error_out, error_sz);
+        return cap_verify_hard_fail("CAP_TOKEN_MISSING", error_out, error_sz);
     }
 
     if (!app_config) {
-        return hard_fail("CAP_VERIFY_FAILED: configuration unavailable", error_out, error_sz);
+        return cap_verify_hard_fail("CAP_VERIFY_FAILED: configuration unavailable", error_out, error_sz);
     }
 
     const char* server = app_config->webserver.chacha_server;
     const char* secret = app_config->webserver.chacha_secret;
 
     if (!server || !*server) {
-        return hard_fail("CAP_VERIFY_FAILED: ChaCha server not configured", error_out, error_sz);
+        return cap_verify_hard_fail("CAP_VERIFY_FAILED: ChaCha server not configured", error_out, error_sz);
     }
     if (!secret || !*secret) {
-        return hard_fail("CAP_VERIFY_FAILED: ChaCha secret not configured", error_out, error_sz);
+        return cap_verify_hard_fail("CAP_VERIFY_FAILED: ChaCha secret not configured", error_out, error_sz);
     }
-    if (!is_valid_http_url(server)) {
-        return hard_fail("CAP_VERIFY_FAILED: invalid ChaCha server URL", error_out, error_sz);
+    if (!cap_verify_is_valid_http_url(server)) {
+        return cap_verify_hard_fail("CAP_VERIFY_FAILED: invalid ChaCha server URL", error_out, error_sz);
     }
 
     char url[1024];
@@ -208,14 +208,14 @@ cap_verify_result_t cap_verify_token(const char* token,
 
     json_t* request_obj = json_object();
     if (!request_obj) {
-        return hard_fail("CAP_VERIFY_FAILED: out of memory", error_out, error_sz);
+        return cap_verify_hard_fail("CAP_VERIFY_FAILED: out of memory", error_out, error_sz);
     }
     json_object_set_new(request_obj, "secret", json_string(secret));
     json_object_set_new(request_obj, "response", json_string(token));
     char* request_body = json_dumps(request_obj, JSON_COMPACT);
     json_decref(request_obj);
     if (!request_body) {
-        return hard_fail("CAP_VERIFY_FAILED: out of memory", error_out, error_sz);
+        return cap_verify_hard_fail("CAP_VERIFY_FAILED: out of memory", error_out, error_sz);
     }
 
     long http_status = 0;
@@ -228,7 +228,7 @@ cap_verify_result_t cap_verify_token(const char* token,
     free(request_body);
 
     if (!response_body) {
-        // Transport-level failure (timeout, connection refused, etc.) -> fallback.
+        // Transport-level failure (timeout, connection refused, etc.) -> cap_verify_fallback.
         if (post_error[0] != '\0') {
             snprintf(error_out, error_sz, "%s", post_error);
         } else {
@@ -246,7 +246,7 @@ cap_verify_result_t cap_verify_token(const char* token,
     json_t* root = json_loads(response_body, 0, &json_err);
     free(response_body);
     if (!root) {
-        return hard_fail("CAP_VERIFY_FAILED: invalid siteverify response", error_out, error_sz);
+        return cap_verify_hard_fail("CAP_VERIFY_FAILED: invalid siteverify response", error_out, error_sz);
     }
 
     json_t* success_field = json_object_get(root, "success");
@@ -254,7 +254,7 @@ cap_verify_result_t cap_verify_token(const char* token,
     json_decref(root);
 
     if (!success) {
-        return hard_fail("CAP_VERIFY_FAILED: token rejected", error_out, error_sz);
+        return cap_verify_hard_fail("CAP_VERIFY_FAILED: token rejected", error_out, error_sz);
     }
 
     return CAP_VERIFY_OK;

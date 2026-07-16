@@ -25,7 +25,7 @@ extern sqlite3_column_type_t sqlite3_column_type_ptr;
 extern sqlite3_step_t sqlite3_step_ptr;
 
 // Helper function to trim trailing whitespace from strings (SQLite-specific, for consistency across engines)
-static char* sqlite_trim_trailing_whitespace(char* str) {
+ char* sqlite_trim_trailing_whitespace(char* str) {
     if (!str) return NULL;
 
     // Find the end of the string

@@ -30,7 +30,7 @@
 extern mysql_fetch_fields_t mysql_fetch_fields_ptr;
 
 // Helper function to trim trailing whitespace from strings (MySQL-specific, for consistency across engines)
-static char* mysql_trim_trailing_whitespace(char* str) {
+ char* mysql_trim_trailing_whitespace(char* str) {
     if (!str) return NULL;
 
     // Find the end of the string
