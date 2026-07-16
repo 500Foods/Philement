@@ -341,8 +341,8 @@ static bool mysql_bind_single_parameter(MYSQL_BIND* bind, unsigned int param_ind
 
 // Helper function to cleanup bound values (will be used in Step 3)
 // cppcheck-suppress unusedFunction
-static void mysql_cleanup_bound_values(void** bound_values, size_t count) __attribute__((unused));
-static void mysql_cleanup_bound_values(void** bound_values, size_t count) {
+ void mysql_cleanup_bound_values(void** bound_values, size_t count) __attribute__((unused));
+ void mysql_cleanup_bound_values(void** bound_values, size_t count) {
     if (bound_values) {
         for (size_t i = 0; i < count; i++) {
             free(bound_values[i]);  // Free buffer

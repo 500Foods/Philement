@@ -39,7 +39,7 @@
 
 // Send an envelope-style 500 response and log the cause. Used for
 // internal failures (allocation, RNG, etc.) where 503 would be misleading.
-static enum MHD_Result send_internal_error(struct MHD_Connection *connection,
+enum MHD_Result send_internal_error(struct MHD_Connection *connection,
                                            const char *cause) {
     log_this(SR_AUTH,
              "OIDC RP /start internal error: %s",
@@ -55,7 +55,7 @@ static enum MHD_Result send_internal_error(struct MHD_Connection *connection,
 }
 
 // Truncated state for logging — first 8 chars only.
-static void truncated_state(const char *state, char out[16]) {
+void start_truncated_state(const char *state, char out[16]) {
     if (!state) {
         snprintf(out, 16, "(null)");
         return;
@@ -265,7 +265,7 @@ enum MHD_Result handle_get_auth_oidc_start(
     // Log at STATE level — operator-visible but no secrets. State is
     // truncated, nonce / code_verifier / code_challenge are never logged.
     char state_short[16];
-    truncated_state(state, state_short);
+    start_truncated_state(state, state_short);
     log_this(SR_AUTH,
              "OIDC RP /start: provider=%s state=%s... ip=%s -> 302",
              LOG_LEVEL_STATE, 3,

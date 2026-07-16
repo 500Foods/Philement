@@ -53,7 +53,7 @@
 
 // Truncated state for logging — first 8 chars only. Same shape as the
 // helper in oidc_rp_start.c.
-static void truncated_state(const char *state, char out[16]) {
+void callback_truncated_state(const char *state, char out[16]) {
     if (!state) {
         snprintf(out, 16, "(null)");
         return;
@@ -70,7 +70,7 @@ static void truncated_state(const char *state, char out[16]) {
 // (plus &return_to=<sanitized> when supplied). The return-origin is taken
 // from the provider's redirect_uri minus the path, so the SPA's origin is
 // reachable without additional config. NULL inputs degrade to a minimal URL.
-static char *build_spa_error_url(const char *redirect_uri,
+char *build_spa_error_url(const char *redirect_uri,
                                  const char *error_code,
                                  const char *return_to) {
     if (!error_code) {
@@ -137,7 +137,7 @@ static char *build_spa_error_url(const char *redirect_uri,
 
 // Build the SPA success redirect URL with the one-time handoff code:
 // <origin>/login?oidc=1&handoff=<code>[&return_to=<sanitized>]
-static char *build_spa_success_url(const char *redirect_uri,
+char *build_spa_success_url(const char *redirect_uri,
                                    const char *handoff_code,
                                    const char *return_to) {
     if (!handoff_code || !*handoff_code) {
@@ -203,7 +203,7 @@ static char *build_spa_success_url(const char *redirect_uri,
 // Redirect to the SPA's login page with `?oidc_error=<code>`. Used by
 // every failure branch below. Returns MHD_NO on allocation failure
 // (the connection is then closed by MHD).
-static enum MHD_Result redirect_with_error(struct MHD_Connection *connection,
+enum MHD_Result redirect_with_error(struct MHD_Connection *connection,
                                            const OIDCRPProviderConfig *provider,
                                            const char *error_code,
                                            const char *return_to) {
@@ -224,7 +224,7 @@ static enum MHD_Result redirect_with_error(struct MHD_Connection *connection,
 // Scrub a sensitive heap string (volatile-ptr walk to defeat -O2
 // dead-store elimination) and free it. Mirrors the discipline used
 // in oidc_rp_state.c, oidc_rp_start.c, and oidc_rp_token.c.
-static void scrub_free(char *s) {
+void callback_scrub_free(char *s) {
     if (!s) {
         return;
     }
@@ -319,7 +319,7 @@ enum MHD_Result handle_get_auth_oidc_callback(
         // Unknown / expired / replay all collapse to one error so the
         // network-side observer cannot tell modes apart.
         char state_short[16];
-        truncated_state(state, state_short);
+        callback_truncated_state(state, state_short);
         log_this(SR_AUTH,
                  "OIDC RP /callback: state_invalid (state=%s...)",
                  LOG_LEVEL_ALERT, 1, state_short);
@@ -552,7 +552,7 @@ enum MHD_Result handle_get_auth_oidc_callback(
 
     char *jwt_hash = compute_token_hash(jwt_token);
     if (!jwt_hash) {
-        scrub_free(jwt_token);
+        callback_scrub_free(jwt_token);
         free(id_token_copy);
         free(client_ip);
         free_account_info(account);
@@ -570,7 +570,7 @@ enum MHD_Result handle_get_auth_oidc_callback(
     // ---- Generate the handoff code and put the record ----
     char *handoff_code = oidc_rp_make_random_hex(32);
     if (!handoff_code) {
-        scrub_free(jwt_token);
+        callback_scrub_free(jwt_token);
         free(id_token_copy);
         free(client_ip);
         free_account_info(account);
@@ -593,7 +593,7 @@ enum MHD_Result handle_get_auth_oidc_callback(
     // The handoff store has copied everything it needs; we can free
     // our local references now. The JWT is scrubbed (sensitive); the
     // others are routine.
-    scrub_free(jwt_token);
+    callback_scrub_free(jwt_token);
     jwt_token = NULL;
     free(id_token_copy);
     id_token_copy = NULL;
@@ -602,7 +602,7 @@ enum MHD_Result handle_get_auth_oidc_callback(
         log_this(SR_AUTH,
                  "OIDC RP /callback: handoff_store_put failed",
                  LOG_LEVEL_ERROR, 0);
-        scrub_free(handoff_code);
+        callback_scrub_free(handoff_code);
         free(client_ip);
         free_account_info(account);
         oidc_rp_idtoken_claims_free(claims);
@@ -623,7 +623,7 @@ enum MHD_Result handle_get_auth_oidc_callback(
     // Scrub the local handoff-code string after building the URL
     // (the URL itself contains the encoded copy; that's fine — the
     // browser is the next hop and the handoff is single-use anyway).
-    scrub_free(handoff_code);
+    callback_scrub_free(handoff_code);
     free(client_ip);
     free_account_info(account);
     oidc_rp_idtoken_claims_free(claims);

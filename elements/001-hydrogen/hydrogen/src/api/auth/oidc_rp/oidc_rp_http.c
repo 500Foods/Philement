@@ -82,12 +82,12 @@ static pthread_mutex_t g_test_fixture_lock = PTHREAD_MUTEX_INITIALIZER;
 // Internal helpers
 // ---------------------------------------------------------------------------
 
-static OidcRpHttpResponse *response_alloc(void) {
+OidcRpHttpResponse *response_alloc(void) {
     OidcRpHttpResponse *r = calloc(1, sizeof(*r));
     return r;
 }
 
-static void response_set_error(OidcRpHttpResponse *r, const char *msg) {
+void response_set_error(OidcRpHttpResponse *r, const char *msg) {
     if (!r) return;
     free(r->error_message);
     r->error_message = msg ? strdup(msg) : NULL;
@@ -96,7 +96,7 @@ static void response_set_error(OidcRpHttpResponse *r, const char *msg) {
 // Phase 16: free the headers array and its owned strings. NULL-safe
 // and idempotent (the response is memset(0) on alloc, so calling
 // this on a never-populated response is a no-op).
-static void response_clear_headers(OidcRpHttpResponse *r) {
+void response_clear_headers(OidcRpHttpResponse *r) {
     if (!r || !r->headers) return;
     for (size_t i = 0; i < r->headers_count; i++) {
         free(r->headers[i].name);
@@ -111,7 +111,7 @@ static void response_clear_headers(OidcRpHttpResponse *r) {
 // underlying array on demand. Returns true on success, false on
 // alloc failure (caller treats that as a non-fatal header-loss —
 // the body still completes; the user just sees fewer headers).
-static bool header_list_append(HeaderList *list, const char *name, size_t name_len,
+bool header_list_append(HeaderList *list, const char *name, size_t name_len,
                                const char *value, size_t value_len) {
     if (list->count + 1 >= list->capacity) {
         size_t new_cap = list->capacity ? list->capacity * 2
@@ -144,7 +144,7 @@ static bool header_list_append(HeaderList *list, const char *name, size_t name_l
     return true;
 }
 
-static size_t write_callback(const void *contents, size_t size, size_t nmemb,
+size_t write_callback(const void *contents, size_t size, size_t nmemb,
                              void *userp) {
     size_t realsize = size * nmemb;
     ResponseBuffer *buf = (ResponseBuffer *)userp;
@@ -180,7 +180,7 @@ static size_t write_callback(const void *contents, size_t size, size_t nmemb,
 // libcurl's contract: return the number of bytes consumed; returning
 // a smaller number aborts the transfer. We always return the full
 // `realsize`.
-static size_t header_callback(const void *contents, size_t size, size_t nmemb,
+size_t header_callback(const void *contents, size_t size, size_t nmemb,
                               void *userp) {
     size_t realsize = size * nmemb;
     HeaderList *list = (HeaderList *)userp;
@@ -221,7 +221,7 @@ static size_t header_callback(const void *contents, size_t size, size_t nmemb,
 }
 
 // Returns true if `url` contains `substring` (or substring is NULL/empty).
-static bool url_matches(const char *url, const char *substring) {
+bool url_matches(const char *url, const char *substring) {
     if (!substring || !*substring) return true;
     if (!url) return false;
     return strstr(url, substring) != NULL;
@@ -232,7 +232,7 @@ static bool url_matches(const char *url, const char *substring) {
 // body string. Walks the queue head-to-tail; the first match is
 // removed and remaining entries shift up. This preserves enqueue
 // order for tests that register multiple fixtures.
-static bool take_fixture(const char *url, long *out_status, char **out_body) {
+bool take_fixture(const char *url, long *out_status, char **out_body) {
     bool taken = false;
     pthread_mutex_lock(&g_test_fixture_lock);
     for (size_t i = 0; i < g_test_queue_count; ++i) {
@@ -278,7 +278,7 @@ void oidc_rp_http_response_free(OidcRpHttpResponse *response) {
 // must abort early (URL invalid OR fixture claimed). When the
 // fixture was claimed, the response struct is populated; when the
 // URL was invalid, only `error_message` is set.
-static bool preflight_request(OidcRpHttpResponse *resp,
+bool preflight_request(OidcRpHttpResponse *resp,
                               const char *url,
                               bool *out_should_proceed) {
     *out_should_proceed = false;
@@ -313,7 +313,7 @@ static bool preflight_request(OidcRpHttpResponse *resp,
 // OIDC RP outbound request must use. Timeout is configurable
 // (Phase 16) and passed by the caller. Caller has already done
 // `curl_easy_init` and set the URL.
-static void apply_common_curl_opts(CURL *curl,
+void apply_common_curl_opts(CURL *curl,
                                    bool verify_ssl,
                                    long request_timeout_seconds) {
     curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, OIDC_RP_HTTP_CONNECT_TIMEOUT_SECONDS);
@@ -328,7 +328,7 @@ static void apply_common_curl_opts(CURL *curl,
 // Internal: perform the request and translate the result into `resp`.
 // Frees `body.data` when an error occurred; transfers ownership to
 // `resp->body` on success.
-static void perform_and_finalize(CURL *curl,
+void perform_and_finalize(CURL *curl,
                                  ResponseBuffer *body,
                                  OidcRpHttpResponse *resp,
                                  const char *method_for_log) {
@@ -362,11 +362,11 @@ static void perform_and_finalize(CURL *curl,
 // Resolve a caller-supplied `max_body_bytes` / `request_timeout_seconds`
 // to the effective value (0 => OIDC default). Done as a small helper
 // so the GET/POST thin wrappers stay readable.
-static size_t resolve_max_body(size_t requested) {
+size_t resolve_max_body(size_t requested) {
     return requested ? requested : OIDC_RP_HTTP_MAX_BODY;
 }
 
-static long resolve_request_timeout(long requested) {
+long resolve_request_timeout(long requested) {
     return requested ? requested : OIDC_RP_HTTP_REQUEST_TIMEOUT_SECONDS;
 }
 

@@ -156,7 +156,7 @@ json_t* chat_request_build_openai(const ChatEngineConfig* engine,
 }
 
 // Helper: Convert OpenAI image_url format to Anthropic image format
-static json_t* convert_openai_content_to_anthropic(const char* content_str) {
+ json_t* chat_request_convert_openai_content_to_anthropic(const char* content_str) {
     if (!content_str) return NULL;
     
     json_error_t error;
@@ -291,7 +291,7 @@ json_t* chat_request_build_anthropic(const ChatEngineConfig* engine,
             json_t* content_obj = NULL;
             if (current->content) {
                 // Try to parse as JSON array (multimodal)
-                content_obj = convert_openai_content_to_anthropic(current->content);
+                content_obj = chat_request_convert_openai_content_to_anthropic(current->content);
             }
             if (content_obj) {
                 json_object_set_new(msg_obj, "content", content_obj);
@@ -402,7 +402,7 @@ char* chat_request_to_json_string(json_t* request, bool compact) {
 
 // Count images in message content
 // For multimodal messages, content is an array of objects with type "image_url" or "image"
-static int chat_message_count_images(const char* content) {
+ int chat_request_message_count_images(const char* content) {
     if (!content) return 0;
 
     // Try to parse as JSON array (multimodal format)
@@ -433,11 +433,11 @@ static int chat_message_count_images(const char* content) {
 }
 
 // Count total images across all messages
-static int chat_count_all_images(const ChatMessage* messages) {
+ int chat_request_count_all_images(const ChatMessage* messages) {
     int total = 0;
     const ChatMessage* current = messages;
     while (current) {
-        total += chat_message_count_images(current->content);
+        total += chat_request_message_count_images(current->content);
         current = current->next;
     }
     return total;
@@ -475,7 +475,7 @@ bool chat_request_validate(const ChatEngineConfig* engine,
     // Check image count per message
     const ChatMessage* current = messages;
     while (current) {
-        int images_in_message = chat_message_count_images(current->content);
+        int images_in_message = chat_request_message_count_images(current->content);
         if (images_in_message > engine->max_images_per_message) {
             if (error_message) {
                 char buf[256];
@@ -489,7 +489,7 @@ bool chat_request_validate(const ChatEngineConfig* engine,
     }
     
     // Check engine supports image modality if images present
-    if (chat_count_all_images(messages) > 0) {
+    if (chat_request_count_all_images(messages) > 0) {
         if (!(engine->supported_modalities & MODALITY_IMAGE)) {
             if (error_message) {
                 *error_message = strdup("Engine does not support image modality");

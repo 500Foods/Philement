@@ -49,7 +49,7 @@ static pthread_mutex_t g_query_result_cache_init_lock = PTHREAD_MUTEX_INITIALIZE
 /*
  * djb2 hash of a NUL-terminated string.
  */
-static unsigned long query_result_cache_hash_string(const char* str) {
+ unsigned long query_result_cache_hash_string(const char* str) {
     unsigned long hash = 5381;
     int c;
 
@@ -63,7 +63,7 @@ static unsigned long query_result_cache_hash_string(const char* str) {
 /*
  * Compare two string pointers for qsort.
  */
-static int query_result_cache_compare_string_pointers(const void* a, const void* b) {
+ int query_result_cache_compare_string_pointers(const void* a, const void* b) {
     const char* sa = *(const char* const*)a;
     const char* sb = *(const char* const*)b;
     return strcmp(sa, sb);
@@ -74,7 +74,7 @@ static int query_result_cache_compare_string_pointers(const void* a, const void*
  * the same string.  Object keys are sorted alphabetically; array order is
  * preserved.  Primitives are deep-copied.
  */
-static json_t* query_result_cache_normalize_json(const json_t* value) {
+ json_t* query_result_cache_normalize_json(const json_t* value) {
     if (!value) {
         return NULL;
     }
@@ -141,7 +141,7 @@ static json_t* query_result_cache_normalize_json(const json_t* value) {
 /*
  * Compute the SHA256 base64url hash of a SQL template.
  */
-static char* query_result_cache_compute_template_hash(const char* sql_template) {
+ char* query_result_cache_compute_template_hash(const char* sql_template) {
     const char* input = sql_template ? sql_template : "";
     return utils_sha256_hash((const unsigned char*)input, strlen(input));
 }
@@ -149,7 +149,7 @@ static char* query_result_cache_compute_template_hash(const char* sql_template) 
 /*
  * Compute the SHA256 base64url hash of normalized parameter JSON.
  */
-static char* query_result_cache_compute_param_hash(const char* params_json) {
+ char* query_result_cache_compute_param_hash(const char* params_json) {
     const char* input = params_json ? params_json : "";
 
     json_error_t error;
@@ -180,7 +180,7 @@ static char* query_result_cache_compute_param_hash(const char* params_json) {
  * Build the composite cache key from database name, template hash, and
  * parameter hash.  Returns an allocated string or NULL on failure.
  */
-static char* query_result_cache_build_key(const char* database_name, const char* template_hash, const char* param_hash) {
+ char* query_result_cache_build_key(const char* database_name, const char* template_hash, const char* param_hash) {
     const char* db_safe = database_name ? database_name : "";
     const char* template_hash_safe = template_hash ? template_hash : "";
     const char* param_hash_safe = param_hash ? param_hash : "";
@@ -202,7 +202,7 @@ static char* query_result_cache_build_key(const char* database_name, const char*
 /*
  * Compute the bucket index for a given key string.
  */
-static size_t query_result_cache_bucket_index(const QueryResultCache* cache, const char* key) {
+ size_t query_result_cache_bucket_index(const QueryResultCache* cache, const char* key) {
     return (size_t)(query_result_cache_hash_string(key) % (unsigned long)cache->bucket_count);
 }
 

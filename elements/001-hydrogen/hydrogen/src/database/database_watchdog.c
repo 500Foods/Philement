@@ -49,7 +49,7 @@ static DatabaseWatchdogState* watchdog_state = NULL;
  * Runtime timeout bounds and default. Initialized from the
  * DATABASE_WATCHDOG_*_SECONDS compile-time defaults; may be
  * overridden at init time via database_watchdog_set_bounds. Read
- * by watchdog_effective_timeout and used in the init log line.
+ * by database_watchdog_effective_timeout and used in the init log line.
  */
 static int g_watchdog_min = DATABASE_WATCHDOG_MIN_TIMEOUT_SECONDS;
 static int g_watchdog_max = DATABASE_WATCHDOG_MAX_TIMEOUT_SECONDS;
@@ -89,7 +89,7 @@ void* database_watchdog_thread_main(void* arg);
  * runtime globals set by database_watchdog_set_bounds; if that
  * setter was never called the compile-time defaults apply.
  */
-static int watchdog_effective_timeout(int requested) {
+ int database_watchdog_effective_timeout(int requested) {
     if (requested <= 0) {
         return g_watchdog_default;
     }
@@ -106,7 +106,7 @@ static int watchdog_effective_timeout(int requested) {
  * Free a single entry. Caller is responsible for unlinking it from
  * the registry first.
  */
-static void watchdog_entry_free(DatabaseWatchdogHandle* entry) {
+ void database_watchdog_entry_free(DatabaseWatchdogHandle* entry) {
     if (!entry) {
         return;
     }
@@ -186,7 +186,7 @@ void database_watchdog_shutdown(void) {
     DatabaseWatchdogHandle* entry = watchdog_state->head;
     while (entry) {
         DatabaseWatchdogHandle* next = entry->next;
-        watchdog_entry_free(entry);
+        database_watchdog_entry_free(entry);
         entry = next;
     }
 
@@ -213,7 +213,7 @@ DatabaseWatchdogHandle* database_watchdog_register(DatabaseHandle* connection,
     const char* query_id_src = request->query_id ? request->query_id : "?";
     entry->query_id_copy = strdup(query_id_src);
     if (!entry->query_id_copy) {
-        watchdog_entry_free(entry);
+        database_watchdog_entry_free(entry);
         return NULL;
     }
 
@@ -222,12 +222,12 @@ DatabaseWatchdogHandle* database_watchdog_register(DatabaseHandle* connection,
                                      : SR_DATABASE;
     entry->designator_copy = strdup(designator_src);
     if (!entry->designator_copy) {
-        watchdog_entry_free(entry);
+        database_watchdog_entry_free(entry);
         return NULL;
     }
 
     entry->start_time = time(NULL);
-    entry->effective_timeout_seconds = watchdog_effective_timeout(request->timeout_seconds);
+    entry->effective_timeout_seconds = database_watchdog_effective_timeout(request->timeout_seconds);
     entry->connection = connection;
     entry->expired = false;
     entry->cancelled = false;
@@ -254,7 +254,7 @@ void database_watchdog_deregister(DatabaseWatchdogHandle* handle) {
          * expects it to be freed, so we free it here even though it
          * is not in the registry.
          */
-        watchdog_entry_free(handle);
+        database_watchdog_entry_free(handle);
         return;
     }
 
@@ -277,7 +277,7 @@ void database_watchdog_deregister(DatabaseWatchdogHandle* handle) {
     pthread_mutex_unlock(&watchdog_state->registry_mutex);
 
     if (found) {
-        watchdog_entry_free(handle);
+        database_watchdog_entry_free(handle);
     }
     /*
      * If not found, the handle was already deregistered. The

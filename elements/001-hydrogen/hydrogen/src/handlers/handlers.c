@@ -62,7 +62,7 @@ extern AppConfig *app_config;
  * Core Mapping Structure
  * Represents a memory mapping from /proc/self/maps
  */
-typedef struct {
+typedef struct CoreMapping {
     unsigned long start;
     unsigned long end;
     unsigned long offset;   // file offset from /proc/self/maps
@@ -76,7 +76,7 @@ typedef struct {
  * Load Segment Structure
  * Represents a PT_LOAD segment for the core dump
  */
-typedef struct {
+typedef struct LoadSegment {
     CoreMapping *m;
     Elf64_Phdr phdr;
 } LoadSegment;
@@ -95,9 +95,9 @@ typedef struct {
 /*
  * Forward declarations for helper functions
  */
-static size_t read_proc_maps(CoreMapping *out, size_t max);
-static void dump_segment(FILE *mem, FILE *out, const LoadSegment *seg);
-static size_t read_auxv_data(unsigned char *buf, size_t max_size);
+ size_t handlers_read_proc_maps(CoreMapping *out, size_t max);
+ void handlers_dump_segment(FILE *mem, FILE *out, const LoadSegment *seg);
+ size_t handlers_read_auxv_data(unsigned char *buf, size_t max_size);
 
 /**
  * @brief Parse /proc/self/maps into an array of memory mappings
@@ -110,7 +110,7 @@ static size_t read_auxv_data(unsigned char *buf, size_t max_size);
  * @param max Maximum number of mappings to store
  * @return Number of mappings successfully parsed
  */
-static size_t read_proc_maps(CoreMapping *out, size_t max) {
+ size_t handlers_read_proc_maps(CoreMapping *out, size_t max) {
     FILE *maps = fopen("/proc/self/maps", "r");
     if (!maps) {
         log_this(SR_CRASH, "Failed to open /proc/self/maps: %s", LOG_LEVEL_ERROR, 1, strerror(errno));
@@ -178,7 +178,7 @@ static size_t read_proc_maps(CoreMapping *out, size_t max) {
  * @param out FILE pointer to the core dump file
  * @param seg LoadSegment containing the mapping and program header info
  */
-static void dump_segment(FILE *mem, FILE *out, const LoadSegment *seg) {
+ void handlers_dump_segment(FILE *mem, FILE *out, const LoadSegment *seg) {
     const CoreMapping *m = seg->m;
     const Elf64_Phdr *ph = &seg->phdr;
     unsigned long addr = m->start;
@@ -233,7 +233,7 @@ static void dump_segment(FILE *mem, FILE *out, const LoadSegment *seg) {
  * @param max_size Maximum size of the buffer
  * @return Number of bytes read, or 0 on failure
  */
-static size_t read_auxv_data(unsigned char *buf, size_t max_size) {
+ size_t handlers_read_auxv_data(unsigned char *buf, size_t max_size) {
     FILE *auxv = fopen("/proc/self/auxv", "rb");
     if (!auxv) {
         log_this(SR_CRASH, "Failed to open /proc/self/auxv: %s", LOG_LEVEL_DEBUG, 1, strerror(errno));
@@ -360,7 +360,7 @@ void crash_handler(int sig, siginfo_t *info, void *ucontext) {
 
     /* Step 2: Parse all memory mappings */
     CoreMapping mappings[MAX_MAPPINGS];
-    size_t mapping_count = read_proc_maps(mappings, MAX_MAPPINGS);
+    size_t mapping_count = handlers_read_proc_maps(mappings, MAX_MAPPINGS);
     if (mapping_count == 0) {
         log_this(SR_CRASH, "No memory mappings found - cannot generate core dump", LOG_LEVEL_ERROR, 0);
         fclose(out);
@@ -434,7 +434,7 @@ void crash_handler(int sig, siginfo_t *info, void *ucontext) {
 
     // Add NT_AUXV note if available
     unsigned char auxv_buf[8192];
-    size_t auxv_size = read_auxv_data(auxv_buf, sizeof(auxv_buf));
+    size_t auxv_size = handlers_read_auxv_data(auxv_buf, sizeof(auxv_buf));
     size_t auxv_note_sz = 0;
 
     if (auxv_size > 0) {
@@ -638,7 +638,7 @@ void crash_handler(int sig, siginfo_t *info, void *ucontext) {
     for (size_t i = 0; i < load_segment_count; i++) {
         LoadSegment *seg = &load_segments[i];
         seg->phdr = *(Elf64_Phdr *)&load_segments[i].phdr; // Copy the header we wrote earlier
-        dump_segment(mem, out, seg);
+        handlers_dump_segment(mem, out, seg);
     }
 
     // Validate that we actually captured memory before closing

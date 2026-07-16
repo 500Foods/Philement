@@ -270,4 +270,10 @@ bool chat_proxy_multi_has_active_streams(const MultiStreamManager* manager);
  */
 size_t chat_proxy_multi_get_stream_count(const MultiStreamManager* manager);
 
+/* ----------------------------------------------------------------------------
+ * The following helper is NOT part of the stable public API. It is exposed
+ * (non-static) solely so the Unity test framework can call it directly.
+ * -------------------------------------------------------------------------- */
+void* chat_proxy_multi_worker_thread(void* arg);
+
 #endif // PROXY_MULTI_H

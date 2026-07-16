@@ -32,7 +32,7 @@ extern SQLPrepare_t SQLPrepare_ptr;
 extern SQLBindParameter_t SQLBindParameter_ptr;
 
 // Helper function to trim trailing whitespace from strings (DB2-specific)
-static char* db2_trim_trailing_whitespace(char* str) {
+ char* db2_trim_trailing_whitespace(char* str) {
     if (!str) return NULL;
 
     // Find the end of the string
@@ -48,7 +48,7 @@ static char* db2_trim_trailing_whitespace(char* str) {
 }
 
 // Helper function to format DB2 datetime strings to standard format (DB2-specific)
-static char* db2_format_datetime_string(char* str) {
+ char* db2_format_datetime_string(char* str) {
     if (!str) return NULL;
 
     // DB2 datetime format: "2023-12-25 14:30:00.000000"
@@ -65,7 +65,7 @@ static char* db2_format_datetime_string(char* str) {
 }
 
 // Helper function to format DB2 timestamp strings to standard format (DB2-specific)
-static char* db2_format_timestamp_string(char* str) {
+ char* db2_format_timestamp_string(char* str) {
     if (!str) return NULL;
 
     // DB2 timestamp format: "2023-12-25 14:30:00.000032"
@@ -584,7 +584,7 @@ bool db2_bind_single_parameter(void* stmt_handle, unsigned short param_index, Ty
 }
 
 // Helper function to cleanup bound values
-static void db2_cleanup_bound_values(void** bound_values, size_t count) {
+ void db2_cleanup_bound_values(void** bound_values, size_t count) {
     if (bound_values) {
         for (size_t i = 0; i < count; i++) {
             free(bound_values[i]);

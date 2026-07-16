@@ -13,7 +13,7 @@
 
 // Health check implementation for OpenAI-compatible APIs
 // Uses a minimal valid request to test connectivity
-static bool chat_health_check_openai(const ChatEngineConfig* engine) {
+bool chat_health_check_openai(const ChatEngineConfig* engine) {
     if (!engine || !engine->api_url[0]) return false;
 
     // Build a minimal valid request body
@@ -43,7 +43,7 @@ static bool chat_health_check_openai(const ChatEngineConfig* engine) {
 }
 
 // Health check implementation for Anthropic
-static bool chat_health_check_anthropic(const ChatEngineConfig* engine) {
+bool chat_health_check_anthropic(const ChatEngineConfig* engine) {
     if (!engine || !engine->api_url[0]) return false;
 
     // Anthropic uses a different request format
@@ -70,7 +70,7 @@ static bool chat_health_check_anthropic(const ChatEngineConfig* engine) {
 }
 
 // Health check implementation for Ollama
-static bool chat_health_check_ollama(const ChatEngineConfig* engine) {
+bool chat_health_check_ollama(const ChatEngineConfig* engine) {
     if (!engine || !engine->api_url[0]) return false;
 
     // Ollama uses OpenAI-compatible format now

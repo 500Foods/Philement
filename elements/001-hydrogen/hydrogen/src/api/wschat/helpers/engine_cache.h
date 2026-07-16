@@ -146,4 +146,10 @@ bool chat_engine_cache_should_refresh(const ChatEngineCache* cache, int refresh_
 // Get last refresh timestamp
 time_t chat_engine_cache_get_last_refresh(const ChatEngineCache* cache);
 
+/* ----------------------------------------------------------------------------
+ * The following helper is NOT part of the stable public API. It is exposed
+ * (non-static) solely so the Unity test framework can call it directly.
+ * -------------------------------------------------------------------------- */
+bool chat_engine_cache_add_engine_locked(ChatEngineCache* cache, ChatEngineConfig* engine);
+
 #endif // ENGINE_CACHE_H

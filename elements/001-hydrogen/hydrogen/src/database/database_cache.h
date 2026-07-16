@@ -54,4 +54,10 @@ void query_cache_entry_destroy(QueryCacheEntry* entry);
 size_t query_cache_get_entry_count(QueryTableCache* cache);
 void query_cache_get_stats(QueryTableCache* cache, char* buffer, size_t buffer_size);
 
+/* ----------------------------------------------------------------------------
+ * The following helper is NOT part of the stable public API. It is exposed
+ * (non-static) solely so the Unity test framework can call it directly.
+ * -------------------------------------------------------------------------- */
+bool database_cache_add_entry_locked(QueryTableCache* cache, QueryCacheEntry* entry, const char* dqm_label);
+
 #endif // DATABASE_CACHE_H

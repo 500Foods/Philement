@@ -193,4 +193,20 @@ const char* victoria_logs_get_priority_label(int priority);
  */
 void victoria_logs_clear_batch(void);
 
+/* ----------------------------------------------------------------------------
+ * The following helpers are NOT part of the stable public API. They are exposed
+ * (non-static) solely so the Unity test framework can call them directly.
+ * -------------------------------------------------------------------------- */
+bool victoria_logs_parse_url(const char* url, char* host, int* port, char* path, bool* use_ssl);
+bool victoria_logs_send_http_post(const char* host, int port, const char* path, const char* body, size_t body_len, bool use_ssl);
+bool victoria_logs_queue_init(void);
+void victoria_logs_queue_cleanup(void);
+bool victoria_logs_queue_enqueue(const char* message);
+char* victoria_logs_queue_dequeue(void);
+bool victoria_logs_add_to_batch(const char* message);
+void victoria_logs_reset_long_timer(void);
+void victoria_logs_clear_batch_impl(void);
+bool victoria_logs_flush_batch_internal(void);
+void* victoria_logs_worker(void* arg);
+
 #endif // VICTORIA_LOGS_H

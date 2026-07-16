@@ -44,7 +44,7 @@ void extract_websocket_metrics(WebSocketMetrics *metrics) {
     }
 }
 
-static bool has_valid_jwt(struct MHD_Connection *connection) {
+ bool system_info_has_valid_jwt(struct MHD_Connection *connection) {
     const char *auth_header = MHD_lookup_connection_value(connection, MHD_HEADER_KIND, "Authorization");
     if (!auth_header) {
         return false;
@@ -83,7 +83,7 @@ enum MHD_Result handle_system_info_request(struct MHD_Connection *connection)
         return MHD_NO;
     }
 
-    if (has_valid_jwt(connection)) {
+    if (system_info_has_valid_jwt(connection)) {
         json_t *scripting_json = scripting_scoreboard_snapshot_json(100, false);
         if (scripting_json) {
             json_object_set_new(root, "scripting", scripting_json);

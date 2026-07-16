@@ -112,7 +112,27 @@ void call_lib_void_function_helper(void *func_ptr, ...);
 // Internal cache functions (made non-static for testing)
 char* get_cache_file_path(const char *db_name);
 bool ensure_cache_dir(void);
-const char* load_cached_version(const char *db_name, char *buffer, size_t size);
-void save_cache(const char *db_name, const char *version);
+const char* load_cached_version(const char *db_name, char* buffer, size_t size);
+void save_cache(const char *db_name, const char* version);
+
+/* ----------------------------------------------------------------------------
+ * The following helpers are NOT part of the stable public API. They are exposed
+ * (non-static) solely so the Unity test framework can call them directly.
+ * DatabaseDependencyConfig and LibConfig are defined privately in
+ * utils_dependency.c and are forward-declared opaque here.
+ * -------------------------------------------------------------------------- */
+typedef struct DatabaseDependencyConfig DatabaseDependencyConfig;
+typedef struct LibConfig LibConfig;
+
+const char *utils_dependency_get_status_string(LibraryStatus status);
+LibraryStatus utils_dependency_determine_status(const char *expected, const char *found, bool required);
+void utils_dependency_log_status(const char *name, const char *expected, const char *found, const char *method, LibraryStatus status);
+const char *utils_dependency_parse_db2_version(const char *output, char *buffer, size_t size);
+const char *utils_dependency_parse_postgresql_version(const char *output, char *buffer, size_t size);
+const char *utils_dependency_parse_mysql_version(const char *output, char *buffer, size_t size);
+const char *utils_dependency_parse_sqlite_version(const char *output, char *buffer, size_t size);
+const char *utils_dependency_get_database_version(const DatabaseDependencyConfig *config, char *buffer, size_t size);
+void *utils_dependency_check_database_thread(void *arg);
+const char *utils_dependency_get_version(const LibConfig *config, char *buffer, size_t size, const char **method);
 
 #endif // UTILS_DEPENDENCY_H

@@ -85,4 +85,10 @@ void free_parameter_list(ParameterList* params);
 const char* parameter_type_to_string(ParameterType type);
 ParameterType string_to_parameter_type(const char* type_str);
 
+/* ----------------------------------------------------------------------------
+ * The following helper is NOT part of the stable public API. It is exposed
+ * (non-static) solely so the Unity test framework can call it directly.
+ * -------------------------------------------------------------------------- */
+bool database_params_is_inside_string_literal(const char* sql, const char* position);
+
 #endif // DATABASE_PARAMS_H

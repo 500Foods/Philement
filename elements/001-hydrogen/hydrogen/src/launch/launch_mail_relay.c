@@ -21,6 +21,7 @@
 
 // Local includes
 #include "launch.h"
+#include "launch_mail_relay.h"
 
 // Registry integration
 #include <src/registry/registry_integration.h>
@@ -54,7 +55,7 @@ int mailrelay_subsystem_id = -1;
 // Register Mail Relay with the subsystem registry for launch/landing dispatch.
 // Matches the mDNS server pattern so the registry knows our threads, shutdown
 // flag, init function, and shutdown function.
-static void register_mail_relay_for_launch(void) {
+ void register_mail_relay_for_launch(void) {
     if (mailrelay_subsystem_id < 0) {
         mailrelay_subsystem_id = register_subsystem_from_launch(
             SR_MAIL_RELAY,
@@ -245,7 +246,7 @@ LaunchReadiness check_mail_relay_launch_readiness(void) {
 static pthread_mutex_t g_launch_transport_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int g_launch_fail_remaining = 0;
 
-static bool launch_fail_transport(const MailRelaySmtpRequest* req, MailRelayResult* out) {
+ bool launch_fail_transport(const MailRelaySmtpRequest* req, MailRelayResult* out) {
     (void)req;
     bool fail = false;
     pthread_mutex_lock(&g_launch_transport_mutex);
@@ -289,7 +290,7 @@ static bool launch_fail_transport(const MailRelaySmtpRequest* req, MailRelayResu
  *
  * Returns true once the cache holds the OTP insert QueryRef.
  */
-static bool launch_wait_for_mailrelay_otp_cache(unsigned int timeout_ms) {
+ bool launch_wait_for_mailrelay_otp_cache(unsigned int timeout_ms) {
     if (!app_config) {
         return false;
     }

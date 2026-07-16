@@ -46,7 +46,7 @@ extern PQresultErrorField_t PQresultErrorField_ptr;
 #define POSTGRES_TIMESTAMPTZOID 1184 // timestamp with time zone
 
 // Helper function to check if PostgreSQL type is numeric
-static bool postgresql_is_numeric_type(int oid) {
+ bool postgresql_is_numeric_type(int oid) {
     switch (oid) {
         case POSTGRES_INT2OID:
         case POSTGRES_INT4OID:
@@ -61,7 +61,7 @@ static bool postgresql_is_numeric_type(int oid) {
 }
 
 // Helper function to check if PostgreSQL type is datetime/timestamp
-static bool postgresql_is_datetime_type(int oid) {
+ bool postgresql_is_datetime_type(int oid) {
     switch (oid) {
         case POSTGRES_DATEOID:
         case POSTGRES_TIMEOID:
@@ -75,7 +75,7 @@ static bool postgresql_is_datetime_type(int oid) {
 }
 
 // Helper function to format PostgreSQL timestamp strings to standard format (PostgreSQL-specific)
-static char* postgresql_format_timestamp_string(char* str) {
+ char* postgresql_format_timestamp_string(char* str) {
     if (!str) return NULL;
 
     // PostgreSQL timestamp format: "2023-12-25 14:30:00.123+00"
@@ -93,7 +93,7 @@ static char* postgresql_format_timestamp_string(char* str) {
 }
 
 // Helper function to trim trailing whitespace from strings (PostgreSQL-specific, for YugabyteDB compatibility)
-static char* postgresql_trim_trailing_whitespace(char* str) {
+ char* postgresql_trim_trailing_whitespace(char* str) {
     if (!str) return NULL;
 
     // Find the end of the string

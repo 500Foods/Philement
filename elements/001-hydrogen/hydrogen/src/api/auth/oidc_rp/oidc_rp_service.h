@@ -207,4 +207,11 @@ const OIDCRPProviderConfig *oidc_rp_get_active_provider(void);
  */
 void oidc_rp_runtime_shutdown(void);
 
+// ---------------------------------------------------------------------------
+// Internal helpers — NOT part of the stable public API. Exposed non-static
+// so Unity tests can call them directly.
+// ---------------------------------------------------------------------------
+bool append_param(char **buf, size_t *len, size_t *cap, const char *prefix, const char *key, const char *value);
+void oidc_rp_runtime_init_impl(void);
+
 #endif // OIDC_RP_SERVICE_H

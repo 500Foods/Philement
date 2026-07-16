@@ -31,7 +31,7 @@ char* chat_storage_binary_to_hex(const uint8_t* data, size_t len) {
 }
 
 /* Helper function to check if a character is a valid hex digit */
-static int is_hex_digit(char c) {
+ int chat_storage_is_hex_digit(char c) {
     return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
 }
 
@@ -53,7 +53,7 @@ bool chat_storage_hex_to_binary(const char* hex, uint8_t** data, size_t* len) {
 
     for (size_t i = 0; i < binary_len; i++) {
         /* Validate both hex characters before parsing */
-        if (!is_hex_digit(hex[i * 2]) || !is_hex_digit(hex[i * 2 + 1])) {
+        if (!chat_storage_is_hex_digit(hex[i * 2]) || !chat_storage_is_hex_digit(hex[i * 2 + 1])) {
             free(binary);
             return false;
         }

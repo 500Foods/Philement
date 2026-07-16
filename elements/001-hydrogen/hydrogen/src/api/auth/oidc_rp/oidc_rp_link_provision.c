@@ -36,7 +36,7 @@
  * -------------------------------------------------------------------------
  */
 
-static bool domains_equal_ci(const char *a, const char *b) {
+bool domains_equal_ci(const char *a, const char *b) {
     if (!a || !b) return false;
     while (*a && *b) {
         char ca = (char)tolower((unsigned char)*a);
@@ -47,7 +47,7 @@ static bool domains_equal_ci(const char *a, const char *b) {
     return *a == '\0' && *b == '\0';
 }
 
-static const char *email_domain(const char *email) {
+const char *email_domain(const char *email) {
     if (!email || !*email) return NULL;
     const char *at = strrchr(email, '@');
     if (!at)         return NULL;
@@ -56,7 +56,7 @@ static const char *email_domain(const char *email) {
     return at + 1;
 }
 
-static bool email_domain_allowed(const OIDCRPAccountLinking *linking,
+bool email_domain_allowed(const OIDCRPAccountLinking *linking,
                                   const char *email) {
     if (linking->allowed_email_domain_count == 0) {
         /* No allow-list = no restriction (Phase 20 lesson #3). */

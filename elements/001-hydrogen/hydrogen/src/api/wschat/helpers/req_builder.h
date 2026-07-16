@@ -89,4 +89,12 @@ bool chat_request_validate(const ChatEngineConfig* engine,
                            const ChatRequestParams* params,
                            char** error_message);
 
+/* ----------------------------------------------------------------------------
+ * The following helpers are NOT part of the stable public API. They are exposed
+ * (non-static) solely so the Unity test framework can call them directly.
+ * -------------------------------------------------------------------------- */
+json_t* chat_request_convert_openai_content_to_anthropic(const char* content_str);
+int chat_request_message_count_images(const char* content);
+int chat_request_count_all_images(const ChatMessage* messages);
+
 #endif // REQ_BUILDER_H

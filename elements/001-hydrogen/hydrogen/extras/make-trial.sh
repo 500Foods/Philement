@@ -2,6 +2,7 @@
 
 # CHANGELOG
 # 2026-07-15: Report build error counts and ensure non-zero exit propagates to callers (e.g. mkt && mka chains)
+# 2026-07-15: Added static-function gate to block NEW static functions in src/ (Unity tests cannot call static fns)
 # 2025-12-05: Added dependency check to prevent .c file includes in Unity tests and mocks, resolving gcov regeneration issue
 # 2025-09-24: Added QUICK parameter to skip cleaning and cmake configuration
 # 2025-07-15: Added Unity test compilation to catch errors in test code during trial builds
@@ -59,6 +60,42 @@ fi
 if [[ -n "${MOCKS_C_INCLUDES}" ]]; then
     echo "❌ Found improper .c includes in Unity mocks:"
     echo "${MOCKS_C_INCLUDES}"
+    exit 1
+fi
+
+# Static-function gate (INSTRUCTIONS.md "NO static FUNCTIONS" rule).
+# Unity Framework tests link directly against the project's object files
+# and CANNOT call static functions, so a static helper is impossible to
+# unit-test. We grandfather the static functions that already exist
+# (listed in tests/.static-baseline.txt) and FAIL THE BUILD on any NEW
+# static function definition in src/. This is the automated enforcement
+# of the rule - a doc note did not stop mailrelay/scripting from
+# shipping ~200 static helpers that later had to be de-static'd by hand.
+STATIC_BASELINE="tests/.static-baseline.txt"
+if [[ ! -f "${STATIC_BASELINE}" ]]; then
+    echo "⚠️  Static baseline missing (${STATIC_BASELINE}); regenerating from current src/"
+    rg -N --no-heading -n '^\s*static\b.*\w+\s*\(' -g '*.c' -g '*.h' src \
+        | rg -o 'static\s+[\w\s\*]*?(\w+)\s*\(' -r '$1' | sort -u > "${STATIC_BASELINE}" || true
+fi
+
+# Collect static FUNCTION DEFINITIONS (lines ending in '{', i.e. not
+# forward declarations which end in ';'). Report any whose name is not
+# in the baseline.
+NEW_STATIC=$(rg -N --no-heading -n '^\s*static\b.*\w+\s*\(' -g 'src/**/*.c' -g 'src/**/*.h' \
+    | grep -E '\)\s*\{?\s*$' \
+    | rg -o 'static\s+[\w\s\*]*?(\w+)\s*\(' -r '$1' \
+    | sort -u \
+    | comm -23 - <(sort -u "${STATIC_BASELINE}") || true)
+
+if [[ -n "${NEW_STATIC}" ]]; then
+    echo "❌ NEW static functions found in src/ (Unity tests cannot call static functions):"
+    echo "${NEW_STATIC}" | while read -r fn; do
+        [[ -n "${fn}" ]] && echo "  - ${fn}"
+    done
+    echo "Remove 'static' and add a header declaration, OR (if genuinely"
+    echo "module-private state) regenerate the baseline with: rg -N --no-heading"
+    printf '%s\n' "  -n '^\\s*static\\b.*\\w+\\s*\\(' -g '*.c' -g '*.h' src | rg -o"
+    printf '%s\n' "  'static\\s+[\\w\\s\\*]*?(\\w+)\\s*\\(' -r '\$1' | sort -u > tests/.static-baseline.txt"
     exit 1
 fi
 
@@ -180,8 +217,10 @@ fi
 if (echo "${UNITY_BUILD_OUTPUT}" | grep -q "completed successfully" || echo "${UNITY_BUILD_OUTPUT}" | grep -q "no work to do") && [[ -z "${ERRORS}" ]]; then
     echo "$(date +%H:%M:%S.%3N || true) - Build Successful"
 
-    # Return to project root for final checks
-    popd >/dev/null 2>&1 || true
+    # Return to project root for final checks (do NOT rely on the dirstack:
+    # the dependency-check popd at the top already consumed the pushd, so the
+    # stack is empty and popd here would be a no-op, leaving CWD in cmake/).
+    cd "${HYDROGEN_ROOT}" >/dev/null 2>&1 || true
 
     # Binary is already created in root directory by hydrogen target
 

@@ -73,4 +73,10 @@ bool sqlite_fetch_row_data(void* stmt_handle, char** column_names, int column_co
  */
 char** sqlite_get_column_names(void* stmt_handle, int column_count);
 
+/* ----------------------------------------------------------------------------
+ * The following helper is NOT part of the stable public API. It is exposed
+ * (non-static) solely so the Unity test framework can call it directly.
+ * -------------------------------------------------------------------------- */
+char* sqlite_trim_trailing_whitespace(char* str);
+
 #endif // DATABASE_ENGINE_SQLITE_QUERY_HELPERS_H

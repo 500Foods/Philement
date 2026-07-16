@@ -35,4 +35,10 @@ bool mysql_process_prepared_result(void* mysql_result, QueryResult* db_result, v
 bool mysql_process_prepared_stmt_result(void* stmt, QueryResult* result, const char* designator);
 bool mysql_process_direct_result(void* mysql_conn, void* mysql_result, QueryResult* result, const char* designator);
 
+/* ----------------------------------------------------------------------------
+ * The following helper is NOT part of the stable public API. It is exposed
+ * (non-static) solely so the Unity test framework can call it directly.
+ * -------------------------------------------------------------------------- */
+char* mysql_trim_trailing_whitespace(char* str);
+
 #endif // DATABASE_ENGINE_MYSQL_QUERY_HELPERS_H

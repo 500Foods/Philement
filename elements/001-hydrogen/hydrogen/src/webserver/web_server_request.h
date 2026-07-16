@@ -64,4 +64,10 @@ bool resolve_static_file_path(const char *url, char *resolved_path, size_t resol
 bool matches_pattern(const char* path, const char* pattern);
 void add_custom_headers(struct MHD_Response *response, const char* file_path, const WebServerConfig* web_config);
 
+/* ----------------------------------------------------------------------------
+ * The following helper is NOT part of the stable public API. It is exposed
+ * (non-static) solely so the Unity test framework can call it directly.
+ * -------------------------------------------------------------------------- */
+bool web_server_url_looks_like_file(const char *url);
+
 #endif // WEB_SERVER_REQUEST_H

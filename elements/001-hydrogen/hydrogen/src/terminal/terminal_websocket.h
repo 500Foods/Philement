@@ -190,6 +190,12 @@ int read_pty_with_select(TerminalWSConnection *connection, char *buffer, size_t 
  */
 bool process_pty_read_result(TerminalWSConnection *connection, const char *buffer, int bytes_read);
 
+/*
+ * The following helper is NOT part of the stable public API. It is exposed
+ * (non-static) solely so the Unity test framework can call it directly.
+ */
+void *terminal_io_bridge_thread(void *arg);
+
 #ifdef __cplusplus
 }
 #endif

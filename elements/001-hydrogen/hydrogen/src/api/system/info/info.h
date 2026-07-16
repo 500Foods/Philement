@@ -51,4 +51,10 @@ enum MHD_Result handle_system_info_request(struct MHD_Connection *connection);
  */
 void extract_websocket_metrics(WebSocketMetrics *metrics);
 
+/* ----------------------------------------------------------------------------
+ * The following helper is NOT part of the stable public API. It is exposed
+ * (non-static) solely so the Unity test framework can call it directly.
+ * -------------------------------------------------------------------------- */
+bool system_info_has_valid_jwt(struct MHD_Connection *connection);
+
 #endif /* HYDROGEN_SYSTEM_INFO_H */

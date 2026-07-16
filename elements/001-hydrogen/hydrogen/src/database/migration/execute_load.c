@@ -23,7 +23,7 @@
  * e.g., "acuranzo_1148.lua" -> 1148
  * Returns -1 on error
  */
-static long long extract_migration_ref_from_filename(const char* filename) {
+ long long migration_extract_ref_from_filename(const char* filename) {
     if (!filename) return -1;
 
     // Find the last underscore
@@ -221,7 +221,7 @@ bool execute_migration_files_load_only(DatabaseQueue* db_queue, DatabaseHandle* 
     // Passing NULL for L forces execute_single_migration_load_only_with_state to create its own
     for (size_t i = 0; i < migration_count; i++) {
         // Extract migration reference number from filename (e.g., "acuranzo_1148.lua" -> 1148)
-        long long migration_ref = extract_migration_ref_from_filename(migration_files[i]);
+        long long migration_ref = migration_extract_ref_from_filename(migration_files[i]);
         if (migration_ref == -1) {
             log_this(dqm_label, "Failed to extract migration ref from filename: %s", LOG_LEVEL_ERROR, 1, migration_files[i]);
             all_success = false;

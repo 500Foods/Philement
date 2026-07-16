@@ -20,4 +20,14 @@ bool postgresql_execute_prepared(DatabaseHandle* connection, const PreparedState
 // Helper function for parameter conversion (exposed for testing)
 char* postgresql_convert_param_value(const TypedParameter* param, const char* designator);
 
+/* ----------------------------------------------------------------------------
+ * The following helpers are NOT part of the stable public API. They are
+ * exposed (non-static) solely so the Unity test framework can call them
+ * directly.
+ * -------------------------------------------------------------------------- */
+bool postgresql_is_numeric_type(int oid);
+bool postgresql_is_datetime_type(int oid);
+char* postgresql_format_timestamp_string(char* str);
+char* postgresql_trim_trailing_whitespace(char* str);
+
 #endif // DATABASE_ENGINE_POSTGRESQL_QUERY_H

@@ -51,7 +51,7 @@ static DiscoveryCache *g_cache = NULL;
 // Doc field helpers
 // ---------------------------------------------------------------------------
 
-static void doc_clear_fields(OidcRpDiscoveryDoc *d) {
+void doc_clear_fields(OidcRpDiscoveryDoc *d) {
     if (!d) return;
     free(d->issuer);                d->issuer = NULL;
     free(d->authorization_endpoint); d->authorization_endpoint = NULL;
@@ -74,7 +74,7 @@ void oidc_rp_discovery_doc_free(OidcRpDiscoveryDoc *doc) {
 // ".well-known/openid-configuration" but with the standard form
 // "<issuer>/.well-known/openid-configuration" (the path always starts
 // with a slash; the spec says append).
-static bool build_discovery_url(const char *issuer, char *out, size_t out_size) {
+bool build_discovery_url(const char *issuer, char *out, size_t out_size) {
     if (!issuer || !*issuer) return false;
     size_t issuer_len = strlen(issuer);
     bool trailing_slash = issuer[issuer_len - 1] == '/';
@@ -93,7 +93,7 @@ static bool build_discovery_url(const char *issuer, char *out, size_t out_size) 
 
 // Required field: must be non-NULL and a string. Sets *out to a
 // heap copy. Caller frees only on the failure path.
-static bool extract_required_string(json_t *obj, const char *key, char **out) {
+bool extract_required_string(json_t *obj, const char *key, char **out) {
     json_t *v = json_object_get(obj, key);
     if (!v || !json_is_string(v)) {
         log_this(SR_AUTH,
@@ -106,7 +106,7 @@ static bool extract_required_string(json_t *obj, const char *key, char **out) {
 }
 
 // Optional string. Sets *out to a heap copy or leaves it as NULL.
-static void extract_optional_string(json_t *obj, const char *key, char **out) {
+void extract_optional_string(json_t *obj, const char *key, char **out) {
     json_t *v = json_object_get(obj, key);
     if (v && json_is_string(v)) {
         char *dup = strdup(json_string_value(v));
@@ -181,7 +181,7 @@ OidcRpDiscoveryDoc *oidc_rp_discovery_parse(const char *json_text,
 // ---------------------------------------------------------------------------
 
 // Find slot by provider name. Returns NULL if missing.
-static DiscoveryEntry *find_slot_locked(const char *name) {
+DiscoveryEntry *discovery_find_slot_locked(const char *name) {
     if (!g_cache || !name) return NULL;
     for (size_t i = 0; i < OIDC_RP_MAX_PROVIDERS; i++) {
         DiscoveryEntry *s = &g_cache->slots[i];
@@ -193,7 +193,7 @@ static DiscoveryEntry *find_slot_locked(const char *name) {
 }
 
 // Find first empty slot. Returns NULL if cache is full.
-static DiscoveryEntry *find_empty_slot_locked(void) {
+DiscoveryEntry *discovery_find_empty_slot_locked(void) {
     if (!g_cache) return NULL;
     for (size_t i = 0; i < OIDC_RP_MAX_PROVIDERS; i++) {
         if (!g_cache->slots[i].provider_name) return &g_cache->slots[i];
@@ -202,14 +202,14 @@ static DiscoveryEntry *find_empty_slot_locked(void) {
 }
 
 // True iff `entry` has aged past its TTL.
-static bool entry_expired(const DiscoveryEntry *entry, time_t now) {
+bool discovery_entry_expired(const DiscoveryEntry *entry, time_t now) {
     if (entry->doc.ttl_seconds <= 0) return false;
     return (now - entry->doc.cached_at) >= entry->doc.ttl_seconds;
 }
 
 // Replace slot contents with `new_doc` and `name`. Frees prior
 // strings if any. Always succeeds (assumes inputs valid).
-static void replace_slot_locked(DiscoveryEntry *slot,
+void replace_slot_locked(DiscoveryEntry *slot,
                                 const char *name,
                                 OidcRpDiscoveryDoc *new_doc) {
     free(slot->provider_name);
@@ -281,8 +281,8 @@ const OidcRpDiscoveryDoc *oidc_rp_discovery_get(const char *provider_name,
 
     // First pass: check the cache while holding the lock.
     pthread_mutex_lock(&g_cache->lock);
-    DiscoveryEntry *slot = find_slot_locked(provider_name);
-    if (slot && !entry_expired(slot, time(NULL))) {
+    DiscoveryEntry *slot = discovery_find_slot_locked(provider_name);
+    if (slot && !discovery_entry_expired(slot, time(NULL))) {
         const OidcRpDiscoveryDoc *cached = &slot->doc;
         pthread_mutex_unlock(&g_cache->lock);
         return cached;
@@ -324,9 +324,9 @@ const OidcRpDiscoveryDoc *oidc_rp_discovery_get(const char *provider_name,
 
     // Install in the cache.
     pthread_mutex_lock(&g_cache->lock);
-    DiscoveryEntry *target = find_slot_locked(provider_name);
+    DiscoveryEntry *target = discovery_find_slot_locked(provider_name);
     if (!target) {
-        target = find_empty_slot_locked();
+        target = discovery_find_empty_slot_locked();
         if (!target) {
             pthread_mutex_unlock(&g_cache->lock);
             log_this(SR_AUTH,
@@ -349,7 +349,7 @@ const OidcRpDiscoveryDoc *oidc_rp_discovery_get(const char *provider_name,
 void oidc_rp_discovery_invalidate(const char *provider_name) {
     if (!g_cache || !provider_name) return;
     pthread_mutex_lock(&g_cache->lock);
-    DiscoveryEntry *slot = find_slot_locked(provider_name);
+    DiscoveryEntry *slot = discovery_find_slot_locked(provider_name);
     if (slot) {
         free(slot->provider_name);
         slot->provider_name = NULL;

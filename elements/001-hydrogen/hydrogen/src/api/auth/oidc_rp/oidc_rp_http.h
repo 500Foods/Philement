@@ -54,6 +54,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <curl/curl.h>  // CURL (for the internal helpers below)
 
 // Forward-declare the libcurl slist type so callers (the Lua
 // scripting layer) can build a headers list without including
@@ -324,5 +325,28 @@ OidcRpHttpResponse *oidc_rp_http_post_with_headers_slist(
  * path (or return a transport failure if the URL is unreachable).
  */
 void oidc_rp_http_test_clear_responses(void);
+
+// ---------------------------------------------------------------------------
+// Internal helpers — NOT part of the stable public API. Exposed non-static
+// so Unity tests can call them directly. `HeaderList` and `ResponseBuffer`
+// are the module's private accumulation types (defined in oidc_rp_http.c);
+// forward-declared here as opaque.
+// ---------------------------------------------------------------------------
+typedef struct HeaderList HeaderList;
+typedef struct ResponseBuffer ResponseBuffer;
+
+OidcRpHttpResponse *response_alloc(void);
+void response_set_error(OidcRpHttpResponse *r, const char *msg);
+void response_clear_headers(OidcRpHttpResponse *r);
+bool header_list_append(HeaderList *list, const char *name, size_t name_len, const char *value, size_t value_len);
+size_t write_callback(const void *contents, size_t size, size_t nmemb, void *userp);
+size_t header_callback(const void *contents, size_t size, size_t nmemb, void *userp);
+bool url_matches(const char *url, const char *substring);
+bool take_fixture(const char *url, long *out_status, char **out_body);
+bool preflight_request(OidcRpHttpResponse *resp, const char *url, bool *out_should_proceed);
+void apply_common_curl_opts(CURL *curl, bool verify_ssl, long request_timeout_seconds);
+void perform_and_finalize(CURL *curl, ResponseBuffer *body, OidcRpHttpResponse *resp, const char *method_for_log);
+size_t resolve_max_body(size_t requested);
+long resolve_request_timeout(long requested);
 
 #endif // OIDC_RP_HTTP_H

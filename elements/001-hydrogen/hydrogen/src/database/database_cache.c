@@ -152,7 +152,7 @@ void query_cache_entry_destroy(QueryCacheEntry* entry) {
 }
 
 // Add entry to cache (assumes write lock is held)
-static bool query_cache_add_entry_locked(QueryTableCache* cache, QueryCacheEntry* entry, const char* dqm_label) {
+ bool database_cache_add_entry_locked(QueryTableCache* cache, QueryCacheEntry* entry, const char* dqm_label) {
     // Check if we need to resize
     if (cache->entry_count >= cache->capacity) {
         size_t new_capacity = cache->capacity * 2;
@@ -190,7 +190,7 @@ bool query_cache_add_entry(QueryTableCache* cache, QueryCacheEntry* entry, const
         return false;
     }
 
-    bool result = query_cache_add_entry_locked(cache, entry, dqm_label);
+    bool result = database_cache_add_entry_locked(cache, entry, dqm_label);
 
     // Release write lock
     pthread_rwlock_unlock(&cache->cache_lock);

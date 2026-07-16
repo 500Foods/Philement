@@ -502,7 +502,7 @@ bool process_pty_read_result(TerminalWSConnection *connection, const char *buffe
  * @param arg TerminalWSConnection context pointer
  * @return NULL
  */
-static void *terminal_io_bridge_thread(void *arg) {
+ void *terminal_io_bridge_thread(void *arg) {
     TerminalWSConnection *connection = (TerminalWSConnection *)arg;
     if (!connection || !connection->session) {
         log_this(SR_TERMINAL, "I/O bridge thread failed: invalid connection or session", LOG_LEVEL_ERROR, 0);

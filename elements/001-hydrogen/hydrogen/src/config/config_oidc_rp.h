@@ -218,4 +218,16 @@ const char* oidc_rp_role_source_name(OIDCRPRoleSource source);
  */
 const char* oidc_rp_auth_method_name(OIDCRPAuthMethod method);
 
+/* ----------------------------------------------------------------------------
+ * The following helpers are NOT part of the stable public API. They are
+ * exposed (non-static) solely so the Unity test framework can call them
+ * directly.
+ * -------------------------------------------------------------------------- */
+char* config_oidc_rp_take_string_or_null(json_t* obj, const char* key);
+bool config_oidc_rp_take_bool_or_default(json_t* obj, const char* key, bool default_value);
+int config_oidc_rp_take_int_or_default(json_t* obj, const char* key, int default_value);
+void config_oidc_rp_provider_apply_defaults(OIDCRPProviderConfig* p);
+void config_oidc_rp_provider_cleanup(OIDCRPProviderConfig* p);
+void config_oidc_rp_provider_load_from_json(OIDCRPProviderConfig* p, json_t* obj);
+
 #endif /* CONFIG_OIDC_RP_H */

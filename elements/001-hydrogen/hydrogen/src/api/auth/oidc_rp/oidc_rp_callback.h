@@ -49,6 +49,7 @@
 
 #include <src/hydrogen.h>
 #include <microhttpd.h>
+#include <src/config/config_oidc_rp.h>  // OIDCRPProviderConfig
 
 /**
  * @brief Handle GET /api/auth/oidc/callback requests.
@@ -84,5 +85,16 @@ enum MHD_Result handle_get_auth_oidc_callback(
     size_t *upload_data_size,
     void **con_cls
 );
+
+// ---------------------------------------------------------------------------
+// Internal helpers — NOT part of the stable public API. Exposed as
+// non-static (with these declarations) purely so Unity tests can call
+// them directly. Do not rely on these outside the OIDC RP module.
+// ---------------------------------------------------------------------------
+void callback_truncated_state(const char *state, char out[16]);
+char *build_spa_error_url(const char *redirect_uri, const char *error_code, const char *return_to);
+char *build_spa_success_url(const char *redirect_uri, const char *handoff_code, const char *return_to);
+enum MHD_Result redirect_with_error(struct MHD_Connection *connection, const OIDCRPProviderConfig *provider, const char *error_code, const char *return_to);
+void callback_scrub_free(char *s);
 
 #endif // OIDC_RP_CALLBACK_H

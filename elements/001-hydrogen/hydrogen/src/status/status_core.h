@@ -232,4 +232,14 @@ SystemMetrics* collect_system_metrics(const WebSocketMetrics *ws_metrics);
 // Free a SystemMetrics structure and all its dynamically allocated members
 void free_system_metrics(SystemMetrics *metrics);
 
+/* ----------------------------------------------------------------------------
+ * The following helpers are NOT part of the stable public API. They are
+ * exposed (non-static) solely so the Unity test framework can call them
+ * directly.
+ * -------------------------------------------------------------------------- */
+void status_free_cpu_metrics(CpuMetrics *cpu);
+void status_free_network_metrics(NetworkMetrics *network);
+void status_free_service_thread_metrics(ServiceThreadMetrics *metrics);
+SystemMetrics* status_allocate_system_metrics(void);
+
 #endif /* STATUS_CORE_H */

@@ -43,6 +43,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <time.h>
 
 /**
@@ -190,5 +191,26 @@ void oidc_rp_state_test_disable_sweeper(void);
  * that toggle the flag mid-suite.
  */
 void oidc_rp_state_test_enable_sweeper(void);
+
+// ---------------------------------------------------------------------------
+// Internal helpers — NOT part of the stable public API. Exposed non-static
+// so Unity tests can call them directly. `StateEntry` is the store's private
+// hash-bucket node type (defined in oidc_rp_state.c); forward-declared here
+// as opaque.
+// ---------------------------------------------------------------------------
+typedef struct StateEntry StateEntry;
+
+uint64_t fnv1a_hash(const char *s);
+size_t bucket_for(const char *key);
+char *opt_strdup(const char *src);
+void state_scrub_free(char *s);
+void record_free_fields(OidcRpStateRecord *r);
+bool state_entry_expired(const StateEntry *entry, time_t now);
+void detach_entry(size_t bucket_idx, StateEntry *prev, StateEntry *entry);
+void free_entry(StateEntry *entry);
+bool remove_locked(const char *state);
+size_t sweep_expired_locked(time_t now);
+void inline_sweep_locked(time_t now);
+void *sweeper_loop(void *arg);
 
 #endif // OIDC_RP_STATE_H

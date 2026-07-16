@@ -19,6 +19,7 @@
 // Local includes
 #include "../conduit_helpers.h"
 #include "../conduit_service.h"
+#include "database_operations.h"
 
 // Enable mock database queue functions for unit testing
 #ifdef USE_MOCK_DBQUEUE
@@ -137,7 +138,7 @@ bool lookup_database_and_protected_query(DatabaseQueue** db_queue, QueryCacheEnt
 // /* */ block comments). String literals are respected so that '--' or '/*'
 // inside a literal does not trigger comment skipping. Returns a pointer to
 // the first non-whitespace, non-comment character.
-static const char* skip_sql_whitespace_and_comments(const char* sql) {
+ const char* conduit_dbops_skip_sql_whitespace_and_comments(const char* sql) {
     if (!sql) {
         return NULL;
     }
@@ -202,7 +203,7 @@ bool query_statement_type_allowed(int query_type, const char* sql_template) {
         return false;
     }
 
-    const char* p = skip_sql_whitespace_and_comments(sql_template);
+    const char* p = conduit_dbops_skip_sql_whitespace_and_comments(sql_template);
     if (!p || !*p) {
         return false;
     }

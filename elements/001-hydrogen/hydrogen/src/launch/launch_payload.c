@@ -29,7 +29,7 @@
  int payload_subsystem_id = -1;
  
  // Register the payload subsystem with the registry
- static void register_payload(void) {
+  void launch_register_payload(void) {
      // Only register if not already registered
      if (payload_subsystem_id < 0) {
          payload_subsystem_id = register_subsystem_from_launch(SR_PAYLOAD, NULL, NULL, NULL,
@@ -48,7 +48,7 @@ LaunchReadiness check_payload_launch_readiness(void) {
     add_launch_message(&messages, &count, &capacity, strdup(SR_PAYLOAD));
 
     // Register with registry if not already registered
-    register_payload();
+    launch_register_payload();
 
     // Check if registry subsystem is available (explicit dependency verification)
     if (is_subsystem_launchable_by_name("Registry")) {

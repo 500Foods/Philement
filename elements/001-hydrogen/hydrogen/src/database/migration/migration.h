@@ -132,4 +132,10 @@ void lua_log_execution_summary(const char* migration_file_path, size_t sql_lengt
                               int line_count, int query_count, const char* dqm_label);
 void lua_cleanup(lua_State* L);
 
+/* ----------------------------------------------------------------------------
+ * The following helper is NOT part of the stable public API. It is exposed
+ * (non-static) solely so the Unity test framework can call it directly.
+ * -------------------------------------------------------------------------- */
+long long migration_extract_ref_from_filename(const char* filename);
+
 #endif /* MIGRATION_H */

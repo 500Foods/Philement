@@ -44,15 +44,15 @@ static const char* priority_labels[] = {
 };
 
 // Forward declarations
-static void* victoria_logs_worker(void* arg);
-static bool vl_queue_enqueue(const char* message);
-static char* vl_queue_dequeue(void);
-static bool vl_queue_init(void);
-static void vl_queue_cleanup(void);
-static bool send_http_post(const char* host, int port, const char* path, const char* body, size_t body_len, bool use_ssl);
-static bool flush_batch_internal(void);
-static bool add_to_batch(const char* message);
-static void reset_long_timer(void);
+ void* victoria_logs_worker(void* arg);
+ bool victoria_logs_queue_enqueue(const char* message);
+ char* victoria_logs_queue_dequeue(void);
+ bool victoria_logs_queue_init(void);
+ void victoria_logs_queue_cleanup(void);
+ bool victoria_logs_send_http_post(const char* host, int port, const char* path, const char* body, size_t body_len, bool use_ssl);
+ bool victoria_logs_flush_batch_internal(void);
+ bool victoria_logs_add_to_batch(const char* message);
+ void victoria_logs_reset_long_timer(void);
 
 /**
  * Parse log level string to numeric value
@@ -163,7 +163,7 @@ int victoria_logs_escape_json(const char* input, char* output, size_t output_siz
  * Parse URL into components
  * Supports http://host:port/path format
  */
-static bool parse_url(const char* url, char* host, int* port, char* path, bool* use_ssl) {
+ bool victoria_logs_parse_url(const char* url, char* host, int* port, char* path, bool* use_ssl) {
     if (!url || !host || !port || !path || !use_ssl) {
         return false;
     }
@@ -219,7 +219,7 @@ static bool parse_url(const char* url, char* host, int* port, char* path, bool* 
  * Sends headers and body separately to avoid buffer size limitations.
  * The body can be up to VICTORIA_LOGS_MAX_BATCH_BUFFER (1MB).
  */
-static bool send_http_post(const char* host, int port, const char* path, const char* body, size_t body_len, bool use_ssl) {
+ bool victoria_logs_send_http_post(const char* host, int port, const char* path, const char* body, size_t body_len, bool use_ssl) {
     (void)use_ssl;  // SSL not implemented yet, would need OpenSSL
 
     int sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -306,7 +306,7 @@ static bool send_http_post(const char* host, int port, const char* path, const c
 /**
  * Initialize the VictoriaLogs message queue
  */
-static bool vl_queue_init(void) {
+ bool victoria_logs_queue_init(void) {
     victoria_logs_thread.queue.head = NULL;
     victoria_logs_thread.queue.tail = NULL;
     victoria_logs_thread.queue.size = 0;
@@ -327,7 +327,7 @@ static bool vl_queue_init(void) {
 /**
  * Cleanup the VictoriaLogs message queue
  */
-static void vl_queue_cleanup(void) {
+ void victoria_logs_queue_cleanup(void) {
     pthread_mutex_lock(&victoria_logs_thread.queue.mutex);
     
     // Free all queued messages
@@ -352,7 +352,7 @@ static void vl_queue_cleanup(void) {
 /**
  * Enqueue a message (called from log_this - must be fast and non-blocking)
  */
-static bool vl_queue_enqueue(const char* message) {
+ bool victoria_logs_queue_enqueue(const char* message) {
     if (!message || !victoria_logs_thread.running) {
         return false;
     }
@@ -403,7 +403,7 @@ static bool vl_queue_enqueue(const char* message) {
  * Returns NULL if queue is empty
  * Caller must free the returned message
  */
-static char* vl_queue_dequeue(void) {
+ char* victoria_logs_queue_dequeue(void) {
     pthread_mutex_lock(&victoria_logs_thread.queue.mutex);
     
     VLQueueNode* node = victoria_logs_thread.queue.head;
@@ -435,7 +435,7 @@ static char* vl_queue_dequeue(void) {
  * @param message The JSON message to add
  * @return true if message was added, false if buffer full
  */
-static bool add_to_batch(const char* message) {
+ bool victoria_logs_add_to_batch(const char* message) {
     size_t msg_len = strlen(message);
 
     // Track when first message was added (for retry age limit)
@@ -468,7 +468,7 @@ static bool add_to_batch(const char* message) {
 /**
  * Reset the long timer to fire VICTORIA_LOGS_LONG_TIMER_SEC from now
  */
-static void reset_long_timer(void) {
+ void victoria_logs_reset_long_timer(void) {
     clock_gettime(CLOCK_REALTIME, &victoria_logs_thread.long_timer);
     victoria_logs_thread.long_timer.tv_sec += VICTORIA_LOGS_LONG_TIMER_SEC;
 }
@@ -476,7 +476,7 @@ static void reset_long_timer(void) {
 /**
  * Clear the batch buffer and reset counters
  */
-static void clear_batch(void) {
+ void victoria_logs_clear_batch_impl(void) {
     victoria_logs_thread.batch_buffer[0] = '\0';
     victoria_logs_thread.batch_buffer_size = 0;
     victoria_logs_thread.batch_count = 0;
@@ -484,10 +484,10 @@ static void clear_batch(void) {
 }
 
 /**
- * Public wrapper for clear_batch (exposed for testing)
+ * Public wrapper for victoria_logs_clear_batch_impl (exposed for testing)
  */
 void victoria_logs_clear_batch(void) {
-    clear_batch();
+    victoria_logs_clear_batch_impl();
 }
 
 /**
@@ -501,7 +501,7 @@ void victoria_logs_clear_batch(void) {
  * This retry behavior ensures logs survive brief VL outages (restarts,
  * network blips) while not accumulating forever if VL is truly gone.
  */
-static bool flush_batch_internal(void) {
+ bool victoria_logs_flush_batch_internal(void) {
     if (victoria_logs_thread.batch_count == 0 || 
         victoria_logs_thread.batch_buffer_size == 0) {
         return true;
@@ -512,27 +512,27 @@ static bool flush_batch_internal(void) {
     char path[1024];
     bool use_ssl;
     
-    if (!parse_url(victoria_logs_config.url, host, &port, path, &use_ssl)) {
+    if (!victoria_logs_parse_url(victoria_logs_config.url, host, &port, path, &use_ssl)) {
         // URL parse failure is permanent - drop the batch
-        clear_batch();
+        victoria_logs_clear_batch_impl();
         return false;
     }
     
-    bool result = send_http_post(host, port, path,
+    bool result = victoria_logs_send_http_post(host, port, path,
         victoria_logs_thread.batch_buffer,
         victoria_logs_thread.batch_buffer_size,
         use_ssl);
     
     if (result) {
         // Success - clear batch
-        clear_batch();
+        victoria_logs_clear_batch_impl();
     } else {
         // Failed - check if batch is too old to keep retrying
         time_t now = time(NULL);
         time_t batch_age = now - victoria_logs_thread.first_message_time;
         if (batch_age > VICTORIA_LOGS_MAX_RETRY_SEC) {
             // Batch too old, drop it to prevent memory stagnation
-            clear_batch();
+            victoria_logs_clear_batch_impl();
         }
         // Otherwise keep batch intact for retry on next timer cycle
     }
@@ -550,11 +550,11 @@ static bool flush_batch_internal(void) {
  * IMPORTANT: Both timers are always reset when they expire, even if
  * there is nothing to flush. This prevents a busy-loop when idle.
  */
-static void* victoria_logs_worker(void* arg) {
+ void* victoria_logs_worker(void* arg) {
     (void)arg;
     
     // Initialize timers
-    reset_long_timer();
+    victoria_logs_reset_long_timer();
     
     victoria_logs_thread.short_timer_active = false;
     victoria_logs_thread.first_log_sent = false;
@@ -627,15 +627,15 @@ static void* victoria_logs_worker(void* arg) {
             pthread_mutex_unlock(&victoria_logs_thread.queue.mutex);
         } else {
             // No timeout or already expired, just check for messages
-            message = vl_queue_dequeue();
+            message = victoria_logs_queue_dequeue();
         }
         
         // Process the message if we got one
         if (message) {
             // Check if this is the first log - send immediately
             if (!victoria_logs_thread.first_log_sent) {
-                add_to_batch(message);
-                if (flush_batch_internal()) {
+                victoria_logs_add_to_batch(message);
+                if (victoria_logs_flush_batch_internal()) {
                     victoria_logs_thread.first_log_sent = true;
                 } else {
                     // First flush failed (VL not ready yet) - set short retry
@@ -645,12 +645,12 @@ static void* victoria_logs_worker(void* arg) {
                 }
             } else {
                 // Add to batch
-                add_to_batch(message);
+                victoria_logs_add_to_batch(message);
                 
                 // Check if batch is full
                 if (victoria_logs_thread.batch_count >= VICTORIA_LOGS_BATCH_SIZE) {
-                    if (flush_batch_internal()) {
-                        reset_long_timer();
+                    if (victoria_logs_flush_batch_internal()) {
+                        victoria_logs_reset_long_timer();
                     } else {
                         // Flush failed - use shorter retry interval
                         clock_gettime(CLOCK_REALTIME, &victoria_logs_thread.long_timer);
@@ -677,8 +677,8 @@ static void* victoria_logs_worker(void* arg) {
                  now.tv_nsec >= victoria_logs_thread.short_timer.tv_nsec)) {
                 // Short timer expired - flush if there's anything and deactivate
                 if (victoria_logs_thread.batch_count > 0) {
-                    if (flush_batch_internal()) {
-                        reset_long_timer();
+                    if (victoria_logs_flush_batch_internal()) {
+                        victoria_logs_reset_long_timer();
                     } else {
                         // Flush failed - use shorter retry interval
                         clock_gettime(CLOCK_REALTIME, &victoria_logs_thread.long_timer);
@@ -695,17 +695,17 @@ static void* victoria_logs_worker(void* arg) {
              now.tv_nsec >= victoria_logs_thread.long_timer.tv_nsec)) {
             // Long timer expired - flush if anything pending, always reset
             if (victoria_logs_thread.batch_count > 0) {
-                if (flush_batch_internal()) {
+                if (victoria_logs_flush_batch_internal()) {
                     // Success - mark first log sent if it wasn't already
                     victoria_logs_thread.first_log_sent = true;
-                    reset_long_timer();
+                    victoria_logs_reset_long_timer();
                 } else {
                     // Flush failed - retry sooner
                     clock_gettime(CLOCK_REALTIME, &victoria_logs_thread.long_timer);
                     victoria_logs_thread.long_timer.tv_sec += VICTORIA_LOGS_RETRY_INTERVAL_SEC;
                 }
             } else {
-                reset_long_timer();
+                victoria_logs_reset_long_timer();
             }
             victoria_logs_thread.short_timer_active = false;
         }
@@ -713,7 +713,7 @@ static void* victoria_logs_worker(void* arg) {
     
     // Final flush before exiting
     if (victoria_logs_thread.batch_count > 0) {
-        flush_batch_internal();
+        victoria_logs_flush_batch_internal();
     }
     
     return NULL;
@@ -735,7 +735,7 @@ bool init_victoria_logs(void) {
     int port;
     char path[1024];
     bool use_ssl;
-    if (!parse_url(url, host, &port, path, &use_ssl)) {
+    if (!victoria_logs_parse_url(url, host, &port, path, &use_ssl)) {
         victoria_logs_config.enabled = false;
         return false;
     }
@@ -799,7 +799,7 @@ bool init_victoria_logs(void) {
     victoria_logs_thread.batch_buffer[0] = '\0';
     
     // Initialize queue
-    if (!vl_queue_init()) {
+    if (!victoria_logs_queue_init()) {
         cleanup_victoria_logs();
         return false;
     }
@@ -834,7 +834,7 @@ void cleanup_victoria_logs(void) {
     }
     
     // Cleanup queue
-    vl_queue_cleanup();
+    victoria_logs_queue_cleanup();
     
     // Free batch buffer
     if (victoria_logs_thread.batch_buffer) {
@@ -926,7 +926,7 @@ bool victoria_logs_send(const char* subsystem, const char* message, int priority
     }
     
     // Enqueue the message (non-blocking)
-    return vl_queue_enqueue(json);
+    return victoria_logs_queue_enqueue(json);
 }
 
 /**
@@ -939,13 +939,13 @@ void victoria_logs_flush(void) {
     
     // Process all remaining queued messages
     char* message;
-    while ((message = vl_queue_dequeue()) != NULL) {
-        add_to_batch(message);
+    while ((message = victoria_logs_queue_dequeue()) != NULL) {
+        victoria_logs_add_to_batch(message);
         free(message);
     }
     
     // Flush the batch
     if (victoria_logs_thread.batch_count > 0) {
-        flush_batch_internal();
+        victoria_logs_flush_batch_internal();
     }
 }

@@ -31,7 +31,7 @@
 static MultiStreamManager* g_multi_manager = NULL;
 
 // Forward declaration for worker thread (implemented below)
-static void* multi_worker_thread(void* arg);
+ void* chat_proxy_multi_worker_thread(void* arg);
 
 // ============================================================================
 // Manager Implementation
@@ -69,7 +69,7 @@ bool chat_proxy_multi_init(MultiStreamManager* manager, struct lws_context* lws_
              LOG_LEVEL_STATE, 2, manager->max_host_connections, manager->max_total_connections);
     
     // Start worker thread to drive the multi handle
-    if (pthread_create(&manager->worker_thread, NULL, multi_worker_thread, manager) != 0) {
+    if (pthread_create(&manager->worker_thread, NULL, chat_proxy_multi_worker_thread, manager) != 0) {
         log_this(SR_CHAT, "Failed to create multi-stream worker thread", LOG_LEVEL_ERROR, 0);
         curl_multi_cleanup(manager->multi_handle);
         manager->initialized = false;
@@ -82,7 +82,7 @@ bool chat_proxy_multi_init(MultiStreamManager* manager, struct lws_context* lws_
 }
 
 // Worker thread function that drives the multi handle
-static void* multi_worker_thread(void* arg) {
+ void* chat_proxy_multi_worker_thread(void* arg) {
     MultiStreamManager* manager = (MultiStreamManager*)arg;
     
     log_this(SR_CHAT, "Multi-stream worker thread started", LOG_LEVEL_DEBUG, 0);

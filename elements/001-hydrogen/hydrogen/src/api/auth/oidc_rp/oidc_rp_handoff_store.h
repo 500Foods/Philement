@@ -55,6 +55,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <time.h>
 
 /**
@@ -212,5 +213,26 @@ void oidc_rp_handoff_store_test_disable_sweeper(void);
  * tests that toggle the flag mid-suite.
  */
 void oidc_rp_handoff_store_test_enable_sweeper(void);
+
+// ---------------------------------------------------------------------------
+// Internal helpers — NOT part of the stable public API. Exposed non-static
+// so Unity tests can call them directly. `HandoffEntry` is the store's
+// private hash-bucket node type (defined in oidc_rp_handoff_store.c);
+// forward-declared here as opaque.
+// ---------------------------------------------------------------------------
+typedef struct HandoffEntry HandoffEntry;
+
+uint64_t handoff_fnv1a_hash(const char *s);
+size_t handoff_bucket_for(const char *key);
+char *handoff_opt_strdup(const char *src);
+void handoff_scrub_free(char *s);
+void handoff_record_free_fields(OidcRpHandoffRecord *r);
+bool handoff_entry_expired(const HandoffEntry *entry, time_t now);
+void handoff_detach_entry(size_t bucket_idx, HandoffEntry *prev, HandoffEntry *entry);
+void handoff_free_entry(HandoffEntry *entry);
+bool handoff_remove_locked(const char *handoff);
+size_t handoff_sweep_expired_locked(time_t now);
+void handoff_inline_sweep_locked(time_t now);
+void *handoff_sweeper_loop(void *arg);
 
 #endif // OIDC_RP_HANDOFF_STORE_H

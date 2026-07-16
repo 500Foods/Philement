@@ -61,4 +61,10 @@ bool auth_chat_stream_parse_request(json_t *request_json,
  */
 json_t* auth_chat_stream_build_error_response(const char *error_message);
 
+/* ----------------------------------------------------------------------------
+ * The following helper is NOT part of the stable public API. It is exposed
+ * (non-static) solely so the Unity test framework can call it directly.
+ * -------------------------------------------------------------------------- */
+enum MHD_Result auth_stream_send_sse_response_headers(struct MHD_Connection *connection);
+
 #endif // AUTH_CHAT_STREAM_H

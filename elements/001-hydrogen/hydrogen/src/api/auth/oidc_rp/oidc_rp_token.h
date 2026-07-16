@@ -159,4 +159,16 @@ OidcRpTokenError oidc_rp_exchange_code(const OIDCRPProviderConfig *provider,
                                        const char *code_verifier,
                                        OidcRpTokenResponse **out_response);
 
+// ---------------------------------------------------------------------------
+// Internal helpers — NOT part of the stable public API. Exposed non-static
+// so Unity tests can call them directly.
+// ---------------------------------------------------------------------------
+void token_scrub_free(char **s);
+char *append_form_param(char *buffer, size_t *out_len, size_t *out_cap, const char *key, const char *value);
+char *build_token_body(const OIDCRPProviderConfig *provider, const char *code, const char *redirect_uri, const char *code_verifier);
+char *build_basic_auth_header(const char *client_id, const char *client_secret);
+OidcRpTokenError map_oauth_error_code(const char *error);
+OidcRpTokenError parse_error_body(const char *body);
+OidcRpTokenResponse *parse_success_body(const char *body);
+
 #endif // OIDC_RP_TOKEN_H

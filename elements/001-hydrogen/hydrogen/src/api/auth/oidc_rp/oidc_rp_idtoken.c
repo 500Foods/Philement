@@ -25,14 +25,14 @@
 // ---------------------------------------------------------------------------
 // Sensitive-buffer scrubbing helper (matches Phase 7/8/10/11 discipline).
 // ---------------------------------------------------------------------------
-static void scrub_and_free(char* p) {
+void scrub_and_free(char* p) {
     if (!p) return;
     volatile char* v = (volatile char*)p;
     while (*v) *v++ = 0;
     free(p);
 }
 
-static void scrub_bytes_and_free(unsigned char* p, size_t n) {
+void scrub_bytes_and_free(unsigned char* p, size_t n) {
     if (!p) return;
     volatile unsigned char* v = (volatile unsigned char*)p;
     for (size_t i = 0; i < n; ++i) v[i] = 0;
@@ -87,7 +87,7 @@ const char* oidc_rp_idtoken_error_name(OidcRpIdTokenError err) {
 // false if the token has the wrong number of segments. The output
 // pointers reference into a heap-allocated buffer that the caller
 // must free via `free(*out_buf)`.
-static bool split_jws(const char* id_token,
+bool split_jws(const char* id_token,
                       char** out_buf,
                       char** header_b64,
                       char** payload_b64,
@@ -136,7 +136,7 @@ static bool split_jws(const char* id_token,
 
 // Decode and parse the JOSE header, returning the `alg` and `kid`.
 // Both values are heap-allocated copies (caller frees).
-static OidcRpIdTokenError parse_header(const char* header_b64,
+OidcRpIdTokenError parse_header(const char* header_b64,
                                        char** out_alg,
                                        char** out_kid) {
     *out_alg = *out_kid = NULL;
@@ -202,7 +202,7 @@ static OidcRpIdTokenError parse_header(const char* header_b64,
 // Returns true if `alg` matches one of the provider's allowed_algorithms
 // AND is not "none" (case-sensitive — "none" lower-case is the only
 // form RFC 7515 defines, and we reject it explicitly).
-static bool alg_is_allowed(const OIDCRPProviderConfig* provider, const char* alg) {
+bool alg_is_allowed(const OIDCRPProviderConfig* provider, const char* alg) {
     if (strcmp(alg, "none") == 0) return false;
     for (size_t i = 0; i < provider->allowed_algorithm_count; ++i) {
         if (provider->allowed_algorithms[i] &&
@@ -217,7 +217,7 @@ static bool alg_is_allowed(const OIDCRPProviderConfig* provider, const char* alg
 // Signature verification (with one rotation-recovery retry).
 // ---------------------------------------------------------------------------
 
-static OidcRpIdTokenError verify_signature(const OIDCRPProviderConfig* provider,
+OidcRpIdTokenError verify_signature(const OIDCRPProviderConfig* provider,
                                            const char* jwks_uri,
                                            const char* kid,
                                            const unsigned char* signing_input,
@@ -296,7 +296,7 @@ static OidcRpIdTokenError verify_signature(const OIDCRPProviderConfig* provider,
 // Helper: copy the value of a string field if present and non-empty.
 // On allocation failure, returns false (caller should treat as
 // INTERNAL error).
-static bool copy_string_field(json_t* root, const char* key, char** out) {
+bool copy_string_field(json_t* root, const char* key, char** out) {
     *out = NULL;
     const json_t* j = json_object_get(root, key);
     if (!json_is_string(j)) return true; // absent is fine for optional fields
@@ -310,7 +310,7 @@ static bool copy_string_field(json_t* root, const char* key, char** out) {
 // single string or a JSON array per OIDC Core 1.0 §2. On match,
 // returns the matched string (heap-allocated copy, caller frees) via
 // out_match.
-static bool aud_contains(json_t* root, const char* expected, char** out_match) {
+bool aud_contains(json_t* root, const char* expected, char** out_match) {
     *out_match = NULL;
     const json_t* aud = json_object_get(root, "aud");
     if (!aud) return false;
@@ -342,7 +342,7 @@ static bool aud_contains(json_t* root, const char* expected, char** out_match) {
 // Read realm_access.roles into the claims struct. Tolerant: missing
 // or wrong-typed claim => zero roles (OIDC Core does not require
 // realm_access; it's a Keycloak extension).
-static void copy_realm_roles(json_t* root, OidcRpIdTokenClaims* claims) {
+void copy_realm_roles(json_t* root, OidcRpIdTokenClaims* claims) {
     const json_t* realm_access = json_object_get(root, "realm_access");
     if (!json_is_object(realm_access)) return;
     const json_t* roles = json_object_get(realm_access, "roles");
@@ -361,7 +361,7 @@ static void copy_realm_roles(json_t* root, OidcRpIdTokenClaims* claims) {
     }
 }
 
-static OidcRpIdTokenError parse_payload_and_check(const char* payload_b64,
+OidcRpIdTokenError parse_payload_and_check(const char* payload_b64,
                                                   const OIDCRPProviderConfig* provider,
                                                   const char* expected_nonce,
                                                   time_t now,

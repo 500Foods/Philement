@@ -42,7 +42,7 @@
 // failure mode (missing/expired/replay/IP-mismatch/malformed) onto
 // the same 401 envelope so the SPA shows one error message and a
 // network observer cannot tell the failure modes apart.
-static enum MHD_Result send_handoff_invalid(struct MHD_Connection *connection,
+enum MHD_Result send_handoff_invalid(struct MHD_Connection *connection,
                                             void **con_cls,
                                             const char *reason_for_log) {
     log_this(SR_AUTH,

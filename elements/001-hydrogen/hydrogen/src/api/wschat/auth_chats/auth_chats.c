@@ -22,7 +22,7 @@
 extern DatabaseQueueManager* global_queue_manager;
 
 // Generate a simple UUID string (simplified version)
-static void generate_broadcast_id(char *buffer, size_t buffer_size) {
+ void auth_chats_generate_broadcast_id(char *buffer, size_t buffer_size) {
     const char *hex = "0123456789abcdef";
     size_t idx = 0;
     for (int i = 0; i < 36 && idx < buffer_size - 1; i++) {
@@ -325,7 +325,7 @@ enum MHD_Result handle_auth_chats_request(struct MHD_Connection *connection,
 
     // Generate broadcast ID
     char broadcast_id[37];
-    generate_broadcast_id(broadcast_id, sizeof(broadcast_id));
+    auth_chats_generate_broadcast_id(broadcast_id, sizeof(broadcast_id));
 
     // Build response
     json_t *response = json_object();

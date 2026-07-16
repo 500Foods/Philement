@@ -166,9 +166,35 @@ tests/          Test framework
 - cmake/CMakeLists.txt is used for all project builds including Unity
 - Run tests/test_91_cppcheck.sh whenever C code is changed
 - Unit test filenames must be unique - search beforee creating new files
-- Don't use static functions if possible as we can't test those
 - When using #include use <src/folder/...> instead of "../../.."
 - cmake files are in cmake/ folder, starting with cmake/CMakeLists.txt
+
+> ⚠️ **CRITICAL — NO `static` FUNCTIONS (ENFORCED AT BUILD TIME)**
+> Do **NOT** declare internal helper functions `static` in `src/`. Unity
+> Framework unit tests link directly against the project's object files and
+> **cannot call `static` functions**, so `static` helpers are impossible to
+> test. This has bitten us repeatedly: the `mailrelay` and `scripting`
+> subsystems (new additions) shipped with ~200 `static` helpers that later had
+> to be de-`static`'d by hand just to enable unit tests (see
+> `elements/001-hydrogen/hydrogen/static_functions_mailrelay_scripting.md`).
+> **Rule:** every function that could conceivably be a Unity test target must
+> be non-`static` **and** have a visible declaration in a header (a `static`
+> function whose only caller is in the same file is a red flag). The only
+> acceptable `static` usage is for file-scope *state* (globals, string
+> literals, test-seam callbacks) — never for callable functions.
+>
+> **This rule is enforced automatically.** `mkt` (the trial build) runs a
+> *static-function gate* in its Dependency Check: any **new** `static`
+> function definition added to `src/` fails the build immediately, with a
+> message telling you to remove `static` and add a header declaration. The set
+> of pre-existing (intentional) `static` functions is grandfathered in
+> `tests/.static-baseline.txt`. If you genuinely need a new module-private
+> `static` (file-scope state only), regenerate the baseline:
+> `rg -N --no-heading -n '^\s*static\b.*\w+\s*\(' -g '*.c' -g '*.h' src | rg -o 'static\s+[\w\s\*]*?(\w+)\s*\(' -r '$1' | sort -u > tests/.static-baseline.txt`
+> Adding a callable `static` function is not acceptable — it is simply not
+> testable, and the build will stop you.
+
+- Don't use static functions if possible as we can't test those
 
 IMPORTANT: The alias `mkp` can be used to run cppcheck against all project sources.
 
