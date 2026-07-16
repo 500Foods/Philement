@@ -200,8 +200,8 @@ _method1_perfile_rows() {
 
     # Sum the raw per-file rows into the four global totals (single awk pass),
     # then write the per-file rows to the requested out_file.
-    # shellcheck disable=SC2016 # single-quoted AWK program is intentional
     local sums
+    # shellcheck disable=SC2016 # single-quoted AWK program is intentional
     sums=$("${awkcmd}" '
         $2 == "U" { uc += $3; ut += $4 }
         $2 == "B" { bc += $3; bt += $4 }
