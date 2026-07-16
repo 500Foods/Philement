@@ -21,6 +21,7 @@
 
 #include "scripting_api.h"
 #include "scripting_handle.h"
+#include "scripting_api_mail_notify.h"
 
 #define MAIL_LUA_MAX_RECIPIENTS 256
 #define MAIL_LUA_MAX_TEMPLATE_KEY_LEN 256
@@ -32,29 +33,8 @@
 /* Phase 7A.4: explicit deferred compatibility; no channel→template map yet. */
 static const char* NOTIFY_DEFERRED_ERROR = "notify: deferred to mailrelay rules";
 
-/* Owned parse buffers freed by free_mail_parse. */
-typedef struct MailLuaParse {
-    char* template_key;
-    char* subject;
-    char* text_body;
-    char* html_body;
-    char* from;
-    char* reply_to;
-    char* idempotency_key;
-    char idempotency_owned[UUID_STR_LEN];
-    bool idempotency_generated;
-    char** to;
-    int to_count;
-    char** cc;
-    int cc_count;
-    char** bcc;
-    int bcc_count;
-    MailRelayTemplateParams params;
-    int priority;
-    char err[MAIL_LUA_ERR_CAP];
-} MailLuaParse;
-
-static void free_mail_parse(MailLuaParse* p) {
+/* Owned parse buffers freed by free_mail_parse (struct defined in
+ * scripting_api_mail_notify.h). */void free_mail_parse(MailLuaParse* p) {
     int i;
 
     if (!p) {
@@ -104,13 +84,13 @@ static void free_mail_parse(MailLuaParse* p) {
     mailrelay_template_params_free(&p->params);
 }
 
-static void mail_parse_init(MailLuaParse* p) {
+void mail_parse_init(MailLuaParse* p) {
     memset(p, 0, sizeof(*p));
     mailrelay_template_params_init(&p->params);
 }
 
 /* Parse string or array of strings into an owned char** list. */
-static bool parse_recipient_field(lua_State* L, int table_idx, const char* field,
+bool parse_recipient_field(lua_State* L, int table_idx, const char* field,
                                   char*** out_items, int* out_count,
                                   char* err, size_t err_cap) {
     int abs_idx;
@@ -207,7 +187,7 @@ static bool parse_recipient_field(lua_State* L, int table_idx, const char* field
     return true;
 }
 
-static bool parse_params_table(lua_State* L, int table_idx, MailRelayTemplateParams* params,
+bool parse_params_table(lua_State* L, int table_idx, MailRelayTemplateParams* params,
                                char* err, size_t err_cap) {
     lua_getfield(L, table_idx, "params");
     if (lua_isnil(L, -1)) {
@@ -239,7 +219,7 @@ static bool parse_params_table(lua_State* L, int table_idx, MailRelayTemplatePar
 }
 
 /* Optional string field: copy non-empty string into *out (caller frees). */
-static bool parse_optional_string_field(lua_State* L, int table_idx, const char* field,
+bool parse_optional_string_field(lua_State* L, int table_idx, const char* field,
                                         char** out, size_t max_len,
                                         char* err, size_t err_cap) {
     *out = NULL;
@@ -281,7 +261,7 @@ static bool parse_optional_string_field(lua_State* L, int table_idx, const char*
  * (subject + text_body/html_body/body). Mixed mode is rejected.
  * Returns false with err filled on validation failure.
  */
-static bool parse_mail_message(lua_State* L, MailLuaParse* p) {
+bool parse_mail_message(lua_State* L, MailLuaParse* p) {
     bool has_template;
     bool has_freeform;
 
@@ -436,7 +416,7 @@ static bool parse_mail_message(lua_State* L, MailLuaParse* p) {
     return true;
 }
 
-static void status_to_mail_error(MailRelayStatus status, const char* producer_err,
+void status_to_mail_error(MailRelayStatus status, const char* producer_err,
                                  char* out, size_t out_cap) {
     if (producer_err && producer_err[0] != '\0') {
         snprintf(out, out_cap, "%s", producer_err);

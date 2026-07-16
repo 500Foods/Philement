@@ -76,4 +76,7 @@ const char* script_registry_lookup(ScriptRegistry* reg, const char* name);
  */
 size_t script_registry_count(ScriptRegistry* reg);
 
+// Exposed for Unity tests (NOT part of the stable public API).
+bool registry_grow_if_needed(ScriptRegistry* reg);
+
 #endif /* HYDROGEN_SCRIPTING_SCRIPT_REGISTRY_H */

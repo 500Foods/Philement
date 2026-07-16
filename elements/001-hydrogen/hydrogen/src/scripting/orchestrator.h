@@ -135,4 +135,16 @@ void scripting_orchestrator_destroy(void);
  */
 bool scripting_orchestrator_is_running(void);
 
+/*
+ * Exposed for Unity tests (NOT part of the stable public API).
+ */
+void* orchestrator_thread_main(void* arg);
+void orchestrator_set_shutdown_and_join(void);
+void orchestrator_load_configured_blocking(void);
+void* orchestrator_loader_main(void* arg);
+const char* orchestrator_resolve_database(void);
+char* orchestrator_build_params_json(const char* group_name,
+                                     const char* script_name);
+char* orchestrator_extract_code_from_result(const char* data_json);
+
 #endif /* HYDROGEN_SCRIPTING_ORCHESTRATOR_H */

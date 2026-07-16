@@ -76,7 +76,7 @@ void source_cache_destroy(SourceCache* cache) {
  * Grow the entries array on demand, doubling capacity. Returns
  * false on allocation failure; the cache remains valid.
  */
-static bool source_cache_grow_if_needed(SourceCache* cache) {
+bool source_cache_grow_if_needed(SourceCache* cache) {
     if (cache->count < cache->capacity) {
         return true;
     }

@@ -171,4 +171,10 @@ H_lua_job_context* H_lua_get_job_context(lua_State* L);
  */
 char* H_lua_build_traceback(lua_State* L);
 
+/*
+ * Exposed for Unity tests (NOT part of the stable public API).
+ */
+void H_lua_open_sandboxed_libraries(lua_State* L);
+int H_lua_panic(lua_State* L);
+
 #endif /* HYDROGEN_SCRIPTING_LUA_CONTEXT_H */

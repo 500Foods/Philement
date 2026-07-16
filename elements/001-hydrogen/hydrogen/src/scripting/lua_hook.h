@@ -55,4 +55,7 @@ void H_lua_install_progress_hook(lua_State* L);
  */
 void H_lua_uninstall_progress_hook(lua_State* L);
 
+// Exposed for Unity tests (NOT part of the stable public API).
+void H_lua_progress_hook_fn(lua_State* L, lua_Debug* ar);
+
 #endif /* HYDROGEN_SCRIPTING_LUA_HOOK_H */

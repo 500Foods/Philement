@@ -32,7 +32,7 @@
 #define SCOREBOARD_INITIAL_CAPACITY 16
 
 // Helper: is this status a terminal state?
-static bool is_terminal_status(ScoreboardJobStatus status) {
+bool is_terminal_status(ScoreboardJobStatus status) {
     return status == SCOREBOARD_JOB_COMPLETED
         || status == SCOREBOARD_JOB_FAILED
         || status == SCOREBOARD_JOB_KILLED;
@@ -40,7 +40,7 @@ static bool is_terminal_status(ScoreboardJobStatus status) {
 
 // Helper: free the strings owned by an entry and zero the struct.
 // Does NOT free the entry pointer itself (caller owns the storage).
-static void entry_clear_owned(ScoreboardEntry* entry) {
+void entry_clear_owned(ScoreboardEntry* entry) {
     if (!entry) {
         return;
     }
@@ -78,7 +78,7 @@ static void entry_clear_owned(ScoreboardEntry* entry) {
 }
 
 // Helper: zero a timespec to "not set".
-static void timespec_clear(struct timespec* ts) {
+void timespec_clear(struct timespec* ts) {
     if (ts) {
         ts->tv_sec = 0;
         ts->tv_nsec = 0;
@@ -86,7 +86,7 @@ static void timespec_clear(struct timespec* ts) {
 }
 
 // Helper: get current CLOCK_REALTIME.
-static void timespec_now(struct timespec* ts) {
+void timespec_now(struct timespec* ts) {
     if (!ts) {
         return;
     }
@@ -96,7 +96,7 @@ static void timespec_now(struct timespec* ts) {
 // Helper: append a new entry (already-populated entry) to the array.
 // On capacity exhaustion, realloc doubles the capacity. Returns
 // true on success, false on allocation failure.
-static bool entries_grow_if_needed(Scoreboard* sb) {
+bool entries_grow_if_needed(Scoreboard* sb) {
     if (sb->count < sb->capacity) {
         return true;
     }
@@ -118,7 +118,7 @@ static bool entries_grow_if_needed(Scoreboard* sb) {
 // On a collision, retry up to a small bound, then return NULL so the
 // caller sees "could not allocate" rather than blocking forever.
 #define SCOREBOARD_ID_RETRY_LIMIT 8
-static bool generate_unique_id(const Scoreboard* sb, char out[ID_LEN + 1]) {
+bool generate_unique_id(const Scoreboard* sb, char out[ID_LEN + 1]) {
     for (int attempt = 0; attempt < SCOREBOARD_ID_RETRY_LIMIT; attempt++) {
         generate_id(out, ID_LEN + 1);
         bool found = false;

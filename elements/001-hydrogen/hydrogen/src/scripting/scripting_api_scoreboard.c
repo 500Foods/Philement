@@ -27,6 +27,7 @@
 #include "source_cache.h"
 #include "orchestrator.h"
 #include "worker_pool.h"
+#include "scripting_api_scoreboard.h"
 
 // H.scoreboard.* implementations //////////////////////////////////////////
 
@@ -221,13 +222,13 @@ int H_lua_scoreboard_cancel(lua_State* L) {
 // H.package.searcher implementation (Phase 11g) ////////////////////////////
 
 // Bytecode dump buffer for caching compiled modules
-typedef struct {
+typedef struct BytecodeDumpBuffer {
     void*   data;
     size_t  len;
     size_t  capacity;
 } BytecodeDumpBuffer;
 
-static int bytecode_dump_writer(lua_State* L, const void* p, size_t sz, void* ud) {
+int bytecode_dump_writer(lua_State* L, const void* p, size_t sz, void* ud) {
     (void)L;
     BytecodeDumpBuffer* buf = (BytecodeDumpBuffer*)ud;
     if (buf->len + sz > buf->capacity) {

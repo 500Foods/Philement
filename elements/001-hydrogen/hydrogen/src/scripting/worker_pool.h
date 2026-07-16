@@ -127,4 +127,13 @@ char* scripting_submit_job_with_source_and_limits(
     const char* params_json,
     const ScoreboardJobLimits* limits);
 
+/*
+ * Exposed for Unity tests (NOT part of the stable public API).
+ */
+void* scripting_worker_thread(void* arg);
+void scripting_worker_process_one(ScriptingWorkerPool* pool,
+                                 const char* job_id);
+bool scripting_worker_should_exit(ScriptingWorkerPool* pool);
+void scripting_signal_waiter_if_present(const char* job_id);
+
 #endif /* HYDROGEN_SCRIPTING_WORKER_POOL_H */

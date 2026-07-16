@@ -572,4 +572,14 @@ bool scoreboard_update_result(Scoreboard* sb, const char* job_id,
                               const char* result_type,
                               const char* result_location);
 
+/*
+ * Exposed for Unity tests (NOT part of the stable public API).
+ */
+bool is_terminal_status(ScoreboardJobStatus status);
+void entry_clear_owned(ScoreboardEntry* entry);
+void timespec_clear(struct timespec* ts);
+void timespec_now(struct timespec* ts);
+bool entries_grow_if_needed(Scoreboard* sb);
+bool generate_unique_id(const Scoreboard* sb, char out[ID_LEN + 1]);
+
 #endif /* HYDROGEN_SCRIPTING_SCOREBOARD_H */

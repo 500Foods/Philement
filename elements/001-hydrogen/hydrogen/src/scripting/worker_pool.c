@@ -69,11 +69,11 @@ ScriptingWorkerPool* scripting_workers = NULL;
 #define WORKER_POLL_USEC 1000
 
 // Forward declarations.
-static void* scripting_worker_thread(void* arg);
-static void scripting_worker_process_one(ScriptingWorkerPool* pool,
-                                          const char* job_id);
-static bool scripting_worker_should_exit(ScriptingWorkerPool* pool);
-static void scripting_signal_waiter_if_present(const char* job_id);
+void* scripting_worker_thread(void* arg);
+void scripting_worker_process_one(ScriptingWorkerPool* pool,
+                                 const char* job_id);
+bool scripting_worker_should_exit(ScriptingWorkerPool* pool);
+void scripting_signal_waiter_if_present(const char* job_id);
 
 /*
  * Phase 12: if the job has a waiter attached, log a marker.
@@ -93,7 +93,7 @@ static void scripting_signal_waiter_if_present(const char* job_id);
  * Callers that attach after claim must check terminal status
  * themselves (Phase 13 H.wait).
  */
-static void scripting_signal_waiter_if_present(const char* job_id) {
+void scripting_signal_waiter_if_present(const char* job_id) {
     if (!job_id || !scripting_scoreboard) {
         return;
     }
@@ -327,7 +327,7 @@ char* scripting_submit_job_with_source_and_limits(
  * must keep draining the queue between those two events. Use the
  * worker's local pool pointer for the queue check.
  */
-static bool scripting_worker_should_exit(ScriptingWorkerPool* pool) {
+bool scripting_worker_should_exit(ScriptingWorkerPool* pool) {
     if (!scripting_system_shutdown) {
         return false;
     }
@@ -341,7 +341,7 @@ static bool scripting_worker_should_exit(ScriptingWorkerPool* pool) {
  * Worker thread main loop. Each worker is independent; no worker
  * shares its lua_State with any other (Phase 1 two-tier architecture).
  */
-static void* scripting_worker_thread(void* arg) {
+void* scripting_worker_thread(void* arg) {
     ScriptingWorkerPool* pool = (ScriptingWorkerPool*)arg;
 
     while (1) {
@@ -376,8 +376,8 @@ static void* scripting_worker_thread(void* arg) {
  * cancelled before a worker picked it up is marked KILLED without
  * burning a lua_State.
  */
-static void scripting_worker_process_one(ScriptingWorkerPool* pool,
-                                          const char* job_id) {
+void scripting_worker_process_one(ScriptingWorkerPool* pool,
+                                   const char* job_id) {
     if (!scripting_scoreboard || !pool) {
         return;
     }

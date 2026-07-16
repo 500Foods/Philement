@@ -79,11 +79,11 @@ extern volatile sig_atomic_t scripting_system_shutdown;
 extern lua_State* scripting_orchestrator_state;
 
 // Forward declarations
-static void* orchestrator_thread_main(void* arg);
-static void   orchestrator_set_shutdown_and_join(void);
-static void   orchestrator_load_configured_blocking(void);
-static void*  orchestrator_loader_main(void* arg);
-static const char* orchestrator_resolve_database(void);
+void* orchestrator_thread_main(void* arg);
+void   orchestrator_set_shutdown_and_join(void);
+void   orchestrator_load_configured_blocking(void);
+void*  orchestrator_loader_main(void* arg);
+const char* orchestrator_resolve_database(void);
 
 // ----------------------------------------------------------------------------
 // Internal: pthread entry point
@@ -100,7 +100,7 @@ static const char* orchestrator_resolve_database(void);
  * apply here because there is exactly one compilation per state and
  * the state is destroyed at thread exit.
  */
-static void* orchestrator_thread_main(void* arg) {
+void* orchestrator_thread_main(void* arg) {
     (void)arg;
 
     char* source = NULL;
@@ -167,7 +167,7 @@ static void* orchestrator_thread_main(void* arg) {
  * and frees any remaining buffers. The lua_State is destroyed by
  * the thread itself as part of its exit path.
  */
-static void orchestrator_set_shutdown_and_join(void) {
+void orchestrator_set_shutdown_and_join(void) {
     orchestrator_shutting_down = 1;
     scripting_system_shutdown = 1;
 
@@ -290,8 +290,8 @@ bool scripting_orchestrator_start_with_source(const char* source,
  * { "STRING": { "GROUP_NAME": "...", "SCRIPT_NAME": "..." } }
  * Returns a heap-allocated string. Caller frees.
  */
-static char* orchestrator_build_params_json(const char* group_name,
-                                            const char* script_name) {
+char* orchestrator_build_params_json(const char* group_name,
+                                      const char* script_name) {
     json_t* root = json_object();
     if (!root) {
         return NULL;
@@ -323,7 +323,7 @@ static char* orchestrator_build_params_json(const char* group_name,
  * Returns a heap-allocated copy of the code string, or NULL if the
  * result is empty or has no `code` string. Caller frees.
  */
-static char* orchestrator_extract_code_from_result(const char* data_json) {
+char* orchestrator_extract_code_from_result(const char* data_json) {
     if (!data_json) {
         return NULL;
     }
@@ -541,7 +541,7 @@ char* scripting_fetch_script_source(const char* group_name,
  * in scripting_orchestrator_load_configured and the actual start in
  * scripting_orchestrator_start_from_db so the two never diverge.
  */
-static const char* orchestrator_resolve_database(void) {
+const char* orchestrator_resolve_database(void) {
     if (!app_config) {
         log_this(SR_SCRIPTING,
                  "Orchestrator: no DefaultDatabase configured; Orchestrator will not start",
@@ -634,7 +634,7 @@ bool scripting_orchestrator_start_from_db(const char* group_name,
  * scripting_orchestrator_load_configured (which logs any parse or
  * DefaultDatabase errors synchronously), so this body only re-splits it.
  */
-static void orchestrator_load_configured_blocking(void) {
+void orchestrator_load_configured_blocking(void) {
     if (!app_config || !app_config->scripting.Enabled) {
         return;
     }
@@ -669,7 +669,7 @@ static void orchestrator_load_configured_blocking(void) {
  * with ServiceThreads for visibility, then returns. The thread is
  * joined by orchestrator_set_shutdown_and_join().
  */
-static void* orchestrator_loader_main(void* arg) {
+void* orchestrator_loader_main(void* arg) {
     (void)arg;
     pthread_t self = pthread_self();
     add_service_thread_with_description(&scripting_threads, self,

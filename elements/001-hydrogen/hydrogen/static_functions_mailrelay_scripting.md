@@ -15,7 +15,7 @@ also get a visible declaration in a header.
 | Module group | `static` functions | Status |
 |--------------|-------------------|--------|
 | **mailrelay** (`src/mailrelay`) | 146 (in 12 files) | ✅ **COMPLETE** |
-| **scripting** (`src/scripting`) | 85 (in ~16 files) | ⏳ NEXT BATCH (see below) |
+| **scripting** (`src/scripting`) | 54 (in 13 files) | ✅ **COMPLETE** |
 
 The mailrelay conversion is done and builds clean under the `Unity`,
 `Regular`, and `Coverage` build configs, and all existing mailrelay Unity
@@ -123,91 +123,134 @@ config) fails to compile.
 
 ---
 
-## scripting — NEXT BATCH (playbook to start fresh)
+## scripting — COMPLETE
 
-Scope: `elements/001-hydrogen/hydrogen/src/scripting`. ~85 `static` functions
-across roughly these files (re-derive exact line numbers with the command in
-"Reproduce the scan" before starting — they shift as code changes):
+### What was done
 
-- `orchestrator.c` (12)
-- `worker_pool.c` (8)
-- `scoreboard.c` (6)
-- `scripting_api_mail_notify.c` (7)
-- `http_pool.c` (7)
-- `lua_context.c` (4)
-- `scripting_api_llm.c` (3)
-- `scripting_handle.c` (1)
-- `scripting_api_scoreboard.c` (1)
-- `script_registry.c` (1)
-- `source_cache.c` (1)
-- `http_client.c` (2)
-- `lua_hook.c` (1)
+- All 54 `static` function definitions across 13 scripting `.c` files were
+  converted to non-`static`. (The original estimate of ~85 was high; the
+  live scan found 54 — the rest had already been converted in prior work.)
+- A matching declaration was added to the appropriate header for each
+  function (see mapping below), marked with a "NOT part of the stable
+  public API / exposed for Unity tests" comment block.
+- Three new headers were created for `.c` files that previously had none:
+  - `scripting_api_mail_notify.h` — owns the previously-private
+    `MailLuaParse` struct and the 7 parse/helper declarations.
+  - `scripting_api_llm.h` — owns the 3 LLM resolve/build helper
+    declarations.
+  - `scripting_api_scoreboard.h` — owns `bytecode_dump_writer`. The
+    previously-anonymous `BytecodeDumpBuffer` struct was promoted to a
+    named `struct BytecodeDumpBuffer` so the header's opaque forward
+    declaration matches the definition.
+- Remaining `static` in `src/scripting` is **intentional and correct**:
+  file-scope globals / string literals (e.g. `NOTIFY_DEFERRED_ERROR`,
+  the `SourceCacheEntry`/`ScriptRegistryEntry` struct definitions, the
+  `*_INITIAL_CAPACITY` macros).
+- **No functions were renamed.** All 14 repeated names were
+  prototype+definition pairs in the same file (see Collision detail at the
+  bottom); there were 0 true cross-file name collisions, and 0 collisions
+  with the rest of `hydrogen/src`.
 
-(NOTE: a couple of scripting functions are Java/other-language namespaced and
-may need care — `bytecode_dump_writer`, etc. Verify they're real C functions
-in `.c` files first.)
+### Header → function mapping (where the declarations went)
 
-### Step-by-step
+| Header | Functions exposed |
+|--------|-------------------|
+| `worker_pool.h` | `scripting_worker_thread`, `scripting_worker_process_one`, `scripting_worker_should_exit`, `scripting_signal_waiter_if_present` |
+| `http_pool.h` | `serialize_headers`, `scripting_http_worker_thread`, `scripting_http_worker_process_one`, `scripting_http_worker_should_exit` |
+| `http_client.h` | `try_test_injection`, `resolve_timeout` |
+| `orchestrator.h` | `orchestrator_thread_main`, `orchestrator_set_shutdown_and_join`, `orchestrator_load_configured_blocking`, `orchestrator_loader_main`, `orchestrator_resolve_database`, `orchestrator_build_params_json`, `orchestrator_extract_code_from_result` |
+| `scoreboard.h` | `is_terminal_status`, `entry_clear_owned`, `timespec_clear`, `timespec_now`, `entries_grow_if_needed`, `generate_unique_id` |
+| `scripting_api_mail_notify.h` (new) | `free_mail_parse`, `mail_parse_init`, `parse_recipient_field`, `parse_params_table`, `parse_optional_string_field`, `parse_mail_message`, `status_to_mail_error` |
+| `scripting_api_llm.h` (new) | `resolve_llm_db_queue`, `resolve_llm_engine`, `build_llm_request_json` |
+| `lua_context.h` | `H_lua_open_sandboxed_libraries`, `H_lua_panic` |
+| `scripting_handle.h` | `H_Handle_gc` |
+| `source_cache.h` | `source_cache_grow_if_needed` |
+| `script_registry.h` | `registry_grow_if_needed` |
+| `lua_hook.h` | `H_lua_progress_hook_fn` |
+| `scripting_api_scoreboard.h` (new) | `bytecode_dump_writer` |
 
-1. **Reproduce the scan** to get the exact current list (line numbers move):
+### Header include fixes required
 
-   ```bash
-   rg -N --no-heading -n '^\s*static\b.*\w+\s*\(' -g '*.c' -g '*.h' \
-     elements/001-hydrogen/hydrogen/src/scripting
-   ```
+When you add a function prototype that references a type not already
+visible in that header, the header must include the header that defines
+the type, otherwise a test that includes only this header fails to
+compile. For scripting these were:
 
-   To detect TRUE cross-file collisions only:
+- `http_pool.h` adds `#include <src/api/auth/oidc_rp/oidc_rp_http.h>`
+  (for `OidcRpHttpResponse`, used by `serialize_headers`).
+- `scripting_api_mail_notify.h` adds `src/utils/utils_uuid.h`
+  (`UUID_STR_LEN`), `src/mailrelay/mailrelay.h` (`MailRelayTemplateParams`,
+  `MailRelayStatus`), and `src/mailrelay/mailrelay_template.h`
+  (`mailrelay_template_params_*`). The header now owns the `MailLuaParse`
+  struct, so `scripting_api_mail_notify.c` no longer defines it (it
+  includes the new header instead).
+- `scripting_api_llm.h` adds `jansson.h`, `src/database/dbqueue/dbqueue.h`
+  (`DatabaseQueue`), and `src/api/wschat/helpers/engine_cache.h`
+  (`ChatEngineConfig`).
+- `scripting_api_scoreboard.h` forward-declares `lua_State` and
+  `struct BytecodeDumpBuffer` (opaque), so it does not pull Lua headers
+  into unrelated TUs.
+- `lua_context.h`, `lua_hook.h`, `scripting_handle.h`, `source_cache.h`,
+  `script_registry.h` already had `lua_State` / `Scoreboard` /
+  `SourceCache` / `ScriptRegistry` visible via existing includes or
+  forward declarations — no extra includes needed.
 
-   ```bash
-   rg -N --no-heading -n '^\s*static\b.*\w+\s*\(' -g '*.c' -g '*.h' \
-     elements/001-hydrogen/hydrogen/src/scripting \
-   | rg -o 'static\s+[\w\s\*]*?(\w+)\s*\(' -r '$1' \
-   | sort | uniq -d      # these "duplicates" are prototype+def pairs — verify they're same-file
-   ```
+### Lessons learned (apply to every future batch)
 
-   Then confirm none collide with the rest of `hydrogen/src` (reuse the
-   comm-style check from mailrelay).
-2. **For each `.c`, strip `static`** from every function definition (and any
-   same-file forward declaration). Use `python3` in-place replace per file;
-   re-read to confirm counts.
-3. **Add a declaration to the right header for each.** Mapping guidance:
-   - Most scripting files already have a matching `*.h` — put the declaration
-     there.
-   - `lua_context.c` → `lua_context.h`; `worker_pool.c` → `worker_pool.h`;
-     `scoreboard.c` → `scoreboard.h`; `orchestrator.c` → `orchestrator.h`;
-     `http_pool.c`/`http_client.c` → their http headers;
-     `scripting_api_*.c` → the matching api header;
-     `script_registry.c`/`source_cache.c`/`scripting_handle.c`/`lua_hook.c` →
-     their headers. If a file has no header, create one or place the decl in
-     the nearest module header (mirror the `mailrelay.h` producer-internals
-     approach).
-   - For functions touching Lua (`lua_State*`), **forward-declare
-     `typedef struct lua_State lua_State;`** in the header instead of pulling
-     the Lua headers into a public header (this is what `mailrelay_events.h`
-     did).
-4. **Make every touched header self-contained** (Lesson #2). scripting headers
-   reference types like `ScriptingWorkerPool`, `ScriptingHttpPool`,
-   `Scoreboard`, `MailRelayTemplateParams`, `OutboundServer`, `json_t`, etc. —
-   each must be available via include. When in doubt, add the specific include
-   (e.g. a header declaring `MailRelayTemplateParams` needs
-   `mailrelay_template.h`).
-5. **Build & verify ALL configs** (Lesson #5):
-   `hydrogen_unity`, `unity_tests`, `hydrogen`, `hydrogen_coverage`, `coverage`.
-   Pay special attention to `Coverage` — it's where include gaps surface.
-6. **Run a sample of scripting tests** (e.g. scoreboard, worker_pool,
-   orchestrator) to confirm no behavior change.
-7. **Update this doc**: mark scripting COMPLETE with its header→function
-   mapping, and append any new lessons.
-
-### Reusable scan/verify one-liner set (run from repo root)
-
-```bash
-# 1. count static fns in a module
-rg -N --no-heading -c '^\s*static\b.*\w+\s*\(' -g '*.c' -g '*.h' \
-  elements/001-hydrogen/hydrogen/src/scripting | grep -v ':0$'
-# 2. confirm none left after conversion (expect only test-seam globals)
-rg -n '^\s*static\b' elements/001-hydrogen/hydrogen/src/scripting/*.c
-```
+1. **Remove `static` AND add a header declaration — two steps, both required.**
+   Removing `static` alone makes the symbol linkable but a test TU still
+   can't *see* it without a declaration. Tests do `#include <src/scripting/...>`.
+2. **Make every touched header self-contained.** The build configs are NOT
+   identical: `mkt` runs `Unity`, `Regular`, AND `Coverage`. A header
+   compiling in one config does not guarantee it compiles standalone (a
+   test TU that includes only this header under a different config). Every
+   header declaring a function using type `T` must itself `#include` (directly
+   or transitively) the header defining `T`.
+3. **The `.c` file MUST `#include` the header that holds its new
+   declarations.** With `-Werror=missing-prototypes`, a non-`static`
+   function with no visible prototype is a hard error. Three new-header
+   `.c` files (`scripting_api_llm.c`, `scripting_api_scoreboard.c`, and the
+   `MailLuaParse`-owning `scripting_api_mail_notify.c`) needed explicit
+   `#include` lines added — the build failed on the first trial until fixed.
+4. **Check for same-file prototype+definition pairs first.** All 14
+   "duplicate" names were just `static foo(...);` forward-decl followed by
+   `static foo(...) {...}` in the same `.c`. These are not real collisions.
+   The reliable way to detect TRUE collisions is: count distinct *files*
+   per name; a name in ≥2 different `.c` files is a real linker collision.
+   Verified: 0 true cross-file collisions within scripting, and 0
+   collisions with the rest of `hydrogen/src`.
+5. **Don't rename unless there's a real cross-file collision.** Within a
+   module, function names are unique across files, so no renaming is
+   needed. (Confirmed: scripting needed 0 renames.)
+6. **Verify against ALL build configs, not just one.** Minimum bar:
+   - `cmake --build build --target hydrogen_unity` (library)
+   - `cmake --build build --target unity_tests` (full test suite)
+   - `cmake --build build --target hydrogen` (regular daemon)
+   - `cmake --build build --target hydrogen_coverage` + `coverage`
+   The `Unity` library build passing is NOT sufficient proof — include
+   gaps surface in `Regular`/`Coverage` because of `-Werror=missing-prototypes`.
+7. **Run a sample of the affected tests** after editing to confirm runtime
+   behavior is unchanged. Scripting: scoreboard (submit), worker_pool
+   (submit), orchestrator (load_run), http_pool (lifecycle), lua_context
+   (run_string), source_cache (put_get), script_registry
+   (register_lookup), lua_hook (install), scripting_handle (lifecycle),
+   scripting_api (mail, llm) — all 0 failures.
+8. **Keep genuinely module-private `static`.** File-scope globals, string
+   literals, and private struct definitions stay `static` — removing them
+   buys nothing and risks exposing internal state.
+9. **Prefer `python3` in-place replace for many occurrences** of
+   `static` → non-static in one file; it's faster and less error-prone
+   than many individual `edit` calls. Always re-read the file after to
+   confirm counts.
+10. **Watch for header self-definition collisions.** If a header
+    forward-declares `typedef struct Foo Foo;` but the `.c` defines
+    `typedef struct { ... } Foo;` (anonymous tag), the two conflict. Fix
+    by giving the `.c` struct a named tag
+    (`typedef struct Foo { ... } Foo;`).
+11. **No CMake changes are needed.** Sources are collected via
+    `file(GLOB_RECURSE HYDROGEN_SOURCES "../src/*.c")` in
+    `cmake/CMakeLists-init.cmake`, so adding/removing `static` and editing
+    headers (or adding new headers) does not require touching build files.
 
 ---
 

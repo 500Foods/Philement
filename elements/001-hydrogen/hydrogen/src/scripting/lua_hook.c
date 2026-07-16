@@ -74,7 +74,7 @@
 #define H_LUA_HOOK_DEFAULT_SAMPLE_EVERY 20
 
 // The hook function. Signature matches lua_Hook.
-static void H_lua_progress_hook_fn(lua_State* L, lua_Debug* ar) {
+void H_lua_progress_hook_fn(lua_State* L, lua_Debug* ar) {
     (void)ar;
     if (!L) {
         return;

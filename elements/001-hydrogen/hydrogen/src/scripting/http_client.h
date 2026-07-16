@@ -142,4 +142,10 @@ void scripting_http_test_clear_responses(void);
  */
 int scripting_http_test_get_consumed_count(void);
 
+/*
+ * Exposed for Unity tests (NOT part of the stable public API).
+ */
+struct OidcRpHttpResponse* try_test_injection(const char* url);
+long resolve_timeout(int requested);
+
 #endif /* HYDROGEN_SCRIPTING_HTTP_CLIENT_H */

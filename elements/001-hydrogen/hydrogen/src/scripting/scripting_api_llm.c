@@ -21,6 +21,7 @@
 #include "scripting_handle.h"
 #include "lua_context.h"
 #include "http_client.h"
+#include "scripting_api_llm.h"
 
 #include <src/api/wschat/helpers/engine_cache.h>
 #include <src/api/wschat/helpers/proxy.h>
@@ -32,7 +33,7 @@ extern volatile sig_atomic_t scripting_system_shutdown;
 #define DEFAULT_LLM_MAX_TOKENS 4096
 #define DEFAULT_LLM_TEMPERATURE 0.7
 
-static DatabaseQueue* resolve_llm_db_queue(const char* db_name, char** err_out) {
+DatabaseQueue* resolve_llm_db_queue(const char* db_name, char** err_out) {
     if (err_out) *err_out = NULL;
 
     const char* target = db_name;
@@ -80,7 +81,7 @@ static DatabaseQueue* resolve_llm_db_queue(const char* db_name, char** err_out) 
     return dbq;
 }
 
-static ChatEngineConfig* resolve_llm_engine(const char* model_name, const char* db_name) {
+ChatEngineConfig* resolve_llm_engine(const char* model_name, const char* db_name) {
     if (!model_name || !*model_name) {
         return NULL;
     }
@@ -93,7 +94,7 @@ static ChatEngineConfig* resolve_llm_engine(const char* model_name, const char* 
     return chat_engine_cache_lookup_by_name(dbq->chat_engine_cache, model_name);
 }
 
-static char* build_llm_request_json(const char* prompt, int max_tokens, double temperature) {
+char* build_llm_request_json(const char* prompt, int max_tokens, double temperature) {
     if (!prompt) {
         return NULL;
     }
