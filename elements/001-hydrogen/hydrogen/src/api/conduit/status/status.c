@@ -112,6 +112,81 @@
 }
 
 /**
+ * Build a JSON array describing the chat engine models configured for a
+ * database, using its ChatEngineCache. Returns a newly allocated json array
+ * (caller owns it) or NULL if the cache is empty. This is factored out of
+ * handle_conduit_status_request so it can be unit tested directly without a
+ * valid JWT or MHD connection.
+ */
+ json_t* conduit_status_build_models(ChatEngineCache* cec) {
+    if (!cec) {
+        return NULL;
+    }
+
+    json_t* models = json_array();
+
+    pthread_rwlock_rdlock(&cec->cache_lock);
+
+    for (size_t j = 0; j < cec->engine_count; j++) {
+        ChatEngineConfig* engine = cec->engines[j];
+        if (!engine) continue;
+
+        json_t* model = json_object();
+
+        // Basic info
+        json_object_set_new(model, "name", json_string(engine->name));
+        json_object_set_new(model, "provider",
+                            json_string(chat_engine_provider_to_string(engine->provider)));
+        json_object_set_new(model, "model", json_string(engine->model));
+
+        // Health status
+        const char* status = chat_engine_config_get_status(engine);
+        json_object_set_new(model, "status", json_string(status));
+
+        // Health details (thread-safe access)
+        pthread_mutex_lock(&engine->health_mutex);
+        time_t last_working = engine->last_confirmed_working;
+        unsigned long long conversations = engine->conversations_24h;
+        unsigned long long tokens = engine->tokens_24h;
+        double avg_response = engine->avg_response_time_ms;
+        int failures = engine->consecutive_failures;
+        pthread_mutex_unlock(&engine->health_mutex);
+
+        // Format last_working as ISO 8601 if set
+        if (last_working > 0) {
+            char time_str[32];
+            strftime(time_str, sizeof(time_str), "%Y-%m-%dT%H:%M:%SZ",
+                     gmtime(&last_working));
+            json_object_set_new(model, "last_confirmed_working", json_string(time_str));
+        } else {
+            json_object_set_new(model, "last_confirmed_working", json_null());
+        }
+
+        json_object_set_new(model, "conversations_24h", json_integer((json_int_t)conversations));
+        json_object_set_new(model, "tokens_24h", json_integer((json_int_t)tokens));
+        json_object_set_new(model, "avg_response_time_ms", json_real(avg_response));
+
+        // Calculate error rate from failures
+        double error_rate = 0.0;
+        if (conversations > 0) {
+            error_rate = (double)failures / (double)(conversations + (unsigned long long)failures);
+        }
+        json_object_set_new(model, "error_rate", json_real(error_rate));
+
+        json_array_append_new(models, model);
+    }
+
+    pthread_rwlock_unlock(&cec->cache_lock);
+
+    if (json_array_size(models) > 0) {
+        return models;
+    }
+
+    json_decref(models);
+    return NULL;
+}
+
+/**
  * Handle the /api/conduit/status endpoint.
  * Returns readiness status for all configured databases.
  * Includes additional details when authenticated with a valid JWT.
@@ -197,66 +272,9 @@ enum MHD_Result handle_conduit_status_request(
 
             // Include chat engine (models) information if CEC exists (Phase 2.5)
             if (db_queue->chat_engine_cache) {
-                ChatEngineCache* cec = db_queue->chat_engine_cache;
-                json_t* models = json_array();
-
-                pthread_rwlock_rdlock(&cec->cache_lock);
-
-                for (size_t j = 0; j < cec->engine_count; j++) {
-                    ChatEngineConfig* engine = cec->engines[j];
-                    if (!engine) continue;
-
-                    json_t* model = json_object();
-
-                    // Basic info
-                    json_object_set_new(model, "name", json_string(engine->name));
-                    json_object_set_new(model, "provider",
-                                        json_string(chat_engine_provider_to_string(engine->provider)));
-                    json_object_set_new(model, "model", json_string(engine->model));
-
-                    // Health status
-                    const char* status = chat_engine_config_get_status(engine);
-                    json_object_set_new(model, "status", json_string(status));
-
-                    // Health details (thread-safe access)
-                    pthread_mutex_lock(&engine->health_mutex);
-                    time_t last_working = engine->last_confirmed_working;
-                    unsigned long long conversations = engine->conversations_24h;
-                    unsigned long long tokens = engine->tokens_24h;
-                    double avg_response = engine->avg_response_time_ms;
-                    int failures = engine->consecutive_failures;
-                    pthread_mutex_unlock(&engine->health_mutex);
-
-                    // Format last_working as ISO 8601 if set
-                    if (last_working > 0) {
-                        char time_str[32];
-                        strftime(time_str, sizeof(time_str), "%Y-%m-%dT%H:%M:%SZ",
-                                 gmtime(&last_working));
-                        json_object_set_new(model, "last_confirmed_working", json_string(time_str));
-                    } else {
-                        json_object_set_new(model, "last_confirmed_working", json_null());
-                    }
-
-                    json_object_set_new(model, "conversations_24h", json_integer((json_int_t)conversations));
-                    json_object_set_new(model, "tokens_24h", json_integer((json_int_t)tokens));
-                    json_object_set_new(model, "avg_response_time_ms", json_real(avg_response));
-
-                    // Calculate error rate from failures
-                    double error_rate = 0.0;
-                    if (conversations > 0) {
-                        error_rate = (double)failures / (double)(conversations + (unsigned long long)failures);
-                    }
-                    json_object_set_new(model, "error_rate", json_real(error_rate));
-
-                    json_array_append_new(models, model);
-                }
-
-                pthread_rwlock_unlock(&cec->cache_lock);
-
-                if (json_array_size(models) > 0) {
+                json_t* models = conduit_status_build_models(db_queue->chat_engine_cache);
+                if (models) {
                     json_object_set_new(db_status, "models", models);
-                } else {
-                    json_decref(models);
                 }
             }
         }
