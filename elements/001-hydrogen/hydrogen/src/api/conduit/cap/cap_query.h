@@ -19,6 +19,11 @@
 // API subsystem includes
 #include <src/api/api_utils.h>
 
+// Database type definitions used by the helper function declarations below
+#include <src/database/database_cache.h>
+#include <src/database/database_params.h>
+#include <src/database/dbqueue/dbqueue.h>
+
 /**
  * Handles the /api/conduit/cap_query endpoint request.
  * Executes a pre-defined protected query from the Query Table Cache (QTC)
@@ -73,5 +78,29 @@ enum MHD_Result handle_conduit_cap_query_request(
     size_t *upload_data_size,
     void **con_cls
 );
+
+/*
+ * The following helpers are part of the cap_query request handler. They are
+ * exposed (non-static) solely so the Unity test framework can call them
+ * directly. They are not part of the stable public API.
+ */
+enum MHD_Result send_cap_verify_error(struct MHD_Connection *connection,
+                                      json_t *request_json,
+                                      const char *error_code,
+                                      const char *error_detail);
+
+enum MHD_Result handle_cap_queue_selection(struct MHD_Connection *connection,
+                                          const char *database,
+                                          int query_ref,
+                                          const QueryCacheEntry *cache_entry,
+                                          ParameterList *param_list,
+                                          char *converted_sql,
+                                          TypedParameter **ordered_params,
+                                          DatabaseQueue **selected_queue,
+                                          const char **intended_queue_type);
+
+enum MHD_Result handle_cap_buffer_result(struct MHD_Connection *connection,
+                                         ApiBufferResult buf_result,
+                                         void **con_cls);
 
 #endif /* HYDROGEN_CONDUIT_CAP_QUERY_H */

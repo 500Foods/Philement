@@ -24,6 +24,29 @@
 #include "../conduit_helpers.h"
 #include "cap_query.h"
 
+// When building the Unity test for handle_conduit_cap_query_request, the
+// database-dependent conduit helper functions are redirected to mock fakes so
+// the request handler's error/early-return branches can be exercised without a
+// live database. This mirrors the existing USE_MOCK_SELECT_QUERY_QUEUE seam in
+// database_operations.c. The production build never defines this macro.
+#ifdef USE_MOCK_CONDUIT_HELPERS
+#include <unity/mocks/mock_conduit_helpers.h>
+#define handle_method_validation                        mock_handle_method_validation
+#define handle_request_parsing_with_buffer            mock_handle_request_parsing_with_buffer
+#define handle_field_extraction                       mock_handle_field_extraction
+#define handle_database_lookup                        mock_handle_database_lookup
+#define handle_parameter_processing                   mock_handle_parameter_processing
+#define handle_cap_queue_selection                    mock_handle_cap_queue_selection
+#define handle_query_id_generation                   mock_handle_query_id_generation
+#define handle_pending_registration                  mock_handle_pending_registration
+#define handle_query_submission                       mock_handle_query_submission
+#define handle_response_building                     mock_handle_response_building
+#define query_statement_type_allowed                  mock_query_statement_type_allowed
+#define build_invalid_queryref_response              mock_build_invalid_queryref_response
+#define cap_verify_token                            mock_cap_verify_token
+#define select_query_queue                          mock_conduit_select_query_queue
+#endif
+
 // Error codes returned in the JSON error response
 #define CAP_ERROR_TOKEN_MISSING "CAP_TOKEN_MISSING"
 #define CAP_ERROR_TOKEN_INVALID "CAP_TOKEN_INVALID"
@@ -36,10 +59,10 @@
 /**
  * Send a Cap verification error response and clean up the request JSON.
  */
-static enum MHD_Result send_cap_verify_error(struct MHD_Connection *connection,
-                                             json_t* request_json,
-                                             const char* error_code,
-                                             const char* error_detail) {
+enum MHD_Result send_cap_verify_error(struct MHD_Connection *connection,
+                                      json_t* request_json,
+                                      const char* error_code,
+                                      const char* error_detail) {
     json_t* response = create_validation_error_response(error_code, error_detail);
     enum MHD_Result result = api_send_json_response(connection, response, CAP_VERIFY_HTTP_STATUS);
     if (request_json) {
@@ -53,18 +76,18 @@ static enum MHD_Result send_cap_verify_error(struct MHD_Connection *connection,
  * Type 11 queries are always forced onto the slow queue.
  * Intended queue type is returned for accurate response labeling.
  */
-static enum MHD_Result handle_cap_queue_selection(struct MHD_Connection *connection,
-                                                   const char* database,
-                                                   int query_ref,
-                                                   const QueryCacheEntry* cache_entry,
-                                                   ParameterList* param_list,
-                                                   char* converted_sql,
-                                                   TypedParameter** ordered_params,
-                                                   DatabaseQueue** selected_queue,
-                                                   const char** intended_queue_type) {
+enum MHD_Result handle_cap_queue_selection(struct MHD_Connection *connection,
+                                          const char* database,
+                                          int query_ref,
+                                          const QueryCacheEntry* cache_entry,
+                                          ParameterList* param_list,
+                                          char* converted_sql,
+                                          TypedParameter** ordered_params,
+                                          DatabaseQueue** selected_queue,
+                                          const char** intended_queue_type) {
     const char* queue_type = (cache_entry && cache_entry->query_type == 11)
-                               ? "slow"
-                               : (cache_entry ? cache_entry->queue_type : "slow");
+                                ? "slow"
+                                : (cache_entry ? cache_entry->queue_type : "slow");
     if (intended_queue_type) {
         *intended_queue_type = queue_type;
     }
@@ -83,9 +106,9 @@ static enum MHD_Result handle_cap_queue_selection(struct MHD_Connection *connect
 /**
  * Handle the result of api_buffer_post_data.
  */
-static enum MHD_Result handle_cap_buffer_result(struct MHD_Connection *connection,
-                                                ApiBufferResult buf_result,
-                                                void **con_cls) {
+enum MHD_Result handle_cap_buffer_result(struct MHD_Connection *connection,
+                                         ApiBufferResult buf_result,
+                                         void **con_cls) {
     switch (buf_result) {
         case API_BUFFER_CONTINUE:
             return MHD_YES;
