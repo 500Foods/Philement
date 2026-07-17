@@ -49,6 +49,7 @@ set(UNITY_MOCK_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_webserver_core.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_api_utils.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_auth_service_jwt.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_conduit_helpers.c
 )
 
 # Print-specific mock sources (only linked to print tests)
@@ -199,6 +200,12 @@ foreach(SOURCE_FILE ${UNITY_HYDROGEN_SOURCES})
             list(APPEND MOCK_DEFINES_LIST "-DUSE_MOCK_GENERATE_QUERY_ID")
             list(APPEND MOCK_DEFINES_LIST "-DUSE_MOCK_PREPARE_AND_SUBMIT_QUERY")
             list(APPEND MOCK_DEFINES_LIST "-DUSE_MOCK_DBQUEUE")
+        endif()
+        # Only redirect the database-dependent conduit helpers to fakes when
+        # compiling the cap_query request handler for its dedicated unit test.
+        # Other conduit tests rely on the real helper implementations.
+        if(${TEST_SOURCE} MATCHES "cap_query_test_handle_conduit_cap_query_request.c")
+            list(APPEND MOCK_DEFINES_LIST "-DUSE_MOCK_CONDUIT_HELPERS")
         endif()
         set(MOCK_DEFINES ${MOCK_DEFINES_LIST})
         unset(MOCK_DEFINES_LIST)
