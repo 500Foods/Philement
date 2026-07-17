@@ -16,6 +16,27 @@
 QueryResult* execute_auth_query(int query_ref, const char* database, json_t* params);
 void free_query_result(QueryResult* result);
 
+/*
+ * Test seam: override execute_auth_query for unit tests.
+ *
+ * When the installed function pointer is non-NULL, execute_auth_query
+ * delegates to it instead of using the live database queue/cache. This
+ * lets Unity tests inject canned QueryResult responses without standing
+ * up a database. The seam is process-global and is NULL in production.
+ *
+ * Install in setUp() and clear in tearDown() (see
+ * auth_service_database_test_query_seam.c).
+ *
+ * @param fn  Replacement with the same signature as execute_auth_query,
+ *            or NULL to disable the override.
+ */
+typedef QueryResult* (*AuthServiceDatabaseQueryFn)(int query_ref,
+                                                    const char* database,
+                                                    json_t* params);
+
+void auth_service_database_test_set_query_fn(AuthServiceDatabaseQueryFn fn);
+void auth_service_database_test_clear_query_fn(void);
+
 // Account management
 account_info_t* lookup_account(const char* login_id, const char* database);
 char* get_password_hash(int account_id, const char* database);

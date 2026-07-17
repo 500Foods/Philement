@@ -27,6 +27,23 @@
 #include <jansson.h>
 #include <src/config/config_databases.h>
 
+/* -------------------------------------------------------------------------
+ * Test seam — process-global override of execute_auth_query.
+ * NULL in production. When set, execute_auth_query delegates to the
+ * installed function instead of touching the live database queue/cache.
+ * Used exclusively by Unity tests to inject canned QueryResult responses.
+ * -------------------------------------------------------------------------
+ */
+AuthServiceDatabaseQueryFn g_auth_service_database_query_fn = NULL;
+
+void auth_service_database_test_set_query_fn(AuthServiceDatabaseQueryFn fn) {
+    g_auth_service_database_query_fn = fn;
+}
+
+void auth_service_database_test_clear_query_fn(void) {
+    g_auth_service_database_query_fn = NULL;
+}
+
 /**
  * Helper function to free QueryResult structure
  */
@@ -55,6 +72,10 @@ void free_query_result(QueryResult* result) {
  * for signaling" and the subsequent free of an orphaned result).
  */
 QueryResult* execute_auth_query(int query_ref, const char* database, json_t* params) {
+    if (g_auth_service_database_query_fn) {
+        return g_auth_service_database_query_fn(query_ref, database, params);
+    }
+
     if (!database || query_ref <= 0) {
         log_this(SR_AUTH, "Invalid parameters for database query", LOG_LEVEL_ERROR, 0);
         return NULL;
@@ -722,7 +743,12 @@ int check_failed_attempts(const char* login_id, const char* client_ip,
     if (result->data_json) {
         json_t* result_json = json_loads(result->data_json, 0, NULL);
         if (result_json) {
-            json_t* count_json = json_object_get(result_json, "count");
+            json_t* row = json_array_get(result_json, 0);
+            json_t* count_json = NULL;
+            if (row) {
+                count_json = json_object_get(row, "count");
+                if (!count_json) count_json = json_object_get(row, "COUNT"); // DB2 uppercase
+            }
             if (count_json) {
                 count = (int)json_integer_value(count_json);
             }

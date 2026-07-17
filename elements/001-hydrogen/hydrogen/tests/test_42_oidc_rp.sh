@@ -31,6 +31,7 @@
 # (Helper functions live in tests/lib/oidc_rp_helpers.sh)
 
 # CHANGELOG
+# 2.4.0 - 2026-07-17 - Phase 23: /callback deep-error coverage — token_invalid_grant, id_token_kid_unknown, and no_api_key (missing + rejected SystemApiKey) branches driven via mock Keycloak error-mode toggles and DB-backed instances lacking a valid SystemApiKey; new helper lib oidc_rp_helpers_callback_errors.sh; mock gains /_test/set-mode admin endpoint; new configs hydrogen_test_42_oidc_rp_no_api_key.json / _bad_api_key.json
 # 2.3.0 - 2026-07-13 - Phase 22: RP-initiated logout /end-session sub-test; POST the OIDC JWT -> 200 + IdP redirect_url (id_token_hint + post_logout_redirect_uri + client_id), GET -> 405
 # 2.2.1 - 2026-07-09 - Phase 19 seed flake: rely on oidc_rp_helpers_link busy_timeout/retry + verified seed_email_contact; ambiguous path scrubs then requires both seeds
 # 2.2.0 - 2026-06-20 - Speed-up: replace per-phase migration-wait loops (broken tail-offset against the per-instance-truncated shared log; timed out ~30s each, ~250s total) with wait_for_migration_ready keyed off the canonical "READY FOR REQUESTS" signal
@@ -55,7 +56,7 @@ TEST_NAME="OIDC Relying Party"
 TEST_ABBR="ORP"
 TEST_NUMBER="42"
 TEST_COUNTER=0
-TEST_VERSION="2.3.0"
+TEST_VERSION="2.4.0"
 
 # Phase 9: mock Keycloak port. Picked outside the typical Hydrogen
 # port range (5000s) and the test config's WebServer port (5242). If
@@ -94,6 +95,8 @@ source "${SCRIPT_DIR}/lib/oidc_rp_helpers_provision.sh"
 source "${SCRIPT_DIR}/lib/oidc_rp_helpers_default.sh"
 # shellcheck source=tests/lib/oidc_rp_helpers_roles.sh # Phase 22 role-mapping sub-tests
 source "${SCRIPT_DIR}/lib/oidc_rp_helpers_roles.sh"
+# shellcheck source=tests/lib/oidc_rp_helpers_callback_errors.sh # Phase 23 deep-error sub-tests
+source "${SCRIPT_DIR}/lib/oidc_rp_helpers_callback_errors.sh"
 
 # Trap to make sure we do not leak a node process if the test script
 # fails between mock start and stop. The functions live in
@@ -299,6 +302,15 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
                 test_oidc_callback_idp_error_redirects_idp_error "${ENABLED_BASE_URL}"
                 test_oidc_callback_method_check_still_works_when_enabled "${ENABLED_BASE_URL}"
                 test_oidc_callback_replay_returns_state_invalid "${ENABLED_BASE_URL}"
+
+                # ---- Phase 23: /callback deep-error branches (no-DB) ----
+                # These force the mock Keycloak into a token/id_token error
+                # mode and drive the full /start -> /callback chain. They
+                # short-circuit before the account linker, so the enabled
+                # (no-DB) instance is sufficient. Each restores the happy
+                # path afterwards so the later phases are unaffected.
+                test_oidc_callback_token_invalid_grant "${ENABLED_BASE_URL}"
+                test_oidc_callback_id_token_invalid_signature "${ENABLED_BASE_URL}"
             fi
 
             # ---- Shutdown enabled-config Hydrogen ----
@@ -439,6 +451,121 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     elif [[ "${MOCK_KC_STARTED:-0}" -eq 1 ]]; then
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
             "Skipping Phase 14 happy-path: missing demo SQLite db, HYDROGEN_DEMO_API_KEY, or jq"
+    fi
+
+    # ---- Phase 23: /callback no_api_key deep-error branches ----
+    # Two SQLite-backed instances (no SystemApiKey, and a bogus
+    # SystemApiKey) drive the full /start -> /callback chain. The linker
+    # resolves a real account (identity pre-seeded, as in Phase 14), then
+    # the server-side API-key check fails: missing key -> oidc_rp_callback.c
+    # ~500-510, rejected key -> ~513-522. Both 302 with oidc_error=no_api_key.
+    # Skipped under the same guards as Phase 14.
+    if [[ "${EXIT_CODE}" -eq 0 ]] \
+        && [[ "${MOCK_KC_STARTED:-0}" -eq 1 ]] \
+        && [[ -n "${HYDROGEN_DEMO_API_KEY:-}" ]] \
+        && [[ -f "${PROJECT_DIR}/tests/artifacts/database/sqlite/hydrodemo.sqlite" ]] \
+        && command -v jq >/dev/null 2>&1 \
+        && command -v sqlite3 >/dev/null 2>&1; then
+
+        NAK_DEMO_SQLITE="${PROJECT_DIR}/tests/artifacts/database/sqlite/hydrodemo.sqlite"
+        NAK_MOCK_ISSUER="http://localhost:${MOCK_KC_PORT}/realms/test"
+        NAK_MOCK_SUBJECT="mock-sub-12345"
+
+        # Seed the identity row for account_id=1 (adminuser) so the linker
+        # resolves without provisioning, BEFORE each instance starts.
+        seed_oidc_queryref_seed_only "${NAK_DEMO_SQLITE}" || true
+        seed_email_queryrefs "${NAK_DEMO_SQLITE}" || true
+        seed_provision_queryrefs "${NAK_DEMO_SQLITE}" || true
+        seed_oidc_identity "${NAK_DEMO_SQLITE}" 1 \
+            "${NAK_MOCK_ISSUER}" "${NAK_MOCK_SUBJECT}" || true
+
+        # Helper to bring up a no_api_key instance, run one sub-test, stop it.
+        # $1 config path, $2 port, $3 description.
+        run_phase23_nak_instance() {
+            local nak_cfg="$1"
+            local nak_port="$2"
+            local nak_desc="$3"
+            local nak_base="http://localhost:${nak_port}"
+
+            print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate ${nak_desc} config"
+            # shellcheck disable=SC2310 # We want to continue even if the test fails
+            if ! validate_config_file "${nak_cfg}"; then
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${nak_desc} config validation failed"
+                EXIT_CODE=1
+                return
+            fi
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${nak_desc} config validated"
+            PASS_COUNT=$(( PASS_COUNT + 1 ))
+
+            local nak_pid="" nak_pid_var="NAK_PID_$$"
+            # (Re)seed the identity row for account_id=1 so the linker
+            # resolves without provisioning. Idempotent (INSERT OR REPLACE);
+            # done per-instance because the shared demo DB may be mutated.
+            seed_oidc_queryref_seed_only "${NAK_DEMO_SQLITE}" || true
+            seed_email_queryrefs "${NAK_DEMO_SQLITE}" || true
+            seed_provision_queryrefs "${NAK_DEMO_SQLITE}" || true
+            seed_oidc_identity "${NAK_DEMO_SQLITE}" 1 \
+                "${NAK_MOCK_ISSUER}" "${NAK_MOCK_SUBJECT}" || true
+            print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Start Hydrogen Server (${nak_desc})"
+            # shellcheck disable=SC2310 # We want to continue even if the test fails
+            if start_hydrogen_with_pid "${nak_cfg}" "${SERVER_LOG}" 30 "${HYDROGEN_BIN}" "${nak_pid_var}"; then
+                nak_pid=$(eval "echo \$${nak_pid_var}")
+                if [[ -n "${nak_pid}" ]] && ps -p "${nak_pid}" > /dev/null 2>&1; then
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Server started with PID ${nak_pid}"
+                    PASS_COUNT=$(( PASS_COUNT + 1 ))
+                else
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Server PID missing after start"
+                    EXIT_CODE=1
+                    return
+                fi
+            else
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to start Hydrogen (${nak_desc})"
+                EXIT_CODE=1
+                return
+            fi
+
+            # shellcheck disable=SC2310 # We want to continue even if the test fails
+            if ! wait_for_server_ready "${nak_base}"; then
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${nak_desc} server failed to become ready"
+                EXIT_CODE=1
+            else
+                # shellcheck disable=SC2310 # Diagnostic-only; proceed even on timeout
+                wait_for_migration_ready "${SERVER_LOG}" 30 || true
+                test_oidc_callback_no_api_key "${nak_base}" "${nak_desc}: /callback no_api_key"
+            fi
+
+            if [[ -n "${nak_pid}" ]] && ps -p "${nak_pid}" > /dev/null 2>&1; then
+                print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Stop Hydrogen Server (${nak_desc})"
+                # shellcheck disable=SC2310 # We want to continue even if the test fails
+                if stop_hydrogen "${nak_pid}" "${SERVER_LOG}" 10 5 "${RESULTS_DIR}"; then
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${nak_desc} server stopped cleanly"
+                    PASS_COUNT=$(( PASS_COUNT + 1 ))
+                else
+                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${nak_desc} shutdown had issues"
+                    EXIT_CODE=1
+                fi
+                # shellcheck disable=SC2310 # Diagnostic-only; non-zero result must not abort the test
+                check_time_wait_sockets "${nak_port}" || true
+            fi
+        }
+
+        # Clean up the pre-seeded identity row ONCE, after both no_api_key
+        # instances have run (they share the demo DB and both rely on the
+        # seeded identity so the linker resolves a real account).
+        if command -v sqlite3 >/dev/null 2>&1; then
+            unseed_oidc_identity "${NAK_DEMO_SQLITE}" \
+                "${NAK_MOCK_ISSUER}" "${NAK_MOCK_SUBJECT}" || true
+        fi
+
+        run_phase23_nak_instance \
+            "${SCRIPT_DIR}/configs/hydrogen_test_42_oidc_rp_no_api_key.json" 5251 \
+            "no-SystemApiKey"
+        run_phase23_nak_instance \
+            "${SCRIPT_DIR}/configs/hydrogen_test_42_oidc_rp_bad_api_key.json" 5252 \
+            "bogus-SystemApiKey"
+    elif [[ "${MOCK_KC_STARTED:-0}" -eq 1 ]]; then
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
+            "Skipping Phase 23 no_api_key sub-tests: missing demo SQLite db, HYDROGEN_DEMO_API_KEY, sqlite3, or jq"
     fi
 
     # ---- Phase 18: match_sub_only linker hit/miss sub-tests ----
