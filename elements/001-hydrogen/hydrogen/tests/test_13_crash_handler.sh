@@ -15,6 +15,7 @@
 # run_crash_test_with_build() 
 
 # CHANGELOG
+# 7.4.0 - 2026-07-16 - Fixed Debug Symbols subtest incorrectly failing the run for development builds (debug symbols present is a PASS); clarified EXIT_CODE handling
 # 7.3.0 - 2025-12-02 - Simplified solution: skip ASAN builds entirely to focus on core crash handler functionality
 # 7.2.0 - 2025-12-02 - Enhanced ASAN build handling with improved startup detection and ASAN-specific options
 # 7.1.0 - 2025-12-02 - Fixed ASAN build crash handling - AddressSanitizer builds now properly handled with SIGABRT
@@ -65,7 +66,7 @@ TEST_NAME="Crash Handler"
 TEST_ABBR="BUG"
 TEST_NUMBER="13"
 TEST_COUNTER=0
-TEST_VERSION="7.3.0"
+TEST_VERSION="7.4.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -887,11 +888,11 @@ for build in "${BUILDS[@]}"; do
     else
         if [[ "${build_name}" == *"release"* ]] || [[ "${build_name}" == *"naked"* ]]; then
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Debug symbols unexpectedly found in release-style build"
+            EXIT_CODE=1
         else
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Debug symbols found in development build"
             BUILD_PASSED_SUBTESTS[${build_name}]=$(( BUILD_PASSED_SUBTESTS[${build_name}] + 1 ))
         fi
-        EXIT_CODE=1
     fi
     
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Core File Generation - ${build_name}"

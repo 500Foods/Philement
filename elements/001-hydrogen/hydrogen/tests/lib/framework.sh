@@ -19,6 +19,9 @@
 # evaluate_test_result_silent()
 
 # CHANGELOG
+# 3.4.0 - 2026-07-16 - TIMESTAMP now includes nanoseconds and PID so concurrent test
+#                     runs (e.g. multiple invocations within the same second under the
+#                     full suite) get isolated, non-colliding output/core/result dirs
 # 3.3.0 - 2026-07-09 - Standalone tests no longer global-pkill; reset_owned_hydrogens
 #                     at test start reaps only this test's prior PID list
 # 3.2.0 - 2026-07-09 - Export ORCHESTRATION; suite-boundary global kill only;
@@ -92,7 +95,7 @@ fi
 
 # Library metadata
 FRAMEWORK_NAME="Framework Library"
-FRAMEWORK_VERSION="3.1.0"
+FRAMEWORK_VERSION="3.4.0"
 export FRAMEWORK_NAME FRAMEWORK_VERSION
 
 # Use this once
@@ -273,7 +276,10 @@ setup_orchestration_environment() {
     export ORCHESTRATION
 
     # Starting point
-    TIMESTAMP=$("${DATE}" +%Y%m%d_%H%M%S)
+    # Include nanoseconds and the PID so concurrent test runs (e.g. multiple
+    # invocations within the same second under the full suite) get isolated,
+    # non-colliding output/core/result directories.
+    TIMESTAMP=$("${DATE}" +%Y%m%d_%H%M%S_%N_$$)
 
     # Suite boundary only: clear any leftover test hydrogen processes before the run.
     # Individual tests never do this — they only kill PIDs in their own ownership file.
@@ -379,7 +385,9 @@ setup_test_environment() {
     if [[ -z "${ORCHESTRATION:-}" ]]; then
 
         # Starting point (no global pkill — only this test's owned PID list is reaped)
-        TIMESTAMP=$("${DATE}" +%Y%m%d_%H%M%S)
+        # Include nanoseconds and the PID so concurrent test runs get isolated,
+        # non-colliding output/core/result directories.
+        TIMESTAMP=$("${DATE}" +%Y%m%d_%H%M%S_%N_$$)
 
         # Global folder variables
         PROJECT_DIR="${HYDROGEN_ROOT}"

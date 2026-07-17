@@ -53,6 +53,7 @@ typedef struct MockTerminalWSConnection {
     size_t incoming_capacity;
     bool active;
     bool authenticated;
+    pthread_t bridge_thread; // Must mirror real TerminalWSConnection layout
 } MockTerminalWSConnection;
 
 // Test fixtures
