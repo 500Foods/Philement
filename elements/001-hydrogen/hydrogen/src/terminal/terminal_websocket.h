@@ -41,6 +41,10 @@ typedef struct TerminalWSConnection {
     // Connection state
     bool active;                      /**< Whether connection is active */
     bool authenticated;               /**< Whether session is authenticated */
+
+    // I/O bridge thread handle (joinable, not detached, so the close
+    // handler can wait for it to finish before freeing connection/session)
+    pthread_t bridge_thread;          /**< Handle of the I/O bridge thread */
 } TerminalWSConnection;
 
 /**

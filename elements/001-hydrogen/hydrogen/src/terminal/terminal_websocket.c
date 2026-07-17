@@ -568,14 +568,15 @@ bool start_terminal_websocket_bridge(TerminalWSConnection *connection) {
     log_this(SR_TERMINAL, "Starting WebSocket I/O bridge for session %s", LOG_LEVEL_STATE, 1, connection->session_id);
 
     // Create thread for I/O bridging
-    pthread_t bridge_thread;
-    if (pthread_create(&bridge_thread, NULL, terminal_io_bridge_thread, connection) != 0) {
+    if (pthread_create(&connection->bridge_thread, NULL, terminal_io_bridge_thread, connection) != 0) {
         log_this(SR_TERMINAL, "Failed to create I/O bridge thread for session %s", LOG_LEVEL_ERROR, 1, connection->session_id);
+        connection->bridge_thread = 0;
         return false;
     }
 
-    // Detach the bridge thread - it will manage itself
-    pthread_detach(bridge_thread);
+    // The bridge thread is joinable (not detached). The close handler joins it
+    // before freeing the connection/session so the thread can never touch
+    // freed memory (use-after-free / SIGSEGV under rapid connect/disconnect).
 
     log_this(SR_TERMINAL, "I/O bridge thread started for session %s", LOG_LEVEL_STATE, 1, connection->session_id);
     return true;
@@ -595,6 +596,11 @@ void handle_terminal_websocket_close(TerminalWSConnection *connection) {
 
     log_this(SR_TERMINAL, "Handling WebSocket close for session %s", LOG_LEVEL_STATE, 1, connection->session_id);
 
+    // Capture the bridge thread handle BEFORE any cleanup, because we must
+    // join it (not detach) to guarantee it has fully exited before we free
+    // the connection/session it operates on.
+    pthread_t bridge_thread = connection->bridge_thread;
+
     // Signal connection closure first (before cleanup)
     connection->active = false;
     if (connection->session) {
@@ -602,8 +608,18 @@ void handle_terminal_websocket_close(TerminalWSConnection *connection) {
         log_this(SR_TERMINAL, "Marked session %s as disconnected", LOG_LEVEL_DEBUG, 1, connection->session_id);
     }
 
-    // Give threads a moment to detect the closure signal
-    usleep(50000); // 50ms - increased delay
+    // Wait for the I/O bridge thread to observe the closure signal and exit.
+    // Joining (rather than a fixed sleep + detach) is what prevents the
+    // thread from touching freed memory after we remove the session below.
+    // Bound the wait so a wedged thread can never hang server shutdown.
+    if (bridge_thread != 0) {
+        struct timespec join_timeout;
+        clock_gettime(CLOCK_REALTIME, &join_timeout);
+        join_timeout.tv_sec += 5; // Up to 5 seconds for the bridge to drain
+        if (pthread_timedjoin_np(bridge_thread, NULL, &join_timeout) != 0) {
+            log_this(SR_TERMINAL, "I/O bridge thread for session %s did not exit within timeout", LOG_LEVEL_DEBUG, 1, connection->session_id);
+        }
+    }
 
     // Stop session if it exists
     if (connection->session) {
