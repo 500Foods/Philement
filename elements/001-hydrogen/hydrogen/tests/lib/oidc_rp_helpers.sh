@@ -233,6 +233,32 @@ stop_mock_keycloak() {
 # because bash traps belong to the executing process. Sourcing this
 # file does not register the trap on its own.
 
+# Flip the mock Keycloak into (or out of) a forced error mode used by
+# the /callback deep-error sub-tests. The mock exposes a test-only
+# POST /realms/test/_test/set-mode admin endpoint. Passing empty
+# arguments resets all toggles back to the happy path.
+#
+# Arguments:
+#   $1 tokenError     — non-empty forces /token to return 400
+#                        {"error":<tokenError>} (e.g. "invalid_grant").
+#   $2 noIdToken      — "1"/"true" omits id_token from the token bundle.
+#   $3 idTokenInvalid — "1"/"true" signs the id_token under an unknown key.
+mock_keycloak_set_mode() {
+    local token_error="${1:-}"
+    local no_id_token="${2:-}"
+    local id_token_invalid="${3:-}"
+    curl -s -X POST \
+        --max-time 5 \
+        --data "tokenError=${token_error}&noIdToken=${no_id_token}&idTokenInvalid=${id_token_invalid}" \
+        "http://127.0.0.1:${MOCK_KC_PORT}/realms/test/_test/set-mode" \
+        >/dev/null 2>&1 || true
+}
+
+# Reset the mock to the happy path (clears all error toggles).
+mock_keycloak_reset_mode() {
+    mock_keycloak_set_mode "" "" ""
+}
+
 # Sub-test: mock Keycloak responds 200 ok at /health.
 test_mock_keycloak_reachable() {
     local response_file="${LOG_PREFIX}${TIMESTAMP}_mock_kc_health.txt"

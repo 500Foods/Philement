@@ -113,13 +113,36 @@ const JWKS_DOC = {
     ],
 };
 
+// A throwaway keypair used by the `idTokenInvalid` test mode to sign
+// an id_token that the Hydrogen RP cannot verify (unknown `kid`). The
+// public half is never exported via the JWKS endpoint, so Hydrogen's
+// id_token validator rejects the signature → exercises the
+// `id_token_*` error branch in oidc_rp_callback.c.
+const { privateKey: badPrivateKey } = crypto.generateKeyPairSync('rsa', {
+    modulusLength: 2048,
+});
+
+// Test-only mode toggles. The Hydrogen RP drives /token indirectly
+// (server → IdP POST), so the blackbox test sets these via the
+// `_test/set-mode` admin endpoint. They let a single mock instance
+// flip between the happy path and the various failure branches the
+// /callback handler must handle, without restarting the process.
+//
+//   tokenError   : if non-empty, /token returns 400 {"error":<tokenError>}
+//                   (e.g. "invalid_grant") instead of a token bundle.
+//   noIdToken    : if true, the 200 token bundle omits `id_token`
+//                   entirely (→ /callback `server_error` path).
+//   idTokenInvalid: if true, sign the id_token under badPrivateKey
+//                   (unknown kid) so Hydrogen's validator fails.
+const testMode = { tokenError: '', noIdToken: false, idTokenInvalid: false };
+
 // Sign a payload as a compact JWS (RS256) under our private key.
 // `payloadObj` is plain JSON; this function adds nothing beyond what
 // the caller specifies.
-function signJwt(payloadObj) {
+function signJwt(payloadObj, signingKey = privateKey, kid = KID) {
     const header = {
         alg: 'RS256',
-        kid: KID,
+        kid,
         typ: 'JWT',
     };
     const headerB64 = Buffer.from(JSON.stringify(header), 'utf8')
@@ -261,6 +284,17 @@ function handleTokenPost(req, res) {
     readBody(req, (body) => {
         const params = parseForm(body);
 
+        // Test-mode: force a token-error response (e.g. invalid_grant)
+        // without needing a real bad code. Exercises the /callback
+        // `token_<x>` error branch.
+        if (testMode.tokenError) {
+            send(res, 400, {
+                error: testMode.tokenError,
+                error_description: `mock forced token error: ${testMode.tokenError}`,
+            });
+            return;
+        }
+
         if (params.grant_type !== 'authorization_code') {
             send(res, 400, {
                 error: 'unsupported_grant_type',
@@ -285,31 +319,46 @@ function handleTokenPost(req, res) {
         const aud   = issued.aud   || params.client_id || 'lithium-web';
         const nonce = issued.nonce || params.nonce     || 'test-nonce';
 
-        const idToken = signJwt({
-            iss: ISSUER,
-            sub: 'mock-sub-12345',
-            aud,
-            iat: now,
-            exp: now + 300,
-            nonce,
-            email: 'mockuser@example.com',
-            email_verified: true,
-            preferred_username: 'mockuser',
-            name: 'Mock User',
-            // Phase 22: realm_access.roles for IDP_REALM_ROLES / MERGE mapping.
-            // A single stable role name so test assertions are predictable.
-            realm_access: { roles: ['test-role'] },
-        });
+        const idToken = signJwt(
+            {
+                iss: ISSUER,
+                sub: 'mock-sub-12345',
+                aud,
+                iat: now,
+                exp: now + 300,
+                nonce,
+                email: 'mockuser@example.com',
+                email_verified: true,
+                preferred_username: 'mockuser',
+                name: 'Mock User',
+                // Phase 22: realm_access.roles for IDP_REALM_ROLES / MERGE mapping.
+                // A single stable role name so test assertions are predictable.
+                realm_access: { roles: ['test-role'] },
+            },
+            // Test-mode: sign under an unknown key so Hydrogen's id_token
+            // validator rejects the signature.
+            testMode.idTokenInvalid ? badPrivateKey : privateKey,
+            testMode.idTokenInvalid ? 'unknown-test-key' : KID);
 
-        send(res, 200, {
+        const tokenBundle = {
             access_token: 'phase11-placeholder-access-token',
             token_type: 'Bearer',
             expires_in: 300,
-            id_token: idToken,
             // refresh_token deliberately omitted; Hydrogen does not
             // consume it (plan non-goal #4).
             scope: 'openid profile email',
-        });
+        };
+        // Happy path normally includes id_token; the test-mode sends it as
+        // a JSON null so Hydrogen's token parser sees a "successful" exchange
+        // but with an empty id_token → exercises the /callback
+        // server_error (missing id_token) branch (oidc_rp_callback.c ~433).
+        if (!testMode.noIdToken) {
+            tokenBundle.id_token = idToken;
+        } else {
+            tokenBundle.id_token = null;
+        }
+
+        send(res, 200, tokenBundle);
     });
 }
 
@@ -339,6 +388,20 @@ const server = http.createServer((req, res) => {
     if (req.method === 'POST' &&
         url === `/realms/${REALM}/protocol/openid-connect/token`) {
         handleTokenPost(req, res);
+        return;
+    }
+    // Test-only control surface used by the blackbox suite (test_42) to
+    // flip the mock between the happy path and the various /token /
+    // id_token failure branches. Not part of the OIDC contract.
+    if (req.method === 'POST' &&
+        url === `/realms/${REALM}/_test/set-mode`) {
+        readBody(req, (body) => {
+            const params = parseForm(body);
+            testMode.tokenError = params.tokenError || '';
+            testMode.noIdToken = params.noIdToken === '1' || params.noIdToken === 'true';
+            testMode.idTokenInvalid = params.idTokenInvalid === '1' || params.idTokenInvalid === 'true';
+            send(res, 200, { ok: true, mode: { ...testMode } });
+        });
         return;
     }
     send(res, 404, { error: 'not_found', path: url });
