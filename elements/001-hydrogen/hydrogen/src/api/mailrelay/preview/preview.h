@@ -10,6 +10,7 @@
 #define MAILRELAY_API_PREVIEW_H
 
 #include <microhttpd.h>
+#include <src/mailrelay/mailrelay_template.h>
 
 /*
  * Handle POST /api/mailrelay/preview requests.
@@ -42,5 +43,21 @@ enum MHD_Result handle_mailrelay_preview_request(
     const char *upload_data,
     size_t *upload_data_size,
     void **con_cls);
+
+/*
+ * The following helpers are NOT part of the stable public API. They are
+ * exposed (non-static) solely so the Unity test framework can call them
+ * directly to exercise request parsing and producer-error mapping.
+ */
+bool parse_template_params(json_t* obj, MailRelayTemplateParams* params,
+                           char* err, size_t err_cap);
+bool parse_preview_request_json(json_t* request_json,
+                                const char** template_key_out,
+                                MailRelayTemplateParams* params,
+                                char* err, size_t err_cap);
+void parse_producer_error(const char* producer_err,
+                          char* code, size_t code_cap,
+                          char* message, size_t message_cap,
+                          unsigned int* http_status);
 
 #endif /* MAILRELAY_API_PREVIEW_H */

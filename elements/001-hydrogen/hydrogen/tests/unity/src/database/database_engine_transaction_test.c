@@ -1,5 +1,5 @@
 /*
- * Unity Test File: database_engine_test_transaction
+ * Unity Test File: database_engine_transaction_test
  * This file contains unit tests for database_engine transaction functions
  * to increase test coverage for transaction management
  */
@@ -228,14 +228,15 @@ void test_database_engine_begin_transaction_null_transaction(void) {
 }
 
 void test_database_engine_begin_transaction_no_engine(void) {
-    // Create a connection and modify its engine type to one without registered engine
+    // Create a connection via the registered mock engine (DB_ENGINE_AI)
     DatabaseHandle* connection = NULL;
     bool connect_result = database_engine_connect_with_designator(DB_ENGINE_AI, &mock_config, &connection, "test-conn");
     TEST_ASSERT_TRUE(connect_result);
     TEST_ASSERT_NOT_NULL(connection);
 
-    // Modify engine type to one without registered engine
-    connection->engine_type = DB_ENGINE_AI; // cppcheck-suppress nullPointerRedundantCheck // AI engine not registered
+    // Modify engine type to one without a registered engine (PostgreSQL is not
+    // registered in this unit-test process, only the DB_ENGINE_AI mock is).
+    connection->engine_type = DB_ENGINE_POSTGRESQL; // cppcheck-suppress nullPointerRedundantCheck
 
     // Test begin transaction
     Transaction* transaction = NULL;
@@ -291,9 +292,9 @@ void test_database_engine_commit_transaction_null_connection(void) {
 }
 
 void test_database_engine_commit_transaction_null_transaction(void) {
-    // Create a connection for testing
+    // Create a connection for testing (mock engine registered as DB_ENGINE_AI)
     DatabaseHandle* connection = NULL;
-    bool connect_result = database_engine_connect_with_designator(DB_ENGINE_POSTGRESQL, &mock_config, &connection, "test-conn");
+    bool connect_result = database_engine_connect_with_designator(DB_ENGINE_AI, &mock_config, &connection, "test-conn");
     TEST_ASSERT_TRUE(connect_result);
     TEST_ASSERT_NOT_NULL(connection);
 
@@ -308,14 +309,15 @@ void test_database_engine_commit_transaction_null_transaction(void) {
 }
 
 void test_database_engine_commit_transaction_no_engine(void) {
-    // Create a connection and modify its engine type
+    // Create a connection via the registered mock engine (DB_ENGINE_AI)
     DatabaseHandle* connection = NULL;
-    bool connect_result = database_engine_connect_with_designator(DB_ENGINE_POSTGRESQL, &mock_config, &connection, "test-conn");
+    bool connect_result = database_engine_connect_with_designator(DB_ENGINE_AI, &mock_config, &connection, "test-conn");
     TEST_ASSERT_TRUE(connect_result);
     TEST_ASSERT_NOT_NULL(connection);
 
-    // Modify engine type to one without registered engine
-    connection->engine_type = DB_ENGINE_AI; // cppcheck-suppress nullPointerRedundantCheck
+    // Modify engine type to one without a registered engine (PostgreSQL is not
+    // registered in this unit-test process, only the DB_ENGINE_AI mock is).
+    connection->engine_type = DB_ENGINE_POSTGRESQL; // cppcheck-suppress nullPointerRedundantCheck
 
     // Create a transaction
     Transaction* transaction = malloc(sizeof(Transaction));
@@ -336,9 +338,9 @@ void test_database_engine_commit_transaction_no_engine(void) {
 
 // Test database_engine_rollback_transaction function
 void test_database_engine_rollback_transaction_basic(void) {
-    // Create a connection for testing
+    // Create a connection for testing (mock engine registered as DB_ENGINE_AI)
     DatabaseHandle* connection = NULL;
-    bool connect_result = database_engine_connect_with_designator(DB_ENGINE_POSTGRESQL, &mock_config, &connection, "test-conn");
+    bool connect_result = database_engine_connect_with_designator(DB_ENGINE_AI, &mock_config, &connection, "test-conn");
     TEST_ASSERT_TRUE(connect_result);
     TEST_ASSERT_NOT_NULL(connection);
 
@@ -377,9 +379,9 @@ void test_database_engine_rollback_transaction_null_connection(void) {
 }
 
 void test_database_engine_rollback_transaction_null_transaction(void) {
-    // Create a connection for testing
+    // Create a connection for testing (mock engine registered as DB_ENGINE_AI)
     DatabaseHandle* connection = NULL;
-    bool connect_result = database_engine_connect_with_designator(DB_ENGINE_POSTGRESQL, &mock_config, &connection, "test-conn");
+    bool connect_result = database_engine_connect_with_designator(DB_ENGINE_AI, &mock_config, &connection, "test-conn");
     TEST_ASSERT_TRUE(connect_result);
     TEST_ASSERT_NOT_NULL(connection);
 
@@ -394,14 +396,15 @@ void test_database_engine_rollback_transaction_null_transaction(void) {
 }
 
 void test_database_engine_rollback_transaction_no_engine(void) {
-    // Create a connection and modify its engine type
+    // Create a connection via the registered mock engine (DB_ENGINE_AI)
     DatabaseHandle* connection = NULL;
-    bool connect_result = database_engine_connect_with_designator(DB_ENGINE_POSTGRESQL, &mock_config, &connection, "test-conn");
+    bool connect_result = database_engine_connect_with_designator(DB_ENGINE_AI, &mock_config, &connection, "test-conn");
     TEST_ASSERT_TRUE(connect_result);
     TEST_ASSERT_NOT_NULL(connection);
 
-    // Modify engine type to one without registered engine
-    connection->engine_type = DB_ENGINE_AI; // cppcheck-suppress nullPointerRedundantCheck
+    // Modify engine type to one without a registered engine (PostgreSQL is not
+    // registered in this unit-test process, only the DB_ENGINE_AI mock is).
+    connection->engine_type = DB_ENGINE_POSTGRESQL; // cppcheck-suppress nullPointerRedundantCheck
 
     // Create a transaction
     Transaction* transaction = malloc(sizeof(Transaction));
@@ -426,17 +429,17 @@ int main(void) {
     RUN_TEST(test_database_engine_begin_transaction_basic);
     RUN_TEST(test_database_engine_begin_transaction_null_connection);
     RUN_TEST(test_database_engine_begin_transaction_null_transaction);
-    if (0) RUN_TEST(test_database_engine_begin_transaction_no_engine);
+    RUN_TEST(test_database_engine_begin_transaction_no_engine);
 
     RUN_TEST(test_database_engine_commit_transaction_basic);
     RUN_TEST(test_database_engine_commit_transaction_null_connection);
-    if (0) RUN_TEST(test_database_engine_commit_transaction_null_transaction);
-    if (0) RUN_TEST(test_database_engine_commit_transaction_no_engine);
+    RUN_TEST(test_database_engine_commit_transaction_null_transaction);
+    RUN_TEST(test_database_engine_commit_transaction_no_engine);
 
-    if (0) RUN_TEST(test_database_engine_rollback_transaction_basic);
+    RUN_TEST(test_database_engine_rollback_transaction_basic);
     RUN_TEST(test_database_engine_rollback_transaction_null_connection);
-    if (0) RUN_TEST(test_database_engine_rollback_transaction_null_transaction);
-    if (0) RUN_TEST(test_database_engine_rollback_transaction_no_engine);
+    RUN_TEST(test_database_engine_rollback_transaction_null_transaction);
+    RUN_TEST(test_database_engine_rollback_transaction_no_engine);
 
     return UNITY_END();
 }

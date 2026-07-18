@@ -142,6 +142,15 @@ void setUp(void) {
     // Initialize the database engine system
     database_engine_init();
 
+    // Register the mock engine once for the whole file. The engine registry is
+    // process-global static state with no de-registration API, so registration
+    // is idempotent here: if a previous test already registered it, the repeat
+    // call simply returns false and the slot stays populated. We deliberately
+    // ignore the result so tests do not depend on execution order.
+    if (!database_engine_get(DB_ENGINE_AI)) {
+        (void)database_engine_register(&mock_engine);
+    }
+
     // Initialize string fields for mock structures
     mock_config.host = strdup("localhost");
     mock_config.database = strdup("testdb");
@@ -171,10 +180,7 @@ void tearDown(void) {
 
 // Test database_engine_connect function
 void test_database_engine_connect_basic(void) {
-    // Register our mock engine
-    bool reg_result = database_engine_register(&mock_engine);
-    TEST_ASSERT_TRUE(reg_result);
-
+    // Mock engine (DB_ENGINE_AI) is registered in setUp.
     // Test basic connect functionality
     DatabaseHandle* connection = NULL;
     bool result = database_engine_connect(DB_ENGINE_AI, &mock_config, &connection);
@@ -220,10 +226,7 @@ void test_database_engine_connect_no_engine_registered(void) {
 
 // Test database_engine_connect_with_designator function
 void test_database_engine_connect_with_designator_basic(void) {
-    // Register our mock engine
-    bool reg_result = database_engine_register(&mock_engine);
-    TEST_ASSERT_TRUE(reg_result);
-
+    // Mock engine (DB_ENGINE_AI) is registered in setUp.
     // Test basic connect with designator
     DatabaseHandle* connection = NULL;
     const char* designator = "test-connection-123";
@@ -241,10 +244,7 @@ void test_database_engine_connect_with_designator_basic(void) {
 }
 
 void test_database_engine_connect_with_designator_null_designator(void) {
-    // Register our mock engine
-    bool reg_result = database_engine_register(&mock_engine);
-    TEST_ASSERT_TRUE(reg_result);
-
+    // Mock engine (DB_ENGINE_AI) is registered in setUp.
     // Test connect with NULL designator (should still work)
     DatabaseHandle* connection = NULL;
     bool result = database_engine_connect_with_designator(DB_ENGINE_AI, &mock_config, &connection, NULL);
@@ -297,8 +297,8 @@ int main(void) {
     RUN_TEST(test_database_engine_connect_invalid_engine);
     RUN_TEST(test_database_engine_connect_no_engine_registered);
 
-    if (0) RUN_TEST(test_database_engine_connect_with_designator_basic);
-    if (0) RUN_TEST(test_database_engine_connect_with_designator_null_designator);
+    RUN_TEST(test_database_engine_connect_with_designator_basic);
+    RUN_TEST(test_database_engine_connect_with_designator_null_designator);
     RUN_TEST(test_database_engine_connect_with_designator_null_config);
     RUN_TEST(test_database_engine_connect_with_designator_null_connection);
     RUN_TEST(test_database_engine_connect_with_designator_invalid_engine);

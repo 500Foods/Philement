@@ -2,11 +2,14 @@
  * Unity Test File: OIDC RP account linker — Phase 21
  *                  (`match_email_then_provision` — the default strategy).
  *
- * Covers `oidc_rp_link_resolve` for
+ * Maps to `src/api/auth/oidc_rp/oidc_rp_link_default.c`. Covers
+ * `oidc_rp_link_resolve` for
  * `Strategy = "match_email_then_provision"`. The Phase 18 (match_sub_only),
  * Phase 19 (match_email_only), and Phase 20 (provision_only) tests live in
- * sibling files. Phase 21 was split into its own binary to keep each Unity
- * source file under the project-wide 1,000-line cap.
+ * sibling files (`oidc_rp_link_sub_test_resolve.c`,
+ * `oidc_rp_link_email_test_resolve.c`, and `oidc_rp_link_provision_test_resolve.c`).
+ * Phase 21 was split into its own binary to keep each Unity source file
+ * under the project-wide 1,000-line cap.
  *
  * The real `execute_auth_query` requires a live database; we avoid that by
  * installing the `oidc_rp_link_test_set_query_fn` test seam in `setUp` and

@@ -9,77 +9,8 @@
 
 #include <src/database/database.h>
 
-// Forward declarations for mock functions
-bool mock_connect(ConnectionConfig* config, DatabaseHandle** connection, const char* designator);
-bool mock_disconnect(DatabaseHandle* connection);
-bool mock_health_check(DatabaseHandle* connection);
-bool mock_unprepare_statement(DatabaseHandle* connection, PreparedStatement* stmt);
-char* mock_get_connection_string(const ConnectionConfig* config);
-bool mock_validate_connection_string(const char* connection_string);
-
 // Forward declarations for engine interfaces
 DatabaseEngineInterface* sqlite_get_interface(void);
-
-// Mock functions for testing
-bool mock_disconnect(DatabaseHandle* connection) {
-    (void)connection;
-    return true;
-}
-
-bool mock_unprepare_statement(DatabaseHandle* connection, PreparedStatement* stmt) {
-    (void)connection;
-    (void)stmt;
-    return true;
-}
-
-bool mock_connect(ConnectionConfig* config, DatabaseHandle** connection, const char* designator) {
-    (void)config;
-    (void)designator;
-    if (connection) {
-        *connection = malloc(sizeof(DatabaseHandle));
-        if (*connection) {
-            memset(*connection, 0, sizeof(DatabaseHandle));
-            (*connection)->engine_type = DB_ENGINE_SQLITE;
-            return true;
-        }
-    }
-    return false;
-}
-
-bool mock_health_check(DatabaseHandle* connection) {
-    (void)connection;
-    return true;
-}
-
-char* mock_get_connection_string(const ConnectionConfig* config) {
-    (void)config;
-    return strdup("mock://connection/string");
-}
-
-bool mock_validate_connection_string(const char* connection_string) {
-    (void)connection_string;
-    return true;
-}
-
-// Mock database engine interface for testing
-static DatabaseEngineInterface mock_engine = {
-    .engine_type = DB_ENGINE_SQLITE,  // Use SQLite which is registered
-    .name = (char*)"sqlite",  // Use real name
-    .connect = mock_connect,
-    .disconnect = mock_disconnect,
-    .health_check = mock_health_check,
-    .reset_connection = NULL,
-    .execute_query = NULL,
-    .execute_prepared = NULL,
-    .begin_transaction = NULL,
-    .commit_transaction = NULL,
-    .rollback_transaction = NULL,
-    .prepare_statement = NULL,
-    .unprepare_statement = mock_unprepare_statement,
-    .get_connection_string = mock_get_connection_string,
-    .validate_connection_string = mock_validate_connection_string,
-    .escape_string = NULL
-};
 
 // Mock connection config for testing
 static ConnectionConfig mock_config = {
@@ -134,18 +65,6 @@ static Transaction mock_transaction = {
 };
 
 // Test function prototypes
-void test_database_engine_register_basic(void);
-void test_database_engine_register_null_engine(void);
-void test_database_engine_register_uninitialized(void);
-void test_database_engine_register_invalid_type(void);
-void test_database_engine_register_already_registered(void);
-void test_database_engine_register_already_registered_independent(void);
-
-void test_database_engine_get_by_name_basic(void);
-void test_database_engine_get_by_name_null_name(void);
-void test_database_engine_get_by_name_uninitialized(void);
-void test_database_engine_get_by_name_not_found(void);
-
 void test_database_engine_build_connection_string_basic(void);
 void test_database_engine_build_connection_string_null_config(void);
 void test_database_engine_build_connection_string_no_engine(void);
@@ -170,18 +89,6 @@ void test_database_engine_execute_uninitialized_system(void);
 void test_database_engine_health_check_null_connection(void);
 void test_database_engine_health_check_invalid_connection(void);
 void test_database_engine_health_check_no_engine(void);
-
-void test_database_engine_begin_transaction_null_connection(void);
-void test_database_engine_begin_transaction_null_transaction(void);
-void test_database_engine_begin_transaction_no_engine(void);
-
-void test_database_engine_commit_transaction_null_connection(void);
-void test_database_engine_commit_transaction_null_transaction(void);
-void test_database_engine_commit_transaction_no_engine(void);
-
-void test_database_engine_rollback_transaction_null_connection(void);
-void test_database_engine_rollback_transaction_null_transaction(void);
-void test_database_engine_rollback_transaction_no_engine(void);
 
 void test_database_engine_cleanup_connection_basic(void);
 void test_database_engine_cleanup_connection_null(void);
@@ -209,7 +116,6 @@ void setUp(void) {
     }
 
     // Initialize string fields for mock structures
-    // mock_engine.name is already set at declaration
     mock_config.host = strdup("localhost");
     mock_config.database = strdup("testdb");
     mock_config.username = strdup("testuser");
@@ -226,7 +132,6 @@ void tearDown(void) {
     pthread_mutex_destroy(&mock_connection.connection_lock);
 
     // Clean up string fields from mock structures
-    // mock_engine.name is static, don't free it
     if (mock_config.host) {
         free(mock_config.host);
         mock_config.host = NULL;
@@ -270,99 +175,6 @@ void tearDown(void) {
         free(mock_transaction.transaction_id);
         mock_transaction.transaction_id = NULL;
     }
-}
-
-// Test database_engine_register function
-void test_database_engine_register_basic(void) {
-    // Test registering a valid engine
-    bool result = database_engine_register(&mock_engine);
-    TEST_ASSERT_TRUE(result);
-}
-
-void test_database_engine_register_null_engine(void) {
-    // Test registering NULL engine
-    bool result = database_engine_register(NULL);
-    TEST_ASSERT_FALSE(result);
-}
-
-void test_database_engine_register_uninitialized(void) {
-    // This would require shutting down the system, which is complex
-    // Skip this test as it's hard to test safely
-}
-
-void test_database_engine_register_invalid_type(void) {
-    // Create engine with invalid type
-    DatabaseEngineInterface invalid_engine = mock_engine;
-    invalid_engine.engine_type = DB_ENGINE_MAX;
-
-    bool result = database_engine_register(&invalid_engine);
-    TEST_ASSERT_FALSE(result);
-}
-
-void test_database_engine_register_already_registered(void) {
-    // First register the engine
-    bool result1 = database_engine_register(&mock_engine);
-    TEST_ASSERT_TRUE(result1);
-
-    // Try to register again (should fail because engine type is already registered)
-    bool result2 = database_engine_register(&mock_engine);
-    TEST_ASSERT_FALSE(result2); // Should return FALSE for already registered engine type
-}
-
-// Alternative test that doesn't depend on previous tests
-void test_database_engine_register_already_registered_independent(void) {
-    // Create a separate mock engine for this test
-    DatabaseEngineInterface test_engine = {
-        .engine_type = DB_ENGINE_AI,
-        .name = (char*)"test_engine",
-        .connect = NULL,
-        .disconnect = NULL,
-        .health_check = NULL,
-        .reset_connection = NULL,
-        .execute_query = NULL,
-        .execute_prepared = NULL,
-        .begin_transaction = NULL,
-        .commit_transaction = NULL,
-        .rollback_transaction = NULL,
-        .prepare_statement = NULL,
-        .unprepare_statement = NULL,
-        .get_connection_string = NULL,
-        .validate_connection_string = NULL,
-        .escape_string = NULL
-    };
-
-    // First register should succeed
-    bool result1 = database_engine_register(&test_engine);
-    TEST_ASSERT_TRUE(result1);
-
-    // Second register should fail
-    bool result2 = database_engine_register(&test_engine);
-    TEST_ASSERT_FALSE(result2);
-}
-
-// Test database_engine_get_by_name function
-void test_database_engine_get_by_name_basic(void) {
-    // Test getting the real SQLite engine by name (it's registered in setUp)
-    DatabaseEngineInterface* found = database_engine_get_by_name("sqlite");
-    TEST_ASSERT_NOT_NULL(found);
-    TEST_ASSERT_EQUAL_STRING("sqlite", found->name);
-}
-
-void test_database_engine_get_by_name_null_name(void) {
-    // Test with NULL name
-    DatabaseEngineInterface* found = database_engine_get_by_name(NULL);
-    TEST_ASSERT_NULL(found);
-}
-
-void test_database_engine_get_by_name_uninitialized(void) {
-    // This would require shutting down the system
-    // Skip for safety
-}
-
-void test_database_engine_get_by_name_not_found(void) {
-    // Test with non-existent name
-    DatabaseEngineInterface* found = database_engine_get_by_name("nonexistent_engine");
-    TEST_ASSERT_NULL(found);
 }
 
 // Test database_engine_build_connection_string function
@@ -618,88 +430,10 @@ void test_database_engine_health_check_no_engine(void) {
     TEST_ASSERT_FALSE(result);
 }
 
-// Test transaction functions
-void test_database_engine_begin_transaction_null_connection(void) {
-    // Test begin transaction with NULL connection
-    Transaction* transaction = NULL;
-    bool result = database_engine_begin_transaction(NULL, DB_ISOLATION_READ_COMMITTED, &transaction);
-    TEST_ASSERT_FALSE(result);
-    TEST_ASSERT_NULL(transaction);
-}
-
-void test_database_engine_begin_transaction_null_transaction(void) {
-    // Test begin transaction with NULL transaction pointer
-    bool result = database_engine_begin_transaction(&mock_connection, DB_ISOLATION_READ_COMMITTED, NULL);
-    TEST_ASSERT_FALSE(result);
-}
-
-void test_database_engine_begin_transaction_no_engine(void) {
-    // Test begin transaction when no engine is registered
-    DatabaseHandle test_conn = mock_connection;
-    test_conn.engine_type = DB_ENGINE_AI; // AI engine not registered
-    Transaction* transaction = NULL;
-    bool result = database_engine_begin_transaction(&test_conn, DB_ISOLATION_READ_COMMITTED, &transaction);
-    TEST_ASSERT_FALSE(result);
-}
-
-void test_database_engine_commit_transaction_null_connection(void) {
-    // Test commit transaction with NULL connection
-    Transaction test_tx = mock_transaction;
-    bool result = database_engine_commit_transaction(NULL, &test_tx);
-    TEST_ASSERT_FALSE(result);
-}
-
-void test_database_engine_commit_transaction_null_transaction(void) {
-    // Test commit transaction with NULL transaction
-    bool result = database_engine_commit_transaction(&mock_connection, NULL);
-    TEST_ASSERT_FALSE(result);
-}
-
-void test_database_engine_commit_transaction_no_engine(void) {
-    // Test commit transaction when no engine is registered
-    DatabaseHandle test_conn = mock_connection;
-    test_conn.engine_type = DB_ENGINE_AI; // AI engine not registered
-    Transaction test_tx = mock_transaction;
-    bool result = database_engine_commit_transaction(&test_conn, &test_tx);
-    TEST_ASSERT_FALSE(result);
-}
-
-void test_database_engine_rollback_transaction_null_connection(void) {
-    // Test rollback transaction with NULL connection
-    Transaction test_tx = mock_transaction;
-    bool result = database_engine_rollback_transaction(NULL, &test_tx);
-    TEST_ASSERT_FALSE(result);
-}
-
-void test_database_engine_rollback_transaction_null_transaction(void) {
-    // Test rollback transaction with NULL transaction
-    bool result = database_engine_rollback_transaction(&mock_connection, NULL);
-    TEST_ASSERT_FALSE(result);
-}
-
-void test_database_engine_rollback_transaction_no_engine(void) {
-    // Test rollback transaction when no engine is registered
-    DatabaseHandle test_conn = mock_connection;
-    test_conn.engine_type = DB_ENGINE_AI; // AI engine not registered
-    Transaction test_tx = mock_transaction;
-    bool result = database_engine_rollback_transaction(&test_conn, &test_tx);
-    TEST_ASSERT_FALSE(result);
-}
-
 int main(void) {
     UNITY_BEGIN();
 
-    // Test database_engine_register - commented out due to issues with mock engine
-    if (0) RUN_TEST(test_database_engine_register_basic);
-    if (0) RUN_TEST(test_database_engine_register_null_engine);
-    if (0) RUN_TEST(test_database_engine_register_invalid_type);
-    if (0) RUN_TEST(test_database_engine_register_already_registered);
-    if (0) RUN_TEST(test_database_engine_register_already_registered_independent);
-
-    // Test database_engine_get_by_name
-    RUN_TEST(test_database_engine_get_by_name_basic);
-    RUN_TEST(test_database_engine_get_by_name_null_name);
-    RUN_TEST(test_database_engine_get_by_name_not_found);
+    // Test database_engine_get_by_name -> moved to database_engine_registry_test_get_by_name.c
 
     // Test database_engine_build_connection_string
     RUN_TEST(test_database_engine_build_connection_string_basic);
@@ -731,20 +465,7 @@ int main(void) {
     RUN_TEST(test_database_engine_health_check_invalid_connection);
     RUN_TEST(test_database_engine_health_check_no_engine);
 
-    // Test database_engine_begin_transaction
-    RUN_TEST(test_database_engine_begin_transaction_null_connection);
-    RUN_TEST(test_database_engine_begin_transaction_null_transaction);
-    RUN_TEST(test_database_engine_begin_transaction_no_engine);
-
-    // Test database_engine_commit_transaction
-    RUN_TEST(test_database_engine_commit_transaction_null_connection);
-    RUN_TEST(test_database_engine_commit_transaction_null_transaction);
-    RUN_TEST(test_database_engine_commit_transaction_no_engine);
-
-    // Test database_engine_rollback_transaction
-    RUN_TEST(test_database_engine_rollback_transaction_null_connection);
-    RUN_TEST(test_database_engine_rollback_transaction_null_transaction);
-    RUN_TEST(test_database_engine_rollback_transaction_no_engine);
+    // Test transaction functions -> moved to database_engine_transaction_test_null_paths.c
 
     // Test database_engine_cleanup_connection
     RUN_TEST(test_database_engine_cleanup_connection_basic);

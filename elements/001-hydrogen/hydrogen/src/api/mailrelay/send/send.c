@@ -40,22 +40,22 @@
 #define MAILRELAY_SEND_MAX_ERROR_MESSAGE_LEN 512
 
 // Forward declarations for internal helpers
-static bool parse_string_array(json_t* arr, const char* field_name,
-                                const char* const** out_items, int* out_count,
-                                char* err, size_t err_cap);
-static bool parse_template_params(json_t* obj, MailRelayTemplateParams* params,
-                                   char* err, size_t err_cap);
-static bool parse_send_request_json(json_t* request_json,
-                                       MailRelaySendTemplateRequest* req,
-                                       MailRelayTemplateParams* params,
-                                       const char* const** to_arr,
-                                       const char* const** cc_arr,
-                                       const char* const** bcc_arr,
-                                       char* err, size_t err_cap);
-static void parse_producer_error(const char* producer_err,
-                                  char* code, size_t code_cap,
-                                  char* message, size_t message_cap,
-                                  unsigned int* http_status);
+bool parse_string_array(json_t* arr, const char* field_name,
+                        const char* const** out_items, int* out_count,
+                        char* err, size_t err_cap);
+bool mailrelay_send_parse_template_params(json_t* obj, MailRelayTemplateParams* params,
+                           char* err, size_t err_cap);
+bool parse_send_request_json(json_t* request_json,
+                             MailRelaySendTemplateRequest* req,
+                             MailRelayTemplateParams* params,
+                             const char* const** to_arr,
+                             const char* const** cc_arr,
+                             const char* const** bcc_arr,
+                             char* err, size_t err_cap);
+void mailrelay_send_parse_producer_error(const char* producer_err,
+                          char* code, size_t code_cap,
+                          char* message, size_t message_cap,
+                          unsigned int* http_status);
 static enum MHD_Result send_mailrelay_error(struct MHD_Connection* connection,
                                              const char* code,
                                              const char* message,
@@ -66,9 +66,9 @@ static enum MHD_Result send_mailrelay_error(struct MHD_Connection* connection,
  * reference the JSON string values and are valid only while the json_t object
  * is alive. NULL or non-array JSON is treated as an empty array.
  */
-static bool parse_string_array(json_t* arr, const char* field_name,
-                                const char* const** out_items, int* out_count,
-                                char* err, size_t err_cap) {
+bool parse_string_array(json_t* arr, const char* field_name,
+                         const char* const** out_items, int* out_count,
+                         char* err, size_t err_cap) {
     *out_items = NULL;
     *out_count = 0;
 
@@ -117,8 +117,8 @@ static bool parse_string_array(json_t* arr, const char* field_name,
  * Parse a JSON object of string values into a MailRelayTemplateParams map.
  * Non-string values are rejected.
  */
-static bool parse_template_params(json_t* obj, MailRelayTemplateParams* params,
-                                   char* err, size_t err_cap) {
+bool mailrelay_send_parse_template_params(json_t* obj, MailRelayTemplateParams* params,
+                           char* err, size_t err_cap) {
     if (!obj) {
         return true;
     }
@@ -150,13 +150,13 @@ static bool parse_template_params(json_t* obj, MailRelayTemplateParams* params,
 /*
  * Parse the request JSON into a MailRelaySendTemplateRequest.
  */
-static bool parse_send_request_json(json_t* request_json,
-                                       MailRelaySendTemplateRequest* req,
-                                       MailRelayTemplateParams* params,
-                                       const char* const** to_arr,
-                                       const char* const** cc_arr,
-                                       const char* const** bcc_arr,
-                                       char* err, size_t err_cap) {
+bool parse_send_request_json(json_t* request_json,
+                             MailRelaySendTemplateRequest* req,
+                             MailRelayTemplateParams* params,
+                             const char* const** to_arr,
+                             const char* const** cc_arr,
+                             const char* const** bcc_arr,
+                             char* err, size_t err_cap) {
     if (!request_json || !req || !params || !to_arr || !cc_arr || !bcc_arr || !err || err_cap == 0) {
         if (err && err_cap > 0) {
             snprintf(err, err_cap, "Invalid arguments");
@@ -216,7 +216,7 @@ static bool parse_send_request_json(json_t* request_json,
     }
 
     json_t* params_json = json_object_get(request_json, "params");
-    if (!parse_template_params(params_json, params, err, err_cap)) {
+    if (!mailrelay_send_parse_template_params(params_json, params, err, err_cap)) {
         return false;
     }
     req->params = params;
@@ -243,10 +243,10 @@ static bool parse_send_request_json(json_t* request_json,
  * Map a producer error string to a stable API error code, message, and HTTP
  * status. The producer prefixes errors with a code like "MAIL_QUEUE_FULL:".
  */
-static void parse_producer_error(const char* producer_err,
-                                  char* code, size_t code_cap,
-                                  char* message, size_t message_cap,
-                                  unsigned int* http_status) {
+void mailrelay_send_parse_producer_error(const char* producer_err,
+                          char* code, size_t code_cap,
+                          char* message, size_t message_cap,
+                          unsigned int* http_status) {
     if (!producer_err || producer_err[0] == '\0') {
         snprintf(code, code_cap, "MAIL_INTERNAL_ERROR");
         snprintf(message, message_cap, "Unknown mail relay error");
@@ -410,7 +410,7 @@ enum MHD_Result handle_mailrelay_send_request(
         char code[MAILRELAY_SEND_MAX_ERROR_CODE_LEN] = {0};
         char message[MAILRELAY_SEND_MAX_ERROR_MESSAGE_LEN] = {0};
         unsigned int http_status = MHD_HTTP_BAD_REQUEST;
-        parse_producer_error(parse_err, code, sizeof(code), message, sizeof(message), &http_status);
+        mailrelay_send_parse_producer_error(parse_err, code, sizeof(code), message, sizeof(message), &http_status);
         free_jwt_claims(jwt_result.claims);
         jwt_result.claims = NULL;
         json_decref(request_json);
@@ -460,7 +460,7 @@ enum MHD_Result handle_mailrelay_send_request(
         char code[MAILRELAY_SEND_MAX_ERROR_CODE_LEN] = {0};
         char message[MAILRELAY_SEND_MAX_ERROR_MESSAGE_LEN] = {0};
         unsigned int http_status = MHD_HTTP_INTERNAL_SERVER_ERROR;
-        parse_producer_error(producer_err, code, sizeof(code), message, sizeof(message), &http_status);
+        mailrelay_send_parse_producer_error(producer_err, code, sizeof(code), message, sizeof(message), &http_status);
         result = send_mailrelay_error(connection, code, message, http_status);
     }
 

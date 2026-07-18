@@ -1,8 +1,9 @@
 /*
- * Unity Test File: query_result_cache_integration
+ * Unity Test File: submit_test_cache_hit_skips_queue
  *
- * Integration tests that verify the database queue layer transparently
- * uses the global query-result cache for cache-type queries.
+ * Integration test that verifies database_queue_submit_query() (in
+ * src/database/dbqueue/submit.c) transparently uses the global
+ * query-result cache for cache-type queries and skips enqueuing on a hit.
  */
 
 #include <src/hydrogen.h>

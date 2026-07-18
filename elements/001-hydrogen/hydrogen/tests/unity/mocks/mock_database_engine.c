@@ -36,6 +36,11 @@ static int mock_execute_call_count = 0;
 
 static bool mock_health_check_result = true;
 
+// database_get_readiness override state
+static DatabaseReadiness mock_readiness_snapshot = {0};
+static bool mock_readiness_armed = false;
+static bool mock_readiness_all_ready = false;
+
 bool mock_database_engine_begin_transaction(DatabaseHandle* connection, DatabaseIsolationLevel level, Transaction** transaction) {
     (void)connection;
 
@@ -304,4 +309,27 @@ DatabaseEngineInterface* mock_database_engine_get(DatabaseEngine engine_type) {
         .cancel_inflight = mock_database_engine_cancel_inflight
     };
     return &mock_engine;
+}
+
+bool mock_database_get_readiness(DatabaseReadiness* readiness) {
+    if (readiness) {
+        *readiness = mock_readiness_snapshot;
+    }
+    return mock_readiness_all_ready;
+}
+
+void mock_database_set_readiness(const DatabaseReadiness* snapshot, bool all_ready) {
+    if (snapshot) {
+        mock_readiness_snapshot = *snapshot;
+    } else {
+        memset(&mock_readiness_snapshot, 0, sizeof(mock_readiness_snapshot));
+    }
+    mock_readiness_armed = true;
+    mock_readiness_all_ready = all_ready;
+}
+
+void mock_database_get_readiness_reset(void) {
+    memset(&mock_readiness_snapshot, 0, sizeof(mock_readiness_snapshot));
+    mock_readiness_armed = false;
+    mock_readiness_all_ready = false;
 }
