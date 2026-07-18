@@ -35,16 +35,16 @@
 #define MAILRELAY_PREVIEW_MAX_ERROR_MESSAGE_LEN 512
 
 // Forward declarations for internal helpers
-static bool parse_template_params(json_t* obj, MailRelayTemplateParams* params,
-                                  char* err, size_t err_cap);
-static bool parse_preview_request_json(json_t* request_json,
-                                       const char** template_key_out,
-                                       MailRelayTemplateParams* params,
-                                       char* err, size_t err_cap);
-static void parse_producer_error(const char* producer_err,
-                                  char* code, size_t code_cap,
-                                  char* message, size_t message_cap,
-                                  unsigned int* http_status);
+bool parse_template_params(json_t* obj, MailRelayTemplateParams* params,
+                           char* err, size_t err_cap);
+bool parse_preview_request_json(json_t* request_json,
+                                const char** template_key_out,
+                                MailRelayTemplateParams* params,
+                                char* err, size_t err_cap);
+void parse_producer_error(const char* producer_err,
+                          char* code, size_t code_cap,
+                          char* message, size_t message_cap,
+                          unsigned int* http_status);
 static enum MHD_Result send_mailrelay_preview_error(struct MHD_Connection* connection,
                                                      const char* code,
                                                      const char* message,
@@ -54,8 +54,8 @@ static enum MHD_Result send_mailrelay_preview_error(struct MHD_Connection* conne
  * Parse a JSON object of string values into a MailRelayTemplateParams map.
  * Non-string values are rejected.
  */
-static bool parse_template_params(json_t* obj, MailRelayTemplateParams* params,
-                                   char* err, size_t err_cap) {
+bool parse_template_params(json_t* obj, MailRelayTemplateParams* params,
+                           char* err, size_t err_cap) {
     if (!obj) {
         return true;
     }
@@ -86,10 +86,10 @@ static bool parse_template_params(json_t* obj, MailRelayTemplateParams* params,
  * Parse the preview request JSON. Only template_key and optional params are
  * accepted; recipients and idempotency keys are not relevant for a preview.
  */
-static bool parse_preview_request_json(json_t* request_json,
-                                       const char** template_key_out,
-                                       MailRelayTemplateParams* params,
-                                       char* err, size_t err_cap) {
+bool parse_preview_request_json(json_t* request_json,
+                                 const char** template_key_out,
+                                 MailRelayTemplateParams* params,
+                                 char* err, size_t err_cap) {
     if (!request_json || !template_key_out || !params || !err || err_cap == 0) {
         if (err && err_cap > 0) {
             snprintf(err, err_cap, "Invalid arguments");
@@ -123,10 +123,10 @@ static bool parse_preview_request_json(json_t* request_json,
  * Map a producer error string to a stable API error code, message, and HTTP
  * status. The producer prefixes errors with a code like "MAIL_PARAM_MISSING:".
  */
-static void parse_producer_error(const char* producer_err,
-                                  char* code, size_t code_cap,
-                                  char* message, size_t message_cap,
-                                  unsigned int* http_status) {
+void parse_producer_error(const char* producer_err,
+                           char* code, size_t code_cap,
+                           char* message, size_t message_cap,
+                           unsigned int* http_status) {
     if (!producer_err || producer_err[0] == '\0') {
         snprintf(code, code_cap, "MAIL_INTERNAL_ERROR");
         snprintf(message, message_cap, "Unknown mail relay error");

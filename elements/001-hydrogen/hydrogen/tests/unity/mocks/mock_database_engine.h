@@ -20,6 +20,7 @@
 #define database_engine_cleanup_transaction mock_database_engine_cleanup_transaction
 #define database_engine_get mock_database_engine_get
 #define database_engine_health_check mock_database_engine_health_check
+#define database_get_readiness mock_database_get_readiness
 #endif
 
 // Mock function prototypes - match signatures from database.h
@@ -31,6 +32,7 @@ void mock_database_engine_cleanup_result(QueryResult* result);
 void mock_database_engine_cleanup_transaction(Transaction* transaction);
 DatabaseEngineInterface* mock_database_engine_get(DatabaseEngine engine_type);
 bool mock_database_engine_health_check(DatabaseHandle* connection);
+bool mock_database_get_readiness(DatabaseReadiness* readiness);
 void mock_database_engine_cancel_inflight(DatabaseHandle* connection);
 int mock_database_engine_get_cancel_call_count(void);
 void mock_database_engine_reset_cancel_call_count(void);
@@ -48,5 +50,10 @@ void mock_database_engine_set_health_check_result(bool result);
 void mock_database_engine_set_execute_error_class(DatabaseErrorClass err_class);
 int mock_database_engine_get_execute_call_count(void);
 void mock_database_engine_reset_execute_call_count(void);
+
+// database_get_readiness override: when armed, mock_database_get_readiness
+// copies the provided snapshot into the caller's buffer and returns all_ready.
+void mock_database_set_readiness(const DatabaseReadiness* snapshot, bool all_ready);
+void mock_database_get_readiness_reset(void);
 
 #endif // MOCK_DATABASE_ENGINE_H

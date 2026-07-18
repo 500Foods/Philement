@@ -54,6 +54,36 @@ enum MHD_Result send_internal_error(struct MHD_Connection *connection,
                                   MHD_HTTP_INTERNAL_SERVER_ERROR);
 }
 
+// Shared failure teardown for handle_get_auth_oidc_start: scrub and free
+// the sensitive buffers (state, nonce, code_verifier) before emitting the
+// internal-error envelope. Any pointer may be NULL (e.g. when an earlier
+// allocation already failed); NULL pointers are simply skipped. The
+// non-sensitive `auth_endpoint_copy` and `client_ip` are freed if present.
+enum MHD_Result oidc_rp_start_fail(struct MHD_Connection *connection,
+                                   const char *cause,
+                                   char *state,
+                                   char *nonce,
+                                   char *code_verifier,
+                                   char *code_challenge,
+                                   char *client_ip,
+                                   char *auth_endpoint_copy) {
+    free(state);
+    if (nonce) {
+        volatile char *p = nonce;
+        while (*p) { *p++ = 0; }
+    }
+    free(nonce);
+    if (code_verifier) {
+        volatile char *p = code_verifier;
+        while (*p) { *p++ = 0; }
+    }
+    free(code_verifier);
+    free(code_challenge);
+    free(client_ip);
+    free(auth_endpoint_copy);
+    return send_internal_error(connection, cause);
+}
+
 // Truncated state for logging — first 8 chars only.
 void start_truncated_state(const char *state, char out[16]) {
     if (!state) {
@@ -148,18 +178,10 @@ enum MHD_Result handle_get_auth_oidc_start(
                              : NULL);
 
     if (!state || !nonce || !code_verifier || !code_challenge) {
-        free(state);
-        free(nonce);
-        if (code_verifier) {
-            // Scrub before free — pkce module also scrubs but a defensive
-            // pass here costs nothing and matches the discipline used in
-            // the state store for sensitive fields.
-            volatile char *p = code_verifier;
-            while (*p) { *p++ = 0; }
-            free(code_verifier);
-        }
-        free(code_challenge);
-        return send_internal_error(connection, "PKCE/state generation failed");
+        oidc_rp_start_fail(connection, "PKCE/state generation failed",
+                           state, nonce, code_verifier, code_challenge,
+                           NULL, NULL);
+        return MHD_NO;
     }
 
     // Resolve the discovery doc. This may make an outbound HTTPS call on
@@ -173,27 +195,14 @@ enum MHD_Result handle_get_auth_oidc_start(
         provider->verify_ssl,
         provider->discovery_cache_seconds);
     if (!doc || !doc->authorization_endpoint) {
-        free(state);
-        free(nonce);
-        // Scrub the verifier (in pkce_make_code_verifier the buffer is
-        // already scrubbed of entropy but the verifier string itself
-        // could end up in a freed block).
-        volatile char *p = code_verifier;
-        while (*p) { *p++ = 0; }
-        free(code_verifier);
-        free(code_challenge);
         log_this(SR_AUTH,
                  "OIDC RP /start: discovery resolution failed for provider %s",
                  LOG_LEVEL_ERROR, 1,
                  provider->name ? provider->name : "(unnamed)");
-        json_t *response = json_object();
-        if (!response) {
-            return MHD_NO;
-        }
-        json_object_set_new(response, "error",
-                            json_string("oidc_discovery_failed"));
-        return api_send_json_response(connection, response,
-                                      MHD_HTTP_BAD_GATEWAY);
+        oidc_rp_start_fail(connection, "oidc_discovery_failed",
+                           state, nonce, code_verifier, code_challenge,
+                           NULL, NULL);
+        return MHD_NO;
     }
 
     // Copy fields we need before any further calls that might mutate
@@ -201,13 +210,10 @@ enum MHD_Result handle_get_auth_oidc_start(
     // is valid until the next mutating call on this provider.
     char *auth_endpoint_copy = strdup(doc->authorization_endpoint);
     if (!auth_endpoint_copy) {
-        free(state);
-        free(nonce);
-        volatile char *p = code_verifier;
-        while (*p) { *p++ = 0; }
-        free(code_verifier);
-        free(code_challenge);
-        return send_internal_error(connection, "auth endpoint copy failed");
+        oidc_rp_start_fail(connection, "auth endpoint copy failed",
+                           state, nonce, code_verifier, code_challenge,
+                           NULL, NULL);
+        return MHD_NO;
     }
 
     // Capture the client IP for state-bound auditing. NULL is acceptable
@@ -223,14 +229,10 @@ enum MHD_Result handle_get_auth_oidc_start(
 
     if (!put_ok) {
         free(auth_endpoint_copy);
-        free(state);
-        free(nonce);
-        volatile char *p = code_verifier;
-        while (*p) { *p++ = 0; }
-        free(code_verifier);
-        free(code_challenge);
-        free(client_ip);
-        return send_internal_error(connection, "state store put failed");
+        oidc_rp_start_fail(connection, "state store put failed",
+                           state, nonce, code_verifier, code_challenge,
+                           client_ip, NULL);
+        return MHD_NO;
     }
 
     // Choose the scope string: provider config first, fallback to the
@@ -252,14 +254,10 @@ enum MHD_Result handle_get_auth_oidc_start(
     if (!redirect_url) {
         // The state record we just inserted will age out via the TTL
         // sweeper; not worth taking the lock again to remove it.
-        free(state);
-        free(nonce);
-        volatile char *p = code_verifier;
-        while (*p) { *p++ = 0; }
-        free(code_verifier);
-        free(code_challenge);
-        free(client_ip);
-        return send_internal_error(connection, "authorize URL build failed");
+        oidc_rp_start_fail(connection, "authorize URL build failed",
+                           state, nonce, code_verifier, code_challenge,
+                           client_ip, NULL);
+        return MHD_NO;
     }
 
     // Log at STATE level — operator-visible but no secrets. State is

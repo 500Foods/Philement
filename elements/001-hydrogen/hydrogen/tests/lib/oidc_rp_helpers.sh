@@ -5,10 +5,8 @@
 # shellcheck disable=SC2312 # Several diagnostic command substitutions intentionally swallow the inner exit code; helpers either fall back gracefully or || true the outer call
 
 # CHANGELOG
-# 1.1.0 - 2026-06-20 - Added wait_for_migration_ready (canonical "READY FOR REQUESTS" signal) to
-#                      replace the per-phase tail-offset migration-wait loops that timed out ~30s
-#                      each (shared SERVER_LOG is truncated per instance, so stale offsets matched
-#                      nothing). Cuts Test 42 runtime from ~250s to a few seconds of real work.
+# 1.1.0 - 2026-06-20 - Added wait_for_migration_ready (canonical "READY FOR REQUESTS" signal) to replace the per-phase tail-offset migration-wait loops that timed out ~30s
+#                      each (shared SERVER_LOG is truncated per instance, so stale offsets matched nothing). Cuts Test 42 runtime from ~250s to a few seconds of real work.
 # 1.0.0 - 2026-05-09 - Initial extraction from test_42_oidc_rp.sh during Phase 13.
 
 wait_for_migration_ready() {
@@ -22,8 +20,7 @@ wait_for_migration_ready() {
         fi
         # shellcheck disable=SC2310 # Polling on success/timeout — non-zero grep is "not yet ready"
         if "${GREP}" -q -E "READY FOR REQUESTS|Migration completed in|Migration Current:" "${server_log}" 2>/dev/null; then
-            # Brief settling pause so the QTC is fully usable by
-            # handle_api_request paths (matches test_40's convention).
+            # Brief settling pause so the QTC is fully usable by handle_api_request paths (matches test_40's convention).
             sleep 1
             return 0
         fi
@@ -31,9 +28,7 @@ wait_for_migration_ready() {
     done
 }
 
-# Issues an HTTP request and verifies (a) the HTTP status and
-# (b) that the response body is JSON containing the expected
-# `error` key value.
+# Issues an HTTP request and verifies (a) the HTTP status and (b) that the response body is JSON containing the expected `error` key value.
 #
 # Arguments:
 #   $1 url
@@ -91,9 +86,7 @@ validate_oidc_request() {
     return 1
 }
 
-# ---------------------------------------------------------------------------
 # Per-endpoint sub-tests
-# ---------------------------------------------------------------------------
 
 test_oidc_endpoint_disabled() {
     local base_url="$1"
@@ -167,13 +160,9 @@ test_oidc_unknown_path_404() {
     fi
 }
 
-# ---------------------------------------------------------------------------
 # Mock Keycloak (Phase 9)
-# ---------------------------------------------------------------------------
 
-# Start the mock Keycloak server in the background. Sets MOCK_KC_PID
-# on success; on failure leaves it empty and returns non-zero. Waits
-# until the script prints "READY <port>" or 5 s elapses.
+# Start the mock Keycloak server in the background. Sets MOCK_KC_PID on success; on failure leaves it empty and returns non-zero. Waits until the script prints "READY <port>" or 5 s elapses.
 start_mock_keycloak() {
     if ! command -v node >/dev/null 2>&1; then
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "node not available; skipping mock Keycloak sub-tests"
@@ -228,15 +217,11 @@ stop_mock_keycloak() {
     MOCK_KC_PID=""
 }
 
-# Note: the EXIT trap that calls stop_mock_keycloak is registered in
-# the test script (test_42_oidc_rp.sh) rather than this library,
-# because bash traps belong to the executing process. Sourcing this
-# file does not register the trap on its own.
+# Note: the EXIT trap that calls stop_mock_keycloak is registered in the test script (test_42_oidc_rp.sh) rather than this library,
+# because bash traps belong to the executing process. Sourcing this  file does not register the trap on its own.
 
-# Flip the mock Keycloak into (or out of) a forced error mode used by
-# the /callback deep-error sub-tests. The mock exposes a test-only
-# POST /realms/test/_test/set-mode admin endpoint. Passing empty
-# arguments resets all toggles back to the happy path.
+# Flip the mock Keycloak into (or out of) a forced error mode used by the /callback deep-error sub-tests. The mock exposes a test-only
+# POST /realms/test/_test/set-mode admin endpoint. Passing empty arguments resets all toggles back to the happy path.
 #
 # Arguments:
 #   $1 tokenError     — non-empty forces /token to return 400

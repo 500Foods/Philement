@@ -1,6 +1,7 @@
 /*
- * Unity Test File: database_get_supported_engines
+ * Unity Test File: database_engine_metrics_test_get_supported_engines
  * This file contains unit tests for database_get_supported_engines functionality
+ * (defined in src/database/database_engine_metrics.c)
  */
 
 #include <src/hydrogen.h>

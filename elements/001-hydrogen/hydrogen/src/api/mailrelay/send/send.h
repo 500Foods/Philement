@@ -9,6 +9,8 @@
 #define MAILRELAY_API_SEND_H
 
 #include <microhttpd.h>
+#include <src/mailrelay/mailrelay_template.h>
+#include <src/mailrelay/mailrelay.h>
 
 /*
  * Handle POST /api/mailrelay/send requests.
@@ -41,5 +43,27 @@ enum MHD_Result handle_mailrelay_send_request(
     const char *upload_data,
     size_t *upload_data_size,
     void **con_cls);
+
+/*
+ * The following helpers are NOT part of the stable public API. They are
+ * exposed (non-static) solely so the Unity test framework can call them
+ * directly to exercise request parsing and producer-error mapping.
+ */
+bool parse_string_array(json_t* arr, const char* field_name,
+                        const char* const** out_items, int* out_count,
+                        char* err, size_t err_cap);
+bool mailrelay_send_parse_template_params(json_t* obj, MailRelayTemplateParams* params,
+                           char* err, size_t err_cap);
+bool parse_send_request_json(json_t* request_json,
+                             MailRelaySendTemplateRequest* req,
+                             MailRelayTemplateParams* params,
+                             const char* const** to_arr,
+                             const char* const** cc_arr,
+                             const char* const** bcc_arr,
+                             char* err, size_t err_cap);
+void mailrelay_send_parse_producer_error(const char* producer_err,
+                          char* code, size_t code_cap,
+                          char* message, size_t message_cap,
+                          unsigned int* http_status);
 
 #endif /* MAILRELAY_API_SEND_H */

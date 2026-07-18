@@ -34,7 +34,6 @@ void test_database_get_result_parameter_validation(void);
 void test_database_cancel_query_parameter_validation(void);
 void test_database_reload_config_uninitialized(void);
 void test_database_test_connection_parameter_validation(void);
-void test_database_get_supported_engines_parameter_validation(void);
 void test_database_process_api_query_parameter_validation(void);
 void test_database_validate_query_edge_cases(void);
 void test_database_escape_parameter_edge_cases(void);
@@ -44,17 +43,11 @@ void test_database_get_total_queue_count_no_manager(void);
 void test_database_get_total_queue_count_with_queues(void);
 void test_database_get_queue_counts_by_type_no_manager(void);
 void test_database_get_queue_counts_by_type_with_queues(void);
-void test_database_get_counts_by_type_no_config(void);
-void test_database_get_counts_by_type_with_config(void);
 void test_database_subsystem_shutdown_null_subsystem(void);
 void test_database_get_stats_null_buffer(void);
 void test_database_get_stats_zero_buffer_size(void);
 void test_database_get_stats_null_subsystem(void);
 void test_database_health_check_null_subsystem(void);
-void test_database_get_supported_engines_null_buffer(void);
-void test_database_get_supported_engines_zero_buffer_size(void);
-void test_database_get_supported_engines_null_subsystem(void);
-void test_database_get_supported_engines_valid(void);
 
 void setUp(void) {
     // Initialize database subsystem for testing
@@ -336,33 +329,6 @@ void test_database_test_connection_parameter_validation(void) {
     TEST_ASSERT_FALSE(result);
 }
 
-// Test database_get_supported_engines parameter validation
-void test_database_get_supported_engines_parameter_validation(void) {
-    char buffer[256];
-
-    // Test NULL buffer
-    database_get_supported_engines(NULL, sizeof(buffer));
-    // Should not crash
-
-    // Test zero buffer size
-    database_get_supported_engines(buffer, 0);
-    // Should not crash
-
-    // Test NULL subsystem
-    DatabaseSubsystem* saved_subsystem = database_subsystem;
-    database_subsystem = NULL;
-
-    database_get_supported_engines(buffer, sizeof(buffer));
-    TEST_ASSERT_TRUE(strstr(buffer, "not initialized") != NULL);
-
-    database_subsystem = saved_subsystem;
-
-    // Test valid parameters
-    database_get_supported_engines(buffer, sizeof(buffer));
-    TEST_ASSERT_TRUE(strlen(buffer) > 0);
-    TEST_ASSERT_TRUE(strstr(buffer, "PostgreSQL") != NULL);
-}
-
 // Test database_process_api_query parameter validation
 void test_database_process_api_query_parameter_validation(void) {
     char buffer[256] = {0};
@@ -470,43 +436,6 @@ void test_database_health_check_null_subsystem(void) {
 
     // Restore
     database_subsystem = saved_subsystem;
-}
-
-// Test database_get_supported_engines with NULL buffer
-void test_database_get_supported_engines_null_buffer(void) {
-    // Should not crash with NULL buffer
-    database_get_supported_engines(NULL, 256);
-    // Test passes if no crash occurs
-}
-
-// Test database_get_supported_engines with zero buffer size
-void test_database_get_supported_engines_zero_buffer_size(void) {
-    char buffer[256];
-    // Should not crash with zero buffer size
-    database_get_supported_engines(buffer, 0);
-    // Test passes if no crash occurs
-}
-
-// Test database_get_supported_engines with NULL subsystem
-void test_database_get_supported_engines_null_subsystem(void) {
-    char buffer[256];
-    // Save original subsystem
-    DatabaseSubsystem* saved_subsystem = database_subsystem;
-    database_subsystem = NULL;
-
-    database_get_supported_engines(buffer, sizeof(buffer));
-    TEST_ASSERT_TRUE(strstr(buffer, "not initialized") != NULL);
-
-    // Restore
-    database_subsystem = saved_subsystem;
-}
-
-// Test database_get_supported_engines with valid parameters
-void test_database_get_supported_engines_valid(void) {
-    char buffer[256];
-    database_get_supported_engines(buffer, sizeof(buffer));
-    TEST_ASSERT_TRUE(strlen(buffer) > 0);
-    TEST_ASSERT_TRUE(strstr(buffer, "PostgreSQL") != NULL);
 }
 
 // Test database_escape_parameter edge cases
@@ -624,37 +553,6 @@ void test_database_get_queue_counts_by_type_with_queues(void) {
     TEST_ASSERT_TRUE(cache_count >= 0);
 }
 
-// Test database_get_counts_by_type with no config
-void test_database_get_counts_by_type_no_config(void) {
-    // Save original config
-    AppConfig* saved_config = app_config;
-    app_config = NULL;
-
-    int postgres_count, mysql_count, sqlite_count, db2_count;
-    database_get_counts_by_type(&postgres_count, &mysql_count, &sqlite_count, &db2_count);
-
-    TEST_ASSERT_EQUAL(0, postgres_count);
-    TEST_ASSERT_EQUAL(0, mysql_count);
-    TEST_ASSERT_EQUAL(0, sqlite_count);
-    TEST_ASSERT_EQUAL(0, db2_count);
-
-    app_config = saved_config;
-}
-
-// Test database_get_counts_by_type with config
-void test_database_get_counts_by_type_with_config(void) {
-    // This would require setting up app_config with database connections
-    // For now, just test that it doesn't crash
-    int postgres_count, mysql_count, sqlite_count, db2_count;
-    database_get_counts_by_type(&postgres_count, &mysql_count, &sqlite_count, &db2_count);
-
-    // Values depend on configuration
-    TEST_ASSERT_TRUE(postgres_count >= 0);
-    TEST_ASSERT_TRUE(mysql_count >= 0);
-    TEST_ASSERT_TRUE(sqlite_count >= 0);
-    TEST_ASSERT_TRUE(db2_count >= 0);
-}
-
 int main(void) {
     UNITY_BEGIN();
 
@@ -676,7 +574,6 @@ int main(void) {
     RUN_TEST(test_database_cancel_query_parameter_validation);
     RUN_TEST(test_database_reload_config_uninitialized);
     RUN_TEST(test_database_test_connection_parameter_validation);
-    RUN_TEST(test_database_get_supported_engines_parameter_validation);
     RUN_TEST(test_database_process_api_query_parameter_validation);
     RUN_TEST(test_database_validate_query_edge_cases);
     RUN_TEST(test_database_escape_parameter_edge_cases);
@@ -686,18 +583,12 @@ int main(void) {
     RUN_TEST(test_database_get_total_queue_count_with_queues);
     RUN_TEST(test_database_get_queue_counts_by_type_no_manager);
     RUN_TEST(test_database_get_queue_counts_by_type_with_queues);
-    RUN_TEST(test_database_get_counts_by_type_no_config);
-    RUN_TEST(test_database_get_counts_by_type_with_config);
 
     RUN_TEST(test_database_subsystem_shutdown_null_subsystem);
     RUN_TEST(test_database_get_stats_null_buffer);
     RUN_TEST(test_database_get_stats_zero_buffer_size);
     RUN_TEST(test_database_get_stats_null_subsystem);
     RUN_TEST(test_database_health_check_null_subsystem);
-    RUN_TEST(test_database_get_supported_engines_null_buffer);
-    RUN_TEST(test_database_get_supported_engines_zero_buffer_size);
-    RUN_TEST(test_database_get_supported_engines_null_subsystem);
-    RUN_TEST(test_database_get_supported_engines_valid);
 
     return UNITY_END();
 }

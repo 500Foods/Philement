@@ -86,5 +86,13 @@ enum MHD_Result handle_get_auth_oidc_start(
 // ---------------------------------------------------------------------------
 enum MHD_Result send_internal_error(struct MHD_Connection *connection, const char *cause);
 void start_truncated_state(const char *state, char out[16]);
+enum MHD_Result oidc_rp_start_fail(struct MHD_Connection *connection,
+                                   const char *cause,
+                                   char *state,
+                                   char *nonce,
+                                   char *code_verifier,
+                                   char *code_challenge,
+                                   char *client_ip,
+                                   char *auth_endpoint_copy);
 
 #endif // OIDC_RP_START_H

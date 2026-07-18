@@ -4,8 +4,7 @@
 # Drives the OIDC RP endpoints through every gate the plan defines
 # from Phase 6 through Phase 22:
 #
-#   - Disabled feature gate (Phase 6): all three endpoints respond
-#     503 {"error":"oidc_disabled"} when OIDC_RP.Enabled = false.
+#   - Disabled feature gate (Phase 6): all three endpoints respond 503 {"error":"oidc_disabled"} when OIDC_RP.Enabled = false.
 #   - Method discrimination (Phase 6): wrong methods get 405.
 #   - Mock IdP reachability + discovery/JWKS shape (Phase 9).
 #   - Mock IdP /token endpoint (Phases 11/12).
@@ -14,21 +13,12 @@
 #   - /oidc/callback full chain (Phase 14; stub linker removed in Phase 21).
 #   - match_sub_only linker: hit/miss paths (Phase 18).
 #   - match_email_only linker: hit/miss/ambiguous paths (Phase 19).
-#   - provision_only linker: happy path (creates account) + blocked
-#     domain (Phase 20).
-#   - match_email_then_provision (default): sub fast-path + provision
-#     path (Phase 21).
-#   - Role mapping: database (QueryRef #017), idp_realm_roles, merge
-#     (Phase 22).
-#   - RP-initiated logout: POST /api/auth/oidc/end-session with the
-#     OIDC JWT -> 200 + IdP redirect_url; GET -> 405 (Phase 22).
+#   - provision_only linker: happy path (creates account) + blocked domain (Phase 20).
+#   - match_email_then_provision (default): sub fast-path + provision path (Phase 21).
+#   - Role mapping: database (QueryRef #017), idp_realm_roles, merge (Phase 22).
+#   - RP-initiated logout: POST /api/auth/oidc/end-session with the  OIDC JWT -> 200 + IdP redirect_url; GET -> 405 (Phase 22).
 #
-# The endpoint helper functions, mock-Keycloak lifecycle, and per-
-# phase sub-test functions live in tests/lib/oidc_rp_helpers.sh; this
-# script is the orchestrator (server lifecycle + sub-test invocation).
-
-# FUNCTIONS
-# (Helper functions live in tests/lib/oidc_rp_helpers.sh)
+# The endpoint helper functions, mock-Keycloak lifecycle, and per-phase sub-test functions live in tests/lib/oidc_rp_helpers.sh; this script is the orchestrator (server lifecycle + sub-test invocation).
 
 # CHANGELOG
 # 2.4.0 - 2026-07-17 - Phase 23: /callback deep-error coverage — token_invalid_grant, id_token_kid_unknown, and no_api_key (missing + rejected SystemApiKey) branches driven via mock Keycloak error-mode toggles and DB-backed instances lacking a valid SystemApiKey; new helper lib oidc_rp_helpers_callback_errors.sh; mock gains /_test/set-mode admin endpoint; new configs hydrogen_test_42_oidc_rp_no_api_key.json / _bad_api_key.json
@@ -58,9 +48,7 @@ TEST_NUMBER="42"
 TEST_COUNTER=0
 TEST_VERSION="2.4.0"
 
-# Phase 9: mock Keycloak port. Picked outside the typical Hydrogen
-# port range (5000s) and the test config's WebServer port (5242). If
-# this collides on someone's machine, override via MOCK_KC_PORT.
+# Phase 9: mock Keycloak port. Picked outside the typical Hydrogen port range (5000s) and the test config's WebServer port (5242). If this collides on someone's machine, override via MOCK_KC_PORT.
 MOCK_KC_PORT="${MOCK_KC_PORT:-7042}"
 MOCK_KC_SCRIPT=""
 MOCK_KC_PID=""
@@ -98,16 +86,11 @@ source "${SCRIPT_DIR}/lib/oidc_rp_helpers_roles.sh"
 # shellcheck source=tests/lib/oidc_rp_helpers_callback_errors.sh # Phase 23 deep-error sub-tests
 source "${SCRIPT_DIR}/lib/oidc_rp_helpers_callback_errors.sh"
 
-# Trap to make sure we do not leak a node process if the test script
-# fails between mock start and stop. The functions live in
-# lib/oidc_rp_helpers.sh; the trap is registered in this file because
-# bash traps belong to the script not the sourced library.
+# Trap to make sure we do not leak a node process if the test script fails between mock start and stop. The functions live in
+# lib/oidc_rp_helpers.sh; the trap is registered in this file because bash traps belong to the script not the sourced library.
 trap 'stop_mock_keycloak || true; _hydrogen_owned_exit_trap 2>/dev/null || true' EXIT
 
-
-# ---------------------------------------------------------------------------
 # Pre-flight: locate binary, validate config
-# ---------------------------------------------------------------------------
 
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Locate Hydrogen Binary"
 
@@ -135,9 +118,7 @@ else
     EXIT_CODE=1
 fi
 
-# ---------------------------------------------------------------------------
 # Server lifecycle + endpoint sub-tests
-# ---------------------------------------------------------------------------
 
 if [[ "${EXIT_CODE}" -eq 0 ]]; then
     SERVER_LOG="${LOG_FILE}"
@@ -186,17 +167,11 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         test_oidc_unknown_path_404 "${BASE_URL}" "auth/oidc/start/x"  "OIDC start with extra segment"
 
         # ---- Phase 9: mock Keycloak reachability + discovery/JWKS ----
-        # The mock is a tiny Node script that serves canned discovery
-        # and JWKS docs. The Hydrogen-side code that consumes those is
-        # exercised by the Unity tests (oidc_rp_discovery_test_cache,
-        # oidc_rp_jwks_test_cache) via the http test seam. These
-        # sub-tests just prove the mock works end-to-end against a
-        # real HTTP client (curl), so future phases that wire the
-        # real flow have a known-good fixture.
+        # The mock is a tiny Node script that serves canned discovery and JWKS docs. The Hydrogen-side code that consumes those is
+        # exercised by the Unity tests (oidc_rp_discovery_test_cache, oidc_rp_jwks_test_cache) via the http test seam. These
+        # sub-tests just prove the mock works end-to-end against a real HTTP client (curl), so future phases that wire the real flow have a known-good fixture.
         #
-        # Phase 10 also relies on the mock IdP being reachable for the
-        # /oidc/start redirect test below (Hydrogen fetches discovery
-        # from the mock when serving /start with Enabled=true).
+        # Phase 10 also relies on the mock IdP being reachable for the /oidc/start redirect test below (Hydrogen fetches discovery from the mock when serving /start with Enabled=true).
         MOCK_KC_STARTED=0
         print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Start mock Keycloak"
         # shellcheck disable=SC2310 # We want to continue even if the test fails
@@ -215,9 +190,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
             test_mock_keycloak_id_token_header_and_claims
         else
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Mock Keycloak failed to start"
-            # Do not fail the whole test if node is missing — the
-            # disabled-stub coverage above is still valid. Phase 9 + 10
-            # sub-tests gracefully degrade.
+            # Do not fail the whole test if node is missing — the disabled-stub coverage above is still valid. Phase 9 + 10 sub-tests gracefully degrade.
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Skipping mock-Keycloak + Phase 10 sub-tests"
         fi
     fi
@@ -239,9 +212,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     fi
 
     # ---- Phase 10: /oidc/start redirect against mock IdP ----
-    # Bring up a second Hydrogen instance with OIDC_RP.Enabled=true,
-    # pointing at the mock Keycloak we already started above. Skip
-    # cleanly if the mock didn't come up (e.g. node missing).
+    # Bring up a second Hydrogen instance with OIDC_RP.Enabled=true, pointing at the mock Keycloak we already started above. Skip cleanly if the mock didn't come up (e.g. node missing).
     if [[ "${EXIT_CODE}" -eq 0 ]] && [[ "${MOCK_KC_STARTED:-0}" -eq 1 ]]; then
         print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate enabled-mode config"
         # shellcheck disable=SC2310 # We want to continue even if the test fails
@@ -473,11 +444,15 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
 
         # Seed the identity row for account_id=1 (adminuser) so the linker
         # resolves without provisioning, BEFORE each instance starts.
+        # Seeding is best-effort; non-zero must not abort (SC2310 per line).
+        # shellcheck disable=SC2310 # Seeding is best-effort; non-zero must not abort
         seed_oidc_queryref_seed_only "${NAK_DEMO_SQLITE}" || true
+        # shellcheck disable=SC2310 # Seeding is best-effort; non-zero must not abort
         seed_email_queryrefs "${NAK_DEMO_SQLITE}" || true
+        # shellcheck disable=SC2310 # Seeding is best-effort; non-zero must not abort
         seed_provision_queryrefs "${NAK_DEMO_SQLITE}" || true
-        seed_oidc_identity "${NAK_DEMO_SQLITE}" 1 \
-            "${NAK_MOCK_ISSUER}" "${NAK_MOCK_SUBJECT}" || true
+        # shellcheck disable=SC2310 # Seeding is best-effort; non-zero must not abort
+        seed_oidc_identity "${NAK_DEMO_SQLITE}" 1 "${NAK_MOCK_ISSUER}" "${NAK_MOCK_SUBJECT}" || true
 
         # Helper to bring up a no_api_key instance, run one sub-test, stop it.
         # $1 config path, $2 port, $3 description.
@@ -501,11 +476,15 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
             # (Re)seed the identity row for account_id=1 so the linker
             # resolves without provisioning. Idempotent (INSERT OR REPLACE);
             # done per-instance because the shared demo DB may be mutated.
+            # Seeding is best-effort; non-zero must not abort (SC2310 per line).
+            # shellcheck disable=SC2310 # Seeding is best-effort; non-zero must not abort
             seed_oidc_queryref_seed_only "${NAK_DEMO_SQLITE}" || true
+            # shellcheck disable=SC2310 # Seeding is best-effort; non-zero must not abort
             seed_email_queryrefs "${NAK_DEMO_SQLITE}" || true
+            # shellcheck disable=SC2310 # Seeding is best-effort; non-zero must not abort
             seed_provision_queryrefs "${NAK_DEMO_SQLITE}" || true
-            seed_oidc_identity "${NAK_DEMO_SQLITE}" 1 \
-                "${NAK_MOCK_ISSUER}" "${NAK_MOCK_SUBJECT}" || true
+            # shellcheck disable=SC2310 # Seeding is best-effort; non-zero must not abort
+            seed_oidc_identity "${NAK_DEMO_SQLITE}" 1 "${NAK_MOCK_ISSUER}" "${NAK_MOCK_SUBJECT}" || true
             print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Start Hydrogen Server (${nak_desc})"
             # shellcheck disable=SC2310 # We want to continue even if the test fails
             if start_hydrogen_with_pid "${nak_cfg}" "${SERVER_LOG}" 30 "${HYDROGEN_BIN}" "${nak_pid_var}"; then
@@ -552,6 +531,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         # Clean up the pre-seeded identity row ONCE, after both no_api_key
         # instances have run (they share the demo DB and both rely on the
         # seeded identity so the linker resolves a real account).
+        # shellcheck disable=SC2310 # Cleanup is best-effort; non-zero must not abort
         if command -v sqlite3 >/dev/null 2>&1; then
             unseed_oidc_identity "${NAK_DEMO_SQLITE}" \
                 "${NAK_MOCK_ISSUER}" "${NAK_MOCK_SUBJECT}" || true
@@ -877,10 +857,8 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Provision-blocked-config validated"
                 PASS_COUNT=$(( PASS_COUNT + 1 ))
 
-                # Seed QueryRefs BEFORE Hydrogen starts (idempotent —
-                # already done above for the provision-config instance,
-                # but safe to repeat here in case earlier instance failed
-                # to start).
+                # Seed QueryRefs BEFORE Hydrogen starts (idempotent — already done above for the provision-config instance,
+                # but safe to repeat here in case earlier instance failed to start).
                 seed_oidc_queryref_seed_only "${DEMO_SQLITE}" || true
                 seed_email_queryrefs "${DEMO_SQLITE}" || true
                 seed_provision_queryrefs "${DEMO_SQLITE}" || true
@@ -949,8 +927,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     fi
 
     # ---- Phase 21: match_email_then_provision (default strategy) ----
-    # Lifecycle helper is in oidc_rp_helpers_default.sh to keep this
-    # orchestrator under the 1,000-line cap.
+    # Lifecycle helper is in oidc_rp_helpers_default.sh to keep this orchestrator under the 1,000-line cap.
     if [[ "${EXIT_CODE}" -eq 0 ]] \
         && [[ "${MOCK_KC_STARTED:-0}" -eq 1 ]] \
         && [[ -n "${HYDROGEN_DEMO_API_KEY:-}" ]] \
@@ -974,9 +951,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     fi
 
     # ---- Phase 22: role mapping ----
-    # Uses the already-running default-config Hydrogen (port 5249) for the
-    # database-source sub-test, plus two new instances for idp_realm_roles
-    # and merge. The default-config instance is passed in as its base URL.
+    # Uses the already-running default-config Hydrogen (port 5249) for the database-source sub-test, plus two new instances for idp_realm_roles and merge. The default-config instance is passed in as its base URL.
     if [[ "${EXIT_CODE}" -eq 0 ]] \
         && [[ "${MOCK_KC_STARTED:-0}" -eq 1 ]] \
         && [[ -n "${HYDROGEN_DEMO_API_KEY:-}" ]] \
@@ -988,9 +963,8 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         MOCK_ISSUER="http://localhost:${MOCK_KC_PORT}/realms/test"
         MOCK_SUBJECT="mock-sub-12345"
 
-        # The default-config Hydrogen instance (port 5249) was started in
-        # Phase 21's run_phase21_default_tests call and is now stopped.
-        # Re-start it here for the Phase 22 database-source sub-test.
+        # The default-config Hydrogen instance (port 5249) was started in Phase 21's run_phase21_default_tests call and is now stopped.
+        # Re-start it here for the Phase 22 database-source sub-test.    
         # shellcheck disable=SC2310 # We want to continue even if the test fails
         run_phase22_roles_tests \
             "http://localhost:5249" \

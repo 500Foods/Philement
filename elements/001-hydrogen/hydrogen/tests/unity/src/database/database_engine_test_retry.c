@@ -1,5 +1,5 @@
 /*
- * Unity Test File: database_engine_retry_test
+ * Unity Test File: database_engine_test_retry
  *
  * Unit tests for the engine-agnostic retry layer in
  * database_engine_execute (step 4 of the database timeout plan).
