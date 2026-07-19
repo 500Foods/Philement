@@ -725,6 +725,52 @@ Based on lessons learned from implementing previous tests.
 - Never use `sleep(1)` or longer delays - unit tests should complete in milliseconds, not seconds
 - A test suite that takes 5+ seconds due to sleep calls will slow down development workflow significantly
 
+**Do NOT Rebind `stdout` with `freopen`**:
+
+Unity prints its result summary (`N Tests M Failures K Ignored` plus the
+`[RUN]`/`[FAIL]`/`[IGNORED]` lines and final `OK`/`FAIL`) to `stdout` from
+`UNITY_END()`. The `mku` runner and coverage reporting (test_89) parse that
+summary out of the test's standard output, so if it is missing the test is
+reported as passing but its sub-test count is never recorded.
+
+`freopen("/dev/null", "w", stdout)` rebinds the **process-wide** `stdout`
+`FILE*` for the rest of the process. Any code under test that writes to
+`stdout` (e.g. a console/log sink) is silenced, but so is Unity's own summary
+— it is thrown away and the test "silently" passes with no `N Tests ...` line.
+This is exactly the failure mode where the test runs and exits 0, yet coverage
+reporting complains the sub-tests were not recorded.
+
+- **Bad**: `freopen("/dev/null", "w", stdout);` to hide noisy console output —
+  it also hides Unity's summary.
+- **Good**: redirect only the underlying file descriptor and restore it in
+  `tearDown()` (before `UNITY_END()` runs), so the summary still reaches the
+  real `stdout`:
+
+  ```c
+  static int g_saved_stdout = -1;
+
+  static void silence_stdout(void) {
+      if (g_saved_stdout != -1) return;
+      g_saved_stdout = dup(1);
+      int devnull = open("/dev/null", O_WRONLY);
+      if (devnull != -1) {
+          dup2(devnull, 1);
+          close(devnull);
+      }
+  }
+
+  static void restore_stdout(void) {
+      if (g_saved_stdout == -1) return;
+      dup2(g_saved_stdout, 1);
+      close(g_saved_stdout);
+      g_saved_stdout = -1;
+  }
+  ```
+
+  Call `silence_stdout()` in `setUp()` and `restore_stdout()` in `tearDown()`.
+  The console noise is suppressed during each test, but `stdout` is restored
+  before `UNITY_END()` prints the summary. (`<fcntl.h>`, `<unistd.h>` required.)
+
 **Use Precise, Minimal Timing When Needed**:
 
 ```c

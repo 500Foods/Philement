@@ -17,10 +17,10 @@
 
 // Local includes
 #include "landing.h"
+#include <src/logging/log_fanout.h>
 
 // External declarations
 extern ServiceThreads logging_threads;
-extern pthread_t log_thread;
 extern volatile sig_atomic_t log_queue_shutdown;
 extern AppConfig* app_config;
 
@@ -78,20 +78,13 @@ int land_logging_subsystem(void) {
     // Signal thread shutdown
     log_queue_shutdown = 1;
     log_this(SR_LOGGING, "Signaled " SR_LOGGING " thread to stop", LOG_LEVEL_TRACE, 0);
-    
-    // Wait for thread to complete
-    if (log_thread) {
-        log_this(SR_LOGGING, "Waiting for " SR_LOGGING " thread to complete", LOG_LEVEL_TRACE, 0);
-        if (pthread_join(log_thread, NULL) != 0) {
-            log_this(SR_LOGGING, "Error waiting for " SR_LOGGING " thread", LOG_LEVEL_ERROR, 0);
-            success = false;
-        } else {
-            log_this(SR_LOGGING, SR_LOGGING " thread completed", LOG_LEVEL_TRACE, 0);
-        }
+
+    // Join the SystemLog fan-out consumer (replaces the legacy log_thread).
+    // This drains any remaining queued entries before buffers/config are freed.
+    if (!shutdown_log_fanout()) {
+        log_this(SR_LOGGING, "Error joining " SR_LOGGING " fan-out thread", LOG_LEVEL_ERROR, 0);
+        success = false;
     }
-    
-    // Remove the logging thread from tracking
-    remove_service_thread(&logging_threads, log_thread);
     
     // Reinitialize thread structure
     init_service_threads(&logging_threads, SR_LOGGING);

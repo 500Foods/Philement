@@ -35,9 +35,9 @@
 #include <src/database/database.h>
 #include <src/scripting/orchestrator.h>
 #include <src/mailrelay/mailrelay_events.h>
+#include <src/logging/log_fanout.h>
 
 // External declarations
-extern void close_file_logging(void);
 extern volatile sig_atomic_t restart_count;
 extern volatile sig_atomic_t restart_requested;
 
@@ -381,7 +381,16 @@ int startup_hydrogen(const char* config_path) {
     
     // Launch approved subsystems and continue regardless of failures
     bool launch_success = launch_approved_subsystems(&readiness_results);
-    
+
+    /*
+     * Start the SystemLog fan-out consumer now that the queue system, the
+     * configuration, and the (potential) mailrelay subsystem are all up. The
+     * consumer drains the SystemLog queue and fans entries out to console,
+     * file, and mailrelay. logging.c already enqueues to SystemLog during
+     * startup, so this must run after queue_system_init() and config load.
+     */
+    init_log_fanout();
+
     // Review launch results
     handle_launch_review(&readiness_results);
     

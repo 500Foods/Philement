@@ -18,11 +18,29 @@
 #include "../helpers/metrics.h"
 #include <src/api/conduit/conduit_service.h>
 
+// Unity test mocks for network-dependent fan-out calls.
+#if defined(USE_MOCK_API_UTILS)
+#include <unity/mocks/mock_api_utils.h>
+#endif
+#if defined(USE_MOCK_AUTH_SERVICE_JWT)
+#include <unity/mocks/mock_auth_service_jwt.h>
+#endif
+#if defined(USE_MOCK_DBQUEUE)
+#include <unity/mocks/mock_dbqueue.h>
+#endif
+#if defined(USE_MOCK_AUTH_CHAT_DEPS)
+#include <unity/mocks/mock_auth_chat_deps.h>
+#endif
+
 // External reference to global queue manager
 extern DatabaseQueueManager* global_queue_manager;
 
 // Generate a simple UUID string (simplified version)
- void auth_chats_generate_broadcast_id(char *buffer, size_t buffer_size) {
+void auth_chats_generate_broadcast_id(char *buffer, size_t buffer_size) {
+    if (!buffer || buffer_size == 0) {
+        return;
+    }
+
     const char *hex = "0123456789abcdef";
     size_t idx = 0;
     for (int i = 0; i < 36 && idx < buffer_size - 1; i++) {
@@ -33,6 +51,279 @@ extern DatabaseQueueManager* global_queue_manager;
         }
     }
     buffer[idx] = '\0';
+}
+
+jwt_validation_result_t auth_chats_validate_jwt_from_header(const char *auth_header) {
+    jwt_validation_result_t result = {0};
+    if (!auth_header || strncmp(auth_header, "Bearer ", 7) != 0) {
+        result.error = JWT_ERROR_INVALID_FORMAT;
+        return result;
+    }
+    return validate_jwt(auth_header + 7, NULL);
+}
+
+json_t *auth_chats_build_error_response(const char *error_message) {
+    json_t *response = json_object();
+    json_object_set_new(response, "success", json_false());
+    json_object_set_new(response, "error", json_string(error_message ? error_message : "Unknown error"));
+    return response;
+}
+
+bool auth_chats_parse_request(json_t *request_json,
+                              json_t **engines,
+                              json_t **messages,
+                              size_t *engine_count,
+                              double *temperature,
+                              int *max_tokens,
+                              char **error_message) {
+    if (!request_json || !engines || !messages || !engine_count || !temperature ||
+        !max_tokens || !error_message) {
+        if (error_message) {
+            *error_message = strdup("Invalid parse request parameters");
+        }
+        return false;
+    }
+
+    *engines = NULL;
+    *messages = NULL;
+    *engine_count = 0;
+    *temperature = -1.0;
+    *max_tokens = -1;
+    *error_message = NULL;
+
+    json_t *engines_obj = json_object_get(request_json, "engines");
+    if (!engines_obj || !json_is_array(engines_obj)) {
+        *error_message = strdup("Missing or invalid 'engines' array");
+        return false;
+    }
+
+    size_t count = json_array_size(engines_obj);
+    if (count == 0 || count > 10) {
+        *error_message = strdup("Engines array must contain 1-10 engine names");
+        return false;
+    }
+
+    json_t *messages_obj = json_object_get(request_json, "messages");
+    if (!messages_obj || !json_is_array(messages_obj)) {
+        *error_message = strdup("Missing or invalid 'messages' array");
+        return false;
+    }
+
+    json_t *temperature_obj = json_object_get(request_json, "temperature");
+    if (temperature_obj && json_is_number(temperature_obj)) {
+        *temperature = json_number_value(temperature_obj);
+    }
+
+    json_t *max_tokens_obj = json_object_get(request_json, "max_tokens");
+    if (max_tokens_obj && json_is_integer(max_tokens_obj)) {
+        *max_tokens = (int)json_integer_value(max_tokens_obj);
+    }
+
+    *engines = engines_obj;
+    *messages = messages_obj;
+    *engine_count = count;
+    return true;
+}
+
+ChatMessage *auth_chats_messages_json_to_list(json_t *messages) {
+    if (!messages || !json_is_array(messages)) {
+        return NULL;
+    }
+
+    ChatMessage *chat_messages = NULL;
+    size_t message_count = json_array_size(messages);
+    for (size_t i = 0; i < message_count; i++) {
+        json_t *message = json_array_get(messages, i);
+        if (!json_is_object(message)) {
+            continue;
+        }
+
+        json_t *role_obj = json_object_get(message, "role");
+        json_t *content_obj = json_object_get(message, "content");
+        if (!role_obj || !content_obj) {
+            continue;
+        }
+
+        char *content = NULL;
+        if (json_is_string(content_obj)) {
+            content = strdup(json_string_value(content_obj));
+        } else if (json_is_array(content_obj)) {
+            content = json_dumps(content_obj, JSON_COMPACT);
+        }
+        if (!content) {
+            continue;
+        }
+
+        ChatMessageRole role = chat_message_role_from_string(json_string_value(role_obj));
+        ChatMessage *new_message = chat_message_create(role, content, NULL);
+        if (new_message) {
+            chat_messages = chat_message_list_append(chat_messages, new_message);
+        }
+        free(content);
+    }
+    return chat_messages;
+}
+
+ChatRequestParams auth_chats_resolve_request_params(const ChatEngineConfig *engine,
+                                                     double temperature,
+                                                     int max_tokens) {
+    ChatRequestParams params = chat_request_params_default();
+    if (!engine) {
+        return params;
+    }
+    params.temperature = temperature >= 0.0 ? temperature : engine->temperature_default;
+    params.max_tokens = max_tokens > 0 ? max_tokens : engine->max_tokens;
+    return params;
+}
+
+size_t auth_chats_build_multi_requests(ChatEngineCache *cache,
+                                       json_t *engines,
+                                       const ChatMessage *messages,
+                                       double temperature,
+                                       int max_tokens,
+                                       ChatMultiRequest *requests) {
+    if (!cache || !engines || !json_is_array(engines) || !requests) {
+        return 0;
+    }
+
+    size_t valid_requests = 0;
+    size_t engine_count = json_array_size(engines);
+    for (size_t i = 0; i < engine_count; i++) {
+        json_t *engine_name_obj = json_array_get(engines, i);
+        if (!json_is_string(engine_name_obj)) {
+            continue;
+        }
+
+        const ChatEngineConfig *engine = chat_engine_cache_lookup_by_name(
+            cache, json_string_value(engine_name_obj));
+        if (!engine || !engine->is_healthy) {
+            continue;
+        }
+
+        ChatRequestParams params = auth_chats_resolve_request_params(engine, temperature, max_tokens);
+        json_t *provider_request = chat_request_build(engine, messages, &params);
+        char *request_body = chat_request_to_json_string(provider_request, true);
+        json_decref(provider_request);
+        if (!request_body) {
+            continue;
+        }
+
+        char *engine_name = strdup(engine->name);
+        if (!engine_name) {
+            free(request_body);
+            continue;
+        }
+        requests[valid_requests].engine = engine;
+        requests[valid_requests].request_json = request_body;
+        requests[valid_requests].engine_name = engine_name;
+        valid_requests++;
+    }
+    return valid_requests;
+}
+
+void auth_chats_free_multi_requests(ChatMultiRequest *requests, size_t request_count) {
+    if (!requests) {
+        return;
+    }
+    for (size_t i = 0; i < request_count; i++) {
+        free((char *)requests[i].request_json);
+        free(requests[i].engine_name);
+    }
+    free(requests);
+}
+
+char **auth_chats_copy_engine_names(const ChatMultiRequest *requests, size_t request_count) {
+    if (!requests || request_count == 0) {
+        return NULL;
+    }
+    char **engine_names = calloc(request_count, sizeof(char *));
+    if (!engine_names) {
+        return NULL;
+    }
+    for (size_t i = 0; i < request_count; i++) {
+        if (requests[i].engine_name) {
+            engine_names[i] = strdup(requests[i].engine_name);
+        }
+    }
+    return engine_names;
+}
+
+void auth_chats_free_engine_names(char **engine_names, size_t engine_count) {
+    if (!engine_names) {
+        return;
+    }
+    for (size_t i = 0; i < engine_count; i++) {
+        free(engine_names[i]);
+    }
+    free(engine_names);
+}
+
+json_t *auth_chats_build_response(const char *database,
+                                  const char *broadcast_id,
+                                  size_t engines_requested,
+                                  char **engine_names,
+                                  const ChatMultiResult *multi_result) {
+    json_t *response = json_object();
+    json_object_set_new(response, "success", json_true());
+    json_object_set_new(response, "database", json_string(database));
+    json_object_set_new(response, "broadcast_id", json_string(broadcast_id));
+    json_object_set_new(response, "engines_requested", json_integer((json_int_t)engines_requested));
+    json_object_set_new(response, "engines_succeeded",
+                        json_integer((json_int_t)(multi_result ? multi_result->success_count : 0)));
+    json_object_set_new(response, "engines_failed",
+                        json_integer((json_int_t)(multi_result ? multi_result->failure_count : 0)));
+
+    json_t *results = json_array();
+    if (multi_result) {
+        for (size_t i = 0; i < multi_result->count; i++) {
+            ChatProxyResult *proxy_result = multi_result->results[i];
+            const char *engine_name = engine_names && engine_names[i] ? engine_names[i] : "unknown";
+            json_t *result = json_object();
+            json_object_set_new(result, "engine", json_string(engine_name));
+
+            if (chat_proxy_result_is_success(proxy_result)) {
+                json_object_set_new(result, "success", json_true());
+                ChatParsedResponse *parsed = chat_response_parse(
+                    proxy_result->response_body, CEC_PROVIDER_OPENAI);
+                if (parsed && parsed->success) {
+                    json_object_set_new(result, "model",
+                                        json_string(parsed->model ? parsed->model : engine_name));
+                    json_object_set_new(result, "content",
+                                        json_string(parsed->content ? parsed->content : ""));
+                    json_t *tokens = json_object();
+                    json_object_set_new(tokens, "prompt", json_integer(parsed->prompt_tokens));
+                    json_object_set_new(tokens, "completion", json_integer(parsed->completion_tokens));
+                    json_object_set_new(tokens, "total", json_integer(parsed->total_tokens));
+                    json_object_set_new(result, "tokens", tokens);
+                    json_object_set_new(result, "finish_reason",
+                                        json_string(parsed->finish_reason ? parsed->finish_reason : "stop"));
+                    chat_metrics_conversation(database, engine_name);
+                    chat_metrics_tokens(database, engine_name, "prompt", parsed->prompt_tokens);
+                    chat_metrics_tokens(database, engine_name, "completion", parsed->completion_tokens);
+                } else {
+                    json_object_set_new(result, "content", json_string(""));
+                    json_object_set_new(result, "error", json_string("Failed to parse response"));
+                }
+                chat_parsed_response_destroy(parsed);
+            } else {
+                json_object_set_new(result, "success", json_false());
+                const char *error = proxy_result && proxy_result->error_message
+                    ? proxy_result->error_message : "Request failed";
+                json_object_set_new(result, "error", json_string(error));
+                chat_metrics_error(database, engine_name, "proxy_error");
+            }
+            json_object_set_new(result, "response_time_ms",
+                                json_real(proxy_result ? proxy_result->total_time_ms : 0.0));
+            json_array_append_new(results, result);
+        }
+    }
+    json_object_set_new(response, "results", results);
+
+    json_t *timing = json_object();
+    json_object_set_new(timing, "total_time_ms",
+                        json_real(multi_result ? multi_result->total_time_ms : 0.0));
+    json_object_set_new(response, "timing", timing);
+    return response;
 }
 
 // Handle auth_chats request
@@ -58,24 +349,19 @@ enum MHD_Result handle_auth_chats_request(struct MHD_Connection *connection,
     // Validate HTTP method
     if (strcmp(method, "POST") != 0) {
         api_free_post_buffer(con_cls);
-        json_t *error = json_object();
-        json_object_set_new(error, "success", json_false());
-        json_object_set_new(error, "error", json_string("Method not allowed - use POST"));
+        json_t *error = auth_chats_build_error_response("Method not allowed - use POST");
         enum MHD_Result ret = api_send_json_response(connection, error, MHD_HTTP_METHOD_NOT_ALLOWED);
         // api_send_json_response takes ownership and decrefs internally
         return ret;
     }
 
     // Extract and validate JWT
-    jwt_validation_result_t jwt_result = {0};
     const char *auth_header = MHD_lookup_connection_value(connection, MHD_HEADER_KIND, "Authorization");
-
-    if (!extract_and_validate_jwt(auth_header, &jwt_result)) {
+    jwt_validation_result_t jwt_result = auth_chats_validate_jwt_from_header(auth_header);
+    if (!jwt_result.valid) {
         api_free_post_buffer(con_cls);
         const char *error_msg = jwt_result.claims ? "Invalid token" : "Authentication required";
-        json_t *error = json_object();
-        json_object_set_new(error, "success", json_false());
-        json_object_set_new(error, "error", json_string(error_msg));
+        json_t *error = auth_chats_build_error_response(error_msg);
         enum MHD_Result ret = api_send_json_response(connection, error, MHD_HTTP_UNAUTHORIZED);
         // api_send_json_response takes ownership and decrefs internally
         free_jwt_validation_result(&jwt_result);
@@ -93,9 +379,7 @@ enum MHD_Result handle_auth_chats_request(struct MHD_Connection *connection,
     const char *database = jwt_result.claims->database;
     if (!database) {
         api_free_post_buffer(con_cls);
-        json_t *error = json_object();
-        json_object_set_new(error, "success", json_false());
-        json_object_set_new(error, "error", json_string("Token missing database claim"));
+        json_t *error = auth_chats_build_error_response("Token missing database claim");
         enum MHD_Result ret = api_send_json_response(connection, error, MHD_HTTP_FORBIDDEN);
         // api_send_json_response takes ownership and decrefs internally
         free_jwt_validation_result(&jwt_result);
@@ -109,49 +393,25 @@ enum MHD_Result handle_auth_chats_request(struct MHD_Connection *connection,
 
     if (!request_json) {
         free_jwt_validation_result(&jwt_result);
-        json_t *error = json_object();
-        json_object_set_new(error, "success", json_false());
-        json_object_set_new(error, "error", json_string("Invalid JSON in request body"));
+        json_t *error = auth_chats_build_error_response("Invalid JSON in request body");
         enum MHD_Result ret = api_send_json_response(connection, error, MHD_HTTP_BAD_REQUEST);
         // api_send_json_response takes ownership and decrefs internally
         return ret;
     }
 
-    // Extract engines array (required)
-    json_t *engines_array = json_object_get(request_json, "engines");
-    if (!engines_array || !json_is_array(engines_array)) {
+    json_t *engines_array = NULL;
+    json_t *messages = NULL;
+    size_t engine_count = 0;
+    double temperature = -1.0;
+    int max_tokens = -1;
+    char *parse_error = NULL;
+    if (!auth_chats_parse_request(request_json, &engines_array, &messages, &engine_count,
+                                  &temperature, &max_tokens, &parse_error)) {
         free_jwt_validation_result(&jwt_result);
         json_decref(request_json);
-        json_t *error = json_object();
-        json_object_set_new(error, "success", json_false());
-        json_object_set_new(error, "error", json_string("Missing or invalid 'engines' array"));
+        json_t *error = auth_chats_build_error_response(parse_error);
+        free(parse_error);
         enum MHD_Result ret = api_send_json_response(connection, error, MHD_HTTP_BAD_REQUEST);
-        // api_send_json_response takes ownership and decrefs internally
-        return ret;
-    }
-
-    size_t engine_count = json_array_size(engines_array);
-    if (engine_count == 0 || engine_count > 10) {
-        free_jwt_validation_result(&jwt_result);
-        json_decref(request_json);
-        json_t *error = json_object();
-        json_object_set_new(error, "success", json_false());
-        json_object_set_new(error, "error", json_string("Engines array must contain 1-10 engine names"));
-        enum MHD_Result ret = api_send_json_response(connection, error, MHD_HTTP_BAD_REQUEST);
-        // api_send_json_response takes ownership and decrefs internally
-        return ret;
-    }
-
-    // Extract messages (required)
-    json_t *messages = json_object_get(request_json, "messages");
-    if (!messages || !json_is_array(messages)) {
-        free_jwt_validation_result(&jwt_result);
-        json_decref(request_json);
-        json_t *error = json_object();
-        json_object_set_new(error, "success", json_false());
-        json_object_set_new(error, "error", json_string("Missing or invalid 'messages' array"));
-        enum MHD_Result ret = api_send_json_response(connection, error, MHD_HTTP_BAD_REQUEST);
-        // api_send_json_response takes ownership and decrefs internally
         return ret;
     }
 
@@ -160,9 +420,7 @@ enum MHD_Result handle_auth_chats_request(struct MHD_Connection *connection,
     if (!db_queue) {
         free_jwt_validation_result(&jwt_result);
         json_decref(request_json);
-        json_t *error = json_object();
-        json_object_set_new(error, "success", json_false());
-        json_object_set_new(error, "error", json_string("Database not found"));
+        json_t *error = auth_chats_build_error_response("Database not found");
         enum MHD_Result ret = api_send_json_response(connection, error, MHD_HTTP_BAD_REQUEST);
         // api_send_json_response takes ownership and decrefs internally
         return ret;
@@ -173,9 +431,7 @@ enum MHD_Result handle_auth_chats_request(struct MHD_Connection *connection,
     if (!cec) {
         free_jwt_validation_result(&jwt_result);
         json_decref(request_json);
-        json_t *error = json_object();
-        json_object_set_new(error, "success", json_false());
-        json_object_set_new(error, "error", json_string("Chat not enabled for this database"));
+        json_t *error = auth_chats_build_error_response("Chat not enabled for this database");
         enum MHD_Result ret = api_send_json_response(connection, error, MHD_HTTP_SERVICE_UNAVAILABLE);
         // api_send_json_response takes ownership and decrefs internally
         return ret;
@@ -186,105 +442,22 @@ enum MHD_Result handle_auth_chats_request(struct MHD_Connection *connection,
     if (!multi_requests) {
         free_jwt_validation_result(&jwt_result);
         json_decref(request_json);
-        json_t *error = json_object();
-        json_object_set_new(error, "success", json_false());
-        json_object_set_new(error, "error", json_string("Failed to allocate request array"));
+        json_t *error = auth_chats_build_error_response("Failed to allocate request array");
         enum MHD_Result ret = api_send_json_response(connection, error, MHD_HTTP_INTERNAL_SERVER_ERROR);
         // api_send_json_response takes ownership and decrefs internally
         return ret;
     }
 
-    // Extract optional parameters
-    double temperature = -1.0;
-    int max_tokens = -1;
-
-    json_t *temp_obj = json_object_get(request_json, "temperature");
-    if (temp_obj && json_is_number(temp_obj)) {
-        temperature = json_number_value(temp_obj);
-    }
-
-    json_t *tokens_obj = json_object_get(request_json, "max_tokens");
-    if (tokens_obj && json_is_integer(tokens_obj)) {
-        max_tokens = (int)json_integer_value(tokens_obj);
-    }
-
-    // Convert messages JSON to ChatMessage list once (shared across all engines)
-    ChatMessage *chat_messages = NULL;
-    size_t msg_count = json_array_size(messages);
-    for (size_t i = 0; i < msg_count; i++) {
-        json_t *msg = json_array_get(messages, i);
-        if (!json_is_object(msg)) continue;
-
-        json_t *role_obj = json_object_get(msg, "role");
-        json_t *content_obj = json_object_get(msg, "content");
-
-        if (!role_obj || !content_obj) continue;
-
-        const char *role_str = json_string_value(role_obj);
-        ChatMessageRole role = chat_message_role_from_string(role_str);
-
-        char *content_str = NULL;
-        if (json_is_string(content_obj)) {
-            content_str = strdup(json_string_value(content_obj));
-        } else if (json_is_array(content_obj)) {
-            content_str = json_dumps(content_obj, JSON_COMPACT);
-        }
-
-        if (content_str) {
-            ChatMessage *new_msg = chat_message_create(role, content_str, NULL);
-            chat_messages = chat_message_list_append(chat_messages, new_msg);
-            free(content_str);
-        }
-    }
-
-    // Lookup engines and build requests
-    size_t valid_requests = 0;
-    for (size_t i = 0; i < engine_count; i++) {
-        json_t *engine_name_obj = json_array_get(engines_array, i);
-        if (!json_is_string(engine_name_obj)) continue;
-
-        const char *engine_name = json_string_value(engine_name_obj);
-        const ChatEngineConfig *engine = chat_engine_cache_lookup_by_name(cec, engine_name);
-
-        if (!engine || !engine->is_healthy) {
-            continue;
-        }
-
-        // Build request parameters
-        ChatRequestParams params = chat_request_params_default();
-        if (temperature >= 0.0) {
-            params.temperature = temperature;
-        } else {
-            params.temperature = engine->temperature_default;
-        }
-        if (max_tokens > 0) {
-            params.max_tokens = max_tokens;
-        } else {
-            params.max_tokens = engine->max_tokens;
-        }
-
-        // Build request JSON for provider
-        json_t *provider_request = chat_request_build(engine, chat_messages, &params);
-        const char *request_body = chat_request_to_json_string(provider_request, true);
-        json_decref(provider_request);
-
-        if (request_body) {
-            multi_requests[valid_requests].engine = engine;
-            multi_requests[valid_requests].request_json = request_body;
-            multi_requests[valid_requests].engine_name = strdup(engine->name);
-            valid_requests++;
-        }
-    }
-
+    ChatMessage *chat_messages = auth_chats_messages_json_to_list(messages);
+    size_t valid_requests = auth_chats_build_multi_requests(
+        cec, engines_array, chat_messages, temperature, max_tokens, multi_requests);
     chat_message_list_destroy(chat_messages);
 
     if (valid_requests == 0) {
-        free(multi_requests);
+        auth_chats_free_multi_requests(multi_requests, valid_requests);
         free_jwt_validation_result(&jwt_result);
         json_decref(request_json);
-        json_t *error = json_object();
-        json_object_set_new(error, "success", json_false());
-        json_object_set_new(error, "error", json_string("No valid or healthy engines found"));
+        json_t *error = auth_chats_build_error_response("No valid or healthy engines found");
         enum MHD_Result ret = api_send_json_response(connection, error, MHD_HTTP_BAD_REQUEST);
         // api_send_json_response takes ownership and decrefs internally
         return ret;
@@ -295,116 +468,28 @@ enum MHD_Result handle_auth_chats_request(struct MHD_Connection *connection,
     ChatMultiResult *multi_result = chat_proxy_send_multi(multi_requests, valid_requests, &proxy_config);
 
     // Save engine names before freeing multi_requests
-    char **engine_names = (char**)calloc(valid_requests, sizeof(char*));
+    char **engine_names = auth_chats_copy_engine_names(multi_requests, valid_requests);
     if (!engine_names) {
-        // Cleanup request bodies on allocation failure
-        for (size_t i = 0; i < valid_requests; i++) {
-            free((char*)multi_requests[i].request_json);
-            free(multi_requests[i].engine_name);
-        }
-        free(multi_requests);
+        auth_chats_free_multi_requests(multi_requests, valid_requests);
+        chat_multi_result_destroy(multi_result);
         free_jwt_validation_result(&jwt_result);
         json_decref(request_json);
-        json_t *error = json_object();
-        json_object_set_new(error, "success", json_false());
-        json_object_set_new(error, "error", json_string("Failed to allocate engine names array"));
+        json_t *error = auth_chats_build_error_response("Failed to allocate engine names array");
         enum MHD_Result ret = api_send_json_response(connection, error, MHD_HTTP_INTERNAL_SERVER_ERROR);
         // api_send_json_response takes ownership and decrefs internally
         return ret;
     }
-    for (size_t i = 0; i < valid_requests; i++) {
-        engine_names[i] = multi_requests[i].engine_name ? strdup(multi_requests[i].engine_name) : NULL;
-    }
-
-    // Cleanup request bodies
-    for (size_t i = 0; i < valid_requests; i++) {
-        free((char*)multi_requests[i].request_json);
-        free(multi_requests[i].engine_name);
-    }
-    free(multi_requests);
+    auth_chats_free_multi_requests(multi_requests, valid_requests);
 
     // Generate broadcast ID
     char broadcast_id[37];
     auth_chats_generate_broadcast_id(broadcast_id, sizeof(broadcast_id));
 
-    // Build response
-    json_t *response = json_object();
-    json_object_set_new(response, "success", json_true());
-    json_object_set_new(response, "database", json_string(database));
-    json_object_set_new(response, "broadcast_id", json_string(broadcast_id));
-    json_object_set_new(response, "engines_requested", json_integer((json_int_t)engine_count));
-    json_object_set_new(response, "engines_succeeded", json_integer((json_int_t)(multi_result ? multi_result->success_count : 0)));
-    json_object_set_new(response, "engines_failed", json_integer((json_int_t)(multi_result ? multi_result->failure_count : 0)));
-
-    // Build results array
-    json_t *results_array = json_array();
-    if (multi_result) {
-        for (size_t i = 0; i < multi_result->count; i++) {
-            ChatProxyResult *proxy_result = multi_result->results[i];
-            json_t *result_obj = json_object();
-
-            // Get engine name from saved context
-            const char *engine_name = engine_names[i] ? engine_names[i] : "unknown";
-
-            json_object_set_new(result_obj, "engine", json_string(engine_name));
-
-            if (chat_proxy_result_is_success(proxy_result)) {
-                json_object_set_new(result_obj, "success", json_true());
-
-                // Parse response
-                ChatParsedResponse *parsed = chat_response_parse(proxy_result->response_body, CEC_PROVIDER_OPENAI);
-                if (parsed && parsed->success) {
-                    json_object_set_new(result_obj, "model", json_string(parsed->model ? parsed->model : engine_name));
-                    json_object_set_new(result_obj, "content", json_string(parsed->content ? parsed->content : ""));
-
-                    json_t *tokens = json_object();
-                    json_object_set_new(tokens, "prompt", json_integer(parsed->prompt_tokens));
-                    json_object_set_new(tokens, "completion", json_integer(parsed->completion_tokens));
-                    json_object_set_new(tokens, "total", json_integer(parsed->total_tokens));
-                    json_object_set_new(result_obj, "tokens", tokens);
-
-                    json_object_set_new(result_obj, "finish_reason", json_string(parsed->finish_reason ? parsed->finish_reason : "stop"));
-
-                    // Record metrics
-                    chat_metrics_conversation(database, engine_name);
-                    chat_metrics_tokens(database, engine_name, "prompt", parsed->prompt_tokens);
-                    chat_metrics_tokens(database, engine_name, "completion", parsed->completion_tokens);
-                } else {
-                    json_object_set_new(result_obj, "content", json_string(""));
-                    json_object_set_new(result_obj, "error", json_string("Failed to parse response"));
-                }
-                chat_parsed_response_destroy(parsed);
-
-                json_object_set_new(result_obj, "response_time_ms", json_real(proxy_result->total_time_ms));
-            } else {
-                json_object_set_new(result_obj, "success", json_false());
-                const char *error_msg = proxy_result->error_message ? proxy_result->error_message : "Request failed";
-                json_object_set_new(result_obj, "error", json_string(error_msg));
-                json_object_set_new(result_obj, "response_time_ms", json_real(proxy_result->total_time_ms));
-
-                // Record error metric
-                chat_metrics_error(database, engine_name, "proxy_error");
-            }
-
-            json_array_append_new(results_array, result_obj);
-        }
-    }
-    json_object_set_new(response, "results", results_array);
-
-    // Add timing
-    json_t *timing = json_object();
-    if (multi_result) {
-        json_object_set_new(timing, "total_time_ms", json_real(multi_result->total_time_ms));
-    } else {
-        json_object_set_new(timing, "total_time_ms", json_real(0.0));
-    }
-    json_object_set_new(response, "timing", timing);
+    json_t *response = auth_chats_build_response(
+        database, broadcast_id, engine_count, engine_names, multi_result);
 
     // Cleanup
-    for (size_t i = 0; i < valid_requests; i++) {
-        free(engine_names[i]);
-    }
-    free(engine_names);
+    auth_chats_free_engine_names(engine_names, valid_requests);
     chat_multi_result_destroy(multi_result);
     free_jwt_validation_result(&jwt_result);
     json_decref(request_json);

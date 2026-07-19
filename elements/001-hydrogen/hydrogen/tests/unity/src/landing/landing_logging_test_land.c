@@ -2,6 +2,18 @@
  * Unity Test File: Land Logging Subsystem Tests
  * This file contains unit tests for the land_logging_subsystem function
  * from src/landing/landing_logging.c
+ *
+ * The logging landing now drains the SystemLog fan-out consumer via
+ * shutdown_log_fanout() (replacing the legacy log_thread join +
+ * remove_service_thread pattern). These tests assert the externally
+ * observable behavior of the landing path.
+ *
+ * NOTE: The Unity suite links the full hydrogen_unity static library, so the
+ * weakly-declared helpers in this file (init_service_threads, cleanup_*,
+ * log_this) resolve to their strong real definitions. We therefore assert only
+ * behavior that is observable without intercepting those internals: the return
+ * code, graceful handling of a NULL app_config, and that landing signals the
+ * log queue to shut down (log_queue_shutdown ends up 1).
  */
 
 // Standard project header plus Unity Framework header
@@ -27,88 +39,25 @@
 // Forward declarations for functions being tested
 int land_logging_subsystem(void);
 
-// Mock globals - use weak linkage to avoid multiple definitions
-__attribute__((weak)) SubsystemRegistry subsystem_registry;
-__attribute__((weak)) pthread_t log_thread;
-__attribute__((weak)) ServiceThreads logging_threads;
-__attribute__((weak)) volatile sig_atomic_t log_queue_shutdown;
+// Mock globals - app_config is kept as a weak input control so the test can
+// drive a NULL configuration path. Other globals resolve to their real
+// (strong) definitions in the hydrogen_unity library.
 __attribute__((weak)) AppConfig* app_config;
-
-// Mock state
-static bool mock_pthread_join_success = true;
-static bool mock_remove_service_thread_called = false;
-static bool mock_init_service_threads_called = false;
-static bool mock_cleanup_logging_config_called = false;
-static bool mock_cleanup_log_buffer_called = false;
-
-// Mock implementations
-__attribute__((weak))
-void log_this(const char* subsystem, const char* format, int priority, int num_args, ...) {
-    (void)subsystem; (void)format; (void)priority; (void)num_args;
-    // Do nothing - suppress logging in tests
-}
-
-__attribute__((weak))
-int pthread_join(pthread_t thread, void **retval) {
-    (void)thread; (void)retval;
-    return mock_pthread_join_success ? 0 : -1;
-}
-
-__attribute__((weak))
-void remove_service_thread(ServiceThreads *threads, pthread_t thread_id) {
-    (void)threads; (void)thread_id;
-    mock_remove_service_thread_called = true;
-}
-
-__attribute__((weak))
-void init_service_threads(ServiceThreads *threads, const char* subsystem_name) {
-    (void)threads; (void)subsystem_name;
-    mock_init_service_threads_called = true;
-}
-
-__attribute__((weak))
-void cleanup_logging_config(LoggingConfig* config) {
-    (void)config;
-    mock_cleanup_logging_config_called = true;
-}
-
-__attribute__((weak))
-void cleanup_log_buffer(void) {
-    mock_cleanup_log_buffer_called = true;
-}
 
 // Forward declarations for test functions
 void test_land_logging_subsystem_success_path(void);
-void test_land_logging_subsystem_pthread_join_failure(void);
-void test_land_logging_subsystem_no_log_thread(void);
 void test_land_logging_subsystem_null_app_config(void);
+void test_land_logging_subsystem_already_shutdown(void);
 
 // Test setup and teardown
 void setUp(void) {
-    // Reset mock state between tests
     mock_landing_reset_all();
     mock_system_reset_all();
-
-    // Reset test state
-    mock_pthread_join_success = true;
-    mock_remove_service_thread_called = false;
-    mock_init_service_threads_called = false;
-    mock_cleanup_logging_config_called = false;
-    mock_cleanup_log_buffer_called = false;
-
-    // Initialize mock globals
-    subsystem_registry.count = 0;
-    subsystem_registry.subsystems = NULL;
-    log_thread = 1; // Valid thread
-    memset(&logging_threads, 0, sizeof(ServiceThreads));
-    logging_threads.thread_count = 1;
-    log_queue_shutdown = 0;
 
     // Initialize app_config with logging config
     app_config = malloc(sizeof(AppConfig));
     TEST_ASSERT_NOT_NULL(app_config);
     memset(app_config, 0, sizeof(AppConfig));
-    // Initialize logging config
     app_config->logging.levels = NULL;
     app_config->logging.level_count = 0;
     app_config->logging.console.enabled = false;
@@ -118,9 +67,7 @@ void setUp(void) {
 }
 
 void tearDown(void) {
-    // Clean up after each test
     if (app_config) {
-        cleanup_logging_config(&app_config->logging);
         free(app_config);
         app_config = NULL;
     }
@@ -129,71 +76,36 @@ void tearDown(void) {
 // ===== LAND LOGGING SUBSYSTEM TESTS =====
 
 void test_land_logging_subsystem_success_path(void) {
-    // Arrange: All conditions for success
-    // log_thread is valid (set in setUp), app_config is valid
-
-    // Act: Call the function
+    // Act: Normal landing with a valid configuration.
     int result = land_logging_subsystem();
 
-    // Assert: Should return 1 (success)
+    // Assert: Completes successfully and signals the log queue to stop.
     TEST_ASSERT_EQUAL(1, result);
-    TEST_ASSERT_TRUE(mock_remove_service_thread_called);
-    TEST_ASSERT_TRUE(mock_init_service_threads_called);
-    TEST_ASSERT_TRUE(mock_cleanup_logging_config_called);
-    TEST_ASSERT_TRUE(mock_cleanup_log_buffer_called);
-    TEST_ASSERT_EQUAL(1, log_queue_shutdown); // Should be set to 1
-}
-
-void test_land_logging_subsystem_pthread_join_failure(void) {
-    // Arrange: Mock pthread_join to fail
-    mock_pthread_join_success = false;
-
-    // Act: Call the function
-    int result = land_logging_subsystem();
-
-    // Assert: Should return 0 (failure) due to pthread_join error
-    TEST_ASSERT_EQUAL(0, result);
-    TEST_ASSERT_TRUE(mock_remove_service_thread_called);
-    TEST_ASSERT_TRUE(mock_init_service_threads_called);
-    TEST_ASSERT_TRUE(mock_cleanup_logging_config_called);
-    TEST_ASSERT_TRUE(mock_cleanup_log_buffer_called);
-    TEST_ASSERT_EQUAL(1, log_queue_shutdown);
-}
-
-void test_land_logging_subsystem_no_log_thread(void) {
-    // Arrange: No log thread (set to 0)
-    log_thread = 0;
-
-    // Act: Call the function
-    int result = land_logging_subsystem();
-
-    // Assert: Should return 1 (success) - skips thread joining
-    TEST_ASSERT_EQUAL(1, result);
-    TEST_ASSERT_TRUE(mock_remove_service_thread_called); // Still called with 0
-    TEST_ASSERT_TRUE(mock_init_service_threads_called);
-    TEST_ASSERT_TRUE(mock_cleanup_logging_config_called);
-    TEST_ASSERT_TRUE(mock_cleanup_log_buffer_called);
     TEST_ASSERT_EQUAL(1, log_queue_shutdown);
 }
 
 void test_land_logging_subsystem_null_app_config(void) {
-    // Arrange: Set app_config to NULL
-    cleanup_logging_config(&app_config->logging);
+    // Arrange: Force a NULL configuration.
     free(app_config);
     app_config = NULL;
-    
-    // Reset the flag after our own cleanup call so we can test if land_logging_subsystem calls it
-    mock_cleanup_logging_config_called = false;
 
-    // Act: Call the function
+    // Act: Should handle the missing config gracefully.
     int result = land_logging_subsystem();
 
-    // Assert: Should return 1 (success) - handles NULL app_config gracefully
+    // Assert: Still returns success and signals shutdown without crashing.
     TEST_ASSERT_EQUAL(1, result);
-    TEST_ASSERT_TRUE(mock_remove_service_thread_called);
-    TEST_ASSERT_TRUE(mock_init_service_threads_called);
-    TEST_ASSERT_FALSE(mock_cleanup_logging_config_called); // Should not be called
-    TEST_ASSERT_TRUE(mock_cleanup_log_buffer_called);
+    TEST_ASSERT_EQUAL(1, log_queue_shutdown);
+}
+
+void test_land_logging_subsystem_already_shutdown(void) {
+    // Arrange: log_queue_shutdown already set (idempotent landing path).
+    log_queue_shutdown = 1;
+
+    // Act
+    int result = land_logging_subsystem();
+
+    // Assert: Completes cleanly.
+    TEST_ASSERT_EQUAL(1, result);
     TEST_ASSERT_EQUAL(1, log_queue_shutdown);
 }
 
@@ -202,11 +114,9 @@ void test_land_logging_subsystem_null_app_config(void) {
 int main(void) {
     UNITY_BEGIN();
 
-    // Land logging subsystem tests
     RUN_TEST(test_land_logging_subsystem_success_path);
-    RUN_TEST(test_land_logging_subsystem_pthread_join_failure);
-    RUN_TEST(test_land_logging_subsystem_no_log_thread);
     RUN_TEST(test_land_logging_subsystem_null_app_config);
+    RUN_TEST(test_land_logging_subsystem_already_shutdown);
 
     return UNITY_END();
 }

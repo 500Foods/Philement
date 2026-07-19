@@ -84,6 +84,16 @@ bool store_prepared_statement(DatabaseHandle* connection, PreparedStatement* stm
                                                                                    connection->designator ? connection->designator : SR_DATABASE);
             if (engine && engine->unprepare_statement) {
                 engine->unprepare_statement(connection, evicted_stmt);
+                /*
+                 * The engine owns the unprepare, so we cannot free the struct
+                 * here - but we MUST drop the dangling pointer from the cache
+                 * array. find_prepared_statement() and the connection cleanup
+                 * path both walk prepared_statements[] and would otherwise
+                 * dereference a freed statement. Leave prepared_statement_count
+                 * unchanged so the "cache full -> use once then free" fallback
+                 * (database_engine.c:238) still triggers on the next store.
+                 */
+                connection->prepared_statements[lru_index] = NULL;
             } else {
                 if (evicted_stmt->name) free(evicted_stmt->name);
                 if (evicted_stmt->sql_template) free(evicted_stmt->sql_template);

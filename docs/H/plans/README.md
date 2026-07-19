@@ -53,3 +53,7 @@ Implementation of LUA general scripting functionality.
 ## [STATIC FUNCTIONS](/docs/H/plans/STATIC_COMPLETE.md)
 
 Adventure involving static function refactoring and optimization - removing them so they can be directly incorporated into Unity Framework unit tests. This has been the policy early on, once the implications for Unity were understood. However, recent model work seemed to not pay heed to this and a ton of code was added with static functions all over.
+
+## [LOGGING FUNCTIONS](/docs/H/plans/LOG_FANOUT_PLAN.md)
+
+Adventure involving static function refactoring and optimization - removing them so they can be directly incorporated into Unity Framework unit tests. This has been the policy early on, once the implications for Unity were understood. However, recent model work seemed to not pay heed to this and a ton of code was added with static functions all over.

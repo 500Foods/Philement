@@ -22,11 +22,333 @@
 #include "../helpers/lru_cache.h"
 #include <src/api/conduit/conduit_service.h>
 
+// Unity test mocks (header-only, guarded by USE_MOCK_* defined by the Unity
+// build). These remap the network/storage/JWT calls used by the success path
+// so the handler can be exercised without a live AI provider or database.
+// Placed after hydrogen.h so all project type definitions are available.
+#if defined(USE_MOCK_AUTH_SERVICE_JWT)
+#include <unity/mocks/mock_auth_service_jwt.h>
+#endif
+#if defined(USE_MOCK_DBQUEUE)
+#include <unity/mocks/mock_dbqueue.h>
+#endif
+#if defined(USE_MOCK_API_UTILS)
+#include <unity/mocks/mock_api_utils.h>
+#endif
+#if defined(USE_MOCK_AUTH_CHAT_DEPS)
+#include <unity/mocks/mock_auth_chat_deps.h>
+#endif
+
 // External reference to global queue manager
 extern DatabaseQueueManager* global_queue_manager;
 
 // Logging source for context hashing
 static const char* SR_AUTH_CHAT = "AUTH_CHAT";
+
+jwt_validation_result_t auth_chat_validate_jwt_from_header(const char *auth_header) {
+    jwt_validation_result_t result = {0};
+
+    if (!auth_header) {
+        result.valid = false;
+        result.error = JWT_ERROR_INVALID_FORMAT;
+        return result;
+    }
+
+    if (strncmp(auth_header, "Bearer ", 7) != 0) {
+        result.valid = false;
+        result.error = JWT_ERROR_INVALID_FORMAT;
+        return result;
+    }
+
+    return validate_jwt(auth_header + 7, NULL);
+}
+
+ChatRequestParams auth_chat_resolve_request_params(const ChatEngineConfig *engine,
+                                                    double temperature,
+                                                    int max_tokens,
+                                                    bool stream) {
+    ChatRequestParams params = chat_request_params_default();
+    if (!engine) {
+        params.stream = stream;
+        return params;
+    }
+
+    if (temperature >= 0.0) {
+        params.temperature = temperature;
+    } else {
+        params.temperature = engine->temperature_default;
+    }
+    if (max_tokens > 0) {
+        params.max_tokens = max_tokens;
+    } else {
+        params.max_tokens = engine->max_tokens;
+    }
+    params.stream = stream;
+    return params;
+}
+
+char *auth_chat_content_to_string(const json_t *content_obj) {
+    if (!content_obj) {
+        return NULL;
+    }
+    if (json_is_string(content_obj)) {
+        const char *value = json_string_value(content_obj);
+        return value ? strdup(value) : NULL;
+    }
+    if (json_is_array(content_obj)) {
+        return json_dumps(content_obj, JSON_COMPACT);
+    }
+    return NULL;
+}
+
+char *auth_chat_resolve_content_string(const char *database, json_t *content_obj) {
+    if (!content_obj) {
+        return NULL;
+    }
+
+    if (json_is_string(content_obj)) {
+        const char *value = json_string_value(content_obj);
+        return value ? strdup(value) : NULL;
+    }
+
+    if (!json_is_array(content_obj)) {
+        return NULL;
+    }
+
+    char *content_json = json_dumps(content_obj, JSON_COMPACT);
+    if (!content_json) {
+        return NULL;
+    }
+
+    if (strstr(content_json, "media:") == NULL) {
+        return content_json;
+    }
+
+    char *resolved_json = NULL;
+    char *error_msg = NULL;
+    if (chat_storage_resolve_media_in_content(database, content_json, &resolved_json, &error_msg)) {
+        free(content_json);
+        return resolved_json;
+    }
+
+    if (error_msg) {
+        log_this(SR_AUTH_CHAT, "Media resolution failed: %s", LOG_LEVEL_ALERT, 1, error_msg);
+        free(error_msg);
+    }
+    return content_json;
+}
+
+ChatMessage *auth_chat_messages_json_to_list(const char *database, json_t *messages) {
+    ChatMessage *chat_messages = NULL;
+    if (!messages || !json_is_array(messages)) {
+        return NULL;
+    }
+
+    size_t msg_count = json_array_size(messages);
+    for (size_t i = 0; i < msg_count; i++) {
+        json_t *msg = json_array_get(messages, i);
+        if (!json_is_object(msg)) {
+            continue;
+        }
+
+        json_t *role_obj = json_object_get(msg, "role");
+        json_t *content_obj = json_object_get(msg, "content");
+        if (!role_obj || !content_obj) {
+            continue;
+        }
+
+        const char *role_str = json_string_value(role_obj);
+        ChatMessageRole role = chat_message_role_from_string(role_str);
+        char *content_str = auth_chat_resolve_content_string(database, content_obj);
+        if (!content_str) {
+            continue;
+        }
+
+        ChatMessage *new_msg = chat_message_create(role, content_str, NULL);
+        chat_messages = chat_message_list_append(chat_messages, new_msg);
+        free(content_str);
+    }
+
+    return chat_messages;
+}
+
+bool auth_chat_payload_exceeds_limit(size_t request_size,
+                                      int max_payload_mb,
+                                      char *error_buf,
+                                      size_t error_buf_size) {
+    if (max_payload_mb <= 0) {
+        return false;
+    }
+
+    size_t max_payload_bytes = (size_t)max_payload_mb * 1024U * 1024U;
+    if (request_size <= max_payload_bytes) {
+        return false;
+    }
+
+    if (error_buf && error_buf_size > 0) {
+        snprintf(error_buf, error_buf_size,
+                 "Request payload size (%zu bytes) exceeds engine limit (%d MB)",
+                 request_size, max_payload_mb);
+    }
+    return true;
+}
+
+bool auth_chat_collect_segment_stats(const char *database,
+                                      json_t *messages,
+                                      char **context_hashes,
+                                      size_t context_hash_count,
+                                      const char *response_content,
+                                      AuthChatSegmentStats *stats) {
+    if (!stats) {
+        return false;
+    }
+
+    memset(stats, 0, sizeof(*stats));
+
+    size_t messages_count = (messages && json_is_array(messages)) ? json_array_size(messages) : 0;
+    size_t max_hashes = messages_count + 1;
+    const char **segment_hashes = calloc(max_hashes, sizeof(char*));
+    if (!segment_hashes) {
+        return false;
+    }
+
+    size_t segment_hash_count = 0;
+    size_t hashes_used = 0;
+    size_t hashes_missed = 0;
+    size_t bandwidth_saved_bytes = 0;
+
+    if (messages_count > 0) {
+        for (size_t i = 0; i < messages_count && segment_hash_count < max_hashes; i++) {
+            json_t *msg = json_array_get(messages, i);
+            if (!json_is_object(msg)) {
+                continue;
+            }
+
+            const json_t *role_obj = json_object_get(msg, "role");
+            const json_t *content_obj = json_object_get(msg, "content");
+            if (!role_obj || !content_obj) {
+                continue;
+            }
+
+            char *content_str = auth_chat_content_to_string(content_obj);
+            if (!content_str) {
+                continue;
+            }
+
+            char *hash = NULL;
+            if (context_hashes && i < context_hash_count) {
+                if (chat_storage_segment_exists(database, context_hashes[i])) {
+                    hash = strdup(context_hashes[i]);
+                    hashes_used++;
+                    size_t content_len = strlen(content_str);
+                    if (content_len > 54) {
+                        bandwidth_saved_bytes += content_len - 54;
+                    }
+                    log_this(SR_AUTH_CHAT, "Using client-provided context hash for message %zu",
+                             LOG_LEVEL_DEBUG, 1, i);
+                } else {
+                    hashes_missed++;
+                    log_this(SR_AUTH_CHAT,
+                             "Client-provided hash not found for message %zu, storing new segment",
+                             LOG_LEVEL_ALERT, 1, i);
+                }
+            }
+
+            if (!hash) {
+                hash = chat_storage_store_segment(database, content_str, strlen(content_str));
+            }
+
+            if (hash) {
+                segment_hashes[segment_hash_count++] = hash;
+            }
+            free(content_str);
+        }
+    }
+
+    if (response_content) {
+        char *resp_hash = chat_storage_store_segment(database, response_content, strlen(response_content));
+        if (resp_hash && segment_hash_count < max_hashes) {
+            segment_hashes[segment_hash_count++] = resp_hash;
+        } else {
+            chat_storage_free_hash(resp_hash);
+        }
+    }
+
+    double bandwidth_saved_percent = 0.0;
+    if (messages_count > 0 && bandwidth_saved_bytes > 0) {
+        size_t total_original_size = 0;
+        for (size_t i = 0; i < messages_count; i++) {
+            json_t *msg = json_array_get(messages, i);
+            if (json_is_object(msg)) {
+                char *msg_str = json_dumps(msg, JSON_COMPACT);
+                if (msg_str) {
+                    total_original_size += strlen(msg_str);
+                    free(msg_str);
+                }
+            }
+        }
+        if (total_original_size > 0) {
+            bandwidth_saved_percent = ((double)bandwidth_saved_bytes / (double)total_original_size) * 100.0;
+        }
+    }
+
+    stats->segment_hashes = segment_hashes;
+    stats->segment_hash_count = segment_hash_count;
+    stats->hashes_used = hashes_used;
+    stats->hashes_missed = hashes_missed;
+    stats->bandwidth_saved_bytes = bandwidth_saved_bytes;
+    stats->bandwidth_saved_percent = bandwidth_saved_percent;
+    return true;
+}
+
+void auth_chat_free_segment_stats(AuthChatSegmentStats *stats) {
+    if (!stats) {
+        return;
+    }
+    if (stats->segment_hashes) {
+        for (size_t i = 0; i < stats->segment_hash_count; i++) {
+            if (stats->segment_hashes[i]) {
+                chat_storage_free_hash((char*)stats->segment_hashes[i]);
+            }
+        }
+        free((void*)stats->segment_hashes);
+        stats->segment_hashes = NULL;
+    }
+    stats->segment_hash_count = 0;
+}
+
+void auth_chat_attach_context_hashing_stats(json_t *response,
+                                            const char *database,
+                                            size_t hashes_used,
+                                            size_t hashes_missed,
+                                            size_t bandwidth_saved_bytes,
+                                            double bandwidth_saved_percent) {
+    if (!response) {
+        return;
+    }
+
+    json_t *context_stats = json_object();
+    if (!context_stats) {
+        return;
+    }
+
+    json_object_set_new(context_stats, "hashes_used", json_integer((json_int_t)hashes_used));
+    json_object_set_new(context_stats, "hashes_missed", json_integer((json_int_t)hashes_missed));
+    json_object_set_new(context_stats, "bandwidth_saved_bytes",
+                        json_integer((json_int_t)bandwidth_saved_bytes));
+    json_object_set_new(context_stats, "bandwidth_saved_percent", json_real(bandwidth_saved_percent));
+
+    uint64_t cache_hits = 0;
+    uint64_t cache_misses = 0;
+    double cache_hit_ratio = 0.0;
+    if (chat_storage_cache_get_stats(database, &cache_hits, &cache_misses, &cache_hit_ratio)) {
+        json_object_set_new(context_stats, "cache_hits", json_integer((json_int_t)cache_hits));
+        json_object_set_new(context_stats, "cache_misses", json_integer((json_int_t)cache_misses));
+        json_object_set_new(context_stats, "cache_hit_ratio", json_real(cache_hit_ratio));
+    }
+
+    json_object_set_new(response, "context_hashing", context_stats);
+}
 
 // Handle auth_chat request
 enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
@@ -53,20 +375,17 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
         api_free_post_buffer(con_cls);
         json_t *error = auth_chat_build_error_response("Method not allowed - use POST");
         enum MHD_Result ret = api_send_json_response(connection, error, MHD_HTTP_METHOD_NOT_ALLOWED);
-        // api_send_json_response takes ownership and decrefs internally
         return ret;
     }
 
     // Extract and validate JWT
-    jwt_validation_result_t jwt_result = {0};
     const char *auth_header = MHD_lookup_connection_value(connection, MHD_HEADER_KIND, "Authorization");
-
-    if (!extract_and_validate_jwt(auth_header, &jwt_result)) {
+    jwt_validation_result_t jwt_result = auth_chat_validate_jwt_from_header(auth_header);
+    if (!jwt_result.valid) {
         api_free_post_buffer(con_cls);
         const char *error_msg = jwt_result.claims ? "Invalid token" : "Authentication required";
         json_t *error = auth_chat_build_error_response(error_msg);
         enum MHD_Result ret = api_send_json_response(connection, error, MHD_HTTP_UNAUTHORIZED);
-        // api_send_json_response takes ownership and decrefs internally
         free_jwt_validation_result(&jwt_result);
         return ret;
     }
@@ -84,7 +403,6 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
         api_free_post_buffer(con_cls);
         json_t *error = auth_chat_build_error_response("Token missing database claim");
         enum MHD_Result ret = api_send_json_response(connection, error, MHD_HTTP_FORBIDDEN);
-        // api_send_json_response takes ownership and decrefs internally
         free_jwt_validation_result(&jwt_result);
         return ret;
     }
@@ -98,7 +416,6 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
         free_jwt_validation_result(&jwt_result);
         json_t *error_response = auth_chat_build_error_response("Invalid JSON in request body");
         enum MHD_Result ret = api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
-        // api_send_json_response takes ownership and decrefs internally
         return ret;
     }
 
@@ -125,7 +442,6 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
         json_t *error_response = auth_chat_build_error_response(error_message ? error_message : "Invalid request");
         free(error_message);
         enum MHD_Result ret = api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
-        // api_send_json_response takes ownership and decrefs internally
         return ret;
     }
 
@@ -137,7 +453,6 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
         chat_context_free_hash_array(context_hashes, context_hash_count);
         json_t *error_response = auth_chat_build_error_response("Streaming not yet implemented");
         enum MHD_Result ret = api_send_json_response(connection, error_response, MHD_HTTP_NOT_IMPLEMENTED);
-        // api_send_json_response takes ownership and decrefs internally
         return ret;
     }
 
@@ -150,7 +465,6 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
         chat_context_free_hash_array(context_hashes, context_hash_count);
         json_t *error_response = auth_chat_build_error_response("Database not found");
         enum MHD_Result ret = api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
-        // api_send_json_response takes ownership and decrefs internally
         return ret;
     }
 
@@ -163,7 +477,6 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
         chat_context_free_hash_array(context_hashes, context_hash_count);
         json_t *error_response = auth_chat_build_error_response("Chat not enabled for this database");
         enum MHD_Result ret = api_send_json_response(connection, error_response, MHD_HTTP_SERVICE_UNAVAILABLE);
-        // api_send_json_response takes ownership and decrefs internally
         return ret;
     }
 
@@ -182,7 +495,6 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
         chat_context_free_hash_array(context_hashes, context_hash_count);
         json_t *error_response = auth_chat_build_error_response(engine_name ? "Engine not found" : "No default engine configured");
         enum MHD_Result ret = api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
-        // api_send_json_response takes ownership and decrefs internally
         return ret;
     }
 
@@ -194,80 +506,14 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
         chat_context_free_hash_array(context_hashes, context_hash_count);
         json_t *error_response = auth_chat_build_error_response("Engine is currently unavailable");
         enum MHD_Result ret = api_send_json_response(connection, error_response, MHD_HTTP_SERVICE_UNAVAILABLE);
-        // api_send_json_response takes ownership and decrefs internally
         return ret;
     }
 
-    // Build request parameters
-    ChatRequestParams params = chat_request_params_default();
-    if (temperature >= 0.0) {
-        params.temperature = temperature;
-    } else {
-        params.temperature = engine->temperature_default;
-    }
-    if (max_tokens > 0) {
-        params.max_tokens = max_tokens;
-    } else {
-        params.max_tokens = engine->max_tokens;
-    }
-    params.stream = stream;
-
-    // Convert messages JSON to ChatMessage list
-    ChatMessage *chat_messages = NULL;
-    size_t msg_count = json_array_size(messages);
-    for (size_t i = 0; i < msg_count; i++) {
-        json_t *msg = json_array_get(messages, i);
-        if (!json_is_object(msg)) continue;
-
-        json_t *role_obj = json_object_get(msg, "role");
-        json_t *content_obj = json_object_get(msg, "content");
-
-        if (!role_obj || !content_obj) continue;
-
-        const char *role_str = json_string_value(role_obj);
-        ChatMessageRole role = chat_message_role_from_string(role_str);
-
-        // Handle content as string or array (multimodal)
-        char *content_str = NULL;
-        if (json_is_string(content_obj)) {
-            content_str = strdup(json_string_value(content_obj));
-        } else if (json_is_array(content_obj)) {
-            // Convert array content to JSON string
-            char *content_json = json_dumps(content_obj, JSON_COMPACT);
-            if (content_json) {
-                // Check if content contains media:hash references
-                if (strstr(content_json, "media:") != NULL) {
-                    // Resolve media references
-                    char *resolved_json = NULL;
-                    char *error_msg = NULL;
-                    if (chat_storage_resolve_media_in_content(database, content_json, &resolved_json, &error_msg)) {
-                        free(content_json);
-                        content_str = resolved_json;
-                    } else {
-                        // Failed to resolve media, keep original content
-                        content_str = content_json;
-                        if (error_msg) {
-                            log_this(SR_AUTH_CHAT, "Media resolution failed: %s", LOG_LEVEL_ALERT, 1, error_msg);
-                            free(error_msg);
-                        }
-                    }
-                } else {
-                    content_str = content_json;
-                }
-            }
-        }
-
-        if (content_str) {
-            ChatMessage *new_msg = chat_message_create(role, content_str, NULL);
-            chat_messages = chat_message_list_append(chat_messages, new_msg);
-            free(content_str);
-        }
-    }
+    ChatRequestParams params = auth_chat_resolve_request_params(engine, temperature, max_tokens, stream);
+    ChatMessage *chat_messages = auth_chat_messages_json_to_list(database, messages);
 
     // Build request JSON for provider
     json_t *provider_request = chat_request_build(engine, chat_messages, &params);
-
-    // Convert to string
     char *request_body = chat_request_to_json_string(provider_request, true);
     json_decref(provider_request);
     chat_message_list_destroy(chat_messages);
@@ -276,26 +522,22 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
         free(engine_name);
         free_jwt_validation_result(&jwt_result);
         json_decref(request_json);
+        chat_context_free_hash_array(context_hashes, context_hash_count);
         json_t *error_response = auth_chat_build_error_response("Failed to build request");
         enum MHD_Result ret = api_send_json_response(connection, error_response, MHD_HTTP_INTERNAL_SERVER_ERROR);
-        // api_send_json_response takes ownership and decrefs internally
         return ret;
     }
 
-    // Validate payload size
-    size_t request_size = strlen(request_body);
-    size_t max_payload_bytes = (size_t)engine->max_payload_mb * 1024 * 1024;
-    if (max_payload_bytes > 0 && request_size > max_payload_bytes) {
+    char error_buf[256];
+    if (auth_chat_payload_exceeds_limit(strlen(request_body), engine->max_payload_mb,
+                                        error_buf, sizeof(error_buf))) {
         free(request_body);
         free(engine_name);
         free_jwt_validation_result(&jwt_result);
         json_decref(request_json);
-        char error_buf[256];
-        snprintf(error_buf, sizeof(error_buf), "Request payload size (%zu bytes) exceeds engine limit (%d MB)",
-                 request_size, engine->max_payload_mb);
+        chat_context_free_hash_array(context_hashes, context_hash_count);
         json_t *error_response = auth_chat_build_error_response(error_buf);
         enum MHD_Result ret = api_send_json_response(connection, error_response, MHD_HTTP_REQUEST_ENTITY_TOO_LARGE);
-        // api_send_json_response takes ownership and decrefs internally
         return ret;
     }
 
@@ -329,12 +571,13 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
         free(engine_name);
         free_jwt_validation_result(&jwt_result);
         json_decref(request_json);
+        chat_context_free_hash_array(context_hashes, context_hash_count);
 
-        const char *error_msg = proxy_result->error_message ? proxy_result->error_message : "Request failed";
+        const char *error_msg = proxy_result && proxy_result->error_message
+            ? proxy_result->error_message : "Request failed";
         json_t *error_response = auth_chat_build_error_response(error_msg);
         chat_proxy_result_destroy(proxy_result);
         enum MHD_Result ret = api_send_json_response(connection, error_response, MHD_HTTP_BAD_GATEWAY);
-        // api_send_json_response takes ownership and decrefs internally
         return ret;
     }
 
@@ -345,13 +588,13 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
         free(engine_name);
         free_jwt_validation_result(&jwt_result);
         json_decref(request_json);
+        chat_context_free_hash_array(context_hashes, context_hash_count);
 
         const char *error_msg = parsed && parsed->error_message ? parsed->error_message : "Failed to parse response";
         json_t *error_response = auth_chat_build_error_response(error_msg);
         chat_parsed_response_destroy(parsed);
         chat_proxy_result_destroy(proxy_result);
         enum MHD_Result ret = api_send_json_response(connection, error_response, MHD_HTTP_BAD_GATEWAY);
-        // api_send_json_response takes ownership and decrefs internally
         return ret;
     }
 
@@ -366,20 +609,9 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
     char convos_ref[64];
     snprintf(convos_ref, sizeof(convos_ref), "chat.%d.%lld", convos_id, (long long)time(NULL));
 
-    // Phase 8: Context Hashing - Use client-provided hashes when available
-    size_t messages_count = (messages && json_is_array(messages)) ? json_array_size(messages) : 0;
-    double bandwidth_saved_percent = 0.0;
-    size_t bandwidth_saved_bytes = 0;
-    size_t hashes_used = 0;
-    size_t hashes_missed = 0;
-
-    const char** segment_hashes = NULL;
-    size_t segment_hash_count = 0;
-
-    // Allocate array for segment hashes (messages + response)
-    size_t max_hashes = messages_count + 1;
-    segment_hashes = calloc(max_hashes, sizeof(char*));
-    if (!segment_hashes) {
+    AuthChatSegmentStats segment_stats;
+    if (!auth_chat_collect_segment_stats(database, messages, context_hashes, context_hash_count,
+                                          parsed->content, &segment_stats)) {
         free(engine_name);
         free_jwt_validation_result(&jwt_result);
         json_decref(request_json);
@@ -388,89 +620,11 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
         chat_proxy_result_destroy(proxy_result);
         json_t *error_response = auth_chat_build_error_response("Memory allocation failed");
         enum MHD_Result ret = api_send_json_response(connection, error_response, MHD_HTTP_INTERNAL_SERVER_ERROR);
-        // api_send_json_response takes ownership and decrefs internally
         return ret;
     }
 
-    // Process messages: use provided context_hashes or store new segments
-    if (messages_count > 0) {
-        for (size_t i = 0; i < messages_count && segment_hash_count < max_hashes; i++) {
-            json_t* msg = json_array_get(messages, i);
-            if (!json_is_object(msg)) continue;
-
-            const json_t* role_obj = json_object_get(msg, "role");
-            const json_t* content_obj = json_object_get(msg, "content");
-            if (!role_obj || !content_obj) continue;
-
-            char* content_str = NULL;
-            if (json_is_string(content_obj)) {
-                content_str = strdup(json_string_value(content_obj));
-            } else if (json_is_array(content_obj)) {
-                content_str = json_dumps(content_obj, JSON_COMPACT);
-            }
-
-            if (!content_str) {
-                continue;
-            }
-
-            // Phase 8: Check if we have a matching context hash from client
-            char* hash = NULL;
-            if (context_hashes && i < context_hash_count) {
-                // Verify the provided hash exists in storage
-                if (chat_storage_segment_exists(database, context_hashes[i])) {
-                    hash = strdup(context_hashes[i]);
-                    hashes_used++;
-                    size_t content_len = strlen(content_str);
-                    if (content_len > 54) {  // Hash overhead is ~54 bytes
-                        bandwidth_saved_bytes += content_len - 54;
-                    }
-                    log_this(SR_AUTH_CHAT, "Using client-provided context hash for message %zu", LOG_LEVEL_DEBUG, 1, i);
-                } else {
-                    hashes_missed++;
-                    log_this(SR_AUTH_CHAT, "Client-provided hash not found for message %zu, storing new segment", LOG_LEVEL_ALERT, 1, i);
-                }
-            }
-
-            // If no valid context hash, store as new segment
-            if (!hash) {
-                hash = chat_storage_store_segment(database, content_str, strlen(content_str));
-            }
-
-            if (hash) {
-                segment_hashes[segment_hash_count++] = hash;
-            }
-            free(content_str);
-        }
-    }
-
-    // Store response as new segment
-    if (parsed->content) {
-        char* resp_hash = chat_storage_store_segment(database, parsed->content, strlen(parsed->content));
-        if (resp_hash && segment_hash_count < max_hashes) {
-            segment_hashes[segment_hash_count++] = resp_hash;
-        }
-    }
-
-    // Calculate bandwidth savings percentage
-    if (messages_count > 0 && bandwidth_saved_bytes > 0) {
-        size_t total_original_size = 0;
-        for (size_t i = 0; i < messages_count; i++) {
-            json_t* msg = json_array_get(messages, i);
-            if (json_is_object(msg)) {
-                char* msg_str = json_dumps(msg, JSON_COMPACT);
-                if (msg_str) {
-                    total_original_size += strlen(msg_str);
-                    free(msg_str);
-                }
-            }
-        }
-        if (total_original_size > 0) {
-            bandwidth_saved_percent = ((double)bandwidth_saved_bytes / (double)total_original_size) * 100.0;
-        }
-    }
-
     chat_storage_store_chat(database, convos_ref,
-                            segment_hashes, segment_hash_count,
+                            segment_stats.segment_hashes, segment_stats.segment_hash_count,
                             engine->name,
                             parsed->model ? parsed->model : engine->model,
                             parsed->prompt_tokens,
@@ -479,11 +633,6 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
                             jwt_result.claims ? jwt_result.claims->user_id : 0,
                             (int)response_time_ms,
                             NULL);
-
-    for (size_t i = 0; i < segment_hash_count; i++) {
-        if (segment_hashes[i]) chat_storage_free_hash((char*)segment_hashes[i]);
-    }
-    free(segment_hashes);
 
     // Build success response
     json_t *response = auth_chat_build_response(
@@ -500,25 +649,15 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
         convos_ref
     );
 
-    // Phase 8: Add context hashing stats to response if hashes were used
     if (context_hashes && context_hash_count > 0) {
-        json_t *context_stats = json_object();
-        json_object_set_new(context_stats, "hashes_used", json_integer((json_int_t)hashes_used));
-        json_object_set_new(context_stats, "hashes_missed", json_integer((json_int_t)hashes_missed));
-        json_object_set_new(context_stats, "bandwidth_saved_bytes", json_integer((json_int_t)bandwidth_saved_bytes));
-        json_object_set_new(context_stats, "bandwidth_saved_percent", json_real(bandwidth_saved_percent));
-
-        // Phase 9: Add cache statistics
-        uint64_t cache_hits = 0, cache_misses = 0;
-        double cache_hit_ratio = 0.0;
-        if (chat_storage_cache_get_stats(database, &cache_hits, &cache_misses, &cache_hit_ratio)) {
-            json_object_set_new(context_stats, "cache_hits", json_integer((json_int_t)cache_hits));
-            json_object_set_new(context_stats, "cache_misses", json_integer((json_int_t)cache_misses));
-            json_object_set_new(context_stats, "cache_hit_ratio", json_real(cache_hit_ratio));
-        }
-
-        json_object_set_new(response, "context_hashing", context_stats);
+        auth_chat_attach_context_hashing_stats(response, database,
+                                                segment_stats.hashes_used,
+                                                segment_stats.hashes_missed,
+                                                segment_stats.bandwidth_saved_bytes,
+                                                segment_stats.bandwidth_saved_percent);
     }
+
+    auth_chat_free_segment_stats(&segment_stats);
 
     // Cleanup
     free(engine_name);
@@ -529,7 +668,6 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
     chat_proxy_result_destroy(proxy_result);
 
     enum MHD_Result ret = api_send_json_response(connection, response, MHD_HTTP_OK);
-    // api_send_json_response takes ownership and decrefs internally
     return ret;
 }
 
@@ -543,7 +681,14 @@ bool auth_chat_parse_request(json_t *request_json,
                               int *max_tokens,
                               bool *stream,
                               char **error_message) {
-    (void)request_json;
+    if (!request_json || !engine || !messages || !context_hashes || !context_hash_count ||
+        !temperature || !max_tokens || !stream || !error_message) {
+        if (error_message) {
+            *error_message = strdup("Invalid parse request parameters");
+        }
+        return false;
+    }
+
     *engine = NULL;
     *messages = NULL;
     *context_hashes = NULL;
