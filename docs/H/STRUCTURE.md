@@ -234,8 +234,6 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 
 - [src/logging/logging.c](/elements/001-hydrogen/hydrogen/src/logging/logging.c) - Core logging system implementation
 - [src/logging/logging.h](/elements/001-hydrogen/hydrogen/src/logging/logging.h) - Logging system interface definitions
-- [src/logging/log_queue_manager.c](/elements/001-hydrogen/hydrogen/src/logging/log_queue_manager.c) - Thread-safe log message queue handler
-- [src/logging/log_queue_manager.h](/elements/001-hydrogen/hydrogen/src/logging/log_queue_manager.h) - Log queue manager interface definitions
 
 </details>
 

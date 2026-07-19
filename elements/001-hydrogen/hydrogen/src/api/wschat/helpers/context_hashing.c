@@ -137,11 +137,12 @@ char** chat_context_parse_request_hashes(json_t* request_json, char** error_mess
         return NULL;
     }
 
-    // Resize array to actual valid count
-    char** resized = realloc(hashes, valid_count * sizeof(char*));
+    // Resize array to actual valid count + NULL terminator for safe counting
+    char** resized = realloc(hashes, (valid_count + 1) * sizeof(char*));
     if (resized) {
         hashes = resized;
     }
+    hashes[valid_count] = NULL;
 
     return hashes;
 }
