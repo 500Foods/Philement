@@ -15,6 +15,9 @@
 #include <src/hydrogen.h>
 #include <unity.h>
 
+#include <stdlib.h>
+#include <string.h>
+
 #include <lua.h>
 #include <lauxlib.h>
 #include <lualib.h>
@@ -31,6 +34,28 @@ void test_traceback_max_frames_limited(void);
 void test_traceback_returns_malloced_string(void);
 void test_traceback_syntax_error(void);
 void test_traceback_runtime_error(void);
+void test_traceback_multi_frame_call_stack(void);
+
+/*
+ * C probe installed as a Lua global. When invoked from within a live
+ * Lua call stack it walks that stack (H_lua_build_traceback) and
+ * returns the resulting string. Pushing nil on allocation failure lets
+ * the caller distinguish the failure path.
+ *
+ * This is the only way to exercise the traceback loop body: after a
+ * pcall error the Lua call stack is unwound, so calling
+ * H_lua_build_traceback from C (outside Lua) yields zero frames.
+ */
+static int lua_traceback_probe(lua_State* L) {
+    char* tb = H_lua_build_traceback(L);
+    if (tb) {
+        lua_pushstring(L, tb);
+        free(tb);
+    } else {
+        lua_pushnil(L);
+    }
+    return 1;
+}
 
 void setUp(void) {
     memset(&mock_app_config_storage, 0, sizeof(mock_app_config_storage));
@@ -187,6 +212,59 @@ void test_traceback_runtime_error(void) {
     H_lua_destroy_context(L);
 }
 
+/*
+ * Drive H_lua_build_traceback from inside a live, deeply nested Lua
+ * call stack. This exercises the loop body that the post-pcall tests
+ * never reach: frame extraction, function-name / source-snippet
+ * formatting (both the currentline>0 and <=0 branches), buffer growth
+ * via realloc, and the MAX_TRACE_FRAMES cap.
+ */
+void test_traceback_multi_frame_call_stack(void) {
+    lua_State* L = H_lua_create_context();
+    TEST_ASSERT_NOT_NULL(L);
+
+    lua_pushcfunction(L, lua_traceback_probe);
+    lua_setglobal(L, "H_traceback_probe");
+
+    const char* code =
+        "local function recurse(n)\n"
+        "  if n <= 1 then return H_traceback_probe() end\n"
+        "  local r = recurse(n - 1)\n"
+        "  return r\n"
+        "end\n"
+        "return recurse(20)\n";
+    int rc = H_lua_run_string(L, code, "[tb:deep:recursion:test]");
+    TEST_ASSERT_EQUAL_INT(LUA_OK, rc);
+
+    // The probe returned the traceback string as a single value.
+    TEST_ASSERT_EQUAL_INT(1, lua_gettop(L));
+    const char* tb = lua_tostring(L, -1);
+    TEST_ASSERT_NOT_NULL(tb);
+
+    // The nested Lua frames must appear, with their function names and
+    // the chunk name as the source snippet (currentline>0 formatting).
+    TEST_ASSERT_NOT_NULL(strstr(tb, "recurse"));
+    TEST_ASSERT_NOT_NULL(strstr(tb, "[tb:deep:recursion:test]"));
+
+    // Multiple frames captured (capped at MAX_TRACE_FRAMES = 10). Count
+    // frame lines (each begins with "  [<level>"), not every '[' (the
+    // chunk name itself also contains '[').
+    int frame_count = 0;
+    const char* p = tb;
+    if (strncmp(p, "  [", 3) == 0) {
+        frame_count++;
+    }
+    while ((p = strstr(p, "\n  [")) != NULL) {
+        frame_count++;
+        p += 4;
+    }
+    TEST_ASSERT_TRUE(frame_count >= 2);
+    TEST_ASSERT_TRUE(frame_count <= 10);
+
+    lua_pop(L, 1);
+    H_lua_destroy_context(L);
+}
+
 void setUp(void);
 void tearDown(void);
 
@@ -201,6 +279,7 @@ int main(void) {
     RUN_TEST(test_traceback_returns_malloced_string);
     RUN_TEST(test_traceback_syntax_error);
     RUN_TEST(test_traceback_runtime_error);
+    RUN_TEST(test_traceback_multi_frame_call_stack);
 
     return UNITY_END();
 }
