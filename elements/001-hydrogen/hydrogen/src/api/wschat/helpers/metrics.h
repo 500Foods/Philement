@@ -62,4 +62,10 @@ size_t chat_metrics_generate_prometheus(char* buffer, size_t buffer_size);
 typedef struct ChatMetricEntry ChatMetricEntry;  /* opaque: defined privately in metrics.c */
 ChatMetricEntry* chat_metrics_get_metric_entry(const char* database, const char* engine);
 
+/* Writes a single Prometheus metric line ("name{labels} value") into buffer at
+ * the given offset. Returns the new offset, or buffer_size when the buffer is
+ * full / the write is truncated. Exposed (non-static) for Unity testing. */
+size_t chat_metrics_write_metric(char* buffer, size_t offset, size_t buffer_size,
+                                 const char* name, const char* labels, double value);
+
 #endif // METRICS_H

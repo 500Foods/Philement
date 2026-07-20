@@ -53,5 +53,12 @@
         "Chat": true
       }
     ]
+  },
+  "WebSocketServer": {
+    "EnableIPv4": true,
+    "EnableIPv6": false,
+    "Port": 15902,
+    "Protocol": "hydrogen",
+    "Key": "${env.WEBSOCKET_KEY}"
   }
 }

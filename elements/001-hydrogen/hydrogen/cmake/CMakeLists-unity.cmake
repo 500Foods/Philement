@@ -51,6 +51,7 @@ set(UNITY_MOCK_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_auth_service_jwt.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_conduit_helpers.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_auth_chat_deps.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_chat_proxy.c
 )
 
 # Print-specific mock sources (only linked to print tests)
@@ -255,6 +256,19 @@ foreach(SOURCE_FILE ${UNITY_HYDROGEN_SOURCES})
         list(APPEND MOCK_DEFINES_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_database_engine.h")
         list(APPEND MOCK_DEFINES_LIST "-include")
         list(APPEND MOCK_DEFINES_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_dbqueue.h")
+        # The chat health unit tests need the proxy network call replaced with a
+        # fake so they can run without a live AI provider. Apply the override
+        # ONLY when compiling health.c; proxy.c must NOT be compiled with the
+        # override or its real chat_proxy_send_request definition would be
+        # renamed into the mock and collide with mock_chat_proxy.c.
+        if(${SOURCE_FILE} MATCHES "helpers/health\\.c")
+            list(APPEND MOCK_DEFINES_LIST "-DUSE_MOCK_CHAT_PROXY")
+            list(APPEND MOCK_DEFINES_LIST "-DUSE_MOCK_PTHREAD")
+            list(APPEND MOCK_DEFINES_LIST "-include")
+            list(APPEND MOCK_DEFINES_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_chat_proxy.h")
+            list(APPEND MOCK_DEFINES_LIST "-include")
+            list(APPEND MOCK_DEFINES_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_pthread.h")
+        endif()
         set(MOCK_DEFINES ${MOCK_DEFINES_LIST})
         unset(MOCK_DEFINES_LIST)
     elseif(IS_DATABASE_SOURCE GREATER -1)
