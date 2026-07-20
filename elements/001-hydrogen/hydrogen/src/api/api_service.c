@@ -32,6 +32,7 @@
 #include "mailrelay/preview/preview.h"
 #include "api/wschat/auth_chat/auth_chat.h"
 #include "api/wschat/auth_chats/auth_chats.h"
+#include "api/wschat/auth_stream/auth_stream.h"
 #include "auth/login/login.h"
  #include "auth/renew/renew.h"
  #include "auth/logout/logout.h"
@@ -208,6 +209,7 @@ bool register_api_endpoints(void) {
         log_this(SR_API, "― %s/conduit/alt_queries", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/conduit/auth_chat", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/conduit/auth_chats", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
+        log_this(SR_API, "― %s/conduit/auth_chat/stream", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/conduit/status", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/mailrelay/status", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/mailrelay/send", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
@@ -345,6 +347,7 @@ bool is_api_request(const char *url) {
         "conduit/alt_queries",
         "conduit/auth_chat",
         "conduit/auth_chats",
+        "conduit/auth_chat/stream",
         NULL  // Sentinel
     };
 
@@ -392,6 +395,7 @@ bool is_api_request(const char *url) {
         "conduit/alt_queries",
         "conduit/auth_chat",
         "conduit/auth_chats",
+        "conduit/auth_chat/stream",
         NULL  // Sentinel
     };
 
@@ -747,7 +751,10 @@ enum MHD_Result handle_api_request(struct MHD_Connection *connection,
         return handle_auth_chat_request(connection, url, method, upload_data,
                                         upload_data_size, con_cls);
     }
-
+    else if (strcmp(path, "conduit/auth_chat/stream") == 0) {
+        return handle_auth_chat_stream_request(connection, url, method, upload_data,
+                                               upload_data_size, con_cls);
+    }
     else if (strcmp(path, "conduit/auth_chats") == 0) {
         return handle_auth_chats_request(connection, url, method, upload_data,
                                          upload_data_size, con_cls);

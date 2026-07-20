@@ -129,6 +129,7 @@ typedef struct {
     // Worker thread for driving curl_multi_perform
     pthread_t worker_thread;         // Background thread to drive multi handle
     volatile bool shutdown_requested; // Shutdown flag for worker thread
+    bool worker_thread_started;      // True only if worker_thread was spawned
 } MultiStreamManager;
 
 // ============================================================================
@@ -155,6 +156,17 @@ void chat_proxy_multi_cleanup(MultiStreamManager* manager);
  * @return true if there are active streams, false if idle
  */
 bool chat_proxy_multi_perform(MultiStreamManager* manager);
+
+/**
+ * Process a single completed CURL transfer (a CURLMSG_DONE result).
+ * Exposed (non-static) so the Unity test framework can drive the transfer
+ * completion logic directly without the full curl_multi event loop.
+ * @param manager Manager instance
+ * @param easy The CURL easy handle that completed
+ * @param res The CURL result code for the transfer
+ * @param http_code The HTTP response code (0 if unavailable)
+ */
+void chat_proxy_multi_handle_completed_transfer(MultiStreamManager* manager, CURL* easy, CURLcode res, long http_code);
 
 /**
  * Get the CURL multi handle for external integration

@@ -12,6 +12,8 @@
 // Project includes
 #include <src/hydrogen.h>
 #include <microhttpd.h>
+#include <src/api/auth/auth_service.h>
+#include <src/api/wschat/helpers/engine_cache.h>
 
 /**
  * Handle POST /api/conduit/auth_chat/stream request
@@ -61,10 +63,26 @@ bool auth_chat_stream_parse_request(json_t *request_json,
  */
 json_t* auth_chat_stream_build_error_response(const char *error_message);
 
+/**
+ * Extract Bearer token and validate JWT (Unity-testable helper).
+ */
+jwt_validation_result_t auth_stream_validate_jwt_from_header(const char *auth_header);
+
 /* ----------------------------------------------------------------------------
- * The following helper is NOT part of the stable public API. It is exposed
- * (non-static) solely so the Unity test framework can call it directly.
+ * The following helpers are NOT part of the stable public API. They are exposed
+ * (non-static) solely so the Unity test framework can call them directly.
  * -------------------------------------------------------------------------- */
+void auth_stream_add_sse_headers(struct MHD_Response *response);
+
 enum MHD_Result auth_stream_send_sse_response_headers(struct MHD_Connection *connection);
+
+enum MHD_Result auth_stream_send_sse_error_response(struct MHD_Connection *connection,
+                                                    const char *error_message,
+                                                    unsigned int status_code);
+
+enum MHD_Result auth_stream_chat_response(struct MHD_Connection *connection,
+                                          const ChatEngineConfig *engine,
+                                          const char *request_json_str,
+                                          const char *database);
 
 #endif // AUTH_CHAT_STREAM_H

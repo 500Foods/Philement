@@ -691,7 +691,7 @@ EOF
             
             if [[ "${coverage_unity_fmt}" != "N/A" ]]; then
                 local coverage_unity_check
-                coverage_unity_check=$(echo "${coverage_unity_fmt} >= 70" | bc -l 2>/dev/null || echo 0)
+                coverage_unity_check=$(echo "${coverage_unity_fmt} >= 75" | bc -l 2>/dev/null || echo 0)
                 if (( coverage_unity_check )); then
                     coverage_unity_color="{GREEN}"
                 else
@@ -703,7 +703,7 @@ EOF
             
             if [[ "${coverage_black_fmt}" != "N/A" ]]; then
                 local coverage_black_check
-                coverage_black_check=$(echo "${coverage_black_fmt} >= 75" | bc -l 2>/dev/null || echo 0)
+                coverage_black_check=$(echo "${coverage_black_fmt} >= 65" | bc -l 2>/dev/null || echo 0)
                 if (( coverage_black_check )); then
                     coverage_black_color="{GREEN}"
                 else
@@ -715,7 +715,7 @@ EOF
             
             if [[ "${coverage_combined_fmt}" != "N/A" ]]; then
                 local coverage_combined_check
-                coverage_combined_check=$(echo "${coverage_combined_fmt} >= 80" | bc -l 2>/dev/null || echo 0)
+                coverage_combined_check=$(echo "${coverage_combined_fmt} >= 85" | bc -l 2>/dev/null || echo 0)
                 if (( coverage_combined_check )); then
                     coverage_combined_color="{GREEN}"
                 else
@@ -728,7 +728,7 @@ EOF
             if [[ "${unity_ratio}" != "N/A" ]]; then
                 local unity_numeric unity_check1 unity_check2
                 unity_numeric=${unity_ratio%'%'}
-                unity_check1=$(echo "${unity_numeric} >= 100" | bc -l 2>/dev/null || echo 0)
+                unity_check1=$(echo "${unity_numeric} >= 150" | bc -l 2>/dev/null || echo 0)
                 unity_check2=$(echo "${unity_numeric} <= 200" | bc -l 2>/dev/null || echo 0)
                 if (( unity_check1 )) && (( unity_check2 )); then
                     unity_color="{GREEN}"
@@ -854,7 +854,7 @@ EOF
          "section": "coverage_percentages",
          "metric": "Unity Ratio",
          "value": "${unity_ratio}",
-         "description": "Test/Core C/Headers         ${unity_color}Target: 100 % - 200 %{RESET}"
+         "description": "Test/Core C/Headers         ${unity_color}Target: 150 % - 200 %{RESET}"
      },
      {
          "section": "file_sizes",

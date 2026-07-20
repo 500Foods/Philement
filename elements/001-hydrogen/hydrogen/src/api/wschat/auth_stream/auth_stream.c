@@ -23,23 +23,58 @@
 #include "../helpers/lru_cache.h"
 #include <src/api/conduit/conduit_service.h>
 
+// Unity test mocks (header-only, guarded by USE_MOCK_* defined by the Unity
+// build). Remap JWT/API-buffer/DBQUEUE calls so the handler can be exercised
+// without a live HTTP stack or database.
+#if defined(USE_MOCK_AUTH_SERVICE_JWT)
+#include <unity/mocks/mock_auth_service_jwt.h>
+#endif
+#if defined(USE_MOCK_DBQUEUE)
+#include <unity/mocks/mock_dbqueue.h>
+#endif
+#if defined(USE_MOCK_API_UTILS)
+#include <unity/mocks/mock_api_utils.h>
+#endif
+
 // External reference to global queue manager
 extern DatabaseQueueManager* global_queue_manager;
 
 // Logging source for streaming
 static const char* SR_AUTH_CHAT_STREAM = "AUTH_CHAT_STREAM";
 
-// Forward declarations for internal helpers
-static enum MHD_Result send_sse_error_response(struct MHD_Connection *connection,
-                                               const char *error_message,
-                                               unsigned int status_code);
+// Forward declarations for internal helpers (non-static for Unity tests)
+enum MHD_Result auth_stream_send_sse_error_response(struct MHD_Connection *connection,
+                                                    const char *error_message,
+                                                    unsigned int status_code);
 
- enum MHD_Result auth_stream_send_sse_response_headers(struct MHD_Connection *connection);
+enum MHD_Result auth_stream_send_sse_response_headers(struct MHD_Connection *connection);
 
-static enum MHD_Result stream_chat_response(struct MHD_Connection *connection,
-                                            const ChatEngineConfig *engine,
-                                            const char *request_json_str,
-                                            const char *database);
+enum MHD_Result auth_stream_chat_response(struct MHD_Connection *connection,
+                                          const ChatEngineConfig *engine,
+                                          const char *request_json_str,
+                                          const char *database);
+
+/**
+ * Extract Bearer token and validate JWT. Local helper so Unity can mock
+ * validate_jwt via USE_MOCK_AUTH_SERVICE_JWT (same pattern as auth_chat).
+ */
+jwt_validation_result_t auth_stream_validate_jwt_from_header(const char *auth_header) {
+    jwt_validation_result_t result = {0};
+
+    if (!auth_header) {
+        result.valid = false;
+        result.error = JWT_ERROR_INVALID_FORMAT;
+        return result;
+    }
+
+    if (strncmp(auth_header, "Bearer ", 7) != 0) {
+        result.valid = false;
+        result.error = JWT_ERROR_INVALID_FORMAT;
+        return result;
+    }
+
+    return validate_jwt(auth_header + 7, NULL);
+}
 
 /**
  * Handle POST /api/conduit/auth_chat/stream request
@@ -68,26 +103,22 @@ enum MHD_Result handle_auth_chat_stream_request(struct MHD_Connection *connectio
     if (strcmp(method, "POST") != 0) {
         api_free_post_buffer(con_cls);
         json_t *error = auth_chat_stream_build_error_response("Method not allowed - use POST");
-        enum MHD_Result ret = api_send_json_response(connection, error, MHD_HTTP_METHOD_NOT_ALLOWED);
-        json_decref(error);
-        return ret;
+        // api_send_json_response takes ownership of error and decrefs it
+        return api_send_json_response(connection, error, MHD_HTTP_METHOD_NOT_ALLOWED);
     }
 
-    // Extract and validate JWT
-    jwt_validation_result_t jwt_result = {0};
+    // Extract and validate JWT (local helper so mocks apply under Unity)
     const char *auth_header = MHD_lookup_connection_value(connection, MHD_HEADER_KIND, "Authorization");
-
-    if (!extract_and_validate_jwt(auth_header, &jwt_result)) {
+    jwt_validation_result_t jwt_result = auth_stream_validate_jwt_from_header(auth_header);
+    if (!jwt_result.valid) {
         api_free_post_buffer(con_cls);
         const char *error_msg = jwt_result.claims ? "Invalid token" : "Authentication required";
         json_t *error = auth_chat_stream_build_error_response(error_msg);
-        enum MHD_Result ret = api_send_json_response(connection, error, MHD_HTTP_UNAUTHORIZED);
-        json_decref(error);
         free_jwt_validation_result(&jwt_result);
-        return ret;
+        return api_send_json_response(connection, error, MHD_HTTP_UNAUTHORIZED);
     }
 
-    // Validate claims
+    // Validate claims (shared helper — pure claim checks, no network)
     if (!validate_jwt_claims(&jwt_result, connection)) {
         api_free_post_buffer(con_cls);
         free_jwt_validation_result(&jwt_result);
@@ -99,10 +130,8 @@ enum MHD_Result handle_auth_chat_stream_request(struct MHD_Connection *connectio
     if (!database) {
         api_free_post_buffer(con_cls);
         json_t *error = auth_chat_stream_build_error_response("Token missing database claim");
-        enum MHD_Result ret = api_send_json_response(connection, error, MHD_HTTP_FORBIDDEN);
-        json_decref(error);
         free_jwt_validation_result(&jwt_result);
-        return ret;
+        return api_send_json_response(connection, error, MHD_HTTP_FORBIDDEN);
     }
 
     // Parse request JSON
@@ -113,9 +142,7 @@ enum MHD_Result handle_auth_chat_stream_request(struct MHD_Connection *connectio
     if (!request_json) {
         free_jwt_validation_result(&jwt_result);
         json_t *error_response = auth_chat_stream_build_error_response("Invalid JSON in request body");
-        enum MHD_Result ret = api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
-        json_decref(error_response);
-        return ret;
+        return api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
     }
 
     // Parse request parameters (reuse auth_chat_parse_request)
@@ -141,9 +168,7 @@ enum MHD_Result handle_auth_chat_stream_request(struct MHD_Connection *connectio
         chat_context_free_hash_array(context_hashes, context_hash_count);
         json_t *error_response = auth_chat_stream_build_error_response(error_message ? error_message : "Invalid request");
         free(error_message);
-        enum MHD_Result ret = api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
-        json_decref(error_response);
-        return ret;
+        return api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
     }
 
     // Force stream = true for this endpoint
@@ -156,7 +181,7 @@ enum MHD_Result handle_auth_chat_stream_request(struct MHD_Connection *connectio
         free_jwt_validation_result(&jwt_result);
         json_decref(request_json);
         chat_context_free_hash_array(context_hashes, context_hash_count);
-        return send_sse_error_response(connection, "Database not found", MHD_HTTP_BAD_REQUEST);
+        return auth_stream_send_sse_error_response(connection, "Database not found", MHD_HTTP_BAD_REQUEST);
     }
 
     // Get CEC
@@ -166,7 +191,7 @@ enum MHD_Result handle_auth_chat_stream_request(struct MHD_Connection *connectio
         free_jwt_validation_result(&jwt_result);
         json_decref(request_json);
         chat_context_free_hash_array(context_hashes, context_hash_count);
-        return send_sse_error_response(connection, "Chat not enabled for this database", MHD_HTTP_SERVICE_UNAVAILABLE);
+        return auth_stream_send_sse_error_response(connection, "Chat not enabled for this database", MHD_HTTP_SERVICE_UNAVAILABLE);
     }
 
     // Look up engine
@@ -178,11 +203,12 @@ enum MHD_Result handle_auth_chat_stream_request(struct MHD_Connection *connectio
     }
 
     if (!engine) {
+        const char *engine_err = engine_name ? "Engine not found" : "No default engine configured";
         free(engine_name);
         free_jwt_validation_result(&jwt_result);
         json_decref(request_json);
         chat_context_free_hash_array(context_hashes, context_hash_count);
-        return send_sse_error_response(connection, engine_name ? "Engine not found" : "No default engine configured", MHD_HTTP_BAD_REQUEST);
+        return auth_stream_send_sse_error_response(connection, engine_err, MHD_HTTP_BAD_REQUEST);
     }
 
     // Check engine health
@@ -191,7 +217,7 @@ enum MHD_Result handle_auth_chat_stream_request(struct MHD_Connection *connectio
         free_jwt_validation_result(&jwt_result);
         json_decref(request_json);
         chat_context_free_hash_array(context_hashes, context_hash_count);
-        return send_sse_error_response(connection, "Engine is currently unavailable", MHD_HTTP_SERVICE_UNAVAILABLE);
+        return auth_stream_send_sse_error_response(connection, "Engine is currently unavailable", MHD_HTTP_SERVICE_UNAVAILABLE);
     }
 
     // Prepare request JSON string for proxy
@@ -201,21 +227,12 @@ enum MHD_Result handle_auth_chat_stream_request(struct MHD_Connection *connectio
         free(engine_name);
         free_jwt_validation_result(&jwt_result);
         chat_context_free_hash_array(context_hashes, context_hash_count);
-        return send_sse_error_response(connection, "Failed to serialize request", MHD_HTTP_INTERNAL_SERVER_ERROR);
+        return auth_stream_send_sse_error_response(connection, "Failed to serialize request", MHD_HTTP_INTERNAL_SERVER_ERROR);
     }
 
-    // Send SSE headers
-    enum MHD_Result ret = auth_stream_send_sse_response_headers(connection);
-    if (ret != MHD_YES) {
-        free(request_json_str);
-        free(engine_name);
-        free_jwt_validation_result(&jwt_result);
-        chat_context_free_hash_array(context_hashes, context_hash_count);
-        return ret;
-    }
-
-    // Stream the response
-    ret = stream_chat_response(connection, engine, request_json_str, database);
+    // Stream the response (single MHD_queue_response — headers + body together).
+    // MHD allows only one queued response per request; do not queue headers first.
+    enum MHD_Result ret = auth_stream_chat_response(connection, engine, request_json_str, database);
 
     // Cleanup
     free(request_json_str);
@@ -256,50 +273,59 @@ json_t* auth_chat_stream_build_error_response(const char *error_message) {
 // Internal helper functions
 // ============================================================================
 
-static enum MHD_Result send_sse_error_response(struct MHD_Connection *connection,
-                                               const char *error_message,
-                                               unsigned int status_code) {
-    // For streaming endpoint, we still send JSON error (not SSE) because stream hasn't started
+enum MHD_Result auth_stream_send_sse_error_response(struct MHD_Connection *connection,
+                                                    const char *error_message,
+                                                    unsigned int status_code) {
+    // For streaming endpoint, we still send JSON error (not SSE) because stream hasn't started.
+    // api_send_json_response takes ownership of error and decrefs it.
     json_t *error = auth_chat_stream_build_error_response(error_message);
-    enum MHD_Result ret = api_send_json_response(connection, error, status_code);
-    json_decref(error);
-    return ret;
+    return api_send_json_response(connection, error, status_code);
 }
 
- enum MHD_Result auth_stream_send_sse_response_headers(struct MHD_Connection *connection) {
-    struct MHD_Response *response = MHD_create_response_from_buffer(0, NULL, MHD_RESPMEM_PERSISTENT);
+void auth_stream_add_sse_headers(struct MHD_Response *response) {
     if (!response) {
-        return MHD_NO;
+        return;
     }
-
     MHD_add_response_header(response, "Content-Type", "text/event-stream");
     MHD_add_response_header(response, "Cache-Control", "no-cache");
     MHD_add_response_header(response, "Connection", "keep-alive");
     MHD_add_response_header(response, "Access-Control-Allow-Origin", "*");
     MHD_add_response_header(response, "Access-Control-Allow-Headers", "Authorization, Content-Type");
     MHD_add_response_header(response, "Access-Control-Expose-Headers", "Content-Type");
+}
+
+enum MHD_Result auth_stream_send_sse_response_headers(struct MHD_Connection *connection) {
+    // Queues an empty SSE response with standard headers. Used by unit tests and
+    // as a building block; the request handler uses auth_stream_chat_response
+    // which attaches the same headers to the body in a single queue_response.
+    struct MHD_Response *response = MHD_create_response_from_buffer(0, NULL, MHD_RESPMEM_PERSISTENT);
+    if (!response) {
+        return MHD_NO;
+    }
+
+    auth_stream_add_sse_headers(response);
 
     enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
     MHD_destroy_response(response);
     return ret;
 }
 
-static enum MHD_Result stream_chat_response(struct MHD_Connection *connection,
-                                            const ChatEngineConfig *engine,
-                                            const char *request_json_str,
-                                            const char *database) {
+enum MHD_Result auth_stream_chat_response(struct MHD_Connection *connection,
+                                          const ChatEngineConfig *engine,
+                                          const char *request_json_str,
+                                          const char *database) {
     (void)engine;
     (void)request_json_str;
     (void)database;
-    // TODO: Implement streaming proxy
-    // For now, send a single error event and finish
+    // TODO: Implement streaming proxy (chunked SSE). Until then, one complete
+    // SSE response with headers + stub event — MHD allows only one queue per request.
     const char *event = "event: error\ndata: {\"error\": \"Streaming not yet implemented\"}\n\n";
     size_t event_len = strlen(event);
     struct MHD_Response *response = MHD_create_response_from_buffer(event_len, (void*)event, MHD_RESPMEM_PERSISTENT);
     if (!response) {
         return MHD_NO;
     }
-    MHD_add_response_header(response, "Content-Type", "text/event-stream");
+    auth_stream_add_sse_headers(response);
     enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
     MHD_destroy_response(response);
     return ret;
