@@ -19,8 +19,8 @@
 
 // Always declare mock function prototypes for the .c file
 bool mock_chat_storage_store_media(const char* database, const char* media_hash,
-                                  const unsigned char* media_data, size_t media_size,
-                                  const char* mime_type);
+                                   const unsigned char* media_data, size_t media_size,
+                                   const char* mime_type);
 
 #endif // USE_MOCK_CHAT_STORAGE
 

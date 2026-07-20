@@ -208,17 +208,18 @@ json_t* chat_request_build_openai(const ChatEngineConfig* engine,
                         if (comma) {
                             // Extract mime type (skip "data:")
                             char* mime_start = strndup(url_str + 5, (size_t)(comma - (url_str + 5)));
-                            char* mime = strchr(mime_start, ';');
-                            if (mime) *mime = '\0';  // Remove ;base64 suffix
-                            else mime = mime_start;
-                            
+                            // Trim any ";base64" (or other parameter) suffix so
+                            // only the media type itself remains in mime_start.
+                            char* semicolon = strchr(mime_start, ';');
+                            if (semicolon) *semicolon = '\0';
+
                             const char* base64_data = comma + 1;
-                            
+
                             new_item = json_object();
                             json_object_set(new_item, "type", json_string("image"));
                             json_t* source = json_object();
                             json_object_set(source, "type", json_string("base64"));
-                            json_object_set(source, "media_type", json_string(mime));
+                            json_object_set(source, "media_type", json_string(mime_start));
                             json_object_set(source, "data", json_string(base64_data));
                             json_object_set(new_item, "source", source);
                             json_decref(source);

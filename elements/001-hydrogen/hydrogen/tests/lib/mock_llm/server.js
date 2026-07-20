@@ -118,6 +118,32 @@ const server = http.createServer(async (req, res) => {
             }
         }
 
+        // Streaming mode: emit Server-Sent-Events so the chat proxy's CURL
+        // write callback (proxy_mc.c) actually receives chunked lines. The
+        // proxy parses SSE and queues chunks for the WebSocket thread.
+        if (parsed.stream === true) {
+            const chunks = content.match(/.{1,8}/g) || [content];
+            res.writeHead(200, {
+                'Content-Type': 'text/event-stream',
+                'Cache-Control': 'no-cache',
+                'Connection': 'keep-alive',
+            });
+            let index = 0;
+            const sendNext = () => {
+                if (index >= chunks.length) {
+                    res.write(`data: ${JSON.stringify({ choices: [{ delta: { content: '' }, finish_reason: 'stop' }] })}\n\n`);
+                    res.write('data: [DONE]\n\n');
+                    res.end();
+                    return;
+                }
+                const piece = chunks[index++];
+                res.write(`data: ${JSON.stringify({ choices: [{ delta: { content: piece } }] })}\n\n`);
+                setTimeout(sendNext, 5);
+            };
+            sendNext();
+            return;
+        }
+
         sendJson(res, 200, openaiResponse(model, content));
         return;
     }

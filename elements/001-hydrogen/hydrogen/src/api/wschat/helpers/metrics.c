@@ -223,8 +223,8 @@ void chat_metrics_update_from_engine(const char* database, ChatEngineConfig* eng
 }
 
 // Helper to write metric line to buffer
-static size_t write_metric(char* buffer, size_t offset, size_t buffer_size,
-                           const char* name, const char* labels, double value) {
+size_t chat_metrics_write_metric(char* buffer, size_t offset, size_t buffer_size,
+                                 const char* name, const char* labels, double value) {
     if (offset >= buffer_size) return offset;
 
     size_t remaining = buffer_size - offset;
@@ -264,7 +264,7 @@ size_t chat_metrics_generate_prometheus(char* buffer, size_t buffer_size) {
                  "database=\"%s\",engine=\"%s\",provider=\"%s\"",
                  entry->database, entry->engine,
                  entry->provider[0] ? entry->provider : "unknown");
-        offset = write_metric(buffer, offset, buffer_size,
+        offset = chat_metrics_write_metric(buffer, offset, buffer_size,
                               "hydrogen_chat_engine_health", labels, entry->health);
     }
 
@@ -280,7 +280,7 @@ size_t chat_metrics_generate_prometheus(char* buffer, size_t buffer_size) {
         snprintf(labels, sizeof(labels),
                  "database=\"%s\",engine=\"%s\"",
                  entry->database, entry->engine);
-        offset = write_metric(buffer, offset, buffer_size,
+        offset = chat_metrics_write_metric(buffer, offset, buffer_size,
                               "hydrogen_chat_engine_response_time_ms", labels,
                               entry->response_time_ms);
     }
@@ -297,7 +297,7 @@ size_t chat_metrics_generate_prometheus(char* buffer, size_t buffer_size) {
         snprintf(labels, sizeof(labels),
                  "database=\"%s\",engine=\"%s\"",
                  entry->database, entry->engine);
-        offset = write_metric(buffer, offset, buffer_size,
+        offset = chat_metrics_write_metric(buffer, offset, buffer_size,
                               "hydrogen_chat_conversations_total", labels,
                               (double)entry->conversations_total);
     }
@@ -316,7 +316,7 @@ size_t chat_metrics_generate_prometheus(char* buffer, size_t buffer_size) {
         snprintf(labels, sizeof(labels),
                  "database=\"%s\",engine=\"%s\",type=\"prompt\"",
                  entry->database, entry->engine);
-        offset = write_metric(buffer, offset, buffer_size,
+        offset = chat_metrics_write_metric(buffer, offset, buffer_size,
                               "hydrogen_chat_tokens_total", labels,
                               (double)entry->tokens_prompt_total);
 
@@ -325,7 +325,7 @@ size_t chat_metrics_generate_prometheus(char* buffer, size_t buffer_size) {
             snprintf(labels, sizeof(labels),
                      "database=\"%s\",engine=\"%s\",type=\"completion\"",
                      entry->database, entry->engine);
-            offset = write_metric(buffer, offset, buffer_size,
+            offset = chat_metrics_write_metric(buffer, offset, buffer_size,
                                   "hydrogen_chat_tokens_total", labels,
                                   (double)entry->tokens_completion_total);
         }
@@ -343,7 +343,7 @@ size_t chat_metrics_generate_prometheus(char* buffer, size_t buffer_size) {
         snprintf(labels, sizeof(labels),
                  "database=\"%s\",engine=\"%s\",error_type=\"total\"",
                  entry->database, entry->engine);
-        offset = write_metric(buffer, offset, buffer_size,
+        offset = chat_metrics_write_metric(buffer, offset, buffer_size,
                               "hydrogen_chat_errors_total", labels,
                               (double)entry->errors_total);
     }
@@ -360,13 +360,13 @@ size_t chat_metrics_generate_prometheus(char* buffer, size_t buffer_size) {
 
         // Sum
         snprintf(labels, sizeof(labels), "engine=\"%s\"", entry->engine);
-        offset = write_metric(buffer, offset, buffer_size,
+        offset = chat_metrics_write_metric(buffer, offset, buffer_size,
                               "hydrogen_chat_request_duration_seconds_sum", labels,
                               entry->request_duration_sum);
         
         // Count
         if (offset < buffer_size) {
-            offset = write_metric(buffer, offset, buffer_size,
+            offset = chat_metrics_write_metric(buffer, offset, buffer_size,
                                   "hydrogen_chat_request_duration_seconds_count", labels,
                                   (double)entry->request_duration_count);
         }

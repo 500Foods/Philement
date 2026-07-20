@@ -2,14 +2,17 @@
 
 # Test: Authenticated Chat API with local mock LLM (no external credits)
 #
-# Starts a Node mock OpenAI-compatible server, points the SQLite demo DB chat
-# engine endpoints at it, enables Chat on the connection, then exercises
-# /api/conduit/auth_chat and /api/conduit/auth_chats enough to produce blackbox
-# coverage of both handlers.
+# Starts a Node mock OpenAI-compatible server (with SSE streaming support),
+# points the SQLite demo DB chat engine endpoints at it, enables Chat on the
+# connection, then exercises the REST /api/conduit/auth_chat and
+# /api/conduit/auth_chats handlers plus the chat WebSocket (media upload and
+# streaming chat) so that the runtime app touches the wschat helper sources:
+#   - storage_media.c / storage_hex.c  (media store/retrieve + hex conversion)
+#   - proxy_mq.c / proxy_mc.c          (multi-stream chunk queue + CURL callbacks)
 #
 # Required environment variables:
 #   HYDROGEN_DEMO_USER_NAME, HYDROGEN_DEMO_USER_PASS, HYDROGEN_DEMO_API_KEY
-#   HYDROGEN_DEMO_JWT_KEY, PAYLOAD_KEY
+#   HYDROGEN_DEMO_JWT_KEY, PAYLOAD_KEY, WEBSOCKET_KEY
 
 # FUNCTIONS
 # start_mock_llm()
@@ -17,12 +20,17 @@
 # prepare_sqlite_with_mock_endpoint()
 # api_request()
 # extract_jwt()
+# chat_ws_send()
+# chat_ws_upload_media()
 
 # CHANGELOG
 # 1.0.0 - 2026-07-19 - Initial SQLite + mock LLM blackbox for auth_chat
 # 1.1.0 - 2026-07-19 - Reordered cleanup/stop_mock_llm for shellcheck; justified
 #                       SC2310 disables; added auth_chats blackbox coverage
 # 1.2.0 - 2026-07-19 - Added auth_chat/stream blackbox coverage (SSE stub path)
+# 1.3.0 - 2026-07-20 - Added WebSocketServer + chat media-upload and streaming
+#                       chat to blackbox-cover storage_media.c, storage_hex.c,
+#                       proxy_mq.c and proxy_mc.c; mock LLM gains SSE streaming
 
 set -euo pipefail
 
@@ -30,7 +38,7 @@ TEST_NAME="Auth Chat"
 TEST_ABBR="ACH"
 TEST_NUMBER="59"
 TEST_COUNTER=0
-TEST_VERSION="1.2.0"
+TEST_VERSION="1.3.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -38,6 +46,7 @@ setup_test_environment
 
 WEB_PORT=15900
 MOCK_LLM_PORT=15901
+WS_PORT=15902
 STARTUP_TIMEOUT=20
 SHUTDOWN_TIMEOUT=30
 SHUTDOWN_ACTIVITY_TIMEOUT=5
@@ -185,6 +194,58 @@ extract_jwt() {
     jq -r '.token // empty' "${file}" 2>/dev/null || true
 }
 
+# Build a chat WebSocket URL and a websocat auth header for the hydrogen protocol.
+ws_chat_url() {
+    echo "ws://127.0.0.1:${WS_PORT}/"
+}
+
+# Send a single JSON message to the chat WebSocket and capture the server's
+# response frames (up to a timeout). Returns the response on stdout via the
+# provided output file. Exits nonzero (not fatal) if websocat is missing or the
+# connection fails.
+chat_ws_send() {
+    local message="$1"
+    local out_file="$2"
+    local timeout_s="${3:-10}"
+    # shellcheck disable=SC2310 # Connection failure is non-fatal; we report below
+    if ! command -v websocat >/dev/null 2>&1; then
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "websocat not available; skipping WS chat step"
+        return 1
+    fi
+    local ws_url
+    ws_url=$(ws_chat_url)
+    # websocat line mode requires a trailing newline to flush the frame.
+    # --no-close keeps the socket open after stdin EOF so the server's JSON
+    # response is captured before the timeout reaps the process.
+    printf '%s\n' "${message}" | "${TIMEOUT}" "${timeout_s}" websocat \
+        --protocol=hydrogen \
+        -H="Authorization: Key ${WEBSOCKET_KEY}" \
+        --ping-interval=30 \
+        --no-close \
+        "${ws_url}" >"${out_file}" 2>&1
+    return 0
+}
+
+# Upload a small media asset over the chat WebSocket so the runtime exercises
+# chat_storage_store_media (storage_media.c) -> chat_storage_binary_to_hex
+# (storage_hex.c). Echoes the returned media hash on stdout (empty if failed).
+chat_ws_upload_media() {
+    local out_file="$1"
+    local mime_type="${2:-image/png}"
+    # 1x1 transparent PNG, base64url encoded (the server decodes base64url).
+    local b64="iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk-M8AAAMCAQDJ_3pUAAAAAElFTkSuQmCC"
+    local msg
+    # shellcheck disable=SC2310 # Build failure is non-fatal; we report empty hash
+    msg=$(jq -cn \
+        --arg jwt "Bearer ${JWT_TOKEN}" \
+        --arg data "${b64}" \
+        --arg mime "${mime_type}" \
+        '{type:"media_upload", payload:{jwt:$jwt, data:$data, mime_type:$mime}}') || true
+    # shellcheck disable=SC2310 # Send failure is non-fatal; caller checks hash
+    chat_ws_send "${msg}" "${out_file}" 10 || true
+    jq -r '.media_hash // empty' "${out_file}" 2>/dev/null || true
+}
+
 wait_for_http_ready() {
     local base_url="$1"
     local timeout_s="$2"
@@ -224,6 +285,10 @@ if [[ -z "${HYDROGEN_DEMO_USER_NAME:-}" || -z "${HYDROGEN_DEMO_USER_PASS:-}" || 
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Demo credentials not set in environment"
     exit 1
 fi
+if [[ -z "${WEBSOCKET_KEY:-}" ]]; then
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "WEBSOCKET_KEY not set in environment"
+    exit 1
+fi
 if [[ ! -f "${BASE_CONFIG}" ]]; then
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Missing config ${BASE_CONFIG}"
     exit 1
@@ -249,12 +314,13 @@ if ! prepare_sqlite_with_mock_endpoint "${SQLITE_TEMP}" "${MOCK_URL}"; then
     exit 1
 fi
 
-# Materialize config with absolute sqlite path and Chat enabled.
-python3 - "${BASE_CONFIG}" "${CONFIG_TEMP}" "${SQLITE_TEMP}" "${WEB_PORT}" <<'PY'
+# Materialize config with absolute sqlite path, Chat enabled, and WebSocketServer port.
+python3 - "${BASE_CONFIG}" "${CONFIG_TEMP}" "${SQLITE_TEMP}" "${WEB_PORT}" "${WS_PORT}" <<'PY'
 import json, sys
-src, dst, sqlite_path, port = sys.argv[1:5]
+src, dst, sqlite_path, web_port, ws_port = sys.argv[1:6]
 cfg = json.load(open(src))
-cfg["WebServer"]["Port"] = int(port)
+cfg["WebServer"]["Port"] = int(web_port)
+cfg["WebSocketServer"]["Port"] = int(ws_port)
 for c in cfg.get("Databases", {}).get("Connections", []):
     c["Database"] = sqlite_path
     c["Chat"] = True
@@ -488,6 +554,66 @@ if [[ "${code}" == "200" && "${req_count}" -eq 2 && "${ok_count}" -eq 1 ]]; then
     record 0 "200 with unknown engine dropped (requested=${req_count} succeeded=${ok_count})"
 else
     record 1 "expected 200 with dropped unknown engine got ${code} body=$(head -c 200 "${out}" 2>/dev/null || true)"
+fi
+
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "WS chat media upload -> store_media + binary_to_hex"
+# Upload a tiny media asset over the chat WebSocket. The runtime must execute
+# chat_storage_store_media (storage_media.c) which calls chat_storage_binary_to_hex
+# (storage_hex.c) before issuing its DB query. We assert the runtime actually
+# touched the code by grepping the server log for storage_media.c's own marker.
+MEDIA_OUT="${RESP_DIR}/ws_media_upload.json"
+MEDIA_HASH=$(chat_ws_upload_media "${MEDIA_OUT}")
+# shellcheck disable=SC2310 # grep returning 1 (no marker) is handled below
+if [[ -f "${HYDROGEN_LOG}" ]] && "${GREP}" -q "Storing media hash" "${HYDROGEN_LOG}"; then
+    record 0 "store_media + binary_to_hex executed (hash=${MEDIA_HASH:0:16})"
+else
+    record 1 "store_media not reached; upload body=$(head -c 200 "${MEDIA_OUT}" 2>/dev/null || true)"
+fi
+
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "auth_chat media reference -> retrieve_media + hex_to_binary"
+# Send a chat request whose content references a media: asset. The runtime calls
+# chat_storage_resolve_media_in_content (storage_media.c) -> chat_storage_retrieve_media
+# (storage_media.c) -> chat_storage_hex_to_binary (storage_hex.c). Whether or not
+# the asset exists, the helper code is touched; we confirm via the server log.
+MEDIA_REF=$(jq -cn --arg hash "${MEDIA_HASH}" '{"messages":[{"role":"user","content":[{"type":"image_url","image_url":{"url":("media:" + $hash)}}]}]}' 2>/dev/null || true)
+out="${RESP_DIR}/media_ref.json"
+if [[ -n "${MEDIA_REF}" ]]; then
+    # shellcheck disable=SC2310 # Request failure is non-fatal; we check the log
+    api_request "POST" "${BASE_URL}/api/conduit/auth_chat" "${MEDIA_REF}" "${out}" "${JWT_TOKEN}" >/dev/null 2>&1 || true
+    # shellcheck disable=SC2310 # grep returning 1 (no marker) is handled below
+    if [[ -f "${HYDROGEN_LOG}" ]] && "${GREP}" -q "QueryRef #072" "${HYDROGEN_LOG}"; then
+        record 0 "retrieve_media + hex_to_binary executed"
+    else
+        record 1 "retrieve_media not reached; body=$(head -c 200 "${out}" 2>/dev/null || true)"
+    fi
+else
+    record 1 "failed to build media reference message"
+fi
+
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "WS streaming chat -> proxy_mq + proxy_mc"
+# A streaming chat request drives chat_proxy_multi_stream_start, which
+# initializes the chunk queue (proxy_mq.c: chunk_queue_init) and registers the
+# CURL write/debug callbacks (proxy_mc.c: multi_stream_write_callback,
+# multi_stream_debug_callback). The mock LLM answers with SSE so the write
+# callback actually receives bytes. We assert the runtime touched the code by
+# grepping the server log for the multi-stream start marker.
+STREAM_OUT="${RESP_DIR}/ws_stream.json"
+# shellcheck disable=SC2310 # Build failure is non-fatal; we report below
+STREAM_MSG=$(jq -cn \
+    --arg jwt "Bearer ${JWT_TOKEN}" \
+    --arg engine "${VALID_ENGINE}" \
+    '{type:"chat", payload:{jwt:$jwt, engine:$engine, stream:true, messages:[{role:"user",content:"stream me"}]}}' 2>/dev/null) || true
+if [[ -n "${STREAM_MSG}" ]]; then
+    # shellcheck disable=SC2310 # Send failure is non-fatal; path still runs server-side
+    chat_ws_send "${STREAM_MSG}" "${STREAM_OUT}" 12 || true
+    # shellcheck disable=SC2310 # grep returning 1 (no marker) is handled below
+    if [[ -f "${HYDROGEN_LOG}" ]] && "${GREP}" -q "Multi-stream started" "${HYDROGEN_LOG}"; then
+        record 0 "multi-stream proxy executed (proxy_mq + proxy_mc touched)"
+    else
+        record 1 "multi-stream proxy not reached; body=$(head -c 200 "${STREAM_OUT}" 2>/dev/null || true)"
+    fi
+else
+    record 1 "failed to build streaming chat message"
 fi
 
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Summary"

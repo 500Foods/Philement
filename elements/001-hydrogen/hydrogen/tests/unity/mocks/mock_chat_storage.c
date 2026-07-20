@@ -11,8 +11,8 @@ static bool mock_store_media_result = true;
  * Mock implementation of chat_storage_store_media
  */
 bool mock_chat_storage_store_media(const char* database, const char* media_hash,
-                                   const unsigned char* media_data, size_t media_size,
-                                   const char* mime_type) {
+                                    const unsigned char* media_data, size_t media_size,
+                                    const char* mime_type) {
     (void)database;      // Unused parameter
     (void)media_hash;    // Unused parameter
     (void)media_data;    // Unused parameter
