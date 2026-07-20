@@ -33,6 +33,11 @@
 // Mock log helpers (USE_MOCK_LOGGING is defined by the CMake build)
 #include "mock_logging.h"
 
+// USE_MOCK_SYSTEM is a global Unity define; the explicit #define matches
+// the CMake -D so the mock function prototypes below are visible.
+#define USE_MOCK_SYSTEM
+#include "mock_system.h"
+
 // Forward declarations (required for -Wmissing-prototypes)
 void test_start_from_db_null_inputs_fail(void);
 void test_start_from_db_idempotent_when_running(void);
@@ -43,6 +48,8 @@ void test_load_configured_invalid_name_logs_error(void);
 void test_load_configured_missing_default_database_logs_clearly(void);
 void test_start_from_db_falls_back_to_single_database(void);
 void test_start_from_db_multiple_databases_still_requires_default(void);
+void test_load_configured_skips_when_shutting_down(void);
+void test_start_from_db_name_allocation_failure(void);
 
 void setUp(void) {
     scripting_system_shutdown = 0;
@@ -214,6 +221,50 @@ void test_start_from_db_multiple_databases_still_requires_default(void) {
     TEST_ASSERT_FALSE(mock_logging_message_contains("using the single configured database"));
 }
 
+void test_load_configured_skips_when_shutting_down(void) {
+    // If a shutdown is already in progress, load_configured must bail
+    // out before it attempts to spawn the loader thread (the
+    // "already / shutting down" guard at 730-732).
+    AppConfig* saved = app_config;
+    AppConfig mock = {0};
+    mock.scripting.Enabled = true;
+    mock.scripting.Orchestrator = strdup("Orchestrators.Orchestrator");
+    mock.scripting.DefaultDatabase = strdup("TestDB");
+    app_config = &mock;
+
+    scripting_system_shutdown = 1;
+    scripting_orchestrator_load_configured();
+    scripting_system_shutdown = 0;
+
+    app_config = saved;
+    free(mock.scripting.Orchestrator);
+    free(mock.scripting.DefaultDatabase);
+
+    TEST_ASSERT_FALSE(scripting_orchestrator_is_running());
+}
+
+void test_start_from_db_name_allocation_failure(void) {
+    // A configured DefaultDatabase resolves without allocation, so the
+    // first heap allocation in start_from_db is the "group.script"
+    // name copy. Force that allocation to fail; the function must
+    // return false without starting anything.
+    AppConfig* saved = app_config;
+    AppConfig mock = {0};
+    mock.scripting.Enabled = true;
+    mock.scripting.DefaultDatabase = strdup("TestDB"); // no log on resolve
+    app_config = &mock;
+
+    mock_system_set_malloc_failure(1);
+    bool rc = scripting_orchestrator_start_from_db("Orchestrators", "Orchestrator");
+    mock_system_reset_all();
+
+    app_config = saved;
+    free(mock.scripting.DefaultDatabase);
+
+    TEST_ASSERT_FALSE(rc);
+    TEST_ASSERT_FALSE(scripting_orchestrator_is_running());
+}
+
 int main(void) {
     UNITY_BEGIN();
 
@@ -226,6 +277,8 @@ int main(void) {
     RUN_TEST(test_load_configured_missing_default_database_logs_clearly);
     RUN_TEST(test_start_from_db_falls_back_to_single_database);
     RUN_TEST(test_start_from_db_multiple_databases_still_requires_default);
+    RUN_TEST(test_load_configured_skips_when_shutting_down);
+    RUN_TEST(test_start_from_db_name_allocation_failure);
 
     return UNITY_END();
 }

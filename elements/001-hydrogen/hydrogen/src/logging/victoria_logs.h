@@ -80,7 +80,13 @@ extern VLThreadState victoria_logs_thread;
 #define VICTORIA_LOGS_MAX_MESSAGE_SIZE 4096
 
 // HTTP timeout in seconds for VictoriaLogs requests
+// Unity builds use a short timeout so failure-path tests stay fast and
+// deterministic (the production 5s connect wait made suite coverage flaky).
+#ifdef UNITY_TEST_MODE
+#define VICTORIA_LOGS_TIMEOUT_SEC 1
+#else
 #define VICTORIA_LOGS_TIMEOUT_SEC 5
+#endif
 
 // Maximum batch size before sending (messages)
 #define VICTORIA_LOGS_BATCH_SIZE 50
@@ -89,10 +95,17 @@ extern VLThreadState victoria_logs_thread;
 #define VICTORIA_LOGS_MAX_BATCH_BUFFER (1024 * 1024)  // 1MB
 
 // Short timer interval (1 second) - resets on each log
-#define VICTORIA_LOGS_SHORT_TIMER_SEC 1
-
 // Long timer interval (10 seconds) - periodic flush during heavy load
+// Unity builds use 1s for both so worker timer paths are covered quickly
+// without multi-second sleeps (pthread_cond_timedwait ignores external
+// timer mutations until the local wait deadline expires).
+#ifdef UNITY_TEST_MODE
+#define VICTORIA_LOGS_SHORT_TIMER_SEC 1
+#define VICTORIA_LOGS_LONG_TIMER_SEC 1
+#else
+#define VICTORIA_LOGS_SHORT_TIMER_SEC 1
 #define VICTORIA_LOGS_LONG_TIMER_SEC 10
+#endif
 
 // Maximum queue size before dropping messages
 #define VICTORIA_LOGS_MAX_QUEUE_SIZE 10000
