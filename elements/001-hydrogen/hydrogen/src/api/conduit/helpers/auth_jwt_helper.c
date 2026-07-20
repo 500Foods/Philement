@@ -8,6 +8,12 @@
 #include <microhttpd.h>
 #include "auth_jwt_helper.h"
 
+// Unity test mocks: remap validate_jwt / free_jwt_validation_result when the
+// Unity build defines USE_MOCK_AUTH_SERVICE_JWT (auth sources get this flag).
+#if defined(USE_MOCK_AUTH_SERVICE_JWT)
+#include <unity/mocks/mock_auth_service_jwt.h>
+#endif
+
 const char* get_jwt_error_message(jwt_error_t error) {
     switch (error) {
         case JWT_ERROR_EXPIRED:

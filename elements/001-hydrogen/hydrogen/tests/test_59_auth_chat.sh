@@ -22,6 +22,7 @@
 # 1.0.0 - 2026-07-19 - Initial SQLite + mock LLM blackbox for auth_chat
 # 1.1.0 - 2026-07-19 - Reordered cleanup/stop_mock_llm for shellcheck; justified
 #                       SC2310 disables; added auth_chats blackbox coverage
+# 1.2.0 - 2026-07-19 - Added auth_chat/stream blackbox coverage (SSE stub path)
 
 set -euo pipefail
 
@@ -29,7 +30,7 @@ TEST_NAME="Auth Chat"
 TEST_ABBR="ACH"
 TEST_NUMBER="59"
 TEST_COUNTER=0
-TEST_VERSION="1.1.0"
+TEST_VERSION="1.2.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -369,6 +370,48 @@ code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chat" \
     '{"messages":[{"role":"user","content":"hi"}],"engine":"does-not-exist-xyz"}' \
     "${out}" "${JWT_TOKEN}")
 if [[ "${code}" == "400" ]]; then record 0 "400 on unknown engine"; else record 1 "expected 400 got ${code}"; fi
+
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "auth_chat/stream no auth -> 401"
+out="${RESP_DIR}/stream_noauth.json"
+code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chat/stream" \
+    '{"messages":[{"role":"user","content":"hi"}]}' "${out}")
+if [[ "${code}" == "401" ]]; then record 0 "401 without Authorization"; else record 1 "expected 401 got ${code}"; fi
+
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "auth_chat/stream wrong method -> 405"
+out="${RESP_DIR}/stream_get.json"
+code=$(api_request "GET" "${BASE_URL}/api/conduit/auth_chat/stream" "" "${out}" "${JWT_TOKEN}")
+if [[ "${code}" == "405" ]]; then record 0 "405 on GET"; else record 1 "expected 405 got ${code}"; fi
+
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "auth_chat/stream invalid JSON -> 400"
+out="${RESP_DIR}/stream_badjson.json"
+code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chat/stream" "not-json" "${out}" "${JWT_TOKEN}")
+if [[ "${code}" == "400" ]]; then record 0 "400 on invalid JSON"; else record 1 "expected 400 got ${code}"; fi
+
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "auth_chat/stream missing messages -> 400"
+out="${RESP_DIR}/stream_nomsg.json"
+code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chat/stream" '{"engine":"x"}' "${out}" "${JWT_TOKEN}")
+if [[ "${code}" == "400" ]]; then record 0 "400 on missing messages"; else record 1 "expected 400 got ${code}"; fi
+
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "auth_chat/stream named engine missing -> 400"
+out="${RESP_DIR}/stream_missing_engine.json"
+code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chat/stream" \
+    '{"messages":[{"role":"user","content":"hi"}],"engine":"does-not-exist-xyz"}' \
+    "${out}" "${JWT_TOKEN}")
+if [[ "${code}" == "400" ]]; then record 0 "400 on unknown engine"; else record 1 "expected 400 got ${code}"; fi
+
+# Streaming is stubbed: a successful auth+parse+engine path returns 200 with an
+# SSE body containing the "not yet implemented" error event.
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "auth_chat/stream stub SSE -> 200"
+out="${RESP_DIR}/stream_stub.json"
+code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chat/stream" \
+    '{"messages":[{"role":"user","content":"hello stream"}],"temperature":0.2,"max_tokens":64}' \
+    "${out}" "${JWT_TOKEN}")
+body_snip=$(head -c 200 "${out}" 2>/dev/null || true)
+if [[ "${code}" == "200" ]] && echo "${body_snip}" | "${GREP}" -q "Streaming not yet implemented"; then
+    record 0 "200 SSE stub with not-implemented event"
+else
+    record 1 "stream stub failed HTTP ${code} body=${body_snip}"
+fi
 
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "auth_chats no auth -> 401"
 out="${RESP_DIR}/chats_noauth.json"

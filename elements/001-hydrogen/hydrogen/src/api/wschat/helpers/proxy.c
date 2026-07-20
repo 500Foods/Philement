@@ -195,7 +195,7 @@ ChatProxyResult* chat_proxy_send_request(const ChatEngineConfig* engine,
         return NULL;
     }
 
-    if (!engine || !request_json) {
+    if (!engine || !request_json || !config || !engine->api_url[0]) {
         result->code = CHAT_PROXY_ERROR_INIT;
         result->error_message = strdup("Invalid parameters");
         return result;

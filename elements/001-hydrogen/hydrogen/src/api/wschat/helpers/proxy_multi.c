@@ -33,6 +33,9 @@ static MultiStreamManager* g_multi_manager = NULL;
 // Forward declaration for worker thread (implemented below)
  void* chat_proxy_multi_worker_thread(void* arg);
 
+// Forward declaration for completed-transfer handler helper
+ void chat_proxy_multi_handle_completed_transfer(MultiStreamManager* manager, CURL* easy, CURLcode res, long http_code);
+
 // ============================================================================
 // Manager Implementation
 // ============================================================================
@@ -75,7 +78,8 @@ bool chat_proxy_multi_init(MultiStreamManager* manager, struct lws_context* lws_
         manager->initialized = false;
         return false;
     }
-    
+    manager->worker_thread_started = true;
+
     log_this(SR_CHAT, "Multi-stream worker thread started", LOG_LEVEL_STATE, 0);
     
     return true;
@@ -265,218 +269,236 @@ bool chat_proxy_multi_perform(MultiStreamManager* manager) {
         if (msg->msg == CURLMSG_DONE) {
             CURL* easy = msg->easy_handle;
             CURLcode res = msg->data.result;
-            
+
             // Log CURL result and HTTP status for debugging
             long http_code = 0;
             curl_easy_getinfo(easy, CURLINFO_RESPONSE_CODE, &http_code);
             log_this(SR_CHAT, "Multi-stream transfer complete: CURL result=%d (%s), HTTP %ld", LOG_LEVEL_DEBUG, 3,
                      (int)res, curl_easy_strerror(res), http_code);
-            
-            // Get stream context from CURL private data
-            void* priv_data = NULL;
-            curl_easy_getinfo(easy, CURLINFO_PRIVATE, &priv_data);
-            
-            if (priv_data) {
-                CurlStreamContext* curl_ctx = (CurlStreamContext*)priv_data;
-                MultiStreamContext* stream_ctx = curl_ctx->stream_ctx;
-                
-                if (stream_ctx) {
-                    // Check if HTTP status indicates an error (non-2xx)
-                    bool http_error = (http_code < 200 || http_code >= 300);
-                    
-                    // Process any remaining data in line buffer (only for successful responses)
-                    if (curl_ctx->line_buffer_len > 0 && res == CURLE_OK && !http_error) {
-                        if (curl_ctx->seen_done) {
-                            // After [DONE], remaining data is metadata (retrieval, etc.)
-                            // Append to post_done_buffer for inclusion in chat_done
-                            if (!curl_ctx->post_done_buffer) {
-                                curl_ctx->post_done_capacity = curl_ctx->line_buffer_len + 1;
-                                curl_ctx->post_done_buffer = (char*)malloc(curl_ctx->post_done_capacity);
-                                if (curl_ctx->post_done_buffer) {
-                                    curl_ctx->post_done_len = 0;
-                                }
-                            }
-                            if (curl_ctx->post_done_buffer) {
-                                size_t needed_cap = curl_ctx->post_done_len + curl_ctx->line_buffer_len + 1;
-                                if (needed_cap > curl_ctx->post_done_capacity) {
-                                    size_t new_cap = needed_cap * 2;
-                                    char* new_buf = realloc(curl_ctx->post_done_buffer, new_cap);
-                                    if (new_buf) {
-                                        curl_ctx->post_done_buffer = new_buf;
-                                        curl_ctx->post_done_capacity = new_cap;
-                                    }
-                                }
-                                memcpy(curl_ctx->post_done_buffer + curl_ctx->post_done_len,
-                                       curl_ctx->line_buffer, curl_ctx->line_buffer_len);
-                                curl_ctx->post_done_len += curl_ctx->line_buffer_len;
-                                curl_ctx->post_done_buffer[curl_ctx->post_done_len] = '\0';
-                            }
-                            log_this(SR_CHAT, "Remaining line buffer captured as post-[DONE] data (%zu bytes)",
-                                     LOG_LEVEL_DEBUG, 1, curl_ctx->line_buffer_len);
-                        } else {
-                            // Normal SSE final chunk processing
-                            ChatStreamChunk* chunk = chat_stream_chunk_parse(curl_ctx->line_buffer);
-                            if (chunk) {
-                                if (chunk->is_done) {
-                                    curl_ctx->seen_done = true;
-                                }
-                                // Build and enqueue final chunk
-                                json_t* response = json_object();
-                                json_object_set_new(response, "type", json_string("chat_chunk"));
-                                if (stream_ctx->request_id) {
-                                    json_object_set_new(response, "id", json_string(stream_ctx->request_id));
-                                }
-                                
-                                json_t* chunk_json = json_object();
-                                json_object_set_new(chunk_json, "content", json_string(chunk->content ? chunk->content : ""));
-                                if (chunk->model) json_object_set_new(chunk_json, "model", json_string(chunk->model));
-                                json_object_set_new(chunk_json, "index", json_integer(stream_ctx->chunk_index));
-                                if (chunk->finish_reason) {
-                                    json_object_set_new(chunk_json, "finish_reason", json_string(chunk->finish_reason));
-                                }
-                                json_object_set_new(response, "chunk", chunk_json);
-                                
-                                char* json_str = json_dumps(response, JSON_COMPACT);
-                                json_decref(response);
-                                
-                                if (json_str) {
-                                    chunk_queue_enqueue(&stream_ctx->chunk_queue, json_str, strlen(json_str));
-                                    chat_proxy_multi_request_writable(stream_ctx);
-                                    free(json_str);
-                                }
-                                
-                                stream_ctx->chunk_index++;
-                                chat_stream_chunk_destroy(chunk);
-                            }
+
+            chat_proxy_multi_handle_completed_transfer(manager, easy, res, http_code);
+        }
+    }
+
+    return true;
+}
+
+/*
+ * Process a single completed CURL transfer (a CURLMSG_DONE message). Extracted
+ * from chat_proxy_multi_perform() so the (large) completion logic can be unit
+ * tested directly without driving the full curl_multi event loop.
+ *
+ * On entry the transfer's easy handle has finished; this function builds the
+ * chat_done / chat_error payload, enqueues it on the stream's chunk queue, and
+ * removes the easy handle from the multi. The stream context itself is NOT
+ * freed here - it is released later by chat_proxy_multi_perform() once the
+ * queued payload has been drained.
+ */
+void chat_proxy_multi_handle_completed_transfer(MultiStreamManager* manager,
+                                                CURL* easy,
+                                                CURLcode res,
+                                                long http_code) {
+    // Get stream context from CURL private data
+    void* priv_data = NULL;
+    curl_easy_getinfo(easy, CURLINFO_PRIVATE, &priv_data);
+
+    if (priv_data) {
+        CurlStreamContext* curl_ctx = (CurlStreamContext*)priv_data;
+        MultiStreamContext* stream_ctx = curl_ctx->stream_ctx;
+
+        if (stream_ctx) {
+            // Check if HTTP status indicates an error (non-2xx)
+            bool http_error = (http_code < 200 || http_code >= 300);
+
+            // Process any remaining data in line buffer (only for successful responses)
+            if (curl_ctx->line_buffer_len > 0 && res == CURLE_OK && !http_error) {
+                if (curl_ctx->seen_done) {
+                    // After [DONE], remaining data is metadata (retrieval, etc.)
+                    // Append to post_done_buffer for inclusion in chat_done
+                    if (!curl_ctx->post_done_buffer) {
+                        curl_ctx->post_done_capacity = curl_ctx->line_buffer_len + 1;
+                        curl_ctx->post_done_buffer = (char*)malloc(curl_ctx->post_done_capacity);
+                        if (curl_ctx->post_done_buffer) {
+                            curl_ctx->post_done_len = 0;
                         }
                     }
-                    
-                    // Mark stream as completed
-                    stream_ctx->stream_completed = true;
-                    
-                    // Build and enqueue response (error or done)
-                    json_t* done_response = json_object();
-                    if (stream_ctx->request_id) {
-                        json_object_set_new(done_response, "id", json_string(stream_ctx->request_id));
-                    }
-                    
-                    // Calculate timing
-                    struct timespec end_time;
-                    clock_gettime(CLOCK_MONOTONIC, &end_time);
-                    double elapsed_ms = (double)(end_time.tv_sec - stream_ctx->start_time.tv_sec) * 1000.0 +
-                                       (double)(end_time.tv_nsec - stream_ctx->start_time.tv_nsec) / 1000000.0;
-                    
-                    if (http_error) {
-                        // HTTP error response - send error to client
-                        json_object_set_new(done_response, "type", json_string("chat_error"));
-                        
-                        // Build error message from available info
-                        char error_msg[256];
-                        if (curl_ctx->line_buffer_len > 0) {
-                            // Use the response body as error message (e.g., "error code: 504")
-                            snprintf(error_msg, sizeof(error_msg), "HTTP %ld: %s", 
-                                     http_code, curl_ctx->line_buffer);
-                        } else {
-                            snprintf(error_msg, sizeof(error_msg), "HTTP %ld error from upstream", http_code);
-                        }
-                        json_object_set_new(done_response, "error", json_string(error_msg));
-                        
-                        log_this(SR_CHAT, "Multi-stream HTTP error: %ld (%.0fms, %zu chunks before error)",
-                                 LOG_LEVEL_ERROR, 3, http_code, elapsed_ms, curl_ctx->chunks_processed);
-                    } else {
-                        // Successful completion
-                        json_object_set_new(done_response, "type", json_string("chat_done"));
-                        
-                        json_t* result = json_object();
-                        json_object_set_new(result, "content", json_string(""));
-                        if (stream_ctx->engine_name) {
-                            json_object_set_new(result, "model", json_string(stream_ctx->engine_name));
-                        }
-                        json_object_set_new(result, "finish_reason", 
-                                           json_string(stream_ctx->finish_reason ? stream_ctx->finish_reason : "stop"));
-                        json_object_set_new(result, "response_time_ms", json_real(elapsed_ms));
-                        
-                        // Include raw_provider_response for transparency.
-                        // This allows clients to access retrieval/citation data,
-                        // guardrails info, and any other provider metadata.
-                        // Check post-[DONE] buffer first (data sent after SSE stream ends)
-                        log_this(SR_CHAT, "Multi-stream: post_done_buffer state: %s, len=%zu",
-                                 LOG_LEVEL_DEBUG, 2,
-                                 curl_ctx->post_done_buffer ? "exists" : "null",
-                                 curl_ctx->post_done_len);
-                        if (curl_ctx->post_done_buffer && curl_ctx->post_done_len > 0) {
-                            json_error_t json_err;
-                            json_t* post_done_json = json_loads(curl_ctx->post_done_buffer, 0, &json_err);
-                            if (post_done_json) {
-                                json_object_set_new(result, "raw_provider_response", post_done_json);
-                                log_this(SR_CHAT, "Multi-stream: included post-[DONE] data as raw_provider_response (%zu keys)",
-                                         LOG_LEVEL_DEBUG, 1, json_object_size(post_done_json));
-                            } else {
-                                // Not valid JSON — log error and raw data for debugging
-                                log_this(SR_CHAT, "Multi-stream: post-[DONE] data not valid JSON: %s. Raw (first 500 chars): %.500s",
-                                         LOG_LEVEL_DEBUG, 2, json_err.text, curl_ctx->post_done_buffer);
+                    if (curl_ctx->post_done_buffer) {
+                        size_t needed_cap = curl_ctx->post_done_len + curl_ctx->line_buffer_len + 1;
+                        if (needed_cap > curl_ctx->post_done_capacity) {
+                            size_t new_cap = needed_cap * 2;
+                            char* new_buf = realloc(curl_ctx->post_done_buffer, new_cap);
+                            if (new_buf) {
+                                curl_ctx->post_done_buffer = new_buf;
+                                curl_ctx->post_done_capacity = new_cap;
                             }
-                        } else {
-                            log_this(SR_CHAT, "Multi-stream: no post-[DONE] data available (seen_done=%s)",
-                                     LOG_LEVEL_DEBUG, 1,
-                                     curl_ctx->seen_done ? "true" : "false");
+                        }
+                        memcpy(curl_ctx->post_done_buffer + curl_ctx->post_done_len,
+                               curl_ctx->line_buffer, curl_ctx->line_buffer_len);
+                        curl_ctx->post_done_len += curl_ctx->line_buffer_len;
+                        curl_ctx->post_done_buffer[curl_ctx->post_done_len] = '\0';
+                    }
+                    log_this(SR_CHAT, "Remaining line buffer captured as post-[DONE] data (%zu bytes)",
+                             LOG_LEVEL_DEBUG, 1, curl_ctx->line_buffer_len);
+                } else {
+                    // Normal SSE final chunk processing
+                    ChatStreamChunk* chunk = chat_stream_chunk_parse(curl_ctx->line_buffer);
+                    if (chunk) {
+                        if (chunk->is_done) {
+                            curl_ctx->seen_done = true;
+                        }
+                        // Build and enqueue final chunk
+                        json_t* response = json_object();
+                        json_object_set_new(response, "type", json_string("chat_chunk"));
+                        if (stream_ctx->request_id) {
+                            json_object_set_new(response, "id", json_string(stream_ctx->request_id));
                         }
 
-                        // Also check the remaining line buffer content—some providers
-                        // send metadata JSON on the last line without a trailing newline
-                        if (!json_object_get(result, "raw_provider_response") &&
-                            curl_ctx->line_buffer_len > 0) {
-                            json_error_t json_err;
-                            json_t* remaining_json = json_loads(curl_ctx->line_buffer, 0, &json_err);
-                            if (remaining_json) {
-                                json_object_set_new(result, "raw_provider_response", remaining_json);
-                                log_this(SR_CHAT, "Multi-stream: included remaining line buffer as raw_provider_response",
-                                         LOG_LEVEL_DEBUG, 0);
-                            }
+                        json_t* chunk_json = json_object();
+                        json_object_set_new(chunk_json, "content", json_string(chunk->content ? chunk->content : ""));
+                        if (chunk->model) json_object_set_new(chunk_json, "model", json_string(chunk->model));
+                        json_object_set_new(chunk_json, "index", json_integer(stream_ctx->chunk_index));
+                        if (chunk->finish_reason) {
+                            json_object_set_new(chunk_json, "finish_reason", json_string(chunk->finish_reason));
                         }
-                        
-                        json_object_set_new(done_response, "result", result);
-                        
-                        log_this(SR_CHAT, "Multi-stream complete: %zu chunks, %.0fms, finish=%s",
-                                 LOG_LEVEL_STATE, 3,
-                                 curl_ctx->chunks_processed,
-                                 elapsed_ms,
-                                 stream_ctx->finish_reason ? stream_ctx->finish_reason : "stop");
-                    }
-                    
-                    char* done_json = json_dumps(done_response, JSON_COMPACT);
-                    json_decref(done_response);
-                    
-                    if (done_json) {
-                        chunk_queue_enqueue(&stream_ctx->chunk_queue, done_json, strlen(done_json));
-                        chat_proxy_multi_request_writable(stream_ctx);
-                        free(done_json);
-                    }
-                    
-                    // Remove CURL handle but DON'T free the stream context yet
-                    // The chat_done message is in the queue and needs to be sent first
-                    curl_multi_remove_handle(manager->multi_handle, easy);
-                    curl_easy_cleanup(easy);
-                    stream_ctx->easy_handle = NULL;
-                    
-                    // Cleanup CURL context (no longer needed)
-                    free(curl_ctx->line_buffer);
-                    free(curl_ctx->post_done_buffer);
-                    free(curl_ctx);
-                    
-                    // Mark as completed - cleanup will happen on next iteration when queue is drained
-                    stream_ctx->stream_completed = true;
-                    
-                    // Update session flag
-                    if (stream_ctx->stream_active) {
-                        *stream_ctx->stream_active = false;
+                        json_object_set_new(response, "chunk", chunk_json);
+
+                        char* json_str = json_dumps(response, JSON_COMPACT);
+                        json_decref(response);
+
+                        if (json_str) {
+                            chunk_queue_enqueue(&stream_ctx->chunk_queue, json_str, strlen(json_str));
+                            chat_proxy_multi_request_writable(stream_ctx);
+                            free(json_str);
+                        }
+
+                        stream_ctx->chunk_index++;
+                        chat_stream_chunk_destroy(chunk);
                     }
                 }
             }
+
+            // Mark stream as completed
+            stream_ctx->stream_completed = true;
+
+            // Build and enqueue response (error or done)
+            json_t* done_response = json_object();
+            if (stream_ctx->request_id) {
+                json_object_set_new(done_response, "id", json_string(stream_ctx->request_id));
+            }
+
+            // Calculate timing
+            struct timespec end_time;
+            clock_gettime(CLOCK_MONOTONIC, &end_time);
+            double elapsed_ms = (double)(end_time.tv_sec - stream_ctx->start_time.tv_sec) * 1000.0 +
+                               (double)(end_time.tv_nsec - stream_ctx->start_time.tv_nsec) / 1000000.0;
+
+            if (http_error) {
+                // HTTP error response - send error to client
+                json_object_set_new(done_response, "type", json_string("chat_error"));
+
+                // Build error message from available info
+                char error_msg[256];
+                if (curl_ctx->line_buffer_len > 0) {
+                    // Use the response body as error message (e.g., "error code: 504")
+                    snprintf(error_msg, sizeof(error_msg), "HTTP %ld: %s",
+                             http_code, curl_ctx->line_buffer);
+                } else {
+                    snprintf(error_msg, sizeof(error_msg), "HTTP %ld error from upstream", http_code);
+                }
+                json_object_set_new(done_response, "error", json_string(error_msg));
+
+                log_this(SR_CHAT, "Multi-stream HTTP error: %ld (%.0fms, %zu chunks before error)",
+                         LOG_LEVEL_ERROR, 3, http_code, elapsed_ms, curl_ctx->chunks_processed);
+            } else {
+                // Successful completion
+                json_object_set_new(done_response, "type", json_string("chat_done"));
+
+                json_t* result = json_object();
+                json_object_set_new(result, "content", json_string(""));
+                if (stream_ctx->engine_name) {
+                    json_object_set_new(result, "model", json_string(stream_ctx->engine_name));
+                }
+                json_object_set_new(result, "finish_reason",
+                                   json_string(stream_ctx->finish_reason ? stream_ctx->finish_reason : "stop"));
+                json_object_set_new(result, "response_time_ms", json_real(elapsed_ms));
+
+                // Include raw_provider_response for transparency.
+                // This allows clients to access retrieval/citation data,
+                // guardrails info, and any other provider metadata.
+                // Check post-[DONE] buffer first (data sent after SSE stream ends)
+                log_this(SR_CHAT, "Multi-stream: post_done_buffer state: %s, len=%zu",
+                         LOG_LEVEL_DEBUG, 2,
+                         curl_ctx->post_done_buffer ? "exists" : "null",
+                         curl_ctx->post_done_len);
+                if (curl_ctx->post_done_buffer && curl_ctx->post_done_len > 0) {
+                    json_error_t json_err;
+                    json_t* post_done_json = json_loads(curl_ctx->post_done_buffer, 0, &json_err);
+                    if (post_done_json) {
+                        json_object_set_new(result, "raw_provider_response", post_done_json);
+                        log_this(SR_CHAT, "Multi-stream: included post-[DONE] data as raw_provider_response (%zu keys)",
+                                 LOG_LEVEL_DEBUG, 1, json_object_size(post_done_json));
+                    } else {
+                        // Not valid JSON — log error and raw data for debugging
+                        log_this(SR_CHAT, "Multi-stream: post-[DONE] data not valid JSON: %s. Raw (first 500 chars): %.500s",
+                                 LOG_LEVEL_DEBUG, 2, json_err.text, curl_ctx->post_done_buffer);
+                    }
+                } else {
+                    log_this(SR_CHAT, "Multi-stream: no post-[DONE] data available (seen_done=%s)",
+                             LOG_LEVEL_DEBUG, 1,
+                             curl_ctx->seen_done ? "true" : "false");
+                }
+
+                // Also check the remaining line buffer content—some providers
+                // send metadata JSON on the last line without a trailing newline
+                if (!json_object_get(result, "raw_provider_response") &&
+                    curl_ctx->line_buffer_len > 0) {
+                    json_error_t json_err;
+                    json_t* remaining_json = json_loads(curl_ctx->line_buffer, 0, &json_err);
+                    if (remaining_json) {
+                        json_object_set_new(result, "raw_provider_response", remaining_json);
+                        log_this(SR_CHAT, "Multi-stream: included remaining line buffer as raw_provider_response",
+                                 LOG_LEVEL_DEBUG, 0);
+                    }
+                }
+
+                json_object_set_new(done_response, "result", result);
+
+                log_this(SR_CHAT, "Multi-stream complete: %zu chunks, %.0fms, finish=%s",
+                         LOG_LEVEL_STATE, 3,
+                         curl_ctx->chunks_processed,
+                         elapsed_ms,
+                         stream_ctx->finish_reason ? stream_ctx->finish_reason : "stop");
+            }
+
+            char* done_json = json_dumps(done_response, JSON_COMPACT);
+            json_decref(done_response);
+
+            if (done_json) {
+                chunk_queue_enqueue(&stream_ctx->chunk_queue, done_json, strlen(done_json));
+                chat_proxy_multi_request_writable(stream_ctx);
+                free(done_json);
+            }
+
+            // Remove CURL handle but DON'T free the stream context yet
+            // The chat_done message is in the queue and needs to be sent first
+            curl_multi_remove_handle(manager->multi_handle, easy);
+            curl_easy_cleanup(easy);
+            stream_ctx->easy_handle = NULL;
+
+            // Cleanup CURL context (no longer needed)
+            free(curl_ctx->line_buffer);
+            free(curl_ctx->post_done_buffer);
+            free(curl_ctx);
+
+            // Mark as completed - cleanup will happen on next iteration when queue is drained
+            stream_ctx->stream_completed = true;
+
+            // Update session flag
+            if (stream_ctx->stream_active) {
+                *stream_ctx->stream_active = false;
+            }
         }
     }
-    
-    return true;
 }
 
 CURLM* chat_proxy_multi_get_handle(const MultiStreamManager* manager) {

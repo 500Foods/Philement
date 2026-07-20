@@ -239,6 +239,24 @@ foreach(SOURCE_FILE ${UNITY_HYDROGEN_SOURCES})
         list(APPEND MOCK_DEFINES_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_libmicrohttpd.h")
         set(MOCK_DEFINES ${MOCK_DEFINES_LIST})
         unset(MOCK_DEFINES_LIST)
+    elseif(IS_WSCHAT_SOURCE GREATER -1)
+        # Chat proxy / websocket-chat helpers: inject malloc/calloc/strdup
+        # fault injection so tests can exercise allocation-failure paths.
+        # Also redirect the database engine and database queue manager so the
+        # storage helpers (store/retrieve/segment/exist/etc.) can be unit
+        # tested without a live database connection.
+        set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
+        list(APPEND MOCK_DEFINES_LIST "-DUSE_MOCK_SYSTEM")
+        list(APPEND MOCK_DEFINES_LIST "-DUSE_MOCK_DATABASE_ENGINE")
+        list(APPEND MOCK_DEFINES_LIST "-DUSE_MOCK_DBQUEUE")
+        list(APPEND MOCK_DEFINES_LIST "-include")
+        list(APPEND MOCK_DEFINES_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_system.h")
+        list(APPEND MOCK_DEFINES_LIST "-include")
+        list(APPEND MOCK_DEFINES_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_database_engine.h")
+        list(APPEND MOCK_DEFINES_LIST "-include")
+        list(APPEND MOCK_DEFINES_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_dbqueue.h")
+        set(MOCK_DEFINES ${MOCK_DEFINES_LIST})
+        unset(MOCK_DEFINES_LIST)
     elseif(IS_DATABASE_SOURCE GREATER -1)
         set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
         list(APPEND MOCK_DEFINES_LIST "-DUSE_MOCK_SYSTEM")
