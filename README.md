@@ -53,36 +53,35 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2026-07-20 22:34:57 UTC
+Last updated at 2026-07-22 01:08:54 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-JSON                           434            397              0        1432355
-SVG                            207            405           6391         267127
-C                             1436          59769          56490         233743
-Text                           297            398              0         120006
+JSON                           434            398              0        1438421
+SVG                            207            405           6391         267123
+C                             1447          60372          56820         236265
+Text                           296            292              0         118788
 Markdown                       714          30361            242          89726
 JavaScript                     275          10509          13612          51625
 Lua                            279           6734           4674          44533
-Bourne Shell                   138           6830          92292          33711
+Bourne Shell                   138           6830          92319          33711
 CSS                            124           2769           1563          14045
-C/C++ Header                   311           3749          13243          11230
-CMake                           22            197            371           3328
+C/C++ Header                   312           3757          13250          11248
 HTML                            54            307            232           3083
+CMake                           18            176            338           1308
 make                            11            112             75            607
 TOML                             1             55             35            449
-YAML                             3             23             15            309
 Python                           1             36              9            195
 SQL                             10             21             23            191
 zsh                              2             31             42             97
 Delphi Form                      1              1              0             43
+YAML                             2              8             13             37
 Pascal                           2             11              2             31
 -------------------------------------------------------------------------------
-SUM:                          4322         122715         189311        2306434
+SUM:                          4328         123185         189640        2311526
 -------------------------------------------------------------------------------
-3131 Files were skipped (duplicate, binary, or without source code):
+2261 Files were skipped (duplicate, binary, or without source code):
   svg: 887
-  gcno: 856
   css: 440
   br: 370
   html: 345
@@ -91,7 +90,6 @@ SUM:                          4322         122715         189311        2306434
   js: 24
   mp4: 15
   lua: 12
-  gcda: 9
   json: 7
   jpg: 6
   woff2: 6
@@ -103,7 +101,6 @@ SUM:                          4322         122715         189311        2306434
   lintignore-c: 2
   lintignore-lua: 2
   lintignore: 2
-  ninja: 2
   sqlite: 2
   sqruff_db2: 2
   sqruff_mysql: 2
@@ -112,7 +109,6 @@ SUM:                          4322         122715         189311        2306434
   3mf: 1
   ansi: 1
   backup: 1
-  check_cache: 1
   control: 1
   detailed: 1
   disabled: 1
@@ -122,8 +118,6 @@ SUM:                          4322         122715         189311        2306434
   gitattributes: 1
   jsonc: 1
   key: 1
-  ninja_deps: 1
-  ninja_log: 1
   payload_generated: 1
   pem: 1
   sh: 1
